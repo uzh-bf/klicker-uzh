@@ -420,11 +420,12 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 ## Progress
 
-- Status: replacement S1 through S3, the bounded correction, the devrouter
-  0.0.37 consumer adaptation, and the final accessibility correction are
-  committed and verified. The current HEAD before this evidence commit is
-  `eefb977d5b449a8b5c4f645727e8fcc09605660d`.
-- Freshness: before this plan edit, the branch was clean, 16 commits ahead and
+- Status: W2 is locally complete through its authorized terminal condition.
+  Implementation, checks, exact devrouter proof, independent review, evidence,
+  and non-destructive shutdown are complete. The current HEAD before this
+  review-disposition commit is
+  `3b0b2704f2fdb3d5d9f9bbbd36d6f03a121c477e`.
+- Freshness: before this plan edit, the branch was clean, 17 commits ahead and
   4 behind `origin/v3`. The four upstream-only commits remain limited to CI,
   deployment, and documentation paths with no W2 overlap; no further rebase
   was performed.
@@ -442,6 +443,12 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 - Correction checks passed: Biome format/check, Prettier, frontend-manage
   check, Playwright check, O-spec collection with 81 tests, `git diff --check`,
   full commit hooks, staged secret/credential/PII audit, and a clean worktree.
+- Independent Sol correction readback reviewed immutable HEAD
+  `3b0b2704f2fdb3d5d9f9bbbd36d6f03a121c477e` over `origin/v3...HEAD` and
+  returned ACCEPTED with zero P0-P3 findings. It verified that the prior P3 is
+  fully resolved by the stable `aria-live="polite"` region, conditional
+  `aria-describedby`, repeated O-spec recovery assertions, exact EN/DE
+  fancy-domain proof, and canonical zero-route shutdown evidence.
 - Current-base static verification passed sequentially: feature-flags build;
   GraphQL build with warnings only; frontend-manage check; Playwright check; B,
   O, and P collection with 154 tests in 3 files; Biome format for all 8 changed
@@ -501,6 +508,9 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   or corrupt browser artifacts without tracked source, package, or lockfile
   changes. Exact agent-browser coverage supplies the completed user-path proof;
   repository Playwright runtime success is not claimed.
+- The repository Playwright browser-payload blocker and existing W8 later-step
+  narrow-layout debt remain exactly as disclosed. Neither is a W2 defect or a
+  passing-runtime claim.
 - Historical readiness failures are resolved for W2 by the committed devrouter
   0.0.37 consumer adaptation: the prior CA-validated 755-SAN path failed with
   curl error 60 while OpenSSL accepted it and an exact served-leaf pin returned
@@ -513,11 +523,11 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   `Stopped`; route state was absent; and the exact W2 route count was 0. No new
   worktree or manual Docker, DevPod, route, TLS, certificate, or lock edit
   occurred.
-- Remaining work is only integrated final re-review of `origin/v3...HEAD` and
-  recording its disposition. Push, PR or stack mutation, merge, deploy,
-  publication, cleanup, and deletion remain withheld.
-- Next action: obtain final reviewer correction readback, then prepare a local
-  handoff. Do not push, open or update a PR, merge, deploy, or publish.
+- Remaining external actions are withheld and are not required for local
+  completion: push, PR or stack mutation, merge, deploy, publication, cleanup,
+  and deletion.
+- Next action: the user may choose whether to push or open a PR in a separately
+  authorized delivery step; no delivery authority is implied here.
 
 ### Historical execution evidence before final runtime proof
 
