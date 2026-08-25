@@ -1,6 +1,6 @@
 # Knowledge Base management UX audit and improvement roadmap
 
-Status: approved execution plan; implementation in progress
+Status: draft PR published; implementation complete; final review and browser-proof blockers remain
 
 Date: 2026-08-24
 
@@ -8,9 +8,11 @@ Base snapshot: `77ab853f697b8ffdeb2f9956fd387deb2e6eccb1`
 
 Plan branch: `rs/kb-management-ux`
 
-Target branch: `v3-ai`
+PR base: `feat/kb-graph-lifecycle`
 
-PR: not created
+Ultimate target: `v3-ai`
+
+PR: [#5540](https://github.com/uzh-bf/klicker-uzh/pull/5540)
 
 Related history: published #5424 (`feat/kb-graph-lifecycle`); no sibling PR changes are in scope.
 
