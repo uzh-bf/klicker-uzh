@@ -57,20 +57,9 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
      3. Those namespaced hosts only work because `allowedDevOrigins` in `packages/next-config/index.js` is `['**.localhost']` in development (and `undefined` in production) — Next's implicit `*.localhost` matches a single label only. If that glob ever stops covering a worktree host, the symptom is an app that serves HTML but never hydrates, with no obvious error.
 3. **Logs:** The dev servers auto-start inside the container. View logs via `devrouter exec . -- tail -f /tmp/dev.log`.
 
-For OpenRouter-backed Chat, inject the shared prototyping key when starting the
-workspace; never write it into the repository:
-
-```bash
-infisical run \
-  --projectId f855faee-8a7f-4615-86a8-dbe7ae7c7d30 \
-  -- sh -c 'UPSTREAM_OPENAI_API_KEY="$OPENROUTER_API_KEY" UPSTREAM_OPENAI_BASE_URL=https://openrouter.ai/api/v1 devrouter ensure .'
-```
-
-The local LiteLLM Auto V2 router sends classification, semantic embedding, and
-answer requests through that same external upstream. Use seeded or synthetic
-content. If the workspace was already started without the variables, stop it
-before rerunning the command because `ensure` does not replace a running
-container's environment.
+For OpenRouter-backed Chat, follow the host-side `rs-infisical-operator`
+workflow in [AGENTS.md](../AGENTS.md). Use only seeded or synthetic content;
+do not copy credentials into the repository or use raw Infisical injection.
 
 `post-start.sh` keeps Klicker's environment and origin setup local. Host-side `devrouter ensure` delivers its matching process helper to the exact validated container, then invokes the adapter. Released devrouter `0.0.35` records its owned process group and fingerprints the workspace, command, adapter bytes, and declared non-secret origin environment in `/tmp/devrouter-process-klicker-dev.state`; an exact repeat is idempotent, stale owned groups are replaced boundedly, and unknown processes are never killed.
 
