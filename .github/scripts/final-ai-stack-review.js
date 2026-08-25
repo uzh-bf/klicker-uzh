@@ -61,15 +61,6 @@ function safeRepositoryPath(value) {
   )
 }
 
-async function getPull(github, context, pullNumber) {
-  const response = await github.rest.pulls.get({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    pull_number: pullNumber,
-  })
-  return response.data
-}
-
 async function getPermission(github, context, username) {
   try {
     const response = await github.rest.repos.getCollaboratorPermissionLevel({
@@ -85,12 +76,10 @@ async function getPermission(github, context, username) {
 }
 
 async function resolveStackMembership({ github, context, pullNumber }) {
-  const targetPull = await getPull(github, context, pullNumber)
   return resolveNativeStackMembership({
     github,
     context,
     pullNumber,
-    pull: targetPull,
   })
 }
 
@@ -214,13 +203,7 @@ async function initializeStackReview({ github, context }) {
     throw error
   }
   if (!membership) return false
-  const eventTopSha =
-    membership.topNumber === pull.number &&
-    /^[0-9a-f]{40}$/.test(pull.head?.sha ?? '')
-      ? pull.head.sha
-      : ''
-  const topSha =
-    membership.top?.head?.sha || membership.topHeadSha || eventTopSha
+  const topSha = membership.topHeadSha
   if (!topSha) {
     console.warn(
       `Native stack top ${membership.topNumber ?? 'unknown'} could not be verified; no status changed`

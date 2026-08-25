@@ -276,6 +276,60 @@ test('accepts a verified two-layer stack as a distinct topology', async () => {
   assert.equal(membership.position, 1)
 })
 
+test('accepts flat native stack head SHA records', async () => {
+  const { github } = stackFixture()
+  const heads = {
+    11: 'c'.repeat(40),
+    12: 'd'.repeat(40),
+    13: 'e'.repeat(40),
+    14: 'f'.repeat(40),
+  }
+  github.request = async () => ({
+    data: [
+      {
+        id: 97,
+        pull_requests: [11, 12, 13, 14].map((number) => ({
+          number,
+          state: 'open',
+          draft: false,
+          head_sha: heads[number],
+        })),
+      },
+    ],
+  })
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  assert.equal(membership.valid, true)
+  assert.equal(membership.topHeadSha, 'f'.repeat(40))
+})
+
+test('rejects a native stack record with a malformed head SHA', async () => {
+  const { github } = stackFixture()
+  github.request = async () => ({
+    data: [
+      {
+        id: 96,
+        pull_requests: [11, 12, 13, 14].map((number) => ({
+          number,
+          state: 'open',
+          draft: false,
+          head: { sha: number === 14 ? 'not-a-sha' : 'c'.repeat(40) },
+        })),
+      },
+    ],
+  })
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  assert.equal(membership.valid, false)
+  assert.match(membership.reason, /malformed stack/)
+})
+
 test('builds a bounded immutable manifest with exact layer owners', async () => {
   const { github } = stackFixture()
   const membership = await resolveStackMembership({
@@ -320,12 +374,21 @@ test('authorizes only the verified top pull request', async () => {
 
 test('invalidates the top status when a lower layer changes', async () => {
   const { github, pulls, state } = stackFixture()
+  state.statuses.push({
+    context: 'final-ai-stack-review',
+    state: 'success',
+    target_url: 'https://github.com/old-review',
+  })
   const eventContext = context(12)
   eventContext.eventName = 'pull_request_target'
-  eventContext.payload.pull_request = pulls[12]
+  eventContext.payload.pull_request = {
+    ...pulls[12],
+    head: { ...pulls[12].head, sha: '0'.repeat(40) },
+  }
   await initializeStackReview({ github, context: eventContext })
   assert.equal(state.createdStatuses.at(-1).sha, pulls[14].head.sha)
   assert.equal(state.createdStatuses.at(-1).state, 'pending')
+  assert.equal(state.createdStatuses.at(-1).context, 'final-ai-stack-review')
 })
 
 test('supersedes the top status when the top member cannot be fetched', async () => {
@@ -344,6 +407,7 @@ test('supersedes the top status when the top member cannot be fetched', async ()
   )
   assert.equal(state.createdStatuses.at(-1).sha, pulls[14].head.sha)
   assert.equal(state.createdStatuses.at(-1).state, 'error')
+  assert.equal(state.createdStatuses.at(-1).context, 'final-ai-stack-review')
   github.rest.pulls.get = originalGet
 })
 
@@ -363,6 +427,7 @@ test('supersedes the top status when a lower member cannot be fetched', async ()
   )
   assert.equal(state.createdStatuses.at(-1).sha, pulls[14].head.sha)
   assert.equal(state.createdStatuses.at(-1).state, 'error')
+  assert.equal(state.createdStatuses.at(-1).context, 'final-ai-stack-review')
   github.rest.pulls.get = originalGet
 })
 
