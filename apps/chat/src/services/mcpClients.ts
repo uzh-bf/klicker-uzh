@@ -15,7 +15,10 @@ import {
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
-import { DOC_QUERY_MCP_SERVER_NAME } from './mcpScope'
+import {
+  DOC_QUERY_MCP_SERVER_NAME,
+  DOC_QUERY_SCOPE_TOKEN_HEADER,
+} from './mcpScope'
 
 // Type definitions for MCP server configuration
 export interface MCPServerConfig {
@@ -51,6 +54,38 @@ export interface MCPRequestContext {
 
 export interface MCPRequestOptions {
   requestTimeoutMs?: number
+}
+
+const HTTP_HEADER_NAME_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/
+
+function resolveDocQueryScopeHeader(server: MCPServerConfig): string {
+  const parameters =
+    server.parameters &&
+    typeof server.parameters === 'object' &&
+    !Array.isArray(server.parameters)
+      ? (server.parameters as Record<string, unknown>)
+      : undefined
+  const rawScopeToken = parameters?.scope_token
+  if (
+    rawScopeToken !== undefined &&
+    (!rawScopeToken ||
+      typeof rawScopeToken !== 'object' ||
+      Array.isArray(rawScopeToken))
+  ) {
+    throw new Error('Invalid Doc Query scope-token configuration')
+  }
+  const scopeToken = rawScopeToken as Record<string, unknown> | undefined
+  const header = scopeToken?.header ?? DOC_QUERY_SCOPE_TOKEN_HEADER
+
+  if (
+    typeof header !== 'string' ||
+    HTTP_HEADER_NAME_PATTERN.test(header) === false ||
+    header.toLowerCase() === 'authorization'
+  ) {
+    throw new Error('Invalid Doc Query scope-token header')
+  }
+
+  return header
 }
 
 function toToolNameHash(rawName: string): string {
@@ -134,13 +169,23 @@ export async function createAuthHeaders(
       throw new Error('Scoped knowledge retrieval is not available')
     }
 
+    // Shared multi-tenant Doc Query keeps transport authentication in
+    // Authorization and carries retrieval scope in its dedicated header.
+    // Scope-only rows remain valid only for explicitly standalone deployments.
+    if (server.authSecret) {
+      if (authType !== 'bearer' && authType !== 'scope_token') {
+        throw new Error('Doc Query transport authentication is invalid')
+      }
+      baseHeaders.Authorization = `Bearer ${safeDecrypt(server.authSecret)}`
+    }
+
     const token = await signDocQueryScopeToken({
       kbId: context.kbId,
       chatbotId: context.chatbotId,
       sessionId: context.sessionId,
       jti: randomUUID(),
     })
-    baseHeaders.Authorization = `Bearer ${token}`
+    baseHeaders[resolveDocQueryScopeHeader(server)] = `Bearer ${token}`
     return baseHeaders
   }
 

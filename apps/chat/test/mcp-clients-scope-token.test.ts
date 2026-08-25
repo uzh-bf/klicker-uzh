@@ -7,6 +7,7 @@ import {
 } from '../src/services/mcpClients'
 import {
   canLoadMCPServer,
+  DOC_QUERY_SCOPE_TOKEN_HEADER,
   DOC_QUERY_TOOL_NAME,
   resolveMcpScopeSessionId,
 } from '../src/services/mcpScope'
@@ -27,6 +28,7 @@ const SCOPE_SERVER: MCPServerConfig = {
   name: 'KB',
   url: 'http://doc-query.test/mcp',
   authType: 'scope_token',
+  authSecret: 'transport-token',
   passChatbotId: true,
 }
 
@@ -49,11 +51,12 @@ describe('doc-query MCP scope authentication', () => {
     vi.unstubAllEnvs()
   })
 
-  test('sends only a scoped bearer token to the KB server', async () => {
+  test('keeps transport auth separate from the scoped bearer token', async () => {
     const headers = await createAuthHeaders(SCOPE_SERVER, TEST_CONTEXT)
-    const token = headers.Authorization?.replace(/^Bearer /, '')
+    const token = headers[DOC_QUERY_SCOPE_TOKEN_HEADER]?.replace(/^Bearer /, '')
 
     expect(token).toBeTruthy()
+    expect(headers.Authorization).toBe('Bearer transport-token')
     expect(headers).not.toHaveProperty('Chatbot-ID')
 
     const { payload } = await jwtVerify(token!, publicKey, {
@@ -68,6 +71,16 @@ describe('doc-query MCP scope authentication', () => {
     })
     expect(payload).not.toHaveProperty('participantId')
     expect(payload).not.toHaveProperty('participant_id')
+  })
+
+  test('retains scope-only authentication for standalone KB deployments', async () => {
+    const headers = await createAuthHeaders(
+      { ...SCOPE_SERVER, authSecret: undefined },
+      TEST_CONTEXT
+    )
+
+    expect(headers.Authorization).toBeUndefined()
+    expect(headers[DOC_QUERY_SCOPE_TOKEN_HEADER]).toMatch(/^Bearer /)
   })
 
   test('skips scoped servers when no enabled KB was resolved', () => {
@@ -89,7 +102,7 @@ describe('doc-query MCP scope authentication', () => {
     )
   })
 
-  test('replaces legacy KB authentication with a scoped token', async () => {
+  test('preserves legacy bearer transport authentication during rollout', async () => {
     const legacyServer = {
       ...SCOPE_SERVER,
       authType: 'bearer',
@@ -98,10 +111,10 @@ describe('doc-query MCP scope authentication', () => {
 
     expect(canLoadMCPServer(legacyServer, TEST_CONTEXT)).toBe(true)
     const headers = await createAuthHeaders(legacyServer, TEST_CONTEXT)
-    const token = headers.Authorization?.replace(/^Bearer /, '')
+    const token = headers[DOC_QUERY_SCOPE_TOKEN_HEADER]?.replace(/^Bearer /, '')
 
     expect(token).toBeTruthy()
-    expect(headers.Authorization).not.toContain(legacyServer.authSecret)
+    expect(headers.Authorization).toBe(`Bearer ${legacyServer.authSecret}`)
     expect(headers).not.toHaveProperty('Chatbot-ID')
     await expect(
       jwtVerify(token!, publicKey, {
@@ -110,6 +123,30 @@ describe('doc-query MCP scope authentication', () => {
         audience: TEST_AUDIENCE,
       })
     ).resolves.toBeTruthy()
+  })
+
+  test('rejects a scope header that would replace transport authorization', async () => {
+    await expect(
+      createAuthHeaders(
+        {
+          ...SCOPE_SERVER,
+          parameters: { scope_token: { header: 'authorization' } },
+        },
+        TEST_CONTEXT
+      )
+    ).rejects.toThrow('Invalid Doc Query scope-token header')
+  })
+
+  test('rejects malformed scope-token configuration', async () => {
+    await expect(
+      createAuthHeaders(
+        {
+          ...SCOPE_SERVER,
+          parameters: { scope_token: 'authorization' },
+        },
+        TEST_CONTEXT
+      )
+    ).rejects.toThrow('Invalid Doc Query scope-token configuration')
   })
 
   test('keeps the citation card aligned with the runtime tool name', () => {

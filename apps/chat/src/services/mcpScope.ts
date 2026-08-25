@@ -1,5 +1,6 @@
 export const DOC_QUERY_MCP_SERVER_NAME = 'KB'
 export const DOC_QUERY_TOOL_NAME = `${DOC_QUERY_MCP_SERVER_NAME}_doc_query`
+export const DOC_QUERY_SCOPE_TOKEN_HEADER = 'X-Doc-Query-Scope-Token'
 
 export function resolveMcpScopeSessionId({
   requestedThreadId,
