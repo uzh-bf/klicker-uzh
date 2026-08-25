@@ -231,7 +231,6 @@ function ActivityEvaluation({
                 activeInstance={activeInstance}
                 activeStack={activeStack}
                 courseLanguage={courseLanguage}
-                courseId={courseId}
                 courseName={courseName}
                 activityName={activityName}
                 activityId={activityId}

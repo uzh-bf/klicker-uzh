@@ -5,7 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import ActivityEvaluation from '../../../components/evaluation/ActivityEvaluation'
 import EvaluationUnavailableNotification from '../../../components/evaluation/EvaluationUnavailableNotification'
 
@@ -14,6 +14,7 @@ function LiveQuizEvaluation() {
   const [lastRefetchTime, setLastRefetchTime] = useState<Date | undefined>(
     undefined
   )
+  const previousNetworkStatus = useRef<NetworkStatus | undefined>(undefined)
 
   // fetch evaluation data
   const { data, loading, networkStatus } = useQuery(
@@ -33,9 +34,19 @@ function LiveQuizEvaluation() {
   )
 
   useEffect(() => {
-    if (networkStatus === NetworkStatus.ready && data?.liveQuizEvaluation) {
+    const wasRefetching =
+      previousNetworkStatus.current === NetworkStatus.poll ||
+      previousNetworkStatus.current === NetworkStatus.refetch
+
+    if (
+      networkStatus === NetworkStatus.ready &&
+      wasRefetching &&
+      data?.liveQuizEvaluation
+    ) {
       setLastRefetchTime(new Date())
     }
+
+    previousNetworkStatus.current = networkStatus
   }, [data?.liveQuizEvaluation, networkStatus])
 
   if (loading && !data?.liveQuizEvaluation) {

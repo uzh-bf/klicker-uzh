@@ -11,7 +11,8 @@ function createSafeLogger(context: string, logLevel?: LogLevel) {
 
   return new Proxy(logger, {
     get(target, property, receiver) {
-      if (typeof property === 'string' && !(property in target)) {
+      // HatchetLogger exposes debug but some SDK versions may dispatch trace-level logs.
+      if (property === 'trace' && !('trace' in target)) {
         return target.debug.bind(target)
       }
 

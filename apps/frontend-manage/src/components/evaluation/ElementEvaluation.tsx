@@ -47,7 +47,6 @@ interface ElementEvaluationProps {
   pinCode?: string | null
   className?: string
   lastRefetchTime?: Date
-  courseId?: string | null
   courseName?: string | null
   activityName: string
   activityId: string

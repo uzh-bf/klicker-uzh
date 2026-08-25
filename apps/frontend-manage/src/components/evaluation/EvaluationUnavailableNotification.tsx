@@ -14,7 +14,7 @@ interface EvaluationUnavailableNotificationProps {
   activityId?: string | null
   activityType?: ActivityType | null
   activityStatus?: PublicationStatus | null
-  elementType?: ElementType | string | null
+  elementType?: ElementType | null
   elementName?: string | null
 }
 
@@ -30,7 +30,7 @@ function EvaluationUnavailableNotification({
   const t = useTranslations()
 
   const formattedElementType = elementType
-    ? t(`shared.${elementType as ElementType}.typeLabel`)
+    ? t(`shared.${elementType}.typeLabel`)
     : null
 
   return (
@@ -63,7 +63,7 @@ function EvaluationUnavailableNotification({
           {activityId && (
             <div>
               <a
-                href={`/activities?openActivityDetailsId=${activityId}&openActivityDetailsType=${activityType ?? ActivityType.LiveQuiz}`}
+                href={`/activities?openActivityDetailsId=${encodeURIComponent(activityId)}&openActivityDetailsType=${activityType ?? ActivityType.LiveQuiz}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary-80 hover:underline"
