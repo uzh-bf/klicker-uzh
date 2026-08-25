@@ -37,11 +37,13 @@ metric counts accepted transport events before that downstream boundary.
 aggregation command batch succeeded. For regular quizzes, the atomic processing
 script claims a bounded replay identifier, applies the result commands, and
 increments the numeric processed counter only when no command reports an error.
-Assessment aggregation uses the same contract. A partial command failure
-releases the replay claim and does not increment the processed counter, so the
-worker can throw and Hatchet can retry. Commands that already applied can still
-be repeated by that retry and require reconciliation. Tracking-command failures
-are logged separately as best-effort metric errors.
+Assessment aggregation uses the same contract. Preflight validation and
+failures before any aggregation command succeeds release the replay claim and
+allow the worker to throw so Hatchet can retry. A failure after an earlier
+command succeeds retains the replay claim and returns
+`reconciliation_required`; the worker acknowledges and logs that outcome for
+reconciliation instead of automatically retrying non-idempotent updates.
+Tracking-command failures are logged separately as best-effort metric errors.
 
 The difference between the two values is an operational signal, not a strict
 queue-depth metric. It can include work that is still queued as well as invalid,
@@ -72,14 +74,13 @@ claim:
 The received and processing scripts update their counters and retention in
 Redis Lua. Processing initializes a missing processed counter from the legacy
 processed-set cardinality once, checks both the age-trimmed claims and the
-legacy set, and records each new claim with its own timestamp. Partial command
-errors return an explicit failed aggregation outcome, release the claim, and
-leave the processed counter unchanged. The worker throws so Hatchet can retry
-instead of acknowledging a response that may have been only partially applied.
-Because commands before the failure may already have run, the retry path can
-repeat non-idempotent updates and remains a reconciliation signal rather than
-an exactly-once guarantee for partial batches. Connection-level script failures
-still throw so Hatchet can retry.
+legacy set, and records each new claim with its own timestamp. Preflight or
+first-command errors release the claim and leave the processed counter
+unchanged so the worker can retry. If a later command fails after an earlier
+command has succeeded, the script retains the claim and returns
+`reconciliation_required`; the worker acknowledges and logs the outcome for
+reconciliation instead of repeating non-idempotent updates. Connection-level
+script failures still throw so Hatchet can retry.
 
 The legacy received set
 `lq:<quiz-id>:i:<instance-id>:responses:received` is read-only compatibility
@@ -174,9 +175,12 @@ not change leaderboard data.
 - A received-counter Redis failure is logged and ingress continues; operational
   counts can therefore undercount during a tracking outage.
 - A Hatchet enqueue failure leaves a received marker without a processed marker.
-- A processing-script command error is logged as an aggregation failure after
-  the replay claim is released; it does not increment the processed counter and
-  triggers a worker retry that can replay partial aggregation.
+- A processing-script preflight or first-command failure is logged as an
+  aggregation failure after the replay claim is released; it does not increment
+  the processed counter and triggers a worker retry.
+- A processing-script failure after an earlier command succeeds retains the
+  replay claim, returns `reconciliation_required`, and is acknowledged and
+  logged for reconciliation; it does not trigger an automatic retry.
 - A connection-level processing-script failure throws so Hatchet can retry; if
   Redis completed the script, the replay claim makes that retry a no-op.
 - Worker retries do not increase the processed counter for the same tracking

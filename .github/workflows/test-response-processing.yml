@@ -1,0 +1,56 @@
+name: Test response processing packages
+
+on:
+  push:
+    branches: ['v3', 'v3*']
+  pull_request:
+    branches: ['v3', 'v3*']
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  test-response-processing:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for changes
+        id: filter
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(apps/(response-api|hatchet-worker-response-processor)/|packages/(grading|hatchet|prisma|types|util)/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|tsconfig\.json|\.github/workflows/test-response-processing\.yml|\.github/actions/changed-paths/)'
+
+      - name: Define node version
+        if: steps.filter.outputs.should_run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - uses: pnpm/action-setup@v4
+        if: steps.filter.outputs.should_run == 'true'
+        with:
+          version: 11.5.0
+          run_install: true
+
+      - name: Build response processing packages and dependencies
+        if: steps.filter.outputs.should_run == 'true'
+        run: |
+          pnpm --filter @klicker-uzh/response-api... run build
+          pnpm --filter @klicker-uzh/hatchet-worker-response-processor... run build
+
+      - name: Test response API
+        if: steps.filter.outputs.should_run == 'true'
+        run: pnpm --filter @klicker-uzh/response-api run test
+
+      - name: Test response processor
+        if: steps.filter.outputs.should_run == 'true'
+        run: pnpm --filter @klicker-uzh/hatchet-worker-response-processor run test

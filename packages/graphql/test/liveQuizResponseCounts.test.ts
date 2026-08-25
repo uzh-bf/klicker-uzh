@@ -7,12 +7,16 @@ import {
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
 import {
+  getLiveQuizInstanceInfoKey,
   getLiveQuizLegacyResponseProcessedKey,
   getLiveQuizLegacyResponseReceivedKey,
   getLiveQuizResponseCountKey,
+  getLiveQuizResponseReplayClaimKey,
+  LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
 } from '@klicker-uzh/util'
+import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
-import { getCockpitQuiz } from '../src/services/liveQuizzes.js'
+import { endLiveQuiz, getCockpitQuiz } from '../src/services/liveQuizzes.js'
 import {
   initializePrisma,
   seedAnswerCollections,
@@ -251,6 +255,111 @@ describe('live quiz cockpit response counts', () => {
       }
     } finally {
       userOneCtx.redisExec.pipeline = originalPipelineMethod
+    }
+  })
+
+  it('keeps published quizzes retryable and repairs retention for ended quizzes', async () => {
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
+    const { SC } = await seedElements(userOneCtx, AC1.id)
+    const quiz = await seedLiveQuiz(
+      {
+        elements: [{ id: SC.id, type: ElementType.SC }],
+        status: PublicationStatus.PUBLISHED,
+      },
+      userOneCtx
+    )
+    liveQuizId = quiz.id
+
+    const blocks = await prisma.elementBlock.findMany({
+      where: { liveQuizId: quiz.id },
+      include: { elements: true },
+    })
+    const instance = blocks[0]!.elements[0]!
+
+    const originalMultiMethod = userOneCtx.redisExec.multi
+    const originalMulti = originalMultiMethod.bind(userOneCtx.redisExec)
+    let failNextMulti = true
+    userOneCtx.redisExec.multi = ((
+      ...args: Parameters<typeof originalMulti>
+    ) => {
+      const multi = originalMulti(...args)
+      if (failNextMulti) {
+        failNextMulti = false
+        multi.exec = vi
+          .fn()
+          .mockResolvedValue([[new Error('retention failed'), null]])
+      }
+      return multi
+    }) as typeof originalMultiMethod
+
+    try {
+      await expect(endLiveQuiz({ id: quiz.id }, userOneCtx)).rejects.toThrow(
+        'Failed to start instance-info retention'
+      )
+    } finally {
+      userOneCtx.redisExec.multi = originalMultiMethod
+    }
+
+    expect(
+      (
+        await prisma.liveQuiz.findUnique({
+          where: { id: quiz.id },
+          select: { status: true },
+        })
+      )?.status
+    ).toBe(PublicationStatus.PUBLISHED)
+
+    const instanceInfoKey = getLiveQuizInstanceInfoKey({
+      liveQuizId: quiz.id,
+      instanceId: instance.id,
+    })
+    const trackingKeys = [
+      getLiveQuizResponseCountKey({
+        liveQuizId: quiz.id,
+        instanceId: instance.id,
+        status: 'received',
+      }),
+      getLiveQuizResponseCountKey({
+        liveQuizId: quiz.id,
+        instanceId: instance.id,
+        status: 'processed',
+      }),
+      getLiveQuizResponseReplayClaimKey({
+        liveQuizId: quiz.id,
+        instanceId: instance.id,
+      }),
+      getLiveQuizLegacyResponseReceivedKey({
+        liveQuizId: quiz.id,
+        instanceId: instance.id,
+      }),
+      getLiveQuizLegacyResponseProcessedKey({
+        liveQuizId: quiz.id,
+        instanceId: instance.id,
+      }),
+    ]
+    expect(trackingKeys).toHaveLength(5)
+
+    await userOneCtx.redisExec.hset(instanceInfoKey, 'id', String(instance.id))
+    await userOneCtx.redisExec.set(trackingKeys[0]!, '1')
+    await userOneCtx.redisExec.set(trackingKeys[1]!, '1')
+    await userOneCtx.redisExec.zadd(trackingKeys[2]!, Date.now(), 'message-1')
+    await userOneCtx.redisExec.sadd(trackingKeys[3]!, 'legacy-received')
+    await userOneCtx.redisExec.sadd(trackingKeys[4]!, 'legacy-processed')
+
+    const finishedAt = new Date('2026-08-25T10:00:00.000Z')
+    await prisma.liveQuiz.update({
+      where: { id: quiz.id },
+      data: { status: PublicationStatus.ENDED, finishedAt },
+    })
+
+    const recoveredQuiz = await endLiveQuiz({ id: quiz.id }, userOneCtx)
+
+    expect(recoveredQuiz?.status).toBe(PublicationStatus.ENDED)
+    expect(recoveredQuiz?.finishedAt).toEqual(finishedAt)
+    for (const key of [instanceInfoKey, ...trackingKeys]) {
+      const ttl = await userOneCtx.redisExec.ttl(key)
+      expect(ttl).toBeGreaterThan(0)
+      expect(ttl).toBeLessThanOrEqual(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
     }
   })
 })

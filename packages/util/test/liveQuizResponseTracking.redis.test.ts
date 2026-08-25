@@ -392,6 +392,7 @@ redisDescribe('live quiz response tracking Redis contract', () => {
         `${prefix}:missing-processed`,
         `${prefix}:missing-processed-count`,
         `${prefix}:received-count`,
+        `${prefix}:malformed-received-count`,
         `${prefix}:active-info`,
         `${prefix}:active-received-count`,
         `${prefix}:error-processed:claims`,
