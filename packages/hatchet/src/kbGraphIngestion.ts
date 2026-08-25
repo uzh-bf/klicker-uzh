@@ -22,6 +22,7 @@ import {
   type ExternalKBGraphClient,
   type ExternalKBGraphPayload,
   type KBGraphLogger,
+  type ExternalKBGraphRequestOptions,
 } from './kbGraphIngestionApi.js'
 
 const KB_GRAPH_MONITOR_BATCH_SIZE = 32
@@ -115,7 +116,10 @@ export type MonitorKBGraphBuildsDependencies = {
   now?: () => Date
   logger?: KBGraphLogger
   providerOperationTimeoutMs?: number
-  getTerminalResult?: (runId: string) => Promise<unknown>
+  getTerminalResult?: (
+    runId: string,
+    options?: ExternalKBGraphRequestOptions
+  ) => Promise<unknown>
   settleTerminalResult?: (input: {
     buildId: string
     result: unknown
@@ -225,14 +229,15 @@ function getGraphMonitorBatchOffset(total: number, now: Date) {
 }
 
 async function withProviderTimeout<T>(
-  operationFactory: () => Promise<T>,
+  operationFactory: (signal: AbortSignal) => Promise<T>,
   timeoutMilliseconds: number | undefined
 ): Promise<T> {
   if (activeProviderOperations.size >= KB_GRAPH_MONITOR_CONCURRENCY) {
     throw new ProviderOperationLimitError()
   }
 
-  const operation = operationFactory()
+  const abortController = new AbortController()
+  const operation = operationFactory(abortController.signal)
   let trackedOperation: Promise<T>
   trackedOperation = operation.finally(() => {
     activeProviderOperations.delete(trackedOperation)
@@ -244,16 +249,27 @@ async function withProviderTimeout<T>(
   }
 
   let timeout: ReturnType<typeof setTimeout> | undefined
+  let timedOut = false
+  const timeoutError = new Error('KB graph provider operation timed out')
   try {
     return await Promise.race([
       trackedOperation,
       new Promise<never>((_, reject) => {
-        timeout = setTimeout(
-          () => reject(new Error('KB graph provider operation timed out')),
-          timeoutMilliseconds
-        )
+        timeout = setTimeout(() => {
+          timedOut = true
+          abortController.abort(timeoutError)
+          reject(timeoutError)
+        }, timeoutMilliseconds)
       }),
     ])
+  } catch (error) {
+    if (!timedOut) {
+      throw error
+    }
+    // The transport must honor the signal before capacity can be reused. This
+    // keeps the worker-wide ceiling valid even when a request times out.
+    await trackedOperation.catch(() => undefined)
+    throw timeoutError
   } finally {
     if (timeout) clearTimeout(timeout)
   }
@@ -567,7 +583,7 @@ export async function resolveAmbiguousKBGraphDispatch(
     const config = getExternalKBGraphConfig(env)
     const client = dependencies.client ?? getExternalKBGraphClient(env)
     recoveredRun = await withProviderTimeout(
-      () =>
+      (signal) =>
         recoverExternalKBGraphRun({
           client,
           workflowName: config.workflowName,
@@ -576,6 +592,7 @@ export async function resolveAmbiguousKBGraphDispatch(
             [KB_GRAPH_KB_METADATA_KEY]: build.kbId,
           },
           recoveryAnchor: build.createdAt,
+          requestOptions: { signal },
         }),
       dependencies.providerOperationTimeoutMs
     )
@@ -1064,7 +1081,8 @@ async function monitorTimedOutKBGraphBuilds(
     const identifiers = graphIdentifiers(build)
     try {
       const externalStatus = await withProviderTimeout(
-        () => client.runs.get_status(build.externalOperationId),
+        (signal) =>
+          client.runs.get_status(build.externalOperationId, { signal }),
         providerOperationTimeoutMs
       )
       if (externalStatus !== 'COMPLETED') {
@@ -1073,7 +1091,10 @@ async function monitorTimedOutKBGraphBuilds(
 
       if (dependencies.getTerminalResult && dependencies.settleTerminalResult) {
         const terminalResult = await withProviderTimeout(
-          () => dependencies.getTerminalResult!(build.externalOperationId),
+          (signal) =>
+            dependencies.getTerminalResult!(build.externalOperationId, {
+              signal,
+            }),
           providerOperationTimeoutMs
         )
         await dependencies.settleTerminalResult({
@@ -1178,7 +1199,7 @@ export async function monitorActiveKBGraphBuilds(
     const identifiers = graphIdentifiers(build)
     try {
       const externalStatus = await withProviderTimeout(
-        () => client.runs.get_status(externalOperationId),
+        (signal) => client.runs.get_status(externalOperationId, { signal }),
         providerOperationTimeoutMs
       )
       const observedAt = now()
@@ -1210,7 +1231,8 @@ export async function monitorActiveKBGraphBuilds(
         }
 
         const terminalResult = await withProviderTimeout(
-          () => dependencies.getTerminalResult!(externalOperationId),
+          (signal) =>
+            dependencies.getTerminalResult!(externalOperationId, { signal }),
           providerOperationTimeoutMs
         )
         await dependencies.settleTerminalResult({
@@ -1226,12 +1248,13 @@ export async function monitorActiveKBGraphBuilds(
         timeoutMilliseconds
       ) {
         await withProviderTimeout(
-          () =>
+          (signal) =>
             cancelExternalKBGraphRunBestEffort({
               client,
               runId: externalOperationId,
               identifiers,
               logger: dependencies.logger,
+              requestOptions: { signal },
             }),
           providerOperationTimeoutMs
         )
