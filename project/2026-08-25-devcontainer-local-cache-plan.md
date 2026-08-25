@@ -160,19 +160,24 @@ critical-path coupling; delegation would cost more than the bounded edits.
 
 ## Progress
 
-- Status: Slice 1 implemented and focused verification passed; commit in
-  progress.
+- Status: Slice 1 committed, reviewed, and corrected; Slice 2 is active.
 - Completed: remote `v3` freshness readback, clean task worktree, planner pass,
-  plan commit `04352a869`, shared pnpm-store implementation, mocked initializer
-  success/idempotence/failure checks, shell syntax, ShellCheck on changed
-  production scripts, and both resolved Compose overlays.
+  plan commit `04352a869`, shared pnpm-store commit `6bc9ff3fe`, mocked
+  initializer success/idempotence/failure checks, shell syntax, ShellCheck on
+  changed production scripts, and both resolved Compose overlays.
 - Focused evidence: `bash util/test-dev-runtime.sh` passed; both Compose models
   expose only `pnpm_store` as external and retain project-scoped
   `node_modules_root` and `pgdata`.
 - Runtime limitation: exact runtime verification is not yet available because
   devrouter reports `could not determine process identity for host route update lock`.
-- Active slice: Slice 1 commit and specialist review.
-- Next: commit Slice 1, run its simplifier and slice reviewer, then implement
-  Slice 2.
+- Slice 1 review: done through trusted generic-continuity specialists after the
+  configured Gemini routes failed pre-work with provider `402`; the accepted
+  simplification uses Docker's idempotent named-volume creation directly. No
+  blocking correctness or isolation finding remained. Reports:
+  `project/_local/reviews/2026-08-25-devcontainer-cache-slice-1-simplifier.md`
+  and `project/_local/reviews/2026-08-25-devcontainer-cache-slice-1-review.md`.
+- Active slice: Slice 2 implementation.
+- Next: commit the Slice 1 review correction, then preserve healthy Next.js
+  development caches with focused repair tests.
 - Required delivery: committed local branch.
-- Achieved delivery: reviewed plan commit only.
+- Achieved delivery: reviewed Slice 1 commit; correction uncommitted.

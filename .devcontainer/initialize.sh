@@ -17,6 +17,4 @@ fi
 
 # The pnpm content store is the only cache shared across worktrees. It is
 # external so deleting one DevPod cannot remove packages used by another.
-if ! docker volume inspect "$PNPM_STORE_VOLUME" >/dev/null 2>&1; then
-  docker volume create "$PNPM_STORE_VOLUME" >/dev/null
-fi
+docker volume create "$PNPM_STORE_VOLUME" >/dev/null
