@@ -2343,16 +2343,33 @@ test.describe.serial('Different live-quiz workflows', () => {
     )
     await page.getByTestId('back-activity-creation').click()
     await page.getByTestId('next-or-submit').click()
-    await page.waitForTimeout(500)
+    const disabledAnnouncement = page.getByTestId(
+      'activity-creation-disabled-announcement'
+    )
+    await expect(disabledAnnouncement).toHaveCount(1)
+    await expect(disabledAnnouncement).toHaveAttribute('role', 'status')
+    await expect(disabledAnnouncement).toHaveAttribute('aria-live', 'polite')
+    await expect(disabledAnnouncement).toHaveAttribute('aria-atomic', 'true')
+    await expect(disabledAnnouncement).toBeEmpty()
+    const disabledAnnouncementElement =
+      await disabledAnnouncement.elementHandle()
+    expect(disabledAnnouncementElement).not.toBeNull()
     await page.getByTestId('next-or-submit').click()
-    await page.waitForTimeout(500)
     await expectByAssertion(page.getByTestId('next-or-submit'), 'be.disabled')
-    await expect(
-      page.getByTestId('activity-creation-disabled-reason')
-    ).toHaveAttribute('aria-live', 'polite')
-    await expect(
-      page.getByTestId('activity-creation-disabled-reason')
-    ).toHaveText(messages.manage.activityWizard.minOneElementPerBlock)
+    const disabledReason = page.getByTestId('activity-creation-disabled-reason')
+    await expect(disabledAnnouncement).toHaveText(
+      messages.manage.activityWizard.minOneElementPerBlock
+    )
+    expect(
+      await disabledAnnouncementElement!.evaluate((node) => node.isConnected)
+    ).toBe(true)
+    expect(
+      await disabledAnnouncementElement!.evaluate((node) => node.textContent)
+    ).toBe(messages.manage.activityWizard.minOneElementPerBlock)
+    await expect(disabledReason).toHaveText(
+      messages.manage.activityWizard.minOneElementPerBlock
+    )
+    await expect(disabledReason).not.toHaveAttribute('aria-live')
     await expect(page.getByTestId('next-or-submit')).toHaveAttribute(
       'aria-describedby',
       'activity-creation-disabled-reason'
@@ -2362,20 +2379,20 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId('next-or-submit'),
       'not.be.disabled'
     )
-    await expect(
-      page.getByTestId('activity-creation-disabled-reason')
-    ).toHaveCount(1)
-    await expect(
-      page.getByTestId('activity-creation-disabled-reason')
-    ).toBeEmpty()
+    await expect(disabledReason).toHaveCount(1)
+    await expect(disabledReason).toBeEmpty()
+    await expect(disabledAnnouncement).toBeEmpty()
     await expect(page.getByTestId('next-or-submit')).not.toHaveAttribute(
       'aria-describedby'
     )
     await page.getByTestId('drop-elements-add-block').click()
     await expectByAssertion(page.getByTestId('next-or-submit'), 'be.disabled')
-    await expect(
-      page.getByTestId('activity-creation-disabled-reason')
-    ).toHaveText(messages.manage.activityWizard.minOneElementPerBlock)
+    await expect(disabledAnnouncement).toHaveText(
+      messages.manage.activityWizard.minOneElementPerBlock
+    )
+    await expect(disabledReason).toHaveText(
+      messages.manage.activityWizard.minOneElementPerBlock
+    )
     await expect(page.getByTestId('next-or-submit')).toHaveAttribute(
       'aria-describedby',
       'activity-creation-disabled-reason'
@@ -2388,20 +2405,20 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId('next-or-submit'),
       'not.be.disabled'
     )
-    await expect(
-      page.getByTestId('activity-creation-disabled-reason')
-    ).toHaveCount(1)
-    await expect(
-      page.getByTestId('activity-creation-disabled-reason')
-    ).toBeEmpty()
+    await expect(disabledReason).toHaveCount(1)
+    await expect(disabledReason).toBeEmpty()
+    await expect(disabledAnnouncement).toBeEmpty()
     await expect(page.getByTestId('next-or-submit')).not.toHaveAttribute(
       'aria-describedby'
     )
     await page.getByTestId('drop-elements-add-block').click()
     await expectByAssertion(page.getByTestId('next-or-submit'), 'be.disabled')
-    await expect(
-      page.getByTestId('activity-creation-disabled-reason')
-    ).toHaveText(messages.manage.activityWizard.minOneElementPerBlock)
+    await expect(disabledAnnouncement).toHaveText(
+      messages.manage.activityWizard.minOneElementPerBlock
+    )
+    await expect(disabledReason).toHaveText(
+      messages.manage.activityWizard.minOneElementPerBlock
+    )
     await expect(page.getByTestId('next-or-submit')).toHaveAttribute(
       'aria-describedby',
       'activity-creation-disabled-reason'
@@ -2411,12 +2428,9 @@ test.describe.serial('Different live-quiz workflows', () => {
       page.getByTestId('next-or-submit'),
       'not.be.disabled'
     )
-    await expect(
-      page.getByTestId('activity-creation-disabled-reason')
-    ).toHaveCount(1)
-    await expect(
-      page.getByTestId('activity-creation-disabled-reason')
-    ).toBeEmpty()
+    await expect(disabledReason).toHaveCount(1)
+    await expect(disabledReason).toBeEmpty()
+    await expect(disabledAnnouncement).toBeEmpty()
     await expect(page.getByTestId('next-or-submit')).not.toHaveAttribute(
       'aria-describedby'
     )

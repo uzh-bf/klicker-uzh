@@ -108,6 +108,7 @@ function LiveQuizWizard({
 
   const [isWizardCompleted, setIsWizardCompleted] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
+  const [disabledAnnouncement, setDisabledAnnouncement] = useState<string>()
   const [stepValidity, setStepValidity] = useState<boolean[]>(
     Array(4).fill(!!initialValues)
   )
@@ -285,6 +286,10 @@ function LiveQuizWizard({
   )
   const [startLiveQuiz] = useMutation(StartLiveQuizDocument)
 
+  const handleDisabledReasonChange = useCallback((reason?: string) => {
+    setDisabledAnnouncement(reason)
+  }, [])
+
   const handleSubmit = useCallback(
     (values: LiveQuizFormValues) => {
       return submitLiveQuizForm({
@@ -322,7 +327,7 @@ function LiveQuizWizard({
     creationData?.createLiveQuiz?.courseId ??
     editingData?.editLiveQuiz?.courseId
 
-  return (
+  const wizardLayout = (
     <WizardLayout
       title={title}
       editMode={editMode}
@@ -494,6 +499,7 @@ function LiveQuizWizard({
           stepValidity={stepValidity}
           validationSchema={questionsValidationSchema}
           setStepValidity={setStepValidity}
+          onDisabledReasonChange={handleDisabledReasonChange}
           onSubmit={(newValues: LiveQuizFormValues) =>
             handleSubmit({ ...formData, ...newValues })
           }
@@ -508,6 +514,21 @@ function LiveQuizWizard({
         setFormData((prev) => ({ ...prev, ...formRef.current?.values }))
       }}
     />
+  )
+
+  return (
+    <>
+      <div
+        className="sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        data-cy="activity-creation-disabled-announcement"
+      >
+        {disabledAnnouncement}
+      </div>
+      {wizardLayout}
+    </>
   )
 }
 

@@ -4,8 +4,9 @@
 
 Give every standard activity choice visible canonical guidance before wizard
 entry. Use correct English and German singular/plural labels for element-
-selection actions, and show the existing empty-block validation reason beside a
-disabled final Create action.
+selection actions, announce the live-quiz empty-block validation through one
+persistent polite region, and show its visible reason beside a disabled final
+Create action.
 
 ADR-0037 is authoritative: Practice Quiz, Microlearning, and Group Activity are
 standard full-access capabilities. All four formats remain enabled and
@@ -25,12 +26,13 @@ uncrowned regardless of Catalyst entitlement.
   wizard layout, or any concern outside this package's approved seams.
 - Do not add dependencies, component-test infrastructure, forced clicks, waits,
   or locator workarounds for the resolved wizard/library overlap.
-- Except for the official devrouter 0.0.37 consumer version pin and generated
+- Except for the official devrouter 0.0.38 consumer version pin and generated
   guidance prerequisite, do not change devrouter, devcontainer, local-origin,
   environment, application routes, or Turborepo routing configuration.
-- Do not push, create or update a PR, submit a stack, merge, deploy, write live
-  state or secrets, change cluster state, clean up worktrees or branches, or
-  delete runtime data.
+- Draft PR #5546, normal branch pushes, and PR body updates are authorized and
+  complete workflow steps. PR merge, mark-ready, deployment, publication,
+  worktree cleanup, and branch, worktree, or runtime-data deletion remain
+  withheld.
 
 ## Execution contract
 
@@ -47,7 +49,7 @@ uncrowned regardless of Catalyst entitlement.
   integrated final review. It changes no runtime, browser, routing, lifecycle,
   publication, or cleanup boundary.
 - The user's current explicit authority additionally covers the official
-  devrouter 0.0.37 shared-readiness consumer prerequisite, canonical exact W2
+  devrouter 0.0.38 shared-readiness consumer prerequisite, canonical exact W2
   revalidation, and the final non-destructive exact-runtime stop. It does not
   authorize manual route, TLS, or certificate changes.
 - Pause conditions: the Ox Alpha route fails terminally; an authorized alternate
@@ -65,12 +67,10 @@ uncrowned regardless of Catalyst entitlement.
 - Reused checkout:
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/ux-review-question-library`.
 - Branch: `rs/question-library-activity-wizard-feedback`.
-- Current base:
-  `4d8d654b2c6e85b72fe89b4bfc68c7dd9f934c93` (the current rebased
-  ADR-0037-bearing branch base). The latest fetched `origin/v3` is
-  `1d19ad9efc6e7af57cff2b805255b4746de25c29`; its three newer CI,
-  deployment, and documentation commits do not overlap W2 paths. The clean
-  branch is 14 commits ahead and 3 behind; no third rebase was performed.
+- Current integrated base and merge-base:
+  `b8ce110513a65dc5f882f3adc3676a489cfdeb94` (the merged `origin/v3`
+  head). The clean branch is 24 commits ahead and has no commits behind
+  `origin/v3`.
 - Historical/superseded evidence: old base
   `7ea45772be3b177978de52e3ede7c95e34cec0b1`; old plan commit
   `a1c9853312907c923127ce81664f06890dd35c6e`; obsolete S1 commit
@@ -102,7 +102,9 @@ uncrowned regardless of Catalyst entitlement.
   element action pluralizes its container count.
 - The inline Create reason applies only when at least one live-quiz block has no
   elements. It reuses `minOneElementPerBlock`, stays adjacent to the final
-  action, and disappears when the existing invariant becomes valid.
+  action, remains mounted and empty across invalid/recovery while on that step,
+  and disappears with the final step. A separate visually hidden polite status
+  region persists from live-quiz wizard mount and announces the same reason.
 - The two selected-element actions in `AddStackButton` need distinct stable
   `data-cy` values so tests and assistive inspection can distinguish their
   different outcomes.
@@ -117,7 +119,7 @@ uncrowned regardless of Catalyst entitlement.
 | Activity type | Reuse | None | Four lecturer creation choices compose existing use-case guidance before wizard entry. | This package fixes presentation only. |
 | Catalyst entitlement | Reuse | Standard activities leave its surface. | Creation choice guidance contains no Catalyst query, crown, status, disabled state, gating, or Catalyst link. | ADR-0037 supersedes ADR-0006's activity-entitlement statement. |
 | Element selection | Reuse | None | Existing add-to-container and create-container actions gain precise count labels and unique selectors. | No selection behavior changes. |
-| Activity wizard validation | Reuse | None | Existing empty-block invariant is surfaced beside final Create. | Existing Yup message and submit behavior remain authoritative. |
+| Activity wizard validation | Reuse | None | Existing empty-block invariant is announced by one persistent hidden status region and surfaced as described text beside final Create. | Existing Yup message and submit behavior remain authoritative. |
 
 No primitive is created, retired, or extended. No new ADR is required. Re-arm
 the ADR gate if implementation proposes a new help framework, entitlement or
@@ -137,7 +139,7 @@ lifecycle.
   `klicker-wiki-maintenance`, and `devrouter`.
 - `$rs-local-runtime-lifecycle` governs runtime lifecycle boundaries. This
   exact runtime is stopped; canonical devrouter ensure/exec and the final
-  non-destructive exact stop are authorized after the official 0.0.37
+  non-destructive exact stop are authorized after the official 0.0.38
   adaptation. Manual route, TLS, and certificate repair remain withheld.
 - The established repository plan format and the fully read sliced-workflow
   contract provide this plan's durable format.
@@ -230,7 +232,7 @@ activity creation, Playwright coverage, and the same exact runtime.
 | Block labels select correct singular/plural | extend existing | `O-live-quiz.spec.ts` step-four journey | One element renders plural, or many containers render singular. | Replacement S2 |
 | Stack labels select correct singular/plural | extend existing | `P-microlearning.spec.ts` stack journey | Shared component's stack branch remains unverified and regresses. | Replacement S2 |
 | Selection actions have unique stable selectors | extend existing | block/stack action assertions | Tests select the wrong one of two semantically different buttons. | Replacement S2 |
-| Empty block explains disabled Create and recovers | extend existing | `O-live-quiz.spec.ts` existing empty-block state | Create stays opaque, reason persists after fill/delete, or validity changes. | Replacement S2 |
+| Empty block explains disabled Create and recovers | extend existing | `O-live-quiz.spec.ts` existing empty-block state | The persistent announcer remounts at the final step, Create stays opaque, visible or announced feedback persists after recovery, or validity changes. | Replacement S2 |
 | Shared wizard/library layout remains usable | exact-domain desktop and narrow browser evidence completed; existing later-step W8 fixed-width debt recorded separately | desktop and narrow view | New description height causes clipping, overlap, or intercepted controls. | Replacement S1/S2 |
 | Paired EN/DE copy and ICU syntax | five existing paired keys use ICU `one`/`other`; bilingual exact-domain rendering passed | both message files | Missing locale key, malformed ICU, or locale-divergent meaning. | Replacement S1/S2 |
 | Durable frontend convention | none | verified documentation only | No executable behavior introduced. | Replacement S3 |
@@ -298,14 +300,18 @@ Implementation and acceptance:
   actual result for one and many selections.
 - Give the one-container and one-container-per-element actions distinct stable
   selectors while preserving their behavior.
-- Add a narrow optional disabled-reason channel to `WizardNavigation`; render it
-  adjacent to final Create and programmatically associate it with the action.
+- Add a narrow optional disabled-reason callback to `WizardNavigation`; keep
+  visible non-live described text adjacent to final Create while its reason
+  exists.
+- Keep one visually hidden polite status region in `LiveQuizWizard` outside the
+  swapped steps, and update it through the live-quiz questions step only.
 - In the live-quiz final step, supply the existing localized
   `minOneElementPerBlock` reason only while at least one block is empty. Do not
   change validation, submission, zero-block behavior, or other activity wizards.
 - Extend existing block and stack journeys for one/many labels and selectors.
-  Extend the existing live-quiz empty-block assertion to cover visible reason,
-  disappearance after recovery, and unchanged Create validity.
+  Extend the existing live-quiz empty-block assertion to prove the persistent
+  announcer survives the settings-to-questions transition, the visible reason
+  and announcement clear after recovery, and Create validity stays unchanged.
 - Check changed-file formatting, Manage typecheck, Playwright type/list checks,
   focused O and P tests, paired ICU catalogs, and bilingual browser states when
   the browser gate is resolved.
@@ -348,12 +354,13 @@ records verified behavior and introduces no executable risk.
 
 Runtime contract:
 
-- The official devrouter 0.0.37 consumer version pin and generated guidance are
+- The official devrouter 0.0.38 consumer version pin and generated guidance are
   the only authorized configuration changes. Canonical exact-checkout
   verification and the final non-destructive exact stop are complete.
 - Verification used `devrouter ensure`, exact-path `devrouter exec`, and
-  `devrouter stop`. It did not use bare DevPod/Docker lifecycle commands,
-  manual routes, localhost fixed ports, or another checkout's runtime.
+  `devrouter workspace stop`. It did not use bare DevPod/Docker lifecycle
+  commands, manual routes, localhost fixed ports, or another checkout's
+  runtime.
 - Browser validation uses only the fancy namespaced origins:
   `https://manage.klicker.rs-ux-review-question-library.localhost` and
   `https://api.klicker.rs-ux-review-question-library.localhost`.
@@ -366,7 +373,7 @@ Browser evidence matrix:
 | State | Locale and viewport | Required evidence |
 | --- | --- | --- |
 | All choices | EN and DE, 1440×900 | Four visible descriptions/links and unchanged enabled actions for every account. |
-| Live quiz block actions | EN and DE, 1440×900 | One/many labels, unique actions, empty-block reason beside disabled Create, and cleared reason after recovery. |
+| Live quiz block actions | EN and DE, 1440×900 | One/many labels, unique actions, a persistent polite empty-block announcement, visible described reason beside disabled Create, and cleared feedback after recovery. |
 | Microlearning stack actions | EN and DE, 1440×900 | One/many stack labels and distinct outcomes. |
 | Narrow layout regression | EN and DE, 390×844 | No new clipping, horizontal overflow, wizard/library overlap, or blocked controls; W8 mobile redesign remains out of scope. |
 | Keyboard semantics | desktop width | Description links are focusable, help is not hover-only, and no nested interactive controls exist. |
@@ -377,9 +384,9 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 2. Manage and Playwright TypeScript checks through the exact container.
 3. Complete base-to-head diff accounting, staged secret/PII scan, and
    comment/diff-scope audit.
-4. Exact-domain readiness and browser evidence passed after the devrouter
-   0.0.37 consumer adaptation; the earlier curl error 60 remains historical
-   diagnostic evidence.
+4. Exact-domain readiness and browser evidence passed after the historical
+   devrouter 0.0.37 consumer adaptation; the earlier curl error 60 remains
+   historical diagnostic evidence.
 
 ## Integrated review and delivery
 
@@ -395,8 +402,9 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   alternate or an unresolved material finding stops delivery.
 - Finalize plan `Progress` in a local commit and report commits, checks,
   review disposition, browser/runtime evidence, and remaining withheld actions.
-  No push, PR, merge, deploy, cleanup, or deletion follows without separate
-  authority.
+  Draft PR #5546, normal branch pushes, and PR body updates are authorized and
+  complete. PR merge, mark-ready, deployment, publication, worktree cleanup,
+  and branch or worktree deletion remain withheld.
 
 ## Risks and stop conditions
 
@@ -405,8 +413,9 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   not a test timing problem.
 - Interactive links must stay outside buttons. Stop if valid focus order and
   programmatic association need a new abstraction or dependency.
-- Shared `WizardNavigation` serves all activity types. Keep the new reason
-  optional and prove unaffected callers compile and render unchanged.
+- Shared `WizardNavigation` serves all activity types. Keep the reason and
+  announcement callback optional, supply the callback only from the live-quiz
+  questions step, and prove unaffected callers compile and render unchanged.
 - ICU syntax errors can fail at runtime despite typechecking. Exact-domain EN/DE
   rendering proved the S2 count labels after the paired catalog changes.
 - If exact Ox Alpha execution becomes unavailable, stop. Do not silently use
@@ -426,14 +435,15 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   and non-destructive shutdown are complete. The current HEAD before this
   review-disposition commit is
   `3b0b2704f2fdb3d5d9f9bbbd36d6f03a121c477e`.
-- Freshness: before this plan edit, the branch was clean, 17 commits ahead and
-  4 behind `origin/v3`. The four upstream-only commits remain limited to CI,
-  deployment, and documentation paths with no W2 overlap; no further rebase
-  was performed.
+- Freshness: `origin/v3` at
+  `b8ce110513a65dc5f882f3adc3676a489cfdeb94` is fully integrated and is the
+  current merge-base. Before this correction, the clean branch was 24 commits
+  ahead with no commits behind `origin/v3`.
 - Independent Sol integrated final review of HEAD `b4c5e516d` found one
   actionable P3: the dynamically changing empty-block validation reason lacked
   a polite live region. All other package lenses were accepted, including W2
-  scope, devrouter 0.0.37, the Playwright runtime-blocker disclosure, and the W8
+  scope, the then-current historical devrouter 0.0.37 adaptation, the
+  Playwright runtime-blocker disclosure, and the W8
   debt classification. The finding was verified against the current Web
   Interface Guidelines rule that asynchronous validation updates need
   `aria-live="polite"`.
@@ -595,6 +605,46 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   `olat-api`, `response-api`, `db` over TCP/Postgres, `lti`, and `chat`. The
   exact workspace stop freed 10 routes; follow-up verification found zero
   matching routes and no `default-rs-315ff` containers.
+- The three latest Sol findings are accepted: use one persistent visually
+  hidden polite status region outside the swapped live-quiz steps while keeping
+  the final-step visible reason as non-live described text; extend the O
+  validation-recovery journey to prove that same announcer survives the
+  settings-to-questions transition and clears with the visible reason; and
+  remove the B test's visual underline assertion plus duplicate per-description
+  Catalyst absence assertion. The independent Ox P4 persona finding is also
+  accepted: the Catalyst choice test uses `loginIndividualCatalyst` while
+  lecturer feature tests remain separate. Extracting the duplicated
+  `selectActivityElements` helper is rejected as YAGNI because it would expand
+  this focused correction into `workflow.ts` and two independent scenario files
+  without a correctness benefit. The matching frontend convention now records
+  the persistent-announcer and visible-described-reason split and cites all
+  three owning components. Focused source formatting and
+  `WizardNavigation` Biome checks, changed Playwright/plan Prettier checks, and
+  `git diff --check` passed before runtime. Final runtime and full check evidence
+  are recorded in the next entry.
+- Final persistent-announcer verification passed at the canonical URL
+  `https://manage.klicker.rs-ux-review-question-library.localhost`. On Settings,
+  the persistent announcer existed empty with `role=status`,
+  `aria-live=polite`, `aria-atomic=true`, and `class=sr-only`. The same DOM node
+  was retained through the Questions & Blocks transition (`sameNode=true`,
+  `connected=true`). In the invalid state, the announcer and visible reason both
+  read "Every block must contain at least one element."; the visible reason had
+  no `aria-live`, its height was 20px, the parent gap was 4px, Create was
+  disabled, and `aria-describedby=activity-creation-disabled-reason`. After one
+  existing element was added, the same announcer node remained connected and
+  cleared; the visible reason was empty at 0px, the parent gap was normal,
+  Create was enabled, and `aria-describedby` was absent. Screenshots are
+  `/private/tmp/pr5546-a11y-final-disabled.png` and
+  `/private/tmp/pr5546-a11y-final-valid.png`. The synthetic creation was
+  canceled and the agent-browser session was closed. The exact devrouter
+  workspace `rs-ux-review-question-library` was stopped, freeing 3 routes;
+  filtered route readback was `[]`, and no `default-rs-315ff` containers
+  remained. The frontend-manage check and Playwright check passed; Playwright
+  `--list` collected 89 tests; Biome formatting passed for touched TSX files;
+  Prettier passed for touched specs and docs; and `git diff --check` passed. A
+  broad Biome check emitted only pre-existing advisory diagnostics, which remain
+  out of scope. Push, PR state changes, merge, deployment, and worktree cleanup
+  remain withheld.
 
 ### Historical execution evidence before final runtime proof
 

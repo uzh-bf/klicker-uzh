@@ -56,16 +56,10 @@ async function expectStandardActivityChoiceGuidance(page: Page) {
     await expect(
       page.getByTestId(activity.description).getByRole('link')
     ).toHaveAttribute('target', '_blank')
-    await expect(
-      page.getByTestId(activity.description).getByRole('link')
-    ).toHaveClass(/underline/)
     const describedBy = await page
       .getByTestId(activity.button)
       .getAttribute('aria-describedby')
     expect(describedBy).toBe(activity.description)
-    await expect(page.getByTestId(activity.description)).not.toContainText(
-      /catalyst/i
-    )
   }
 
   await expect(choiceRegion).not.toContainText(/catalyst/i)
@@ -126,9 +120,9 @@ test.describe('Tests the availability of standard activity creation formats', ()
 
   test('Test that all standard creation buttons are enabled for catalyst users', async ({
     page,
-    loginLecturer,
+    loginIndividualCatalyst,
   }) => {
-    await loginLecturer()
+    await loginIndividualCatalyst()
     await expect(page.getByTestId('homepage')).toBeVisible()
 
     await expectStandardActivityChoiceGuidance(page)

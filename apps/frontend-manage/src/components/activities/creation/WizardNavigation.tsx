@@ -6,6 +6,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
+import { useEffect } from 'react'
 
 interface WizardNavigationProps {
   editMode: boolean
@@ -15,6 +16,7 @@ interface WizardNavigationProps {
   lastStep: boolean
   continueDisabled: boolean
   disabledReason?: string
+  onDisabledReasonChange?: (reason?: string) => void
   onPrevStep?: () => void
   onCloseWizard: () => void
 }
@@ -29,10 +31,22 @@ function WizardNavigation({
   lastStep,
   continueDisabled,
   disabledReason,
+  onDisabledReasonChange,
   onPrevStep,
   onCloseWizard,
 }: WizardNavigationProps) {
   const t = useTranslations()
+
+  useEffect(() => {
+    onDisabledReasonChange?.(lastStep ? disabledReason : undefined)
+  }, [disabledReason, lastStep, onDisabledReasonChange])
+
+  useEffect(
+    () => () => {
+      onDisabledReasonChange?.(undefined)
+    },
+    [onDisabledReasonChange]
+  )
 
   return (
     <div className="flex flex-row justify-between pt-2">
@@ -68,7 +82,6 @@ function WizardNavigation({
         {lastStep && (
           <div
             id={disabledReasonId}
-            aria-live="polite"
             className={
               disabledReason ? 'text-sm text-red-600' : 'h-0 overflow-hidden'
             }

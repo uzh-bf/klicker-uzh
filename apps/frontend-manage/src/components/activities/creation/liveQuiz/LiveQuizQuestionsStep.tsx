@@ -19,6 +19,7 @@ interface LiveQuizQuestionsStepProps extends LiveQuizWizardStepProps {
   acceptedTypes: ElementType[]
   selection: Record<number, Element>
   resetSelection: () => void
+  onDisabledReasonChange: (reason?: string) => void
 }
 
 function LiveQuizQuestionsStep({
@@ -36,6 +37,7 @@ function LiveQuizQuestionsStep({
   closeWizard,
   selection,
   resetSelection,
+  onDisabledReasonChange,
 }: LiveQuizQuestionsStepProps) {
   const t = useTranslations()
 
@@ -140,6 +142,7 @@ function LiveQuizQuestionsStep({
                   ? t('manage.activityWizard.minOneElementPerBlock')
                   : undefined
               }
+              onDisabledReasonChange={onDisabledReasonChange}
               onPrevStep={() => onPrevStep!(values)}
               onCloseWizard={closeWizard}
             />
