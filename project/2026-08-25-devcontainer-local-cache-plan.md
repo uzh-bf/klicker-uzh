@@ -160,8 +160,8 @@ critical-path coupling; delegation would cost more than the bounded edits.
 
 ## Progress
 
-- Status: Slice 1 committed, reviewed, and corrected; Slice 2 focused
-  verification passed and its commit is in progress.
+- Status: Slices 1 and 2 are committed and reviewed; Slice 3 documentation is
+  in progress.
 - Completed: remote `v3` freshness readback, clean task worktree, planner pass,
   plan commit `04352a869`, shared pnpm-store commit `6bc9ff3fe`, mocked
   initializer success/idempotence/failure checks, shell syntax, ShellCheck on
@@ -179,7 +179,12 @@ critical-path coupling; delegation would cost more than the bounded edits.
   blocking correctness or isolation finding remained. Reports:
   `project/_local/reviews/2026-08-25-devcontainer-cache-slice-1-simplifier.md`
   and `project/_local/reviews/2026-08-25-devcontainer-cache-slice-1-review.md`.
-- Active slice: Slice 2 commit and specialist review.
-- Next: commit Slice 2, then run its simplifier and slice reviewer.
+- Slice 2 review: done through the same trusted generic-continuity route. No
+  simplification or blocking finding; live proof remains a finish-gate item.
+  Reports:
+  `project/_local/reviews/2026-08-25-devcontainer-cache-slice-2-simplifier.md`
+  and `project/_local/reviews/2026-08-25-devcontainer-cache-slice-2-review.md`.
+- Active slice: Slice 3 lifecycle documentation.
+- Next: validate, format, and commit the wiki, skill, README, and log update.
 - Required delivery: committed local branch.
-- Achieved delivery: reviewed and corrected Slice 1 commits.
+- Achieved delivery: reviewed Slices 1 and 2.
