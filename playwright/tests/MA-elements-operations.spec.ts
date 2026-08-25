@@ -1152,14 +1152,23 @@ test.describe('Create different types of elements (with and without sample solut
 
       await deleteElement(page, data.update.title3)
 
+      const searchActivities = async (quiz: string) => {
+        const input = page.getByTestId('activities-search-input')
+        await expect(input).toBeVisible()
+        await input.click()
+        await input.press('ControlOrMeta+A')
+        await input.pressSequentially(quiz)
+        await expect(input).toHaveValue(quiz)
+        await input.press('Enter')
+      }
+
       await page.getByTestId('activities').click()
       for (const quiz of [
         data.update.liveQuiz1,
         data.update.liveQuiz2,
         data.update.liveQuiz3,
       ]) {
-        await page.getByTestId('activities-search-input').fill(quiz)
-        await page.keyboard.press('Enter')
+        await searchActivities(quiz)
         await Promise.all([
           page.waitForURL(/\/cockpit/, { timeout: 30000 }),
           page.getByTestId(`live-quiz-cockpit-${quiz}`).click(),
@@ -1171,9 +1180,7 @@ test.describe('Create different types of elements (with and without sample solut
         await page.waitForTimeout(500)
         await page.reload()
         await page.getByTestId('activities').click()
-        await expect(page.getByTestId('activities-search-input')).toBeVisible()
-        await page.getByTestId('activities-search-input').fill(quiz)
-        await page.keyboard.press('Enter')
+        await searchActivities(quiz)
         await chooseActivityAction(
           page,
           'LIVE_QUIZ',
@@ -1185,7 +1192,6 @@ test.describe('Create different types of elements (with and without sample solut
           'confirm-deletion-qa-feedbacks',
           'confirm-deletion-confusion-feedbacks',
         ])
-        await page.getByTestId('activities-search-input').clear()
       }
 
       await page.getByTestId('courses').click()
