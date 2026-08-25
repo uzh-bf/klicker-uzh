@@ -47,7 +47,9 @@ jobs:
           llm_model: deepseek/deepseek-v4-flash-0731
           background: ${{ steps.context.outputs.background }}
           llm_use_anthropic: 'false'
+          llm_timeout: '540'
           ocr_version: '1.9.10'
+          review_concurrency: '2'
           sticky_summary: 'true'
           incremental: 'true'
           route_severity_below: 'low'
