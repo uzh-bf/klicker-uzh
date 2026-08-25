@@ -141,6 +141,30 @@ describe('default chat model registry parity', () => {
       /Duplicate model id/
     )
   })
+
+  test('both consumers reject invalid participant-credit base policy', () => {
+    const soleNonLunaBaseRegistry = chatModels.map((model) => {
+      if (model.id === 'gpt-5.6-luna') {
+        return { ...model, usageClass: 'ADVANCED' as const }
+      }
+      if (model.id === 'gpt-4.1') {
+        return { ...model, usageClass: 'BASE' as const }
+      }
+      return model
+    })
+    const nonFallbackLunaRegistry = chatModels.map((model) =>
+      model.id === 'gpt-5.6-luna' ? { ...model, fallback: false } : model
+    )
+
+    for (const parseRegistry of [parseChatRegistry, parseBackendRegistry]) {
+      expect(() => parseRegistry(soleNonLunaBaseRegistry)).toThrow(
+        /gpt-5\.6-luna.*only BASE/
+      )
+      expect(() => parseRegistry(nonFallbackLunaRegistry)).toThrow(
+        /participant-credit fallback/
+      )
+    }
+  })
 })
 
 function loadDeployedRegistries() {

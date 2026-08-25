@@ -386,3 +386,11 @@ policy itself is proven by registry tests and the producing runtime.
   reached its approved terminal condition. PR #5524 remains draft; ready
   marking, merge, deployment, live traffic, PR closure, worktree cleanup, and
   deletion remain withheld.
+- 2026-08-25: the stack was rebased cleanly onto current `origin/v3`; range-diff
+  preserved every layer commit, including both U2 lifecycle corrections. The
+  latest U4 review follow-up now centralizes the Luna-only BASE and fallback
+  invariant in `@klicker-uzh/util`, removing the duplicated Chat and GraphQL
+  policy implementations while preserving their validation messages and paths.
+  Focused registry/parity tests pass 18/18, and the Util, GraphQL, and Chat
+  package checks pass in the exact Node 24 DevPod. Publication and fresh CI
+  remain pending.
