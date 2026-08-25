@@ -25,10 +25,12 @@ cockpit does not sum these into a block total.
 `numOfResponsesReceived` is the number of response events accepted by the
 response API for one element instance and successfully recorded by the numeric
 received counter. The response API increments that counter before handing the
-event to Hatchet. Tracking is best-effort so an unavailable metric store never
-rejects a participant response; such a failure can temporarily undercount
-received responses. During the key-shape transition, the cockpit also includes
-the legacy received-set cardinality, so old and new ingress instances remain
+event to Hatchet. The tracking eval has a 250ms deadline; a timeout or other
+tracking failure is logged and the participant event is still handed to
+Hatchet. Tracking is best-effort so an unavailable metric store never rejects
+a participant response; such a failure can temporarily undercount received
+responses. During the key-shape transition, the cockpit also includes the
+legacy received-set cardinality, so old and new ingress instances remain
 visible without writing new unbounded sets. Assessment admission continues to
 use its existing participant and database uniqueness boundary, while this
 metric counts accepted transport events before that downstream boundary.
@@ -99,8 +101,13 @@ so late scripts cannot recreate persistent tracking keys.
 
 The rollout must deploy GraphQL before new ingress, drain old response
 processor replicas before initializing processed counters, and then run only
-the new processors. This is required because an old processor can claim and
-aggregate without incrementing the new processed counter.
+the new processors. The persisted-operation manifest retains the previous
+`GetCockpitQuiz` hash while old Manage bundles drain; GraphQL generation
+rebuilds that compatibility entry with
+`packages/graphql/scripts/merge-persisted-query-compatibility.mjs`. This is
+required because an old processor can claim and aggregate without incrementing
+the new processed counter, and an old frontend must continue to resolve its
+persisted operation during the mixed-version window.
 
 ### Cockpit query
 
@@ -172,8 +179,9 @@ not change leaderboard data.
 
 - Missing tracking keys for an element in a started block are interpreted as
   zero.
-- A received-counter Redis failure is logged and ingress continues; operational
-  counts can therefore undercount during a tracking outage.
+- A received-counter Redis failure or the 250ms tracking deadline is logged and
+  ingress continues; operational counts can therefore undercount during a
+  tracking outage.
 - A Hatchet enqueue failure leaves a received marker without a processed marker.
 - A processing-script preflight or first-command failure is logged as an
   aggregation failure after the replay claim is released; it does not increment

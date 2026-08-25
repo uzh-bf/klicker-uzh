@@ -26,6 +26,12 @@ non-idempotent command succeeds retains the claim, returns
 `reconciliation_required`, and is acknowledged and logged for reconciliation
 instead of being automatically retried.
 
+The persisted-operation manifest retains the previous `GetCockpitQuiz` hash
+while older Manage bundles drain. The compatibility entry is rebuilt after
+GraphQL code generation by
+`packages/graphql/scripts/merge-persisted-query-compatibility.mjs` and is
+removed only in a deliberate follow-up after the old bundle is retired.
+
 ## Consequences
 
 Counters remain bounded and duplicate retries do not repeat already-applied

@@ -8,6 +8,8 @@ import type { Redis } from 'ioredis'
 
 type ResponseTrackingRedis = Pick<Redis, 'eval'>
 
+export const LIVE_QUIZ_RESPONSE_TRACKING_TIMEOUT_MS = 250
+
 type ReceivedTrackingResult =
   | { status: 'inactive' }
   | { status: 'tracked'; ttl: number }
@@ -28,16 +30,19 @@ export async function trackLiveQuizResponseIfActive({
   })
   const trackingResult = JSON.parse(
     String(
-      await redisClient.eval(
-        LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT,
-        2,
-        getLiveQuizResponseCountKey({
-          liveQuizId,
-          instanceId,
-          status: 'received',
-        }),
-        instanceInfoKey,
-        String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
+      await withTimeout(
+        redisClient.eval(
+          LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT,
+          2,
+          getLiveQuizResponseCountKey({
+            liveQuizId,
+            instanceId,
+            status: 'received',
+          }),
+          instanceInfoKey,
+          String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
+        ),
+        LIVE_QUIZ_RESPONSE_TRACKING_TIMEOUT_MS
       )
     )
   ) as ReceivedTrackingResult
@@ -60,4 +65,30 @@ export async function trackLiveQuizResponseIfActive({
   }
 
   return true
+}
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number
+): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(() => {
+          reject(
+            new Error(
+              `Live quiz response tracking timed out after ${timeoutMs}ms`
+            )
+          )
+        }, timeoutMs)
+      }),
+    ])
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout)
+    }
+  }
 }

@@ -85,3 +85,18 @@ test('surfaces defensive tracking failures to the ingress handler', async () => 
     /tracking failed: WRONGTYPE/
   )
 })
+
+test('times out a stalled tracking command so ingress can continue', async () => {
+  const redisClient = {
+    eval: async () => await new Promise<string>(() => undefined),
+  }
+
+  await assert.rejects(
+    trackLiveQuizResponseIfActive({
+      redisClient,
+      liveQuizId: 'quiz-5',
+      instanceId: 13,
+    }),
+    /tracking timed out after 250ms/
+  )
+})

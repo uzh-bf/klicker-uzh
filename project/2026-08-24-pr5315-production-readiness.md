@@ -46,11 +46,14 @@ No remote merge, deployment, or production-data access was performed.
   components together, so this ordering is a release gate rather than an
   ordinary promotion behavior. Do not promote this cutover until mixed-version
   workers are counter-compatible or an explicit rollout provides that order.
+- The persisted-operation manifest retains the previous `GetCockpitQuiz` hash
+  while old Manage bundles drain. GraphQL generation rebuilds that compatibility
+  entry through `packages/graphql/scripts/merge-persisted-query-compatibility.mjs`.
 - Cockpit status, participant, external-link, and response-count icons use fixed
   inline or flex boxes so their optical alignment is stable.
 - The response API records when received-response tracking is skipped because
-  the instance-info key is missing; repeated end calls retry failed retention,
-  and assessment cleanup propagates Redis failures for Hatchet retry.
+  the instance-info key is missing, applies a 250ms deadline before continuing
+  to Hatchet, and assessment cleanup propagates Redis failures for Hatchet retry.
 
 ## Local evidence
 
@@ -61,13 +64,13 @@ No remote merge, deployment, or production-data access was performed.
 | Util tests                                   | 54 passed across the real-Redis integration suite, including command preflight, replay retention, and same-message partial-failure deduplication                                                                                                                                                                                                   |
 | GraphQL cockpit count tests                  | 2 passed; compatibility reads, scheduled nulls, and pipeline-failure degradation are covered                                                                                                                                                                                                                                                       |
 | Cockpit Redis fault-injection test           | Passed; a failed count pipeline returned the cockpit with `null` response counts                                                                                                                                                                                                                                                                   |
-| GraphQL code generation                      | Passed; generated output was unchanged                                                                                                                                                                                                                                                                                                             |
+| GraphQL code generation                      | Passed; generated outputs rebuilt and the legacy `GetCockpitQuiz` hash was preserved                                                                                                                                                                                                                                                                |
 | GraphQL typecheck                            | Passed                                                                                                                                                                                                                                                                                                                                             |
-| Response-api ingress tracking tests          | Passed; 4 direct tests cover missing-instance skips, active-instance increments, invalid tracking responses, and the current tracking contract                                                                                                                                                                                                     |
+| Response-api ingress tracking tests          | Passed; 5 direct tests cover missing-instance skips, active-instance increments, invalid tracking responses, timeout continuation, and the current tracking contract                                                                                                                                                                             |
 | Syncpack check                               | Passed                                                                                                                                                                                                                                                                                                                                             |
 | Repository build                             | Passed; 23 of 23 Turbo tasks succeeded                                                                                                                                                                                                                                                                                                             |
 | Redis integration contract test              | Passed with `LIVE_QUIZ_REDIS_INTEGRATION=true`; concurrent replay applied one result, counters stayed exact, claims and counters mirrored bounded TTLs, missing-info retention was one day, first-command failures released the claim without incrementing the processed counter, and mixed partial failures retained the claim for reconciliation |
-| GraphQL code generation and repository build | Passed; generated output was unchanged and 23 of 23 Turbo build tasks succeeded                                                                                                                                                                                                                                                                    |
+| GraphQL code generation and repository build | Passed; generated outputs rebuilt, the legacy `GetCockpitQuiz` hash was preserved, and 23 of 23 Turbo build tasks succeeded                                                                                                                                                                                                                         |
 | Browser verification                         | The manage cockpit route passed locally with delegated lecturer login. At 360×640 the corrected card measured 176px, the long element label wrapped, and the response-status pill remained a single 79.94px line with aligned icons. A separate desktop capture was blocked by the local Chrome MachPort permission error.                         |
 | Diff whitespace check                        | Passed                                                                                                                                                                                                                                                                                                                                             |
 
@@ -77,7 +80,8 @@ The manage cockpit rendered `Test Live Quiz 3` with its scheduled and active
 blocks and the live-quiz controls. The narrow post-patch capture verified the
 alignment change without altering shared Redis state. A separate headed
 desktop Chrome attempt terminated with macOS MachPort/Crashpad permission
-errors, so no desktop screenshot claim is made.
+errors, so no desktop screenshot claim is made and the planned desktop UI-
+verification terminal remains incomplete.
 
 ## Conditions and blockers
 
@@ -97,7 +101,7 @@ errors, so no desktop screenshot claim is made.
 - A separate desktop post-patch browser capture could not be completed because
   headed Chrome terminated with macOS MachPort/Crashpad permission errors. The
   narrow 360×640 capture is the available visual evidence for the alignment
-  change.
+  change; the planned desktop UI-verification terminal remains incomplete.
 - No production or deployed Redis, worker, GraphQL, or browser-health evidence
   is claimed here. CI, reviewer approval, and the normal release/deployment
   gates remain required before production use.

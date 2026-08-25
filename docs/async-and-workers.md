@@ -43,8 +43,9 @@ leaderboard, and response-hash command in the batch succeeds.
 The response API attempts the received-counter increment before enqueueing a
 known instance. One Redis script checks the instance-info TTL and updates the
 counter and its retention atomically; an inactive instance returns without
-creating a tracking key. Tracking is best-effort: a tracking failure is logged
-but does not reject or delay the participant response.
+creating a tracking key. Tracking is best-effort: the Redis eval has a 250ms
+deadline, and a tracking failure or timeout is logged but does not reject or
+delay the participant response.
 The new
 `lq:<quiz-id>:i:<instance-id>:responses:processed:claims` sorted set is an
 age-trimmed replay claim for the response `messageId` or assessment
@@ -109,10 +110,13 @@ failure and the caller can retry the cleanup.
 
 Deployment ordering matters: deploy GraphQL before new response ingress, drain
 old response-processor replicas before initializing processed counters, and then
-run only the new processors. Frontend-manage remains safe after GraphQL because
-the fields are additive and nullable. Old and new processors cannot overlap
-after counter initialization because old workers do not increment the new
-processed counter.
+run only the new processors. The GraphQL persisted-query manifest also retains
+the previous `GetCockpitQuiz` hash through the old Manage bundle drain; the
+compatibility entry is rebuilt by
+`packages/graphql/scripts/merge-persisted-query-compatibility.mjs`. Frontend-
+manage remains safe during that window because the fields are additive and
+nullable. Old and new processors cannot overlap after counter initialization
+because old workers do not increment the new processed counter.
 
 ## Worker task catalog
 

@@ -1,6 +1,10 @@
 # Live Quiz Per-Element Response Counts Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Historical archive — do not execute:** Tasks 1–6 below describe the
+> superseded set-cardinality design and are retained only for provenance. Their
+> unchecked steps, commands, and snippets are non-authoritative. Use the
+> approved redesign addendum above, ADR 0038, and the current repository checks
+> for implementation and acceptance.
 
 **Goal:** Show a lecturer the received and processed answer counts for every
 element in an active or executed live quiz block.
@@ -121,7 +125,9 @@ those sections remain as implementation history for the original package.
 
 ---
 
-### Task 1: Centralize the Redis tracking-key contract
+<!-- BEGIN ARCHIVED TASKS: superseded set-cardinality design; do not execute. -->
+
+### Historical Task 1 (superseded): Centralize the Redis tracking-key contract
 
 **Files:**
 
@@ -235,7 +241,7 @@ git add packages/util/src/liveQuizResponseTracking.ts packages/util/src/index.ts
 git commit -m "feat(util): add live quiz response tracking keys"
 ```
 
-### Task 2: Record received and processed response identifiers
+### Historical Task 2 (superseded): Record received and processed response identifiers
 
 **Files:**
 
@@ -403,7 +409,7 @@ git add apps/response-api/src/index.ts apps/hatchet-worker-response-processor/sr
 git commit -m "feat(live-quiz): track response processing state"
 ```
 
-### Task 3: Expose per-element counts through the lecturer cockpit query
+### Historical Task 3 (superseded): Expose per-element counts through the lecturer cockpit query
 
 **Files:**
 
@@ -789,7 +795,7 @@ git add packages/graphql/src/schema/element.ts packages/graphql/src/services/liv
 git commit -m "feat(graphql): expose live quiz response counts per element"
 ```
 
-### Task 4: Render and verify per-element counts in the cockpit
+### Historical Task 4 (superseded): Render and verify per-element counts in the cockpit
 
 **Files:**
 
@@ -927,7 +933,7 @@ git add packages/i18n/messages/en.ts packages/i18n/messages/de.ts apps/frontend-
 git commit -m "feat(manage): show live quiz response counts per element"
 ```
 
-### Task 5: Document and validate the response-processing signal
+### Historical Task 5 (superseded): Document and validate the response-processing signal
 
 **Files:**
 
@@ -999,7 +1005,7 @@ git add docs/async-and-workers.md project/plans_wip/PLAN-live-quiz-response-coun
 git commit -m "docs(live-quiz): document response processing counts"
 ```
 
-### Task 6: Run the real workflow, review, and publish the draft PR
+### Historical Task 6 (superseded): Run the real workflow, review, and publish the draft PR
 
 **Files:**
 
@@ -1104,6 +1110,8 @@ explain that the difference is not exact queue depth, list every verification
 command and result, include both locale screenshots, and mention any explicitly
 deferred review finding. Do not mark ready or merge without separate user
 approval.
+
+<!-- END ARCHIVED TASKS -->
 
 ### Task 7: Align the element links and response statuses
 
