@@ -228,6 +228,11 @@ const toNumber = (value: unknown): number | null => {
   return Number.isNaN(parsed) ? null : parsed
 }
 
+export async function getManageChatModelRegistry(ctx: ContextWithUser) {
+  await assertManageAiEnabled(ctx)
+  return getChatModelRegistry()
+}
+
 export async function getParticipantCourseChatbots(
   { courseId }: { courseId: string },
   ctx: Context

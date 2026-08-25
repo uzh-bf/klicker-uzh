@@ -30,6 +30,15 @@ async function loadGate(forcedOn?: string) {
   return import('../src/lib/manageAiFeatureGate.js')
 }
 
+async function loadChatbots(forcedOn?: string) {
+  vi.resetModules()
+  vi.stubEnv('GROWTHBOOK_API_HOST', '')
+  vi.stubEnv('GROWTHBOOK_CLIENT_KEY', '')
+  vi.stubEnv('GROWTHBOOK_ENV', 'development')
+  vi.stubEnv('FEATURE_FLAGS_FORCED_ON', forcedOn ?? '')
+  return import('../src/services/chatbots.js')
+}
+
 describe('Manage AI feature gate', () => {
   beforeEach(() => {
     vi.unstubAllEnvs()
@@ -72,5 +81,15 @@ describe('Manage AI feature gate', () => {
       id: 'lecturer-1',
       role: 'USER',
     })
+  })
+
+  test('keeps the Manage chatbot model registry behind the gate', async () => {
+    const { ctx, findUnique } = createContext(true)
+    const { getManageChatModelRegistry } = await loadChatbots()
+
+    await expect(getManageChatModelRegistry(ctx)).rejects.toMatchObject({
+      extensions: { code: 'AI_BETA_ACCESS_REQUIRED' },
+    })
+    expect(findUnique).not.toHaveBeenCalled()
   })
 })

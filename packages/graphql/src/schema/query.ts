@@ -1619,8 +1619,8 @@ export const Query = builder.queryType({
       getChatModelRegistry: t.withAuth(asUser).field({
         nullable: false,
         type: [ChatModelCapability],
-        resolve: async () => {
-          return ChatbotsService.getChatModelRegistry()
+        resolve: async (_, __, ctx) => {
+          return await ChatbotsService.getManageChatModelRegistry(ctx)
         },
       }),
 
