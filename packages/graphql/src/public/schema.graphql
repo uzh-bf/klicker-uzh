@@ -1981,12 +1981,12 @@ type Mutation {
   deleteElement(id: Int!): Element
   deleteFeedback(id: Int!, liveQuizId: String!): Feedback
   deleteFeedbackResponse(id: Int!, liveQuizId: String!): Feedback
-  deleteGroupActivity(id: String!): GroupActivity
+  deleteGroupActivity(id: String!, onlyIfUnpublished: Boolean): GroupActivity
   deleteLiveQuiz(id: String!): LiveQuiz
-  deleteMicroLearning(id: String!): MicroLearning
+  deleteMicroLearning(id: String!, onlyIfUnpublished: Boolean): MicroLearning
   deleteParticipantAccount: Boolean
   deletePendingAssessmentParticipantInvitation(courseId: String!, invitationId: Int!): AssessmentParticipantInvitation
-  deletePracticeQuiz(id: String!): PracticeQuiz
+  deletePracticeQuiz(id: String!, onlyIfUnpublished: Boolean): PracticeQuiz
   deleteTag(id: Int!): Tag
   deleteUserGroup(groupId: Int!): Boolean!
   deleteUserLogin(id: String!): UserLogin

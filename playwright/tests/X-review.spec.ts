@@ -1593,6 +1593,16 @@ test.describe
       stacks: [{ elements: [data.SCML.title, data.NRML.title] }],
     })
     await page.getByTestId('create-new-activity').click()
+    await createGroupActivity(page, {
+      name: data.batch.groupActivity2,
+      displayName: data.batch.groupActivity2,
+      courseName: data.batch.course2,
+      scheduledStartDate: activityStart,
+      scheduledEndDate: activityEnd,
+      task: 'TASK',
+      clues: data.groupActivityStandardClues,
+      stack: { elements: [data.SCML.title, data.NRML.title] },
+    })
   })
 
   test('Verify that selected activities are shown correctly in activity batch operations modal', async ({
@@ -2523,5 +2533,73 @@ test.describe
       '4'
     )
     await page.getByTestId('live-quiz-advanced-settings-close').click()
+  })
+
+  test('Delete selected activities through batch operations', async ({
+    page: testPage,
+  }, testInfo) => {
+    page = testPage
+    aliases.clear()
+    testInfo.setTimeout(600_000)
+    page.setDefaultNavigationTimeout(300_000)
+    await loginLecturer(page)
+    await page.getByTestId('activities').click()
+
+    const activitiesToDelete = [
+      data.batch.liveQuiz2,
+      data.batch.practiceQuiz2,
+      data.batch.microLearning2,
+      data.batch.groupActivity2,
+    ]
+
+    for (const title of activitiesToDelete) {
+      await page.getByTestId(`activity-checkbox-${title}`).click()
+    }
+
+    await page.getByTestId('activity-batch-operations').click()
+    await page.getByTestId('multiplier-checkbox').click()
+    await expect(
+      page.getByRole('checkbox', {
+        name: messages.manage.activities.batchDeleteDescription,
+      })
+    ).toBeVisible()
+    await page.getByTestId('delete-activities-checkbox').click()
+
+    await expect(page.getByTestId('multiplier-checkbox')).toBeDisabled()
+    const deletionCountMessage =
+      messages.manage.activities.nActivitiesWillBeDeleted.replace(
+        '{number, plural, =1 {# activity will be deleted} other {# activities will be deleted}}',
+        `${activitiesToDelete.length} ${
+          activitiesToDelete.length === 1 ? 'activity' : 'activities'
+        } will be deleted`
+      )
+    await expect(page.getByText(deletionCountMessage)).toBeVisible()
+
+    for (const title of activitiesToDelete) {
+      await expect(
+        page.getByTestId(`activity-batch-check-${title}`)
+      ).toBeVisible()
+      await expect(page.getByTestId(`activity-batch-x-${title}`)).toHaveCount(0)
+    }
+
+    await page.getByTestId('apply-batch-operations').click()
+    await expect(page.getByTestId('confirmation-modal-confirm')).toBeDisabled()
+    await expect(
+      page.getByTestId('confirm-batch-activity-deletion')
+    ).toHaveText(messages.manage.activities.confirmBatchDeletionAcknowledge)
+    await page.getByTestId('confirm-batch-activity-deletion').click()
+    await expect(page.getByTestId('confirmation-modal-confirm')).toHaveText(
+      messages.manage.activities.confirmBatchDeletionSubmit
+    )
+    await page.getByTestId('confirmation-modal-confirm').click()
+
+    await expect(
+      page.getByText(messages.manage.activities.batchDeletionSuccess)
+    ).toBeVisible()
+    for (const title of activitiesToDelete) {
+      await expect(page.getByTestId(`activity-checkbox-${title}`)).toHaveCount(
+        0
+      )
+    }
   })
 })

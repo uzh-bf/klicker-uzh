@@ -1,16 +1,32 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
-import { useLayoutEffect, useRef, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import * as SelectPrimitive from '@radix-ui/react-select'
 import {
+  CheckIcon,
+  ChevronDownIcon,
+  GraduationCapIcon,
+  LightbulbIcon,
+  SparklesIcon,
+} from 'lucide-react'
+import { useTranslations } from 'next-intl'
+import {
+  formatModeLabel,
   getModeDescription,
-  getModeIcon,
-  isKnownMode,
   resolveSelectedMode,
-} from '../lib/config/modes'
-import { useSettingsStore } from '../stores/settingsStore'
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+} from '@/src/lib/config/modes'
+import { useSettingsStore } from '@/src/stores/settingsStore'
+
+function ModeIcon({ mode, className }: { mode: string; className?: string }) {
+  if (mode === 'tutor') {
+    return <GraduationCapIcon aria-hidden="true" className={className} />
+  }
+
+  if (mode === 'explainer') {
+    return <LightbulbIcon aria-hidden="true" className={className} />
+  }
+
+  return <SparklesIcon aria-hidden="true" className={className} />
+}
 
 export function ModeSwitcher({
   modeOptions: modeOptionsOverride,
@@ -25,110 +41,86 @@ export function ModeSwitcher({
   const setSelectedMode = useSettingsStore((state) => state.setSelectedMode)
   const modeOptions = modeOptionsOverride ?? storeModeOptions
   const modeKeys = Object.keys(modeOptions)
-  const modeKeysSignature = modeKeys.join('|')
   const effectiveSelectedMode = resolveSelectedMode(modeOptions, selectedMode)
-
-  const containerRef = useRef<HTMLDivElement>(null)
-  const buttonRefs = useRef(new Map<string, HTMLButtonElement>())
-  // M7: sliding thumb behind the active segment. `null` until the first
-  // measurement lands, so the thumb never flashes at the wrong size/position.
-  const [thumb, setThumb] = useState<{ left: number; width: number } | null>(
-    null
-  )
-
-  useLayoutEffect(() => {
-    const measure = () => {
-      const activeButton = buttonRefs.current.get(effectiveSelectedMode)
-      if (!activeButton) return
-      setThumb({
-        left: activeButton.offsetLeft,
-        width: activeButton.offsetWidth,
-      })
-    }
-
-    measure()
-
-    // Segments can vary in width per locale/label (no fixed column grid), so
-    // re-measure if a segment's own size changes (e.g. a locale switch
-    // re-renders the same mode with a wider/narrower label) without
-    // `selectedMode` itself changing.
-    const observer = new ResizeObserver(measure)
-    buttonRefs.current.forEach((button) => observer.observe(button))
-    return () => observer.disconnect()
-  }, [effectiveSelectedMode, modeKeysSignature])
 
   // Nothing to switch between when a chatbot exposes a single mode.
   if (modeKeys.length <= 1) return null
 
-  return (
-    <div
-      ref={containerRef}
-      role="group"
-      aria-label={t('chat.modes.switcherLabel')}
-      data-cy={`${testIdPrefix}-switcher`}
-      className="bg-muted scrollbar-none relative flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full p-0.5"
-    >
-      {thumb && (
-        <div
-          aria-hidden="true"
-          className="bg-primary absolute inset-y-0.5 rounded-full shadow-sm transition-[transform,width] duration-200 ease-out motion-reduce:transition-none"
-          style={{
-            width: thumb.width,
-            transform: `translateX(${thumb.left}px)`,
-          }}
-        />
-      )}
-      {modeKeys.map((mode) => {
-        const Icon = getModeIcon(mode)
-        const label = isKnownMode(mode)
-          ? t(`chat.modes.${mode}`)
-          : mode.charAt(0).toUpperCase() + mode.slice(1)
-        const description = getModeDescription(t, mode, modeOptions)
-        const isActive = mode === effectiveSelectedMode
+  const selectedLabel = formatModeLabel(t, effectiveSelectedMode)
 
-        return (
-          <Tooltip key={mode}>
-            <TooltipTrigger asChild>
-              <button
-                ref={(el) => {
-                  if (el) buttonRefs.current.set(mode, el)
-                  else buttonRefs.current.delete(mode)
-                }}
-                type="button"
-                aria-pressed={isActive}
-                aria-label={description ? `${label}: ${description}` : label}
-                data-cy={`${testIdPrefix}-option-${mode}`}
-                onClick={() => setSelectedMode(mode)}
-                className={twMerge(
-                  'relative z-10 inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium transition-colors touch-manipulation fine-pointer:min-h-8',
-                  isActive
-                    ? 'text-primary-foreground'
-                    : // Full foreground rather than muted-foreground: the inactive
-                      // tab sits on bg-muted, where muted-foreground only reaches
-                      // ~4.4:1 and misses the WCAG 1.4.3 AA floor for this text
-                      // size. The active state is carried by the sliding thumb,
-                      // not by the label colour.
-                      'text-foreground hover:bg-background/60'
-                )}
-              >
-                <Icon className="size-4" />
-                <span>{label}</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-64 text-left text-pretty">
-              <p className="font-medium">{label}</p>
-              {description ? (
-                <p
-                  data-cy={`${testIdPrefix}-description-${mode}`}
-                  className="mt-1"
+  return (
+    <SelectPrimitive.Root
+      value={effectiveSelectedMode}
+      onValueChange={setSelectedMode}
+    >
+      <SelectPrimitive.Trigger
+        data-cy={`${testIdPrefix}-switcher`}
+        aria-label={`${t('chat.modes.switcherLabel')}: ${selectedLabel}`}
+        className="border-border bg-background hover:bg-accent focus-visible:ring-ring inline-flex min-h-11 max-w-40 min-w-0 touch-manipulation items-center gap-1.5 rounded-full border px-3 text-sm font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 data-[state=open]:bg-accent fine-pointer:min-h-9"
+      >
+        <SelectPrimitive.Value aria-label={selectedLabel}>
+          <span className="flex min-w-0 items-center gap-1.5">
+            <ModeIcon
+              mode={effectiveSelectedMode}
+              className="size-4 shrink-0"
+            />
+            <span className="truncate">{selectedLabel}</span>
+          </span>
+        </SelectPrimitive.Value>
+        <SelectPrimitive.Icon asChild>
+          <ChevronDownIcon
+            aria-hidden="true"
+            className="text-muted-foreground size-3.5 shrink-0"
+          />
+        </SelectPrimitive.Icon>
+      </SelectPrimitive.Trigger>
+
+      <SelectPrimitive.Portal>
+        <SelectPrimitive.Content
+          position="popper"
+          align="center"
+          sideOffset={6}
+          collisionPadding={8}
+          className="border-border bg-popover text-popover-foreground animate-in fade-in-0 zoom-in-95 z-50 max-h-[min(24rem,var(--radix-select-content-available-height))] w-[min(22rem,calc(100vw-1rem))] overflow-hidden rounded-xl border shadow-lg motion-reduce:animate-none"
+        >
+          <SelectPrimitive.Viewport className="p-1.5">
+            {modeKeys.map((mode) => {
+              const label = formatModeLabel(t, mode)
+              const description = getModeDescription(t, mode, modeOptions)
+              const descriptionId = `${testIdPrefix}-description-${mode}`
+
+              return (
+                <SelectPrimitive.Item
+                  key={mode}
+                  value={mode}
+                  aria-describedby={description ? descriptionId : undefined}
+                  data-cy={`${testIdPrefix}-option-${mode}`}
+                  className="data-[highlighted]:bg-accent data-[state=checked]:text-primary focus-visible:ring-ring relative flex min-h-11 cursor-pointer select-none items-start gap-2 rounded-lg py-2 pl-9 pr-3 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus-visible:ring-1"
                 >
-                  {description}
-                </p>
-              ) : null}
-            </TooltipContent>
-          </Tooltip>
-        )
-      })}
-    </div>
+                  <SelectPrimitive.ItemIndicator className="absolute left-3 top-2.5">
+                    <CheckIcon aria-hidden="true" className="size-4" />
+                  </SelectPrimitive.ItemIndicator>
+                  <ModeIcon mode={mode} className="mt-0.5 size-4 shrink-0" />
+                  <span className="min-w-0 flex-1">
+                    <SelectPrimitive.ItemText className="block font-medium">
+                      {label}
+                    </SelectPrimitive.ItemText>
+                    {description ? (
+                      <span
+                        id={descriptionId}
+                        data-cy={`${testIdPrefix}-description-${mode}`}
+                        className="text-muted-foreground mt-0.5 block text-pretty text-xs leading-4"
+                      >
+                        {description}
+                      </span>
+                    ) : null}
+                  </span>
+                </SelectPrimitive.Item>
+              )
+            })}
+          </SelectPrimitive.Viewport>
+        </SelectPrimitive.Content>
+      </SelectPrimitive.Portal>
+    </SelectPrimitive.Root>
   )
 }

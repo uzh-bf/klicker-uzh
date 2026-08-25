@@ -10,6 +10,7 @@ import { twMerge } from 'tailwind-merge'
 
 interface ConfirmationItemProps {
   label: string
+  actionLabel?: string
   confirmed: boolean
   notApplicable: boolean
   onClick: () => void
@@ -19,6 +20,7 @@ interface ConfirmationItemProps {
 
 function ConfirmationItem({
   label,
+  actionLabel,
   confirmed,
   notApplicable,
   onClick,
@@ -62,7 +64,9 @@ function ConfirmationItem({
           }}
           data={data}
         >
-          <Button.Label>{t('shared.generic.confirm')}</Button.Label>
+          <Button.Label>
+            {actionLabel ?? t('shared.generic.confirm')}
+          </Button.Label>
         </Button>
       )}
     </div>
