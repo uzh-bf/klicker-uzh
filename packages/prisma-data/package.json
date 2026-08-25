@@ -48,6 +48,7 @@
     "seed:achievements": "ENV=development ../../util/_run_with_infisical.sh --env dev tsx src/data/seedAchievements.ts",
     "seed:assessment-course": "ENV=development tsx src/data/seedAssessmentCourse.ts",
     "seed:course-awards": "ENV=development ../../util/_run_with_infisical.sh --env dev tsx src/data/seedCourseAwards.ts",
+    "seed:demo-participants": "tsx src/scripts/2026-08-24_seed_demo_participants.ts",
     "seed:flashcards": "ENV=development ../../util/_run_with_infisical.sh --env dev tsx src/data/seedFlashcards.ts",
     "seed:prod:achievements": "ENV=production ../../util/_run_with_infisical.sh --env prd tsx src/data/seedAchievements.ts",
     "seed:prod:course-awards": "ENV=production ../../util/_run_with_infisical.sh --env prd tsx src/data/seedCourseAwards.ts",
@@ -58,7 +59,8 @@
     "seed:raw": "ENV=development run-s --npm-path pnpm seed:test seed:assessment-course",
     "seed:raw:course-awards": "tsx src/data/seedCourseAwards.ts",
     "seed:test": "ENV=development tsx src/data/seedTEST.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:demo-participants": "cross-env TEST_DATABASE_DISPOSABLE=1 TEST_DATABASE_DISPOSABLE_REQUIRED=1 vitest run src/scripts/2026-08-24_seed_demo_participants.test.ts"
   },
   "engines": {
     "node": "=24"
