@@ -1880,6 +1880,11 @@ export async function deleteGroupActivity(
     return null
   }
 
+  let groupActivityForSoftDelete = {
+    status: groupActivity.status,
+    scheduledCompletionTaskId: groupActivity.scheduledCompletionTaskId,
+  }
+
   const isUnpublished = UNPUBLISHED_ACTIVITY_STATUSES.includes(
     groupActivity.status
   )
@@ -1971,17 +1976,19 @@ export async function deleteGroupActivity(
 
     // A concurrent instance can make the atomic hard-delete predicate fail.
     // Reload the activity before taking the soft-delete path.
-    groupActivity = await ctx.prisma.groupActivity.findUnique({
+    const reloadedGroupActivity = await ctx.prisma.groupActivity.findUnique({
       where: { id },
-      include: {
-        activityInstances: true,
-        stacks: { include: { elements: true } },
+      select: {
+        status: true,
+        scheduledCompletionTaskId: true,
       },
     })
 
-    if (!groupActivity) {
+    if (!reloadedGroupActivity) {
       return null
     }
+
+    groupActivityForSoftDelete = reloadedGroupActivity
   }
 
   // if the group activity already has active instances, only soft delete it
@@ -1989,12 +1996,12 @@ export async function deleteGroupActivity(
     async (prisma) => {
       // remove the scheduled completion task, if it exists (should only exist for published group activities)
       if (
-        groupActivity.status === DB.PublicationStatus.PUBLISHED &&
-        groupActivity.scheduledCompletionTaskId
+        groupActivityForSoftDelete.status === DB.PublicationStatus.PUBLISHED &&
+        groupActivityForSoftDelete.scheduledCompletionTaskId
       ) {
         try {
           await ctx.hatchet.scheduled.delete(
-            groupActivity.scheduledCompletionTaskId
+            groupActivityForSoftDelete.scheduledCompletionTaskId
           )
         } catch (error) {
           console.error(
@@ -2011,7 +2018,7 @@ export async function deleteGroupActivity(
           isDeleted: true,
           directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
           scheduledCompletionTaskId:
-            groupActivity.status === DB.PublicationStatus.PUBLISHED
+            groupActivityForSoftDelete.status === DB.PublicationStatus.PUBLISHED
               ? null
               : undefined,
         },
