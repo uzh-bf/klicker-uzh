@@ -639,7 +639,11 @@ export async function aggregateAssessmentResponses(
         )
       )
     ) as {
-      status: 'already_processed' | 'processed' | 'aggregation_failed'
+      status:
+        | 'already_processed'
+        | 'processed'
+        | 'aggregation_failed'
+        | 'reconciliation_required'
       counted?: boolean
       commandErrors?: string[]
       trackingErrors?: string[]
@@ -651,6 +655,20 @@ export async function aggregateAssessmentResponses(
         liveQuizId,
         instanceId,
       })
+      return { status: 200 }
+    }
+    if (processingResult.status === 'reconciliation_required') {
+      ctx.logger.error(
+        'Redis assessment aggregation requires reconciliation; replay claim retained',
+        {
+          extra: {
+            correlationId,
+            liveQuizId,
+            instanceId,
+            commandErrors: processingResult.commandErrors ?? [],
+          },
+        }
+      )
       return { status: 200 }
     }
     if (

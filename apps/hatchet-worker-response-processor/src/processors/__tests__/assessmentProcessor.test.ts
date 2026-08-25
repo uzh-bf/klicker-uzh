@@ -100,6 +100,31 @@ describe('aggregateAssessmentResponses atomic processing', () => {
     )
   })
 
+  it('acknowledges reconciliation results without retrying partial writes', async () => {
+    setupHappyPath()
+    hoisted.assessmentClient.eval.mockResolvedValue(
+      JSON.stringify({
+        status: 'reconciliation_required',
+        commandErrors: ['increment overflow'],
+        trackingErrors: [],
+      })
+    )
+    const ctx = createContext()
+
+    const result = await aggregateAssessmentResponses(createMessage(), ctx)
+
+    expect(result).toEqual({ status: 200 })
+    expect(ctx.logger.error).toHaveBeenCalledWith(
+      'Redis assessment aggregation requires reconciliation; replay claim retained',
+      expect.objectContaining({
+        extra: expect.objectContaining({
+          correlationId: 'correlation-1',
+          commandErrors: ['increment overflow'],
+        }),
+      })
+    )
+  })
+
   it('throws on per-command errors so Hatchet can retry the assessment', async () => {
     setupHappyPath()
     hoisted.assessmentClient.eval.mockResolvedValue(

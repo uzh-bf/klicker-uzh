@@ -55,12 +55,15 @@ member-trimming horizon while the key remains. The legacy
 `lq:<quiz-id>:i:<instance-id>:responses:processed` set is read only during the
 worker rollout and provides the initial processed-counter baseline. A
 processing retry after a lost Redis reply therefore cannot apply the same
-completed batch twice during that horizon. If an aggregation command fails, the
-script releases the claim, leaves the processed counter unchanged, and returns
-an explicit aggregation failure. The worker throws so Hatchet can retry the
-message. Commands before the failure may already have applied, so a retry can
-repeat partial non-idempotent updates; surfacing the failure avoids silently
-losing the response and leaves reconciliation visible.
+completed batch twice during that horizon. The script validates command
+targets and numeric increment fields before any aggregation mutation. If
+validation fails, it returns an explicit aggregation failure without creating
+a claim so the worker can retry safely. If an unexpected command failure occurs
+after an earlier command has applied, the script retains the claim and returns
+`reconciliation_required`; the worker acknowledges the message and logs the
+partial result instead of retrying and duplicating non-idempotent updates. A
+command failure before any command applies releases the claim and remains
+retryable.
 
 The legacy received set
 `lq:<quiz-id>:i:<instance-id>:responses:received` is read-only compatibility
@@ -85,9 +88,12 @@ exact queue depth. It can include queued work as well as invalid, duplicate,
 late, rejected, failed, or untracked responses. Tracking does not change the
 response pipeline's validation semantics. Result aggregation uses the replay
 claim as a bounded replay guard for completed batches: after a successful
-claim-and-aggregation, a retry is a no-op. Per-command Redis errors release the
+claim-and-aggregation, a retry is a no-op. Preflight command errors release no
 claim, are logged as aggregation failures, do not increment the processed
-counter, and cause the worker to retry.
+counter, and cause the worker to retry. Unexpected errors after a command has
+applied retain the claim, return `reconciliation_required`, and are
+acknowledged without retry; errors before any command applies release the claim
+and remain retryable.
 
 Counters stay persistent while their element instance is active, matching the
 rest of the live execution cache. Replay claims are bounded independently of

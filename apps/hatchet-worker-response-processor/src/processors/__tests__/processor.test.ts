@@ -116,6 +116,31 @@ describe('processResponseMessage atomicity', () => {
     )
   })
 
+  it('acknowledges reconciliation results without retrying partial writes', async () => {
+    setupHappyPath(hoisted.regularClient)
+    hoisted.regularClient.eval.mockResolvedValue(
+      JSON.stringify({
+        status: 'reconciliation_required',
+        commandErrors: ['increment overflow'],
+        trackingErrors: [],
+      })
+    )
+    const ctx = createContext()
+
+    const result = await processResponseMessage(createMessage(), ctx)
+
+    expect(result).toEqual({ status: 200 })
+    expect(ctx.logger.error).toHaveBeenCalledWith(
+      'Redis response aggregation requires reconciliation; replay claim retained',
+      expect.objectContaining({
+        extra: expect.objectContaining({
+          messageId: 'msg-1',
+          commandErrors: ['increment overflow'],
+        }),
+      })
+    )
+  })
+
   it('throws on per-command processing errors so Hatchet can retry', async () => {
     setupHappyPath(hoisted.regularClient)
     const ctx = createContext()

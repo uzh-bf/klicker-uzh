@@ -278,7 +278,7 @@ redisDescribe('live quiz response tracking Redis contract', () => {
       expect(errorResult.status).toBe('aggregation_failed')
       expect(errorResult.counted).toBe(false)
       expect(errorResult.commandErrors).toHaveLength(1)
-      expect(await redis.get(errorCountKey)).toBe('0')
+      expect(await redis.get(errorCountKey)).toBeNull()
       expect(await redis.zscore(errorClaimKey, 'message-4')).toBeNull()
 
       const partialClaimKey = `${prefix}:partial-processed:claims`
@@ -302,11 +302,48 @@ redisDescribe('live quiz response tracking Redis contract', () => {
         ])
       )
       const partialResult = JSON.parse(String(partialReply))
+      expect(partialResult.status).toBe('aggregation_failed')
       expect(partialResult.commandErrors).toHaveLength(1)
       expect(partialResult.counted).toBe(false)
-      expect(await redis.get(partialCountKey)).toBe('0')
-      expect(await redis.hget(partialSuccessKey, 'participants')).toBe('1')
+      expect(await redis.get(partialCountKey)).toBeNull()
+      expect(await redis.hget(partialSuccessKey, 'participants')).toBeNull()
       expect(await redis.zscore(partialClaimKey, 'message-5')).toBeNull()
+
+      const mixedClaimKey = `${prefix}:mixed-processed:claims`
+      const mixedLegacyProcessedKey = `${prefix}:mixed-processed`
+      const mixedCountKey = `${prefix}:mixed-processed-count`
+      const mixedSuccessKey = `${prefix}:mixed-success-results`
+      const mixedOverflowKey = `${prefix}:mixed-overflow-results`
+      await redis.hset(mixedOverflowKey, 'participants', '9223372036854775807')
+      const mixedCommands = JSON.stringify([
+        ['HINCRBY', mixedSuccessKey, 'participants', '1'],
+        ['HINCRBY', mixedOverflowKey, 'participants', '1'],
+      ])
+      const processMixedFailure = () =>
+        redis.eval(
+          LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
+          4,
+          mixedClaimKey,
+          mixedCountKey,
+          `${prefix}:mixed-info`,
+          mixedLegacyProcessedKey,
+          'message-7',
+          String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
+          mixedCommands
+        )
+
+      const mixedFirstResult = JSON.parse(String(await processMixedFailure()))
+      expect(mixedFirstResult.status).toBe('reconciliation_required')
+      expect(mixedFirstResult.commandErrors).toHaveLength(1)
+      expect(await redis.hget(mixedSuccessKey, 'participants')).toBe('1')
+      expect(await redis.zscore(mixedClaimKey, 'message-7')).not.toBeNull()
+
+      const mixedRetryResult = JSON.parse(String(await processMixedFailure()))
+      expect(mixedRetryResult.status).toBe('already_processed')
+      expect(await redis.hget(mixedSuccessKey, 'participants')).toBe('1')
+      expect(await redis.hget(mixedOverflowKey, 'participants')).toBe(
+        '9223372036854775807'
+      )
 
       const invalidClaimKey = `${prefix}:invalid-claim:claims`
       const invalidLegacyProcessedKey = `${prefix}:invalid-claim`
@@ -366,6 +403,11 @@ redisDescribe('live quiz response tracking Redis contract', () => {
         `${prefix}:partial-processed-count`,
         `${prefix}:partial-error-results`,
         `${prefix}:partial-success-results`,
+        `${prefix}:mixed-processed:claims`,
+        `${prefix}:mixed-processed`,
+        `${prefix}:mixed-processed-count`,
+        `${prefix}:mixed-success-results`,
+        `${prefix}:mixed-overflow-results`,
         `${prefix}:invalid-claim:claims`,
         `${prefix}:invalid-claim`,
         `${prefix}:invalid-claim-count`,

@@ -21,22 +21,6 @@ if instanceInfoTtl >= 0 then
 end
 
 local currentTime = tonumber(redis.call('TIME')[1])
-local trimResult = redis.pcall(
-  'ZREMRANGEBYSCORE',
-  KEYS[1],
-  '-inf',
-  currentTime - replayClaimTtl
-)
-if type(trimResult) == 'table' and trimResult.err then
-  table.insert(commandErrors, trimResult.err)
-  return cjson.encode({
-    status = 'aggregation_failed',
-    counted = false,
-    commandErrors = commandErrors,
-    trackingErrors = trackingErrors,
-  })
-end
-
 local existingClaimResult = redis.pcall('ZSCORE', KEYS[1], ARGV[1])
 if type(existingClaimResult) == 'table' and existingClaimResult.err then
   table.insert(commandErrors, existingClaimResult.err)
@@ -59,24 +43,125 @@ if type(legacyMemberResult) == 'table' and legacyMemberResult.err then
   })
 end
 
+if legacyMemberResult == 1 or (
+  existingClaimResult ~= false and
+  currentTime - tonumber(existingClaimResult) < replayClaimTtl
+) then
+  return cjson.encode({
+    status = 'already_processed',
+    counted = false,
+    commandErrors = commandErrors,
+    trackingErrors = trackingErrors,
+  })
+end
+
+local function isInteger(value)
+  return value ~= nil and string.match(tostring(value), '^%-?%d+$') ~= nil
+end
+
+local function validateCommands()
+  for commandIndex, command in ipairs(commands) do
+    local operation = command[1]
+    local key = command[2]
+    if type(operation) ~= 'string' or type(key) ~= 'string' then
+      return string.format('invalid Redis command at index %d', commandIndex)
+    end
+
+    if operation ~= 'HINCRBY' and operation ~= 'HSET' then
+      return string.format(
+        'unsupported Redis command %s at index %d',
+        operation,
+        commandIndex
+      )
+    end
+
+    local keyTypeResult = redis.pcall('TYPE', key)
+    if type(keyTypeResult) == 'table' and keyTypeResult.err then
+      return keyTypeResult.err
+    end
+    local keyType = keyTypeResult.ok
+    if keyType ~= 'none' and keyType ~= 'hash' then
+      return string.format(
+        'Redis command %s targets a non-hash key %s',
+        operation,
+        key
+      )
+    end
+
+    local field = command[3]
+    if type(field) ~= 'string' then
+      return string.format(
+        'Redis command %s has an invalid hash field at index %d',
+        operation,
+        commandIndex
+      )
+    end
+
+    if operation == 'HINCRBY' then
+      if not isInteger(command[4]) then
+        return string.format(
+          'Redis HINCRBY has a non-integer increment at index %d',
+          commandIndex
+        )
+      end
+
+      local fieldValueResult = redis.pcall('HGET', key, field)
+      if type(fieldValueResult) == 'table' and fieldValueResult.err then
+        return fieldValueResult.err
+      end
+      if fieldValueResult ~= false and not isInteger(fieldValueResult) then
+        return string.format(
+          'Redis HINCRBY targets a non-integer field %s at index %d',
+          field,
+          commandIndex
+        )
+      end
+    elseif
+      type(command[4]) ~= 'string' and
+      type(command[4]) ~= 'number'
+    then
+      return string.format(
+        'Redis HSET has an invalid value at index %d',
+        commandIndex
+      )
+    end
+  end
+
+  return nil
+end
+
+local validationError = validateCommands()
+if validationError then
+  table.insert(commandErrors, validationError)
+  return cjson.encode({
+    status = 'aggregation_failed',
+    counted = false,
+    commandErrors = commandErrors,
+    trackingErrors = trackingErrors,
+  })
+end
+
+local trimResult = redis.pcall(
+  'ZREMRANGEBYSCORE',
+  KEYS[1],
+  '-inf',
+  currentTime - replayClaimTtl
+)
+if type(trimResult) == 'table' and trimResult.err then
+  table.insert(commandErrors, trimResult.err)
+  return cjson.encode({
+    status = 'aggregation_failed',
+    counted = false,
+    commandErrors = commandErrors,
+    trackingErrors = trackingErrors,
+  })
+end
+
 local counterTtl
 if instanceInfoTtl >= 0 then
   counterTtl = math.max(instanceInfoTtl, 1)
 elseif instanceInfoTtl == -2 then
   counterTtl = tonumber(ARGV[2])
-end
-
--- Initialize a new counter from the legacy processed set once. This keeps
--- counts visible during the key-shape cutover without double-counting new
--- claims.
-local legacyProcessedCount = redis.pcall('SCARD', KEYS[4])
-if type(legacyProcessedCount) == 'table' and legacyProcessedCount.err then
-  table.insert(trackingErrors, legacyProcessedCount.err)
-else
-  local baselineResult = redis.pcall('SETNX', KEYS[2], legacyProcessedCount)
-  if type(baselineResult) == 'table' and baselineResult.err then
-    table.insert(trackingErrors, baselineResult.err)
-  end
 end
 
 local function expireCounter()
@@ -97,16 +182,21 @@ local function releaseClaim()
   end
 end
 
-expireCounter()
-
-if existingClaimResult ~= false or legacyMemberResult == 1 then
-  return cjson.encode({
-    status = 'already_processed',
-    counted = false,
-    commandErrors = commandErrors,
-    trackingErrors = trackingErrors,
-  })
+-- Initialize a new counter from the legacy processed set once. This keeps
+-- counts visible during the key-shape cutover without double-counting new
+-- claims. Validation runs before this mutation so malformed batches remain
+-- safely retryable.
+local legacyProcessedCount = redis.pcall('SCARD', KEYS[4])
+if type(legacyProcessedCount) == 'table' and legacyProcessedCount.err then
+  table.insert(trackingErrors, legacyProcessedCount.err)
+else
+  local baselineResult = redis.pcall('SETNX', KEYS[2], legacyProcessedCount)
+  if type(baselineResult) == 'table' and baselineResult.err then
+    table.insert(trackingErrors, baselineResult.err)
+  end
 end
+
+expireCounter()
 
 local claimResult = redis.pcall('ZADD', KEYS[1], currentTime, ARGV[1])
 if type(claimResult) == 'table' and claimResult.err then
@@ -124,17 +214,31 @@ if type(expireResult) == 'table' and expireResult.err then
   table.insert(trackingErrors, expireResult.err)
 end
 
+local appliedCommandCount = 0
 for _, command in ipairs(commands) do
   local result = redis.pcall(unpack(command))
   if type(result) == 'table' and result.err then
     table.insert(commandErrors, result.err)
+    break
   end
+  appliedCommandCount = appliedCommandCount + 1
 end
 
 if #commandErrors > 0 then
-  -- Do not let a failed aggregation become an already-processed replay. The
-  -- worker raises so Hatchet can retry the message.
-  releaseClaim()
+  if appliedCommandCount == 0 then
+    -- No aggregation command succeeded, so the worker can safely retry.
+    releaseClaim()
+  else
+    -- Keep the claim when a non-idempotent command already applied. Retrying
+    -- the batch could duplicate the successful commands; reconciliation must
+    -- inspect the partial result instead.
+    return cjson.encode({
+      status = 'reconciliation_required',
+      counted = false,
+      commandErrors = commandErrors,
+      trackingErrors = trackingErrors,
+    })
+  end
 end
 
 local counted = false

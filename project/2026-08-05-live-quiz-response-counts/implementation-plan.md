@@ -64,11 +64,16 @@ Decision: Use these keys for new writes:
 
 The processing script trims expired claim timestamps, initializes a missing
 processed counter once from the legacy processed-set cardinality, checks both
-claim stores, records the identifier with its claim timestamp, applies every
-command with `redis.pcall`, and increments the counter only when no command
-fails. It releases the claim and returns `aggregation_failed` when a command
-fails so the worker can throw and Hatchet can retry. It returns
-`already_processed`, `processed`, or `aggregation_failed`. The legacy
+claim stores, validates command target types and numeric increment fields,
+records the identifier with its claim timestamp, and applies every command
+with `redis.pcall`. It increments the counter only when no command fails. A
+preflight or first-command failure returns `aggregation_failed` and releases
+the claim so the worker can throw and Hatchet can retry. An unexpected failure
+after an earlier command has applied retains the claim and returns
+`reconciliation_required`; the worker acknowledges the message and logs the
+partial result instead of retrying non-idempotent writes. It returns
+`already_processed`, `processed`, `aggregation_failed`, or
+`reconciliation_required`. The legacy
 received set is read-only compatibility input; GraphQL adds its cardinality to
 the new received counter. A missing processed counter falls back to the legacy
 processed-set cardinality as an opaque pre-cutover baseline.
@@ -76,9 +81,10 @@ processed-set cardinality as an opaque pre-cutover baseline.
 Risk: The compatibility bridge cannot make old workers increment the new
 processed counter. Deploy GraphQL before new ingress, drain old response
 processors before initializing processed counters, and run only the new
-processors after initialization. A partial failure releases the replay claim
-and retries the message, so commands that already applied must be reconciled
-if a non-idempotent update repeats.
+processors after initialization. A post-write command failure retains the
+replay claim and requires reconciliation because retrying could duplicate a
+non-idempotent update; safe preflight and first-command failures remain
+retryable.
 
 Delegation Map:
 
@@ -100,11 +106,12 @@ evidence, with deployment compatibility conditions recorded. Pause only for a
 new data-contract decision, unavailable required verification capability, or
 an authority boundary.
 
-Progress: Complete locally — the counter/replay redesign is implemented,
-formatted, typechecked, covered by focused worker/util/GraphQL tests, verified
-against real Redis, and included in the refreshed branch against current
-`origin/v3`. The remote PR still requires publication of this branch before
-GitHub can recalculate its mergeability.
+Progress: Published to PR #5315 at head `6fecf0f022436b3a4fb3382ce58a255235a05c98`
+against `origin/v3` base `b924af4830dacc875cb69ee5c8ca5b6ffd261435`. The
+counter/replay redesign is formatted, typechecked, covered by four focused
+response-api tests plus worker/util/GraphQL tests, and verified against real
+Redis. Current-head CI and the exact-head final review remain the delivery
+gates.
 
 This addendum supersedes the earlier set-cardinality details in Tasks 1–6;
 those sections remain as implementation history for the original package.
