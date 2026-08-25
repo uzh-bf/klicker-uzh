@@ -19,15 +19,14 @@
 - Authority: the user authorized a new branch and pull request against `v3`,
   implementation, repository-native verification, conventional commits, and a
   normal push.
-- Withheld: branch-protection mutation requires one explicit repository-admin
-  approval after the replacement contexts pass on the same draft PR head.
-  Merge, ready-for-review transition, deployment, force push, and cleanup also
-  remain withheld.
+- Branch-protection authority was granted explicitly after replacement proof;
+  the incremental migration completed with exact app-bound readback. Merge of
+  the follow-up PR, deployment, force push, and cleanup remain withheld.
 - Execution owner and boundary owner: main session. The workflow definitions,
   hosted proof, and required-context migration remain coupled in one owner.
-- Terminal: the draft PR contains the complete cutover; replacement checks pass
-  on its exact final head; branch protection is migrated and read back; required
-  reviews are resolved; no merge or deployment occurs.
+- Terminal: a follow-up draft PR contains the workflow deletion and current
+  documentation; required reviews and verification are resolved; no additional
+  merge or deployment occurs.
 - Pause: stop on a missing or skipped replacement context, incomplete unit-test
   diagnostics, a protection readback mismatch, a concurrent workflow/protection
   edit that cannot be preserved, a required force push, or a new credential.
@@ -35,19 +34,23 @@
 ## Plan identity
 
 - Plan: `project/2026-08-25-pr-5551-ci-workflow-efficiency-plan.md`.
-- Branch: `rs/ci-workflow-efficiency`.
+- Branch: `rs/ci-workflow-efficiency-cleanup` for the follow-up cutover.
 - Worktree: `trees/ci-workflow-efficiency`.
-- Target: `origin/v3` at `5ffc6a6d2bc4b12f6f38b5119718a7545e039256`.
-- Pull request: draft PR #5551 against `v3`.
-- Package: one ordinary PR because replacement proof, required-context
-  migration, and deletion of superseded workflow files form one cutover.
+- Target: `origin/v3` at squash merge
+  `e4ef09e5bfc64a4019bace0b472630d5a21408c5`.
+- Pull request: #5551 was squash-merged externally before the planned cleanup;
+  follow-up draft PR pending.
+- Package: the intended single cutover was split by that external merge. The
+  follow-up contains only the now-unblocked workflow deletions, documentation,
+  and final evidence.
 
 ## Current evidence and decisions
 
-- Current branch protection requires `check-format`, `check-lint`,
-  `check-syncpack`, `check-types`, `test-graphql-status`,
-  `test-playwright-status`, `build-amd`, and `build-arm`. It does not currently
-  require `check`, `check-gitleaks`, or advisory `check-knip`.
+- Current branch protection uses strict mode and requires `check`,
+  `check-gitleaks`, `test-graphql-status`, `test-playwright-status`, `build-amd`,
+  and `build-arm`, all bound to GitHub Actions app ID 15368. The four former
+  split contexts were removed only after both replacements passed and were
+  added with successful readback.
 - PR #5304 added `check.yml` beside the five old check workflows so an
   administrator could migrate required contexts safely. That migration and
   cleanup never happened.
@@ -74,7 +77,8 @@
 - The consolidated check and unit workflows receive `contents: read` only.
   Unused `packages: write` permissions are removed from GraphQL and OLAT.
 - The current wiki skill reserves `docs/log.md` and `docs/log/` as absent.
-  Durable updates go only to `docs/ci-and-deployment.md`, `docs/testing.md`, and
+  Durable updates go to `docs/ci-and-deployment.md`, `docs/testing.md`, the
+  directly affected `docs/chat-platform.md`, and
   `.agents/skills/klicker-testing-verification/SKILL.md`.
 - No ADR is needed: this is a reversible CI-configuration consolidation that
   preserves product, data, deployment, and public contracts. Reusable image
@@ -150,9 +154,9 @@ review gates remain required.
   one install, the dependency-build chain, and all four test steps. `test-unit`
   remains path-filtered and is not added to branch protection.
 
-## Slice 3: migrate branch protection
+## Slice 3: migrate branch protection — completed
 
-Pause for explicit repository-admin approval. After approval:
+The user granted explicit repository-admin approval. The completed sequence:
 
 1. Read the current strict setting and complete app-bound context set.
 2. Add `check`, then read back its GitHub Actions binding.
@@ -165,7 +169,7 @@ Pause for explicit repository-admin approval. After approval:
 
 Do not delete a workflow if any readback differs from the expected set.
 
-## Slice 4: complete the cutover
+## Slice 4: complete the cutover in a follow-up PR
 
 - Delete `check-format.yml`, `check-lint.yml`, `check-syncpack.yml`,
   `check-types.yml`, `check-knip.yml`, `test-chat.yml`, `test-grading.yml`,
@@ -173,8 +177,8 @@ Do not delete a workflow if any readback differs from the expected set.
 - Update the CI guide, testing guide, testing-verification skill, and plan
   progress to describe the delivered state and measured follow-ups.
 - Run Actions validation, repository-native checks, the required slice review,
-  and one integrated final reviewer. Update the draft PR, but do not mark it
-  ready, merge, deploy, or clean up the branch/worktree.
+  and one integrated final reviewer. Open and update a follow-up draft PR, but
+  do not mark it ready, merge, deploy, or clean up the branch/worktree.
 - Commit: `ci: complete workflow efficiency consolidation`.
 
 ## Deferred efficiency packages
@@ -192,8 +196,8 @@ Do not delete a workflow if any readback differs from the expected set.
 
 ## Progress
 
-- Status: slice 1 published in draft PR #5551; hosted checks running and manual
-  unit-proof trigger pending publication.
+- Status: branch protection migrated; follow-up cleanup implemented and under
+  final verification on current `origin/v3`.
 - Completed: plan commit and post-commit freshness check; replacement workflow
   implementation; Actions audit, validation, and discovery; exact Node 24
   dependency builds; all four unit suites; Prettier and diff checks; and the
@@ -201,12 +205,21 @@ Do not delete a workflow if any readback differs from the expected set.
   analytics lint task could not build pandas because the devcontainer has no C
   compiler; this is unrelated to the workflow-only diff. The specialist review
   accepted the consolidation and identified one least-privilege gap: GraphQL's
-  filter and status jobs now receive workflow-level `contents: read`. Draft PR
-  #5551 is open against `v3`. Its initial `test-unit` PR job skipped as designed
-  because the PR is draft, so a manual dispatch trigger now supplies proof
-  without crossing the withheld ready-for-review boundary.
-- Remaining: commit and push the manual proof trigger, prove replacement
-  contexts, request settings authority, complete the cutover, and run final
-  review.
-- Delivery boundary: branch-protection mutation, ready transition, merge,
-  deployment, and cleanup remain withheld.
+  filter and status jobs now receive workflow-level `contents: read`. On exact
+  PR head `e15bd081a`, `check`, `check-gitleaks`, and manually dispatched
+  `test-unit` passed; hosted logs confirmed one install, the ordered dependency
+  build, and all four suites. PR #5551 was then squash-merged externally as
+  `e4ef09e5b`. After explicit approval, branch protection was migrated and read
+  back after each step with strict mode and app ID 15368 preserved.
+- Remaining: complete review and hosted verification, then open and update the
+  follow-up draft PR.
+- Follow-up verification: the safe Actions audit, syntax validation, and job
+  discovery pass with only `check`, `check-gitleaks`, and `test-unit` present for
+  the consolidated scope. Prettier passes under the repository-pinned Node 24
+  runtime. The repository-wide wiki validator still reports 19 pre-existing
+  frontmatter errors, all outside the edited pages. The former task DevPod was
+  removed externally after #5551 merged, and the installed devrouter rejects
+  the repository's current `profiles` configuration, so this cleanup uses the
+  narrow pinned-toolchain fallback rather than modifying host tooling.
+- Delivery boundary: ready transition, follow-up merge, deployment, and cleanup
+  remain withheld.

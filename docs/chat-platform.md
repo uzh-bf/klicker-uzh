@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-22'
+timestamp: '2026-08-25'
 tags:
   - frontend
   - chat
@@ -603,9 +603,10 @@ action that uses the existing assistant-ui reload path, so retrying truncates
 the failed branch instead of adding a duplicate user turn. Keep the retry and
 duplicate-turn behavior in the mobile smoke matrix.
 
-The suite runs in CI via `.github/workflows/test-chat.yml` (single-job fail-open path
-filter like `test-markdown.yml`, covering `apps/chat/` plus `packages/{i18n,prisma,graphql}/`).
-The workflow builds `packages/prisma` before vitest because
+The suite runs as its own step in `.github/workflows/test-unit.yml`, whose path
+union covers `apps/chat/`, its shared packages, and the grading, markdown, and
+util suites consolidated into the same job. The workflow builds Prisma, types,
+grading, and util once before the four suites because
 `test/modelRegistryParity.test.ts` imports the backend registry from
 `packages/graphql/src/services/chatbots.ts`, whose first line is a runtime prisma-client
 import ([Testing](./testing.md)).
