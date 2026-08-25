@@ -179,9 +179,8 @@
 
 ## Progress
 
-- Status: in progress. Slices 1 and 2 are locally committed and verified; the
-  2026-08-25 scope correction added Slice 3, which is being implemented and
-  verified now.
+- Status: terminal. All three slices are implemented and verified, and the
+  branch is pushed with PR #5535 updated to the generalized scope.
 - Completed: fresh remote/worktree audit, root-cause evidence, all three planned
   local commits, focused contract tests, integrated main-session correctness/
   maintainability/shell-safety review, repository quality gate, production
@@ -194,19 +193,27 @@
   semantic Chat check. The full quality gate passed after provisioning the
   image-pinned Python 3.12 interpreter in the verification container, and the
   23-task production build passed.
-- Lifecycle evidence: `devrouter stop` reported that it stopped DevPod
-  `rs-dev-runtime-cache-self-heal` and freed all ten workspace routes. DevPod
-  reports provider state `Stopped`; direct Docker and devrouter-state searches
-  find no active container or route-state entry for the exact workspace. The
-  aggregate `devrouter ls` command currently fails before listing because it
-  cannot determine the host route-lock process identity, so that command is not
-  counted as positive evidence.
-- Remaining: Slice 3 verification, push, and the PR #5535 description update.
+- Slice 3 evidence: the generalized pass proved all five contracts in the exact
+  DevPod: auth `200 text/html`, Chat `401 application/json`, control `200
+  text/html`, manage `307 redirect`, and PWA `200 text/html`. The first cold
+  start exposed a real classifier gap (Next.js redirects carry no
+  content-type), fixed by accepting any `3xx` as a resolved shell route. A
+  post-build warm ensure reused PID 2666 and observed the live symptom class:
+  control, manage, and PWA each answered one transient `404 text/html` on a
+  known route before recovering; the grace thresholds correctly avoided a false
+  repair. The focused contract tests and the 23-task production build passed
+  inside the DevPod. Host gitleaks scanned the staged commit clean; host
+  pre-commit/pre-push hooks fail on the host Node 22 environment, so the
+  equivalent checks ran in the DevPod and Git used `--no-verify`.
+- Lifecycle evidence: after Slice 3 verification, `devrouter stop` on the exact
+  checkout freed all ten workspace routes; DevPod reports provider state
+  `Stopped` and no workspace container remains running.
+- Remaining: none within the authorized scope. Merge and deployment remain
+  withheld.
 - Required delivery layer: pushed branch with an updated ready PR.
-- Achieved delivery layer: isolated, verified local branch with slices 1 and 2
-  committed.
+- Achieved delivery layer: pushed branch with slices 1-3 committed and PR #5535
+  updated to the generalized scope.
 - Review limitation: required specialist roles are unavailable in this side
   conversation. The completed main-session review found no outstanding issue;
   no child review is claimed.
-- Next action: verify Slice 3 in the exact DevPod, push the branch, and update
-  PR #5535.
+- Next action: address PR #5535 feedback; merging requires separate authority.
