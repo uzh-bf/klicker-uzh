@@ -1,11 +1,16 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
+import {
+  AchievementType,
+  UserLoginScope,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
 import type { GraphQLObjectType } from 'graphql'
 import { afterAll, afterEach, describe, expect, it } from 'vitest'
 import { schema } from '../src/index.js'
 import type { ContextWithUser } from '../src/lib/context.js'
 
 const fixtureIds = {
+  achievementIds: [] as number[],
   instanceIds: [] as number[],
   participantIds: [] as string[],
 }
@@ -61,9 +66,21 @@ async function createFixture() {
   ])
   fixtureIds.participantIds.push(owner.id, other.id)
 
-  const achievement = await prisma.achievement.findFirstOrThrow({
+  const achievement = await prisma.achievement.create({
+    data: {
+      nameDE: `Quittungs-Testauszeichnung ${suffix}`,
+      nameEN: `Receipt test achievement ${suffix}`,
+      descriptionDE: 'Auszeichnung für Quittungstests.',
+      descriptionEN: 'Achievement used for receipt tests.',
+      icon: '/achievements/Dreamteam.svg',
+      rewardedPoints: 0,
+      rewardedXP: 0,
+      type: AchievementType.PARTICIPANT,
+      isDiscoverable: true,
+    },
     select: { id: true },
   })
+  fixtureIds.achievementIds.push(achievement.id)
 
   const instance = await prisma.participantAchievementInstance.create({
     data: {
@@ -81,6 +98,9 @@ async function createFixture() {
 async function cleanupFixtures() {
   await prisma.participantAchievementInstance.deleteMany({
     where: { id: { in: fixtureIds.instanceIds.splice(0) } },
+  })
+  await prisma.achievement.deleteMany({
+    where: { id: { in: fixtureIds.achievementIds.splice(0) } },
   })
   await prisma.participant.deleteMany({
     where: { id: { in: fixtureIds.participantIds.splice(0) } },

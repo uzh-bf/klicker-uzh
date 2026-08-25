@@ -33,7 +33,7 @@ test.beforeAll(async () => {
         achievedAt: new Date('2026-01-01T00:00:00Z'),
       },
       {
-        participantId: PARTICIPANT_IDS[49]!,
+        participantId: PARTICIPANT_IDS[0]!,
         achievementId: achievement.id,
         achievedAt: new Date('2026-01-01T00:00:00Z'),
       },
@@ -114,7 +114,7 @@ test('acknowledges receipts only for self profiles and retries after failure', a
 
   await page.goto(`/course/${COURSE_ID_TEST}`)
   const publicParticipant = page
-    .getByTestId('leaderboard-entry-testuser50')
+    .getByTestId('leaderboard-entry-testuser1')
     .first()
   await expect(publicParticipant).toBeVisible()
   await publicParticipant.click()
