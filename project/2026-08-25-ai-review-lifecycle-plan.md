@@ -468,16 +468,23 @@ real runs before proposing any parameter retune or branch-protection context.
 
 ## Progress
 
-- Status: plan approved; the plan commit is the next execution boundary.
+- Status: S1 completed; S2 is the next execution slice.
 - Completed: fresh `origin/v3` baseline, primary-worktree ownership audit,
   current workflow/helper/rule inspection, native stack endpoint probe,
   OpenRouter documentation check, shared-skill dirty-diff preservation audit,
-  product-primitive mapping, and required planner challenge.
+  product-primitive mapping, required planner challenge, approved plan commit,
+  and S1 draft-only workflow implementation.
 - Planner disposition: accepted bounded descendant attestation, latest-status
   semantics, lower-layer invalidation, compact manifest metadata, terminal
   dispositions, and removal of generated-promotion special handling. Rejected
   only the claim that `writing-for-agents` was unavailable.
-- Remaining: G1-G4, slices S1-S5, verification, required reviews, local commits,
+- S1 evidence: YAML parsing and `git diff --check` passed; `actionlint` is not
+  installed; the pinned action's documented diagnostics remain unproven and
+  were not added. The configured Gemini simplifier and slice-reviewer routes
+  failed before producing reports at the provider credit limit, so trusted Sol
+  fallbacks reviewed the immutable slice and returned `DONE` with no findings.
+- Commits: plan `2b83fbb49`; S1 `6f80a97f2`.
+- Remaining: G1-G4, slices S2-S5, verification, required reviews, local commits,
   and the cross-repository progress record.
 - Delivery boundary: pushes, PRs, live qualification, ClickUp writes, branch
   protection, merge, deployment, and cleanup remain withheld.
