@@ -817,6 +817,9 @@ export async function rejectChatbotPublication(
   if (!chatbot) {
     return null
   }
+  if (args.comment.trim().length === 0) {
+    throw new GraphQLError('Review comment must not be empty')
+  }
   if (chatbot.status !== DB.ChatbotStatus.PENDING_APPROVAL) {
     throw new GraphQLError(`Cannot reject from status ${chatbot.status}`)
   }

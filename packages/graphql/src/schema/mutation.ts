@@ -1535,7 +1535,10 @@ export const Mutation = builder.mutationType({
         type: Chatbot,
         args: {
           id: t.arg.string({ required: true }),
-          comment: t.arg.string({ required: true }),
+          comment: t.arg.string({
+            required: true,
+            validate: { minLength: 1, regex: /\S/ },
+          }),
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotsService.rejectChatbotPublication(args, ctx)

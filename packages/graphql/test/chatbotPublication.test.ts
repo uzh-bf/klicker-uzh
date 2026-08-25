@@ -458,12 +458,42 @@ describe('Integration tests for the chatbot publication workflow', () => {
       expect(result?.reviewComment).toBe('scope too broad')
     })
 
+    it.each([
+      ['empty', ''],
+      ['whitespace-only', ' \t\n'],
+    ])('rejects a %s review comment without changing the bot', async (_, comment) => {
+      const bot = await seedChatbot(ChatbotStatus.PENDING_APPROVAL)
+
+      await expect(
+        rejectChatbotPublication({ id: bot.id, comment }, adminCtx)
+      ).rejects.toThrow('Review comment must not be empty')
+
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({
+          where: { id: bot.id },
+          select: { status: true, reviewComment: true },
+        })
+      ).resolves.toMatchObject({
+        status: ChatbotStatus.PENDING_APPROVAL,
+        reviewComment: null,
+      })
+    })
+
     it('rejects a non-admin caller', async () => {
       const bot = await seedChatbot(ChatbotStatus.PENDING_APPROVAL)
 
       await expect(
-        rejectChatbotPublication({ id: bot.id, comment: 'no' }, userOneCtx)
+        rejectChatbotPublication({ id: bot.id, comment: ' ' }, userOneCtx)
       ).rejects.toThrow('Not authorized')
+    })
+
+    it('returns null for a missing bot before validating the comment', async () => {
+      await expect(
+        rejectChatbotPublication(
+          { id: '00000000-0000-0000-0000-000000000000', comment: ' ' },
+          adminCtx
+        )
+      ).resolves.toBeNull()
     })
   })
 })
