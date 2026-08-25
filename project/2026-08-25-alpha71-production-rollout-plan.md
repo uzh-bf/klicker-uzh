@@ -189,6 +189,25 @@ Check:
   report alpha.71 images ready, assessment migration coverage to be proven, and
   post-rollout public probes to match the baseline.
 
+## Preflight evidence (2026-08-25)
+
+- The values-free public baseline returned `200` for auth, chat health, PWA,
+  Manage, Control, backend health, OLAT API health, Response API health,
+  assessment PWA, assessment API health, and assessment Response API health.
+  The LTI `/info` probe returned its expected unauthenticated `401`. Response
+  bodies were not retained.
+- The named managed production PostgreSQL server reported `Ready`, 35 days of
+  backup retention, geo-redundant backups `Enabled`, and high availability
+  `NotEnabled`. The latest values-free backup listing reported an automatic
+  full backup completed at `2026-08-25T08:20:50Z`. Database-owner confirmation
+  of the recovery procedure, RPO, and RTO remains pending.
+- The existing ArgoCD context was available locally, but its application-list
+  read timed out at the configured endpoint. No new tunnel or connectivity was
+  established, and no ArgoCD or Kubernetes state was read. Merge is blocked
+  until the existing production connection is available.
+- Primary-versus-assessment database target coverage is still unproven within
+  the allowed values-free boundary. It remains a required pre-merge gate.
+
 ## Rollback contract
 
 If post-merge health regresses, stop and request fresh authority for a new PR
