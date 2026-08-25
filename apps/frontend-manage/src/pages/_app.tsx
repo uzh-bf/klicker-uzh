@@ -15,6 +15,7 @@ import { useEffect } from 'react'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { CourseDuplicationProvider } from '../components/courses/CourseDuplicationStatusProvider'
+import ManageFeatureFlagProvider from '../components/featureFlags/ManageFeatureFlagProvider'
 import '../globals.css'
 import { useApollo } from '../lib/apollo'
 
@@ -56,10 +57,12 @@ function App({ Component, pageProps }: AppProps) {
           getMessageFallback={getMessageFallback}
         >
           <DndProvider backend={HTML5Backend}>
-            <CourseDuplicationProvider>
-              <Toaster closeButton position="top-right" />
-              <Component {...pageProps} />
-            </CourseDuplicationProvider>
+            <ManageFeatureFlagProvider>
+              <CourseDuplicationProvider>
+                <Toaster closeButton position="top-right" />
+                <Component {...pageProps} />
+              </CourseDuplicationProvider>
+            </ManageFeatureFlagProvider>
           </DndProvider>
         </NextIntlClientProvider>
       </ApolloProvider>

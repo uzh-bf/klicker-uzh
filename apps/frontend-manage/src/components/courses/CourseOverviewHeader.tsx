@@ -11,6 +11,7 @@ import {
   faUserPlus,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   type Course,
   GetSingleCourseDocument,
@@ -69,6 +70,7 @@ function CourseOverviewHeader({
   const router = useRouter()
   const { isSourceCourseDuplicating, startCourseDuplication } =
     useCourseDuplicationStatus()
+  const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
 
   const [courseSettingsModal, setCourseSettingsModal] = useState(false)
   const [sharingModal, setSharingModal] = useState(false)
@@ -149,21 +151,34 @@ function CourseOverviewHeader({
           },
         ]
       : []),
-    ...(user?.publicPreview
-      ? [
-          {
-            id: 'course-learning-analytics',
-            label: courseActionMenuLabel(
-              <FontAwesomeIcon icon={faChartPie} className="h-4 w-4" />,
-              t('manage.course.learningAnalytics')
-            ),
-            onClick: () => {
-              window.open(`/analytics/${course.id}/activity`, '_blank')
-            },
-            data: { cy: 'course-learning-analytics-link' },
-          },
-        ]
-      : []),
+    {
+      id: 'course-learning-analytics',
+      label: courseActionMenuLabel(
+        <FontAwesomeIcon icon={faChartPie} className="h-4 w-4" />,
+        t('manage.course.learningAnalytics')
+      ),
+      onClick: (event: React.MouseEvent) => {
+        if (!learningAnalyticsEnabled) {
+          event.preventDefault()
+          event.stopPropagation()
+          return
+        }
+
+        window.open(`/analytics/${course.id}/activity`, '_blank')
+      },
+      disabled: !learningAnalyticsEnabled,
+      tooltip: !learningAnalyticsEnabled
+        ? t('manage.analytics.featureUnavailable')
+        : undefined,
+      className: {
+        // The disabled item remains inert, but its explanation still needs to
+        // receive pointer input through the design-system tooltip trigger.
+        item: !learningAnalyticsEnabled
+          ? 'data-disabled:pointer-events-auto'
+          : undefined,
+      },
+      data: { cy: 'course-learning-analytics-link' },
+    },
     ...(course.isAssessmentEnabled && course.isManager
       ? [
           {

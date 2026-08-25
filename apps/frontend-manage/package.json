@@ -16,6 +16,7 @@
     "@fullcalendar/interaction": "6.1.20",
     "@fullcalendar/react": "6.1.20",
     "@fullcalendar/timegrid": "6.1.20",
+    "@klicker-uzh/feature-flags": "workspace:*",
     "@klicker-uzh/graphql": "workspace:*",
     "@klicker-uzh/i18n": "workspace:*",
     "@klicker-uzh/markdown": "workspace:*",
