@@ -424,23 +424,30 @@ async function authorizeFinalReview({ github, context, core }) {
 
   core.setOutput('authorized', 'true')
   core.setOutput('pr_number', String(pull.number))
-  core.setOutput('base_ref', pull.base.ref)
+  core.setOutput('base_sha', pull.base.sha)
   core.setOutput('head_sha', pull.head.sha)
   core.setOutput('background', buildReviewBackground(pull.title))
   return true
 }
 
-async function startFinalReview({ github, context, prNumber, headSha }) {
+async function startFinalReview({
+  github,
+  context,
+  prNumber,
+  baseSha,
+  headSha,
+}) {
   const pull = await getPull(github, context, prNumber)
   const repository = `${context.repo.owner}/${context.repo.repo}`
   if (
     pull.head.sha !== headSha ||
+    pull.base.sha !== baseSha ||
     pull.state !== 'open' ||
     pull.draft ||
     pull.base.ref !== context.payload.repository.default_branch ||
     pull.base.repo.full_name !== repository
   ) {
-    throw new Error('PR head changed before the final review started')
+    throw new Error('PR is no longer eligible for this final-review run')
   }
   await setCommitStatus({
     github,

@@ -7,6 +7,7 @@ const test = require('node:test')
 const {
   FINAL_REVIEW_MODEL,
   PROMOTION_FILE,
+  authorizeFinalReview,
   buildExpectedPromotionContent,
   buildOCRConfig,
   buildReviewBackground,
@@ -17,6 +18,7 @@ const {
   promotionBody,
   removeOCRConfig,
   renderFinalReviewChunks,
+  startFinalReview,
   validatePromotionContract,
   writeOCRConfig,
 } = require('./final-ai-review.js')
@@ -41,6 +43,80 @@ test('accepts only the exact command and calculated write permissions', () => {
   assert.equal(isTrustedPermission('admin'), true)
   assert.equal(isTrustedPermission('read'), false)
   assert.equal(isTrustedPermission('maintain'), false)
+})
+
+test('authorizes and starts only the immutable ready PR range', async () => {
+  const baseSha = 'b'.repeat(40)
+  const headSha = 'a'.repeat(40)
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Ready change',
+    base: {
+      ref: 'v3',
+      sha: baseSha,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: { sha: headSha },
+  }
+  const statuses = []
+  const github = {
+    rest: {
+      pulls: {
+        get: async () => ({ data: pull }),
+      },
+      repos: {
+        createCommitStatus: async (status) => statuses.push(status),
+        getCollaboratorPermissionLevel: async () => ({
+          data: { user: { permission: 'write' } },
+        }),
+      },
+    },
+  }
+  const outputs = new Map()
+  const core = {
+    notice: () => {},
+    setOutput: (name, value) => outputs.set(name, value),
+  }
+  const context = {
+    eventName: 'issue_comment',
+    issue: { number: 42 },
+    payload: {
+      comment: { body: '/final-review', user: { login: 'reviewer' } },
+      issue: { pull_request: {} },
+      repository: { default_branch: 'v3' },
+    },
+    repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
+    runId: 123,
+    serverUrl: 'https://github.com',
+  }
+
+  assert.equal(await authorizeFinalReview({ github, context, core }), true)
+  assert.equal(outputs.get('base_sha'), baseSha)
+  assert.equal(outputs.get('head_sha'), headSha)
+
+  await startFinalReview({
+    github,
+    context,
+    prNumber: 42,
+    baseSha,
+    headSha,
+  })
+  assert.equal(statuses.length, 1)
+  assert.equal(statuses[0].sha, headSha)
+  assert.equal(statuses[0].state, 'pending')
+
+  await assert.rejects(
+    startFinalReview({
+      github,
+      context,
+      prNumber: 42,
+      baseSha: 'c'.repeat(40),
+      headSha,
+    }),
+    /no longer eligible/
+  )
 })
 
 test('writes an exact high-reasoning OCR config with mode 0600', () => {
