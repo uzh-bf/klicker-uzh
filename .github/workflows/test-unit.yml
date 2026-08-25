@@ -1,6 +1,7 @@
 name: Test lightweight unit suites
 
 on:
+  workflow_dispatch:
   push:
     branches: ['v3', 'v3*']
     paths:

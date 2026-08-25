@@ -68,6 +68,9 @@
   and util once in that order, then runs four separately visible test steps.
   Later suites run after an earlier suite failure but not after setup or build
   failure, preserving useful diagnostics.
+- Draft pull requests retain the existing unit-suite skip behavior. A manual
+  dispatch trigger provides exact-head hosted proof without marking the draft
+  ready or running the suite automatically on every draft update.
 - The consolidated check and unit workflows receive `contents: read` only.
   Unused `packages: write` permissions are removed from GraphQL and OLAT.
 - The current wiki skill reserves `docs/log.md` and `docs/log/` as absent.
@@ -142,10 +145,10 @@ review gates remain required.
 - Push normally and open a draft PR against `v3`.
 - Rename this plan to include the assigned PR number, update its identity,
   commit, and push normally.
-- Obtain successful `check`, `check-gitleaks`, and `test-unit` runs on one exact
-  PR head. Confirm the unit log contains one install, the dependency-build
-  chain, and all four test steps. `test-unit` remains path-filtered and is not
-  added to branch protection.
+- Obtain successful `check` and `check-gitleaks` PR runs plus a manually
+  dispatched `test-unit` run on one exact PR head. Confirm the unit log contains
+  one install, the dependency-build chain, and all four test steps. `test-unit`
+  remains path-filtered and is not added to branch protection.
 
 ## Slice 3: migrate branch protection
 
@@ -189,7 +192,8 @@ Do not delete a workflow if any readback differs from the expected set.
 
 ## Progress
 
-- Status: slice 1 published in draft PR #5551; hosted replacement proof pending.
+- Status: slice 1 published in draft PR #5551; hosted checks running and manual
+  unit-proof trigger pending publication.
 - Completed: plan commit and post-commit freshness check; replacement workflow
   implementation; Actions audit, validation, and discovery; exact Node 24
   dependency builds; all four unit suites; Prettier and diff checks; and the
@@ -198,8 +202,11 @@ Do not delete a workflow if any readback differs from the expected set.
   compiler; this is unrelated to the workflow-only diff. The specialist review
   accepted the consolidation and identified one least-privilege gap: GraphQL's
   filter and status jobs now receive workflow-level `contents: read`. Draft PR
-  #5551 is open against `v3`.
-- Remaining: push this plan identity update, prove replacement contexts, request
-  settings authority, complete the cutover, and run final review.
+  #5551 is open against `v3`. Its initial `test-unit` PR job skipped as designed
+  because the PR is draft, so a manual dispatch trigger now supplies proof
+  without crossing the withheld ready-for-review boundary.
+- Remaining: commit and push the manual proof trigger, prove replacement
+  contexts, request settings authority, complete the cutover, and run final
+  review.
 - Delivery boundary: branch-protection mutation, ready transition, merge,
   deployment, and cleanup remain withheld.
