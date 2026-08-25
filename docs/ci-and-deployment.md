@@ -29,14 +29,20 @@ Per-commit workflows: `check` (consolidated check job combining format, lint, sy
 
 ## Image builds
 
-13 apps × stg + prd workflows (`v3_<app>-{stg,prd}.yml`), pushing to ghcr.io with separate `-arm`/`-amd` jobs:
+13 apps × stg + prd workflows (`v3_<app>-{stg,prd}.yml`) push ARM64
+images to ghcr.io through their `-arm` jobs. The legacy `-amd` image jobs stay
+defined but use an always-false job condition, so they publish no AMD64 images.
+Keeping the skipped `build-amd` job preserves the required status context while
+branch protection still requires that name. The no-op `Build Fallback`
+`build-amd` job remains enabled for pull requests that do not start an app image
+workflow.
 
 - **stg**: push to `v3`/`v3*` or PR touching the app's paths (PRs build but don't push).
 - **prd**: tags `v*.*.*` only.
 
 Build context is the repo root with `file: apps/<app>/Dockerfile` — Dockerfile changes must keep monorepo-root context assumptions.
 
-The five Next images (auth, chat, control, manage, PWA) consume Next's `.next/standalone` output. Auth and chat production builds use Turbopack. Control, manage, and PWA production builds explicitly use Webpack while `@ducanh2912/next-pwa` remains responsible for `sw.js`, Workbox chunks, and the custom worker bundle copied by their Dockerfiles. Before publishing a framework upgrade, run the mixed production build, inspect those artifacts, smoke the standalone server paths, and require both AMD and ARM image jobs. These are **config-derived** contracts until the corresponding command and CI check are recorded for the release SHA.
+The five Next images (auth, chat, control, manage, PWA) consume Next's `.next/standalone` output. Auth and chat production builds use Turbopack. Control, manage, and PWA production builds explicitly use Webpack while `@ducanh2912/next-pwa` remains responsible for `sw.js`, Workbox chunks, and the custom worker bundle copied by their Dockerfiles. Before publishing a framework upgrade, run the mixed production build, inspect those artifacts, smoke the standalone server paths, and require the ARM image jobs. These are **config-derived** contracts until the corresponding command and CI check are recorded for the release SHA.
 
 The same five images receive browser GrowthBook configuration at build time.
 Staging workflows use the repository variables
