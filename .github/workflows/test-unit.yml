@@ -8,6 +8,7 @@ on:
       - 'apps/chat/**'
       - 'packages/grading/**'
       - 'packages/graphql/**'
+      - 'packages/feature-flags/**'
       - 'packages/i18n/**'
       - 'packages/markdown/**'
       - 'packages/next-config/**'
@@ -26,6 +27,7 @@ on:
       - 'apps/chat/**'
       - 'packages/grading/**'
       - 'packages/graphql/**'
+      - 'packages/feature-flags/**'
       - 'packages/i18n/**'
       - 'packages/markdown/**'
       - 'packages/next-config/**'
@@ -72,11 +74,7 @@ jobs:
       - name: Build unit-test dependencies
         id: build
         shell: bash
-        run: |
-          pnpm --filter @klicker-uzh/prisma build
-          pnpm --filter @klicker-uzh/types build
-          pnpm --filter @klicker-uzh/grading build
-          pnpm --filter @klicker-uzh/util build
+        run: pnpm --filter "@klicker-uzh/chat^..." run build
 
       - name: Test chat app
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
