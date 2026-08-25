@@ -60,6 +60,7 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
         Use `devrouter workspace up <branch-name>` from the main repository to create a new worktree. Do not use bare `devpod up` or manual route-token loops; `ensure` owns the persisted identity, Git mount, overlay, aliases, runtime proof, and routes together.
      3. Those namespaced hosts only work because `allowedDevOrigins` in `packages/next-config/index.js` is `['**.localhost']` in development (and `undefined` in production) — Next's implicit `*.localhost` matches a single label only. If that glob ever stops covering a worktree host, the symptom is an app that serves HTML but never hydrates, with no obvious error.
 3. **Logs:** The dev servers auto-start inside the container. View logs via `devrouter exec . -- tail -f /tmp/dev.log`.
+4. **Browser E2E:** Run Playwright from the host with `bash util/run-host-e2e.sh --project=chromium <spec>`. The runner detects routed linked and primary checkouts, a plain primary devcontainer, and host-run apps; it maps the app URLs and seed database while reusing the host browser cache. Never install Playwright browser binaries in a DevPod. The existing global setup resets and reseeds the mapped database, so use only a disposable local test runtime.
 
 For OpenRouter-backed Chat, inject the shared prototyping key when starting the
 workspace; never write it into the repository:

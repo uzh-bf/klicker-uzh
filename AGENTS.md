@@ -132,7 +132,7 @@ Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a 
 
 ### Self-contained devcontainer (recommended)
 
-Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm/prisma/tests **inside the container**, never on the host.
+Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm/prisma/unit tests **inside the container**, never on the host. **Exception — Playwright E2E runs on the host**: run `bash util/run-host-e2e.sh --project=chromium tests/<spec>.spec.ts` (or `pnpm --filter @klicker-uzh/playwright test:host -- --project=chromium <spec>`) — it auto-maps the app URLs and seed database for routed devrouter workspaces, a plain primary devcontainer, or host-run apps, and shares host browser/node caches; never download browsers into a DevPod. Services without direct routes stay inside the container and are exercised through the routed apps; do not move Playwright into the container to reach them.
 
 ```bash
 devrouter ensure .
