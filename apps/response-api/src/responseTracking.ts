@@ -6,7 +6,12 @@ import {
 } from '@klicker-uzh/util'
 import type { Redis } from 'ioredis'
 
-type ResponseTrackingRedis = Pick<Redis, 'eval' | 'exists'>
+type ResponseTrackingRedis = Pick<Redis, 'eval'>
+
+type ReceivedTrackingResult =
+  | { status: 'inactive' }
+  | { status: 'tracked'; ttl: number }
+  | { status: 'tracking_failed'; error: string }
 
 export async function trackLiveQuizResponseIfActive({
   redisClient,
@@ -21,24 +26,37 @@ export async function trackLiveQuizResponseIfActive({
     liveQuizId,
     instanceId,
   })
-  if ((await redisClient.exists(instanceInfoKey)) !== 1) {
+  const trackingResult = JSON.parse(
+    String(
+      await redisClient.eval(
+        LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT,
+        2,
+        getLiveQuizResponseCountKey({
+          liveQuizId,
+          instanceId,
+          status: 'received',
+        }),
+        instanceInfoKey,
+        String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
+      )
+    )
+  ) as ReceivedTrackingResult
+
+  if (trackingResult.status === 'inactive') {
     return false
   }
 
-  const instanceInfoTtl = await redisClient.eval(
-    LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT,
-    2,
-    getLiveQuizResponseCountKey({
-      liveQuizId,
-      instanceId,
-      status: 'received',
-    }),
-    instanceInfoKey,
-    String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
-  )
+  if (trackingResult.status === 'tracking_failed') {
+    throw new Error(
+      `Live quiz response tracking failed: ${trackingResult.error}`
+    )
+  }
 
-  if (!Number.isInteger(Number(instanceInfoTtl))) {
-    throw new Error('Live quiz response tracking returned an invalid TTL')
+  if (
+    trackingResult.status !== 'tracked' ||
+    !Number.isInteger(trackingResult.ttl)
+  ) {
+    throw new Error('Live quiz response tracking returned an invalid result')
   }
 
   return true

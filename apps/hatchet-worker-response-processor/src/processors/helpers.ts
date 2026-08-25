@@ -39,15 +39,16 @@ export interface RedisCommandCollector {
 }
 
 export function createRedisCommandCollector(): RedisCommandCollector {
+  const commands: RedisCommand[] = []
   const collector: RedisCommandCollector = {
-    commands: [],
+    commands,
     hincrby(key, field, increment) {
-      this.commands.push(['HINCRBY', key, field, increment])
-      return this
+      commands.push(['HINCRBY', key, field, increment])
+      return collector
     },
     hset(key, field, value) {
-      this.commands.push(['HSET', key, field, value])
-      return this
+      commands.push(['HSET', key, field, value])
+      return collector
     },
   }
 

@@ -41,8 +41,10 @@ assessment processors increment the processed counter only after every result,
 leaderboard, and response-hash command in the batch succeeds.
 
 The response API attempts the received-counter increment before enqueueing a
-known instance. Tracking is best-effort: a tracking failure is logged but does
-not reject or delay the participant response.
+known instance. One Redis script checks the instance-info TTL and updates the
+counter and its retention atomically; an inactive instance returns without
+creating a tracking key. Tracking is best-effort: a tracking failure is logged
+but does not reject or delay the participant response.
 The new
 `lq:<quiz-id>:i:<instance-id>:responses:processed:claims` sorted set is an
 age-trimmed replay claim for the response `messageId` or assessment

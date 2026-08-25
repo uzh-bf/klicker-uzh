@@ -160,24 +160,49 @@ return cjson.encode({
 // policy are updated together. Each accepted request is a separate event.
 export const LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT = `
 local instanceInfoTtl = redis.call('TTL', KEYS[2])
-local currentCount = redis.call('GET', KEYS[1])
+if instanceInfoTtl == -2 then
+  return cjson.encode({ status = 'inactive' })
+end
+
+local currentCountResult = redis.pcall('GET', KEYS[1])
+if type(currentCountResult) == 'table' and currentCountResult.err then
+  return cjson.encode({
+    status = 'tracking_failed',
+    error = currentCountResult.err,
+  })
+end
+
+local currentCount = currentCountResult
 local nextCount = 1
 if currentCount then
-  nextCount = tonumber(currentCount) + 1
+  local numericCount = tonumber(currentCount)
+  if not numericCount then
+    return cjson.encode({
+      status = 'tracking_failed',
+      error = 'received response counter is not numeric',
+    })
+  end
+  nextCount = numericCount + 1
 end
 
 -- SET with EX commits the value and its retention together. Active instance
 -- info without an expiry keeps the counter persistent until cleanup starts.
+local setResult
 if instanceInfoTtl >= 0 then
   local trackingTtl = math.max(math.min(instanceInfoTtl, tonumber(ARGV[1])), 1)
-  redis.call('SET', KEYS[1], nextCount, 'EX', trackingTtl)
-elseif instanceInfoTtl == -2 then
-  redis.call('SET', KEYS[1], nextCount, 'EX', tonumber(ARGV[1]))
+  setResult = redis.pcall('SET', KEYS[1], nextCount, 'EX', trackingTtl)
 else
-  redis.call('SET', KEYS[1], nextCount)
+  setResult = redis.pcall('SET', KEYS[1], nextCount)
 end
 
-return instanceInfoTtl
+if type(setResult) == 'table' and setResult.err then
+  return cjson.encode({
+    status = 'tracking_failed',
+    error = setResult.err,
+  })
+end
+
+return cjson.encode({ status = 'tracked', ttl = instanceInfoTtl })
 `.trim()
 
 export function getLiveQuizInstanceInfoKey({

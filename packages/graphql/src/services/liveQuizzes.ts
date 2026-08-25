@@ -19,6 +19,7 @@ import {
   getLiveQuizLegacyResponseProcessedKey,
   getLiveQuizLegacyResponseReceivedKey,
   getLiveQuizResponseCountKey,
+  getLiveQuizResponseReplayClaimKey,
   LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
   levelFromXp,
   propagateActivityToElements,
@@ -1667,8 +1668,8 @@ async function startLiveQuizResponseTrackingRetention({
     if (expiryResults === null) {
       throw new Error('Redis returned no instance-info expiry results')
     }
-    const expiryErrors = expiryResults.flatMap(([error]) =>
-      error ? [error] : []
+    const expiryErrors = expiryResults.flatMap((result) =>
+      result?.[0] ? [result[0]] : []
     )
     if (expiryErrors.length > 0) {
       throw new Error(
@@ -1677,7 +1678,36 @@ async function startLiveQuizResponseTrackingRetention({
     }
   }
 
-  const trackingKeys = await redis.keys(`lq:${liveQuizId}:*:responses:*`)
+  const trackingKeys = [
+    ...new Set(
+      blocks.flatMap((block) =>
+        block.elements.flatMap((instance) => [
+          getLiveQuizResponseCountKey({
+            liveQuizId,
+            instanceId: instance.id,
+            status: 'received',
+          }),
+          getLiveQuizResponseCountKey({
+            liveQuizId,
+            instanceId: instance.id,
+            status: 'processed',
+          }),
+          getLiveQuizResponseReplayClaimKey({
+            liveQuizId,
+            instanceId: instance.id,
+          }),
+          getLiveQuizLegacyResponseReceivedKey({
+            liveQuizId,
+            instanceId: instance.id,
+          }),
+          getLiveQuizLegacyResponseProcessedKey({
+            liveQuizId,
+            instanceId: instance.id,
+          }),
+        ])
+      )
+    ),
+  ]
   if (trackingKeys.length > 0) {
     const pipe = redis.multi()
     for (const key of trackingKeys) {
@@ -1687,8 +1717,8 @@ async function startLiveQuizResponseTrackingRetention({
     if (trackingExpiryResults === null) {
       throw new Error('Redis returned no response-tracking expiry results')
     }
-    const trackingExpiryErrors = trackingExpiryResults.flatMap(([error]) =>
-      error ? [error] : []
+    const trackingExpiryErrors = trackingExpiryResults.flatMap((result) =>
+      result?.[0] ? [result[0]] : []
     )
     if (trackingExpiryErrors.length > 0) {
       throw new Error(
@@ -1934,6 +1964,14 @@ export async function endLiveQuiz(
 
   // update course leaderboard and participant XP
   try {
+    // Start retention before changing the database state. If Redis cleanup
+    // fails, the quiz remains publishable and the caller can retry the end.
+    await startLiveQuizResponseTrackingRetention({
+      liveQuizId: id,
+      blocks: quiz.blocks,
+      redis,
+    })
+
     const quizLB = await redis.hgetall(`lq:${id}:lb`)
     const quizXP = await redis.hgetall(`lq:${id}:xp`)
     const participants: Record<string, any> = {}
@@ -2189,15 +2227,6 @@ export async function endLiveQuiz(
         status: DB.PublicationStatus.ENDED,
         finishedAt: new Date(),
       },
-    })
-
-    // Start retention on instance-info keys before expiring response-tracking
-    // keys. A late response can recreate a tracking key after this sweep, and
-    // the tracking scripts will then mirror the bounded info-key TTL.
-    await startLiveQuizResponseTrackingRetention({
-      liveQuizId: id,
-      blocks: quiz.blocks,
-      redis,
     })
 
     await sendTeamsNotification({

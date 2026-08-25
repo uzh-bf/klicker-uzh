@@ -147,7 +147,7 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
       instanceId,
     })
     if (!tracked) {
-      console.warn(
+      console.debug(
         'Instance info key missing; skipping received-response tracking',
         {
           liveQuizId,
@@ -344,7 +344,7 @@ async function handleAddAssessmentResponse(
       instanceId,
     })
     if (!tracked) {
-      console.warn(
+      console.debug(
         'Instance info key missing; skipping received-assessment tracking',
         {
           liveQuizId,

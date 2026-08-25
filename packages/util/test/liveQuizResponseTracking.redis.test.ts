@@ -219,31 +219,44 @@ redisDescribe('live quiz response tracking Redis contract', () => {
       )
 
       const receivedCountKey = `${prefix}:received-count`
-      await redis.eval(
+      const inactiveReceivedReply = await redis.eval(
         LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT,
         2,
         receivedCountKey,
         `${prefix}:missing-info-2`,
         String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
       )
-      expect(await redis.get(receivedCountKey)).toBe('1')
-      expect(await redis.ttl(receivedCountKey)).toBeGreaterThan(0)
-      expect(await redis.ttl(receivedCountKey)).toBeLessThanOrEqual(
-        LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
-      )
+      expect(JSON.parse(String(inactiveReceivedReply))).toEqual({
+        status: 'inactive',
+      })
+      expect(await redis.get(receivedCountKey)).toBeNull()
 
       const activeInfoKey = `${prefix}:active-info`
       const activeReceivedCountKey = `${prefix}:active-received-count`
       await redis.hset(activeInfoKey, 'id', 'synthetic')
-      await redis.eval(
+      const activeReceivedReply = await redis.eval(
         LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT,
         2,
         activeReceivedCountKey,
         activeInfoKey,
         String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
       )
+      expect(JSON.parse(String(activeReceivedReply)).status).toBe('tracked')
       expect(await redis.get(activeReceivedCountKey)).toBe('1')
       expect(await redis.ttl(activeReceivedCountKey)).toBe(-1)
+
+      const malformedReceivedCountKey = `${prefix}:malformed-received-count`
+      await redis.rpush(malformedReceivedCountKey, 'wrong-type')
+      const malformedReceivedReply = await redis.eval(
+        LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT,
+        2,
+        malformedReceivedCountKey,
+        activeInfoKey,
+        String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
+      )
+      expect(JSON.parse(String(malformedReceivedReply))).toMatchObject({
+        status: 'tracking_failed',
+      })
 
       const errorClaimKey = `${prefix}:error-processed:claims`
       const errorLegacyProcessedKey = `${prefix}:error-processed-legacy`
