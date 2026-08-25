@@ -34,13 +34,11 @@
 
 ## Plan identity
 
-- Plan: `project/2026-08-25-ci-workflow-efficiency-plan.md` until a PR number is
-  assigned, then rename it to include `pr-<id>`.
+- Plan: `project/2026-08-25-pr-5551-ci-workflow-efficiency-plan.md`.
 - Branch: `rs/ci-workflow-efficiency`.
 - Worktree: `trees/ci-workflow-efficiency`.
 - Target: `origin/v3` at `5ffc6a6d2bc4b12f6f38b5119718a7545e039256`.
-- Pull request: draft PR to be created after the replacement workflows are
-  committed and locally verified.
+- Pull request: draft PR #5551 against `v3`.
 - Package: one ordinary PR because replacement proof, required-context
   migration, and deletion of superseded workflow files form one cutover.
 
@@ -191,8 +189,7 @@ Do not delete a workflow if any readback differs from the expected set.
 
 ## Progress
 
-- Status: slice 1 implemented, locally verified, specialist-reviewed, and
-  corrected; ready to publish as a draft PR.
+- Status: slice 1 published in draft PR #5551; hosted replacement proof pending.
 - Completed: plan commit and post-commit freshness check; replacement workflow
   implementation; Actions audit, validation, and discovery; exact Node 24
   dependency builds; all four unit suites; Prettier and diff checks; and the
@@ -200,8 +197,9 @@ Do not delete a workflow if any readback differs from the expected set.
   analytics lint task could not build pandas because the devcontainer has no C
   compiler; this is unrelated to the workflow-only diff. The specialist review
   accepted the consolidation and identified one least-privilege gap: GraphQL's
-  filter and status jobs now receive workflow-level `contents: read`.
-- Remaining: push and open the draft PR, prove replacement contexts, request
+  filter and status jobs now receive workflow-level `contents: read`. Draft PR
+  #5551 is open against `v3`.
+- Remaining: push this plan identity update, prove replacement contexts, request
   settings authority, complete the cutover, and run final review.
 - Delivery boundary: branch-protection mutation, ready transition, merge,
   deployment, and cleanup remain withheld.
