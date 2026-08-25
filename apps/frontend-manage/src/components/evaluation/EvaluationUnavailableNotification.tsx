@@ -22,7 +22,7 @@ function EvaluationUnavailableNotification({
   courseName,
   activityName,
   activityId,
-  activityType = ActivityType.LiveQuiz,
+  activityType,
   activityStatus,
   elementType,
   elementName,
@@ -60,10 +60,10 @@ function EvaluationUnavailableNotification({
               : {formattedElementType}
             </div>
           )}
-          {activityId && (
+          {activityId && activityType && (
             <div>
               <a
-                href={`/activities?openActivityDetailsId=${encodeURIComponent(activityId)}&openActivityDetailsType=${activityType ?? ActivityType.LiveQuiz}`}
+                href={`/activities?openActivityDetailsId=${encodeURIComponent(activityId)}&openActivityDetailsType=${activityType}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary-80 hover:underline"
