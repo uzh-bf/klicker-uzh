@@ -56,10 +56,12 @@ No remote merge, deployment, or production-data access was performed.
 - Cockpit status, participant, external-link, and response-count icons use fixed
   inline or flex boxes so their optical alignment is stable.
 - The response API records when received-response tracking is skipped because
-  the instance-info key is missing, awaits tracking with a 250ms deadline before
-  enqueueing the Hatchet event, and assessment cleanup propagates Redis failures
-  for Hatchet retry. A slow tracking attempt can delay the request by up to
-  250ms; timeout and failure paths are caught at ingress.
+  the instance-info key is missing, awaits tracking with a 250ms command
+  deadline before enqueueing the Hatchet event, and assessment cleanup
+  propagates Redis failures for Hatchet retry. Tracking clients disable offline
+  queueing and per-request retries, so a slow tracking attempt can delay the
+  request by up to 250ms without accumulating unavailable-command retries;
+  timeout and failure paths are caught at ingress.
 
 ## Local evidence
 

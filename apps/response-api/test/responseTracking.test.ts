@@ -1,6 +1,17 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { trackLiveQuizResponseIfActive } from '../src/responseTracking.ts'
+import {
+  LIVE_QUIZ_RESPONSE_TRACKING_REDIS_OPTIONS,
+  trackLiveQuizResponseIfActive,
+} from '../src/responseTracking.ts'
+
+test('configures tracking Redis commands to fail fast', () => {
+  assert.deepEqual(LIVE_QUIZ_RESPONSE_TRACKING_REDIS_OPTIONS, {
+    commandTimeout: 250,
+    enableOfflineQueue: false,
+    maxRetriesPerRequest: 0,
+  })
+})
 
 function createRedis({
   evalResult = '{"status":"tracked","ttl":86400}',

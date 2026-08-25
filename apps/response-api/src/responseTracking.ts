@@ -9,6 +9,11 @@ import type { Redis } from 'ioredis'
 type ResponseTrackingRedis = Pick<Redis, 'eval'>
 
 export const LIVE_QUIZ_RESPONSE_TRACKING_TIMEOUT_MS = 250
+export const LIVE_QUIZ_RESPONSE_TRACKING_REDIS_OPTIONS = {
+  commandTimeout: LIVE_QUIZ_RESPONSE_TRACKING_TIMEOUT_MS,
+  enableOfflineQueue: false,
+  maxRetriesPerRequest: 0,
+} as const
 
 type ReceivedTrackingResult =
   | { status: 'inactive' }

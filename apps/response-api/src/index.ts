@@ -4,9 +4,13 @@ import { UserLoginScope } from '@klicker-uzh/prisma/client'
 import { type JWTPayload, verifyJWT } from '@klicker-uzh/util'
 import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { Redis } from 'ioredis'
-import { trackLiveQuizResponseIfActive } from './responseTracking.js'
+import {
+  LIVE_QUIZ_RESPONSE_TRACKING_REDIS_OPTIONS,
+  trackLiveQuizResponseIfActive,
+} from './responseTracking.js'
 
 const redis = new Redis({
+  ...LIVE_QUIZ_RESPONSE_TRACKING_REDIS_OPTIONS,
   family: 4,
   host: process.env.REDIS_HOST,
   password: process.env.REDIS_PASS ?? '',
@@ -21,6 +25,9 @@ const assessmentRedis = new Redis({
   port: Number(process.env.REDIS_ASSESSMENT_PORT ?? 6381),
   tls: process.env.REDIS_ASSESSMENT_TLS ? {} : undefined,
 })
+const assessmentTrackingRedis = assessmentRedis.duplicate(
+  LIVE_QUIZ_RESPONSE_TRACKING_REDIS_OPTIONS
+)
 
 const PORT = Number(process.env.PORT ?? 7078)
 const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || '')
@@ -339,7 +346,7 @@ async function handleAddAssessmentResponse(
 
   try {
     const tracked = await trackLiveQuizResponseIfActive({
-      redisClient: assessmentRedis,
+      redisClient: assessmentTrackingRedis,
       liveQuizId: String(liveQuizId),
       instanceId,
     })
@@ -455,6 +462,15 @@ async function initializeService() {
     console.log('Assessment Redis connection established')
   } catch (error) {
     console.error('Failed to connect to assessment Redis:', error)
+    throw error
+  }
+
+  console.log('Testing Redis (assessment tracking) connection...')
+  try {
+    await assessmentTrackingRedis.ping()
+    console.log('Assessment tracking Redis connection established')
+  } catch (error) {
+    console.error('Failed to connect to assessment tracking Redis:', error)
     throw error
   }
 
