@@ -96,6 +96,12 @@ test.describe('AI beta management navigation gate', () => {
         )
         await expect(page.getByTestId('ai-beta-unavailable')).toBeVisible()
       }
+
+      await page.goto(`${manageUrl}/de/resources/knowledgeBases`)
+      await expect(page).toHaveURL(/\/de\/resources\/knowledgeBases$/)
+      await expect(page.getByTestId('ai-beta-unavailable')).toContainText(
+        'KI-Funktionen nicht verfügbar'
+      )
     } finally {
       await updateLecturerAiAccess(true)
     }
