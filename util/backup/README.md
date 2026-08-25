@@ -90,7 +90,11 @@ the integration review above is complete; it does not configure or disable the
 integrations itself.
 
 The script first acquires and renews the exclusive
-`argo/app-klicker-prd-to-stg-refresh` Lease. It streams `pg_dump` directly into
+`argo/app-klicker-prd-to-stg-refresh` Lease. The default five-minute Lease is
+renewed every 30 seconds with bounded retries. Each renewal reads the current
+phase from the run directory rather than a fork-time shell value. Repeated
+renewal failure signals the main process, and `SIGINT`/`SIGTERM` enter the same
+fail-safe cleanup path as any other error. It streams `pg_dump` directly into
 an AES-256 GPG archive and never writes a plaintext dump. Before changing STG it
 validates the archive, disables ArgoCD automated sync/self-heal, binds the exact
 Deployment set and original replica counts to the run receipt, and scales those

@@ -454,6 +454,9 @@ run_presync_hook() {
   while true; do
     assert_refresh_lease
     if ! application_json="$(get_argocd_application)"; then
+      if (( SECONDS >= deadline )); then
+        die "Could not read the ArgoCD Application before the sync timeout"
+      fi
       log "Waiting for the ArgoCD Application resource to become readable"
       sleep "$ARGOCD_POLL_SECONDS"
       continue

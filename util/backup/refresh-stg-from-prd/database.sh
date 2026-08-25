@@ -440,6 +440,11 @@ WITH public_namespace AS (
         AND d.deptype IN ('i', 'e')
     )
 ), unsupported_objects AS (
+  SELECT c.oid
+  FROM pg_class c
+  WHERE c.relnamespace = (SELECT oid FROM public_namespace)
+    AND c.relkind = 'c'
+  UNION ALL
   SELECT coll.oid
   FROM pg_collation coll
   WHERE coll.collnamespace = (SELECT oid FROM public_namespace)

@@ -77,7 +77,9 @@ than ambient configuration. During an approved
 execution it acquires and renews one expiring Kubernetes Lease, creates and
 verifies an encrypted custom-format dump, disables ArgoCD automated sync, binds
 the original replicas to the run receipt, and scales the exact `app-klicker`
-Deployments to zero. Azure's administration role owns `public`,
+Deployments to zero. Lease renewal uses bounded retries, publishes the current
+receipt phase, and terminates through the signal-aware fail-safe cleanup path
+if ownership can no longer be maintained. Azure's administration role owns `public`,
 while the Klicker application role owns its contents. The refresh therefore
 preserves the schema and its grants, removes only application-owned objects in
 one transaction, and filters schema creation/ownership entries from the restore

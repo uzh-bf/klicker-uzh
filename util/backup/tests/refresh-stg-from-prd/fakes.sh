@@ -285,6 +285,10 @@ fake_kubectl() {
   elif [[ " $* " == *" auth can-i "* ]]; then
     [[ "${FAKE_RBAC_DENY:-false}" != true ]] || return 1
   elif [[ " $* " == *" get application.argoproj.io "* ]]; then
+    if [[ "${FAKE_ARGO_UNREADABLE_AFTER_SYNC:-false}" == true &&
+      -f "$FAKE_SYNCED_FILE" ]]; then
+      return 1
+    fi
     fake_argocd_application_json
   elif [[ " $* " == *" get appproject.argoproj.io "* ]]; then
     cat "$FAKE_PROJECT_FILE"
@@ -418,8 +422,26 @@ fake_kubectl() {
       fi
     fi
   elif [[ " $* " == *" create -f - "* || " $* " == *" replace -f - "* ]]; then
-    cat >"$FAKE_LEASE_FILE"
-    fake_log 'kubectl lease write'
+    local lease_payload lease_phase
+    lease_payload="$(cat)"
+    lease_phase="$(jq -r '.metadata.annotations["klicker.uzh.ch/refresh-phase"] // ""' \
+      <<<"$lease_payload")"
+    if [[ " $* " == *" replace -f - "* ]]; then
+      local failed_renewals_file="$FAKE_STATE_DIR/failed-lease-renewals"
+      local failed_renewals=0 requested_failures
+      [[ ! -f "$failed_renewals_file" ]] \
+        || failed_renewals="$(<"$failed_renewals_file")"
+      requested_failures="${FAKE_LEASE_RENEW_FAIL_COUNT:-0}"
+      local failure_phase="${FAKE_LEASE_RENEW_FAIL_PHASE:-}"
+      if [[ ( -z "$failure_phase" || "$lease_phase" == "$failure_phase" ) &&
+        ( "${FAKE_LEASE_RENEW_FAIL:-false}" == true ||
+          "$failed_renewals" -lt "$requested_failures" ) ]]; then
+        printf '%s' "$((failed_renewals + 1))" >"$failed_renewals_file"
+        return 1
+      fi
+    fi
+    printf '%s' "$lease_payload" >"$FAKE_LEASE_FILE"
+    fake_log "kubectl lease write phase=$lease_phase"
   else
     return 2
   fi
@@ -475,6 +497,9 @@ fake_pg_restore() {
   [[ "${PGPORT:-}" == 6432 && "${PGDATABASE:-}" == klicker-qa-stg ]] || return 2
   [[ " $* " == *" --dbname=klicker-qa-stg "* ]] || return 2
   cat >/dev/null
+  if [[ "${FAKE_SLOW_RESTORE:-false}" == true ]]; then
+    sleep 3
+  fi
   [[ "${FAKE_PG_RESTORE_FAIL:-false}" != true ]] || return 1
   : >"$FAKE_RESTORED_FILE"
   fake_log 'pg_restore target database=klicker-qa-stg'
@@ -515,7 +540,8 @@ fake_psql() {
   fi
 
   if [[ " $* " == *" klicker_stg_reset_capabilities "* ]]; then
-    printf '%s\n' 'klicker-qa-stg|stg-user|azure_pg_admin|t|253|0|0|0|0'
+    printf 'klicker-qa-stg|stg-user|azure_pg_admin|t|253|0|%s|0|0\n' \
+      "${FAKE_STG_UNSUPPORTED_OBJECT_COUNT:-0}"
     return
   fi
   if [[ " $* " == *"reset-stg-owned-objects.sql "* ]]; then

@@ -70,8 +70,10 @@ CLEANUP_TIMEOUT_SECONDS="${CLEANUP_TIMEOUT_SECONDS:-300}"
 MIGRATOR_EVIDENCE_TIMEOUT_SECONDS="${MIGRATOR_EVIDENCE_TIMEOUT_SECONDS:-10}"
 
 readonly REFRESH_LEASE_NAME=app-klicker-prd-to-stg-refresh
-REFRESH_LEASE_DURATION_SECONDS="${REFRESH_LEASE_DURATION_SECONDS:-120}"
+REFRESH_LEASE_DURATION_SECONDS="${REFRESH_LEASE_DURATION_SECONDS:-300}"
 REFRESH_LEASE_RENEW_INTERVAL_SECONDS="${REFRESH_LEASE_RENEW_INTERVAL_SECONDS:-30}"
+REFRESH_LEASE_RENEW_RETRY_ATTEMPTS="${REFRESH_LEASE_RENEW_RETRY_ATTEMPTS:-3}"
+REFRESH_LEASE_RENEW_RETRY_DELAY_SECONDS="${REFRESH_LEASE_RENEW_RETRY_DELAY_SECONDS:-2}"
 
 CONFIRM_PRD_TO_STG_REFRESH="${CONFIRM_PRD_TO_STG_REFRESH:-}"
 ALLOW_RAW_PRD_DATA_IN_STG="${ALLOW_RAW_PRD_DATA_IN_STG:-false}"
@@ -94,6 +96,7 @@ DEPLOYMENT_RECEIPT=""
 SCALE_OBSERVATION_RECEIPT=""
 STATE_RECEIPT=""
 LEASE_FAILURE_FILE=""
+RUN_PHASE_FILE=""
 
 ARGOCD_POLICY_PAUSED=false
 MAINTENANCE_FENCE_ACTIVE=false
@@ -208,8 +211,10 @@ Important configuration variables:
   STG_STORAGE_GIB                     default: 32
   MAX_SOURCE_STORAGE_PERCENT          default: 75
   MIN_STG_FREE_SPACE_MULTIPLIER       default: 3
-  REFRESH_LEASE_DURATION_SECONDS      default: 120
+  REFRESH_LEASE_DURATION_SECONDS      default: 300
   REFRESH_LEASE_RENEW_INTERVAL_SECONDS default: 30
+  REFRESH_LEASE_RENEW_RETRY_ATTEMPTS  default: 3
+  REFRESH_LEASE_RENEW_RETRY_DELAY_SECONDS default: 2
   CLEANUP_TIMEOUT_SECONDS             default: 300
   MIGRATOR_EVIDENCE_TIMEOUT_SECONDS   default: 10
   RUN_ID                              unique receipt identifier
@@ -291,7 +296,7 @@ source "$SCRIPT_DIR/refresh-stg-from-prd/kubernetes.sh"
 source "$SCRIPT_DIR/refresh-stg-from-prd/argocd.sh"
 
 cleanup() {
-  local exit_code=$?
+  local exit_code="${1:-$?}"
   local cleanup_complete=true
 
   trap - EXIT INT TERM
@@ -376,6 +381,8 @@ cleanup() {
 }
 
 trap cleanup EXIT
+trap 'cleanup 130' INT
+trap 'cleanup 143' TERM
 
 load_failed_run_receipt() {
   local failed_run_dir="$REFRESH_ROOT_DIR/$RESUME_FAILED_RUN_ID"
@@ -476,6 +483,7 @@ prepare_run_directory() {
   SCALE_OBSERVATION_RECEIPT="$RUN_DIR/scale-observations.tsv"
   STATE_RECEIPT="$RUN_DIR/state.json"
   LEASE_FAILURE_FILE="$RUN_DIR/lease-renewal-failed"
+  RUN_PHASE_FILE="$RUN_DIR/phase"
   MIGRATOR_EVIDENCE_FILE="$RUN_DIR/migrator-evidence.json"
 
   [[ ! -e "$RUN_DIR" ]] || die "Run directory already exists; choose a new RUN_ID: $RUN_DIR"
@@ -486,6 +494,11 @@ prepare_run_directory() {
 set_run_phase() {
   local phase="$1"
   RUN_PHASE="$phase"
+  if [[ -n "$RUN_PHASE_FILE" ]]; then
+    local temporary_phase_file="$RUN_PHASE_FILE.tmp"
+    printf '%s\n' "$RUN_PHASE" >"$temporary_phase_file"
+    mv -- "$temporary_phase_file" "$RUN_PHASE_FILE"
+  fi
   [[ -n "$STATE_RECEIPT" ]] || return 0
   local temporary_receipt="$STATE_RECEIPT.tmp"
   jq -n \
@@ -735,6 +748,8 @@ validate_configuration() {
   validate_positive_integer MIGRATOR_EVIDENCE_TIMEOUT_SECONDS "$MIGRATOR_EVIDENCE_TIMEOUT_SECONDS"
   validate_positive_integer REFRESH_LEASE_DURATION_SECONDS "$REFRESH_LEASE_DURATION_SECONDS"
   validate_positive_integer REFRESH_LEASE_RENEW_INTERVAL_SECONDS "$REFRESH_LEASE_RENEW_INTERVAL_SECONDS"
+  validate_positive_integer REFRESH_LEASE_RENEW_RETRY_ATTEMPTS "$REFRESH_LEASE_RENEW_RETRY_ATTEMPTS"
+  validate_positive_integer REFRESH_LEASE_RENEW_RETRY_DELAY_SECONDS "$REFRESH_LEASE_RENEW_RETRY_DELAY_SECONDS"
   validate_run_id
   validate_resume_failed_run_id
   (( STG_STORAGE_GIB > 0 )) || die "STG_STORAGE_GIB must be greater than zero"
@@ -748,12 +763,32 @@ validate_configuration() {
     || die "POST_SYNC_HEALTH_TIMEOUT_SECONDS must be greater than zero"
   (( REFRESH_LEASE_RENEW_INTERVAL_SECONDS > 0 )) \
     || die "REFRESH_LEASE_RENEW_INTERVAL_SECONDS must be greater than zero"
+  (( REFRESH_LEASE_RENEW_RETRY_ATTEMPTS > 0 )) \
+    || die "REFRESH_LEASE_RENEW_RETRY_ATTEMPTS must be greater than zero"
   (( REFRESH_LEASE_DURATION_SECONDS > REFRESH_LEASE_RENEW_INTERVAL_SECONDS * 2 )) \
     || die "REFRESH_LEASE_DURATION_SECONDS must exceed twice the renewal interval"
   (( MAX_SOURCE_STORAGE_PERCENT > 0 && MAX_SOURCE_STORAGE_PERCENT <= 95 )) \
     || die "MAX_SOURCE_STORAGE_PERCENT must be between 1 and 95"
   [[ "$KUBECTL_REQUEST_TIMEOUT" =~ ^[1-9][0-9]*[smh]$ ]] \
     || die "KUBECTL_REQUEST_TIMEOUT must be a positive Kubernetes duration such as 30s"
+  local kubectl_timeout_magnitude="${KUBECTL_REQUEST_TIMEOUT%?}"
+  local kubectl_timeout_multiplier
+  case "${KUBECTL_REQUEST_TIMEOUT: -1}" in
+    s) kubectl_timeout_multiplier=1 ;;
+    m) kubectl_timeout_multiplier=60 ;;
+    h) kubectl_timeout_multiplier=3600 ;;
+  esac
+  local kubectl_timeout_seconds=$((
+    kubectl_timeout_magnitude * kubectl_timeout_multiplier
+  ))
+  local lease_renewal_failure_budget=$((
+    REFRESH_LEASE_RENEW_INTERVAL_SECONDS +
+      REFRESH_LEASE_RENEW_RETRY_ATTEMPTS * kubectl_timeout_seconds * 2 +
+      (REFRESH_LEASE_RENEW_RETRY_ATTEMPTS - 1) *
+        REFRESH_LEASE_RENEW_RETRY_DELAY_SECONDS
+  ))
+  (( REFRESH_LEASE_DURATION_SECONDS > lease_renewal_failure_budget )) \
+    || die "REFRESH_LEASE_DURATION_SECONDS must exceed the worst-case Lease renewal retry window ($lease_renewal_failure_budget seconds)"
 
   local required_value
   for required_value in \

@@ -20,7 +20,7 @@ deployed STG release before workloads resume.
 
 ## Domain and layer footprint
 
-- Source: the Klicker PRD PostgreSQL database, read only.
+- Source: the Klicker PRD PostgreSQL database, read-only.
 - Target: the Klicker STG PostgreSQL database, fully replaced.
 - Infrastructure: `util/backup`, the `app-klicker` ArgoCD application, and STG
   Deployments selected by `app.kubernetes.io/instance=app-klicker`.

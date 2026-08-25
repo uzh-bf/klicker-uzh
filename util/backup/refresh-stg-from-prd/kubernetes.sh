@@ -165,14 +165,19 @@ lease_is_available() {
   jq -e --arg holder "$LEASE_HOLDER_ID" '
     (.spec.holderIdentity // "") == "" or
     (.spec.holderIdentity // "") == $holder or
-    (((.spec.renewTime // .spec.acquireTime) |
-      sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601) +
-      (.spec.leaseDurationSeconds // 0) < now)
+    (
+      (.spec.leaseDurationSeconds |
+        select(type == "number" and . > 0)) as $duration |
+      ((.spec.renewTime // .spec.acquireTime // "") |
+        sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601?) as $renewedAt |
+      $renewedAt != null and ($renewedAt + $duration < now)
+    )
   ' >/dev/null <<<"$lease_json"
 }
 
 build_refresh_lease() {
   local existing_json="${1:-}"
+  local phase="${2:-$RUN_PHASE}"
   local now
   now="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   if [[ -z "$existing_json" ]]; then
@@ -182,7 +187,7 @@ build_refresh_lease() {
       --arg holder "$LEASE_HOLDER_ID" \
       --arg now "$now" \
       --arg runId "$RUN_ID" \
-      --arg phase "$RUN_PHASE" \
+      --arg phase "$phase" \
       --arg approvalRef "$RAW_PRD_DATA_APPROVAL_REF" \
       --arg outboundIntegrationsIsolated "$STG_OUTBOUND_INTEGRATIONS_ISOLATED" \
       --argjson duration "$REFRESH_LEASE_DURATION_SECONDS" \
@@ -214,7 +219,7 @@ build_refresh_lease() {
     --arg holder "$LEASE_HOLDER_ID" \
     --arg now "$now" \
     --arg runId "$RUN_ID" \
-    --arg phase "$RUN_PHASE" \
+    --arg phase "$phase" \
     --arg approvalRef "$RAW_PRD_DATA_APPROVAL_REF" \
     --arg outboundIntegrationsIsolated "$STG_OUTBOUND_INTEGRATIONS_ISOLATED" \
     --argjson duration "$REFRESH_LEASE_DURATION_SECONDS" '
@@ -259,21 +264,41 @@ acquire_refresh_lease() {
 }
 
 renew_refresh_lease_once() {
-  local existing_json lease_payload holder
+  local existing_json lease_payload holder phase
   existing_json="$(
     kubectl_for_argocd get lease.coordination.k8s.io "$REFRESH_LEASE_NAME" -o json
   )" || return 1
   holder="$(jq -r '.spec.holderIdentity // ""' <<<"$existing_json")"
   [[ "$holder" == "$LEASE_HOLDER_ID" ]] || return 1
-  lease_payload="$(build_refresh_lease "$existing_json")" || return 1
+  [[ -s "$RUN_PHASE_FILE" ]] || return 1
+  phase="$(<"$RUN_PHASE_FILE")"
+  [[ -n "$phase" ]] || return 1
+  lease_payload="$(build_refresh_lease "$existing_json" "$phase")" || return 1
   printf '%s' "$lease_payload" | kubectl_for_argocd replace -f - >/dev/null
 }
 
+renew_refresh_lease_with_retry() {
+  local attempt
+  for ((attempt = 1; attempt <= REFRESH_LEASE_RENEW_RETRY_ATTEMPTS; attempt++)); do
+    if renew_refresh_lease_once; then
+      return 0
+    fi
+    if (( attempt < REFRESH_LEASE_RENEW_RETRY_ATTEMPTS )); then
+      log "Refresh Lease renewal attempt $attempt failed; retrying"
+      sleep "$REFRESH_LEASE_RENEW_RETRY_DELAY_SECONDS"
+    fi
+  done
+  return 1
+}
+
 start_refresh_lease_renewal() {
+  local refresh_main_pid="$$"
   (
     while sleep "$REFRESH_LEASE_RENEW_INTERVAL_SECONDS"; do
-      if ! renew_refresh_lease_once; then
+      if ! renew_refresh_lease_with_retry; then
         printf '%s\n' 'Lease renewal failed' >"$LEASE_FAILURE_FILE"
+        log "Refresh Lease renewal failed after $REFRESH_LEASE_RENEW_RETRY_ATTEMPTS attempts; terminating the refresh"
+        kill -TERM "$refresh_main_pid" 2>/dev/null || true
         exit 1
       fi
     done
@@ -298,9 +323,13 @@ assert_refresh_lease() {
     .metadata.annotations["klicker.uzh.ch/refresh-run-id"] == $runId and
     .metadata.annotations["klicker.uzh.ch/raw-data-approval-ref"] == $approvalRef and
     .metadata.annotations["klicker.uzh.ch/outbound-integrations-isolated"] == $outboundIntegrationsIsolated and
-    (((.spec.renewTime // .spec.acquireTime) |
-      sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601) +
-      (.spec.leaseDurationSeconds // 0) >= now)
+    (
+      (.spec.leaseDurationSeconds |
+        select(type == "number" and . > 0)) as $duration |
+      ((.spec.renewTime // .spec.acquireTime // "") |
+        sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601?) as $renewedAt |
+      $renewedAt != null and ($renewedAt + $duration >= now)
+    )
   ' >/dev/null <<<"$lease_json" \
     || die "Refresh Lease ownership was lost or expired; refusing further state changes"
 }

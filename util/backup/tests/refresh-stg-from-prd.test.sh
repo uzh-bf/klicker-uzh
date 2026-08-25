@@ -106,6 +106,7 @@ run_refresh() {
     FAKE_PSQL_CONNECT_FAIL="${FAKE_PSQL_CONNECT_FAIL:-false}" \
     FAKE_ARGO_SYNC_FAIL="${FAKE_ARGO_SYNC_FAIL:-false}" \
     FAKE_ARGO_TIMEOUT="${FAKE_ARGO_TIMEOUT:-false}" \
+    FAKE_ARGO_UNREADABLE_AFTER_SYNC="${FAKE_ARGO_UNREADABLE_AFTER_SYNC:-false}" \
     FAKE_CLUSTER_MISMATCH="${FAKE_CLUSTER_MISMATCH:-false}" \
     FAKE_RBAC_DENY="${FAKE_RBAC_DENY:-false}" \
     FAKE_MIGRATOR_MISMATCH="${FAKE_MIGRATOR_MISMATCH:-false}" \
@@ -116,6 +117,11 @@ run_refresh() {
     FAKE_HEALTH_FAIL="${FAKE_HEALTH_FAIL:-false}" \
     FAKE_STORAGE_LOW="${FAKE_STORAGE_LOW:-false}" \
     FAKE_LEASE_LOSS="${FAKE_LEASE_LOSS:-false}" \
+    FAKE_LEASE_RENEW_FAIL="${FAKE_LEASE_RENEW_FAIL:-false}" \
+    FAKE_LEASE_RENEW_FAIL_COUNT="${FAKE_LEASE_RENEW_FAIL_COUNT:-0}" \
+    FAKE_LEASE_RENEW_FAIL_PHASE="${FAKE_LEASE_RENEW_FAIL_PHASE:-}" \
+    FAKE_SLOW_RESTORE="${FAKE_SLOW_RESTORE:-false}" \
+    FAKE_STG_UNSUPPORTED_OBJECT_COUNT="${FAKE_STG_UNSUPPORTED_OBJECT_COUNT:-0}" \
     FAKE_COMPETING_SYNC="${FAKE_COMPETING_SYNC:-false}" \
     FAKE_CAS_RACE="${FAKE_CAS_RACE:-false}" \
     FAKE_CLEANUP_FENCE_FAIL="${FAKE_CLEANUP_FENCE_FAIL:-false}" \
@@ -138,12 +144,15 @@ run_refresh() {
     BACKUP_ENCRYPTION_KEY="${BACKUP_ENCRYPTION_KEY_OVERRIDE-synthetic-test-key}" \
     ARGOCD_TIMEOUT_SECONDS=2 \
     ARGOCD_POLL_SECONDS=1 \
+    KUBECTL_REQUEST_TIMEOUT=1s \
     WORKLOAD_DRAIN_TIMEOUT_SECONDS=2 \
     POST_SYNC_HEALTH_TIMEOUT_SECONDS=2 \
     CLEANUP_TIMEOUT_SECONDS=2 \
     MIGRATOR_EVIDENCE_TIMEOUT_SECONDS=1 \
-    REFRESH_LEASE_DURATION_SECONDS=61 \
-    REFRESH_LEASE_RENEW_INTERVAL_SECONDS=20 \
+    REFRESH_LEASE_DURATION_SECONDS="${REFRESH_LEASE_DURATION_SECONDS_OVERRIDE:-61}" \
+    REFRESH_LEASE_RENEW_INTERVAL_SECONDS="${REFRESH_LEASE_RENEW_INTERVAL_SECONDS_OVERRIDE:-20}" \
+    REFRESH_LEASE_RENEW_RETRY_ATTEMPTS="${REFRESH_LEASE_RENEW_RETRY_ATTEMPTS_OVERRIDE:-3}" \
+    REFRESH_LEASE_RENEW_RETRY_DELAY_SECONDS="${REFRESH_LEASE_RENEW_RETRY_DELAY_SECONDS_OVERRIDE:-0}" \
     "$SCRIPT_UNDER_TEST" "$@" >"$OUTPUT_FILE" 2>&1
 }
 
@@ -387,6 +396,38 @@ test_active_lease() {
   fi
 }
 
+test_malformed_lease_fails_closed() {
+  new_case malformed-lease
+  jq -n --arg now "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" '
+    {
+      metadata: {name: "app-klicker-prd-to-stg-refresh", resourceVersion: "7"},
+      spec: {
+        holderIdentity: "another-refresh",
+        acquireTime: $now,
+        renewTime: $now,
+        leaseDurationSeconds: 0
+      }
+    }
+  ' >"$FAKE_LEASE_FILE"
+  if ! run_live && assert_contains "$OUTPUT_FILE" 'held by another active run' &&
+    assert_not_contains "$FAKE_LOG" 'pg_dump source'; then
+    pass 'a malformed active Lease cannot be treated as expired'
+  else
+    fail 'a malformed active Lease cannot be treated as expired'
+  fi
+}
+
+test_unsupported_composite_type() {
+  new_case unsupported-composite
+  if ! FAKE_STG_UNSUPPORTED_OBJECT_COUNT=1 run_refresh &&
+    assert_contains "$OUTPUT_FILE" 'unsupported public object' &&
+    assert_not_contains "$FAKE_LOG" 'pg_dump source'; then
+    pass 'unsupported public objects are rejected before maintenance mode'
+  else
+    fail 'unsupported public objects are rejected before maintenance mode'
+  fi
+}
+
 test_storage_headroom() {
   new_case storage-headroom
   if ! FAKE_STORAGE_LOW=true run_refresh &&
@@ -409,6 +450,38 @@ test_lease_loss() {
     pass 'Lease loss stops mutation and compensates pre-mutation state'
   else
     fail 'Lease loss stops mutation and compensates pre-mutation state'
+  fi
+}
+
+test_transient_lease_renewal_failure() {
+  new_case transient-lease-renewal
+  local REFRESH_LEASE_DURATION_SECONDS_OVERRIDE=10
+  local REFRESH_LEASE_RENEW_INTERVAL_SECONDS_OVERRIDE=1
+  if FAKE_LEASE_RENEW_FAIL_COUNT=1 \
+    FAKE_LEASE_RENEW_FAIL_PHASE=restoring-target \
+    FAKE_SLOW_RESTORE=true run_live &&
+    assert_contains "$OUTPUT_FILE" 'Lease renewal attempt 1 failed; retrying' &&
+    assert_contains "$FAKE_LOG" 'kubectl lease write phase=restoring-target'; then
+    pass 'Lease renewal retries a transient conflict and publishes the current phase'
+  else
+    fail 'Lease renewal retries a transient conflict and publishes the current phase'
+  fi
+}
+
+test_permanent_lease_renewal_failure() {
+  new_case permanent-lease-renewal
+  local REFRESH_LEASE_DURATION_SECONDS_OVERRIDE=10
+  local REFRESH_LEASE_RENEW_INTERVAL_SECONDS_OVERRIDE=1
+  if ! FAKE_LEASE_RENEW_FAIL=true \
+    FAKE_LEASE_RENEW_FAIL_PHASE=restoring-target \
+    FAKE_SLOW_RESTORE=true run_live &&
+    assert_contains "$OUTPUT_FILE" 'Lease renewal failed after 3 attempts' &&
+    assert_contains "$OUTPUT_FILE" "failed during phase 'restoring-target'" &&
+    assert_fail_safe_failure &&
+    assert_not_contains "$FAKE_LOG" 'kubectl app sync hook'; then
+    pass 'repeated Lease renewal failure interrupts restore and enters fail-safe cleanup'
+  else
+    fail 'repeated Lease renewal failure interrupts restore and enters fail-safe cleanup'
   fi
 }
 
@@ -640,6 +713,19 @@ test_argocd_timeout() {
   fi
 }
 
+test_argocd_unreadable_timeout() {
+  new_case argocd-unreadable-timeout
+  if ! FAKE_ARGO_UNREADABLE_AFTER_SYNC=true run_live &&
+    assert_contains "$OUTPUT_FILE" \
+      'Could not read the ArgoCD Application before the sync timeout' &&
+    jq -e '.cleanupIncomplete == true' \
+      "$REFRESH_DIR/test-run/state.json" >/dev/null; then
+    pass 'an unreadable ArgoCD Application exits through the bounded fail-safe path'
+  else
+    fail 'an unreadable ArgoCD Application exits through the bounded fail-safe path'
+  fi
+}
+
 test_health_failure() {
   new_case health-failure
   if ! FAKE_HEALTH_FAIL=true run_live && assert_fail_safe_failure &&
@@ -716,8 +802,12 @@ test_cluster_guard
 test_rbac_guard
 test_migrator_guard
 test_active_lease
+test_malformed_lease_fails_closed
+test_unsupported_composite_type
 test_storage_headroom
 test_lease_loss
+test_transient_lease_renewal_failure
+test_permanent_lease_renewal_failure
 test_competing_sync
 test_infisical
 test_success
@@ -734,6 +824,7 @@ test_post_sync_metadata_failure
 test_policy_restore_failure
 test_migration_divergence
 test_argocd_timeout
+test_argocd_unreadable_timeout
 test_health_failure
 test_post_policy_operation
 test_resume
