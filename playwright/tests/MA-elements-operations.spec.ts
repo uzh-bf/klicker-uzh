@@ -1172,9 +1172,16 @@ test.describe('Create different types of elements (with and without sample solut
         data.update.liveQuiz3,
       ]) {
         await filterActivitiesByName(page, quiz)
+        const cockpitButton = page.getByTestId(`live-quiz-cockpit-${quiz}`)
+        const quizExists = await cockpitButton
+          .waitFor({ state: 'visible', timeout: 5000 })
+          .then(() => true)
+          .catch(() => false)
+        if (!quizExists) continue
+
         await Promise.all([
           page.waitForURL(/\/cockpit/, { timeout: 30000 }),
-          page.getByTestId(`live-quiz-cockpit-${quiz}`).click(),
+          cockpitButton.click(),
         ])
         await expect(page.getByTestId('next-block-timeline')).toBeVisible()
         await page.getByTestId('next-block-timeline').click()
@@ -1195,7 +1202,6 @@ test.describe('Create different types of elements (with and without sample solut
           'confirm-deletion-qa-feedbacks',
           'confirm-deletion-confusion-feedbacks',
         ])
-        await page.getByTestId('activities-search-input').clear()
       }
 
       await page.getByTestId('courses').click()

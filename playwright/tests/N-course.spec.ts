@@ -2968,12 +2968,12 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       .getByRole('listitem')
       .filter({ hasText: copyName })
     await expect(successToast).toBeVisible()
-    await successToast.hover()
-    await successToast
-      .getByRole('button', {
-        name: messages.manage.courseList.courseDuplicationOpenCourse,
-      })
-      .click()
+    const openCourseAction = successToast.getByRole('button', {
+      name: messages.manage.courseList.courseDuplicationOpenCourse,
+    })
+    await expect(openCourseAction).toBeVisible()
+    await openCourseAction.focus()
+    await openCourseAction.press('Enter')
     await expect(page).toHaveURL(/\/courses\/[0-9a-f-]{36}/, {
       timeout: 30_000,
     })
