@@ -2503,8 +2503,7 @@ describe('Integration tests for knowledge base CRUD', () => {
       () => getKbKnowledgeGraphConfig({ kbId }, nonAiCtx),
       () => getKbKnowledgeGraphOverview({ kbId }, nonAiCtx),
       () => searchKbKnowledgeGraph({ kbId, query: 'blocked' }, nonAiCtx),
-      () =>
-        getKbKnowledgeGraphNeighbors({ kbId, nodeId: 'blocked' }, nonAiCtx),
+      () => getKbKnowledgeGraphNeighbors({ kbId, nodeId: 'blocked' }, nonAiCtx),
       () => setKbKnowledgeGraphEnabled({ kbId, enabled: true }, nonAiCtx),
       () => rebuildKbKnowledgeGraph({ kbId }, nonAiCtx),
     ]

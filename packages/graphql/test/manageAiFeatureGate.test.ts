@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 
 function createContext(aiFeaturesEnabled: boolean | null) {
-  const findUnique = vi.fn().mockResolvedValue(
-    aiFeaturesEnabled === null ? null : { aiFeaturesEnabled }
-  )
+  const findUnique = vi
+    .fn()
+    .mockResolvedValue(
+      aiFeaturesEnabled === null ? null : { aiFeaturesEnabled }
+    )
   const ctx = {
     prisma: { user: { findUnique } },
     user: {
@@ -48,17 +50,17 @@ describe('Manage AI feature gate', () => {
     expect(findUnique).not.toHaveBeenCalled()
   })
 
-  test.each([false, null])(
-    'stays closed without a live account entitlement (%s)',
-    async (aiFeaturesEnabled) => {
-      const { ctx } = createContext(aiFeaturesEnabled)
-      const { assertManageAiEnabled } = await loadGate('ai-beta')
+  test.each([
+    false,
+    null,
+  ])('stays closed without a live account entitlement (%s)', async (aiFeaturesEnabled) => {
+    const { ctx } = createContext(aiFeaturesEnabled)
+    const { assertManageAiEnabled } = await loadGate('ai-beta')
 
-      await expect(assertManageAiEnabled(ctx)).rejects.toMatchObject({
-        extensions: { code: 'AI_BETA_ACCESS_REQUIRED' },
-      })
-    }
-  )
+    await expect(assertManageAiEnabled(ctx)).rejects.toMatchObject({
+      extensions: { code: 'AI_BETA_ACCESS_REQUIRED' },
+    })
+  })
 
   test('uses the same catalyst attribute as the browser gate', async () => {
     const { ctx } = createContext(true)

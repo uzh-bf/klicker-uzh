@@ -3,20 +3,12 @@ import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from './context.js'
 
-let client: NodeFeatureFlagClient | undefined
-
-function getFeatureFlagClient(): NodeFeatureFlagClient {
-  if (!client) {
-    client = new NodeFeatureFlagClient({
-      apiHost: process.env.GROWTHBOOK_API_HOST,
-      clientKey: process.env.GROWTHBOOK_CLIENT_KEY,
-      environment: process.env.GROWTHBOOK_ENV,
-      forcedOn: process.env.FEATURE_FLAGS_FORCED_ON,
-    })
-  }
-
-  return client
-}
+const featureFlagClient = new NodeFeatureFlagClient({
+  apiHost: process.env.GROWTHBOOK_API_HOST,
+  clientKey: process.env.GROWTHBOOK_CLIENT_KEY,
+  environment: process.env.GROWTHBOOK_ENV,
+  forcedOn: process.env.FEATURE_FLAGS_FORCED_ON,
+})
 
 export function manageAiFeatureFlagAttributes(
   user: ContextWithUser['user']
@@ -32,10 +24,9 @@ export function manageAiFeatureFlagAttributes(
 export async function isManageAiEnabled(
   ctx: ContextWithUser
 ): Promise<boolean> {
-  const featureFlags = getFeatureFlagClient()
-  await featureFlags.initialize()
+  await featureFlagClient.initialize()
   if (
-    !featureFlags.isEnabled(
+    !featureFlagClient.isEnabled(
       'ai-beta',
       manageAiFeatureFlagAttributes(ctx.user)
     )

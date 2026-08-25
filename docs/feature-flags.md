@@ -38,10 +38,10 @@ settlement are unaffected.
 
 ## Active flags
 
-| Key                  | Consumer           | Fallback | Disabled behavior                                      |
-| -------------------- | ------------------ | -------- | ------------------------------------------------------ |
-| `ai-beta`            | Lecturer AI        | `false`  | AI surfaces and their endpoints remain unavailable     |
-| `learning-analytics` | Lecturer UI/Manage | `false`  | Analytics controls remain visible but are not usable   |
+| Key                  | Consumer           | Fallback | Disabled behavior                                    |
+| -------------------- | ------------------ | -------- | ---------------------------------------------------- |
+| `ai-beta`            | Lecturer AI        | `false`  | AI surfaces and their endpoints remain unavailable   |
+| `learning-analytics` | Lecturer UI/Manage | `false`  | Analytics controls remain visible but are not usable |
 
 Disabled analytics controls explain that the feature is not yet available for
 the current account. This keeps a deliberately staged rollout distinguishable
