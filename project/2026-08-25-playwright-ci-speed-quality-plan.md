@@ -124,6 +124,13 @@ Add a separate `.github/workflows/update-playwright-timings.yml` workflow that:
 6. opens one non-draft human-reviewed PR into `v3` when the generated file
    changes, with no auto-merge and no PR for unchanged output.
 
+The required status job uploads a small filter-decision marker so a successful
+path-filtered run with skipped Playwright tests becomes a no-op rather than a
+false partial-artifact failure. The updater reads that marker as data and never
+executes artifact content. It also skips a source run whose commit subject or
+single-commit diff is timing-only, which prevents a timing PR merge from
+creating an automatic feedback loop.
+
 The writer requires `PLAYWRIGHT_TIMINGS_BOT_TOKEN` with only the repository
 contents and pull-request permissions needed for this branch/PR workflow. The
 default `GITHUB_TOKEN` is not an acceptable substitute because its PR does not
