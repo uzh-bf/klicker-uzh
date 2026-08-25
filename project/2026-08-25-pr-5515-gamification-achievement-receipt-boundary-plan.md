@@ -414,9 +414,17 @@ finish gate for the complete package.
   without a C compiler, and fresh `origin/v3` frontend-manage feature-flag
   typing errors remain in five unrelated files. `git diff --check` is clean;
   the unrelated untracked Prisma `schema/views/` directory remains untouched.
+- 2026-08-25: The integrated final reviewer initially found one low-severity
+  gap in the focused retry test: it reloaded before Apollo's first retry window
+  elapsed. Commit `428e8497f` keeps the failed profile mount alive for two
+  seconds and asserts that the acknowledgement request count remains one
+  before the later-mount retry. The native follow-up review passed with no
+  remaining findings. W6 is locally verified at `pr_ready` on `428e8497f`,
+  with the runtime retained and push, PR update, merge, deployment, and cleanup
+  still withheld.
 
 ## Next step
 
-Complete the single final integrated review against the committed W6 package,
-then reconcile its result and the recorded environment blockers before marking
-the goal `pr_ready`.
+Terminal reached: W6 is locally verified at `pr_ready`. Retain the local
+runtime for testing; all remote delivery, deployment, and cleanup actions
+remain outside this task's authority.

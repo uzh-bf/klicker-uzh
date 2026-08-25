@@ -5,19 +5,19 @@
 - Date: 2026-08-23
 - Last reconciled: 2026-08-25
 - Status: W6 achievement receipt boundary closure is implemented on branch
-  `rs/gamification-achievement-receipts` through `c1c4d8d54`; final integrated
-  verification and review remain in progress. The branch is not being pushed
-  or updated remotely in this task. See Progress and the W6 execution plan for
-  the current evidence and remaining local checks.
+  `rs/gamification-achievement-receipts` through correction commit
+  `428e8497f` and is locally verified at `pr_ready`. The branch is not being
+  pushed or updated remotely in this task. See Progress and the W6 execution
+  plan for the current evidence.
 - Repository: `uzh-bf/klicker-uzh`
 - Authoritative remote base checked: remote `v3` at
   `1d19ad9efc6e7af57cff2b805255b4746de25c29`
 - Roadmap worktree: branch `rs/gamification-achievement-receipts` at
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/gamification-roadmap`
 - The worktree was rebaselined onto the fresh `origin/v3` before W6; it is
-  currently 43 commits ahead and 0 behind that base.
-- Delivery layer: local commits are complete through `c1c4d8d54`. Push,
-  pull-request update, merge, ClickUp reconciliation, deployment, and
+  currently 46 commits ahead and 0 behind that base.
+- Delivery layer: local implementation and verification commits are complete.
+  Push, pull-request update, merge, ClickUp reconciliation, deployment, and
   live-data actions remain separate authority boundaries.
 - Audience: an engineer or execution agent with no earlier session context.
 
@@ -67,7 +67,7 @@ or efficacy claim.
 | Course leaderboards | Top 10 plus self, rolling 14-day mode, privacy handling, opt-in, and tie-aware ranks are shipped | S1 nearby context is implemented on this branch with service-test coverage | No further leaderboard scope is planned in this package |
 | Responses | `QuestionResponseDetail` stores each PracticeQuiz and MicroLearning attempt; `QuestionResponse` stores one aggregate per participant and question instance with `lastAnsweredAt` | Regular LiveQuiz responses remain Redis-only; `LiveQuizResponse` is persisted for assessment flows | Use the existing aggregate for today and existing details for overdue repair; exclude regular LiveQuiz at launch |
 | Streaks and freezes | `Participation` state, Prisma reconciliation, self-scoped API, PWA cards/progress, notices, focused tests, and browser proof are implemented on this branch | The latest correction initializes seeded participants and repairs current and overdue state without response backfill | Keep the private, course-scoped contract; no new streak primitive |
-| Achievements | Catalog discoverability, historical award preservation, private `receiptAcknowledgedAt`, idempotent self-only acknowledgement, and retryable post-presentation receipt UI are implemented on this branch | Final integrated verification remains | Preserve every award; keep public profiles receipt-free |
+| Achievements | Catalog discoverability, historical award preservation, private `receiptAcknowledgedAt`, idempotent self-only acknowledgement, and retryable post-presentation receipt UI are implemented on this branch | Package is locally `pr_ready`; remote delivery remains separate | Preserve every award; keep public profiles receipt-free |
 | Product experimentation | Normal logs, support feedback, and product iteration exist | Open PR #5323 concerns GrowthBook and Learning Analytics; it is not part of this package | No new experiment, survey, or analysis workstream |
 
 Verified repository history:
@@ -85,8 +85,8 @@ The student-gamification implementation package and W6 receipt correction are
 committed locally on `rs/gamification-achievement-receipts`. S1 nearby
 leaderboard context, S2 private Study streaks, S3 achievement changes, S4 PWA
 presentation, follow-up streak corrections, and W6 receipt closure are present
-in the branch. The final integrated checks and review are the remaining local
-finish gate.
+in the branch. The final integrated checks and review passed; the package is
+locally `pr_ready`.
 
 ## Settled product contract
 
@@ -537,7 +537,7 @@ fixtures/spec, screenshots, and wiki pages.
     streak, leaderboard, XP, avatar, and achievement-reward behavior remains
     unchanged.
 - **Working context** — Repository `uzh-bf/klicker-uzh`; continue from
-  `rs/gamification-achievement-receipts` at `b046dd165` in
+  `rs/gamification-achievement-receipts` at `428e8497f` in
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/gamification-roadmap`. Keep one
   implementation writer and this as one cohesive follow-up branch/MR; do not
   touch the unrelated untracked `packages/prisma/src/prisma/schema/views/`
@@ -605,10 +605,9 @@ the layer changes UI. S2 additionally records the inspected current-day and
 overdue query plans plus forced-failure repair proof. S3 records one integrated
 English and German mobile/desktop flow and the final review result.
 
-The implementation branch is locally verified through the follow-up streak
-correction and W6 is in its final local verification phase. The package remains
-below `pr_ready` until the integrated checks and final review are reconciled.
-Source push, merge, release, deployment, and live behavior are later states.
+The implementation branch is locally verified through the W6 final review and
+is locally `pr_ready`. Source push, merge, release, deployment, and live
+behavior are later states.
 
 ## Backlog reconciliation proposal
 
@@ -926,3 +925,10 @@ Append entries; do not rewrite history.
   feature-flag typing errors introduced by fresh `origin/v3`. The unrelated
   untracked Prisma `schema/views/` directory remains untouched; final
   integrated review is the remaining W6 finish gate.
+- 2026-08-25 — The integrated final reviewer found one low-severity gap in the
+  retry test: it reloaded before Apollo's first retry window elapsed. Commit
+  `428e8497f` keeps the failed mount active for two seconds and asserts that
+  only one request occurred before reload. The follow-up native final review
+  passed with no remaining findings. W6 is locally `pr_ready` at that commit;
+  the runtime is retained for testing and no push, PR update, merge,
+  deployment, or cleanup has occurred.
