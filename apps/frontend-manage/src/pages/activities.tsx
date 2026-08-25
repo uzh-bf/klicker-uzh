@@ -256,9 +256,9 @@ function Activities() {
             filtersActive={filtersActive}
           />
         </div>
-        <div className="flex w-full flex-1 flex-col overflow-auto">
+        <div className="flex w-full flex-1 flex-col">
           <>
-            <div className="flex flex-row items-start justify-between">
+            <div className="flex flex-none flex-row items-start justify-between">
               <div className="mb-2 flex flex-row items-center gap-1.5">
                 <ActivityListSelectAllCheckbox
                   activities={activities}
@@ -290,11 +290,13 @@ function Activities() {
               ) : null}
             </div>
 
-            <div className="h-full overflow-y-auto">
-              {loadingActivities ? (
+            {loadingActivities ? (
+              <div className="flex flex-1 items-center justify-center">
                 <Loader />
-              ) : (
-                <>
+              </div>
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col">
+                <div className="min-h-0 flex-1 overflow-y-auto">
                   <ActivityList
                     filtersActive={filtersActive}
                     activities={activities}
@@ -307,22 +309,22 @@ function Activities() {
                       await refetchActivities()
                     }}
                   />
+                </div>
 
-                  {activities.length > 0 && (
-                    <Pagination
-                      totalPages={totalPages}
-                      currentPage={currentPage}
-                      setCurrentPage={setCurrentPage}
-                      numOfObjects={numOfActivities}
-                      pageSize={pageSize}
-                      setPageSize={setPageSize}
-                      showAll
-                      className="mb-3"
-                    />
-                  )}
-                </>
-              )}
-            </div>
+                {activities.length > 0 && (
+                  <Pagination
+                    totalPages={totalPages}
+                    currentPage={currentPage}
+                    setCurrentPage={setCurrentPage}
+                    numOfObjects={numOfActivities}
+                    pageSize={pageSize}
+                    setPageSize={setPageSize}
+                    showAll
+                    className="flex-none"
+                  />
+                )}
+              </div>
+            )}
           </>
         </div>
       </div>
