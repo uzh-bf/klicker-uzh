@@ -62,12 +62,16 @@ function WizardNavigation({
           </Button.Label>
         </Button>
       </div>
-      <div className="flex flex-col items-end gap-1">
+      <div
+        className={`flex flex-col items-end${disabledReason ? ' gap-1' : ''}`}
+      >
         {lastStep && (
           <div
             id={disabledReasonId}
             aria-live="polite"
-            className="text-sm text-red-600"
+            className={
+              disabledReason ? 'text-sm text-red-600' : 'h-0 overflow-hidden'
+            }
             data-cy={disabledReasonId}
           >
             {disabledReason}
