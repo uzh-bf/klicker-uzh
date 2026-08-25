@@ -67,7 +67,7 @@ the ADR gate.
 - `rs-model-routing`: planner, slice reviewers, simplifiers, and final review.
 - `rs-local-runtime-lifecycle`: exact DevPod verification and shutdown.
 - `klicker-testing-verification`: focused checks and repository verification.
-- `klicker-wiki-maintenance`: same-change wiki, skill, and log updates.
+- `klicker-wiki-maintenance`: same-change wiki and skill updates.
 - `devrouter`: canonical startup, static verification, and route ownership.
 
 ## Planning-stage specialist
@@ -76,9 +76,9 @@ the ADR gate.
 - Accepted: include the Dockerfile comment, preserve only explicit repair
   deletion, keep all writes in the main session, and verify both Compose
   overlays plus exact runtime behavior.
-- Corrected: the planner proposed omitting `docs/log/`, but the applicable
-  `klicker-wiki-maintenance` skill requires one new log entry for every wiki
-  edit. The implementation follows that higher-priority repository contract.
+- Accepted: the planner omitted `docs/log/`; the applicable
+  `klicker-wiki-maintenance` skill reserves that path and requires it to remain
+  absent.
 
 ## Delegation map
 
@@ -86,7 +86,7 @@ the ADR gate.
 | --- | --- | --- | --- |
 | Shared pnpm store | main | plan commit | exact volume bootstrap, Compose topology, local-first install |
 | Next cache retention | main | shared store | ordinary retention, explicit repair, symlink refusal |
-| Lifecycle documentation | main | runtime behavior | wiki, skill, README, and log agree with source |
+| Lifecycle documentation | main | runtime behavior | wiki, skill, and README agree with source |
 
 Execution stays in the main session because the slices share one runtime
 script, one Compose topology, and one exact verification environment. This is
@@ -133,7 +133,7 @@ critical-path coupling; delegation would cost more than the bounded edits.
 
 - Route: main.
 - Do: update the devcontainer README, getting-started wiki, environment-doctor
-  skill, and one new wiki log entry.
+  skill, and keep the reserved `docs/log/` path absent.
 - Check: wiki validation, formatting, and source-to-document fact check.
 - Acceptance: docs state the exact shared and isolated paths, canonical
   startup, repair behavior, and approval-gated manual cleanup.
@@ -160,8 +160,8 @@ critical-path coupling; delegation would cost more than the bounded edits.
 
 ## Progress
 
-- Status: Slices 1 and 2 are committed and reviewed; Slice 3 documentation is
-  in progress.
+- Status: all three slices are committed; final runtime verification and the
+  integrated final review are in progress.
 - Completed: remote `v3` freshness readback, clean task worktree, planner pass,
   plan commit `04352a869`, shared pnpm-store commit `6bc9ff3fe`, mocked
   initializer success/idempotence/failure checks, shell syntax, ShellCheck on
@@ -171,8 +171,22 @@ critical-path coupling; delegation would cost more than the bounded edits.
   `node_modules_root` and `pgdata`. The updated runtime test proves ordinary
   starts retain all five `.next/dev` caches, explicit repair remains exact and
   deduplicated, and symlinked repair targets fail without touching their data.
-- Runtime limitation: exact runtime verification is not yet available because
-  devrouter reports `could not determine process identity for host route update lock`.
+- Runtime evidence: the static devcontainer verifier reports five passing
+  checks. The exact runtime mounted
+  `klicker-uzh-pnpm-store-v1` at `/pnpm/.pnpm-store`, passed all five app
+  readiness contracts, and completed the root build with 23 of 23 tasks.
+- Restart evidence: after an exact stop reached zero containers and routes, the
+  same Compose project restarted. A harmless marker under
+  `apps/frontend-manage/.next/dev` survived, the shared-store mount remained
+  exact, and `pnpm run dev:doctor` passed all five readiness contracts.
+- Host anomaly: an earlier proof attempt coincided with a Docker-engine state
+  reset and therefore performed a cold image and package rebuild. It is not
+  counted as cache-retention evidence and no startup-time claim is based on it.
+- Repository-check limitation: `pnpm run check:all` reaches the analytics
+  Python environment, where `uv` selects CPython 3.14.4 and pandas 2.2.2 cannot
+  build because the image has no C compiler. The exact removed-doc-artifact
+  check passes, and the branch's wiki-validator findings match the archived
+  `origin/v3` baseline.
 - Slice 1 review: done through trusted generic-continuity specialists after the
   configured Gemini routes failed pre-work with provider `402`; the accepted
   simplification uses Docker's idempotent named-volume creation directly. No
@@ -184,7 +198,11 @@ critical-path coupling; delegation would cost more than the bounded edits.
   Reports:
   `project/_local/reviews/2026-08-25-devcontainer-cache-slice-2-simplifier.md`
   and `project/_local/reviews/2026-08-25-devcontainer-cache-slice-2-review.md`.
-- Active slice: Slice 3 lifecycle documentation.
-- Next: validate, format, and commit the wiki, skill, and README update.
+- Runtime lifecycle: the exact workspace is stopped with zero containers and
+  routes. The local `klicker-uzh-pnpm-store-v1` volume remains intentionally
+  retained.
+- Active gate: integrated final review.
+- Next: commit this evidence and run the final reviewer.
 - Required delivery: committed local branch.
-- Achieved delivery: reviewed Slices 1 and 2.
+- Achieved delivery: all three implementation slices committed and slice-level
+  reviews complete.
