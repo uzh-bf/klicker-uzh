@@ -6,6 +6,12 @@ import KnowledgeBaseUrlForm from './KnowledgeBaseUrlForm'
 
 type AddResourceMode = 'chooser' | 'website' | 'document'
 
+const FOCUS_SELECTORS: Record<AddResourceMode, string> = {
+  chooser: '[data-cy="choose-kb-resource-website"]',
+  website: '[data-cy="kb-url-title"]',
+  document: '[data-cy="kb-file-dropzone"]',
+}
+
 function KnowledgeBaseAddResourceModal({
   kbId,
   triggerRef,
@@ -73,13 +79,7 @@ function KnowledgeBaseAddResourceModal({
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
-      const selector =
-        mode === 'chooser'
-          ? '[data-cy="choose-kb-resource-website"]'
-          : mode === 'website'
-            ? '[data-cy="kb-url-title"]'
-            : '[data-cy="kb-file-dropzone"]'
-      document.querySelector<HTMLElement>(selector)?.focus()
+      document.querySelector<HTMLElement>(FOCUS_SELECTORS[mode])?.focus()
     })
 
     return () => window.cancelAnimationFrame(frame)
@@ -88,12 +88,34 @@ function KnowledgeBaseAddResourceModal({
   const handleResourceCreated = async () => {
     try {
       await onResourceCreated()
-    } finally {
-      closeModal()
+    } catch {
+      console.error('Failed to refresh KB resources after creation', { kbId })
+      return
     }
+    closeModal()
   }
 
   const isChooser = mode === 'chooser'
+  const modeTitles: Record<AddResourceMode, string> = {
+    chooser: t('kb.addResourceTitle'),
+    website: t('kb.addWebsite'),
+    document: t('kb.addDocument'),
+  }
+  const resourceForm =
+    mode === 'website' ? (
+      <KnowledgeBaseUrlForm
+        kbId={kbId}
+        embedded
+        onResourceCreated={handleResourceCreated}
+      />
+    ) : (
+      <KnowledgeBaseFileDropzone
+        kbId={kbId}
+        embedded
+        onUploadStateChange={setUploadingDocument}
+        onResourceCreated={handleResourceCreated}
+      />
+    )
 
   return (
     <Modal
@@ -101,13 +123,7 @@ function KnowledgeBaseAddResourceModal({
       onClose={handleClose}
       escapeDisabled={uploadingDocument}
       hideCloseButton={uploadingDocument}
-      title={
-        isChooser
-          ? t('kb.addResourceTitle')
-          : mode === 'website'
-            ? t('kb.addWebsite')
-            : t('kb.addDocument')
-      }
+      title={modeTitles[mode]}
       secondaryLabel={
         isChooser || uploadingDocument ? undefined : t('kb.backToResourceTypes')
       }
@@ -171,19 +187,8 @@ function KnowledgeBaseAddResourceModal({
             </Button.Label>
           </Button>
         </div>
-      ) : mode === 'website' ? (
-        <KnowledgeBaseUrlForm
-          kbId={kbId}
-          embedded
-          onResourceCreated={handleResourceCreated}
-        />
       ) : (
-        <KnowledgeBaseFileDropzone
-          kbId={kbId}
-          embedded
-          onUploadStateChange={setUploadingDocument}
-          onResourceCreated={handleResourceCreated}
-        />
+        resourceForm
       )}
     </Modal>
   )

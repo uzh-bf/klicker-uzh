@@ -25,8 +25,8 @@ import type { KnowledgeGraphDataSource } from '@klicker-uzh/shared-components/sr
 import { KnowledgeGraphUnavailableError } from '@klicker-uzh/shared-components/src/knowledgeGraph/knowledgeGraphState'
 import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
 import { Badge, Button, SelectField, Switch } from '@uzh-bf/design-system'
-import { useFormatter, useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
+import { useFormatter, useTranslations } from 'next-intl'
 import React, { useEffect, useMemo, useState } from 'react'
 
 const KnowledgeGraphViewer = dynamic(
@@ -287,20 +287,22 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
     released: t('kb.graphCostStatusReleased'),
     needsHumanReview: t('kb.graphCostStatusNeedsHumanReview'),
   }
-  const graphSummary =
-    loading && data === undefined
-      ? t('kb.graphLoading')
-      : error || config === undefined
-        ? t('kb.graphLoadError')
-        : [
-            `${t('kb.graphStatusLabel')}: ${statusLabel(config.status, statusLabels)}`,
-            config.isStale && hasPublishedGraph ? t('kb.graphStale') : null,
-            config.costStatus === KbGraphCostStatus.NeedsHumanReview
-              ? costStatusLabel(config.costStatus, costStatusLabels)
-              : null,
-          ]
-            .filter((value): value is string => Boolean(value))
-            .join(' · ')
+  let graphSummary: string
+  if (loading && data === undefined) {
+    graphSummary = t('kb.graphLoading')
+  } else if (error || config === undefined) {
+    graphSummary = t('kb.graphLoadError')
+  } else {
+    graphSummary = [
+      `${t('kb.graphStatusLabel')}: ${statusLabel(config.status, statusLabels)}`,
+      config.isStale && hasPublishedGraph ? t('kb.graphStale') : null,
+      config.costStatus === KbGraphCostStatus.NeedsHumanReview
+        ? costStatusLabel(config.costStatus, costStatusLabels)
+        : null,
+    ]
+      .filter((value): value is string => Boolean(value))
+      .join(' · ')
+  }
 
   const handleRebuild = async () => {
     if (isRebuilding || isActive || !config?.isEnabled) return
@@ -311,7 +313,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
         variables: { kbId, qualityTier: selectedTier },
       })
       await refetch()
-    } catch (mutationError) {
+    } catch {
       console.error('Failed to rebuild KB knowledge graph', { kbId })
       setOperationError(t('kb.graphBuildError'))
     }
@@ -339,13 +341,7 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
       onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
     >
       <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2">
-        <span
-          className="font-semibold text-slate-900"
-          role="heading"
-          aria-level={2}
-        >
-          {t('kb.graphTitle')}
-        </span>
+        <h2 className="font-semibold text-slate-900">{t('kb.graphTitle')}</h2>
         <span
           className="text-sm text-slate-600"
           aria-live="polite"

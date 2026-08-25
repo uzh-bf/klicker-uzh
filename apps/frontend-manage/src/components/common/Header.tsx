@@ -8,17 +8,17 @@ import {
   CountCatalogSharingRequestsDocument,
   GetUserCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
-  User,
+  type User,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Navigation,
-  NavigationItemProps,
-  NavigationMenuItemProps,
+  type NavigationItemProps,
+  type NavigationMenuItemProps,
 } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SupportModal from './SupportModal'
@@ -42,17 +42,6 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
   const courses = courseData?.userCourses
 
   const resourceElements: NavigationMenuItemProps[] = [
-    ...(user?.privatePreview
-      ? [
-          {
-            key: 'knowledge-bases-item',
-            type: 'link' as const,
-            label: t('kb.title'),
-            onClick: () => router.push('/resources/knowledgeBases'),
-            data: { cy: 'knowledge-bases' },
-          },
-        ]
-      : []),
     {
       key: 'knowledge-bases-item',
       type: 'link' as const,
@@ -131,7 +120,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       key: 'library-menubar-item',
       label: t('manage.general.library'),
       onClick: () => router.push('/'),
-      active: router.pathname == '/',
+      active: router.pathname === '/',
       data: { cy: 'library' },
     },
     {
@@ -139,7 +128,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       key: 'activities-menubar-item',
       label: t('shared.generic.activities'),
       onClick: () => router.push('/activities'),
-      active: router.pathname == '/activities',
+      active: router.pathname === '/activities',
       data: { cy: 'activities' },
     },
     {
@@ -147,7 +136,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       key: 'courses-menubar-item',
       label: t('manage.general.courses'),
       onClick: () => router.push('/courses'),
-      active: router.pathname == '/courses',
+      active: router.pathname === '/courses',
       data: { cy: 'courses' },
     },
 
@@ -158,7 +147,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       icon: faBolt,
       active:
         router.pathname.startsWith('/resources/knowledgeBases') ||
-        router.pathname == '/resources/answerCollections' ||
+        router.pathname === '/resources/answerCollections' ||
         router.pathname === '/resources/chatbots' ||
         router.pathname === '/resources/catalog' ||
         router.pathname === '/resources/userGroups' ||
@@ -295,7 +284,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
           type: 'link',
           label: t('shared.generic.logout'),
           onClick: () =>
-            router.push(process.env.NEXT_PUBLIC_AUTH_URL + '/logout'),
+            router.push(`${process.env.NEXT_PUBLIC_AUTH_URL}/logout`),
           data: { cy: 'logout' },
         },
       ],
