@@ -37,7 +37,8 @@ prove the exact deployed revision without exposing production data or secrets.
 - The read-only planner returned `DONE_WITH_CONCERNS`. The plan accepts its
   corrections: separate local, publication, and production gates; remove the
   stale authority claim; and add clean-Argo, backup/recovery,
-  registry-manifest, rollback, and exact live-proof gates.
+  registry-manifest, rollback, exact live-proof, and assessment-database
+  coverage gates.
 
 ## Decision
 
@@ -45,10 +46,10 @@ prove the exact deployed revision without exposing production data or secrets.
 - Replace exactly the 15 production image pins with
   `v3.4.0-alpha.71`. Keep `migrator.enabled: true` and every unrelated value
   unchanged.
-- Correct only the stale production-migrator statements in the two deployment
-  wiki pages. No skill, ADR, chart, schema, migration, dependency, application
-  code, index, log, archive, or navigation-structure changes belong in this
-  package.
+- Correct the stale production-migrator statements in the two deployment wiki
+  pages and the directly adjacent production-values comment. No skill, ADR,
+  chart, schema, migration, dependency, application code, index, log, archive,
+  or navigation-structure changes belong in this package.
 - Treat the package as full path because merging it executes production
   database migrations. The implementation stays in the main session because
   production GitOps state, publication, and live proof are tightly coupled.
@@ -88,7 +89,7 @@ failure and request the smallest next authority.
 
 | Slice | Owner | Dependency | Acceptance |
 | --- | --- | --- | --- |
-| Prepare the rollout package and correct operator guidance | main | Corrected plan approved for local work | Only the plan, 15 production pins, and two operator docs; retired wiki paths remain absent; scoped formatting, Helm, diff, and review checks pass |
+| Prepare the rollout package and correct operator guidance | main | Corrected plan approved for local work | Only the plan, 15 production pins, the production-values comment, and two operator docs; retired wiki paths remain absent; scoped formatting, Helm, diff, and review checks pass |
 | Publish and qualify the PR | main | Prepared committed package and approved publication | Release, migrations, registry manifests, final review, required PR CI, and PR scope pass; stop before merge if production gates are not green |
 | Preflight, merge, and prove production | main | Qualified PR and approved production action | Backup/recovery and clean-Argo gates pass; exact revision, migration hook, images, readiness, and public probes are proven |
 
@@ -115,13 +116,15 @@ Do:
 - Preserve `migrator.enabled: true` and every unrelated production value.
 - Correct the stale production-migrator descriptions in
   `docs/ci-and-deployment.md` and `docs/data-and-migrations.md`.
+- Correct the stale production-migrator comment immediately above the
+  `migrator` block in `deploy/env-uzh-prd/values.yaml`.
 
 Check:
 
 - Require 15 alpha.71 pins, zero alpha.70 pins, unchanged migrator enablement,
   only the planned files, `git diff --check`, repository formatting for the
   touched YAML/Markdown, successful Helm lint/template for production, and no
-  retired wiki paths.
+  retired wiki paths or stale production-migrator instructions.
 - Test obligation: no new automated test. Existing chart rendering, release CI,
   PR CI, migration inspection, and live status checks cover this configuration
   promotion.
@@ -162,7 +165,15 @@ Do:
 
 - Record a current values-free public-health baseline. Confirm managed
   PostgreSQL backup/recovery readiness without reading secret values or database
-  content.
+  content. The pass evidence is the named production server in `Ready` state,
+  a positive managed-backup retention/PITR window with a current restore point,
+  and the database owner's confirmation of the recovery procedure, RPO, and
+  RTO; record the owner and sanitized metadata, not secret values or data.
+- Establish that the primary and assessment backend targets are covered by the
+  same migration path using only existing values-free ArgoCD/Kubernetes or
+  database-owner evidence. Do not read Secret values. If the targets are
+  separate, stop and require a separate migration hook or explicit release
+  authority before publication/merge.
 - Confirm ArgoCD is synced and healthy at the pre-merge revision with no
   operation in progress. Use only already-configured connectivity.
 - Squash-merge only after the review, CI, image, migration, and backup gates are
@@ -175,8 +186,8 @@ Check:
 
 - Require the exact merged revision to be synced and healthy, the alpha.71
   migration hook to have completed successfully, all production workloads to
-  report alpha.71 images ready, and post-rollout public probes to match the
-  baseline.
+  report alpha.71 images ready, assessment migration coverage to be proven, and
+  post-rollout public probes to match the baseline.
 
 ## Rollback contract
 
@@ -191,7 +202,7 @@ schema changes; diagnose or roll forward separately.
 - [x] Verify production image build evidence and inspect migrations.
 - [x] Complete planner review and integrate its accepted findings.
 - [x] Obtain plan and named external-action approval.
-- [ ] Record baseline public health.
+- [x] Record baseline public health.
 - [x] Commit the plan and implement the scoped rollout.
 - [ ] Verify, review, publish, and pass PR CI.
 - [ ] Confirm backup/recovery readiness and merge.
