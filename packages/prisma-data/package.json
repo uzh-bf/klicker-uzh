@@ -58,9 +58,9 @@
     "seed:raw": "ENV=development run-s --npm-path pnpm seed:test seed:assessment-course",
     "seed:raw:course-awards": "tsx src/data/seedCourseAwards.ts",
     "seed:test": "ENV=development tsx src/data/seedTEST.ts",
-    "test": "vitest run",
+    "test": "run-s --npm-path pnpm test:node test:vitest",
     "test:node": "tsx --test test/*.test.ts",
-    "test:run": "run-s --npm-path pnpm test:node test:vitest",
+    "test:run": "pnpm run test",
     "test:vitest": "vitest run src/scripts/2026-08-23_provision_course_chatbot.test.ts"
   },
   "engines": {
