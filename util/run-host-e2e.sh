@@ -15,6 +15,7 @@
 # Usage:
 #   bash util/run-host-e2e.sh --print
 #   bash util/run-host-e2e.sh --project=chromium tests/A-login.spec.ts
+#   bash util/run-host-e2e.sh --project=chromium tests/Y-kb-management-ux.spec.ts
 #   pnpm --filter @klicker-uzh/playwright test:host -- --project=chromium tests/A-login.spec.ts
 #
 # Environment overrides:

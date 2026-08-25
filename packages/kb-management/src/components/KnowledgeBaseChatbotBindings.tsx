@@ -7,7 +7,6 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
-  H3,
   SelectField,
   Skeleton,
   UserNotification,
@@ -47,6 +46,13 @@ function KnowledgeBaseChatbotBindings({
   const replacing =
     selectedBinding?.enabledKbId != null && selectedBinding.enabledKbId !== kbId
   const mutating = attaching || detaching
+  const summary = loading
+    ? t('shared.generic.loading')
+    : error
+      ? t('kb.chatbotsLoadError')
+      : linkedBindings.length > 0
+        ? t('kb.linkedChatbots')
+        : t('kb.noLinkedChatbots')
 
   const refetchQueries = [
     {
@@ -94,112 +100,123 @@ function KnowledgeBaseChatbotBindings({
   }
 
   return (
-    <section
-      className="mt-6 rounded-md border border-slate-200 bg-white p-4 shadow-sm"
-      data-cy="kb-chatbot-bindings"
-    >
-      <H3>{t('kb.chatbotsTitle')}</H3>
-      <p className="mt-1 text-sm text-slate-600">
-        {t('kb.chatbotsDescription')}
-      </p>
+    <details className="mt-6" data-cy="kb-chatbot-settings">
+      <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2">
+        <span
+          className="font-semibold text-slate-900"
+          role="heading"
+          aria-level={2}
+        >
+          {t('kb.chatbotsTitle')}
+        </span>
+        <span className="text-sm text-slate-600" data-cy="kb-chatbot-summary">
+          {summary}
+        </span>
+        <span className="text-sm font-medium text-primary-100">
+          {t('kb.configure')}
+        </span>
+      </summary>
+      <section className="mt-3" data-cy="kb-chatbot-bindings">
+        <p className="text-sm text-slate-600">{t('kb.chatbotsDescription')}</p>
 
-      {loading ? (
-        <Skeleton
-          className="mt-4 h-20 w-full motion-reduce:animate-none"
-          aria-hidden="true"
-        />
-      ) : error ? (
-        <UserNotification
-          type="error"
-          className={{ root: 'mt-4' }}
-          message={t('kb.chatbotsLoadError')}
-          data={{ cy: 'kb-chatbot-bindings-error' }}
-        />
-      ) : bindings.length === 0 ? (
-        <UserNotification
-          className={{ root: 'mt-4' }}
-          message={t('kb.noChatbots')}
-          data={{ cy: 'kb-chatbot-bindings-empty' }}
-        />
-      ) : (
-        <>
-          <div
-            className="mt-4 flex flex-col items-end gap-3 sm:flex-row"
-            data-cy="kb-chatbot-attach-form"
-          >
-            <div className="w-full flex-1">
-              <SelectField
-                label={t('kb.chatbotSelectLabel')}
-                items={bindings.map((binding) => ({
-                  value: binding.chatbotId,
-                  label: binding.chatbotName,
-                }))}
-                value={selectedChatbotId}
-                onChange={setSelectedChatbotId}
-                placeholder={t('kb.chatbotSelectPlaceholder')}
-                disabled={mutating}
-              />
-            </div>
-            <Button
-              primary
-              disabled={!selectedChatbotId || mutating}
-              onClick={handleAttach}
-              data={{ cy: 'attach-kb-chatbot' }}
+        {loading ? (
+          <Skeleton
+            className="mt-4 h-20 w-full motion-reduce:animate-none"
+            aria-hidden="true"
+          />
+        ) : error ? (
+          <UserNotification
+            type="error"
+            className={{ root: 'mt-4' }}
+            message={t('kb.chatbotsLoadError')}
+            data={{ cy: 'kb-chatbot-bindings-error' }}
+          />
+        ) : bindings.length === 0 ? (
+          <UserNotification
+            className={{ root: 'mt-4' }}
+            message={t('kb.noChatbots')}
+            data={{ cy: 'kb-chatbot-bindings-empty' }}
+          />
+        ) : (
+          <>
+            <div
+              className="mt-4 flex flex-col items-end gap-3 sm:flex-row"
+              data-cy="kb-chatbot-attach-form"
             >
-              <Button.Label>
-                {replacing ? t('kb.replaceChatbot') : t('kb.attachChatbot')}
-              </Button.Label>
-            </Button>
-          </div>
-
-          {replacing ? (
-            <UserNotification
-              type="warning"
-              className={{ root: 'mt-3' }}
-              message={t('kb.chatbotReplacementWarning', {
-                kbName: selectedBinding?.enabledKbName ?? '',
-              })}
-              data={{ cy: 'kb-chatbot-replacement-warning' }}
-            />
-          ) : null}
-
-          <div className="mt-5">
-            <div className="text-sm font-medium text-slate-700">
-              {t('kb.linkedChatbots')}
-            </div>
-            {linkedBindings.length === 0 ? (
-              <p
-                className="mt-2 text-sm text-slate-600"
-                data-cy="kb-no-linked-chatbots"
+              <div className="w-full flex-1">
+                <SelectField
+                  label={t('kb.chatbotSelectLabel')}
+                  items={bindings.map((binding) => ({
+                    value: binding.chatbotId,
+                    label: binding.chatbotName,
+                  }))}
+                  value={selectedChatbotId}
+                  onChange={setSelectedChatbotId}
+                  placeholder={t('kb.chatbotSelectPlaceholder')}
+                  disabled={mutating}
+                />
+              </div>
+              <Button
+                primary
+                disabled={!selectedChatbotId || mutating}
+                onClick={handleAttach}
+                data={{ cy: 'attach-kb-chatbot' }}
               >
-                {t('kb.noLinkedChatbots')}
-              </p>
-            ) : (
-              <ul className="mt-2 divide-y divide-slate-200">
-                {linkedBindings.map((binding) => (
-                  <li
-                    key={binding.chatbotId}
-                    className="flex items-center justify-between gap-3 py-3"
-                    data-cy={`kb-linked-chatbot-${binding.chatbotId}`}
-                  >
-                    <span className="break-words font-medium">
-                      {binding.chatbotName}
-                    </span>
-                    <Button
-                      disabled={mutating}
-                      onClick={() => handleDetach(binding.chatbotId)}
-                      data={{ cy: `detach-kb-chatbot-${binding.chatbotId}` }}
+                <Button.Label>
+                  {replacing ? t('kb.replaceChatbot') : t('kb.attachChatbot')}
+                </Button.Label>
+              </Button>
+            </div>
+
+            {replacing ? (
+              <UserNotification
+                type="warning"
+                className={{ root: 'mt-3' }}
+                message={t('kb.chatbotReplacementWarning', {
+                  kbName: selectedBinding?.enabledKbName ?? '',
+                })}
+                data={{ cy: 'kb-chatbot-replacement-warning' }}
+              />
+            ) : null}
+
+            <div className="mt-5">
+              <div className="text-sm font-medium text-slate-700">
+                {t('kb.linkedChatbots')}
+              </div>
+              {linkedBindings.length === 0 ? (
+                <p
+                  className="mt-2 text-sm text-slate-600"
+                  data-cy="kb-no-linked-chatbots"
+                >
+                  {t('kb.noLinkedChatbots')}
+                </p>
+              ) : (
+                <ul className="mt-2 divide-y divide-slate-200">
+                  {linkedBindings.map((binding) => (
+                    <li
+                      key={binding.chatbotId}
+                      className="flex items-center justify-between gap-3 py-3"
+                      data-cy={`kb-linked-chatbot-${binding.chatbotId}`}
                     >
-                      <Button.Label>{t('kb.detachChatbot')}</Button.Label>
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </>
-      )}
-    </section>
+                      <span className="break-words font-medium">
+                        {binding.chatbotName}
+                      </span>
+                      <Button
+                        disabled={mutating}
+                        onClick={() => handleDetach(binding.chatbotId)}
+                        data={{ cy: `detach-kb-chatbot-${binding.chatbotId}` }}
+                      >
+                        <Button.Label>{t('kb.detachChatbot')}</Button.Label>
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </>
+        )}
+      </section>
+    </details>
   )
 }
 

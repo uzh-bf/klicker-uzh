@@ -44,6 +44,7 @@ never download browsers into a DevPod.
 ```bash
 # auto-detects routed worktrees / plain devcontainer / host-run apps
 bash util/run-host-e2e.sh --project=chromium tests/A-login.spec.ts
+bash util/run-host-e2e.sh --project=chromium tests/Y-kb-management-ux.spec.ts
 
 # inspect the resolved URL + database mapping without running anything
 bash util/run-host-e2e.sh --print

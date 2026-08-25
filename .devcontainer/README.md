@@ -169,7 +169,12 @@ replacement. HTTP readiness remains in
 `devrouter ensure .`; the root build script forces production mode even though
 the live container exports `NODE_ENV=development`. Rerun ensure after
 `pnpm run build` so stale Next.js dev output can trigger the single
-container-recreate budget.
+container-recreate budget. The repository runtime guard also fingerprints
+dependencies, clears only the five owned `.next/dev` directories on each true
+managed start, and checks semantic readiness for each Next.js app. If a route
+returns the known stale `404` HTML response, it requests one bounded full-cache
+repair for that app and rechecks the apps; unexpected responses fail closed
+without deleting caches.
 
 The image also carries uv `0.11.12` and selects Python 3.12, matching the
 analytics image and lint CI so the root quality gate runs inside the container.

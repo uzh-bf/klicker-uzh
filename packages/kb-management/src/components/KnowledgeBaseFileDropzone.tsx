@@ -5,7 +5,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { H3, toast } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { getGraphQLErrorCode } from '../graphqlError'
 import { refreshAfterMutation } from '../refreshAfterMutation'
@@ -24,15 +24,23 @@ const ACCEPTED_FILES = {
 
 function KnowledgeBaseFileDropzone({
   kbId,
+  embedded = false,
+  onUploadStateChange,
   onResourceCreated,
 }: {
   kbId: string
+  embedded?: boolean
+  onUploadStateChange?: (uploading: boolean) => void
   onResourceCreated: () => Promise<unknown>
 }) {
   const t = useTranslations()
   const [uploading, setUploading] = useState(false)
   const [requestUpload] = useMutation(RequestKbFileUploadDocument)
   const [confirmUpload] = useMutation(ConfirmKbFileUploadDocument)
+
+  useEffect(() => {
+    onUploadStateChange?.(uploading)
+  }, [onUploadStateChange, uploading])
 
   const uploadFile = async (files: File[]) => {
     const file = files[0]
@@ -112,13 +120,9 @@ function KnowledgeBaseFileDropzone({
       toast({ type: 'error', message: t('kb.fileRejected') }),
   })
 
-  return (
-    <section
-      id="kb-file-upload"
-      tabIndex={-1}
-      className="scroll-mt-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm"
-    >
-      <H3>{t('kb.fileUploadTitle')}</H3>
+  const content = (
+    <>
+      {!embedded ? <H3>{t('kb.fileUploadTitle')}</H3> : null}
       <p className="mt-1 text-sm text-slate-600">
         {t('kb.fileUploadDescription')}
       </p>
@@ -143,6 +147,18 @@ function KnowledgeBaseFileDropzone({
           {t('kb.fileUploadFormats')}
         </span>
       </div>
+    </>
+  )
+
+  return embedded ? (
+    <div data-cy="kb-file-upload-form">{content}</div>
+  ) : (
+    <section
+      id="kb-file-upload"
+      tabIndex={-1}
+      className="scroll-mt-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm"
+    >
+      {content}
     </section>
   )
 }

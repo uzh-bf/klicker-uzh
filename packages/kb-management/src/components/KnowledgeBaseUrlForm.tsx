@@ -17,9 +17,11 @@ function isValidWebUrl(value: string) {
 
 function KnowledgeBaseUrlForm({
   kbId,
+  embedded = false,
   onResourceCreated,
 }: {
   kbId: string
+  embedded?: boolean
   onResourceCreated: () => Promise<unknown>
 }) {
   const t = useTranslations()
@@ -66,13 +68,9 @@ function KnowledgeBaseUrlForm({
     toast({ type: 'success', message: t('kb.linkSuccess') })
   }
 
-  return (
-    <section
-      id="kb-link-form"
-      tabIndex={-1}
-      className="scroll-mt-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm"
-    >
-      <H3>{t('kb.linkTitle')}</H3>
+  const content = (
+    <>
+      {!embedded ? <H3>{t('kb.linkTitle')}</H3> : null}
       <p className="mt-1 text-sm text-slate-600">{t('kb.linkDescription')}</p>
       <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
         <TextField
@@ -121,6 +119,18 @@ function KnowledgeBaseUrlForm({
           <Button.Label>{t('kb.linkTitle')}</Button.Label>
         </Button>
       </form>
+    </>
+  )
+
+  return embedded ? (
+    <div data-cy="kb-url-form">{content}</div>
+  ) : (
+    <section
+      id="kb-link-form"
+      tabIndex={-1}
+      className="scroll-mt-4 rounded-md border border-slate-200 bg-white p-4 shadow-sm"
+    >
+      {content}
     </section>
   )
 }
