@@ -121,6 +121,68 @@ Points earned inside Klicker (Swiss Quiz, microlearnings) are already on the lea
 
 **Do not derive microlearning completion from `ParticipantActivityPerformance.completion`, `MicroLearning.completedCount`, or `startedCount`.** All three are empty for the Summer School 2026 course (zero rows, zero counters) even though responses exist, so they silently yield zero for every participant instead of failing. `QuestionResponse` is the reliable signal; cross-check the derived count against the workbook before seeding.
 
+### Dedicated demo participants
+
+The three lecturer-demo courses use dedicated manual participant accounts. The
+reconciler is idempotent: it creates the missing account, repairs only the
+dedicated account's active/private state, activates its matching leaderboard
+participation,
+and deactivates an active leaderboard participation in another course without
+deleting it.
+It never touches the shared `teststudent` account. Course and chatbot names are
+resolved under owner shortname `klick`; missing, archived, duplicated, or
+re-owned targets fail before any write.
+
+`Participation.isActive` is the course-leaderboard opt-in flag only. The
+reconciler's participation updates change leaderboard inclusion; they do not
+grant or revoke course, assessment, or chatbot access. Access remains governed
+by the endpoint-specific authorization and invitation/account rules, so a
+leaderboard change must never be presented as a security change.
+
+| Demo         | Course                  | Chatbot                     | Participant username  | Password secret name                             |
+| ------------ | ----------------------- | --------------------------- | --------------------- | ------------------------------------------------ |
+| IuW          | `testkurs IuW`          | `Informatik und Wirtschaft` | `teststudent-iuw`     | `KLICKER_DEMO_IUW_PARTICIPANT_PASSWORD`          |
+| RadioSurfVet | `testkurs RadioSurfVet` | `RadioSurfVet`              | `teststudent-rsv`     | `KLICKER_DEMO_RADIOSURFVET_PARTICIPANT_PASSWORD` |
+| Culture      | `Demo Course Copy`      | `Culture Scenario Lab`      | `teststudent-culture` | `KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD`      |
+
+Run this from the repository root with the PRD operator profile. The default
+mode and `--readback` are read-only; `--apply` is the sole write mode and
+requires all three password mappings. The operator injects `DATABASE_URL` and
+the password values only into this child process, so no `.env` file or shell
+history entry carries them:
+
+```bash
+rs-infisical-operator --profile klicker-prd run \
+  --map DATABASE_URL=DATABASE_URL \
+  -- pnpm --filter @klicker-uzh/prisma-data run seed:demo-participants
+
+rs-infisical-operator --profile klicker-prd run \
+  --map DATABASE_URL=DATABASE_URL \
+  -- pnpm --filter @klicker-uzh/prisma-data run seed:demo-participants --readback
+
+rs-infisical-operator --profile klicker-prd run \
+  --map DATABASE_URL=DATABASE_URL \
+  --map KLICKER_DEMO_IUW_PARTICIPANT_PASSWORD=KLICKER_DEMO_IUW_PARTICIPANT_PASSWORD \
+  --map KLICKER_DEMO_RADIOSURFVET_PARTICIPANT_PASSWORD=KLICKER_DEMO_RADIOSURFVET_PARTICIPANT_PASSWORD \
+  --map KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD=KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD \
+  -- pnpm --filter @klicker-uzh/prisma-data run seed:demo-participants --apply
+```
+
+The password names need exact read and write permission in that profile before
+the first run. Write permission is used only to create a missing random value
+with `rs-infisical-operator set-random --bytes 32`; do not rotate an existing
+value without a separate decision. Never print, copy, or read back the values.
+The script reports fixed target labels, status names, and booleans only. The
+apply transaction verifies active, private, manual accounts, matching active
+participations, password matches, and no active off-target participation before
+commit; run `--readback` afterward for the non-secret account and participation
+checks.
+
+These password variables are deliberately not added to `turbo.json` global
+environment inputs. Broad Turbo propagation would expose credentials to
+unrelated tasks, so invoke this maintenance script directly through the
+operator boundary.
+
 ## Typed Json fields
 
 Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc comment on the field (e.g. `[PrismaElementOptions]` in `element.prisma`) maps to declarations in `packages/graphql/src/types/app.ts` (`declare global { namespace PrismaJson { … } }`), which import shapes from `@klicker-uzh/types`. Add the comment AND the declaration when introducing a typed Json field.
