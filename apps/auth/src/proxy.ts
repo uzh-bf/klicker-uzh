@@ -7,7 +7,8 @@ import {
   STUDENT_REDIRECT_COOKIE_NAME,
 } from './lib/constants'
 
-const REDIRECT_COOKIE_TTL_MS = 10000
+// Cookie maxAge is specified in seconds
+const REDIRECT_COOKIE_TTL_S = 10
 
 function parseCsvHosts(value: string | undefined): string[] {
   if (!value) return []
@@ -55,15 +56,8 @@ function getHostFromHeaderUrl(h?: string | null): string | null {
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
-
-  console.log('MIDDLEWARE RUNNING:', {
-    pathname,
-    fullUrl: request.url,
-    referer: request.headers.get('referer'),
-    searchParams: Object.fromEntries(request.nextUrl.searchParams.entries()),
-  })
 
   // If the request is initiated from the PWA, redirect to the PWA login
   const referer = request.headers.get('referer')
@@ -125,13 +119,6 @@ export async function middleware(request: NextRequest) {
     (refererHost && PWA_HOSTS.includes(refererHost)) ||
     (redirectToHost && PWA_HOSTS.includes(redirectToHost))
   ) {
-    console.log('PWA origin detected. Redirecting to PWA login.', {
-      referer,
-      refererHost,
-      redirectToParam,
-      redirectToHost,
-      pwaLoginUrl,
-    })
     return NextResponse.redirect(pwaLoginUrl)
   }
 
@@ -143,25 +130,20 @@ export async function middleware(request: NextRequest) {
       // Set lecturer-specific cookie, scoped to auth host
       response.cookies.set(LECTURER_REDIRECT_COOKIE_NAME, redirectTo, {
         ...commonCookieOpts,
-        maxAge: REDIRECT_COOKIE_TTL_MS,
+        maxAge: REDIRECT_COOKIE_TTL_S,
       })
-      console.log('Root route: lecturer redirect cookie set')
       return response
     }
   }
 
   // Handle /lecturer route - redirect to lecturer UI and set cookie early
   if (pathname === '/lecturer') {
-    console.log('LECTURER ROUTE MATCHED!')
     const redirectTo =
       request.nextUrl.searchParams.get('redirectTo') ||
       process.env.NEXT_PUBLIC_MANAGE_URL ||
       'https://manage.klicker.uzh.ch'
 
-    console.log('RedirectTo parameter (with default):', redirectTo)
-
     if (!isValidLecturerRedirectUrl(redirectTo)) {
-      console.log('Invalid lecturer redirect URL:', redirectTo)
       return new NextResponse('Invalid redirect URL', { status: 400 })
     }
 
@@ -172,39 +154,30 @@ export async function middleware(request: NextRequest) {
     // Set lecturer-specific cookie, scoped to auth host
     response.cookies.set(LECTURER_REDIRECT_COOKIE_NAME, redirectTo, {
       ...commonCookieOpts,
-      maxAge: REDIRECT_COOKIE_TTL_MS,
+      maxAge: REDIRECT_COOKIE_TTL_S,
     })
-    console.log(
-      'Lecturer route: set cookie and redirect to index UI:',
-      dest.toString()
-    )
     return response
   }
 
   // Handle /student route - render login page and set cookie early (belt-and-suspenders)
   if (pathname === '/student') {
-    console.log('STUDENT ROUTE MATCHED!')
     const redirectTo =
       request.nextUrl.searchParams.get('redirectTo') ||
       process.env.NEXT_PUBLIC_ASSESSMENT_URL ||
       'https://assessment.klicker.uzh.ch'
 
-    console.log('RedirectTo parameter (with default):', redirectTo)
-
     if (!isValidStudentRedirectUrl(redirectTo)) {
-      console.log('Invalid redirect URL:', redirectTo)
       return new NextResponse('Invalid redirect URL', { status: 400 })
     }
 
     // Set/refresh the redirect cookie so it's available on callback even if
-    // NextAuth posts the callbackUrl in the body (not readable in middleware)
+    // NextAuth posts the callbackUrl in the body (not readable in proxy)
     const response = NextResponse.next()
     // Set student-specific cookie, scoped to auth host
     response.cookies.set(STUDENT_REDIRECT_COOKIE_NAME, redirectTo, {
       ...commonCookieOpts,
-      maxAge: REDIRECT_COOKIE_TTL_MS,
+      maxAge: REDIRECT_COOKIE_TTL_S,
     })
-    console.log('Student route: cookie set, rendering student login page')
     return response
   }
 
@@ -218,13 +191,6 @@ export async function middleware(request: NextRequest) {
       participantParam === 'true' ||
       referer.includes('assessment.') ||
       referer.includes('/student')
-
-    console.log('Stateless context detection result:', {
-      isParticipantContext,
-      participantParam,
-      referer,
-      pathname,
-    })
 
     // If handling provider callback, ensure we carry the intended callbackUrl from cookie
     if (pathname.startsWith('/api/auth/callback')) {
@@ -269,32 +235,19 @@ export async function middleware(request: NextRequest) {
           const resp = NextResponse.redirect(url)
           // Clear all redirect cookies on callback (scoped + legacy)
           clearAllRedirectCookies(resp)
-          console.log('Callback: injected params from cookie and cleared it', {
-            url: url.toString(),
-            cookieSaysParticipant,
-            cookieSaysLecturer,
-          })
           return resp
         }
 
         // Clear the cookies in any case on callback to avoid lingering state
         const passthrough = NextResponse.next()
         clearAllRedirectCookies(passthrough)
-        console.log('Callback: cleared unused redirect cookies')
         return passthrough
       }
       // If generic cookie is not present, still clear any specific cookies
       const passthrough = NextResponse.next()
-      let clearedAny = false
-      if (studentRedirect) {
+      if (studentRedirect || lecturerRedirect) {
         clearAllRedirectCookies(passthrough)
-        clearedAny = true
       }
-      if (lecturerRedirect) {
-        clearAllRedirectCookies(passthrough)
-        clearedAny = true
-      }
-      if (clearedAny) console.log('Callback: cleared specific redirect cookies')
       return passthrough
     }
 
@@ -315,11 +268,7 @@ export async function middleware(request: NextRequest) {
           : LECTURER_REDIRECT_COOKIE_NAME
         response.cookies.set(cookieName, cb, {
           ...commonCookieOpts,
-          maxAge: REDIRECT_COOKIE_TTL_MS,
-        })
-        console.log('Set redirect cookie on signin:', {
-          cb,
-          isParticipantContext,
+          maxAge: REDIRECT_COOKIE_TTL_S,
         })
       }
     }

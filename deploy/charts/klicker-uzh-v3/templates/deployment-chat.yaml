@@ -56,6 +56,9 @@ spec:
                 name: {{ include "chart.fullname" . }}-config-chat
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-chat
+            - secretRef:
+                name: {{ include "chart.fullname" . }}-secret-growthbook
+                optional: true
           livenessProbe:
             httpGet:
               path: /api/health

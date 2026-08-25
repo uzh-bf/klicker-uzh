@@ -132,7 +132,7 @@ Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a 
 
 ### Self-contained devcontainer (recommended)
 
-Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm/prisma/tests **inside the container**, never on the host.
+Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm/prisma/unit tests **inside the container**, never on the host. **Exception — Playwright E2E runs on the host**: run `bash util/run-host-e2e.sh --project=chromium tests/<spec>.spec.ts` (or `pnpm --filter @klicker-uzh/playwright test:host -- --project=chromium <spec>`) — it auto-maps the app URLs and seed database for routed devrouter workspaces, a plain primary devcontainer, or host-run apps, and shares host browser/node caches; never download browsers into a DevPod. Services without direct routes stay inside the container and are exercised through the routed apps; do not move Playwright into the container to reach them.
 
 ```bash
 devrouter ensure .
@@ -224,6 +224,21 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - Students: `testuser1`-`testuser50`, password `abcdabcd` (enrolled in "Testkurs")
 - Additional: `testuser51`-`testuser52` exist but are not enrolled in any course by default
 
+### Authenticated load-test login
+
+- Keep participant credential values only in Infisical. Do not put them in this file, repository files, command arguments, logs, or chat.
+- The approved operator profile is `klicker-dev`; it intentionally maps to Infisical project `klicker-uzh-dev` in environment `dev`. Inject the allowlisted names directly into the child process:
+
+  ```bash
+  rs-infisical-operator --profile klicker-dev run \
+    --map KLICKER_TESTSTUDENT_USERNAME=KLICKER_PARTICIPANT_USERNAME_OR_EMAIL \
+    --map KLICKER_TESTSTUDENT_PASSWORD=KLICKER_PARTICIPANT_PASSWORD \
+    -- k6 run util/load-test/chatbot-auth.js
+  ```
+
+- Set the target-specific `KLICKER_BASE_URL` and `KLICKER_API_URL` in the child environment. Normal login also requires `KLICKER_ALLOW_LOGIN=true`; PRD additionally requires `KLICKER_ALLOW_PRODUCTION=true`.
+- Use `KLICKER_PARTICIPANT_TOKEN` instead when an already-issued token is supplied. Never print or persist either the token or the injected credential values.
+
 ## Code Conventions
 
 - **TypeScript strict mode** everywhere
@@ -257,7 +272,7 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 
 ## Engineering Wiki
 
-[docs/](docs/) is the selective, agent-facing OKF v0.1 engineering wiki for working on this codebase (not to be confused with `apps/docs`, the user-facing site). It contains durable knowledge that is non-obvious from the source: top-level area guides explain _what_ and _how_, [docs/adr/](docs/adr/) records _why_, and `docs/solutions/` captures reusable lessons from resolved problems. Preserve concept frontmatter and use descriptive filenames, direct links, and repository search. The optional OKF index and log files are omitted because they duplicate directory discovery and Git history.
+[docs/](docs/) is the selective, agent-facing OKF v0.1 engineering wiki for working on this codebase (not to be confused with `apps/docs`, the user-facing site). It contains durable knowledge that is non-obvious from the source: top-level area guides explain _what_ and _how_, [docs/adr/](docs/adr/) records _why_, and `docs/solutions/` captures reusable lessons from resolved problems. Preserve concept frontmatter and use descriptive filenames, direct links, and repository search. The OKF index and log paths (`docs/index.md`, `docs/log.md`, and `docs/log/`) are intentionally absent and must never be created or restored because they duplicate directory discovery and Git history.
 
 Read the relevant pages before working in an unfamiliar area. Update `docs/` and the relevant skills in `.agents/skills/` in the same PR when a change makes existing guidance inaccurate or introduces a durable contract that the code does not explain. A behavior change does not require a ceremonial documentation edit. The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
 

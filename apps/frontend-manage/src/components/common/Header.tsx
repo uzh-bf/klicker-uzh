@@ -235,6 +235,7 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
       key: 'support-menubar-item',
       icon: faQuestionCircle,
       onClick: () => setShowSupportModal(true),
+      data: { cy: 'support-menubar-item' },
       className: { icon: '-mx-1', root: 'px-3' },
     },
     {

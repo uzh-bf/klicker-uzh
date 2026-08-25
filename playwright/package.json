@@ -17,6 +17,7 @@
     "test": "../util/_run_with_infisical.sh --env dev-playwright playwright test",
     "test:headed": "../util/_run_with_infisical.sh --env dev-playwright playwright test --headed --project=chromium",
     "test:headed:raw": "playwright test --headed --project=chromium",
+    "test:host": "bash ../util/run-host-e2e.sh",
     "test:raw": "playwright test",
     "test:run": "../util/_run_with_infisical.sh --env dev-playwright playwright test",
     "test:run:raw": "playwright test",

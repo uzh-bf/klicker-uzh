@@ -60,6 +60,7 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
         Use `devrouter workspace up <branch-name>` from the main repository to create a new worktree. Do not use bare `devpod up` or manual route-token loops; `ensure` owns the persisted identity, Git mount, overlay, aliases, runtime proof, and routes together.
      3. Those namespaced hosts only work because `allowedDevOrigins` in `packages/next-config/index.js` is `['**.localhost']` in development (and `undefined` in production) — Next's implicit `*.localhost` matches a single label only. If that glob ever stops covering a worktree host, the symptom is an app that serves HTML but never hydrates, with no obvious error.
 3. **Logs:** The dev servers auto-start inside the container. View logs via `devrouter exec . -- tail -f /tmp/dev.log`.
+4. **Browser E2E:** Run Playwright from the host with `bash util/run-host-e2e.sh --project=chromium <spec>`. The runner detects routed linked and primary checkouts, a plain primary devcontainer, and host-run apps; it maps the app URLs and seed database while reusing the host browser cache. Never install Playwright browser binaries in a DevPod. The existing global setup resets and reseeds the mapped database, so use only a disposable local test runtime.
 
 For OpenRouter-backed Chat, inject the shared prototyping key when starting the
 workspace; never write it into the repository:
@@ -145,3 +146,17 @@ Compose infra needs no secrets; the app dev servers are the secret consumers. Da
 - **Browser verification**: always `npx agent-browser`, never bare `agent-browser` — a global install conflicts with Volta's Node shim and fails with "Could not execute command".
 - **Turbo persistent dev tasks must set `"cache": false`** in [turbo.json](../turbo.json); otherwise Turbo can replay stale `EADDRINUSE` logs from a previous failed `dev:test` run while nothing is actually listening.
 - **Any non-`NEXT_PUBLIC_` env var an app must see when started through a turbo task (`dev`, `build`, `test`) has to be listed in `turbo.json` `globalEnv`**, or task runs and cache invalidation won't see it. This is not limited to Infisical-managed secrets: Turborepo runs in strict env mode here (no `envMode` or `globalPassThroughEnv` key), so an unlisted var is stripped from the task environment even when the container shell exports it — including vars set in `.devcontainer/devcontainer.env`. Symptom: `process.env.YOUR_VAR` is `undefined` inside the app while `echo $YOUR_VAR` in the same container prints a value. Two things legitimately bypass this rule: `NEXT_PUBLIC_*` vars are picked up by turbo's Next.js framework inference, and Next loads `.env`/`.env.local` itself. The production image is **not** a bypass — only its runtime entrypoint (`node apps/chat/server.js`) is turbo-free, while its build stage runs `pnpm run build` → `turbo run build`, so anything inlined at build time (`next.config.ts` reads, values baked into the standalone bundle) still needs a `globalEnv` entry even when the Dockerfile declares a matching `ARG`. Confirm a var is listed with `pnpm exec turbo run dev --filter=<pkg> --dry=json | jq '.globalCacheInputs.environmentVariables.specified.env'`. In the per-task `environmentVariables` block, `specified.env` and `configured` are empty because this repo declares no per-task `env`; framework-inferred `NEXT_PUBLIC_*` vars show up under `inferred`.
+
+### Klicker chatbot evaluation
+
+Run the external evaluation framework from the main repository with:
+
+```bash
+pnpm run eval:klicker -- --mode eval --limit 20
+```
+
+The root-owned wrapper (`util/_run_klicker_eval.sh`) injects the `dev` Infisical environment without
+watch mode, selects the local `gpt-5.6-luna` judge with high reasoning effort, and passes
+`evaluation/framework/data/input/metrics/klicker_chatbot.yaml` through the framework's `--metrics`
+option. Additional arguments are forwarded unchanged. It does not start LiteLLM; recreate that
+container through Infisical if its upstream credentials are absent.

@@ -1,4 +1,4 @@
-import { config } from '@/src/middleware'
+import { config } from '@/src/proxy'
 import { unstable_doesMiddlewareMatch } from 'next/experimental/testing/server'
 import { describe, expect, test } from 'vitest'
 
