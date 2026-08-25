@@ -242,7 +242,9 @@ item only for `scopeType === 'instance'`:
 - Regenerate `packages/graphql/src/public/client.json`.
 - Regenerate `packages/graphql/src/public/server.json`.
 - Modify `docs/domain-model.md`.
-- Create `docs/log/2026-08-14-element-point-correction-quiz-audience.md`.
+- The transient `docs/log/2026-08-14-element-point-correction-quiz-audience.md`
+  was removed after its conclusions were incorporated into the durable wiki
+  pages.
 - Modify `.agents/skills/klicker-feature-design/SKILL.md`.
 
 - [x] Run `pnpm --filter @klicker-uzh/graphql generate` and verify the only
@@ -251,7 +253,8 @@ item only for `scopeType === 'instance'`:
 - [x] Add a concise assessment point-correction section to the domain model,
       citing `response.prisma:PointCorrectionType` and
       `courses.ts:correctAssessmentPointsInstance`, and bump its timestamp.
-- [x] Add the required wiki change-log file.
+- [x] Add the required wiki change-log file; the transient file was later
+      removed after its conclusions were incorporated into the durable wiki.
 - [x] Add scope-dependent enum applicability to the feature-design checklist
       so future designs specify server validation and UI filtering together.
 - [x] Format the wiki bundle; final validation is part of Task 6.
@@ -282,10 +285,9 @@ item only for `scopeType === 'instance'`:
   `apps/frontend-manage/src/components/courses/pointCorrections/PointCorrectionsSummaryStep.tsx`.
 - Modify `packages/i18n/messages/en.ts`.
 - Modify `packages/i18n/messages/de.ts`.
-- Refresh
-  `docs/images/2026-08-14-element-point-correction/element-audience-options.png`.
-- Refresh
-  `docs/images/2026-08-14-element-point-correction/quiz-audience-options.png`.
+- The historical screenshots under
+  `docs/images/2026-08-14-element-point-correction/` were removed after the
+  UI conclusions were incorporated into the durable plan and wiki.
 
 **Interface produced:** element corrections display scope-qualified labels in
 the audience selector and summary, while quiz corrections retain the existing
@@ -376,8 +378,9 @@ stay unchanged.
 - **2026-08-14:** Verified the real Manage flow with delegated local login.
   Element scope exposes five audiences, quiz scope exposes four, changing
   scope clears the element-only audience, and both English and German labels
-  render correctly. Captured screenshots under
-  `docs/images/2026-08-14-element-point-correction/`.
+  render correctly. The transient screenshots from this verification were
+  removed after the UI conclusions were incorporated into the durable plan
+  and wiki.
 - **2026-08-14:** Completed verification with 33/33 workspace type/check tasks
   and 7/7 lint tasks at bounded concurrency, using Python 3.12 for Analytics.
   Both focused GraphQL tests pass after a clean database reset. OpenGrep found

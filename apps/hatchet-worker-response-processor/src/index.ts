@@ -1,11 +1,13 @@
 import {
   ConcurrencyLimitStrategy,
+  NonRetryableError,
   Priority,
 } from '@hatchet-dev/typescript-sdk/index.js'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import {
   aggregateAssessmentResponses,
+  clearPendingAssessmentResponseAcceptance,
   processAssessmentResponse,
 } from './processors/assessmentProcessor.js'
 import { processResponseMessage } from './processors/processor.js'
@@ -38,6 +40,7 @@ export const processAssessmentResponseWorkflow = hatchetClient.workflow<{
   participantId: string
   liveQuizId: string
   instanceId: string
+  elementBlockExecution?: number
   response: LiveQuizResponseInput
   cookie?: string
   responseTimestamp: number
@@ -49,7 +52,22 @@ export const processAssessmentResponseWorkflow = hatchetClient.workflow<{
 processAssessmentResponseWorkflow.durableTask({
   name: 'process-assessment-response',
   retries: 3,
-  fn: (input, ctx) => processAssessmentResponse(input, ctx),
+  fn: async (input, ctx) => {
+    try {
+      return await processAssessmentResponse(input, ctx)
+    } catch (error) {
+      if (error instanceof NonRetryableError) {
+        await clearPendingAssessmentResponseAcceptance({
+          instanceId: Number(input.instanceId),
+          participantId: input.participantId,
+          elementBlockExecution: input.elementBlockExecution,
+          correlationId: input.correlationId,
+        })
+        return { status: 422, error: 'invalid_response' }
+      }
+      throw error
+    }
+  },
 })
 processAssessmentResponseWorkflow.onFailure({
   name: 'log-assessment-response-failure',

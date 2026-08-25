@@ -127,8 +127,14 @@ export async function testInitialization(
   })
 
   const pubSub = createPubSub()
-  const redisExec = new Redis({ host: '127.0.0.1', port: 6379 })
-  const redisAssessmentExec = new Redis({ host: '127.0.0.1', port: 6380 })
+  const redisExec = new Redis({
+    host: process.env.REDIS_HOST ?? '127.0.0.1',
+    port: Number(process.env.REDIS_PORT ?? 6379),
+  })
+  const redisAssessmentExec = new Redis({
+    host: process.env.REDIS_ASSESSMENT_HOST ?? '127.0.0.1',
+    port: Number(process.env.REDIS_ASSESSMENT_PORT ?? 6380),
+  })
 
   const hatchetCtx = {
     hatchet,

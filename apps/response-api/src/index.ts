@@ -1,5 +1,12 @@
 import { hatchetClient } from '@klicker-uzh/hatchet'
-import { UserLoginScope } from '@klicker-uzh/prisma/client'
+import type { JsonObject } from '@hatchet-dev/typescript-sdk/index.js'
+import { prisma } from '@klicker-uzh/prisma'
+import {
+  InvitationStatus,
+  Prisma,
+  ResponseCorrectness,
+  UserLoginScope,
+} from '@klicker-uzh/prisma/client'
 import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
 import { randomUUID } from 'crypto'
 import { createServer, IncomingMessage, ServerResponse } from 'http'
@@ -156,13 +163,17 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   return sendJson(req, res, 200, { status: 'ok', responseTimestamp })
 }
 
-async function handleAddAssessmentResponse(
+type AssessmentRequestPayload = {
+  correlationKey: string
+  response: JsonObject
+  liveQuizId: string
+  instanceId: string | number
+}
+
+async function readAssessmentRequestPayload(
   req: IncomingMessage,
   res: ServerResponse
-) {
-  // track the time where the response was received
-  const responseTimestamp = Date.now()
-
+): Promise<AssessmentRequestPayload | null> {
   let payload: any
   try {
     payload = await readBody(req)
@@ -170,14 +181,16 @@ async function handleAddAssessmentResponse(
     hatchetClient.events.push('create-audit-log-entry', {
       info: `[ERROR] [AddResponse Assessment] Failed to read request body: ${err.message} for request ${JSON.stringify(req)}`,
     })
-    return badRequest(req, res, err.message)
+    badRequest(req, res, err.message)
+    return null
   }
 
   if (!payload || typeof payload !== 'object') {
     hatchetClient.events.push('create-audit-log-entry', {
       info: `[ERROR] [AddResponse Assessment] Invalid request body: ${JSON.stringify(payload)}`,
     })
-    return badRequest(req, res, 'submission_failure')
+    badRequest(req, res, 'submission_failure')
+    return null
   }
 
   const { correlationKey, response, liveQuizId, instanceId } = payload
@@ -192,15 +205,22 @@ async function handleAddAssessmentResponse(
         payload
       )}`,
     })
-
-    return badRequest(req, res, 'missing_response')
+    badRequest(req, res, 'missing_response')
+    return null
   }
 
-  // validate correlationKey (execution, quizId and instanceId same as passed arguments)
+  return { correlationKey, response, liveQuizId, instanceId }
+}
+
+async function verifyAssessmentCorrelation(
+  req: IncomingMessage,
+  res: ServerResponse,
+  payload: AssessmentRequestPayload
+): Promise<JWTPayload | null> {
   let correlationData: JWTPayload | null = null
   try {
     correlationData = await verifyJWT(
-      correlationKey,
+      payload.correlationKey,
       process.env.APP_SECRET as string,
       { issuer: process.env.APP_ORIGIN_ASSESSMENT_API }
     )
@@ -210,26 +230,30 @@ async function handleAddAssessmentResponse(
         payload
       )}`,
     })
-    return badRequest(req, res, 'invalid_submission')
+    badRequest(req, res, 'invalid_submission')
+    return null
   }
 
   if (
     !correlationData ||
-    correlationData.instanceId !== instanceId ||
-    correlationData.liveQuizId !== liveQuizId
+    correlationData.instanceId !== payload.instanceId ||
+    correlationData.liveQuizId !== payload.liveQuizId
   ) {
     hatchetClient.events.push('create-audit-log-entry', {
-      info: `[ERROR] [AddResponse Assessment] Invalid correlationKey in request body: ${correlationKey} for response ${JSON.stringify(payload)}`,
+      info: `[ERROR] [AddResponse Assessment] Invalid correlationKey in request body: ${payload.correlationKey} for response ${JSON.stringify(payload)}`,
     })
-    return badRequest(req, res, 'invalid_submission')
+    badRequest(req, res, 'invalid_submission')
+    return null
   }
 
+  return correlationData
+}
+
+function getAssessmentCookies(req: IncomingMessage) {
   const cookies =
     typeof req.headers['cookie'] === 'string'
       ? req.headers['cookie']
       : undefined
-
-  // parse the cookies that are of the format key=value; key2=value2
   const parsedCookies: Record<string, string> = {}
   if (cookies) {
     cookies.split(';').forEach((cookie) => {
@@ -237,8 +261,15 @@ async function handleAddAssessmentResponse(
       if (key && value) parsedCookies[key] = value
     })
   }
+  return { cookies, parsedCookies }
+}
 
-  // check if the assessment cookie is present and valid
+async function verifyAssessmentParticipant(
+  req: IncomingMessage,
+  res: ServerResponse,
+  payload: AssessmentRequestPayload
+): Promise<JWTPayload | null> {
+  const { cookies, parsedCookies } = getAssessmentCookies(req)
   let user: JWTPayload | null = null
   try {
     user = parsedCookies['next-auth.participant-session-token']
@@ -254,7 +285,8 @@ async function handleAddAssessmentResponse(
         payload
       )}`,
     })
-    return sendJson(req, res, 401, { error: 'invalid_assessment_cookie' })
+    sendJson(req, res, 401, { error: 'invalid_assessment_cookie' })
+    return null
   }
 
   const isAssessmentCookieValid =
@@ -263,10 +295,143 @@ async function handleAddAssessmentResponse(
     hatchetClient.events.push('create-audit-log-entry', {
       info: `[ERROR] [AddResponse Assessment] Missing or invalid assessment cookie: ${cookies} for response ${JSON.stringify(payload)}`,
     })
-    return sendJson(req, res, 401, {
+    sendJson(req, res, 401, {
       error: 'missing_invalid_assessment_cookie',
     })
+    return null
   }
+
+  return user
+}
+
+type AssessmentWorkflowMessage = JsonObject & {
+  correlationId: string
+  participantId: string
+  instanceId: string
+  elementBlockExecution?: number
+}
+
+async function hasCompletedAssessmentResponse(
+  message: AssessmentWorkflowMessage
+) {
+  const instanceId = Number(message.instanceId)
+  const elementBlockExecution = Number(message.elementBlockExecution)
+  if (
+    !Number.isInteger(instanceId) ||
+    !Number.isInteger(elementBlockExecution)
+  ) {
+    return false
+  }
+
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw(
+      Prisma.sql`
+        SELECT pg_advisory_xact_lock(
+          hashtextextended(
+            ${`${instanceId}:${elementBlockExecution}:${message.participantId}`},
+            0
+          )
+        )
+      `
+    )
+
+    const response = await tx.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId,
+          elementBlockExecution,
+          participantId: message.participantId,
+        },
+      },
+      select: {
+        correctionOnly: true,
+        correlationId: true,
+        assessmentResponseEffect: { select: { responseId: true } },
+      },
+    })
+
+    return (
+      !!response &&
+      !response.correctionOnly &&
+      response.correlationId === message.correlationId &&
+      !response.assessmentResponseEffect
+    )
+  })
+}
+
+async function processAssessmentWorkflow(
+  req: IncomingMessage,
+  res: ServerResponse,
+  message: AssessmentWorkflowMessage,
+  responseTimestamp: number
+) {
+  const workflowOutput = (await hatchetClient.runAndWait(
+    'process-assessment-response-workflow',
+    message
+  )) as Record<string, unknown>
+  const workflowResult = (workflowOutput['process-assessment-response'] ??
+    workflowOutput) as { status?: number; error?: string }
+
+  if (workflowResult.status === 409) {
+    sendJson(req, res, 409, {
+      error: workflowResult.error ?? 'response_after_block_closed',
+      responseTimestamp,
+    })
+    return true
+  }
+
+  if (workflowResult.status === 422) {
+    sendJson(req, res, 422, {
+      error: workflowResult.error ?? 'invalid_response',
+      responseTimestamp,
+    })
+    return true
+  }
+
+  if (workflowResult.status === 208) {
+    if (!(await hasCompletedAssessmentResponse(message))) {
+      sendJson(req, res, 503, {
+        error: 'response_processing_unavailable',
+        responseTimestamp,
+      })
+      return true
+    }
+
+    sendJson(req, res, 208, {
+      status: 'response_recorded_before',
+      responseTimestamp,
+    })
+    return true
+  }
+
+  // Fail closed when an old or incompatible worker returns a terminal
+  // duplicate without materializing the acceptance marker.
+  if (workflowResult.status !== 200) {
+    sendJson(req, res, 503, {
+      error: 'response_processing_unavailable',
+      responseTimestamp,
+    })
+    return true
+  }
+
+  return false
+}
+
+async function handleAddAssessmentResponse(
+  req: IncomingMessage,
+  res: ServerResponse
+) {
+  // track the time where the response was received
+  const responseTimestamp = Date.now()
+
+  const payload = await readAssessmentRequestPayload(req, res)
+  if (!payload) return
+  const correlationData = await verifyAssessmentCorrelation(req, res, payload)
+  if (!correlationData) return
+  const participant = await verifyAssessmentParticipant(req, res, payload)
+  if (!participant) return
+  const user = participant
+  const { correlationKey, response, liveQuizId, instanceId } = payload
 
   // set up correlation id as an MD5 hash of correlationKey and participantId to obtain tracking id
   const combinedCorrelationKey = `${correlationKey}:${user.sub}`
@@ -282,21 +447,208 @@ async function handleAddAssessmentResponse(
     )}`,
   })
 
-  // check if there already exists an entry in the votes table with the given correlationId
-  const votes = await assessmentRedis.hget(
-    `lq:${liveQuizId}:i:${instanceId}:votes`,
-    correlationId
-  )
-  if (votes) {
-    console.log(
-      `Participant with correlationId ${correlationId} already answered instance ${instanceId} in live quiz ${liveQuizId}`
-    )
+  const instance = await prisma.elementInstance.findUnique({
+    where: {
+      id: Number(instanceId),
+      elementBlock: { liveQuizId: String(liveQuizId) },
+    },
+    select: {
+      id: true,
+      elementBlock: {
+        select: {
+          execution: true,
+          liveQuizId: true,
+          liveQuiz: { select: { courseId: true } },
+        },
+      },
+    },
+  })
+
+  const elementBlock = instance?.elementBlock
+  if (!elementBlock || !elementBlock.liveQuiz.courseId) {
+    return badRequest(req, res, 'invalid_submission')
+  }
+  const courseId = elementBlock.liveQuiz.courseId
+  const requestedExecution = Number(correlationData.execution)
+
+  // A response may already be durably persisted while its Redis effect is
+  // pending, or may have completed before the client retried. Allow that
+  // exact retry to resume or return 208 after the live quiz advances.
+  const recoveryRetry = Number.isInteger(requestedExecution)
+    ? await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw(
+          Prisma.sql`
+            SELECT pg_advisory_xact_lock(
+              hashtextextended(
+                ${`${instance.id}:${requestedExecution}:${user.sub}`},
+                0
+              )
+            )
+          `
+        )
+
+        return tx.liveQuizResponse.findUnique({
+          where: {
+            instanceId_elementBlockExecution_participantId: {
+              instanceId: instance.id,
+              elementBlockExecution: requestedExecution,
+              participantId: user.sub,
+            },
+          },
+          select: {
+            correctionOnly: true,
+            correlationId: true,
+            assessmentResponseEffect: { select: { responseId: true } },
+          },
+        })
+      })
+    : null
+  const isRecoveryRetry =
+    recoveryRetry?.correlationId === correlationId &&
+    !recoveryRetry.correctionOnly
+  const isPendingEffectRetry =
+    isRecoveryRetry && !!recoveryRetry.assessmentResponseEffect
+  const isCompletedRetry = isRecoveryRetry && !isPendingEffectRetry
+
+  if (requestedExecution !== elementBlock.execution && !isRecoveryRetry) {
+    hatchetClient.events.push('create-audit-log-entry', {
+      correlationId,
+      info: `[ERROR] [AddResponse Assessment] Invalid block execution in correlationKey for response ${JSON.stringify(
+        payload
+      )}`,
+    })
+    return badRequest(req, res, 'invalid_submission')
+  }
+
+  if (isCompletedRetry) {
+    return sendJson(req, res, 208, {
+      status: 'response_recorded_before',
+      responseTimestamp,
+    })
+  }
+
+  // Serialize acceptance with correction-audience snapshots and response
+  // corrections. The transaction acquires both shared locks before reading or
+  // writing the acceptance marker.
+  const acceptance = isPendingEffectRetry
+    ? ({ status: 'retry' as const } as const)
+    : await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw(
+          Prisma.sql`
+        SELECT pg_advisory_xact_lock(
+          hashtextextended(${`assessment-audience:${liveQuizId}`}, 0)
+        )
+      `
+        )
+
+        // Match the worker and correction transaction lock for this response
+        // identity before reading or creating the acceptance marker.
+        await tx.$executeRaw(
+          Prisma.sql`
+        SELECT pg_advisory_xact_lock(
+          hashtextextended(
+            ${`${instance.id}:${elementBlock.execution}:${user.sub}`},
+            0
+          )
+        )
+      `
+        )
+
+        const participation = await tx.participation.findFirst({
+          where: {
+            courseId,
+            participantId: user.sub,
+            participant: { isActive: true },
+            course: {
+              isAssessmentEnabled: true,
+              participantInvitations: {
+                some: {
+                  participantId: user.sub,
+                  status: InvitationStatus.ACCEPTED,
+                  acceptedAt: { not: null },
+                },
+              },
+            },
+          },
+          select: { participantId: true },
+        })
+        if (!participation) {
+          return { status: 'not_participant' as const }
+        }
+
+        const existingResponse = await tx.liveQuizResponse.findUnique({
+          where: {
+            instanceId_elementBlockExecution_participantId: {
+              instanceId: instance.id,
+              elementBlockExecution: elementBlock.execution,
+              participantId: user.sub,
+            },
+          },
+          select: {
+            id: true,
+            correctionOnly: true,
+            correlationId: true,
+            assessmentResponseEffect: { select: { responseId: true } },
+          },
+        })
+
+        if (existingResponse && !existingResponse.correctionOnly) {
+          return existingResponse.correlationId === correlationId &&
+            existingResponse.assessmentResponseEffect
+            ? { status: 'retry' as const }
+            : { status: 'duplicate' as const }
+        }
+
+        if (
+          existingResponse?.correlationId &&
+          existingResponse.correlationId !== correlationId
+        ) {
+          return { status: 'duplicate' as const }
+        }
+
+        if (existingResponse) {
+          await tx.liveQuizResponse.update({
+            where: { id: existingResponse.id },
+            data: { correlationId },
+          })
+          return { status: 'retry' as const }
+        }
+
+        await tx.liveQuizResponse.create({
+          data: {
+            submittedAt: new Date(responseTimestamp),
+            // Keep the durable retry marker out of correction audiences until
+            // the worker has validated and materialized the response.
+            acceptedAt: null,
+            correlationId,
+            timeSpent: -1,
+            correctness: ResponseCorrectness.CORRECT,
+            basePoints: 0,
+            correctnessPoints: 0,
+            bonusPoints: 0,
+            correctionOnly: true,
+            elementBlockExecution: elementBlock.execution,
+            instance: { connect: { id: instance.id } },
+            participant: { connect: { id: user.sub } },
+          },
+        })
+
+        return { status: 'accepted' as const }
+      })
+
+  if (acceptance.status === 'not_participant') {
+    return sendJson(req, res, 403, {
+      error: 'invalid_assessment_participation',
+      responseTimestamp,
+    })
+  }
+
+  if (acceptance.status === 'duplicate') {
     hatchetClient.events.push('create-audit-log-entry', {
       correlationId,
       info: `[AddResponse Assessment] Participant with correlationId ${correlationId} tried to answer instance ${instanceId} in live quiz ${liveQuizId} again.`,
     })
 
-    // show success message that response was already recorded before and that first response counts
     return sendJson(req, res, 208, {
       status: 'response_recorded_before',
       responseTimestamp,
@@ -308,23 +660,27 @@ async function handleAddAssessmentResponse(
     participantId: user.sub,
     liveQuizId: String(liveQuizId),
     instanceId: String(instanceId),
+    elementBlockExecution: isPendingEffectRetry
+      ? requestedExecution
+      : elementBlock.execution,
     response, // pass through as-is; worker validates
     responseTimestamp,
   }
 
-  // start the processing of an assessment response
-  console.log(
-    `Pushing event ${'response-received:assessment'} with payload`,
-    message
-  )
+  // Start the processing workflow and wait for persistence plus the pending
+  // Redis effect. A failed workflow is retryable; it must never be reported as
+  // a successful submission.
+  console.log('Starting assessment response workflow with payload', message)
 
   try {
-    await hatchetClient.events.push('response-received:assessment', message)
+    if (await processAssessmentWorkflow(req, res, message, responseTimestamp)) {
+      return
+    }
   } catch (error) {
     try {
       await hatchetClient.events.push('create-audit-log-entry', {
         correlationId,
-        info: `[ERROR] [AddResponse Assessment] Failed to push response-received:assessment event for correlationId ${correlationId}: ${error}`,
+        info: `[ERROR] [AddResponse Assessment] Failed to complete response processing workflow for correlationId ${correlationId}: ${error}`,
       })
     } catch (loggingError) {
       // TODO: send error directly to audit-logging service through network request
@@ -333,6 +689,11 @@ async function handleAddAssessmentResponse(
         loggingError,
       })
     }
+
+    return sendJson(req, res, 503, {
+      error: 'response_processing_unavailable',
+      responseTimestamp,
+    })
   }
 
   return sendJson(req, res, 200, {
@@ -387,6 +748,17 @@ async function initializeService() {
     `Assessment mode: ${process.env.ASSESSMENT_MODE === 'true' ? 'enabled' : 'disabled'}`
   )
   console.log(`CORS origins: ${CORS_ALLOWED_ORIGINS.join(', ')}`)
+
+  if (process.env.ASSESSMENT_MODE === 'true') {
+    console.log('Testing PostgreSQL connection for assessment responses...')
+    try {
+      await prisma.$queryRaw(Prisma.sql`SELECT 1`)
+      console.log('PostgreSQL connection established')
+    } catch (error) {
+      console.error('Failed to connect to PostgreSQL:', error)
+      throw error
+    }
+  }
 
   // test connection to Redis cache for standard responses
   console.log('Testing Redis (standard responses) connection...')

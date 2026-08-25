@@ -1022,11 +1022,187 @@ export async function getLiveQuizStudentAssessmentResponses(
   return studentResponses
 }
 
+type PointCorrectionFlags = {
+  awardBasePoints?: boolean | null
+  awardCorrectnessPoints?: boolean | null
+  awardBonusPoints?: boolean | null
+  deductBasePoints?: boolean | null
+  deductCorrectnessPoints?: boolean | null
+  deductBonusPoints?: boolean | null
+}
+
+type PointCorrectionValues = {
+  basePoints: boolean | null
+  correctnessPoints: boolean | null
+  bonusPoints: boolean | null
+}
+
+function getPointCorrectionValue(
+  award: boolean | null | undefined,
+  deduct: boolean | null | undefined
+) {
+  if (award === true) return true
+  if (deduct === true) return false
+  return null
+}
+
+function getPointCorrectionValues(
+  flags: PointCorrectionFlags
+): PointCorrectionValues {
+  return {
+    basePoints: getPointCorrectionValue(
+      flags.awardBasePoints,
+      flags.deductBasePoints
+    ),
+    correctnessPoints: getPointCorrectionValue(
+      flags.awardCorrectnessPoints,
+      flags.deductCorrectnessPoints
+    ),
+    bonusPoints: getPointCorrectionValue(
+      flags.awardBonusPoints,
+      flags.deductBonusPoints
+    ),
+  }
+}
+
+function getResponsePointValues(
+  flags: PointCorrectionFlags,
+  available: {
+    basePoints: number
+    correctnessPoints: number
+    bonusPoints: number
+  }
+) {
+  return {
+    basePoints: flags.awardBasePoints === true ? available.basePoints : 0,
+    correctnessPoints:
+      flags.awardCorrectnessPoints === true ? available.correctnessPoints : 0,
+    bonusPoints: flags.awardBonusPoints === true ? available.bonusPoints : 0,
+  }
+}
+
+function getResponsePointUpdates(
+  flags: PointCorrectionFlags,
+  available: {
+    basePoints: number
+    correctnessPoints: number
+    bonusPoints: number
+  }
+) {
+  return {
+    basePoints:
+      flags.awardBasePoints === true
+        ? available.basePoints
+        : flags.deductBasePoints === true
+          ? 0
+          : undefined,
+    correctnessPoints:
+      flags.awardCorrectnessPoints === true
+        ? available.correctnessPoints
+        : flags.deductCorrectnessPoints === true
+          ? 0
+          : undefined,
+    bonusPoints:
+      flags.awardBonusPoints === true
+        ? available.bonusPoints
+        : flags.deductBonusPoints === true
+          ? 0
+          : undefined,
+  }
+}
+
+function hasPointCorrectionChange(flags: PointCorrectionFlags) {
+  return [
+    flags.awardBasePoints,
+    flags.awardCorrectnessPoints,
+    flags.awardBonusPoints,
+    flags.deductBasePoints,
+    flags.deductCorrectnessPoints,
+    flags.deductBonusPoints,
+  ].some((value) => value === true)
+}
+
+function hasConflictingPointCorrection(flags: PointCorrectionFlags) {
+  return (
+    (flags.awardBasePoints === true && flags.deductBasePoints === true) ||
+    (flags.awardCorrectnessPoints === true &&
+      flags.deductCorrectnessPoints === true) ||
+    (flags.awardBonusPoints === true && flags.deductBonusPoints === true)
+  )
+}
+
+function isValidPointCorrectionRequest({
+  scope,
+  participantId,
+  participantIds,
+  allowQuizParticipantScope,
+  ...flags
+}: PointCorrectionFlags & {
+  scope: DB.PointCorrectionType
+  participantId?: string | null
+  participantIds?: string[] | null
+  allowQuizParticipantScope: boolean
+}) {
+  if (
+    !allowQuizParticipantScope &&
+    scope === PointCorrectionType.PARTICIPATING_QUIZ
+  ) {
+    return false
+  }
+  if (scope === PointCorrectionType.SINGLE && !participantId) return false
+  if (
+    scope === PointCorrectionType.MULTIPLE &&
+    (!participantIds || participantIds.length === 0)
+  ) {
+    return false
+  }
+  return (
+    hasPointCorrectionChange(flags) && !hasConflictingPointCorrection(flags)
+  )
+}
+
+function getAppliedCorrectionAmounts(
+  currentResponse: {
+    basePoints: number
+    correctnessPoints: number
+    bonusPoints: number
+  } | null,
+  flags: PointCorrectionFlags,
+  available: {
+    basePoints: number
+    correctnessPoints: number
+    bonusPoints: number
+  }
+) {
+  const currentBasePoints = currentResponse?.basePoints ?? 0
+  const currentCorrectnessPoints = currentResponse?.correctnessPoints ?? 0
+  const currentBonusPoints = currentResponse?.bonusPoints ?? 0
+
+  return {
+    awardedBasePoints:
+      flags.awardBasePoints === true
+        ? available.basePoints - currentBasePoints
+        : 0,
+    awardedCorrectnessPoints:
+      flags.awardCorrectnessPoints === true
+        ? available.correctnessPoints - currentCorrectnessPoints
+        : 0,
+    awardedBonusPoints:
+      flags.awardBonusPoints === true
+        ? available.bonusPoints - currentBonusPoints
+        : 0,
+    deductedBasePoints: flags.deductBasePoints === true ? currentBasePoints : 0,
+    deductedCorrectnessPoints:
+      flags.deductCorrectnessPoints === true ? currentCorrectnessPoints : 0,
+    deductedBonusPoints:
+      flags.deductBonusPoints === true ? currentBonusPoints : 0,
+  }
+}
+
 async function upsertResponseAppliedCorrection(
   {
     correctionId,
     instance,
-    response,
     participantId,
     awardBasePoints,
     awardCorrectnessPoints,
@@ -1040,7 +1216,6 @@ async function upsertResponseAppliedCorrection(
   }: {
     correctionId: number
     instance: DB.ElementInstance & { elementBlock: DB.ElementBlock }
-    response?: DB.LiveQuizResponse | null
     participantId: string
     awardBasePoints?: boolean | null // true = award, null / undefined = no change
     awardCorrectnessPoints?: boolean | null // true = award, null / undefined = no change
@@ -1055,45 +1230,78 @@ async function upsertResponseAppliedCorrection(
   tx: PrismaTransactionClient,
   ctx: ContextWithUser
 ) {
+  // Match the response worker's transaction lock so corrections read the
+  // materialized response instead of overwriting a concurrent update.
+  await tx.$executeRaw(
+    DB.Prisma.sql`
+      SELECT pg_advisory_xact_lock(
+        hashtextextended(
+          ${`${instance.id}:${instance.elementBlock.execution}:${participantId}`},
+          0
+        )
+      )
+    `
+  )
+  const currentResponse = await tx.liveQuizResponse.findUnique({
+    where: {
+      instanceId_elementBlockExecution_participantId: {
+        instanceId: instance.id,
+        elementBlockExecution: instance.elementBlock.execution,
+        participantId,
+      },
+    },
+    select: {
+      id: true,
+      basePoints: true,
+      correctnessPoints: true,
+      bonusPoints: true,
+    },
+  })
+
   // upsert live quiz response with the corrected points
   const lqr = await tx.liveQuizResponse.upsert({
-    where:
-      response !== null && typeof response !== 'undefined'
-        ? { id: response.id }
-        : { id: -1 },
+    where: { id: currentResponse?.id ?? -1 },
     // response is not set -> defaults to null (setting it to null explicitly does not work, since this would be interpreted as the JSON value being null -> violates DB constraint)
     create: {
       correctionOnly: true,
       submittedAt: new Date(),
       timeSpent: -1,
       correctness: DB.ResponseCorrectness.CORRECT,
-      basePoints: awardBasePoints === true ? availableBasePoints : 0,
-      correctnessPoints:
-        awardCorrectnessPoints === true ? availableCorrectnessPoints : 0,
-      bonusPoints: awardBonusPoints === true ? availableBonusPoints : 0,
+      ...getResponsePointValues(
+        {
+          awardBasePoints,
+          awardCorrectnessPoints,
+          awardBonusPoints,
+          deductBasePoints,
+          deductCorrectnessPoints,
+          deductBonusPoints,
+        },
+        {
+          basePoints: availableBasePoints,
+          correctnessPoints: availableCorrectnessPoints,
+          bonusPoints: availableBonusPoints,
+        }
+      ),
       elementBlockExecution: instance.elementBlock.execution,
       instance: { connect: { id: instance.id } },
       participant: { connect: { id: participantId } },
     },
     update: {
-      basePoints:
-        awardBasePoints === true
-          ? availableBasePoints
-          : deductBasePoints === true
-            ? 0
-            : undefined,
-      correctnessPoints:
-        awardCorrectnessPoints === true
-          ? availableCorrectnessPoints
-          : deductCorrectnessPoints === true
-            ? 0
-            : undefined,
-      bonusPoints:
-        awardBonusPoints === true
-          ? availableBonusPoints
-          : deductBonusPoints === true
-            ? 0
-            : undefined,
+      ...getResponsePointUpdates(
+        {
+          awardBasePoints,
+          awardCorrectnessPoints,
+          awardBonusPoints,
+          deductBasePoints,
+          deductCorrectnessPoints,
+          deductBonusPoints,
+        },
+        {
+          basePoints: availableBasePoints,
+          correctnessPoints: availableCorrectnessPoints,
+          bonusPoints: availableBonusPoints,
+        }
+      ),
     },
   })
 
@@ -1101,26 +1309,22 @@ async function upsertResponseAppliedCorrection(
   const appliedCorrection = await tx.appliedPointCorrection.create({
     data: {
       // awarded and deducted points (true as award, false as deduction, null as no change)
-      awardedBasePoints:
-        awardBasePoints === true
-          ? availableBasePoints - (response?.basePoints ?? 0)
-          : 0,
-      awardedCorrectnessPoints:
-        awardCorrectnessPoints === true
-          ? availableCorrectnessPoints - (response?.correctnessPoints ?? 0)
-          : 0,
-      awardedBonusPoints:
-        awardBonusPoints === true
-          ? availableBonusPoints - (response?.bonusPoints ?? 0)
-          : 0,
-      deductedBasePoints:
-        deductBasePoints === true ? (response?.basePoints ?? 0) : 0,
-      deductedCorrectnessPoints:
-        deductCorrectnessPoints === true
-          ? (response?.correctnessPoints ?? 0)
-          : 0,
-      deductedBonusPoints:
-        deductBonusPoints === true ? (response?.bonusPoints ?? 0) : 0,
+      ...getAppliedCorrectionAmounts(
+        currentResponse,
+        {
+          awardBasePoints,
+          awardCorrectnessPoints,
+          awardBonusPoints,
+          deductBasePoints,
+          deductCorrectnessPoints,
+          deductBonusPoints,
+        },
+        {
+          basePoints: availableBasePoints,
+          correctnessPoints: availableCorrectnessPoints,
+          bonusPoints: availableBonusPoints,
+        }
+      ),
       // link to point correction
       pointCorrection: { connect: { id: correctionId } },
       // upsert live quiz response with corresponding points
@@ -1135,54 +1339,59 @@ async function upsertResponseAppliedCorrection(
   }
 }
 
-type ParticipantResponseMap = Record<
-  string,
-  Record<number, DB.LiveQuizResponse>
->
-
-async function getLiveQuizParticipantResponseMap(
+async function getLiveQuizParticipantIds(
   liveQuizId: string,
-  prisma: DB.PrismaClient
-): Promise<ParticipantResponseMap | null> {
-  const liveQuiz = await prisma.liveQuiz.findUnique({
-    where: { id: liveQuizId },
-    include: {
-      blocks: {
-        include: { elements: { include: { liveQuizResponses: true } } },
-      },
-    },
-  })
-
-  if (!liveQuiz) return null
-
-  const participantResponseMap = liveQuiz.blocks.reduce<ParticipantResponseMap>(
-    (blockAcc, block) => {
-      block.elements.forEach((instance) => {
-        instance.liveQuizResponses
-          .filter(
-            (response) => response.elementBlockExecution === block.execution
+  prisma: PrismaTransactionClient,
+  cutoff: Date
+): Promise<string[]> {
+  const participants = await prisma.$queryRaw<Array<{ participantId: string }>>(
+    DB.Prisma.sql`
+      SELECT DISTINCT response."participantId" AS "participantId"
+      FROM "LiveQuizResponse" AS response
+      INNER JOIN "ElementInstance" AS instance
+        ON instance.id = response."instanceId"
+      INNER JOIN "ElementBlock" AS block
+        ON block.id = instance."elementBlockId"
+      INNER JOIN "LiveQuiz" AS quiz
+        ON quiz.id = block."liveQuizId"
+      INNER JOIN "Participation" AS participation
+        ON participation."courseId" = quiz."courseId"
+        AND participation."participantId" = response."participantId"
+      WHERE block."liveQuizId" = ${liveQuizId}
+        AND quiz."courseId" IS NOT NULL
+        AND response."elementBlockExecution" = block.execution
+        AND response."correctionOnly" = false
+        AND (
+          response."acceptedAt" <= ${cutoff}
+          OR (
+            response."acceptedAt" IS NULL
+            AND response."submittedAt" <= ${cutoff}
           )
-          .forEach((response) => {
-            if (!blockAcc[response.participantId]) {
-              blockAcc[response.participantId] = {}
-            }
-
-            blockAcc[response.participantId]![instance.id] = response
-          })
-      })
-
-      return blockAcc
-    },
-    {}
+        )
+      ORDER BY response."participantId"
+    `
   )
 
-  return Object.fromEntries(
-    Object.entries(participantResponseMap).filter(([, instanceResponseMap]) =>
-      Object.values(instanceResponseMap).some(
-        (response) => response.correctionOnly === false
+  return participants.map(({ participantId }) => participantId)
+}
+
+async function getLockedLiveQuizParticipantIds(
+  liveQuizId: string,
+  prisma: PrismaTransactionClient,
+  cutoff: Date
+): Promise<string[]> {
+  await prisma.$executeRaw(
+    DB.Prisma.sql`
+      SELECT pg_advisory_xact_lock(
+        hashtextextended(
+          ${`assessment-audience:${liveQuizId}`},
+          0
+        )
       )
-    )
+    `
   )
+
+  return getLiveQuizParticipantIds(liveQuizId, prisma, cutoff)
 }
 
 export async function correctAssessmentPointsInstance(
@@ -1215,48 +1424,19 @@ export async function correctAssessmentPointsInstance(
   },
   ctx: ContextWithUser
 ) {
-  // if the scope is set to a single participant, but no participant is provided, return early
-  if (scope === PointCorrectionType.SINGLE && !participantId) {
-    return null
-  }
-
-  // if the scope is set to multiple participants, but no participants are provided, return early
   if (
-    scope === PointCorrectionType.MULTIPLE &&
-    (!participantIds || participantIds.length === 0)
-  ) {
-    return null
-  }
-
-  // if no updates should be applied, return early
-  if (
-    (awardBasePoints === null ||
-      typeof awardBasePoints === 'undefined' ||
-      awardBasePoints === false) &&
-    (awardCorrectnessPoints === null ||
-      typeof awardCorrectnessPoints === 'undefined' ||
-      awardCorrectnessPoints === false) &&
-    (awardBonusPoints === null ||
-      typeof awardBonusPoints === 'undefined' ||
-      awardBonusPoints === false) &&
-    (deductBasePoints === null ||
-      typeof deductBasePoints === 'undefined' ||
-      deductBasePoints === false) &&
-    (deductCorrectnessPoints === null ||
-      typeof deductCorrectnessPoints === 'undefined' ||
-      deductCorrectnessPoints === false) &&
-    (deductBonusPoints === null ||
-      typeof deductBonusPoints === 'undefined' ||
-      deductBonusPoints === false)
-  ) {
-    return null
-  }
-
-  // if for one of the point categories both award and deduct is set, return early
-  if (
-    (awardBasePoints === true && deductBasePoints === true) ||
-    (awardCorrectnessPoints === true && deductCorrectnessPoints === true) ||
-    (awardBonusPoints === true && deductBonusPoints === true)
+    !isValidPointCorrectionRequest({
+      scope,
+      participantId,
+      participantIds,
+      allowQuizParticipantScope: true,
+      awardBasePoints,
+      awardCorrectnessPoints,
+      awardBonusPoints,
+      deductBasePoints,
+      deductCorrectnessPoints,
+      deductBonusPoints,
+    })
   ) {
     return null
   }
@@ -1292,6 +1472,8 @@ export async function correctAssessmentPointsInstance(
   )
     return null
 
+  const liveQuizId = instance.elementBlock.liveQuiz.id
+
   // compute the achievable points for this instance
   const {
     basePoints: availableBasePoints,
@@ -1307,16 +1489,6 @@ export async function correctAssessmentPointsInstance(
 
   // if the points of a single participant should be modified, fetch the corresponding response and update it
   if (scope === PointCorrectionType.SINGLE && participantId) {
-    const response = await ctx.prisma.liveQuizResponse.findUnique({
-      where: {
-        instanceId_elementBlockExecution_participantId: {
-          instanceId,
-          elementBlockExecution: instance.elementBlock.execution,
-          participantId,
-        },
-      },
-    })
-
     // compute the points that should be incremented / decremented and make the
     // corresponding change in a transaction (including audit logging)
     const createdCorrection = await ctx.prisma.$transaction(
@@ -1324,21 +1496,14 @@ export async function correctAssessmentPointsInstance(
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
-            basePoints: awardBasePoints
-              ? true
-              : deductBasePoints
-                ? false
-                : null,
-            correctnessPoints: awardCorrectnessPoints
-              ? true
-              : deductCorrectnessPoints
-                ? false
-                : null,
-            bonusPoints: awardBonusPoints
-              ? true
-              : deductBonusPoints
-                ? false
-                : null,
+            ...getPointCorrectionValues({
+              awardBasePoints,
+              awardCorrectnessPoints,
+              awardBonusPoints,
+              deductBasePoints,
+              deductCorrectnessPoints,
+              deductBonusPoints,
+            }),
             reason,
             studentReason,
             type: PointCorrectionType.SINGLE,
@@ -1355,7 +1520,6 @@ export async function correctAssessmentPointsInstance(
             instance: instance as DB.ElementInstance & {
               elementBlock: DB.ElementBlock
             },
-            response,
             participantId,
             awardBasePoints,
             awardCorrectnessPoints,
@@ -1383,7 +1547,8 @@ export async function correctAssessmentPointsInstance(
     return createdCorrection
   }
 
-  // if the points of all participating students should be modified, fetch all responses with a participantId and update them
+  // if the points of all participating students should be modified, update
+  // every genuine response for the selected instance
   if (scope === PointCorrectionType.PARTICIPATING) {
     // find all live quiz responses for the given instance (excluding the ones generated through corrections with null as a response)
     const responses = await ctx.prisma.liveQuizResponse.findMany({
@@ -1392,6 +1557,8 @@ export async function correctAssessmentPointsInstance(
         elementBlockExecution: instance.elementBlock.execution,
         correctionOnly: false,
       },
+      select: { participantId: true },
+      orderBy: { participantId: 'asc' },
     })
 
     const createdCorrection = await ctx.prisma.$transaction(
@@ -1399,21 +1566,14 @@ export async function correctAssessmentPointsInstance(
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
-            basePoints: awardBasePoints
-              ? true
-              : deductBasePoints
-                ? false
-                : null,
-            correctnessPoints: awardCorrectnessPoints
-              ? true
-              : deductCorrectnessPoints
-                ? false
-                : null,
-            bonusPoints: awardBonusPoints
-              ? true
-              : deductBonusPoints
-                ? false
-                : null,
+            ...getPointCorrectionValues({
+              awardBasePoints,
+              awardCorrectnessPoints,
+              awardBonusPoints,
+              deductBasePoints,
+              deductCorrectnessPoints,
+              deductBonusPoints,
+            }),
             reason,
             studentReason,
             type: PointCorrectionType.PARTICIPATING,
@@ -1427,34 +1587,31 @@ export async function correctAssessmentPointsInstance(
         const logEntries: { message: { info: string } }[] = []
 
         // loop over all responses and update them with the corrected points
-        await Promise.all(
-          responses.map(async (response) => {
-            const logObject = await upsertResponseAppliedCorrection(
-              {
-                correctionId: correction.id,
-                instance: instance as DB.ElementInstance & {
-                  elementBlock: DB.ElementBlock
-                },
-                response,
-                participantId: response.participantId,
-                awardBasePoints,
-                awardCorrectnessPoints,
-                awardBonusPoints,
-                deductBasePoints,
-                deductCorrectnessPoints,
-                deductBonusPoints,
-                availableBasePoints,
-                availableCorrectnessPoints,
-                availableBonusPoints,
+        for (const response of responses) {
+          const logObject = await upsertResponseAppliedCorrection(
+            {
+              correctionId: correction.id,
+              instance: instance as DB.ElementInstance & {
+                elementBlock: DB.ElementBlock
               },
-              tx,
-              ctx
-            )
+              participantId: response.participantId,
+              awardBasePoints,
+              awardCorrectnessPoints,
+              awardBonusPoints,
+              deductBasePoints,
+              deductCorrectnessPoints,
+              deductBonusPoints,
+              availableBasePoints,
+              availableCorrectnessPoints,
+              availableBonusPoints,
+            },
+            tx,
+            ctx
+          )
 
-            // add the log object to the list of log entries
-            logEntries.push(logObject)
-          })
-        )
+          // add the log object to the list of log entries
+          logEntries.push(logObject)
+        }
 
         // create the collected audit log entries
         await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
@@ -1469,56 +1626,47 @@ export async function correctAssessmentPointsInstance(
   }
 
   // if the points of all quiz participants should be modified, update the
-  // selected instance for everyone with at least one genuine quiz response
+  // selected instance for everyone accepted before the correction snapshot
   if (scope === PointCorrectionType.PARTICIPATING_QUIZ) {
-    const participantResponseMap = await getLiveQuizParticipantResponseMap(
-      instance.elementBlock.liveQuiz.id,
-      ctx.prisma
-    )
+    const cutoff = new Date()
+    const participantIds = await ctx.prisma.$transaction(async (tx) => {
+      return getLockedLiveQuizParticipantIds(liveQuizId, tx, cutoff)
+    })
 
-    if (!participantResponseMap) return null
+    if (!participantIds.length) return null
 
-    const createdCorrection = await ctx.prisma.$transaction(
-      async (tx) => {
-        const correction = await tx.pointCorrection.create({
-          data: {
-            basePoints: awardBasePoints
-              ? true
-              : deductBasePoints
-                ? false
-                : null,
-            correctnessPoints: awardCorrectnessPoints
-              ? true
-              : deductCorrectnessPoints
-                ? false
-                : null,
-            bonusPoints: awardBonusPoints
-              ? true
-              : deductBonusPoints
-                ? false
-                : null,
-            reason,
-            studentReason,
-            type: PointCorrectionType.PARTICIPATING_QUIZ,
-            correctedBy: { connect: { id: ctx.user.sub } },
-            instance: { connect: { id: instanceId } },
-          },
-          include: { correctedBy: true, instance: true },
-        })
+    const { correction: createdCorrection, logEntries } =
+      await ctx.prisma.$transaction(
+        async (tx) => {
+          const correction = await tx.pointCorrection.create({
+            data: {
+              ...getPointCorrectionValues({
+                awardBasePoints,
+                awardCorrectnessPoints,
+                awardBonusPoints,
+                deductBasePoints,
+                deductCorrectnessPoints,
+                deductBonusPoints,
+              }),
+              reason,
+              studentReason,
+              type: PointCorrectionType.PARTICIPATING_QUIZ,
+              correctedBy: { connect: { id: ctx.user.sub } },
+              instance: { connect: { id: instanceId } },
+            },
+            include: { correctedBy: true, instance: true },
+          })
 
-        const logEntries: { message: { info: string } }[] = []
-
-        await Promise.all(
-          Object.entries(participantResponseMap).map(
-            async ([pId, instanceResponseMap]) => {
-              const logEntry = await upsertResponseAppliedCorrection(
+          const logEntries: { message: { info: string } }[] = []
+          for (const participantId of participantIds) {
+            logEntries.push(
+              await upsertResponseAppliedCorrection(
                 {
                   correctionId: correction.id,
                   instance: instance as DB.ElementInstance & {
                     elementBlock: DB.ElementBlock
                   },
-                  response: instanceResponseMap[instanceId],
-                  participantId: pId,
+                  participantId,
                   awardBasePoints,
                   awardCorrectnessPoints,
                   awardBonusPoints,
@@ -1532,28 +1680,32 @@ export async function correctAssessmentPointsInstance(
                 tx,
                 ctx
               )
+            )
+          }
 
-              logEntries.push(logEntry)
-            }
-          )
-        )
+          return { correction, logEntries }
+        },
+        { timeout: 300000 }
+      )
 
-        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
-
-        return correction
-      },
-      { timeout: 300000 }
-    )
+    try {
+      await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+    } catch (error) {
+      // The correction is already committed; audit delivery must not make a
+      // successful mutation appear failed or invite a duplicate retry.
+      console.error('Failed to enqueue correction audit log entries:', error)
+    }
 
     return createdCorrection
   }
 
-  // if the points of multiple students / all students in the course should be modified, fetch all responses and update them
+  // if the points of multiple students / all students in the course should be
+  // modified, update each participant in a stable order
   if (
     scope === PointCorrectionType.ALL_COURSE ||
     scope === PointCorrectionType.MULTIPLE
   ) {
-    // find all participants of the course and the corresponding responses for the given instance
+    // find all participants of the course for the given instance
     const participations = await ctx.prisma.participation.findMany({
       where: {
         courseId: instance.elementBlock.liveQuiz.courseId!,
@@ -1562,18 +1714,8 @@ export async function correctAssessmentPointsInstance(
             ? { in: participantIds! }
             : undefined,
       },
-      include: {
-        participant: {
-          include: {
-            liveQuizResponses: {
-              where: {
-                instanceId,
-                elementBlockExecution: instance.elementBlock.execution,
-              },
-            },
-          },
-        },
-      },
+      select: { participantId: true },
+      orderBy: { participantId: 'asc' },
     })
 
     const createdCorrection = await ctx.prisma.$transaction(
@@ -1581,21 +1723,14 @@ export async function correctAssessmentPointsInstance(
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
-            basePoints: awardBasePoints
-              ? true
-              : deductBasePoints
-                ? false
-                : null,
-            correctnessPoints: awardCorrectnessPoints
-              ? true
-              : deductCorrectnessPoints
-                ? false
-                : null,
-            bonusPoints: awardBonusPoints
-              ? true
-              : deductBonusPoints
-                ? false
-                : null,
+            ...getPointCorrectionValues({
+              awardBasePoints,
+              awardCorrectnessPoints,
+              awardBonusPoints,
+              deductBasePoints,
+              deductCorrectnessPoints,
+              deductBonusPoints,
+            }),
             reason,
             studentReason,
             type: scope,
@@ -1613,34 +1748,31 @@ export async function correctAssessmentPointsInstance(
         const logEntries: { message: { info: string } }[] = []
 
         // loop over all responses and update them with the corrected points
-        await Promise.all(
-          participations.map(async (participation) => {
-            const logEntry = await upsertResponseAppliedCorrection(
-              {
-                correctionId: correction.id,
-                instance: instance as DB.ElementInstance & {
-                  elementBlock: DB.ElementBlock
-                },
-                response: participation.participant.liveQuizResponses[0],
-                participantId: participation.participantId,
-                awardBasePoints,
-                awardCorrectnessPoints,
-                awardBonusPoints,
-                deductBasePoints,
-                deductCorrectnessPoints,
-                deductBonusPoints,
-                availableBasePoints,
-                availableCorrectnessPoints,
-                availableBonusPoints,
+        for (const participation of participations) {
+          const logEntry = await upsertResponseAppliedCorrection(
+            {
+              correctionId: correction.id,
+              instance: instance as DB.ElementInstance & {
+                elementBlock: DB.ElementBlock
               },
-              tx,
-              ctx
-            )
+              participantId: participation.participantId,
+              awardBasePoints,
+              awardCorrectnessPoints,
+              awardBonusPoints,
+              deductBasePoints,
+              deductCorrectnessPoints,
+              deductBonusPoints,
+              availableBasePoints,
+              availableCorrectnessPoints,
+              availableBonusPoints,
+            },
+            tx,
+            ctx
+          )
 
-            // push the log object to the list of log entries
-            logEntries.push(logEntry)
-          })
-        )
+          // push the log object to the list of log entries
+          logEntries.push(logEntry)
+        }
 
         // create the collected audit log entries
         await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
@@ -1688,53 +1820,19 @@ export async function correctAssessmentPointsLiveQuiz(
   },
   ctx: ContextWithUser
 ) {
-  // the quiz-participant audience only applies to a correction on one instance
-  if (scope === PointCorrectionType.PARTICIPATING_QUIZ) {
-    return null
-  }
-
-  // if the scope is set to a single participant, but no participant is provided, return early
-  if (scope === PointCorrectionType.SINGLE && !participantId) {
-    return null
-  }
-
-  // if the scope is set to multiple participants, but no participants are provided, return early
   if (
-    scope === PointCorrectionType.MULTIPLE &&
-    (!participantIds || participantIds.length === 0)
-  ) {
-    return null
-  }
-
-  // if no updates should be applied, return early
-  if (
-    (awardBasePoints === null ||
-      typeof awardBasePoints === 'undefined' ||
-      awardBasePoints === false) &&
-    (awardCorrectnessPoints === null ||
-      typeof awardCorrectnessPoints === 'undefined' ||
-      awardCorrectnessPoints === false) &&
-    (awardBonusPoints === null ||
-      typeof awardBonusPoints === 'undefined' ||
-      awardBonusPoints === false) &&
-    (deductBasePoints === null ||
-      typeof deductBasePoints === 'undefined' ||
-      deductBasePoints === false) &&
-    (deductCorrectnessPoints === null ||
-      typeof deductCorrectnessPoints === 'undefined' ||
-      deductCorrectnessPoints === false) &&
-    (deductBonusPoints === null ||
-      typeof deductBonusPoints === 'undefined' ||
-      deductBonusPoints === false)
-  ) {
-    return null
-  }
-
-  // if for one of the point categories both award and deduct is set, return early
-  if (
-    (awardBasePoints === true && deductBasePoints === true) ||
-    (awardCorrectnessPoints === true && deductCorrectnessPoints === true) ||
-    (awardBonusPoints === true && deductBonusPoints === true)
+    !isValidPointCorrectionRequest({
+      scope,
+      participantId,
+      participantIds,
+      allowQuizParticipantScope: false,
+      awardBasePoints,
+      awardCorrectnessPoints,
+      awardBonusPoints,
+      deductBasePoints,
+      deductCorrectnessPoints,
+      deductBonusPoints,
+    })
   ) {
     return null
   }
@@ -1802,21 +1900,14 @@ export async function correctAssessmentPointsLiveQuiz(
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
-            basePoints: awardBasePoints
-              ? true
-              : deductBasePoints
-                ? false
-                : null,
-            correctnessPoints: awardCorrectnessPoints
-              ? true
-              : deductCorrectnessPoints
-                ? false
-                : null,
-            bonusPoints: awardBonusPoints
-              ? true
-              : deductBonusPoints
-                ? false
-                : null,
+            ...getPointCorrectionValues({
+              awardBasePoints,
+              awardCorrectnessPoints,
+              awardBonusPoints,
+              deductBasePoints,
+              deductCorrectnessPoints,
+              deductBonusPoints,
+            }),
             reason,
             studentReason,
             type: PointCorrectionType.SINGLE,
@@ -1836,53 +1927,37 @@ export async function correctAssessmentPointsLiveQuiz(
         const logEntries: { message: { info: string } }[] = []
 
         // loop over all instances and update the corresponding responses with the corrected points
-        await Promise.all(
-          liveQuiz.blocks.map(async (block) => {
-            await Promise.all(
-              block.elements.map(async (instance) => {
-                const {
-                  availableBasePoints,
-                  availableCorrectnessPoints,
-                  availableBonusPoints,
-                } = availablePoints[instance.id]!
+        for (const block of liveQuiz.blocks) {
+          for (const instance of block.elements) {
+            const {
+              availableBasePoints,
+              availableCorrectnessPoints,
+              availableBonusPoints,
+            } = availablePoints[instance.id]!
 
-                // try to find an existing response of the participant for the instance
-                const response = await tx.liveQuizResponse.findUnique({
-                  where: {
-                    instanceId_elementBlockExecution_participantId: {
-                      instanceId: instance.id,
-                      elementBlockExecution: block.execution,
-                      participantId,
-                    },
-                  },
-                })
-
-                const logEntry = await upsertResponseAppliedCorrection(
-                  {
-                    correctionId: correction.id,
-                    instance: { ...instance, elementBlock: block },
-                    response,
-                    participantId,
-                    awardBasePoints,
-                    awardCorrectnessPoints,
-                    awardBonusPoints,
-                    deductBasePoints,
-                    deductCorrectnessPoints,
-                    deductBonusPoints,
-                    availableBasePoints,
-                    availableCorrectnessPoints,
-                    availableBonusPoints,
-                  },
-                  tx,
-                  ctx
-                )
-
-                // push the log object to the list of log entries
-                logEntries.push(logEntry)
-              })
+            const logEntry = await upsertResponseAppliedCorrection(
+              {
+                correctionId: correction.id,
+                instance: { ...instance, elementBlock: block },
+                participantId,
+                awardBasePoints,
+                awardCorrectnessPoints,
+                awardBonusPoints,
+                deductBasePoints,
+                deductCorrectnessPoints,
+                deductBonusPoints,
+                availableBasePoints,
+                availableCorrectnessPoints,
+                availableBonusPoints,
+              },
+              tx,
+              ctx
             )
-          })
-        )
+
+            // push the log object to the list of log entries
+            logEntries.push(logEntry)
+          }
+        }
 
         // create the collected audit log entries
         await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
@@ -1895,14 +1970,15 @@ export async function correctAssessmentPointsLiveQuiz(
     return createdCorrection
   }
 
-  // if the points of all participating students should be modified, fetch all responses with a participantId and update them
+  // if the points of all participating students should be modified, update
+  // every instance for participants with a genuine response in the quiz
   if (scope === PointCorrectionType.PARTICIPATING) {
-    const participantResponseMap = await getLiveQuizParticipantResponseMap(
-      liveQuiz.id,
-      ctx.prisma
-    )
+    const cutoff = new Date()
+    const participantIds = await ctx.prisma.$transaction(async (tx) => {
+      return getLockedLiveQuizParticipantIds(liveQuiz.id, tx, cutoff)
+    })
 
-    if (!participantResponseMap) return null
+    if (!participantIds.length) return null
 
     // update the responses of all participants that have submitted at least one response to the live quiz
     const createdCorrection = await ctx.prisma.$transaction(
@@ -1910,21 +1986,14 @@ export async function correctAssessmentPointsLiveQuiz(
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
-            basePoints: awardBasePoints
-              ? true
-              : deductBasePoints
-                ? false
-                : null,
-            correctnessPoints: awardCorrectnessPoints
-              ? true
-              : deductCorrectnessPoints
-                ? false
-                : null,
-            bonusPoints: awardBonusPoints
-              ? true
-              : deductBonusPoints
-                ? false
-                : null,
+            ...getPointCorrectionValues({
+              awardBasePoints,
+              awardCorrectnessPoints,
+              awardBonusPoints,
+              deductBasePoints,
+              deductCorrectnessPoints,
+              deductBonusPoints,
+            }),
             reason,
             studentReason,
             type: PointCorrectionType.PARTICIPATING,
@@ -1938,50 +2007,39 @@ export async function correctAssessmentPointsLiveQuiz(
         const logEntries: { message: { info: string } }[] = []
 
         // loop over all instances and participants to upsert all relevant responses
-        await Promise.all(
-          liveQuiz.blocks.map(async (block) => {
-            await Promise.all(
-              block.elements.map(async (instance) => {
-                const {
+        for (const block of liveQuiz.blocks) {
+          for (const instance of block.elements) {
+            const {
+              availableBasePoints,
+              availableCorrectnessPoints,
+              availableBonusPoints,
+            } = availablePoints[instance.id]!
+
+            for (const participantId of participantIds) {
+              const logEntry = await upsertResponseAppliedCorrection(
+                {
+                  correctionId: correction.id,
+                  instance: { ...instance, elementBlock: block },
+                  participantId,
+                  awardBasePoints,
+                  awardCorrectnessPoints,
+                  awardBonusPoints,
+                  deductBasePoints,
+                  deductCorrectnessPoints,
+                  deductBonusPoints,
                   availableBasePoints,
                   availableCorrectnessPoints,
                   availableBonusPoints,
-                } = availablePoints[instance.id]!
+                },
+                tx,
+                ctx
+              )
 
-                await Promise.all(
-                  Object.entries(participantResponseMap).map(
-                    async ([pId, instanceResponseMap]) => {
-                      const response = instanceResponseMap[instance.id]
-
-                      const logEntry = await upsertResponseAppliedCorrection(
-                        {
-                          correctionId: correction.id,
-                          instance: { ...instance, elementBlock: block },
-                          response,
-                          participantId: pId,
-                          awardBasePoints,
-                          awardCorrectnessPoints,
-                          awardBonusPoints,
-                          deductBasePoints,
-                          deductCorrectnessPoints,
-                          deductBonusPoints,
-                          availableBasePoints,
-                          availableCorrectnessPoints,
-                          availableBonusPoints,
-                        },
-                        tx,
-                        ctx
-                      )
-
-                      // push the log object to the list of log entries
-                      logEntries.push(logEntry)
-                    }
-                  )
-                )
-              })
-            )
-          })
-        )
+              // push the log object to the list of log entries
+              logEntries.push(logEntry)
+            }
+          }
+        }
 
         // create the collected audit log entries
         await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
@@ -1999,7 +2057,7 @@ export async function correctAssessmentPointsLiveQuiz(
     scope === PointCorrectionType.ALL_COURSE ||
     scope === PointCorrectionType.MULTIPLE
   ) {
-    // get all participations of the course, including the linked participants
+    // get all participant IDs of the course in a stable lock order
     const participations = await ctx.prisma.participation.findMany({
       where: {
         courseId: liveQuiz.courseId,
@@ -2008,7 +2066,8 @@ export async function correctAssessmentPointsLiveQuiz(
             ? { in: participantIds! }
             : undefined,
       },
-      include: { participant: true },
+      select: { participantId: true },
+      orderBy: { participantId: 'asc' },
     })
 
     // update the responses of all participants in the course
@@ -2017,21 +2076,14 @@ export async function correctAssessmentPointsLiveQuiz(
         // create point correction entry
         const correction = await tx.pointCorrection.create({
           data: {
-            basePoints: awardBasePoints
-              ? true
-              : deductBasePoints
-                ? false
-                : null,
-            correctnessPoints: awardCorrectnessPoints
-              ? true
-              : deductCorrectnessPoints
-                ? false
-                : null,
-            bonusPoints: awardBonusPoints
-              ? true
-              : deductBonusPoints
-                ? false
-                : null,
+            ...getPointCorrectionValues({
+              awardBasePoints,
+              awardCorrectnessPoints,
+              awardBonusPoints,
+              deductBasePoints,
+              deductCorrectnessPoints,
+              deductBonusPoints,
+            }),
             reason,
             studentReason,
             type: scope,
@@ -2049,57 +2101,39 @@ export async function correctAssessmentPointsLiveQuiz(
         const logEntries: { message: { info: string } }[] = []
 
         // loop over all instances and participants to upsert all relevant responses
-        await Promise.all(
-          liveQuiz.blocks.map(async (block) => {
-            await Promise.all(
-              block.elements.map(async (instance) => {
-                const {
+        for (const block of liveQuiz.blocks) {
+          for (const instance of block.elements) {
+            const {
+              availableBasePoints,
+              availableCorrectnessPoints,
+              availableBonusPoints,
+            } = availablePoints[instance.id]!
+
+            for (const participation of participations) {
+              const logEntry = await upsertResponseAppliedCorrection(
+                {
+                  correctionId: correction.id,
+                  instance: { ...instance, elementBlock: block },
+                  participantId: participation.participantId,
+                  awardBasePoints,
+                  awardCorrectnessPoints,
+                  awardBonusPoints,
+                  deductBasePoints,
+                  deductCorrectnessPoints,
+                  deductBonusPoints,
                   availableBasePoints,
                   availableCorrectnessPoints,
                   availableBonusPoints,
-                } = availablePoints[instance.id]!
+                },
+                tx,
+                ctx
+              )
 
-                await Promise.all(
-                  participations.map(async (participation) => {
-                    const pId = participation.participantId
-                    const response = await tx.liveQuizResponse.findUnique({
-                      where: {
-                        instanceId_elementBlockExecution_participantId: {
-                          instanceId: instance.id,
-                          elementBlockExecution: block.execution,
-                          participantId: pId,
-                        },
-                      },
-                    })
-
-                    const logEntry = await upsertResponseAppliedCorrection(
-                      {
-                        correctionId: correction.id,
-                        instance: { ...instance, elementBlock: block },
-                        response,
-                        participantId: pId,
-                        awardBasePoints,
-                        awardCorrectnessPoints,
-                        awardBonusPoints,
-                        deductBasePoints,
-                        deductCorrectnessPoints,
-                        deductBonusPoints,
-                        availableBasePoints,
-                        availableCorrectnessPoints,
-                        availableBonusPoints,
-                      },
-                      tx,
-                      ctx
-                    )
-
-                    // push the log object to the list of log entries
-                    logEntries.push(logEntry)
-                  })
-                )
-              })
-            )
-          })
-        )
+              // push the log object to the list of log entries
+              logEntries.push(logEntry)
+            }
+          }
+        }
 
         // create the collected audit log entries
         await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)

@@ -111,6 +111,12 @@ model QuestionResponseDetail {
 model LiveQuizResponse {
   id          Int      @id @default(autoincrement())
   submittedAt DateTime
+  /// Timestamp at which the validated response became durable.
+  /// Null while the response API's pending retry marker awaits worker
+  /// validation and materialization.
+  acceptedAt DateTime?
+  /// Correlates retries of the accepted submission with the persisted row.
+  correlationId String?
 
   /// [PrismaSingleQuestionResponseLiveQuiz]
   response Json?
@@ -135,6 +141,7 @@ model LiveQuizResponse {
 
   // link to corrections -> database constraint: correctionOnly can only be set, if the response is set to null
   appliedCorrections AppliedPointCorrection[]
+  assessmentResponseEffect AssessmentResponseEffect?
   correctionOnly     Boolean                  @default(false) // if true, response was created as part of point correction and not by participant
 
   createdAt DateTime @default(now())
@@ -142,6 +149,20 @@ model LiveQuizResponse {
 
   @@unique([instanceId, elementBlockExecution, participantId])
   @@index([instanceId, elementBlockExecution])
+}
+
+/// Pending Redis/result-cache effects for a persisted assessment response.
+/// The row is created with the response and removed only after the effect is
+/// applied, so a worker retry can resume after a post-commit failure.
+model AssessmentResponseEffect {
+  // The response identity is also the effect identity: at most one pending
+  // Redis effect can exist for a persisted response.
+  response   LiveQuizResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  responseId Int              @id
+
+  /// Frozen aggregation input needed to replay the Redis side effects.
+  payload   Json
+  createdAt DateTime @default(now())
 }
 
 enum PointCorrectionType {

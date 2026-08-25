@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-08-20'
+timestamp: '2026-08-21'
 tags:
   - backend
   - hatchet
@@ -15,11 +15,15 @@ tags:
 ## Topology
 
 ```
-student answer → apps/response-api (HTTP) → Hatchet event
-                                              ↓
-        apps/hatchet-worker-response-processor (consume + re-emit)
-                                              ↓
-        apps/hatchet-worker-general (aggregation + scheduled jobs)
+student answer → apps/response-api (HTTP)
+                 ↓ durable pending marker + Hatchet workflow
+        apps/hatchet-worker-response-processor
+                 ↓ PostgreSQL response + effect outbox
+        atomic Redis result, vote, leaderboard, and XP effects
+
+Legacy `response-received:assessment` events still enter the same durable
+workflow during rollout. The separate aggregation task remains for older
+queued events and shares the response correlation ID as its idempotency key.
 ```
 
 Task definitions are centralized in `packages/hatchet/src/index.ts:prepareHatchetTasks`; the actual handlers are service functions exported from `@klicker-uzh/graphql` as the `HatchetHandlers` map — workers and the GraphQL backend share one business-logic codebase. The backend itself also constructs the tasks at startup and exposes them on the GraphQL context as `ctx.tasks`.
@@ -28,7 +32,20 @@ Hatchet clients use two distinct endpoints (`packages/hatchet/src/client.ts:setu
 
 ## Response ingest (`apps/response-api`)
 
-Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. Non-assessment responses (`handleAddResponse`) emit `response-received:authenticated|anonymous`. The assessment path (`handleAddAssessmentResponse`) verifies a JWT correlation key, dedupes via `hget` on the assessment Redis, then emits `response-received:assessment`; audit-log events (`create-audit-log-entry`) are emitted throughout. Live-quiz vs assessment behavior switches on the `ASSESSMENT_MODE` env var.
+Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`.
+Non-assessment responses (`handleAddResponse`) emit
+`response-received:authenticated|anonymous`. The assessment path
+(`handleAddAssessmentResponse`) verifies a JWT correlation key, writes a
+`LiveQuizResponse` pending marker under the quiz and response-identity locks,
+checks course participation, and waits for
+`process-assessment-response-workflow`. The signed block execution is copied
+into the workflow input and must still match the cache before persistence. It
+returns success only after the worker has persisted the response and applied
+its Redis effects; a late response returns `409`, and workflow failure or an
+incompatible worker returns a retryable `503`. A genuine response with a
+pending `AssessmentResponseEffect` resumes the workflow on retry. Audit-log
+events (`create-audit-log-entry`) remain best effort. Live-quiz versus
+assessment behavior switches on the `ASSESSMENT_MODE` env var.
 
 ## Worker task catalog
 
@@ -37,7 +54,24 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 - `processAnonymousResponseTask` — on `response-received:anonymous`
 - `processAuthenticatedResponseTask` — durable
 - `processAssessmentResponseWorkflow` — durable, with an on-failure audit-log hook
-- `aggregateAssessmentResponsesTask` — keyed by `instanceId`
+- `aggregateAssessmentResponsesTask` — keyed by `instanceId`; consumes older
+  queued aggregation events and uses the same per-response marker as the
+  synchronous workflow
+
+After cache and response validation, assessment response persistence sets the
+durable acceptance timestamp and creates an `AssessmentResponseEffect` row in
+the same transaction as the genuine response or correction-only materialization.
+The worker removes that row only after a watched Redis transaction has applied
+the vote, result counters, response hashes, leaderboards, XP, and completion
+marker. Before the transaction, it validates target key types and counter
+values and surfaces command-level errors. Redis does not roll back earlier
+commands in a `MULTI/EXEC`, so a partial transaction is not safely recoverable
+from the completion marker alone; production release still requires a
+per-response contribution ledger or reconciliation path. A retry with the same
+correlation ID resumes the row, while a genuine response without a pending
+effect remains a completed legacy duplicate. Terminally rejected or late
+submissions clear their pending marker. Pre-migration responses without an
+effect row remain compatible as already-complete data.
 
 `apps/hatchet-worker-general` (`src/index.ts`) — selects workflows via the `HATCHET_WORKFLOWS` env var (default all; unknown keys are rejected at startup):
 

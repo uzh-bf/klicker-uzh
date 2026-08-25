@@ -1,14 +1,20 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  ElementData,
   ElementInstanceResults,
   ElementResultsCaseStudy,
   ElementResultsOpen,
   HatchetHandlers,
   type ElementBlockInput,
+  type ElementData,
+  type ElementInstanceOptions,
   type ElementResultsChoices,
   type ElementResultsSelection,
+  type ChoicesElementData,
+  type NumericalElementData,
+  type FreeTextElementData,
+  type SelectionElementData,
+  type CaseStudyElementData,
   type ElementStackInput,
 } from '@klicker-uzh/types'
 import {
@@ -1019,9 +1025,16 @@ export async function getCockpitQuiz(
         ][]
       | null
 
-    const activeBlockParticipants = cacheContent
-      ?.map(([_, result]) => parseInt(result?.participants))
-      .reduce((acc, val) => min(acc, val), 100000)
+    const activeBlockParticipantCounts = cacheContent?.map(([_, result]) => {
+      const participants = Number.parseInt(result?.participants ?? '0', 10)
+      return Number.isFinite(participants) ? participants : 0
+    })
+    const activeBlockParticipants = activeBlockParticipantCounts?.length
+      ? activeBlockParticipantCounts.reduce(
+          (acc, val) => min(acc, val),
+          Number.POSITIVE_INFINITY
+        )
+      : 0
     blockParticipants[liveQuiz.activeBlock.id] =
       activeBlockParticipants ?? blockParticipants[liveQuiz.activeBlock.id] ?? 0
   }
@@ -1058,6 +1071,213 @@ export async function getCockpitQuiz(
   }
 
   return reducedQuiz
+}
+
+type ActiveBlockInstance = {
+  id: number
+  elementData: ElementData
+  options: ElementInstanceOptions
+  results: ElementInstanceResults
+}
+
+type ActiveBlockCacheArgs = {
+  redisMulti: ReturnType<Redis['pipeline']>
+  infoKey: string
+  resultsKey: string
+  commonInfo: Record<string, string | number | boolean | undefined>
+}
+
+function getRestrictionInfo(
+  restrictions: Record<string, unknown> | null | undefined
+) {
+  if (!restrictions || Object.keys(restrictions).length === 0) return {}
+  return { restrictions: JSON.stringify(restrictions) }
+}
+
+function getNumericalSolutions(elementData: NumericalElementData) {
+  if (elementData.options.exactSolutions?.length) {
+    return JSON.stringify(elementData.options.exactSolutions)
+  }
+  if (elementData.options.solutionRanges) {
+    return JSON.stringify(elementData.options.solutionRanges)
+  }
+  return undefined
+}
+
+function queueChoicesCache({
+  redisMulti,
+  infoKey,
+  resultsKey,
+  commonInfo,
+  elementData,
+  results,
+}: ActiveBlockCacheArgs & {
+  elementData: ChoicesElementData
+  results: ElementInstanceResults
+}) {
+  redisMulti.hmset(infoKey, {
+    ...commonInfo,
+    choiceCount: elementData.options.choices.length,
+    solutions: elementData.options.hasSampleSolution
+      ? JSON.stringify(
+          elementData.options.choices
+            .map((choice, ix) => ({ ix, correct: choice.correct }))
+            .filter((choice) => choice.correct)
+            .map((choice) => choice.ix)
+        )
+      : undefined,
+  })
+  redisMulti.hmset(resultsKey, {
+    participants: 0,
+    ...(results as ElementResultsChoices).choices,
+  })
+}
+
+function queueNumericalCache({
+  redisMulti,
+  infoKey,
+  resultsKey,
+  commonInfo,
+  elementData,
+}: ActiveBlockCacheArgs & { elementData: NumericalElementData }) {
+  redisMulti.hmset(infoKey, {
+    ...commonInfo,
+    ...getRestrictionInfo(elementData.options.restrictions),
+    solutions: getNumericalSolutions(elementData),
+  })
+  redisMulti.hmset(resultsKey, { participants: 0 })
+}
+
+function queueFreeTextCache({
+  redisMulti,
+  infoKey,
+  resultsKey,
+  commonInfo,
+  elementData,
+}: ActiveBlockCacheArgs & { elementData: FreeTextElementData }) {
+  redisMulti.hmset(infoKey, {
+    ...commonInfo,
+    ...getRestrictionInfo(elementData.options.restrictions),
+    solutions: elementData.options.hasSampleSolution
+      ? JSON.stringify(elementData.options.solutions)
+      : undefined,
+  })
+  redisMulti.hmset(resultsKey, { participants: 0 })
+}
+
+function queueSelectionCache({
+  redisMulti,
+  infoKey,
+  resultsKey,
+  commonInfo,
+  elementData,
+  results,
+}: ActiveBlockCacheArgs & {
+  elementData: SelectionElementData
+  results: ElementInstanceResults
+}) {
+  redisMulti.hmset(infoKey, {
+    ...commonInfo,
+    solutions: JSON.stringify(elementData.options.answerCollectionSolutionIds),
+    numberOfInputs: elementData.options.numberOfInputs,
+  })
+  redisMulti.hmset(resultsKey, {
+    participants: 0,
+    ...(results as ElementResultsSelection).selections,
+  })
+}
+
+function queueCaseStudyCache({
+  redisMulti,
+  infoKey,
+  resultsKey,
+  commonInfo,
+  elementData,
+}: ActiveBlockCacheArgs & { elementData: CaseStudyElementData }) {
+  const validSolutions = elementData.options.cases.every(
+    (caseItem) => caseItem.solutions
+  )
+  const solutions =
+    elementData.options.hasSampleSolution && validSolutions
+      ? elementData.options.cases.map((caseItem) => ({
+          caseId: caseItem.id,
+          itemSolutions: caseItem.solutions,
+        }))
+      : undefined
+
+  redisMulti.hmset(infoKey, {
+    ...commonInfo,
+    solutions: solutions ? JSON.stringify(solutions) : undefined,
+  })
+  redisMulti.hmset(resultsKey, { participants: 0 })
+}
+
+function queueContentCache({
+  redisMulti,
+  infoKey,
+  resultsKey,
+  commonInfo,
+}: ActiveBlockCacheArgs) {
+  redisMulti.hmset(infoKey, commonInfo)
+  redisMulti.hmset(resultsKey, { participants: 0 })
+}
+
+function queueActiveBlockInstanceCache({
+  redisMulti,
+  quizId,
+  instance,
+  commonInfo,
+}: {
+  redisMulti: ReturnType<Redis['pipeline']>
+  quizId: string
+  instance: ActiveBlockInstance
+  commonInfo: Record<string, string | number | boolean | undefined>
+}) {
+  const infoKey = `lq:${quizId}:i:${instance.id}:info`
+  const resultsKey = `lq:${quizId}:i:${instance.id}:results`
+
+  const cacheArgs = { redisMulti, infoKey, resultsKey, commonInfo }
+  switch (instance.elementData.type) {
+    case DB.ElementType.SC:
+    case DB.ElementType.MC:
+    case DB.ElementType.KPRIM:
+      queueChoicesCache({
+        ...cacheArgs,
+        elementData: instance.elementData,
+        results: instance.results,
+      })
+      return
+
+    case DB.ElementType.NUMERICAL:
+      queueNumericalCache({
+        ...cacheArgs,
+        elementData: instance.elementData,
+      })
+      return
+
+    case DB.ElementType.FREE_TEXT:
+      queueFreeTextCache({
+        ...cacheArgs,
+        elementData: instance.elementData,
+      })
+      return
+
+    case DB.ElementType.SELECTION:
+      queueSelectionCache({
+        ...cacheArgs,
+        elementData: instance.elementData,
+        results: instance.results,
+      })
+      return
+
+    case DB.ElementType.CASE_STUDY:
+      queueCaseStudyCache({ ...cacheArgs, elementData: instance.elementData })
+      return
+
+    case DB.ElementType.CONTENT:
+      queueContentCache(cacheArgs)
+      return
+  }
 }
 
 export async function activateLiveQuizBlock(
@@ -1168,7 +1388,6 @@ export async function activateLiveQuizBlock(
 
   updatedQuiz.activeBlock!.elements.forEach((instance) => {
     const elementData = instance.elementData
-
     const commonInfo = {
       namespace: updatedQuiz.namespace,
       startedAt: Number(new Date()),
@@ -1182,123 +1401,20 @@ export async function activateLiveQuizBlock(
       defaultCorrectPoints: updatedQuiz.defaultCorrectPoints,
       maxBonusPoints: updatedQuiz.maxBonusPoints,
       timeToZeroBonus: updatedQuiz.timeToZeroBonus,
+      hasSampleSolution:
+        'hasSampleSolution' in elementData.options
+          ? (elementData.options.hasSampleSolution ?? false)
+          : false,
       blockExecution: updatedQuiz.activeBlock!.execution,
       blockStartedAt: Number(updatedQuiz.activeBlock!.startedAt),
     }
 
-    switch (elementData.type) {
-      case DB.ElementType.SC:
-      case DB.ElementType.MC:
-      case DB.ElementType.KPRIM: {
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
-          ...commonInfo,
-          choiceCount: elementData.options.choices.length,
-          solutions: elementData.options.hasSampleSolution
-            ? JSON.stringify(
-                elementData.options.choices
-                  .map((choice, ix) => ({ ix, correct: choice.correct }))
-                  .filter((choice) => choice.correct)
-                  .map((choice) => choice.ix)
-              )
-            : undefined,
-        })
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
-          participants: 0,
-          ...(instance.results as ElementResultsChoices).choices,
-        })
-
-        break
-      }
-
-      case DB.ElementType.NUMERICAL: {
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
-          ...commonInfo,
-          ...(elementData.options.restrictions &&
-          Object.keys(elementData.options.restrictions).length > 0
-            ? { restrictions: JSON.stringify(elementData.options.restrictions) }
-            : {}),
-          solutions:
-            elementData.options.exactSolutions &&
-            elementData.options.exactSolutions.length > 0
-              ? JSON.stringify(elementData.options.exactSolutions)
-              : elementData.options.solutionRanges
-                ? JSON.stringify(elementData.options.solutionRanges)
-                : undefined,
-        })
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
-          participants: 0,
-        })
-
-        break
-      }
-
-      case DB.ElementType.FREE_TEXT: {
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
-          ...commonInfo,
-          ...(elementData.options.restrictions &&
-          Object.keys(elementData.options.restrictions).length > 0
-            ? { restrictions: JSON.stringify(elementData.options.restrictions) }
-            : {}),
-          solutions: elementData.options.hasSampleSolution
-            ? JSON.stringify(elementData.options.solutions)
-            : undefined,
-        })
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
-          participants: 0,
-        })
-
-        break
-      }
-
-      case DB.ElementType.SELECTION: {
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
-          ...commonInfo,
-          solutions: JSON.stringify(
-            elementData.options.answerCollectionSolutionIds
-          ),
-          numberOfInputs: elementData.options.numberOfInputs,
-        })
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
-          participants: 0,
-          ...(instance.results as ElementResultsSelection).selections,
-        })
-
-        break
-      }
-
-      case DB.ElementType.CASE_STUDY: {
-        // convert solutions to object for faster access
-        const validSolutions = elementData.options.cases.every(
-          (caseItem) => caseItem.solutions
-        )
-        const solutions =
-          elementData.options.hasSampleSolution && validSolutions
-            ? elementData.options.cases.map((caseItem) => ({
-                caseId: caseItem.id,
-                itemSolutions: caseItem.solutions,
-              }))
-            : undefined
-
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
-          ...commonInfo,
-          solutions: solutions ? JSON.stringify(solutions) : undefined,
-        })
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
-          participants: 0,
-        })
-
-        break
-      }
-
-      case DB.ElementType.CONTENT: {
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, commonInfo)
-        redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
-          participants: 0,
-        })
-
-        break
-      }
-    }
+    queueActiveBlockInstanceCache({
+      redisMulti,
+      quizId: quiz.id,
+      instance: instance as ActiveBlockInstance,
+      commonInfo,
+    })
   })
 
   redisMulti.exec()

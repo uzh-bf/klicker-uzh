@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-22'
+timestamp: '2026-08-21'
 tags:
   - backend
   - prisma
@@ -89,11 +89,26 @@ A response created solely by an earlier correction (`correctionOnly = true`)
 does not establish quiz participation. Participants who qualify through another
 question but did not answer the selected instance receive a correction-only
 response for that instance. The shared audience selection is implemented by
-`packages/graphql/src/services/courses.ts:getLiveQuizParticipantResponseMap`
+`packages/graphql/src/services/courses.ts:getLiveQuizParticipantIds`
 and applied by
 `packages/graphql/src/services/courses.ts:correctAssessmentPointsInstance`.
-Whole-quiz corrections intentionally retain the four original audiences and
-reject `PARTICIPATING_QUIZ`.
+The query runs under the quiz audience lock and uses a cutoff: validated
+genuine rows with `acceptedAt` at or before it are eligible. Pre-migration
+genuine rows without an acceptance timestamp fall back to `submittedAt` for
+compatibility; pending correction-only markers remain excluded. Stale
+executions, non-participants, and correction-only rows are excluded. The
+signed block execution is carried into the worker so a response cannot drift
+into a later attempt.
+
+Assessment submissions create a pending retry marker before the worker runs.
+The worker validates the cached execution, closure, response shape, and course
+participation, then sets `acceptedAt`, materializes the genuine response, and
+records the pending Redis work in `AssessmentResponseEffect` in one transaction.
+The effect is removed only after idempotent result and leaderboard updates
+succeed. Terminally rejected or late submissions clear their pending marker so
+they cannot become phantom quiz participants. Whole-quiz corrections
+intentionally retain the four original audiences and reject
+`PARTICIPATING_QUIZ`.
 
 ## Course duplication
 
