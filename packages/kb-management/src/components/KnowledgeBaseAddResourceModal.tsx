@@ -90,7 +90,6 @@ function KnowledgeBaseAddResourceModal({
       await onResourceCreated()
     } catch {
       console.error('Failed to refresh KB resources after creation', { kbId })
-      return
     }
     closeModal()
   }

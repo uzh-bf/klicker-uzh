@@ -78,14 +78,123 @@ test.describe('Knowledge base management workspace', () => {
       await expect(modal).toBeHidden()
       await expect(page.getByTestId('add-kb-resource')).toBeFocused()
 
+      let releasePendingUpload = () => {}
+      let signalUploadStarted = () => {}
+      let failNextKbMetricsRefresh = false
+      const pendingUpload = new Promise<void>((resolve) => {
+        releasePendingUpload = resolve
+      })
+      const uploadStarted = new Promise<void>((resolve) => {
+        signalUploadStarted = resolve
+      })
+
+      await page.route('**/graphql', async (route) => {
+        const request = route.request()
+        if (request.method() !== 'POST') {
+          await route.continue()
+          return
+        }
+
+        const operationName = (
+          request.postDataJSON() as { operationName?: string }
+        ).operationName
+        if (operationName === 'RequestKbFileUpload') {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: {
+                requestKbFileUpload: {
+                  uploadSasURL: 'https://kb-upload.invalid/?sig=test',
+                  containerName: 'kb',
+                  blobName: 'pending.txt',
+                },
+              },
+            }),
+          })
+          return
+        }
+        if (operationName === 'ConfirmKbFileUpload') {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: { confirmKbFileUpload: { id: 'synthetic-resource' } },
+            }),
+          })
+          return
+        }
+
+        if (operationName === 'GetKb' && failNextKbMetricsRefresh) {
+          failNextKbMetricsRefresh = false
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              errors: [{ message: 'Synthetic metrics refresh failure' }],
+            }),
+          })
+          return
+        }
+
+        await route.continue()
+      })
+      await page.route('https://kb-upload.invalid/**', async (route) => {
+        if (route.request().method() === 'OPTIONS') {
+          await route.fulfill({
+            status: 204,
+            headers: {
+              'access-control-allow-headers': '*',
+              'access-control-allow-methods': 'PUT, OPTIONS',
+              'access-control-allow-origin': '*',
+            },
+          })
+          return
+        }
+
+        signalUploadStarted()
+        await pendingUpload
+        await route.fulfill({
+          status: 201,
+          headers: {
+            'access-control-allow-origin': '*',
+            etag: '"synthetic-etag"',
+            'last-modified': new Date(0).toUTCString(),
+            'x-ms-request-id': 'synthetic-request',
+            'x-ms-version': '2025-11-05',
+          },
+        })
+      })
+
+      await page.getByTestId('add-kb-resource').click()
+      await page.getByTestId('choose-kb-resource-document').click()
+      await page.getByTestId('kb-file-input').setInputFiles({
+        name: 'pending.txt',
+        mimeType: 'text/plain',
+        buffer: Buffer.from('pending upload'),
+      })
+      await uploadStarted
+      await expect(page.getByTestId('close-kb-add-resource-modal')).toHaveCount(
+        0
+      )
+      await expect(page.getByTestId('back-kb-add-resource')).toHaveCount(0)
+      await page.keyboard.press('Escape')
+      await expect(modal).toBeVisible()
+
+      releasePendingUpload()
+      await expect(modal).toBeHidden()
+
       await page.getByTestId('add-kb-resource').click()
       await page.getByTestId('choose-kb-resource-website').click()
       await page.getByTestId('kb-url-title').fill(resourceTitle)
       await page
         .getByTestId('kb-url')
         .fill(`https://example.org/${resourceTitle.replaceAll(' ', '-')}`)
+      failNextKbMetricsRefresh = true
       await page.getByTestId('add-kb-url-resource').click()
       await expect(modal).toBeHidden()
+      await page.reload()
+      await expect(detail).toBeVisible()
 
       const resourceTable = page.getByRole('table')
       await expect(resourceTable).toBeVisible()
