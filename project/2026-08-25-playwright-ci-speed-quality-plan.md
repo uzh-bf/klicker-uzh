@@ -213,15 +213,17 @@ access, or change to the course-duplication worker.
   malformed/partial timing fixture rejection. The manifest remains 886 tests
   in 31 files.
 - 2026-08-25: No exact runtime for this worktree was available, so the browser
-  duplication journey was not started. Fresh CI proof and timing-workflow
-  activation remain withheld with push, credential, and live-service actions.
+  duplication journey was not started. Fresh CI proof is pending on the
+  published PR; timing-workflow activation remains withheld pending the
+  dedicated credential and future live run.
 - 2026-08-25: The branch was synced with current `origin/v3` as `e5f2cc0cb`;
   the package.json conflict preserved both the course-duplication stress seed
   and the upstream demo-participant seed. The generated GraphQL paths remain
   dirty and unstaged.
-- 2026-08-25: The user authorized publishing the branch and making PR #5446
-  ready for review. Push and PR read-back remain to be recorded after the
-  publication step.
+- 2026-08-25: Published `c71616734a` to PR #5446 and replaced the stale body
+  with branch-wide coverage, exact verification categories, and follow-ups.
+  GitHub read-back confirms the PR is open, non-draft, mergeable, and currently
+  blocked while required checks run.
 - 2026-08-25: The native simplifier and slice-reviewer routes returned provider
   `402` credit errors. A lightweight GPT-5.6 Sol fallback reviewed the exact
   package and found no material implementation risk after this progress update;
