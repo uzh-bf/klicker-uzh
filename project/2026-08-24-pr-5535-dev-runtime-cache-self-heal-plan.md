@@ -3,32 +3,41 @@
 ## Goal
 
 - Problem: generated Next.js and dependency state survives DevPod restarts in
-  the bind-mounted worktree. A stale Chat route graph can therefore return HTML
-  404 responses while the container, process, and top-level HTTP route all look
-  healthy.
+  the bind-mounted worktree. Stale Next.js route state can therefore serve
+  HTML 404 responses on routes that exist in the branch while the container,
+  process, and top-level HTTP route all look healthy. This affects every Next
+  app, not only Chat: Next 16 keeps the persistent Turbopack development cache
+  under `.next/dev`, exactly the state a true managed start must drop.
 - Evidence: the reproduced Chat failure persisted across an exact workspace
   restart and recovered only after replacing `apps/chat/.next`. The repository
   disables Turbo caching for `dev`, so the incident was stale Next.js runtime
-  state rather than a replayed Turbo development task.
+  state rather than a replayed Turbo development task. The 2026-08-25 scope
+  correction (thread `01a0347d`, quiz-evaluation 404) reports the same
+  symptom class on manage detail pages; that specific incident showed the
+  evaluation GraphQL query returning no data, which is a data-driven
+  application 404 rather than proven cache staleness.
 - Decision: make true development-process starts invalidate only Next.js
   development caches, fingerprint structural and dependency inputs, verify a
-  nested Chat API route semantically, and perform one bounded app-cache repair
+  per-app readiness contract (the nested Chat API route plus committed shell
+  pages for the other apps), and perform one bounded per-app cache repair
   before failing closed.
 - Non-goals: clear all Turbo caches, reset databases, change production builds,
   add dependencies, change application authentication, or modify devrouter
-  itself.
+  itself. Data-driven 404s stay application failures and are never
+  reclassified as cache signatures.
 
 ## Execution Contract
 
-- Authority: the user's 2026-08-24 instruction authorizes this isolated
+- Authority: the user's 2026-08-24 instruction authorized this isolated
   worktree, plan, local implementation, repository-native verification, exact
-  DevPod startup and shutdown, and local conventional commits.
-- Withheld: push, PR creation or update, merge, deployment, worktree deletion,
-  and DevPod data deletion.
-- Terminal: the branch contains the plan and implementation commits; focused
-  tests and repository checks pass; an exact-worktree runtime proves healthy
-  warm reuse and bounded stale-cache recovery; the runtime is stopped and its
-  routes are absent.
+  DevPod startup and shutdown, and local conventional commits. The user's
+  2026-08-25 instruction additionally authorizes generalizing readiness and
+  repair to all Next apps, pushing the branch, and updating PR #5535.
+- Withheld: merge, deployment, worktree deletion, and DevPod data deletion.
+- Terminal: the branch contains the generalized plan and implementation;
+  focused tests and repository checks pass; an exact-worktree runtime proves
+  all five readiness contracts and is stopped with zero routes; the branch is
+  pushed and PR #5535 describes the generalized scope.
 - Boundary owner: self.
 - Pause: stop for a required production/public behavior change, non-generated
   data deletion, an unsafe process-ownership ambiguity, or a verification
@@ -36,10 +45,10 @@
 
 ## Plan Identity
 
-- Plan: `project/2026-08-24-dev-runtime-cache-self-heal-plan.md`.
+- Plan: `project/2026-08-24-pr-5535-dev-runtime-cache-self-heal-plan.md`.
 - Branch: `rs/dev-runtime-cache-self-heal`.
-- Target: `v3` at fresh `origin/v3` commit `09257efb71`.
-- PR: none; publication is not authorized.
+- Target: `v3` (merged up to `origin/v3` commit `7b638c6cbe`).
+- PR: [uzh-bf/klicker-uzh#5535](https://github.com/uzh-bf/klicker-uzh/pull/5535).
 - Package: one ordinary PR-sized runtime reliability fix. No stack is needed
   because both slices form one independently useful lifecycle contract.
 
@@ -53,12 +62,16 @@
 - Cache policy: preserve Turbo and production build caches by default. Clear
   each Next app's `.next/dev` only when its managed dev process truly starts;
   clear one app's complete `.next` only for a confirmed stale-route signature.
-- Readiness policy: the Chat sentinel uses a valid synthetic UUID without
-  credentials and expects `401 application/json`. Repeated `404 text/html`
-  means stale route state. Other stable failures remain visible and are not
-  relabeled as cache problems.
-- Recovery policy: repair once, restart only the exact managed process group,
-  recheck, then fail closed with the observed status and log path.
+- Readiness policy: every Next app carries a readiness contract on a route
+  that exists in every branch. Chat expects unauthenticated `401
+  application/json` on a nested synthetic API route; auth, control, manage,
+  and PWA expect `2xx` HTML or a redirect from a committed shell page. Repeated
+  `404 text/html` on those routes means stale route state. Dynamic detail
+  pages are deliberately not probed because legitimate data misses also 404.
+- Recovery policy: collect every app with the confirmed stale signature, clear
+  exactly those apps' complete `.next`, restart only the exact managed
+  process group once, recheck all contracts, then fail closed with the
+  observed status and log path.
 - Dependency policy: tie the persistent `node_modules` volume to a hash of the
   lockfile and workspace package manifests. Install with the frozen lockfile
   only when that identity changes.
@@ -86,6 +99,7 @@
 | --- | --- | --- | --- |
 | Runtime identity and cache policy | 1 | main | Shell contract tests prove fingerprints, dependency stamping, and scoped cache cleanup |
 | Semantic readiness and repair | 2 | main | Slice 1, then exact DevPod proof of healthy reuse and one-shot Chat repair |
+| Generalized readiness and repair | 3 | main | Slice 2, then contract tests plus exact DevPod proof for all five app contracts |
 
 - Execution-tier skip reason: side-conversation policy prohibits subagents;
   process lifecycle and live proof are also coupled to one exact local runtime.
@@ -98,6 +112,8 @@
 | Persistent dependencies match the checked-out lockfile | `post-create` installs once | add new | shell contract test with a fake installer | branch or lockfile changes reuse stale `node_modules` | 1 |
 | Normal restarts preserve production outputs but drop Next dev state | no automated protection | add new | temporary-filesystem shell test | `.next/dev` survives and poisons a new process | 1 |
 | Confirmed stale Chat routing gets one scoped repair | manual cache move proved recovery | add new plus runtime proof | pure response classifier and exact DevPod | blanket cleanup, false classification, or repair loop | 2 |
+| Shell-route classification distinguishes ready, stale, and unexpected | Chat classifier only | add new | pure response classifier | a shell page's error or JSON response is misclassified as stale or ready | 3 |
+| Multi-app stale repair removes exactly the affected caches | single-app repair only | add new | shell contract test | a multi-app outage repairs one app, restarts repeatedly, or deletes unrelated caches | 3 |
 | Healthy warm ensure remains idempotent | devrouter process-helper contract | runtime proof | exact source-path process state | reliability fix causes repeated cold restarts | 2 |
 
 ## Slice 1: Deterministic Managed Runtime Start
@@ -140,10 +156,32 @@
   route absence.
 - Commit: `fix(dev): self-heal stale Chat route state`.
 
+## Slice 3: Generalized Readiness and Repair
+
+- Problem: the Chat-only sentinel cannot observe stale route state in the other
+  four Next apps, and one repair request can name only one app.
+- Route: main.
+- Do:
+  - Replace the Chat-only probe, wait, and classify commands with per-app
+    contracts: Chat keeps the nested API `401 application/json` contract;
+    auth, control, manage, and PWA use committed shell pages that must answer
+    `2xx` HTML or a redirect without database content.
+  - Let one repair request carry several deduplicated apps and clear exactly
+    the listed apps' `.next` in a single managed start.
+  - Make `post-start` probe all five apps, collect the confirmed stale set,
+    repair those apps together with one restart, and fail closed otherwise.
+  - Generalize `dev:doctor`, the devcontainer README, getting-started
+    guidance, and the data-driven-404 boundary.
+- Check: shell syntax; focused contract tests inside the exact DevPod;
+  `pnpm run build` in the DevPod; exact-worktree startup proving all five
+  readiness contracts; runtime stop with zero routes; PR #5535 updated.
+- Commit: `fix(dev): generalize runtime self-healing to all Next apps`.
+
 ## Progress
 
-- Status: terminal. Both slices are locally committed and verified, and the
-  exact runtime has been stopped without deleting its data.
+- Status: in progress. Slices 1 and 2 are locally committed and verified; the
+  2026-08-25 scope correction added Slice 3, which is being implemented and
+  verified now.
 - Completed: fresh remote/worktree audit, root-cause evidence, all three planned
   local commits, focused contract tests, integrated main-session correctness/
   maintainability/shell-safety review, repository quality gate, production
@@ -163,13 +201,12 @@
   aggregate `devrouter ls` command currently fails before listing because it
   cannot determine the host route-lock process identity, so that command is not
   counted as positive evidence.
-- Remaining: none within the authorized local scope. Push and PR creation remain
-  withheld.
-- Required delivery layer: verified local committed branch.
-- Achieved delivery layer: isolated, verified local branch with the plan and
-  both implementation slices committed.
+- Remaining: Slice 3 verification, push, and the PR #5535 description update.
+- Required delivery layer: pushed branch with an updated ready PR.
+- Achieved delivery layer: isolated, verified local branch with slices 1 and 2
+  committed.
 - Review limitation: required specialist roles are unavailable in this side
   conversation. The completed main-session review found no outstanding issue;
   no child review is claimed.
-- Next action: none. Publishing the branch and creating or updating a PR require
-  separate authorization.
+- Next action: verify Slice 3 in the exact DevPod, push the branch, and update
+  PR #5535.

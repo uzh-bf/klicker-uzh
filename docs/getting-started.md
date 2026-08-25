@@ -71,14 +71,17 @@ The image does include the repository's development toolchain: pnpm `11.5.0`, uv
 
 `devrouter doctor --repo .` is the static check. `devrouter ensure .` is the runtime authority: it resolves the checkout-specific overlay and fails unless the actual container aliases, Git mount, managed process, and routes agree.
 
-Klicker's runtime guard adds semantic readiness for Chat. It fingerprints the
-dependency graph, checked-out commit, Next.js route structure, and app
-configuration. A true managed start removes each Next app's `.next/dev` output,
-while a changed dependency fingerprint refreshes the persistent `node_modules`
-volume with a frozen install. The nested Chat route probe expects unauthenticated
-`401 application/json`. Repeated `404 text/html` responses identify the known
-stale route-table state and trigger one full `apps/chat/.next` cleanup plus one
-managed restart. Any other stable response fails without deleting caches.
+Klicker's runtime guard adds semantic readiness for every Next app. It
+fingerprints the dependency graph, checked-out commit, Next.js route structure,
+and app configuration. A true managed start removes each Next app's `.next/dev`
+output, including the persistent Turbopack development cache, while a changed
+dependency fingerprint refreshes the persistent `node_modules` volume with a
+frozen install. Unauthenticated Chat must answer `401 application/json` on a
+nested API route; the shell pages of auth, PWA, manage, and control must answer
+`2xx` HTML or a redirect. Repeated `404 text/html` responses on such known-existing
+routes identify stale route-table state and trigger one full `.next` cleanup
+for the affected apps plus one managed restart. Any other stable response fails
+without deleting caches, so data-driven 404s stay application failures.
 
 Run the read-only semantic check inside the exact workspace:
 
@@ -101,14 +104,14 @@ Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `p
 
 ## Failure signatures (fresh clone / wrong state)
 
-| Exact error                                                                     | Cause                                                                                    | Fix                                                               |
-| ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `sh: run-p: command not found` + `husky - pre-commit script failed`             | `node_modules` missing                                                                   | `pnpm install` (pnpm 11)                                          |
-| `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`                                    | pnpm 11 found `node_modules` from another pnpm major; headless shell can't confirm purge | `pnpm install --config.confirmModulesPurge=false`                 |
-| `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` … `"overrides" configuration doesn't match` | `CI=true` forces frozen install after a wrong-major pnpm rewrote the lockfile            | `git checkout pnpm-lock.yaml`, non-frozen install with pnpm 11    |
-| `Bind for :::5432 failed: port is already allocated`                            | another stack holds the host port (also seen on 6379, 7077/8888, 80/443)                 | `lsof -nP -iTCP:5432 -sTCP:LISTEN`, stop the other stack          |
-| ~19 packages fail `pnpm run check` on fresh clone                               | generated artifacts missing                                                              | `pnpm run build` once, then check                                 |
-| Chat says `Your chats could not be loaded` and nested API calls return HTML 404 | stale Next.js development route state                                                    | `devrouter ensure .`; it verifies and repairs this signature once |
+| Exact error                                                                                                                   | Cause                                                                                    | Fix                                                               |
+| ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `sh: run-p: command not found` + `husky - pre-commit script failed`                                                           | `node_modules` missing                                                                   | `pnpm install` (pnpm 11)                                          |
+| `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`                                                                                  | pnpm 11 found `node_modules` from another pnpm major; headless shell can't confirm purge | `pnpm install --config.confirmModulesPurge=false`                 |
+| `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` … `"overrides" configuration doesn't match`                                               | `CI=true` forces frozen install after a wrong-major pnpm rewrote the lockfile            | `git checkout pnpm-lock.yaml`, non-frozen install with pnpm 11    |
+| `Bind for :::5432 failed: port is already allocated`                                                                          | another stack holds the host port (also seen on 6379, 7077/8888, 80/443)                 | `lsof -nP -iTCP:5432 -sTCP:LISTEN`, stop the other stack          |
+| ~19 packages fail `pnpm run check` on fresh clone                                                                             | generated artifacts missing                                                              | `pnpm run build` once, then check                                 |
+| A known page or nested API route answers HTML 404 although it exists in the checked-out branch (for example Chat's chat list) | stale Next.js development route state                                                    | `devrouter ensure .`; it verifies and repairs this signature once |
 
 ## Infrastructure (Docker Compose)
 

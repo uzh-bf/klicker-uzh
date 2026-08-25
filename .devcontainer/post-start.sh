@@ -116,23 +116,51 @@ start_managed_runtime() {
 
 start_managed_runtime
 
-CHAT_WAIT_STATUS=0
-bash ./util/dev-runtime.sh wait-chat || CHAT_WAIT_STATUS=$?
-if [ "$CHAT_WAIT_STATUS" -eq 20 ]; then
-  echo '[post-start] Repairing the confirmed stale Chat .next cache once.'
-  bash ./util/dev-runtime.sh request-repair chat
+# Probe every Next app's readiness contract. 20 is the confirmed stale-route
+# signature from util/dev-runtime.sh; any other failure fails closed without
+# cache cleanup. Collect every stale app first so one managed restart repairs
+# them together instead of restarting once per app.
+STALE_NEXT_APPS=()
+run_readiness_pass() {
+  local app status=0
+
+  STALE_NEXT_APPS=()
+  for app in auth chat frontend-control frontend-manage frontend-pwa; do
+    status=0
+    bash ./util/dev-runtime.sh wait-app "$app" || status=$?
+    if [ "$status" -eq 20 ]; then
+      STALE_NEXT_APPS+=("$app")
+    elif [ "$status" -ne 0 ]; then
+      echo "[post-start] ERROR: $app failed semantic readiness; no cache cleanup was attempted." >&2
+      echo '[post-start] Inspect /tmp/dev.log for the application failure.' >&2
+      return "$status"
+    fi
+  done
+
+  if [ "${#STALE_NEXT_APPS[@]}" -gt 0 ]; then
+    echo "[post-start] Confirmed stale Next.js route state: ${STALE_NEXT_APPS[*]}." >&2
+    return 20
+  fi
+  return 0
+}
+
+READINESS_STATUS=0
+run_readiness_pass || READINESS_STATUS=$?
+if [ "$READINESS_STATUS" -eq 20 ]; then
+  echo "[post-start] Repairing the confirmed stale .next caches once: ${STALE_NEXT_APPS[*]}."
+  for app in "${STALE_NEXT_APPS[@]}"; do
+    bash ./util/dev-runtime.sh request-repair "$app"
+  done
   start_managed_runtime
 
-  CHAT_WAIT_STATUS=0
-  bash ./util/dev-runtime.sh wait-chat || CHAT_WAIT_STATUS=$?
-  if [ "$CHAT_WAIT_STATUS" -ne 0 ]; then
-    echo '[post-start] ERROR: Chat remained unhealthy after its one repair attempt.' >&2
+  READINESS_STATUS=0
+  run_readiness_pass || READINESS_STATUS=$?
+  if [ "$READINESS_STATUS" -ne 0 ]; then
+    echo '[post-start] ERROR: The runtime remained unhealthy after its one repair attempt.' >&2
     echo '[post-start] Inspect /tmp/dev.log; no further cache cleanup was attempted.' >&2
     exit 1
   fi
-elif [ "$CHAT_WAIT_STATUS" -ne 0 ]; then
-  echo '[post-start] ERROR: Chat failed semantic readiness; no cache cleanup was attempted.' >&2
-  echo '[post-start] Inspect /tmp/dev.log for the application failure.' >&2
+elif [ "$READINESS_STATUS" -ne 0 ]; then
   exit 1
 fi
 

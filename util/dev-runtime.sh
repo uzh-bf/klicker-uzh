@@ -11,9 +11,9 @@ NEXT_APPS=(auth chat frontend-control frontend-manage frontend-pwa)
 # Authentication rejects this valid synthetic nested route before any database
 # lookup, so the handler must return JSON 401 even when no seed data exists.
 CHAT_PROBE_URL='http://localhost:3004/api/chatbots/00000000-0000-4000-8000-000000000000/threads'
-CHAT_STALE_STATUS=20
-CHAT_WAITING_STATUS=21
-CHAT_UNEXPECTED_STATUS=22
+STALE_STATUS=20
+WAITING_STATUS=21
+UNEXPECTED_STATUS=22
 
 die() {
   echo "[dev-runtime] ERROR: $*" >&2
@@ -146,9 +146,33 @@ valid_next_app() {
   return 1
 }
 
+probe_url() {
+  case "$1" in
+    auth) echo 'http://localhost:3010/' ;;
+    chat) echo "$CHAT_PROBE_URL" ;;
+    frontend-control) echo 'http://localhost:3003/login' ;;
+    frontend-manage) echo 'http://localhost:3002/login' ;;
+    frontend-pwa) echo 'http://localhost:3001/login' ;;
+    *) return 1 ;;
+  esac
+}
+
+# Chat proves its nested dynamic API route graph through the authentication
+# contract above. The other apps prove their static route table through a
+# committed shell page that renders HTML without database content, so a 404
+# there can never be a legitimate data-driven miss.
+probe_mode() {
+  case "$1" in
+    chat) echo 'auth-json' ;;
+    auth | frontend-control | frontend-manage | frontend-pwa)
+      echo 'html-shell'
+      ;;
+    *) return 1 ;;
+  esac
+}
+
 request_repair() {
-  local app="$1"
-  local generation
+  local app="$1" generation pending updated
 
   valid_next_app "$app" || die "Unsupported Next.js repair target: $app"
   require_tool flock
@@ -157,7 +181,15 @@ request_repair() {
   flock -w 10 9 || die "Timed out waiting for the runtime-state lock."
 
   generation="$(read_generation)"
-  write_atomic "$REPAIR_REQUEST_FILE" "$app"
+  updated="$app"
+  if [ -s "$REPAIR_REQUEST_FILE" ]; then
+    while IFS= read -r pending; do
+      valid_next_app "$pending" ||
+        die "Invalid pending repair target: $pending."
+      [ "$pending" = "$app" ] || updated="$updated"$'\n'"$pending"
+    done <"$REPAIR_REQUEST_FILE"
+  fi
+  write_atomic "$REPAIR_REQUEST_FILE" "$updated"
   write_atomic "$GENERATION_FILE" "$((generation + 1))"
   echo "[dev-runtime] Requested one full .next repair for $app."
 }
@@ -206,63 +238,84 @@ remove_next_dir() {
 }
 
 apply_cache_policy() {
-  local app repair_target=""
+  local app repair_target
 
   for app in "${NEXT_APPS[@]}"; do
     remove_next_dir "$ROOT/apps/$app/.next/dev"
   done
 
   if [ -f "$REPAIR_REQUEST_FILE" ]; then
-    IFS= read -r repair_target <"$REPAIR_REQUEST_FILE" || true
-    valid_next_app "$repair_target" || die "Invalid pending repair target."
-    remove_next_dir "$ROOT/apps/$repair_target/.next"
+    while IFS= read -r repair_target; do
+      valid_next_app "$repair_target" ||
+        die "Invalid pending repair target: $repair_target."
+      remove_next_dir "$ROOT/apps/$repair_target/.next"
+    done <"$REPAIR_REQUEST_FILE"
     rm -f "$REPAIR_REQUEST_FILE"
   fi
 }
 
-classify_chat_response() {
-  local status="$1"
-  local content_type="${2,,}"
+classify_response() {
+  local mode="$1" status="$2"
+  local content_type="${3,,}"
 
-  if [ "$status" = '401' ] && [[ "$content_type" == application/json* ]]; then
-    echo "ready: HTTP $status $content_type"
-    return 0
+  if [ "$mode" = 'auth-json' ]; then
+    if [ "$status" = '401' ] && [[ "$content_type" == application/json* ]]; then
+      echo "ready: HTTP $status $content_type"
+      return 0
+    fi
+  elif [ "$mode" = 'html-shell' ]; then
+    if [[ "$status" =~ ^[23][0-9][0-9]$ ]] &&
+      [[ "$content_type" == text/html* ]]; then
+      echo "ready: HTTP $status $content_type"
+      return 0
+    fi
+    # Next.js redirect responses often have no body and no content-type; the
+    # redirect itself proves the committed shell route resolved.
+    if [[ "$status" =~ ^3[0-9][0-9]$ ]]; then
+      echo "ready: HTTP $status redirect"
+      return 0
+    fi
+  else
+    die "Unknown probe mode: $mode."
   fi
+
   if [ "$status" = '404' ] && [[ "$content_type" == text/html* ]]; then
     echo "stale: HTTP $status $content_type"
-    return "$CHAT_STALE_STATUS"
+    return "$STALE_STATUS"
   fi
-
   echo "unexpected: HTTP $status ${content_type:-unknown-content-type}"
-  return "$CHAT_UNEXPECTED_STATUS"
+  return "$UNEXPECTED_STATUS"
 }
 
-probe_chat() {
-  local response status content_type
+probe_app() {
+  local app="$1" mode url response status content_type
 
+  mode="$(probe_mode "$app")" || die "No probe contract is defined for: $app"
+  url="$(probe_url "$app")" || die "No probe URL is defined for: $app"
   require_tool curl
   if ! response="$(curl --silent --show-error --output /dev/null \
     --write-out $'%{http_code}\t%{content_type}' \
     --connect-timeout 2 --max-time 15 --noproxy '*' \
-    "$CHAT_PROBE_URL" 2>/dev/null)"; then
-    echo 'waiting: Chat is not accepting connections'
-    return "$CHAT_WAITING_STATUS"
+    "$url" 2>/dev/null)"; then
+    echo "waiting: $app is not accepting connections"
+    return "$WAITING_STATUS"
   fi
 
   status="${response%%$'\t'*}"
   content_type="${response#*$'\t'}"
-  classify_chat_response "$status" "$content_type"
+  classify_response "$mode" "$status" "$content_type"
 }
 
-wait_for_chat() {
+wait_for_app() {
+  local app="$1"
   local attempt observation status=0 last_observation=''
   local stale_count=0 unexpected_count=0
 
   require_tool sleep
-  echo '[dev-runtime] Waiting for the Chat route contract...'
+  echo "[dev-runtime] Waiting for the $app readiness contract..."
   for ((attempt = 1; attempt <= 90; attempt++)); do
     status=0
-    observation="$(probe_chat)" || status=$?
+    observation="$(probe_app "$app")" || status=$?
     if [ "$observation" != "$last_observation" ]; then
       echo "[dev-runtime] $observation"
       last_observation="$observation"
@@ -270,57 +323,69 @@ wait_for_chat() {
 
     case "$status" in
       0)
-        echo '[dev-runtime] Chat route contract is ready.'
+        echo "[dev-runtime] $app readiness contract is satisfied."
         return 0
         ;;
-      "$CHAT_STALE_STATUS")
+      "$STALE_STATUS")
         stale_count=$((stale_count + 1))
         unexpected_count=0
         ;;
-      "$CHAT_WAITING_STATUS")
+      "$WAITING_STATUS")
         stale_count=0
         unexpected_count=0
         ;;
-      "$CHAT_UNEXPECTED_STATUS")
+      "$UNEXPECTED_STATUS")
         stale_count=0
         unexpected_count=$((unexpected_count + 1))
         ;;
       *)
-        die "Chat probe returned unsupported status $status."
+        die "$app probe returned unsupported status $status."
         ;;
     esac
 
     if [ "$attempt" -ge 10 ] && [ "$stale_count" -ge 5 ]; then
-      echo '[dev-runtime] Confirmed stale Chat route state.' >&2
-      return "$CHAT_STALE_STATUS"
+      echo "[dev-runtime] Confirmed stale $app route state." >&2
+      return "$STALE_STATUS"
     fi
     if [ "$attempt" -ge 10 ] && [ "$unexpected_count" -ge 3 ]; then
-      echo '[dev-runtime] Chat returned a stable unexpected response; no cache was removed.' >&2
-      return "$CHAT_UNEXPECTED_STATUS"
+      echo "[dev-runtime] $app returned a stable unexpected response; no cache was removed." >&2
+      return "$UNEXPECTED_STATUS"
     fi
     [ "$attempt" -eq 90 ] || sleep 1
   done
 
-  echo '[dev-runtime] Chat did not satisfy its route contract within 90 seconds.' >&2
+  echo "[dev-runtime] $app did not satisfy its readiness contract within 90 seconds." >&2
   return 1
 }
 
-doctor_chat() {
-  local observation status=0
+doctor() {
+  local app observation status=0 unhealthy=0
+  local any_stale=false any_unexpected=false
 
-  observation="$(probe_chat)" || status=$?
-  if [ "$status" -eq 0 ]; then
-    echo "[dev-runtime] Chat healthy: $observation"
-    return 0
-  fi
+  for app in "${NEXT_APPS[@]}"; do
+    status=0
+    observation="$(probe_app "$app")" || status=$?
+    if [ "$status" -eq 0 ]; then
+      echo "[dev-runtime] $app healthy: $observation"
+      continue
+    fi
 
-  echo "[dev-runtime] ERROR: Chat unhealthy: $observation" >&2
-  if [ "$status" -eq "$CHAT_STALE_STATUS" ]; then
+    unhealthy=1
+    echo "[dev-runtime] ERROR: $app unhealthy: $observation" >&2
+    if [ "$status" -eq "$STALE_STATUS" ]; then
+      any_stale=true
+    else
+      any_unexpected=true
+    fi
+  done
+
+  if [ "$any_stale" = true ]; then
     echo '[dev-runtime] Run devrouter ensure . on the host to apply the bounded repair.' >&2
-  else
+  fi
+  if [ "$any_unexpected" = true ]; then
     echo '[dev-runtime] No cache was removed. Inspect /tmp/dev.log for the application failure.' >&2
   fi
-  return 1
+  return "$unhealthy"
 }
 
 start_runtime() {
@@ -355,9 +420,9 @@ Usage:
   util/dev-runtime.sh ensure-dependencies
   util/dev-runtime.sh request-repair <next-app>
   util/dev-runtime.sh start <fingerprint> <generation> -- <command> [args...]
-  util/dev-runtime.sh classify-chat-response <status> <content-type>
-  util/dev-runtime.sh probe-chat
-  util/dev-runtime.sh wait-chat
+  util/dev-runtime.sh classify-response <auth-json|html-shell> <status> <content-type>
+  util/dev-runtime.sh probe-app <next-app>
+  util/dev-runtime.sh wait-app <next-app>
   util/dev-runtime.sh doctor
 EOF
 }
@@ -394,21 +459,21 @@ main() {
       shift
       start_runtime "$@"
       ;;
-    classify-chat-response)
-      [ "$#" -eq 3 ] || die "classify-chat-response requires status and content type."
-      classify_chat_response "$2" "$3"
+    classify-response)
+      [ "$#" -eq 4 ] || die "classify-response requires mode, status, and content type."
+      classify_response "$2" "$3" "$4"
       ;;
-    probe-chat)
-      [ "$#" -eq 1 ] || die "probe-chat takes no arguments."
-      probe_chat
+    probe-app)
+      [ "$#" -eq 2 ] || die "probe-app requires one app name."
+      probe_app "$2"
       ;;
-    wait-chat)
-      [ "$#" -eq 1 ] || die "wait-chat takes no arguments."
-      wait_for_chat
+    wait-app)
+      [ "$#" -eq 2 ] || die "wait-app requires one app name."
+      wait_for_app "$2"
       ;;
     doctor)
       [ "$#" -eq 1 ] || die "doctor takes no arguments."
-      doctor_chat
+      doctor
       ;;
     --help|-h)
       usage

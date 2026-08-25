@@ -138,18 +138,23 @@ replaced boundedly, and unknown processes are never killed. The MCP command
 also carries the fixture source hash so a source edit forces managed
 replacement. The app command also fingerprints dependency inputs, Next.js route
 structure, configuration, and the checked-out commit. A true process start
-clears only `.next/dev`; a changed dependency fingerprint runs one frozen
-install against the persistent `node_modules` volume.
+clears every Next app's `.next/dev` output, including the persistent Turbopack
+development cache, while production outputs survive; a changed dependency
+fingerprint runs one frozen install against the persistent `node_modules` volume.
 
-Before `post-start` reports success, it probes a nested unauthenticated Chat API
-route whose healthy contract is `401 application/json`. Five consecutive
-`404 text/html` responses after the startup grace period identify the known
-stale Next.js route state. Only that signature requests one managed Chat
-restart with a full `apps/chat/.next` cleanup. Other errors fail closed without
-removing caches. Run `devrouter exec . -- pnpm run dev:doctor` for the same
-read-only semantic check. The root build script forces production mode even
-though the live container exports `NODE_ENV=development`; rerun
-`devrouter ensure .` afterward to restore and prove the development runtime.
+Before `post-start` reports success, it probes every Next app's readiness
+contract. Unauthenticated Chat must answer `401 application/json` on a nested
+API route, and the committed shell pages of auth, PWA, manage, and control must
+answer `2xx` HTML or a redirect. Five consecutive `404 text/html` responses on such a
+known-existing route after the startup grace period identify stale Next.js
+route state. Only that signature requests one managed restart with a full
+`.next` cleanup for exactly the affected apps. Other errors fail closed without
+removing caches; a data-driven 404, for example a missing quiz evaluation, is
+an application failure rather than a cache signature. Run
+`devrouter exec . -- pnpm run dev:doctor` for the same read-only check across
+all five apps. The root build script forces production mode even though the
+live container exports `NODE_ENV=development`; rerun `devrouter ensure .`
+afterward to restore and prove the development runtime.
 
 The image also carries uv `0.11.12` and selects Python 3.12, matching the
 analytics image and lint CI so the root quality gate runs inside the container.

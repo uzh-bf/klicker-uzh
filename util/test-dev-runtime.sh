@@ -118,29 +118,90 @@ if bash "$RUNTIME_SCRIPT" request-repair unsupported >/dev/null 2>&1; then
   fail 'unsupported repair target was accepted'
 fi
 
+# A stale pass can cover several apps at once: every requested app receives a
+# full .next repair in one start, untouched apps keep their production output,
+# and repeated requests for the same app stay deduplicated.
+rm -f "$ROOT/apps/chat/.next"
+for app in "${NEXT_APPS[@]}"; do
+  write_file "$ROOT/apps/$app/.next/dev/cache.bin" 'development cache'
+  write_file "$ROOT/apps/$app/.next/production.bin" 'production cache'
+done
+
+bash "$RUNTIME_SCRIPT" request-repair frontend-manage >/dev/null
+bash "$RUNTIME_SCRIPT" request-repair chat >/dev/null
+bash "$RUNTIME_SCRIPT" request-repair chat >/dev/null
+assert_equal "$(bash "$RUNTIME_SCRIPT" generation)" '4'
 assert_equal \
-  "$(bash "$RUNTIME_SCRIPT" classify-chat-response 401 'application/json; charset=utf-8')" \
+  "$(LC_ALL=C sort "$ROOT/.devcontainer/.runtime/next-repair-request" | tr '\n' ' ')" \
+  'chat frontend-manage '
+bash "$RUNTIME_SCRIPT" start "$runtime_fingerprint" 4 -- true
+assert_absent "$ROOT/apps/chat/.next"
+assert_absent "$ROOT/apps/frontend-manage/.next"
+assert_exists "$ROOT/apps/auth/.next/production.bin"
+assert_exists "$ROOT/apps/frontend-pwa/.next/production.bin"
+assert_absent "$ROOT/.devcontainer/.runtime/next-repair-request"
+
+assert_equal \
+  "$(bash "$RUNTIME_SCRIPT" classify-response auth-json 401 'application/json; charset=utf-8')" \
   'ready: HTTP 401 application/json; charset=utf-8'
 
 classification_status=0
 classification_output="$(
-  bash "$RUNTIME_SCRIPT" classify-chat-response 404 'text/html; charset=utf-8'
+  bash "$RUNTIME_SCRIPT" classify-response auth-json 404 'text/html; charset=utf-8'
 )" || classification_status=$?
 assert_equal "$classification_status" '20'
 assert_equal "$classification_output" 'stale: HTTP 404 text/html; charset=utf-8'
 
 classification_status=0
 classification_output="$(
-  bash "$RUNTIME_SCRIPT" classify-chat-response 500 application/json
+  bash "$RUNTIME_SCRIPT" classify-response auth-json 500 application/json
 )" || classification_status=$?
 assert_equal "$classification_status" '22'
 assert_equal "$classification_output" 'unexpected: HTTP 500 application/json'
 
 classification_status=0
 classification_output="$(
-  bash "$RUNTIME_SCRIPT" classify-chat-response 404 application/json
+  bash "$RUNTIME_SCRIPT" classify-response auth-json 404 application/json
 )" || classification_status=$?
 assert_equal "$classification_status" '22'
 assert_equal "$classification_output" 'unexpected: HTTP 404 application/json'
+
+assert_equal \
+  "$(bash "$RUNTIME_SCRIPT" classify-response html-shell 200 'text/html; charset=utf-8')" \
+  'ready: HTTP 200 text/html; charset=utf-8'
+assert_equal \
+  "$(bash "$RUNTIME_SCRIPT" classify-response html-shell 307 'text/html')" \
+  'ready: HTTP 307 text/html'
+assert_equal \
+  "$(bash "$RUNTIME_SCRIPT" classify-response html-shell 307 '')" \
+  'ready: HTTP 307 redirect'
+
+classification_status=0
+classification_output="$(
+  bash "$RUNTIME_SCRIPT" classify-response html-shell 404 'text/html'
+)" || classification_status=$?
+assert_equal "$classification_status" '20'
+assert_equal "$classification_output" 'stale: HTTP 404 text/html'
+
+classification_status=0
+classification_output="$(
+  bash "$RUNTIME_SCRIPT" classify-response html-shell 500 'text/html'
+)" || classification_status=$?
+assert_equal "$classification_status" '22'
+assert_equal "$classification_output" 'unexpected: HTTP 500 text/html'
+
+classification_status=0
+classification_output="$(
+  bash "$RUNTIME_SCRIPT" classify-response html-shell 200 'application/json'
+)" || classification_status=$?
+assert_equal "$classification_status" '22'
+assert_equal "$classification_output" 'unexpected: HTTP 200 application/json'
+
+if bash "$RUNTIME_SCRIPT" classify-response unknown-mode 200 'text/html' >/dev/null 2>&1; then
+  fail 'unknown probe mode was accepted'
+fi
+if bash "$RUNTIME_SCRIPT" probe-app unsupported >/dev/null 2>&1; then
+  fail 'app without a probe contract was accepted'
+fi
 
 echo '[test-dev-runtime] PASS'
