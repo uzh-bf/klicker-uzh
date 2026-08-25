@@ -64,6 +64,7 @@ import {
 import {
   handleEvaluateFreeTextAttempt,
   handleEvaluateFreeTextAttemptFailure,
+  handleReapStalledFreeTextAttempts,
 } from './services/freeTextEvaluationHandler.js'
 import {
   handleEndExpiredGroupActivity,
@@ -95,6 +96,9 @@ export const schema = builder.toSchema({
 })
 
 export const handlers: HatchetHandlers = {
+  handleEvaluateFreeTextAttempt,
+  handleEvaluateFreeTextAttemptFailure,
+  handleReapStalledFreeTextAttempts,
   handleFinalRandomGroupAssignments,
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,

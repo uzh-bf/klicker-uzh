@@ -86,22 +86,25 @@ export async function handleEvaluateFreeTextAttempt(
     return { success: true, applied: true }
   }
 
-  const consent =
-    await globalCtx.prisma.participantSemanticEvaluationConsent.findUnique({
+  const latestConsentEvent =
+    await globalCtx.prisma.freeTextConsentEvent.findFirst({
       where: {
-        participantId_disclosureVersion: {
-          participantId: attempt.cycle.participantId,
-          disclosureVersion: getSemanticEvaluationDisclosureVersion(),
-        },
+        participantId: attempt.cycle.participantId,
+        disclosureVersion: getSemanticEvaluationDisclosureVersion(),
       },
+      orderBy: [{ decidedAt: 'desc' }, { id: 'desc' }],
     })
-  if (consent?.decision !== DB.SemanticEvaluationConsentDecision.ACCEPTED) {
+  if (
+    latestConsentEvent?.decision !==
+    DB.SemanticEvaluationConsentDecision.ACCEPTED
+  ) {
     await markFreeTextAttemptUnavailable(
       {
         attemptId,
         evaluationRevision,
         reason:
-          consent?.decision === DB.SemanticEvaluationConsentDecision.DECLINED
+          latestConsentEvent?.decision ===
+          DB.SemanticEvaluationConsentDecision.DECLINED
             ? 'CONSENT_DECLINED'
             : 'CONSENT_REQUIRED',
         retryable: true,
@@ -151,6 +154,21 @@ export async function handleEvaluateFreeTextAttempt(
   const responseApplied = applied
     ? await applyFreeTextAttemptResponse({ attemptId }, globalCtx.prisma)
     : false
+  if (applied && !responseApplied) {
+    // The evaluation is committed but the reward/response application was
+    // skipped (instance missing or results unchanged). Surface this loudly:
+    // the participant sees feedback without XP/points and nothing else would
+    // indicate the gap.
+    console.error(
+      JSON.stringify({
+        service: 'semantic-free-text-evaluator',
+        attemptId,
+        reasonClass: 'REWARD_APPLICATION_SKIPPED',
+        detail:
+          'Evaluation completed but applyFreeTextAttemptResponse returned false',
+      })
+    )
+  }
   return { success: true, applied: applied && responseApplied }
 }
 
@@ -171,7 +189,53 @@ export async function handleEvaluateFreeTextAttemptFailure(
     },
     globalCtx.prisma
   )
+  if (!applied) {
+    console.warn(
+      JSON.stringify({
+        service: 'semantic-free-text-evaluator',
+        attemptId,
+        reasonClass: 'FAILURE_HANDLER_NOOP',
+        detail: 'mark-free-text-attempt-unavailable matched no PENDING attempt',
+      })
+    )
+  }
   return { success: true, applied }
+}
+
+const REAP_STALLED_AFTER_MINUTES = 10
+
+export async function handleReapStalledFreeTextAttempts(
+  {},
+  globalCtx: HatchetHandlerGlobalContext,
+  _executionCtx: Context<unknown>
+) {
+  const stalledBefore = new Date(
+    Date.now() - REAP_STALLED_AFTER_MINUTES * 60 * 1000
+  )
+  const result = await globalCtx.prisma.freeTextAttempt.updateMany({
+    where: {
+      evaluationStatus: DB.FreeTextEvaluationStatus.PENDING,
+      updatedAt: { lt: stalledBefore },
+      cycle: { status: DB.FreeTextPracticeCycleStatus.ACTIVE },
+    },
+    data: {
+      evaluationStatus: DB.FreeTextEvaluationStatus.UNAVAILABLE,
+      evaluationSource: null,
+      availabilityReason: 'EVALUATION_STALLED',
+      retryable: true,
+      completedAt: new Date(),
+    },
+  })
+  if (result.count > 0) {
+    console.warn(
+      JSON.stringify({
+        service: 'semantic-free-text-evaluator',
+        reasonClass: 'STALLED_ATTEMPTS_REAPED',
+        count: result.count,
+      })
+    )
+  }
+  return true
 }
 
 export { RetryableSemanticEvaluatorError }

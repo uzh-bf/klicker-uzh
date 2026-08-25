@@ -485,10 +485,16 @@ describe('semantic free-text practice state', () => {
     expect(restarted.cycleStatus).toBe('ACTIVE')
   })
 
-  it('persists consent decisions by disclosure version', async () => {
+  it('persists consent decisions as an append-only event history', async () => {
     const ctx = participantContext(fixture.participant.id)
     await decideSemanticEvaluationConsent(
       { disclosureVersion: 'v1', accepted: true },
+      ctx
+    )
+    // A flip on the same version must append, not overwrite: the ledger keeps
+    // the demonstrable-consent trail for both decisions.
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: 'v1', accepted: false },
       ctx
     )
     await decideSemanticEvaluationConsent(
@@ -496,22 +502,17 @@ describe('semantic free-text practice state', () => {
       ctx
     )
 
-    const decisions =
-      await prisma.participantSemanticEvaluationConsent.findMany({
-        where: { participantId: fixture.participant.id },
-      })
-    expect(decisions).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          disclosureVersion: 'v1',
-          decision: SemanticEvaluationConsentDecision.ACCEPTED,
-        }),
-        expect.objectContaining({
-          disclosureVersion: 'v2',
-          decision: SemanticEvaluationConsentDecision.DECLINED,
-        }),
-      ])
-    )
+    const events = await prisma.freeTextConsentEvent.findMany({
+      where: { participantId: fixture.participant.id },
+      orderBy: [{ decidedAt: 'asc' }, { id: 'asc' }],
+    })
+    expect(
+      events.map((event) => [event.disclosureVersion, event.decision])
+    ).toEqual([
+      ['v1', SemanticEvaluationConsentDecision.ACCEPTED],
+      ['v1', SemanticEvaluationConsentDecision.DECLINED],
+      ['v2', SemanticEvaluationConsentDecision.DECLINED],
+    ])
   })
 
   it('does not expose solution details for an active cycle', async () => {

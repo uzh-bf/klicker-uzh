@@ -17,6 +17,9 @@ import dayjs from 'dayjs'
 import type { ContextWithUser } from '@/lib/context.js'
 
 const DEFAULT_DISCLOSURE_VERSION = '2026-08-18'
+// Absolute ceiling for participant free-text answers on semantic elements,
+// independent of the lecturer-configured maxLength.
+const MAX_SEMANTIC_ANSWER_LENGTH = 10_000
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
 const UUID_PATTERN =
@@ -98,8 +101,8 @@ function assertParticipant(ctx: ContextWithUser) {
 
 function getDisclosureVersion(options?: FreeTextEvaluationServiceOptions) {
   return (
-    options?.disclosureVersion ??
-    process.env.SEMANTIC_EVALUATION_DISCLOSURE_VERSION ??
+    options?.disclosureVersion ||
+    process.env.SEMANTIC_EVALUATION_DISCLOSURE_VERSION ||
     DEFAULT_DISCLOSURE_VERSION
   )
 }
@@ -210,14 +213,11 @@ async function getConsentDecision(
   disclosureVersion: string,
   ctx: ContextWithUser
 ) {
-  return await ctx.prisma.participantSemanticEvaluationConsent.findUnique({
-    where: {
-      participantId_disclosureVersion: {
-        participantId,
-        disclosureVersion,
-      },
-    },
+  const latestEvent = await ctx.prisma.freeTextConsentEvent.findFirst({
+    where: { participantId, disclosureVersion },
+    orderBy: [{ decidedAt: 'desc' }, { id: 'desc' }],
   })
+  return latestEvent
 }
 
 function evaluationAvailabilityReason({
@@ -373,8 +373,8 @@ function toAttemptState(
     outcomeBandId: attempt.outcomeBandId,
     outcomeBandLabel: attempt.outcomeBandLabel,
     correctness: attempt.correctness,
-    evaluatorVersion: attempt.evaluatorVersion,
-    modelVersion: attempt.modelVersion,
+    evaluatorVersion: solutionAuthorized ? attempt.evaluatorVersion : null,
+    modelVersion: solutionAuthorized ? attempt.modelVersion : null,
     structuredResult: solutionAuthorized
       ? (attempt.structuredResult as FreeTextEvaluationResult | null)
       : null,
@@ -498,7 +498,11 @@ async function schedulePendingAttempt(
 ) {
   try {
     await scheduleAttempt(attempt, ctx)
-  } catch {
+  } catch (error) {
+    console.error(
+      `Failed to schedule pending free-text attempt ${attempt.id}:`,
+      error
+    )
     await ctx.prisma.freeTextAttempt.updateMany({
       where: {
         id: attempt.id,
@@ -544,6 +548,9 @@ export async function createFreeTextAttempt(
   const maxLength = freeTextOptions.restrictions?.maxLength
   if (typeof maxLength === 'number' && answer.length > maxLength) {
     throw new Error('Answer exceeds the configured maximum length')
+  }
+  if (answer.length > MAX_SEMANTIC_ANSWER_LENGTH) {
+    throw new Error('Answer exceeds the maximum allowed length')
   }
   const cycle = await getActiveOrCreateCycle(semanticInstance, ctx)
   const duplicate = await ctx.prisma.freeTextAttempt.findUnique({
@@ -662,7 +669,18 @@ export async function createFreeTextAttempt(
         bestScore: 100,
       },
     })
-    await scheduleAttempt(attempt, ctx)
+    try {
+      await scheduleAttempt(attempt, ctx)
+    } catch (error) {
+      // The attempt is already terminal-EVALUATED and rewards are applied by
+      // the scheduled handler; scheduling here is bookkeeping only. A failed
+      // schedule leaves the persisted success intact — the duplicate-submission
+      // heal path re-schedules on the next identical submit.
+      console.error(
+        `Failed to schedule exact-match free-text attempt ${attempt.id}:`,
+        error
+      )
+    }
   } else if (!unavailableReason) {
     await schedulePendingAttempt(attempt, ctx)
   }
@@ -806,25 +824,13 @@ export async function decideSemanticEvaluationConsent(
   if (!disclosureVersion.trim()) {
     throw new Error('Disclosure version is required')
   }
-  return await ctx.prisma.participantSemanticEvaluationConsent.upsert({
-    where: {
-      participantId_disclosureVersion: {
-        participantId: ctx.user.sub,
-        disclosureVersion,
-      },
-    },
-    create: {
+  return await ctx.prisma.freeTextConsentEvent.create({
+    data: {
       participantId: ctx.user.sub,
       disclosureVersion,
       decision: accepted
         ? DB.SemanticEvaluationConsentDecision.ACCEPTED
         : DB.SemanticEvaluationConsentDecision.DECLINED,
-    },
-    update: {
-      decision: accepted
-        ? DB.SemanticEvaluationConsentDecision.ACCEPTED
-        : DB.SemanticEvaluationConsentDecision.DECLINED,
-      decidedAt: new Date(),
     },
   })
 }

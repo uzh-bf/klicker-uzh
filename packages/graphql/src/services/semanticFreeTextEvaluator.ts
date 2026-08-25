@@ -7,6 +7,27 @@ import type {
 
 const DEFAULT_TIMEOUT_MS = 30_000
 
+// Structured boundary logging: reason class and correlation ids only. Never
+// log answer text, rubric content, tokens, or full payloads.
+function logEvaluatorEvent(
+  level: 'warn' | 'error',
+  taskBundleId: string,
+  reasonClass: string,
+  extra?: Record<string, unknown>
+) {
+  const entry = {
+    service: 'semantic-free-text-evaluator',
+    attemptId: taskBundleId,
+    reasonClass,
+    ...extra,
+  }
+  if (level === 'error') {
+    console.error(JSON.stringify(entry))
+  } else {
+    console.warn(JSON.stringify(entry))
+  }
+}
+
 export class RetryableSemanticEvaluatorError extends Error {
   constructor() {
     super('Semantic evaluator request failed')
@@ -38,9 +59,13 @@ export async function requestSemanticFreeTextEvaluation({
     }
   }
 
-  const timeout = Number(
+  const configuredTimeout = Number(
     process.env.CATALYST_FORMATIVE_EVALUATOR_TIMEOUT_MS ?? DEFAULT_TIMEOUT_MS
   )
+  const timeout =
+    Number.isFinite(configuredTimeout) && configuredTimeout > 0
+      ? configuredTimeout
+      : DEFAULT_TIMEOUT_MS
   let response: Response
   try {
     response = await fetch(endpoint, {
@@ -54,9 +79,12 @@ export async function requestSemanticFreeTextEvaluation({
           : {}),
       },
       body: JSON.stringify(request),
-      signal: AbortSignal.timeout(Number.isFinite(timeout) ? timeout : 30_000),
+      signal: AbortSignal.timeout(timeout),
     })
-  } catch {
+  } catch (error) {
+    logEvaluatorEvent('warn', request.task_bundle_id, 'RETRYABLE_NETWORK', {
+      detail: error instanceof Error ? error.name : 'unknown',
+    })
     throw new RetryableSemanticEvaluatorError()
   }
 
@@ -66,8 +94,17 @@ export async function requestSemanticFreeTextEvaluation({
       response.status === 429 ||
       response.status >= 500
     ) {
+      logEvaluatorEvent('warn', request.task_bundle_id, 'HTTP_RETRYABLE', {
+        status: response.status,
+      })
       throw new RetryableSemanticEvaluatorError()
     }
+    logEvaluatorEvent(
+      'error',
+      request.task_bundle_id,
+      'EVALUATOR_REJECTED_REQUEST',
+      { status: response.status }
+    )
     return {
       ok: false,
       reason: 'EVALUATOR_REJECTED_REQUEST',
@@ -79,6 +116,7 @@ export async function requestSemanticFreeTextEvaluation({
   try {
     value = await response.json()
   } catch {
+    logEvaluatorEvent('error', request.task_bundle_id, 'INVALID_JSON_PAYLOAD')
     return {
       ok: false,
       reason: 'EVALUATOR_RESULT_UNAVAILABLE',
@@ -91,6 +129,9 @@ export async function requestSemanticFreeTextEvaluation({
     rubricSchema,
   })
   if (errors.length > 0) {
+    logEvaluatorEvent('error', request.task_bundle_id, 'INVALID_PAYLOAD', {
+      validationErrors: errors.length,
+    })
     return {
       ok: false,
       reason: 'EVALUATOR_RESULT_UNAVAILABLE',

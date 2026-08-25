@@ -104,6 +104,22 @@ export function prepareHatchetTasks({
 
   // ! SEMANTIC FREE-TEXT EVALUATION
   // #region
+  const reapStalledFreeTextAttempts = hatchet.task({
+    name: 'reap-stalled-free-text-attempts',
+    retries: 3,
+    onCrons: [
+      '*/5 * * * *', // runs every 5 minutes (UTC)
+    ],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleReapStalledFreeTextAttempts(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
   const evaluateFreeTextAttempt = hatchet.workflow<{
     attemptId: string
     evaluationRevision: number
@@ -563,6 +579,7 @@ export function prepareHatchetTasks({
 
   const tasks = {
     evaluateFreeTextAttempt,
+    reapStalledFreeTextAttempts,
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,
