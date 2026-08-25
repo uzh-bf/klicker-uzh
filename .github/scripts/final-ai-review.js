@@ -47,6 +47,17 @@ function normalizeTitle(value, limit = 200) {
   return Array.from(normalized).slice(0, limit).join('')
 }
 
+function isSafeRepositoryPath(value) {
+  return (
+    typeof value === 'string' &&
+    value.length > 0 &&
+    value.length <= 500 &&
+    !path.posix.isAbsolute(value) &&
+    !value.split('/').includes('..') &&
+    !/[\p{Cc}\p{Cf}`]/u.test(value)
+  )
+}
+
 function buildReviewBackground(title) {
   const normalized = normalizeTitle(title)
   const value = normalized || '(empty title)'
@@ -602,9 +613,19 @@ function parseDispositionRecord(body) {
   try {
     const record = JSON.parse(match[1])
     if (
+      Object.keys(record).some(
+        (key) =>
+          ![
+            'schema_version',
+            'review_id',
+            'root_head',
+            'workflow_run_id',
+            'entries',
+          ].includes(key)
+      ) ||
       record.schema_version !== DISPOSITION_SCHEMA ||
-      typeof record.review_id !== 'string' ||
-      typeof record.root_head !== 'string' ||
+      !/^(?:frv|fsr)-[0-9a-f]{24}$/.test(record.review_id ?? '') ||
+      !/^[0-9a-f]{40}$/.test(record.root_head ?? '') ||
       !Number.isSafeInteger(record.workflow_run_id) ||
       record.workflow_run_id <= 0 ||
       !Array.isArray(record.entries)
@@ -739,25 +760,43 @@ function dispositionEntries(metadata) {
       : []
 }
 
-function validateDispositionRecord(record, expectedFindingIds) {
+function validateDispositionRecord(
+  record,
+  expectedFindingIds,
+  rootFindingById
+) {
   if (!record) return null
   const expected = new Set(expectedFindingIds)
   const seen = new Set()
   const entries = []
   for (const entry of record.entries) {
-    const findingId = String(entry?.finding_id ?? '')
-    const state = String(entry?.state ?? '')
+    const findingId = entry?.finding_id
+    const state = entry?.state
     const reference = normalizeTitle(entry?.reference ?? '', 300)
+    const paths = entry?.paths
     if (
+      !entry ||
+      typeof entry !== 'object' ||
+      Object.keys(entry).some(
+        (key) => !['finding_id', 'state', 'reference', 'paths'].includes(key)
+      ) ||
+      typeof findingId !== 'string' ||
       !expected.has(findingId) ||
       seen.has(findingId) ||
+      typeof state !== 'string' ||
       !DISPOSITION_STATES.has(state) ||
-      !reference
+      !reference ||
+      !Array.isArray(paths) ||
+      paths.length === 0 ||
+      paths.length > MAX_INCREMENTAL_PATHS ||
+      paths.some((filePath) => !isSafeRepositoryPath(filePath))
     ) {
       return null
     }
+    const finding = rootFindingById.get(findingId)
+    if (!finding || !paths.includes(finding.path)) return null
     seen.add(findingId)
-    entries.push({ finding_id: findingId, reference, state })
+    entries.push({ finding_id: findingId, paths, reference, state })
   }
   if (seen.size !== expected.size) return null
   const orderedEntries = expectedFindingIds.map((findingId) =>
@@ -773,6 +812,9 @@ function validateDispositionRecord(record, expectedFindingIds) {
 
 async function latestTrustedDisposition({ github, context, pull, rootReview }) {
   const expectedFindingIds = dispositionEntries(rootReview.metadata)
+  const rootFindingById = new Map(
+    (rootReview.metadata.findings ?? []).map((finding) => [finding.id, finding])
+  )
   if (expectedFindingIds.length === 0) {
     return {
       entries: [],
@@ -797,7 +839,11 @@ async function latestTrustedDisposition({ github, context, pull, rootReview }) {
     }
     const permission = await getPermission(github, context, artifact.user.login)
     if (!isTrustedPermission(permission)) continue
-    const validated = validateDispositionRecord(record, expectedFindingIds)
+    const validated = validateDispositionRecord(
+      record,
+      expectedFindingIds,
+      rootFindingById
+    )
     if (validated) {
       candidates.push({ artifact, disposition: validated })
     }
@@ -808,50 +854,6 @@ async function latestTrustedDisposition({ github, context, pull, rootReview }) {
       (left, right) =>
         artifactTimestamp(right.artifact) - artifactTimestamp(left.artifact)
     )[0]?.disposition ?? null
-  )
-}
-
-function isTestPath(filePath) {
-  return (
-    /(^|\/)(__tests__|tests?|specs?)(\/|$)/i.test(filePath) ||
-    /\.(test|spec)\.[^/]+$/i.test(filePath)
-  )
-}
-
-function isDocumentationPath(filePath) {
-  return (
-    /(^|\/)(docs?|documentation)(\/|$)/i.test(filePath) ||
-    /\.(md|mdx|rst|adoc)$/i.test(filePath)
-  )
-}
-
-function isGeneratedPath(filePath) {
-  return (
-    /(^|\/)(generated|gen)(\/|$)/i.test(filePath) ||
-    /\.(generated|gen)\.[^/]+$/i.test(filePath)
-  )
-}
-
-function companionStem(filePath) {
-  return path.posix
-    .basename(filePath)
-    .replace(/\.(test|spec|generated|gen)(?=\.)/gi, '')
-    .replace(/\.[^.]+$/u, '')
-}
-
-function isRelatedCompanionPath(filePath, rootFindingPaths) {
-  if (
-    !isTestPath(filePath) &&
-    !isDocumentationPath(filePath) &&
-    !isGeneratedPath(filePath)
-  ) {
-    return false
-  }
-  const stem = companionStem(filePath)
-  return [...rootFindingPaths].some(
-    (rootPath) =>
-      companionStem(rootPath) === stem &&
-      path.posix.dirname(rootPath) === path.posix.dirname(filePath)
   )
 }
 
@@ -867,15 +869,12 @@ function requiresColdIncrementalReview(filePath) {
   )
 }
 
-function isAllowedIncrementalFile(file, rootFindingPaths) {
+function isAllowedIncrementalFile(file, remediationPaths) {
   const filePath = String(file.filename ?? '')
   const previousPath = String(file.previous_filename ?? '')
   if (!filePath || requiresColdIncrementalReview(filePath)) return false
   if (previousPath && previousPath !== filePath) return false
-  return (
-    rootFindingPaths.has(filePath) ||
-    isRelatedCompanionPath(filePath, rootFindingPaths)
-  )
+  return remediationPaths.has(filePath)
 }
 
 async function compareIncrementalRange({ github, context, rootHead, headSha }) {
@@ -913,7 +912,7 @@ function buildIncrementalBackground({
   const states = (disposition?.entries ?? [])
     .map(
       (entry) =>
-        `${entry.finding_id}=${entry.state}(${entry.reference || 'no reference'})`
+        `${entry.finding_id}=${entry.state}(${entry.reference || 'no reference'}; paths=${entry.paths.join(',')})`
     )
     .join(', ')
   return [
@@ -985,7 +984,6 @@ async function buildReviewPlan({ github, context, pull }) {
   const root = rootReview.metadata
   if (
     root.head_sha === pull.head.sha ||
-    root.base_sha !== pull.base.sha ||
     root.base_ref !== pull.base.ref ||
     root.base_repo !== pull.base.repo.full_name ||
     root.head_ref !== pull.head.ref ||
@@ -1002,6 +1000,49 @@ async function buildReviewPlan({ github, context, pull }) {
   }
 
   const rootFindingIds = dispositionEntries(root)
+  const rootFindingPaths = new Set(
+    (root.findings ?? []).map((finding) => finding.path)
+  )
+  const disposition = await latestTrustedDisposition({
+    github,
+    context,
+    pull,
+    rootReview,
+  })
+  if (rootFindingIds.length > 0 && !disposition) return fullPlan
+  const remediationPaths = new Set(
+    (disposition?.entries ?? []).flatMap((entry) => entry.paths)
+  )
+  if (rootFindingIds.length === 0) return fullPlan
+
+  if (root.base_sha !== pull.base.sha) {
+    const baseAdvance = await compareGitRange({
+      github,
+      context,
+      baseSha: root.base_sha,
+      headSha: pull.base.sha,
+    })
+    const baseFiles = baseAdvance?.data?.files
+    if (
+      baseAdvance?.data?.status !== 'ahead' ||
+      !Array.isArray(baseFiles) ||
+      baseFiles.length > MAX_INCREMENTAL_PATHS ||
+      baseFiles.some((file) => {
+        const filePath = String(file.filename ?? '')
+        const previousPath = String(file.previous_filename ?? '')
+        return (
+          !isSafeRepositoryPath(filePath) ||
+          (previousPath && !isSafeRepositoryPath(previousPath)) ||
+          requiresColdIncrementalReview(filePath) ||
+          rootFindingPaths.has(filePath) ||
+          remediationPaths.has(filePath)
+        )
+      })
+    ) {
+      return fullPlan
+    }
+  }
+
   const comparison = await compareIncrementalRange({
     github,
     context,
@@ -1016,24 +1057,13 @@ async function buildReviewPlan({ github, context, pull }) {
     return fullPlan
   }
 
-  const rootFindingPaths = new Set(
-    (root.findings ?? []).map((finding) => finding.path)
-  )
   if (
     comparison.files.some(
-      (file) => !isAllowedIncrementalFile(file, rootFindingPaths)
+      (file) => !isAllowedIncrementalFile(file, remediationPaths)
     )
   ) {
     return fullPlan
   }
-
-  const disposition = await latestTrustedDisposition({
-    github,
-    context,
-    pull,
-    rootReview,
-  })
-  if (rootFindingIds.length > 0 && !disposition) return fullPlan
 
   const background = buildIncrementalBackground({
     baseBackground,
@@ -1676,10 +1706,14 @@ if (require.main === module) {
 
 module.exports = {
   FINAL_REVIEW_COMMAND,
+  FINAL_REVIEW_BOT,
   FINAL_REVIEW_CONTEXT,
   FINAL_REVIEW_MODEL,
   FINAL_REVIEW_SCHEMA,
   FINAL_REVIEW_WORKFLOW_PATH,
+  DISPOSITION_SCHEMA,
+  MAX_INCREMENTAL_LINES,
+  MAX_INCREMENTAL_PATHS,
   PROMOTION_FILE,
   authorizeFinalReview,
   buildExpectedPromotionContent,
@@ -1693,6 +1727,8 @@ module.exports = {
   isPromotionCandidate,
   isTrustedPermission,
   normalizeTitle,
+  listReviewArtifacts,
+  parseDispositionRecord,
   parseReviewMetadata,
   parsePromotionTarget,
   promotionBody,
@@ -1700,6 +1736,8 @@ module.exports = {
   removeOCRConfig,
   renderFinalReviewChunks,
   startFinalReview,
+  validateDispositionRecord,
   validatePromotionContract,
+  validateFinding,
   writeOCRConfig,
 }

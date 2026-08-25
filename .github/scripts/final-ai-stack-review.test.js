@@ -7,12 +7,14 @@ const test = require('node:test')
 const {
   FINAL_REVIEW_MODEL,
   authorizeStackReview,
+  buildStackReviewPlan,
   buildStackSnapshot,
   callTopologyModel,
   decideStackStatus,
   finalizeStackReview,
   initializeStackReview,
   isStackReviewCommand,
+  parseStackReviewMetadata,
   renderStackReview,
   resolveStackMembership,
   snapshotMatchesMembership,
@@ -617,6 +619,123 @@ test('starts a review only when the stack snapshot remains identical', async () 
   assert.equal(fs.existsSync(manifestPath), true)
   assert.match(outputs.get('manifest_digest'), /^[0-9a-f]{64}$/)
   assert.equal(state.createdStatuses.at(-1).state, 'pending')
+})
+
+test('attests a bounded repaired top layer from a trusted stack disposition', async () => {
+  const { files, github, pulls, responses, state } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const rootReport = renderStackReview({
+    codeResult: completeOCRResult([codeFinding()]),
+    headSha: 'f'.repeat(40),
+    manifestBundle,
+    topologyResult: topologyResult(),
+    workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+    workflowHeadSha: 'a'.repeat(40),
+    workflowRunId: 700,
+  })
+  const rootMetadata = parseStackReviewMetadata(rootReport)
+  assert.ok(
+    rootMetadata,
+    rootReport.match(/<!-- final-ai-stack-review\/v1 ([^\n]+) -->/)?.[1]
+  )
+  const nextHead = '9'.repeat(40)
+  pulls[14].head.sha = nextHead
+  responses.set('e'.repeat(40), nextHead)
+  responses.set('f'.repeat(40), nextHead)
+  files.set('e'.repeat(40), [
+    { filename: 'src/one.ts', additions: 2, deletions: 1 },
+  ])
+  files.set('f'.repeat(40), [
+    { filename: 'src/one.ts', additions: 2, deletions: 1 },
+  ])
+  github.request = async () => ({
+    data: [
+      {
+        id: 99,
+        pull_requests: [11, 12, 13, 14].map((number) => ({
+          number,
+          state: 'open',
+          draft: false,
+          head: { sha: number === 14 ? nextHead : pulls[number].head.sha },
+        })),
+      },
+    ],
+  })
+  state.reviews = [
+    {
+      id: 701,
+      body: rootReport,
+      commit_id: 'f'.repeat(40),
+      state: 'COMMENTED',
+      submitted_at: '2026-08-25T00:00:00Z',
+      user: { login: 'github-actions[bot]' },
+    },
+  ]
+  github.paginate = async (endpoint) =>
+    endpoint === github.rest.pulls.listReviews ? state.reviews : state.comments
+  state.comments = [
+    {
+      body: `<!-- final-ai-disposition/v1 ${JSON.stringify({
+        schema_version: 'final-ai-disposition/v1',
+        review_id: rootMetadata.review_id,
+        root_head: 'f'.repeat(40),
+        workflow_run_id: 700,
+        entries: [
+          {
+            finding_id: rootMetadata.finding_ids[0],
+            state: 'fixed',
+            reference: 'commit:9'.padEnd(46, '0'),
+            paths: ['src/one.ts'],
+          },
+        ],
+      })} -->`,
+      created_at: '2026-08-25T01:00:00Z',
+      user: { login: 'reviewer' },
+    },
+  ]
+  state.workflowRun = {
+    id: 700,
+    path: '.github/workflows/check-ocr-final-stack-review.yml',
+    event: 'issue_comment',
+    head_branch: 'v3',
+    head_sha: 'a'.repeat(40),
+    conclusion: 'success',
+    repository: { full_name: repository },
+  }
+  state.statuses = [
+    {
+      context: 'final-ai-stack-review',
+      state: 'success',
+      target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+    },
+  ]
+  github.rest.actions = {
+    getWorkflowRun: async () => ({ data: state.workflowRun }),
+  }
+
+  const plan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership: await resolveStackMembership({
+      github,
+      context: context(),
+      pullNumber: 14,
+    }),
+  })
+  assert.equal(plan.mode, 'incremental')
+  assert.equal(plan.rootHead, 'f'.repeat(40))
+  assert.equal(plan.rootReviewId, rootMetadata.review_id)
+  assert.match(plan.dispositionDigest, /^[0-9a-f]{64}$/)
+  assert.match(plan.background, /incremental attestation/)
 })
 
 test('rejects a successful finish after lower-layer identity drift', async () => {

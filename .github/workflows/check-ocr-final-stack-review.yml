@@ -55,6 +55,7 @@ jobs:
       issues: read
       pull-requests: read
       statuses: read
+      actions: read
     outputs:
       authorized: ${{ steps.authorize.outputs.authorized }}
       pr_number: ${{ steps.authorize.outputs.pr_number }}
@@ -64,6 +65,10 @@ jobs:
       stack_order_digest: ${{ steps.authorize.outputs.stack_order_digest }}
       stack_identity_digest: ${{ steps.authorize.outputs.stack_identity_digest }}
       member_numbers: ${{ steps.authorize.outputs.member_numbers }}
+      mode: ${{ steps.authorize.outputs.mode }}
+      root_head: ${{ steps.authorize.outputs.root_head }}
+      root_review_id: ${{ steps.authorize.outputs.root_review_id }}
+      disposition_digest: ${{ steps.authorize.outputs.disposition_digest }}
       background: ${{ steps.authorize.outputs.background }}
     steps:
       - name: Checkout trusted stack-review policy
@@ -117,6 +122,10 @@ jobs:
           STACK_ORDER_DIGEST: ${{ needs.authorize.outputs.stack_order_digest }}
           STACK_IDENTITY_DIGEST: ${{ needs.authorize.outputs.stack_identity_digest }}
           MEMBER_NUMBERS: ${{ needs.authorize.outputs.member_numbers }}
+          REVIEW_MODE: ${{ needs.authorize.outputs.mode }}
+          ROOT_HEAD: ${{ needs.authorize.outputs.root_head }}
+          ROOT_REVIEW_ID: ${{ needs.authorize.outputs.root_review_id }}
+          DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
         with:
           github-token: ${{ github.token }}
@@ -133,6 +142,10 @@ jobs:
               stackOrderDigest: process.env.STACK_ORDER_DIGEST,
               stackIdentityDigest: process.env.STACK_IDENTITY_DIGEST,
               memberNumbers,
+              mode: process.env.REVIEW_MODE,
+              rootHead: process.env.ROOT_HEAD,
+              rootReviewId: process.env.ROOT_REVIEW_ID,
+              dispositionDigest: process.env.DISPOSITION_DIGEST,
               manifestPath: process.env.MANIFEST_PATH,
               core,
             })
@@ -144,12 +157,16 @@ jobs:
         env:
           BASE_SHA: ${{ needs.authorize.outputs.base_sha }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+          REVIEW_MODE: ${{ needs.authorize.outputs.mode }}
+          ROOT_HEAD: ${{ needs.authorize.outputs.root_head }}
           MEMBER_NUMBERS: ${{ needs.authorize.outputs.member_numbers }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
         run: |
           set -euo pipefail
           [[ "${BASE_SHA}" =~ ^[0-9a-f]{40}$ ]]
           [[ "${HEAD_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${REVIEW_MODE}" == "full" || "${REVIEW_MODE}" == "incremental" ]]
+          [[ "${ROOT_HEAD}" =~ ^[0-9a-f]{40}$ ]]
           git cat-file -e "${BASE_SHA}^{commit}"
           while read -r NUMBER EXPECTED_SHA; do
             [[ "${NUMBER}" =~ ^[0-9]+$ ]]
@@ -157,7 +174,11 @@ jobs:
             git fetch --no-tags origin "pull/${NUMBER}/head"
             test "$(git rev-parse FETCH_HEAD)" = "${EXPECTED_SHA}"
           done < <(node -e 'const m = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).manifest; for (const l of m.layers) console.log(`${l.pull_request} ${l.head_sha}`)' "${MANIFEST_PATH}")
-          REVIEW_FROM="$(git merge-base "${BASE_SHA}" "${HEAD_SHA}")"
+          if [[ "${REVIEW_MODE}" == "incremental" ]]; then
+            REVIEW_FROM="${ROOT_HEAD}"
+          else
+            REVIEW_FROM="$(git merge-base "${BASE_SHA}" "${HEAD_SHA}")"
+          fi
           [[ "${REVIEW_FROM}" =~ ^[0-9a-f]{40}$ ]]
           git cat-file -e "${REVIEW_FROM}^{commit}"
           echo "review_from=${REVIEW_FROM}" >>"${GITHUB_OUTPUT}"
@@ -231,6 +252,10 @@ jobs:
           STACK_ORDER_DIGEST: ${{ needs.authorize.outputs.stack_order_digest }}
           STACK_IDENTITY_DIGEST: ${{ needs.authorize.outputs.stack_identity_digest }}
           MEMBER_NUMBERS: ${{ needs.authorize.outputs.member_numbers }}
+          REVIEW_MODE: ${{ needs.authorize.outputs.mode }}
+          ROOT_HEAD: ${{ needs.authorize.outputs.root_head }}
+          ROOT_REVIEW_ID: ${{ needs.authorize.outputs.root_review_id }}
+          DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
           RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
           TOPOLOGY_RESULT_PATH: ${{ runner.temp }}/final-ai-stack-topology-result.json
@@ -249,6 +274,10 @@ jobs:
               stackOrderDigest: process.env.STACK_ORDER_DIGEST,
               stackIdentityDigest: process.env.STACK_IDENTITY_DIGEST,
               memberNumbers,
+              mode: process.env.REVIEW_MODE,
+              rootHead: process.env.ROOT_HEAD,
+              rootReviewId: process.env.ROOT_REVIEW_ID,
+              dispositionDigest: process.env.DISPOSITION_DIGEST,
               manifestPath: process.env.MANIFEST_PATH,
               resultPath: process.env.RESULT_PATH,
               topologyResultPath: process.env.TOPOLOGY_RESULT_PATH,
@@ -268,6 +297,10 @@ jobs:
           STACK_ORDER_DIGEST: ${{ needs.authorize.outputs.stack_order_digest }}
           STACK_IDENTITY_DIGEST: ${{ needs.authorize.outputs.stack_identity_digest }}
           MEMBER_NUMBERS: ${{ needs.authorize.outputs.member_numbers }}
+          REVIEW_MODE: ${{ needs.authorize.outputs.mode }}
+          ROOT_HEAD: ${{ needs.authorize.outputs.root_head }}
+          ROOT_REVIEW_ID: ${{ needs.authorize.outputs.root_review_id }}
+          DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
           CODE_OUTCOME: ${{ steps.code_review.outcome }}
           TOPOLOGY_OUTCOME: ${{ steps.topology_review.outcome }}
           CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
@@ -287,6 +320,10 @@ jobs:
               stackOrderDigest: process.env.STACK_ORDER_DIGEST,
               stackIdentityDigest: process.env.STACK_IDENTITY_DIGEST,
               memberNumbers,
+              mode: process.env.REVIEW_MODE,
+              rootHead: process.env.ROOT_HEAD,
+              rootReviewId: process.env.ROOT_REVIEW_ID,
+              dispositionDigest: process.env.DISPOSITION_DIGEST,
               codeOutcome: process.env.CODE_OUTCOME,
               topologyOutcome: process.env.TOPOLOGY_OUTCOME,
               cleanupOutcome: process.env.CLEANUP_OUTCOME,

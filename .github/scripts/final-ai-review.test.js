@@ -268,6 +268,7 @@ function reviewGithub({
   reviews = [],
   comments = [],
   comparison = { status: 'identical', files: [] },
+  comparisons = {},
   statuses = [],
   permission = 'write',
   rules = '{"rules":[]}',
@@ -279,6 +280,7 @@ function reviewGithub({
   const commentsEndpoint = {}
   const state = {
     comparison,
+    comparisons,
     comments,
     pull,
     reviews,
@@ -297,7 +299,9 @@ function reviewGithub({
       },
       issues: { listComments: commentsEndpoint },
       repos: {
-        compareCommits: async () => ({ data: state.comparison }),
+        compareCommits: async ({ base, head }) => ({
+          data: state.comparisons[`${base}...${head}`] ?? state.comparison,
+        }),
         getCollaboratorPermissionLevel: async () => ({
           data: { user: { permission: state.permission } },
         }),
@@ -517,6 +521,7 @@ test('selects incremental attestation only for bounded repaired changes', async 
         finding_id: rootMetadata.finding_ids[0],
         state: 'fixed',
         reference: `commit:${rootHead}`,
+        paths: ['src/example.ts', 'src/example.test.ts'],
       },
     ],
   })} -->`
@@ -642,12 +647,26 @@ test('selects incremental attestation only for bounded repaired changes', async 
     ...state.pull,
     base: { ...state.pull.base, sha: 'c'.repeat(40) },
   }
+  state.comparisons[`${baseSha}...${'c'.repeat(40)}`] = {
+    status: 'ahead',
+    files: [{ filename: 'src/unrelated.ts', additions: 3, deletions: 1 }],
+  }
   const advancedBase = await buildReviewPlan({
     github,
     context,
     pull: state.pull,
   })
-  assert.equal(advancedBase.mode, 'full')
+  assert.equal(advancedBase.mode, 'incremental')
+  state.comparisons[`${baseSha}...${'c'.repeat(40)}`] = {
+    status: 'ahead',
+    files: [{ filename: 'src/example.ts', additions: 3, deletions: 1 }],
+  }
+  const interactingBase = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(interactingBase.mode, 'full')
   state.pull = {
     ...state.pull,
     base: { ...state.pull.base, sha: baseSha },
@@ -695,11 +714,13 @@ test('selects incremental attestation only for bounded repaired changes', async 
             finding_id: rootMetadata.finding_ids[0],
             state: 'fixed',
             reference: `commit:${rootHead}`,
+            paths: ['src/example.ts'],
           },
           {
             finding_id: rootMetadata.finding_ids[0],
             state: 'fixed',
             reference: `commit:${rootHead}`,
+            paths: ['src/example.ts'],
           },
         ],
       })} -->`,
