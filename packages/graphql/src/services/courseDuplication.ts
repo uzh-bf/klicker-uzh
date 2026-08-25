@@ -186,12 +186,6 @@ function getCourseDuplicationJobErrorType(
   if (code === COURSE_DUPLICATION_PARTIAL_FAILURE_CODE) return 'partial'
   if (code === 'FORBIDDEN') return 'access'
 
-  const message = getErrorMessage(error).toLowerCase()
-  if (message.includes('not all')) return 'partial'
-  if (message.includes('access') || message.includes('permission')) {
-    return 'access'
-  }
-
   return 'generic'
 }
 

@@ -41,7 +41,7 @@ export function prepareHatchetTasks({
   redisCache?: Redis
   handlers: HatchetHandlers
 }) {
-  let preparedTasks!: PreparedHatchetTasks
+  let preparedTasks: PreparedHatchetTasks | undefined
   const globalContext = {
     hatchet,
     pubSub,
@@ -51,6 +51,11 @@ export function prepareHatchetTasks({
     redisCache,
     prisma,
     get tasks() {
+      if (!preparedTasks) {
+        throw new Error(
+          'Hatchet tasks are not available until prepareHatchetTasks completes.'
+        )
+      }
       return preparedTasks
     },
   }

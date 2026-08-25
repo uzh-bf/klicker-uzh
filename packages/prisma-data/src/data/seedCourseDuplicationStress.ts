@@ -6,6 +6,7 @@ import { COURSE_ID_DUPLICATION_STRESS, USER_ID_TEST } from './constants.js'
 import { prepareCourse } from './helpers.js'
 
 const STRESS_ACTIVITY_COUNT = 200
+const STRESS_ACTIVITY_CONCURRENCY = 20
 const STRESS_PIN_CODE_START = 987650000
 
 function assertLocalDatabase() {
@@ -110,25 +111,49 @@ async function seedCourseDuplicationStress() {
     (_, index) => activityId(index)
   )
 
-  await Promise.all(
-    expectedActivityIds.map(async (id, index) => {
-      const name = `Duplication stress activity ${index + 1}`
-      const data = {
-        name,
-        displayName: name,
-        description: 'Empty development stress-test activity.',
-        ownerId: USER_ID_TEST,
-        courseId: COURSE_ID_DUPLICATION_STRESS,
-        status: Prisma.PublicationStatus.DRAFT,
-        isDeleted: false,
-      }
-      await prisma.liveQuiz.upsert({
-        where: { id },
-        create: { id, ...data },
-        update: data,
-      })
-    })
+  const existingActivities = await prisma.liveQuiz.findMany({
+    where: { id: { in: expectedActivityIds } },
+    select: { id: true, courseId: true, ownerId: true },
+  })
+  const collidingActivity = existingActivities.find(
+    (activity) =>
+      activity.courseId !== COURSE_ID_DUPLICATION_STRESS ||
+      activity.ownerId !== USER_ID_TEST
   )
+  if (collidingActivity) {
+    throw new Error(
+      `The stress fixture activity ${collidingActivity.id} already belongs to course ${collidingActivity.courseId} and owner ${collidingActivity.ownerId}.`
+    )
+  }
+
+  for (
+    let batchStart = 0;
+    batchStart < expectedActivityIds.length;
+    batchStart += STRESS_ACTIVITY_CONCURRENCY
+  ) {
+    await Promise.all(
+      expectedActivityIds
+        .slice(batchStart, batchStart + STRESS_ACTIVITY_CONCURRENCY)
+        .map(async (id, batchIndex) => {
+          const index = batchStart + batchIndex
+          const name = `Duplication stress activity ${index + 1}`
+          const data = {
+            name,
+            displayName: name,
+            description: 'Empty development stress-test activity.',
+            ownerId: USER_ID_TEST,
+            courseId: COURSE_ID_DUPLICATION_STRESS,
+            status: Prisma.PublicationStatus.DRAFT,
+            isDeleted: false,
+          }
+          await prisma.liveQuiz.upsert({
+            where: { id },
+            create: { id, ...data },
+            update: data,
+          })
+        })
+    )
+  }
 
   await recomputeDerivedPermissions(
     { courseId: COURSE_ID_DUPLICATION_STRESS, userId: USER_ID_TEST },
