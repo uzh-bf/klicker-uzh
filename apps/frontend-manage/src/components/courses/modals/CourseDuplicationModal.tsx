@@ -627,7 +627,6 @@ function CourseDuplicationModal({
 }: Readonly<CourseDuplicationModalProps>) {
   const t = useTranslations()
   const formRef = useRef<FormikProps<CourseDuplicationFormData>>(null)
-  const submitInFlightRef = useRef(false)
 
   // fetch user (from cache) to get email for notification field initialization
   const { data: dataUser, loading: loadingUser } = useQuery(
@@ -710,9 +709,6 @@ function CourseDuplicationModal({
           copyGroupActivities: initialValues?.isGroupCreationEnabled ?? true,
         }}
         onSubmit={async (values) => {
-          if (submitInFlightRef.current) return
-
-          submitInFlightRef.current = true
           let errorReported = false
           try {
             await onSubmit(values, (errorType) => {
@@ -732,8 +728,6 @@ function CourseDuplicationModal({
                 options: { duration: 6000 },
               })
             }
-          } finally {
-            submitInFlightRef.current = false
           }
         }}
         validationSchema={schema}

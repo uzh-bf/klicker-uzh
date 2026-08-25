@@ -140,7 +140,6 @@ export const Mutation = builder.mutationType({
         required: false,
         validate: { email: true },
       }),
-      isGamificationEnabled: t.arg.boolean({ required: true }),
     }
 
     return {
@@ -1371,6 +1370,7 @@ export const Mutation = builder.mutationType({
         type: Course,
         args: {
           ...courseCreationArgs,
+          isGamificationEnabled: t.arg.boolean({ required: true }),
           sourceCourseId: t.arg.string({ required: false }),
           duplicateLiveQuizzes: t.arg.boolean({ required: false }),
           duplicatePracticeQuizzes: t.arg.boolean({ required: false }),
@@ -1391,6 +1391,7 @@ export const Mutation = builder.mutationType({
         type: CourseDuplicationStatus,
         args: {
           ...courseCreationArgs,
+          isGamificationEnabled: t.arg.boolean({ required: false }),
           sourceCourseId: t.arg.string({ required: true }),
           duplicateLiveQuizzes: t.arg.boolean({ required: false }),
           duplicatePracticeQuizzes: t.arg.boolean({ required: false }),

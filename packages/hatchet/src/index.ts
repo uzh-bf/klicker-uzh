@@ -368,19 +368,7 @@ export function prepareHatchetTasks({
     sweepStaleCourseDuplications,
   }
 
-  preparedTasks = {
-    createAuditLogEntry,
-    publishScheduledMicroLearning,
-    publishScheduledPracticeQuiz,
-    publishScheduledGroupActivity,
-    publishScheduledLiveQuiz,
-    endExpiredMicroLearning,
-    endExpiredGroupActivity,
-    aggregateLiveQuizBlockResultsStandard,
-    aggregateLiveQuizBlockResultsAssessment,
-    processCourseDuplication,
-    sweepStaleCourseDuplications,
-  }
+  preparedTasks = tasks
 
   return tasks
 }

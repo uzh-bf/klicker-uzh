@@ -57,7 +57,11 @@ export type CourseDuplicationJobStatus =
 
 export type CourseDuplicationErrorType = 'access' | 'generic' | 'partial'
 
-type CourseDuplicationArgs = CourseCreationArgs & {
+type CourseDuplicationArgs = Omit<
+  CourseCreationArgs,
+  'isGamificationEnabled'
+> & {
+  isGamificationEnabled?: boolean | null
   sourceCourseId?: string | null
   duplicateLiveQuizzes?: boolean | null
   duplicatePracticeQuizzes?: boolean | null
@@ -751,11 +755,24 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
         throw error
       }
 
-      await updateCourseDuplicationJob(redis, job, {
-        status: 'FAILED',
-        errorType,
-        errorMessage: getCourseDuplicationJobErrorMessage(error),
-      })
+      try {
+        await updateCourseDuplicationJob(redis, job, {
+          status: 'FAILED',
+          errorType,
+          errorMessage: getCourseDuplicationJobErrorMessage(error),
+        })
+      } catch (statusUpdateError) {
+        executionCtx.logger.error(
+          `Failed to mark course duplication job ${jobId} as FAILED: ${getErrorMessage(statusUpdateError)}`
+        )
+        try {
+          await releaseCourseDuplicationSourceLock(redis, job)
+        } catch (releaseError) {
+          executionCtx.logger.error(
+            `Failed to release course duplication source lock for job ${jobId}: ${getErrorMessage(releaseError)}`
+          )
+        }
+      }
 
       return false
     } finally {

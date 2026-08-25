@@ -3305,7 +3305,7 @@ export type MutationStartCourseDuplicationArgs = {
   duplicatePracticeQuizzes?: InputMaybe<Scalars['Boolean']['input']>;
   endDate: Scalars['Date']['input'];
   groupDeadlineDate: Scalars['Date']['input'];
-  isGamificationEnabled: Scalars['Boolean']['input'];
+  isGamificationEnabled?: InputMaybe<Scalars['Boolean']['input']>;
   isGroupCreationEnabled: Scalars['Boolean']['input'];
   language: LocaleType;
   maxGroupSize: Scalars['Int']['input'];
