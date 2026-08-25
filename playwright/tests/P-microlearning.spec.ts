@@ -753,7 +753,7 @@ test.describe.serial('Different microlearning workflows', () => {
       .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro4}`)
       .click()
     await expectByAssertion(
-      page.getByTestId(`open-analytics-async-activity`),
+      page.getByTestId(`open-analytics-microlearning-${data.sharing.micro4}`),
       'exist'
     )
     await expectByAssertion(
@@ -908,7 +908,7 @@ test.describe.serial('Different microlearning workflows', () => {
       .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro4}`)
       .click()
     await expectByAssertion(
-      page.getByTestId(`open-analytics-async-activity`),
+      page.getByTestId(`open-analytics-microlearning-${data.sharing.micro4}`),
       'exist'
     )
     await expectByAssertion(
@@ -1074,7 +1074,7 @@ test.describe.serial('Different microlearning workflows', () => {
       .getByTestId(`actions-MICRO_LEARNING-${data.sharing.micro4}`)
       .click()
     await expectByAssertion(
-      page.getByTestId(`open-analytics-async-activity`),
+      page.getByTestId(`open-analytics-microlearning-${data.sharing.micro4}`),
       'exist'
     )
     await expectByAssertion(

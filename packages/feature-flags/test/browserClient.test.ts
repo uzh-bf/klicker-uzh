@@ -67,6 +67,7 @@ describe('createBrowserFeatureFlagClient', () => {
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     setPolyfills({
       fetch: originalFetch,
     })
@@ -97,6 +98,7 @@ describe('createBrowserFeatureFlagClient', () => {
   })
 
   it('fails closed when the feature payload cannot be loaded', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     mockFetch.mockRejectedValueOnce(new Error('GrowthBook unavailable'))
     const { growthbook, initialize } =
       createBrowserFeatureFlagClient<TestFeatures>({
@@ -106,6 +108,9 @@ describe('createBrowserFeatureFlagClient', () => {
       })
 
     expect(await initialize()).toBe(false)
+    expect(warn).toHaveBeenCalledWith(
+      '[feature-flags] Browser initialization failed; using false fallbacks'
+    )
     await growthbook.setAttributes(enabledAttributes)
     expect(growthbook.isOn('targeted-flag')).toBe(false)
   })
@@ -226,11 +231,16 @@ describe('createBrowserFeatureFlagClient', () => {
   })
 
   it('initializes once and fails closed without configuration', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const { growthbook, initialize } =
       createBrowserFeatureFlagClient<TestFeatures>({ environment: 'test' })
 
     expect(await initialize()).toBe(false)
     expect(await initialize()).toBe(false)
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalledWith(
+      '[feature-flags] Browser configuration is incomplete; using false fallbacks'
+    )
     await growthbook.setAttributes(enabledAttributes)
     expect(growthbook.isOn('targeted-flag')).toBe(false)
     expect(mockFetch).not.toHaveBeenCalled()
