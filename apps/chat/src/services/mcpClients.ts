@@ -1,19 +1,21 @@
 'use server'
 
+import { createHash, randomUUID } from 'node:crypto'
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { createHash } from 'node:crypto'
 import {
   MAX_TOOL_NAME_LENGTH,
   TOOL_NAME_SUFFIX_LENGTH,
 } from '@/src/lib/config/toolNames'
+import { signDocQueryScopeToken } from '@/src/lib/server/docQueryScopeToken'
+import type { AuthMode } from '@/src/lib/server/ltiGuest'
+import { mintParticipantMcpJwt } from '@/src/lib/server/mcpAuthMint'
 import {
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
-import type { AuthMode } from '@/src/lib/server/ltiGuest'
-import { mintParticipantMcpJwt } from '@/src/lib/server/mcpAuthMint'
+import { DOC_QUERY_MCP_SERVER_NAME } from './mcpScope'
 
 // Type definitions for MCP server configuration
 export interface MCPServerConfig {
@@ -37,6 +39,14 @@ export interface MCPConfigSettings {
 export interface MCPServerWithConfig {
   server: MCPServerConfig
   config: MCPConfigSettings
+}
+
+export interface MCPRequestContext {
+  chatbotId: string
+  participantId?: string
+  authMode: AuthMode
+  kbId?: string
+  sessionId?: string
 }
 
 export interface MCPRequestOptions {
@@ -110,33 +120,54 @@ function toSafeToolName(
 /**
  * Creates authentication headers based on server auth type
  */
-async function createAuthHeaders(
+export async function createAuthHeaders(
   server: MCPServerConfig,
-  chatbotId: string,
-  participantId = '',
-  authMode: AuthMode
+  context: MCPRequestContext
 ): Promise<Record<string, string>> {
   const baseHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
+  }
+  const authType = server.authType.toLowerCase()
+
+  if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
+    if (!context.kbId || !context.sessionId) {
+      throw new Error('Scoped knowledge retrieval is not available')
+    }
+
+    const token = await signDocQueryScopeToken({
+      kbId: context.kbId,
+      chatbotId: context.chatbotId,
+      sessionId: context.sessionId,
+      jti: randomUUID(),
+    })
+    baseHeaders.Authorization = `Bearer ${token}`
+    return baseHeaders
+  }
+
+  if (authType === 'scope_token') {
+    throw new Error('Scoped knowledge retrieval is not available')
   }
 
   // Add chatbot ID if configured (new behavior - defaults to false for backward compatibility)
   if (server.passChatbotId) {
     const raw = server.chatbotIdHeader || 'Chatbot-ID'
     const headerName = raw.replace(/[^A-Za-z0-9-]/g, '') || 'Chatbot-ID'
-    baseHeaders[headerName] = chatbotId
+    baseHeaders[headerName] = context.chatbotId
   }
 
   // Per-participant JWT mint for the Klicker MCP server. Identity
   // comes from the caller's verified participant cookie, not a static
   // shared secret, so the MCP server can apply row-level auth.
-  if (server.authType.toLowerCase() === 'klicker-participant-jwt') {
-    if (!participantId) {
+  if (authType === 'klicker-participant-jwt') {
+    if (!context.participantId) {
       throw new Error(
         'Participant identity is required for participant MCP auth'
       )
     }
-    const token = await mintParticipantMcpJwt(participantId, authMode)
+    const token = await mintParticipantMcpJwt(
+      context.participantId,
+      context.authMode
+    )
     baseHeaders.Authorization = `Bearer ${token}`
     return baseHeaders
   }
@@ -147,7 +178,7 @@ async function createAuthHeaders(
 
   const decryptedSecret = safeDecrypt(server.authSecret)
 
-  switch (server.authType.toLowerCase()) {
+  switch (authType) {
     case 'custom':
       // Parse and apply custom headers from JSON
       {
@@ -196,12 +227,41 @@ async function createAuthHeaders(
   return baseHeaders
 }
 
+function normalizeMCPRequest(
+  contextOrChatbotId: MCPRequestContext | string,
+  participantIdOrOptions: string | MCPRequestOptions = '',
+  authMode: AuthMode = 'account'
+): { context: MCPRequestContext; options: MCPRequestOptions } {
+  if (typeof contextOrChatbotId !== 'string') {
+    return {
+      context: contextOrChatbotId,
+      options:
+        typeof participantIdOrOptions === 'string'
+          ? {}
+          : participantIdOrOptions,
+    }
+  }
+
+  return {
+    context: {
+      chatbotId: contextOrChatbotId,
+      participantId:
+        typeof participantIdOrOptions === 'string'
+          ? participantIdOrOptions
+          : undefined,
+      authMode,
+    },
+    options:
+      typeof participantIdOrOptions === 'string' ? {} : participantIdOrOptions,
+  }
+}
+
 /**
  * Creates and initializes a single MCP client for a specific server configuration
  */
 export async function createMCPClient(
   server: MCPServerConfig,
-  chatbotId: string,
+  contextOrChatbotId: MCPRequestContext | string,
   participantIdOrOptions: string | MCPRequestOptions = '',
   authMode: AuthMode = 'account'
 ) {
@@ -209,18 +269,14 @@ export async function createMCPClient(
     throw new Error(`MCP server ${server.name} has no URL defined`)
   }
 
-  const participantId =
-    typeof participantIdOrOptions === 'string' ? participantIdOrOptions : ''
-  const options =
-    typeof participantIdOrOptions === 'string' ? {} : participantIdOrOptions
+  const { context, options } = normalizeMCPRequest(
+    contextOrChatbotId,
+    participantIdOrOptions,
+    authMode
+  )
 
   try {
-    const headers = await createAuthHeaders(
-      server,
-      chatbotId,
-      participantId,
-      authMode
-    )
+    const headers = await createAuthHeaders(server, context)
 
     const httpTransport = new StreamableHTTPClientTransport(
       new URL(server.url),
@@ -228,7 +284,7 @@ export async function createMCPClient(
         requestInit: {
           headers,
           redirect: 'error',
-          ...(options.requestTimeoutMs
+          ...(options.requestTimeoutMs !== undefined
             ? { signal: AbortSignal.timeout(options.requestTimeoutMs) }
             : {}),
         },
@@ -275,9 +331,8 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
  */
 async function loadServerTools(
   serverWithConfig: MCPServerWithConfig,
-  chatbotId: string,
-  participantIdOrOptions: string | MCPRequestOptions = '',
-  authMode: AuthMode = 'account'
+  context: MCPRequestContext,
+  options: MCPRequestOptions
 ): Promise<Record<string, any>> {
   const { server, config } = serverWithConfig
   const runtimePolicy = parseMCPRuntimePolicy(config.parameters)
@@ -305,12 +360,7 @@ async function loadServerTools(
   }
 
   try {
-    const client = await createMCPClient(
-      server,
-      chatbotId,
-      participantIdOrOptions,
-      authMode
-    )
+    const client = await createMCPClient(server, context, options)
     const rawTools = await client.tools()
 
     if (runtimePolicy.required && requiredRawToolName) {
@@ -372,11 +422,17 @@ async function loadServerTools(
  */
 export async function getAggregatedMCPTools(
   serversWithConfigs: MCPServerWithConfig[],
-  chatbotId: string,
+  contextOrChatbotId: MCPRequestContext | string,
   participantIdOrOptions: string | MCPRequestOptions = '',
   authMode: AuthMode = 'account'
 ): Promise<Record<string, any>> {
   console.log(`Loading MCP Tools from ${serversWithConfigs.length} servers...`)
+
+  const { context, options } = normalizeMCPRequest(
+    contextOrChatbotId,
+    participantIdOrOptions,
+    authMode
+  )
 
   if (serversWithConfigs.length === 0) {
     console.log('No MCP servers configured')
@@ -396,9 +452,8 @@ export async function getAggregatedMCPTools(
     try {
       const serverTools = await loadServerTools(
         serverWithConfig,
-        chatbotId,
-        participantIdOrOptions,
-        authMode
+        context,
+        options
       )
       const runtimePolicy = parseMCPRuntimePolicy(
         serverWithConfig.config.parameters
@@ -462,9 +517,8 @@ export async function getMCPTools(
   try {
     const serverTools = await loadServerTools(
       { server: legacyServer, config: legacyConfig },
-      chatbotId,
-      participantId,
-      authMode
+      { chatbotId, participantId, authMode },
+      {}
     )
     return serverTools
   } catch (error) {

@@ -19,6 +19,7 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 | UI or user flows                                                                  | e2e — use `klicker-playwright-e2e`                                                                                                                                                          |
 | React component appearance/behavior only                                          | there is **no component-test layer** — verify in the browser (below) and rely on e2e if a flow covers it                                                                                    |
 | Office Add-in source, build, or manifest                                          | Run its `check`, `lint`, `test`, `build:docs`, `verify:docs`, and `validate` scripts; use a stubbed Office API for browser UI checks and sideload the manifest in PowerPoint before release |
+| Prisma seed reconciliation                                                        | `pnpm --filter @klicker-uzh/prisma-data test` — Node test runner through the package's existing `tsx` toolchain                                                                             |
 
 For the manage-list `All` page size, the focused browser evidence must cover
 the finite-to-All-to-50 state transition and explicit selection. A 200-record
@@ -27,6 +28,20 @@ usability, and returned mutation count; do not infer production performance or
 atomicity from it.
 
 Never run root `pnpm run test:run` blind — the graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state).
+
+The focused `knowledge.test.ts`, `knowledgeIngestion.test.ts`, and `knowledgeWebhooks.test.ts` suites use real PostgreSQL but deliberately stub or avoid Hatchet, so they can verify owner-scoped binding replacement, MCP configuration, attempt-ledger, platform-refresh idempotency, current-attempt list projection, and serving-state transitions without a client token. Keep the full GraphQL suite on `test:local`.
+
+For KB deletion changes, add real-PostgreSQL coverage for owner-hidden tombstones and KB-first create/delete races, plus Hatchet unit coverage for the exact external delete request, operation fencing, empty-serving cutover, ticket expiry, blob-before-row ordering, and idempotent maintenance retry.
+
+For KB quota changes, use real PostgreSQL for exact 100-resource/500-MiB boundaries, concurrent reservations, ticket conversion, tombstone retention, and cleanup release. Use Hatchet tests for persisted KB-scope mismatch and locked URL replacement accounting (`usage - old size + observed size`) before dispatch.
+
+For KB pagination and bulk operations, use real PostgreSQL for tied keyset order, malformed/owner/filter-mismatched cursors, status changes between resource pages, exact grouped metrics, tombstone hiding, deterministic lock order, all-or-nothing active/foreign guards, input bounds, and independent post-commit dispatch failure. The KB UI has no component-test layer; use the real delegated-login browser for EN/DE desktop/390 px catalog and detail flows.
+
+For the interim KB gate, exercise every KB service entry point with a non-preview real-PostgreSQL user and verify `KB_PREVIEW_ACCESS_REQUIRED`. Toggle `KB_INGESTION_DISABLED` at call time and prove it blocks upload-ticket issue, URL creation, and ingestion while leaving deletion available. Browser proof covers preview/non-preview navigation plus direct-route denial in both locales.
+
+For KB file-upload browser proof, use the managed DevPod's routed Azurite service. Upload a synthetic PDF/TXT/MD fixture through the real hidden `[data-cy="kb-file-input"]`, then verify the resource row, exact size, and cleared upload reservation. The browser flow must cover ticket issue, Blob PUT, and confirmation; a CORS preflight may supplement it, but never print the SAS query. This proves local upload and confirmation only, not external ingestion acceptance.
+
+For maintenance recovery, prove a stale `QUEUED` UPSERT with no external operation id re-dispatches the same stored attempt id, young/in-flight/tombstoned/DELETE rows are excluded, and a repeated sweep creates no replacement run. Source-gateway coverage uses real PostgreSQL to prove the exact version, non-tombstoned BLOB, digest, and QUEUED/PROCESSING predicate before Blob access; direct resolver tests cover loopback/private/link-local/IPv6 rejection without external network.
 
 For OpenAI-compatible chat stream changes, run
 `apps/chat/test/openai-chat-streaming.test.ts` before the full chat suite. The
@@ -145,6 +160,8 @@ For TypeScript or other compiler/toolchain upgrades, root `check:all` includes t
 For a Prisma major or driver-adapter change, also run a frozen install; Prisma generate/check/build; local `*:raw` reset, push, migrate, diff, deploy, and explicit-seed command smokes as applicable; the guarded Auth adapter round-trip; both root build modes; relevant database-backed tests; and the Analytics Python generation/image build. Run destructive commands only against the isolated DevPod database and state every CI-only gap.
 
 The Office Add-in is a browser application bundled by Rollup. Its package check must use the workspace TypeScript version, `moduleResolution: Bundler`, `noEmit`, and explicit `types: ["office-js"]`. `build:docs` regenerates and replaces the deployable directory; `verify:docs` must then prove exact parity. Browser checks with an Office API stub verify the UI state machine only. Persistence, multi-instance behavior, and embedded evaluation rendering still require a real PowerPoint sideload.
+
+For KB graph lifecycle changes, use real PostgreSQL for quota-lock and settlement tests, including a valid metered non-success result that settles without publishing, the dispatch-claim ambiguity hold, and matching/stale/newer-build late-success reconciliation; apply the current migration to a disposable database before the seam tests. Use pure tests for the W1 result/cost contracts, PostgreSQL integer bounds, and quota-configuration drift; and use Hatchet unit tests for provider-status reconciliation and complete reservation identity before dispatch. A provider `COMPLETED` response without a versioned result must be asserted as fail-closed; it is not evidence of publication or cost settlement.
 
 ## Reporting
 

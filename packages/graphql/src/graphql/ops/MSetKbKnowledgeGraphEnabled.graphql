@@ -1,0 +1,38 @@
+mutation SetKbKnowledgeGraphEnabled($kbId: ID!, $enabled: Boolean!) {
+  setKbKnowledgeGraphEnabled(kbId: $kbId, enabled: $enabled) {
+    kbId
+    isEnabled
+    buildId
+    status
+    statusMessage
+    qualityTier
+    sourceContentDigest
+    activeBuildId
+    publishedBuildId
+    isStale
+    startedAt
+    finishedAt
+    createdAt
+    updatedAt
+    costConfigurationReady
+    costCurrency
+    quotaCurrency
+    billingLabel
+    standardEstimateMinorUnits
+    highEstimateMinorUnits
+    estimatedCostMinorUnits
+    actualCostMinorUnits
+    actualInputTokens
+    actualOutputTokens
+    actualEmbeddingTokens
+    actualRequestCount
+    maxCostMinorUnits
+    costStatus
+    semesterKey
+    semesterQuotaMinorUnits
+    semesterReservedMinorUnits
+    semesterSettledMinorUnits
+    remainingSemesterQuotaMinorUnits
+    worstCaseRemainingMinorUnits
+  }
+}

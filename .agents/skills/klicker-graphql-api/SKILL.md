@@ -11,7 +11,7 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
 1. **Service function** — `packages/graphql/src/services/<area>.ts`. All logic, Prisma, Redis, pubSub here. Signature `(args, ctx: ContextWithUser) => …`. Errors: `GraphQLError` with `extensions.code` (grep `LIVE_QUIZ_PIN_INVALID` for the pattern) — not bare `Error`.
 2. **Schema field** — `packages/graphql/src/schema/query.ts` / `mutation.ts` / `subscription.ts` (+ new object types in the area file). The resolver is a **one-liner** delegating to the service.
-3. **Auth on the field** — copy the existing composition exactly (real shape from `deleteCourse` in `mutation.ts`; `withPermission` WRAPS the resolver):
+3. **Auth on the field** — always declare the role with `t.withAuth(...)`. For shareable aggregates represented by `PermissionCheck`, copy the existing composition exactly (real shape from `deleteCourse` in `mutation.ts`; `withPermission` WRAPS the resolver):
 
    ```ts
    deleteCourse: t.withAuth(asUser).field({
@@ -30,7 +30,7 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
    })
    ```
 
-   Participant-facing fields usually need only `t.withAuth(asParticipant)`. Note `withPermission` returns `null` on failure (client sees a null field, not an error) — don't "fix" that.
+   Participant-facing fields usually need only `t.withAuth(asParticipant)`. Note `withPermission` returns `null` on failure (client sees a null field, not an error) — don't "fix" that. Owner-only aggregates that have no `PermissionCheck` key, including `KB`, keep the role gate on the schema field and must resolve the persisted owner relation inside every service entry point. Do not invent a permission key or make an owner-only aggregate shareable only to reuse this wrapper.
 
    Multi-object batch fields are the deliberate exception: `withPermission`
    accepts one object selector and can only return one nullable field. Protect
@@ -56,6 +56,24 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
 7. **Frontend wiring** — `import { <Name>Document } from '@klicker-uzh/graphql/dist/ops'`; `useQuery`/`useMutation` (+ `refetchQueries`) per [docs/frontend-conventions.md](../../../docs/frontend-conventions.md).
 8. **Tests** — graphql vitest for service logic (`pnpm --filter @klicker-uzh/graphql test:local`; see the heavy pattern in `38c92d035`); route further via `klicker-testing-verification`.
+
+Do not nest full history under a frequently polled parent list. The KB detail query loads only each resource's latest run; the separate owner-checked history query returns at most the five newest runs and is called on expansion.
+
+Every KB service query and mutation must start with `assertKbPreviewAccess(ctx)`, which reads the current `User.privatePreview` value instead of trusting a JWT claim. Apply the separate `assertKbIngestionEnabled()` kill switch only to upload-ticket issue, URL-resource creation, and Ingest/Retry/Re-ingest; reads, confirmation, deletion, and chatbot binding must stay available while ingestion is disabled.
+
+Knowledge-graph mutations add a distinct `KB_GRAPH_DISABLED` generation switch and require the persisted per-KB `knowledgeGraphEnabled` opt-in. Before dispatch, reserve the configured estimate in the owner-semester `KBGraphQuota`; recheck the complete reservation and linked quota identity at the worker effect boundary; claim `dispatchClaimedAt` before the provider call; and hold an accepted-but-uncorrelated run instead of retrying an ambiguous external effect. Keep its reservation and active KB build slot fenced until recovery, cancellation, settlement, or manual resolution, and refuse a rebuild mutation that would start a second external run. Expose cost and quota state without credentials. Provider status is not a GraphQL success proof: wire a versioned terminal result through `settleKbKnowledgeGraphResult`, validate build/KB/owner/run/digest/artifact/currency/bounded-counter/metering identity, settle valid metered non-success results without publication, and let `KBGraphBuild.costStatus` make settlement idempotent. The production backend and general worker explicitly pass `getKBGraphTerminalResult` and `settleKbKnowledgeGraphResult` into `prepareHatchetTasks`; both adapters are required for the supported runtime composition. A timed-out success requires locked no-newer-build and current-digest reconciliation before publication; stale or superseded late results settle without publication. The config query selects the newest graph attempt for lifecycle and cost fields, while it resolves `isStale` only from a verified successful published build, so a held or charged rebuild remains visible without changing the served pointer. Report persisted quota currency/limit drift as unavailable and keep historical build-cost currency separate from quota display.
+
+KB/chatbot attach and detach must lock both owner rows, replace the enabled link atomically, and reconcile only the `tutor` and `explainer` KB MCP configurations. Do not expose a configuration without the matching scoped-retrieval runtime support.
+
+KB child creation and deletion share a KB-first lock order. Upload-ticket issue, confirmation, URL creation, resource deletion, and whole-KB deletion must require a live parent under that lock. Deletion keeps hidden tombstones and queues the external operation after commit; queue failure must remain hidden and retryable.
+
+KB resource-count and byte quotas use that same parent lock. Reserve unknown-size URL resources at the full 25 MiB source limit until the worker records their measured size. Return stable GraphQL codes for quota and ticket mismatches, and derive every ingestion `kb_id` from the persisted owner-checked KB/resource relationship rather than client-supplied scope text.
+
+The source gateway is system-to-system, not caller-owner authorization: one `KB_SOURCE_GATEWAY_KEY` may fetch any owner's exact eligible BLOB resource. Keep the non-tombstoned BLOB/digest/QUEUED-or-PROCESSING database predicate ahead of Blob Storage access, derive the container from the persisted owner relation, and never describe the shared key as tenant-scoped.
+
+For scalable KB lists, use the existing owner/filter-bound opaque keyset connections: `(updatedAt, id)` for KBs and immutable `(createdAt, id)` for resources, both descending, bounded to 50. Do not reintroduce the former unbounded `getUserKbs` or nested `KB.resources` fields. Keep exact metrics derived with grouped queries, keep full run history in its separate five-row query, filter resources by their latest ingestion-run status, and reset cursors when normalized search/type/status filters change.
+
+Bulk resource deletion accepts at most 50 unique ids from one owned KB. Lock the parent then sorted children, reject the selection atomically for missing/foreign/active rows, create one fenced delete run per row before commit, and treat post-commit task dispatches independently.
 
 For pagination changes, test both finite `take`/`skip` values and omitted
 values in the service, and verify that the generated operation variables and

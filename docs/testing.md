@@ -1,8 +1,8 @@
 ---
 type: Testing Guide
 title: Testing
-description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-20'
+description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
+timestamp: '2026-08-24'
 tags:
   - testing
   - ci
@@ -35,6 +35,14 @@ Assessment participant invitations are a bounded exception: the Manage page
 offers only finite `10`, `20`, and `50` sizes, rejects CSV files above 1 MiB or
 200 data rows before submission, and must verify page totals and page-one reset
 after import or deletion.
+
+The focused KB CRUD, ingestion, and signed-webhook suites deliberately avoid a real Hatchet client: CRUD and ingestion use test-only task stubs, and webhook tests use Prisma directly. They still run against real PostgreSQL and cover owner-scoped bounded history, atomic resource/run transitions, retry races, serving cutover, and terminal-event ordering.
+
+KB quota coverage must use real PostgreSQL for parent-row lock serialization, exact count/byte boundaries, pending tickets, tombstones, confirmation conversion, and cleanup release. Hatchet unit coverage owns persisted KB-scope rejection plus URL-size replacement arithmetic and the no-dispatch `KB_STORAGE_LIMIT_REACHED` transition.
+
+KB graph accounting coverage also uses real PostgreSQL: `packages/graphql/test/knowledgeGraphAccounting.test.ts` proves same-owner semester-quota lock serialization, one-time success settlement, metered non-success settlement without publication, dispatch-failure release, cleanup-fenced late success, matching/stale/newer-build late-success reconciliation, bounded actual token/request aggregation, publication only after contract validation, and reservation hold on an invalid result. The disposable migration applies the durable dispatch-claim column before these tests. Pure W1 terminal-result, database-integer-bound, cost-configuration, and quota-drift validation remains in `kbGraphContract.test.ts`, `knowledgeGraphCost.test.ts`, and `knowledgeGraphConfig.test.ts`; `packages/hatchet/test/kbGraphIngestion.test.ts` proves worker-side kill-switch/opt-in/complete-reservation gates, pre-accounting fencing, accepted-but-uncorrelated dispatch holds, provider-status-only reconciliation failure, abort-before-slot-reuse for eight concurrent provider calls, and versioned-result handoff to the settlement callback.
+
+KB scale coverage uses real PostgreSQL for tied keyset traversal, cursor/filter binding, owner isolation, tombstone hiding, immutable resource-page order during status changes, exact derived metrics, and all-or-nothing bounded bulk deletion. UI appearance and interaction have no component-test layer in this repository: verify the generated-operation typechecks, then exercise catalog/detail search, filters, inspector, selection/confirmation, active polling, EN/DE, and desktop/390 px layouts through the real delegated-login browser path.
 
 **Never run root `pnpm run test:run` blind.** The graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state) — don't parallelize it.
 

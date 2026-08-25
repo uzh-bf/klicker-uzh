@@ -27,6 +27,7 @@ import {
   STUDENT_PRACTICE_QUIZ_TOOL_NAME,
   toPracticeCandidateId,
 } from '@/src/services/studentPracticeMcp'
+import { resolveMcpScopeSessionId } from '@/src/services/mcpScope'
 import { ThreadService } from '@/src/services/threads'
 import { z } from 'zod'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
@@ -722,6 +723,7 @@ export async function POST(
   let systemPrompt = ''
   let mcpServersWithConfigs: MCPServerWithConfig[] = []
   let chatbot = null
+  let enabledKnowledgeBaseId: string | undefined
 
   try {
     chatbot = await prisma.chatbot.findUnique({
@@ -736,10 +738,17 @@ export async function POST(
           },
           orderBy: { priority: 'asc' },
         },
+        knowledgeBases: {
+          where: { isEnabled: true },
+          select: { kbId: true },
+          take: 1,
+        },
       },
     })
 
     if (chatbot) {
+      enabledKnowledgeBaseId = chatbot.knowledgeBases[0]?.kbId
+
       // Extract system prompt
       const systemPrompts = chatbot.systemPrompts as Record<
         string,
@@ -811,16 +820,38 @@ export async function POST(
     },
   }))
 
+  // The doc-query scope token carries this session id as its JWT subject. An
+  // existing id must belong to this participant and chatbot. For a new thread,
+  // allocate the eventual database id before loading MCP tools so every request
+  // for that thread uses one stable scope subject without persisting anything
+  // when a required MCP server is unavailable.
+  const pendingThreadId = currentThreadId ? undefined : randomUUID()
+  const scopeOwningThread = currentThreadId
+    ? await prisma.chatThread.findFirst({
+        where: { id: currentThreadId, participantId, chatbotId },
+        select: { id: true },
+      })
+    : null
+  const mcpScopeSessionId = resolveMcpScopeSessionId({
+    requestedThreadId: currentThreadId,
+    owningThreadId: scopeOwningThread?.id,
+    fallbackId: pendingThreadId ?? requestId,
+  })
+  if (mcpScopeSessionId === null) {
+    return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
+  }
+
   // MCP availability is checked before creating a thread or doing any model,
   // credit, image-generation, or message-persistence work.
   let mcpTools: ToolSet
   try {
-    mcpTools = await getAggregatedMCPTools(
-      mcpServersWithConfigs,
+    mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, {
       chatbotId,
       participantId,
-      authMode
-    )
+      authMode,
+      kbId: enabledKnowledgeBaseId,
+      sessionId: mcpScopeSessionId,
+    })
   } catch (error) {
     if (error instanceof RequiredMCPUnavailableError) {
       return NextResponse.json(
@@ -840,7 +871,8 @@ export async function POST(
       const newThread = await ThreadService.createThread(
         participantId,
         chatbotId,
-        null
+        null,
+        pendingThreadId
       )
       currentThreadId = newThread.id
     } catch (error) {

@@ -18,6 +18,9 @@ paths = [
   '''apps/docs/docusaurus\.config\.ts''',
   # Self-host docker-compose example env — placeholder/template values only.
   '''deploy/compose-traefik-proxy/.*\.env$''',
+  # Devcontainer compose holds the Azurite emulator key (base64 of a dev-only
+  # placeholder, documented inline as non-cloud) — verified false positive.
+  '''\.devcontainer/docker-compose\.yml''',
   # Documentation-only fixture snippets with deliberately illustrative values.
   '''^\.agents/skills/playwright-best-practices/advanced/authentication-flows\.md$''',
   '''^project/plans_future/PLAN-k6-load-testing\.md$''',

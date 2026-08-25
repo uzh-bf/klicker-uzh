@@ -9,7 +9,7 @@ import {
 import { Plus } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, usePathname, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -27,6 +27,8 @@ import { ChatUiProvider, useChatUi } from './chat-ui-context'
 import { DisclaimerModal } from './disclaimer-modal'
 import { MobileCreditsBar } from './credits-footer'
 import { EmbeddedCreditsBar, EmbeddedSettings } from './embedded-settings'
+import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
+import { ChatKnowledgeGraphWorkspace } from './knowledge-graph/ChatKnowledgeGraphWorkspace'
 import { ModeSwitcher } from './mode-switcher'
 import { Thread } from './thread'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -74,9 +76,11 @@ export function Assistant({
   initialModeOptions,
   initialModeOptionsAreFallback,
 }: AssistantProps) {
-  const t = useTranslations()
-  // Stuff CHIPS fallback tokens into sessionStorage and strip them from the URL.
+  // Stuff `?_t=<token>` (CHIPS-unsupported-browser fallback) into
+  // sessionStorage and strip it from the URL on first render.
   useChatGuestTokenBootstrap()
+
+  const t = useTranslations()
   usePwaEmbedTokenBootstrap()
   const embedded = useEmbedded()
   const participationRequired = useChatStore(
@@ -224,6 +228,7 @@ function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
           }),
         }
       )
+
       if (response.ok) {
         setDisclaimerStatus((prev) => ({
           ...(prev ?? {}),
@@ -260,6 +265,7 @@ function useDisclaimerGate(chatbotId: string, participationRequired: boolean) {
           }),
         }
       )
+
       if (response.ok) {
         setDisclaimerStatus((prev) => ({
           ...(prev ?? {}),
@@ -487,10 +493,12 @@ function ThreadSkeleton() {
 
 function SidebarMain({
   chatbot,
+  graphMode,
   initialModeOptions,
   initialModeOptionsAreFallback,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
+  graphMode: boolean
   initialModeOptions: Record<string, string>
   initialModeOptionsAreFallback: boolean
 }) {
@@ -566,21 +574,32 @@ function SidebarMain({
         </Tooltip>
       </header>
       <MobileCreditsBar />
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex shrink-0 justify-center border-b border-[#E9E9E9] bg-white p-2">
+        <ChatGraphModeSwitch chatbotId={chatbot.id} />
+      </div>
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex min-h-0 flex-1 flex-col"
+      >
         <div className="relative flex min-h-0 flex-1 flex-col">
           {isLoading && (
             <div className="bg-background absolute inset-0 z-10 overflow-y-auto">
               <ThreadSkeleton />
             </div>
           )}
-          <Thread
-            chatbotAvatar={chatbot.avatar ?? ''}
-            chatbotName={chatbot.name}
-            initialModeOptions={initialModeOptions}
-            initialModeOptionsAreFallback={initialModeOptionsAreFallback}
-          />
+          {graphMode ? (
+            <ChatKnowledgeGraphWorkspace chatbotId={chatbot.id} />
+          ) : (
+            <Thread
+              chatbotAvatar={chatbot.avatar ?? ''}
+              chatbotName={chatbot.name}
+              initialModeOptions={initialModeOptions}
+              initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+            />
+          )}
         </div>
-      </div>
+      </main>
     </SidebarInset>
   )
 }
@@ -596,6 +615,8 @@ function AssistantLayout({
 }) {
   const { showSidebar } = useChatUi()
   const isLoading = useChatStore((state) => state.isLoading)
+  const pathname = usePathname()
+  const graphMode = pathname === `/${chatbot.id}/graph`
   useEmbeddedChatContext()
   const context = useChatContextStore((state) => state.context)
   const contextLabel = getKlickerChatContextLabel(context)
@@ -607,6 +628,7 @@ function AssistantLayout({
         <AppSidebar />
         <SidebarMain
           chatbot={chatbot}
+          graphMode={graphMode}
           initialModeOptions={initialModeOptions}
           initialModeOptionsAreFallback={initialModeOptionsAreFallback}
         />
@@ -627,20 +649,27 @@ function AssistantLayout({
         tabIndex={-1}
         className="flex min-h-0 flex-1 flex-col"
       >
+        <div className="flex shrink-0 justify-center border-b border-[#E9E9E9] bg-white p-2">
+          <ChatGraphModeSwitch chatbotId={chatbot.id} />
+        </div>
         <div className="relative flex min-h-0 flex-1 flex-col">
           {isLoading && (
             <div className="bg-background absolute inset-0 z-10 overflow-y-auto">
               <ThreadSkeleton />
             </div>
           )}
-          <Thread
-            chatbotAvatar={chatbot.avatar ?? ''}
-            chatbotName={chatbot.name}
-            contextLabel={contextLabel}
-            contextualSuggestions={hasQuestionContext}
-            initialModeOptions={initialModeOptions}
-            initialModeOptionsAreFallback={initialModeOptionsAreFallback}
-          />
+          {graphMode ? (
+            <ChatKnowledgeGraphWorkspace chatbotId={chatbot.id} />
+          ) : (
+            <Thread
+              chatbotAvatar={chatbot.avatar ?? ''}
+              chatbotName={chatbot.name}
+              contextLabel={contextLabel}
+              contextualSuggestions={hasQuestionContext}
+              initialModeOptions={initialModeOptions}
+              initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+            />
+          )}
         </div>
         <EmbeddedCreditsBar />
       </main>

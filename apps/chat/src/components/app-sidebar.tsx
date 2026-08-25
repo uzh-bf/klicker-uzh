@@ -18,6 +18,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import * as React from 'react'
+import { ChatGraphModeSwitch } from './knowledge-graph/ChatGraphModeSwitch'
 import { CreditsFooter } from './credits-footer'
 import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
@@ -96,6 +97,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
+        <div className="border-b border-[#E9E9E9] px-2 pb-2">
+          <ChatGraphModeSwitch chatbotId={chatbotId} compact />
+        </div>
         <p className="text-foreground px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide">
           {t('chat.sidebar.conversationsLabel')}
         </p>

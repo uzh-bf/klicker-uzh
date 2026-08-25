@@ -86,6 +86,20 @@ hatchet:
     apiUrl: ""
     tenantId: ""
     hostPort: ""
+  kbIngestion:
+    apiUrl: ""
+    projectId: "klicker-course-materials"
+    sourceGatewayUrl: ""
+  kbGraph:
+    hostPort: ""
+    apiUrl: ""
+    tlsStrategy: ""
+    workflowName: ""
+    timeoutSeconds: "21600"
+    standardGenerationModel: ""
+    standardCleaningModel: ""
+    highGenerationModel: ""
+    highCleaningModel: ""
   workers:
     general:
       replicaCount: 1
@@ -206,6 +220,11 @@ chat:
 
   mcp:
     key: ''
+
+  docQueryScope:
+    issuer: ''
+    audience: ''
+    keyId: ''
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat
@@ -467,6 +486,12 @@ frontendControl:
 
 backendGraphql:
   priorityClassName: production-workload
+
+  knowledgeGraph:
+    host: ''
+    port: '6379'
+    tls: 'false'
+    queryTimeoutMs: '5000'
 
   # Id of the GrowthBook saved group backing the lecturer beta opt-in. Leave
   # empty to disable the opt-in switch entirely: the setting hides itself when

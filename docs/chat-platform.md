@@ -588,6 +588,14 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 - **Streaming failures need both client and server evidence**: a client-side generic error bubble does not distinguish a provider failure from a response-pipe failure. For staging smoke tests, correlate the browser request time with the chat pod logs and check for `failed to pipe response`, `stream.error`, and `stream.finish` before changing ingress timeouts or model routing.
 - **Message edits must go through the edit composer's own send** — `messageRuntime.composer.send({ startRun: true })` in `thread.tsx:EditComposer`. The public `threadRuntime.append()` normalizes a `null` parentId to "last message in the current path" (vendor `toAppendMessage`), so submitting an edit through it turns a root-message edit into a brand-new turn instead of a sibling branch and the branch pager (`branch-picker.tsx`) never shows. `startRun: true` is required because the vendor's own change gate compares only composer text/attachments and cannot see the kept-original-attachment state this app tracks outside the composer; the app-side `canSubmit` is the real change gate.
 
+## Scoped KB retrieval
+
+The chat route derives the enabled knowledge-base id from the authenticated chatbot in PostgreSQL; it never accepts a client-supplied KB id. `src/services/mcpClients.ts` passes that id with the chatbot and session context only to the configured `KB` MCP server. For rollout and rollback compatibility, the new Chat runtime recognizes that server by its reserved `KB` name even when the persisted row still has its legacy auth type. It ignores all persisted credentials and always sends the scoped token. Without an enabled binding, complete signer configuration, or the exact KB server, KB tools stay unavailable while other MCP servers continue to load.
+
+`src/lib/server/docQueryScopeToken.ts:signDocQueryScopeToken` signs a five-minute ES256 token with `DOC_QUERY_SCOPE_PRIVATE_KEY`, `DOC_QUERY_SCOPE_KID`, `DOC_QUERY_SCOPE_ISSUER`, and `DOC_QUERY_SCOPE_AUDIENCE`. Claims bind `kb_id`, `chatbot_id`, session subject, and a unique `jti`; participant identity is intentionally absent. Scope-token requests carry only the bearer token and content type, never the legacy `Chatbot-ID` header. Existing participant-JWT MCP authentication is unchanged.
+
+The assistant UI registers the retrieval card through `src/components/tools-ui/rag-tool-ui.tsx:RAGToolUI`. Its registration uses `src/services/mcpScope.ts:DOC_QUERY_TOOL_NAME` (`KB_doc_query`), matching the namespaced runtime tool name. The card is localized through `pwa.chatbot.retrieval` and renders only a generic failure state; raw retrieval-service errors must never reach participants.
+
 ## Testing
 
 The self-contained devcontainer starts the seeded local MCP fixture through

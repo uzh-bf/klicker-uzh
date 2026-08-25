@@ -21,7 +21,20 @@ services:
       - '127.0.0.1:8888:8888'
       - '127.0.0.1:7077:7077'
 
+  azurite:
+    ports:
+      - '127.0.0.1:10000:10000'
+    networks:
+      devnet:
+        aliases:
+          - klicker-uzh-azurite
+
   app:
+    environment:
+      BLOB_STORAGE_ACCOUNT_URL: 'https://blob.klicker.localhost/klickerdev'
+      BLOB_STORAGE_INTERNAL_ACCOUNT_URL: 'http://klicker-uzh-azurite:10000/klickerdev'
+    extra_hosts:
+      - 'blob.klicker.localhost:host-gateway'
     networks:
       devnet:
         aliases:

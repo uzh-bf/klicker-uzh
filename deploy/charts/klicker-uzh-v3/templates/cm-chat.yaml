@@ -13,6 +13,9 @@ data:
   OPENAI_BASE_URL: {{ .Values.chat.openai.baseUrl | quote }}
   CHAT_OPENAI_STORE_RESPONSES: {{ .Values.chat.openai.storeResponses | default false | quote }}
   CHAT_ENABLE_AI_TELEMETRY: {{ $chatTelemetryEnabled | quote }}
+  DOC_QUERY_SCOPE_ISSUER: {{ .Values.chat.docQueryScope.issuer | quote }}
+  DOC_QUERY_SCOPE_AUDIENCE: {{ .Values.chat.docQueryScope.audience | quote }}
+  DOC_QUERY_SCOPE_KID: {{ .Values.chat.docQueryScope.keyId | quote }}
   {{- if .Values.chat.modelRegistry }}
   CHAT_MODEL_REGISTRY_JSON: {{ .Values.chat.modelRegistry | toJson | quote }}
   {{- end }}

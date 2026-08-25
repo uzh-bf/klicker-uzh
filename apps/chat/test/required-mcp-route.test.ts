@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   withChatbotAuth: vi.fn(),
   checkDisclaimerStatus: vi.fn(),
   findUnique: vi.fn(),
+  findFirstThread: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
   createThread: vi.fn(),
 }))
@@ -23,6 +24,9 @@ vi.mock('@klicker-uzh/prisma', () => ({
   prisma: {
     chatbot: {
       findUnique: mocks.findUnique,
+    },
+    chatThread: {
+      findFirst: mocks.findFirstThread,
     },
   },
 }))
@@ -43,7 +47,7 @@ import {
   RequiredMCPUnavailableError,
 } from '../src/lib/server/mcpRuntimePolicy'
 
-function createRequest(selectedMode?: string) {
+function createRequest(selectedMode?: string, threadId?: string) {
   return new NextRequest('http://localhost/api/chatbots/chatbot-1/chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -53,6 +57,7 @@ function createRequest(selectedMode?: string) {
       ],
       selectedModel: 'gpt-4.1',
       ...(selectedMode ? { selectedMode } : {}),
+      ...(threadId ? { threadId } : {}),
       assistantMessageId: 'assistant-1',
     }),
   })
@@ -91,9 +96,47 @@ describe('required MCP chat preflight', () => {
           },
         },
       ],
+      knowledgeBases: [],
     })
+    mocks.findFirstThread.mockResolvedValue(null)
     mocks.getAggregatedMCPTools.mockRejectedValue(
       new RequiredMCPUnavailableError()
+    )
+  })
+
+  test('refuses a thread id the caller does not own before any MCP work', async () => {
+    const response = await POST(createRequest(undefined, 'thread-foreign'), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(404)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Thread not found',
+    })
+    expect(mocks.findFirstThread).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'thread-foreign',
+          participantId: 'participant-1',
+          chatbotId: 'chatbot-1',
+        },
+      })
+    )
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.createThread).not.toHaveBeenCalled()
+  })
+
+  test('scopes the MCP session to an owned thread id', async () => {
+    mocks.findFirstThread.mockResolvedValueOnce({ id: 'thread-owned' })
+
+    const response = await POST(createRequest(undefined, 'thread-owned'), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(503)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ sessionId: 'thread-owned' })
     )
   })
 
@@ -113,9 +156,14 @@ describe('required MCP chat preflight', () => {
           server: expect.objectContaining({ isActive: false }),
         }),
       ],
-      'chatbot-1',
-      'participant-1',
-      'account'
+      expect.objectContaining({
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+        authMode: 'account',
+        sessionId: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+        ),
+      })
     )
     expect(mocks.createThread).not.toHaveBeenCalled()
   })
@@ -146,6 +194,7 @@ describe('required MCP chat preflight', () => {
           parameters: { required: true, toolAlias: 'doc_query' },
         },
       ],
+      knowledgeBases: [],
     })
 
     const response = await POST(createRequest(), {

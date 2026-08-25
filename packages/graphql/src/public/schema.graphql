@@ -727,6 +727,7 @@ type Chatbot {
   creditResetPeriod: CreditResetPeriod!
   description: String
   disclaimerSummary: ChatbotDisclaimerSummary
+  enabledKnowledgeBase: ChatbotKnowledgeBaseSummary
   id: ID!
   mcpConfigurations: [ChatbotMcpConfigurationSummary!]!
   modelSelection: Boolean!
@@ -742,6 +743,11 @@ type ChatbotDisclaimerSummary {
   name: String!
   pendingCount: Int!
   title: String!
+}
+
+type ChatbotKnowledgeBaseSummary {
+  id: ID!
+  name: String!
 }
 
 type ChatbotMcpConfigurationSummary {
@@ -1772,6 +1778,206 @@ The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://
 """
 scalar Json
 
+type KB {
+  createdAt: Date!
+  description: String
+  id: ID!
+  metrics: KBMetrics
+  name: String!
+  updatedAt: Date!
+}
+
+type KBChatbotBinding {
+  chatbotId: ID!
+  chatbotName: String!
+  enabledKbId: ID
+  enabledKbName: String
+}
+
+type KBConnection {
+  items: [KB!]!
+  pageInfo: KBPageInfo!
+  totalCount: Int!
+}
+
+type KBFileUpload {
+  blobName: String!
+  containerName: String!
+  uploadSasURL: String!
+}
+
+enum KBGraphBuildStatus {
+  FAILED
+  PROCESSING
+  QUEUED
+  SUCCEEDED
+  SUPERSEDED
+}
+
+enum KBGraphCostStatus {
+  NEEDS_HUMAN_REVIEW
+  RELEASED
+  RESERVED
+  SETTLED
+}
+
+enum KBGraphQualityTier {
+  HIGH
+  STANDARD
+}
+
+type KBIngestionRun {
+  contentSha256: String
+  createdAt: Date!
+  errorCode: String
+  finishedAt: Date
+  id: ID!
+  resourceVersion: Int!
+  startedAt: Date
+  status: KBIngestionStatus!
+  statusMessage: String
+  updatedAt: Date!
+}
+
+enum KBIngestionStatus {
+  FAILED
+  PROCESSING
+  QUEUED
+  SUCCEEDED
+  SUPERSEDED
+}
+
+type KBKnowledgeGraphConfig {
+  activeBuildId: ID
+  actualCostMinorUnits: Int
+  actualEmbeddingTokens: Int
+  actualInputTokens: Int
+  actualOutputTokens: Int
+  actualRequestCount: Int
+  billingLabel: String
+  buildId: ID
+  costConfigurationReady: Boolean!
+  costCurrency: String
+  costStatus: KBGraphCostStatus
+  createdAt: Date
+  estimatedCostMinorUnits: Int
+  finishedAt: Date
+  highEstimateMinorUnits: Int
+  isEnabled: Boolean!
+  isStale: Boolean!
+  kbId: ID!
+  maxCostMinorUnits: Int
+  publishedBuildId: ID
+  qualityTier: KBGraphQualityTier
+  quotaCurrency: String
+  remainingSemesterQuotaMinorUnits: Int
+  semesterKey: String
+  semesterQuotaMinorUnits: Int
+  semesterReservedMinorUnits: Int
+  semesterSettledMinorUnits: Int
+  sourceContentDigest: String
+  standardEstimateMinorUnits: Int
+  startedAt: Date
+  status: KBGraphBuildStatus
+  statusMessage: String
+  updatedAt: Date
+  worstCaseRemainingMinorUnits: Int
+}
+
+type KBMetrics {
+  linkedConsumerCount: Int!
+  pendingCleanupCount: Int!
+  pendingCleanupSizeBytes: Int!
+  quotaResourceCount: Int!
+  quotaSizeBytes: Int!
+  reservedResourceCount: Int!
+  reservedSizeBytes: Int!
+  resourceLimit: Int!
+  storageLimitBytes: Int!
+  unknownSizeResourceCount: Int!
+  visibleResourceCount: Int!
+  visibleSizeBytes: Int!
+}
+
+type KBPageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+}
+
+type KBResource {
+  activeContentSha256: String
+  activeResourceVersion: Int
+  createdAt: Date!
+  errorCode: String
+  id: ID!
+  ingestedAt: Date
+  latestIngestionRun: KBIngestionRun
+  mimeType: String
+  originalFilename: String
+  resourceVersion: Int!
+  sizeBytes: Int
+  sourceUrl: String
+  status: KBResourceStatus!
+  statusMessage: String
+  title: String!
+  type: KBResourceType!
+  updatedAt: Date!
+}
+
+type KBResourceConnection {
+  items: [KBResource!]!
+  pageInfo: KBPageInfo!
+  totalCount: Int!
+}
+
+enum KBResourceStatus {
+  ADDED
+  FAILED
+  PROCESSING
+  QUEUED
+  READY
+}
+
+enum KBResourceType {
+  BLOB
+  URL
+}
+
+type KnowledgeGraphEdge {
+  id: ID!
+  label: String!
+  properties: Json!
+  source: ID!
+  target: ID!
+  type: String!
+}
+
+type KnowledgeGraphNode {
+  content: String
+  degree: Int!
+  displayLabel: String!
+  id: ID!
+  kind: String!
+  labels: [String!]!
+  sourceReferences: [KnowledgeGraphSourceReference!]!
+  summary: String
+}
+
+type KnowledgeGraphResponse {
+  buildId: ID!
+  edges: [KnowledgeGraphEdge!]!
+  isStale: Boolean!
+  kbId: ID!
+  nodes: [KnowledgeGraphNode!]!
+  truncated: Boolean!
+}
+
+type KnowledgeGraphSourceReference {
+  reference: String
+  resourceId: ID!
+  title: String!
+}
+
 type LeaderboardEntry {
   avatar: String
   email: String
@@ -1934,6 +2140,7 @@ type Mutation {
   applyActivityBatchOperations(activityIds: [String!]!, basePoints: Int, bonusPoints: Int, correctnessPoints: Int, courseId: String, multiplier: Int, timeToZeroBonus: Int): Int!
   applyElementBatchOperations(archive: Boolean!, basePoints: Boolean, elementIds: [Int!]!, multiplier: Int, status: ElementStatus, unarchive: Boolean!, updateInstances: Boolean!, updateTemplateInstances: Boolean!): Int!
   approveObjectSharingRequest(permissionLevel: PermissionLevel!, propagation: Boolean!, requestId: Int!, userId: String!): Boolean!
+  attachKbToChatbot(chatbotId: ID!, kbId: ID!): KBChatbotBinding!
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelLiveQuiz(id: String!): LiveQuiz
   cancelObjectSharingRequest(objectId: String!, objectType: ObjectType!): Boolean!
@@ -1950,6 +2157,7 @@ type Mutation {
   changeShortname(shortname: String!): User
   changeUserGroupName(id: Int!, name: String!): Boolean!
   changeUserLocale(locale: LocaleType!): User
+  confirmKbFileUpload(blobName: String!, kbId: ID!, mimeType: String!, originalFilename: String!, sizeBytes: Int!, title: String!): KBResource!
   copyCatalogObjectToAccount(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
   correctAssessmentPointsInstance(awardBasePoints: Boolean, awardBonusPoints: Boolean, awardCorrectnessPoints: Boolean, deductBasePoints: Boolean, deductBonusPoints: Boolean, deductCorrectnessPoints: Boolean, instanceId: Int!, participantId: String, participantIds: [String!], reason: String!, scope: PointCorrectionType!, studentReason: String!): PointCorrection
   correctAssessmentPointsLiveQuiz(awardBasePoints: Boolean, awardBonusPoints: Boolean, awardCorrectnessPoints: Boolean, deductBasePoints: Boolean, deductBonusPoints: Boolean, deductCorrectnessPoints: Boolean, liveQuizId: String!, participantId: String, participantIds: [String!], reason: String!, scope: PointCorrectionType!, studentReason: String!): PointCorrection
@@ -1960,6 +2168,8 @@ type Mutation {
   createCourse(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean!, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String, startDate: Date!): Course
   createFeedback(content: String!, quizId: String!): Feedback
   createGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
+  createKb(description: String, name: String!): KB!
+  createKbUrlResource(kbId: ID!, title: String!, url: String!): KBResource!
   createLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
   createLiveQuizFromTemplate(blocks: [TemplateBlockInput!]!, courseId: String, description: String, displayName: String!, isGamificationEnabled: Boolean!, name: String!, templateId: String!): String
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
@@ -1980,6 +2190,9 @@ type Mutation {
   deleteFeedback(id: Int!, liveQuizId: String!): Feedback
   deleteFeedbackResponse(id: Int!, liveQuizId: String!): Feedback
   deleteGroupActivity(id: String!): GroupActivity
+  deleteKb(id: ID!): KB!
+  deleteKbResource(id: ID!): KBResource!
+  deleteKbResources(ids: [String!]!, kbId: ID!): [KBResource!]!
   deleteLiveQuiz(id: String!): LiveQuiz
   deleteMicroLearning(id: String!): MicroLearning
   deleteParticipantAccount: Boolean
@@ -1989,6 +2202,7 @@ type Mutation {
   deleteUserGroup(groupId: Int!): Boolean!
   deleteUserLogin(id: String!): UserLogin
   demoteGroupAdminToMember(adminId: String!, groupId: Int!): Boolean!
+  detachKbFromChatbot(chatbotId: ID!, kbId: ID!): Boolean!
   duplicateAnswerCollection(id: Int!): AnswerCollection
   editActivityTemplate(activityId: String!, activityType: ActivityType!, description: String!, instructions: String!, name: String!, templateId: String!): Boolean!
   editAnswerCollectionEntry(collectionId: Int!, id: Int!, value: String!): AnswerCollectionEntry
@@ -2011,6 +2225,7 @@ type Mutation {
   gradeGroupActivitySubmission(gradingDecisions: GroupActivityGradingInput!, groupActivityId: String!, id: Int!): GroupActivityInstance
   grantPrivatePreviewAccess(email: String!): Int
   importCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!): Boolean!
+  ingestKbResource(id: ID!): KBResource!
   issueAssessmentReport(courseId: String!): IssuedAssessmentReport!
   joinCourseLeaderboard(courseId: String!): ParticipantLearningData
   joinCourseWithPin(pin: Int!): Participant
@@ -2045,6 +2260,7 @@ type Mutation {
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(availableFrom: Date, id: String!): PracticeQuiz
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
+  rebuildKbKnowledgeGraph(kbId: ID!, qualityTier: KBGraphQualityTier): KBKnowledgeGraphConfig!
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
   removeObject(objectId: String!, objectType: ObjectType!): String
   removeUserFromGroup(groupId: Int!, userId: String!): Boolean!
@@ -2052,6 +2268,7 @@ type Mutation {
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
   requestCatalystAccess(institution: String!, useCase: String!): Boolean!
+  requestKbFileUpload(contentType: String!, fileName: String!, kbId: ID!, sizeBytes: Int!): KBFileUpload!
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
   resolveActivityLogEntry(id: Int!): ActivityLogEntry
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
@@ -2064,6 +2281,7 @@ type Mutation {
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
   setAiFeatures(email: String!, enabled: Boolean!): Int
   setBetaFeatures(enabled: Boolean!): Boolean
+  setKbKnowledgeGraphEnabled(enabled: Boolean!, kbId: ID!): KBKnowledgeGraphConfig!
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
@@ -2582,6 +2800,13 @@ type Query {
   getGradingGroupActivity(id: String!): GroupActivity
   getGroupActivitySummary(id: String!): GroupActivitySummary
   getInstanceUpdateActivities(elementId: Int!, hasSampleSolution: Boolean, includeTemplateInstances: Boolean!): [InstanceUpdateActivityInfo!]
+  getKb(id: ID!): KB!
+  getKbChatbotBindings(kbId: ID!): [KBChatbotBinding!]!
+  getKbKnowledgeGraphConfig(kbId: ID!): KBKnowledgeGraphConfig!
+  getKbKnowledgeGraphNeighbors(kbId: ID!, nodeId: ID!): KnowledgeGraphResponse!
+  getKbKnowledgeGraphOverview(kbId: ID!): KnowledgeGraphResponse!
+  getKbResourceIngestionRuns(resourceId: ID!): [KBIngestionRun!]!
+  getKbResources(after: String, first: Int, kbId: ID!, search: String, status: KBIngestionStatus, type: KBResourceType): KBResourceConnection!
   getLecturerViewLiveQuiz(id: String!): LiveQuiz
   getLiveQuizEmbeddingInfo(id: String!): LiveQuizEmbeddingInfo
   getLiveQuizSummary(quizId: String!): LiveQuizSummary
@@ -2607,6 +2832,7 @@ type Query {
   getTemplatePreviewAnswerCollectionEntries(answerCollectionId: Int!, templateId: String!): [AnswerCollectionPreviewEntry!]
   getUserActivitiesCourses: [CourseListEntry!]
   getUserGroupsUser: [UserGroup!]
+  getUserKbsConnection(after: String, first: Int, search: String): KBConnection!
   getUsersAiFeatures: [UserInfo!]
   getUsersPrivatePreview: [UserInfo!]
   groupActivities(courseId: String!): [GroupActivity!]
@@ -2624,6 +2850,7 @@ type Query {
   practiceQuiz(id: String!): PracticeQuiz
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
+  searchKbKnowledgeGraph(kbId: ID!, query: String!): KnowledgeGraphResponse!
   self(liveQuizId: String): Participant
   selfWithAchievements: ParticipantWithAchievements
   shortnameQuizzes(shortname: String!): [LiveQuiz!]

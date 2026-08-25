@@ -25,19 +25,33 @@ Conventions (design system, Tailwind v4, Apollo, i18n, CSP): [docs/frontend-conv
      services.
    - Forms: Formik + Yup. Conditional classes: `twMerge`. Feature flags gate alone — never `flag && count > 0`.
    - No Next.js middleware for CSP/headers — that belongs at the proxy layer.
+   - KB graph panel: show the per-KB opt-in and localized billing/quota states before the rebuild control. Format current estimates, maxima, and quota values with the current persisted quota currency, and historical settled build cost with its recorded currency; treat persisted quota currency/limit drift as unavailable. Keep rebuild disabled when opt-in, cost configuration, or active-build conditions fail; display actual cost and usage only after settlement; keep provider credentials out of the browser; and map billing enums to localized text.
    - Assessment comparison charts use equal-width categorical bars and a
      labelled 0–100 percentile ruler; keep the exact range/count table and
      highlight the student's containing range.
 3. **Verify in the browser — mandatory, not optional.** Depending on your environment path:
+
    - **Inside Devcontainer:** Dev servers auto-start in the background. No need to start/stop them. View logs via `tail -f /tmp/dev.log`.
    - **Host-based Setup:** You are authorized to start the dev servers needed for this verification, and must clean up after with `./_down.sh`. Bring-up per [docs/getting-started.md](../../../docs/getting-started.md) (localhost `dev:raw` path works without secrets).
    - On bring-up / server failure → `klicker-environment-doctor`.
    - Open the changed pages with `npx agent-browser` (never bare `agent-browser`), log in via **delegated** access with the AGENTS.md test credentials (not Edu-ID).
    - Capture before/after screenshots of every changed state (including error/empty states you touched); check both locales if strings changed.
    - Iterate on issues you see yourself; hand to the user for manual verification only after your own pass succeeds.
+
 4. **Pre-PR** — `klicker-testing-verification` checklist; attach the screenshots to the PR description.
 
 ## App boundaries
 
 - `frontend-manage` (lecturer), `frontend-pwa` (student; also has a localforage offline side-channel for live-quiz answers — don't bypass `storageHelpers.ts`), `frontend-control` (mobile controller), `auth` (login flows — auth changes also need [docs/auth-model.md](../../../docs/auth-model.md)).
+- Knowledge-base management is a reusable package mounted by `frontend-manage`: edit `packages/kb-management`, not duplicate app-local components. Verify `/resources/knowledgeBases` plus the detail route at desktop and mobile widths, both locales, and every changed empty/active/success/failure state.
+- The KB navigation item is an interim `user.privatePreview` discovery gate. Direct catalog/detail URLs must render the localized `KB_PREVIEW_ACCESS_REQUIRED` service error for a non-preview lecturer; never rely on hidden navigation as authorization.
+- The knowledge-resource Ingest action accepts only the resource identifier. Do not expose transport tuning in the UI unless the GraphQL and ingestion-platform contracts add a real user-controlled setting.
+- Keep full KB attempt history out of the two-second detail poll. Load the bounded, owner-checked history query only when a lecturer expands a resource, while the parent query carries only the latest run needed for operation status.
+- Localize KB failure detail from stable status/error codes. Do not render raw ingestion-platform status text into the EN/DE lecturer UI.
+- Replacing a chatbot's enabled KB requires an explicit warning state; verify attach, replace, detach, linked-KB, and no-KB states in both locales and at desktop/mobile widths.
+- KB delete copy must distinguish immediate removal from background external/blob cleanup; never claim that asynchronous cleanup completed in the mutation success toast.
+- KB uploads expose only PDF, TXT, and MD up to 25 MiB while the ingestion bridge supports PDF/plain text; map Markdown to `text/plain` and do not advertise DOCX/PPTX prematurely. Localize stable quota codes rather than raw service messages.
+- KB catalog/detail scale uses server-backed search/filter connections, design-system `SelectField` filters, and explicit load-more controls. While one row is active, poll page zero plus known active pages every two seconds and run a full loaded-window walk every tenth tick; fall back immediately on cursor/page-length drift. Preserve the latest loaded window across action refreshes, use `no-cache` promise queries for background polls, and invalidate in-flight refreshes when filters change. Use indeterminate operation progress, not fabricated percentages. Keep selection bounded to 50 and remove rows from selection when they become active. Keep bulk deletion behind a named confirmation, and expose source, operation-versus-serving state, contextual actions, and lazy history in the keyboard-accessible inspector.
+- Treat a KB mutation and its follow-up query refresh as separate outcomes. After mutation success, close/reset and show success even when a best-effort refresh fails; log the refresh failure without surfacing a mutation error or encouraging a duplicate retry.
+- KB metrics must distinguish visible data from quota usage, reservations, pending cleanup, unknown-size conservative claims, and linked consumers. Verify these states in EN/DE at desktop and 390 px widths.
 - **`apps/chat` is out of scope here** — app router, zustand, assistant-ui; read [docs/chat-platform.md](../../../docs/chat-platform.md) and follow its local conventions instead.

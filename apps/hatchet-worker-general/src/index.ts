@@ -1,9 +1,16 @@
 // basic structure according to https://github.com/hatchet-dev/hatchet-typescript-quickstart/tree/main/monorepo
 
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
-import { handlers } from '@klicker-uzh/graphql'
+import { handlers, settleKbKnowledgeGraphResult } from '@klicker-uzh/graphql'
 import type { PreparedHatchetTasks } from '@klicker-uzh/hatchet'
-import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
+import {
+  getKBGraphTerminalResult,
+  hatchetClient,
+  prepareHatchetTasks,
+  validateKBGraphWorkerConfig,
+  validateKBIngestionWorkerConfig,
+} from '@klicker-uzh/hatchet'
+import { prisma } from '@klicker-uzh/prisma'
 import EventEmitter from 'events'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
@@ -58,6 +65,8 @@ function selectWorkflows(workflows: PreparedHatchetTasks) {
 }
 
 async function main() {
+  validateKBIngestionWorkerConfig()
+  validateKBGraphWorkerConfig()
   logger.info({ workerName: HATCHET_WORKER_NAME }, 'Starting Hatchet worker')
 
   const redisExec = new Redis({
@@ -119,6 +128,18 @@ async function main() {
     redisAssessmentExec,
     redisCache,
     handlers,
+    getKBGraphTerminalResult,
+    settleKBGraphTerminalResult: ({
+      buildId,
+      result,
+      finishedAt,
+      allowLateSuccess,
+    }) =>
+      settleKbKnowledgeGraphResult(
+        prisma,
+        { buildId, result, allowLateSuccess },
+        finishedAt
+      ),
   })
 
   const workflows = selectWorkflows(preparedWorkflows)

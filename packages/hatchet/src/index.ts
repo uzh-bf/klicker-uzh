@@ -1,11 +1,39 @@
-import { Priority, type HatchetClient } from '@hatchet-dev/typescript-sdk'
+import {
+  ConcurrencyLimitStrategy,
+  Priority,
+  type Context,
+  type HatchetClient,
+} from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
-import type { HatchetHandlers } from '@klicker-uzh/types'
+import type {
+  BuildKBGraphInput,
+  DeleteKBResourceInput,
+  HatchetHandlers,
+  IngestKBResourceInput,
+} from '@klicker-uzh/types'
 import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
+import {
+  dispatchKBGraphBuild,
+  markKBGraphBuildDispatchFailed,
+  monitorActiveKBGraphBuilds,
+} from './kbGraphIngestion.js'
+import {
+  dispatchKBDeletion,
+  dispatchKBIngestion,
+  failKBIngestionDispatch,
+  monitorActiveKBIngestions,
+  retainFailedKBDeletionDispatch,
+} from './kbIngestion.js'
+import { maintainKBResources } from './kbMaintenance.js'
 
 export * from './client.js'
+export * from './kbGraphIngestion.js'
+export * from './kbGraphIngestionApi.js'
+export * from './kbIngestion.js'
+export * from './kbIngestionApi.js'
+export * from './kbMaintenance.js'
 
 export type { HatchetHandlers } from '@klicker-uzh/types'
 
@@ -17,6 +45,8 @@ export function prepareHatchetTasks({
   redisAssessmentExec,
   redisCache,
   handlers,
+  getKBGraphTerminalResult,
+  settleKBGraphTerminalResult,
 }: {
   hatchet: HatchetClient
   pubSub: PubSub<any>
@@ -25,6 +55,13 @@ export function prepareHatchetTasks({
   redisAssessmentExec: Redis
   redisCache?: Redis
   handlers: HatchetHandlers
+  getKBGraphTerminalResult: (runId: string) => Promise<unknown>
+  settleKBGraphTerminalResult: (input: {
+    buildId: string
+    result: unknown
+    finishedAt: Date
+    allowLateSuccess?: boolean
+  }) => Promise<'SETTLED' | 'RELEASED' | 'NEEDS_HUMAN_REVIEW' | 'DUPLICATE'>
 }) {
   const globalContext = {
     hatchet,
@@ -56,6 +93,80 @@ export function prepareHatchetTasks({
       ctx.logger.info(`Audit log entry: ${info}`, args)
     },
   })
+
+  const ingestKBResourceDefinition = {
+    name: 'ingest-kb-resource',
+    retries: 3,
+    fn: async (
+      input: IngestKBResourceInput,
+      ctx: Context<IngestKBResourceInput>
+    ) => {
+      await ctx.logger.info('KB ingestion dispatch started', {
+        resourceId: input.resourceId,
+        kbId: input.kbId,
+        type: input.type,
+      })
+      await dispatchKBIngestion(input, {
+        prisma,
+        logger: ctx.logger,
+      })
+      return { success: true }
+    },
+    onFailure: {
+      retries: 3,
+      fn: async (input: IngestKBResourceInput) => {
+        await failKBIngestionDispatch({ input, prisma })
+      },
+    },
+  }
+  const ingestKBResource = hatchet.task(ingestKBResourceDefinition)
+  const deleteKBResourceDefinition = {
+    name: 'delete-kb-resource',
+    retries: 3,
+    fn: async (
+      input: DeleteKBResourceInput,
+      ctx: Context<DeleteKBResourceInput>
+    ) => {
+      await ctx.logger.info('KB deletion dispatch started', {
+        resourceId: input.resourceId,
+        kbId: input.kbId,
+      })
+      await dispatchKBDeletion(input, {
+        prisma,
+        logger: ctx.logger,
+      })
+      return { success: true }
+    },
+    onFailure: {
+      retries: 3,
+      fn: async (input: DeleteKBResourceInput) => {
+        await retainFailedKBDeletionDispatch({ input, prisma })
+      },
+    },
+  }
+  const deleteKBResource = hatchet.task(deleteKBResourceDefinition)
+
+  const buildKBGraphDefinition = {
+    name: 'build-kb-knowledge-graph',
+    retries: 3,
+    fn: async (input: BuildKBGraphInput, ctx: Context<BuildKBGraphInput>) => {
+      await ctx.logger.info('KB graph build dispatch started', {
+        buildId: input.buildId,
+      })
+      await dispatchKBGraphBuild(input, {
+        prisma,
+        logger: ctx.logger,
+      })
+      return { success: true }
+    },
+    onFailure: {
+      retries: 3,
+      fn: async (input: BuildKBGraphInput) => {
+        await markKBGraphBuildDispatchFailed(input, prisma)
+      },
+    },
+  }
+  const buildKBGraph = hatchet.task(buildKBGraphDefinition)
   // #endregion
 
   // ! ACTIVITY PUBLICATION TASKS
@@ -274,6 +385,52 @@ export function prepareHatchetTasks({
     },
   })
 
+  const monitorKBIngestions = hatchet.task({
+    name: 'monitor-kb-ingestions',
+    onCrons: ['* * * * *'],
+    concurrency: {
+      expression: '"monitor-kb-ingestions"',
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
+    },
+    fn: async () => monitorActiveKBIngestions({ prisma }),
+  })
+
+  const monitorKBGraphBuilds = hatchet.task({
+    name: 'monitor-kb-graph-builds',
+    onCrons: ['* * * * *'],
+    concurrency: {
+      expression: '"monitor-kb-graph-builds"',
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
+    },
+    fn: async (_, ctx) =>
+      monitorActiveKBGraphBuilds({
+        prisma,
+        logger: ctx.logger,
+        getTerminalResult: getKBGraphTerminalResult,
+        settleTerminalResult: settleKBGraphTerminalResult,
+      }),
+  })
+
+  const maintainKBResourcesTask = hatchet.task({
+    name: 'maintain-kb-resources',
+    onCrons: ['*/15 * * * *'],
+    concurrency: {
+      expression: '"maintain-kb-resources"',
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.CANCEL_NEWEST,
+    },
+    fn: async (_, ctx) =>
+      maintainKBResources({
+        prisma,
+        logger: ctx.logger,
+        enqueueKBGraphBuild: async (buildId) => {
+          await buildKBGraph.runNoWait({ buildId })
+        },
+      }),
+  })
+
   // ? temporarily paused workflow, since the functionality is currently not available and needs fixing
   const sendPushNotifications = hatchet.task({
     name: 'send-push-notifications',
@@ -302,6 +459,12 @@ export function prepareHatchetTasks({
     endExpiredMicroLearning,
     aggregateLiveQuizBlockResultsStandard,
     aggregateLiveQuizBlockResultsAssessment,
+    ingestKBResource,
+    deleteKBResource,
+    buildKBGraph,
+    monitorKBIngestions,
+    monitorKBGraphBuilds,
+    maintainKBResources: maintainKBResourcesTask,
     createAuditLogEntry,
   }
 }

@@ -50,6 +50,35 @@ services:
     image: mailhog/mailhog:latest
     networks: [default]
 
+  # --- local Azure Blob Storage emulator for browser uploads ---
+  # The custom key decodes to the literal "test". It is deterministic,
+  # low-entropy, and local-only, not a cloud credential. Path-style URLs let
+  # one workspace-safe devrouter host serve the account without per-account DNS.
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.36.0
+    command:
+      - azurite-blob
+      - --blobHost
+      - 0.0.0.0
+      - --blobPort
+      - '10000'
+      - --location
+      - /data
+      - --disableProductStyleUrl
+      - --disableTelemetry
+    environment:
+      AZURITE_ACCOUNTS: 'klickerdev:dGVzdA=='
+    healthcheck:
+      test: ['CMD-SHELL', 'nc -z 127.0.0.1 10000']
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    networks:
+      default: {}
+      devnet: {}
+    volumes:
+      - azurite_data:/data
+
   # --- Hatchet workflow engine (gRPC :7077, http :8888). Reached at hatchet:7077
   # by the app via compose DNS. SERVER_GRPC_BROADCAST_ADDRESS is set to the compose
   # name so the issued client token advertises a container-reachable endpoint. ---
@@ -82,6 +111,10 @@ services:
       - devcontainer.env
     environment:
       - WORKSPACE=${WORKSPACE:-}
+      - BLOB_STORAGE_ACCOUNT_NAME=klickerdev
+      - BLOB_STORAGE_ACCESS_KEY=dGVzdA==
+      - BLOB_STORAGE_ACCOUNT_URL=http://localhost:10000/klickerdev
+      - BLOB_STORAGE_INTERNAL_ACCOUNT_URL=http://azurite:10000/klickerdev
       # Beta opt-in against a GrowthBook instance the developer supplies from
       # their own shell. The management key is write-capable, so it is passed
       # through from the host and never written into devcontainer.env, which is
@@ -118,6 +151,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      azurite:
+        condition: service_healthy
 
   # --- LiteLLM for Chat (Tier 3) ---
   # Pin an image tag that still exists on ghcr — BerriAI prunes old main-vX.Y.Z
@@ -153,6 +188,7 @@ services:
 
 volumes:
   pgdata:
+  azurite_data:
   node_modules_root:
   hatchet_lite_config:
 

@@ -1,0 +1,296 @@
+// ----- KNOWLEDGE BASES -----
+// #region
+
+enum KBResourceType {
+  BLOB // uploaded file stored in Azure Blob Storage
+  URL // external web resource (e.g., website, Kaltura MediaSpace video) fetched during ingestion
+}
+
+enum KBResourceStatus {
+  ADDED // resource registered (blob uploaded or URL added), not yet queued for ingestion
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum KBIngestionStatus {
+  QUEUED
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  SUPERSEDED
+}
+
+enum KBIngestionOperation {
+  UPSERT
+  DELETE
+}
+
+enum KBGraphBuildStatus {
+  QUEUED
+  PROCESSING
+  SUCCEEDED
+  FAILED // includes builds failed by the reconciliation timeout
+  SUPERSEDED
+}
+
+enum KBGraphQualityTier {
+  STANDARD
+  HIGH
+}
+
+enum KBGraphCostStatus {
+  RESERVED
+  SETTLED
+  RELEASED
+  NEEDS_HUMAN_REVIEW
+}
+
+model KB {
+  id          String  @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  deletedAt   DateTime?
+  deletedBy   User?     @relation("KBDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  deletedById String?   @db.Uuid
+
+  // at most one build may hold the slot at a time; claimed with a conditional update
+  activeGraphBuildId String? @db.Uuid
+  // the build FalkorDB currently serves, kept in place even once its digest goes stale
+  publishedGraphBuildId String? @db.Uuid
+  // graph generation is opt-in per KB; the lecturer-level preview flag is a separate gate
+  knowledgeGraphEnabled Boolean @default(false)
+
+  resources     KBResource[]
+  uploadTickets KBUploadTicket[]
+  chatbots      KBChatbot[]
+  graphBuilds   KBGraphBuild[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([deletedAt])
+}
+
+model KBResource {
+  id String @id @default(uuid()) @db.Uuid
+
+  type  KBResourceType
+  title String
+
+  // URL resources: location of the external web resource
+  sourceUrl String?
+
+  // BLOB resources: upload metadata and blob location (resolver-enforced as required for type BLOB)
+  originalFilename String?
+  mimeType         String?
+  sizeBytes        Int?
+  blobName         String?
+  blobHref         String?
+
+  status                     KBResourceStatus     @default(ADDED)
+  statusMessage              String?
+  ingestedAt                 DateTime?
+  ingestionAttemptId         String?              @db.Uuid
+  resourceVersion            Int                  @default(0)
+  contentSha256              String?
+  externalOperationId        String?
+  externalOperationStartedAt DateTime?
+  activeResourceVersion      Int?
+  activeContentSha256        String?
+  errorCode                  String?
+  ingestionOperation         KBIngestionOperation @default(UPSERT)
+
+  deletedAt   DateTime?
+  deletedBy   User?     @relation("KBResourceDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  deletedById String?   @db.Uuid
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  ingestionRuns KBIngestionRun[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kbId, status])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model KBIngestionRun {
+  id String @id @db.Uuid
+
+  operation           KBIngestionOperation @default(UPSERT)
+  status              KBIngestionStatus    @default(QUEUED)
+  resourceVersion     Int
+  contentSha256       String?
+  externalOperationId String?
+  statusMessage       String?
+  errorCode           String?
+  startedAt           DateTime?
+  finishedAt          DateTime?
+
+  resource   KBResource @relation(fields: [resourceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  resourceId String     @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([resourceId, createdAt])
+  @@index([status])
+}
+
+// Append-only ledger of knowledge graph build attempts, mirroring KBIngestionRun.
+// The id is supplied by KlickerUZH and doubles as the idempotency key handed to the
+// external generation service, which answers with its own externalOperationId.
+model KBGraphBuild {
+  id String @id @db.Uuid
+
+  status      KBGraphBuildStatus @default(QUEUED)
+  qualityTier KBGraphQualityTier @default(STANDARD)
+
+  // digest over the KB's active serving set at request time; pins what this build represents
+  sourceContentDigest String
+  // FalkorDB graph the completed build is written to, in one step at the end
+  graphName String
+  // GraphML export retained on Blob for versioning, once the build succeeds
+  graphmlBlobName String?
+
+  // Cost reservation is part of the build ledger so settlement is idempotent by build id.
+  estimatedCostMinorUnits Int?
+  actualCostMinorUnits    Int?
+  actualInputTokens       Int?
+  actualOutputTokens      Int?
+  actualEmbeddingTokens   Int?
+  actualRequestCount      Int?
+  costCurrency            String?
+  costPricingVersion      String?
+  costStatus              KBGraphCostStatus?
+  /// [PrismaKBGraphMeteredCost]
+  meteredCost             Json?
+  semesterKey             String?
+  quota                   KBGraphQuota? @relation(fields: [quotaId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  quotaId                 String?       @db.Uuid
+
+  externalOperationId String?
+  externalStartedAt   DateTime?
+  // Durable claim written before the provider call. If the call is accepted
+  // but its run id cannot be correlated, this prevents releasing the reserve.
+  dispatchClaimedAt   DateTime?
+  statusMessage       String?
+  errorCode           String?
+  startedAt           DateTime?
+  finishedAt          DateTime?
+  // terminal builds keep their ledger row; maintenance records once their
+  // external FalkorDB graph has been retired.
+  // Set before external deletion so late external completions cannot publish
+  // while retention cleanup is in flight. Stale claims are reclaimable after
+  // the retention grace window.
+  cleanupStartedAt    DateTime?
+  cleanedAt           DateTime?
+  // The GraphML archive outlives the serving graph: it is purged on a separate,
+  // longer clock (the KB deletion recovery grace) so an earlier successful
+  // version stays restorable while the knowledge base exists. Tracked apart from
+  // `cleanedAt` because whole-KB hard deletion keys off graph retirement.
+  graphmlPurgedAt     DateTime?
+
+  // builds spend the requesting lecturer's AI budget, so the requester is recorded
+  requestedBy   User?   @relation(fields: [requestedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  requestedById String? @db.Uuid
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  // The graph must remain explainable even if a source resource is later
+  // deleted or replaced, so this is a build-local snapshot rather than a FK.
+  sources KBGraphBuildSource[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kbId, createdAt])
+  @@index([status])
+  @@index([quotaId])
+}
+
+model KBGraphQuota {
+  id String @id @default(uuid()) @db.Uuid
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  semesterKey          String
+  currency             String
+  limitMinorUnits      Int
+  reservedMinorUnits   Int @default(0)
+  settledMinorUnits    Int @default(0)
+  graphBuilds          KBGraphBuild[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, semesterKey])
+  @@index([ownerId])
+}
+
+model KBGraphBuildSource {
+  id String @id @default(uuid()) @db.Uuid
+
+  resourceId    String         @db.Uuid
+  title         String
+  type          KBResourceType
+  contentSha256 String
+  sourceUrl     String?
+  blobName      String?
+
+  build   KBGraphBuild @relation(fields: [buildId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  buildId String       @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@unique([buildId, resourceId])
+  @@index([resourceId])
+}
+
+model KBUploadTicket {
+  id String @id @db.Uuid
+
+  blobName  String
+  sizeBytes Int      @default(0)
+  expiresAt DateTime
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@unique([kbId, blobName])
+  @@index([expiresAt])
+}
+
+model KBChatbot {
+  id String @id @default(uuid()) @db.Uuid
+
+  isEnabled Boolean @default(true)
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([kbId, chatbotId])
+  @@index([chatbotId])
+}
+
+// #endregion

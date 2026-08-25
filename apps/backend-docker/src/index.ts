@@ -1,11 +1,20 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
-import { enhanceContext, handlers, schema } from '@klicker-uzh/graphql'
+import {
+  enhanceContext,
+  handlers,
+  schema,
+  settleKbKnowledgeGraphResult,
+} from '@klicker-uzh/graphql'
 import { prisma as prismaBase } from '@klicker-uzh/prisma'
 // import * as Sentry from '@sentry/node'
 // import '@sentry/tracing'
 import { createInMemoryCache, type Cache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
-import { hatchetClient, prepareHatchetTasks } from '@klicker-uzh/hatchet'
+import {
+  getKBGraphTerminalResult,
+  hatchetClient,
+  prepareHatchetTasks,
+} from '@klicker-uzh/hatchet'
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
@@ -111,6 +120,18 @@ migrate(prisma).then(() => {
     redisExec,
     redisAssessmentExec,
     handlers,
+    getKBGraphTerminalResult,
+    settleKBGraphTerminalResult: ({
+      buildId,
+      result,
+      finishedAt,
+      allowLateSuccess,
+    }) =>
+      settleKbKnowledgeGraphResult(
+        prisma,
+        { buildId, result, allowLateSuccess },
+        finishedAt
+      ),
   })
 
   console.log('Hatchet tasks initialized.', Object.keys(tasks))

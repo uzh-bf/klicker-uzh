@@ -854,6 +854,15 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
       activeContext: 'Nutzt den aktuellen Seitenkontext',
       questionContext: 'Frage {currentStep}/{totalSteps}',
       noCourseChatbot: 'Für diesen Kurs ist noch kein Kurs-Chatbot verfügbar.',
+      retrieval: {
+        searching: 'Vorlesungsinhalte werden nach „{query}“ durchsucht…',
+        errorTitle: 'Suche nicht verfügbar',
+        errorDescription:
+          'Die Vorlesungsinhalte konnten nicht durchsucht werden. Bitte versuchen Sie es erneut.',
+        contentTitle: 'Vorlesungsinhalte',
+        questionLabel: 'Frage',
+        noContent: 'Keine Inhalte verfügbar',
+      },
     },
     insights: {
       noCourseDataAvailable:
@@ -1501,6 +1510,222 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       verificationIdentityTitle: 'Berichtsidentität',
       cohortSizeLabel: 'Vergleichsgruppe: {count} aktive Teilnehmende',
     },
+  },
+  kb: {
+    title: 'Wissensdatenbanken',
+    create: 'Wissensdatenbank erstellen',
+    nameLabel: 'Name',
+    descriptionLabel: 'Beschreibung (optional)',
+    createSuccess: 'Wissensdatenbank wurde erstellt.',
+    createError: 'Die Wissensdatenbank konnte nicht erstellt werden.',
+    deleteTitle: 'Wissensdatenbank löschen',
+    deleteDescription:
+      '„{name}“ wird sofort ausgeblendet. Gespeicherte Dateien und der externe Index werden im Hintergrund entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
+    deleteSuccess:
+      'Wissensdatenbank wurde entfernt. Die Bereinigung läuft im Hintergrund.',
+    deleteError: 'Die Wissensdatenbank konnte nicht gelöscht werden.',
+    emptyTitle: 'Noch keine Wissensdatenbanken',
+    emptyDescription:
+      'Erstellen Sie eine Wissensdatenbank, um erste Ressourcen hinzuzufügen.',
+    noDescription: 'Keine Beschreibung',
+    loadError: 'Die Wissensdatenbanken konnten nicht geladen werden.',
+    searchKnowledgeBases: 'Wissensdatenbanken suchen',
+    searchKnowledgeBasesPlaceholder: 'Nach Name oder Beschreibung suchen',
+    noSearchResults: 'Keine passenden Wissensdatenbanken',
+    noSearchResultsDescription:
+      'Versuchen Sie es mit einem anderen Namen oder einer anderen Beschreibung.',
+    searchResultCount:
+      '{count, plural, =0 {Keine Wissensdatenbanken} one {# Wissensdatenbank} other {# Wissensdatenbanken}}',
+    catalogMetrics:
+      '{resources, plural, one {# Ressource} other {# Ressourcen}} · {chatbots, plural, one {# verknüpfter Chatbot} other {# verknüpfte Chatbots}}',
+    loadMore: 'Weitere Wissensdatenbanken laden',
+    notFound: 'Die Wissensdatenbank konnte nicht gefunden werden.',
+    backToList: 'Zurück zu den Wissensdatenbanken',
+    metricsTitle: 'Nutzung und Verknüpfungen',
+    metricVisibleResources: 'Sichtbare Ressourcen',
+    metricReservedResources:
+      '{count, plural, =0 {Keine Upload-Reservierungen} one {# Upload-Reservierung} other {# Upload-Reservierungen}}',
+    metricStorage: 'Speicherlimit',
+    metricStorageBreakdown:
+      '{visible} sichtbar · {reserved} für Uploads reserviert',
+    unknownSizesReserved:
+      '{count, plural, one {# ältere Ressource reserviert bis zu 25 MiB} other {# ältere Ressourcen reservieren je bis zu 25 MiB}}',
+    metricPendingCleanup: 'Ausstehende Bereinigung',
+    metricPendingCleanupSize: '{size} warten auf die Bereinigung',
+    metricLinkedConsumers: 'Verknüpfte Chatbots',
+    metricQuotaResources: '{count} Ressourcen werden dem Limit angerechnet',
+    quotaReleaseMessage:
+      'Gelöschte Ressourcen werden dem Limit weiterhin angerechnet, bis die Bereinigung im Hintergrund abgeschlossen ist.',
+    fileUploadTitle: 'Datei hochladen',
+    fileUploadDescription: 'Fügen Sie Kursmaterial von Ihrem Computer hinzu.',
+    fileDropPrompt: 'Datei hier ablegen oder zum Auswählen klicken',
+    fileUploadFormats: 'PDF, TXT oder MD · maximal 25 MB',
+    uploading: 'Wird hochgeladen…',
+    fileUploadSuccess: 'Datei wurde zur Wissensdatenbank hinzugefügt.',
+    fileUploadError: 'Die Datei konnte nicht hochgeladen werden.',
+    fileRejected: 'Wählen Sie eine unterstützte Datei mit maximal 25 MB.',
+    linkTitle: 'Link hinzufügen',
+    linkDescription:
+      'Registrieren Sie eine Website oder Medienressource für die Verarbeitung.',
+    resourceTitleLabel: 'Titel',
+    urlLabel: 'URL',
+    invalidUrl:
+      'Geben Sie eine gültige URL ein, die mit http:// oder https:// beginnt.',
+    linkSuccess: 'Link wurde zur Wissensdatenbank hinzugefügt.',
+    linkError: 'Der Link konnte nicht hinzugefügt werden.',
+    resourcesTitle: 'Ressourcen',
+    resourcesLoadError: 'Die Ressourcen konnten nicht geladen werden.',
+    searchResources: 'Ressourcen suchen',
+    searchResourcesPlaceholder: 'Titel, Dateiname oder URL suchen',
+    filterType: 'Typ',
+    filterStatus: 'Letzte Verarbeitung',
+    filterAll: 'Alle',
+    typeFile: 'Datei',
+    typeUrl: 'Link',
+    noResourceResults: 'Keine Ressourcen entsprechen diesen Filtern.',
+    resourceResultCount:
+      '{count, plural, =0 {Keine Ressourcen} one {# Ressource} other {# Ressourcen}}',
+    selectAllPage: 'Bis zu 50 verfügbare Ressourcen auswählen',
+    selectResource: '„{title}“ auswählen',
+    loadMoreResources: 'Weitere Ressourcen laden',
+    noResources: 'Es wurden noch keine Ressourcen hinzugefügt.',
+    updatedAt: 'Aktualisiert {date}',
+    statusAdded: 'Hinzugefügt',
+    statusQueued: 'In Warteschlange',
+    statusProcessing: 'In Verarbeitung',
+    statusReady: 'Bereit',
+    statusFailed: 'Fehlgeschlagen',
+    deleteResourceTitle: 'Ressource löschen',
+    deleteResourceDescription:
+      '„{title}“ wird sofort ausgeblendet. Die gespeicherte Datei und der externe Index werden im Hintergrund entfernt. Diese Aktion kann nicht rückgängig gemacht werden.',
+    deleteResourceSuccess:
+      'Ressource wurde entfernt. Die Bereinigung läuft im Hintergrund.',
+    deleteResourceError: 'Die Ressource konnte nicht gelöscht werden.',
+    bulkDelete: 'Ausgewählte löschen ({count})',
+    bulkDeleteTitle:
+      '{count, plural, one {# Ressource löschen} other {# Ressourcen löschen}}',
+    bulkDeleteConfirm:
+      '{count, plural, one {Ressource löschen} other {# Ressourcen löschen}}',
+    bulkDeleteDescription:
+      '{count, plural, one {Die ausgewählte Ressource wird sofort ausgeblendet. Gespeicherte Dateien und externe Indizes werden im Hintergrund entfernt. Diese Aktion kann nicht rückgängig gemacht werden.} other {Die # ausgewählten Ressourcen werden sofort ausgeblendet. Gespeicherte Dateien und externe Indizes werden im Hintergrund entfernt. Diese Aktion kann nicht rückgängig gemacht werden.}}',
+    bulkDeleteSuccess:
+      '{count, plural, one {Ressource wurde entfernt. Die Bereinigung läuft im Hintergrund.} other {# Ressourcen wurden entfernt. Die Bereinigung läuft im Hintergrund.}}',
+    bulkDeleteError:
+      'Das Löschen konnte nicht bestätigt werden. Aktualisieren Sie die Liste, bevor Sie es erneut versuchen.',
+    ingestResource: 'Verarbeiten',
+    retryIngestion: 'Erneut versuchen',
+    reingestResource: 'Neu verarbeiten',
+    ingestResourceSuccess: 'Ressource wurde zur Verarbeitung eingeplant.',
+    ingestResourceError:
+      'Die Ressource konnte nicht zur Verarbeitung eingeplant werden.',
+    operationStatus: 'Letzte Verarbeitung',
+    operationInProgress:
+      'Dieser Vorgang läuft im Hintergrund. Sie können diese Seite verlassen.',
+    backgroundOperationsMessage:
+      'Ein oder mehrere Vorgänge laufen noch. Die Status werden automatisch aktualisiert und Sie können diese Seite sicher verlassen.',
+    servingStatus: 'Für KI verfügbar',
+    notServing: 'Noch nicht verfügbar',
+    servingCurrentVersion: 'Aktuelle Version {version}',
+    servingPreviousVersion: 'Version {version} bleibt verfügbar',
+    servingSince: 'Verfügbar seit {date}',
+    version: 'Version {version}',
+    recentAttempts: 'Letzte Versuche',
+    noRecentAttempts: 'Noch keine Verarbeitungsversuche.',
+    historyLoadError: 'Die letzten Versuche konnten nicht geladen werden.',
+    runStatusQueued: 'In Warteschlange',
+    runStatusProcessing: 'In Verarbeitung',
+    runStatusSucceeded: 'Erfolgreich',
+    runStatusFailed: 'Fehlgeschlagen',
+    runStatusSuperseded: 'Ersetzt',
+    ingestionStartError:
+      'Der Verarbeitungsvorgang konnte nicht gestartet werden.',
+    storageLimitError:
+      'Diese Ressource überschreitet das Speicherlimit von 500 MiB für die Wissensdatenbank.',
+    resourceLimitError:
+      'Diese Wissensdatenbank hat ihr Limit von 100 Ressourcen erreicht.',
+    uploadMismatchError:
+      'Die hochgeladene Datei stimmt nicht mehr mit ihrer Upload-Reservierung überein. Laden Sie sie erneut hoch.',
+    ingestionFailed: 'Der Verarbeitungsvorgang ist fehlgeschlagen.',
+    ingestionSuperseded: 'Der Verarbeitungsvorgang wurde ersetzt.',
+    inspectResource: 'Details',
+    inspectorTitle: 'Ressourcendetails',
+    sourceType: 'Quelltyp',
+    sourceLocation: 'Quell-URL',
+    fileName: 'Ursprünglicher Dateiname',
+    mimeType: 'Medientyp',
+    fileSize: 'Dateigrösse',
+    createdAt: 'Erstellt',
+    chatbotsTitle: 'Verknüpfte Chatbots',
+    chatbotsDescription:
+      'Wählen Sie, welcher Chatbot diese Wissensdatenbank verwenden kann. Ein Chatbot kann jeweils eine Wissensdatenbank verwenden.',
+    chatbotsLoadError: 'Die Chatbots konnten nicht geladen werden.',
+    noChatbots:
+      'Erstellen Sie einen Chatbot, bevor Sie eine Wissensdatenbank verknüpfen.',
+    chatbotSelectLabel: 'Chatbot',
+    chatbotSelectPlaceholder: 'Chatbot auswählen',
+    attachChatbot: 'Chatbot verknüpfen',
+    replaceChatbot: 'Wissensdatenbank ersetzen',
+    detachChatbot: 'Verknüpfung aufheben',
+    linkedChatbots: 'Verwendet diese Wissensdatenbank',
+    noLinkedChatbots: 'Kein Chatbot verwendet diese Wissensdatenbank.',
+    chatbotReplacementWarning:
+      'Dieser Chatbot verwendet derzeit „{kbName}“. Durch die Verknüpfung wird diese Wissensdatenbank ersetzt.',
+    chatbotAttachSuccess: 'Chatbot wurde mit der Wissensdatenbank verknüpft.',
+    chatbotAttachError: 'Der Chatbot konnte nicht verknüpft werden.',
+    chatbotDetachSuccess: 'Die Verknüpfung des Chatbots wurde aufgehoben.',
+    chatbotDetachError:
+      'Die Verknüpfung des Chatbots konnte nicht aufgehoben werden.',
+    previewAccessError:
+      'Der Wissensdatenbank-Arbeitsbereich ist für Ihr Konto noch nicht verfügbar.',
+    graphTitle: 'Wissensgraph',
+    graphDescription:
+      'Erstellen Sie aus den Ressourcen der Wissensdatenbank einen Graphen und prüfen Sie das veröffentlichte Ergebnis.',
+    graphQualityTierLabel: 'Qualität des Aufbaus',
+    graphQualityStandard: 'Standard (geringere Kosten)',
+    graphQualityHigh: 'Hoch (höhere Kosten)',
+    graphBuild: 'Graph erstellen',
+    graphRebuild: 'Graph neu erstellen',
+    graphBuildCost: 'Geschätzte Kosten für diesen Aufbau: {amount}.',
+    graphEnableLabel: 'Wissensgraph für diese Wissensdatenbank aktivieren',
+    graphEnabledDescription:
+      'Ein veröffentlichter Graph kann von aktivierten Chatbot-Verknüpfungen dieser Wissensdatenbank verwendet werden.',
+    graphDisabledDescription:
+      'Aktivieren Sie die Wissensdatenbank, bevor Sie einen Graphen erstellen oder für Studierende bereitstellen.',
+    graphCostUnavailable:
+      'Die Kostenkontrollen für Graphen sind noch nicht konfiguriert. Der Aufbau bleibt deaktiviert.',
+    graphEnableError:
+      'Die Einstellung des Wissensgraphen konnte nicht aktualisiert werden.',
+    graphBillingLabel: 'Abrechnungsmodus',
+    graphBillingSemesterQuota: 'Semesterkontingent',
+    graphBillingProvider: 'Durch Anbieter abgerechnet',
+    graphRemainingQuota: 'Verbleibendes Semesterkontingent',
+    graphWorstCaseBalance: 'Kontostand nach dem maximalen Aufbau',
+    graphMaxCost: 'Maximal reservierte Kosten',
+    graphCostStatus: 'Kostenreservierung',
+    graphCostStatusReserved: 'Reserviert',
+    graphCostStatusSettled: 'Abgerechnet',
+    graphCostStatusReleased: 'Freigegeben',
+    graphCostStatusNeedsHumanReview: 'Zur manuellen Prüfung zurückgehalten',
+    graphActualCost: 'Tatsächliche Kosten',
+    graphActualUsage:
+      'Tatsächliche Nutzung: {requests} Anfragen, {inputTokens} Eingabetoken, {outputTokens} Ausgabetoken, {embeddingTokens} Embedding-Token.',
+    graphStatusLabel: 'Status',
+    graphStatusEmpty: 'Kein Aufbau',
+    graphStatusQueued: 'In Warteschlange',
+    graphStatusProcessing: 'In Verarbeitung',
+    graphStatusSucceeded: 'Erfolgreich',
+    graphStatusFailed: 'Fehlgeschlagen',
+    graphStale: 'Veraltet',
+    graphBuildId: 'Aufbau {buildId}',
+    graphLoading: 'Graphstatus wird geladen…',
+    graphLoadError: 'Der Graphstatus konnte nicht geladen werden.',
+    graphRetry: 'Erneut versuchen',
+    graphBuildError: 'Der Graphaufbau konnte nicht gestartet werden.',
+    graphPreviewTitle: 'Veröffentlichter Graph',
+    graphPreviewUnavailable:
+      'Erstellen und veröffentlichen Sie einen Graphen, bevor Sie die Dozierendenansicht öffnen.',
+    ingestionDisabledError:
+      'Das Hinzufügen neuer Inhalte zu Wissensdatenbanken ist vorübergehend deaktiviert.',
   },
   manage: {
     assistant: {
@@ -3790,6 +4015,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       disclaimerDeclined: 'Abgelehnt',
       disclaimerPending: 'Ausstehend',
       mcpConfigurations: 'MCP-Konfigurationen',
+      knowledgeBase: 'Wissensdatenbank',
+      noEnabledKnowledgeBase:
+        'Es ist keine Wissensdatenbank verknüpft. Dieser Chatbot kann Kursmaterial nicht durchsuchen.',
       noMcpConfigurations: 'Keine MCP-Konfigurationen.',
       mcpServerActive: 'Server aktiv',
       mcpServerInactive: 'Server inaktiv',

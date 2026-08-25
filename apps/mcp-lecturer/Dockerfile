@@ -10,6 +10,7 @@ RUN npm i -g --ignore-scripts pnpm@11.5.0 turbo@2.5.6
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY apps/mcp-lecturer ./apps/mcp-lecturer
 COPY packages/prisma ./packages/prisma
+COPY packages/util ./packages/util
 
 RUN turbo prune --scope=@klicker-uzh/mcp-lecturer --docker
 
@@ -44,6 +45,7 @@ RUN adduser --system --uid 1001 nodejs
 
 COPY --from=builder /app/apps/mcp-lecturer/dist/ /app/apps/mcp-lecturer/dist/
 COPY --from=builder /app/packages/prisma/dist/ /app/packages/prisma/dist/
+COPY --from=builder /app/packages/util/dist/ /app/packages/util/dist/
 
 USER nodejs
 

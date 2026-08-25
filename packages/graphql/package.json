@@ -13,6 +13,7 @@
     "@graphql-yoga/redis-event-target": "1.0.0",
     "@hatchet-dev/typescript-sdk": "1.9.4",
     "@klicker-uzh/grading": "workspace:*",
+    "@klicker-uzh/knowledge-graph": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",

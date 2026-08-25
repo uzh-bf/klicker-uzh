@@ -316,6 +316,8 @@ test.describe('Manage Assistant — Per-surface suggestions', () => {
   }) => {
     await mockManageChatStream(page)
     const assistant = await openManageAssistantWidget(page)
+    // The conversation starters render in their own section next to the
+    // welcome message, not inside it, so scope surface assertions here.
     const suggestions = assistant.getByTestId('chat-welcome-suggestions')
 
     for (const text of [

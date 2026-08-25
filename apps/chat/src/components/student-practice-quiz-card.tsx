@@ -309,6 +309,14 @@ export function StudentPracticeQuizCard({
       return
     }
 
+    const submittedAtMs = Date.now()
+    const stackAnswerTimeSeconds = Math.max(
+      0,
+      Math.round(
+        (submittedAtMs - (startedAtMs.current ?? submittedAtMs)) / 1000
+      )
+    )
+
     setIsSubmitting(true)
     try {
       const response = await fetch(
@@ -317,12 +325,7 @@ export function StudentPracticeQuizCard({
           body: JSON.stringify({
             questionRef: activeQuiz.questionRef,
             responses: built.responses,
-            stackAnswerTimeSeconds: Math.max(
-              0,
-              Math.round(
-                (Date.now() - (startedAtMs.current ?? Date.now())) / 1000
-              )
-            ),
+            stackAnswerTimeSeconds,
           }),
           headers: { 'Content-Type': 'application/json' },
           method: 'POST',

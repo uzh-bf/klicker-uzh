@@ -1,0 +1,17 @@
+mutation RequestKbFileUpload(
+  $kbId: ID!
+  $fileName: String!
+  $contentType: String!
+  $sizeBytes: Int!
+) {
+  requestKbFileUpload(
+    kbId: $kbId
+    fileName: $fileName
+    contentType: $contentType
+    sizeBytes: $sizeBytes
+  ) {
+    uploadSasURL
+    containerName
+    blobName
+  }
+}

@@ -132,6 +132,11 @@ model User {
   answerCollections          AnswerCollection[]
   chatbots                   Chatbot[]
   chatbotDisclaimers         ChatbotDisclaimer[]
+  kbs                        KB[]
+  deletedKbs                 KB[]                   @relation("KBDeletedBy")
+  deletedKbResources         KBResource[]           @relation("KBResourceDeletedBy")
+  requestedKbGraphBuilds     KBGraphBuild[]
+  kbGraphQuotas               KBGraphQuota[]
   revokedVerificationRecords VerifiableCredential[] @relation("RevokedVerifiableCredentials")
 
   userGroups                UserGroup[]         @relation("UserGroupMembers")

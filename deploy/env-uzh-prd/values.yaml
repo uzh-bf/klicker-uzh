@@ -655,6 +655,7 @@ backendGraphql:
   appStudentDomain: pwa.klicker.uzh.ch
   appControlDomain: control.klicker.uzh.ch
   cookieDomain: .klicker.uzh.ch
+  # kbIngestionDisabled: true # interim kill switch — set to true to refuse new KB ingestion during an incident
 
   ingress:
     className: haproxy

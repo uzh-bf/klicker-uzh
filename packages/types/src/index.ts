@@ -16,6 +16,9 @@ import type {
 export * from './assessmentReport.js'
 export * from './hatchet.js'
 
+// ----- KNOWLEDGE GRAPH TYPES -----
+export * from './knowledgeGraph.js'
+
 // ----- ACTIVITY LOG TYPES -----
 // #region
 export enum ActivityLogModificationFieldType {
@@ -1055,5 +1058,6 @@ export enum PointCorrectionType {
 // #endregion
 
 export * from './chatContext.js'
+export * from './knowledgeGraph.js'
 export * from './manageAssistant.js'
 export * from './studentMcp.js'

@@ -28,5 +28,11 @@ export * from './clientAuth.js'
 // export everything from the crypto module
 export * from './crypto.js'
 
+// export everything from the KB webhook module
+export * from './kbWebhook.js'
+
+// export Blob Storage endpoint resolution
+export * from './blobStorage.js'
+
 // export everything from the identity module
 export * from './identity.js'
