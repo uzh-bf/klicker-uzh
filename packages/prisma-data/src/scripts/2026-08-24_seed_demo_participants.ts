@@ -7,6 +7,7 @@ const READBACK_FLAG = '--readback'
 const HELP_FLAG = '--help'
 const OWNER_SHORTNAME = 'klick'
 const SHARED_TEST_USERNAME = 'teststudent'
+const PASSWORD_HASH_ROUNDS = 12
 
 const TARGETS = [
   {
@@ -89,6 +90,10 @@ function getPassword(target: Target) {
     throw new SeedError(`missing_password_${target.label}`)
   }
   return password
+}
+
+function hashPassword(password: string) {
+  return bcrypt.hash(password, PASSWORD_HASH_ROUNDS)
 }
 
 async function resolveTargets(
@@ -265,7 +270,7 @@ async function reconcileParticipant(
     const created = await client.participant.create({
       data: {
         username: target.username,
-        password: await bcrypt.hash(password, 12),
+        password: await hashPassword(password),
         isActive: true,
         isProfilePublic: false,
         isEmailValid: false,
@@ -284,9 +289,7 @@ async function reconcileParticipant(
       await client.participant.update({
         where: { id: existing.id },
         data: {
-          password: passwordMatches
-            ? undefined
-            : await bcrypt.hash(password, 12),
+          password: passwordMatches ? undefined : await hashPassword(password),
           isActive: true,
           isProfilePublic: false,
         },
