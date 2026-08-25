@@ -89,13 +89,27 @@ describe('doc-query MCP scope authentication', () => {
     )
   })
 
-  test('rejects a KB server without scoped authentication', async () => {
-    const misconfiguredServer = { ...SCOPE_SERVER, authType: 'none' }
+  test('replaces legacy KB authentication with a scoped token', async () => {
+    const legacyServer = {
+      ...SCOPE_SERVER,
+      authType: 'bearer',
+      authSecret: 'legacy-secret-must-not-leave-klicker',
+    }
 
-    expect(canLoadMCPServer(misconfiguredServer, TEST_CONTEXT)).toBe(false)
+    expect(canLoadMCPServer(legacyServer, TEST_CONTEXT)).toBe(true)
+    const headers = await createAuthHeaders(legacyServer, TEST_CONTEXT)
+    const token = headers.Authorization?.replace(/^Bearer /, '')
+
+    expect(token).toBeTruthy()
+    expect(headers.Authorization).not.toContain(legacyServer.authSecret)
+    expect(headers).not.toHaveProperty('Chatbot-ID')
     await expect(
-      createAuthHeaders(misconfiguredServer, TEST_CONTEXT)
-    ).rejects.toThrow('Scoped knowledge retrieval is not available')
+      jwtVerify(token!, publicKey, {
+        algorithms: ['ES256'],
+        issuer: TEST_ISSUER,
+        audience: TEST_AUDIENCE,
+      })
+    ).resolves.toBeTruthy()
   })
 
   test('keeps the citation card aligned with the runtime tool name', () => {

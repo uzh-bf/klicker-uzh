@@ -7,7 +7,7 @@ import {
   KBIngestionStatus,
   KBResourceStatus,
   KBResourceType,
-  PrismaClient,
+  type PrismaClient,
 } from '@klicker-uzh/prisma/client'
 import {
   MAX_KB_RESOURCE_COUNT,
@@ -565,7 +565,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     ).rejects.toThrow('Chatbot not found')
   })
 
-  it('fails closed when scoped retrieval is not configured', async () => {
+  it('fails closed when knowledge retrieval is inactive', async () => {
     const kb = await createKb({ name: 'Finance notes' }, userOneCtx)
     const course = await seedCourse({}, userOneCtx)
     const chatbot = await prisma.chatbot.create({
@@ -577,7 +577,7 @@ describe('Integration tests for knowledge base CRUD', () => {
     })
     await prisma.chatbotMCPServer.update({
       where: { name: 'KB' },
-      data: { authType: 'none' },
+      data: { isActive: false },
     })
 
     await expect(
@@ -586,6 +586,32 @@ describe('Integration tests for knowledge base CRUD', () => {
     await expect(
       prisma.kBChatbot.count({ where: { chatbotId: chatbot.id } })
     ).resolves.toBe(0)
+  })
+
+  it('accepts the existing KB server row during the compatible rollout', async () => {
+    const kb = await createKb({ name: 'Finance notes' }, userOneCtx)
+    const course = await seedCourse({}, userOneCtx)
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Finance tutor',
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+      },
+    })
+    await prisma.chatbotMCPServer.update({
+      where: { name: 'KB' },
+      data: {
+        authType: 'bearer',
+        authSecret: 'encrypted-legacy-auth-placeholder',
+      },
+    })
+
+    await expect(
+      attachKbToChatbot({ kbId: kb.id, chatbotId: chatbot.id }, userOneCtx)
+    ).resolves.toMatchObject({
+      chatbotId: chatbot.id,
+      enabledKbId: kb.id,
+    })
   })
 
   it('detaches the binding and disables KB MCP configurations', async () => {

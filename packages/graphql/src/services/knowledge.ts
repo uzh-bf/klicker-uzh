@@ -10,10 +10,10 @@ import {
   getPublishedKnowledgeGraph,
   hashKBContentDigestEntries,
   KnowledgeGraphNotPublishedError,
+  type PublishedKnowledgeGraph,
   readKnowledgeGraphNeighbors,
   readKnowledgeGraphOverview,
   searchKnowledgeGraph,
-  type PublishedKnowledgeGraph,
 } from '@klicker-uzh/knowledge-graph'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
@@ -467,13 +467,9 @@ async function lockOwnedChatbotOrThrow(
 async function getKbMcpServerOrThrow(prisma: DB.Prisma.TransactionClient) {
   const mcpServer = await prisma.chatbotMCPServer.findUnique({
     where: { name: KB_MCP_SERVER_NAME },
-    select: { id: true, authType: true, isActive: true },
+    select: { id: true, isActive: true },
   })
-  if (
-    !mcpServer ||
-    !mcpServer.isActive ||
-    mcpServer.authType !== 'scope_token'
-  ) {
+  if (!mcpServer || !mcpServer.isActive) {
     throw new GraphQLError('Knowledge base retrieval is not configured')
   }
   return mcpServer

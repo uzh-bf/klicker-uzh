@@ -1,20 +1,20 @@
 'use server'
 
+import { createHash, randomUUID } from 'node:crypto'
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { createHash, randomUUID } from 'node:crypto'
 import {
   MAX_TOOL_NAME_LENGTH,
   TOOL_NAME_SUFFIX_LENGTH,
 } from '@/src/lib/config/toolNames'
+import { signDocQueryScopeToken } from '@/src/lib/server/docQueryScopeToken'
+import type { AuthMode } from '@/src/lib/server/ltiGuest'
+import { mintParticipantMcpJwt } from '@/src/lib/server/mcpAuthMint'
 import {
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
-import type { AuthMode } from '@/src/lib/server/ltiGuest'
-import { mintParticipantMcpJwt } from '@/src/lib/server/mcpAuthMint'
-import { signDocQueryScopeToken } from '@/src/lib/server/docQueryScopeToken'
 import { DOC_QUERY_MCP_SERVER_NAME } from './mcpScope'
 
 // Type definitions for MCP server configuration
@@ -129,16 +129,8 @@ export async function createAuthHeaders(
   }
   const authType = server.authType.toLowerCase()
 
-  if (server.name === DOC_QUERY_MCP_SERVER_NAME && authType !== 'scope_token') {
-    throw new Error('Scoped knowledge retrieval is not available')
-  }
-
-  if (authType === 'scope_token') {
-    if (
-      server.name !== DOC_QUERY_MCP_SERVER_NAME ||
-      !context.kbId ||
-      !context.sessionId
-    ) {
+  if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
+    if (!context.kbId || !context.sessionId) {
       throw new Error('Scoped knowledge retrieval is not available')
     }
 
@@ -150,6 +142,10 @@ export async function createAuthHeaders(
     })
     baseHeaders.Authorization = `Bearer ${token}`
     return baseHeaders
+  }
+
+  if (authType === 'scope_token') {
+    throw new Error('Scoped knowledge retrieval is not available')
   }
 
   // Add chatbot ID if configured (new behavior - defaults to false for backward compatibility)

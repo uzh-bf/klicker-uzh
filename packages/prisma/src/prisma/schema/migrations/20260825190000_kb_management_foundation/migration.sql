@@ -276,14 +276,3 @@ ALTER TABLE "KBChatbot" ADD CONSTRAINT "KBChatbot_kbId_fkey" FOREIGN KEY ("kbId"
 
 -- AddForeignKey
 ALTER TABLE "KBChatbot" ADD CONSTRAINT "KBChatbot_chatbotId_fkey" FOREIGN KEY ("chatbotId") REFERENCES "Chatbot"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- The KB MCP server authenticates with a per-request doc-query scope token.
--- Existing environments need the same configuration as newly seeded ones.
-UPDATE "ChatbotMCPServer"
-SET "authType" = 'scope_token',
-    "passChatbotId" = false,
-    "chatbotIdHeader" = NULL,
-    "authSecret" = NULL,
-    "updatedAt" = CURRENT_TIMESTAMP
-WHERE "name" = 'KB'
-  AND "authType" <> 'scope_token';
