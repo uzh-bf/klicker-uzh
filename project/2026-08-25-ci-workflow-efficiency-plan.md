@@ -190,13 +190,15 @@ Do not delete a workflow if any readback differs from the expected set.
 
 ## Progress
 
-- Status: plan frozen; implementation pending.
-- Completed: remote freshness and worktree audit, current required-context
-  readback, same-commit Actions timing sample, duplicate-workflow inventory,
-  Docker/image follow-up investigation, Actions audit/validation/list, required
-  planner challenge, and isolated devcontainer startup.
-- Remaining: commit the plan, refresh the base, implement and verify slice 1,
-  run slice reviews, push and open the draft PR, prove replacement contexts,
-  request settings authority, complete the cutover, and run final review.
+- Status: slice 1 implemented and locally verified; specialist review pending.
+- Completed: plan commit and post-commit freshness check; replacement workflow
+  implementation; Actions audit, validation, and discovery; exact Node 24
+  dependency builds; all four unit suites; Prettier and diff checks; and the
+  full monorepo build. The root `check:all` gate reached 6 of 7 tasks but the
+  analytics lint task could not build pandas because the devcontainer has no C
+  compiler; this is unrelated to the workflow-only diff.
+- Remaining: commit slice 1, run slice reviews, push and open the draft PR,
+  prove replacement contexts, request settings authority, complete the cutover,
+  and run final review.
 - Delivery boundary: branch-protection mutation, ready transition, merge,
   deployment, and cleanup remain withheld.
