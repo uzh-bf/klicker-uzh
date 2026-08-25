@@ -24,84 +24,82 @@ function BlockStatusIndicator({
   const hasValidClosedAt =
     closedAtDate !== null && !Number.isNaN(closedAtDate.getTime())
 
-  const getTooltipContent = () => {
+  const getStatusPresentation = () => {
     switch (status) {
       case ElementBlockStatus.Scheduled:
-        return (
-          <div className="text-sm">
-            <div className="font-semibold">
-              {t('manage.evaluation.instanceScheduled')}
+        return {
+          dot: <div className="h-4 w-4 rounded-full bg-gray-400 shadow-lg" />,
+          tooltip: (
+            <div className="text-sm">
+              <div className="font-semibold">
+                {t('manage.evaluation.instanceScheduled')}
+              </div>
             </div>
-          </div>
-        )
+          ),
+        }
       case ElementBlockStatus.Active:
-        return (
-          <div className="text-sm">
-            <div className="font-semibold">
-              {t('manage.evaluation.instanceActive')}
-            </div>
-            {lastRefetchTime && (
-              <div className="mt-1 text-xs text-gray-600">
-                {t('manage.evaluation.instanceLastRefetch')}:{' '}
-                {formatter.dateTime(lastRefetchTime, {
-                  dateStyle: 'short',
-                  timeStyle: 'medium',
-                })}
+        return {
+          dot: (
+            <div className="h-4 w-4 animate-pulse rounded-full bg-green-400 shadow-lg" />
+          ),
+          tooltip: (
+            <div className="text-sm">
+              <div className="font-semibold">
+                {t('manage.evaluation.instanceActive')}
               </div>
-            )}
-          </div>
-        )
+              {lastRefetchTime && (
+                <div className="mt-1 text-xs text-gray-600">
+                  {t('manage.evaluation.instanceLastRefetch')}:{' '}
+                  {formatter.dateTime(lastRefetchTime, {
+                    dateStyle: 'short',
+                    timeStyle: 'medium',
+                  })}
+                </div>
+              )}
+            </div>
+          ),
+        }
       case ElementBlockStatus.Executed:
-        return (
-          <div className="text-sm">
-            <div className="font-semibold">
-              {t('manage.evaluation.instanceExecuted')}
+        return {
+          dot: (
+            <div className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 shadow-lg">
+              <FontAwesomeIcon icon={faCheck} className="text-xs text-white" />
             </div>
-            {hasValidClosedAt && closedAtDate && (
-              <div className="mt-1 text-xs text-gray-600">
-                {t('manage.evaluation.instanceExecutionDate')}:{' '}
-                {formatter.dateTime(closedAtDate, {
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                })}
+          ),
+          tooltip: (
+            <div className="text-sm">
+              <div className="font-semibold">
+                {t('manage.evaluation.instanceExecuted')}
               </div>
-            )}
-          </div>
-        )
+              {hasValidClosedAt && closedAtDate && (
+                <div className="mt-1 text-xs text-gray-600">
+                  {t('manage.evaluation.instanceExecutionDate')}:{' '}
+                  {formatter.dateTime(closedAtDate, {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                  })}
+                </div>
+              )}
+            </div>
+          ),
+        }
       default:
-        return null
+        return { dot: null, tooltip: null }
     }
   }
 
-  const getStatusDot = () => {
-    switch (status) {
-      case ElementBlockStatus.Scheduled:
-        return <div className="h-4 w-4 rounded-full bg-gray-400 shadow-lg" />
-      case ElementBlockStatus.Active:
-        return (
-          <div className="h-4 w-4 animate-pulse rounded-full bg-green-400 shadow-lg" />
-        )
-      case ElementBlockStatus.Executed:
-        return (
-          <div className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 shadow-lg">
-            <FontAwesomeIcon icon={faCheck} className="text-xs text-white" />
-          </div>
-        )
-      default:
-        return null
-    }
-  }
+  const { dot, tooltip } = getStatusPresentation()
 
   return (
     <div className={twMerge('flex justify-center', className)}>
       <Tooltip
-        tooltip={getTooltipContent()}
+        tooltip={tooltip}
         className={{
           tooltip:
             'max-w-xs rounded border border-gray-200 bg-white p-2 shadow-lg',
         }}
       >
-        {getStatusDot()}
+        {dot}
       </Tooltip>
     </div>
   )

@@ -13,6 +13,8 @@ export function getEvaluationQuestionLocation(
   const questionIndex = Number(questionIx)
   if (!Number.isSafeInteger(questionIndex)) return null
 
+  // questionOffset covers all instances, while resultOffset covers only
+  // instances with evaluation results; -1 marks hidden or unavailable results.
   let questionOffset = 0
   let resultOffset = 0
 

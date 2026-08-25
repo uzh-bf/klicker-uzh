@@ -133,7 +133,7 @@ function ActivityEvaluation({
   useEffect(() => {
     if (
       type === 'LiveQuiz' &&
-      typeof router.query.questionIx !== 'string' &&
+      typeof router.query.questionIx === 'undefined' &&
       activeInstance === -1 &&
       typeof activeStack === 'number'
     ) {
