@@ -201,10 +201,13 @@ Check:
   `NotEnabled`. The latest values-free backup listing reported an automatic
   full backup completed at `2026-08-25T08:20:50Z`. Database-owner confirmation
   of the recovery procedure, RPO, and RTO remains pending.
-- The existing ArgoCD context was available locally, but its application-list
-  read timed out at the configured endpoint. No new tunnel or connectivity was
-  established, and no ArgoCD or Kubernetes state was read. Merge is blocked
-  until the existing production connection is available.
+- The existing ArgoCD CLI application-list read timed out at the configured
+  endpoint. The already-configured Kubernetes context was readable: the
+  `app-klicker` Application is `Healthy` but `OutOfSync` at the current `v3`
+  revision, with a previously `Succeeded` operation; both assessment
+  Deployments are `OutOfSync`. All current production workloads are ready on
+  alpha.70. No new tunnel or connectivity was established and no manual sync
+  or repair was attempted. The clean-Argo gate therefore fails.
 - Primary-versus-assessment database target coverage is still unproven within
   the allowed values-free boundary. It remains a required pre-merge gate.
 
