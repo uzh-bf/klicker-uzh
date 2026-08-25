@@ -33,6 +33,29 @@ function throwOnMutationErrors(
   }
 }
 
+type DeleteMutationResult<TData> = {
+  data?: TData | null
+  errors?: readonly { message: string }[]
+}
+
+async function deleteActivityWithMutation<TData extends object>(
+  activity: ActivityInfo,
+  mutate: (options: {
+    variables: { id: string }
+  }) => Promise<DeleteMutationResult<TData>>,
+  field: keyof TData
+) {
+  const { data, errors } = await mutate({
+    variables: { id: activity.id },
+  })
+  throwOnMutationErrors(errors)
+  const deletedActivity = data?.[field] as
+    | { id?: string | null }
+    | null
+    | undefined
+  return deletedActivity?.id === activity.id
+}
+
 function useActivityBatchDeletion() {
   const [deleteLiveQuiz] = useMutation(DeleteLiveQuizDocument)
   const [deletePracticeQuiz] = useMutation(DeletePracticeQuizBatchDocument)
@@ -41,34 +64,30 @@ function useActivityBatchDeletion() {
 
   async function deleteActivity(activity: ActivityInfo) {
     switch (activity.type) {
-      case ActivityType.LiveQuiz: {
-        const { data, errors } = await deleteLiveQuiz({
-          variables: { id: activity.id },
-        })
-        throwOnMutationErrors(errors)
-        return data?.deleteLiveQuiz?.id === activity.id
-      }
-      case ActivityType.PracticeQuiz: {
-        const { data, errors } = await deletePracticeQuiz({
-          variables: { id: activity.id },
-        })
-        throwOnMutationErrors(errors)
-        return data?.deletePracticeQuiz?.id === activity.id
-      }
-      case ActivityType.MicroLearning: {
-        const { data, errors } = await deleteMicroLearning({
-          variables: { id: activity.id },
-        })
-        throwOnMutationErrors(errors)
-        return data?.deleteMicroLearning?.id === activity.id
-      }
-      case ActivityType.GroupActivity: {
-        const { data, errors } = await deleteGroupActivity({
-          variables: { id: activity.id },
-        })
-        throwOnMutationErrors(errors)
-        return data?.deleteGroupActivity?.id === activity.id
-      }
+      case ActivityType.LiveQuiz:
+        return deleteActivityWithMutation(
+          activity,
+          deleteLiveQuiz,
+          'deleteLiveQuiz'
+        )
+      case ActivityType.PracticeQuiz:
+        return deleteActivityWithMutation(
+          activity,
+          deletePracticeQuiz,
+          'deletePracticeQuiz'
+        )
+      case ActivityType.MicroLearning:
+        return deleteActivityWithMutation(
+          activity,
+          deleteMicroLearning,
+          'deleteMicroLearning'
+        )
+      case ActivityType.GroupActivity:
+        return deleteActivityWithMutation(
+          activity,
+          deleteGroupActivity,
+          'deleteGroupActivity'
+        )
       default:
         return assertNever(activity.type)
     }
