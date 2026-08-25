@@ -18,6 +18,7 @@ test.describe('Knowledge base management workspace', () => {
       await expect(
         page.getByRole('main').getByRole('heading', { level: 1 })
       ).toBeVisible()
+      await expect(page.getByTestId('knowledge-base-loading')).toBeHidden()
 
       await page.getByTestId('create-knowledge-base').click()
       await page.getByTestId('knowledge-base-name').fill(kbName)
