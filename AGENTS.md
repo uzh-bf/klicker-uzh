@@ -56,6 +56,11 @@ pnpm --filter @klicker-uzh/graphql generate   # one-shot codegen
 pnpm --filter @klicker-uzh/graphql dev        # watch mode (codegen + rollup)
 ```
 
+The generated client documents and persisted-query maps are build outputs and
+are ignored by Git; package builds regenerate them before producing `dist`.
+The generated public SDL snapshot remains tracked for schema review and local
+GraphQL tooling.
+
 ### Tests
 
 ```bash
@@ -114,7 +119,7 @@ packages/
 
 ## GraphQL Workflow
 
-Code-first with **Pothos** in `packages/graphql/src/`. After changing types/resolvers (`src/graphql/`) or `.graphql` ops (`src/graphql/ops/`), regenerate with `pnpm --filter @klicker-uzh/graphql generate` (codegen is required — ops are stale otherwise). Op-name prefixes: `Q` query, `M` mutation, `S` subscription, `F` fragment. The public schema definition is generated at [packages/graphql/src/public/schema.graphql](packages/graphql/src/public/schema.graphql).
+Code-first with **Pothos** in `packages/graphql/src/`. After changing types/resolvers (`src/graphql/`) or `.graphql` ops (`src/graphql/ops/`), regenerate with `pnpm --filter @klicker-uzh/graphql generate` (codegen is required — ops are stale otherwise). Op-name prefixes: `Q` query, `M` mutation, `S` subscription, `F` fragment. Package builds regenerate the ignored typed documents and persisted-query maps; the generated public SDL snapshot at `packages/graphql/src/public/schema.graphql` remains tracked for review and local GraphQL tooling.
 
 ## Database Workflow
 
