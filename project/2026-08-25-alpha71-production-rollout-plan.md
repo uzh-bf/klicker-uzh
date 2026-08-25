@@ -155,7 +155,8 @@ Do:
 Check:
 
 - Confirm the PR contains only the approved package, targets `v3`, and remains
-  independently reviewable and safe to land.
+  independently reviewable and safe to publish for review. It is not
+  merge-ready until every production preflight gate passes.
 - Require all applicable required checks and reviews to pass. Stop before merge
   if any production preflight gate remains unresolved.
 
@@ -172,8 +173,10 @@ Do:
 - Establish that the primary and assessment backend targets are covered by the
   same migration path using only existing values-free ArgoCD/Kubernetes or
   database-owner evidence. Do not read Secret values. If the targets are
-  separate, stop and require a separate migration hook or explicit release
-  authority before publication/merge.
+  separate, stop and require either proven shared-database coverage or a
+  completed assessment migration path before merge. Explicit release authority
+  may authorize that migration path but must not waive migration proof;
+  publication of the review-only PR may proceed independently.
 - Confirm ArgoCD is synced and healthy at the pre-merge revision with no
   operation in progress. Use only already-configured connectivity.
 - Squash-merge only after the review, CI, image, migration, and backup gates are
