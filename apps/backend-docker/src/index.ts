@@ -29,9 +29,13 @@ const featureFlags = new NodeFeatureFlagClient({
   apiHost: process.env.GROWTHBOOK_API_HOST,
   clientKey: process.env.GROWTHBOOK_CLIENT_KEY,
   environment: process.env.GROWTHBOOK_ENV ?? process.env.NODE_ENV,
+  refreshIntervalMs: process.env.GROWTHBOOK_REFRESH_INTERVAL_MS
+    ? Number(process.env.GROWTHBOOK_REFRESH_INTERVAL_MS)
+    : undefined,
 })
+process.once('exit', () => featureFlags.destroy())
 
-const prisma = prismaBase
+let prisma = prismaBase
 
 // if (
 //   process.env.NODE_ENV === 'development' &&

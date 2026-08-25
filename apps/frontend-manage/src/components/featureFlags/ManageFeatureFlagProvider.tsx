@@ -26,7 +26,7 @@ function ManageFeatureFlagProvider({
   const skipUserProfile =
     router.pathname === '/quizzes/[id]/evaluation' &&
     (!router.isReady || router.query.hmac !== undefined)
-  const { data } = useQuery(UserProfileDocument, {
+  const { data, loading } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-and-network',
     errorPolicy: 'ignore',
     // HMAC evaluation links are public. An identity query on those links would
@@ -36,6 +36,7 @@ function ManageFeatureFlagProvider({
   const user = data?.userProfile
   const userId = user?.id
   const userRole = user?.role
+  const userProfileUnavailable = !skipUserProfile && !loading && !userId
   const userCatalyst = user?.catalyst
   const attributes = useMemo<FeatureFlagAttributes>(
     () =>
@@ -54,7 +55,10 @@ function ManageFeatureFlagProvider({
     <FeatureFlagProvider
       config={config}
       attributes={attributes}
-      attributesReady={skipUserProfile || Boolean(userId)}
+      attributesReady={
+        skipUserProfile || Boolean(userId) || userProfileUnavailable
+      }
+      evaluationAvailable={!userProfileUnavailable}
     >
       {children}
     </FeatureFlagProvider>

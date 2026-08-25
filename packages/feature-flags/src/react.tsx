@@ -23,12 +23,14 @@ import type {
 export type { BrowserFeatureFlagConfig } from './browserClient.js'
 
 const FeatureFlagsReadyContext = createContext(false)
+const FeatureFlagEvaluationAvailableContext = createContext(true)
 
 type FeatureFlagProviderProps = {
   attributes: FeatureFlagAttributes
   attributesReady?: boolean
   config: BrowserFeatureFlagConfig
   children: ReactNode
+  evaluationAvailable?: boolean
 }
 
 export function FeatureFlagProvider({
@@ -36,6 +38,7 @@ export function FeatureFlagProvider({
   attributesReady = true,
   config,
   children,
+  evaluationAvailable = true,
 }: FeatureFlagProviderProps) {
   const [{ growthbook, initialize, setAttributes }] = useState(() =>
     createBrowserFeatureFlagClient<KlickerFeatureFlags>(config)
@@ -44,8 +47,12 @@ export function FeatureFlagProvider({
     undefined
   )
   const [initializationSettled, setInitializationSettled] = useState(false)
-  const [appliedAttributes, setAppliedAttributes] = useState<
-    FeatureFlagAttributes | undefined
+  const [attributeApplication, setAttributeApplication] = useState<
+    | {
+        attributes: FeatureFlagAttributes
+        available: boolean
+      }
+    | undefined
   >(undefined)
 
   useEffect(() => {
@@ -53,12 +60,17 @@ export function FeatureFlagProvider({
 
     void setAttributes(attributes)
       .then(() => {
-        if (active) setAppliedAttributes(attributes)
+        if (active) {
+          setAttributeApplication({ attributes, available: true })
+        }
       })
       .catch(() => {
         console.warn(
           '[feature-flags] Browser attributes could not be applied; keeping routes unavailable'
         )
+        if (active) {
+          setAttributeApplication({ attributes, available: false })
+        }
       })
 
     return () => {
@@ -89,25 +101,43 @@ export function FeatureFlagProvider({
     }
   }, [growthbook, initialize])
 
+  const attributesSettled = attributeApplication?.attributes === attributes
+  const attributesAvailable = attributesSettled
+    ? attributeApplication?.available === true
+    : true
+  const effectiveEvaluationAvailable =
+    evaluationAvailable && attributesAvailable
+
   return (
     <FeatureFlagsReadyContext.Provider
       value={
-        attributesReady &&
-        initializationSettled &&
-        appliedAttributes === attributes
+        !evaluationAvailable ||
+        (attributesSettled &&
+          (!attributesAvailable || (attributesReady && initializationSettled)))
       }
     >
-      <GrowthBookProvider growthbook={growthbook}>
-        {children}
-      </GrowthBookProvider>
+      <FeatureFlagEvaluationAvailableContext.Provider
+        value={effectiveEvaluationAvailable}
+      >
+        <GrowthBookProvider growthbook={growthbook}>
+          {children}
+        </GrowthBookProvider>
+      </FeatureFlagEvaluationAvailableContext.Provider>
     </FeatureFlagsReadyContext.Provider>
   )
 }
 
 export function useFeatureFlag(key: FeatureFlagKey): boolean {
-  return useFeatureIsOn<KlickerFeatureFlags>(key)
+  const enabled = useFeatureIsOn<KlickerFeatureFlags>(key)
+  const evaluationAvailable = useContext(FeatureFlagEvaluationAvailableContext)
+
+  return evaluationAvailable && enabled
 }
 
 export function useFeatureFlagsReady(): boolean {
   return useContext(FeatureFlagsReadyContext)
+}
+
+export function useFeatureFlagEvaluationAvailable(): boolean {
+  return useContext(FeatureFlagEvaluationAvailableContext)
 }

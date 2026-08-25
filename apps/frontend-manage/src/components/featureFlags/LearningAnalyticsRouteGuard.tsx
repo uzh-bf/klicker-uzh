@@ -1,5 +1,6 @@
 import {
   useFeatureFlag,
+  useFeatureFlagEvaluationAvailable,
   useFeatureFlagsReady,
 } from '@klicker-uzh/feature-flags/react'
 import { UserNotification } from '@uzh-bf/design-system'
@@ -15,6 +16,7 @@ export default function LearningAnalyticsRouteGuard({
 }) {
   const t = useTranslations()
   const flagsReady = useFeatureFlagsReady()
+  const flagEvaluationAvailable = useFeatureFlagEvaluationAvailable()
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
   const title = t('shared.generic.learningAnalytics')
 
@@ -22,21 +24,25 @@ export default function LearningAnalyticsRouteGuard({
     return <AnalyticsLoadingView title={title} navigation={null} />
   }
 
+  const unavailable = (
+    <div
+      className="flex h-full w-full items-center justify-center"
+      data-cy="learning-analytics-access-denied"
+    >
+      <UserNotification
+        type="info"
+        message={t('manage.analytics.featureUnavailable')}
+        className={{ root: 'w-max max-w-full text-base' }}
+      />
+    </div>
+  )
+
+  if (!flagEvaluationAvailable) {
+    return unavailable
+  }
+
   if (!learningAnalyticsEnabled) {
-    return (
-      <Layout displayName={title}>
-        <div
-          className="flex h-full w-full items-center justify-center"
-          data-cy="learning-analytics-access-denied"
-        >
-          <UserNotification
-            type="info"
-            message={t('manage.analytics.featureUnavailable')}
-            className={{ root: 'w-max max-w-full text-base' }}
-          />
-        </div>
-      </Layout>
-    )
+    return <Layout displayName={title}>{unavailable}</Layout>
   }
 
   return children

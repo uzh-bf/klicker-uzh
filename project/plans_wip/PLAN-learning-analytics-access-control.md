@@ -31,12 +31,16 @@ direct GraphQL request to read analytics data.
 - `packages/graphql`: define the evaluator context contract, centralize the
   fail-closed entitlement check, and apply it to all analytics-data queries.
 - `packages/feature-flags`: expose provider readiness so route guards do not
-  mistake SDK initialization for a disabled result.
+  mistake SDK initialization for a disabled result; give the Node adapter an
+  abortable polling lifecycle and bounded stale-payload policy.
 - `apps/frontend-manage`: mount a shared guard at the application root for the
   `/analytics` route namespace before page query components mount.
-- `playwright`: cover direct navigation when the browser flag is on and off.
+- `playwright`: cover direct navigation when the browser flag is on and off and
+  a real persisted GraphQL denial when the backend entitlement is false.
 - `docs/feature-flags.md`: replace the old affordance-only contract with the
   enforced route/API contract and rollout requirements.
+- `docs/adr`: record the narrowly scoped backend-entitlement exception to the
+  original presentation-only GrowthBook decision.
 
 ## User experience
 
@@ -62,7 +66,11 @@ direct GraphQL request to read analytics data.
   provider-readiness contract; exercise readiness through the route E2E.
 - Run focused feature-flag and GraphQL tests and package type checks/builds.
 - Add Playwright coverage proving a disabled flag blocks direct analytics
-  navigation and an enabled flag permits it.
+  navigation, a profile failure settles to unavailable, and an enabled flag
+  permits a protected analytics-data request through the backend evaluator;
+  independently prove the backend denies a persisted request when disabled.
+- Unit-test hung-request recovery, scheduled refresh, revocation propagation,
+  bounded staleness, and teardown for the Node adapter.
 - Run repository formatting/lint checks for changed files.
 - Exercise the route in a browser with deterministic GrowthBook responses if
   an already-running approved local environment is available; otherwise record
@@ -79,17 +87,23 @@ direct GraphQL request to read analytics data.
 
 ## Verification evidence
 
-- Shared feature-flag package: build, check, and 24 tests passed.
+- Shared feature-flag package: build, check, and 36 tests passed, including
+  strict boolean-only entitlement evaluation, abortable hung-request recovery,
+  scheduled revocation refresh, bounded stale denial, and teardown.
 - GraphQL: check and production build passed; all 8 focused access-control
   tests passed, including denial before Prisma access for all four analytics
   service entry points.
 - Backend and Manage: checks and production builds passed.
-- Playwright: type-check passed and all 10 feature-access tests were discovered,
-  including direct-navigation flag-off and flag-on cases.
+- Playwright: type-check passed and all 12 feature-access tests were discovered,
+  including direct-navigation flag-off, flag-on, backend-denied, and
+  profile-failure cases.
+- The deterministic backend GrowthBook fixture returned the expected targeted
+  payload and switched its synthetic definition between enabled and disabled.
 - Repository `check:all` passed (25 checks and 7 lints).
-- Independent review found no backend bypass. Its two medium findings—anonymous
-  startup readiness and four-path enforcement evidence—were addressed before
-  final verification.
-- Runtime browser execution remains for CI: no approved local environment was
-  already running, and the local Docker provider was unavailable. No
-  environment was started because Devrouter is opt-in.
+- The repository production build passed (23 build tasks).
+- The final independent security/readiness review found no remaining
+  actionable issue after strict value checks, deterministic backend-decision
+  polling, attribute-failure settling, and documentation corrections.
+- Full GraphQL and browser runtime execution remain for CI. The isolated local
+  GraphQL/Playwright stacks bind ports already owned by unrelated active
+  Devrouter environments, and those environments were left untouched.

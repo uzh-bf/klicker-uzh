@@ -1,3 +1,9 @@
+import type {
+  APIRequestContext,
+  Page,
+  Request,
+  Response as PlaywrightResponse,
+} from '@playwright/test'
 import { seedActivities } from '../global-setup.js'
 import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
@@ -7,6 +13,96 @@ import {
   updateLecturerPrivatePreview,
 } from '../util/fixtures/manage.js'
 import { COURSE_ID_TEST, SEEDED_COURSE, URL_MANAGE } from '../util/constants.js'
+
+function getGraphqlOperationName(request: Request) {
+  const getOperationName = new URL(request.url()).searchParams.get(
+    'operationName'
+  )
+  if (getOperationName) return getOperationName
+
+  const postData = request.postData()
+  if (!postData) return undefined
+
+  try {
+    return (JSON.parse(postData) as { operationName?: string }).operationName
+  } catch {
+    return undefined
+  }
+}
+
+async function setBackendGrowthBookLearningAnalytics(
+  request: APIRequestContext,
+  enabled: boolean
+) {
+  const growthbookPort = process.env.GROWTHBOOK_TEST_PORT ?? '4010'
+  const response = await request.post(
+    `http://127.0.0.1:${growthbookPort}/__test/learning-analytics?enabled=${enabled}`
+  )
+  expect(response.ok()).toBe(true)
+}
+
+type AnalyticsGraphqlResult = {
+  allowed: boolean
+  forbidden: boolean
+  response: PlaywrightResponse
+}
+
+async function loadActivityAnalytics(
+  page: Page
+): Promise<AnalyticsGraphqlResult> {
+  const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+  const analyticsResponsePromise = page.waitForResponse(
+    (response) =>
+      getGraphqlOperationName(response.request()) ===
+      'GetCourseActivityAnalytics',
+    { timeout: 5000 }
+  )
+
+  await page.goto(`${manageUrl}/analytics/${COURSE_ID_TEST}/activity`, {
+    timeout: 5000,
+  })
+
+  const response = await analyticsResponsePromise
+  const body = (await response.json()) as {
+    errors?: Array<{ extensions?: { code?: string } }>
+  }
+  const forbidden = Boolean(
+    body.errors?.some((error) => error.extensions?.code === 'FORBIDDEN')
+  )
+
+  return {
+    allowed: response.ok() && !body.errors?.length,
+    forbidden,
+    response,
+  }
+}
+
+async function waitForBackendGrowthBookLearningAnalytics(
+  page: Page,
+  enabled: boolean
+): Promise<AnalyticsGraphqlResult> {
+  let result: AnalyticsGraphqlResult | undefined
+
+  await expect
+    .poll(
+      async () => {
+        result = await loadActivityAnalytics(page)
+        return enabled ? result.allowed : result.forbidden
+      },
+      {
+        intervals: [100, 250, 500],
+        message: `Wait for backend learning analytics entitlement to become ${enabled ? 'enabled' : 'disabled'}`,
+        timeout: 15_000,
+      }
+    )
+    .toBe(true)
+
+  if (!result) {
+    throw new Error('Backend learning analytics decision was not observed')
+  }
+
+  return result
+}
 
 test('CLEANUP', cleanupTest)
 
@@ -136,10 +232,7 @@ test.describe('Tests the availability of standard activity creation formats', ()
   }) => {
     let analyticsQueryRequested = false
     page.on('request', (request) => {
-      if (
-        request.method() === 'POST' &&
-        request.postData()?.includes('GetCourseActivityAnalytics')
-      ) {
+      if (getGraphqlOperationName(request) === 'GetCourseActivityAnalytics') {
         analyticsQueryRequested = true
       }
     })
@@ -158,17 +251,75 @@ test.describe('Tests the availability of standard activity creation formats', ()
   test('Allows direct analytics navigation with feature access', async ({
     page,
     loginLecturer,
+    request,
   }) => {
+    await setBackendGrowthBookLearningAnalytics(request, true)
     await mockGrowthBookLearningAnalytics(page, true)
     await loginLecturer()
-    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
-    await page.goto(`${manageUrl}/analytics`)
-
+    const analyticsResult = await waitForBackendGrowthBookLearningAnalytics(
+      page,
+      true
+    )
+    expect(analyticsResult.response.ok()).toBe(true)
     await expect(
-      page.getByTestId(`analytics-course-label-${SEEDED_COURSE}`)
+      page.getByRole('heading', {
+        name: `Activity Dashboard: ${SEEDED_COURSE}`,
+      })
     ).toBeVisible()
+
     await expect(
       page.getByTestId('learning-analytics-access-denied')
     ).not.toBeAttached()
+  })
+
+  test('Denies analytics data when the backend entitlement is false', async ({
+    page,
+    loginLecturer,
+    request,
+  }) => {
+    await mockGrowthBookLearningAnalytics(page, true)
+    await loginLecturer()
+    await setBackendGrowthBookLearningAnalytics(request, false)
+
+    try {
+      const analyticsResult = await waitForBackendGrowthBookLearningAnalytics(
+        page,
+        false
+      )
+      expect(analyticsResult.response.ok()).toBe(true)
+      expect(analyticsResult.forbidden).toBe(true)
+    } finally {
+      await setBackendGrowthBookLearningAnalytics(request, true)
+      await waitForBackendGrowthBookLearningAnalytics(page, true)
+    }
+  })
+
+  test('Shows analytics unavailable when the user profile cannot load', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await page.route('**/api/graphql*', async (route) => {
+      if (getGraphqlOperationName(route.request()) === 'UserProfile') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            errors: [{ message: 'Synthetic user profile failure' }],
+          }),
+        })
+        return
+      }
+
+      await route.continue()
+    })
+
+    await loginLecturer()
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await page.goto(`${manageUrl}/analytics/${COURSE_ID_TEST}/activity`)
+
+    await expect(
+      page.getByTestId('learning-analytics-access-denied')
+    ).toBeVisible()
+    await expect(page.getByText('Loading analytics data')).not.toBeAttached()
   })
 })

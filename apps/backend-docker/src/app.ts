@@ -184,7 +184,7 @@ function prepareApp({
     graphqlEndpoint: '/api/graphql',
   })
 
-  app.use('/healthz', (req, res) => {
+  app.use('/healthz', function (req, res) {
     res.send('OK')
   })
 

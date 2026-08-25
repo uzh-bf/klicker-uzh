@@ -2,7 +2,7 @@
 type: Feature Flags
 title: Feature Flags
 description: Shared GrowthBook contracts, frontend and backend connectivity, targeting attributes, failure behavior, and the adoption checklist.
-timestamp: '2026-08-24'
+timestamp: '2026-08-25'
 tags:
   - architecture
   - frontend
@@ -52,7 +52,9 @@ attributes, then updates it after `QUserProfile` resolves to target the
 authenticated lecturer by stable `User.id`, role, actor type, and environment.
 It does not expose the provider as ready until that authenticated identity is
 available, so an initially anonymous evaluation cannot unlock a protected
-route.
+route. If the profile request settles without a usable identity, the provider
+marks evaluation unavailable: flag hooks remain false and protected routes
+render their unavailable explanation instead of loading indefinitely.
 This keeps full-screen routes such as activity evaluations inside the provider.
 Public live-quiz evaluation links with an HMAC stay anonymous and skip the
 profile lookup so Apollo's Unauthorized handler cannot redirect them to login.
@@ -114,9 +116,12 @@ diagnostics and optional targeting. `NEXT_PUBLIC_ENV` is registered in
 
 Do not use email addresses or other direct identifiers. Browser attributes and
 client-side targeting rules are observable by the person using the browser, so
-they must not carry secrets or authorize data access. A flag may change what is
-offered in the UI; the destination route and API must still enforce their own
-authentication and authorization.
+they must not carry secrets or authorize data access. A browser flag may change
+what is offered in the UI, but the destination route and API must still enforce
+their own authentication and resource authorization. A feature entitlement may
+additionally be enforced by the backend under
+[ADR 0038](./adr/0038-backend-enforced-feature-entitlements.md); a true result
+never grants access beyond the existing role, scope, and resource permissions.
 
 ## Browser adoption
 
@@ -183,7 +188,9 @@ The adopting service maps server-only variables into one process-level client:
 
 - `GROWTHBOOK_API_HOST`: cluster-internal GrowthBook SDK service;
 - `GROWTHBOOK_CLIENT_KEY`: environment-specific server SDK key;
-- `GROWTHBOOK_ENV`: server deployment environment.
+- `GROWTHBOOK_ENV`: server deployment environment;
+- `GROWTHBOOK_REFRESH_INTERVAL_MS`: optional polling override (30 seconds by
+  default; tests use 250 ms).
 
 ```ts
 const flags = new NodeFeatureFlagClient({
@@ -200,11 +207,15 @@ feature payload on the process client while passing the request-local
 `FeatureFlagAttributes` as `attributes` to every evaluation. The adapter filters
 unknown fields before calling GrowthBook, so direct identifiers cannot cross the
 boundary even when a JavaScript caller supplies a wider object. Never mutate
-global attributes with the current user. Call `getStatus()` from a readiness
-probe and `refresh()` from an intentional lifecycle or refresh hook if the
-service needs new definitions without restarting. A refresh marks the client
-healthy only after GrowthBook reports a successful payload update and retains the
-previous payload when a refresh fails.
+global attributes with the current user. Entitlement evaluation requires the
+runtime feature value to be exactly boolean `true`; truthy strings, numbers, or
+objects fail closed. The adapter owns its network and refresh lifecycle: it
+applies an abortable two-second request deadline, polls every 30 seconds, and
+exposes `destroy()` for teardown. A refresh marks the client healthy only after
+a validated payload update. A failed refresh retains the previous payload for
+at most two minutes; after that bounded stale window, all evaluations fail
+closed until a refresh succeeds. `getStatus()` reports health, staleness, and
+the last successful refresh time without exposing keys or targeting data.
 
 The `NODE_ENV` fallback covers local development and tests. It must not be used
 to distinguish staging from production because both normally run with
@@ -212,11 +223,11 @@ to distinguish staging from production because both normally run with
 `turbo.json`.
 
 The primary backend GraphQL process initializes this client during startup and
-injects it into both HTTP and WebSocket contexts. Startup continues after a
-missing configuration or unsuccessful initialization, but analytics-data
-resolvers return `FORBIDDEN` until `learning-analytics` evaluates true for the
-authenticated user. The v3 chart makes the Kubernetes-deployed Node workloads
-configuration-ready:
+injects it into both HTTP and WebSocket contexts, runs the owned polling loop,
+and destroys it on process exit. Startup continues after a missing configuration
+or unsuccessful initialization, but analytics-data resolvers return `FORBIDDEN`
+until `learning-analytics` evaluates true for the authenticated user. The v3
+chart makes the Kubernetes-deployed Node workloads configuration-ready:
 
 - `GROWTHBOOK_ENV` comes from `global.deploymentEnvironment`; the checked-in
   environment values set it to `staging` or `production`.
@@ -303,14 +314,21 @@ hidden and nothing else changes.
   flags false, even if the remote definition would match the actor or default
   to true.
 - Network or unusable-payload initialization leaves unavailable flags false;
-  GrowthBook keeps a usable cached payload when one exists, while a missing or
-  unusable cache stays on the false fallback.
+  the Node adapter keeps a validated cached payload only within its two-minute
+  stale bound, while a missing, expired, or unusable payload stays on the false
+  fallback.
+- A hung Node request is aborted at the adapter deadline and is not retained in
+  GrowthBook's shared fetch cache, so the next scheduled refresh can recover.
+- Healthy backend definitions refresh every 30 seconds by default. Revocations
+  therefore propagate without a pod restart; an outage can extend the old
+  decision only until the bounded stale deadline.
 - `initialize()` reports whether the SDK loaded successfully; application
   startup must not depend on a true result.
 - A backend-enforced flag must be configured in both the browser and backend
   environments with equivalent definitions and targeting attributes. If the
-  two evaluations disagree, the backend result is authoritative and access is
-  denied.
+  two evaluations disagree, a backend `false` always denies. A browser `false`
+  may still hide the feature when the backend result is true; a backend `true`
+  never bypasses existing authentication and resource permissions.
 - Feature definitions and targeting rules are managed in GrowthBook. Ordinary
   SDK evaluation never uses the optional management API key; only a future,
   explicitly authorized control-plane integration may do so.
@@ -332,8 +350,9 @@ hidden and nothing else changes.
 4. Map the authenticated actor to `FeatureFlagAttributes` once at the app or
    request boundary; adapters add their normalized deployment environment.
 5. Cover fallback, enabled, disabled, and per-user targeting where relevant.
-6. Document whether the flag hides, disables, or changes behavior and reiterate
-   that it is not an authorization boundary.
+6. Document whether the flag hides, disables, changes behavior, or is a
+   backend-enforced feature entitlement. Browser evaluation is never an
+   authorization boundary; entitlement flags must follow ADR 0038.
 
 ## Deployment setup checklist
 
@@ -358,4 +377,5 @@ hidden and nothing else changes.
 GitHub reference: [Variables](https://docs.github.com/en/actions/concepts/workflows-and-actions/variables).
 
 The architectural rationale is recorded in
-[ADR 0008](./adr/0008-use-growthbook-for-feature-flags.md).
+[ADR 0008](./adr/0008-use-growthbook-for-feature-flags.md) and
+[ADR 0038](./adr/0038-backend-enforced-feature-entitlements.md).

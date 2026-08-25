@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-08-24'
+timestamp: '2026-08-25'
 tags:
   - backend
   - graphql
@@ -20,6 +20,19 @@ Owner-only aggregates such as `KB` enforce their persisted owner relation at the
 1. **Role/scope gate — `t.withAuth(scopeObject)`.** Scope objects are defined once near the top of `packages/graphql/src/schema/mutation.ts` (and mirrored in `query.ts`): `asUser`, `asUserFullAccess`, `asUserSessionExec`, `asUserOwner`, `asParticipant`, `asTemporaryParticipant`, `asAdmin`. Their semantics come from `packages/graphql/src/builder.ts` auth scopes: `authenticated` (logged in, not OTP), `role` (USER also passes for ADMIN; PARTICIPANT is exact), `scope` (a ladder — `ACCOUNT_OWNER > FULL_ACCESS > SESSION_EXEC > READ_ONLY`, a login with a higher scope passes lower requirements), `catalyst`. `defaultStrategy: 'all'`; failure throws `GraphQLError('Unauthorized')`. The former `asUserWithCatalyst` shorthand was removed when the three activity formats became standard (ADR 0037); gate such fields with `asUserFullAccess` and keep the `catalyst` scope for surfaces that genuinely require the paid tier.
 2. **Object-level permission — `withPermission(argsToCheck, PermissionLevel, resolver)`** (`packages/graphql/src/services/sharing.ts:withPermission`). Maps resolver args to a `PermissionCheck` (one of `courseId | liveQuizId | practiceQuizId | microLearningId | groupActivityId | elementId | answerCollectionId | catalogCollectionId`) and a required `PermissionLevel`. **On failure it returns `null` instead of throwing** — clients see a null field, not an error. A multi-object batch field cannot use this single-selector wrapper: gate the field with `t.withAuth(...)`, then perform a bounded service query and an explicit permission check for every unique object before mutation. Return per-object outcomes instead of collapsing the batch to one nullable field.
 3. **Derived-permission lookup — `checkAccess`** (same file): resolves ownership and sharing grants (`DerivedPermission`) for the target object.
+
+### Optional feature-entitlement gate
+
+A backend-enforced feature entitlement is an additional service-entry
+condition, not a replacement or shortcut for the three authorization layers.
+Use the centralized fail-closed evaluator (currently
+`packages/graphql/src/lib/featureFlags.ts:requireFeatureFlagAccess`) before the
+protected service reads feature data. It receives only the authenticated
+Klicker user ID, actor type, and role; missing evaluators, false results, or SDK
+failures return a generic `FORBIDDEN`. A true result only permits the normal
+role/scope and resource-permission contract to continue. Browser evaluation is
+never trusted for API access. See
+[ADR 0038](./adr/0038-backend-enforced-feature-entitlements.md).
 
 `PermissionCheck` has no KB key because knowledge bases are not shareable aggregates. KB schema fields use the appropriate `t.withAuth(...)` scope, then every service query or mutation resolves the KB through `ownerId: ctx.user.sub` or an equivalent persisted owner relation before reading or mutating it. Do not add a fake permission mapping or widen KB sharing to make its resolver look like a course resolver.
 
