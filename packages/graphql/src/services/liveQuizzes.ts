@@ -1964,14 +1964,6 @@ export async function endLiveQuiz(
 
   // update course leaderboard and participant XP
   try {
-    // Start retention before changing the database state. If Redis cleanup
-    // fails, the quiz remains publishable and the caller can retry the end.
-    await startLiveQuizResponseTrackingRetention({
-      liveQuizId: id,
-      blocks: quiz.blocks,
-      redis,
-    })
-
     const quizLB = await redis.hgetall(`lq:${id}:lb`)
     const quizXP = await redis.hgetall(`lq:${id}:xp`)
     const participants: Record<string, any> = {}
@@ -2227,6 +2219,14 @@ export async function endLiveQuiz(
         status: DB.PublicationStatus.ENDED,
         finishedAt: new Date(),
       },
+    })
+
+    // Retention is armed only after ENDED is durable. If Redis cleanup fails,
+    // the repeated ENDED branch can retry it without repeating end effects.
+    await startLiveQuizResponseTrackingRetention({
+      liveQuizId: id,
+      blocks: quiz.blocks,
+      redis,
     })
 
     await sendTeamsNotification({

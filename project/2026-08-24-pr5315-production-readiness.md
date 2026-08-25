@@ -37,9 +37,13 @@ No remote merge, deployment, or production-data access was performed.
 - Cockpit response-count resolution degrades all response counts to `null`
   when its count pipeline fails; the rest of the authorized cockpit query
   remains available.
-- Numeric counters and age-trimmed replay claims use bounded retention.
-  `endLiveQuiz` starts retention on instance-info keys before expiring leftover
-  tracking keys, so late responses cannot recreate persistent tracking keys.
+- Numeric counters use bounded retention, while age-trimmed replay claims stay
+  for the full 24-hour replay horizon even when instance-info expires sooner.
+  `endLiveQuiz` persists `ENDED` before arming retention, so a retention
+  failure leaves an ended quiz whose repeated end call repairs retention
+  without repeating end-of-quiz side effects. Retention starts on instance-info
+  keys before expiring leftover tracking keys, so late responses cannot
+  recreate persistent tracking keys.
 - Deployment must publish GraphQL before new ingress and drain old processors
   before initializing processed counters. Old processors do not increment the
   new processed counter. The current staging values roll all fifteen
@@ -71,7 +75,7 @@ No remote merge, deployment, or production-data access was performed.
 | Response-api ingress tracking tests          | Passed; 5 direct tests cover missing-instance skips, active-instance increments, invalid tracking responses, and the 250ms timeout rejection contract                                                                                                                                                                                              |
 | Syncpack check                               | Passed                                                                                                                                                                                                                                                                                                                                             |
 | Repository build                             | Passed; 23 of 23 Turbo tasks succeeded                                                                                                                                                                                                                                                                                                             |
-| Redis integration contract test              | Passed with `LIVE_QUIZ_REDIS_INTEGRATION=true`; concurrent replay applied one result, counters stayed exact, claims and counters mirrored bounded TTLs, missing-info retention was one day, first-command failures released the claim without incrementing the processed counter, and mixed partial failures retained the claim for reconciliation |
+| Redis integration contract test              | Passed with `LIVE_QUIZ_REDIS_INTEGRATION=true`; concurrent replay applied one result, counters stayed exact, claims retained the full replay horizon beyond instance-info expiry, counters mirrored bounded TTLs, missing-info retention was one day, first-command failures released the claim without incrementing the processed counter, and mixed partial failures retained the claim for reconciliation |
 | GraphQL code generation and repository build | Passed; generated outputs rebuilt, the legacy `GetCockpitQuiz` hash was preserved, and 23 of 23 Turbo build tasks succeeded                                                                                                                                                                                                                         |
 | Browser verification                         | The manage cockpit route passed locally with delegated lecturer login. At 360×640 the corrected card measured 176px, the long element label wrapped, and the response-status pill remained a single 79.94px line with aligned icons. A separate desktop capture was blocked by the local Chrome MachPort permission error.                         |
 | Diff whitespace check                        | Passed                                                                                                                                                                                                                                                                                                                                             |

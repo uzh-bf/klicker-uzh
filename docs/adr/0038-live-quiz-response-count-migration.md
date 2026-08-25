@@ -26,6 +26,12 @@ non-idempotent command succeeds retains the claim, returns
 `reconciliation_required`, and is acknowledged and logged for reconciliation
 instead of being automatically retried.
 
+Replay claims remain for the full 24-hour replay horizon, independently of the
+shorter instance-info and counter retention. The end-live-quiz mutation
+persists `ENDED` before arming that retention. If retention fails, a repeated
+call retries only retention through the existing `ENDED` branch and does not
+repeat end-of-quiz side effects.
+
 The persisted-operation manifest retains the previous `GetCockpitQuiz` hash
 while older Manage bundles drain. The compatibility entry is rebuilt after
 GraphQL code generation by
@@ -34,6 +40,7 @@ removed only in a deliberate follow-up after the old bundle is retired.
 
 ## Consequences
 
-Counters remain bounded and duplicate retries do not repeat already-applied
-commands. Post-write reconciliation is operational work, and the rollout gate
-remains until compatibility or the required deployment order is proven.
+Counters remain bounded, replay claims protect the full replay horizon, and
+duplicate retries do not repeat already-applied commands. Post-write
+reconciliation is operational work, and the rollout gate remains until
+compatibility or the required deployment order is proven.

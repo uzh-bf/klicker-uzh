@@ -158,7 +158,10 @@ redisDescribe('live quiz response tracking Redis contract', () => {
       )
       expect(await redis.get(boundedCountKey)).toBe('1')
       expect(await redis.ttl(boundedClaimKey)).toBeGreaterThan(0)
-      expect(await redis.ttl(boundedClaimKey)).toBeLessThanOrEqual(30)
+      expect(await redis.ttl(boundedClaimKey)).toBeGreaterThan(30)
+      expect(await redis.ttl(boundedClaimKey)).toBeLessThanOrEqual(
+        LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS
+      )
       expect(await redis.ttl(boundedCountKey)).toBeGreaterThan(0)
       expect(await redis.ttl(boundedCountKey)).toBeLessThanOrEqual(30)
 
@@ -166,9 +169,13 @@ redisDescribe('live quiz response tracking Redis contract', () => {
       const shrinkingClaimKey = `${prefix}:shrinking-processed:claims`
       const shrinkingLegacyProcessedKey = `${prefix}:shrinking-processed`
       const shrinkingCountKey = `${prefix}:shrinking-processed-count`
+      const shrinkingResultsKey = `${prefix}:shrinking-results`
+      const shrinkingCommands = JSON.stringify([
+        ['HINCRBY', shrinkingResultsKey, 'participants', '1'],
+      ])
       await redis.hset(shrinkingInfoKey, 'id', 'synthetic')
-      await redis.pexpire(shrinkingInfoKey, 5000)
-      const processWithShrinkingInfo = (messageId: string) =>
+      await redis.pexpire(shrinkingInfoKey, 2000)
+      const processWithShrinkingInfo = () =>
         redis.eval(
           LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
           4,
@@ -176,23 +183,23 @@ redisDescribe('live quiz response tracking Redis contract', () => {
           shrinkingCountKey,
           shrinkingInfoKey,
           shrinkingLegacyProcessedKey,
-          messageId,
+          'message-old',
           '8',
-          JSON.stringify([])
+          shrinkingCommands
         )
 
-      expect(
-        JSON.parse(String(await processWithShrinkingInfo('message-old'))).status
-      ).toBe('processed')
-      await new Promise((resolve) => setTimeout(resolve, 1100))
-      expect(
-        JSON.parse(String(await processWithShrinkingInfo('message-new'))).status
-      ).toBe('processed')
-      await new Promise((resolve) => setTimeout(resolve, 2100))
-      expect(
-        JSON.parse(String(await processWithShrinkingInfo('message-old'))).status
-      ).toBe('already_processed')
-      expect(await redis.get(shrinkingCountKey)).toBe('2')
+      expect(JSON.parse(String(await processWithShrinkingInfo())).status).toBe(
+        'processed'
+      )
+      await redis.expire(shrinkingResultsKey, 30)
+      await redis.expire(shrinkingCountKey, 30)
+      await new Promise((resolve) => setTimeout(resolve, 2300))
+      expect(await redis.ttl(shrinkingInfoKey)).toBe(-2)
+      expect(JSON.parse(String(await processWithShrinkingInfo())).status).toBe(
+        'already_processed'
+      )
+      expect(await redis.hget(shrinkingResultsKey, 'participants')).toBe('1')
+      expect(await redis.get(shrinkingCountKey)).toBe('1')
 
       const missingClaimKey = `${prefix}:missing-processed:claims`
       const missingLegacyProcessedKey = `${prefix}:missing-processed`

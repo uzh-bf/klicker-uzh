@@ -12,13 +12,8 @@ local commandErrors = {}
 local trackingErrors = {}
 local instanceInfoTtl = redis.call('TTL', KEYS[3])
 local replayClaimTtl = tonumber(ARGV[2])
--- Keep member trimming on the replay horizon. The instance TTL only bounds
--- the lifetime of the claim key itself during cleanup.
-local claimKeyTtl = replayClaimTtl
-
-if instanceInfoTtl >= 0 then
-  claimKeyTtl = math.max(instanceInfoTtl, 1)
-end
+-- Keep replay claims for the full horizon even when instance-info expires
+-- sooner. Retries must remain idempotent after tracking data is gone.
 
 local currentTime = tonumber(redis.call('TIME')[1])
 local existingClaimResult = redis.pcall('ZSCORE', KEYS[1], ARGV[1])
@@ -209,7 +204,7 @@ if type(claimResult) == 'table' and claimResult.err then
   })
 end
 
-local expireResult = redis.pcall('EXPIRE', KEYS[1], claimKeyTtl)
+local expireResult = redis.pcall('EXPIRE', KEYS[1], replayClaimTtl)
 if type(expireResult) == 'table' and expireResult.err then
   table.insert(trackingErrors, expireResult.err)
 end

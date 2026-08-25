@@ -258,7 +258,7 @@ describe('live quiz cockpit response counts', () => {
     }
   })
 
-  it('keeps published quizzes retryable and repairs retention for ended quizzes', async () => {
+  it('persists ENDED before retention and repairs retention on retry', async () => {
     const { AC1 } = await seedAnswerCollections(userOneCtx)
     const { SC } = await seedElements(userOneCtx, AC1.id)
     const quiz = await seedLiveQuiz(
@@ -300,14 +300,12 @@ describe('live quiz cockpit response counts', () => {
       userOneCtx.redisExec.multi = originalMultiMethod
     }
 
-    expect(
-      (
-        await prisma.liveQuiz.findUnique({
-          where: { id: quiz.id },
-          select: { status: true },
-        })
-      )?.status
-    ).toBe(PublicationStatus.PUBLISHED)
+    const failedEnd = await prisma.liveQuiz.findUnique({
+      where: { id: quiz.id },
+      select: { status: true, finishedAt: true },
+    })
+    expect(failedEnd?.status).toBe(PublicationStatus.ENDED)
+    expect(failedEnd?.finishedAt).not.toBeNull()
 
     const instanceInfoKey = getLiveQuizInstanceInfoKey({
       liveQuizId: quiz.id,
@@ -346,16 +344,10 @@ describe('live quiz cockpit response counts', () => {
     await userOneCtx.redisExec.sadd(trackingKeys[3]!, 'legacy-received')
     await userOneCtx.redisExec.sadd(trackingKeys[4]!, 'legacy-processed')
 
-    const finishedAt = new Date('2026-08-25T10:00:00.000Z')
-    await prisma.liveQuiz.update({
-      where: { id: quiz.id },
-      data: { status: PublicationStatus.ENDED, finishedAt },
-    })
-
     const recoveredQuiz = await endLiveQuiz({ id: quiz.id }, userOneCtx)
 
     expect(recoveredQuiz?.status).toBe(PublicationStatus.ENDED)
-    expect(recoveredQuiz?.finishedAt).toEqual(finishedAt)
+    expect(recoveredQuiz?.finishedAt).toEqual(failedEnd?.finishedAt)
     for (const key of [instanceInfoKey, ...trackingKeys]) {
       const ttl = await userOneCtx.redisExec.ttl(key)
       expect(ttl).toBeGreaterThan(0)

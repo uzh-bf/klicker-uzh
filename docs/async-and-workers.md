@@ -51,9 +51,9 @@ The new
 `lq:<quiz-id>:i:<instance-id>:responses:processed:claims` sorted set is an
 age-trimmed replay claim for the response `messageId` or assessment
 `correlationId`; each member keeps its own timestamp within the 24-hour replay
-horizon. After closure, the claim key itself follows the shorter remaining
-instance-info retention, but that key-level expiry does not shorten the
-member-trimming horizon while the key remains. The legacy
+horizon. The claim key remains for that full horizon even when instance-info
+expires sooner, so a retry cannot repeat a completed batch after tracking data
+has expired. The legacy
 `lq:<quiz-id>:i:<instance-id>:responses:processed` set is read only during the
 worker rollout and provides the initial processed-counter baseline. A
 processing retry after a lost Redis reply therefore cannot apply the same
@@ -98,16 +98,17 @@ acknowledged without retry; errors before any command applies release the claim
 and remain retryable.
 
 Counters stay persistent while their element instance is active, matching the
-rest of the live execution cache. Replay claims are bounded independently of
-active-instance lifetime. When a block closes, cleanup first starts the
+rest of the live execution cache. Replay claims are retained independently for
+the full 24-hour replay horizon. When a block closes, cleanup first starts the
 canonical instance-info key's one-day retention and then expires the response
 keys. A concurrent tracking write atomically reads that info-key TTL and
-mirrors the remaining retention; if the info key is already missing, the
-tracking key receives a one-day safety expiry. The keys also remain under the
-existing per-instance wildcard
+mirrors the remaining retention for counters; if the info key is already
+missing, the tracking key receives a one-day safety expiry. The keys also
+remain under the existing per-instance wildcard
 (`packages/graphql/src/services/liveQuizzes.ts:removeCacheEntriesBlock`).
-Cleanup-retention failures are logged and propagated so the mutation reports a
-failure and the caller can retry the cleanup.
+`endLiveQuiz` persists `ENDED` before arming retention. Cleanup-retention
+failures are logged and propagated; a repeated call on an ended quiz retries
+retention without repeating end-of-quiz side effects.
 
 Deployment ordering matters: deploy GraphQL before new response ingress, drain
 old response-processor replicas before initializing processed counters, and then
