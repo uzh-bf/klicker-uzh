@@ -192,7 +192,7 @@ schema changes; diagnose or roll forward separately.
 - [x] Complete planner review and integrate its accepted findings.
 - [x] Obtain plan and named external-action approval.
 - [ ] Record baseline public health.
-- [ ] Commit the plan and implement the scoped rollout.
+- [x] Commit the plan and implement the scoped rollout.
 - [ ] Verify, review, publish, and pass PR CI.
 - [ ] Confirm backup/recovery readiness and merge.
 - [ ] Prove ArgoCD, migration, workload image, and public health state.
