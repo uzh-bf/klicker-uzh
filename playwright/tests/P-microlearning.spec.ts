@@ -54,19 +54,22 @@ function readFixture(name: string) {
   )
 }
 
-async function selectActivityElements(page: Page, elementNames: string[]) {
+async function selectActivityElements(
+  page: Page,
+  searchTerm: string,
+  elementNames: string[]
+) {
+  await selectOption(page, '[data-cy="pagination-page-size"]', 'all')
+  await expect(page.getByTestId('pagination-page-size')).toContainText('All')
   const search = page.getByTestId('elements-search-input')
+  await search.fill(searchTerm)
+  await page.keyboard.press('Enter')
 
   for (const elementName of elementNames) {
-    await search.clear()
-    await search.fill(elementName)
-    await page.keyboard.press('Enter')
     const checkbox = page.getByTestId(`element-checkbox-${elementName}`)
     await expect(checkbox).toBeVisible()
     await checkbox.check()
   }
-
-  await search.clear()
 }
 
 let page: Page
@@ -1584,7 +1587,7 @@ test.describe.serial('Different microlearning workflows', () => {
     await page.waitForTimeout(500)
     await expectByAssertion(page.getByTestId('next-or-submit'), 'be.disabled')
 
-    await selectActivityElements(page, [data.SCML.title])
+    await selectActivityElements(page, data.SCML.title, [data.SCML.title])
     await expect(page.getByTestId('add-selection-to-one-stack')).toHaveText(
       'Add 1 stack with 1 element'
     )
@@ -1600,7 +1603,10 @@ test.describe.serial('Different microlearning workflows', () => {
     )
     await page.getByTestId('remove-element-0-stack-0').click()
 
-    await selectActivityElements(page, [data.SCML.title, data.FTML.title])
+    await selectActivityElements(page, 'Title Test 2 (Version 1)', [
+      data.SCML.title,
+      data.FTML.title,
+    ])
     await expect(page.getByTestId('add-selection-to-one-stack')).toHaveText(
       'Add 1 stack with 2 elements'
     )
@@ -1621,7 +1627,10 @@ test.describe.serial('Different microlearning workflows', () => {
     await page.getByTestId('delete-stack').last().click()
     await expect(page.getByTestId('stack-container-header')).toHaveCount(1)
 
-    await selectActivityElements(page, [data.SCML.title, data.FTML.title])
+    await selectActivityElements(page, 'Title Test 2 (Version 1)', [
+      data.SCML.title,
+      data.FTML.title,
+    ])
     await page.getByTestId('create-one-stack-per-selected-element').click()
     await expect(page.getByTestId('stack-container-header')).toHaveCount(3)
     await expect(page.getByTestId('element-0-stack-1')).toContainText(

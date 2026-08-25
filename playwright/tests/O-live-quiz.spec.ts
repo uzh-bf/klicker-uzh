@@ -58,19 +58,22 @@ function readFixture(name: string) {
   )
 }
 
-async function selectActivityElements(page: Page, elementNames: string[]) {
+async function selectActivityElements(
+  page: Page,
+  searchTerm: string,
+  elementNames: string[]
+) {
+  await selectOption(page, '[data-cy="pagination-page-size"]', 'all')
+  await expect(page.getByTestId('pagination-page-size')).toContainText('All')
   const search = page.getByTestId('elements-search-input')
+  await search.fill(searchTerm)
+  await page.keyboard.press('Enter')
 
   for (const elementName of elementNames) {
-    await search.clear()
-    await search.fill(elementName)
-    await page.keyboard.press('Enter')
     const checkbox = page.getByTestId(`element-checkbox-${elementName}`)
     await expect(checkbox).toBeVisible()
     await checkbox.check()
   }
-
-  await search.clear()
 }
 
 let page: Page
@@ -2008,7 +2011,7 @@ test.describe.serial('Different live-quiz workflows', () => {
       1
     )
 
-    await selectActivityElements(page, [data.SC.title])
+    await selectActivityElements(page, data.SC.title, [data.SC.title])
     await expect(page.getByTestId('add-selection-to-one-block')).toHaveText(
       'Add 1 block with 1 element'
     )
@@ -2024,7 +2027,10 @@ test.describe.serial('Different live-quiz workflows', () => {
     )
     await page.getByTestId('remove-element-0-block-0').click()
 
-    await selectActivityElements(page, [data.SC.title, data.SCML.title])
+    await selectActivityElements(page, 'SC Title Test', [
+      data.SC.title,
+      data.SCML.title,
+    ])
     await expect(page.getByTestId('add-selection-to-one-block')).toHaveText(
       'Add 1 block with 2 elements'
     )
@@ -2048,7 +2054,10 @@ test.describe.serial('Different live-quiz workflows', () => {
     )
     await page.getByTestId('delete-block-1').click()
 
-    await selectActivityElements(page, [data.SC.title, data.SCML.title])
+    await selectActivityElements(page, 'SC Title Test', [
+      data.SC.title,
+      data.SCML.title,
+    ])
     await page.getByTestId('create-one-block-per-selected-element').click()
     await expectByAssertion(
       page.getByTestId('block-container-header'),
