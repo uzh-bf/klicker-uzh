@@ -1,0 +1,5 @@
+mutation DeletePracticeQuizBatch($id: String!) {
+  deletePracticeQuiz(id: $id, onlyIfUnpublished: true) {
+    id
+  }
+}

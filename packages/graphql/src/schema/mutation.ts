@@ -3403,12 +3403,21 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: PracticeQuiz,
-          args: { id: t.arg.string({ required: true }) },
+          args: {
+            id: t.arg.string({ required: true }),
+            onlyIfUnpublished: t.arg.boolean({ required: false }),
+          },
           resolve: withPermission(
             (args) => ({ practiceQuizId: args.id }),
             DB.PermissionLevel.ADMIN,
             async (_, args, ctx) => {
-              return await PracticeQuizService.deletePracticeQuiz(args, ctx)
+              return await PracticeQuizService.deletePracticeQuiz(
+                {
+                  ...args,
+                  onlyIfUnpublished: args.onlyIfUnpublished ?? undefined,
+                },
+                ctx
+              )
             }
           ),
         }),
@@ -3418,12 +3427,21 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: MicroLearning,
-          args: { id: t.arg.string({ required: true }) },
+          args: {
+            id: t.arg.string({ required: true }),
+            onlyIfUnpublished: t.arg.boolean({ required: false }),
+          },
           resolve: withPermission(
             (args) => ({ microLearningId: args.id }),
             DB.PermissionLevel.ADMIN,
             async (_, args, ctx) => {
-              return await MicroLearningService.deleteMicroLearning(args, ctx)
+              return await MicroLearningService.deleteMicroLearning(
+                {
+                  ...args,
+                  onlyIfUnpublished: args.onlyIfUnpublished ?? undefined,
+                },
+                ctx
+              )
             }
           ),
         }),
@@ -3493,12 +3511,21 @@ export const Mutation = builder.mutationType({
         .field({
           nullable: true,
           type: GroupActivity,
-          args: { id: t.arg.string({ required: true }) },
+          args: {
+            id: t.arg.string({ required: true }),
+            onlyIfUnpublished: t.arg.boolean({ required: false }),
+          },
           resolve: withPermission(
             (args) => ({ groupActivityId: args.id }),
             DB.PermissionLevel.ADMIN,
             async (_, args, ctx) => {
-              return await GroupService.deleteGroupActivity(args, ctx)
+              return await GroupService.deleteGroupActivity(
+                {
+                  ...args,
+                  onlyIfUnpublished: args.onlyIfUnpublished ?? undefined,
+                },
+                ctx
+              )
             }
           ),
         }),

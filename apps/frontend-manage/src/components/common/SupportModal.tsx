@@ -1,18 +1,12 @@
 import { faGithub } from '@fortawesome/free-brands-svg-icons'
 import { faCrown } from '@fortawesome/free-solid-svg-icons'
-import {
-  faComment,
-  faEnvelope,
-  faLightbulb,
-} from '@fortawesome/free-regular-svg-icons'
+import { faComment, faEnvelope } from '@fortawesome/free-regular-svg-icons'
 import {
   faBook,
-  faBug,
   faBullseye,
   faInfo,
   faList,
   faQuestion,
-  faServer,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -63,25 +57,11 @@ function SupportModal({
             </p>
             <div className="flex flex-col gap-2">
               <SupportEntry
-                href="https://klicker-uzh.feedbear.com/boards/feature-requests"
-                title={t('manage.support.featureRequest')}
-                subtitle={t('manage.support.featureRequestDesc')}
-                icon={faLightbulb}
-                data={{ cy: 'support-feature-request' }}
-              />
-              <SupportEntry
-                href="https://klicker-uzh.feedbear.com/boards/bug-reports"
-                title={t('manage.support.bugReport')}
-                subtitle={t('manage.support.bugReportDesc')}
-                icon={faBug}
-                data={{ cy: 'support-bug-report' }}
-              />
-              <SupportEntry
-                href="https://klicker-uzh.feedbear.com/boards/self-hosting"
-                title={t('manage.support.selfHosting')}
-                subtitle={t('manage.support.selfHostingDesc')}
-                icon={faServer}
-                data={{ cy: 'support-self-hosting' }}
+                href="https://klicker-uzh.feedback.df-app.ch/"
+                title={t('shared.generic.feedback')}
+                subtitle={t('manage.support.feedbackDesc')}
+                icon={faComment}
+                data={{ cy: 'support-feedback' }}
               />
             </div>
           </div>

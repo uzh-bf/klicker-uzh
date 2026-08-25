@@ -355,6 +355,15 @@ function Activities() {
         <ActivityBatchOperationsModal
           selectedActivities={Object.values(selectedActivities)}
           onClose={() => setBatchOperationsOpen(false)}
+          removeSelectedActivities={(activityIds) =>
+            setSelectedActivities((previous) => {
+              const next = { ...previous }
+              for (const activityId of activityIds) {
+                delete next[activityId]
+              }
+              return next
+            })
+          }
           resetSelectedActivities={() => setSelectedActivities({})}
           refetchActivities={async () => {
             await refetchActivities()
