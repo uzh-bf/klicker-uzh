@@ -60,6 +60,17 @@ function ActivityBatchOperationsModal({
     }
   }, [])
 
+  useEffect(() => {
+    if (
+      deletionConfirmationOpen &&
+      !deleting &&
+      selectedActivities.length === 0
+    ) {
+      setDeletionConfirmationOpen(false)
+      onClose()
+    }
+  }, [deletionConfirmationOpen, deleting, onClose, selectedActivities.length])
+
   // database mutation to execute activity batch operations
   const [applyActivityBatchOperations, { loading: applying }] = useMutation(
     ApplyActivityBatchOperationsDocument
@@ -328,6 +339,7 @@ function ActivityBatchOperationsModal({
         message: t('manage.activities.batchDeletionNoEligibleActivities'),
         options: { duration: 5000 },
       })
+      onClose()
       return
     }
 
