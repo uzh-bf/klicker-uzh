@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 
 function createContext(aiFeaturesEnabled: boolean | null) {
@@ -41,6 +41,10 @@ async function loadChatbots(forcedOn?: string) {
 
 describe('Manage AI feature gate', () => {
   beforeEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  afterEach(() => {
     vi.unstubAllEnvs()
   })
 
