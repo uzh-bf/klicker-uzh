@@ -28,8 +28,9 @@ Redis keys, and Hatchet workers.
 - Freshness was re-established on 2026-08-25 with `git fetch origin` in the
   matching worktree.
 - The worktree is `/Volumes/HOME/Git/klicker/klicker-uzh/trees/fix-course-duplication-timeout`.
-- Branch `fix/course-duplication-timeout` is at `e5f2cc0cb`, includes the current
-  `origin/v3` base, and is 79 commits ahead of it.
+- Branch `fix/course-duplication-timeout` includes the current `origin/v3` base;
+  the latest published head and commit count are recorded in the final
+  Progress entry below.
 - The current Playwright manifest is 886 tests in 31 active files. Five tests
   added by the current branch's latest-base integration are part of the
   baseline and must remain unchanged.
@@ -220,10 +221,11 @@ access, or change to the course-duplication worker.
   the package.json conflict preserved both the course-duplication stress seed
   and the upstream demo-participant seed. The generated GraphQL paths remain
   dirty and unstaged.
-- 2026-08-25: Published `c71616734a` to PR #5446 and replaced the stale body
+- 2026-08-25: Published the branch to PR #5446 and replaced the stale body
   with branch-wide coverage, exact verification categories, and follow-ups.
   GitHub read-back confirms the PR is open, non-draft, mergeable, and currently
-  blocked while required checks run.
+  blocked while required checks run; the final publication commit is this
+  progress record.
 - 2026-08-25: The native simplifier and slice-reviewer routes returned provider
   `402` credit errors. A lightweight GPT-5.6 Sol fallback reviewed the exact
   package and found no material implementation risk after this progress update;
