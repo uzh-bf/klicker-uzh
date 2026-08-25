@@ -368,7 +368,7 @@ describe('live quiz cockpit response counts', () => {
         ([, body]) => (body as { text: string }).text
       )
       expect(
-        notificationTexts.filter((text) => text.startsWith('END '))
+        notificationTexts.filter((text) => text.includes('] END Live quiz '))
       ).toHaveLength(1)
     } finally {
       teamsPost.mockRestore()
