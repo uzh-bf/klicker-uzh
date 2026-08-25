@@ -30,7 +30,11 @@ import {
 } from '../lib/randomizedGroups.js'
 import { computeRanks, shuffle } from '../lib/util.js'
 import * as EmailService from '../services/email.js'
-import { persistActivityWithPermissions } from './activities.js'
+import {
+  deleteWithPublicationStatusGuard,
+  persistActivityWithPermissions,
+  UNPUBLISHED_ACTIVITY_STATUSES,
+} from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { upsertDailyTimelineEntry } from './participants.js'
@@ -1858,10 +1862,13 @@ export async function extendGroupActivity(
 }
 
 export async function deleteGroupActivity(
-  { id }: { id: string },
+  {
+    id,
+    onlyIfUnpublished = false,
+  }: { id: string; onlyIfUnpublished?: boolean },
   ctx: ContextWithUser
 ) {
-  const groupActivity = await ctx.prisma.groupActivity.findUnique({
+  let groupActivity = await ctx.prisma.groupActivity.findUnique({
     where: { id },
     include: {
       activityInstances: true,
@@ -1873,109 +1880,171 @@ export async function deleteGroupActivity(
     return null
   }
 
+  let groupActivityForSoftDelete = {
+    status: groupActivity.status,
+    scheduledCompletionTaskId: groupActivity.scheduledCompletionTaskId,
+  }
+
+  const isUnpublished = UNPUBLISHED_ACTIVITY_STATUSES.includes(
+    groupActivity.status
+  )
+
+  if (onlyIfUnpublished && !isUnpublished) {
+    return null
+  }
+
   // if the the group activity is not yet published / has not started or has no instances -> hard deletion
   // as soon as an instance exists (independent of results) -> soft deletion
   if (
-    groupActivity.status === DB.PublicationStatus.DRAFT ||
-    groupActivity.status === DB.PublicationStatus.SCHEDULED ||
-    groupActivity.activityInstances.length === 0
+    isUnpublished ||
+    (!onlyIfUnpublished && groupActivity.activityInstances.length === 0)
   ) {
-    const deletedItem = await ctx.prisma.groupActivity.delete({ where: { id } })
-
-    // remove the scheduled publication task, if it exists (should only exist for scheduled group activities)
-    if (
-      deletedItem.scheduledPublicationTaskId &&
-      deletedItem.status === DB.PublicationStatus.SCHEDULED
-    ) {
-      try {
-        await ctx.hatchet.scheduled.delete(
-          deletedItem.scheduledPublicationTaskId
-        )
-      } catch (error) {
-        console.error(
-          `Failed to delete scheduled publication task for group activity ${id}:`,
-          error
-        )
-      }
+    // Recheck publication status and instance state in the delete statement
+    // because the initial read can become stale while the user confirms the batch.
+    let deletedItem: DB.GroupActivity | null
+    if (onlyIfUnpublished) {
+      deletedItem = await deleteWithPublicationStatusGuard(() =>
+        ctx.prisma.groupActivity.delete({
+          where: { id, status: { in: UNPUBLISHED_ACTIVITY_STATUSES } },
+        })
+      )
+    } else {
+      deletedItem = await deleteWithPublicationStatusGuard(() =>
+        ctx.prisma.groupActivity.delete({
+          where: {
+            id,
+            OR: [
+              { status: { in: UNPUBLISHED_ACTIVITY_STATUSES } },
+              { activityInstances: { none: {} } },
+            ],
+          },
+        })
+      )
     }
 
-    // remove the scheduled completion task, if it exists (should only exist for scheduled/published group activities)
-    if (
-      deletedItem.scheduledCompletionTaskId &&
-      (deletedItem.status === DB.PublicationStatus.SCHEDULED ||
-        deletedItem.status === DB.PublicationStatus.PUBLISHED)
-    ) {
-      try {
-        await ctx.hatchet.scheduled.delete(
-          deletedItem.scheduledCompletionTaskId
-        )
-      } catch (error) {
-        console.error(
-          `Failed to delete scheduled completion task for group activity ${id}:`,
-          error
-        )
-      }
-    }
-
-    // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
-    // this case cannot be handled by the permissions module, since the group activity is already hard deleted
-    // access requests need to be updated as well, since the derived permissions on elements might have changed
-    await propagateActivityToElements(
-      { stacks: groupActivity.stacks, updateAccessRequests: true },
-      ctx.prisma
-    )
-
-    ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
-    return deletedItem
-  } else {
-    // if the group activity already has active instances, only soft delete it
-    const updatedGroupActivity = await ctx.prisma.$transaction(
-      async (prisma) => {
-        // remove the scheduled completion task, if it exists (should only exist for published group activities)
-        if (
-          groupActivity.status === DB.PublicationStatus.PUBLISHED &&
-          groupActivity.scheduledCompletionTaskId
-        ) {
-          try {
-            await ctx.hatchet.scheduled.delete(
-              groupActivity.scheduledCompletionTaskId
-            )
-          } catch (error) {
-            console.error(
-              `Failed to delete scheduled completion task for microlearning ${id}:`,
-              error
-            )
-          }
+    if (deletedItem) {
+      // remove the scheduled publication task, if it exists (should only exist for scheduled group activities)
+      if (
+        deletedItem.scheduledPublicationTaskId &&
+        deletedItem.status === DB.PublicationStatus.SCHEDULED
+      ) {
+        try {
+          await ctx.hatchet.scheduled.delete(
+            deletedItem.scheduledPublicationTaskId
+          )
+        } catch (error) {
+          console.error(
+            `Failed to delete scheduled publication task for group activity ${id}:`,
+            error
+          )
         }
+      }
 
-        // soft delete the group activity and remove all direct permissions
-        const updatedActivity = await prisma.groupActivity.update({
+      // remove the scheduled completion task, if it exists (should only exist for scheduled/published group activities)
+      if (
+        deletedItem.scheduledCompletionTaskId &&
+        (deletedItem.status === DB.PublicationStatus.SCHEDULED ||
+          deletedItem.status === DB.PublicationStatus.PUBLISHED)
+      ) {
+        try {
+          await ctx.hatchet.scheduled.delete(
+            deletedItem.scheduledCompletionTaskId
+          )
+        } catch (error) {
+          console.error(
+            `Failed to delete scheduled completion task for group activity ${id}:`,
+            error
+          )
+        }
+      }
+
+      // update derived permissions on all linked elements (to make sure that invalid derived permissions are also removed)
+      // this case cannot be handled by the permissions module, since the group activity is already hard deleted
+      // access requests need to be updated as well, since the derived permissions on elements might have changed
+      await propagateActivityToElements(
+        { stacks: groupActivity.stacks, updateAccessRequests: true },
+        ctx.prisma
+      )
+
+      ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
+      return deletedItem
+    }
+
+    if (onlyIfUnpublished) {
+      return null
+    }
+
+    // A concurrent instance can make the atomic hard-delete predicate fail.
+    // Reload the activity before taking the soft-delete path.
+    const reloadedGroupActivity = await ctx.prisma.groupActivity.findUnique({
+      where: { id },
+      select: {
+        status: true,
+        scheduledCompletionTaskId: true,
+      },
+    })
+
+    if (!reloadedGroupActivity) {
+      return null
+    }
+
+    groupActivityForSoftDelete = reloadedGroupActivity
+  }
+
+  // if the group activity already has active instances, only soft delete it
+  const updatedGroupActivity = await ctx.prisma.$transaction(
+    async (prisma) => {
+      // remove the scheduled completion task, if it exists (should only exist for published group activities)
+      if (
+        groupActivityForSoftDelete.status === DB.PublicationStatus.PUBLISHED &&
+        groupActivityForSoftDelete.scheduledCompletionTaskId
+      ) {
+        try {
+          await ctx.hatchet.scheduled.delete(
+            groupActivityForSoftDelete.scheduledCompletionTaskId
+          )
+        } catch (error) {
+          console.error(
+            `Failed to delete scheduled completion task for microlearning ${id}:`,
+            error
+          )
+        }
+      }
+
+      // soft delete the group activity and remove all direct permissions
+      const updatedActivity = await deleteWithPublicationStatusGuard(() =>
+        prisma.groupActivity.update({
           where: { id },
           data: {
             isDeleted: true,
             directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
             scheduledCompletionTaskId:
-              groupActivity.status === DB.PublicationStatus.PUBLISHED
+              groupActivityForSoftDelete.status ===
+              DB.PublicationStatus.PUBLISHED
                 ? null
                 : undefined,
           },
         })
+      )
 
-        // update derived permissions for this group activity (after soft deletion)
-        // this function call automatically includes permission updates for all linked elements
-        await recomputeDerivedPermissions(
-          { groupActivityId: updatedActivity.id },
-          prisma
-        )
+      if (!updatedActivity) {
+        return null
+      }
 
-        return updatedActivity
-      },
-      { timeout: 60000 }
-    )
+      // update derived permissions for this group activity (after soft deletion)
+      // this function call automatically includes permission updates for all linked elements
+      await recomputeDerivedPermissions(
+        { groupActivityId: updatedActivity.id },
+        prisma
+      )
 
-    ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
-    return updatedGroupActivity
-  }
+      return updatedActivity
+    },
+    { timeout: 60000 }
+  )
+
+  ctx.emitter.emit('invalidate', { typename: 'GroupActivity', id })
+  return updatedGroupActivity
 }
 
 export async function removeGroupActivity(

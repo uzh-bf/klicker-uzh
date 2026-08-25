@@ -26,6 +26,7 @@ jobs:
           llm_url: https://openrouter.ai/api/v1/chat/completions
           llm_auth_token: ${{ secrets.OPENROUTER_API_KEY }}
           llm_model: deepseek/deepseek-v4-flash-0731
+          background: ${{ github.event.pull_request.title }}
           llm_use_anthropic: 'false'
           ocr_version: '1.9.10'
           sticky_summary: 'true'

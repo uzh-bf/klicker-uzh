@@ -18,8 +18,8 @@ import { useEmbedded } from '../hooks/useEmbedded'
 import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
-import { DisclaimerModal } from './disclaimer-modal'
 import { MobileCreditsBar } from './credits-footer'
+import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedCreditsBar, EmbeddedSettings } from './embedded-settings'
 import { ModeSwitcher } from './mode-switcher'
 import { Thread } from './thread'
@@ -501,22 +501,26 @@ function SidebarMain({
 
   return (
     <SidebarInset id="main-content" tabIndex={-1}>
-      <header className="bg-muted/50 flex shrink-0 items-center gap-2 border-b px-2 py-1.5">
+      <header
+        data-cy="chat-header"
+        className="bg-muted/50 grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2 border-b px-2 py-1.5"
+      >
+        {/* Only visible when the sidebar is closed — once it's open, the
+            sidebar's own trigger closes it, so this stays the single toggle
+            on screen at any given time. The dedicated grid column keeps the
+            title, mode menu, and new-chat action from overlapping at narrow
+            widths. */}
+        <SidebarTrigger
+          className={twMerge(
+            'size-11 touch-manipulation fine-pointer:size-8',
+            open && 'md:hidden'
+          )}
+          aria-label={t('chat.sidebar.openSidebar')}
+        />
+        {/* Persistent header identity (V3): name (+ avatar) stays visible
+            here regardless of sidebar open/closed state, so the sidebar's own
+            header no longer repeats it (see app-sidebar.tsx). */}
         <div className="flex min-w-0 items-center gap-2">
-          {/* Only visible when the sidebar is closed — once it's open, the
-              sidebar's own trigger closes it, so this stays the single
-              toggle on screen at any given time (Overrides the design
-              system's hardcoded English sr-only label). */}
-          <SidebarTrigger
-            className={twMerge(
-              'size-11 touch-manipulation fine-pointer:size-8',
-              open && 'md:hidden'
-            )}
-            aria-label={t('chat.sidebar.openSidebar')}
-          />
-          {/* Persistent header identity (V3): name (+ avatar) stays visible
-              here regardless of sidebar open/closed state, so the sidebar's
-              own header no longer repeats it (see app-sidebar.tsx). */}
           {chatbot.avatar && (
             <Image
               src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbot.avatar}.svg`}
@@ -524,14 +528,12 @@ function SidebarMain({
               width={24}
               height={24}
               unoptimized
-              className="ring-border size-6 shrink-0 rounded-full bg-white ring-1"
+              className="ring-border hidden size-6 shrink-0 rounded-full bg-white ring-1 sm:block"
             />
           )}
           <h1 className="min-w-0 truncate text-sm">{chatbot.name}</h1>
         </div>
-        <div className="flex min-w-0 flex-1 justify-center">
-          <ModeSwitcher />
-        </div>
+        <ModeSwitcher />
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -539,11 +541,11 @@ function SidebarMain({
               onClick={handleNewThread}
               disabled={participationRequired}
               className={twMerge(
-                'text-muted-foreground hover:text-foreground inline-flex size-11 items-center justify-center rounded-sm transition-colors touch-manipulation disabled:pointer-events-none disabled:opacity-50 fine-pointer:size-8',
+                'text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-11 items-center justify-center rounded-full transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 fine-pointer:size-8',
                 open && 'md:hidden'
               )}
             >
-              <Plus className="size-4" />
+              <Plus aria-hidden="true" className="size-4" />
               <span className="sr-only">{t('chat.sidebar.newChat')}</span>
             </button>
           </TooltipTrigger>

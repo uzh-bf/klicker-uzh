@@ -102,25 +102,68 @@ done
 # Run every routed app plus both Hatchet workers without Infisical. Devrouter
 # owns generic locking, process-group identity, and bounded replacement; this
 # repository owns only the application command and environment above.
-"$DEVROUTER_PROCESS_HELPER" ensure \
-  --name klicker-dev \
-  --match 'turbo run dev' \
-  --log /tmp/dev.log \
-  -- bash -lc '
-    # The helper has stopped any previous owned group before this command
-    # starts, so clearing the generated Manage route manifest is safe here.
-    for attempt in $(seq 1 30); do
-      rm -rf /workspaces/klicker-uzh/apps/frontend-manage/.next/dev || true
-      if [ ! -e /workspaces/klicker-uzh/apps/frontend-manage/.next/dev ]; then
-        break
-      fi
-      sleep 1
-    done
-    if [ -e /workspaces/klicker-uzh/apps/frontend-manage/.next/dev ]; then
-      echo "[post-start] WARN: Could not clear the generated Manage route manifest; continuing with the existing dev process." >&2
+start_managed_runtime() {
+  local runtime_fingerprint runtime_generation
+
+  runtime_fingerprint="$(bash ./util/dev-runtime.sh fingerprint)"
+  runtime_generation="$(bash ./util/dev-runtime.sh generation)"
+  "$DEVROUTER_PROCESS_HELPER" ensure \
+    --name klicker-dev \
+    --match 'turbo run dev' \
+    --log /tmp/dev.log \
+    -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
+    -- pnpm run dev:container
+}
+
+start_managed_runtime
+
+# Probe every Next app's readiness contract. 20 is the confirmed stale-route
+# signature from util/dev-runtime.sh; any other failure fails closed without
+# cache cleanup. Collect every stale app first so one managed restart repairs
+# them together instead of restarting once per app.
+STALE_NEXT_APPS=()
+run_readiness_pass() {
+  local app status=0
+
+  STALE_NEXT_APPS=()
+  for app in auth chat frontend-control frontend-manage frontend-pwa; do
+    status=0
+    bash ./util/dev-runtime.sh wait-app "$app" || status=$?
+    if [ "$status" -eq 20 ]; then
+      STALE_NEXT_APPS+=("$app")
+    elif [ "$status" -ne 0 ]; then
+      echo "[post-start] ERROR: $app failed semantic readiness; no cache cleanup was attempted." >&2
+      echo '[post-start] Inspect /tmp/dev.log for the application failure.' >&2
+      return "$status"
     fi
-    exec pnpm run dev:container
-  '
+  done
+
+  if [ "${#STALE_NEXT_APPS[@]}" -gt 0 ]; then
+    echo "[post-start] Confirmed stale Next.js route state: ${STALE_NEXT_APPS[*]}." >&2
+    return 20
+  fi
+  return 0
+}
+
+READINESS_STATUS=0
+run_readiness_pass || READINESS_STATUS=$?
+if [ "$READINESS_STATUS" -eq 20 ]; then
+  echo "[post-start] Repairing the confirmed stale .next caches once: ${STALE_NEXT_APPS[*]}."
+  for app in "${STALE_NEXT_APPS[@]}"; do
+    bash ./util/dev-runtime.sh request-repair "$app"
+  done
+  start_managed_runtime
+
+  READINESS_STATUS=0
+  run_readiness_pass || READINESS_STATUS=$?
+  if [ "$READINESS_STATUS" -ne 0 ]; then
+    echo '[post-start] ERROR: The runtime remained unhealthy after its one repair attempt.' >&2
+    echo '[post-start] Inspect /tmp/dev.log; no further cache cleanup was attempted.' >&2
+    exit 1
+  fi
+elif [ "$READINESS_STATUS" -ne 0 ]; then
+  exit 1
+fi
 
 # Next's development server compiles fallback dynamic routes on their first
 # request. Prime the Manage course routes before a browser can request them so
@@ -136,6 +179,7 @@ fi
 manage_probe_deadline=$((SECONDS + 60))
 manage_list_ready=false
 manage_course_ready=false
+manage_course_path="${APP_ORIGIN_MANAGE}/courses/__devrouter_warmup"
 probe_manage_route() {
   if ((${#MANAGE_CURL_CA[@]} > 0)); then
     curl "${MANAGE_CURL_CA[@]}" --location --silent --show-error \
@@ -156,7 +200,6 @@ while (( SECONDS < manage_probe_deadline )); do
     [[ "$manage_list_probe" =~ ^200\ [1-9][0-9]*$ ]] && manage_list_ready=true
   fi
   if [[ "$manage_course_ready" == false ]]; then
-    manage_course_path="${APP_ORIGIN_MANAGE}/courses/__devrouter_warmup"
     manage_course_probe=$(probe_manage_route "$manage_course_path")
     [[ "$manage_course_probe" =~ ^200\ [1-9][0-9]*$ ]] && manage_course_ready=true
   fi

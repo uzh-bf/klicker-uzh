@@ -32,6 +32,7 @@ retry() {
 
 echo "[post-create] Installing dependencies (pnpm)..."
 pnpm install --no-frozen-lockfile
+bash ./util/dev-runtime.sh stamp-dependencies
 
 # Build the workspace PACKAGES (graphql, prisma, util, markdown, transactional,
 # types, i18n, ...) the apps import — turbo orders them by their dep graph, and

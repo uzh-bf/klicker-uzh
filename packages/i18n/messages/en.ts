@@ -1609,7 +1609,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       reviewStatusUpdated: 'Review status updated successfully',
       reviewStatusUpdateFailed: 'Update of review status failed',
       openElementsInLibrary: 'Open elements in library',
-      batchOperations: 'Batch operations ({numActivities} activities)',
+      batchOperations:
+        'Batch operations ({numActivities, plural, =1 {1 activity} other {# activities}})',
       batchOperationsOnlyDraftScheduled:
         'Batch operations can only be performed on draft or scheduled activities.',
       batchOperationsActivities: 'Activities - Batch Operations',
@@ -1618,6 +1619,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modifyMultiplier: 'Modify multiplier',
       changeCourse: 'Change course assignment',
       modifyLiveQuizPoints: 'Adjust scoring (Live Quiz only)',
+      deleteSelectedActivities: 'Delete activities',
+      batchDeleteDescription:
+        'Permanently delete eligible activities. Deletion cannot be combined with other batch actions.',
       enableLiveQuizPointsModification:
         'Modify base, correctness and bonus points',
       bonusTime: 'Bonus time',
@@ -1625,6 +1629,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The time period during which bonus points are awarded must be at least 1 second. To not award any bonus points, set the bonus points to 0.',
       noActivitiesWillBeUpdated: 'No activities will be updated',
       nActivitiesWillBeUpdated: '{number} activities will be updated',
+      noActivitiesWillBeDeleted: 'No activities will be deleted',
+      nActivitiesWillBeDeleted:
+        '{number, plural, =1 {# activity will be deleted} other {# activities will be deleted}}',
+      nOfMActivitiesWillBeDeleted:
+        '{affected}/{total} activities will be deleted',
       activityContainsNoElements:
         'This {activity} does not contain any elements.',
       multiplierRequiresGamifiedAssessmentCourse:
@@ -1638,21 +1647,25 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
 <li>Changes to the multiplier are only possible for gamified activities or activities that are part of assessment courses. If a new course assignment is chosen as a batch operation in the same step, the gamification and assessment settings of that course will apply.</li>
 <li>Activities can generally be assigned to all ongoing and future courses. For microlearnings and group activities, only assignments where the availability interval of the activity is fully within the course duration are allowed.</li>
 <li>Base, correctness, and bonus points can only be defined and adjusted for live quizzes. If this option is activated, other activity types will not be updated.</li>
-<li>All adjustments require at least write permissions on the respective activities.</li>
+<li>All adjustments require at least write permissions on the respective activities. Permanent deletion requires admin access.</li>
 </ul>
       `,
       selectedActivitiesDescription:
-        'You have selected the following activities. All activities affected by the selected actions are marked. Hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed individually or require specific access rights (see tooltip). Carefully review the selected actions before applying them.',
+        'You have selected the following activities. All activities affected by the selected actions are marked. Hover over the icon for unaffected activities for more information. Please note: Some actions can only be performed individually or require specific access rights (see tooltip). Carefully review the selected actions before applying them.',
       batchInvalidStatus:
         'Only draft and scheduled activities can be adjusted via batch operations.',
       batchNeedEditorPermissions:
         'To adjust an activity via batch operations, you need at least write access.',
+      batchNeedManagerPermissions:
+        'To permanently delete an activity, you need admin access.',
       batchMultiplierRequiresGamificationOrAssessment:
         'A multiplier can only be set for gamified activities or activities in assessment courses, as points can only be collected in these courses.',
       batchGroupActivityRequiresGroupsEnabled:
         'Group activities can only be assigned to courses where group formation is enabled.',
       batchAssessmentRemovalAdminOnly:
         'Activities that are in assessment mode (assigned to an assessment course) can only be removed from it by administrators of the corresponding course.',
+      batchAssessmentDeletionAdminOnly:
+        'Assessment live quizzes can only be deleted by administrators of the corresponding assessment course.',
       batchActivityDatesOutsideCourse:
         'The availability interval of group activities and microlearnings must be fully within the course duration.',
       batchGroupActivityRequiresFinalizedGroups:
@@ -1666,6 +1679,27 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Only a part of your batch operation could be applied successfully. Please check the affected activities and your permissions.',
       batchOperationFailed:
         'An error occurred while applying the batch operation. Please check your permissions and try again.',
+      confirmBatchDeletionTitle: 'Delete selected activities',
+      confirmBatchDeletionMessage:
+        'You are about to permanently delete {number, plural, =1 {1 activity} other {# activities}}, including their associated participant data and results. This action cannot be undone.',
+      confirmBatchDeletionIrreversible:
+        'I understand that {number, plural, =1 {the activity and its associated data} other {all # activities and their associated data}} will be permanently deleted and cannot be restored.',
+      confirmBatchDeletionAcknowledge: 'Acknowledge',
+      confirmBatchDeletionSubmit: 'Delete activities',
+      batchDeletionProgress:
+        'Deletion in progress: {completed} of {total, plural, =1 {1 activity} other {# activities}} completed. Please keep this window open.',
+      batchDeletionRefreshFailed:
+        'Deletion finished, but the activity list could not be refreshed. Reload the list before continuing.',
+      batchDeletionNoEligibleActivities:
+        'No selected activities were eligible for deletion. The selection was reset; review the activity list before trying again.',
+      batchDeletionSuccess:
+        'The eligible selected activities were successfully deleted.',
+      batchDeletionPartialSuccess:
+        'Only some of the selected activities could be deleted. Please check the remaining activities and your permissions.',
+      batchDeletionUncertain:
+        'The result of some deletions could not be confirmed. Please check the activity list and refresh it if needed before trying again.',
+      batchDeletionFailed:
+        'The selected activities could not be deleted. Please check your permissions and try again.',
     },
     assessment: {
       assessmentResults: 'Assessment Results',
@@ -1800,13 +1834,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modalTitle: 'Support KlickerUZH',
       yourFeedback: 'Your Feedback',
       feedbackText:
-        'Do you have any feedback for us? Are you experiencing issues when using KlickerUZH? Please provide us with your feedback so we can continue to improve KlickerUZH for you.',
-      featureRequest: 'Feature Request',
-      featureRequestDesc: 'I would like to request a new feature.',
-      bugReport: 'Bug Report',
-      bugReportDesc: 'I would like to report a bug or issue.',
-      selfHosting: 'Self-Hosting',
-      selfHostingDesc: 'I have problems when self-hosting KlickerUZH.',
+        'What works well for you, and what should we improve? Share ideas, positive experiences, and problems on our public feedback platform. Please do not include personal or course data.',
+      feedbackDesc: 'Share ideas, positive experiences, and problems.',
       furtherResources: 'Further Resources',
       documentationDesc: 'Tutorials, feature documentation, and release notes',
       faq: 'FAQ',
@@ -1978,6 +2007,16 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       numSelected: '{count}/{total}',
       moveToArchive: 'Move to archive',
       restoreFromArchive: 'Restore from archive',
+      elementArchivedSuccessfully: 'The element was moved to the archive.',
+      elementRestoredSuccessfully: 'The element was restored from the archive.',
+      elementArchiveActionUnchanged:
+        'The element was already in the requested archive state.',
+      elementArchiveActionFailed:
+        'The archive state of the element could not be changed.',
+      elementArchiveActionUncertain:
+        'The archive state could not be confirmed. Please check the element list before trying again.',
+      elementArchiveRefreshFailed:
+        'The archive state could not be confirmed because the element list could not be refreshed. Reload the page to see the current state.',
       showFeedbacksExplanation: 'Show answer feedbacks & explanation',
       showExplanation: 'Show explanation',
       showFeedbacksExplanationTooltip:
