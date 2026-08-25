@@ -68,7 +68,7 @@ uncrowned regardless of Catalyst entitlement.
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/ux-review-question-library`.
 - Branch: `rs/question-library-activity-wizard-feedback`.
 - Current integrated base and merge-base:
-  `b8ce110513a65dc5f882f3adc3676a489cfdeb94` (the merged `origin/v3`
+  `2385ed7ffc05c7ef220f55a179f84b7fdfa20e8c` (the merged `origin/v3`
   head). The branch fully integrates that base; exact ahead/behind counts are
   intentionally omitted while local correction commits continue.
 - Historical/superseded evidence: old base
@@ -435,11 +435,10 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 - Status: W2 is locally complete through its authorized terminal condition.
   Implementation, checks, exact devrouter proof, independent review, evidence,
-  and non-destructive shutdown are complete. The current HEAD before this
-  review-disposition commit is
-  `3b0b2704f2fdb3d5d9f9bbbd36d6f03a121c477e`.
+  and non-destructive shutdown are complete through the local correction and
+  review-disposition commits.
 - Freshness: `origin/v3` at
-  `b8ce110513a65dc5f882f3adc3676a489cfdeb94` is fully integrated and is the
+  `2385ed7ffc05c7ef220f55a179f84b7fdfa20e8c` is fully integrated and is the
   current merge-base. Exact ahead/behind counts are not treated as durable
   Progress state while local correction commits continue.
 - Independent Sol integrated final review of HEAD `b4c5e516d` found one
@@ -677,6 +676,12 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   checks is therefore the intended identity guard; `O-live-quiz.spec.ts`
   remains unchanged. Focused frontend-manage type and Biome format checks plus
   `git diff --check` passed. Final review and CI completion are not claimed.
+- Fresh host fetch advanced `origin/v3` by exactly one deployment-only commit,
+  `2385ed7ffc05c7ef220f55a179f84b7fdfa20e8c` (`chore(deploy): promote
+  f51e96cb8e5a to stg [skip ci] (#5557)`). The normal no-rebase, no-force merge
+  reconciles its sole changed path, `deploy/env-uzh-stg/values.yaml`, without
+  conflicts or devrouter configuration changes. No new runtime, CI, review,
+  push, or PR-state completion is claimed.
 
 ### Historical execution evidence before final runtime proof
 
