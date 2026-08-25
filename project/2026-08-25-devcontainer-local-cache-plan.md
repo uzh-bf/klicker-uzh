@@ -185,6 +185,6 @@ critical-path coupling; delegation would cost more than the bounded edits.
   `project/_local/reviews/2026-08-25-devcontainer-cache-slice-2-simplifier.md`
   and `project/_local/reviews/2026-08-25-devcontainer-cache-slice-2-review.md`.
 - Active slice: Slice 3 lifecycle documentation.
-- Next: validate, format, and commit the wiki, skill, README, and log update.
+- Next: validate, format, and commit the wiki, skill, and README update.
 - Required delivery: committed local branch.
 - Achieved delivery: reviewed Slices 1 and 2.
