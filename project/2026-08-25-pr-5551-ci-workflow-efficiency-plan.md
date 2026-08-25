@@ -39,7 +39,7 @@
 - Target: `origin/v3` at squash merge
   `e4ef09e5bfc64a4019bace0b472630d5a21408c5`.
 - Pull request: #5551 was squash-merged externally before the planned cleanup;
-  follow-up draft PR pending.
+  follow-up draft PR #5553 contains the completed cutover.
 - Package: the intended single cutover was split by that external merge. The
   follow-up contains only the now-unblocked workflow deletions, documentation,
   and final evidence.
@@ -196,8 +196,8 @@ Do not delete a workflow if any readback differs from the expected set.
 
 ## Progress
 
-- Status: branch protection migrated; follow-up cleanup implemented and under
-  final verification on current `origin/v3`.
+- Status: follow-up draft PR #5553 is open with the cleanup and current
+  guidance; exact-head hosted checks are pending.
 - Completed: plan commit and post-commit freshness check; replacement workflow
   implementation; Actions audit, validation, and discovery; exact Node 24
   dependency builds; all four unit suites; Prettier and diff checks; and the
@@ -211,8 +211,8 @@ Do not delete a workflow if any readback differs from the expected set.
   build, and all four suites. PR #5551 was then squash-merged externally as
   `e4ef09e5b`. After explicit approval, branch protection was migrated and read
   back after each step with strict mode and app ID 15368 preserved.
-- Remaining: complete review and hosted verification, then open and update the
-  follow-up draft PR.
+- Remaining: confirm the required hosted checks on #5553's exact final head and
+  update its evidence. Ready transition and merge remain withheld.
 - Follow-up verification: the safe Actions audit, syntax validation, and job
   discovery pass with only `check`, `check-gitleaks`, and `test-unit` present for
   the consolidated scope. Prettier passes under the repository-pinned Node 24
@@ -221,5 +221,10 @@ Do not delete a workflow if any readback differs from the expected set.
   removed externally after #5551 merged, and the installed devrouter rejects
   the repository's current `profiles` configuration, so this cleanup uses the
   narrow pinned-toolchain fallback rather than modifying host tooling.
+- The full `pnpm run check:all` hook passes under Node 24 and pnpm 11.5 after
+  restoring dependencies from the unchanged frozen lockfile. The normal
+  pre-push build passes 23/23 tasks. The integrated final reviewer found no
+  change-introduced issue and confirmed that `test-unit` should not trigger on
+  changes to the composite changed-path action it no longer consumes.
 - Delivery boundary: ready transition, follow-up merge, deployment, and cleanup
   remain withheld.
