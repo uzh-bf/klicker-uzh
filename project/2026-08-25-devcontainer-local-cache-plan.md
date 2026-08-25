@@ -160,8 +160,8 @@ critical-path coupling; delegation would cost more than the bounded edits.
 
 ## Progress
 
-- Status: all three slices and the accepted final-review corrections are
-  committed; correction re-review is pending.
+- Status: complete. All three slices and accepted final-review corrections are
+  committed, verified, and reviewed.
 - Completed: remote `v3` freshness readback, clean task worktree, planner pass,
   plan commit `585f0c1b4`, shared pnpm-store commit `3355b0829`, mocked
   initializer success/idempotence/failure checks, shell syntax, ShellCheck on
@@ -192,6 +192,9 @@ critical-path coupling; delegation would cost more than the bounded edits.
   shell, Compose, and runtime tests pass. Installed devrouter 0.0.37 cannot
   parse the upstream `profiles` key; the already-built local devrouter 0.0.38
   checkout validates the rebased configuration with five passing checks.
+- Later upstream state: unrelated CI commit `b8ce11051` landed after the final
+  rebase and changes no reviewed path. The local branch is therefore one commit
+  behind current `origin/v3` without a content conflict.
 - Final-head runtime: exact commit `b381b01a1` started with the devrouter 0.0.38
   `full` profile. The external-store mount was exact, a commit-specific
   `.next/dev` marker survived a settled stop/start cycle, and all five
@@ -214,9 +217,9 @@ critical-path coupling; delegation would cost more than the bounded edits.
   two medium findings and one low finding were accepted: documentation now
   requires devrouter 0.0.38, final-head live proof is recorded above, and the
   source-format-dependent pnpm assertion was removed while executable argument
-  coverage remains in the focused runtime test.
-- Active gate: correction re-review.
-- Next: commit this evidence and run the focused correction re-review.
+  coverage remains in the focused runtime test. The focused correction
+  re-review returned `DONE` with no remaining findings.
+- Active gate: none.
+- Next: optional push and pull-request creation require separate user approval.
 - Required delivery: committed local branch.
-- Achieved delivery: all three implementation slices committed and slice-level
-  reviews complete.
+- Achieved delivery: complete, verified, reviewed local branch.
