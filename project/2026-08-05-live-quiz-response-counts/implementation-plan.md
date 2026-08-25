@@ -79,21 +79,24 @@ the new received counter. A missing processed counter falls back to the legacy
 processed-set cardinality as an opaque pre-cutover baseline.
 
 Risk: The compatibility bridge cannot make old workers increment the new
-processed counter. Deploy GraphQL before new ingress, drain old response
-processors before initializing processed counters, and run only the new
-processors after initialization. A post-write command failure retains the
-replay claim and requires reconciliation because retrying could duplicate a
-non-idempotent update; safe preflight and first-command failures remain
-retryable.
+processed counter. The current staging values roll the fifteen components as
+one promotion, so they cannot provide the required GraphQL-before-ingress and
+old-worker-drain ordering by themselves. Do not promote this cutover through
+the ordinary staging path until mixed-version workers are counter-compatible or
+an explicit rollout can deploy GraphQL first, drain old response processors,
+initialize the counters, and then run only the new processors. A post-write
+command failure retains the replay claim and requires reconciliation because
+retrying could duplicate a non-idempotent update; safe preflight and
+first-command failures remain retryable.
 
 Delegation Map:
 
-| Slice | Owner | Acceptance |
-|---|---|---|
-| Contract and compatibility amendment | main | This addendum, design, and async-worker documentation describe exact keys, legacy limitations, retention, and rollout order. |
-| Redis scripts and producer/processor adoption | main | Real Redis contract plus both focused processor suites pass; no source-token assertions remain. |
-| Cockpit readers and retention | main | GraphQL count test covers new counters, legacy bridge, scheduled nulls, and pipeline degradation; cleanup expires response keys with checked results. |
-| Integrated verification and review | main | Fresh repository checks, browser evidence or documented macOS blocker, required simplifier/slice/final reviews, and local commit. |
+| Slice                                         | Owner | Acceptance                                                                                                                                            |
+| --------------------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contract and compatibility amendment          | main  | This addendum, design, and async-worker documentation describe exact keys, legacy limitations, retention, and rollout order.                          |
+| Redis scripts and producer/processor adoption | main  | Real Redis contract plus both focused processor suites pass; no source-token assertions remain.                                                       |
+| Cockpit readers and retention                 | main  | GraphQL count test covers new counters, legacy bridge, scheduled nulls, and pipeline degradation; cleanup expires response keys with checked results. |
+| Integrated verification and review            | main  | Fresh repository checks, browser evidence or documented macOS blocker, required simplifier/slice/final reviews, and local commit.                     |
 
 Authority: The user approved the redesign and local implementation, tests,
 documentation, reviews, and commits, and requested that PR #5315 receive the
@@ -106,12 +109,12 @@ evidence, with deployment compatibility conditions recorded. Pause only for a
 new data-contract decision, unavailable required verification capability, or
 an authority boundary.
 
-Progress: Published to PR #5315 at head `6fecf0f022436b3a4fb3382ce58a255235a05c98`
-against `origin/v3` base `b924af4830dacc875cb69ee5c8ca5b6ffd261435`. The
+Progress: Published to PR #5315 at head `8c4e2163abc0527c3b430abbbb965f7507a6bbef`
+against `origin/v3` base `03ff51f041f1afcd5bc275ff9964457c136e9809`. The
 counter/replay redesign is formatted, typechecked, covered by four focused
-response-api tests plus worker/util/GraphQL tests, and verified against real
-Redis. Current-head CI and the exact-head final review remain the delivery
-gates.
+response-api tests, nine worker tests, and real-Redis util tests, and includes
+the refreshed base. Current-head CI and the exact-head final review remain the
+delivery gates; the mixed-version staging rollout remains explicitly withheld.
 
 This addendum supersedes the earlier set-cardinality details in Tasks 1–6;
 those sections remain as implementation history for the original package.

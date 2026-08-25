@@ -1,6 +1,6 @@
 # PR 5315 production-readiness evidence
 
-Date: 2026-08-24
+Date: 2026-08-25
 
 ## Scope
 
@@ -17,21 +17,23 @@ No remote merge, deployment, or production-data access was performed.
 ## Changes verified
 
 - Regular and assessment aggregation build Redis commands locally, then use one
-  atomic Lua script that claims a bounded replay identifier, applies the batch,
-  and increments the numeric processed counter only after every command
-  succeeds. Concurrent retries and lost replies therefore cannot apply a
-  successfully completed aggregation twice within the replay horizon; partial
-  command failures are surfaced for retry and reconciliation separately.
+  atomic Lua script that validates command targets before mutation, claims a
+  bounded replay identifier, applies the batch, and increments the numeric
+  processed counter only after every command succeeds. Concurrent retries and
+  lost replies therefore cannot apply a successfully completed aggregation
+  twice within the replay horizon. Preflight and first-command failures release
+  the claim and are retryable; a later failure retains the claim and returns
+  `reconciliation_required` so non-idempotent writes are not retried.
 - New ingress writes a numeric received counter. The legacy received set is
   read-only compatibility input, and the cockpit adds its cardinality while
   old response-api instances drain.
 - The processing script captures per-command Redis errors with `redis.pcall`.
-  Partial failures release the replay claim, return `aggregation_failed`, and
-  leave the processed counter unchanged because some commands may already have
-  applied. The worker throws so Hatchet retries instead of acknowledging a
-  response that may have been lost. A retry can repeat partial non-idempotent
-  updates, so this path remains visible for reconciliation. Connection-level
-  failures still throw so the worker can retry.
+  A failure before any aggregation command succeeds releases the replay claim,
+  returns `aggregation_failed`, and the worker throws so Hatchet can retry. A
+  later failure retains the claim, returns `reconciliation_required`, and the
+  worker acknowledges and logs the message for reconciliation instead of
+  retrying already-applied non-idempotent updates. Connection-level failures
+  still throw so the worker can retry.
 - Cockpit response-count resolution degrades all response counts to `null`
   when its count pipeline fails; the rest of the authorized cockpit query
   remains available.
@@ -40,7 +42,10 @@ No remote merge, deployment, or production-data access was performed.
   tracking keys, so late responses cannot recreate persistent tracking keys.
 - Deployment must publish GraphQL before new ingress and drain old processors
   before initializing processed counters. Old processors do not increment the
-  new processed counter.
+  new processed counter. The current staging values roll all fifteen
+  components together, so this ordering is a release gate rather than an
+  ordinary promotion behavior. Do not promote this cutover until mixed-version
+  workers are counter-compatible or an explicit rollout provides that order.
 - Cockpit status, participant, external-link, and response-count icons use fixed
   inline or flex boxes so their optical alignment is stable.
 - The response API records when received-response tracking is skipped because
@@ -49,31 +54,30 @@ No remote merge, deployment, or production-data access was performed.
 
 ## Local evidence
 
-| Check | Result |
-| --- | --- |
-| Response-processor typecheck | Passed |
-| Response-processor unit tests | 7 passed across regular and assessment processors, including atomic script calls, replay guards, partial-failure handling, and connection-level failure propagation |
-| Util tests | 53 passed in the default suite; the real Redis contract test passed separately with integration enabled |
-| GraphQL cockpit count tests | 2 passed; compatibility reads, scheduled nulls, and pipeline-failure degradation are covered |
-| Cockpit Redis fault-injection test | Passed; a failed count pipeline returned the cockpit with `null` response counts |
-| GraphQL code generation | Passed; generated output was unchanged |
-| GraphQL typecheck | Passed |
-| Response-api ingress tracking tests | Passed; 3 direct tests cover missing-instance skips, active-instance increments, and invalid tracking responses |
-| Syncpack check | Passed |
-| Repository build | Passed; 23 of 23 Turbo tasks succeeded |
-| Redis integration contract test | Passed with `LIVE_QUIZ_REDIS_INTEGRATION=true`; concurrent replay applied one result, counters stayed exact, claims and counters mirrored bounded TTLs, missing-info retention was one day, and partial command errors released the claim without incrementing the processed counter |
-| GraphQL code generation and repository build | Passed; generated output was unchanged and 23 of 23 Turbo build tasks succeeded |
-| Browser verification | The manage cockpit route passed locally with delegated lecturer login before the final icon patch; the seeded live quiz rendered its blocks and activation controls, and activating the first block completed the local active-block lifecycle. A post-patch icon capture was blocked by the local Chrome session. |
-| Diff whitespace check | Passed |
+| Check                                        | Result                                                                                                                                                                                                                                                                                                                                             |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Response-processor typecheck                 | Passed                                                                                                                                                                                                                                                                                                                                             |
+| Response-processor unit tests                | 9 passed across regular and assessment processors, including atomic script calls, replay guards, partial-failure handling, reconciliation acknowledgement, and connection-level failure propagation                                                                                                                                                |
+| Util tests                                   | 54 passed across the real-Redis integration suite, including command preflight, replay retention, and same-message partial-failure deduplication                                                                                                                                                                                                   |
+| GraphQL cockpit count tests                  | 2 passed; compatibility reads, scheduled nulls, and pipeline-failure degradation are covered                                                                                                                                                                                                                                                       |
+| Cockpit Redis fault-injection test           | Passed; a failed count pipeline returned the cockpit with `null` response counts                                                                                                                                                                                                                                                                   |
+| GraphQL code generation                      | Passed; generated output was unchanged                                                                                                                                                                                                                                                                                                             |
+| GraphQL typecheck                            | Passed                                                                                                                                                                                                                                                                                                                                             |
+| Response-api ingress tracking tests          | Passed; 4 direct tests cover missing-instance skips, active-instance increments, invalid tracking responses, and the current tracking contract                                                                                                                                                                                                     |
+| Syncpack check                               | Passed                                                                                                                                                                                                                                                                                                                                             |
+| Repository build                             | Passed; 23 of 23 Turbo tasks succeeded                                                                                                                                                                                                                                                                                                             |
+| Redis integration contract test              | Passed with `LIVE_QUIZ_REDIS_INTEGRATION=true`; concurrent replay applied one result, counters stayed exact, claims and counters mirrored bounded TTLs, missing-info retention was one day, first-command failures released the claim without incrementing the processed counter, and mixed partial failures retained the claim for reconciliation |
+| GraphQL code generation and repository build | Passed; generated output was unchanged and 23 of 23 Turbo build tasks succeeded                                                                                                                                                                                                                                                                    |
+| Browser verification                         | The manage cockpit route passed locally with delegated lecturer login. At 360×640 the corrected card measured 176px, the long element label wrapped, and the response-status pill remained a single 79.94px line with aligned icons. A separate desktop capture was blocked by the local Chrome MachPort permission error.                         |
+| Diff whitespace check                        | Passed                                                                                                                                                                                                                                                                                                                                             |
 
 The browser run used the direct local app-container address because the
 `devrouter ensure` lifecycle lock could not be acquired for this worktree.
 The manage cockpit rendered `Test Live Quiz 3` with its scheduled and active
-blocks and the live-quiz controls before the final icon patch. A fresh headed
-Chrome attempt after the patch terminated with macOS MachPort/Crashpad
-permission errors, so no post-patch visual claim is made. The focused Redis
-fault-injection test is the authoritative count-degradation evidence because
-the browser runtime was not used to alter shared Redis state.
+blocks and the live-quiz controls. The narrow post-patch capture verified the
+alignment change without altering shared Redis state. A separate headed
+desktop Chrome attempt terminated with macOS MachPort/Crashpad permission
+errors, so no desktop screenshot claim is made.
 
 ## Conditions and blockers
 
@@ -90,10 +94,10 @@ the browser runtime was not used to alter shared Redis state.
   heartbeat logger error (`this.logger[message.type] is not a function`). The
   modified processor tests and typecheck pass; this unrelated local runtime
   compatibility issue was not changed in this scope.
-- A final post-patch browser capture could not be completed because headed
-  Chrome terminated with macOS MachPort/Crashpad permission errors. The icon
-  alignment change is covered by the fixed-size layout boxes in the component,
-  but not by a fresh screenshot in this run.
+- A separate desktop post-patch browser capture could not be completed because
+  headed Chrome terminated with macOS MachPort/Crashpad permission errors. The
+  narrow 360×640 capture is the available visual evidence for the alignment
+  change.
 - No production or deployed Redis, worker, GraphQL, or browser-health evidence
   is claimed here. CI, reviewer approval, and the normal release/deployment
   gates remain required before production use.

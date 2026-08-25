@@ -3159,10 +3159,13 @@ test.describe.serial('Different live-quiz workflows', () => {
       { title: data.KPML.title, expected: 1 },
       { title: data.NR.title, expected: 0 },
     ]) {
-      const elementRow = page
+      const elementLink = page
         .getByRole('link', { name: title, exact: false })
-        .locator('xpath=..')
-      const counts = elementRow.getByTestId(/^live-quiz-response-counts-/)
+        .first()
+      const linkTestId = await elementLink.getAttribute('data-cy')
+      expect(linkTestId).toMatch(/^open-question-live-quiz-\d+$/)
+      const instanceId = linkTestId!.replace('open-question-live-quiz-', '')
+      const counts = page.getByTestId(`live-quiz-response-counts-${instanceId}`)
 
       const responseCountLabel = [
         messages.manage.cockpit.responsesReceived.replace(
