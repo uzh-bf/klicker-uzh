@@ -35,9 +35,13 @@ export const ParticipantAchievementInstance = builder.objectType(
 
       achievedAt: t.expose('achievedAt', { type: 'Date' }),
       achievedCount: t.exposeInt('achievedCount'),
-      receiptAcknowledgedAt: t.expose('receiptAcknowledgedAt', {
+      receiptAcknowledgedAt: t.field({
         type: 'Date',
         nullable: true,
+        resolve: (instance, _, ctx) =>
+          instance.participantId === ctx.user?.sub
+            ? instance.receiptAcknowledgedAt
+            : null,
       }),
 
       achievement: t.expose('achievement', {

@@ -842,6 +842,47 @@ export async function getPublicParticipantProfile(
   }
 }
 
+export async function acknowledgeAchievementReceipt(
+  { achievementInstanceId }: { achievementInstanceId: number },
+  ctx: ContextWithUser
+) {
+  const instance = await ctx.prisma.participantAchievementInstance.findUnique({
+    where: { id: achievementInstanceId },
+    select: {
+      participantId: true,
+      receiptAcknowledgedAt: true,
+    },
+  })
+
+  if (!instance || instance.participantId !== ctx.user.sub) return false
+  if (instance.receiptAcknowledgedAt !== null) return true
+
+  const updated = await ctx.prisma.participantAchievementInstance.updateMany({
+    where: {
+      id: achievementInstanceId,
+      participantId: ctx.user.sub,
+      receiptAcknowledgedAt: null,
+    },
+    data: { receiptAcknowledgedAt: new Date() },
+  })
+
+  if (updated.count > 0) return true
+
+  const acknowledgedInstance =
+    await ctx.prisma.participantAchievementInstance.findUnique({
+      where: { id: achievementInstanceId },
+      select: {
+        participantId: true,
+        receiptAcknowledgedAt: true,
+      },
+    })
+
+  return (
+    acknowledgedInstance?.participantId === ctx.user.sub &&
+    acknowledgedInstance.receiptAcknowledgedAt !== null
+  )
+}
+
 export async function getParticipantWithAchievements(ctx: ContextWithUser) {
   const participant = await ctx.prisma.participant.findUnique({
     where: { id: ctx.user.sub },

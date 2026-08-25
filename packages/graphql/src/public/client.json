@@ -1,4 +1,5 @@
 {
+   "AcknowledgeAchievementReceipt": "6040fa6ae080e1fcbba7bb08a35a77f0a8663534ebde18fe8e048c29c1e095ea",
    "ActivateParticipantAccount": "94be2b160d9ac7d21ef8d657fa0d7deeec9d0872ba31479df05e256c82e74789",
    "ActivateLiveQuizBlock": "f9afb1bf4afad2294ac2bc409acc96d253d47eb4d49d653a2fad07a27990135f",
    "AddActivityMessage": "95990f115954e0d8d38dd2eb80fff8dc136fbeffaff04b56d708a8cb2c15e126",
@@ -253,7 +254,7 @@
    "GetPracticeQuizSummary": "01dada3ea64ea21a809b325f22580d5f4857b150f719c7a3134709185a708cbf",
    "GetPreviousPointCorrections": "abb80f2fd05d51825939cf16578621328075e84eedf04bcc86e8994c0f98a18f",
    "GetPreviousStackEvaluation": "179a69cf889090027d3579581168954f5bf1c1cec2b5436ac1390717ff53b307",
-   "GetPublicParticipantProfile": "e82d90be7d5d0875220df3dca2afac6f67e365875637a6aec4f690d69a67d51e",
+   "GetPublicParticipantProfile": "fdbf93261e4c5e7a0857aa00f43462c4074d50da839e77b1fdbfdc33102fa824",
    "GetRunningLiveQuiz": "7d5324b6748a1a3009899d8d44be06dcf5d3f7260155f854599360a67652b20a",
    "GetShortnameQuizzes": "d7af38702df3fa265ccbefe9b2f133b67a27b462dcf28178c021cef21083c11f",
    "GetSingleAnswerCollection": "b586e9af280f888252c3549bf06d599addb7c0de0a9cd8c4aaca9ce746f069a0",
