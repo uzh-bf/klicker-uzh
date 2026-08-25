@@ -61,6 +61,7 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
           token: ${{ github.token }}
+          persist-credentials: false
 
       - name: Skip timing-only source changes
         id: source-gate
@@ -88,6 +89,12 @@ jobs:
             echo "::error::secrets.PLAYWRIGHT_TIMINGS_BOT_TOKEN is not set"
             exit 1
           fi
+
+      - name: Configure Git with the timing update token
+        if: steps.run-gate.outputs.should_run == 'true' && steps.source-gate.outputs.should_update == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.PLAYWRIGHT_TIMINGS_BOT_TOKEN }}
+        run: gh auth setup-git
 
       - name: Download compact shard results
         if: steps.run-gate.outputs.should_run == 'true' && steps.source-gate.outputs.should_update == 'true'
