@@ -97,6 +97,7 @@ export async function finalizeChatTurn(
 ): Promise<FinalizeChatTurnResult> {
   const finalizedAt = input.now ?? new Date()
   const monthStart = getZurichMonthStart(finalizedAt)
+  const duplicateMessageConstraint = Symbol('duplicate message constraint')
   const credits =
     input.rawCreditsUsed === null
       ? null
@@ -116,20 +117,25 @@ export async function finalizeChatTurn(
         throw new ChatTurnConflictError()
       }
 
-      await tx.chatMessage.create({
-        data: {
-          id: input.assistantMessageId,
-          threadId: input.threadId,
-          parentId: input.parentId,
-          role: 'assistant',
-          content: input.content,
-          chatMode: input.chatMode,
-          modelId: input.modelId,
-          reasoningEffort: input.reasoningEffort,
-          reasoningContent: input.reasoningContent,
-          creditsUsed: credits,
-        },
-      })
+      try {
+        await tx.chatMessage.create({
+          data: {
+            id: input.assistantMessageId,
+            threadId: input.threadId,
+            parentId: input.parentId,
+            role: 'assistant',
+            content: input.content,
+            chatMode: input.chatMode,
+            modelId: input.modelId,
+            reasoningEffort: input.reasoningEffort,
+            reasoningContent: input.reasoningContent,
+            creditsUsed: credits,
+          },
+        })
+      } catch (error) {
+        if (!isUniqueConstraintError(error)) throw error
+        throw duplicateMessageConstraint
+      }
 
       if (credits !== null) {
         const effectiveUsage = await getEffectiveChatAccountUsage(tx, {
@@ -173,7 +179,7 @@ export async function finalizeChatTurn(
       }
     })
   } catch (error) {
-    if (!isUniqueConstraintError(error)) {
+    if (error !== duplicateMessageConstraint) {
       throw error
     }
 
