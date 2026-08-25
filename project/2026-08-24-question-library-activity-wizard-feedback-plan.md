@@ -66,10 +66,11 @@ uncrowned regardless of Catalyst entitlement.
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/ux-review-question-library`.
 - Branch: `rs/question-library-activity-wizard-feedback`.
 - Current base:
-  `ae9bc7ea526b32cdc964057c00f1b1e8e7d045ee` (the ADR-0037-bearing branch
-  base). The latest fetched `origin/v3` is
-  `09257efb71027d478ed2c418fd007a60900b34ea`; its two newer deployment/release
-  commits do not overlap this package, and no rebase is authorized here.
+  `4d8d654b2c6e85b72fe89b4bfc68c7dd9f934c93` (the current rebased
+  ADR-0037-bearing branch base). The latest fetched `origin/v3` is
+  `1d19ad9efc6e7af57cff2b805255b4746de25c29`; its three newer CI,
+  deployment, and documentation commits do not overlap W2 paths. The clean
+  branch is 14 commits ahead and 3 behind; no third rebase was performed.
 - Historical/superseded evidence: old base
   `7ea45772be3b177978de52e3ede7c95e34cec0b1`; old plan commit
   `a1c9853312907c923127ce81664f06890dd35c6e`; obsolete S1 commit
@@ -169,9 +170,10 @@ lifecycle.
 - Upstream changes since the old audit base `ee5712399` include the accepted
   ADR-0037 standard-format contract; current origin/v3 does not gate these
   choices behind Catalyst.
-- Canonical exact-checkout HTTPS readiness failed with curl error 60.
-  Fancy-domain browser/E2E proof remains blocked; do not use localhost/fixed
-  ports or routing/configuration workarounds.
+- Historical canonical exact-checkout HTTPS readiness failed with curl error
+  60. The committed devrouter 0.0.37 consumer adaptation resolved the W2
+  readiness path, and exact-domain browser proof later passed without
+  localhost/fixed ports or routing/configuration workarounds.
 - Configured Gemini S1 reviewers failed before work with HTTP 402. Existing
   continuity reports cover only the superseded S1 and do not validate this
   replacement.
@@ -210,7 +212,7 @@ Historical planner provenance: original native planner task
 | Workstream | Slices | Owner | Dependency | Acceptance boundary |
 | --- | --- | --- | --- | --- |
 | Activity guidance | Replacement S1 | Ox Alpha, sole writer | committed corrected plan | Four visible descriptions/links, stable associations/hooks, enabled paths, no Catalyst signaling, and non-browser checks pass. |
-| Count and validation feedback | Replacement S2 | Ox Alpha, sole writer | accepted replacement S1 | Block and stack labels plus empty-block reason pass focused flow checks; browser proof remains gated. |
+| Count and validation feedback | Replacement S2 | Ox Alpha, sole writer | accepted replacement S1 | Block and stack labels plus empty-block reason pass focused static and exact-domain browser flow checks; repository Playwright execution remains environment-blocked. |
 | Durable convention | Replacement S3 | Ox Alpha, sole writer | accepted replacement S1 and S2 | `docs/frontend-conventions.md` validates and matches verified behavior. |
 | Reviews | replacement S1, S2, final | configured native specialists preferred; authorized Luna simplification and separate Sol correctness/risk/final alternates when unavailable | immutable commits | Read-only findings are verified and dispositioned independently of Ox Alpha; unavailable alternates or unresolved material findings stop progression. |
 
@@ -223,13 +225,13 @@ activity creation, Playwright coverage, and the same exact runtime.
 | --- | --- | --- | --- | --- |
 | All four choices explain the activity before entry | extend existing | `B-feature-access.spec.ts` | Enabled choices remain unexplained or rich links disappear. | Replacement S1 |
 | Choices preserve full access | extend existing | same spec | Any account sees disabled controls or Catalyst signaling. | Replacement S1 |
-| Choice help is visible, not hover-only, and not nested-interactive | static association assertions now; browser/accessibility proof remains blocked | composed choice region | Help becomes hover-only or interactive controls nest. | Replacement S1 |
+| Choice help is visible, not hover-only, and not nested-interactive | static association assertions and exact-domain browser/accessibility proof passed | composed choice region | Help becomes hover-only or interactive controls nest. | Replacement S1 |
 | Block labels select correct singular/plural | extend existing | `O-live-quiz.spec.ts` step-four journey | One element renders plural, or many containers render singular. | Replacement S2 |
 | Stack labels select correct singular/plural | extend existing | `P-microlearning.spec.ts` stack journey | Shared component's stack branch remains unverified and regresses. | Replacement S2 |
 | Selection actions have unique stable selectors | extend existing | block/stack action assertions | Tests select the wrong one of two semantically different buttons. | Replacement S2 |
 | Empty block explains disabled Create and recovers | extend existing | `O-live-quiz.spec.ts` existing empty-block state | Create stays opaque, reason persists after fill/delete, or validity changes. | Replacement S2 |
-| Shared wizard/library layout remains usable | browser regression when the gate is resolved | desktop and narrow view | New description height causes clipping, overlap, or intercepted controls. | Replacement S1/S2 |
-| Paired EN/DE copy and ICU syntax | five existing paired keys use ICU `one`/`other`; bilingual runtime rendering evidence remains blocked by unavailable exact routes | both message files | Missing locale key, malformed ICU, or locale-divergent meaning. | Replacement S1/S2 |
+| Shared wizard/library layout remains usable | exact-domain desktop and narrow browser evidence completed; existing later-step W8 fixed-width debt recorded separately | desktop and narrow view | New description height causes clipping, overlap, or intercepted controls. | Replacement S1/S2 |
+| Paired EN/DE copy and ICU syntax | five existing paired keys use ICU `one`/`other`; bilingual exact-domain rendering passed | both message files | Missing locale key, malformed ICU, or locale-divergent meaning. | Replacement S1/S2 |
 | Durable frontend convention | none | verified documentation only | No executable behavior introduced. | Replacement S3 |
 
 No new component-test layer is added. If extending the microlearning journey in
@@ -346,18 +348,17 @@ records verified behavior and introduces no executable risk.
 Runtime contract:
 
 - The official devrouter 0.0.37 consumer version pin and generated guidance are
-  the only authorized configuration changes. This prerequisite commit does not
-  start or stop the currently stopped exact runtime.
-- Subsequent canonical exact-checkout verification may use `devrouter ensure`
-  and exact-path `devrouter exec`, followed by a non-destructive exact
-  `devrouter stop`. Do not use bare DevPod/Docker lifecycle commands, manual
-  routes, localhost fixed ports, or another checkout's runtime.
+  the only authorized configuration changes. Canonical exact-checkout
+  verification and the final non-destructive exact stop are complete.
+- Verification used `devrouter ensure`, exact-path `devrouter exec`, and
+  `devrouter stop`. It did not use bare DevPod/Docker lifecycle commands,
+  manual routes, localhost fixed ports, or another checkout's runtime.
 - Browser validation uses only the fancy namespaced origins:
   `https://manage.klicker.rs-ux-review-question-library.localhost` and
   `https://api.klicker.rs-ux-review-question-library.localhost`.
-- Canonical exact-checkout HTTPS readiness failed with curl error 60, so
-  fancy-domain/browser proof remains blocked. Do not alter routing config or
-  claim browser/release readiness without it.
+- Historical canonical exact-checkout HTTPS readiness failed with curl error
+  60. The committed devrouter 0.0.37 adaptation resolved that readiness path;
+  the exact-domain browser matrix passed without routing changes.
 
 Browser evidence matrix:
 
@@ -375,8 +376,9 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 2. Manage and Playwright TypeScript checks through the exact container.
 3. Complete base-to-head diff accounting, staged secret/PII scan, and
    comment/diff-scope audit.
-4. Fancy-domain request evidence remains blocked because canonical
-   exact-checkout HTTPS readiness failed with curl error 60.
+4. Exact-domain readiness and browser evidence passed after the devrouter
+   0.0.37 consumer adaptation; the earlier curl error 60 remains historical
+   diagnostic evidence.
 
 ## Integrated review and delivery
 
@@ -391,9 +393,9 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   available; rerun every materially affected check. An unavailable Sol
   alternate or an unresolved material finding stops delivery.
 - Finalize plan `Progress` in a local commit and report commits, checks,
-  review disposition, blocked browser/runtime proof, and remaining withheld
-  actions. No push, PR, merge, deploy, cleanup, or deletion follows without
-  separate authority.
+  review disposition, browser/runtime evidence, and remaining withheld actions.
+  No push, PR, merge, deploy, cleanup, or deletion follows without separate
+  authority.
 
 ## Risks and stop conditions
 
@@ -404,9 +406,8 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   programmatic association need a new abstraction or dependency.
 - Shared `WizardNavigation` serves all activity types. Keep the new reason
   optional and prove unaffected callers compile and render unchanged.
-- ICU syntax errors can fail at runtime despite typechecking. Replacement S1
-  reuses existing catalogs unchanged; actual EN/DE rendering proof for S2
-  counts remains gated.
+- ICU syntax errors can fail at runtime despite typechecking. Exact-domain EN/DE
+  rendering proved the S2 count labels after the paired catalog changes.
 - If exact Ox Alpha execution becomes unavailable, stop. Do not silently use
   another provider for implementation.
 - If current upstream changes touch an owned seam before the first commit,
@@ -414,139 +415,99 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 ## Manual evidence expected at end
 
-- Command/result ledger for targeted non-container checks, diff hygiene, native
-  reviews when available, and unresolved fancy-domain/browser blockers.
+- Command/result ledger for targeted checks, diff hygiene, reviews, exact-domain
+  browser evidence, and the environment-blocked repository Playwright run.
 
 ## Progress
 
-- Status: replacement S1 through S3 and the bounded correction are committed
-  and statically verified. Final package readiness is blocked on exact-runtime
-  evidence; no verified code defect remains.
-- Current authority and prerequisite: the user explicitly authorized the
-  official devrouter 0.0.37 shared-readiness consumer adaptation and exact W2
-  revalidation. This commit pins 0.0.37 and refreshes only the official
-  generated guidance; it does not mutate runtime, routes, TLS, or certificates.
-- Completed: exact-base history rewrite to ADR-0037-bearing `origin/v3`;
-  corrected plan restored from the old plan commit and rebuilt without obsolete
-  Catalyst signaling requirements. No new worktree or runtime/routing change
-  occurred; the official 0.0.37 pin and generated guidance are the sole
-  consumer-configuration exception.
-- Historical freshness rebase: the then-authoritative `origin/v3` was
-  `ae9bc7ea526b32cdc964057c00f1b1e8e7d045ee`. Its only changes from the prior
-  base were `.github/workflows/check-ocr-review.yml` and
-  `project/2026-08-24-open-code-review-plan.md`, with no W2 overlap. Host
-  `git rebase --autostash origin/v3` completed without conflicts and reapplied
-  only this plan edit. Range-diff
-  `d8e964c28..5e59aa60 ae9bc7ea5..f574eb3dc` shows all six patches equivalent.
-  The plan-only review-disposition commit left the branch 7 ahead and 0 behind;
-  the current fetch found `origin/v3` at `09257efb7`, with only two newer,
-  non-overlapping deployment/release commits. This consumer commit began 12
-  ahead and 2 behind; no rebase, pull, or merge occurred.
-- Review gate: independent Luna simplification and separate Sol correctness/risk
-  re-reviews accepted rewritten replacement S1 range
-  `11c523c4e..ae8ed5a15` with zero remaining findings. The equivalent
-  pre-rebase range `cdebb6543..d052e445e` is retained only as review provenance.
-  The user's 2026-08-24 alternate-review authorization also covers S2 and
-  integrated final review when the configured native roles remain unavailable.
-- Current S1 evidence: four canonical rich descriptions with exact links added
-  below each standard creation button; each button uses `aria-describedby` to
-  its distinct `description-<data-cy>` region; all click paths remain enabled;
-  no Catalyst query/crown/status/disabled behavior or i18n change was added.
-  Upstream free-user open/cancel coverage was preserved and extended with
-  description/link/enabled/no-Catalyst-signaling assertions for free and
-  lecturer/Catalyst checks. Prettier, package-scoped Biome,
-  frontend-manage check, Playwright TypeScript check, and `git diff --check`
-  passed through the exact container.
-- Current S2 evidence: rewritten range `ae8ed5a15..f574eb3dc` contains the five
-  selection-count labels with paired EN/DE ICU `one`/`other` wording; the
-  one-container, one-container-per-element, and existing-container actions have
-  stable outcome-specific selectors; and the live-quiz Create action exposes
-  the existing empty-block reason through an adjacent, programmatically
-  associated description without changing validity or submission behavior.
-  Existing O live-quiz and P microlearning journeys protect singular/plural
-  labels, distinct outcomes, the zero-block exception, recovery, reappearance,
-  and unchanged Create enabled/disabled states.
-- S2 review disposition: Sol accepted the static implementation with no material
-  blocker and reported this stale Progress state as a P3 finding. Luna found no
-  implementation or simplification issue and blocked only because Progress
-  incorrectly called the S2 commit pending. This plan-only correction resolves
-  that workflow finding without changing the reviewed implementation. Luna and
-  Sol accepted the plan-only readback with no findings, so S2 is fully statically
-  accepted.
-- S2 checks: repository Biome formatting on the six owned source/locale files
-  passed with no fixes needed; Prettier write on the two owned specs passed;
-  `pnpm --filter @klicker-uzh/frontend-manage check` passed;
-  `pnpm --filter @klicker-uzh/playwright check` passed; focused Playwright
-  collection for `O-live-quiz.spec.ts` and `P-microlearning.spec.ts` passed with
-  146 tests listed; and `git diff --check` passed before those steps. Final
-  Prettier for both specs and this plan passed, followed by a fresh
-  `git diff --check`. Commit hooks and the staged scope, secret, credential, and
-  personal-data audit also passed. A separate Biome lint/check diagnostic
-  reported only existing findings on unchanged legacy lines in
-  `AddStackButton`, `PasteSelectionButton`, and `LiveQuizQuestionsStep`; no
-  unrelated line was changed or suppressed.
-- Exact runtime evidence: three canonical exact-checkout
-  `devrouter ensure . --json` attempts exited 1 during HTTP readiness. On the
-  third attempt, all nine probes (`api`, `auth`, `pwa`, `manage`, `control`,
-  `olat-api`, `response-api`, `lti`, and `chat`) failed identically with curl
-  error 60, `SSL certificate problem: out of memory`. The exact workspace was
-  `rs-ux-review-question-library`; internal manage at `localhost:3002` returned
-  200, but this is provider-process evidence only and not exact-domain browser
-  proof. The failed attempts rolled the exact routes back to zero.
-- Shared TLS diagnostics: `devrouter doctor` reported 0 errors and only
-  unrelated or static warnings. The 52,538-byte shared localhost certificate
-  had 755 DNS SANs and already contained the ten exact W2 hostnames, while the
-  global route state contained 458 running routes. SAN and route scale are a
-  plausible shared TLS cause, not a proven root cause.
-- Tight synthetic reproduction: a CA-validated 755-SAN certificate fails with
-  curl error 60 while OpenSSL accepts it; pinning the exact served leaf returns
-  HTTP 204. Devrouter 0.0.37 addresses that HTTPS readiness path. It does not
-  prune SANs: 295 SANs were stale relative to active routes, so append-only SAN
-  growth remains an unresolved concern rather than a claimed fixed cause.
-- Devrouter 0.0.37 static verification: installed and local repo versions both
-  resolved to 0.0.37 with no next upgrade target; `devrouter doctor --json` and
-  `devrouter repo devcontainer verify --json` passed without starting the
-  runtime. Repository Prettier and `git diff --check` passed for the owned
-  consumer and plan changes.
-- Post-adaptation slice review: the configured simplifier and slice-reviewer
-  failed before work with upstream HTTP 402. A Luna max generic-continuity
-  simplifier found no simplification, and a separate Luna max
-  generic-continuity correctness/TLS review accepted the adaptation subject
-  only to correcting the stale Skill routing authority above. This plan-only
-  correction resolves that finding; no code or configuration defect was found.
-- Runtime proof status: no fancy-domain browser matrix or focused B, O, or P
-  test ran. No localhost or fixed-port browser fallback and no manual route,
-  certificate, runtime, or configuration change, repair, or workaround
+- Status: replacement S1 through S3, the bounded correction, and the devrouter
+  0.0.37 consumer adaptation are committed and verified. The current HEAD
+  before this evidence commit is
+  `f98f320391779d7ffa9dc16b7f0edc9ca03825ec`.
+- Freshness: before this plan edit, the branch was clean and 14 commits ahead
+  and 3 behind `origin/v3`. The three newer upstream commits are limited to CI,
+  deployment, and documentation paths with no W2 overlap; no third rebase was
+  performed.
+- Current-base static verification passed sequentially: feature-flags build;
+  GraphQL build with warnings only; frontend-manage check; Playwright check; B,
+  O, and P collection with 154 tests in 3 files; Biome format for all 8 changed
+  non-Playwright TS/TSX/i18n files; Prettier for all 7 changed
+  Markdown/YAML/Playwright files; base-to-head `git diff --check`; and a clean
+  worktree before this evidence update.
+- Exact runtime readiness passed on the rebased HEAD: canonical `devrouter
+  ensure` resolved workspace `rs-ux-review-question-library` with 10 routes.
+  Three consecutive readiness rounds returned Manage 200, Auth 200, PWA 200,
+  and API 404. Turbo and the required Manage, Auth, API, and PWA processes were
+  present, with no new OOM, kill, or Turbo-failure evidence.
+- Final current-base exact-domain smoke passed through the exact Auth route with
+  the documented seeded local lecturer account at
+  `https://manage.klicker.rs-ux-review-question-library.localhost/`. EN and DE
+  each showed all four visible descriptions, enabled creation actions, exact
+  canonical use-case links opening in a new tab, matching
+  `aria-describedby` associations, and zero Catalyst text, links, hooks, or
+  crown icons. Ox visual readback found no apparent clipping or overlap at
+  1440x900.
+- Final screenshots are gitignored at
+  `project/_local/evidence/w2-runtime-2026-08-25/current-base-home-en-1440x900.png`
+  and
+  `project/_local/evidence/w2-runtime-2026-08-25/current-base-home-de-1440x900.png`.
+- Earlier exact-domain browser evidence on the equivalent implementation passed
+  the four-choice region in EN and DE at 1440x900 and 390x844. All four actions
+  remained enabled, explanation links were independent rather than nested, and
+  desktop keyboard order reached both creation controls and links correctly.
+- Live quiz EN and DE browser flows passed singular/plural labels, distinct
+  outcome actions, one-block-per-element placement, the empty-block disabled
+  reason and `aria-describedby` association, recovery after deleting the empty
+  block, and draft cancellation without submission.
+- Microlearning EN and DE browser flows passed singular/plural labels, distinct
+  existing-stack, new-stack, and one-stack-per-element outcomes, expected
+  placement/removal behavior, and draft cancellation without submission.
+- Narrow later-step checks exposed existing global/fixed-width W8 debt outside
+  the W2 choice-region scope: live-quiz blocks and microlearning stacks require
+  horizontal document scrolling, and the German global navigation overlaps.
+  This is recorded debt, not a W2 regression, a claimed W2-complete mobile
+  redesign, or a reason to weaken the passing choice-region evidence.
+- Focused repository B/O/P Playwright runtime execution remains locally blocked
+  because the exact container lacks a complete Chromium/headless-shell payload.
+  The producing attempt passed 1 cleanup test and had 7 browser-launch failures.
+  Subsequent repository-native installation attempts timed out and left partial
+  or corrupt browser artifacts without tracked source, package, or lockfile
+  changes. Exact agent-browser coverage supplies the completed user-path proof;
+  repository Playwright runtime success is not claimed.
+- Historical readiness failures are resolved for W2 by the committed devrouter
+  0.0.37 consumer adaptation: the prior CA-validated 755-SAN path failed with
+  curl error 60 while OpenSSL accepted it and an exact served-leaf pin returned
+  HTTP 204. Current exact namespaced domains work, and readiness preserves CA,
+  hostname, SNI, and HTTP-status checks against the served leaf without `-k`.
+  Append-only SAN growth remains unresolved, including the observed 295 stale
+  SANs; no manual route, TLS, certificate, or SAN change was made.
+- Final lifecycle is complete: canonical stop for the exact source reported
+  provider state `Stopped`, freed 10 routes, and left 0 exact W2 routes. No new
+  worktree and no manual Docker, DevPod, route, TLS, certificate, or lock edit
   occurred.
-- Final lifecycle evidence: the exact DevPod `rs-ux-review-question-library` was
-  canonically stopped and reported `Stopped`; the exact W2 route count was 0.
-- Current S3 evidence: the frontend conventions now record the verified
-  activity-creation guidance, count-label, outcome-selector, and recoverable
-  disabled-reason patterns with current symbol citations. Exact-container
-  Prettier, current-source symbol citation checks, the two-file scope audit, and
-  `git diff --check` passed.
-- Integrated review disposition: the independent Luna maintainability and Sol
-  final correctness/risk correction readbacks both reported no P0-P3 correction
-  findings and ACCEPTED the correction. Both found no verified code defect and
-  classify final package readiness as BLOCKED ON EXACT-RUNTIME EVIDENCE.
-- Post-runtime independent Sol final review found no verified code or package
-  defect. The exact-domain browser/Playwright gap remains a validation and
-  external-authority blocker. The review identified three stale lifecycle-lock
-  references, and this commit replaces them with the verified curl error 60
-  readiness evidence.
-- Final exact-checkout checks: Prettier passed for the B, O, and P specs,
-  `docs/frontend-conventions.md`, and this plan. Biome format passed for all 8
-  changed TS/TSX/i18n files with no fixes. The frontend-manage check and
-  Playwright check passed. Playwright collection for the B, O, and P specs
-  passed with 154 tests in 3 files; correction-specific B collection passed with
-  8 tests. Base-to-head `git diff --check`, commit hooks, staged scope, and
-  secret, credential, sensitive-URL, and personal-data audits passed.
-- Remaining: canonical exact ensure and exact-domain browser/E2E evidence under
-  the newly explicit authority. Broader manual route, TLS, certificate, or
-  SAN-pruning work remains withheld.
-- Withheld: push, PR or stack mutation, merge, deployment, live or secret writes,
-  cluster changes, cleanup, deletion, and publication claims.
-- Next action: with doctor/static verification complete, rerun canonical exact
-  ensure, execute the bilingual desktop, narrow, and keyboard fancy-domain
-  browser matrix plus the focused B, O, and P specs, record the evidence, then
-  stop and verify the exact runtime non-destructively.
+- Remaining work is only an independent integrated final review of
+  `origin/v3...HEAD` and recording its disposition. Push, PR or stack mutation,
+  merge, deploy, publication, cleanup, and deletion remain withheld.
+- Next action: run the independent integrated final review, then prepare a local
+  handoff. Do not push, open or update a PR, merge, deploy, or publish.
+
+### Historical execution evidence before final runtime proof
+
+- The ADR-0037 history rewrite, S1 through S3, and the bounded correction were
+  accepted by their independent Luna and Sol review passes. Configured native
+  review roles and later configured Gemini attempts failed before work with
+  upstream HTTP 402; the user-authorized alternate-review route supplied the
+  recorded independent dispositions without changing implementation ownership.
+- Before devrouter 0.0.37, three canonical exact-checkout ensures failed during
+  HTTPS readiness. The third attempt returned curl error 60 for all nine probes
+  even though internal Manage returned 200, and the failed ensure rolled the W2
+  routes back to zero. This is historical failure evidence, not current W2
+  readiness status.
+- Historical diagnostics found a 52,538-byte shared certificate with 755 DNS
+  SANs and 458 running routes. SAN/route scale was only a plausible cause. The
+  deterministic synthetic result and the 295 stale SAN count established the
+  readiness and append-only-growth concerns without proving one root cause.
+- Installed and repository devrouter 0.0.37 static checks passed before runtime
+  revalidation. The adaptation fixed the readiness probe path but did not claim
+  SAN pruning, and no manual route, TLS, certificate, or runtime workaround was
+  used.
