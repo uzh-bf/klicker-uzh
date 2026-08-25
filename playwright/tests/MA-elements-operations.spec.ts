@@ -1158,7 +1158,6 @@ test.describe('Create different types of elements (with and without sample solut
         data.update.liveQuiz2,
         data.update.liveQuiz3,
       ]) {
-        await page.getByTestId('activities-search-input').clear()
         await page.getByTestId('activities-search-input').fill(quiz)
         await page.keyboard.press('Enter')
         await Promise.all([

@@ -44,8 +44,9 @@ The response API attempts the received-counter increment before enqueueing a
 known instance. One Redis script checks the instance-info TTL and updates the
 counter and its retention atomically; an inactive instance returns without
 creating a tracking key. Tracking is best-effort: the Redis eval has a 250ms
-deadline, and a tracking failure or timeout is logged but does not reject or
-delay the participant response.
+deadline. Because the handler awaits this attempt before enqueueing, a slow
+tracking call can delay enqueueing and the request by up to 250ms; a tracking
+failure or timeout is logged and does not reject the participant response.
 The new
 `lq:<quiz-id>:i:<instance-id>:responses:processed:claims` sorted set is an
 age-trimmed replay claim for the response `messageId` or assessment

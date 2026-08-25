@@ -113,12 +113,12 @@ evidence, with deployment compatibility conditions recorded. Pause only for a
 new data-contract decision, unavailable required verification capability, or
 an authority boundary.
 
-Progress: Published to PR #5315 at head `8c4e2163abc0527c3b430abbbb965f7507a6bbef`
-against `origin/v3` base `03ff51f041f1afcd5bc275ff9964457c136e9809`. The
-counter/replay redesign is formatted, typechecked, covered by four focused
-response-api tests, nine worker tests, and real-Redis util tests, and includes
-the refreshed base. Current-head CI and the exact-head final review remain the
-delivery gates; the mixed-version staging rollout remains explicitly withheld.
+Progress: Published to PR #5315. The PR status and readiness report maintain
+the current branch head, base, CI, and exact-head review state. The
+counter/replay redesign is formatted, typechecked, covered by five focused
+response-api tests, nine worker tests, and real-Redis util tests. Current-head
+CI and the exact-head final review remain the delivery gates; the mixed-version
+staging rollout remains explicitly withheld.
 
 This addendum supersedes the earlier set-cardinality details in Tasks 1–6;
 those sections remain as implementation history for the original package.
