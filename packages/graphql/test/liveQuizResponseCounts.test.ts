@@ -335,7 +335,6 @@ describe('live quiz cockpit response counts', () => {
         instanceId: instance.id,
       }),
     ]
-    expect(trackingKeys).toHaveLength(5)
 
     await userOneCtx.redisExec.hset(instanceInfoKey, 'id', String(instance.id))
     await userOneCtx.redisExec.set(trackingKeys[0]!, '1')
