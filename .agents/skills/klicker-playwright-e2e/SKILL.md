@@ -35,6 +35,43 @@ rg -n "test\\(" playwright/tests
 
 ## Local Test Setup
 
+### Host-run against a running devrouter workspace (preferred)
+
+Playwright is a black-box driver: run it from the host against the devrouter
+routes. Browser binaries and node_modules come from shared host caches, so
+never download browsers into a DevPod.
+
+```bash
+# auto-detects routed worktrees / plain devcontainer / host-run apps
+bash util/run-host-e2e.sh --project=chromium tests/Y-kb-management-ux.spec.ts
+
+# inspect the resolved URL + database mapping without running anything
+bash util/run-host-e2e.sh --print
+
+# linked-workspace token override (long branch names can get truncated)
+E2E_WORKSPACE=<token> bash util/run-host-e2e.sh --project=chromium <spec>
+```
+
+The runner installs only the Playwright workspace dependencies on the host,
+builds `@klicker-uzh/prisma` and `@klicker-uzh/types` for global setup, maps
+the application URLs and seed database to the reachable runtime, and reuses
+the host browser cache. Headless runs install only the smaller Chromium shell;
+a headed run needs one full Chromium installation on the host.
+
+The seed database uses the workspace Postgres container's OrbStack host name.
+Node Postgres cannot negotiate libpq direct TLS through the Traefik database
+route; that route remains correct for psql and other libpq tooling.
+On another Docker runtime, pass `E2E_DATABASE_URL` for a disposable database
+that is reachable from the host.
+Container-local dependencies stay behind the routed applications. If a future
+browser journey needs direct access to another service, expose a host route for
+that service instead of running Playwright inside the DevPod.
+
+The existing global setup resets and reseeds the mapped database. Run the host
+runner only against a disposable local test runtime.
+
+### Legacy host-based stack
+
 Run from repo root. Use Volta when Node/pnpm versions are confusing.
 
 ```bash
