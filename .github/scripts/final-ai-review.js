@@ -8,14 +8,20 @@ const FINAL_REVIEW_MODEL = 'google/gemini-3.7-flash'
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 const PROMOTION_FILE = 'deploy/env-uzh-stg/values.yaml'
 const REPORT_LIMIT = 55_000
+const FINDING_CATEGORIES = new Set([
+  'bug',
+  'security',
+  'performance',
+  'maintainability',
+  'test',
+  'style',
+  'documentation',
+  'other',
+])
+const FINDING_SEVERITIES = new Set(['critical', 'high', 'medium', 'low'])
 
 function normalizeTitle(value, limit = 200) {
-  const withoutControls = Array.from(String(value ?? ''))
-    .map((character) => {
-      const codePoint = character.codePointAt(0)
-      return codePoint <= 0x1f || codePoint === 0x7f ? ' ' : character
-    })
-    .join('')
+  const withoutControls = String(value ?? '').replace(/[\p{Cc}\p{Cf}]/gu, ' ')
   const normalized = withoutControls.replace(/\s+/gu, ' ').trim()
 
   return Array.from(normalized).slice(0, limit).join('')
@@ -237,12 +243,26 @@ async function setCommitStatus({ github, context, sha, state, description }) {
 }
 
 async function getPermission(github, context, username) {
-  const response = await github.rest.repos.getCollaboratorPermissionLevel({
+  try {
+    const response = await github.rest.repos.getCollaboratorPermissionLevel({
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      username,
+    })
+    return response.data.user?.permission ?? response.data.permission ?? ''
+  } catch (error) {
+    if (error.status === 404) return ''
+    throw error
+  }
+}
+
+async function getPull(github, context, pullNumber) {
+  const response = await github.rest.pulls.get({
     owner: context.repo.owner,
     repo: context.repo.repo,
-    username,
+    pull_number: pullNumber,
   })
-  return response.data.user?.permission ?? response.data.permission ?? ''
+  return response.data
 }
 
 async function getFileText(github, context, filePath, ref) {
@@ -388,12 +408,7 @@ async function authorizeFinalReview({ github, context, core }) {
     return deny('The commenter does not have write permission')
   }
 
-  const response = await github.rest.pulls.get({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    pull_number: context.issue.number,
-  })
-  const pull = response.data
+  const pull = await getPull(github, context, context.issue.number)
   const repository = `${context.repo.owner}/${context.repo.repo}`
   const defaultBranch = context.payload.repository.default_branch
   if (
@@ -416,12 +431,15 @@ async function authorizeFinalReview({ github, context, core }) {
 }
 
 async function startFinalReview({ github, context, prNumber, headSha }) {
-  const response = await github.rest.pulls.get({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    pull_number: prNumber,
-  })
-  if (response.data.head.sha !== headSha) {
+  const pull = await getPull(github, context, prNumber)
+  const repository = `${context.repo.owner}/${context.repo.repo}`
+  if (
+    pull.head.sha !== headSha ||
+    pull.state !== 'open' ||
+    pull.draft ||
+    pull.base.ref !== context.payload.repository.default_branch ||
+    pull.base.repo.full_name !== repository
+  ) {
     throw new Error('PR head changed before the final review started')
   }
   await setCommitStatus({
@@ -444,17 +462,69 @@ function fencedBlock(value) {
   return `${fence}\n${value}\n${fence}`
 }
 
+function validateFinding(comment, index) {
+  if (!comment || typeof comment !== 'object' || Array.isArray(comment)) {
+    throw new Error(`Finding ${index + 1} is not an object`)
+  }
+
+  const filePath = String(comment.path ?? '')
+  if (
+    !filePath ||
+    filePath.length > 500 ||
+    path.isAbsolute(filePath) ||
+    filePath.split('/').includes('..') ||
+    /[\p{Cc}\p{Cf}`]/u.test(filePath)
+  ) {
+    throw new Error(`Finding ${index + 1} has an invalid repository path`)
+  }
+
+  const start = Number(comment.start_line)
+  const end = Number(comment.end_line)
+  if (
+    !Number.isSafeInteger(start) ||
+    !Number.isSafeInteger(end) ||
+    start < 1 ||
+    end < start
+  ) {
+    throw new Error(`Finding ${index + 1} has an invalid line range`)
+  }
+
+  const severity = String(comment.severity ?? '').toLowerCase()
+  const category = String(comment.category ?? '').toLowerCase()
+  if (!FINDING_SEVERITIES.has(severity)) {
+    throw new Error(`Finding ${index + 1} has an invalid severity`)
+  }
+  if (!FINDING_CATEGORIES.has(category)) {
+    throw new Error(`Finding ${index + 1} has an invalid category`)
+  }
+
+  const content = String(comment.content ?? '').trim()
+  const confidenceMatch = content.match(/\bConfidence:\s*(\d{1,3})\/100\b/i)
+  const confidence = Number(confidenceMatch?.[1])
+  const threshold = severity === 'critical' ? 50 : 75
+  if (!confidenceMatch || confidence < threshold || confidence > 100) {
+    throw new Error(`Finding ${index + 1} has an invalid confidence score`)
+  }
+  if (!/\bAutofix:\s*(mechanical|manual|not-applicable)\b/i.test(content)) {
+    throw new Error(`Finding ${index + 1} has no valid autofix class`)
+  }
+  if (!/\bMotivating line:\s*`[^`\r\n]+`/i.test(content)) {
+    throw new Error(`Finding ${index + 1} has no quoted motivating line`)
+  }
+
+  return { category, content, end, filePath, severity, start }
+}
+
 function findingBlock(comment, index) {
-  const severity = String(comment.severity || 'unknown').toUpperCase()
-  const category = String(comment.category || 'other')
-  const filePath = String(comment.path || 'unknown').replace(/`/g, '\\`')
-  const start = Number(comment.start_line) || 0
-  const end = Number(comment.end_line) || start
-  const lines = start > 0 ? (end > start ? `${start}-${end}` : `${start}`) : '?'
+  const { category, content, end, filePath, severity, start } = validateFinding(
+    comment,
+    index
+  )
+  const lines = end > start ? `${start}-${end}` : `${start}`
   const sections = [
-    `### ${index + 1}. ${severity} · ${category} · \`${filePath}:${lines}\``,
+    `### ${index + 1}. ${severity.toUpperCase()} · ${category} · \`${filePath}:${lines}\``,
     '',
-    String(comment.content || 'No finding description supplied.'),
+    fencedBlock(content),
   ]
 
   if (comment.suggestion_code) {
@@ -481,6 +551,9 @@ function renderFinalReviewChunks(result, headSha) {
   if (!Array.isArray(result.comments)) {
     throw new Error('OCR result has no comments array')
   }
+  if (!/^[0-9a-f]{40}$/.test(headSha)) {
+    throw new Error('Final review head is not a full commit SHA')
+  }
 
   const marker = `<!-- final-ai-review head=${headSha} model=${FINAL_REVIEW_MODEL} -->`
   const header = [
@@ -505,34 +578,22 @@ function renderFinalReviewChunks(result, headSha) {
       [
         '### Coverage warnings',
         '',
-        ...warnings.map((warning) => `- ${warning}`),
+        ...warnings.map(
+          (warning, index) => `${index + 1}.\n\n${fencedBlock(warning)}`
+        ),
       ].join('\n')
     )
   }
 
-  const chunks = []
-  let current = header
+  let report = header
   for (const block of blocks) {
-    if (block.length + header.length + 2 > REPORT_LIMIT) {
-      throw new Error(
-        'One final-review finding exceeds the GitHub report limit'
-      )
-    }
-    if (current.length + block.length + 2 > REPORT_LIMIT) {
-      chunks.push(current)
-      current = header
-    }
-    current += `${current.endsWith('\n\n') ? '' : '\n\n'}${block}`
+    report += `${report.endsWith('\n\n') ? '' : '\n\n'}${block}`
   }
-  chunks.push(current)
+  if (report.length > REPORT_LIMIT) {
+    throw new Error('Final-review report exceeds the GitHub report limit')
+  }
 
-  return chunks.map((chunk, index) => {
-    if (chunks.length === 1) return chunk
-    return chunk.replace(
-      '## Final AI review',
-      `## Final AI review · part ${index + 1}/${chunks.length}`
-    )
-  })
+  return [report]
 }
 
 async function publishFinalReview({
@@ -542,30 +603,22 @@ async function publishFinalReview({
   headSha,
   resultPath,
 }) {
-  const response = await github.rest.pulls.get({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    pull_number: prNumber,
-  })
-  if (response.data.head.sha !== headSha) {
+  const pull = await getPull(github, context, prNumber)
+  if (pull.head.sha !== headSha) {
     throw new Error('PR head changed before final-review publication')
   }
 
   const result = JSON.parse(fs.readFileSync(resultPath, 'utf8'))
-  const chunks = renderFinalReviewChunks(result, headSha)
-  const urls = []
-  for (const body of chunks) {
-    const review = await github.rest.pulls.createReview({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      pull_number: prNumber,
-      commit_id: headSha,
-      event: 'COMMENT',
-      body,
-    })
-    urls.push(review.data.html_url)
-  }
-  return urls
+  const [body] = renderFinalReviewChunks(result, headSha)
+  const review = await github.rest.pulls.createReview({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    pull_number: prNumber,
+    commit_id: headSha,
+    event: 'COMMENT',
+    body,
+  })
+  return review.data.html_url
 }
 
 function decideFinalStatus({
@@ -606,14 +659,10 @@ async function finalizeFinalReview({
   cleanupOutcome,
   publishOutcome,
 }) {
-  const response = await github.rest.pulls.get({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    pull_number: prNumber,
-  })
+  const pull = await getPull(github, context, prNumber)
   const status = decideFinalStatus({
     reviewedHead: headSha,
-    currentHead: response.data.head.sha,
+    currentHead: pull.head.sha,
     reviewOutcome,
     cleanupOutcome,
     publishOutcome,

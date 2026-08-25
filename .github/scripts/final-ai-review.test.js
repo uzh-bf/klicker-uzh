@@ -22,11 +22,13 @@ const {
 } = require('./final-ai-review.js')
 
 test('normalizes untrusted PR titles to 200 Unicode code points', () => {
-  const title = `  Ignore\n\u0000 instructions\t${'🙂'.repeat(210)}  `
+  const title = `  Ignore\n\u0000 \u202einstructions\u200b\t${'🙂'.repeat(210)}  `
   const normalized = normalizeTitle(title)
 
   assert.equal(normalized.includes('\n'), false)
   assert.equal(normalized.includes('\u0000'), false)
+  assert.equal(normalized.includes('\u202e'), false)
+  assert.equal(normalized.includes('\u200b'), false)
   assert.equal(Array.from(normalized).length, 200)
   assert.match(buildReviewBackground(title), /untrusted metadata/)
 })
@@ -69,7 +71,12 @@ test('renders findings without making finding count a failure', () => {
     comments: [
       {
         path: 'src/example.ts',
-        content: 'Confidence: 75/100. This can fail at runtime.',
+        content: [
+          'Confidence: 75/100',
+          'Autofix: manual',
+          'Motivating line: `return value`',
+          'This can fail at runtime.\n## Injected heading',
+        ].join('\n'),
         suggestion_code: 'return value ?? fallback',
         start_line: 10,
         end_line: 11,
@@ -83,6 +90,7 @@ test('renders findings without making finding count a failure', () => {
   assert.match(report, /Gemini 3\.7 Flash \(high reasoning\)/)
   assert.match(report, /src\/example\.ts:10-11/)
   assert.match(report, /Confidence: 75\/100/)
+  assert.match(report, /```[\s\S]*\n## Injected heading\n```/)
 })
 
 test('rejects incomplete or wrong-model OCR results', () => {
@@ -110,6 +118,53 @@ test('rejects incomplete or wrong-model OCR results', () => {
         'a'.repeat(40)
       ),
     /exhausted/
+  )
+  assert.throws(
+    () =>
+      renderFinalReviewChunks(
+        {
+          status: 'success',
+          llm: { model: FINAL_REVIEW_MODEL },
+          summary: { budget_exceeded: false },
+          comments: [
+            {
+              path: 'src/example.ts',
+              content: 'Missing the required evidence fields.',
+              start_line: 1,
+              end_line: 1,
+              category: 'bug',
+              severity: 'high',
+            },
+          ],
+        },
+        'a'.repeat(40)
+      ),
+    /confidence score/
+  )
+})
+
+test('rejects a report that would require partial publication', () => {
+  assert.throws(
+    () =>
+      renderFinalReviewChunks(
+        {
+          status: 'success',
+          llm: { model: FINAL_REVIEW_MODEL },
+          summary: { budget_exceeded: false },
+          comments: [
+            {
+              path: 'src/example.ts',
+              content: `Confidence: 75/100\nAutofix: manual\nMotivating line: \`return value\`\n${'x'.repeat(55_000)}`,
+              start_line: 1,
+              end_line: 1,
+              category: 'bug',
+              severity: 'high',
+            },
+          ],
+        },
+        'a'.repeat(40)
+      ),
+    /report limit/
   )
 })
 
