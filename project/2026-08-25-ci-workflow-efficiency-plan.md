@@ -191,8 +191,8 @@ Do not delete a workflow if any readback differs from the expected set.
 
 ## Progress
 
-- Status: slice 1 implemented, locally verified, and specialist-reviewed;
-  review correction pending commit.
+- Status: slice 1 implemented, locally verified, specialist-reviewed, and
+  corrected; ready to publish as a draft PR.
 - Completed: plan commit and post-commit freshness check; replacement workflow
   implementation; Actions audit, validation, and discovery; exact Node 24
   dependency builds; all four unit suites; Prettier and diff checks; and the
@@ -201,8 +201,7 @@ Do not delete a workflow if any readback differs from the expected set.
   compiler; this is unrelated to the workflow-only diff. The specialist review
   accepted the consolidation and identified one least-privilege gap: GraphQL's
   filter and status jobs now receive workflow-level `contents: read`.
-- Remaining: commit the review correction, push and open the draft PR, prove
-  replacement contexts, request settings authority, complete the cutover, and
-  run final review.
+- Remaining: push and open the draft PR, prove replacement contexts, request
+  settings authority, complete the cutover, and run final review.
 - Delivery boundary: branch-protection mutation, ready transition, merge,
   deployment, and cleanup remain withheld.
