@@ -102,6 +102,14 @@ test('acknowledges receipts only for self profiles and retries after failure', a
   await page.waitForTimeout(500)
   expect(acknowledgementRequests).toBe(2)
 
+  await loginStudentPassword('testuser49')
+  await expect(page.getByTestId('homepage')).toBeVisible()
+  await page.goto('/profile')
+  await expect(page.getByText('Receipt test achievement')).toBeVisible()
+  await expect(page.getByText(receiptNotice)).not.toBeVisible()
+  await page.waitForTimeout(500)
+  expect(acknowledgementRequests).toBe(2)
+
   await page.goto(`/course/${COURSE_ID_TEST}`)
   const publicParticipant = page
     .getByTestId('leaderboard-entry-testuser50')

@@ -36,6 +36,7 @@ function ReceivedAchievementTile({
 
     void acknowledgeAchievementReceipt({
       variables: { achievementInstanceId: instance.id },
+      context: { skipRetry: true },
     })
       .then(({ data }) => {
         if (data?.acknowledgeAchievementReceipt) {
