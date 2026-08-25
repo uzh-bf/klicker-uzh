@@ -334,6 +334,26 @@ test('rejects a forked member and a one-layer stack', async () => {
   assert.equal(oneLayer.valid, false)
 })
 
+test('fails closed on a member with missing identity fields', async () => {
+  const { github, pulls } = stackFixture()
+  const originalGet = github.rest.pulls.get
+  github.rest.pulls.get = async ({ pull_number }) => ({
+    data:
+      pull_number === 13
+        ? { ...pulls[pull_number], base: undefined }
+        : pulls[pull_number],
+  })
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  assert.equal(membership.valid, false)
+  assert.equal(membership.identityDigest, '')
+  assert.match(membership.reason, /open and ready/)
+  github.rest.pulls.get = originalGet
+})
+
 test('fails closed when a comparison reaches the GitHub file-list cap', async () => {
   const { files, github } = stackFixture()
   files.set(

@@ -213,6 +213,24 @@ async function resolveNativeStackMembership({
   }
 
   const numbers = stack.pull_requests.map((record) => record.number)
+  const identities = members.map(({ number, pull: memberPull }) => ({
+    base_ref: memberPull.base?.ref,
+    base_sha: memberPull.base?.sha,
+    head_ref: memberPull.head?.ref,
+    head_sha: memberPull.head?.sha,
+    number,
+  }))
+  const identityDigest =
+    members.length === stack.pull_requests.length &&
+    identities.every(
+      ({ base_ref, base_sha, head_ref, head_sha }) =>
+        typeof base_ref === 'string' &&
+        typeof head_ref === 'string' &&
+        /^[0-9a-f]{40}$/.test(base_sha ?? '') &&
+        /^[0-9a-f]{40}$/.test(head_sha ?? '')
+    )
+      ? sha256(JSON.stringify(identities))
+      : ''
   return {
     valid: reasons.length === 0,
     reason: reasons.join('; '),
@@ -221,17 +239,7 @@ async function resolveNativeStackMembership({
     ranges,
     numbers,
     orderDigest: sha256(JSON.stringify(numbers)),
-    identityDigest: sha256(
-      JSON.stringify(
-        members.map(({ number, pull: memberPull }) => ({
-          base_ref: memberPull.base.ref,
-          base_sha: memberPull.base.sha,
-          head_ref: memberPull.head.ref,
-          head_sha: memberPull.head.sha,
-          number,
-        }))
-      )
-    ),
+    identityDigest,
     position: numbers.indexOf(pullNumber),
     top,
   }
