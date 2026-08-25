@@ -87,6 +87,8 @@ The image does include the repository's development toolchain: pnpm `11.5.0`, uv
 
 `devrouter doctor --repo .` is the static check. `devrouter ensure .` is the runtime authority: it resolves the checkout-specific overlay and fails unless the actual container aliases, Git mount, managed process, and routes agree.
 
+The managed adapter adds a repository-owned semantic readiness guard. It fingerprints dependencies, keeps dependency changes from reusing stale Next.js dev output, and repairs confirmed stale `404` HTML responses once per startup. Unexpected responses fail closed without cache deletion. Run `pnpm run dev:doctor` for the read-only runtime diagnosis and `pnpm run test:dev-runtime` for the shell-level guard checks.
+
 ### Path B: Host-based Setup (Legacy)
 
 Runs all services on your host machine. Needs Traefik (`*.klicker.com` reverse proxy), mkcert, `/etc/hosts` configurations, and Infisical for secret injection.
