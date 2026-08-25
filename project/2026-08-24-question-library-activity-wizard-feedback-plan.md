@@ -29,10 +29,10 @@ uncrowned regardless of Catalyst entitlement.
 - Except for the official devrouter 0.0.38 consumer version pin and generated
   guidance prerequisite, do not change devrouter, devcontainer, local-origin,
   environment, application routes, or Turborepo routing configuration.
-- Draft PR #5546, normal branch pushes, and PR body updates are authorized and
-  complete workflow steps. PR merge, mark-ready, deployment, publication,
-  worktree cleanup, and branch, worktree, or runtime-data deletion remain
-  withheld.
+- Draft PR #5546 exists. Normal branch pushes and PR body updates are authorized,
+  but the latest reconciled and corrected commits remain local and their normal
+  push is pending. PR merge, mark-ready, deployment, publication, worktree
+  cleanup, and branch, worktree, or runtime-data deletion remain withheld.
 
 ## Execution contract
 
@@ -69,8 +69,8 @@ uncrowned regardless of Catalyst entitlement.
 - Branch: `rs/question-library-activity-wizard-feedback`.
 - Current integrated base and merge-base:
   `b8ce110513a65dc5f882f3adc3676a489cfdeb94` (the merged `origin/v3`
-  head). The clean branch is 24 commits ahead and has no commits behind
-  `origin/v3`.
+  head). The branch fully integrates that base; exact ahead/behind counts are
+  intentionally omitted while local correction commits continue.
 - Historical/superseded evidence: old base
   `7ea45772be3b177978de52e3ede7c95e34cec0b1`; old plan commit
   `a1c9853312907c923127ce81664f06890dd35c6e`; obsolete S1 commit
@@ -80,8 +80,10 @@ uncrowned regardless of Catalyst entitlement.
   `01a03490-059c-7381-adb8-91b77e89f5f9` accepted rebuilding S1 without
   Catalyst signaling because ADR-0037 makes the three formerly gated formats
   standard full-access capabilities.
-- Draft PR #5546 exists, and normal pushes are complete. PR merge, mark-ready,
-  deployment, publication, cleanup, and deletion remain withheld.
+- Draft PR #5546 exists. The latest reconciled and corrected commits remain
+  local; their normal push and the corresponding PR body update are authorized
+  but pending. PR merge, mark-ready, deployment, publication, cleanup, and
+  deletion remain withheld.
 - Authoritative roadmap:
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/question-library-feedback-recovery/project/2026-08-23-question-library-ux-audit-and-roadmap.md`
   on `rs/question-library-feedback-recovery` at `5d7c0284890db55a93da1cb66a1ca87ab03f2e0d`.
@@ -402,9 +404,10 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   alternate or an unresolved material finding stops delivery.
 - Finalize plan `Progress` in a local commit and report commits, checks,
   review disposition, browser/runtime evidence, and remaining withheld actions.
-  Draft PR #5546, normal branch pushes, and PR body updates are authorized and
-  complete. PR merge, mark-ready, deployment, publication, worktree cleanup,
-  and branch or worktree deletion remain withheld.
+  Draft PR #5546 exists; normal branch pushes and PR body updates are authorized
+  but pending for the latest local corrections. PR merge, mark-ready,
+  deployment, publication, worktree cleanup, and branch or worktree deletion
+  remain withheld.
 
 ## Risks and stop conditions
 
@@ -437,8 +440,8 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   `3b0b2704f2fdb3d5d9f9bbbd36d6f03a121c477e`.
 - Freshness: `origin/v3` at
   `b8ce110513a65dc5f882f3adc3676a489cfdeb94` is fully integrated and is the
-  current merge-base. Before this correction, the clean branch was 24 commits
-  ahead with no commits behind `origin/v3`.
+  current merge-base. Exact ahead/behind counts are not treated as durable
+  Progress state while local correction commits continue.
 - Independent Sol integrated final review of HEAD `b4c5e516d` found one
   actionable P3: the dynamically changing empty-block validation reason lacked
   a polite live region. All other package lenses were accepted, including W2
@@ -534,9 +537,10 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   `Stopped`; route state was absent; and the exact W2 route count was 0. No new
   worktree or manual Docker, DevPod, route, TLS, certificate, or lock edit
   occurred.
-- Delivery state: draft PR #5546 exists, and its separately authorized normal
-  branch pushes are complete. PR merge, mark-ready, deployment, publication,
-  cleanup, and deletion remain withheld.
+- Delivery state: draft PR #5546 exists, while the latest reconciled and
+  corrected commits remain local. Their normal push and the corresponding PR
+  body update are authorized but pending. PR merge, mark-ready, deployment,
+  publication, cleanup, and deletion remain withheld.
 - Final-review closure at `fb86b209a`: the prior committed Progress predates
   `b1d7b730a` and `fb86b209a`. `b1d7b730a` stabilized O/P activity-wizard
   selection coverage, and branch-owned CI Playwright shards 1 and 3 passed. The
@@ -645,6 +649,22 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   broad Biome check emitted only pre-existing advisory diagnostics, which remain
   out of scope. Push, PR state changes, merge, deployment, and worktree cleanup
   remain withheld.
+- The current OpenCodeReview guidance-link finding is verified and accepted:
+  all four new `target="_blank"` use-case anchors suppressed Biome's
+  `noBlankTarget` rule without declaring the expected opener protection. The
+  correction removes those suppressions, adds the exact
+  `rel="noopener noreferrer"` value to every guidance link, and extends the
+  focused B-spec helper to protect that contract. Focused Biome and Prettier,
+  frontend-manage and Playwright typechecks, B-spec Chromium collection with 8
+  tests, and `git diff --check` passed. CI and reviewer completion are not
+  claimed; resolving the review thread remains withheld.
+- The fresh Sol final-review finding is verified and accepted: draft PR #5546
+  remains at `f4d061e48`, while the latest reconciled and corrected commits are
+  still local, so current-state claims that normal pushes were complete and the
+  volatile exact branch commit count were stale. Current authority now records
+  the normal push and PR body update as authorized but pending and omits an exact
+  ahead/behind count. No new exact local head or CI result is claimed before
+  push.
 
 ### Historical execution evidence before final runtime proof
 

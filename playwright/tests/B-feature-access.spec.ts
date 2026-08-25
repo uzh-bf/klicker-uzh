@@ -56,6 +56,9 @@ async function expectStandardActivityChoiceGuidance(page: Page) {
     await expect(
       page.getByTestId(activity.description).getByRole('link')
     ).toHaveAttribute('target', '_blank')
+    await expect(
+      page.getByTestId(activity.description).getByRole('link')
+    ).toHaveAttribute('rel', 'noopener noreferrer')
     const describedBy = await page
       .getByTestId(activity.button)
       .getAttribute('aria-describedby')

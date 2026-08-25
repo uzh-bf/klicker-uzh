@@ -30,8 +30,8 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
           link: (chunks) => (
             <a
               href="https://www.klicker.uzh.ch/use_cases/live_quiz/"
-              // biome-ignore lint/security/noBlankTarget: Matches the canonical information-step link exactly.
               target="_blank"
+              rel="noopener noreferrer"
               className="underline"
             >
               {chunks}
@@ -50,8 +50,8 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
           link: (chunks) => (
             <a
               href="https://www.klicker.uzh.ch/use_cases/microlearning/"
-              // biome-ignore lint/security/noBlankTarget: Matches the canonical information-step link exactly.
               target="_blank"
+              rel="noopener noreferrer"
               className="underline"
             >
               {chunks}
@@ -70,8 +70,8 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
           link: (chunks) => (
             <a
               href="https://www.klicker.uzh.ch/use_cases/practice_quiz/"
-              // biome-ignore lint/security/noBlankTarget: Matches the canonical information-step link exactly.
               target="_blank"
+              rel="noopener noreferrer"
               className="underline"
             >
               {chunks}
@@ -90,8 +90,8 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
           link: (chunks) => (
             <a
               href="https://www.klicker.uzh.ch/use_cases/group_activity/"
-              // biome-ignore lint/security/noBlankTarget: Matches the canonical information-step link exactly.
               target="_blank"
+              rel="noopener noreferrer"
               className="underline"
             >
               {chunks}
