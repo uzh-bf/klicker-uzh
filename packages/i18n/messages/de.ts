@@ -3102,11 +3102,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte bestätigen Sie, dass der Block geschlossen werden soll. Ab diesem Zeitpunkt akzeptiert das System keine weiteren Antworten der Studierenden und die vollständige Auswertung (inkl. Musterlösung) kann eingesehen werden.',
     },
     evaluation: {
-      courseName: 'Kurs',
-      activityName: 'Aktivität',
       activityStatus: 'Aktivitätsstatus',
-      elementName: 'Element',
-      elementType: 'Elementtyp',
       linkActivityDetails: 'Aktivitätsdetails anzeigen',
       instanceScheduled: 'Element ist zur Durchführung geplant',
       instanceActive:

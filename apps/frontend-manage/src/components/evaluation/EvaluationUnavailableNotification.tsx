@@ -47,7 +47,7 @@ function EvaluationUnavailableNotification({
           {elementName && (
             <div>
               <span className="font-semibold">
-                {t('manage.evaluation.elementName')}
+                {t('shared.generic.element')}
               </span>
               : {elementName}
             </div>
@@ -55,7 +55,7 @@ function EvaluationUnavailableNotification({
           {formattedElementType && (
             <div>
               <span className="font-semibold">
-                {t('manage.evaluation.elementType')}
+                {t('manage.general.elementType')}
               </span>
               : {formattedElementType}
             </div>
@@ -82,7 +82,7 @@ function EvaluationUnavailableNotification({
           {activityName && (
             <div>
               <span className="font-semibold">
-                {t('manage.evaluation.activityName')}
+                {t('shared.generic.activity')}
               </span>
               : {activityName}
             </div>
@@ -99,7 +99,7 @@ function EvaluationUnavailableNotification({
           {courseName && (
             <div>
               <span className="font-semibold">
-                {t('manage.evaluation.courseName')}
+                {t('shared.generic.course')}
               </span>
               : {courseName}
             </div>
