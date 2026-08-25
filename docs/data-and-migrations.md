@@ -47,7 +47,7 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 - A **failed** hook aborts the whole sync — app Deployments never roll onto an unmigrated DB. The Job runs while the **previous** app version is still live, so migrations must be **backward-compatible (expand-contract)**; a destructive/renaming migration must be split across releases.
 - **Break-glass only:** `pnpm --filter @klicker-uzh/prisma prisma:deploy:prod` (Infisical `--env prd`) still applies migrations manually from a workstation. Use it only when the hook is unavailable; `prisma:resolve:prod` resolves a failed/partial migration.
 - **Scope:** the hook migrates only the database in the `…-secret-backend-graphql` Secret. The assessment stack binds a separate `…-secret-backend-assessment` Secret; if that points at a different database, it is **not** covered here and still needs the manual path. Both Secrets are provisioned outside this repo, so confirm in Infisical before assuming coverage.
-- **Bootstrap and rollback:** the tag coupling means a release tag with no matching migrator image renders an unpullable hook image, which fails the sync after `activeDeadlineSeconds`. No migrator image exists for any tag cut before this feature landed, so `migrator.enabled` stays `false` on prd until the env tags reach the first release whose CI built it — and rolling prd back to a pre-hook tag means setting it back to `false`. Stg is unaffected: its floating `v3` tag is rebuilt on every merge.
+- **Bootstrap and rollback:** the tag coupling means a release tag with no matching migrator image renders an unpullable hook image, which fails the sync after `activeDeadlineSeconds`. No migrator image exists for any tag cut before this feature landed, so `migrator.enabled` stays `false` on prd until the env tags reach the first release whose CI built it — and rolling prd back to a pre-hook tag means setting it back to `false`. Stg is unaffected: its selected floating source tag is rebuilt on every merge.
 
 Where `migrate deploy` is invoked in deployment is now the PreSync hook above (see [CI & Deployment → Deployment migrations](./ci-and-deployment.md#deployment-migrations)). Rationale and rejected alternatives: [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md).
 
@@ -55,9 +55,9 @@ Where `migrate deploy` is invoked in deployment is now the PreSync hook above (s
 
 A failed hook blocks **every** sync to that environment, by design. Recovery order:
 
-Nothing alerts on hook failure — detection is whoever is watching ArgoCD, so a blocked environment stays blocked silently until someone looks.
+Nothing alerts on hook failure — detection is whoever is watching ArgoCD, so a blocked environment stays blocked silently until someone looks. (The df-cloud staging Prometheus rules now provide early detection of stuck operations and failed syncs; see the linked solution doc below.)
 
-1. **Get the logs first.** Find the Job with `kubectl get jobs -n <ns> -l app.kubernetes.io/component=migrate` (it is named `<helm-release>-klicker-uzh-v2-migrate` unless the release name already contains the chart name), then `kubectl logs job/<name> -n <ns>` — the failed Job is kept (`hook-delete-policy: BeforeHookCreation,HookSucceeded`, no TTL), but the next sync deletes it. Treat the output as potentially containing row data from backfill migrations; scrub before pasting it anywhere.
+1. **Get the logs first.** Find the Job with `kubectl get jobs -n <ns> -l app.kubernetes.io/component=migrate` (it is named `<helm-release>-klicker-uzh-v2-migrate` unless the release name already contains the chart name), then `kubectl logs job/<name> -n <ns>` — with the default values, both successful and failed Jobs are kept until the next sync (`hook-delete-policy: BeforeHookCreation`, no TTL by default). Keeping successful jobs prevents an upstream ArgoCD finalizer race from deadlocking the sync (see the [df-cloud incident analysis](https://gitlab.uzh.ch/uzh-bf/cloud/df-cloud-klickeruzh/-/blob/stg/docs/solutions/integration/argocd-hook-job-finalizer-update.md)). Treat the output as potentially containing row data from backfill migrations; scrub before pasting it anywhere.
 2. **Classify the failure.** Image pull (`ImagePullBackOff` → the rendered tag has no migrator image, see bootstrap above); connection error (DB unreachable — `backoffLimit: 1` gives little retry, so a failover during the hook simply needs a re-sync); or a SQL error inside a migration.
 3. **A SQL failure leaves the DB partially migrated.** Prisma marks the migration failed and every later run stops with `P3009` until it is resolved. `prisma migrate resolve` only rewrites that bookkeeping — it does **not** undo DDL the failed migration already committed. Inspect the schema, undo the partial DDL by hand, then `prisma:resolve:prod` with `--rolled-back` (re-apply later) or `--applied` (you finished it manually).
 4. **Killed mid-migration is the same case.** The CLI ignores `SIGTERM`, so hitting `activeDeadlineSeconds: 600`, evicting the pod, or terminating the sync escalates to `SIGKILL` and leaves exactly the partial state above. An orphaned backend can also hold the advisory lock briefly; a later run then reports a connection-ish error that is really lock contention.
@@ -120,6 +120,68 @@ Points and badges are independent per row: `points` defaults to 0 and `awards` t
 Points earned inside Klicker (Swiss Quiz, microlearnings) are already on the leaderboard and are never part of these payloads — only externally-run activities are seeded. Awards that depend on in-platform behaviour are derived from the database rather than the workbook: `prepareMicrolearningAwards.ts` grants a round's `derivedAward` (Busy Bee, for Summer School) when the participant has a `QuestionResponse` for every `ElementInstance` of every non-deleted `MicroLearning` in the course. The derivation is frozen into the payload rather than recomputed at write time, so the payload hash still pins exactly what gets written.
 
 **Do not derive microlearning completion from `ParticipantActivityPerformance.completion`, `MicroLearning.completedCount`, or `startedCount`.** All three are empty for the Summer School 2026 course (zero rows, zero counters) even though responses exist, so they silently yield zero for every participant instead of failing. `QuestionResponse` is the reliable signal; cross-check the derived count against the workbook before seeding.
+
+### Dedicated demo participants
+
+The three lecturer-demo courses use dedicated manual participant accounts. The
+reconciler is idempotent: it creates the missing account, repairs only the
+dedicated account's active/private state, activates its matching leaderboard
+participation,
+and deactivates an active leaderboard participation in another course without
+deleting it.
+It never touches the shared `teststudent` account. Course and chatbot names are
+resolved under owner shortname `klick`; missing, archived, duplicated, or
+re-owned targets fail before any write.
+
+`Participation.isActive` is the course-leaderboard opt-in flag only. The
+reconciler's participation updates change leaderboard inclusion; they do not
+grant or revoke course, assessment, or chatbot access. Access remains governed
+by the endpoint-specific authorization and invitation/account rules, so a
+leaderboard change must never be presented as a security change.
+
+| Demo         | Course                  | Chatbot                     | Participant username  | Password secret name                             |
+| ------------ | ----------------------- | --------------------------- | --------------------- | ------------------------------------------------ |
+| IuW          | `testkurs IuW`          | `Informatik und Wirtschaft` | `teststudent-iuw`     | `KLICKER_DEMO_IUW_PARTICIPANT_PASSWORD`          |
+| RadioSurfVet | `testkurs RadioSurfVet` | `RadioSurfVet`              | `teststudent-rsv`     | `KLICKER_DEMO_RADIOSURFVET_PARTICIPANT_PASSWORD` |
+| Culture      | `Demo Course Copy`      | `Culture Scenario Lab`      | `teststudent-culture` | `KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD`      |
+
+Run this from the repository root with the PRD operator profile. The default
+mode and `--readback` are read-only; `--apply` is the sole write mode and
+requires all three password mappings. The operator injects `DATABASE_URL` and
+the password values only into this child process, so no `.env` file or shell
+history entry carries them:
+
+```bash
+rs-infisical-operator --profile klicker-prd run \
+  --map DATABASE_URL=DATABASE_URL \
+  -- pnpm --filter @klicker-uzh/prisma-data run seed:demo-participants
+
+rs-infisical-operator --profile klicker-prd run \
+  --map DATABASE_URL=DATABASE_URL \
+  -- pnpm --filter @klicker-uzh/prisma-data run seed:demo-participants --readback
+
+rs-infisical-operator --profile klicker-prd run \
+  --map DATABASE_URL=DATABASE_URL \
+  --map KLICKER_DEMO_IUW_PARTICIPANT_PASSWORD=KLICKER_DEMO_IUW_PARTICIPANT_PASSWORD \
+  --map KLICKER_DEMO_RADIOSURFVET_PARTICIPANT_PASSWORD=KLICKER_DEMO_RADIOSURFVET_PARTICIPANT_PASSWORD \
+  --map KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD=KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD \
+  -- pnpm --filter @klicker-uzh/prisma-data run seed:demo-participants --apply
+```
+
+The password names need exact read and write permission in that profile before
+the first run. Write permission is used only to create a missing random value
+with `rs-infisical-operator set-random --bytes 32`; do not rotate an existing
+value without a separate decision. Never print, copy, or read back the values.
+The script reports fixed target labels, status names, and booleans only. The
+apply transaction verifies active, private, manual accounts, matching active
+participations, password matches, and no active off-target participation before
+commit; run `--readback` afterward for the non-secret account and participation
+checks.
+
+These password variables are deliberately not added to `turbo.json` global
+environment inputs. Broad Turbo propagation would expose credentials to
+unrelated tasks, so invoke this maintenance script directly through the
+operator boundary.
 
 ## Typed Json fields
 

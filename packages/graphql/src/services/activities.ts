@@ -9,6 +9,33 @@ import generatePassword from 'generate-password'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
 
+export const UNPUBLISHED_ACTIVITY_STATUSES: DB.PublicationStatus[] = [
+  DB.PublicationStatus.DRAFT,
+  DB.PublicationStatus.SCHEDULED,
+]
+
+function isPrismaRecordNotFoundError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'P2025'
+  )
+}
+
+export async function deleteWithPublicationStatusGuard<T>(
+  deleteOperation: () => Promise<T>
+): Promise<T | null> {
+  try {
+    return await deleteOperation()
+  } catch (error) {
+    if (isPrismaRecordNotFoundError(error)) {
+      return null
+    }
+    throw error
+  }
+}
+
 export async function getUserActivitiesCourses(ctx: ContextWithUser) {
   const user = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },

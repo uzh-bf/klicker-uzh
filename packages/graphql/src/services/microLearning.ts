@@ -14,7 +14,11 @@ import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import { persistActivityWithPermissions } from './activities.js'
+import {
+  deleteWithPublicationStatusGuard,
+  persistActivityWithPermissions,
+  UNPUBLISHED_ACTIVITY_STATUSES,
+} from './activities.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -735,7 +739,10 @@ export async function getMicroLearningSummary(
 }
 
 export async function deleteMicroLearning(
-  { id }: { id: string },
+  {
+    id,
+    onlyIfUnpublished = false,
+  }: { id: string; onlyIfUnpublished?: boolean },
   ctx: ContextWithUser
 ) {
   const microLearning = await ctx.prisma.microLearning.findUnique({
@@ -747,14 +754,33 @@ export async function deleteMicroLearning(
     return null
   }
 
+  const isUnpublished = UNPUBLISHED_ACTIVITY_STATUSES.includes(
+    microLearning.status
+  )
+
+  if (onlyIfUnpublished && !isUnpublished) {
+    return null
+  }
+
   // if the microlearning is not published yet or has no responses -> hard deletion
   // anonymous results are ignored, since deleting them does not have an impage on data consistency
   if (
-    microLearning.status === DB.PublicationStatus.DRAFT ||
-    microLearning.status === DB.PublicationStatus.SCHEDULED ||
-    microLearning.responses.length === 0
+    isUnpublished ||
+    (!onlyIfUnpublished && microLearning.responses.length === 0)
   ) {
-    const deletedItem = await ctx.prisma.microLearning.delete({ where: { id } })
+    // Recheck publication status in the delete statement because the initial
+    // read can become stale while the user confirms the batch.
+    const deletedItem = onlyIfUnpublished
+      ? await deleteWithPublicationStatusGuard(() =>
+          ctx.prisma.microLearning.delete({
+            where: { id, status: { in: UNPUBLISHED_ACTIVITY_STATUSES } },
+          })
+        )
+      : await ctx.prisma.microLearning.delete({ where: { id } })
+
+    if (!deletedItem) {
+      return null
+    }
 
     // remove the scheduled publication task, if it exists (should only exist for scheduled microlearnings)
     if (

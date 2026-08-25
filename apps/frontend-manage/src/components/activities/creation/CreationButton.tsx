@@ -1,12 +1,10 @@
 import { IconDefinition } from '@fortawesome/free-regular-svg-icons'
-import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { Button, Tooltip } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 
 interface CreationButtonProps {
   comingSoon?: boolean
-  isCatalystRequired?: boolean
   icon: IconDefinition
   text: string
   onClick?: () => void
@@ -19,7 +17,6 @@ interface CreationButtonProps {
 
 function CreationButton({
   comingSoon,
-  isCatalystRequired,
   icon,
   text,
   onClick,
@@ -42,14 +39,6 @@ function CreationButton({
         <FontAwesomeIcon icon={icon} />
         <div>{text}</div>
       </div>
-      <div>
-        {isCatalystRequired && (
-          <FontAwesomeIcon
-            icon={faCrown}
-            className={comingSoon ? 'text-slate-400' : 'text-orange-400'}
-          />
-        )}
-      </div>
     </Button>
   )
 
@@ -57,27 +46,6 @@ function CreationButton({
     return (
       <Tooltip
         tooltip={t('shared.generic.comingSoon')}
-        className={{ tooltip: 'z-20' }}
-      >
-        {button}
-      </Tooltip>
-    )
-  }
-
-  if (isCatalystRequired && disabled) {
-    return (
-      <Tooltip
-        tooltip={t.rich('manage.general.catalystRequired', {
-          link: () => (
-            <a
-              target="_blank"
-              href="https://www.klicker.uzh.ch/catalyst"
-              className="underline"
-            >
-              www.klicker.uzh.ch/catalyst
-            </a>
-          ),
-        })}
         className={{ tooltip: 'z-20' }}
       >
         {button}

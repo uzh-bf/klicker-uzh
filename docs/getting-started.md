@@ -57,20 +57,9 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
      3. Those namespaced hosts only work because `allowedDevOrigins` in `packages/next-config/index.js` is `['**.localhost']` in development (and `undefined` in production) — Next's implicit `*.localhost` matches a single label only. If that glob ever stops covering a worktree host, the symptom is an app that serves HTML but never hydrates, with no obvious error.
 3. **Logs:** The dev servers auto-start inside the container. View logs via `devrouter exec . -- tail -f /tmp/dev.log`.
 
-For OpenRouter-backed Chat, inject the shared prototyping key when starting the
-workspace; never write it into the repository:
-
-```bash
-infisical run \
-  --projectId f855faee-8a7f-4615-86a8-dbe7ae7c7d30 \
-  -- sh -c 'UPSTREAM_OPENAI_API_KEY="$OPENROUTER_API_KEY" UPSTREAM_OPENAI_BASE_URL=https://openrouter.ai/api/v1 devrouter ensure .'
-```
-
-The local LiteLLM Auto V2 router sends classification, semantic embedding, and
-answer requests through that same external upstream. Use seeded or synthetic
-content. If the workspace was already started without the variables, stop it
-before rerunning the command because `ensure` does not replace a running
-container's environment.
+For OpenRouter-backed Chat, follow the host-side `rs-infisical-operator`
+workflow in [AGENTS.md](../AGENTS.md). Use only seeded or synthetic content;
+do not copy credentials into the repository or use raw Infisical injection.
 
 `post-start.sh` keeps Klicker's environment and origin setup local. Host-side `devrouter ensure` delivers its matching process helper to the exact validated container, then invokes the adapter. Released devrouter `0.0.35` records its owned process group and fingerprints the workspace, command, adapter bytes, and declared non-secret origin environment in `/tmp/devrouter-process-klicker-dev.state`; an exact repeat is idempotent, stale owned groups are replaced boundedly, and unknown processes are never killed.
 
@@ -81,6 +70,24 @@ The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.35`. 
 The image does include the repository's development toolchain: pnpm `11.5.0`, uv `0.11.12`, and the Python 3.12 selection used by analytics CI. This keeps `pnpm run check:all` reproducible inside the container.
 
 `devrouter doctor --repo .` is the static check. `devrouter ensure .` is the runtime authority: it resolves the checkout-specific overlay and fails unless the actual container aliases, Git mount, managed process, and routes agree.
+
+Klicker's runtime guard adds semantic readiness for every Next app. It
+fingerprints the dependency graph, checked-out commit, Next.js route structure,
+and app configuration. A true managed start removes each Next app's `.next/dev`
+output, including the persistent Turbopack development cache, while a changed
+dependency fingerprint refreshes the persistent `node_modules` volume with a
+frozen install. Unauthenticated Chat must answer `401 application/json` on a
+nested API route; the shell pages of auth, PWA, manage, and control must answer
+`2xx` HTML or a redirect. Repeated `404 text/html` responses on such known-existing
+routes identify stale route-table state and trigger one full `.next` cleanup
+for the affected apps plus one managed restart. Any other stable response fails
+without deleting caches, so data-driven 404s stay application failures.
+
+Run the read-only semantic check inside the exact workspace:
+
+```bash
+devrouter exec . -- pnpm run dev:doctor
+```
 
 ### Path B: Host-based Setup (Legacy)
 
@@ -97,13 +104,14 @@ Order matters: on a fresh clone, `pnpm run check` fails in ~19 packages until `p
 
 ## Failure signatures (fresh clone / wrong state)
 
-| Exact error                                                                     | Cause                                                                                    | Fix                                                            |
-| ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `sh: run-p: command not found` + `husky - pre-commit script failed`             | `node_modules` missing                                                                   | `pnpm install` (pnpm 11)                                       |
-| `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`                                    | pnpm 11 found `node_modules` from another pnpm major; headless shell can't confirm purge | `pnpm install --config.confirmModulesPurge=false`              |
-| `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` … `"overrides" configuration doesn't match` | `CI=true` forces frozen install after a wrong-major pnpm rewrote the lockfile            | `git checkout pnpm-lock.yaml`, non-frozen install with pnpm 11 |
-| `Bind for :::5432 failed: port is already allocated`                            | another stack holds the host port (also seen on 6379, 7077/8888, 80/443)                 | `lsof -nP -iTCP:5432 -sTCP:LISTEN`, stop the other stack       |
-| ~19 packages fail `pnpm run check` on fresh clone                               | generated artifacts missing                                                              | `pnpm run build` once, then check                              |
+| Exact error                                                                                                                   | Cause                                                                                    | Fix                                                               |
+| ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `sh: run-p: command not found` + `husky - pre-commit script failed`                                                           | `node_modules` missing                                                                   | `pnpm install` (pnpm 11)                                          |
+| `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`                                                                                  | pnpm 11 found `node_modules` from another pnpm major; headless shell can't confirm purge | `pnpm install --config.confirmModulesPurge=false`                 |
+| `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` … `"overrides" configuration doesn't match`                                               | `CI=true` forces frozen install after a wrong-major pnpm rewrote the lockfile            | `git checkout pnpm-lock.yaml`, non-frozen install with pnpm 11    |
+| `Bind for :::5432 failed: port is already allocated`                                                                          | another stack holds the host port (also seen on 6379, 7077/8888, 80/443)                 | `lsof -nP -iTCP:5432 -sTCP:LISTEN`, stop the other stack          |
+| ~19 packages fail `pnpm run check` on fresh clone                                                                             | generated artifacts missing                                                              | `pnpm run build` once, then check                                 |
+| A known page or nested API route answers HTML 404 although it exists in the checked-out branch (for example Chat's chat list) | stale Next.js development route state                                                    | `devrouter ensure .`; it verifies and repairs this signature once |
 
 ## Infrastructure (Docker Compose)
 

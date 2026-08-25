@@ -1,0 +1,35 @@
+name: AI code review (OpenCodeReview)
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+# The action checks out only the trusted base and reads PR-head objects for the diff.
+# Do not add checkout, build, test, install, or execution steps for PR-head content here.
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  ocr-review:
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Run OpenCodeReview
+        uses: alibaba/open-code-review@66120291271b2e605e420e9f11fbd6448f06163f # v1.9.10
+        with:
+          llm_url: https://openrouter.ai/api/v1/chat/completions
+          llm_auth_token: ${{ secrets.OPENROUTER_API_KEY }}
+          llm_model: deepseek/deepseek-v4-flash-0731
+          background: ${{ github.event.pull_request.title }}
+          llm_use_anthropic: 'false'
+          ocr_version: '1.9.10'
+          sticky_summary: 'true'
+          incremental: 'true'
+          route_severity_below: 'low'
+          upload_artifacts: 'false'
