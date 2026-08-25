@@ -137,6 +137,7 @@ jobs:
             apps/olat-api/dist
             apps/response-api/dist
             packages/export/dist
+            packages/feature-flags/dist
             packages/grading/dist
             packages/graphql/dist
             packages/hatchet/dist
