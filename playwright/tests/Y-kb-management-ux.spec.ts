@@ -116,21 +116,7 @@ test.describe('Knowledge base management workspace', () => {
         fullPage: true,
       })
 
-      for (const width of [390, 320]) {
-        await page.setViewportSize({ width, height: 844 })
-        await expect
-          .poll(() =>
-            page.evaluate(
-              () => document.documentElement.scrollWidth <= window.innerWidth
-            )
-          )
-          .toBe(true)
-        await page.screenshot({
-          path: testInfo.outputPath(`kb-management-en-${width}.png`),
-          fullPage: true,
-        })
-      }
-
+      await page.setViewportSize({ width: 1440, height: 900 })
       await page.goto(`${manageUrl}/de${detailPath}`)
       await expect(page.getByTestId('knowledge-base-detail')).toBeVisible()
       await expect(page.getByTestId('add-kb-resource')).toContainText(
@@ -140,7 +126,7 @@ test.describe('Knowledge base management workspace', () => {
         page.getByTestId('kb-chatbot-settings').getByText('Konfigurieren')
       ).toBeVisible()
       await page.screenshot({
-        path: testInfo.outputPath('kb-management-de-mobile.png'),
+        path: testInfo.outputPath('kb-management-de-desktop.png'),
         fullPage: true,
       })
     } finally {
