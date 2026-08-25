@@ -2340,6 +2340,9 @@ test.describe.serial('Different live-quiz workflows', () => {
     await expectByAssertion(page.getByTestId('next-or-submit'), 'be.disabled')
     await expect(
       page.getByTestId('activity-creation-disabled-reason')
+    ).toHaveAttribute('aria-live', 'polite')
+    await expect(
+      page.getByTestId('activity-creation-disabled-reason')
     ).toHaveText(messages.manage.activityWizard.minOneElementPerBlock)
     await expect(page.getByTestId('next-or-submit')).toHaveAttribute(
       'aria-describedby',
@@ -2352,7 +2355,10 @@ test.describe.serial('Different live-quiz workflows', () => {
     )
     await expect(
       page.getByTestId('activity-creation-disabled-reason')
-    ).toHaveCount(0)
+    ).toHaveCount(1)
+    await expect(
+      page.getByTestId('activity-creation-disabled-reason')
+    ).toBeEmpty()
     await expect(page.getByTestId('next-or-submit')).not.toHaveAttribute(
       'aria-describedby'
     )
@@ -2375,7 +2381,10 @@ test.describe.serial('Different live-quiz workflows', () => {
     )
     await expect(
       page.getByTestId('activity-creation-disabled-reason')
-    ).toHaveCount(0)
+    ).toHaveCount(1)
+    await expect(
+      page.getByTestId('activity-creation-disabled-reason')
+    ).toBeEmpty()
     await expect(page.getByTestId('next-or-submit')).not.toHaveAttribute(
       'aria-describedby'
     )
@@ -2395,7 +2404,13 @@ test.describe.serial('Different live-quiz workflows', () => {
     )
     await expect(
       page.getByTestId('activity-creation-disabled-reason')
-    ).toHaveCount(0)
+    ).toHaveCount(1)
+    await expect(
+      page.getByTestId('activity-creation-disabled-reason')
+    ).toBeEmpty()
+    await expect(page.getByTestId('next-or-submit')).not.toHaveAttribute(
+      'aria-describedby'
+    )
     await page.getByTestId('move-block-1-left').click()
     await expectByAssertion(page.getByTestId('element-0-block-0'), 'exist')
     await expectByAssertion(
