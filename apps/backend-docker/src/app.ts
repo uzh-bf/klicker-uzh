@@ -1,4 +1,6 @@
 // import { useSentry } from '@envelop/sentry'
+
+import { createRequire } from 'node:module'
 import { EnvelopArmor } from '@escape.tech/graphql-armor'
 import { useCSRFPrevention } from '@graphql-yoga/plugin-csrf-prevention'
 import { usePersistedOperations } from '@graphql-yoga/plugin-persisted-operations'
@@ -9,7 +11,6 @@ import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express from 'express'
 import { createYoga } from 'graphql-yoga'
-import { createRequire } from 'node:module'
 import { registerKBHttpRoutes } from './kbHttpRoutes.js'
 
 const require = createRequire(import.meta.url)
@@ -24,6 +25,7 @@ function prepareApp({
   emitter,
   hatchet,
   tasks,
+  featureFlags,
 }: any) {
   const armor = new EnvelopArmor({
     maxDepth: {
@@ -174,6 +176,7 @@ function prepareApp({
       emitter,
       hatchet,
       tasks,
+      featureFlags,
     }),
     logging: true,
     cors: false,
@@ -181,7 +184,7 @@ function prepareApp({
     graphqlEndpoint: '/api/graphql',
   })
 
-  app.use('/healthz', function (req, res) {
+  app.use('/healthz', (req, res) => {
     res.send('OK')
   })
 

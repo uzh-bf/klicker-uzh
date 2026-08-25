@@ -51,7 +51,11 @@ function ManageFeatureFlagProvider({
   )
 
   return (
-    <FeatureFlagProvider config={config} attributes={attributes}>
+    <FeatureFlagProvider
+      config={config}
+      attributes={attributes}
+      attributesReady={skipUserProfile || Boolean(userId)}
+    >
       {children}
     </FeatureFlagProvider>
   )

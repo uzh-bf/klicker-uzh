@@ -16,6 +16,7 @@ import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { ManageAssistantWidget } from '../components/assistant/ManageAssistantWidget'
 import { CourseDuplicationProvider } from '../components/courses/CourseDuplicationStatusProvider'
+import LearningAnalyticsRouteGuard from '../components/featureFlags/LearningAnalyticsRouteGuard'
 import ManageFeatureFlagProvider from '../components/featureFlags/ManageFeatureFlagProvider'
 import '../globals.css'
 import { useApollo } from '../lib/apollo'
@@ -29,7 +30,7 @@ const MATOMO_URL = process.env.NEXT_PUBLIC_MATOMO_URL
 const MATOMO_SITE_ID = process.env.NEXT_PUBLIC_MATOMO_SITE_ID
 
 function App({ Component, pageProps }: AppProps) {
-  const { locale } = useRouter()
+  const { locale, pathname } = useRouter()
 
   const apolloClient = useApollo(pageProps)
 
@@ -61,7 +62,13 @@ function App({ Component, pageProps }: AppProps) {
             <DndProvider backend={HTML5Backend}>
               <CourseDuplicationProvider>
                 <Toaster closeButton position="top-right" />
-                <Component {...pageProps} />
+                {pathname.startsWith('/analytics') ? (
+                  <LearningAnalyticsRouteGuard>
+                    <Component {...pageProps} />
+                  </LearningAnalyticsRouteGuard>
+                ) : (
+                  <Component {...pageProps} />
+                )}
                 {/* Mounted here rather than in Layout so that navigating between
                     Manage pages does not tear down the assistant and reload its
                     iframe mid-conversation. */}

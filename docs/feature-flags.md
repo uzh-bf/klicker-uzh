@@ -38,10 +38,10 @@ settlement are unaffected.
 
 ## Active flags
 
-| Key                  | Consumer           | Fallback | Disabled behavior                                    |
-| -------------------- | ------------------ | -------- | ---------------------------------------------------- |
-| `ai-beta`            | Lecturer AI        | `false`  | AI surfaces and their endpoints remain unavailable   |
-| `learning-analytics` | Lecturer UI/Manage | `false`  | Analytics controls remain visible but are not usable |
+| Key                  | Consumer             | Fallback | Disabled behavior                                                |
+| -------------------- | -------------------- | -------- | ---------------------------------------------------------------- |
+| `ai-beta`            | Lecturer AI          | `false`  | AI surfaces and their endpoints remain unavailable               |
+| `learning-analytics` | Manage + GraphQL API | `false`  | Controls are inert, routes unavailable, analytics data forbidden |
 
 Disabled analytics controls explain that the feature is not yet available for
 the current account. This keeps a deliberately staged rollout distinguishable
@@ -50,6 +50,9 @@ from a broken control without implying that lecturers can enable it themselves.
 Manage mounts the browser provider at the application root with anonymous
 attributes, then updates it after `QUserProfile` resolves to target the
 authenticated lecturer by stable `User.id`, role, actor type, and environment.
+It does not expose the provider as ready until that authenticated identity is
+available, so an initially anonymous evaluation cannot unlock a protected
+route.
 This keeps full-screen routes such as activity evaluations inside the provider.
 Public live-quiz evaluation links with an HMAC stay anonymous and skip the
 profile lookup so Apollo's Unauthorized handler cannot redirect them to login.
@@ -57,9 +60,13 @@ The former `User.publicPreview` field is no longer selected by that operation
 and is not authoritative for learning analytics. The Prisma and public GraphQL
 fields remain available for other consumers and a later cleanup.
 
-Direct analytics routes remain reachable to authenticated lecturers. The flag
-controls product affordances, not authorization; routes and APIs continue to
-enforce their own access rules.
+All five `/analytics` pages wait for browser initialization and the current
+user attributes before mounting their page queries. A false or unavailable
+flag renders the translated unavailable explanation instead. The GraphQL API
+independently requires the same flag at every analytics-data service entry
+point, in addition to its existing course/activity `READ` permission. This
+makes direct URLs and direct GraphQL requests fail closed; browser evaluation
+is only the user-experience layer and is never trusted as the data boundary.
 
 ## Package contract
 
@@ -124,11 +131,15 @@ It must also pass
 The app owns environment-variable registration in `turbo.json`; the shared
 package itself reads no process environment. Mount the provider above every
 flag consumer, and memoize the attribute object. If identity loads
-asynchronously, start with `actorType: 'anonymous'` and apply the authenticated
-attributes when they become available:
+asynchronously, start with `actorType: 'anonymous'`, keep `attributesReady`
+false, and apply the authenticated attributes before marking them ready:
 
 ```tsx
-<FeatureFlagProvider config={browserConfig} attributes={attributes}>
+<FeatureFlagProvider
+  config={browserConfig}
+  attributes={attributes}
+  attributesReady={identityReady}
+>
   <App />
 </FeatureFlagProvider>
 ```
@@ -200,7 +211,12 @@ to distinguish staging from production because both normally run with
 `NODE_ENV=production`. An adopting service must register `GROWTHBOOK_ENV` in
 `turbo.json`.
 
-The v3 chart makes the Kubernetes-deployed Node workloads configuration-ready:
+The primary backend GraphQL process initializes this client during startup and
+injects it into both HTTP and WebSocket contexts. Startup continues after a
+missing configuration or unsuccessful initialization, but analytics-data
+resolvers return `FORBIDDEN` until `learning-analytics` evaluates true for the
+authenticated user. The v3 chart makes the Kubernetes-deployed Node workloads
+configuration-ready:
 
 - `GROWTHBOOK_ENV` comes from `global.deploymentEnvironment`; the checked-in
   environment values set it to `staging` or `production`.
@@ -291,6 +307,10 @@ hidden and nothing else changes.
   unusable cache stays on the false fallback.
 - `initialize()` reports whether the SDK loaded successfully; application
   startup must not depend on a true result.
+- A backend-enforced flag must be configured in both the browser and backend
+  environments with equivalent definitions and targeting attributes. If the
+  two evaluations disagree, the backend result is authoritative and access is
+  denied.
 - Feature definitions and targeting rules are managed in GrowthBook. Ordinary
   SDK evaluation never uses the optional management API key; only a future,
   explicitly authorized control-plane integration may do so.

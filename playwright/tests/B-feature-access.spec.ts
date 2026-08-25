@@ -6,6 +6,7 @@ import {
   prepareSeededAnalyticsActivities,
   updateLecturerPrivatePreview,
 } from '../util/fixtures/manage.js'
+import { COURSE_ID_TEST, SEEDED_COURSE, URL_MANAGE } from '../util/constants.js'
 
 test('CLEANUP', cleanupTest)
 
@@ -127,5 +128,47 @@ test.describe('Tests the availability of standard activity creation formats', ()
       learningAnalytics: false,
       privatePreview: false,
     })
+  })
+
+  test('Blocks direct analytics navigation without feature access', async ({
+    page,
+    loginLecturer,
+  }) => {
+    let analyticsQueryRequested = false
+    page.on('request', (request) => {
+      if (
+        request.method() === 'POST' &&
+        request.postData()?.includes('GetCourseActivityAnalytics')
+      ) {
+        analyticsQueryRequested = true
+      }
+    })
+
+    await mockGrowthBookLearningAnalytics(page, false)
+    await loginLecturer()
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await page.goto(`${manageUrl}/analytics/${COURSE_ID_TEST}/activity`)
+
+    await expect(
+      page.getByTestId('learning-analytics-access-denied')
+    ).toBeVisible()
+    expect(analyticsQueryRequested).toBe(false)
+  })
+
+  test('Allows direct analytics navigation with feature access', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await mockGrowthBookLearningAnalytics(page, true)
+    await loginLecturer()
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await page.goto(`${manageUrl}/analytics`)
+
+    await expect(
+      page.getByTestId(`analytics-course-label-${SEEDED_COURSE}`)
+    ).toBeVisible()
+    await expect(
+      page.getByTestId('learning-analytics-access-denied')
+    ).not.toBeAttached()
   })
 })
