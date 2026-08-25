@@ -61,12 +61,8 @@ function ActivityBatchOperationsModal({
   }, [])
 
   useEffect(() => {
-    if (
-      deletionConfirmationOpen &&
-      !deleting &&
-      selectedActivities.length === 0
-    ) {
-      setDeletionConfirmationOpen(false)
+    if (!deleting && selectedActivities.length === 0) {
+      if (deletionConfirmationOpen) setDeletionConfirmationOpen(false)
       onClose()
     }
   }, [deletionConfirmationOpen, deleting, onClose, selectedActivities.length])
@@ -421,7 +417,11 @@ function ActivityBatchOperationsModal({
       }
 
       setDeleting(false)
-      if (allActivitiesDeleted) onClose()
+      if (allActivitiesDeleted) {
+        onClose()
+      } else {
+        setDeletionConfirmationOpen(false)
+      }
     } catch (error) {
       console.error(error)
       if (!isMountedRef.current) return
