@@ -306,6 +306,68 @@ test('accepts flat native stack head SHA records', async () => {
   assert.equal(membership.topHeadSha, 'f'.repeat(40))
 })
 
+test('rejects a native top record whose head differs from the fetched PR', async () => {
+  const { github } = stackFixture()
+  const heads = {
+    11: 'c'.repeat(40),
+    12: 'd'.repeat(40),
+    13: 'e'.repeat(40),
+    14: '0'.repeat(40),
+  }
+  github.request = async () => ({
+    data: [
+      {
+        id: 95,
+        pull_requests: [11, 12, 13, 14].map((number) => ({
+          number,
+          state: 'open',
+          draft: false,
+          head: { sha: heads[number] },
+        })),
+      },
+    ],
+  })
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  assert.equal(membership.valid, false)
+  assert.match(membership.reason, /stack member 14/)
+  assert.equal(membership.topHeadSha, '0'.repeat(40))
+})
+
+test('rejects a native lower-layer record whose head differs from the fetched PR', async () => {
+  const { github } = stackFixture()
+  const heads = {
+    11: 'c'.repeat(40),
+    12: '0'.repeat(40),
+    13: 'e'.repeat(40),
+    14: 'f'.repeat(40),
+  }
+  github.request = async () => ({
+    data: [
+      {
+        id: 94,
+        pull_requests: [11, 12, 13, 14].map((number) => ({
+          number,
+          state: 'open',
+          draft: false,
+          head: { sha: heads[number] },
+        })),
+      },
+    ],
+  })
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  assert.equal(membership.valid, false)
+  assert.match(membership.reason, /stack member 12/)
+  assert.equal(membership.topHeadSha, 'f'.repeat(40))
+})
+
 test('rejects a native stack record with a malformed head SHA', async () => {
   const { github } = stackFixture()
   github.request = async () => ({

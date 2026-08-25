@@ -164,6 +164,7 @@ async function resolveNativeStackMembership({
       memberPull.state !== 'open' ||
       memberPull.draft ||
       !pullIdentityIsValid(memberPull, repository, record.number) ||
+      stackRecordHeadSha(record) !== memberPull.head?.sha ||
       record.state !== memberPull.state ||
       record.draft !== memberPull.draft
     ) {
@@ -261,7 +262,7 @@ async function resolveNativeStackMembership({
     orderDigest: sha256(JSON.stringify(numbers)),
     identityDigest,
     position: numbers.indexOf(pullNumber),
-    topHeadSha: top?.head?.sha ?? stackRecordHeadSha(topRecord),
+    topHeadSha: stackRecordHeadSha(topRecord),
     topNumber,
     top,
   }
