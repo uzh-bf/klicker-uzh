@@ -2267,6 +2267,7 @@ type Mutation {
   renameParticipantGroup(groupId: String!, name: String!): ParticipantGroup
   requestCatalogCollection(catalogCollectionId: String!, requestedPermissionLevel: PermissionLevel): CatalogCollection
   requestCatalogObject(catalogCollectionId: String, objectId: String!, objectType: ObjectType!, requestedPermissionLevel: PermissionLevel): Boolean!
+  requestCatalystAccess(institution: String!, useCase: String!): Boolean!
   requestKbFileUpload(contentType: String!, fileName: String!, kbId: ID!, sizeBytes: Int!): KBFileUpload!
   resetAssessmentLiveQuiz(id: String!): ActivityInfo
   resolveActivityLogEntry(id: Int!): ActivityLogEntry

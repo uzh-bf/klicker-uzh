@@ -14,6 +14,7 @@
 #
 # Usage:
 #   bash util/run-host-e2e.sh --print
+#   bash util/run-host-e2e.sh --project=chromium tests/A-login.spec.ts
 #   bash util/run-host-e2e.sh --project=chromium tests/Y-kb-management-ux.spec.ts
 #   pnpm --filter @klicker-uzh/playwright test:host -- --project=chromium tests/A-login.spec.ts
 #
@@ -201,11 +202,14 @@ URL_STUDENT_LOGIN="${URL_STUDENT}/login"
 # <container>.orb.local — connect there directly instead.
 DB_HOSTPORT=""
 DB_PARAMS=""
-if [[ "$MODE" == linked || "$MODE" == primary ]]; then
+DATABASE_URL_OVERRIDE="${E2E_DATABASE_URL:-}"
+if [[ -n "$DATABASE_URL_OVERRIDE" ]]; then
+  DB_HOSTPORT="(override)"
+elif [[ "$MODE" == linked || "$MODE" == primary ]]; then
   POSTGRES_CONTAINER="$(compose_container postgres)"
   if [[ -n "$POSTGRES_CONTAINER" ]]; then
     DB_HOSTPORT="${POSTGRES_CONTAINER}.orb.local:5432"
-    if [[ -z "${E2E_DATABASE_URL:-}" && "$NO_VERIFY" != 1 ]] \
+    if [[ "$NO_VERIFY" != 1 ]] \
       && command -v nc >/dev/null 2>&1 \
       && ! nc -z -w 3 "${POSTGRES_CONTAINER}.orb.local" 5432 \
         >/dev/null 2>&1; then
@@ -227,16 +231,17 @@ fi
 
 # Credentials and database name come from the committed dev-only env file, so
 # this script never duplicates them; only the host:port and TLS mode change.
-DB_TEMPLATE="$(grep -E '^DATABASE_URL=' "$DEV_ENV_FILE" | head -1 | cut -d= -f2-)"
-if [[ ! "$DB_TEMPLATE" =~ ^postgres(ql)?://([^:/@]+):([^@/]+)@[^/]+/(.+)$ ]]; then
-  die "cannot parse DATABASE_URL from $DEV_ENV_FILE"
-fi
-DB_USER="${BASH_REMATCH[2]}"
-DB_PASS="${BASH_REMATCH[3]}"
-DB_NAME="${BASH_REMATCH[4]}"
-DATABASE_URL="postgres://${DB_USER}:${DB_PASS}@${DB_HOSTPORT}/${DB_NAME}${DB_PARAMS}"
-if [[ -n "${E2E_DATABASE_URL:-}" ]]; then
-  DATABASE_URL="$E2E_DATABASE_URL"
+if [[ -n "$DATABASE_URL_OVERRIDE" ]]; then
+  DATABASE_URL="$DATABASE_URL_OVERRIDE"
+else
+  DB_TEMPLATE="$(grep -E '^DATABASE_URL=' "$DEV_ENV_FILE" | head -1 | cut -d= -f2-)"
+  if [[ ! "$DB_TEMPLATE" =~ ^postgres(ql)?://([^:/@]+):([^@/]+)@[^/]+/(.+)$ ]]; then
+    die "cannot parse DATABASE_URL from $DEV_ENV_FILE"
+  fi
+  DB_USER="${BASH_REMATCH[2]}"
+  DB_PASS="${BASH_REMATCH[3]}"
+  DB_NAME="${BASH_REMATCH[4]}"
+  DATABASE_URL="postgres://${DB_USER}:${DB_PASS}@${DB_HOSTPORT}/${DB_NAME}${DB_PARAMS}"
 fi
 
 APP_SECRET="$(grep -E '^APP_SECRET=' "$DEV_ENV_FILE" | head -1 | cut -d= -f2-)"
@@ -254,7 +259,11 @@ if [[ "$PRINT" == 1 ]]; then
   log "URL_AUTH:      $URL_AUTH"
   log "APP_ORIGIN_AUTH: ${APP_ORIGIN_AUTH:-(default http://127.0.0.1:3010)}"
   log "COOKIE_DOMAIN:   ${COOKIE_DOMAIN:-(origin-only cookies)}"
-  log "DATABASE_URL:  postgres://${DB_USER}:***@${DB_HOSTPORT}/${DB_NAME}${DB_PARAMS}"
+  if [[ -n "$DATABASE_URL_OVERRIDE" ]]; then
+    log "DATABASE_URL:  (from E2E_DATABASE_URL; value hidden)"
+  else
+    log "DATABASE_URL:  postgres://${DB_USER}:***@${DB_HOSTPORT}/${DB_NAME}${DB_PARAMS}"
+  fi
   log "APP_SECRET:    (from devcontainer.env)"
   log "skip probes:   $NO_VERIFY"
   exit 0

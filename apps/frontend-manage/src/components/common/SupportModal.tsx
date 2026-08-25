@@ -1,4 +1,5 @@
 import { faGithub } from '@fortawesome/free-brands-svg-icons'
+import { faCrown } from '@fortawesome/free-solid-svg-icons'
 import {
   faComment,
   faEnvelope,
@@ -13,10 +14,18 @@ import {
   faQuestion,
   faServer,
 } from '@fortawesome/free-solid-svg-icons'
-import { User } from '@klicker-uzh/graphql/dist/ops'
-import { H2, Modal } from '@uzh-bf/design-system'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  QGetCatalystRequestAccessDocument,
+  User,
+  UserLoginScope,
+} from '@klicker-uzh/graphql/dist/ops'
+import { Button, H2, Modal } from '@uzh-bf/design-system'
+import { useQuery } from '@apollo/client'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
+import { useState } from 'react'
+import CatalystRequestForm from './CatalystRequestForm'
 import SupportEntry from './SupportEntry'
 
 function SupportModal({
@@ -27,6 +36,11 @@ function SupportModal({
   user?: User | null
 }) {
   const t = useTranslations()
+  const [showRequestPanel, setShowRequestPanel] = useState(false)
+
+  const { data: scopeData } = useQuery(QGetCatalystRequestAccessDocument)
+
+  const isAccountOwner = scopeData?.userScope === UserLoginScope.AccountOwner
 
   return (
     <Modal
@@ -107,6 +121,7 @@ function SupportModal({
             <div className="mt-4 text-gray-600">
               {t('manage.support.connect')}
             </div>
+
             <SupportEntry
               href="https://www.klicker.uzh.ch/community"
               title={t('manage.support.community')}
@@ -122,6 +137,40 @@ function SupportModal({
                 icon={faEnvelope}
                 data={{ cy: 'support-email' }}
               />
+            ) : isAccountOwner ? (
+              <div className="flex flex-col gap-2">
+                {!showRequestPanel ? (
+                  <Button
+                    variant="default"
+                    onClick={() => setShowRequestPanel(true)}
+                    data={{ cy: 'support-catalyst-request' }}
+                  >
+                    <div className="flex flex-row items-center gap-2">
+                      <FontAwesomeIcon
+                        icon={faCrown}
+                        className="text-orange-400"
+                      />
+                      <div>
+                        <div className="font-bold">
+                          {t('manage.support.catalystRequest.title')}
+                        </div>
+                        <div className="text-sm font-normal">
+                          {t('manage.support.catalystRequest.subtitle')}
+                        </div>
+                      </div>
+                    </div>
+                  </Button>
+                ) : (
+                  <div className="flex flex-col gap-3 rounded-lg border border-solid border-gray-300 p-4">
+                    <CatalystRequestForm
+                      onSuccess={() => {
+                        setShowRequestPanel(false)
+                        onClose()
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             ) : null}
             <div className="mt-4 text-gray-600">
               {t('manage.support.aboutProject')}

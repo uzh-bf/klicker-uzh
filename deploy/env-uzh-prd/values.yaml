@@ -619,6 +619,7 @@ frontendControl:
       memory: 512Mi
 
 backendGraphql:
+  betaSavedGroupId: grp_2CeKcuxYw3c567fSV7CPPQ
   priorityClassName: production-workload
 
   replicaCount: 4

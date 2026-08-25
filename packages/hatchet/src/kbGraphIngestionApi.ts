@@ -80,6 +80,10 @@ export type ExternalKBGraphStatus =
   | 'FAILED'
   | 'CANCELLED'
 
+export type ExternalKBGraphRequestOptions = {
+  signal?: AbortSignal
+}
+
 export type ExternalKBGraphClient = {
   runNoWait: (
     workflowName: string,
@@ -87,25 +91,37 @@ export type ExternalKBGraphClient = {
     options: { additionalMetadata: Record<string, string> }
   ) => Promise<{ getWorkflowRunId: () => Promise<string> }>
   runs: {
-    get: (runId: string) => Promise<{
+    get: (
+      runId: string,
+      options?: ExternalKBGraphRequestOptions
+    ) => Promise<{
       run: { output: unknown }
     }>
-    get_status: (runId: string) => Promise<ExternalKBGraphStatus>
-    list: (options: {
-      workflowNames: string[]
-      additionalMetadata: Record<string, string>
-      onlyTasks: boolean
-      includePayloads: boolean
-      limit: number
-      since: Date
-    }) => Promise<{
+    get_status: (
+      runId: string,
+      options?: ExternalKBGraphRequestOptions
+    ) => Promise<ExternalKBGraphStatus>
+    list: (
+      options: {
+        workflowNames: string[]
+        additionalMetadata: Record<string, string>
+        onlyTasks: boolean
+        includePayloads: boolean
+        limit: number
+        since: Date
+      },
+      requestOptions?: ExternalKBGraphRequestOptions
+    ) => Promise<{
       rows: Array<{
         workflowRunExternalId: string
         createdAt: string
         additionalMetadata?: Record<string, unknown>
       }>
     }>
-    cancel: (options: { ids: string[] }) => Promise<unknown>
+    cancel: (
+      options: { ids: string[] },
+      requestOptions?: ExternalKBGraphRequestOptions
+    ) => Promise<unknown>
   }
 }
 
@@ -275,18 +291,93 @@ export function getExternalKBGraphClient(
   env: NodeJS.ProcessEnv = process.env
 ): ExternalKBGraphClient {
   if (!externalKBGraphClient) {
-    externalKBGraphClient = HatchetClient.init(
+    const hatchetClient = HatchetClient.init(
       getExternalKBGraphConfig(env).client
-    ) as ExternalKBGraphClient
+    )
+    externalKBGraphClient = {
+      runNoWait: (workflowName, input, options) =>
+        hatchetClient.runNoWait(workflowName, input, options),
+      runs: {
+        get: async (runId, requestOptions) => {
+          const response = await hatchetClient.api.v1WorkflowRunGet(
+            runId,
+            requestOptions
+          )
+          return response.data
+        },
+        get_status: async (runId, requestOptions) => {
+          const response = await hatchetClient.api.v1WorkflowRunGetStatus(
+            runId,
+            requestOptions
+          )
+          return response.data
+        },
+        list: async (options, requestOptions) => {
+          const workflowIds = await Promise.all(
+            options.workflowNames.map(async (workflowName) => {
+              const response = await hatchetClient.api.workflowList(
+                hatchetClient.tenantId,
+                { name: workflowName },
+                requestOptions
+              )
+              const workflowId = response.data.rows?.[0]?.metadata.id
+              if (!workflowId) {
+                throw new Error(
+                  `Hatchet workflow was not found: ${workflowName}`
+                )
+              }
+              return workflowId
+            })
+          )
+          const response = await hatchetClient.api.v1WorkflowRunList(
+            hatchetClient.tenantId,
+            {
+              limit: options.limit,
+              since: options.since.toISOString(),
+              additional_metadata: Object.entries(
+                options.additionalMetadata
+              ).map(([key, value]) => `${key}:${value}`),
+              workflow_ids: workflowIds,
+              only_tasks: options.onlyTasks,
+              include_payloads: options.includePayloads,
+            },
+            requestOptions
+          )
+          return {
+            rows: response.data.rows.map((row) => ({
+              workflowRunExternalId: row.workflowRunExternalId,
+              createdAt: row.createdAt,
+              additionalMetadata: row.additionalMetadata as
+                | Record<string, unknown>
+                | undefined,
+            })),
+          }
+        },
+        cancel: (options, requestOptions) =>
+          hatchetClient.api.v1TaskCancel(
+            hatchetClient.tenantId,
+            { externalIds: options.ids },
+            requestOptions
+          ),
+      },
+    }
   }
-  return externalKBGraphClient
+  return externalKBGraphClient!
 }
 
 export async function getKBGraphTerminalResult(
   runId: string,
-  client: ExternalKBGraphClient = getExternalKBGraphClient()
+  clientOrOptions?: ExternalKBGraphClient | ExternalKBGraphRequestOptions
 ): Promise<unknown> {
-  const details = await client.runs.get(runId)
+  const client =
+    clientOrOptions && 'runs' in clientOrOptions
+      ? clientOrOptions
+      : getExternalKBGraphClient()
+  const requestOptions =
+    clientOrOptions && 'runs' in clientOrOptions ? undefined : clientOrOptions
+  const details = requestOptions
+    ? await client.runs.get(runId, requestOptions)
+    : await client.runs.get(runId)
   return details.run.output
 }
 
@@ -365,30 +456,37 @@ export async function recoverExternalKBGraphRun({
   workflowName,
   additionalMetadata,
   recoveryAnchor,
+  requestOptions,
 }: {
   client: ExternalKBGraphClient
   workflowName: string
   additionalMetadata: Record<string, string>
   recoveryAnchor: Date
+  requestOptions?: ExternalKBGraphRequestOptions
 }): Promise<RecoveredExternalKBGraphRun | undefined> {
   const buildId = additionalMetadata[KB_GRAPH_BUILD_METADATA_KEY]
   if (!buildId) {
     throw new Error('KB graph build recovery metadata is missing')
   }
 
-  const existingRuns = await client.runs.list({
-    workflowNames: [workflowName],
-    // Hatchet treats metadata filters as OR. Query on the unique build id and
-    // verify the rest locally before recovering a run.
-    additionalMetadata: { [KB_GRAPH_BUILD_METADATA_KEY]: buildId },
-    onlyTasks: false,
-    includePayloads: false,
-    // An empty answer is taken as proof that the provider never accepted a run
-    // for this build (it releases the cost reservation), so the page must be
-    // large enough that a matching row can never be truncated away.
-    limit: 10,
-    since: new Date(recoveryAnchor.getTime() - KB_GRAPH_BLOB_SAS_CLOCK_SKEW_MS),
-  })
+  const existingRuns = await client.runs.list(
+    {
+      workflowNames: [workflowName],
+      // Hatchet treats metadata filters as OR. Query on the unique build id and
+      // verify the rest locally before recovering a run.
+      additionalMetadata: { [KB_GRAPH_BUILD_METADATA_KEY]: buildId },
+      onlyTasks: false,
+      includePayloads: false,
+      // An empty answer is taken as proof that the provider never accepted a run
+      // for this build (it releases the cost reservation), so the page must be
+      // large enough that a matching row can never be truncated away.
+      limit: 10,
+      since: new Date(
+        recoveryAnchor.getTime() - KB_GRAPH_BLOB_SAS_CLOCK_SKEW_MS
+      ),
+    },
+    requestOptions
+  )
   const recoveredRun = existingRuns.rows.find((run) =>
     Object.entries(additionalMetadata).every(
       ([key, value]) => run.additionalMetadata?.[key] === value
@@ -421,14 +519,20 @@ export async function cancelExternalKBGraphRunBestEffort({
   runId,
   identifiers,
   logger,
+  requestOptions,
 }: {
   client: ExternalKBGraphClient
   runId: string
   identifiers: Record<string, string>
   logger?: KBGraphLogger
+  requestOptions?: ExternalKBGraphRequestOptions
 }): Promise<void> {
   try {
-    await client.runs.cancel({ ids: [runId] })
+    if (requestOptions) {
+      await client.runs.cancel({ ids: [runId] }, requestOptions)
+    } else {
+      await client.runs.cancel({ ids: [runId] })
+    }
   } catch {
     await logErrorBestEffort(
       logger,

@@ -725,6 +725,12 @@ export default {
         'Diese Option erzeugt eine nicht-nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut.',
       image:
         'Wählen Sie diese Einstellung, um ein Bild einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden.',
+      video: 'Binden Sie ein YouTube- oder Kaltura-Video ein.',
+      videoUrl: 'YouTube- oder Kaltura-URL',
+      videoUrlPlaceholder: 'YouTube- oder Kaltura-Video-URL einfügen',
+      videoUrlInvalid:
+        'Geben Sie eine gültige YouTube- oder Kaltura-Video-URL ein.',
+      insertVideo: 'Video einfügen',
       latex:
         'Wählen Sie diese Einstellung, um eine LaTeX-Formel inline einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden.',
       latexCentered:
@@ -2104,6 +2110,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       githubRepositoryDesc: 'Quellcode des Open-Source Projekts',
       survey:
         'Wir möchten gerne wissen, was Sie über KlickerUZH und unsere zukünftigen Pläne denken! Bitte geben Sie uns Ihr Feedback in einer <link>kurzen Umfrage (5 - 10min)</link>.',
+      catalystRequest: {
+        title: 'Catalyst-Zugang anfragen',
+        subtitle:
+          'Beschreiben Sie Ihren Anwendungsfall und wir melden uns bei Ihnen.',
+        explanation:
+          'Ihre Anfrage geht an klicker@df.uzh.ch. Wir antworten auf die E-Mail-Adresse Ihres Kontos und verwenden Ihre Daten ausschliesslich zur Bearbeitung dieser Anfrage.',
+        institution: 'Institution',
+        institutionRequired: 'Bitte geben Sie Ihre Institution ein.',
+        institutionMin: 'Bitte geben Sie mindestens 2 Zeichen ein.',
+        institutionMax: 'Bitte geben Sie höchstens 160 Zeichen ein.',
+        useCase: 'Geplante Verwendung',
+        useCaseRequired: 'Bitte beschreiben Sie die geplante Verwendung.',
+        useCaseMin: 'Bitte geben Sie mindestens 20 Zeichen ein.',
+        useCaseMax: 'Bitte geben Sie höchstens 2000 Zeichen ein.',
+        submit: 'Anfrage senden',
+      },
     },
     login: {
       lecturerLogin: 'Login Dozierende',

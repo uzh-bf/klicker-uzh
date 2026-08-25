@@ -895,7 +895,10 @@ describe('KB graph external reconciliation', () => {
       settleTerminalResult,
     })
 
-    expect(getTerminalResult).toHaveBeenCalledWith('external-run-id')
+    expect(getTerminalResult).toHaveBeenCalledWith(
+      'external-run-id',
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    )
     expect(settleTerminalResult).toHaveBeenCalledWith({
       buildId: BUILD_ID,
       result: { status: 'SUCCEEDED' },
@@ -924,9 +927,10 @@ describe('KB graph external reconciliation', () => {
       now: () => NOW,
     })
 
-    expect(vi.mocked(client.runs.cancel)).toHaveBeenCalledWith({
-      ids: ['external-run-id'],
-    })
+    expect(vi.mocked(client.runs.cancel)).toHaveBeenCalledWith(
+      { ids: ['external-run-id'] },
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    )
     expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -1025,7 +1029,7 @@ describe('KB graph external reconciliation', () => {
     expect(maxActiveCalls).toBe(8)
   })
 
-  it('keeps timed-out provider operations counted until they settle', async () => {
+  it('aborts timed-out provider operations before admitting the next build', async () => {
     const builds = Array.from({ length: 9 }, (_, index) => ({
       id: `build-${index}`,
       kbId: KB_ID,
@@ -1034,13 +1038,26 @@ describe('KB graph external reconciliation', () => {
     }))
     const prisma = createMonitorPrisma(builds)
     const client = createClient()
-    const resolveOperations: Array<() => void> = []
-    vi.mocked(client.runs.get_status).mockImplementation(
-      () =>
-        new Promise<'QUEUED'>((resolve) => {
-          resolveOperations.push(() => resolve('QUEUED'))
-        })
-    )
+    let activeCalls = 0
+    let maxActiveCalls = 0
+    let callCount = 0
+    vi.mocked(client.runs.get_status).mockImplementation((_runId, options) => {
+      callCount += 1
+      activeCalls += 1
+      maxActiveCalls = Math.max(maxActiveCalls, activeCalls)
+      if (callCount === 9) {
+        activeCalls -= 1
+        return Promise.resolve('QUEUED')
+      }
+
+      return new Promise<'QUEUED'>((_, reject) => {
+        const abort = () => {
+          activeCalls -= 1
+          reject(options?.signal?.reason)
+        }
+        options?.signal?.addEventListener('abort', abort, { once: true })
+      })
+    })
 
     await monitorActiveKBGraphBuilds({
       prisma: prisma as never,
@@ -1050,11 +1067,9 @@ describe('KB graph external reconciliation', () => {
       providerOperationTimeoutMs: 5,
     })
 
-    expect(resolveOperations).toHaveLength(8)
-    expect(client.runs.get_status).toHaveBeenCalledTimes(8)
-
-    resolveOperations.forEach((resolve) => resolve())
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(callCount).toBe(9)
+    expect(maxActiveCalls).toBe(8)
+    expect(activeCalls).toBe(0)
   })
 
   it('continues independent builds when one provider status call hangs', async () => {
@@ -1072,9 +1087,15 @@ describe('KB graph external reconciliation', () => {
     }
     const prisma = createMonitorPrisma([hungBuild, readyBuild])
     const client = createClient()
-    vi.mocked(client.runs.get_status).mockImplementation((runId) =>
+    vi.mocked(client.runs.get_status).mockImplementation((runId, options) =>
       runId === 'external-run-hung'
-        ? new Promise(() => {})
+        ? new Promise<'RUNNING'>((_, reject) => {
+            options?.signal?.addEventListener(
+              'abort',
+              () => reject(options.signal?.reason),
+              { once: true }
+            )
+          })
         : Promise.resolve('RUNNING')
     )
 
@@ -1200,7 +1221,10 @@ describe('KB graph external reconciliation', () => {
       settleTerminalResult,
     })
 
-    expect(getTerminalResult).toHaveBeenCalledWith('external-run-id')
+    expect(getTerminalResult).toHaveBeenCalledWith(
+      'external-run-id',
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    )
     expect(settleTerminalResult).toHaveBeenCalledWith({
       buildId: BUILD_ID,
       result: { status: 'SUCCEEDED' },

@@ -49,6 +49,10 @@ export interface MCPRequestContext {
   sessionId?: string
 }
 
+export interface MCPRequestOptions {
+  requestTimeoutMs?: number
+}
+
 function toToolNameHash(rawName: string): string {
   return createHash('sha256')
     .update(rawName)
@@ -227,16 +231,53 @@ export async function createAuthHeaders(
   return baseHeaders
 }
 
+function normalizeMCPRequest(
+  contextOrChatbotId: MCPRequestContext | string,
+  participantIdOrOptions: string | MCPRequestOptions = '',
+  authMode: AuthMode = 'account'
+): { context: MCPRequestContext; options: MCPRequestOptions } {
+  if (typeof contextOrChatbotId !== 'string') {
+    return {
+      context: contextOrChatbotId,
+      options:
+        typeof participantIdOrOptions === 'string'
+          ? {}
+          : participantIdOrOptions,
+    }
+  }
+
+  return {
+    context: {
+      chatbotId: contextOrChatbotId,
+      participantId:
+        typeof participantIdOrOptions === 'string'
+          ? participantIdOrOptions
+          : undefined,
+      authMode,
+    },
+    options:
+      typeof participantIdOrOptions === 'string' ? {} : participantIdOrOptions,
+  }
+}
+
 /**
  * Creates and initializes a single MCP client for a specific server configuration
  */
 export async function createMCPClient(
   server: MCPServerConfig,
-  context: MCPRequestContext
+  contextOrChatbotId: MCPRequestContext | string,
+  participantIdOrOptions: string | MCPRequestOptions = '',
+  authMode: AuthMode = 'account'
 ) {
   if (!server.url) {
     throw new Error(`MCP server ${server.name} has no URL defined`)
   }
+
+  const { context, options } = normalizeMCPRequest(
+    contextOrChatbotId,
+    participantIdOrOptions,
+    authMode
+  )
 
   try {
     const headers = await createAuthHeaders(server, context)
@@ -244,7 +285,13 @@ export async function createMCPClient(
     const httpTransport = new StreamableHTTPClientTransport(
       new URL(server.url),
       {
-        requestInit: { headers },
+        requestInit: {
+          headers,
+          redirect: 'error',
+          ...(options.requestTimeoutMs !== undefined
+            ? { signal: AbortSignal.timeout(options.requestTimeoutMs) }
+            : {}),
+        },
       }
     )
 
@@ -288,7 +335,8 @@ function isToolAllowed(toolName: string, allowedTools: string[]): boolean {
  */
 async function loadServerTools(
   serverWithConfig: MCPServerWithConfig,
-  context: MCPRequestContext
+  context: MCPRequestContext,
+  options: MCPRequestOptions
 ): Promise<Record<string, any>> {
   const { server, config } = serverWithConfig
   const runtimePolicy = parseMCPRuntimePolicy(config.parameters)
@@ -316,7 +364,7 @@ async function loadServerTools(
   }
 
   try {
-    const client = await createMCPClient(server, context)
+    const client = await createMCPClient(server, context, options)
     const rawTools = await client.tools()
 
     if (runtimePolicy.required && requiredRawToolName) {
@@ -378,9 +426,17 @@ async function loadServerTools(
  */
 export async function getAggregatedMCPTools(
   serversWithConfigs: MCPServerWithConfig[],
-  context: MCPRequestContext
+  contextOrChatbotId: MCPRequestContext | string,
+  participantIdOrOptions: string | MCPRequestOptions = '',
+  authMode: AuthMode = 'account'
 ): Promise<Record<string, any>> {
   console.log(`Loading MCP Tools from ${serversWithConfigs.length} servers...`)
+
+  const { context, options } = normalizeMCPRequest(
+    contextOrChatbotId,
+    participantIdOrOptions,
+    authMode
+  )
 
   if (serversWithConfigs.length === 0) {
     console.log('No MCP servers configured')
@@ -398,7 +454,11 @@ export async function getAggregatedMCPTools(
   // Load tools from each server in priority order
   for (const serverWithConfig of sortedServers) {
     try {
-      const serverTools = await loadServerTools(serverWithConfig, context)
+      const serverTools = await loadServerTools(
+        serverWithConfig,
+        context,
+        options
+      )
       const runtimePolicy = parseMCPRuntimePolicy(
         serverWithConfig.config.parameters
       )
@@ -461,7 +521,8 @@ export async function getMCPTools(
   try {
     const serverTools = await loadServerTools(
       { server: legacyServer, config: legacyConfig },
-      { chatbotId, participantId, authMode }
+      { chatbotId, participantId, authMode },
+      {}
     )
     return serverTools
   } catch (error) {
