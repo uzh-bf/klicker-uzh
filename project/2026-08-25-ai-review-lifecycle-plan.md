@@ -484,14 +484,17 @@ real runs before proposing any parameter retune or branch-protection context.
   were not added. The configured Gemini simplifier and slice-reviewer routes
   failed before producing reports at the provider credit limit, so trusted Sol
   fallbacks reviewed the immutable slice and returned `DONE` with no findings.
-- S2 evidence: 12 focused tests passed in the managed task container; Biome
-  check passed; workflow YAML parsing and `git diff --check` passed. The suite
-  covers default and native-stack eligibility, latest status selection,
-  deterministic finding metadata, trusted dispositions, ancestry, digest,
-  base-advance, bounds, duplicate, report-limit, and material-change fallbacks.
-  `actionlint` remains unavailable.
-- Commits: plan `2b83fbb49`; S1 `6f80a97f2`; S2 implementation pending local
-  commit and required specialist reviews.
+- S2 evidence: 13 focused tests passed in the managed task container; Biome
+  check passed; workflow YAML parsing, `git diff --check`, and staged gitleaks
+  scanning passed. The suite covers default and native-stack eligibility,
+  latest status selection, deterministic finding metadata, trusted dispositions,
+  exact workflow provenance, ancestry, digest, base-advance, bounds, duplicate,
+  report-limit, and material-change fallbacks. `actionlint` remains unavailable.
+  The configured Gemini simplifier and slice-reviewer routes again failed at the
+  provider credit limit; trusted Sol fallbacks reviewed the correction range.
+  Their high-severity provenance findings were corrected in `93a19531e`.
+- Commits: plan `2b83fbb49`; S1 `6f80a97f2`; S2 implementation `f7920c6fe`,
+  correction `e5c7be23`, and provenance correction `93a19531e`.
 - Remaining: G1-G4, slices S3-S5, verification, required reviews, local commits,
   and the cross-repository progress record.
 - Delivery boundary: pushes, PRs, live qualification, ClickUp writes, branch
