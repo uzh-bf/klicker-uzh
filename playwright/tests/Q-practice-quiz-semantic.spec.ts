@@ -12,6 +12,16 @@ const data = JSON.parse(
 
 let quiz: { id: string; courseId: string; semanticInstanceId: number }
 
+type SemanticPracticeSnapshot = {
+  attemptCount: number
+  clientSubmissionIds: string[]
+  responseDetailCount: number
+  responseDetailPoints: number[]
+  responseDetailXp: number[]
+  pointsAwarded: number
+  xpAwarded: number
+}
+
 async function openQuiz(page: Page, username: string) {
   await loginStudentPassword(page, { username })
   await page.goto(
@@ -184,6 +194,83 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
       page.getByTestId('semantic-free-text-retry-panel')
     ).toContainText(data.correctLabel)
     await expect(page.getByTestId('semantic-practice-again')).toBeVisible()
+  })
+
+  test('retries an unavailable evaluation on the same answer attempt', async ({
+    page,
+  }) => {
+    await openQuiz(page, 'testuser6')
+    await startQuiz(page, 'accept')
+    await submitInitialStack(
+      page,
+      `${data.partialAnswer} [semantic:retry-once]`
+    )
+
+    const panel = page.getByTestId('semantic-free-text-retry-panel')
+    await expect(panel).toContainText(
+      'Semantic feedback is currently unavailable.'
+    )
+    await expect(page.getByTestId('semantic-attempts-used')).toContainText(
+      '0 of 2'
+    )
+    await expect(
+      page.getByTestId('semantic-attempt-history').locator('li')
+    ).toHaveCount(1)
+
+    await page.getByTestId('semantic-retry-evaluation').click()
+    await expect(panel).toContainText(data.partialLabel)
+    await expect(page.getByTestId('semantic-attempts-used')).toContainText(
+      '1 of 2'
+    )
+    await expect(
+      page.getByTestId('semantic-attempt-history').locator('li')
+    ).toHaveCount(1)
+  })
+
+  test('deduplicates a replayed stack submission and its rewards', async ({
+    page,
+  }) => {
+    await openQuiz(page, 'testuser7')
+    await startQuiz(page, 'accept')
+    await page.getByTestId('free-text-input-0').fill(data.correctAnswer)
+    await page.getByTestId('free-text-input-1').fill(data.legacySolution)
+    const stackRequest = page.waitForRequest((request) => {
+      if (
+        request.method() !== 'POST' ||
+        !request.url().includes('/api/graphql')
+      ) {
+        return false
+      }
+      return JSON.stringify(request.postDataJSON()).includes(
+        'RespondToElementStack'
+      )
+    })
+    await page.getByTestId('student-stack-submit').click()
+    const originalRequest = await stackRequest
+    const replay = await page.request.post(originalRequest.url(), {
+      data: originalRequest.postDataJSON(),
+      headers: {
+        'content-type': 'application/json',
+        origin: env('URL_STUDENT'),
+      },
+    })
+    expect(replay.ok()).toBe(true)
+    expect(await replay.json()).not.toHaveProperty('errors')
+
+    await expect(
+      page.getByTestId('semantic-free-text-retry-panel')
+    ).toContainText(data.correctLabel)
+    const snapshot = (await runTask('getSemanticPracticeSnapshot', {
+      username: 'testuser7',
+      instanceId: quiz.semanticInstanceId,
+    })) as SemanticPracticeSnapshot
+    expect(snapshot.attemptCount).toBe(1)
+    expect(new Set(snapshot.clientSubmissionIds).size).toBe(1)
+    expect(snapshot.responseDetailCount).toBe(1)
+    expect(snapshot.pointsAwarded).toBeGreaterThan(0)
+    expect(snapshot.xpAwarded).toBeGreaterThan(0)
+    expect(snapshot.responseDetailPoints).toEqual([snapshot.pointsAwarded])
+    expect(snapshot.responseDetailXp).toEqual([snapshot.xpAwarded])
   })
 
   test('auto-reveals the solution after the configured attempt limit', async ({

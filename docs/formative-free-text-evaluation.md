@@ -198,6 +198,14 @@ The local test-origin wrapper sets the stub URL and disclosure version. Set
 `PLAYWRIGHT_SEMANTIC_EVALUATOR_STUB=false` to run a test environment without the
 stub.
 
+Because the evaluator URL belongs to the application and worker environment, this
+focused spec cannot target an already-running devrouter container whose environment
+does not contain the synthetic boundary. For local execution, start the host test
+runtime with `pnpm run dev:playwright` and run the spec through
+`E2E_MODE=host bash util/run-host-e2e.sh ...`; the host runner fails explicitly for
+unsupported devcontainer targets. CI launches all of these processes in one test
+environment and is the merge gate for the complete browser journey.
+
 ## Rewards and lecturer analytics
 
 Within one practice cycle, only improvement beyond the already rewarded best result

@@ -12,7 +12,7 @@ import {
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import PreviewMessage from '../common/PreviewMessage'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
@@ -95,6 +95,7 @@ function PracticeQuiz({
     DecideSemanticEvaluationConsentDocument
   )
   const [consentTargetIx, setConsentTargetIx] = useState<number | null>(null)
+  const quizStartRequestInFlight = useRef(false)
   const capability = capabilityData?.semanticFreeTextCapability
   const semanticGateLoading =
     hasSemanticEvaluation &&
@@ -102,12 +103,13 @@ function PracticeQuiz({
     (participantLoading || capabilityLoading)
 
   const requestQuizStart = async (targetIx: number) => {
-    if (semanticGateLoading) return
+    if (semanticGateLoading || quizStartRequestInFlight.current) return
     if (!shouldGateSemanticEvaluation) {
       setCurrentIx(targetIx)
       return
     }
 
+    quizStartRequestInFlight.current = true
     try {
       const { data } = await loadSemanticCapability()
       const currentCapability = data?.semanticFreeTextCapability
@@ -121,6 +123,8 @@ function PracticeQuiz({
     } catch {
       // Capability failures preserve the deterministic exact-match fallback.
       setCurrentIx(targetIx)
+    } finally {
+      quizStartRequestInFlight.current = false
     }
   }
 

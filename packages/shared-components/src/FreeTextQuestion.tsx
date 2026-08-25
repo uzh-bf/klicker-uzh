@@ -78,7 +78,11 @@ function FreeTextQuestion({
             setResponse(newValue, valid)
           }}
           maxLength={options.restrictions?.maxLength ?? undefined}
-          disabled={disabled || (!!existingResponse && !semanticInputEditable)}
+          disabled={
+            disabled ||
+            ((existingResponse != null || semanticAnswer != null) &&
+              !semanticInputEditable)
+          }
           elementIx={elementIx}
         />
       </div>

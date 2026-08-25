@@ -89,8 +89,6 @@ function getRubricAssessments(value: unknown): RubricAssessment[] {
       typeof assessment.proposed_level !== 'string' ||
       typeof assessment.normalized_score !== 'number' ||
       !Number.isFinite(assessment.normalized_score) ||
-      assessment.normalized_score < 0 ||
-      assessment.normalized_score > 100 ||
       typeof assessment.rationale !== 'string' ||
       assessment.rationale.trim().length === 0
     ) {
@@ -102,7 +100,10 @@ function getRubricAssessments(value: unknown): RubricAssessment[] {
         rubricId: assessment.rubric_id,
         rubricName: assessment.rubric_name,
         proposedLevel: assessment.proposed_level,
-        normalizedScore: assessment.normalized_score,
+        normalizedScore: Math.min(
+          100,
+          Math.max(0, assessment.normalized_score)
+        ),
         rationale: assessment.rationale.trim(),
         feedback: feedbackByRubric.get(assessment.rubric_id),
       },
@@ -214,7 +215,10 @@ function FreeTextRubricBreakdown({ result }: { result: unknown }) {
                 className={`group overflow-hidden rounded-md border bg-white ${style.detailClassName}`}
                 data-cy={`semantic-rubric-result-${assessment.rubricId}`}
               >
-                <summary className="flex cursor-pointer list-none items-center gap-3 p-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-uzh-blue-100">
+                <summary
+                  className="flex cursor-pointer list-none items-center gap-3 p-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-uzh-blue-100"
+                  data-cy={`semantic-rubric-result-toggle-${assessment.rubricId}`}
+                >
                   <span
                     className={`flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${style.badgeClassName}`}
                     aria-hidden="true"

@@ -147,6 +147,36 @@ case "$MODE" in
     ;;
 esac
 
+# The semantic Practice Quiz spec needs the evaluator URL in the application
+# process, not only in Playwright. An already-running devcontainer cannot receive
+# that environment from this host-side runner, and its loopback cannot reach the
+# host stub. Keep that limitation explicit instead of reporting fallback behavior
+# as semantic-evaluator coverage.
+HAS_SPEC_FILTER=0
+SEMANTIC_SPEC_SELECTED=0
+LIST_ONLY=0
+for arg in ${ARGS[@]+"${ARGS[@]}"}; do
+  if [[ "$arg" == --list ]]; then
+    LIST_ONLY=1
+  fi
+  if [[ "$arg" == *'.spec.ts'* ]]; then
+    HAS_SPEC_FILTER=1
+  fi
+  if [[ "$arg" == *'Q-practice-quiz-semantic.spec.ts'* ]]; then
+    SEMANTIC_SPEC_SELECTED=1
+  fi
+done
+if [[ "$HAS_SPEC_FILTER" == 0 ]]; then
+  SEMANTIC_SPEC_SELECTED=1
+fi
+if [[ "$SEMANTIC_SPEC_SELECTED" == 1 && "$MODE" != host && "$PRINT" == 0 && "$LIST_ONLY" == 0 ]]; then
+  die "semantic Practice Quiz tests cannot use the already-running '$MODE' runtime
+  the application must start with the synthetic evaluator URL in its environment
+  supported local path: pnpm run dev:playwright
+  then run: E2E_MODE=host bash util/run-host-e2e.sh --project=chromium tests/Q-practice-quiz-semantic.spec.ts
+  CI also launches the app, worker, and evaluator in one test environment"
+fi
+
 # --- URL and database mapping -----------------------------------------------
 
 case "$MODE" in
@@ -273,6 +303,11 @@ export URL_STUDENT URL_STUDENT_LOGIN URL_MANAGE URL_CONTROL URL_CHAT URL_AUTH
 export APP_ORIGIN_AUTH COOKIE_DOMAIN
 export PLAYWRIGHT_BASE_URL="$URL_STUDENT"
 export DATABASE_URL APP_SECRET
+if [[ "$MODE" == host ]]; then
+  export NODE_ENV="${NODE_ENV:-test}"
+  export PLAYWRIGHT_SEMANTIC_EVALUATOR_STUB="${PLAYWRIGHT_SEMANTIC_EVALUATOR_STUB:-true}"
+  export PLAYWRIGHT_SEMANTIC_EVALUATOR_PORT="${PLAYWRIGHT_SEMANTIC_EVALUATOR_PORT:-7099}"
+fi
 
 # --- host bootstrap ---------------------------------------------------------
 

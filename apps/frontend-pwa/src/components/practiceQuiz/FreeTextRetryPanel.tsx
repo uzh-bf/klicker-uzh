@@ -42,29 +42,32 @@ function FreeTextRetryPanel({
   const evaluated =
     attempt?.evaluationStatus === FreeTextEvaluationStatus.Evaluated
 
-  const defaultOutcome =
-    attempt?.correctness === FreeTextCorrectnessCategory.Correct
-      ? t('pwa.practiceQuiz.semanticCorrect')
-      : attempt?.correctness === FreeTextCorrectnessCategory.Partial
-        ? t('pwa.practiceQuiz.semanticPartiallyCorrect')
-        : t('pwa.practiceQuiz.semanticIncorrect')
+  let defaultOutcome = t('pwa.practiceQuiz.semanticIncorrect')
+  if (attempt?.correctness === FreeTextCorrectnessCategory.Correct) {
+    defaultOutcome = t('pwa.practiceQuiz.semanticCorrect')
+  } else if (attempt?.correctness === FreeTextCorrectnessCategory.Partial) {
+    defaultOutcome = t('pwa.practiceQuiz.semanticPartiallyCorrect')
+  }
   const outcomeMessage = attempt?.outcomeBandLabel || defaultOutcome
-  const notificationType = pending
-    ? 'info'
-    : unavailable
-      ? 'warning'
-      : attempt?.correctness === FreeTextCorrectnessCategory.Correct
-        ? 'success'
-        : attempt?.correctness === FreeTextCorrectnessCategory.Partial
-          ? 'warning'
-          : 'error'
-  const notificationMessage = pending
-    ? t('pwa.practiceQuiz.semanticPending')
-    : unavailable
-      ? t('pwa.practiceQuiz.semanticUnavailable')
-      : evaluated
-        ? outcomeMessage
-        : t('pwa.practiceQuiz.semanticReady')
+  let notificationType: 'info' | 'warning' | 'success' | 'error' = 'info'
+  if (unavailable) {
+    notificationType = 'warning'
+  } else if (attempt?.correctness === FreeTextCorrectnessCategory.Correct) {
+    notificationType = 'success'
+  } else if (attempt?.correctness === FreeTextCorrectnessCategory.Partial) {
+    notificationType = 'warning'
+  } else if (evaluated) {
+    notificationType = 'error'
+  }
+
+  let notificationMessage = t('pwa.practiceQuiz.semanticReady')
+  if (pending) {
+    notificationMessage = t('pwa.practiceQuiz.semanticPending')
+  } else if (unavailable) {
+    notificationMessage = t('pwa.practiceQuiz.semanticUnavailable')
+  } else if (evaluated) {
+    notificationMessage = outcomeMessage
+  }
 
   return (
     <section
@@ -176,27 +179,40 @@ function FreeTextRetryPanel({
 
       {state.attempts.length > 0 && (
         <details className="mt-4" data-cy="semantic-attempt-history">
-          <summary className="cursor-pointer text-sm font-semibold">
+          <summary
+            className="cursor-pointer text-sm font-semibold"
+            data-cy="semantic-attempt-history-toggle"
+          >
             {t('pwa.practiceQuiz.semanticAttemptHistory')}
           </summary>
           <ol className="mt-2 flex list-decimal flex-col gap-2 pl-5">
-            {state.attempts.map((historyAttempt) => (
-              <li key={historyAttempt.id} className="text-sm">
-                <div className="whitespace-pre-wrap break-words">
-                  {historyAttempt.answer}
-                </div>
-                <div className="text-xs text-gray-600">
-                  {historyAttempt.evaluationStatus ===
-                  FreeTextEvaluationStatus.Pending
-                    ? t('pwa.practiceQuiz.semanticHistoryPending')
-                    : historyAttempt.evaluationStatus ===
-                        FreeTextEvaluationStatus.Unavailable
-                      ? t('pwa.practiceQuiz.semanticHistoryUnavailable')
-                      : historyAttempt.outcomeBandLabel ||
-                        t('pwa.practiceQuiz.semanticHistoryEvaluated')}
-                </div>
-              </li>
-            ))}
+            {state.attempts.map((historyAttempt) => {
+              let historyMessage =
+                historyAttempt.outcomeBandLabel ||
+                t('pwa.practiceQuiz.semanticHistoryEvaluated')
+              if (
+                historyAttempt.evaluationStatus ===
+                FreeTextEvaluationStatus.Pending
+              ) {
+                historyMessage = t('pwa.practiceQuiz.semanticHistoryPending')
+              } else if (
+                historyAttempt.evaluationStatus ===
+                FreeTextEvaluationStatus.Unavailable
+              ) {
+                historyMessage = t(
+                  'pwa.practiceQuiz.semanticHistoryUnavailable'
+                )
+              }
+
+              return (
+                <li key={historyAttempt.id} className="text-sm">
+                  <div className="whitespace-pre-wrap break-words">
+                    {historyAttempt.answer}
+                  </div>
+                  <div className="text-xs text-gray-600">{historyMessage}</div>
+                </li>
+              )
+            })}
           </ol>
         </details>
       )}

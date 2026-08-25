@@ -46,6 +46,7 @@ function validateRequest(value) {
 }
 
 function selectScenario(answer) {
+  if (answer.includes('[semantic:retry-once]')) return 'retry-once'
   if (answer.includes('[semantic:correct]')) return 'correct'
   if (answer.includes('[semantic:partial]')) return 'partial'
   if (answer.includes('[semantic:incorrect]')) return 'incorrect'
@@ -213,6 +214,7 @@ if (process.env.NODE_ENV !== 'test') {
 const port = Number(
   process.env.PLAYWRIGHT_SEMANTIC_EVALUATOR_PORT ?? DEFAULT_PORT
 )
+const retryOnceTaskBundles = new Set()
 const server = createServer((request, response) => {
   if (request.method === 'GET' && request.url === '/healthz') {
     sendJson(response, 200, { status: 'ok' })
@@ -244,13 +246,31 @@ const server = createServer((request, response) => {
     }
 
     const scenario = selectScenario(value.response.text)
+    if (
+      scenario === 'retry-once' &&
+      !retryOnceTaskBundles.has(value.task_bundle_id)
+    ) {
+      retryOnceTaskBundles.add(value.task_bundle_id)
+      // Return a contract-invalid success once. The public boundary converts this
+      // into a retryable UNAVAILABLE state without Hatchet automatically retrying
+      // the same workflow, so the participant retry control is exercised.
+      sendJson(response, 200, { error: 'synthetic_retry_once' })
+      return
+    }
     if (scenario === 'failure') {
       sendJson(response, 503, { error: 'synthetic_failure' })
       return
     }
 
     setTimeout(() => {
-      sendJson(response, 200, createEvaluation(value, scenario))
+      sendJson(
+        response,
+        200,
+        createEvaluation(
+          value,
+          scenario === 'retry-once' ? 'partial' : scenario
+        )
+      )
     }, 300)
   })
 })

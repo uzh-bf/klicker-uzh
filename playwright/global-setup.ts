@@ -24,6 +24,7 @@ import type { SemanticFreeTextConfig } from '@klicker-uzh/types'
 import bcrypt from 'bcryptjs'
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import {
   COURSE_ID_TEST,
   COURSE_ID_TEST2,
@@ -89,7 +90,7 @@ async function startSemanticEvaluatorStub() {
 
   const child = spawn(
     process.execPath,
-    [new URL('./semantic-evaluator-stub.mjs', import.meta.url).pathname],
+    [fileURLToPath(new URL('./semantic-evaluator-stub.mjs', import.meta.url))],
     {
       env: {
         ...process.env,

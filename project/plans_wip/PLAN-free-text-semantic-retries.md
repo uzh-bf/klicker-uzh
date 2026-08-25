@@ -84,7 +84,7 @@ This is a substantial cross-layer feature and should be implemented as a native
 four-layer GitHub stack after explicit topology approval. The existing isolated Codex
 worktree is the stack worktree, rooted at
 `/Users/paldov/.codex/worktrees/f0ec/klicker-uzh`; its bottom branch is
-`feat/free-text-semantic-contract`.
+`feat/free-text-semantic-contract`, based on `v3-ai`.
 
 | Layer | Work package                                      | Independent proof                                        |
 | ----: | ------------------------------------------------- | -------------------------------------------------------- |
@@ -545,6 +545,7 @@ booleans.
   `.github/workflows/test-playwright.yml`
 - Update: `docs/formative-free-text-evaluation.md`
 - Update: `docs/async-and-workers.md`
+- Update: `project/plans_wip/PLAN-free-text-semantic-retries.md`
 
 **Interfaces:** the stub binds only in the Playwright environment, verifies the
 request contract, and returns deterministic correct/partial/incorrect/uncertain/
@@ -582,9 +583,9 @@ failure fixtures selected by synthetic marker text. Production has no fixture mo
 - Modify: `playwright/fixtures/Q-practice-quiz.json`
 - Modify: `playwright/semantic-evaluator-stub.mjs`
 - Modify: `playwright/tests/Q-practice-quiz-semantic.spec.ts`
-- Update: `docs/log/2026-08-19-formative-free-text-evaluation-participant.md`
-- Add: `docs/log/assets/2026-08-19-formative-free-text-evaluation-participant/participant-rubric-feedback-desktop.png`
-- Add: `docs/log/assets/2026-08-19-formative-free-text-evaluation-participant/participant-rubric-feedback-mobile.png`
+- Update: `project/plans_wip/PLAN-free-text-semantic-retries.md`
+- Add: `project/plans_wip/assets/free-text-semantic-retries/participant-rubric-feedback-desktop.png`
+- Add: `project/plans_wip/assets/free-text-semantic-retries/participant-rubric-feedback-mobile.png`
 
 **Interfaces:** `FreeTextRubricBreakdown` continues to consume the authorized
 `structuredResult` JSON. Its parser additionally retains `normalized_score`, and its
@@ -652,9 +653,9 @@ rendered contract exposes stable `semantic-rubric-summary`,
 - Modify: `packages/i18n/messages/de.ts`
 - Modify: `playwright/semantic-evaluator-stub.mjs`
 - Modify: `playwright/tests/Q-practice-quiz-semantic.spec.ts`
-- Update: `docs/log/2026-08-19-formative-free-text-evaluation-participant.md`
-- Replace: `docs/log/assets/2026-08-19-formative-free-text-evaluation-participant/participant-rubric-feedback-desktop.png`
-- Replace: `docs/log/assets/2026-08-19-formative-free-text-evaluation-participant/participant-rubric-feedback-mobile.png`
+- Update: `project/plans_wip/PLAN-free-text-semantic-retries.md`
+- Replace: `project/plans_wip/assets/free-text-semantic-retries/participant-rubric-feedback-desktop.png`
+- Replace: `project/plans_wip/assets/free-text-semantic-retries/participant-rubric-feedback-mobile.png`
 
 **Interfaces:** the authorized rubric parser keeps required non-empty assessment
 `rationale` values and joins optional non-empty `feedback_proposals[].feedback` by
@@ -675,7 +676,7 @@ exact `rubric_id`. Each detail card exposes
 - [x] Replace the cropped rubric-panel evidence with complete 1440 x 1900 and
       390 x 2400 student views containing the question, answer, generic result,
       revealed solution, all criteria, and expanded AI feedback together.
-- [x] Push the participant layer through native stack #5436, replace the duplicate
+- [x] Push the participant layer through the native stack, replace the duplicate
       screenshot sections in draft PR #5433, and re-read the PR state and checks.
 
 ## Self-review checklist
@@ -757,7 +758,17 @@ exact `rubric_id`. Each detail card exposes
   solution-authorization boundary. Replaced the cropped evidence with complete
   1440 x 1900 and 390 x 2400 student views, verified keyboard expansion and mobile
   overflow in the real PWA, and committed the evidence as `0f7c4aed2`. Pushed all
-  four tracked branches through native GitHub stack #5436 and updated draft PR #5433
+  four tracked branches through the native GitHub stack and updated draft PR #5433
   to show only the two integrated student views before the exact-match and disclosure
   evidence. The PR remained draft and correctly targeted #5432; its new CI runs were
   pending when checked, with no actionable comments or review threads.
+- **2026-08-25:** Rebased the complete four-layer stack onto `v3-ai` and retargeted
+  the native PR topology to `v3-ai` → #5430 → #5431 → #5432 → #5433. The integration
+  keeps the `v3-ai` Chat drawer, feature flags, LTI hardening, compact free-text
+  rendering, and generated AI operations alongside the semantic-evaluation surface.
+  Closed the remaining API authorization/validation gaps, stabilized authoring field
+  identities, hardened participant start and submission state transitions, and added
+  Playwright coverage for same-attempt evaluator retry and replay idempotency. The
+  grading suite passes 23/23, all 27 repository check tasks and all 7 lint tasks pass,
+  and Chromium discovers all seven focused semantic Practice Quiz tests. A local
+  application runtime was not active, so the executable browser run remains a CI gate.
