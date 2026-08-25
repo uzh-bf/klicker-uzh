@@ -38,7 +38,7 @@
 - Historical plan: `project/2026-08-24-open-code-review-plan.md`.
 - Branch: `rs/manual-final-ai-review-gate`.
 - Worktree: `trees/rs-open-code-review-background`.
-- Target: current `origin/v3` at `1ef0b5f737`; the replacement branch was
+- Target: current `origin/v3` at `4d8d654b2c`; the replacement branch was
   rebuilt directly on this baseline without force-pushing.
 - Pull request: replacement draft PR to be created after push. Historical
   [#5530](https://github.com/uzh-bf/klicker-uzh/pull/5530) is merged.
@@ -221,8 +221,8 @@ security-sensitive. Read-only specialist reviews remain mandatory.
 
 ## Progress
 
-- Status: the integrated final-review finding is corrected on current
-  `origin/v3`; fresh verification and final re-review are in progress.
+- Status: integrated verification and final re-review pass on current
+  `origin/v3`; delivery is in progress.
 - Completed: fresh remote audit, normal merge of current `origin/v3`, upstream
   OCR and current OpenRouter research, production-readiness lens selection,
   required planner challenge, promotion-contract inspection, passing
@@ -242,7 +242,10 @@ security-sensitive. Read-only specialist reviews remain mandatory.
   v1.9.10 reports a fully covered manifest run as `complete`, not synthetic
   `success`. The parser now requires both `status: complete` and a complete
   `ocr.run-manifest/v1`; its focused fixture rejects partial coverage.
-- Remaining: run integrated verification and the final reviewer, push normally,
-  and create the replacement draft PR.
+- Review disposition: Sol re-reviewed the corrected seven-commit range and
+  returned `DONE` with no remaining material findings. The later unpublished
+  rebase onto current `v3` preserved the package patch byte-for-byte.
+- Remaining: push normally, create the replacement draft PR, read it back, and
+  account for current-head CI.
 - Delivery boundary: live command proof, merge, and branch-protection activation
   remain withheld post-merge work.
