@@ -1,4 +1,4 @@
-import { extractBearerToken } from '@klicker-uzh/util'
+import { extractBearerToken } from '@klicker-uzh/util/auth'
 import type { IncomingHttpHeaders } from 'node:http'
 import type { RuntimeSettings } from './config.js'
 import { verifyLecturerJwt } from './jwt.js'
