@@ -263,17 +263,6 @@ function normalizeMCPRequest(
 /**
  * Creates and initializes a single MCP client for a specific server configuration
  */
-export function createMCPClient(
-  server: MCPServerConfig,
-  context: MCPRequestContext,
-  options?: MCPRequestOptions
-): ReturnType<typeof createSDKMCPClient>
-export function createMCPClient(
-  server: MCPServerConfig,
-  chatbotId: string,
-  participantIdOrOptions?: string | MCPRequestOptions,
-  authMode?: AuthMode
-): ReturnType<typeof createSDKMCPClient>
 export async function createMCPClient(
   server: MCPServerConfig,
   contextOrChatbotId: MCPRequestContext | string,
@@ -435,17 +424,6 @@ async function loadServerTools(
 /**
  * Aggregates tools from multiple MCP servers with priority-based loading
  */
-export function getAggregatedMCPTools(
-  serversWithConfigs: MCPServerWithConfig[],
-  context: MCPRequestContext,
-  options?: MCPRequestOptions
-): Promise<Record<string, any>>
-export function getAggregatedMCPTools(
-  serversWithConfigs: MCPServerWithConfig[],
-  chatbotId: string,
-  participantIdOrOptions?: string | MCPRequestOptions,
-  authMode?: AuthMode
-): Promise<Record<string, any>>
 export async function getAggregatedMCPTools(
   serversWithConfigs: MCPServerWithConfig[],
   contextOrChatbotId: MCPRequestContext | string,
