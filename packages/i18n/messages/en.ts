@@ -4301,6 +4301,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       performanceDashboard: 'Performance and Progress Dashboard',
       quizDashboard: 'Quiz Dashboard',
       quizAnalytics: 'Quiz Analytics',
+      featureUnavailable:
+        'Learning analytics are not available for your account yet.',
       analyticsLoadingWait: 'Loading analytics data. Please wait...',
       analyticsLoadingFailed:
         'An error occurred while loading the analytics data. Please try again later or contact the support.',
