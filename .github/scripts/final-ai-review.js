@@ -560,8 +560,14 @@ function findingBlock(comment, index) {
 }
 
 function renderFinalReviewChunks(result, headSha) {
-  if (result.status !== 'success') {
+  if (result.status !== 'complete') {
     throw new Error(`OCR returned unexpected status: ${result.status}`)
+  }
+  if (
+    result.manifest?.schema_version !== 'ocr.run-manifest/v1' ||
+    result.manifest.terminal_state !== 'complete'
+  ) {
+    throw new Error('OCR result has no complete v1 run manifest')
   }
   if (result.llm?.model !== FINAL_REVIEW_MODEL) {
     throw new Error(`OCR returned unexpected model: ${result.llm?.model}`)

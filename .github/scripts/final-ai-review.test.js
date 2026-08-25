@@ -160,28 +160,43 @@ test('writes an exact high-reasoning OCR config with mode 0600', () => {
   assert.equal(fs.existsSync(configPath), false)
 })
 
-test('renders findings without making finding count a failure', () => {
-  const result = {
-    status: 'success',
+function completeReviewResult(comments = []) {
+  return {
+    status: 'complete',
     llm: { model: FINAL_REVIEW_MODEL },
-    summary: {},
-    comments: [
-      {
-        path: 'src/example.ts',
-        content: [
-          'Confidence: 75/100',
-          'Autofix: manual',
-          'Motivating line: `return value`',
-          'This can fail at runtime.\n## Injected heading',
-        ].join('\n'),
-        suggestion_code: 'return value ?? fallback',
-        start_line: 10,
-        end_line: 11,
-        category: 'bug',
-        severity: 'high',
-      },
-    ],
+    summary: {
+      files_reviewed: 1,
+      comments: comments.length,
+      total_tokens: 100,
+      input_tokens: 80,
+      output_tokens: 20,
+      elapsed: '1s',
+    },
+    comments,
+    manifest: {
+      schema_version: 'ocr.run-manifest/v1',
+      terminal_state: 'complete',
+    },
   }
+}
+
+test('renders findings without making finding count a failure', () => {
+  const result = completeReviewResult([
+    {
+      path: 'src/example.ts',
+      content: [
+        'Confidence: 75/100',
+        'Autofix: manual',
+        'Motivating line: `return value`',
+        'This can fail at runtime.\n## Injected heading',
+      ].join('\n'),
+      suggestion_code: 'return value ?? fallback',
+      start_line: 10,
+      end_line: 11,
+      category: 'bug',
+      severity: 'high',
+    },
+  ])
 
   const [report] = renderFinalReviewChunks(result, 'a'.repeat(40))
   assert.match(report, /Gemini 3\.7 Flash \(high reasoning\)/)
@@ -195,9 +210,8 @@ test('rejects incomplete or wrong-model OCR results', () => {
     () =>
       renderFinalReviewChunks(
         {
-          status: 'success',
+          ...completeReviewResult(),
           llm: { model: 'wrong-model' },
-          comments: [],
         },
         'a'.repeat(40)
       ),
@@ -207,10 +221,8 @@ test('rejects incomplete or wrong-model OCR results', () => {
     () =>
       renderFinalReviewChunks(
         {
-          status: 'success',
-          llm: { model: FINAL_REVIEW_MODEL },
+          ...completeReviewResult(),
           summary: { budget_exceeded: true },
-          comments: [],
         },
         'a'.repeat(40)
       ),
@@ -220,9 +232,8 @@ test('rejects incomplete or wrong-model OCR results', () => {
     () =>
       renderFinalReviewChunks(
         {
-          status: 'success',
-          llm: { model: FINAL_REVIEW_MODEL },
-          comments: [],
+          ...completeReviewResult(),
+          summary: undefined,
         },
         'a'.repeat(40)
       ),
@@ -232,9 +243,7 @@ test('rejects incomplete or wrong-model OCR results', () => {
     () =>
       renderFinalReviewChunks(
         {
-          status: 'success',
-          llm: { model: FINAL_REVIEW_MODEL },
-          summary: { budget_exceeded: false },
+          ...completeReviewResult(),
           comments: [
             {
               path: 'src/example.ts',
@@ -250,6 +259,21 @@ test('rejects incomplete or wrong-model OCR results', () => {
       ),
     /confidence score/
   )
+  assert.throws(
+    () =>
+      renderFinalReviewChunks(
+        {
+          ...completeReviewResult(),
+          status: 'partial',
+          manifest: {
+            schema_version: 'ocr.run-manifest/v1',
+            terminal_state: 'partial',
+          },
+        },
+        'a'.repeat(40)
+      ),
+    /unexpected status: partial/
+  )
 })
 
 test('rejects a report that would require partial publication', () => {
@@ -257,9 +281,7 @@ test('rejects a report that would require partial publication', () => {
     () =>
       renderFinalReviewChunks(
         {
-          status: 'success',
-          llm: { model: FINAL_REVIEW_MODEL },
-          summary: { budget_exceeded: false },
+          ...completeReviewResult(),
           comments: [
             {
               path: 'src/example.ts',

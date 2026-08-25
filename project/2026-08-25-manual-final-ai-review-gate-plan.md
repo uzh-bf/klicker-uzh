@@ -221,8 +221,8 @@ security-sensitive. Read-only specialist reviews remain mandatory.
 
 ## Progress
 
-- Status: reviewed implementation and corrections are committed on current
-  `origin/v3`; integrated verification and the finish gate are in progress.
+- Status: the integrated final-review finding is corrected on current
+  `origin/v3`; fresh verification and final re-review are in progress.
 - Completed: fresh remote audit, normal merge of current `origin/v3`, upstream
   OCR and current OpenRouter research, production-readiness lens selection,
   required planner challenge, promotion-contract inspection, passing
@@ -238,6 +238,10 @@ security-sensitive. Read-only specialist reviews remain mandatory.
   review spend, and one unused output. OCR v1.9.10 omits
   `budget_exceeded: false`, so the verified correction requires the summary
   object and rejects `true` rather than requiring an impossible explicit false.
+- Review disposition: the integrated Sol reviewer proved that pinned OCR
+  v1.9.10 reports a fully covered manifest run as `complete`, not synthetic
+  `success`. The parser now requires both `status: complete` and a complete
+  `ocr.run-manifest/v1`; its focused fixture rejects partial coverage.
 - Remaining: run integrated verification and the final reviewer, push normally,
   and create the replacement draft PR.
 - Delivery boundary: live command proof, merge, and branch-protection activation
