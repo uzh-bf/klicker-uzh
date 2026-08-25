@@ -1,0 +1,120 @@
+{
+  "schema_version": "qualification-fixture/v1",
+  "scenario": "invalid-topology",
+  "expected_outcome": "fails-closed",
+  "expected_adjudication": null,
+  "review": {
+    "schema_version": "ocr.run-manifest/v1",
+    "status": "complete",
+    "model": "synthetic/model-v1",
+    "finish_reason": "stop",
+    "warnings": [],
+    "summary": {
+      "coverage": "complete",
+      "comments": 0,
+      "files_reviewed": 1,
+      "elapsed": "2s",
+      "input_tokens": 75,
+      "output_tokens": 25,
+      "total_tokens": 100
+    },
+    "manifest": {
+      "schema_version": "ocr.run-manifest/v1",
+      "terminal_state": "complete"
+    },
+    "comments": [],
+    "stack": {
+      "schema_version": "final-ai-stack-manifest/v1",
+      "stack_id": "synthetic-stack-71-72-73",
+      "ultimate_base": {
+        "ref": "v3",
+        "sha": "fa0f80a3b99181661d386f460ecd5fc23ec144cc"
+      },
+      "stack_order": [
+        71,
+        72,
+        73
+      ],
+      "layers": [
+        {
+          "position": 1,
+          "pull_request": 71,
+          "base_ref": "v3",
+          "base_sha": "fa0f80a3b99181661d386f460ecd5fc23ec144cc",
+          "head_ref": "rs/synthetic-1",
+          "head_sha": "bca8bf016ab3e996d0ed642c65483676b934d6db",
+          "title": "Synthetic layer 1",
+          "files": [
+            {
+              "filename": "src/a.ts",
+              "status": "modified",
+              "additions": 1,
+              "deletions": 0
+            }
+          ]
+        },
+        {
+          "position": 2,
+          "pull_request": 72,
+          "base_ref": "rs/synthetic-1",
+          "base_sha": "bca8bf016ab3e996d0ed642c65483676b934d6db",
+          "head_ref": "rs/synthetic-2",
+          "head_sha": "fa20e30f0095af1556fb769342cae65bac94a60f",
+          "title": "Synthetic layer 2",
+          "files": [
+            {
+              "filename": "src/b.ts",
+              "status": "modified",
+              "additions": 1,
+              "deletions": 0
+            }
+          ]
+        },
+        {
+          "position": 3,
+          "pull_request": 73,
+          "base_ref": "rs/synthetic-2",
+          "base_sha": "0d63cbc30d5eb3b6e89ac12a00a72afc876b58ee",
+          "head_ref": "rs/synthetic-3",
+          "head_sha": "819b1a51fcee28b1f0c67a0695f36c1be559842d",
+          "title": "Synthetic layer 3",
+          "files": [
+            {
+              "filename": "src/c.ts",
+              "status": "modified",
+              "additions": 1,
+              "deletions": 0
+            }
+          ]
+        }
+      ],
+      "path_index": [
+        {
+          "filename": "src/a.ts",
+          "additions": 1,
+          "deletions": 0,
+          "layers": [
+            1
+          ]
+        },
+        {
+          "filename": "src/b.ts",
+          "additions": 1,
+          "deletions": 0,
+          "layers": [
+            2
+          ]
+        },
+        {
+          "filename": "src/c.ts",
+          "additions": 1,
+          "deletions": 0,
+          "layers": [
+            3
+          ]
+        }
+      ]
+    }
+  },
+  "notes": "Layer 3 declares a different base than the recorded head of layer 2; the ancestry/topology is invalid and the evaluator fails closed without an adjudication label."
+}

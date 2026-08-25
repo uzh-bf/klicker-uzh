@@ -1,0 +1,94 @@
+{
+  "schema_version": "qualification-fixture/v1",
+  "scenario": "valid-two-layer-stack",
+  "expected_outcome": "accepts",
+  "expected_adjudication": "clean",
+  "review": {
+    "schema_version": "ocr.run-manifest/v1",
+    "status": "complete",
+    "model": "synthetic/model-v1",
+    "finish_reason": "stop",
+    "warnings": [],
+    "summary": {
+      "coverage": "complete",
+      "comments": 0,
+      "files_reviewed": 1,
+      "elapsed": "2s",
+      "input_tokens": 75,
+      "output_tokens": 25,
+      "total_tokens": 100
+    },
+    "manifest": {
+      "schema_version": "ocr.run-manifest/v1",
+      "terminal_state": "complete"
+    },
+    "comments": [],
+    "stack": {
+      "schema_version": "final-ai-stack-manifest/v1",
+      "stack_id": "synthetic-stack-21-22",
+      "ultimate_base": {
+        "ref": "v3",
+        "sha": "fa0f80a3b99181661d386f460ecd5fc23ec144cc"
+      },
+      "stack_order": [
+        21,
+        22
+      ],
+      "layers": [
+        {
+          "position": 1,
+          "pull_request": 21,
+          "base_ref": "v3",
+          "base_sha": "fa0f80a3b99181661d386f460ecd5fc23ec144cc",
+          "head_ref": "rs/synthetic-1",
+          "head_sha": "bca8bf016ab3e996d0ed642c65483676b934d6db",
+          "title": "Synthetic layer 1",
+          "files": [
+            {
+              "filename": "src/a.ts",
+              "status": "modified",
+              "additions": 10,
+              "deletions": 2
+            }
+          ]
+        },
+        {
+          "position": 2,
+          "pull_request": 22,
+          "base_ref": "rs/synthetic-1",
+          "base_sha": "bca8bf016ab3e996d0ed642c65483676b934d6db",
+          "head_ref": "rs/synthetic-2",
+          "head_sha": "fa20e30f0095af1556fb769342cae65bac94a60f",
+          "title": "Synthetic layer 2",
+          "files": [
+            {
+              "filename": "src/b.ts",
+              "status": "added",
+              "additions": 12,
+              "deletions": 0
+            }
+          ]
+        }
+      ],
+      "path_index": [
+        {
+          "filename": "src/a.ts",
+          "additions": 10,
+          "deletions": 2,
+          "layers": [
+            1
+          ]
+        },
+        {
+          "filename": "src/b.ts",
+          "additions": 12,
+          "deletions": 0,
+          "layers": [
+            2
+          ]
+        }
+      ]
+    }
+  },
+  "notes": "A verified two-layer stack with exact base/head edges, a complete path index, and no findings accepts as clean."
+}

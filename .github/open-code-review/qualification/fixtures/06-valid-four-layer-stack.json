@@ -1,0 +1,152 @@
+{
+  "schema_version": "qualification-fixture/v1",
+  "scenario": "valid-four-layer-stack",
+  "expected_outcome": "accepts",
+  "expected_adjudication": "blocker",
+  "review": {
+    "schema_version": "ocr.run-manifest/v1",
+    "status": "complete",
+    "model": "synthetic/model-v1",
+    "finish_reason": "stop",
+    "warnings": [],
+    "summary": {
+      "coverage": "complete",
+      "comments": 1,
+      "files_reviewed": 1,
+      "elapsed": "2s",
+      "input_tokens": 75,
+      "output_tokens": 25,
+      "total_tokens": 100
+    },
+    "manifest": {
+      "schema_version": "ocr.run-manifest/v1",
+      "terminal_state": "complete"
+    },
+    "comments": [
+      {
+        "path": "src/mid.ts",
+        "layer_numbers": [
+          2,
+          3
+        ],
+        "start_line": 14,
+        "end_line": 14,
+        "category": "bug",
+        "severity": "high",
+        "content": "Confidence: 80/100\nAutofix: manual\nMotivating line: `value *= scale`\nLayer 3 scales the value that layer 2 already scaled, double-counting the conversion for downstream consumers."
+      }
+    ],
+    "stack": {
+      "schema_version": "final-ai-stack-manifest/v1",
+      "stack_id": "synthetic-stack-41-42-43-44",
+      "ultimate_base": {
+        "ref": "v3",
+        "sha": "fa0f80a3b99181661d386f460ecd5fc23ec144cc"
+      },
+      "stack_order": [
+        41,
+        42,
+        43,
+        44
+      ],
+      "layers": [
+        {
+          "position": 1,
+          "pull_request": 41,
+          "base_ref": "v3",
+          "base_sha": "fa0f80a3b99181661d386f460ecd5fc23ec144cc",
+          "head_ref": "rs/synthetic-1",
+          "head_sha": "bca8bf016ab3e996d0ed642c65483676b934d6db",
+          "title": "Synthetic layer 1",
+          "files": [
+            {
+              "filename": "src/base.ts",
+              "status": "modified",
+              "additions": 5,
+              "deletions": 1
+            }
+          ]
+        },
+        {
+          "position": 2,
+          "pull_request": 42,
+          "base_ref": "rs/synthetic-1",
+          "base_sha": "bca8bf016ab3e996d0ed642c65483676b934d6db",
+          "head_ref": "rs/synthetic-2",
+          "head_sha": "fa20e30f0095af1556fb769342cae65bac94a60f",
+          "title": "Synthetic layer 2",
+          "files": [
+            {
+              "filename": "src/mid.ts",
+              "status": "added",
+              "additions": 20,
+              "deletions": 0
+            }
+          ]
+        },
+        {
+          "position": 3,
+          "pull_request": 43,
+          "base_ref": "rs/synthetic-2",
+          "base_sha": "fa20e30f0095af1556fb769342cae65bac94a60f",
+          "head_ref": "rs/synthetic-3",
+          "head_sha": "819b1a51fcee28b1f0c67a0695f36c1be559842d",
+          "title": "Synthetic layer 3",
+          "files": [
+            {
+              "filename": "src/mid.ts",
+              "status": "modified",
+              "additions": 4,
+              "deletions": 1
+            }
+          ]
+        },
+        {
+          "position": 4,
+          "pull_request": 44,
+          "base_ref": "rs/synthetic-3",
+          "base_sha": "819b1a51fcee28b1f0c67a0695f36c1be559842d",
+          "head_ref": "rs/synthetic-4",
+          "head_sha": "41a32b4aa9a7e76aa29c3903a14d450dcf6eeb23",
+          "title": "Synthetic layer 4",
+          "files": [
+            {
+              "filename": "src/top.ts",
+              "status": "added",
+              "additions": 9,
+              "deletions": 0
+            }
+          ]
+        }
+      ],
+      "path_index": [
+        {
+          "filename": "src/base.ts",
+          "additions": 5,
+          "deletions": 1,
+          "layers": [
+            1
+          ]
+        },
+        {
+          "filename": "src/mid.ts",
+          "additions": 24,
+          "deletions": 1,
+          "layers": [
+            2,
+            3
+          ]
+        },
+        {
+          "filename": "src/top.ts",
+          "additions": 9,
+          "deletions": 0,
+          "layers": [
+            4
+          ]
+        }
+      ]
+    }
+  },
+  "notes": "A four-layer stack with a cross-layer finding on layers 2 and 3 must validate the owner list and adjudicate as a blocker."
+}

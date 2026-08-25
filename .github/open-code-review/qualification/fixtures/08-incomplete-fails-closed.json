@@ -1,0 +1,28 @@
+{
+  "schema_version": "qualification-fixture/v1",
+  "scenario": "incomplete-fails-closed",
+  "expected_outcome": "fails-closed",
+  "expected_adjudication": null,
+  "review": {
+    "schema_version": "ocr.run-manifest/v1",
+    "status": "complete",
+    "model": "synthetic/model-v1",
+    "finish_reason": "stop",
+    "warnings": [],
+    "summary": {
+      "coverage": "partial",
+      "comments": 0,
+      "files_reviewed": 1,
+      "elapsed": "2s",
+      "input_tokens": 75,
+      "output_tokens": 25,
+      "total_tokens": 100
+    },
+    "manifest": {
+      "schema_version": "ocr.run-manifest/v1",
+      "terminal_state": "complete"
+    },
+    "comments": []
+  },
+  "notes": "A partial-coverage review must fail closed even when it reports no findings, because completeness is a precondition of the final review contract."
+}

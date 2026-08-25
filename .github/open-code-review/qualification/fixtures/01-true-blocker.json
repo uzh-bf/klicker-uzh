@@ -1,0 +1,37 @@
+{
+  "schema_version": "qualification-fixture/v1",
+  "scenario": "true-blocker",
+  "expected_outcome": "accepts",
+  "expected_adjudication": "blocker",
+  "review": {
+    "schema_version": "ocr.run-manifest/v1",
+    "status": "complete",
+    "model": "synthetic/model-v1",
+    "finish_reason": "stop",
+    "warnings": [],
+    "summary": {
+      "coverage": "complete",
+      "comments": 1,
+      "files_reviewed": 1,
+      "elapsed": "2s",
+      "input_tokens": 75,
+      "output_tokens": 25,
+      "total_tokens": 100
+    },
+    "manifest": {
+      "schema_version": "ocr.run-manifest/v1",
+      "terminal_state": "complete"
+    },
+    "comments": [
+      {
+        "path": "src/export.ts",
+        "start_line": 12,
+        "end_line": 12,
+        "category": "bug",
+        "severity": "critical",
+        "content": "Confidence: 90/100\nAutofix: manual\nMotivating line: `return rawPayload`\nThe new endpoint returns the unvalidated payload field as the record id, which collides with an existing index and drops earlier records."
+      }
+    ]
+  },
+  "notes": "A verified data-integrity defect on a changed line with the required evidence shape must adjudicate as a blocker."
+}
