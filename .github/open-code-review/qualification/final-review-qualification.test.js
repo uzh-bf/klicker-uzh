@@ -249,6 +249,21 @@ test('accepts a coherent two-layer stack with exact edges', () => {
   assert.equal(evaluation.valid, true)
 })
 
+test('keeps stack validation pure across repeated evaluations', () => {
+  const fixture = minimalFixture({
+    review: {
+      ...minimalFixture().review,
+      stack: twoLayerStack(),
+    },
+  })
+  const before = JSON.stringify(fixture)
+  const first = evaluate(fixture)
+  const second = evaluate(fixture)
+  assert.equal(first.valid, true)
+  assert.deepEqual(second, first)
+  assert.equal(JSON.stringify(fixture), before)
+})
+
 test('fails closed when a layer breaks the base-sha ancestry', () => {
   const stack = twoLayerStack()
   stack.layers[1].base_sha = sha256('drifted').slice(0, 40)

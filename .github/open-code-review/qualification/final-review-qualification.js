@@ -542,14 +542,15 @@ function validateStack(stack, reasons) {
       )
     }
   }
-  stack.path_owners = new Map(
-    [...pathIndex.entries()].map(([filename, entry]) => [
-      filename,
-      entry.layers,
-    ])
-  )
-  stack.layer_count = layers.length
-  return true
+  return {
+    layer_count: layers.length,
+    path_owners: new Map(
+      [...pathIndex.entries()].map(([filename, entry]) => [
+        filename,
+        entry.layers,
+      ])
+    ),
+  }
 }
 
 function validateFixture(fixture, reasons) {
@@ -608,12 +609,18 @@ function validateFixture(fixture, reasons) {
   ) {
     return false
   }
-  if (stack != null && !validateStack(stack, reasons)) {
-    return false
+  let stackContext = null
+  if (stack != null) {
+    stackContext = validateStack(stack, reasons)
+    if (!stackContext) return false
   }
   const { comments } = fixture.review
   for (let index = 0; index < comments.length; index += 1) {
-    if (!validateFindingComment(comments[index], index, reasons, { stack })) {
+    if (
+      !validateFindingComment(comments[index], index, reasons, {
+        stack: stackContext,
+      })
+    ) {
       return false
     }
   }
