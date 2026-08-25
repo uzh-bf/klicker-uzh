@@ -48,7 +48,7 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
 2. **Accessing the apps:**
    - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost ports. Lecturer login is `lecturer`/`abcd`.
    - **Mode 2 (linked checkout):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
-     1. Install devrouter ≥ 0.0.35 and run `devrouter setup --yes` once.
+     1. Install devrouter ≥ 0.0.38 and run `devrouter setup --yes` once.
      2. From an existing linked worktree, start and prove the environment with:
         ```bash
         devrouter ensure .

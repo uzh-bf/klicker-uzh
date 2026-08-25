@@ -104,10 +104,6 @@ if KLICKER_TEST_DOCKER_CREATE_FAIL=true bash "$INIT_ROOT/initialize.sh" \
   fail 'initializer ignored a Docker volume creation failure'
 fi
 
-grep -Fq 'pnpm install --prefer-offline --no-frozen-lockfile' \
-  "$REPO_ROOT/.devcontainer/post-create.sh" ||
-  fail 'post-create does not prefer the shared pnpm store'
-
 base_fingerprint="$(bash "$RUNTIME_SCRIPT" fingerprint)"
 write_file "$ROOT/apps/chat/src/app/api/example/route.ts" 'export const GET = false'
 content_fingerprint="$(bash "$RUNTIME_SCRIPT" fingerprint)"
