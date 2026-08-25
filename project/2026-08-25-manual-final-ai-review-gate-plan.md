@@ -34,11 +34,12 @@
 
 ## Plan identity
 
-- Plan: `project/2026-08-25-pr-5530-final-ai-review-gate-plan.md`.
+- Plan: `project/2026-08-25-manual-final-ai-review-gate-plan.md`.
 - Historical plan: `project/2026-08-24-open-code-review-plan.md`.
 - Branch: `rs/manual-final-ai-review-gate`.
 - Worktree: `trees/rs-open-code-review-background`.
-- Target: `v3`, merged locally through `853567e54b` without force-pushing.
+- Target: current `origin/v3` at `1ef0b5f737`; the replacement branch was
+  rebuilt directly on this baseline without force-pushing.
 - Pull request: replacement draft PR to be created after push. Historical
   [#5530](https://github.com/uzh-bf/klicker-uzh/pull/5530) is merged.
 - Package: one ordinary PR because continuous-review hardening, the manual
@@ -220,8 +221,8 @@ security-sensitive. Read-only specialist reviews remain mandatory.
 
 ## Progress
 
-- Status: integrated implementation committed; independent review and finish
-  gate are in progress.
+- Status: reviewed implementation and corrections are committed on current
+  `origin/v3`; integrated verification and the finish gate are in progress.
 - Completed: fresh remote audit, normal merge of current `origin/v3`, upstream
   OCR and current OpenRouter research, production-readiness lens selection,
   required planner challenge, promotion-contract inspection, passing
@@ -232,8 +233,12 @@ security-sensitive. Read-only specialist reviews remain mandatory.
   were unavailable at the provider credit boundary. Trusted fallback reviews
   found and corrected Unicode-format controls, finding-schema validation,
   Markdown confinement, partial report publication, and repeated PR fetches.
-- Remaining: review the committed workflow slice, apply verified corrections,
-  run integrated verification and the final reviewer, push normally, and update
-  the replacement draft PR.
+- Review disposition: the workflow slice's trusted fallback reviews found and
+  corrected stale base-range success, incomplete result acceptance, duplicate
+  review spend, and one unused output. OCR v1.9.10 omits
+  `budget_exceeded: false`, so the verified correction requires the summary
+  object and rejects `true` rather than requiring an impossible explicit false.
+- Remaining: run integrated verification and the final reviewer, push normally,
+  and create the replacement draft PR.
 - Delivery boundary: live command proof, merge, and branch-protection activation
   remain withheld post-merge work.
