@@ -78,6 +78,8 @@ test('acknowledges receipts only for self profiles and retries after failure', a
   await expect(page.getByText('Receipt test achievement')).toBeVisible()
   await expect(page.getByText(receiptNotice)).toBeVisible()
   await expect.poll(() => acknowledgementRequests).toBe(1)
+  await page.waitForTimeout(2000)
+  expect(acknowledgementRequests).toBe(1)
 
   failAcknowledgement = false
   await page.reload()
