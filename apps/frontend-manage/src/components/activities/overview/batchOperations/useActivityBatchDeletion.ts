@@ -25,6 +25,14 @@ function assertNever(value: never): never {
   throw new Error(`Unsupported activity type: ${String(value)}`)
 }
 
+function throwOnMutationErrors(
+  errors: readonly { message: string }[] | undefined
+) {
+  if (errors?.length) {
+    throw new Error(errors.map((error) => error.message).join('; '))
+  }
+}
+
 function useActivityBatchDeletion() {
   const [deleteLiveQuiz] = useMutation(DeleteLiveQuizDocument)
   const [deletePracticeQuiz] = useMutation(DeletePracticeQuizBatchDocument)
@@ -34,27 +42,31 @@ function useActivityBatchDeletion() {
   async function deleteActivity(activity: ActivityInfo) {
     switch (activity.type) {
       case ActivityType.LiveQuiz: {
-        const { data } = await deleteLiveQuiz({
+        const { data, errors } = await deleteLiveQuiz({
           variables: { id: activity.id },
         })
+        throwOnMutationErrors(errors)
         return data?.deleteLiveQuiz?.id === activity.id
       }
       case ActivityType.PracticeQuiz: {
-        const { data } = await deletePracticeQuiz({
+        const { data, errors } = await deletePracticeQuiz({
           variables: { id: activity.id },
         })
+        throwOnMutationErrors(errors)
         return data?.deletePracticeQuiz?.id === activity.id
       }
       case ActivityType.MicroLearning: {
-        const { data } = await deleteMicroLearning({
+        const { data, errors } = await deleteMicroLearning({
           variables: { id: activity.id },
         })
+        throwOnMutationErrors(errors)
         return data?.deleteMicroLearning?.id === activity.id
       }
       case ActivityType.GroupActivity: {
-        const { data } = await deleteGroupActivity({
+        const { data, errors } = await deleteGroupActivity({
           variables: { id: activity.id },
         })
+        throwOnMutationErrors(errors)
         return data?.deleteGroupActivity?.id === activity.id
       }
       default:
@@ -71,10 +83,11 @@ function useActivityBatchDeletion() {
         activity,
         status: deleted ? 'deleted' : 'failed',
       }
-    } catch {
+    } catch (error) {
       console.error('Batch activity deletion failed', {
         activityId: activity.id,
         activityType: activity.type,
+        error,
       })
       return {
         activity,
