@@ -68,7 +68,8 @@ claim:
 - `lq:<quiz-id>:i:<instance-id>:responses:processed:claims` is a sorted-set
   replay claim for message IDs or correlation IDs. Scores are claim timestamps,
   and members older than the 24-hour replay horizon are trimmed before each
-  claim. The key uses the shorter remaining instance-info TTL after closure;
+  claim. The key remains for the full 24-hour replay horizon independently of
+  instance-info and counter retention;
 - `lq:<quiz-id>:i:<instance-id>:responses:processed` remains the legacy replay
   set during the worker rollout and is read only for compatibility and the
   initial processed-counter baseline.
@@ -96,8 +97,10 @@ All keys remain under the existing
 space, while sorted-set replay claims trim members after the bounded horizon and
 expire with the latest claim while the instance is active. Block closure and
 quiz termination start one-day retention on instance-info keys before expiring
-the response keys; the claim key follows that shorter remaining key retention,
-so late scripts cannot recreate persistent tracking keys.
+the response keys. Response counters mirror the remaining instance-info
+retention, or receive a one-day safety expiry when instance-info is already
+missing. Replay claims retain the full 24-hour horizon independently so late
+retries cannot repeat a completed batch.
 
 The rollout must deploy GraphQL before new ingress, drain old response
 processor replicas before initializing processed counters, and then run only
