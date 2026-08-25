@@ -6,6 +6,7 @@ import {
   chooseActivityAction,
   filterActivitiesByName,
   openActionMenuByTestId,
+  replaceControlledSearchValue,
 } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
@@ -292,9 +293,9 @@ async function shareElementWithUser(
 }
 
 async function openShareModalForElement(page: Page, elementName: string) {
-  await page.getByTestId('elements-search-input').clear()
-  await page.getByTestId('elements-search-input').fill(elementName)
-  await page.keyboard.press('Enter')
+  const searchInput = page.getByTestId('elements-search-input')
+  await replaceControlledSearchValue(searchInput, elementName)
+  await searchInput.press('Enter')
   await page.getByTestId(`actions-element-${elementName}`).click()
   await page.getByTestId(`share-element-${elementName}`).click()
 }
@@ -1979,16 +1980,21 @@ test.describe('Create different types of elements (with and without sample solut
       loginInstitutionalCatalyst,
       loginIndividualCatalyst,
       logoutUser,
-    }) => {
+    }, testInfo) => {
+      const retrySuffix =
+        testInfo.retry === 0 ? '' : ` (retry ${testInfo.retry})`
+      const mcTitle = `${data.MCML.title}${retrySuffix}`
+      const nrTitle = `${data.NRML.title}${retrySuffix}`
+
       await loginLecturer()
       await createQuestionMC({
-        name: data.MCML.title,
+        name: mcTitle,
         content: data.MCML.content,
         choices: data.MCML.choices,
         userId: LECTURER_ID,
       })
       await createQuestionNR(page, {
-        name: data.NRML.title,
+        name: nrTitle,
         content: data.NRML.content,
         ...data.NRML.options,
         multiplier: 3,
@@ -1996,14 +2002,14 @@ test.describe('Create different types of elements (with and without sample solut
       })
 
       await page.reload()
-      await openShareModalForElement(page, data.MCML.title)
+      await openShareModalForElement(page, mcTitle)
       await shareElementWithUser(page, {
         shortnameOrEmail: LECTURER_INST_SHORTNAME,
         permission: messages.manage.sharing.permissionsADMIN,
       })
       await page.getByTestId('close-share-object').click()
 
-      await openShareModalForElement(page, data.NRML.title)
+      await openShareModalForElement(page, nrTitle)
       await shareElementWithUser(page, {
         shortnameOrEmail: LECTURER_INST_SHORTNAME,
         permission: messages.manage.sharing.permissionsWRITE,
@@ -2012,10 +2018,11 @@ test.describe('Create different types of elements (with and without sample solut
 
       await logoutUser()
       await loginInstitutionalCatalyst()
-      await page.getByTestId('elements-search-input').clear()
-      await page.getByTestId('elements-search-input').press('Enter')
+      const institutionalSearchInput = page.getByTestId('elements-search-input')
+      await replaceControlledSearchValue(institutionalSearchInput, '')
+      await institutionalSearchInput.press('Enter')
 
-      await page.getByTestId(`element-checkbox-${data.NRML.title}`).check()
+      await page.getByTestId(`element-checkbox-${nrTitle}`).check()
       await page.getByTestId('element-batch-operations').click()
       await page.getByTestId('status-checkbox').check()
       await selectOption(
@@ -2028,14 +2035,14 @@ test.describe('Create different types of elements (with and without sample solut
         .getByTestId('element-batch-sharing-username-or-email')
         .fill(LECTURER_IND_SHORTNAME)
       await expect(
-        page.getByTestId(`element-batch-sharing-x-${data.NRML.title}`)
+        page.getByTestId(`element-batch-sharing-x-${nrTitle}`)
       ).toBeVisible()
       await expect(page.getByTestId('apply-batch-operations')).toBeEnabled()
       await page.getByTestId('close-batch-operations-modal').click()
-      await page.getByTestId(`element-checkbox-${data.NRML.title}`).uncheck()
+      await page.getByTestId(`element-checkbox-${nrTitle}`).uncheck()
 
-      await page.getByTestId(`element-checkbox-${data.MCML.title}`).check()
-      await page.getByTestId(`element-checkbox-${data.NRML.title}`).check()
+      await page.getByTestId(`element-checkbox-${mcTitle}`).check()
+      await page.getByTestId(`element-checkbox-${nrTitle}`).check()
       await page.getByTestId('element-batch-operations').click()
       await page.getByTestId('status-checkbox').check()
       await selectOption(
@@ -2054,10 +2061,10 @@ test.describe('Create different types of elements (with and without sample solut
       )
 
       await expect(
-        page.getByTestId(`element-batch-sharing-check-${data.MCML.title}`)
+        page.getByTestId(`element-batch-sharing-check-${mcTitle}`)
       ).toBeVisible()
       const writeOnlyElement = page.getByTestId(
-        `element-batch-sharing-x-${data.NRML.title}`
+        `element-batch-sharing-x-${nrTitle}`
       )
       await expect(writeOnlyElement).toBeVisible()
       await writeOnlyElement.hover()
@@ -2076,28 +2083,25 @@ test.describe('Create different types of elements (with and without sample solut
         page.getByTestId('element-batch-update-result')
       ).toContainText(messages.manage.questionPool.batchUpdateResultSuccess)
       await expect(
-        page.getByTestId(`element-batch-sharing-result-${data.MCML.title}`)
+        page.getByTestId(`element-batch-sharing-result-${mcTitle}`)
       ).toContainText(messages.manage.questionPool.batchSharingResultShared)
       await expect(
-        page.getByTestId(`element-batch-sharing-result-${data.NRML.title}`)
+        page.getByTestId(`element-batch-sharing-result-${nrTitle}`)
       ).toContainText(
         messages.manage.questionPool
           .batchSharingResultSkippedInsufficientPermission
       )
       await page.getByTestId('close-batch-operations-result').click()
 
-      await validateElement(page, data.NRML.title, [
-        messages.shared.READY.statusLabel,
-      ])
+      await validateElement(page, nrTitle, [messages.shared.READY.statusLabel])
 
       await logoutUser()
       await loginIndividualCatalyst()
-      await validateElement(page, data.MCML.title)
-      await page.getByTestId('elements-search-input').fill(data.NRML.title)
-      await page.getByTestId('elements-search-input').press('Enter')
-      await expect(
-        page.getByTestId(`element-item-${data.NRML.title}`)
-      ).toBeHidden()
+      await validateElement(page, mcTitle)
+      const individualSearchInput = page.getByTestId('elements-search-input')
+      await replaceControlledSearchValue(individualSearchInput, nrTitle)
+      await individualSearchInput.press('Enter')
+      await expect(page.getByTestId(`element-item-${nrTitle}`)).toBeHidden()
     })
 
     test('Create a single choice question and share it with different permission levels', async ({

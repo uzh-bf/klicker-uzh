@@ -75,11 +75,27 @@ export async function chooseActivityAction(
 export async function filterActivitiesByName(page: Page, activityName: string) {
   const searchInput = page.getByTestId('activities-search-input')
 
-  await expect(searchInput).toBeVisible()
-  await searchInput.fill(activityName)
-  await expect(searchInput).toHaveValue(activityName)
+  await replaceControlledSearchValue(searchInput, activityName)
   await searchInput.press('Enter')
   await expect(searchInput).toHaveValue(activityName)
+}
+
+export async function replaceControlledSearchValue(
+  searchInput: Locator,
+  value: string
+) {
+  await expect(searchInput).toBeVisible()
+  if ((await searchInput.inputValue()) !== '') {
+    const resetIcon = searchInput.locator(
+      'xpath=following-sibling::*[@data-icon="xmark"]'
+    )
+    await expect(resetIcon).toBeVisible()
+    await resetIcon.click()
+    await expect(searchInput).toHaveValue('')
+  }
+
+  await searchInput.fill(value)
+  await expect(searchInput).toHaveValue(value)
 }
 
 export async function openCourseActionMenu(
