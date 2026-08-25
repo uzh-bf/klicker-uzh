@@ -156,11 +156,14 @@ right-hand cell so row alignment remains stable without displaying counts.
 
 ## Layer Footprint
 
-- `apps/response-api`: record received response identifiers.
-- `apps/hatchet-worker-response-processor`: record identifiers after successful
-  regular or assessment aggregation.
-- `packages/graphql`: expose element-instance fields, attach Redis cardinalities,
-  update the cockpit operation, and regenerate checked-in GraphQL artifacts.
+- `apps/response-api`: increment the numeric received counter before handing the
+  response to asynchronous processing.
+- `apps/hatchet-worker-response-processor`: atomically claim replay identifiers
+  and increment the numeric processed counter after successful regular or
+  assessment aggregation.
+- `packages/graphql`: expose element-instance fields, read numeric counters plus
+  legacy cardinality baselines, update the cockpit operation, and regenerate
+  checked-in GraphQL artifacts.
 - `apps/frontend-manage`: render the response status on cockpit block cards.
 - `packages/i18n`: add English and German labels.
 - `playwright`: extend the existing live quiz lifecycle coverage.
