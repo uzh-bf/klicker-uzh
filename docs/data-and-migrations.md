@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-08-04'
+timestamp: '2026-08-21'
 tags:
   - backend
   - prisma
@@ -51,11 +51,113 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 
 Where `migrate deploy` is invoked in deployment is now the PreSync hook above (see [CI & Deployment → Deployment migrations](./ci-and-deployment.md#deployment-migrations)). Rationale and rejected alternatives: [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md).
 
+### Refreshing STG from PRD
+
+The operator-run
+[`util/backup/refresh-stg-from-prd.sh`](../util/backup/refresh-stg-from-prd.sh)
+replaces the disposable Klicker STG PostgreSQL database with a consistent
+logical PRD dump. It does not copy Redis, Blob Storage, Hatchet state, or other
+components. The dump is not sanitized, so the workflow requires an explicit
+acknowledgement that STG may contain raw PRD data. Environment-owner approval
+must cover restricted access, synthetic or disabled outbound integrations,
+logs, backup/PITR retention, and deletion of the local encrypted archive; the
+operator checklist is in the backup README. Live execution fails before any
+credential lookup unless it receives both a bounded approval reference and an
+explicit outbound-isolation acknowledgement. Those values are bound to the
+local receipts and Kubernetes Lease.
+
+The script is read-only by default. Its preflight validates exact database
+host/port/name/TLS and server identities, the migrator Secret target, ordered
+Prisma migration names/checksums, immutable STG cluster/namespace/Application
+identities, write RBAC, fresh Azure storage/free/WAL metrics with conservative
+restore headroom, and a visible sorted Deployment set. The Infisical locations,
+database endpoints, Azure server, Kubernetes and ArgoCD identities, Git source,
+workload selector, migrator, and Lease name are checked-in constants rather
+than ambient configuration. During an approved
+execution it acquires and renews one expiring Kubernetes Lease, creates and
+verifies an encrypted custom-format dump, disables ArgoCD automated sync, binds
+the original replicas to the run receipt, and scales the exact `app-klicker`
+Deployments to zero. Lease renewal uses bounded retries, publishes the current
+receipt phase, and terminates through the signal-aware fail-safe cleanup path
+if ownership can no longer be maintained. Azure's administration role owns `public`,
+while the Klicker application role owns its contents. The refresh therefore
+preserves the schema and its grants, removes only application-owned objects in
+one transaction, and filters schema creation/ownership entries from the restore
+catalog. Preflight rejects unowned or unsupported objects, non-public
+application schemas, and PostgreSQL large objects before maintenance mode. An
+app-scoped deny window on the bound AppProject blocks manual and automated syncs
+throughout reset/restore. After the snapshot is verified, the exact prior
+windows are restored and a hook-based sync submitted directly through the
+self-hosted ArgoCD `Application` custom resource reapplies the existing
+`PreSync` hook; this is intentional because ArgoCD runs hooks on a requested
+sync even if the rendered manifests are unchanged. The script submits the
+operation with a Kubernetes resource-version compare-and-swap and identifies it
+by its run-scoped initiator. A timeout terminates that owned operation through
+the status subresource and waits for terminal state rather than returning while
+it can still reconcile. Success is bound to the exact Argo Git revision and to
+a newly observed migrator Job/Pod whose executed `imageID` contains the expected
+repository's immutable digest; the post-hook migration history must preserve
+the complete PRD name/checksum prefix. The terminal receipt is written only
+after the exact original automated policy is restored, ArgoCD remains
+`Synced`/`Healthy` across two observations, and every bound Deployment is ready.
+This is control-plane/database evidence. The operator must still inspect the
+migrator logs, confirm outbound isolation, verify backend behavior, and perform
+one isolated synthetic STG request before declaring the environment usable.
+This path uses `kubectl`; it does not require the local `argocd` CLI.
+
+PostgreSQL client commands go through
+`util/backup/refresh-stg-from-prd/database.sh:run_database_command`, which
+validates and decomposes each URL into libpq connection variables. Do not put a
+full URI in `PGDATABASE`: libpq treats that environment value as the database
+name and can fall back to the local Unix socket. The wrapper keeps the URL out
+of process arguments while preserving the remote host, credentials, and supported SSL
+settings. `pg_restore` is the exception for database selection: it does not use
+`PGDATABASE` unless direct-to-database mode is selected, so the script also
+passes the already-validated, non-secret STG database name through `--dbname`.
+
+This command and resource selection are fake-tested, including missing
+governance gates, ambient target-override attempts, wrong database, wrong
+cluster, RBAC denial, Lease contention/loss, migrator-target mismatch,
+operation compare-and-swap races/timeouts, stale migrator Jobs, invalid image
+digests, partial scaling, injected cleanup API failures, divergent migrations,
+metadata failure, health failure, and policy-restore failure. A disposable
+PostgreSQL integration test executes the reset SQL to prove that
+application-owned objects are removed while schema ownership, grants, and
+administrator-owned objects survive. The implementation workflow does not
+execute a real environment refresh.
+
+The source schema must not be newer than the STG release. Prisma migrations are
+forward-only: copying a newer PRD database into an older STG release is not a
+downgrade strategy. On a pre-mutation scale failure, the script compensates the
+replicas and policy. Once the target may have changed, failure cleanup
+reinstalls the app-scoped deny window, drains its accepted Argo operation,
+disables automated sync, and forces both recorded and currently selected
+Deployments to zero. If any invariant cannot be proven before the cleanup
+timeout, `state.json` records `cleanupIncomplete: true`, the Lease is not
+released, and the script does not claim the environment is safe. A normal
+subsequent run
+refuses to adopt that unfinished state. When reset completed but restore did
+not, the operator must not trigger an ArgoCD sync against the incomplete
+database. `RESUME_FAILED_RUN_ID` enables a receipt-bound retry only while ArgoCD
+is still manual, the exact receipt-bound deny window is present, the exact
+recorded Deployment set remains stopped, the receipt matches the current
+endpoints and prior automated policy, and no successful after receipt exists.
+The retry creates a fresh encrypted dump and restores the saved policy only
+after restore verification and the hook-based sync succeed.
+The complete operator procedure, confirmation gates, prerequisites, receipts,
+and recovery behavior
+are documented in the [backup README](../util/backup/README.md#refresh-the-stg-database-from-prd).
+
 ### Recovering a failed migration hook
 
 A failed hook blocks **every** sync to that environment, by design. Recovery order:
 
-Nothing alerts on hook failure — detection is whoever is watching ArgoCD, so a blocked environment stays blocked silently until someone looks. (The df-cloud staging Prometheus rules now provide early detection of stuck operations and failed syncs; see the linked solution doc below.)
+The refresh Lease retains run ID, phase, and `success`/`failed` result
+annotations, and local `state.json` records the target and last phase. There is
+no refresh-specific paging integration, so the operator must monitor the run
+and route a failed result through the environment's incident channel.
+Independently, the df-cloud staging Prometheus rules provide early detection of
+stuck operations and failed syncs; see the linked solution document below.
 
 1. **Get the logs first.** Find the Job with `kubectl get jobs -n <ns> -l app.kubernetes.io/component=migrate` (it is named `<helm-release>-klicker-uzh-v2-migrate` unless the release name already contains the chart name), then `kubectl logs job/<name> -n <ns>` — with the default values, both successful and failed Jobs are kept until the next sync (`hook-delete-policy: BeforeHookCreation`, no TTL by default). Keeping successful jobs prevents an upstream ArgoCD finalizer race from deadlocking the sync (see the [df-cloud incident analysis](https://gitlab.uzh.ch/uzh-bf/cloud/df-cloud-klickeruzh/-/blob/stg/docs/solutions/integration/argocd-hook-job-finalizer-update.md)). Treat the output as potentially containing row data from backfill migrations; scrub before pasting it anywhere.
 2. **Classify the failure.** Image pull (`ImagePullBackOff` → the rendered tag has no migrator image, see bootstrap above); connection error (DB unreachable — `backoffLimit: 1` gives little retry, so a failover during the hook simply needs a re-sync); or a SQL error inside a migration.
