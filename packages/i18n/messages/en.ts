@@ -1687,7 +1687,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       confirmBatchDeletionAcknowledge: 'Acknowledge',
       confirmBatchDeletionSubmit: 'Delete activities',
       batchDeletionProgress:
-        'Deletion in progress: {completed} of {total} {total, plural, =1 {activity} other {activities}} completed. Please keep this window open.',
+        'Deletion in progress: {completed} of {total, plural, =1 {1 activity} other {# activities}} completed. Please keep this window open.',
       batchDeletionRefreshFailed:
         'Deletion finished, but the activity list could not be refreshed. Reload the list before continuing.',
       batchDeletionNoEligibleActivities:

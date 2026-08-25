@@ -1695,7 +1695,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       confirmBatchDeletionAcknowledge: 'Bestätigen',
       confirmBatchDeletionSubmit: 'Aktivitäten löschen',
       batchDeletionProgress:
-        'Löschung läuft: {completed} von {total} {total, plural, =1 {Aktivität} other {Aktivitäten}} abgeschlossen. Bitte lassen Sie dieses Fenster geöffnet.',
+        'Löschung läuft: {completed} von {total, plural, =1 {1 Aktivität} other {# Aktivitäten}} abgeschlossen. Bitte lassen Sie dieses Fenster geöffnet.',
       batchDeletionRefreshFailed:
         'Die Löschung ist abgeschlossen, aber die Aktivitätenliste konnte nicht aktualisiert werden. Laden Sie die Liste neu, bevor Sie fortfahren.',
       batchDeletionNoEligibleActivities:
