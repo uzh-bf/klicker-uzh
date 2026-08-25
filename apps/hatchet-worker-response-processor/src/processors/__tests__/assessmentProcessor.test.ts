@@ -99,7 +99,7 @@ describe('aggregateAssessmentResponses atomic processing', () => {
     )
   })
 
-  it('accepts per-command errors after the assessment marker is claimed', async () => {
+  it('throws on per-command errors so Hatchet can retry the assessment', async () => {
     setupHappyPath()
     hoisted.assessmentClient.eval.mockResolvedValue(
       JSON.stringify({
@@ -110,11 +110,17 @@ describe('aggregateAssessmentResponses atomic processing', () => {
     )
     const ctx = createContext()
 
-    const result = await aggregateAssessmentResponses(createMessage(), ctx)
-
-    expect(result).toEqual({ status: 200 })
+    await expect(
+      aggregateAssessmentResponses(createMessage(), ctx)
+    ).rejects.toThrow('Redis pipeline for results aggregation failed')
     expect(ctx.logger.error).toHaveBeenCalledWith(
-      expect.stringContaining('processed count unchanged')
+      'Redis results aggregation commands failed; retrying assessment processing',
+      expect.objectContaining({
+        extra: expect.objectContaining({
+          correlationId: 'correlation-1',
+          commandErrors: ['WRONGTYPE Operation against a key'],
+        }),
+      })
     )
   })
 })

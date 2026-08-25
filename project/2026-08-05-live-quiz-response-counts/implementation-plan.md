@@ -60,7 +60,9 @@ Decision: Use these keys for new writes:
 The processing script initializes a missing processed counter once from the
 legacy processed-set cardinality, claims the identifier, applies every command
 with `redis.pcall`, and increments the counter only when no command fails. It
-returns `already_processed`, `processed`, or `aggregation_failed`. The legacy
+releases the claim and returns `aggregation_failed` when a command fails so the
+worker can throw and Hatchet can retry. It returns `already_processed`,
+`processed`, or `aggregation_failed`. The legacy
 received set is read-only compatibility input; GraphQL adds its cardinality to
 the new received counter. A missing processed counter falls back to the legacy
 processed-set cardinality as an opaque pre-cutover baseline.
@@ -68,8 +70,9 @@ processed-set cardinality as an opaque pre-cutover baseline.
 Risk: The compatibility bridge cannot make old workers increment the new
 processed counter. Deploy GraphQL before new ingress, drain old response
 processors before initializing processed counters, and run only the new
-processors after initialization. Partial failures remain claimed and are not
-replayed because some aggregation commands may already have applied.
+processors after initialization. A partial failure releases the replay claim
+and retries the message, so commands that already applied must be reconciled
+if a non-idempotent update repeats.
 
 Delegation Map:
 

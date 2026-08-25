@@ -41,13 +41,14 @@ end
 -- Initialize a new counter from the legacy processed set once. This keeps
 -- counts visible during the key-shape cutover without double-counting new
 -- claims.
-local baselineResult = redis.pcall(
-  'SETNX',
-  KEYS[2],
-  redis.call('SCARD', KEYS[1])
-)
-if type(baselineResult) == 'table' and baselineResult.err then
-  table.insert(trackingErrors, baselineResult.err)
+local legacyProcessedCount = redis.pcall('SCARD', KEYS[1])
+if type(legacyProcessedCount) == 'table' and legacyProcessedCount.err then
+  table.insert(trackingErrors, legacyProcessedCount.err)
+else
+  local baselineResult = redis.pcall('SETNX', KEYS[2], legacyProcessedCount)
+  if type(baselineResult) == 'table' and baselineResult.err then
+    table.insert(trackingErrors, baselineResult.err)
+  end
 end
 
 local function expireCounter()
@@ -61,9 +62,19 @@ local function expireCounter()
   end
 end
 
+local function releaseClaim()
+  local releaseResult = redis.pcall('SREM', KEYS[1], ARGV[1])
+  if type(releaseResult) == 'table' and releaseResult.err then
+    table.insert(trackingErrors, releaseResult.err)
+  end
+end
+
 expireCounter()
 
-if redis.call('SISMEMBER', KEYS[1], ARGV[1]) == 1 then
+local memberResult = redis.pcall('SISMEMBER', KEYS[1], ARGV[1])
+if type(memberResult) == 'table' and memberResult.err then
+  table.insert(commandErrors, memberResult.err)
+elseif memberResult == 1 then
   return cjson.encode({
     status = 'already_processed',
     counted = false,
@@ -72,7 +83,26 @@ if redis.call('SISMEMBER', KEYS[1], ARGV[1]) == 1 then
   })
 end
 
-redis.call('SADD', KEYS[1], ARGV[1])
+if #commandErrors > 0 then
+  return cjson.encode({
+    status = 'aggregation_failed',
+    counted = false,
+    commandErrors = commandErrors,
+    trackingErrors = trackingErrors,
+  })
+end
+
+local claimResult = redis.pcall('SADD', KEYS[1], ARGV[1])
+if type(claimResult) == 'table' and claimResult.err then
+  table.insert(commandErrors, claimResult.err)
+  return cjson.encode({
+    status = 'aggregation_failed',
+    counted = false,
+    commandErrors = commandErrors,
+    trackingErrors = trackingErrors,
+  })
+end
+
 if currentClaimTtl == -2 then
   local expireResult = redis.pcall('EXPIRE', KEYS[1], replayClaimTtl)
   if type(expireResult) == 'table' and expireResult.err then
@@ -85,6 +115,12 @@ for _, command in ipairs(commands) do
   if type(result) == 'table' and result.err then
     table.insert(commandErrors, result.err)
   end
+end
+
+if #commandErrors > 0 then
+  -- Do not let a failed aggregation become an already-processed replay. The
+  -- worker raises so Hatchet can retry the message.
+  releaseClaim()
 end
 
 local counted = false

@@ -187,7 +187,7 @@ redisDescribe('live quiz response tracking Redis contract', () => {
       expect(errorResult.counted).toBe(false)
       expect(errorResult.commandErrors).toHaveLength(1)
       expect(await redis.get(errorCountKey)).toBe('0')
-      expect(await redis.sismember(errorClaimKey, 'message-4')).toBe(1)
+      expect(await redis.sismember(errorClaimKey, 'message-4')).toBe(0)
 
       const partialClaimKey = `${prefix}:partial-processed`
       const partialCountKey = `${prefix}:partial-processed-count`
@@ -212,6 +212,25 @@ redisDescribe('live quiz response tracking Redis contract', () => {
       expect(partialResult.counted).toBe(false)
       expect(await redis.get(partialCountKey)).toBe('0')
       expect(await redis.hget(partialSuccessKey, 'participants')).toBe('1')
+      expect(await redis.sismember(partialClaimKey, 'message-5')).toBe(0)
+
+      const invalidClaimKey = `${prefix}:invalid-claim`
+      const invalidClaimCountKey = `${prefix}:invalid-claim-count`
+      await redis.set(invalidClaimKey, 'wrong-type')
+      const invalidClaimReply = await redis.eval(
+        LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
+        3,
+        invalidClaimKey,
+        invalidClaimCountKey,
+        `${prefix}:invalid-claim-info`,
+        'message-6',
+        String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
+        JSON.stringify([])
+      )
+      const invalidClaimResult = JSON.parse(String(invalidClaimReply))
+      expect(invalidClaimResult.status).toBe('aggregation_failed')
+      expect(invalidClaimResult.commandErrors).toHaveLength(1)
+      expect(await redis.get(invalidClaimCountKey)).toBeNull()
     } finally {
       await redis.del(
         replayClaimKey,
@@ -235,7 +254,10 @@ redisDescribe('live quiz response tracking Redis contract', () => {
         `${prefix}:partial-processed`,
         `${prefix}:partial-processed-count`,
         `${prefix}:partial-error-results`,
-        `${prefix}:partial-success-results`
+        `${prefix}:partial-success-results`,
+        `${prefix}:invalid-claim`,
+        `${prefix}:invalid-claim-count`,
+        `${prefix}:invalid-claim-info`
       )
     }
   })

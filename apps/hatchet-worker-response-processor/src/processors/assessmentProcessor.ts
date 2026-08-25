@@ -660,20 +660,30 @@ export async function aggregateAssessmentResponses(
     ) {
       const commandErrors = processingResult.commandErrors ?? []
       ctx.logger.error(
-        `Redis results aggregation commands failed; processed count unchanged while accepting partial application: ${commandErrors.join('; ')}` +
-          JSON.stringify({
-            correlationId: message.correlationId,
-            liveQuizId: message.liveQuizId,
-            instanceId: message.instanceId,
-          })
+        'Redis results aggregation commands failed; retrying assessment processing',
+        {
+          extra: {
+            correlationId,
+            liveQuizId,
+            instanceId,
+            commandErrors,
+          },
+        }
+      )
+      throw new Error(
+        `Redis response aggregation failed: ${commandErrors.join('; ') || 'unknown command error'}`
       )
     }
 
     if (processingResult.trackingErrors?.length) {
-      ctx.logger.error(
-        `Failed to track processed assessment response: ${processingResult.trackingErrors.join('; ')} ` +
-          JSON.stringify({ correlationId, liveQuizId, instanceId })
-      )
+      ctx.logger.error('Failed to track processed assessment response', {
+        extra: {
+          correlationId,
+          liveQuizId,
+          instanceId,
+          trackingErrors: processingResult.trackingErrors,
+        },
+      })
     }
 
     if (
@@ -688,14 +698,14 @@ export async function aggregateAssessmentResponses(
     }
     return { status: 200 }
   } catch (e) {
-    ctx.logger.error(
-      `Redis pipeline for results aggregation failed: ${String(e)}` +
-        JSON.stringify({
-          correlationId: message.correlationId,
-          liveQuizId: message.liveQuizId,
-          instanceId: message.instanceId,
-        })
-    )
+    ctx.logger.error('Redis pipeline for results aggregation failed', {
+      error: e instanceof Error ? e : new Error(String(e)),
+      extra: {
+        correlationId: message.correlationId,
+        liveQuizId: message.liveQuizId,
+        instanceId: message.instanceId,
+      },
+    })
     throw new Error(
       `Redis pipeline for results aggregation failed ${String(e)}`
     )

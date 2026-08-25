@@ -148,14 +148,21 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
     })
     if (!tracked) {
       console.warn(
-        `Instance info key missing, skipping received-response tracking for live quiz ${liveQuizId}, instance ${instanceId}, message ${message.messageId}`
+        'Instance info key missing; skipping received-response tracking',
+        {
+          liveQuizId,
+          instanceId,
+          messageId: message.messageId,
+        }
       )
     }
   } catch (error) {
-    console.error(
-      `Failed to track received response ${message.messageId} for live quiz ${liveQuizId}, instance ${instanceId}:`,
-      error
-    )
+    console.error('Failed to track received response', {
+      messageId: message.messageId,
+      liveQuizId,
+      instanceId,
+      error,
+    })
   }
 
   // determine if the participant is logged in with a valid student cookie (temporary or standard)
@@ -338,14 +345,21 @@ async function handleAddAssessmentResponse(
     })
     if (!tracked) {
       console.warn(
-        `Instance info key missing, skipping received-assessment tracking for live quiz ${liveQuizId}, instance ${instanceId}, correlation ${correlationId}`
+        'Instance info key missing; skipping received-assessment tracking',
+        {
+          liveQuizId,
+          instanceId,
+          correlationId,
+        }
       )
     }
   } catch (error) {
-    console.error(
-      `Failed to track received assessment response ${correlationId} for live quiz ${liveQuizId}, instance ${instanceId}:`,
-      error
-    )
+    console.error('Failed to track received assessment response', {
+      correlationId,
+      liveQuizId,
+      instanceId,
+      error,
+    })
   }
 
   // start the processing of an assessment response

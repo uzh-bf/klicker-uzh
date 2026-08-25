@@ -48,10 +48,12 @@ The existing
 claim for the response `messageId` or assessment `correlationId`. Its members
 expire within the 24-hour replay horizon, or sooner when instance-info retention
 is shorter. A processing retry after a lost Redis reply therefore cannot apply
-the same batch twice during that horizon. Partial Redis command errors retain
-the claim, return an explicit aggregation failure, and leave the processed
-counter unchanged; they are logged and not replayed because some commands may
-already have applied.
+the same completed batch twice during that horizon. If an aggregation command
+fails, the script releases the claim, leaves the processed counter unchanged,
+and returns an explicit aggregation failure. The worker throws so Hatchet can
+retry the message. Commands before the failure may already have applied, so a
+retry can repeat partial non-idempotent updates; surfacing the failure avoids
+silently losing the response and leaves reconciliation visible.
 
 The legacy received set
 `lq:<quiz-id>:i:<instance-id>:responses:received` is read-only compatibility
@@ -75,9 +77,10 @@ The difference between received and processed is an operational signal, not
 exact queue depth. It can include queued work as well as invalid, duplicate,
 late, rejected, failed, or untracked responses. Tracking does not change the
 response pipeline's validation semantics. Result aggregation uses the replay
-claim as a bounded exactly-once guard: after the claim is present, a retry is a
-no-op. Per-command Redis errors are logged as aggregation failures, do not
-increment the processed counter, and are not replayed.
+claim as a bounded replay guard for completed batches: after a successful
+claim-and-aggregation, a retry is a no-op. Per-command Redis errors release the
+claim, are logged as aggregation failures, do not increment the processed
+counter, and cause the worker to retry.
 
 Counters stay persistent while their element instance is active, matching the
 rest of the live execution cache. Replay claims are bounded independently of

@@ -9,8 +9,8 @@ received and processed response counts in the live-quiz cockpit. The readiness
 fixes cover regular and assessment response processing, replay safety, cockpit
 count degradation, response-tracking cleanup, and cockpit icon alignment.
 
-The local audit branch was refreshed against the current `origin/v3` at
-`09257efb71027d478ed2c418fd007a60900b34ea` before this verification. It also
+The local audit branch was refreshed against the current `origin/v3` before
+this verification. It also
 contains the approved counter and replay-claim redesign described below.
 No remote merge, deployment, or production-data access was performed.
 
@@ -19,16 +19,19 @@ No remote merge, deployment, or production-data access was performed.
 - Regular and assessment aggregation build Redis commands locally, then use one
   atomic Lua script that claims a bounded replay identifier, applies the batch,
   and increments the numeric processed counter only after every command
-  succeeds. Concurrent retries and lost replies therefore cannot apply
-  aggregation twice within the replay horizon.
+  succeeds. Concurrent retries and lost replies therefore cannot apply a
+  successfully completed aggregation twice within the replay horizon; partial
+  command failures are surfaced for retry and reconciliation separately.
 - New ingress writes a numeric received counter. The legacy received set is
   read-only compatibility input, and the cockpit adds its cardinality while
   old response-api instances drain.
 - The processing script captures per-command Redis errors with `redis.pcall`.
-  Partial failures retain the replay claim, return `aggregation_failed`, and
+  Partial failures release the replay claim, return `aggregation_failed`, and
   leave the processed counter unchanged because some commands may already have
-  applied. Connection-level failures still throw so the worker can retry
-  safely.
+  applied. The worker throws so Hatchet retries instead of acknowledging a
+  response that may have been lost. A retry can repeat partial non-idempotent
+  updates, so this path remains visible for reconciliation. Connection-level
+  failures still throw so the worker can retry.
 - Cockpit response-count resolution degrades all response counts to `null`
   when its count pipeline fails; the rest of the authorized cockpit query
   remains available.
@@ -58,7 +61,7 @@ No remote merge, deployment, or production-data access was performed.
 | Response-api ingress tracking tests | Passed; 3 direct tests cover missing-instance skips, active-instance increments, and invalid tracking responses |
 | Syncpack check | Passed |
 | Repository build | Passed; 23 of 23 Turbo tasks succeeded |
-| Redis integration contract test | Passed with `LIVE_QUIZ_REDIS_INTEGRATION=true`; concurrent replay applied one result, counters stayed exact, claims and counters mirrored bounded TTLs, missing-info retention was one day, and partial command errors retained the claim without incrementing the processed counter |
+| Redis integration contract test | Passed with `LIVE_QUIZ_REDIS_INTEGRATION=true`; concurrent replay applied one result, counters stayed exact, claims and counters mirrored bounded TTLs, missing-info retention was one day, and partial command errors released the claim without incrementing the processed counter |
 | GraphQL code generation and repository build | Passed; generated output was unchanged and 23 of 23 Turbo build tasks succeeded |
 | Browser verification | The manage cockpit route passed locally with delegated lecturer login before the final icon patch; the seeded live quiz rendered its blocks and activation controls, and activating the first block completed the local active-block lifecycle. A post-patch icon capture was blocked by the local Chrome session. |
 | Diff whitespace check | Passed |

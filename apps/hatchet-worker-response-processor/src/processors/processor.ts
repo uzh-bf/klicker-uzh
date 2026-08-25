@@ -670,14 +670,14 @@ export async function processResponseMessage(
       }
     }
   } catch (e) {
-    ctx.logger.error(
-      `Error processing response: ${String(e)} ` +
-        JSON.stringify({
-          messageId: message.messageId,
-          sessionId: message.sessionId,
-          instanceId: message.instanceId,
-        })
-    )
+    ctx.logger.error('Error processing response', {
+      error: e instanceof Error ? e : new Error(String(e)),
+      extra: {
+        messageId: message.messageId,
+        sessionId: message.sessionId,
+        instanceId: message.instanceId,
+      },
+    })
     return { status: 500 }
   }
 
@@ -726,24 +726,30 @@ export async function processResponseMessage(
     ) {
       const commandErrors = processingResult.commandErrors ?? []
       ctx.logger.error(
-        `Redis results aggregation commands failed; processed count unchanged while accepting partial application: ${commandErrors.join('; ')}` +
-          JSON.stringify({
+        'Redis results aggregation commands failed; retrying response processing',
+        {
+          extra: {
             messageId: message.messageId,
             sessionId: message.sessionId,
             instanceId: message.instanceId,
-          })
+            commandErrors,
+          },
+        }
+      )
+      throw new Error(
+        `Redis response aggregation failed: ${commandErrors.join('; ') || 'unknown command error'}`
       )
     }
 
     if (processingResult.trackingErrors?.length) {
-      ctx.logger.error(
-        `Failed to track processed response: ${processingResult.trackingErrors.join('; ')} ` +
-          JSON.stringify({
-            messageId: message.messageId,
-            sessionId: message.sessionId,
-            instanceId: message.instanceId,
-          })
-      )
+      ctx.logger.error('Failed to track processed response', {
+        extra: {
+          messageId: message.messageId,
+          sessionId: message.sessionId,
+          instanceId: message.instanceId,
+          trackingErrors: processingResult.trackingErrors,
+        },
+      })
     }
 
     if (
@@ -758,14 +764,14 @@ export async function processResponseMessage(
     }
     return { status: 200 }
   } catch (e) {
-    ctx.logger.error(
-      `Redis transaction failed: ${String(e)} ` +
-        JSON.stringify({
-          messageId: message.messageId,
-          sessionId: message.sessionId,
-          instanceId: message.instanceId,
-        })
-    )
+    ctx.logger.error('Redis transaction failed', {
+      error: e instanceof Error ? e : new Error(String(e)),
+      extra: {
+        messageId: message.messageId,
+        sessionId: message.sessionId,
+        instanceId: message.instanceId,
+      },
+    })
     throw new Error(`Redis transaction failed ${String(e)}`)
   }
 }

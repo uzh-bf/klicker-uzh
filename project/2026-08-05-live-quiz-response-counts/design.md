@@ -68,8 +68,12 @@ The received and processing scripts update their counters and retention in
 Redis Lua. Processing initializes a missing processed counter from the legacy
 processed-set cardinality once, which preserves pre-cutover visibility without
 double-counting new claims. Partial command errors return an explicit failed
-aggregation outcome, keep the claim to prevent unsafe replay, and leave the
-processed counter unchanged. Connection-level script failures still throw so
+aggregation outcome, release the claim, and leave the processed counter
+unchanged. The worker throws so Hatchet can retry instead of acknowledging a
+response that may have been only partially applied. Because commands before
+the failure may already have run, the retry path can repeat non-idempotent
+updates and remains a reconciliation signal rather than an exactly-once
+guarantee for partial batches. Connection-level script failures still throw so
 Hatchet can retry.
 
 The legacy received set

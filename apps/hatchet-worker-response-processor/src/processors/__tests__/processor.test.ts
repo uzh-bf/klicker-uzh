@@ -115,7 +115,7 @@ describe('processResponseMessage atomicity', () => {
     )
   })
 
-  it('logs and accepts per-command processing errors instead of triggering a Hatchet retry', async () => {
+  it('throws on per-command processing errors so Hatchet can retry', async () => {
     setupHappyPath(hoisted.regularClient)
     const ctx = createContext()
     hoisted.regularClient.eval.mockResolvedValue(
@@ -126,11 +126,17 @@ describe('processResponseMessage atomicity', () => {
       })
     )
 
-    const result = await processResponseMessage(createMessage(), ctx)
-
-    expect(result).toEqual({ status: 200 })
+    await expect(processResponseMessage(createMessage(), ctx)).rejects.toThrow(
+      'Redis transaction failed'
+    )
     expect(ctx.logger.error).toHaveBeenCalledWith(
-      expect.stringContaining('processed count unchanged')
+      'Redis results aggregation commands failed; retrying response processing',
+      expect.objectContaining({
+        extra: expect.objectContaining({
+          messageId: 'msg-1',
+          commandErrors: ['WRONGTYPE Operation against a key'],
+        }),
+      })
     )
   })
 
