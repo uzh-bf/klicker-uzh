@@ -17,7 +17,8 @@ import { Ellipsis } from '@klicker-uzh/markdown'
 import { Badge, Button, Checkbox, Dropdown } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import React, { useState } from 'react'
+import type React from 'react'
+import { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { twMerge } from 'tailwind-merge'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
@@ -118,6 +119,7 @@ function Element({
     setRemovalModalOpen,
     setActivityLogOpen,
     setSharingModalOpen,
+    refetchElements,
   })
 
   const availableActions = useAvailableElementActions({
@@ -126,6 +128,7 @@ function Element({
       isManager: [
         ...(dataUser?.userProfile?.privatePreview ? ['shareElement'] : []),
         'deleteElement',
+        'archiveElement',
       ],
       isEditor: ['editElement'],
       isShared: ['duplicateElement', 'activityLog'],
@@ -295,6 +298,7 @@ function Element({
                     </div>
                   ),
                   onClick: action.onClick,
+                  disabled: action.disabled,
                   data: action.data,
                 }))}
                 trigger={<FontAwesomeIcon icon={faEllipsis} />}

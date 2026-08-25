@@ -150,6 +150,9 @@ function Index() {
   })
   const numOfElements = dataElements?.userElements?.numOfElements || 0
   const elements = dataElements?.userElements?.elements ?? []
+  const refetchElementsForChildren = useCallback(async () => {
+    await refetchElements()
+  }, [refetchElements])
 
   // on change, store new page size in local storage
   useEffect(() => {
@@ -332,9 +335,7 @@ function Index() {
             toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
             handleToggleArchive={handleToggleArchive}
             isArchiveActive={filters.archive}
-            refetchElements={async () => {
-              await refetchElements()
-            }}
+            refetchElements={refetchElementsForChildren}
           />
         </div>
 
@@ -435,9 +436,7 @@ function Index() {
                       })
                     }
                     handleFilterReset={handleResetCleanURL}
-                    refetchElements={async () => {
-                      await refetchElements()
-                    }}
+                    refetchElements={refetchElementsForChildren}
                   />
                 </div>
 
@@ -471,9 +470,7 @@ function Index() {
           }
           isOpen={isElementCreationModalOpen}
           mode={ElementEditMode.CREATE}
-          refetchElements={async () => {
-            await refetchElements()
-          }}
+          refetchElements={refetchElementsForChildren}
         />
       )}
       {modificationModalOpen && router.query.editElementId && (
@@ -490,9 +487,7 @@ function Index() {
           }
           elementId={parseInt(router.query.editElementId as string, 10)}
           mode={ElementEditMode.EDIT}
-          refetchElements={async () => {
-            await refetchElements()
-          }}
+          refetchElements={refetchElementsForChildren}
         />
       )}
       {batchOperationsOpen && (
@@ -500,9 +495,7 @@ function Index() {
           selectedElements={Object.values(selectedElements)}
           onClose={() => setBatchOperationsOpen(false)}
           resetSelectedElements={() => setSelectedElements({})}
-          refetchElements={async () => {
-            await refetchElements()
-          }}
+          refetchElements={refetchElementsForChildren}
         />
       )}
       {showRecoveryPrompt && (
@@ -520,9 +513,7 @@ function Index() {
       )}
       <Suspense fallback={<div />}>
         <SuspendedFirstLoginModal
-          refetchElements={async () => {
-            await refetchElements()
-          }}
+          refetchElements={refetchElementsForChildren}
         />
       </Suspense>
     </Layout>
