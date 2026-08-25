@@ -35,7 +35,7 @@ Next.js development caches, and retain the existing bounded stale-cache repair.
 - Branch: `rs/devcontainer-local-cache`
 - Worktree: `trees/devcontainer-local-cache`
 - Target: `v3`
-- Base: `5ffc6a6d2bc4b12f6f38b5119718a7545e039256`
+- Base: `e4ef09e5bfc64a4019bace0b472630d5a21408c5`
 - Pull request: none
 
 ## Decisions and assumptions
@@ -163,7 +163,7 @@ critical-path coupling; delegation would cost more than the bounded edits.
 - Status: all three slices are committed; final runtime verification and the
   integrated final review are in progress.
 - Completed: remote `v3` freshness readback, clean task worktree, planner pass,
-  plan commit `04352a869`, shared pnpm-store commit `6bc9ff3fe`, mocked
+  plan commit `585f0c1b4`, shared pnpm-store commit `3355b0829`, mocked
   initializer success/idempotence/failure checks, shell syntax, ShellCheck on
   changed production scripts, and both resolved Compose overlays.
 - Focused evidence: `bash util/test-dev-runtime.sh` passed; both Compose models
@@ -187,6 +187,11 @@ critical-path coupling; delegation would cost more than the bounded edits.
   build because the image has no C compiler. The exact removed-doc-artifact
   check passes, and the branch's wiki-validator findings match the archived
   `origin/v3` baseline.
+- Freshness update: the branch was cleanly rebased onto current `origin/v3`
+  after three upstream commits landed during verification. The rebased focused
+  shell, Compose, and runtime tests pass. Installed devrouter 0.0.37 cannot
+  parse the upstream `profiles` key; the already-built local devrouter 0.0.38
+  checkout validates the rebased configuration with five passing checks.
 - Slice 1 review: done through trusted generic-continuity specialists after the
   configured Gemini routes failed pre-work with provider `402`; the accepted
   simplification uses Docker's idempotent named-volume creation directly. No
