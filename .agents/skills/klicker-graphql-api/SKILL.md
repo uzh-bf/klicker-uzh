@@ -15,7 +15,7 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
    ```ts
    deleteCourse: t.withAuth(asUser).field({
-     // asUser | asParticipant | asUserFullAccess | asUserSessionExec | asUserOwner | asUserWithCatalyst | asAdmin
+     // asUser | asParticipant | asUserFullAccess | asUserSessionExec | asUserOwner | asAdmin
      nullable: true,
      type: Course,
      args: {

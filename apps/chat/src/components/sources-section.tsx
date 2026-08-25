@@ -1,3 +1,4 @@
+import { useThreadViewportStore } from '@assistant-ui/react'
 import {
   BookOpenIcon,
   ExternalLinkIcon,
@@ -7,13 +8,15 @@ import {
   PlayIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import type { ComponentType, SVGProps } from 'react'
+import {
+  type ComponentType,
+  type SVGProps,
+  useLayoutEffect,
+  useRef,
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import {
-  getSourceSecondaryLine,
-  isMediaSource,
-} from '@/src/lib/sources/sourceDisplay'
+import { getSourceSecondaryLine } from '@/src/lib/sources/sourceDisplay'
 import type { ChatSource, ChatSourceType } from '@/src/lib/sources/types'
 import { useMessageSourcesContext } from './message-sources-context'
 import { SourcePreviewContent } from './source-preview-content'
@@ -41,7 +44,6 @@ function SourceCard({
 }) {
   const t = useTranslations()
   const Icon = SOURCE_TYPE_ICONS[source.type]
-  const isMedia = isMediaSource(source)
   const secondaryLine = getSourceSecondaryLine(source, t)
 
   const inner = (
@@ -103,8 +105,7 @@ function SourceCard({
       // programmatic focus to a non-url card too, and that focus needs to
       // stay visible even though the card itself isn't a link. All cards use
       // the same passive tooltip for their source details.
-      'border-border bg-background focus-visible:ring-ring flex min-w-0 items-start gap-2 rounded-lg border p-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-1',
-      isMedia && 'w-auto max-w-[16rem]',
+      'border-border bg-background focus-visible:ring-ring flex h-full min-w-0 items-start gap-2 rounded-lg border p-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-1',
       source.url && 'hover:bg-accent hover:text-accent-foreground'
     ),
   }
@@ -145,20 +146,32 @@ export function SourcesSection() {
   // via context with the inline citation chips, instead of re-parsing the
   // tool JSON here again.
   const { messageId, sources } = useMessageSourcesContext()
+  const threadViewportStore = useThreadViewportStore()
+  const revealOnMountRef = useRef(threadViewportStore.getState().isAtBottom)
+  const headingRef = useRef<HTMLHeadingElement>(null)
+
+  // Auto-scroll follows the answer while it streams but deliberately switches
+  // off before this terminal-only section mounts. If the participant was still
+  // following at the bottom, reveal just the sources heading with the smallest
+  // possible scroll instead of jumping to the final card. If they had scrolled
+  // up, preserve their position entirely.
+  useLayoutEffect(() => {
+    if (!revealOnMountRef.current) return
+    headingRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [])
 
   if (sources.length === 0) return null
 
-  const documentSources = sources.filter((s) => !isMediaSource(s))
-  const mediaSources = sources.filter((s) => isMediaSource(s))
   const headingId = `chat-sources-heading-${messageId}`
 
   return (
     <section
       aria-labelledby={headingId}
       data-cy="chat-sources-section"
-      className="border-border mt-3 border-t border-dashed pt-3"
+      className="border-border animate-in fade-in mt-3 min-w-0 border-t border-dashed pt-3 duration-300 motion-reduce:animate-none"
     >
       <h3
+        ref={headingRef}
         id={headingId}
         className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide"
       >
@@ -166,31 +179,14 @@ export function SourcesSection() {
         {t('chat.sources.title')} · {sources.length}
       </h3>
 
-      {/* `auto-fit`, not `auto-fill`: with fewer cards than would fit, the
-          empty tracks collapse and the cards stretch across the full row —
-          cards only wrap when they genuinely no longer fit. The `min(230px,
-          100%)` floor keeps a track from forcing horizontal overflow in
-          containers narrower than 230px (embedded mode). */}
-      {documentSources.length > 0 && (
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(230px,100%),1fr))] gap-2">
-          {documentSources.map((source) => (
-            <SourceCard key={source.id} source={source} messageId={messageId} />
-          ))}
-        </div>
-      )}
-
-      {mediaSources.length > 0 && (
-        <div
-          className={twMerge(
-            'flex flex-wrap gap-2',
-            documentSources.length > 0 && 'mt-2'
-          )}
-        >
-          {mediaSources.map((source) => (
-            <SourceCard key={source.id} source={source} messageId={messageId} />
-          ))}
-        </div>
-      )}
+      {/* All source types share one responsive grid. Equal-width tracks keep
+          mixed document/media results aligned, while min(230px, 100%) prevents
+          horizontal overflow in mobile and embedded containers. */}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(230px,100%),1fr))] items-stretch gap-2">
+        {sources.map((source) => (
+          <SourceCard key={source.id} source={source} messageId={messageId} />
+        ))}
+      </div>
     </section>
   )
 }

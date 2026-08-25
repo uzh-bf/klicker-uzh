@@ -1,5 +1,8 @@
 import { useMutation, useQuery } from '@apollo/client'
-import { faCircleQuestion } from '@fortawesome/free-regular-svg-icons'
+import {
+  faCircleQuestion,
+  faComment,
+} from '@fortawesome/free-regular-svg-icons'
 import {
   faExclamationCircle,
   faLanguage,
@@ -27,6 +30,8 @@ import { useRouter } from 'next/router'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import AvatarWithLevel from './AvatarWithLevel'
+
+const FEEDBACK_URL = 'https://klicker-uzh.feedback.df-app.ch/'
 
 interface HeaderProps {
   participant?: Partial<Participant>
@@ -279,6 +284,27 @@ function Header({
               onClick: () => router.push(`/docs`),
               data: { cy: 'course-docs' },
             },
+            ...(process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' && !pageInFrame
+              ? [
+                  {
+                    id: 'feedback',
+                    type: 'standard' as 'standard',
+                    label: (
+                      <div>
+                        <FontAwesomeIcon
+                          icon={faComment}
+                          className="mr-2 w-4"
+                        />
+                        <span>{t('shared.generic.feedback')}</span>
+                      </div>
+                    ),
+                    onClick: () => {
+                      window.open(FEEDBACK_URL, '_blank', 'noopener,noreferrer')
+                    },
+                    data: { cy: 'student-feedback-link' },
+                  },
+                ]
+              : []),
             {
               id: 'languageSwitch',
               label: (

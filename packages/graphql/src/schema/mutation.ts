@@ -18,6 +18,7 @@ import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
+import * as SupportService from '../services/support.js'
 import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
@@ -115,12 +116,12 @@ export const Mutation = builder.mutationType({
     }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
-    const asUserWithCatalyst = { ...asUser, catalyst: true }
     const asUserSessionExec = {
       ...asUser,
       scope: DB.UserLoginScope.SESSION_EXEC,
     }
     const asUserFullAccess = { ...asUser, scope: DB.UserLoginScope.FULL_ACCESS }
+    const asUserFullAccessForStandardActivities = asUserFullAccess
     const asUserOwner = { ...asUser, scope: DB.UserLoginScope.ACCOUNT_OWNER }
 
     return {
@@ -3126,10 +3127,10 @@ export const Mutation = builder.mutationType({
       }),
       // #endregion
 
-      // ----- USER WITH CATALYST -----
+      // ----- USER WITH STANDARD ACTIVITY ACCESS -----
       // #region
       createPracticeQuiz: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3155,7 +3156,7 @@ export const Mutation = builder.mutationType({
         }),
 
       editPracticeQuiz: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3186,7 +3187,7 @@ export const Mutation = builder.mutationType({
         }),
 
       createMicroLearning: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3206,7 +3207,7 @@ export const Mutation = builder.mutationType({
         }),
 
       editMicroLearning: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3234,7 +3235,7 @@ export const Mutation = builder.mutationType({
         }),
 
       extendMicroLearning: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: MicroLearning,
@@ -3252,7 +3253,7 @@ export const Mutation = builder.mutationType({
         }),
 
       endMicroLearning: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: MicroLearning,
@@ -3267,7 +3268,7 @@ export const Mutation = builder.mutationType({
         }),
 
       createGroupActivity: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3288,7 +3289,7 @@ export const Mutation = builder.mutationType({
         }),
 
       editGroupActivity: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: ActivityInfo,
@@ -3314,7 +3315,7 @@ export const Mutation = builder.mutationType({
         }),
 
       extendGroupActivity: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3332,7 +3333,7 @@ export const Mutation = builder.mutationType({
         }),
 
       publishPracticeQuiz: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: PracticeQuiz,
@@ -3350,7 +3351,7 @@ export const Mutation = builder.mutationType({
         }),
 
       publishMicroLearning: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: MicroLearning,
@@ -3365,7 +3366,7 @@ export const Mutation = builder.mutationType({
         }),
 
       unpublishPracticeQuiz: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: PracticeQuiz,
@@ -3380,7 +3381,7 @@ export const Mutation = builder.mutationType({
         }),
 
       unpublishMicroLearning: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: MicroLearning,
@@ -3398,37 +3399,55 @@ export const Mutation = builder.mutationType({
         }),
 
       deletePracticeQuiz: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: PracticeQuiz,
-          args: { id: t.arg.string({ required: true }) },
+          args: {
+            id: t.arg.string({ required: true }),
+            onlyIfUnpublished: t.arg.boolean({ required: false }),
+          },
           resolve: withPermission(
             (args) => ({ practiceQuizId: args.id }),
             DB.PermissionLevel.ADMIN,
             async (_, args, ctx) => {
-              return await PracticeQuizService.deletePracticeQuiz(args, ctx)
+              return await PracticeQuizService.deletePracticeQuiz(
+                {
+                  ...args,
+                  onlyIfUnpublished: args.onlyIfUnpublished ?? undefined,
+                },
+                ctx
+              )
             }
           ),
         }),
 
       deleteMicroLearning: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: MicroLearning,
-          args: { id: t.arg.string({ required: true }) },
+          args: {
+            id: t.arg.string({ required: true }),
+            onlyIfUnpublished: t.arg.boolean({ required: false }),
+          },
           resolve: withPermission(
             (args) => ({ microLearningId: args.id }),
             DB.PermissionLevel.ADMIN,
             async (_, args, ctx) => {
-              return await MicroLearningService.deleteMicroLearning(args, ctx)
+              return await MicroLearningService.deleteMicroLearning(
+                {
+                  ...args,
+                  onlyIfUnpublished: args.onlyIfUnpublished ?? undefined,
+                },
+                ctx
+              )
             }
           ),
         }),
 
       publishGroupActivity: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3443,7 +3462,7 @@ export const Mutation = builder.mutationType({
         }),
 
       unpublishGroupActivity: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3458,7 +3477,7 @@ export const Mutation = builder.mutationType({
         }),
 
       openGroupActivity: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3473,7 +3492,7 @@ export const Mutation = builder.mutationType({
         }),
 
       endGroupActivity: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3488,22 +3507,31 @@ export const Mutation = builder.mutationType({
         }),
 
       deleteGroupActivity: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
-          args: { id: t.arg.string({ required: true }) },
+          args: {
+            id: t.arg.string({ required: true }),
+            onlyIfUnpublished: t.arg.boolean({ required: false }),
+          },
           resolve: withPermission(
             (args) => ({ groupActivityId: args.id }),
             DB.PermissionLevel.ADMIN,
             async (_, args, ctx) => {
-              return await GroupService.deleteGroupActivity(args, ctx)
+              return await GroupService.deleteGroupActivity(
+                {
+                  ...args,
+                  onlyIfUnpublished: args.onlyIfUnpublished ?? undefined,
+                },
+                ctx
+              )
             }
           ),
         }),
 
       gradeGroupActivitySubmission: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivityInstance,
@@ -3525,7 +3553,7 @@ export const Mutation = builder.mutationType({
         }),
 
       finalizeGroupActivityGrading: t
-        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .withAuth(asUserFullAccessForStandardActivities)
         .field({
           nullable: true,
           type: GroupActivity,
@@ -3573,6 +3601,23 @@ export const Mutation = builder.mutationType({
         args: { id: t.arg.string({ required: true }) },
         resolve: async (_, args, ctx) => {
           return await AccountService.deleteUserLogin(args, ctx)
+        },
+      }),
+
+      requestCatalystAccess: t.withAuth(asUserOwner).field({
+        type: 'Boolean',
+        args: {
+          institution: t.arg.string({
+            required: true,
+            validate: { minLength: 2, maxLength: 160 },
+          }),
+          useCase: t.arg.string({
+            required: true,
+            validate: { minLength: 20, maxLength: 2000 },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await SupportService.requestCatalystAccess(args, ctx)
         },
       }),
 

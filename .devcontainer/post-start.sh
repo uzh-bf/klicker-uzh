@@ -90,21 +90,26 @@ export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORI
 # comma list as a single literal package name.
 # DEVROUTER_PROFILE may be a merged selection (e.g. "chat,pwa", canonicalized
 # sorted by devrouter); match on contained profile names, not the exact string.
+# READINESS_APPS lists the Next apps the profile starts, so the dev-runtime
+# readiness contract only probes servers that are actually running.
 case ",${DEVROUTER_PROFILE}," in
   *,full,*)
     DEV_TURBO_FILTERS=''
+    READINESS_APPS='auth chat frontend-control frontend-manage frontend-pwa'
     ;;
   *,live-quiz,*)
     DEV_TURBO_FILTERS='--filter=@klicker-uzh/backend-docker --filter=@klicker-uzh/auth --filter=@klicker-uzh/frontend-pwa --filter=@klicker-uzh/frontend-control --filter=@klicker-uzh/response-api --filter=@klicker-uzh/hatchet-worker-general --filter=@klicker-uzh/hatchet-worker-response-processor'
+    READINESS_APPS='auth frontend-control frontend-pwa'
     ;;
   *)
     DEV_TURBO_FILTERS='--filter=@klicker-uzh/backend-docker --filter=@klicker-uzh/auth'
+    READINESS_APPS='auth'
     for profile_name in $(echo "${DEVROUTER_PROFILE}" | tr ',' ' '); do
       case "${profile_name}" in
-        manage) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/frontend-manage" ;;
-        pwa) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/frontend-pwa" ;;
-        chat) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/chat" ;;
-        control) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/frontend-control" ;;
+        manage) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/frontend-manage"; READINESS_APPS="${READINESS_APPS} frontend-manage" ;;
+        pwa) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/frontend-pwa"; READINESS_APPS="${READINESS_APPS} frontend-pwa" ;;
+        chat) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/chat"; READINESS_APPS="${READINESS_APPS} chat" ;;
+        control) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/frontend-control"; READINESS_APPS="${READINESS_APPS} frontend-control" ;;
         olat-api) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/olat-api" ;;
         lti) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/lti-service" ;;
         response-api) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/response-api" ;;
@@ -113,8 +118,11 @@ case ",${DEVROUTER_PROFILE}," in
           ;;
       esac
     done
+    # Canonical order for stable logs; dev-runtime probes each app independently.
+    READINESS_APPS=$(printf '%s\n' ${READINESS_APPS} | sort -u | tr '\n' ' ' | sed 's/ $//')
     ;;
 esac
+export READINESS_APPS
 
 # The test seed connects Benibot's Tutor and Explainer modes to this local,
 # read-only MCP fixture. Keep it in the app container so the seeded
@@ -142,19 +150,79 @@ done
 # Run the profile's apps (or everything for `full`) without Infisical. Devrouter
 # owns generic locking, process-group identity, and bounded replacement; this
 # repository owns only the application command and environment above.
-if [ -n "${DEV_TURBO_FILTERS}" ]; then
-  # shellcheck disable=SC2086 # intentional word splitting of filter flags
-  "$DEVROUTER_PROCESS_HELPER" ensure \
-    --name klicker-dev \
-    --match 'turbo run dev' \
-    --log /tmp/dev.log \
-    -- pnpm exec turbo run dev ${DEV_TURBO_FILTERS}
-else
-  "$DEVROUTER_PROCESS_HELPER" ensure \
-    --name klicker-dev \
-    --match 'turbo run dev' \
-    --log /tmp/dev.log \
-    -- pnpm run dev:container
+start_managed_runtime() {
+  local runtime_fingerprint runtime_generation
+
+  runtime_fingerprint="$(bash ./util/dev-runtime.sh fingerprint)"
+  runtime_generation="$(bash ./util/dev-runtime.sh generation)"
+  if [ -n "${DEV_TURBO_FILTERS}" ]; then
+    # shellcheck disable=SC2086 # intentional word splitting of filter flags
+    "$DEVROUTER_PROCESS_HELPER" ensure \
+      --name klicker-dev \
+      --match 'turbo run dev' \
+      --log /tmp/dev.log \
+      -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
+      -- pnpm exec turbo run dev ${DEV_TURBO_FILTERS}
+  else
+    "$DEVROUTER_PROCESS_HELPER" ensure \
+      --name klicker-dev \
+      --match 'turbo run dev' \
+      --log /tmp/dev.log \
+      -- bash ./util/dev-runtime.sh start "$runtime_fingerprint" "$runtime_generation" \
+      -- pnpm run dev:container
+  fi
+}
+
+start_managed_runtime
+
+# Probe the profile's Next apps' readiness contract. 20 is the confirmed
+# stale-route signature from util/dev-runtime.sh; any other failure fails closed
+# without cache cleanup. Collect every stale app first so one managed restart
+# repairs them together instead of restarting once per app. The app list comes
+# from READINESS_APPS (profile-scoped) rather than every Next app, because a
+# profile intentionally does not start the rest.
+STALE_NEXT_APPS=()
+run_readiness_pass() {
+  local app status=0
+
+  STALE_NEXT_APPS=()
+  for app in ${READINESS_APPS}; do
+    status=0
+    bash ./util/dev-runtime.sh wait-app "$app" || status=$?
+    if [ "$status" -eq 20 ]; then
+      STALE_NEXT_APPS+=("$app")
+    elif [ "$status" -ne 0 ]; then
+      echo "[post-start] ERROR: $app failed semantic readiness; no cache cleanup was attempted." >&2
+      echo '[post-start] Inspect /tmp/dev.log for the application failure.' >&2
+      return "$status"
+    fi
+  done
+
+  if [ "${#STALE_NEXT_APPS[@]}" -gt 0 ]; then
+    echo "[post-start] Confirmed stale Next.js route state: ${STALE_NEXT_APPS[*]}." >&2
+    return 20
+  fi
+  return 0
+}
+
+READINESS_STATUS=0
+run_readiness_pass || READINESS_STATUS=$?
+if [ "$READINESS_STATUS" -eq 20 ]; then
+  echo "[post-start] Repairing the confirmed stale .next caches once: ${STALE_NEXT_APPS[*]}."
+  for app in "${STALE_NEXT_APPS[@]}"; do
+    bash ./util/dev-runtime.sh request-repair "$app"
+  done
+  start_managed_runtime
+
+  READINESS_STATUS=0
+  run_readiness_pass || READINESS_STATUS=$?
+  if [ "$READINESS_STATUS" -ne 0 ]; then
+    echo '[post-start] ERROR: The runtime remained unhealthy after its one repair attempt.' >&2
+    echo '[post-start] Inspect /tmp/dev.log; no further cache cleanup was attempted.' >&2
+    exit 1
+  fi
+elif [ "$READINESS_STATUS" -ne 0 ]; then
+  exit 1
 fi
 
 if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then

@@ -45,7 +45,6 @@ export default defineConfig({
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
     ignoreHTTPSErrors: true,
-    // Disable CSS animations to stabilise interactions (mirrors cypress support/e2e.ts)
     launchOptions: {
       args: ['--lang=en-US'],
     },
