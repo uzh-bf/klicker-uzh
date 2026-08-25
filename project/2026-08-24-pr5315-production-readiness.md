@@ -61,7 +61,8 @@ No remote merge, deployment, or production-data access was performed.
   propagates Redis failures for Hatchet retry. Tracking clients disable offline
   queueing and per-request retries, so a slow tracking attempt can delay the
   request by up to 250ms without accumulating unavailable-command retries;
-  timeout and failure paths are caught at ingress.
+  tracking clients connect explicitly during startup, and timeout and failure
+  paths are caught at ingress.
 
 ## Local evidence
 

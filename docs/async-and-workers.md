@@ -44,8 +44,9 @@ The response API attempts the received-counter increment before enqueueing a
 known instance. One Redis script checks the instance-info TTL and updates the
 counter and its retention atomically; an inactive instance returns without
 creating a tracking key. Tracking is best-effort: the tracking Redis clients
-disable offline queueing and per-request retries and apply a 250ms command
-timeout. Because the handler awaits this attempt before enqueueing, a slow
+explicitly connect during startup, disable offline queueing and per-request
+retries, and apply a 250ms command timeout. Because the handler awaits this
+attempt before enqueueing, a slow
 tracking call can delay enqueueing and the request by up to 250ms; a tracking
 failure or timeout is logged and does not reject the participant response.
 The client timeout bounds the response API's wait and pending retry work; it

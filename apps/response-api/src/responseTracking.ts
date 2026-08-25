@@ -12,6 +12,7 @@ export const LIVE_QUIZ_RESPONSE_TRACKING_TIMEOUT_MS = 250
 export const LIVE_QUIZ_RESPONSE_TRACKING_REDIS_OPTIONS = {
   commandTimeout: LIVE_QUIZ_RESPONSE_TRACKING_TIMEOUT_MS,
   enableOfflineQueue: false,
+  lazyConnect: true,
   maxRetriesPerRequest: 0,
 } as const
 

@@ -448,6 +448,7 @@ async function initializeService() {
   // test connection to Redis cache for standard responses
   console.log('Testing Redis (standard responses) connection...')
   try {
+    await redis.connect()
     await redis.ping()
     console.log('Redis connection established')
   } catch (error) {
@@ -467,6 +468,7 @@ async function initializeService() {
 
   console.log('Testing Redis (assessment tracking) connection...')
   try {
+    await assessmentTrackingRedis.connect()
     await assessmentTrackingRedis.ping()
     console.log('Assessment tracking Redis connection established')
   } catch (error) {

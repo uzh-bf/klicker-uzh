@@ -9,6 +9,7 @@ test('configures tracking Redis commands to fail fast', () => {
   assert.deepEqual(LIVE_QUIZ_RESPONSE_TRACKING_REDIS_OPTIONS, {
     commandTimeout: 250,
     enableOfflineQueue: false,
+    lazyConnect: true,
     maxRetriesPerRequest: 0,
   })
 })

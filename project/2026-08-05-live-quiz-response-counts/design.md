@@ -25,8 +25,9 @@ cockpit does not sum these into a block total.
 `numOfResponsesReceived` is the number of response events accepted by the
 response API for one element instance and successfully recorded by the numeric
 received counter. The response API increments that counter before handing the
-event to Hatchet. Tracking uses Redis clients with offline queueing and
-per-request retries disabled plus a 250ms command timeout. A timeout or other
+event to Hatchet. Tracking uses Redis clients that explicitly connect during
+startup, disable offline queueing and per-request retries, and apply a 250ms
+command timeout. A timeout or other
 tracking failure is logged and the participant event is still handed to
 Hatchet. The client timeout bounds the response API's wait and pending retry
 work, but it cannot cancel a Lua script that Redis has already started.
