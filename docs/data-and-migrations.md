@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-08-04'
+timestamp: '2026-08-25'
 tags:
   - backend
   - prisma
@@ -40,14 +40,14 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 
 ### Deployment migrations
 
-`prisma migrate deploy` runs **automatically** on every stg rollout as an ArgoCD **`PreSync` hook Job** (`deploy/charts/klicker-uzh-v3/templates/job-migrate.yaml`), not by hand. On prd the hook ships **disabled** until the pinned tags reach a migrator-bearing release (see Bootstrap and rollback below), so prd migrations remain manual for now. Mechanics:
+`prisma migrate deploy` runs **automatically** on every stg and prd rollout as an ArgoCD **`PreSync` hook Job** (`deploy/charts/klicker-uzh-v3/templates/job-migrate.yaml`), not by hand. On prd the hook is **enabled** because the pinned tags have reached a migrator-bearing release (see Bootstrap and rollback below), so normal prd migrations run through ArgoCD. Mechanics:
 
 - A dedicated migrator image (`packages/prisma/Dockerfile`: `node:24.16.0-alpine` + a **local** `prisma` install, carrying `prisma.config.ts` + the schema + `migrations/`) runs `./node_modules/.bin/prisma migrate deploy`. The install must stay local, not `-g` — Prisma 7's `prisma.config.ts` imports `prisma/config`, which only resolves from `/app/node_modules`; the config supplies the datasource URL from `DATABASE_URL`. It exists because the backend runtime image installs `--prod --ignore-scripts` and so ships neither the Prisma CLI nor the migration engine. CI builds it as `backend-docker-migrator{-arm,-amd}` in lockstep with `backend-docker` (`v3_backend-docker-{stg,prd}.yml`). Its image **tag** auto-tracks the backend tag — the chart defaults `migrator.image.tag` to `backendGraphql.image.tag`, so each env pins only the migrator **repository** and never a separate tag.
 - The hook draws `DATABASE_URL` from the externally-provisioned `…-secret-backend-graphql` Secret only (a PreSync hook must not depend on Sync-phase ConfigMaps). Toggle with `migrator.enabled`.
 - A **failed** hook aborts the whole sync — app Deployments never roll onto an unmigrated DB. The Job runs while the **previous** app version is still live, so migrations must be **backward-compatible (expand-contract)**; a destructive/renaming migration must be split across releases.
 - **Break-glass only:** `pnpm --filter @klicker-uzh/prisma prisma:deploy:prod` (Infisical `--env prd`) still applies migrations manually from a workstation. Use it only when the hook is unavailable; `prisma:resolve:prod` resolves a failed/partial migration.
 - **Scope:** the hook migrates only the database in the `…-secret-backend-graphql` Secret. The assessment stack binds a separate `…-secret-backend-assessment` Secret; if that points at a different database, it is **not** covered here and still needs the manual path. Both Secrets are provisioned outside this repo, so confirm in Infisical before assuming coverage.
-- **Bootstrap and rollback:** the tag coupling means a release tag with no matching migrator image renders an unpullable hook image, which fails the sync after `activeDeadlineSeconds`. No migrator image exists for any tag cut before this feature landed, so `migrator.enabled` stays `false` on prd until the env tags reach the first release whose CI built it — and rolling prd back to a pre-hook tag means setting it back to `false`. Stg is unaffected: its selected floating source tag is rebuilt on every merge.
+- **Bootstrap and rollback:** the tag coupling means a release tag with no matching migrator image renders an unpullable hook image, which fails the sync after `activeDeadlineSeconds`. Production now uses migrator-bearing release tags with `migrator.enabled: true`; rolling prd back to a pre-hook tag means setting it back to `false`. The alpha.70 and alpha.71 release workflows both built matching migrator images. Stg is unaffected: its selected floating source tag is rebuilt on every merge.
 
 Where `migrate deploy` is invoked in deployment is now the PreSync hook above (see [CI & Deployment → Deployment migrations](./ci-and-deployment.md#deployment-migrations)). Rationale and rejected alternatives: [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md).
 
@@ -120,6 +120,68 @@ Points and badges are independent per row: `points` defaults to 0 and `awards` t
 Points earned inside Klicker (Swiss Quiz, microlearnings) are already on the leaderboard and are never part of these payloads — only externally-run activities are seeded. Awards that depend on in-platform behaviour are derived from the database rather than the workbook: `prepareMicrolearningAwards.ts` grants a round's `derivedAward` (Busy Bee, for Summer School) when the participant has a `QuestionResponse` for every `ElementInstance` of every non-deleted `MicroLearning` in the course. The derivation is frozen into the payload rather than recomputed at write time, so the payload hash still pins exactly what gets written.
 
 **Do not derive microlearning completion from `ParticipantActivityPerformance.completion`, `MicroLearning.completedCount`, or `startedCount`.** All three are empty for the Summer School 2026 course (zero rows, zero counters) even though responses exist, so they silently yield zero for every participant instead of failing. `QuestionResponse` is the reliable signal; cross-check the derived count against the workbook before seeding.
+
+### Dedicated demo participants
+
+The three lecturer-demo courses use dedicated manual participant accounts. The
+reconciler is idempotent: it creates the missing account, repairs only the
+dedicated account's active/private state, activates its matching leaderboard
+participation,
+and deactivates an active leaderboard participation in another course without
+deleting it.
+It never touches the shared `teststudent` account. Course and chatbot names are
+resolved under owner shortname `klick`; missing, archived, duplicated, or
+re-owned targets fail before any write.
+
+`Participation.isActive` is the course-leaderboard opt-in flag only. The
+reconciler's participation updates change leaderboard inclusion; they do not
+grant or revoke course, assessment, or chatbot access. Access remains governed
+by the endpoint-specific authorization and invitation/account rules, so a
+leaderboard change must never be presented as a security change.
+
+| Demo         | Course                  | Chatbot                     | Participant username  | Password secret name                             |
+| ------------ | ----------------------- | --------------------------- | --------------------- | ------------------------------------------------ |
+| IuW          | `testkurs IuW`          | `Informatik und Wirtschaft` | `teststudent-iuw`     | `KLICKER_DEMO_IUW_PARTICIPANT_PASSWORD`          |
+| RadioSurfVet | `testkurs RadioSurfVet` | `RadioSurfVet`              | `teststudent-rsv`     | `KLICKER_DEMO_RADIOSURFVET_PARTICIPANT_PASSWORD` |
+| Culture      | `Demo Course Copy`      | `Culture Scenario Lab`      | `teststudent-culture` | `KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD`      |
+
+Run this from the repository root with the PRD operator profile. The default
+mode and `--readback` are read-only; `--apply` is the sole write mode and
+requires all three password mappings. The operator injects `DATABASE_URL` and
+the password values only into this child process, so no `.env` file or shell
+history entry carries them:
+
+```bash
+rs-infisical-operator --profile klicker-prd run \
+  --map DATABASE_URL=DATABASE_URL \
+  -- pnpm --filter @klicker-uzh/prisma-data run seed:demo-participants
+
+rs-infisical-operator --profile klicker-prd run \
+  --map DATABASE_URL=DATABASE_URL \
+  -- pnpm --filter @klicker-uzh/prisma-data run seed:demo-participants --readback
+
+rs-infisical-operator --profile klicker-prd run \
+  --map DATABASE_URL=DATABASE_URL \
+  --map KLICKER_DEMO_IUW_PARTICIPANT_PASSWORD=KLICKER_DEMO_IUW_PARTICIPANT_PASSWORD \
+  --map KLICKER_DEMO_RADIOSURFVET_PARTICIPANT_PASSWORD=KLICKER_DEMO_RADIOSURFVET_PARTICIPANT_PASSWORD \
+  --map KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD=KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD \
+  -- pnpm --filter @klicker-uzh/prisma-data run seed:demo-participants --apply
+```
+
+The password names need exact read and write permission in that profile before
+the first run. Write permission is used only to create a missing random value
+with `rs-infisical-operator set-random --bytes 32`; do not rotate an existing
+value without a separate decision. Never print, copy, or read back the values.
+The script reports fixed target labels, status names, and booleans only. The
+apply transaction verifies active, private, manual accounts, matching active
+participations, password matches, and no active off-target participation before
+commit; run `--readback` afterward for the non-secret account and participation
+checks.
+
+These password variables are deliberately not added to `turbo.json` global
+environment inputs. Broad Turbo propagation would expose credentials to
+unrelated tasks, so invoke this maintenance script directly through the
+operator boundary.
 
 ## Typed Json fields
 

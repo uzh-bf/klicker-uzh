@@ -30,6 +30,7 @@
 - `Do:` Remove the four tracked outputs from the branch.
 - `Do:` Stop generating the unused `ops.schema.json` output and remove its dedicated codegen dependency.
 - `Do:` Make the GraphQL package check run codegen first, then fail when generation changes the tracked schema snapshot before running TypeScript.
+- `Do:` Make direct GraphQL package tests run codegen first so they also work from a clean checkout.
 - `Check:` Run direct GraphQL check and build from the output-absent state. Inspect `dist/ops.js`, `dist/client.json`, `dist/server.json`, and `dist/schema.graphql`; confirm no `ops.schema.json` is produced.
 - `Commit:` `refactor(graphql): build generated client artifacts`
 
@@ -46,3 +47,9 @@
 - `Do:` Re-run focused checks after documentation integration and inspect the complete diff for scope, secret, and personal-data hygiene.
 - `Check:` Run GraphQL check/build, relevant formatting and wiki validation, and `git diff --check`. Record any container-only or full-root checks that remain unrun.
 - `Terminal:` Local branch contains the approved source, build, and guidance changes with verified focused checks. Delivery remains pending until separately authorized.
+
+## Progress
+
+- `Conflict repair:` Merging the current `v3` produced three modify/delete conflicts in generated artifacts. Keep `ops.ts`, `public/client.json`, and `public/server.json` deleted; the merged `QUserProfile.graphql` source regenerates them.
+- `Discovered gap:` The package build, check, CI test, and image paths already generate the artifacts, but a direct `pnpm --filter @klicker-uzh/graphql test` did not. Add the package lifecycle generation barrier and validate tests from an output-absent state.
+- `Delivery:` Branch update, merge, and deployment remain pending until verification and the applicable authority gates complete.

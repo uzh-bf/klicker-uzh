@@ -4,8 +4,10 @@ import {
 } from '../src/index.js'
 
 describe('feature flag contracts', () => {
-  it('starts without active product flags', () => {
-    expect(FEATURE_FLAG_DEFAULTS).toEqual({})
+  it('registers product flags with fail-closed defaults', () => {
+    expect(FEATURE_FLAG_DEFAULTS).toEqual({
+      'learning-analytics': false,
+    })
   })
 
   it.each([

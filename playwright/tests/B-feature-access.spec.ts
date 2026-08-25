@@ -1,21 +1,24 @@
 import { seedActivities } from '../global-setup.js'
 import { cleanupTest } from '../util/cleanup.js'
 import { expect, test } from '../util/fixtures.js'
-import { updateLecturerPreviewFlags } from '../util/fixtures/manage.js'
+import {
+  mockGrowthBookLearningAnalytics,
+  prepareSeededAnalyticsActivities,
+  updateLecturerPrivatePreview,
+} from '../util/fixtures/manage.js'
 
 test('CLEANUP', cleanupTest)
 
 test.describe('Tests the availability of standard activity creation formats', () => {
   test.beforeAll(async () => {
     await seedActivities()
+    await prepareSeededAnalyticsActivities()
   })
 
   test.afterAll(async () => {
-    // Restore lecturer flags to defaults for subsequent specs
-    await updateLecturerPreviewFlags({
-      publicPreview: true,
-      privatePreview: true,
-    })
+    // Restore the lecturer flag and shared activity fixtures for later specs.
+    await cleanupTest()
+    await updateLecturerPrivatePreview(true)
   })
 
   test('Test login for catalyst users and non-catalyst users', async ({
@@ -72,65 +75,56 @@ test.describe('Tests the availability of standard activity creation formats', ()
     await expect(page.getByTestId('create-group-activity')).not.toBeDisabled()
   })
 
-  test('Verify that both public and private preview features are available for lecturer', async ({
+  test('Verify that learning analytics and private preview features are available for lecturer', async ({
     page,
     loginLecturer,
     validateFeatureAvailability,
   }) => {
+    await updateLecturerPrivatePreview(true)
     await loginLecturer()
     await validateFeatureAvailability(page, {
-      publicPreview: true,
+      learningAnalytics: true,
       privatePreview: true,
     })
   })
 
-  test('Verify that only the public preview features are available if the corresponding flag is set', async ({
+  test('Verify that only learning analytics is available if private preview is disabled', async ({
     page,
     loginLecturer,
     validateFeatureAvailability,
   }) => {
-    await updateLecturerPreviewFlags({
-      publicPreview: true,
-      privatePreview: false,
-    })
+    await updateLecturerPrivatePreview(false)
     await loginLecturer()
-    await page.reload()
     await validateFeatureAvailability(page, {
-      publicPreview: true,
+      learningAnalytics: true,
       privatePreview: false,
     })
   })
 
-  test('Verify that only private preview features are available if the corresponding flag is set', async ({
+  test('Verify that only private preview features are available if learning analytics is disabled', async ({
     page,
     loginLecturer,
     validateFeatureAvailability,
   }) => {
-    await updateLecturerPreviewFlags({
-      publicPreview: false,
-      privatePreview: true,
-    })
+    await mockGrowthBookLearningAnalytics(page, false)
+    await updateLecturerPrivatePreview(true)
     await loginLecturer()
-    await page.reload()
     await validateFeatureAvailability(page, {
-      publicPreview: false,
+      learningAnalytics: false,
       privatePreview: true,
     })
   })
 
-  test('Verify that without feature flags, preview features are not visible', async ({
+  test('Verify that analytics controls remain visible but disabled without feature access', async ({
     page,
     loginLecturer,
     validateFeatureAvailability,
   }) => {
-    await updateLecturerPreviewFlags({
-      publicPreview: false,
-      privatePreview: false,
-    })
+    await mockGrowthBookLearningAnalytics(page, false)
+    await updateLecturerPrivatePreview(false)
     await loginLecturer()
-    await page.reload()
     await validateFeatureAvailability(page, {
-      publicPreview: false,
+      learningAnalytics: false,
       privatePreview: false,
     })
   })
