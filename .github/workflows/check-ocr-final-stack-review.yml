@@ -51,11 +51,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
+      actions: read
       contents: read
       issues: read
       pull-requests: read
       statuses: read
-      actions: read
     outputs:
       authorized: ${{ steps.authorize.outputs.authorized }}
       pr_number: ${{ steps.authorize.outputs.pr_number }}
@@ -96,6 +96,7 @@ jobs:
       group: final-ai-stack-review-${{ needs.authorize.outputs.pr_number }}
       cancel-in-progress: false
     permissions:
+      actions: read
       contents: read
       issues: read
       pull-requests: write

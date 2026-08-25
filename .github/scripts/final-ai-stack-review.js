@@ -117,7 +117,6 @@ function stackPlan(membership, context) {
     rootReviewId: '',
     dispositionIds: [],
     dispositionDigest: '',
-    reviewFrom: '',
     topNumber: top.number,
     background: buildStackBackground(membership, context),
   }
@@ -312,7 +311,7 @@ function parseStackReviewMetadata(body) {
   }
 }
 
-async function latestStackReview({ github, context, pull }) {
+async function latestStackRootReview({ github, context, pull }) {
   const artifacts = await listReviewArtifacts({ github, context, pull })
   const candidates = artifacts
     .map((artifact) => ({
@@ -322,6 +321,7 @@ async function latestStackReview({ github, context, pull }) {
     .filter(
       ({ artifact, metadata }) =>
         metadata?.head_sha &&
+        metadata.mode === 'full' &&
         metadata.model === FINAL_REVIEW_MODEL &&
         artifact.kind === 'review' &&
         artifact.user?.login === FINAL_REVIEW_BOT &&
@@ -467,6 +467,16 @@ function allowedStackIncrementalFile(file, remediationPaths) {
   )
 }
 
+function stackLayerIdentityMatches(previous, current, allowHeadChange = false) {
+  return (
+    previous.base_ref === current.base_ref &&
+    previous.base_sha === current.base_sha &&
+    previous.head_ref === current.head_ref &&
+    previous.pull_request === current.pull_request &&
+    (allowHeadChange || previous.head_sha === current.head_sha)
+  )
+}
+
 function stackReviewPlanMatches(plan, expected) {
   return (
     stackPlanMatches(plan, expected) &&
@@ -484,7 +494,7 @@ async function buildStackReviewPlan({ github, context, membership }) {
   if (!fullPlan.eligible) return fullPlan
 
   const topPull = membership.members.at(-1).pull
-  const rootReview = await latestStackReview({
+  const rootReview = await latestStackRootReview({
     github,
     context,
     pull: topPull,
@@ -510,13 +520,14 @@ async function buildStackReviewPlan({ github, context, membership }) {
     root.layer_head_shas
       .slice(0, -1)
       .some((sha, index) => sha !== currentLayerHeads[index]) ||
-    root.layer_identities
-      .slice(0, -1)
-      .some(
-        (identity, index) =>
-          JSON.stringify(identity) !==
-          JSON.stringify(currentLayerIdentities[index])
-      )
+    root.layer_identities.some(
+      (identity, index) =>
+        !stackLayerIdentityMatches(
+          identity,
+          currentLayerIdentities[index],
+          index === currentLayerIdentities.length - 1
+        )
+    )
   ) {
     return fullPlan
   }
@@ -1009,7 +1020,6 @@ async function startStackReview({
   })
   core?.setOutput('background', plan.background)
   core?.setOutput('manifest_digest', bundle.manifestDigest)
-  core?.setOutput('review_from', plan.reviewFrom)
   return true
 }
 
@@ -1257,6 +1267,11 @@ function renderStackReview({
   if (manifest.top.sha !== headSha) {
     throw new Error('Stack manifest top head does not match publication head')
   }
+  const reviewStart =
+    mode === 'incremental' ? rootHead : manifest.ultimate_base?.sha
+  if (!validSha(reviewStart)) {
+    throw new Error('Stack manifest ultimate base identity is missing')
+  }
   if (
     !/^[0-9a-f]{40}$/.test(workflowHeadSha ?? '') ||
     !Number.isSafeInteger(workflowRunId) ||
@@ -1332,10 +1347,10 @@ function renderStackReview({
     `<!-- ${STACK_REVIEW_SCHEMA} ${JSON.stringify(metadata)} -->`,
     `## Final AI stack review · Gemini 3.7 Flash (high reasoning)`,
     '',
-    `Reviewed verified stack ${manifest.stack_id} from \`${rootHead.slice(0, 12)}\` to \`${headSha.slice(0, 12)}\`.`,
+    `Reviewed verified stack ${manifest.stack_id} from \`${reviewStart.slice(0, 12)}\` to \`${headSha.slice(0, 12)}\`.`,
     `Layers: ${manifest.stack_order.join(' → ')}. This is a ${mode === 'incremental' ? 'bounded stack attestation' : 'cumulative code and topology review'}, not a full production-readiness audit.`,
     '',
-    '### Cumulative code review',
+    `### ${mode === 'incremental' ? 'Bounded cumulative code attestation' : 'Cumulative code review'}`,
   ]
   if (codeComments.length === 0)
     sections.push('', 'No actionable cumulative code findings.')

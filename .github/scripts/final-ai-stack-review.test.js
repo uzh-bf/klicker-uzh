@@ -436,6 +436,20 @@ test('authorizes only the verified top pull request', async () => {
   )
 })
 
+test('keeps actions read permission for stack revalidation', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-stack-review.yml'),
+    'utf8'
+  )
+  const reviewJob =
+    workflow.match(/\n  review:\n([\s\S]*?)(?=\n  [a-z][\w-]*:\n|$)/)?.[1] ?? ''
+  const permissions =
+    reviewJob.match(
+      /\n    permissions:\n([\s\S]*?)(?=\n    steps:\n|$)/
+    )?.[1] ?? ''
+  assert.match(permissions, /      actions: read\n/)
+})
+
 test('invalidates the top status when a lower layer changes', async () => {
   const { github, pulls, state } = stackFixture()
   state.statuses.push({
@@ -647,6 +661,25 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
     rootMetadata,
     rootReport.match(/<!-- final-ai-stack-review\/v1 ([^\n]+) -->/)?.[1]
   )
+  const incrementalReport = renderStackReview({
+    codeResult: completeOCRResult([codeFinding()]),
+    headSha: 'f'.repeat(40),
+    manifestBundle,
+    mode: 'incremental',
+    rootHead: 'e'.repeat(40),
+    rootReviewId: rootMetadata.review_id,
+    dispositionIds: rootMetadata.finding_ids,
+    dispositionDigest: 'a'.repeat(64),
+    topologyResult: topologyResult(),
+    workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+    workflowHeadSha: 'a'.repeat(40),
+    workflowRunId: 700,
+  })
+  assert.match(
+    incrementalReport,
+    /Reviewed verified stack 99 from `eeeeeeeeeeee` to `ffffffffffff`\./
+  )
+  assert.match(incrementalReport, /Bounded cumulative code attestation/)
   const nextHead = '9'.repeat(40)
   pulls[14].head.sha = nextHead
   responses.set('e'.repeat(40), nextHead)
@@ -680,6 +713,30 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
       user: { login: 'github-actions[bot]' },
     },
   ]
+  const secondReviewMetadata = {
+    ...rootMetadata,
+    head_sha: nextHead,
+    layer_head_shas: rootMetadata.layer_head_shas.map((sha, index) =>
+      index === 3 ? nextHead : sha
+    ),
+    layer_identities: rootMetadata.layer_identities.map((identity, index) =>
+      index === 3 ? { ...identity, head_sha: nextHead } : identity
+    ),
+    mode: 'incremental',
+    review_id: `fsr-${'1'.repeat(24)}`,
+    root_head: 'f'.repeat(40),
+    root_review_id: rootMetadata.review_id,
+    disposition_digest: 'a'.repeat(64),
+    disposition_ids: rootMetadata.finding_ids,
+  }
+  state.reviews.push({
+    id: 702,
+    body: `<!-- final-ai-stack-review/v1 ${JSON.stringify(secondReviewMetadata)} -->`,
+    commit_id: nextHead,
+    state: 'COMMENTED',
+    submitted_at: '2026-08-25T02:00:00Z',
+    user: { login: 'github-actions[bot]' },
+  })
   github.paginate = async (endpoint) =>
     endpoint === github.rest.pulls.listReviews ? state.reviews : state.comments
   state.comments = [
@@ -736,6 +793,18 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
   assert.equal(plan.rootReviewId, rootMetadata.review_id)
   assert.match(plan.dispositionDigest, /^[0-9a-f]{64}$/)
   assert.match(plan.background, /incremental attestation/)
+
+  pulls[14].head.ref = 'rs/layer-4-renamed'
+  const driftPlan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership: await resolveStackMembership({
+      github,
+      context: context(),
+      pullNumber: 14,
+    }),
+  })
+  assert.equal(driftPlan.mode, 'full')
 })
 
 test('rejects a successful finish after lower-layer identity drift', async () => {
@@ -802,6 +871,10 @@ test('renders consolidated code and topology findings with one stack marker', as
     workflowRunId: 700,
   })
   assert.match(report, /final-ai-stack-review\/v1/)
+  assert.match(
+    report,
+    /Reviewed verified stack 99 from `bbbbbbbbbbbb` to `ffffffffffff`\./
+  )
   assert.match(report, /Cumulative code review/)
   assert.match(report, /Cross-layer topology review/)
   assert.match(report, /src\/one\.ts/)
