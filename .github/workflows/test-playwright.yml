@@ -354,11 +354,20 @@ jobs:
           APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
           APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
-      - name: Upload Playwright artifacts
+      - name: Upload Playwright JUnit results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-artifacts-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
+          name: playwright-results-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
+          path: playwright/test-results/junit.xml
+          if-no-files-found: ignore
+          retention-days: 1
+
+      - name: Upload Playwright diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-diagnostics-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
           path: |
             playwright/playwright-report
             playwright/test-results
