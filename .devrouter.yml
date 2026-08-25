@@ -13,11 +13,37 @@
 #
 # The container runs every routed app plus the two Hatchet workers. Workers have
 # no route; analytics, Office add-in, and docs remain outside this stack.
+#
+# Profiles (devrouter >= 0.0.38) scope `devrouter ensure --profile <name>` to the
+# apps a task needs; the default profile `full` preserves the everything-stack
+# behavior. Profile selection also reaches the container as DEVROUTER_PROFILE so
+# post-start.sh can start only the matching turbo dev tasks.
 version: 1
 devrouter:
-  version: 0.0.37
+  version: 0.0.38
 project:
   name: klicker-uzh
+profiles:
+  # lecturer UI work: manage + its API and auth dependencies
+  manage:
+    apps: [manage, api, auth]
+    readiness: [manage, api]
+  # student PWA work: pwa + API and auth
+  pwa:
+    apps: [pwa, api, auth]
+    readiness: [pwa, api]
+  # chat work: chat + API and auth (litellm stays compose-side, always up)
+  chat:
+    apps: [chat, api, auth]
+    readiness: [chat, api]
+  # live-quiz work: student PWA, controller, response ingestion, workers
+  live-quiz:
+    apps: [pwa, control, api, auth, response-api]
+    readiness: [pwa, api]
+  # everything (current behavior); also the default when --profile is omitted
+  full:
+    apps: ['*']
+    default: true
 apps:
   # backend GraphQL API
   - name: api

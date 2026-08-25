@@ -80,7 +80,8 @@ uncrowned regardless of Catalyst entitlement.
   `01a03490-059c-7381-adb8-91b77e89f5f9` accepted rebuilding S1 without
   Catalyst signaling because ADR-0037 makes the three formerly gated formats
   standard full-access capabilities.
-- Pull request: none; all remote and publication actions are withheld.
+- Draft PR #5546 exists, and normal pushes are complete. PR merge, mark-ready,
+  deployment, publication, cleanup, and deletion remain withheld.
 - Authoritative roadmap:
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/question-library-feedback-recovery/project/2026-08-23-question-library-ux-audit-and-roadmap.md`
   on `rs/question-library-feedback-recovery` at `5d7c0284890db55a93da1cb66a1ca87ab03f2e0d`.
@@ -523,11 +524,9 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   `Stopped`; route state was absent; and the exact W2 route count was 0. No new
   worktree or manual Docker, DevPod, route, TLS, certificate, or lock edit
   occurred.
-- Remaining external actions are withheld and are not required for local
-  completion: push, PR or stack mutation, merge, deploy, publication, cleanup,
-  and deletion.
-- Next action: the user may choose whether to push or open a PR in a separately
-  authorized delivery step; no delivery authority is implied here.
+- Delivery state: draft PR #5546 exists, and its separately authorized normal
+  branch pushes are complete. PR merge, mark-ready, deployment, publication,
+  cleanup, and deletion remain withheld.
 - Final-review closure at `fb86b209a`: the prior committed Progress predates
   `b1d7b730a` and `fb86b209a`. `b1d7b730a` stabilized O/P activity-wizard
   selection coverage, and branch-owned CI Playwright shards 1 and 3 passed. The
@@ -563,6 +562,32 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   `/private/tmp/pr5546-final-disabled-reason-visible.png` and
   `/private/tmp/pr5546-final-disabled-reason-empty.png`. The synthetic quiz
   was canceled.
+- Sol final review found one P3: Progress still described push and PR creation
+  as future after draft PR #5546 and its normal branch pushes were complete.
+  The pending normal merge reconciliation brings `origin/v3` at
+  `b8ce110513a65dc5f882f3adc3676a489cfdeb94` into branch head `f4d061e48`.
+  Its only conflict, `.devrouter.yml`, keeps upstream's profile-scoped
+  configuration and comments. Config validation rejected `profiles` with the
+  staged 0.0.37 pin; official devrouter 0.0.38 is installed and now pinned.
+  The merge and plan changes are staged but uncommitted and unpushed.
+  Post-merge CI, browser, and devrouter validation remain pending and are not
+  claimed. PR merge, mark-ready, and deployment remain withheld.
+- Post-merge proof used official devrouter CLI and config 0.0.38. `doctor`
+  reported 23 ok, 3 unrelated warnings, 0 errors, and a valid `repo.config`.
+  `ensure --profile manage` returned profile `manage` and only the canonical
+  API, Auth, and Manage routes; the runtime log started exactly
+  `backend-docker`, `auth`, and `frontend-manage`. The frontend-manage check
+  passed. Browser proof at
+  `https://manage.klicker.rs-ux-review-question-library.localhost` measured the
+  invalid final state with a 4px gap, 20px polite live region, disabled Create,
+  and `aria-describedby`; the valid state kept the polite live region mounted
+  and empty at 0px, used the normal gap with no added gap, enabled Create, and
+  omitted `aria-describedby`. Screenshots are
+  `/private/tmp/pr5546-merge-final-disabled.png` and
+  `/private/tmp/pr5546-merge-final-valid.png`. The synthetic activity was
+  canceled, the browser was closed, and the workspace was stopped with zero
+  routes and no exact `default-rs-315ff` containers. CI and reviews after push
+  remain pending; PR merge, mark-ready, and deployment remain withheld.
 
 ### Historical execution evidence before final runtime proof
 
