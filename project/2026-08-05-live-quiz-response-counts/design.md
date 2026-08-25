@@ -91,9 +91,10 @@ legacy processed-set cardinality is used as the opaque pre-cutover baseline.
 All keys remain under the existing
 `lq:<quiz-id>:i:<instance-id>:*` namespace. Active counters have constant key
 space, while sorted-set replay claims trim members after the bounded horizon and
-expire with the latest claim. Block closure and quiz termination start one-day
-retention on instance-info keys before expiring the response keys, so late
-scripts cannot recreate persistent tracking keys.
+expire with the latest claim while the instance is active. Block closure and
+quiz termination start one-day retention on instance-info keys before expiring
+the response keys; the claim key follows that shorter remaining key retention,
+so late scripts cannot recreate persistent tracking keys.
 
 The rollout must deploy GraphQL before new ingress, drain old response
 processor replicas before initializing processed counters, and then run only

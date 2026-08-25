@@ -47,7 +47,9 @@ The new
 `lq:<quiz-id>:i:<instance-id>:responses:processed:claims` sorted set is an
 age-trimmed replay claim for the response `messageId` or assessment
 `correlationId`; each member keeps its own timestamp within the 24-hour replay
-horizon, or the shorter remaining instance-info retention. The legacy
+horizon. After closure, the claim key itself follows the shorter remaining
+instance-info retention, but that key-level expiry does not shorten the
+member-trimming horizon while the key remains. The legacy
 `lq:<quiz-id>:i:<instance-id>:responses:processed` set is read only during the
 worker rollout and provides the initial processed-counter baseline. A
 processing retry after a lost Redis reply therefore cannot apply the same

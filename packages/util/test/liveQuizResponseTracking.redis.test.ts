@@ -162,6 +162,38 @@ redisDescribe('live quiz response tracking Redis contract', () => {
       expect(await redis.ttl(boundedCountKey)).toBeGreaterThan(0)
       expect(await redis.ttl(boundedCountKey)).toBeLessThanOrEqual(30)
 
+      const shrinkingInfoKey = `${prefix}:shrinking-info`
+      const shrinkingClaimKey = `${prefix}:shrinking-processed:claims`
+      const shrinkingLegacyProcessedKey = `${prefix}:shrinking-processed`
+      const shrinkingCountKey = `${prefix}:shrinking-processed-count`
+      await redis.hset(shrinkingInfoKey, 'id', 'synthetic')
+      await redis.pexpire(shrinkingInfoKey, 5000)
+      const processWithShrinkingInfo = (messageId: string) =>
+        redis.eval(
+          LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
+          4,
+          shrinkingClaimKey,
+          shrinkingCountKey,
+          shrinkingInfoKey,
+          shrinkingLegacyProcessedKey,
+          messageId,
+          '8',
+          JSON.stringify([])
+        )
+
+      expect(
+        JSON.parse(String(await processWithShrinkingInfo('message-old'))).status
+      ).toBe('processed')
+      await new Promise((resolve) => setTimeout(resolve, 1100))
+      expect(
+        JSON.parse(String(await processWithShrinkingInfo('message-new'))).status
+      ).toBe('processed')
+      await new Promise((resolve) => setTimeout(resolve, 2100))
+      expect(
+        JSON.parse(String(await processWithShrinkingInfo('message-old'))).status
+      ).toBe('already_processed')
+      expect(await redis.get(shrinkingCountKey)).toBe('2')
+
       const missingClaimKey = `${prefix}:missing-processed:claims`
       const missingLegacyProcessedKey = `${prefix}:missing-processed`
       const missingCountKey = `${prefix}:missing-processed-count`
@@ -302,6 +334,10 @@ redisDescribe('live quiz response tracking Redis contract', () => {
         `${prefix}:bounded-processed:claims`,
         `${prefix}:bounded-processed`,
         `${prefix}:bounded-processed-count`,
+        `${prefix}:shrinking-info`,
+        `${prefix}:shrinking-processed:claims`,
+        `${prefix}:shrinking-processed`,
+        `${prefix}:shrinking-processed-count`,
         `${prefix}:missing-processed:claims`,
         `${prefix}:missing-processed`,
         `${prefix}:missing-processed-count`,
