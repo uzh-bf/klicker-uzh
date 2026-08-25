@@ -29,11 +29,7 @@ export function canLoadMCPServer(
   const authType = server.authType.toLowerCase()
 
   if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
-    return (
-      authType === 'scope_token' &&
-      Boolean(context.kbId) &&
-      Boolean(context.sessionId)
-    )
+    return Boolean(context.kbId) && Boolean(context.sessionId)
   }
 
   if (authType !== 'scope_token') {
