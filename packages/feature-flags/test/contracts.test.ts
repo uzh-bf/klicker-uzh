@@ -6,9 +6,10 @@ import {
 } from '../src/index.js'
 
 describe('feature flag contracts', () => {
-  it('registers exactly the lecturer-facing flags, all shipping false', () => {
+  it('registers product flags with fail-closed defaults', () => {
     expect(FEATURE_FLAG_DEFAULTS).toEqual({
       'ai-beta': false,
+      'learning-analytics': false,
     })
   })
 

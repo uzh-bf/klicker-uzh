@@ -15,7 +15,7 @@ import { useEffect } from 'react'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { ManageAssistantWidget } from '../components/assistant/ManageAssistantWidget'
-import { ManageFeatureFlags } from '../components/ManageFeatureFlags'
+import ManageFeatureFlagProvider from '../components/featureFlags/ManageFeatureFlagProvider'
 import '../globals.css'
 import { useApollo } from '../lib/apollo'
 
@@ -49,7 +49,7 @@ function App({ Component, pageProps }: AppProps) {
       className={`flex h-full min-h-full flex-col bg-white ${sourceSansPro.variable} font-sans`}
     >
       <ApolloProvider client={apolloClient}>
-        <ManageFeatureFlags>
+        <ManageFeatureFlagProvider>
           <NextIntlClientProvider
             timeZone="Europe/Zurich"
             messages={pageProps.messages}
@@ -66,7 +66,7 @@ function App({ Component, pageProps }: AppProps) {
               <ManageAssistantWidget />
             </DndProvider>
           </NextIntlClientProvider>
-        </ManageFeatureFlags>
+        </ManageFeatureFlagProvider>
       </ApolloProvider>
 
       <style>{`

@@ -2,7 +2,7 @@
 type: Feature Flags
 title: Feature Flags
 description: Shared GrowthBook contracts, frontend and backend connectivity, targeting attributes, failure behavior, and the adoption checklist.
-timestamp: '2026-08-22'
+timestamp: '2026-08-24'
 tags:
   - architecture
   - frontend
@@ -19,8 +19,8 @@ and is not a GrowthBook management key.
 
 The reusable foundation is `@klicker-uzh/feature-flags`. Its registry is
 `packages/feature-flags/src/contracts.ts:FEATURE_FLAG_DEFAULTS`, which currently
-holds one product flag, `ai-beta`. Applications initialize GrowthBook only when
-they adopt their first flag.
+holds the `ai-beta` and `learning-analytics` product flags. Applications
+initialize GrowthBook only when they adopt their first flag.
 
 `ai-beta` is not the whole gate over the lecturer AI surfaces. It decides
 whether the beta is open to an account; the account's `aiFeaturesEnabled`
@@ -28,6 +28,31 @@ column decides whether that account may spend model budget at all, and an
 administrator sets it once a cost center has been supplied to bill the usage
 to. Both must hold, and the flag alone never opens a surface — see
 [Chat platform](./chat-platform.md#auth-guard-pattern-route-handlers).
+
+## Active flags
+
+| Key                  | Consumer           | Fallback | Disabled behavior                                      |
+| -------------------- | ------------------ | -------- | ------------------------------------------------------ |
+| `ai-beta`            | Lecturer AI        | `false`  | AI surfaces and their endpoints remain unavailable     |
+| `learning-analytics` | Lecturer UI/Manage | `false`  | Analytics controls remain visible but are not usable   |
+
+Disabled analytics controls explain that the feature is not yet available for
+the current account. This keeps a deliberately staged rollout distinguishable
+from a broken control without implying that lecturers can enable it themselves.
+
+Manage mounts the browser provider at the application root with anonymous
+attributes, then updates it after `QUserProfile` resolves to target the
+authenticated lecturer by stable `User.id`, role, actor type, and environment.
+This keeps full-screen routes such as activity evaluations inside the provider.
+Public live-quiz evaluation links with an HMAC stay anonymous and skip the
+profile lookup so Apollo's Unauthorized handler cannot redirect them to login.
+The former `User.publicPreview` field is no longer selected by that operation
+and is not authoritative for learning analytics. The Prisma and public GraphQL
+fields remain available for other consumers and a later cleanup.
+
+Direct analytics routes remain reachable to authenticated lecturers. The flag
+controls product affordances, not authorization; routes and APIs continue to
+enforce their own access rules.
 
 ## Package contract
 
@@ -90,8 +115,10 @@ It must also pass
 `process.env.NEXT_PUBLIC_ENV ?? process.env.NODE_ENV` as `environment`.
 
 The app owns environment-variable registration in `turbo.json`; the shared
-package itself reads no process environment. Mount the provider after identity
-is known, and memoize the attribute object:
+package itself reads no process environment. Mount the provider above every
+flag consumer, and memoize the attribute object. If identity loads
+asynchronously, start with `actorType: 'anonymous'` and apply the authenticated
+attributes when they become available:
 
 ```tsx
 <FeatureFlagProvider config={browserConfig} attributes={attributes}>
@@ -100,12 +127,15 @@ is known, and memoize the attribute object:
 ```
 
 `packages/feature-flags/src/react.tsx:FeatureFlagProvider` creates one client
-per provider mount, applies new attributes without recreating it, and dedupes
-initialization under React Strict Mode. It loads the feature payload once; a
-flag change is picked up on the next provider mount or page reload. Missing
-configuration initializes an empty payload without a network request. The
-browser adapter disables GrowthBook auto-experiments, visual changes, JavaScript
-injection, and URL redirects; this foundation evaluates feature flags only.
+per provider mount, applies new attributes through the browser adapter's
+sanitizer without recreating it, and dedupes initialization under React Strict
+Mode. It loads the feature payload once; a flag change is picked up on the next
+provider mount or page reload. Missing configuration initializes an empty
+payload without a network request and emits a credential-free browser warning.
+Failed SDK initialization emits the same class of safe warning while retaining
+false fallbacks. The browser adapter disables GrowthBook auto-experiments,
+visual changes, JavaScript injection, and URL redirects; this foundation
+evaluates feature flags only.
 
 All five deployed Next.js images are build-time ready for browser adoption:
 `auth`, `chat`, `frontend-control`, `frontend-manage`, and `frontend-pwa`
@@ -123,6 +153,11 @@ non-sensitive SDK connection values that Next.js embeds into public browser
 assets; GitHub documents variables as the store for non-sensitive configuration
 and warns that they are not masked. Missing variables still produce a valid
 image, but the browser adapter performs no SDK request and keeps flags off.
+
+Manage registers these variables in `turbo.json` and supplies the provider from
+its application root. Its Playwright fixture intercepts only the external SDK
+response so feature states remain deterministic while the real Klicker
+authentication, API, and database are exercised.
 
 ## Node.js adoption
 

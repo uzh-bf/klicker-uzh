@@ -9,7 +9,6 @@ query UserProfile {
     firstLogin
     catalyst
     catalystTier
-    publicPreview
     privatePreview
     aiFeaturesEnabled
     numChatbots

@@ -10,6 +10,7 @@ export const FEATURE_FLAG_DEFAULTS = {
   // move together on purpose — a surface withdrawn while the tools behind it
   // stay live is a gap, not a finer control.
   'ai-beta': false,
+  'learning-analytics': false,
 } as const satisfies Record<string, false>
 
 export type KlickerFeatureFlags = {

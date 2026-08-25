@@ -53,7 +53,10 @@ detach upstream generation from `req.signal` or guarantee completion after a
 client abort. The root layout also declares
 `interactiveWidget: 'resizes-content'` alongside `viewportFit: 'cover'`; this
 is required for Android keyboard resizing because the thread viewport is the
-only conversation scroller and the composer is positioned over it.
+only conversation scroller. The standalone composer remains in the thread's
+flex layout so expanded text, attachments, and errors reduce the viewport
+instead of covering its final content; only embedded mode keeps the compact
+overlay treatment.
 
 The OpenAI-compatible `provider.chat(...)` path uses an aligned AI SDK 7 patch
 train: `ai@7.0.52`, `@ai-sdk/openai@4.0.30`, and `@ai-sdk/mcp@2.0.25`, which
@@ -276,14 +279,16 @@ reasoning parts share one disclosure, adjacent tool calls share one group when t
 than one, and a single tool call keeps its direct result disclosure. Reasoning auto-opens only
 while active until the participant manually chooses an open state; that manual choice then wins.
 The source-card section is derived from completed `doc_query` tool results but
-stays hidden while the same assistant message is actively running without
-non-whitespace answer text. This keeps tool activity in stream order and
-prevents a result card from appearing as if it were the answer during the gap
-between tool completion and the model's next text step. If the turn becomes
-terminal before producing answer text, including an incomplete or aborted
-tool-only turn, valid completed sources are shown instead of being lost on
-reload. The source component still suppresses the section when normalization
-produces no sources.
+stays hidden for the full time the same assistant message is actively running,
+including after answer text begins. This lets the viewport follow the growing
+answer instead of jumping over it to a large source grid. When the turn becomes
+terminal, resize-driven bottom scrolling switches off and the section fades
+in. If the participant was following at the bottom, only the source heading is
+scrolled into view; a large grid never jumps directly to its final card. If the
+participant had scrolled up, their position is preserved. Terminal incomplete,
+aborted, and tool-only turns still show valid completed sources instead of
+losing them on reload. The source component suppresses the section when
+normalization produces no sources.
 The runtime render boundary is deliberately narrow: `RuntimeProvider` selects only the active
 thread's messages/running state and the actions it calls, while `Thread` renders its message rows
 through the assistant-ui 0.15 children renderer and passes the chatbot avatar through context. Runtime
@@ -404,11 +409,13 @@ MCP `tool-result` envelopes with `output.isError === true` persist only the gene
 error bodies into `ChatMessage.content`. The live SSE path applies the same boundary through
 `src/lib/toolOutput.ts:normalizeLiveToolOutput` before a result reaches `ToolFallback`.
 
-The mobile layout exports `viewportFit: 'cover'`, reserves the bottom safe area for the
-composer, wraps Markdown tables in horizontal scrolling, and makes the mode pills horizontally
-scrollable. Embedded mode shows the loading state and compact credit/model information through
-the shared settings components. Direct thread URL activation resynchronizes the thread's stored
-chat mode once per activation, without overriding a mode manually chosen afterward.
+The mobile layout exports `viewportFit: 'cover'`, keeps the standalone composer
+in normal layout with bottom safe-area padding, wraps Markdown tables in
+horizontal scrolling, and uses a compact mode dropdown in an overflow-safe
+header grid. Embedded mode shows the loading state and compact credit/model
+information through the shared settings components. Direct thread URL
+activation resynchronizes the thread's stored chat mode once per activation,
+without overriding a mode manually chosen afterward.
 
 Switching mode mid-thread affects **only the turns sent afterwards**, and the choice is not
 persisted until the next send: a thread's stored mode is `lastChatMode`, derived from its most
@@ -505,11 +512,13 @@ shared tooltip with the full title and excerpt when one exists. Inline citation 
 same content and add the existing navigation hint. These are passive Radix tooltips, so touch
 behavior remains compact cards plus the existing URL and in-page citation actions. Card titles
 clamp at two lines — and note that `line-clamp-2` needs `display: -webkit-box`, so adding `block`
-alongside it silently disables the clamp. Document cards lay out with
-`repeat(auto-fit, minmax(min(230px, 100%), 1fr))`: `auto-fit` (not `auto-fill`) collapses empty
-tracks so fewer cards stretch across the whole row and only wrap when they genuinely no longer
-fit, and the `min(230px, 100%)` floor keeps a track from forcing horizontal overflow in
-containers narrower than 230px (embedded mode).
+alongside it silently disables the clamp. All source types share one
+`repeat(auto-fit, minmax(min(230px, 100%), 1fr))` grid: `auto-fit` (not
+`auto-fill`) collapses empty tracks so fewer cards stretch across the whole row
+and only wrap when they genuinely no longer fit. Equal-width tracks keep mixed
+document/media results aligned, and the `min(230px, 100%)` floor keeps a track
+from forcing horizontal overflow in containers narrower than 230px (mobile and
+embedded mode).
 
 The activity chip's four states come from the pure `getDocQueryChipState` in `tool-fallback.tsx`.
 "No results" is claimed only for a payload that actually **parsed**: a cancelled call leaves the
@@ -556,7 +565,7 @@ needs a live key the devcontainer does not carry.
 
 Two recurring traps in this app's strings:
 
-- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the own-property known-mode predicate and `formatModeLabel` (used by the thread-list mode subtitle; unknown modes fall back to their capitalized raw name), while the older call sites still translate inline alongside their icon lookups; `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. The mode switcher's tooltip — a Radix popover, not a native `title` — uses the same localized label, never the English-only registry description. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value. When a model registry or LiteLLM alias introduces a new effort id, add it to `KNOWN_REASONING_EFFORTS` and to both message files in the same change — otherwise the raw-name fallback leaks an English id (`xhigh` shipped that way and read "Xhigh" next to Niedrig/Mittel/Hoch until it was fixed, and `none` — offered by `gpt-5.1` and `gpt-5.5` in prd, by `gpt-5.1` only in stg, and by no model in the local default registry — read "None" for the same reason). The local `DEFAULT_MODEL_REGISTRY` and the deployed registries in `deploy/env-uzh-{stg,prd}/values.yaml` only overlap partly — local has a `gpt-5.6-luna` the deployments do not ship, and the deployments offer effort ids (`none`, `minimal`) that no local model does — so check both before assuming a browser pass covered every effort id.
+- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the own-property known-mode predicate and `formatModeLabel` (used by the mode dropdown and thread-list subtitle; unknown modes fall back to their capitalized raw name), while `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. The mode dropdown shows the same localized label and description in its Radix menu, never an English-only registry description for a known mode. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value. When a model registry or LiteLLM alias introduces a new effort id, add it to `KNOWN_REASONING_EFFORTS` and to both message files in the same change — otherwise the raw-name fallback leaks an English id (`xhigh` shipped that way and read "Xhigh" next to Niedrig/Mittel/Hoch until it was fixed, and `none` — offered by `gpt-5.1` and `gpt-5.5` in prd, by `gpt-5.1` only in stg, and by no model in the local default registry — read "None" for the same reason). The local `DEFAULT_MODEL_REGISTRY` and the deployed registries in `deploy/env-uzh-{stg,prd}/values.yaml` only overlap partly — local has a `gpt-5.6-luna` the deployments do not ship, and the deployments offer effort ids (`none`, `minimal`) that no local model does — so check both before assuming a browser pass covered every effort id.
 - **ICU plurals must be selected on the displayed number.** `formatCredits(1.2)` renders `1` but `Intl.PluralRules.select(1.2)` is `other`, so passing the raw float prints "1 credits". Feed `count` the rounded value the user actually sees.
 
 ## Message feedback and Langfuse

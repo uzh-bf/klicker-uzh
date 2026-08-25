@@ -42,14 +42,38 @@ export function createBrowserFeatureFlagClient<
       if (configured) {
         initializePromise = growthbook
           .init({ timeout: config.timeoutMs ?? 2000 })
-          .then((result) => result.success)
-          .catch(() => false)
+          .then((result) => {
+            if (!result.success) {
+              console.warn(
+                '[feature-flags] Browser initialization failed; using false fallbacks'
+              )
+            }
+            return result.success
+          })
+          .catch(() => {
+            console.warn(
+              '[feature-flags] Browser initialization failed; using false fallbacks'
+            )
+            return false
+          })
       } else {
+        const forcedFeatures = forcedFeatureFlagPayload(
+          config.forcedOn,
+          environment
+        )
         growthbook.initSync({
           payload: {
-            features: forcedFeatureFlagPayload(config.forcedOn, environment),
+            features: forcedFeatures,
           },
         })
+        if (
+          environment !== 'unknown' &&
+          Object.keys(forcedFeatures).length === 0
+        ) {
+          console.warn(
+            '[feature-flags] Browser configuration is incomplete; using false fallbacks'
+          )
+        }
         initializePromise = Promise.resolve(false)
       }
     }

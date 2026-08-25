@@ -1,0 +1,229 @@
+name: Final AI review
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
+
+jobs:
+  initialize:
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: final-ai-review-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
+    steps:
+      - name: Checkout trusted final-review policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - name: Initialize final-review status
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH || 'v3' }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const helper = require('./.github/scripts/final-ai-review.js')
+            await helper.initializeFinalReview({
+              github,
+              context,
+              core,
+              sourceBranch: process.env.SOURCE_BRANCH,
+            })
+
+  authorize:
+    if: >-
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request != null &&
+      github.event.comment.body == '/final-review'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: read
+    outputs:
+      authorized: ${{ steps.authorize.outputs.authorized }}
+      pr_number: ${{ steps.authorize.outputs.pr_number }}
+      base_sha: ${{ steps.authorize.outputs.base_sha }}
+      head_sha: ${{ steps.authorize.outputs.head_sha }}
+      background: ${{ steps.authorize.outputs.background }}
+    steps:
+      - name: Checkout trusted final-review policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - name: Authorize final review
+        id: authorize
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const helper = require('./.github/scripts/final-ai-review.js')
+            await helper.authorizeFinalReview({ github, context, core })
+
+  review:
+    needs: authorize
+    if: needs.authorize.outputs.authorized == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: final-ai-review-${{ needs.authorize.outputs.pr_number }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+    steps:
+      - name: Checkout trusted final-review implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify trusted helper
+        run: node --test .github/scripts/final-ai-review.test.js
+
+      - name: Start final review
+        id: start
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PR_NUMBER: ${{ needs.authorize.outputs.pr_number }}
+          BASE_SHA: ${{ needs.authorize.outputs.base_sha }}
+          HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const helper = require('./.github/scripts/final-ai-review.js')
+            const shouldRun = await helper.startFinalReview({
+              github,
+              context,
+              prNumber: Number(process.env.PR_NUMBER),
+              baseSha: process.env.BASE_SHA,
+              headSha: process.env.HEAD_SHA,
+            })
+            core.setOutput('run_review', String(shouldRun))
+
+      - name: Resolve immutable review range
+        id: range
+        if: steps.start.outputs.run_review == 'true'
+        env:
+          PR_NUMBER: ${{ needs.authorize.outputs.pr_number }}
+          BASE_SHA: ${{ needs.authorize.outputs.base_sha }}
+          HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          [[ "${PR_NUMBER}" =~ ^[0-9]+$ ]]
+          [[ "${BASE_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${HEAD_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          git fetch --no-tags origin "pull/${PR_NUMBER}/head"
+          test "$(git rev-parse FETCH_HEAD)" = "${HEAD_SHA}"
+          git cat-file -e "${BASE_SHA}^{commit}"
+          MERGE_BASE="$(git merge-base "${BASE_SHA}" "${HEAD_SHA}")"
+          [[ "${MERGE_BASE}" =~ ^[0-9a-f]{40}$ ]]
+          echo "merge_base=${MERGE_BASE}" >>"${GITHUB_OUTPUT}"
+
+      - name: Install pinned OpenCodeReview CLI
+        if: steps.start.outputs.run_review == 'true'
+        run: |
+          npm install -g @alibaba-group/open-code-review@1.9.10
+          ocr version
+
+      - name: Configure ephemeral OpenRouter access
+        id: configure
+        if: steps.start.outputs.run_review == 'true'
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          set -euo pipefail
+          printf '%s' "${OPENROUTER_API_KEY}" |
+            node .github/scripts/final-ai-review.js configure-ocr
+
+      - name: Run final review
+        id: run_review
+        if: steps.start.outputs.run_review == 'true'
+        env:
+          BACKGROUND: ${{ needs.authorize.outputs.background }}
+          HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+          MERGE_BASE: ${{ steps.range.outputs.merge_base }}
+          RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
+          STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
+        run: |
+          set -euo pipefail
+          ocr review \
+            --from "${MERGE_BASE}" \
+            --to "${HEAD_SHA}" \
+            --audience agent \
+            --format json \
+            --background "${BACKGROUND}" \
+            --rule .github/open-code-review/final-review-rules.json \
+            >"${RESULT_PATH}" 2>"${STDERR_PATH}"
+
+      - name: Remove ephemeral OpenRouter access
+        id: cleanup
+        if: always() && steps.configure.outcome == 'success'
+        run: node .github/scripts/final-ai-review.js cleanup-ocr
+
+      - name: Publish consolidated final review
+        id: publish
+        if: >-
+          steps.run_review.outcome == 'success' &&
+          steps.cleanup.outcome == 'success'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PR_NUMBER: ${{ needs.authorize.outputs.pr_number }}
+          BASE_SHA: ${{ needs.authorize.outputs.base_sha }}
+          HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+          RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const helper = require('./.github/scripts/final-ai-review.js')
+            const url = await helper.publishFinalReview({
+              github,
+              context,
+              prNumber: Number(process.env.PR_NUMBER),
+              baseSha: process.env.BASE_SHA,
+              headSha: process.env.HEAD_SHA,
+              resultPath: process.env.RESULT_PATH,
+            })
+            core.info(`Published ${url}`)
+
+      - name: Finalize exact-head status
+        if: always() && steps.start.outputs.run_review == 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PR_NUMBER: ${{ needs.authorize.outputs.pr_number }}
+          BASE_SHA: ${{ needs.authorize.outputs.base_sha }}
+          HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+          REVIEW_OUTCOME: ${{ steps.run_review.outcome }}
+          CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
+          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const helper = require('./.github/scripts/final-ai-review.js')
+            await helper.finalizeFinalReview({
+              github,
+              context,
+              prNumber: Number(process.env.PR_NUMBER),
+              baseSha: process.env.BASE_SHA,
+              headSha: process.env.HEAD_SHA,
+              reviewOutcome: process.env.REVIEW_OUTCOME,
+              cleanupOutcome: process.env.CLEANUP_OUTCOME,
+              publishOutcome: process.env.PUBLISH_OUTCOME,
+            })

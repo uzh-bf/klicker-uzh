@@ -2,7 +2,7 @@
 type: Frontend Conventions
 title: Frontend Conventions
 description: Shared conventions for manage, pwa, control, and auth — design system, Apollo with generated ops, i18n, Formik, data-cy, and CSP rules.
-timestamp: '2026-08-24'
+timestamp: '2026-08-25'
 tags:
   - frontend
 ---
@@ -64,6 +64,7 @@ contract is unchanged.
 - Clickable rows must ignore events from marked interactive subtrees so opening a dropdown or modal cannot also trigger the row navigation.
 - Async Formik submit handlers must return or await their mutation promise so `isSubmitting` remains active and users cannot navigate away before the save completes.
 - Custom modal drawers must use a neutral element with `role="dialog"` and `aria-modal="true"`, connect the launcher with `aria-controls`, `aria-expanded`, and `aria-haspopup="dialog"`, trap keyboard focus, and restore focus on close. When the drawer lives beside the page root, portal it to `document.body` and make the page root `inert` plus `aria-hidden` while open; restore the exact previous state on cleanup. Both assistant drawers implement this contract: `apps/frontend-manage/src/components/assistant/ManageAssistantWidget.tsx` and `apps/frontend-pwa/src/components/chatbot/CourseChatDrawer.tsx`.
+- **Pinned list controls**: pagination / entries-per-page controls must never scroll away with their list. On a page, make the container `flex flex-col`, give the scrolling list its own `min-h-0 flex-1 overflow-y-auto` child, and keep the pager a `flex-none` sibling below it (`pages/index.tsx`, `pages/activities.tsx`). Inside the design-system `Modal` — whose content is itself `overflow-y-auto` — neutralize that with `className.content: 'overflow-visible'` and cap the list with `max-h-[...] overflow-y-auto` so it is the single scroll boundary (`ExistingElementSelectionModal.tsx`, `courses/CourseVerifiableCredentialsModal.tsx`).
 
 ## Markdown and Video Embeds
 
@@ -131,10 +132,10 @@ Namespaces are per-app plus `shared` (`shared`, `auth`, `pwa`, `manage`, `contro
 ## Gotchas absorbed from experience
 
 - **Feature flags gate alone.** Don't combine a flag with data-dependent counts (`flag && count > 0`) — that creates chicken-and-egg visibility problems.
-  - **Active Feature Flags:**
+  - **Legacy active preview fields:**
     - `privatePreview` (User-profile level): Gates advanced beta features such as knowledge-base management, element/activity sharing, microlearning, and administrator panels. Managed via the admin page (`apps/frontend-manage/src/pages/admin.tsx`). The KB service reads the database value per request, so disabling it does not require re-login.
-    - `publicPreview` (User-profile level): Gates general preview features like microlearning analytics and new evaluation navigation interfaces.
-  - The behavior-free `@klicker-uzh/feature-flags` GrowthBook foundation is available for incremental migration, but an existing preview field remains authoritative until all consumers for that behavior move. See [Feature Flags](./feature-flags.md) and [ADR 0008](./adr/0008-use-growthbook-for-feature-flags.md).
+    - `publicPreview` (User-profile level): Retained in Prisma and the public GraphQL schema, but no longer selected by Manage's user-profile query or used for learning analytics.
+  - `@klicker-uzh/feature-flags` is the shared GrowthBook integration. The `ai-beta` and `learning-analytics` flags default to false. Manage leaves analytics controls visible but disabled when `learning-analytics` is off. Use stable internal actor IDs for targeting, and never treat a flag as authorization. See [Feature Flags](./feature-flags.md) and [ADR 0008](./adr/0008-use-growthbook-for-feature-flags.md).
   - _Interim KB rollout_: `privatePreview` remains the authoritative per-account gate for KB management until its consumers migrate to the GrowthBook foundation.
 - **CSP `frame-ancestors` is set at the proxy, never in Next.js middleware.** Middleware CSP breaks `_next/data` routes in production builds (known Next.js bug). Production: HAProxy ingress annotations (`haproxy.org/response-set-header` in `deploy/charts/klicker-uzh-v3/templates/ingress-*.yaml`); local: Traefik `customResponseHeaders` (`util/traefik/rules_docker.yaml`).
 - **Embedded PWA messaging**: use a parent-initiated `postMessage` handshake to capture `event.origin`; no `'*'` target origins and no second per-platform allowlist in page code — embedding permission is enforced by ingress `frame-ancestors`.

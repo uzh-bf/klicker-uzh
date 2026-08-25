@@ -312,6 +312,7 @@ export const Thread: FC<ThreadProps> = ({
   const resolvedSuggestions =
     suggestions ??
     getStudentThreadSuggestions(contextualSuggestions ?? Boolean(contextLabel))
+  const isRunning = useAuiState((s) => s.thread.isRunning)
   const activeThread = useChatStore((state) =>
     state.threads.find((thread) => thread.id === state.activeThreadId)
   )
@@ -336,12 +337,17 @@ export const Thread: FC<ThreadProps> = ({
         role="region"
         aria-label={t('chat.thread.viewportLabel')}
         tabIndex={0}
+        // Follow content growth only while an answer is running. Sources mount
+        // when the run becomes terminal; disabling resize-driven bottom
+        // scrolling for that insertion prevents a large source grid from
+        // jumping past the final answer.
+        autoScroll={isRunning}
         className={twMerge(
           'focus-visible:ring-ring flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset motion-reduce:scroll-auto',
           embedded
             ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-24 pt-2'
             : twMerge(
-                'overscroll-contain overflow-y-scroll px-2 pb-28 pt-2 sm:px-4 sm:pt-8',
+                'overscroll-contain overflow-y-scroll px-2 pb-4 pt-2 sm:px-4 sm:pt-8',
                 showHistoryRail && 'pt-14 md:pl-10 md:pt-8'
               )
         )}
@@ -381,10 +387,10 @@ export const Thread: FC<ThreadProps> = ({
 
       <div
         className={twMerge(
-          'absolute bottom-0 left-0 right-0 z-10 flex w-full flex-col items-center justify-end',
+          'z-10 flex w-full flex-col items-center justify-end',
           embedded
-            ? 'px-2 pb-2'
-            : 'px-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-4'
+            ? 'absolute bottom-0 left-0 right-0 px-2 pb-2'
+            : 'relative shrink-0 px-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-4'
         )}
       >
         <div className="from-background bg-linear-to-t pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
@@ -580,8 +586,7 @@ const ThreadWelcome: FC<{
   const activeMode = resolveSelectedMode(modeOptions, selectedMode)
   const modeLabel = activeMode ? formatModeLabel(t, activeMode) : null
   const modeDescription = activeMode
-    ? !modeOptionsAreFallback &&
-      Object.prototype.hasOwnProperty.call(modeOptions, activeMode)
+    ? !modeOptionsAreFallback && Object.hasOwn(modeOptions, activeMode)
       ? (modeOptions[activeMode]?.trim() ?? '')
       : getModeDescription(t, activeMode, modeOptions)
     : null
@@ -1327,7 +1332,7 @@ const ComposerAction: FC = () => {
             crossfade(!isRunning)
           )}
         >
-          <SendHorizontalIcon className={iconSize} />
+          <SendHorizontalIcon aria-hidden="true" className={iconSize} />
         </button>
       </ComposerPrimitive.Send>
       <ComposerPrimitive.Cancel asChild>
@@ -1347,7 +1352,10 @@ const ComposerAction: FC = () => {
             crossfade(isRunning)
           )}
         >
-          <SquareIcon className={iconSize} />
+          <SquareIcon
+            aria-hidden="true"
+            className={twMerge(iconSize, 'fill-current')}
+          />
         </button>
       </ComposerPrimitive.Cancel>
     </div>
@@ -1721,16 +1729,13 @@ const AssistantMessage: FC<{
       s.message.status?.type === 'running' &&
       s.message.content.length === 0
   )
-  // Sources stay hidden only while the assistant message is actively running
-  // and no non-whitespace answer text has streamed yet. Once the turn is
-  // terminal (e.g. a completed tool call with no answer text), completed
-  // source-bearing tool results must become visible.
+  // Keep source cards out of layout for the complete run, even after tool
+  // results and the first answer chunks arrive. The viewport can then follow
+  // the growing answer instead of jumping over it to a large source grid.
+  // Terminal tool-only turns still show their completed sources.
   const showSources = useAuiState((s) => {
-    const message = s.message
-    const hasAnswerText = message.content.some(
-      (part) => part.type === 'text' && part.text.trim().length > 0
-    )
-    return !(message.status?.type === 'running' && !hasAnswerText)
+    const status = s.message.status?.type
+    return status !== 'running' && status !== 'requires-action'
   })
   // Computed once here (not inside SourcesSection/MarkdownText) and shared
   // via context, so the sources grid and the inline `[n]` citation chips

@@ -1886,7 +1886,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       reviewStatusUpdateFailed:
         'Aktualisierung des Review-Status fehlgeschlagen',
       openElementsInLibrary: 'Elemente in Bibliothek öffnen',
-      batchOperations: 'Batch-Operationen ({numActivities} Aktivitäten)',
+      batchOperations:
+        'Batch-Operationen ({numActivities, plural, =1 {1 Aktivität} other {# Aktivitäten}})',
       batchOperationsOnlyDraftScheduled:
         'Batch-Operationen können nur mit Entwurfs- oder geplanten Aktivitäten ausgeführt werden.',
       batchOperationsActivities: 'Aktivitäten - Batch-Operationen',
@@ -1895,6 +1896,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyMultiplier: 'Multiplikator ändern',
       changeCourse: 'Kurszuweisung ändern',
       modifyLiveQuizPoints: 'Bepunktung anpassen (nur Live Quiz)',
+      deleteSelectedActivities: 'Aktivitäten löschen',
+      batchDeleteDescription:
+        'Berechtigte Aktivitäten unwiderruflich löschen. Das Löschen kann nicht mit anderen Batch-Aktionen kombiniert werden.',
       enableLiveQuizPointsModification:
         'Basis, Korrektheits- und Bonuspunkte anpassen',
       bonusTime: 'Bonuszeit',
@@ -1902,6 +1906,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Zeitspanne während welcher Bonuspunkte vergeben werden muss mindestens 1 Sekunde betragen. Um keine Bonuspunkte zu vergeben, setzen Sie die Bonuspunkte auf 0.',
       noActivitiesWillBeUpdated: 'Keine Aktivitäten werden verändert',
       nActivitiesWillBeUpdated: '{number} Aktivitäten werden angepasst',
+      noActivitiesWillBeDeleted: 'Keine Aktivitäten werden gelöscht',
+      nActivitiesWillBeDeleted:
+        '{number, plural, =1 {# Aktivität wird gelöscht} other {# Aktivitäten werden gelöscht}}',
+      nOfMActivitiesWillBeDeleted:
+        '{affected}/{total} Aktivitäten werden gelöscht',
       activityContainsNoElements: 'Diese {activity} enthält keine Elemente.',
       multiplierRequiresGamifiedAssessmentCourse:
         'Ein Multiplikator kann nur für gamifizierte Aktivitäten oder Aktivitäten in Assessment-Kursen definiert werden, da nur in diesen Kursen Punkte gesammelt werden können. Sie haben die Zuweisung zu einem Kurs gewählt, welcher diese Bedingungen nicht erfüllt.',
@@ -1914,21 +1923,25 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
 <li>Veränderungen des Multiplikators sind nur für gamifizierte Aktivitäten oder Aktivitäten als Teil eines Assessment-Kurses möglich. Wird eine neue Kurszuweisung im gleichen Schritt als Batch-Operation gewählt, werden die Gamifizierungs- und Assessment-Einstellungen dieses Kurses genutzt.</li>
 <li>Aktivitäten können grundsätzlich allen laufenden und zukünftigen Kursen zugewiesen werden. Bei Microlearnings und Gruppenaktivitäten werden zusätzlich nur Zuweisungen erlaubt, bei welchen das Verfügbarkeits-Intervall der Aktivität vollständig in der Kurslaufzeit liegt.</li>
 <li>Basis-, Korrektheits- und Bonuspunkte können nur für Live Quizzes definiert und angepasst werden. Bei Aktivierung dieser Option werden andere Aktivitätstypen nicht geupdated.</li>
-<li>Alle Anpassungen erfordern mindestens Schreibrechte auf der jeweiligen Aktivität.</li>
+<li>Alle Anpassungen erfordern mindestens Schreibrechte auf der jeweiligen Aktivität. Für das unwiderrufliche Löschen ist Administratorzugriff erforderlich.</li>
 </ul>
       `,
       selectedActivitiesDescription:
-        'Sie haben die folgenden Aktivitäten ausgewählt. Alle Aktivitäten, welche von den gewählten Aktionen betroffen sind, sind markiert. Hovern Sie über dem Symbol für nicht betroffene Elemente für mehr Informationen. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
+        'Sie haben die folgenden Aktivitäten ausgewählt. Alle Aktivitäten, welche von den gewählten Aktionen betroffen sind, sind markiert. Hovern Sie über dem Symbol für nicht betroffene Aktivitäten für mehr Informationen. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
       batchInvalidStatus:
         'Nur Entwurfs- und geplante Aktivitäten können über Batch-Operations angepasst werden.',
       batchNeedEditorPermissions:
         'Um eine Aktivität über die Batch-Operationen anzupassen, benötigen Sie mindestens Schreibzugriff.',
+      batchNeedManagerPermissions:
+        'Um eine Aktivität unwiderruflich zu löschen, benötigen Sie Administratorzugriff.',
       batchMultiplierRequiresGamificationOrAssessment:
         'Eine Veränderung des Multiplikators ist nur für gamifizierte Aktivitäten oder Aktivitäten mit Assessment-Kurs Zuweisung möglich.',
       batchGroupActivityRequiresGroupsEnabled:
         'Gruppenaktivitäten können nur Kursen zugewiesen werden, in welchen die Gruppenbildung aktiviert ist.',
       batchAssessmentRemovalAdminOnly:
         'Aktivitäten, welche sich im Assessment-Modus (mit Zuweisung zu einem Assessment-Kurs) befinden, können nur von Administratoren des entsprechenden Kurses aus diesem entfernt werden.',
+      batchAssessmentDeletionAdminOnly:
+        'Assessment-Live-Quizzes können nur von Administratoren des entsprechenden Assessment-Kurses gelöscht werden.',
       batchActivityDatesOutsideCourse:
         'Das Verfügbarkeitsintervall von Gruppenaktivtäten und Microlearnings muss vollständig innerhalb der Kurslaufzeit liegen.',
       batchGroupActivityRequiresFinalizedGroups:
@@ -1943,6 +1956,27 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Nur ein Teil Ihrer Batch-Operation konnte erfolgreich angewendet werden. Bitte überprüfen Sie die betroffenen Aktivitäten und Ihre Berechtigungen.',
       batchOperationFailed:
         'Beim Anwenden der Batch-Operation ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
+      confirmBatchDeletionTitle: 'Ausgewählte Aktivitäten löschen',
+      confirmBatchDeletionMessage:
+        'Sie sind im Begriff, {number, plural, =1 {1 Aktivität} other {# Aktivitäten}} einschliesslich der zugehörigen Teilnehmerdaten und Resultate unwiderruflich zu löschen. Diese Aktion kann nicht rückgängig gemacht werden.',
+      confirmBatchDeletionIrreversible:
+        'Ich verstehe, dass {number, plural, =1 {die Aktivität und die zugehörigen Daten} other {alle # Aktivitäten und die zugehörigen Daten}} unwiderruflich gelöscht und nicht wiederhergestellt werden können.',
+      confirmBatchDeletionAcknowledge: 'Bestätigen',
+      confirmBatchDeletionSubmit: 'Aktivitäten löschen',
+      batchDeletionProgress:
+        'Löschung läuft: {completed} von {total, plural, =1 {1 Aktivität} other {# Aktivitäten}} abgeschlossen. Bitte lassen Sie dieses Fenster geöffnet.',
+      batchDeletionRefreshFailed:
+        'Die Löschung ist abgeschlossen, aber die Aktivitätenliste konnte nicht aktualisiert werden. Laden Sie die Liste neu, bevor Sie fortfahren.',
+      batchDeletionNoEligibleActivities:
+        'Keine der ausgewählten Aktivitäten war zum Löschen berechtigt. Die Auswahl wurde zurückgesetzt; überprüfen Sie die Aktivitätenliste, bevor Sie es erneut versuchen.',
+      batchDeletionSuccess:
+        'Die berechtigten ausgewählten Aktivitäten wurden erfolgreich gelöscht.',
+      batchDeletionPartialSuccess:
+        'Nur ein Teil der ausgewählten Aktivitäten konnte gelöscht werden. Bitte überprüfen Sie die verbleibenden Aktivitäten und Ihre Berechtigungen.',
+      batchDeletionUncertain:
+        'Das Ergebnis einiger Löschvorgänge konnte nicht bestätigt werden. Bitte überprüfen Sie die Aktivitätenliste und laden Sie diese bei Bedarf neu, bevor Sie es erneut versuchen.',
+      batchDeletionFailed:
+        'Die ausgewählten Aktivitäten konnten nicht gelöscht werden. Bitte überprüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
     },
     assessment: {
       assessmentResults: 'Assessment Resultate',
@@ -2081,13 +2115,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modalTitle: 'Support KlickerUZH',
       yourFeedback: 'Ihr Feedback',
       feedbackText:
-        'Haben Sie Feedback für uns? Haben Sie Probleme bei der Nutzung von KlickerUZH? Bitte geben Sie uns Ihr Feedback, damit wir KlickerUZH für Sie weiter verbessern können.',
-      featureRequest: 'Feature Request',
-      featureRequestDesc: 'Ich möchte ein neues Feature anfragen.',
-      bugReport: 'Bug Report',
-      bugReportDesc: 'Ich möchte einen Fehler oder ein Problem melden.',
-      selfHosting: 'Self-Hosting',
-      selfHostingDesc: 'Ich habe Probleme beim Self-Hosting von KlickerUZH.',
+        'Was funktioniert für Sie gut und was sollten wir verbessern? Teilen Sie Ideen, positive Erfahrungen und Probleme auf unserer öffentlichen Feedback-Plattform. Bitte geben Sie keine persönlichen Angaben oder Kursdaten ein.',
+      feedbackDesc: 'Teilen Sie Ideen, positive Erfahrungen und Probleme.',
       furtherResources: 'Weitere Ressourcen',
       documentationDesc: 'Tutorials, Funktionsdokumentation und Release Notes',
       faq: 'FAQ',
@@ -2265,6 +2294,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       numSelected: '{count}/{total}',
       moveToArchive: 'Ins Archiv verschieben',
       restoreFromArchive: 'Element wiederherstellen',
+      elementArchivedSuccessfully: 'Das Element wurde ins Archiv verschoben.',
+      elementRestoredSuccessfully:
+        'Das Element wurde aus dem Archiv wiederhergestellt.',
+      elementArchiveActionUnchanged:
+        'Das Element befand sich bereits im gewünschten Archivstatus.',
+      elementArchiveActionFailed:
+        'Der Archivstatus des Elements konnte nicht geändert werden.',
+      elementArchiveActionUncertain:
+        'Der Archivstatus konnte nicht bestätigt werden. Prüfen Sie die Elementliste, bevor Sie es erneut versuchen.',
+      elementArchiveRefreshFailed:
+        'Der Archivstatus konnte nicht bestätigt werden, weil die Elementliste nicht aktualisiert werden konnte. Laden Sie die Seite neu, um den aktuellen Status anzuzeigen.',
       showFeedbacksExplanation: 'Antwort-Feedbacks & Erklärung anzeigen',
       showExplanation: 'Erklärung anzeigen',
       showFeedbacksExplanationTooltip:
@@ -4591,6 +4631,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       performanceDashboard: 'Leistungs- und Fortschritts-Dashboard',
       quizDashboard: 'Quiz-Dashboard',
       quizAnalytics: 'Quiz Analytics',
+      featureUnavailable:
+        'Learning Analytics sind für Ihr Benutzerkonto noch nicht verfügbar.',
       analyticsLoadingWait: 'Lade Analyse-Daten. Bitte warten...',
       analyticsLoadingFailed:
         'Beim Laden der Analyse-Daten ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.',

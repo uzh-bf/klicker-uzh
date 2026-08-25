@@ -29,7 +29,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.70
+        tag: v3.4.0-alpha.71
       resources:
         requests:
           cpu: 50m
@@ -68,7 +68,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.70
+        tag: v3.4.0-alpha.71
       resources:
         requests:
           cpu: 50m
@@ -107,7 +107,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.70
+        tag: v3.4.0-alpha.71
       resources:
         requests:
           cpu: 50m
@@ -177,7 +177,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.70
+    tag: v3.4.0-alpha.71
 
   ingress:
     annotations:
@@ -327,7 +327,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.70
+    tag: v3.4.0-alpha.71
 
   ingress:
     annotations:
@@ -482,7 +482,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.70
+    tag: v3.4.0-alpha.71
 
   ingress:
     className: haproxy
@@ -535,7 +535,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.70
+    tag: v3.4.0-alpha.71
 
   ingress:
     className: haproxy
@@ -573,7 +573,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.70
+    tag: v3.4.0-alpha.71
 
   autoscaling:
     enabled: false
@@ -643,7 +643,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.70
+    tag: v3.4.0-alpha.71
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -697,7 +697,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.70
+    tag: v3.4.0-alpha.71
 
   autoscaling:
     enabled: false
@@ -770,7 +770,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.70
+    tag: v3.4.0-alpha.71
 
   ingress:
     className: haproxy
@@ -802,7 +802,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3.4.0-alpha.70
+    tag: v3.4.0-alpha.71
     pullPolicy: IfNotPresent
 
   autoscaling:
@@ -897,7 +897,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.70
+      tag: v3.4.0-alpha.71
 
     ingress:
       className: haproxy
@@ -974,7 +974,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.70
+      tag: v3.4.0-alpha.71
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -1053,7 +1053,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.70
+      tag: v3.4.0-alpha.71
 
     ingress:
       className: haproxy
@@ -1085,14 +1085,11 @@ assessment:
 # Migration hook image: only the repo is pinned; the tag auto-tracks the
 # backendGraphql image tag above (see chart job-migrate.yaml).
 #
-# DISABLED UNTIL THE FIRST POST-HOOK RELEASE. No migrator image exists for any
-# release tag cut before this feature landed, so while backendGraphql.image.tag
-# still points at such a tag the hook would fail on ImagePullBackOff and abort
-# every prd sync — including a rollback to an older tag. Flip this to true in the
-# same commit that bumps the prd image tags to the first release whose CI built
-# `backend-docker-migrator-arm`. Until then prd migrations stay manual
-# (`prisma:deploy:prod`). Rolling back to a pre-hook tag requires setting this
-# back to false. See docs/data-and-migrations.md → Recovering a failed hook.
+# Enabled because the pinned production tags have matching migrator images; the
+# tag auto-tracks backendGraphql.image.tag. Keep this true for migrator-bearing
+# release tags. Rolling back to a pre-hook tag requires setting this back to
+# false and using the manual migration path. See docs/data-and-migrations.md →
+# Recovering a failed hook.
 migrator:
   enabled: true
   priorityClassName: production-workload
