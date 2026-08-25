@@ -4,15 +4,26 @@ Date: 2026-07-07 · Reviewer: Claude (requested by @rschlaefli) · Target: `v3`
 
 ## TL;DR
 
-The feature is genuinely useful (context + status on embedded/inactive evaluation screens instead of a bare "not available" notice), but the PR is **not mergeable in its current state**. It contains one security-relevant data-exposure regression on the backend, one confirmed duplicate-rendering bug, a UX regression on the loading path, and several unresolved reviewer comments. The branch is also ~197 commits behind `v3` (last real code change Sept 2025), so the first step is a careful rebase/merge and re-verification. Estimated effort to production: **2–4 focused days** including testing.
+The feature is genuinely useful (context + status on embedded/inactive evaluation screens instead of a bare "not available" notice). This document records the original review findings; the current branch has since merged `origin/v3`, fixed the three blocker findings, corrected the local response-api and Hatchet runtime path, and re-verified the evaluation flow locally. Fresh CI and review confirmation remain pending.
 
 ## What the PR does (scope)
 
 - Shows activity name, status, course name, element name/type and a link to activity details inside `EvaluationUnavailableNotification` when an evaluation (or a single scheduled element) has no data yet — mainly for the PowerPoint-embedded view.
 - Adds a `BlockStatusIndicator` dot (Scheduled / Active / Executed) with tooltips incl. last-refresh and execution timestamps.
 - Extends the `ActivityEvaluation` GraphQL type with `status` and `courseName`; makes `displayName` non-nullable.
-- Backend: `getLiveQuizEvaluation` no longer filters the quiz by `PUBLISHED/ENDED` status and no longer restricts `blocks` to `EXECUTED`, so the frontend can render scheduled blocks with a status indicator.
+- Backend: `getLiveQuizEvaluation` keeps scheduled blocks for status metadata, restricts HMAC access to `PUBLISHED/ENDED` quizzes, strips elements from non-executed blocks, and replaces the active block in place with cached results.
 - Unrelated: adds `NEXT_PUBLIC_IS_ASSESSMENT: "true"` to the assessment frontend Helm ConfigMap.
+
+## Current branch status
+
+The blocker descriptions below are historical findings from the initial review. On the current branch:
+
+- HMAC evaluation access is restricted to published or ended quizzes, and non-executed blocks return metadata without element content.
+- The active block is replaced in place, so it is returned once rather than appended a second time.
+- A completed null evaluation stops polling and renders `EvaluationUnavailableNotification` instead of an indefinite loader.
+- The local end-to-end path submitted a participant response, processed it through the response worker, and displayed one participant in the manage evaluation.
+
+The current implementation is covered by regression tests in `packages/graphql/test/liveQuizEvaluation.test.ts` and by the local browser verification recorded in the task handoff.
 
 ## What is good (keep)
 
@@ -24,7 +35,7 @@ The feature is genuinely useful (context + status on embedded/inactive evaluatio
 
 ## Findings
 
-### 🔴 Blocker 1 — Security: unreleased questions and sample solutions are exposed via the API
+### 🔴 Blocker 1 — Security: unreleased questions and sample solutions are exposed via the API (historical; fixed)
 
 `getLiveQuizEvaluation` on the branch removes both server-side filters:
 
@@ -33,19 +44,19 @@ The feature is genuinely useful (context + status on embedded/inactive evaluatio
 
 The evaluation payload built by `computeStackEvaluation` → `computeInstanceEvaluation` includes per instance: question `content`, `explanation`, and for choice questions each choice with its **`correct` flag and `feedback`** (`packages/graphql/src/services/stacks.ts:3269-3275`, `:3742-3747`). This endpoint is reachable by **anyone holding the HMAC embed link** (no login — see `liveQuizEvaluation` resolver, `packages/graphql/src/schema/query.ts:668` ff.). PPT slide decks containing the embed URL are routinely shared with students, so this leaks upcoming questions *and their solutions* to students via the browser network tab, before the block is ever started. The frontend "hides" scheduled content only visually (`ElementEvaluation.tsx` renders `EvaluationUnavailableNotification` next to the data — and per the reviewer's screenshot doesn't even fully hide it).
 
-**Required fix (server-side, not CSS):** keep returning scheduled/active blocks for the status indicator, but strip instance content for non-`EXECUTED` blocks (except the active block via the existing Redis path, which already only exposes anonymous results of a started block). Concretely: return stack metadata (`stackId`, `order`, `status`, `expiresAt`, name) with `instances: []` for `SCHEDULED` blocks, and only include full instance evaluations for `EXECUTED` blocks + the cached active block. Also re-add the quiz-level status filter, or at minimum restrict `DRAFT`/`SCHEDULED` quizzes to authenticated users with `READ` permission (the HMAC path must not see drafts).
+**Historical required fix:** keep returning scheduled/active blocks for the status indicator, but strip instance content for non-`EXECUTED` blocks and re-add the quiz-level status filter. The current branch implements both protections in `getLiveQuizEvaluation`.
 
-### 🔴 Blocker 2 — Stability: blocks rendered twice (confirmed in manual review)
+### 🔴 Blocker 2 — Stability: blocks rendered twice (historical; fixed)
 
-Because `liveQuiz.blocks` is now unfiltered, the active block appears in `blocks` *and* is appended again as `activeBlockWithResults` (`[...liveQuiz.blocks, { ...activeBlockWithResults, active: true }]`). Codex flagged this as P1 and sjschlapbach reproduced it: each completed block shows twice, once with and once without results (screenshots in his 2025-09-18 review). Fix by excluding the active block id from the mapped `blocks` before appending the Redis-backed copy, and dedupe/verify `stackId` uniqueness. This bug likely also explains "results no longer load" from the review: the stale DB copy (empty results) shadows the live one depending on order.
+Because `liveQuiz.blocks` was unfiltered, the active block appeared in `blocks` and was appended again as `activeBlockWithResults`. Codex flagged this as P1 and sjschlapbach reproduced it: each completed block showed twice, once with and once without results. The current implementation replaces the matching active block in place and the regression test verifies unique stack IDs.
 
-### 🔴 Blocker 3 — UX regression: infinite spinner instead of "unavailable" notice
+### 🔴 Blocker 3 — UX regression: infinite spinner instead of "unavailable" notice (historical; fixed)
 
-`apps/frontend-manage/src/pages/quizzes/[id]/evaluation.tsx` changed the guard to `if (loading || !data?.liveQuizEvaluation) return <Loader />`. The resolver returns `null` (not an error) for missing/unauthorized quizzes, so users with a wrong id or missing permission now poll every 5 s forever behind a spinner. Previously they got `EvaluationUnavailableNotification`. Restore a null-data branch that renders the notification (without metadata, since there is none).
+`apps/frontend-manage/src/pages/quizzes/[id]/evaluation.tsx` now keeps the loader only while the query is loading, stops polling after a completed null response, and renders `EvaluationUnavailableNotification` for missing or unauthorized evaluations.
 
-### 🟠 Major 4 — Broken/hardcoded production link
+### 🟠 Major 4 — Broken/hardcoded production link (fixed in current branch)
 
-`EvaluationUnavailableNotification.tsx` links to `https://manage.klicker.com/activities?...` — that is the **local dev** domain (prod is `manage.klicker.uzh.ch`). Use a relative `/activities?...` link (CodeRabbit already suggested this) and add `rel="noopener noreferrer"`. Also: `openActivityDetailsType=LIVE_QUIZ` is hardcoded, but `ActivityEvaluation` (and thus this notification) is also used by the practice-quiz and micro-learning evaluation pages (`apps/frontend-manage/src/pages/practiceQuiz/[id]/evaluation.tsx`, `.../microLearning/[id]/evaluation.tsx`) — pass the activity type in as a prop instead.
+The original implementation linked to a hardcoded host and activity type. The current component uses a relative link, adds `rel="noopener noreferrer"`, and receives the activity type as a prop.
 
 ### 🟠 Major 5 — `lastRefetchTime` doesn't update (confirmed in manual review)
 
@@ -65,9 +76,9 @@ The `useEffect` keys on the `data` object; with `pollInterval: 5000` Apollo retu
 6. Stray comment edit in `liveQuizzes.ts` (`...completed quizzes,` trailing comma) and unrelated whitespace churn in the big i18n doc strings — harmless, but revert to keep the diff clean.
 7. Layout: reviewer screenshots show the scheduled-element notification rendered *in addition to* (and overlapping) the chart/footer. The notification must replace the evaluation body, not overlay it (`ElementEvaluation.tsx` renders it as a sibling inside `relative` without hiding the content behind it).
 
-### CI state (as of 2026-07-07)
+### CI state at the original review point (2026-07-07)
 
-`build`/`lint`/`check`/`test`/CodeQL/GitGuardian green; **`cypress-run-cloud` and one SonarCloud gate failing**; branch `BEHIND` (197 commits), merge state requires update. Two `CHANGES_REQUESTED` reviews are unresolved and will block merge.
+`build`/`lint`/`check`/`test`/CodeQL/GitGuardian green; **`cypress-run-cloud` and one SonarCloud gate failing**; branch `BEHIND` (197 commits), merge state requires update. The latest push has triggered a fresh CI run; consult the PR checks for current results.
 
 ---
 
@@ -75,12 +86,12 @@ The `useEffect` keys on the `data` object; with `pollInterval: 5000` Apollo retu
 
 Work on the `activity-info-on-eval` branch. After each step: commit with a conventional message and run `pnpm run check` + affected-package tests.
 
-1. **Update the branch.** Merge `origin/v3` (repo uses merge commits on this branch, don't rebase published history). Resolve conflicts, then `pnpm install && pnpm run build` to confirm a clean baseline. Re-run the app locally (`pnpm run dev:test`, lecturer login `lecturer`/`abcd`) and reproduce the reviewer's bugs before fixing anything — you want a failing baseline you can verify against.
-2. **Fix Blocker 1 (server-side data exposure).** In `getLiveQuizEvaluation` (`packages/graphql/src/services/liveQuizzes.ts`):
+1. **Update the branch.** **Complete.** The branch merged `origin/v3`, passed the repository pre-commit checks and production build, and was re-verified in the local runtime with a disposable seeded local account.
+2. **Fix Blocker 1 (server-side data exposure).** **Complete.** In `getLiveQuizEvaluation` (`packages/graphql/src/services/liveQuizzes.ts`):
    - Re-add the quiz status filter for the HMAC path (or gate non-`PUBLISHED/ENDED` quizzes on authenticated `READ` access).
    - Keep all blocks in the query for status metadata, but before calling `computeStackEvaluation`, replace the `elements` of every non-`EXECUTED`, non-active block with `[]` (or map scheduled blocks to metadata-only stacks). Verify with a raw GraphQL query (GraphiQL at `http://localhost:3000/api/graphql`, and via the HMAC URL) that a scheduled block returns **no** `content`, `explanation`, `correct`, or `feedback` fields.
-3. **Fix Blocker 2 (duplicate blocks).** Filter `liveQuiz.blocks` by `block.id !== liveQuiz.activeBlockId` before appending `activeBlockWithResults`. Re-test the reviewer's scenario: run a quiz, answer, close block → each block appears exactly once, with results.
-4. **Fix Blocker 3 (infinite loader).** In `quizzes/[id]/evaluation.tsx`: after `loading` is false, `!data?.liveQuizEvaluation` must render `EvaluationUnavailableNotification` (and stop polling — `skipPollAttempt` or conditional `pollInterval`).
+3. **Fix Blocker 2 (duplicate blocks).** **Complete.** The active block is replaced in place and the regression test verifies that each block appears exactly once with results.
+4. **Fix Blocker 3 (infinite loader).** **Complete.** After loading finishes, a null evaluation renders `EvaluationUnavailableNotification` and polling stops.
 5. **Fix the metadata notice (Major 4 + minors).** Relative link + `noopener noreferrer`, activity type as prop, `text-sm`, translated element type, reuse existing i18n keys, correct executed-at field, fix the overlay so the notification *replaces* the element body for scheduled elements.
 6. **Fix `lastRefetchTime` (Major 5)** via `onCompleted`/`networkStatus`, or cut the timestamp from the tooltip.
 7. **Split out the Helm flag (Major 6).** `git revert`/drop the `cm-frontend-assessment.yaml` hunk; open a separate PR that adds the build ARG to `apps/frontend-pwa/Dockerfile`, the CI image build args, and `turbo.json` `globalEnv`.
