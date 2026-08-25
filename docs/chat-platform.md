@@ -320,9 +320,10 @@ and renders an "AI tutor" button (`data-cy="student-course-chatbot-link"`) next
 to the home/back button when the caller is a participant of the course. The
 button is a real anchor (`<Link target="_blank" rel="noopener">` wrapping the
 design-system `Button`, the same pattern as the sibling home button), so
-middle-click and copy-link behave as expected. It links `courseChatbots[0]`:
-courses are deliberately limited to a single chatbot for now, which is also why
-`Chatbot` carries no ordering field. It does carry a publication `status`
+middle-click and copy-link behave as expected. The data model and query can
+return multiple published chatbots, ordered by name and then creation time, but
+the current PWA exposes only `courseChatbots[0]` as its single header
+button. `Chatbot` carries no ordering field. It does carry a publication `status`
 (`DRAFT`/`PENDING_APPROVAL`/`PUBLISHED`/`PAUSED`/`REJECTED`, see
 [ADR 0020](./adr/0020-two-tier-chatbot-approval.md)) that gates participant
 visibility — only `PUBLISHED` bots are reachable — but that is a visibility

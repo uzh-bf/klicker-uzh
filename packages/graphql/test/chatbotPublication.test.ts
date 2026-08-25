@@ -217,6 +217,74 @@ describe('Integration tests for the chatbot publication workflow', () => {
       ).rejects.toThrow('Cannot request publication from status PUBLISHED')
     })
 
+    it.each([
+      ['empty', ''],
+      ['overlong', 'x'.repeat(2001)],
+    ])('rejects a %s use case', async (_, useCase) => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.DRAFT)
+
+      await expect(
+        requestChatbotPublication(
+          {
+            id: bot.id,
+            useCase,
+            expectedStudentCount: 1,
+            proposedCredits: 1,
+          },
+          userOneCtx
+        )
+      ).rejects.toThrow('useCase must be between 1 and 2000 characters long')
+    })
+
+    it.each([
+      ['zero', 0],
+      ['negative', -1],
+      ['non-integer', 1.5],
+      ['overflow', 2_147_483_648],
+    ])('rejects %s expected student count', async (_, value) => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.DRAFT)
+
+      await expect(
+        requestChatbotPublication(
+          {
+            id: bot.id,
+            useCase: 'Course Q&A',
+            expectedStudentCount: value,
+            proposedCredits: 1,
+          },
+          userOneCtx
+        )
+      ).rejects.toThrow(
+        'expectedStudentCount must be a positive signed 32-bit integer'
+      )
+    })
+
+    it.each([
+      ['zero', 0],
+      ['negative', -1],
+      ['non-integer', 1.5],
+      ['overflow', 2_147_483_648],
+    ])('rejects %s proposed credit count', async (_, value) => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.DRAFT)
+
+      await expect(
+        requestChatbotPublication(
+          {
+            id: bot.id,
+            useCase: 'Course Q&A',
+            expectedStudentCount: 1,
+            proposedCredits: value,
+          },
+          userOneCtx
+        )
+      ).rejects.toThrow(
+        'proposedCredits must be a positive signed 32-bit integer'
+      )
+    })
+
     it('rejects when the account is not approved for publishing', async () => {
       // aiChatbotPublishingEnabled defaults to false — do not enable it.
       const bot = await seedChatbot(ChatbotStatus.DRAFT)

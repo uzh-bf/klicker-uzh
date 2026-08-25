@@ -81,6 +81,19 @@ describe('compileSystemPrompt', () => {
     expect(result).toContain(DEFAULT_TUTOR_MARK)
   })
 
+  test.each([
+    ['an object', {}],
+    ['an array', []],
+    ['a number', 42],
+    ['a boolean', true],
+  ])('falls back to the default when a stored prompt is %s', (_, prompt) => {
+    const stored = { tutor: { prompt } }
+
+    const result = compileSystemPrompt(stored, 'tutor', [])
+
+    expect(result).toContain(DEFAULT_TUTOR_MARK)
+  })
+
   test('yields only the language contract for an unknown mode with no default', () => {
     // `explainer` has no DEFAULT_PROMPT entry, so the base resolves to '' and
     // only the unconditional language contract remains.

@@ -223,6 +223,14 @@ No separate tasks; nothing crosses a boundary warranting one.
   The remaining work is to cascade the bottom-layer correction through the
   stack, run the integrated final review, republish, and obtain fresh CI. Merge
   remains outside this plan's authority.
+- 2026-08-25: the latest PR feedback follow-up now validates publication input
+  at the service boundary, centralizes owner-facing chatbot response shaping,
+  safely rejects malformed stored prompt values, and documents the current
+  first-chatbot PWA entry behavior without imposing a new database cardinality
+  constraint. Focused
+  prompt tests passed 11/11, publication workflow tests passed 23/23 after the
+  seeded local database was cleaned, and the Chat and GraphQL package checks
+  pass in the exact Node 24 DevPod. Publication and fresh CI remain pending.
 
 ### Historical execution record
 

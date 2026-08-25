@@ -17,14 +17,22 @@ function resolveBaseSystemPrompt(
   systemPrompts: unknown,
   selectedMode: string
 ): string {
-  const stored = systemPrompts as
-    | Record<string, Record<string, string> | undefined>
-    | null
-    | undefined
-  if (stored?.[selectedMode]) {
-    return (
-      stored[selectedMode].prompt || DEFAULT_PROMPT[selectedMode]?.prompt || ''
-    )
+  if (
+    systemPrompts !== null &&
+    typeof systemPrompts === 'object' &&
+    !Array.isArray(systemPrompts)
+  ) {
+    const storedMode = (systemPrompts as Record<string, unknown>)[selectedMode]
+    if (
+      storedMode !== null &&
+      typeof storedMode === 'object' &&
+      !Array.isArray(storedMode)
+    ) {
+      const prompt = (storedMode as Record<string, unknown>).prompt
+      if (typeof prompt === 'string' && prompt.length > 0) {
+        return prompt
+      }
+    }
   }
   return DEFAULT_PROMPT[selectedMode]?.prompt || ''
 }

@@ -1,7 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma } from '@klicker-uzh/prisma/client'
-import { z } from 'zod'
 import { GraphQLError } from 'graphql'
+import { z } from 'zod'
 import type { Context, ContextWithUser } from '../lib/context.js'
 
 const chatModelSchema = z
@@ -259,6 +259,21 @@ const chatbotOwnerSelect = {
   updatedAt: true,
 } satisfies Prisma.ChatbotSelect
 
+type ChatbotWithOwnerCourse = {
+  allowedReasoningEffortsByModel: unknown
+  course: { id: string; name: string } | null
+}
+
+function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(chatbot: T) {
+  return {
+    ...chatbot,
+    allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
+      chatbot.allowedReasoningEffortsByModel
+    ),
+    courses: chatbot.course ? [chatbot.course] : [],
+  }
+}
+
 export async function getChatbotsInfo(ctx: ContextWithUser) {
   const chatbots = await ctx.prisma.chatbot.findMany({
     where: { ownerId: ctx.user.sub },
@@ -403,11 +418,7 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
     }))
 
     return {
-      ...chatbot,
-      allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
-        chatbot.allowedReasoningEffortsByModel
-      ),
-      courses: chatbot.course ? [chatbot.course] : [],
+      ...shapeChatbotResponse(chatbot),
       usageSummary,
       disclaimerSummary,
       mcpConfigurations,
@@ -523,13 +534,7 @@ export async function updateChatbotModelSettings(
     },
   })
 
-  return {
-    ...updated,
-    allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
-      updated.allowedReasoningEffortsByModel
-    ),
-    courses: updated.course ? [updated.course] : [],
-  }
+  return shapeChatbotResponse(updated)
 }
 
 type CreateChatbotArgs = {
@@ -573,13 +578,7 @@ export async function createChatbot(
     },
   })
 
-  return {
-    ...created,
-    allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
-      created.allowedReasoningEffortsByModel
-    ),
-    courses: created.course ? [created.course] : [],
-  }
+  return shapeChatbotResponse(created)
 }
 
 type UpdateChatbotArgs = {
@@ -621,13 +620,7 @@ export async function updateChatbot(
     },
   })
 
-  return {
-    ...updated,
-    allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
-      updated.allowedReasoningEffortsByModel
-    ),
-    courses: updated.course ? [updated.course] : [],
-  }
+  return shapeChatbotResponse(updated)
 }
 
 type RequestChatbotPublicationArgs = {
@@ -649,6 +642,31 @@ export async function requestChatbotPublication(
   })
   if (!chatbot) {
     return null
+  }
+
+  if (
+    typeof args.useCase !== 'string' ||
+    args.useCase.length < 1 ||
+    args.useCase.length > 2000
+  ) {
+    throw new GraphQLError('useCase must be between 1 and 2000 characters long')
+  }
+
+  const isPositiveSignedInt32 = (value: unknown): value is number =>
+    typeof value === 'number' &&
+    Number.isInteger(value) &&
+    value >= 1 &&
+    value <= 2_147_483_647
+
+  if (!isPositiveSignedInt32(args.expectedStudentCount)) {
+    throw new GraphQLError(
+      'expectedStudentCount must be a positive signed 32-bit integer'
+    )
+  }
+  if (!isPositiveSignedInt32(args.proposedCredits)) {
+    throw new GraphQLError(
+      'proposedCredits must be a positive signed 32-bit integer'
+    )
   }
 
   // Account-level capability gate (D1, ADR 0020): read the live User row, never
@@ -708,13 +726,7 @@ export async function requestChatbotPublication(
     },
   })
 
-  return {
-    ...updated,
-    allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
-      updated.allowedReasoningEffortsByModel
-    ),
-    courses: updated.course ? [updated.course] : [],
-  }
+  return shapeChatbotResponse(updated)
 }
 
 export async function approveChatbotPublication(
@@ -781,13 +793,7 @@ export async function approveChatbotPublication(
     },
   })
 
-  return {
-    ...updated,
-    allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
-      updated.allowedReasoningEffortsByModel
-    ),
-    courses: updated.course ? [updated.course] : [],
-  }
+  return shapeChatbotResponse(updated)
 }
 
 export async function rejectChatbotPublication(
@@ -833,11 +839,5 @@ export async function rejectChatbotPublication(
     },
   })
 
-  return {
-    ...updated,
-    allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
-      updated.allowedReasoningEffortsByModel
-    ),
-    courses: updated.course ? [updated.course] : [],
-  }
+  return shapeChatbotResponse(updated)
 }
