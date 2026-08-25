@@ -63,7 +63,7 @@ function WizardNavigation({
         </Button>
       </div>
       <div
-        className={`flex flex-col items-end${disabledReason ? ' gap-1' : ''}`}
+        className={`flex flex-col items-end${lastStep && disabledReason ? ' gap-1' : ''}`}
       >
         {lastStep && (
           <div

@@ -549,6 +549,20 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   mark-ready, deployment, deletion/cleanup, and screenshot attachment remain
   withheld. PR delivery remains gated on terminal required CI/reviews and
   screenshot attachment.
+- OpenCodeReview correction `PRRT_kwDOBXNwx86cPzOy`: the parent gap in
+  `WizardNavigation.tsx` now uses `lastStep && disabledReason`, matching the
+  mounted feedback condition. `devrouter exec . -- pnpm exec biome check
+  apps/frontend-manage/src/components/activities/creation/WizardNavigation.tsx`
+  passed, and `devrouter exec . -- pnpm --filter
+  @klicker-uzh/frontend-manage run check` passed. Browser proof at
+  `https://manage.klicker.rs-ux-review-question-library.localhost` showed the
+  invalid final state with a 4px gap, 20px polite live feedback, disabled
+  Create, and `aria-describedby`; the valid final state kept an empty mounted
+  polite live region at 0px, with no gap, enabled Create, and no
+  `aria-describedby`. Screenshots are
+  `/private/tmp/pr5546-final-disabled-reason-visible.png` and
+  `/private/tmp/pr5546-final-disabled-reason-empty.png`. The synthetic quiz
+  was canceled.
 
 ### Historical execution evidence before final runtime proof
 
