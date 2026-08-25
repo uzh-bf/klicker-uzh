@@ -151,7 +151,7 @@ describe('required MCP chat preflight', () => {
     })
     expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
       ownerId: 'owner-1',
-      usageClass: 'BASE',
+      usageClass: 'ADVANCED',
     })
     expect(mocks.previewUserCredits).toHaveBeenCalledWith(
       'participant-1',
