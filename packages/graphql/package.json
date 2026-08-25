@@ -41,7 +41,6 @@
   "devDependencies": {
     "@graphql-codegen/cli": "~5.0.3",
     "@graphql-codegen/fragment-matcher": "~5.0.2",
-    "@graphql-codegen/introspection": "~4.0.3",
     "@graphql-codegen/schema-ast": "~4.1.0",
     "@graphql-codegen/typed-document-node": "~5.0.10",
     "@graphql-codegen/typescript": "~4.1.0",
@@ -84,7 +83,9 @@
     "build:instrument": "nyc instrument --compact=false src instrumented",
     "build:test": "run-s --npm-path pnpm build:instrument build",
     "build:ts": "rollup -c",
-    "check": "tsc --noEmit -p tsconfig.check.json",
+    "check": "run-s --npm-path pnpm generate check:schema check:ts",
+    "check:schema": "git diff --exit-code -- src/public/schema.graphql",
+    "check:ts": "tsc --noEmit -p tsconfig.check.json",
     "dev": "npm-run-all --parallel dev:graphql dev:ts",
     "dev:graphql": "nodemon --watch 'src/graphql/ops/*.graphql' --watch 'src/**/*.ts' --exec 'graphql-codegen --config codegen.ts'",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
