@@ -28,8 +28,8 @@ Redis keys, and Hatchet workers.
 - Freshness was re-established on 2026-08-25 with `git fetch origin` in the
   matching worktree.
 - The worktree is `/Volumes/HOME/Git/klicker/klicker-uzh/trees/fix-course-duplication-timeout`.
-- Branch `fix/course-duplication-timeout` is at `f41161ca23`, equal to the live
-  PR #5446 head and 72 commits ahead of `origin/v3`.
+- Branch `fix/course-duplication-timeout` is at `e5f2cc0cb`, includes the current
+  `origin/v3` base, and is 79 commits ahead of it.
 - The current Playwright manifest is 886 tests in 31 active files. Five tests
   added by the current branch's latest-base integration are part of the
   baseline and must remain unchanged.
@@ -134,8 +134,10 @@ creating an automatic feedback loop.
 The writer requires `PLAYWRIGHT_TIMINGS_BOT_TOKEN` with only the repository
 contents and pull-request permissions needed for this branch/PR workflow. The
 default `GITHUB_TOKEN` is not an acceptable substitute because its PR does not
-start the required checks. Secret provisioning, workflow activation, push,
-timing PR creation, merge, and any live run remain outside this task.
+start the required checks. Secret provisioning, workflow activation, timing PR
+creation, merge, and any live run remain outside this task. The later user
+request to make PR #5446 ready authorizes publishing this branch and updating
+that existing PR, but not merging it.
 
 ## Acceptance checks
 
@@ -146,7 +148,7 @@ timing PR creation, merge, and any live run remain outside this task.
 | Timing aggregation | Standard-library XML parsing rejects malformed/oversized/partial input; eight artifacts, zero failures/errors/skips, and all 31 specs are required; retries are summed |
 | Shard allocation | All 886 tests remain listed; every active file is assigned exactly once across eight deterministic outputs; tie ordering is stable |
 | Workflow guard | Only successful direct `v3` pushes can write; PR runs, failed/partial runs, filter-skipped runs, timing-only loops, and unchanged output do not create a timing PR |
-| Repository safety | Generated GraphQL changes remain unstaged; no secret, real personal data, push, PR publication, merge, deployment, or live-service action occurs |
+| Repository safety | Generated GraphQL changes remain unstaged; no secret or real personal data is committed; merge, deployment, and live-service actions remain out of scope |
 
 ## Delegation map
 
@@ -164,20 +166,22 @@ the test, timing, workflow, and plan changes need exact-path integration.
 ## Authority
 
 Authorized: local plan amendment, in-scope edits, repository-native checks,
-read-only review, and local conventional commits on the existing branch.
+read-only review, local conventional commits, publishing this branch to the
+existing PR, and updating that PR to ready for review.
 
-Withheld: push, PR update or publication, merge, branch/worktree deletion,
-secret provisioning, workflow activation, deployment, cluster changes,
-production access, and live-service changes.
+Withheld: merge, branch/worktree deletion, secret provisioning, workflow
+activation, deployment, cluster changes, production access, and live-service
+changes.
 
 ## Terminal
 
-The local package reaches its terminal after the reviewed plan amendment,
-observer repair, timing tooling, guarded workflow, focused checks, deterministic
-fixture validation, exact diff inspection, final review, and local commits are
-complete. It does not claim a green PR or active timing automation without a
-future authorized push, credential provisioning, workflow run, timing PR, and
-fresh CI evidence.
+The local package reached its implementation terminal after the reviewed plan
+amendment, observer repair, timing tooling, guarded workflow, focused checks,
+deterministic fixture validation, exact diff inspection, final review, and local
+commits. The publication terminal is the existing PR branch pushed, its body
+updated, and its review-ready state read back. It does not claim a green PR or
+active timing automation without credential provisioning, a workflow run,
+timing PR, merge, and fresh CI evidence.
 
 ## Boundary owner
 
@@ -185,8 +189,8 @@ fresh CI evidence.
 
 ## Pause
 
-Pause before any push, PR update, merge, secret provisioning, workflow
-activation, live-service access, or change to the course-duplication worker.
+Pause before merge, secret provisioning, workflow activation, live-service
+access, or change to the course-duplication worker.
 
 ## Progress
 
@@ -211,9 +215,13 @@ activation, live-service access, or change to the course-duplication worker.
 - 2026-08-25: No exact runtime for this worktree was available, so the browser
   duplication journey was not started. Fresh CI proof and timing-workflow
   activation remain withheld with push, credential, and live-service actions.
-- 2026-08-25: The live PR head is `559239ec3`; the local workflow commits after
-  that head remain unpushed by this task. The generated GraphQL paths remain
+- 2026-08-25: The branch was synced with current `origin/v3` as `e5f2cc0cb`;
+  the package.json conflict preserved both the course-duplication stress seed
+  and the upstream demo-participant seed. The generated GraphQL paths remain
   dirty and unstaged.
+- 2026-08-25: The user authorized publishing the branch and making PR #5446
+  ready for review. Push and PR read-back remain to be recorded after the
+  publication step.
 - 2026-08-25: The native simplifier and slice-reviewer routes returned provider
   `402` credit errors. A lightweight GPT-5.6 Sol fallback reviewed the exact
   package and found no material implementation risk after this progress update;
