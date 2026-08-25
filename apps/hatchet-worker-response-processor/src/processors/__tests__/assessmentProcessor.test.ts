@@ -67,16 +67,17 @@ describe('aggregateAssessmentResponses atomic processing', () => {
     expect(result).toEqual({ status: 200 })
     expect(hoisted.assessmentClient.eval).toHaveBeenCalledWith(
       LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-      3,
-      'lq:quiz-1:i:instance-1:responses:processed',
+      4,
+      'lq:quiz-1:i:instance-1:responses:processed:claims',
       'lq:quiz-1:i:instance-1:responses:processed:count',
       'lq:quiz-1:i:instance-1:info',
+      'lq:quiz-1:i:instance-1:responses:processed',
       'correlation-1',
       '86400',
       expect.any(String)
     )
     expect(
-      JSON.parse(hoisted.assessmentClient.eval.mock.calls[0]![7] as string)
+      JSON.parse(hoisted.assessmentClient.eval.mock.calls[0]![8] as string)
     ).toEqual([
       ['HINCRBY', 'lq:quiz-1:i:instance-1:results', 'participants', 1],
     ])

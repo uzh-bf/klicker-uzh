@@ -84,16 +84,17 @@ describe('processResponseMessage atomicity', () => {
     expect(result).toEqual({ status: 200 })
     expect(hoisted.regularClient.eval).toHaveBeenCalledWith(
       LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-      3,
-      'lq:quiz-1:i:inst-1:responses:processed',
+      4,
+      'lq:quiz-1:i:inst-1:responses:processed:claims',
       'lq:quiz-1:i:inst-1:responses:processed:count',
       'lq:quiz-1:i:inst-1:info',
+      'lq:quiz-1:i:inst-1:responses:processed',
       'msg-1',
       '86400',
       expect.any(String)
     )
     const commandList = JSON.parse(
-      hoisted.regularClient.eval.mock.calls[0]![7] as string
+      hoisted.regularClient.eval.mock.calls[0]![8] as string
     ) as string[][]
     expect(commandList.some(([command]) => command === 'HINCRBY')).toBe(true)
   })

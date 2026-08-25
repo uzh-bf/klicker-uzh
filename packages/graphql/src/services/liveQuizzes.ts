@@ -16,9 +16,9 @@ import {
   getCachedBlockResults,
   getInitialInstanceResults,
   getLiveQuizInstanceInfoKey,
+  getLiveQuizLegacyResponseProcessedKey,
   getLiveQuizLegacyResponseReceivedKey,
   getLiveQuizResponseCountKey,
-  getLiveQuizResponseReplayClaimKey,
   LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
   levelFromXp,
   propagateActivityToElements,
@@ -1029,7 +1029,7 @@ export async function getCockpitQuiz(
           })
         )
         responseCountPipeline.scard(
-          getLiveQuizResponseReplayClaimKey({
+          getLiveQuizLegacyResponseProcessedKey({
             liveQuizId: id,
             instanceId: instance.id,
           })
@@ -1913,10 +1913,10 @@ export async function endLiveQuiz(
         redis,
       })
     } catch (error) {
-      console.error(
-        `Failed to clean up response tracking keys for live quiz ${id}:`,
-        error
-      )
+      console.error('Failed to clean up response tracking keys for live quiz', {
+        liveQuizId: id,
+        error,
+      })
       await sendTeamsNotification({
         scope: 'graphql/endLiveQuiz',
         text: `ERROR - failed to finish retention for ended live quiz ${quiz.name} with id ${quiz.id}: ${error}`,

@@ -43,17 +43,20 @@ leaderboard, and response-hash command in the batch succeeds.
 The response API attempts the received-counter increment before enqueueing a
 known instance. Tracking is best-effort: a tracking failure is logged but does
 not reject or delay the participant response.
-The existing
-`lq:<quiz-id>:i:<instance-id>:responses:processed` set remains a bounded replay
-claim for the response `messageId` or assessment `correlationId`. Its members
-expire within the 24-hour replay horizon, or sooner when instance-info retention
-is shorter. A processing retry after a lost Redis reply therefore cannot apply
-the same completed batch twice during that horizon. If an aggregation command
-fails, the script releases the claim, leaves the processed counter unchanged,
-and returns an explicit aggregation failure. The worker throws so Hatchet can
-retry the message. Commands before the failure may already have applied, so a
-retry can repeat partial non-idempotent updates; surfacing the failure avoids
-silently losing the response and leaves reconciliation visible.
+The new
+`lq:<quiz-id>:i:<instance-id>:responses:processed:claims` sorted set is an
+age-trimmed replay claim for the response `messageId` or assessment
+`correlationId`; each member keeps its own timestamp within the 24-hour replay
+horizon, or the shorter remaining instance-info retention. The legacy
+`lq:<quiz-id>:i:<instance-id>:responses:processed` set is read only during the
+worker rollout and provides the initial processed-counter baseline. A
+processing retry after a lost Redis reply therefore cannot apply the same
+completed batch twice during that horizon. If an aggregation command fails, the
+script releases the claim, leaves the processed counter unchanged, and returns
+an explicit aggregation failure. The worker throws so Hatchet can retry the
+message. Commands before the failure may already have applied, so a retry can
+repeat partial non-idempotent updates; surfacing the failure avoids silently
+losing the response and leaves reconciliation visible.
 
 The legacy received set
 `lq:<quiz-id>:i:<instance-id>:responses:received` is read-only compatibility

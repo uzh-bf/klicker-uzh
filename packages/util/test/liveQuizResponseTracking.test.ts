@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   getLiveQuizInstanceInfoKey,
+  getLiveQuizLegacyResponseProcessedKey,
   getLiveQuizResponseCountKey,
   getLiveQuizResponseReplayClaimKey,
   LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS,
@@ -26,9 +27,16 @@ describe('live quiz response tracking', () => {
     ).toBe('lq:quiz-id:i:43:responses:processed:count')
   })
 
-  it('keeps the processed key as the bounded replay claim key', () => {
+  it('separates the age-trimmed claim key from the legacy processed set', () => {
     expect(
       getLiveQuizResponseReplayClaimKey({
+        liveQuizId: 'quiz-id',
+        instanceId: 43,
+      })
+    ).toBe('lq:quiz-id:i:43:responses:processed:claims')
+
+    expect(
+      getLiveQuizLegacyResponseProcessedKey({
         liveQuizId: 'quiz-id',
         instanceId: 43,
       })

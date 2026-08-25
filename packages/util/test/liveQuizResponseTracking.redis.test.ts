@@ -28,7 +28,8 @@ redisDescribe('live quiz response tracking Redis contract', () => {
 
   it('keeps counters exact, claims bounded, and excludes partial failures', async () => {
     const prefix = `live-quiz-response-tracking-test:${process.pid}:${Date.now()}`
-    const replayClaimKey = `${prefix}:processed`
+    const replayClaimKey = `${prefix}:processed:claims`
+    const legacyProcessedKey = `${prefix}:processed`
     const processedCountKey = `${prefix}:processed-count`
     const instanceInfoKey = `${prefix}:info`
     const resultsKey = `${prefix}:results`
@@ -43,10 +44,11 @@ redisDescribe('live quiz response tracking Redis contract', () => {
         Array.from({ length: 8 }, () =>
           redis.eval(
             LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-            3,
+            4,
             replayClaimKey,
             processedCountKey,
             instanceInfoKey,
+            legacyProcessedKey,
             'message-1',
             String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
             commands
@@ -69,8 +71,46 @@ redisDescribe('live quiz response tracking Redis contract', () => {
       )
       expect(await redis.ttl(processedCountKey)).toBe(-1)
 
+      const horizonClaimKey = `${prefix}:horizon-processed:claims`
+      const horizonLegacyProcessedKey = `${prefix}:horizon-processed`
+      const horizonCountKey = `${prefix}:horizon-processed-count`
+      const horizonResultsKey = `${prefix}:horizon-results`
+      const horizonCommands = JSON.stringify([
+        ['HINCRBY', horizonResultsKey, 'participants', '1'],
+      ])
+      const processWithShortReplayHorizon = (messageId: string) =>
+        redis.eval(
+          LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
+          4,
+          horizonClaimKey,
+          horizonCountKey,
+          `${prefix}:horizon-info`,
+          horizonLegacyProcessedKey,
+          messageId,
+          '3',
+          horizonCommands
+        )
+
+      expect(
+        JSON.parse(String(await processWithShortReplayHorizon('message-old')))
+          .status
+      ).toBe('processed')
+      await new Promise((resolve) => setTimeout(resolve, 2100))
+      expect(
+        JSON.parse(String(await processWithShortReplayHorizon('message-new')))
+          .status
+      ).toBe('processed')
+      await new Promise((resolve) => setTimeout(resolve, 1100))
+      expect(
+        JSON.parse(String(await processWithShortReplayHorizon('message-new')))
+          .status
+      ).toBe('already_processed')
+      expect(await redis.hget(horizonResultsKey, 'participants')).toBe('2')
+      expect(await redis.get(horizonCountKey)).toBe('2')
+
       const nearExpiryInfoKey = `${prefix}:near-expiry-info`
-      const nearExpiryClaimKey = `${prefix}:near-expiry-processed`
+      const nearExpiryClaimKey = `${prefix}:near-expiry-processed:claims`
+      const nearExpiryLegacyProcessedKey = `${prefix}:near-expiry-processed`
       const nearExpiryCountKey = `${prefix}:near-expiry-processed-count`
       await redis.hset(nearExpiryInfoKey, 'id', 'synthetic')
       await redis.pexpire(nearExpiryInfoKey, 1500)
@@ -86,10 +126,11 @@ redisDescribe('live quiz response tracking Redis contract', () => {
       expect(nearExpiryTtl).toBe(0)
       const nearExpiryReply = await redis.eval(
         LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-        3,
+        4,
         nearExpiryClaimKey,
         nearExpiryCountKey,
         nearExpiryInfoKey,
+        nearExpiryLegacyProcessedKey,
         'message-near-expiry',
         String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
         JSON.stringify([])
@@ -99,16 +140,18 @@ redisDescribe('live quiz response tracking Redis contract', () => {
       expect(await redis.ttl(nearExpiryCountKey)).toBeGreaterThan(0)
 
       const boundedInfoKey = `${prefix}:bounded-info`
-      const boundedClaimKey = `${prefix}:bounded-processed`
+      const boundedClaimKey = `${prefix}:bounded-processed:claims`
+      const boundedLegacyProcessedKey = `${prefix}:bounded-processed`
       const boundedCountKey = `${prefix}:bounded-processed-count`
       await redis.hset(boundedInfoKey, 'id', 'synthetic')
       await redis.expire(boundedInfoKey, 30)
       await redis.eval(
         LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-        3,
+        4,
         boundedClaimKey,
         boundedCountKey,
         boundedInfoKey,
+        boundedLegacyProcessedKey,
         'message-2',
         String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
         JSON.stringify([])
@@ -119,14 +162,16 @@ redisDescribe('live quiz response tracking Redis contract', () => {
       expect(await redis.ttl(boundedCountKey)).toBeGreaterThan(0)
       expect(await redis.ttl(boundedCountKey)).toBeLessThanOrEqual(30)
 
-      const missingClaimKey = `${prefix}:missing-processed`
+      const missingClaimKey = `${prefix}:missing-processed:claims`
+      const missingLegacyProcessedKey = `${prefix}:missing-processed`
       const missingCountKey = `${prefix}:missing-processed-count`
       await redis.eval(
         LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-        3,
+        4,
         missingClaimKey,
         missingCountKey,
         `${prefix}:missing-info`,
+        missingLegacyProcessedKey,
         'message-3',
         String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
         JSON.stringify([])
@@ -168,16 +213,18 @@ redisDescribe('live quiz response tracking Redis contract', () => {
       expect(await redis.get(activeReceivedCountKey)).toBe('1')
       expect(await redis.ttl(activeReceivedCountKey)).toBe(-1)
 
-      const errorClaimKey = `${prefix}:error-processed`
+      const errorClaimKey = `${prefix}:error-processed:claims`
+      const errorLegacyProcessedKey = `${prefix}:error-processed-legacy`
       const errorCountKey = `${prefix}:error-processed-count`
       const errorResultsKey = `${prefix}:error-results`
       await redis.set(errorResultsKey, 'wrong-type')
       const errorReply = await redis.eval(
         LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-        3,
+        4,
         errorClaimKey,
         errorCountKey,
         `${prefix}:error-info`,
+        errorLegacyProcessedKey,
         'message-4',
         String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
         JSON.stringify([['HINCRBY', errorResultsKey, 'participants', '1']])
@@ -187,19 +234,21 @@ redisDescribe('live quiz response tracking Redis contract', () => {
       expect(errorResult.counted).toBe(false)
       expect(errorResult.commandErrors).toHaveLength(1)
       expect(await redis.get(errorCountKey)).toBe('0')
-      expect(await redis.sismember(errorClaimKey, 'message-4')).toBe(0)
+      expect(await redis.zscore(errorClaimKey, 'message-4')).toBeNull()
 
-      const partialClaimKey = `${prefix}:partial-processed`
+      const partialClaimKey = `${prefix}:partial-processed:claims`
+      const partialLegacyProcessedKey = `${prefix}:partial-processed`
       const partialCountKey = `${prefix}:partial-processed-count`
       const partialErrorKey = `${prefix}:partial-error-results`
       const partialSuccessKey = `${prefix}:partial-success-results`
       await redis.set(partialErrorKey, 'wrong-type')
       const partialReply = await redis.eval(
         LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-        3,
+        4,
         partialClaimKey,
         partialCountKey,
         `${prefix}:partial-info`,
+        partialLegacyProcessedKey,
         'message-5',
         String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
         JSON.stringify([
@@ -212,17 +261,19 @@ redisDescribe('live quiz response tracking Redis contract', () => {
       expect(partialResult.counted).toBe(false)
       expect(await redis.get(partialCountKey)).toBe('0')
       expect(await redis.hget(partialSuccessKey, 'participants')).toBe('1')
-      expect(await redis.sismember(partialClaimKey, 'message-5')).toBe(0)
+      expect(await redis.zscore(partialClaimKey, 'message-5')).toBeNull()
 
-      const invalidClaimKey = `${prefix}:invalid-claim`
+      const invalidClaimKey = `${prefix}:invalid-claim:claims`
+      const invalidLegacyProcessedKey = `${prefix}:invalid-claim`
       const invalidClaimCountKey = `${prefix}:invalid-claim-count`
       await redis.set(invalidClaimKey, 'wrong-type')
       const invalidClaimReply = await redis.eval(
         LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-        3,
+        4,
         invalidClaimKey,
         invalidClaimCountKey,
         `${prefix}:invalid-claim-info`,
+        invalidLegacyProcessedKey,
         'message-6',
         String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
         JSON.stringify([])
@@ -234,27 +285,39 @@ redisDescribe('live quiz response tracking Redis contract', () => {
     } finally {
       await redis.del(
         replayClaimKey,
+        legacyProcessedKey,
         processedCountKey,
         instanceInfoKey,
         resultsKey,
+        `${prefix}:horizon-processed:claims`,
+        `${prefix}:horizon-processed`,
+        `${prefix}:horizon-processed-count`,
+        `${prefix}:horizon-results`,
+        `${prefix}:horizon-info`,
         `${prefix}:bounded-info`,
         `${prefix}:near-expiry-info`,
+        `${prefix}:near-expiry-processed:claims`,
         `${prefix}:near-expiry-processed`,
         `${prefix}:near-expiry-processed-count`,
+        `${prefix}:bounded-processed:claims`,
         `${prefix}:bounded-processed`,
         `${prefix}:bounded-processed-count`,
+        `${prefix}:missing-processed:claims`,
         `${prefix}:missing-processed`,
         `${prefix}:missing-processed-count`,
         `${prefix}:received-count`,
         `${prefix}:active-info`,
         `${prefix}:active-received-count`,
-        `${prefix}:error-processed`,
+        `${prefix}:error-processed:claims`,
+        `${prefix}:error-processed-legacy`,
         `${prefix}:error-processed-count`,
         `${prefix}:error-results`,
+        `${prefix}:partial-processed:claims`,
         `${prefix}:partial-processed`,
         `${prefix}:partial-processed-count`,
         `${prefix}:partial-error-results`,
         `${prefix}:partial-success-results`,
+        `${prefix}:invalid-claim:claims`,
         `${prefix}:invalid-claim`,
         `${prefix}:invalid-claim-count`,
         `${prefix}:invalid-claim-info`

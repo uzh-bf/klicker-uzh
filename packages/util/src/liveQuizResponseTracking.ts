@@ -4,9 +4,8 @@ export const LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS = 60 * 60 * 24
 export const LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS =
   LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
 
-// Redis runs this script atomically. The replay claim is bounded independently
-// of the exact processed counter so active quizzes cannot retain one member
-// forever for every response.
+// Redis runs this script atomically. Replay claims are age-trimmed so each
+// identifier gets the full horizon without retaining expired members forever.
 export const LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT = `
 local commands = cjson.decode(ARGV[3])
 local commandErrors = {}
@@ -23,6 +22,45 @@ if replayClaimTtl < 1 then
   replayClaimTtl = 1
 end
 
+local currentTime = tonumber(redis.call('TIME')[1])
+local trimResult = redis.pcall(
+  'ZREMRANGEBYSCORE',
+  KEYS[1],
+  '-inf',
+  currentTime - replayClaimTtl
+)
+if type(trimResult) == 'table' and trimResult.err then
+  table.insert(commandErrors, trimResult.err)
+  return cjson.encode({
+    status = 'aggregation_failed',
+    counted = false,
+    commandErrors = commandErrors,
+    trackingErrors = trackingErrors,
+  })
+end
+
+local existingClaimResult = redis.pcall('ZSCORE', KEYS[1], ARGV[1])
+if type(existingClaimResult) == 'table' and existingClaimResult.err then
+  table.insert(commandErrors, existingClaimResult.err)
+  return cjson.encode({
+    status = 'aggregation_failed',
+    counted = false,
+    commandErrors = commandErrors,
+    trackingErrors = trackingErrors,
+  })
+end
+
+local legacyMemberResult = redis.pcall('SISMEMBER', KEYS[4], ARGV[1])
+if type(legacyMemberResult) == 'table' and legacyMemberResult.err then
+  table.insert(commandErrors, legacyMemberResult.err)
+  return cjson.encode({
+    status = 'aggregation_failed',
+    counted = false,
+    commandErrors = commandErrors,
+    trackingErrors = trackingErrors,
+  })
+end
+
 local counterTtl
 if instanceInfoTtl >= 0 then
   counterTtl = math.max(instanceInfoTtl, 1)
@@ -30,18 +68,10 @@ elseif instanceInfoTtl == -2 then
   counterTtl = tonumber(ARGV[2])
 end
 
-local currentClaimTtl = redis.call('TTL', KEYS[1])
-if currentClaimTtl == -1 or currentClaimTtl > replayClaimTtl then
-  local expireResult = redis.pcall('EXPIRE', KEYS[1], replayClaimTtl)
-  if type(expireResult) == 'table' and expireResult.err then
-    table.insert(trackingErrors, expireResult.err)
-  end
-end
-
 -- Initialize a new counter from the legacy processed set once. This keeps
 -- counts visible during the key-shape cutover without double-counting new
 -- claims.
-local legacyProcessedCount = redis.pcall('SCARD', KEYS[1])
+local legacyProcessedCount = redis.pcall('SCARD', KEYS[4])
 if type(legacyProcessedCount) == 'table' and legacyProcessedCount.err then
   table.insert(trackingErrors, legacyProcessedCount.err)
 else
@@ -63,7 +93,7 @@ local function expireCounter()
 end
 
 local function releaseClaim()
-  local releaseResult = redis.pcall('SREM', KEYS[1], ARGV[1])
+  local releaseResult = redis.pcall('ZREM', KEYS[1], ARGV[1])
   if type(releaseResult) == 'table' and releaseResult.err then
     table.insert(trackingErrors, releaseResult.err)
   end
@@ -71,10 +101,7 @@ end
 
 expireCounter()
 
-local memberResult = redis.pcall('SISMEMBER', KEYS[1], ARGV[1])
-if type(memberResult) == 'table' and memberResult.err then
-  table.insert(commandErrors, memberResult.err)
-elseif memberResult == 1 then
+if existingClaimResult ~= false or legacyMemberResult == 1 then
   return cjson.encode({
     status = 'already_processed',
     counted = false,
@@ -83,16 +110,7 @@ elseif memberResult == 1 then
   })
 end
 
-if #commandErrors > 0 then
-  return cjson.encode({
-    status = 'aggregation_failed',
-    counted = false,
-    commandErrors = commandErrors,
-    trackingErrors = trackingErrors,
-  })
-end
-
-local claimResult = redis.pcall('SADD', KEYS[1], ARGV[1])
+local claimResult = redis.pcall('ZADD', KEYS[1], currentTime, ARGV[1])
 if type(claimResult) == 'table' and claimResult.err then
   table.insert(commandErrors, claimResult.err)
   return cjson.encode({
@@ -103,11 +121,9 @@ if type(claimResult) == 'table' and claimResult.err then
   })
 end
 
-if currentClaimTtl == -2 then
-  local expireResult = redis.pcall('EXPIRE', KEYS[1], replayClaimTtl)
-  if type(expireResult) == 'table' and expireResult.err then
-    table.insert(trackingErrors, expireResult.err)
-  end
+local expireResult = redis.pcall('EXPIRE', KEYS[1], replayClaimTtl)
+if type(expireResult) == 'table' and expireResult.err then
+  table.insert(trackingErrors, expireResult.err)
 end
 
 for _, command in ipairs(commands) do
@@ -195,8 +211,16 @@ export function getLiveQuizResponseReplayClaimKey({
   liveQuizId: string
   instanceId: string | number
 }): string {
-  // Keep the existing processed-set name so a coordinated worker rollout does
-  // not create a second replay guard during the cutover.
+  return `lq:${liveQuizId}:i:${instanceId}:responses:processed:claims`
+}
+
+export function getLiveQuizLegacyResponseProcessedKey({
+  liveQuizId,
+  instanceId,
+}: {
+  liveQuizId: string
+  instanceId: string | number
+}): string {
   return `lq:${liveQuizId}:i:${instanceId}:responses:processed`
 }
 

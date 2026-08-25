@@ -35,9 +35,9 @@ No remote merge, deployment, or production-data access was performed.
 - Cockpit response-count resolution degrades all response counts to `null`
   when its count pipeline fails; the rest of the authorized cockpit query
   remains available.
-- Numeric counters and replay claims use bounded retention. `endLiveQuiz`
-  starts retention on instance-info keys before expiring leftover tracking keys,
-  so late responses cannot recreate persistent tracking keys.
+- Numeric counters and age-trimmed replay claims use bounded retention.
+  `endLiveQuiz` starts retention on instance-info keys before expiring leftover
+  tracking keys, so late responses cannot recreate persistent tracking keys.
 - Deployment must publish GraphQL before new ingress and drain old processors
   before initializing processed counters. Old processors do not increment the
   new processed counter.

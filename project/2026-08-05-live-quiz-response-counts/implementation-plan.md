@@ -27,8 +27,10 @@ Apollo Client, Next.js 16, React 19, next-intl, Vitest, Playwright.
   and database uniqueness checks. The received metric intentionally counts
   accepted transport events before that downstream boundary.
 - Keep the existing `numOfParticipants` field and behavior unchanged.
-- Use numeric Redis counters for reporting. Use the processed set only as a
-  bounded replay claim, not as the processed count.
+- Use numeric Redis counters for reporting. Use the age-trimmed
+  processed-claims sorted set only as a replay claim, not as the processed
+  count. Keep the old processed set read-only for rollout compatibility and the
+  initial counter baseline.
 - Keep tracking keys under `lq:<quiz-id>:i:<instance-id>:*` so existing expiry
   and cleanup logic applies.
 - Do not change Prisma, response validation rules, scoring, XP, leaderboards,
@@ -55,14 +57,18 @@ Decision: Use these keys for new writes:
 
 - `responses:received:count` — numeric ingress counter;
 - `responses:processed:count` — numeric successful-aggregation counter;
-- `responses:processed` — bounded replay-claim set with a 24-hour horizon.
+- `responses:processed:claims` — age-trimmed sorted-set replay claim with a
+  24-hour horizon;
+- `responses:processed` — legacy processed set read only for compatibility and
+  the initial counter baseline.
 
-The processing script initializes a missing processed counter once from the
-legacy processed-set cardinality, claims the identifier, applies every command
-with `redis.pcall`, and increments the counter only when no command fails. It
-releases the claim and returns `aggregation_failed` when a command fails so the
-worker can throw and Hatchet can retry. It returns `already_processed`,
-`processed`, or `aggregation_failed`. The legacy
+The processing script trims expired claim timestamps, initializes a missing
+processed counter once from the legacy processed-set cardinality, checks both
+claim stores, records the identifier with its claim timestamp, applies every
+command with `redis.pcall`, and increments the counter only when no command
+fails. It releases the claim and returns `aggregation_failed` when a command
+fails so the worker can throw and Hatchet can retry. It returns
+`already_processed`, `processed`, or `aggregation_failed`. The legacy
 received set is read-only compatibility input; GraphQL adds its cardinality to
 the new received counter. A missing processed counter falls back to the legacy
 processed-set cardinality as an opaque pre-cutover baseline.
@@ -916,7 +922,7 @@ git commit -m "feat(manage): show live quiz response counts per element"
 **Files:**
 
 - Modify: `docs/async-and-workers.md`
-- Modify: `docs/log.md`
+- Do not create or modify the intentionally absent `docs/log.md` or `docs/log/`
 - Modify: `project/plans_wip/PLAN-live-quiz-response-counts.md`
 
 **Interfaces:**
@@ -933,32 +939,26 @@ response-ingest paragraph, add:
 ```md
 ### Per-element response processing counts
 
-For every started live-quiz element instance, execution Redis stores two sets:
-`lq:<quiz-id>:i:<instance-id>:responses:received` and
-`lq:<quiz-id>:i:<instance-id>:responses:processed`. The response API records the
-Hatchet event identifier in the received set; the response processor records the
-same identifier only when live results have been updated. The lecturer cockpit
-polls their cardinalities and reports both values per element.
+For every started live-quiz element instance, execution Redis stores numeric
+received and processed counters. The processor also stores response identifiers
+with timestamps in the age-trimmed
+`responses:processed:claims` sorted set. The legacy processed set remains a
+read-only rollout bridge. The lecturer cockpit polls the counters and reports
+both values per element.
 
 The difference is an operational signal, not exact queue depth. It can include
 queued work as well as invalid, duplicate, late, rejected, or failed responses.
-Set membership makes reporting idempotent across task retries, but it does not
-change the response pipeline's existing validation or result-aggregation retry
-behavior. Existing live-quiz cache expiry removes these sets with the other
-instance keys.
+The claim timestamp makes reporting idempotent across task retries within the
+replay horizon, but it does not change the response pipeline's existing
+validation or result-aggregation retry behavior. Existing live-quiz cache
+expiry removes these keys with the other instance keys.
 ```
 
 - [ ] **Step 2: Add the wiki log entry**
 
-At the top of `docs/log.md`, add:
-
-```md
-## 2026-08-05
-
-- **Update**: [async-and-workers](./async-and-workers.md) documents the
-  per-element live-quiz received/processed response signal, retry-safe Redis set
-  tracking, cockpit polling, and why the difference is not exact queue depth.
-```
+The former `docs/log.md` and `docs/log/` paths are intentionally absent under
+the current documentation pattern; do not create or restore them. The
+engineering wiki page above is the durable record for this change.
 
 - [ ] **Step 3: Mark implementation slices complete in the repository tracker**
 
@@ -985,7 +985,7 @@ checks to make the branch green.
 - [ ] **Step 5: Commit the documentation**
 
 ```bash
-git add docs/async-and-workers.md docs/log.md project/plans_wip/PLAN-live-quiz-response-counts.md
+git add docs/async-and-workers.md project/plans_wip/PLAN-live-quiz-response-counts.md
 git commit -m "docs(live-quiz): document response processing counts"
 ```
 

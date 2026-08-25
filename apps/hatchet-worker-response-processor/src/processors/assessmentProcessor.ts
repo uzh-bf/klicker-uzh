@@ -18,6 +18,7 @@ import type {
 } from '@klicker-uzh/types'
 import {
   getLiveQuizInstanceInfoKey,
+  getLiveQuizLegacyResponseProcessedKey,
   getLiveQuizResponseCountKey,
   getLiveQuizResponseReplayClaimKey,
   LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
@@ -492,6 +493,10 @@ export async function aggregateAssessmentResponses(
     liveQuizId,
     instanceId,
   })
+  const legacyProcessedKey = getLiveQuizLegacyResponseProcessedKey({
+    liveQuizId,
+    instanceId,
+  })
   const processedResponseCountKey = getLiveQuizResponseCountKey({
     liveQuizId,
     instanceId,
@@ -623,10 +628,11 @@ export async function aggregateAssessmentResponses(
       String(
         await redisExec.eval(
           LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-          3,
+          4,
           replayClaimKey,
           processedResponseCountKey,
           getLiveQuizInstanceInfoKey({ liveQuizId, instanceId }),
+          legacyProcessedKey,
           correlationId,
           String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
           JSON.stringify(transaction.commands)

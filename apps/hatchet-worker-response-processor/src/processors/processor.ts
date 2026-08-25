@@ -13,6 +13,7 @@ import type {
 } from '@klicker-uzh/types'
 import {
   getLiveQuizInstanceInfoKey,
+  getLiveQuizLegacyResponseProcessedKey,
   getLiveQuizResponseCountKey,
   getLiveQuizResponseReplayClaimKey,
   type JWTPayload,
@@ -71,6 +72,10 @@ export async function processResponseMessage(
   }
 
   const replayClaimKey = getLiveQuizResponseReplayClaimKey({
+    liveQuizId: message.sessionId,
+    instanceId: message.instanceId,
+  })
+  const legacyProcessedKey = getLiveQuizLegacyResponseProcessedKey({
     liveQuizId: message.sessionId,
     instanceId: message.instanceId,
   })
@@ -686,13 +691,14 @@ export async function processResponseMessage(
       String(
         await redisExec.eval(
           LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-          3,
+          4,
           replayClaimKey,
           processedResponseCountKey,
           getLiveQuizInstanceInfoKey({
             liveQuizId: message.sessionId,
             instanceId: message.instanceId,
           }),
+          legacyProcessedKey,
           message.messageId,
           String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
           JSON.stringify(transaction.commands)

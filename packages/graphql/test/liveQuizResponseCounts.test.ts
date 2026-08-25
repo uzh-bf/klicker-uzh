@@ -7,9 +7,9 @@ import {
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
 import {
+  getLiveQuizLegacyResponseProcessedKey,
   getLiveQuizLegacyResponseReceivedKey,
   getLiveQuizResponseCountKey,
-  getLiveQuizResponseReplayClaimKey,
 } from '@klicker-uzh/util'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { getCockpitQuiz } from '../src/services/liveQuizzes.js'
@@ -148,7 +148,7 @@ describe('live quiz cockpit response counts', () => {
       'executed-response'
     )
     await userOneCtx.redisExec.sadd(
-      getLiveQuizResponseReplayClaimKey({
+      getLiveQuizLegacyResponseProcessedKey({
         liveQuizId: quiz.id,
         instanceId: executedInstance.id,
       }),

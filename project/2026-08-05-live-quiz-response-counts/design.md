@@ -37,11 +37,11 @@ metric counts accepted transport events before that downstream boundary.
 aggregation command batch succeeded. For regular quizzes, the atomic processing
 script claims a bounded replay identifier, applies the result commands, and
 increments the numeric processed counter only when no command reports an error.
-Assessment aggregation uses the same contract. A partial command failure keeps
-the replay claim but does not increment the processed counter, because replaying
-could duplicate commands that already applied. Tracking-command failures are
-logged separately as best-effort metric errors; the aggregation claim remains
-authoritative once result commands have been attempted.
+Assessment aggregation uses the same contract. A partial command failure
+releases the replay claim and does not increment the processed counter, so the
+worker can throw and Hatchet can retry. Commands that already applied can still
+be repeated by that retry and require reconciliation. Tracking-command failures
+are logged separately as best-effort metric errors.
 
 The difference between the two values is an operational signal, not a strict
 queue-depth metric. It can include work that is still queued as well as invalid,
@@ -54,27 +54,32 @@ value lower than the corresponding pipeline activity.
 ### Tracking
 
 Use the execution Redis instance selected by the live quiz's regular-versus-
-assessment mode. New writes use numeric counters and a bounded replay claim:
+assessment mode. New writes use numeric counters and an age-trimmed replay
+claim:
 
 - `lq:<quiz-id>:i:<instance-id>:responses:received:count` is a numeric counter
   incremented once for each accepted ingress event;
 - `lq:<quiz-id>:i:<instance-id>:responses:processed:count` is a numeric counter
   incremented only after a complete aggregation command batch succeeds;
-- `lq:<quiz-id>:i:<instance-id>:responses:processed` remains the replay-claim
-  set for message IDs or correlation IDs and is capped to the 24-hour replay
-  horizon, or the shorter remaining instance-info TTL.
+- `lq:<quiz-id>:i:<instance-id>:responses:processed:claims` is a sorted-set
+  replay claim for message IDs or correlation IDs. Scores are claim timestamps,
+  and members older than the 24-hour replay horizon are trimmed before each
+  claim. The key uses the shorter remaining instance-info TTL after closure;
+- `lq:<quiz-id>:i:<instance-id>:responses:processed` remains the legacy replay
+  set during the worker rollout and is read only for compatibility and the
+  initial processed-counter baseline.
 
 The received and processing scripts update their counters and retention in
 Redis Lua. Processing initializes a missing processed counter from the legacy
-processed-set cardinality once, which preserves pre-cutover visibility without
-double-counting new claims. Partial command errors return an explicit failed
-aggregation outcome, release the claim, and leave the processed counter
-unchanged. The worker throws so Hatchet can retry instead of acknowledging a
-response that may have been only partially applied. Because commands before
-the failure may already have run, the retry path can repeat non-idempotent
-updates and remains a reconciliation signal rather than an exactly-once
-guarantee for partial batches. Connection-level script failures still throw so
-Hatchet can retry.
+processed-set cardinality once, checks both the age-trimmed claims and the
+legacy set, and records each new claim with its own timestamp. Partial command
+errors return an explicit failed aggregation outcome, release the claim, and
+leave the processed counter unchanged. The worker throws so Hatchet can retry
+instead of acknowledging a response that may have been only partially applied.
+Because commands before the failure may already have run, the retry path can
+repeat non-idempotent updates and remains a reconciliation signal rather than
+an exactly-once guarantee for partial batches. Connection-level script failures
+still throw so Hatchet can retry.
 
 The legacy received set
 `lq:<quiz-id>:i:<instance-id>:responses:received` is read-only compatibility
@@ -85,9 +90,10 @@ legacy processed-set cardinality is used as the opaque pre-cutover baseline.
 
 All keys remain under the existing
 `lq:<quiz-id>:i:<instance-id>:*` namespace. Active counters have constant key
-space, while replay claims expire after the bounded horizon. Block closure and
-quiz termination start one-day retention on instance-info keys before expiring
-the response keys, so late scripts cannot recreate persistent tracking keys.
+space, while sorted-set replay claims trim members after the bounded horizon and
+expire with the latest claim. Block closure and quiz termination start one-day
+retention on instance-info keys before expiring the response keys, so late
+scripts cannot recreate persistent tracking keys.
 
 The rollout must deploy GraphQL before new ingress, drain old response
 processor replicas before initializing processed counters, and then run only
@@ -168,8 +174,8 @@ not change leaderboard data.
   counts can therefore undercount during a tracking outage.
 - A Hatchet enqueue failure leaves a received marker without a processed marker.
 - A processing-script command error is logged as an aggregation failure after
-  the replay claim is retained; it does not increment the processed counter or
-  trigger a retry that could replay partial aggregation.
+  the replay claim is released; it does not increment the processed counter and
+  triggers a worker retry that can replay partial aggregation.
 - A connection-level processing-script failure throws so Hatchet can retry; if
   Redis completed the script, the replay claim makes that retry a no-op.
 - Worker retries do not increase the processed counter for the same tracking
