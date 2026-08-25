@@ -51,6 +51,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      statuses: read
     outputs:
       authorized: ${{ steps.authorize.outputs.authorized }}
       pr_number: ${{ steps.authorize.outputs.pr_number }}
@@ -81,7 +82,7 @@ jobs:
     timeout-minutes: 45
     concurrency:
       group: final-ai-review-${{ needs.authorize.outputs.pr_number }}
-      cancel-in-progress: true
+      cancel-in-progress: false
     permissions:
       contents: read
       pull-requests: write
@@ -98,6 +99,7 @@ jobs:
         run: node --test .github/scripts/final-ai-review.test.js
 
       - name: Start final review
+        id: start
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           PR_NUMBER: ${{ needs.authorize.outputs.pr_number }}
@@ -107,16 +109,18 @@ jobs:
           github-token: ${{ github.token }}
           script: |
             const helper = require('./.github/scripts/final-ai-review.js')
-            await helper.startFinalReview({
+            const shouldRun = await helper.startFinalReview({
               github,
               context,
               prNumber: Number(process.env.PR_NUMBER),
               baseSha: process.env.BASE_SHA,
               headSha: process.env.HEAD_SHA,
             })
+            core.setOutput('run_review', String(shouldRun))
 
       - name: Resolve immutable review range
         id: range
+        if: steps.start.outputs.run_review == 'true'
         env:
           PR_NUMBER: ${{ needs.authorize.outputs.pr_number }}
           BASE_SHA: ${{ needs.authorize.outputs.base_sha }}
@@ -134,12 +138,14 @@ jobs:
           echo "merge_base=${MERGE_BASE}" >>"${GITHUB_OUTPUT}"
 
       - name: Install pinned OpenCodeReview CLI
+        if: steps.start.outputs.run_review == 'true'
         run: |
           npm install -g @alibaba-group/open-code-review@1.9.10
           ocr version
 
       - name: Configure ephemeral OpenRouter access
         id: configure
+        if: steps.start.outputs.run_review == 'true'
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
@@ -149,6 +155,7 @@ jobs:
 
       - name: Run final review
         id: run_review
+        if: steps.start.outputs.run_review == 'true'
         env:
           BACKGROUND: ${{ needs.authorize.outputs.background }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
@@ -179,6 +186,7 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           PR_NUMBER: ${{ needs.authorize.outputs.pr_number }}
+          BASE_SHA: ${{ needs.authorize.outputs.base_sha }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
         with:
@@ -189,16 +197,18 @@ jobs:
               github,
               context,
               prNumber: Number(process.env.PR_NUMBER),
+              baseSha: process.env.BASE_SHA,
               headSha: process.env.HEAD_SHA,
               resultPath: process.env.RESULT_PATH,
             })
             core.info(`Published ${url}`)
 
       - name: Finalize exact-head status
-        if: always()
+        if: always() && steps.start.outputs.run_review == 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           PR_NUMBER: ${{ needs.authorize.outputs.pr_number }}
+          BASE_SHA: ${{ needs.authorize.outputs.base_sha }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
           REVIEW_OUTCOME: ${{ steps.run_review.outcome }}
           CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
@@ -211,6 +221,7 @@ jobs:
               github,
               context,
               prNumber: Number(process.env.PR_NUMBER),
+              baseSha: process.env.BASE_SHA,
               headSha: process.env.HEAD_SHA,
               reviewOutcome: process.env.REVIEW_OUTCOME,
               cleanupOutcome: process.env.CLEANUP_OUTCOME,

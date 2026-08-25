@@ -61,6 +61,7 @@ test('authorizes and starts only the immutable ready PR range', async () => {
     head: { sha: headSha },
   }
   const statuses = []
+  let combinedStatuses = []
   const github = {
     rest: {
       pulls: {
@@ -68,6 +69,9 @@ test('authorizes and starts only the immutable ready PR range', async () => {
       },
       repos: {
         createCommitStatus: async (status) => statuses.push(status),
+        getCombinedStatusForRef: async () => ({
+          data: { statuses: combinedStatuses },
+        }),
         getCollaboratorPermissionLevel: async () => ({
           data: { user: { permission: 'write' } },
         }),
@@ -96,13 +100,16 @@ test('authorizes and starts only the immutable ready PR range', async () => {
   assert.equal(outputs.get('base_sha'), baseSha)
   assert.equal(outputs.get('head_sha'), headSha)
 
-  await startFinalReview({
-    github,
-    context,
-    prNumber: 42,
-    baseSha,
-    headSha,
-  })
+  assert.equal(
+    await startFinalReview({
+      github,
+      context,
+      prNumber: 42,
+      baseSha,
+      headSha,
+    }),
+    true
+  )
   assert.equal(statuses.length, 1)
   assert.equal(statuses[0].sha, headSha)
   assert.equal(statuses[0].state, 'pending')
@@ -117,6 +124,20 @@ test('authorizes and starts only the immutable ready PR range', async () => {
     }),
     /no longer eligible/
   )
+
+  combinedStatuses = [{ context: 'final-ai-review', state: 'success' }]
+  assert.equal(await authorizeFinalReview({ github, context, core }), false)
+  assert.equal(
+    await startFinalReview({
+      github,
+      context,
+      prNumber: 42,
+      baseSha,
+      headSha,
+    }),
+    false
+  )
+  assert.equal(statuses.length, 1)
 })
 
 test('writes an exact high-reasoning OCR config with mode 0600', () => {
@@ -143,7 +164,7 @@ test('renders findings without making finding count a failure', () => {
   const result = {
     status: 'success',
     llm: { model: FINAL_REVIEW_MODEL },
-    summary: { budget_exceeded: false },
+    summary: {},
     comments: [
       {
         path: 'src/example.ts',
@@ -201,6 +222,18 @@ test('rejects incomplete or wrong-model OCR results', () => {
         {
           status: 'success',
           llm: { model: FINAL_REVIEW_MODEL },
+          comments: [],
+        },
+        'a'.repeat(40)
+      ),
+    /review summary/
+  )
+  assert.throws(
+    () =>
+      renderFinalReviewChunks(
+        {
+          status: 'success',
+          llm: { model: FINAL_REVIEW_MODEL },
           summary: { budget_exceeded: false },
           comments: [
             {
@@ -248,6 +281,9 @@ test('only succeeds a status for a complete review on the current head', () => {
   const success = decideFinalStatus({
     reviewedHead: 'a',
     currentHead: 'a',
+    reviewedBase: 'base-a',
+    currentBase: 'base-a',
+    eligible: true,
     reviewOutcome: 'success',
     cleanupOutcome: 'success',
     publishOutcome: 'success',
@@ -257,15 +293,33 @@ test('only succeeds a status for a complete review on the current head', () => {
   const stale = decideFinalStatus({
     reviewedHead: 'a',
     currentHead: 'b',
+    reviewedBase: 'base-a',
+    currentBase: 'base-a',
+    eligible: true,
     reviewOutcome: 'success',
     cleanupOutcome: 'success',
     publishOutcome: 'success',
   })
   assert.equal(stale.state, 'error')
 
+  const staleBase = decideFinalStatus({
+    reviewedHead: 'a',
+    currentHead: 'a',
+    reviewedBase: 'base-a',
+    currentBase: 'base-b',
+    eligible: false,
+    reviewOutcome: 'success',
+    cleanupOutcome: 'success',
+    publishOutcome: 'success',
+  })
+  assert.equal(staleBase.state, 'error')
+
   const failed = decideFinalStatus({
     reviewedHead: 'a',
     currentHead: 'a',
+    reviewedBase: 'base-a',
+    currentBase: 'base-a',
+    eligible: true,
     reviewOutcome: 'success',
     cleanupOutcome: 'success',
     publishOutcome: 'failure',

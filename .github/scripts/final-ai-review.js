@@ -265,6 +265,30 @@ async function getPull(github, context, pullNumber) {
   return response.data
 }
 
+function isEligiblePull({ pull, context, baseSha, headSha }) {
+  const repository = `${context.repo.owner}/${context.repo.repo}`
+  return (
+    pull.state === 'open' &&
+    !pull.draft &&
+    pull.base.ref === context.payload.repository.default_branch &&
+    pull.base.repo.full_name === repository &&
+    (!baseSha || pull.base.sha === baseSha) &&
+    (!headSha || pull.head.sha === headSha)
+  )
+}
+
+async function hasSuccessfulFinalReview(github, context, headSha) {
+  const response = await github.rest.repos.getCombinedStatusForRef({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    ref: headSha,
+  })
+  return response.data.statuses.some(
+    (status) =>
+      status.context === FINAL_REVIEW_CONTEXT && status.state === 'success'
+  )
+}
+
 async function getFileText(github, context, filePath, ref) {
   const response = await github.rest.repos.getContent({
     owner: context.repo.owner,
@@ -384,7 +408,6 @@ async function initializeFinalReview({ github, context, core, sourceBranch }) {
     state,
     description,
   })
-  core.setOutput('state', state)
 }
 
 async function authorizeFinalReview({ github, context, core }) {
@@ -409,17 +432,13 @@ async function authorizeFinalReview({ github, context, core }) {
   }
 
   const pull = await getPull(github, context, context.issue.number)
-  const repository = `${context.repo.owner}/${context.repo.repo}`
-  const defaultBranch = context.payload.repository.default_branch
-  if (
-    pull.state !== 'open' ||
-    pull.draft ||
-    pull.base.ref !== defaultBranch ||
-    pull.base.repo.full_name !== repository
-  ) {
+  if (!isEligiblePull({ pull, context })) {
     return deny(
       'Final review requires an open, ready PR targeting the default branch'
     )
+  }
+  if (await hasSuccessfulFinalReview(github, context, pull.head.sha)) {
+    return deny('Final review already succeeded for the current head')
   }
 
   core.setOutput('authorized', 'true')
@@ -438,17 +457,11 @@ async function startFinalReview({
   headSha,
 }) {
   const pull = await getPull(github, context, prNumber)
-  const repository = `${context.repo.owner}/${context.repo.repo}`
-  if (
-    pull.head.sha !== headSha ||
-    pull.base.sha !== baseSha ||
-    pull.state !== 'open' ||
-    pull.draft ||
-    pull.base.ref !== context.payload.repository.default_branch ||
-    pull.base.repo.full_name !== repository
-  ) {
+  if (!isEligiblePull({ pull, context, baseSha, headSha })) {
     throw new Error('PR is no longer eligible for this final-review run')
   }
+  if (await hasSuccessfulFinalReview(github, context, headSha)) return false
+
   await setCommitStatus({
     github,
     context,
@@ -456,6 +469,7 @@ async function startFinalReview({
     state: 'pending',
     description: 'Gemini final review is running for this head',
   })
+  return true
 }
 
 function safeFence(value) {
@@ -552,7 +566,10 @@ function renderFinalReviewChunks(result, headSha) {
   if (result.llm?.model !== FINAL_REVIEW_MODEL) {
     throw new Error(`OCR returned unexpected model: ${result.llm?.model}`)
   }
-  if (result.summary?.budget_exceeded) {
+  if (!result.summary || typeof result.summary !== 'object') {
+    throw new Error('OCR result has no review summary')
+  }
+  if (result.summary.budget_exceeded === true) {
     throw new Error('OCR exhausted its review budget')
   }
   if (!Array.isArray(result.comments)) {
@@ -607,12 +624,13 @@ async function publishFinalReview({
   github,
   context,
   prNumber,
+  baseSha,
   headSha,
   resultPath,
 }) {
   const pull = await getPull(github, context, prNumber)
-  if (pull.head.sha !== headSha) {
-    throw new Error('PR head changed before final-review publication')
+  if (!isEligiblePull({ pull, context, baseSha, headSha })) {
+    throw new Error('PR range changed before final-review publication')
   }
 
   const result = JSON.parse(fs.readFileSync(resultPath, 'utf8'))
@@ -631,14 +649,21 @@ async function publishFinalReview({
 function decideFinalStatus({
   reviewedHead,
   currentHead,
+  reviewedBase,
+  currentBase,
+  eligible,
   reviewOutcome,
   cleanupOutcome,
   publishOutcome,
 }) {
-  if (currentHead !== reviewedHead) {
+  if (
+    currentHead !== reviewedHead ||
+    currentBase !== reviewedBase ||
+    !eligible
+  ) {
     return {
       state: 'error',
-      description: 'PR head changed; run /final-review for the current head',
+      description: 'PR range changed; run /final-review for the current range',
     }
   }
   if (
@@ -661,6 +686,7 @@ async function finalizeFinalReview({
   github,
   context,
   prNumber,
+  baseSha,
   headSha,
   reviewOutcome,
   cleanupOutcome,
@@ -670,6 +696,9 @@ async function finalizeFinalReview({
   const status = decideFinalStatus({
     reviewedHead: headSha,
     currentHead: pull.head.sha,
+    reviewedBase: baseSha,
+    currentBase: pull.base.sha,
+    eligible: isEligiblePull({ pull, context, baseSha, headSha }),
     reviewOutcome,
     cleanupOutcome,
     publishOutcome,

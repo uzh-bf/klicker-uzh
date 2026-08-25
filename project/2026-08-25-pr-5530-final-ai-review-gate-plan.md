@@ -18,13 +18,14 @@
 ## Execution contract
 
 - Authority: the user's approved design authorizes this plan, local
-  implementation and verification, conventional commits, a normal push to the
-  existing branch, and an update of draft PR #5530.
+  implementation and verification, conventional commits, a normal push, and a
+  draft PR. PR #5530 merged while this package was being prepared, so delivery
+  moves to the replacement branch and PR recorded below.
 - Withheld: force push, merge, ready-for-review transition, deployment,
   worktree removal, and GitHub branch-protection mutation.
 - Execution owner and boundary owner: main session. Privileged workflow,
   authorization, secret, status, and integration logic stay coupled here.
-- Terminal: the existing draft PR contains the committed implementation,
+- Terminal: the replacement draft PR contains the committed implementation,
   focused verification and required reviews pass, the remote head matches the
   local head, and post-merge live-proof and activation steps are explicit.
 - Pause: stop for a failed reasoning-wire proof, a promotion contract that
@@ -35,11 +36,11 @@
 
 - Plan: `project/2026-08-25-pr-5530-final-ai-review-gate-plan.md`.
 - Historical plan: `project/2026-08-24-open-code-review-plan.md`.
-- Branch: `rs/open-code-review-background`.
+- Branch: `rs/manual-final-ai-review-gate`.
 - Worktree: `trees/rs-open-code-review-background`.
 - Target: `v3`, merged locally through `853567e54b` without force-pushing.
-- Pull request: [#5530](https://github.com/uzh-bf/klicker-uzh/pull/5530),
-  kept draft.
+- Pull request: replacement draft PR to be created after push. Historical
+  [#5530](https://github.com/uzh-bf/klicker-uzh/pull/5530) is merged.
 - Package: one ordinary PR because continuous-review hardening, the manual
   review gate, and its generated-promotion exception form one review policy.
 
@@ -78,14 +79,15 @@
 | PR opened, synchronized, reopened, or marked ready | Keep automatic DeepSeek review. Initialize the exact head unless it is a verified generated promotion.                                   | `pending`, or `success` for a verified promotion |
 | Exact `/final-review` PR comment                   | Resolve calculated commenter permission, require a non-draft PR targeting `v3`, snapshot head `H`, and serialize authorized work per PR. | `pending` on `H`                                 |
 | OCR and publication complete                       | Re-fetch the PR, require the current head still equals `H`, and publish a distinct final-review report attached to `H`.                  | `success` on `H`, regardless of finding count    |
-| Review, publication, or status step fails          | Preserve logs without artifacts or secret values and link the status to the workflow run.                                                | `failure` or `error` on `H`                      |
-| Head changes during the review                     | Suppress the stale report and require a new command for the new head.                                                                    | old `H` is not successful; new head is `pending` |
+| Review, publication, or status step fails          | Preserve the workflow outcome without uploading OCR artifacts or secret values and link the status to the workflow run.                  | `failure` or `error` on `H`                      |
+| Head changes during the review                     | Refuse success for `H` and require a new command. A single report attached to `H` can still land if publication races the push.           | old `H` is not successful; new head is `pending` |
 
 - A final review is accepted only for a ready PR. Drafts continue to receive the
   inexpensive automatic reviewer.
-- Repeated authorized commands serialize. A current-head success can
-  short-circuit a duplicate command; unauthorized comments never enter the
-  concurrency group and cannot cancel trusted work.
+- Repeated authorized commands serialize per PR. A duplicate skips when the
+  current head already has a successful final review; if a run is active, the
+  duplicate waits and retries only when that run fails. Unauthorized comments
+  never enter that concurrency group and cannot cancel trusted work.
 - The workflow and custom status use different names so the GitHub Actions job
   check cannot collide with `final-ai-review`.
 - Branch protection is activated only after the merged workflow has passed the
@@ -203,8 +205,8 @@ security-sensitive. Read-only specialist reviews remain mandatory.
   `git diff --check`, and staged secret/PII review. No application build is
   required because no application or package code changes.
 - Run one integrated final reviewer after all corrections and fresh checks.
-- Update this plan's progress, push normally, and rewrite draft PR #5530's title
-  and body for the complete branch using `rs-mr-description-writer`.
+- Update this plan's progress, push normally, and create the replacement draft
+  PR with a whole-branch title and body using `rs-mr-description-writer`.
 - Confirm the remote head equals local head and account for current-head CI.
 
 ## Post-merge continuation
@@ -218,12 +220,20 @@ security-sensitive. Read-only specialist reviews remain mandatory.
 
 ## Progress
 
-- Status: planning and preflight complete; implementation has not started.
+- Status: integrated implementation committed; independent review and finish
+  gate are in progress.
 - Completed: fresh remote audit, normal merge of current `origin/v3`, upstream
   OCR and current OpenRouter research, production-readiness lens selection,
-  required planner challenge, promotion-contract inspection, and passing
-  dummy-token reasoning wire probe.
-- Remaining: slices 1-3, independent slice reviews, integrated verification,
-  final review, normal push, and draft PR update.
+  required planner challenge, promotion-contract inspection, passing
+  dummy-token reasoning wire probe, continuous-review hardening, trusted helper
+  and tests, manual Gemini workflow, final-review rule, exact generated
+  promotion exemption, and operator documentation.
+- Review disposition: the first helper slice's configured Gemini specialists
+  were unavailable at the provider credit boundary. Trusted fallback reviews
+  found and corrected Unicode-format controls, finding-schema validation,
+  Markdown confinement, partial report publication, and repeated PR fetches.
+- Remaining: review the committed workflow slice, apply verified corrections,
+  run integrated verification and the final reviewer, push normally, and update
+  the replacement draft PR.
 - Delivery boundary: live command proof, merge, and branch-protection activation
   remain withheld post-merge work.
