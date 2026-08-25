@@ -20,13 +20,32 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      - name: Checkout trusted review policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - name: Prepare bounded review context
+        id: context
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const { buildReviewBackground } = require('./.github/scripts/final-ai-review.js')
+          const background = buildReviewBackground(process.env.PR_TITLE)
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `background=${background}\n`)
+          NODE
+
       - name: Run OpenCodeReview
         uses: alibaba/open-code-review@66120291271b2e605e420e9f11fbd6448f06163f # v1.9.10
         with:
           llm_url: https://openrouter.ai/api/v1/chat/completions
           llm_auth_token: ${{ secrets.OPENROUTER_API_KEY }}
           llm_model: deepseek/deepseek-v4-flash-0731
-          background: ${{ github.event.pull_request.title }}
+          background: ${{ steps.context.outputs.background }}
           llm_use_anthropic: 'false'
           ocr_version: '1.9.10'
           sticky_summary: 'true'
