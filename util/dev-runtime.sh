@@ -213,7 +213,7 @@ ensure_dependencies() {
   fi
 
   echo '[dev-runtime] Dependency inputs changed; running frozen pnpm install.'
-  (cd "$ROOT" && pnpm install --frozen-lockfile)
+  (cd "$ROOT" && pnpm install --frozen-lockfile --prefer-offline)
   write_atomic "$DEPENDENCY_STAMP_FILE" "$current"
 }
 

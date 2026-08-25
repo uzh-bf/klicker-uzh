@@ -160,13 +160,19 @@ critical-path coupling; delegation would cost more than the bounded edits.
 
 ## Progress
 
-- Status: plan reviewed; plan commit in progress.
-- Completed: remote `v3` freshness readback, clean task worktree, source
-  inventory, planner pass, baseline Compose resolution.
-- Baseline limitation: the host shell test reached the existing Linux-only
-  `flock` dependency; exact runtime verification is not yet available because
+- Status: Slice 1 implemented and focused verification passed; commit in
+  progress.
+- Completed: remote `v3` freshness readback, clean task worktree, planner pass,
+  plan commit `04352a869`, shared pnpm-store implementation, mocked initializer
+  success/idempotence/failure checks, shell syntax, ShellCheck on changed
+  production scripts, and both resolved Compose overlays.
+- Focused evidence: `bash util/test-dev-runtime.sh` passed; both Compose models
+  expose only `pnpm_store` as external and retain project-scoped
+  `node_modules_root` and `pgdata`.
+- Runtime limitation: exact runtime verification is not yet available because
   devrouter reports `could not determine process identity for host route update lock`.
-- Active slice: plan commit.
-- Next: implement Slice 1.
+- Active slice: Slice 1 commit and specialist review.
+- Next: commit Slice 1, run its simplifier and slice reviewer, then implement
+  Slice 2.
 - Required delivery: committed local branch.
-- Achieved delivery: uncommitted plan only.
+- Achieved delivery: reviewed plan commit only.

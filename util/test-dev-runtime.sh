@@ -38,6 +38,8 @@ write_file() {
 ROOT="$TEST_ROOT/repo"
 FAKE_BIN="$TEST_ROOT/bin"
 INSTALL_LOG="$TEST_ROOT/install.log"
+DOCKER_LOG="$TEST_ROOT/docker.log"
+DOCKER_VOLUME_STATE="$TEST_ROOT/docker-volume-state"
 NEXT_APPS=(auth chat frontend-control frontend-manage frontend-pwa)
 mkdir -p "$ROOT/node_modules" "$FAKE_BIN"
 
@@ -58,13 +60,56 @@ if [ "${1:-}" = "--version" ]; then
   echo "11.5.0"
   exit 0
 fi
-printf "install\n" >>"$KLICKER_TEST_INSTALL_LOG"'
-chmod +x "$FAKE_BIN/pnpm"
+printf "%s\n" "$*" >>"$KLICKER_TEST_INSTALL_LOG"'
+write_file "$FAKE_BIN/flock" '#!/usr/bin/env bash
+exit 0'
+write_file "$FAKE_BIN/mkcert" '#!/usr/bin/env bash
+[ "${1:-}" = "-CAROOT" ] || exit 1
+printf "%s\n" "$KLICKER_TEST_MKCERT_CAROOT"'
+write_file "$FAKE_BIN/docker" '#!/usr/bin/env bash
+if [ "$1 $2" = "volume inspect" ]; then
+  [ "$3" = "klicker-uzh-pnpm-store-v1" ] || exit 2
+  [ -f "$KLICKER_TEST_DOCKER_VOLUME_STATE" ]
+  exit
+fi
+if [ "$1 $2" = "volume create" ]; then
+  [ "$3" = "klicker-uzh-pnpm-store-v1" ] || exit 2
+  [ "${KLICKER_TEST_DOCKER_CREATE_FAIL:-false}" != "true" ] || exit 9
+  touch "$KLICKER_TEST_DOCKER_VOLUME_STATE"
+  printf "%s\n" "$3" >>"$KLICKER_TEST_DOCKER_LOG"
+  exit 0
+fi
+exit 2'
+chmod +x "$FAKE_BIN/pnpm" "$FAKE_BIN/flock" "$FAKE_BIN/mkcert" "$FAKE_BIN/docker"
 
 export PATH="$FAKE_BIN:$PATH"
 export KLICKER_TEST_INSTALL_LOG="$INSTALL_LOG"
+export KLICKER_TEST_DOCKER_LOG="$DOCKER_LOG"
+export KLICKER_TEST_DOCKER_VOLUME_STATE="$DOCKER_VOLUME_STATE"
 export KLICKER_DEV_RUNTIME_ROOT="$ROOT"
 export KLICKER_DEV_RUNTIME_GIT_HEAD=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+INIT_ROOT="$TEST_ROOT/init-repo/.devcontainer"
+MKCERT_CAROOT="$TEST_ROOT/mkcert"
+mkdir -p "$INIT_ROOT" "$MKCERT_CAROOT"
+cp "$REPO_ROOT/.devcontainer/initialize.sh" "$INIT_ROOT/initialize.sh"
+write_file "$MKCERT_CAROOT/rootCA.pem" 'test CA'
+export KLICKER_TEST_MKCERT_CAROOT="$MKCERT_CAROOT"
+
+bash "$INIT_ROOT/initialize.sh"
+bash "$INIT_ROOT/initialize.sh"
+assert_equal "$(wc -l <"$DOCKER_LOG" | tr -d ' ')" '1'
+assert_equal "$(cat "$INIT_ROOT/certs/rootCA.pem")" 'test CA'
+assert_exists "$DOCKER_VOLUME_STATE"
+rm -f "$DOCKER_VOLUME_STATE"
+if KLICKER_TEST_DOCKER_CREATE_FAIL=true bash "$INIT_ROOT/initialize.sh" \
+  >/dev/null 2>&1; then
+  fail 'initializer ignored a Docker volume creation failure'
+fi
+
+grep -Fq 'pnpm install --prefer-offline --no-frozen-lockfile' \
+  "$REPO_ROOT/.devcontainer/post-create.sh" ||
+  fail 'post-create does not prefer the shared pnpm store'
 
 base_fingerprint="$(bash "$RUNTIME_SCRIPT" fingerprint)"
 write_file "$ROOT/apps/chat/src/app/api/example/route.ts" 'export const GET = false'
@@ -82,6 +127,7 @@ assert_not_equal "$path_fingerprint" "$config_fingerprint"
 bash "$RUNTIME_SCRIPT" ensure-dependencies >/dev/null
 bash "$RUNTIME_SCRIPT" ensure-dependencies >/dev/null
 assert_equal "$(wc -l <"$INSTALL_LOG" | tr -d ' ')" '1'
+assert_equal "$(sed -n '1p' "$INSTALL_LOG")" 'install --frozen-lockfile --prefer-offline'
 
 write_file "$ROOT/pnpm-lock.yaml" 'lockfileVersion: 9.1'
 bash "$RUNTIME_SCRIPT" ensure-dependencies >/dev/null
