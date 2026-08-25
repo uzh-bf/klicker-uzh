@@ -350,9 +350,10 @@ function ActivityBatchOperationsModal({
         (outcome) => outcome.status === 'uncertain'
       ).length
       const hadOutcome = deletedCount > 0 || uncertainCount > 0
+      const allActivitiesDeleted = deletedCount === activitiesToDelete.length
 
       if (deletedCount > 0) {
-        if (uncertainCount === 0) {
+        if (allActivitiesDeleted) {
           resetSelectedActivities()
         } else {
           removeSelectedActivities(
@@ -408,9 +409,7 @@ function ActivityBatchOperationsModal({
       }
 
       setDeleting(false)
-      if (deletedCount > 0 && uncertainCount === 0) {
-        onClose()
-      }
+      if (allActivitiesDeleted) onClose()
     } catch (error) {
       console.error(error)
       if (!isMountedRef.current) return
