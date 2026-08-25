@@ -224,8 +224,16 @@ access, or change to the course-duplication worker.
 - 2026-08-25: Published the branch to PR #5446 and replaced the stale body
   with branch-wide coverage, exact verification categories, and follow-ups.
   GitHub read-back confirms the PR is open, non-draft, mergeable, and currently
-  blocked while required checks run; the final publication commit is this
-  progress record.
+  blocked while required checks run. Subsequent base synchronization commits
+  remain within the same publication boundary.
+- 2026-08-25: `v3` advanced with the learning-analytics feature-flag change.
+  The branch merged that base and preserved both the course-duplication
+  provider and the manage feature-flag provider; GitHub then reported the PR
+  mergeable again.
+- 2026-08-25: The host could not run the focused TypeScript check after the
+  sync because a non-interactive dependency refresh failed while rebuilding
+  `sharp@0.32.6`. No source check ran in that attempt; the queued GitHub
+  checks remain the authoritative fresh validation.
 - 2026-08-25: The native simplifier and slice-reviewer routes returned provider
   `402` credit errors. A lightweight GPT-5.6 Sol fallback reviewed the exact
   package and found no material implementation risk after this progress update;
