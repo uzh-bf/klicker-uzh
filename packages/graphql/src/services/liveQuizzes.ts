@@ -2221,17 +2221,19 @@ export async function endLiveQuiz(
       },
     })
 
-    // Retention is armed only after ENDED is durable. If Redis cleanup fails,
-    // the repeated ENDED branch can retry it without repeating end effects.
+    // ENDED is durable before sending the one-time completion notification.
+    // Retention is retryable and must not suppress that notification.
+    await sendTeamsNotification({
+      scope: 'graphql/endLiveQuiz',
+      text: `END Live quiz ${quiz.name} with id ${quiz.id}.`,
+    })
+
+    // If Redis cleanup fails, the repeated ENDED branch can retry it without
+    // repeating the end-of-quiz notification or other end effects.
     await startLiveQuizResponseTrackingRetention({
       liveQuizId: id,
       blocks: quiz.blocks,
       redis,
-    })
-
-    await sendTeamsNotification({
-      scope: 'graphql/endLiveQuiz',
-      text: `END Live quiz ${quiz.name} with id ${quiz.id}.`,
     })
 
     return endedLiveQuiz

@@ -6,6 +6,7 @@ import {
   type PrismaClient,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
+import axios from 'axios'
 import {
   getLiveQuizInstanceInfoKey,
   getLiveQuizLegacyResponseProcessedKey,
@@ -291,66 +292,97 @@ describe('live quiz cockpit response counts', () => {
       }
       return multi
     }) as typeof originalMultiMethod
+    const originalTeamsWebhookUrl = process.env.TEAMS_WEBHOOK_URL
+    process.env.TEAMS_WEBHOOK_URL = 'https://example.test/teams'
+    const teamsPost = vi
+      .spyOn(axios, 'post')
+      .mockImplementation(async () => ({}) as never)
 
     try {
-      await expect(endLiveQuiz({ id: quiz.id }, userOneCtx)).rejects.toThrow(
-        'Failed to start instance-info retention'
+      try {
+        await expect(endLiveQuiz({ id: quiz.id }, userOneCtx)).rejects.toThrow(
+          'Failed to start instance-info retention'
+        )
+      } finally {
+        userOneCtx.redisExec.multi = originalMultiMethod
+      }
+
+      const failedEnd = await prisma.liveQuiz.findUnique({
+        where: { id: quiz.id },
+        select: { status: true, finishedAt: true },
+      })
+      expect(failedEnd?.status).toBe(PublicationStatus.ENDED)
+      expect(failedEnd?.finishedAt).not.toBeNull()
+
+      const instanceInfoKey = getLiveQuizInstanceInfoKey({
+        liveQuizId: quiz.id,
+        instanceId: instance.id,
+      })
+      const trackingKeys = [
+        getLiveQuizResponseCountKey({
+          liveQuizId: quiz.id,
+          instanceId: instance.id,
+          status: 'received',
+        }),
+        getLiveQuizResponseCountKey({
+          liveQuizId: quiz.id,
+          instanceId: instance.id,
+          status: 'processed',
+        }),
+        getLiveQuizResponseReplayClaimKey({
+          liveQuizId: quiz.id,
+          instanceId: instance.id,
+        }),
+        getLiveQuizLegacyResponseReceivedKey({
+          liveQuizId: quiz.id,
+          instanceId: instance.id,
+        }),
+        getLiveQuizLegacyResponseProcessedKey({
+          liveQuizId: quiz.id,
+          instanceId: instance.id,
+        }),
+      ]
+
+      await userOneCtx.redisExec.hset(
+        instanceInfoKey,
+        'id',
+        String(instance.id)
       )
+      await userOneCtx.redisExec.set(trackingKeys[0]!, '1')
+      await userOneCtx.redisExec.set(trackingKeys[1]!, '1')
+      await userOneCtx.redisExec.zadd(
+        trackingKeys[2]!,
+        Date.now(),
+        'message-1'
+      )
+      await userOneCtx.redisExec.sadd(trackingKeys[3]!, 'legacy-received')
+      await userOneCtx.redisExec.sadd(trackingKeys[4]!, 'legacy-processed')
+
+      const recoveredQuiz = await endLiveQuiz({ id: quiz.id }, userOneCtx)
+
+      expect(recoveredQuiz?.status).toBe(PublicationStatus.ENDED)
+      expect(recoveredQuiz?.finishedAt).toEqual(failedEnd?.finishedAt)
+      for (const key of [instanceInfoKey, ...trackingKeys]) {
+        const ttl = await userOneCtx.redisExec.ttl(key)
+        expect(ttl).toBeGreaterThan(0)
+        expect(ttl).toBeLessThanOrEqual(
+          LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
+        )
+      }
+
+      const notificationTexts = teamsPost.mock.calls.map(
+        ([, body]) => (body as { text: string }).text
+      )
+      expect(
+        notificationTexts.filter((text) => text.startsWith('END '))
+      ).toHaveLength(1)
     } finally {
-      userOneCtx.redisExec.multi = originalMultiMethod
-    }
-
-    const failedEnd = await prisma.liveQuiz.findUnique({
-      where: { id: quiz.id },
-      select: { status: true, finishedAt: true },
-    })
-    expect(failedEnd?.status).toBe(PublicationStatus.ENDED)
-    expect(failedEnd?.finishedAt).not.toBeNull()
-
-    const instanceInfoKey = getLiveQuizInstanceInfoKey({
-      liveQuizId: quiz.id,
-      instanceId: instance.id,
-    })
-    const trackingKeys = [
-      getLiveQuizResponseCountKey({
-        liveQuizId: quiz.id,
-        instanceId: instance.id,
-        status: 'received',
-      }),
-      getLiveQuizResponseCountKey({
-        liveQuizId: quiz.id,
-        instanceId: instance.id,
-        status: 'processed',
-      }),
-      getLiveQuizResponseReplayClaimKey({
-        liveQuizId: quiz.id,
-        instanceId: instance.id,
-      }),
-      getLiveQuizLegacyResponseReceivedKey({
-        liveQuizId: quiz.id,
-        instanceId: instance.id,
-      }),
-      getLiveQuizLegacyResponseProcessedKey({
-        liveQuizId: quiz.id,
-        instanceId: instance.id,
-      }),
-    ]
-
-    await userOneCtx.redisExec.hset(instanceInfoKey, 'id', String(instance.id))
-    await userOneCtx.redisExec.set(trackingKeys[0]!, '1')
-    await userOneCtx.redisExec.set(trackingKeys[1]!, '1')
-    await userOneCtx.redisExec.zadd(trackingKeys[2]!, Date.now(), 'message-1')
-    await userOneCtx.redisExec.sadd(trackingKeys[3]!, 'legacy-received')
-    await userOneCtx.redisExec.sadd(trackingKeys[4]!, 'legacy-processed')
-
-    const recoveredQuiz = await endLiveQuiz({ id: quiz.id }, userOneCtx)
-
-    expect(recoveredQuiz?.status).toBe(PublicationStatus.ENDED)
-    expect(recoveredQuiz?.finishedAt).toEqual(failedEnd?.finishedAt)
-    for (const key of [instanceInfoKey, ...trackingKeys]) {
-      const ttl = await userOneCtx.redisExec.ttl(key)
-      expect(ttl).toBeGreaterThan(0)
-      expect(ttl).toBeLessThanOrEqual(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
+      teamsPost.mockRestore()
+      if (originalTeamsWebhookUrl === undefined) {
+        delete process.env.TEAMS_WEBHOOK_URL
+      } else {
+        process.env.TEAMS_WEBHOOK_URL = originalTeamsWebhookUrl
+      }
     }
   })
 })
