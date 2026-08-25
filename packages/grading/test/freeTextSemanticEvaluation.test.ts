@@ -329,6 +329,54 @@ describe('semantic free-text evaluation', () => {
     )
   })
 
+  it('validates one feedback proposal for every configured rubric', () => {
+    const feedbackProposals = validSchema.rubrics.map((rubric) => ({
+      task_bundle_id: 'attempt-1',
+      rubric_id: rubric.id,
+      rubric_name: rubric.name,
+      feedback: 'The response addresses this criterion.',
+      strengths: ['Uses the relevant concept.'],
+      improvements: [],
+      action_items: ['Add a concrete example.'],
+      evidence_ids: [],
+      confidence: 0.9,
+    }))
+
+    expect(
+      validateEvaluateFreeTextResponse({
+        value: { ...validResponse, feedback_proposals: feedbackProposals },
+        taskBundleId: 'attempt-1',
+        rubricSchema: validSchema,
+      })
+    ).toEqual([])
+
+    expect(
+      validateEvaluateFreeTextResponse({
+        value: {
+          ...validResponse,
+          feedback_proposals: [
+            {
+              ...feedbackProposals[0],
+              task_bundle_id: 'another-attempt',
+              rubric_name: 'Wrong rubric name',
+              confidence: 2,
+            },
+            feedbackProposals[0],
+          ],
+        },
+        taskBundleId: 'attempt-1',
+        rubricSchema: validSchema,
+      })
+    ).toEqual(
+      expect.arrayContaining([
+        'feedback proposal 1 task_bundle_id does not match the request',
+        'feedback proposal 1 rubric_name does not match the rubric',
+        'feedback proposal 1 confidence must be between 0 and 1',
+        'feedback proposals must contain every configured rubric exactly once',
+      ])
+    )
+  })
+
   it('rejects mismatched, uncertain, and out-of-range evaluator output', () => {
     const invalidResponse = {
       ...validResponse,

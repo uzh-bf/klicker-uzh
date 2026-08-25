@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util'
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
@@ -1279,9 +1280,10 @@ export const Mutation = builder.mutationType({
                 semanticEvaluation?: unknown
               } | null
             )?.semanticEvaluation
-            const semanticChanged =
-              JSON.stringify(previousSemantic ?? null) !==
-              JSON.stringify(args.options.semanticEvaluation ?? null)
+            const semanticChanged = !isDeepStrictEqual(
+              previousSemantic ?? null,
+              args.options.semanticEvaluation ?? null
+            )
             const catalystEntitled =
               ctx.user.catalystInstitutional || ctx.user.catalystIndividual
             if (semanticChanged && !catalystEntitled) return null

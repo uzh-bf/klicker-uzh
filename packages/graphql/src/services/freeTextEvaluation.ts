@@ -20,6 +20,7 @@ const DEFAULT_DISCLOSURE_VERSION = '2026-08-18'
 // Absolute ceiling for participant free-text answers on semantic elements,
 // independent of the lecturer-configured maxLength.
 const MAX_SEMANTIC_ANSWER_LENGTH = 10_000
+const MAX_PEER_ANSWERS = 20
 const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
 const UUID_PATTERN =
@@ -410,9 +411,14 @@ async function stateFromCycle(
     consent?.decision === DB.SemanticEvaluationConsentDecision.ACCEPTED
   const peerAnswers =
     solutionAuthorized && 'responses' in cycle.elementInstance.results
-      ? Object.values(cycle.elementInstance.results.responses).map(
-          ({ value, count }) => ({ value, count })
-        )
+      ? Object.values(cycle.elementInstance.results.responses)
+          .map(({ value, count }) => ({ value, count }))
+          .sort((left, right) => {
+            return (
+              right.count - left.count || left.value.localeCompare(right.value)
+            )
+          })
+          .slice(0, MAX_PEER_ANSWERS)
       : []
 
   return {
@@ -726,13 +732,17 @@ export async function retryFreeTextEvaluation(
   ) {
     throw new Error('Free-text evaluation cannot be retried')
   }
+  const semanticInstance = await getSemanticInstance(
+    attempt.cycle.elementInstanceId,
+    ctx
+  )
   const consent = await getConsentDecision(
     ctx.user.sub,
     getDisclosureVersion(options),
     ctx
   )
   const unavailableReason = evaluationAvailabilityReason({
-    ownerEntitled: ownerHasCatalyst(attempt.cycle.practiceQuiz),
+    ownerEntitled: ownerHasCatalyst(semanticInstance.practiceQuiz),
     consent: consent?.decision ?? null,
   })
   if (unavailableReason) {
@@ -769,7 +779,11 @@ export async function revealFreeTextSolution(
     },
   })
   if (!cycle) throw new Error('Free-text practice cycle not found')
-  const config = parseSemanticConfig(cycle.elementInstance)
+  const semanticInstance = await getSemanticInstance(
+    cycle.elementInstanceId,
+    ctx
+  )
+  const config = semanticInstance.config
   const currentAttempt = cycle.attempts[0]
   if (
     cycle.status !== DB.FreeTextPracticeCycleStatus.ACTIVE ||
@@ -821,8 +835,8 @@ export async function decideSemanticEvaluationConsent(
   ctx: ContextWithUser
 ) {
   assertParticipant(ctx)
-  if (!disclosureVersion.trim()) {
-    throw new Error('Disclosure version is required')
+  if (disclosureVersion !== getSemanticEvaluationDisclosureVersion()) {
+    throw new Error('Disclosure version is not current')
   }
   return await ctx.prisma.freeTextConsentEvent.create({
     data: {

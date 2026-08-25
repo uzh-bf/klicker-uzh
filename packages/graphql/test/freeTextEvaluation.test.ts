@@ -216,7 +216,10 @@ beforeEach(async () => {
   fixture = await createFixture()
 })
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.unstubAllEnvs()
+})
 
 afterAll(async () => {
   await prisma.course.deleteMany({
@@ -347,6 +350,39 @@ describe('semantic free-text practice state', () => {
         where: { cycleId: recovered.cycleId },
       })
     ).toBe(1)
+  })
+
+  it('rechecks active quiz access before retrying an evaluation', async () => {
+    const failedCtx = participantContext(
+      fixture.participant.id,
+      vi.fn().mockRejectedValue(new Error('offline'))
+    )
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      failedCtx
+    )
+    const unavailable = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'It spreads risk.',
+        answerTime: 4,
+        clientSubmissionId: randomUUID(),
+      },
+      failedCtx,
+      { disclosureVersion: '2026-08-18' }
+    )
+    await prisma.practiceQuiz.update({
+      where: { id: fixture.practiceQuiz.id },
+      data: { status: PublicationStatus.DRAFT },
+    })
+
+    await expect(
+      retryFreeTextEvaluation(
+        { attemptId: unavailable.currentAttempt!.id },
+        participantContext(fixture.participant.id),
+        { disclosureVersion: '2026-08-18' }
+      )
+    ).rejects.toThrow('Published practice quiz instance not found')
   })
 
   it('confirms an accepted exact answer without external processing', async () => {
@@ -488,17 +524,18 @@ describe('semantic free-text practice state', () => {
   it('persists consent decisions as an append-only event history', async () => {
     const ctx = participantContext(fixture.participant.id)
     await decideSemanticEvaluationConsent(
-      { disclosureVersion: 'v1', accepted: true },
+      { disclosureVersion: '2026-08-18', accepted: true },
       ctx
     )
     // A flip on the same version must append, not overwrite: the ledger keeps
     // the demonstrable-consent trail for both decisions.
     await decideSemanticEvaluationConsent(
-      { disclosureVersion: 'v1', accepted: false },
+      { disclosureVersion: '2026-08-18', accepted: false },
       ctx
     )
+    vi.stubEnv('SEMANTIC_EVALUATION_DISCLOSURE_VERSION', '2026-08-19')
     await decideSemanticEvaluationConsent(
-      { disclosureVersion: 'v2', accepted: false },
+      { disclosureVersion: '2026-08-19', accepted: false },
       ctx
     )
 
@@ -509,10 +546,72 @@ describe('semantic free-text practice state', () => {
     expect(
       events.map((event) => [event.disclosureVersion, event.decision])
     ).toEqual([
-      ['v1', SemanticEvaluationConsentDecision.ACCEPTED],
-      ['v1', SemanticEvaluationConsentDecision.DECLINED],
-      ['v2', SemanticEvaluationConsentDecision.DECLINED],
+      ['2026-08-18', SemanticEvaluationConsentDecision.ACCEPTED],
+      ['2026-08-18', SemanticEvaluationConsentDecision.DECLINED],
+      ['2026-08-19', SemanticEvaluationConsentDecision.DECLINED],
     ])
+  })
+
+  it('rejects consent decisions for a stale disclosure version', async () => {
+    await expect(
+      decideSemanticEvaluationConsent(
+        { disclosureVersion: 'stale-version', accepted: true },
+        participantContext(fixture.participant.id)
+      )
+    ).rejects.toThrow('Disclosure version is not current')
+  })
+
+  it('rechecks active course access before revealing a solution', async () => {
+    const ctx = participantContext(fixture.participant.id)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: false },
+      ctx
+    )
+    const active = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'It spreads risk.',
+        answerTime: 4,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+    await prisma.participation.update({
+      where: { id: fixture.participant.participations[0]!.id },
+      data: { isActive: false },
+    })
+
+    await expect(
+      revealFreeTextSolution({ cycleId: active.cycleId }, ctx)
+    ).rejects.toThrow('Participant does not have active access to this course')
+  })
+
+  it('returns at most the most frequent peer answers after authorization', async () => {
+    const responses = Object.fromEntries(
+      Array.from({ length: 25 }, (_, index) => [
+        String(index),
+        { value: `Answer ${String(index).padStart(2, '0')}`, count: index + 1 },
+      ])
+    )
+    await prisma.elementInstance.update({
+      where: { id: fixture.instance.id },
+      data: { results: { responses, total: 325 } },
+    })
+
+    const state = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'Diversification reduces idiosyncratic risk.',
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      participantContext(fixture.participant.id)
+    )
+
+    expect(state.peerAnswers).toHaveLength(20)
+    expect(state.peerAnswers[0]).toEqual({ value: 'Answer 24', count: 25 })
+    expect(state.peerAnswers.at(-1)).toEqual({ value: 'Answer 05', count: 6 })
   })
 
   it('does not expose solution details for an active cycle', async () => {

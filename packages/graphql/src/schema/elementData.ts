@@ -115,17 +115,15 @@ export const FreeTextRestrictions = builder
     }),
   })
 
+function isAuthoringRole(role: DB.UserRole | undefined) {
+  return role === DB.UserRole.USER || role === DB.UserRole.ADMIN
+}
+
 export function semanticEvaluationForViewer(
   options: ElementOptionsFreeTextType,
   role: DB.UserRole | undefined
 ) {
-  return role === DB.UserRole.USER || role === DB.UserRole.ADMIN
-    ? options.semanticEvaluation
-    : null
-}
-
-function isAuthoringRole(role: DB.UserRole | undefined) {
-  return role === DB.UserRole.USER || role === DB.UserRole.ADMIN
+  return isAuthoringRole(role) ? options.semanticEvaluation : null
 }
 
 export function freeTextSolutionsForViewer(

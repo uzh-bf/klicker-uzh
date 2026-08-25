@@ -248,6 +248,64 @@ export function validateEvaluateFreeTextResponse({
     !Array.isArray(value.feedback_proposals)
   ) {
     errors.push('feedback proposals must be an array')
+  } else if (Array.isArray(value.feedback_proposals)) {
+    const proposedRubricIds: string[] = []
+    value.feedback_proposals.forEach((proposal, index) => {
+      const prefix = `feedback proposal ${index + 1}`
+      if (!isRecord(proposal)) {
+        errors.push(`${prefix} must be an object`)
+        return
+      }
+
+      if (proposal.task_bundle_id !== taskBundleId) {
+        errors.push(`${prefix} task_bundle_id does not match the request`)
+      }
+
+      const rubricId = proposal.rubric_id
+      if (!isNonEmptyString(rubricId)) {
+        errors.push(`${prefix} rubric_id is required`)
+      } else {
+        proposedRubricIds.push(rubricId)
+        const configuredRubric = configuredRubricById.get(rubricId)
+        if (!configuredRubric) {
+          errors.push(`${prefix} rubric_id is not configured`)
+        } else if (proposal.rubric_name !== configuredRubric.name) {
+          errors.push(`${prefix} rubric_name does not match the rubric`)
+        }
+      }
+
+      if (!isNonEmptyString(proposal.feedback)) {
+        errors.push(`${prefix} feedback is required`)
+      }
+      for (const [field, fieldValue] of [
+        ['strengths', proposal.strengths],
+        ['improvements', proposal.improvements],
+        ['action_items', proposal.action_items],
+        ['evidence_ids', proposal.evidence_ids],
+      ] as const) {
+        if (!isStringArray(fieldValue)) {
+          errors.push(`${prefix} ${field} must be a string array`)
+        }
+      }
+      if (
+        !isFiniteNumber(proposal.confidence) ||
+        proposal.confidence < 0 ||
+        proposal.confidence > 1
+      ) {
+        errors.push(`${prefix} confidence must be between 0 and 1`)
+      }
+    })
+
+    const containsEveryRubricExactlyOnce =
+      proposedRubricIds.length === schema.rubrics.length &&
+      schema.rubrics.every((rubric) => {
+        return proposedRubricIds.filter((id) => id === rubric.id).length === 1
+      })
+    if (!containsEveryRubricExactlyOnce) {
+      errors.push(
+        'feedback proposals must contain every configured rubric exactly once'
+      )
+    }
   }
 
   return errors
