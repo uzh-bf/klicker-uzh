@@ -2,7 +2,8 @@ name: Final AI review
 
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types:
+      [opened, synchronize, reopened, edited, closed, ready_for_review, converted_to_draft]
   issue_comment:
     types: [created]
 
@@ -53,6 +54,7 @@ jobs:
       issues: read
       pull-requests: read
       statuses: read
+      actions: read
     outputs:
       authorized: ${{ steps.authorize.outputs.authorized }}
       pr_number: ${{ steps.authorize.outputs.pr_number }}
@@ -66,6 +68,8 @@ jobs:
       scope_kind: ${{ steps.authorize.outputs.scope_kind }}
       stack_id: ${{ steps.authorize.outputs.stack_id }}
       stack_position: ${{ steps.authorize.outputs.stack_position }}
+      stack_order_digest: ${{ steps.authorize.outputs.stack_order_digest }}
+      disposition_digest: ${{ steps.authorize.outputs.disposition_digest }}
       background: ${{ steps.authorize.outputs.background }}
     steps:
       - name: Checkout trusted final-review policy
@@ -97,6 +101,7 @@ jobs:
       issues: read
       pull-requests: write
       statuses: write
+      actions: read
     steps:
       - name: Checkout trusted final-review implementation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -123,6 +128,8 @@ jobs:
           SCOPE_KIND: ${{ needs.authorize.outputs.scope_kind }}
           STACK_ID: ${{ needs.authorize.outputs.stack_id }}
           STACK_POSITION: ${{ needs.authorize.outputs.stack_position }}
+          STACK_ORDER_DIGEST: ${{ needs.authorize.outputs.stack_order_digest }}
+          DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -141,6 +148,9 @@ jobs:
               scopeKind: process.env.SCOPE_KIND,
               stackId: process.env.STACK_ID,
               stackPosition: process.env.STACK_POSITION,
+              stackOrderDigest: process.env.STACK_ORDER_DIGEST,
+              dispositionDigest: process.env.DISPOSITION_DIGEST,
+              core,
             })
             core.setOutput('run_review', String(shouldRun))
 
@@ -192,7 +202,7 @@ jobs:
         id: run_review
         if: steps.start.outputs.run_review == 'true'
         env:
-          BACKGROUND: ${{ needs.authorize.outputs.background }}
+          BACKGROUND: ${{ steps.start.outputs.background }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
           REVIEW_FROM: ${{ steps.range.outputs.review_from }}
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
@@ -231,6 +241,8 @@ jobs:
           SCOPE_KIND: ${{ needs.authorize.outputs.scope_kind }}
           STACK_ID: ${{ needs.authorize.outputs.stack_id }}
           STACK_POSITION: ${{ needs.authorize.outputs.stack_position }}
+          STACK_ORDER_DIGEST: ${{ needs.authorize.outputs.stack_order_digest }}
+          DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
         with:
           github-token: ${{ github.token }}
@@ -250,6 +262,8 @@ jobs:
               scopeKind: process.env.SCOPE_KIND,
               stackId: process.env.STACK_ID,
               stackPosition: process.env.STACK_POSITION,
+              stackOrderDigest: process.env.STACK_ORDER_DIGEST,
+              dispositionDigest: process.env.DISPOSITION_DIGEST,
               resultPath: process.env.RESULT_PATH,
             })
             core.info(`Published ${url}`)
@@ -264,6 +278,7 @@ jobs:
           SCOPE_KIND: ${{ needs.authorize.outputs.scope_kind }}
           STACK_ID: ${{ needs.authorize.outputs.stack_id }}
           STACK_POSITION: ${{ needs.authorize.outputs.stack_position }}
+          STACK_ORDER_DIGEST: ${{ needs.authorize.outputs.stack_order_digest }}
           REVIEW_OUTCOME: ${{ steps.run_review.outcome }}
           CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
           PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
@@ -280,6 +295,7 @@ jobs:
               scopeKind: process.env.SCOPE_KIND,
               stackId: process.env.STACK_ID,
               stackPosition: process.env.STACK_POSITION,
+              stackOrderDigest: process.env.STACK_ORDER_DIGEST,
               reviewOutcome: process.env.REVIEW_OUTCOME,
               cleanupOutcome: process.env.CLEANUP_OUTCOME,
               publishOutcome: process.env.PUBLISH_OUTCOME,

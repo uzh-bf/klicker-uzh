@@ -61,7 +61,10 @@ test('authorizes and starts only the immutable ready PR range', async () => {
       sha: baseSha,
       repo: { full_name: 'uzh-bf/klicker-uzh' },
     },
-    head: { sha: headSha },
+    head: {
+      sha: headSha,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
   }
   const statuses = []
   let combinedStatuses = []
@@ -127,6 +130,8 @@ test('authorizes and starts only the immutable ready PR range', async () => {
     scopeKind: outputs.get('scope_kind'),
     stackId: outputs.get('stack_id'),
     stackPosition: outputs.get('stack_position'),
+    stackOrderDigest: outputs.get('stack_order_digest'),
+    dispositionDigest: outputs.get('disposition_digest'),
   }
 
   assert.equal(
@@ -226,6 +231,22 @@ function completeReviewResult(comments = []) {
   }
 }
 
+function completeReviewMetadata(headSha = 'a'.repeat(40), overrides = {}) {
+  return {
+    baseRef: 'v3',
+    baseRepo: 'uzh-bf/klicker-uzh',
+    baseSha: 'b'.repeat(40),
+    backgroundDigest: '1'.repeat(64),
+    headRef: 'rs/test-review',
+    headRepo: 'uzh-bf/klicker-uzh',
+    mode: 'full',
+    rulesDigest: '2'.repeat(64),
+    workflowRunId: 123,
+    ...overrides,
+    headSha,
+  }
+}
+
 function reviewContext() {
   return {
     eventName: 'issue_comment',
@@ -250,6 +271,8 @@ function reviewGithub({
   permission = 'write',
   rules = '{"rules":[]}',
   stackResponse,
+  workflowRun = null,
+  pullsByNumber = {},
 }) {
   const reviewsEndpoint = {}
   const commentsEndpoint = {}
@@ -261,11 +284,14 @@ function reviewGithub({
     statuses,
     permission,
     rules,
+    workflowRun,
   }
   const github = {
     rest: {
       pulls: {
-        get: async () => ({ data: state.pull }),
+        get: async ({ pull_number }) => ({
+          data: pullsByNumber[pull_number] ?? state.pull,
+        }),
         listReviews: reviewsEndpoint,
       },
       issues: { listComments: commentsEndpoint },
@@ -284,6 +310,9 @@ function reviewGithub({
             content: Buffer.from(state.rules).toString('base64'),
           },
         }),
+      },
+      actions: {
+        getWorkflowRun: async () => ({ data: state.workflowRun }),
       },
     },
     paginate: async (endpoint) =>
@@ -311,7 +340,12 @@ test('renders findings without making finding count a failure', () => {
     },
   ])
 
-  const [report] = renderFinalReviewChunks(result, 'a'.repeat(40))
+  const metadataInput = completeReviewMetadata()
+  const [report] = renderFinalReviewChunks(
+    result,
+    'a'.repeat(40),
+    metadataInput
+  )
   assert.match(report, /Gemini 3\.7 Flash \(high reasoning\)/)
   assert.match(report, /src\/example\.ts:10-11/)
   assert.match(report, /Confidence: 75\/100/)
@@ -320,10 +354,34 @@ test('renders findings without making finding count a failure', () => {
   assert.equal(metadata.schema_version, FINAL_REVIEW_SCHEMA)
   assert.equal(metadata.finding_ids.length, 1)
   assert.match(report, new RegExp(metadata.finding_ids[0]))
-  assert.equal(report, renderFinalReviewChunks(result, 'a'.repeat(40))[0])
+  const tampered = report.replace(
+    /"finding_ids":\["fr-[0-9a-f]{16}"\]/u,
+    '"finding_ids":["fr-0000000000000000"]'
+  )
+  assert.equal(parseReviewMetadata(tampered), null)
+  assert.equal(
+    report,
+    renderFinalReviewChunks(result, 'a'.repeat(40), metadataInput)[0]
+  )
 })
 
 test('authorizes a verified native stack member', async () => {
+  const parentPull = {
+    number: 41,
+    state: 'open',
+    draft: false,
+    title: 'Parent change',
+    base: {
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/parent-change',
+      sha: 'c'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
   const pull = {
     number: 42,
     state: 'open',
@@ -331,7 +389,7 @@ test('authorizes a verified native stack member', async () => {
     title: 'Stacked change',
     base: {
       ref: 'rs/parent-change',
-      sha: 'b'.repeat(40),
+      sha: 'c'.repeat(40),
       repo: { full_name: 'uzh-bf/klicker-uzh' },
     },
     head: {
@@ -347,16 +405,20 @@ test('authorizes a verified native stack member', async () => {
         id: 'stack-42',
         pull_requests: [
           {
-            number: 42,
-            head_sha: pull.head.sha,
-            base_repo: 'uzh-bf/klicker-uzh',
+            number: 41,
             state: 'open',
             draft: false,
-            position: 1,
+          },
+          {
+            number: 42,
+            state: 'open',
+            draft: false,
           },
         ],
       },
     ],
+    comparison: { status: 'ahead', files: [] },
+    pullsByNumber: { 41: parentPull },
   })
   const outputs = new Map()
   const core = {
@@ -428,6 +490,8 @@ test('selects incremental attestation only for bounded repaired changes', async 
     backgroundDigest: rootPlan.backgroundDigest,
     scopeKind: rootPlan.scopeKind,
     stackId: rootPlan.stackId,
+    stackOrderDigest: rootPlan.stackOrderDigest,
+    workflowRunId: 123,
   })
   const rootMetadata = parseReviewMetadata(rootBody)
   const disposition = `<!-- final-ai-disposition/v1 ${JSON.stringify({
@@ -438,6 +502,7 @@ test('selects incremental attestation only for bounded repaired changes', async 
       {
         finding_id: rootMetadata.finding_ids[0],
         state: 'fixed',
+        reference: `commit:${rootHead}`,
       },
     ],
   })} -->`
@@ -448,7 +513,10 @@ test('selects incremental attestation only for bounded repaired changes', async 
   }
   state.reviews = [
     {
+      id: 501,
       body: rootBody,
+      commit_id: rootHead,
+      state: 'COMMENTED',
       submitted_at: '2026-08-25T00:00:00Z',
       user: { login: 'github-actions[bot]' },
     },
@@ -458,6 +526,22 @@ test('selects incremental attestation only for bounded repaired changes', async 
       body: disposition,
       created_at: '2026-08-25T01:00:00Z',
       user: { login: 'reviewer' },
+    },
+  ]
+  state.workflowRun = {
+    id: 123,
+    path: '.github/workflows/check-ocr-final-review.yml',
+    event: 'issue_comment',
+    head_sha: rootHead,
+    conclusion: 'success',
+    repository: { full_name: 'uzh-bf/klicker-uzh' },
+  }
+  state.statuses = [
+    {
+      context: 'final-ai-review',
+      state: 'success',
+      target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+      updated_at: '2026-08-25T00:00:00Z',
     },
   ]
   state.comparison = {
@@ -494,6 +578,28 @@ test('selects incremental attestation only for bounded repaired changes', async 
     pull: state.pull,
   })
   assert.equal(materialChange.mode, 'full')
+
+  state.comparison = {
+    status: 'ahead',
+    files: [{ filename: 'tests/example.test.ts', additions: 4, deletions: 2 }],
+  }
+  const relatedCompanion = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(relatedCompanion.mode, 'incremental')
+
+  state.comparison = {
+    status: 'ahead',
+    files: [{ filename: 'docs/unrelated.md', additions: 1, deletions: 0 }],
+  }
+  const unrelatedCompanion = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(unrelatedCompanion.mode, 'full')
 
   state.comparison = {
     status: 'ahead',
@@ -569,8 +675,16 @@ test('selects incremental attestation only for bounded repaired changes', async 
         review_id: rootMetadata.review_id,
         root_head: rootHead,
         entries: [
-          { finding_id: rootMetadata.finding_ids[0], state: 'fixed' },
-          { finding_id: rootMetadata.finding_ids[0], state: 'fixed' },
+          {
+            finding_id: rootMetadata.finding_ids[0],
+            state: 'fixed',
+            reference: `commit:${rootHead}`,
+          },
+          {
+            finding_id: rootMetadata.finding_ids[0],
+            state: 'fixed',
+            reference: `commit:${rootHead}`,
+          },
         ],
       })} -->`,
       user: { login: 'reviewer' },
@@ -623,6 +737,10 @@ test('rejects incomplete or wrong-model OCR results', () => {
       renderFinalReviewChunks(
         {
           ...completeReviewResult(),
+          summary: {
+            ...completeReviewResult().summary,
+            comments: 1,
+          },
           comments: [
             {
               path: 'src/example.ts',
@@ -653,6 +771,55 @@ test('rejects incomplete or wrong-model OCR results', () => {
       ),
     /unexpected status: partial/
   )
+  assert.throws(
+    () =>
+      renderFinalReviewChunks(
+        {
+          ...completeReviewResult(),
+          warnings: [{ code: 'partial-coverage' }],
+        },
+        'a'.repeat(40)
+      ),
+    /coverage warnings/
+  )
+})
+
+test('rejects malformed native stack membership instead of inferring topology', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Malformed stack payload',
+    base: {
+      ref: 'rs/parent-change',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/child-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github } = reviewGithub({
+    pull,
+    stackResponse: [{ id: 'stack-42', pull_requests: [{ number: 42 }] }],
+  })
+  const outputs = new Map()
+  const core = {
+    notice: () => {},
+    setOutput: (name, value) => outputs.set(name, value),
+  }
+
+  assert.equal(
+    await authorizeFinalReview({
+      github,
+      context: reviewContext(),
+      core,
+    }),
+    false
+  )
+  assert.equal(outputs.get('authorized'), 'false')
 })
 
 test('rejects a report that would require partial publication', () => {
@@ -661,6 +828,10 @@ test('rejects a report that would require partial publication', () => {
       renderFinalReviewChunks(
         {
           ...completeReviewResult(),
+          summary: {
+            ...completeReviewResult().summary,
+            comments: 1,
+          },
           comments: [
             {
               path: 'src/example.ts',

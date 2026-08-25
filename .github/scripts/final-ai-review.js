@@ -9,6 +9,8 @@ const FINAL_REVIEW_MODEL = 'google/gemini-3.7-flash'
 const FINAL_REVIEW_BOT = 'github-actions[bot]'
 const FINAL_REVIEW_SCHEMA = 'final-ai-review/v2'
 const DISPOSITION_SCHEMA = 'final-ai-disposition/v1'
+const FINAL_REVIEW_WORKFLOW_PATH =
+  '.github/workflows/check-ocr-final-review.yml'
 const FINAL_REVIEW_RULES_PATH =
   '.github/open-code-review/final-review-rules.json'
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
@@ -239,8 +241,8 @@ function validatePromotionContract(input) {
   }
 }
 
-function workflowRunUrl(context) {
-  return `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+function workflowRunUrl(context, runId = context.runId) {
+  return `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`
 }
 
 async function setCommitStatus({ github, context, sha, state, description }) {
@@ -289,31 +291,41 @@ function isEligibleDefaultPull({ pull, context, baseSha, headSha }) {
     !pull.draft &&
     pull.base.ref === context.payload.repository.default_branch &&
     pull.base.repo.full_name === repository &&
+    pull.head.repo?.full_name === repository &&
     (!baseSha || pull.base.sha === baseSha) &&
     (!headSha || pull.head.sha === headSha)
   )
 }
 
-function stackPullRequests(stack) {
-  const records =
-    stack.pull_requests ?? stack.pullRequests ?? stack.items ?? stack.members
-  if (Array.isArray(records)) return records
-  if (records && Array.isArray(records.nodes)) return records.nodes
-  return []
+function stackRecordIsValid(record) {
+  return (
+    record &&
+    Number.isSafeInteger(record.number) &&
+    record.number > 0 &&
+    typeof record.state === 'string' &&
+    typeof record.draft === 'boolean'
+  )
 }
 
-function stackPullNumber(record) {
-  const number =
-    record.number ??
-    record.pull_number ??
-    record.pullRequest?.number ??
-    record.pull_request?.number
-  return Number.isSafeInteger(Number(number)) ? Number(number) : 0
-}
-
-function stackIdentifier(stack) {
-  const value = stack.id ?? stack.stack_id ?? stack.name
-  return value == null ? '' : String(value)
+async function compareGitRange({ github, context, baseSha, headSha }) {
+  const params = {
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+  }
+  if (typeof github.rest.repos.compareCommitsWithBasehead === 'function') {
+    return github.rest.repos.compareCommitsWithBasehead({
+      ...params,
+      basehead: `${baseSha}...${headSha}`,
+    })
+  }
+  if (typeof github.rest.repos.compareCommits === 'function') {
+    return github.rest.repos.compareCommits({
+      ...params,
+      base: baseSha,
+      head: headSha,
+    })
+  }
+  return null
 }
 
 async function getNativeStackMembership({ github, context, pull }) {
@@ -324,41 +336,93 @@ async function getNativeStackMembership({ github, context, pull }) {
     repo: context.repo.repo,
     headers: { accept: 'application/vnd.github+json' },
   })
-  const stacks = Array.isArray(response.data)
-    ? response.data
-    : Array.isArray(response.data?.stacks)
-      ? response.data.stacks
-      : response.data?.pull_requests
-        ? [response.data]
-        : []
+  if (!Array.isArray(response.data)) return null
   const repository = repositoryName(context)
 
-  for (const stack of stacks) {
-    const member = stackPullRequests(stack).find(
-      (record) => stackPullNumber(record) === pull.number
+  for (const stack of response.data) {
+    if (
+      !stack ||
+      (typeof stack.id === 'string' && !stack.id) ||
+      (typeof stack.id !== 'string' && !Number.isSafeInteger(stack.id)) ||
+      !Array.isArray(stack.pull_requests) ||
+      stack.pull_requests.length === 0 ||
+      !stack.pull_requests.every(stackRecordIsValid)
+    ) {
+      return null
+    }
+
+    const memberIndex = stack.pull_requests.findIndex(
+      (record) => record.number === pull.number
     )
+    const member =
+      memberIndex >= 0 ? stack.pull_requests[memberIndex] : undefined
     if (!member) continue
 
-    const memberHeadSha = member.head_sha ?? member.headSha
-    const memberBaseRepo =
-      member.base_repo ?? member.baseRepo ?? member.base?.repo?.full_name
-    const memberState = member.state
     if (
-      (memberHeadSha && memberHeadSha !== pull.head.sha) ||
-      (memberBaseRepo && memberBaseRepo !== repository) ||
-      (memberState && memberState !== 'open') ||
-      member.draft === true ||
+      member.state !== pull.state ||
+      member.draft !== pull.draft ||
       pull.head.repo?.full_name !== repository
     ) {
       return null
     }
 
-    const id = stackIdentifier(stack)
-    if (!id) return null
+    const id = String(stack.id)
+    const members = []
+    for (const record of stack.pull_requests) {
+      const memberPull =
+        record.number === pull.number
+          ? pull
+          : await getPull(github, context, record.number)
+      if (
+        memberPull.state !== 'open' ||
+        memberPull.draft ||
+        memberPull.base.repo?.full_name !== repository ||
+        memberPull.head.repo?.full_name !== repository ||
+        record.state !== memberPull.state ||
+        record.draft !== memberPull.draft
+      ) {
+        return null
+      }
+      members.push(memberPull)
+    }
+
+    if (
+      members[0].base.ref !== context.payload.repository.default_branch ||
+      members[0].base.repo.full_name !== repository
+    ) {
+      return null
+    }
+    for (let index = 1; index < members.length; index += 1) {
+      const parent = members[index - 1]
+      const memberPull = members[index]
+      if (
+        memberPull.base.ref !== parent.head.ref ||
+        memberPull.base.sha !== parent.head.sha ||
+        memberPull.base.repo.full_name !== repository
+      ) {
+        return null
+      }
+    }
+
+    for (let index = 0; index < members.length; index += 1) {
+      const baseSha =
+        index === 0 ? members[0].base.sha : members[index - 1].head.sha
+      const comparison = await compareGitRange({
+        github,
+        context,
+        baseSha,
+        headSha: members[index].head.sha,
+      })
+      if (comparison?.data.status !== 'ahead') return null
+    }
+
     return {
       id,
-      isTop: member.is_top === true || member.isTop === true,
-      position: member.position ?? member.index ?? null,
+      isTop: memberIndex === members.length - 1,
+      position: memberIndex,
+      orderDigest: sha256(
+        JSON.stringify(stack.pull_requests.map((record) => record.number))
+      ),
     }
   }
 
@@ -378,6 +442,7 @@ async function resolvePullEligibility({
       scopeKind: 'default',
       stackId: '',
       stackPosition: '',
+      stackOrderDigest: '',
     }
   }
 
@@ -388,7 +453,13 @@ async function resolvePullEligibility({
     (headSha && pull.head.sha !== headSha) ||
     pull.base.repo.full_name !== repositoryName(context)
   ) {
-    return { eligible: false, scopeKind: '', stackId: '', stackPosition: '' }
+    return {
+      eligible: false,
+      scopeKind: '',
+      stackId: '',
+      stackPosition: '',
+      stackOrderDigest: '',
+    }
   }
 
   const stack = await getNativeStackMembership({ github, context, pull })
@@ -400,6 +471,7 @@ async function resolvePullEligibility({
     scopeKind: 'native-stack',
     stackId: stack.id,
     stackPosition: stack.position == null ? '' : String(stack.position),
+    stackOrderDigest: stack.orderDigest,
   }
 }
 
@@ -423,9 +495,18 @@ async function getLatestFinalReviewStatus(github, context, headSha) {
     )[0]?.status
 }
 
-async function hasSuccessfulFinalReview(github, context, headSha) {
+async function hasSuccessfulFinalReview(
+  github,
+  context,
+  headSha,
+  workflowRunId = null
+) {
   const status = await getLatestFinalReviewStatus(github, context, headSha)
-  return status?.state === 'success'
+  return (
+    status?.state === 'success' &&
+    (workflowRunId == null ||
+      status.target_url === workflowRunUrl(context, workflowRunId))
+  )
 }
 
 async function getFileText(github, context, filePath, ref) {
@@ -533,10 +614,77 @@ function parseReviewMetadata(body) {
     const metadata = JSON.parse(match[1])
     if (
       metadata.schema_version !== FINAL_REVIEW_SCHEMA ||
-      typeof metadata.review_id !== 'string' ||
+      !/^frv-[0-9a-f]{24}$/.test(metadata.review_id ?? '') ||
       !['full', 'incremental'].includes(metadata.mode) ||
+      !/^[0-9a-f]{40}$/.test(metadata.base_sha ?? '') ||
+      !/^[0-9a-f]{40}$/.test(metadata.head_sha ?? '') ||
+      !/^[0-9a-f]{40}$/.test(metadata.root_head ?? '') ||
+      !/^[0-9a-f]{64}$/.test(metadata.rules_digest ?? '') ||
+      !/^[0-9a-f]{64}$/.test(metadata.background_digest ?? '') ||
+      metadata.workflow_path !== FINAL_REVIEW_WORKFLOW_PATH ||
+      !Number.isSafeInteger(metadata.workflow_run_id) ||
+      metadata.workflow_run_id <= 0 ||
       !Array.isArray(metadata.findings) ||
       !Array.isArray(metadata.finding_ids)
+    ) {
+      return null
+    }
+
+    const findingIds = new Set()
+    for (const finding of metadata.findings) {
+      if (
+        !finding ||
+        typeof finding !== 'object' ||
+        !/^fr-[0-9a-f]{16}$/.test(finding.id ?? '') ||
+        !/^([0-9a-f]{64})$/.test(finding.content_digest ?? '') ||
+        typeof finding.path !== 'string' ||
+        !finding.path ||
+        path.isAbsolute(finding.path) ||
+        finding.path.split('/').includes('..') ||
+        !Number.isSafeInteger(finding.start_line) ||
+        !Number.isSafeInteger(finding.end_line) ||
+        finding.start_line < 1 ||
+        finding.end_line < finding.start_line ||
+        !FINDING_CATEGORIES.has(finding.category) ||
+        !FINDING_SEVERITIES.has(finding.severity) ||
+        findingIds.has(finding.id)
+      ) {
+        return null
+      }
+      const expectedId = `fr-${sha256(
+        JSON.stringify({
+          category: finding.category,
+          content_digest: finding.content_digest,
+          end_line: finding.end_line,
+          path: finding.path,
+          severity: finding.severity,
+          start_line: finding.start_line,
+        })
+      ).slice(0, 16)}`
+      if (expectedId !== finding.id) return null
+      findingIds.add(finding.id)
+    }
+    if (
+      metadata.finding_ids.length !== metadata.findings.length ||
+      metadata.finding_ids.some(
+        (findingId, index) => findingId !== metadata.findings[index].id
+      ) ||
+      metadata.finding_ids.some((findingId) => !findingIds.has(findingId))
+    ) {
+      return null
+    }
+    if (
+      !metadata.usage ||
+      metadata.coverage_state !== 'complete' ||
+      !Number.isSafeInteger(metadata.usage.files_reviewed) ||
+      !Number.isSafeInteger(metadata.usage.comments) ||
+      !Number.isSafeInteger(metadata.usage.total_tokens) ||
+      !Number.isSafeInteger(metadata.usage.input_tokens) ||
+      !Number.isSafeInteger(metadata.usage.output_tokens) ||
+      typeof metadata.usage.elapsed !== 'string' ||
+      Object.values(metadata.usage).some(
+        (value) => typeof value === 'number' && value < 0
+      )
     ) {
       return null
     }
@@ -598,13 +746,19 @@ async function listReviewArtifacts({ github, context, pull }) {
 
   return [
     ...reviews.map((review) => ({
+      kind: 'review',
+      id: review.id,
       body: review.body ?? '',
+      commit_id: review.commit_id,
+      state: review.state,
       created_at: review.created_at,
       submitted_at: review.submitted_at,
       updated_at: review.updated_at,
       user: review.user,
     })),
     ...comments.map((comment) => ({
+      kind: 'comment',
+      id: comment.id,
       body: comment.body ?? '',
       created_at: comment.created_at,
       submitted_at: comment.created_at,
@@ -627,18 +781,45 @@ async function latestFullReview({ github, context, pull }) {
         /^[0-9a-f]{40}$/.test(metadata.head_sha ?? '') &&
         metadata.model === FINAL_REVIEW_MODEL
     )
-    .filter(({ artifact }) => artifact.user?.login === FINAL_REVIEW_BOT)
+    .filter(
+      ({ artifact, metadata }) =>
+        artifact.kind === 'review' &&
+        artifact.user?.login === FINAL_REVIEW_BOT &&
+        artifact.state === 'COMMENTED' &&
+        artifact.commit_id === metadata.head_sha
+    )
     .sort(
       (left, right) =>
         artifactTimestamp(right.artifact) - artifactTimestamp(left.artifact)
     )
 
   for (const candidate of candidates) {
+    const run =
+      typeof github.rest.actions?.getWorkflowRun === 'function'
+        ? await github.rest.actions.getWorkflowRun({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            run_id: candidate.metadata.workflow_run_id,
+          })
+        : null
+    const workflow = run?.data
+    if (
+      !workflow ||
+      workflow.id !== candidate.metadata.workflow_run_id ||
+      workflow.path !== FINAL_REVIEW_WORKFLOW_PATH ||
+      workflow.event !== 'issue_comment' ||
+      workflow.head_sha !== candidate.metadata.head_sha ||
+      workflow.conclusion !== 'success' ||
+      workflow.repository?.full_name !== repositoryName(context)
+    ) {
+      continue
+    }
     if (
       await hasSuccessfulFinalReview(
         github,
         context,
-        candidate.metadata.head_sha
+        candidate.metadata.head_sha,
+        candidate.metadata.workflow_run_id
       )
     ) {
       return candidate
@@ -668,7 +849,7 @@ function validateDispositionRecord(record, expectedFindingIds) {
       !expected.has(findingId) ||
       seen.has(findingId) ||
       !DISPOSITION_STATES.has(state) ||
-      (state === 'follow-up' && !reference)
+      !reference
     ) {
       return null
     }
@@ -676,7 +857,15 @@ function validateDispositionRecord(record, expectedFindingIds) {
     entries.push({ finding_id: findingId, reference, state })
   }
   if (seen.size !== expected.size) return null
-  return { entries, review_id: record.review_id, root_head: record.root_head }
+  const orderedEntries = expectedFindingIds.map((findingId) =>
+    entries.find((entry) => entry.finding_id === findingId)
+  )
+  return {
+    entries: orderedEntries,
+    disposition_digest: sha256(JSON.stringify(orderedEntries)),
+    review_id: record.review_id,
+    root_head: record.root_head,
+  }
 }
 
 async function latestTrustedDisposition({ github, context, pull, rootReview }) {
@@ -684,6 +873,7 @@ async function latestTrustedDisposition({ github, context, pull, rootReview }) {
   if (expectedFindingIds.length === 0) {
     return {
       entries: [],
+      disposition_digest: sha256(JSON.stringify([])),
       review_id: rootReview.metadata.review_id,
       root_head: rootReview.metadata.head_sha,
     }
@@ -738,6 +928,27 @@ function isGeneratedPath(filePath) {
   )
 }
 
+function companionStem(filePath) {
+  return path.posix
+    .basename(filePath)
+    .replace(/\.(test|spec|generated|gen)(?=\.)/gi, '')
+    .replace(/\.[^.]+$/u, '')
+}
+
+function isRelatedCompanionPath(filePath, rootFindingPaths) {
+  if (
+    !isTestPath(filePath) &&
+    !isDocumentationPath(filePath) &&
+    !isGeneratedPath(filePath)
+  ) {
+    return false
+  }
+  const stem = companionStem(filePath)
+  return [...rootFindingPaths].some(
+    (rootPath) => companionStem(rootPath) === stem
+  )
+}
+
 function requiresColdIncrementalReview(filePath) {
   return (
     /^\.github\/(workflows|actions)\//i.test(filePath) ||
@@ -757,19 +968,18 @@ function isAllowedIncrementalFile(file, rootFindingPaths) {
   if (previousPath && previousPath !== filePath) return false
   return (
     rootFindingPaths.has(filePath) ||
-    isTestPath(filePath) ||
-    isDocumentationPath(filePath) ||
-    isGeneratedPath(filePath)
+    isRelatedCompanionPath(filePath, rootFindingPaths)
   )
 }
 
 async function compareIncrementalRange({ github, context, rootHead, headSha }) {
-  const response = await github.rest.repos.compareCommits({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    base: rootHead,
-    head: headSha,
+  const response = await compareGitRange({
+    github,
+    context,
+    baseSha: rootHead,
+    headSha,
   })
+  if (!response) return null
   const comparison = response.data
   if (!['ahead', 'identical'].includes(comparison.status)) return null
   const files = comparison.files
@@ -795,7 +1005,10 @@ function buildIncrementalBackground({
     )
     .join(', ')
   const states = (disposition?.entries ?? [])
-    .map((entry) => `${entry.finding_id}=${entry.state}`)
+    .map(
+      (entry) =>
+        `${entry.finding_id}=${entry.state}(${entry.reference || 'no reference'})`
+    )
     .join(', ')
   return [
     baseBackground,
@@ -818,7 +1031,9 @@ function planMatches(plan, expected) {
     plan.backgroundDigest === expected.backgroundDigest &&
     plan.scopeKind === expected.scopeKind &&
     plan.stackId === expected.stackId &&
-    plan.stackPosition === expected.stackPosition
+    plan.stackPosition === expected.stackPosition &&
+    plan.stackOrderDigest === expected.stackOrderDigest &&
+    plan.dispositionDigest === expected.dispositionDigest
   )
 }
 
@@ -836,23 +1051,27 @@ async function buildReviewPlan({ github, context, pull }) {
       scopeKind: '',
       stackId: '',
       stackPosition: '',
+      stackOrderDigest: '',
+      dispositionDigest: '',
     }
   }
 
   const baseBackground = buildReviewBackground(pull.title)
   const rulesDigest = await getReviewRulesDigest({ github, context })
-  const backgroundDigest = sha256(baseBackground)
+  const baseBackgroundDigest = sha256(baseBackground)
   const fullPlan = {
     eligible: true,
     mode: 'full',
     rootHead: pull.head.sha,
     rootReviewId: '',
     rulesDigest,
-    backgroundDigest,
+    backgroundDigest: baseBackgroundDigest,
     background: baseBackground,
     scopeKind: eligibility.scopeKind,
     stackId: eligibility.stackId,
     stackPosition: eligibility.stackPosition,
+    stackOrderDigest: eligibility.stackOrderDigest,
+    dispositionDigest: '',
   }
 
   const rootReview = await latestFullReview({ github, context, pull })
@@ -866,11 +1085,12 @@ async function buildReviewPlan({ github, context, pull }) {
     root.head_ref !== pull.head.ref ||
     root.head_repo !== pull.head.repo?.full_name ||
     root.rules_digest !== rulesDigest ||
-    root.background_digest !== backgroundDigest ||
+    root.background_digest !== baseBackgroundDigest ||
     root.model !== FINAL_REVIEW_MODEL ||
     root.scope_kind !== eligibility.scopeKind ||
     root.stack_id !== eligibility.stackId ||
-    root.stack_position !== eligibility.stackPosition
+    root.stack_position !== eligibility.stackPosition ||
+    root.stack_order_digest !== eligibility.stackOrderDigest
   ) {
     return fullPlan
   }
@@ -915,11 +1135,15 @@ async function buildReviewPlan({ github, context, pull }) {
     rootHead: root.head_sha,
     rootReviewId: root.review_id,
     dispositionIds: disposition?.entries.map((entry) => entry.finding_id) ?? [],
-    background: buildIncrementalBackground({
-      baseBackground,
-      rootReview,
-      disposition,
-    }),
+    dispositionDigest: disposition?.disposition_digest ?? '',
+    ...(() => {
+      const background = buildIncrementalBackground({
+        baseBackground,
+        rootReview,
+        disposition,
+      })
+      return { background, backgroundDigest: sha256(background) }
+    })(),
   }
 }
 
@@ -928,7 +1152,10 @@ async function initializeFinalReview({ github, context, core, sourceBranch }) {
   let state = 'pending'
   let description = 'Manual Gemini final review required for this head'
 
-  if (isPromotionCandidate(pull.head.ref)) {
+  if (pull.state !== 'open') {
+    state = 'error'
+    description = 'Final review is unavailable for a closed pull request'
+  } else if (isPromotionCandidate(pull.head.ref)) {
     try {
       const promotion = await inspectPromotion({
         github,
@@ -1032,6 +1259,8 @@ async function authorizeFinalReview({ github, context, core }) {
   core.setOutput('scope_kind', plan.scopeKind)
   core.setOutput('stack_id', plan.stackId)
   core.setOutput('stack_position', plan.stackPosition)
+  core.setOutput('stack_order_digest', plan.stackOrderDigest)
+  core.setOutput('disposition_digest', plan.dispositionDigest)
   core.setOutput('background', plan.background)
   return true
 }
@@ -1050,6 +1279,9 @@ async function startFinalReview({
   scopeKind,
   stackId,
   stackPosition,
+  stackOrderDigest,
+  dispositionDigest,
+  core,
 }) {
   const pull = await getPull(github, context, prNumber)
   const plan = await buildReviewPlan({ github, context, pull })
@@ -1063,6 +1295,8 @@ async function startFinalReview({
       scopeKind,
       stackId,
       stackPosition,
+      stackOrderDigest,
+      dispositionDigest,
     }) ||
     pull.base.sha !== baseSha ||
     pull.head.sha !== headSha
@@ -1078,6 +1312,8 @@ async function startFinalReview({
     state: 'pending',
     description: 'Gemini final review is running for this head',
   })
+  core?.setOutput('background', plan.background)
+  core?.setOutput('disposition_digest', plan.dispositionDigest)
   return true
 }
 
@@ -1147,10 +1383,11 @@ function validateFinding(comment, index) {
 
 function buildFindingMetadata(comment, index) {
   const finding = validateFinding(comment, index)
+  const contentDigest = sha256(finding.content)
   const id = `fr-${sha256(
     JSON.stringify({
       category: finding.category,
-      content: finding.content,
+      content_digest: contentDigest,
       end_line: finding.end,
       path: finding.filePath,
       severity: finding.severity,
@@ -1159,6 +1396,7 @@ function buildFindingMetadata(comment, index) {
   ).slice(0, 16)}`
   return {
     category: finding.category,
+    content_digest: contentDigest,
     end_line: finding.end,
     id,
     path: finding.filePath,
@@ -1200,6 +1438,37 @@ function findingBlock(
   return sections.join('\n')
 }
 
+function validateReviewSummary(summary, commentCount) {
+  const counters = [
+    'files_reviewed',
+    'comments',
+    'total_tokens',
+    'input_tokens',
+    'output_tokens',
+  ]
+  if (
+    typeof summary.elapsed !== 'string' ||
+    !summary.elapsed.trim() ||
+    counters.some(
+      (key) => !Number.isSafeInteger(summary[key]) || summary[key] < 0
+    ) ||
+    summary.comments !== commentCount
+  ) {
+    throw new Error('OCR result has incomplete review usage counters')
+  }
+  if (summary.files_reviewed < 1) {
+    throw new Error('OCR result reviewed no files')
+  }
+  return {
+    comments: summary.comments,
+    elapsed: summary.elapsed,
+    files_reviewed: summary.files_reviewed,
+    input_tokens: summary.input_tokens,
+    output_tokens: summary.output_tokens,
+    total_tokens: summary.total_tokens,
+  }
+}
+
 function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
   if (result.status !== 'complete') {
     throw new Error(`OCR returned unexpected status: ${result.status}`)
@@ -1222,9 +1491,17 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
   if (!Array.isArray(result.comments)) {
     throw new Error('OCR result has no comments array')
   }
+  if (!Array.isArray(result.warnings)) {
+    if (result.warnings != null) {
+      throw new Error('OCR result has an invalid warnings array')
+    }
+  } else if (result.warnings.length > 0) {
+    throw new Error('OCR result has coverage warnings; rerun the review')
+  }
   if (!/^[0-9a-f]{40}$/.test(headSha)) {
     throw new Error('Final review head is not a full commit SHA')
   }
+  const usage = validateReviewSummary(result.summary, result.comments.length)
 
   const mode = reviewMetadata.mode ?? 'full'
   if (mode !== 'full' && mode !== 'incremental') {
@@ -1258,6 +1535,7 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
     base_ref: reviewMetadata.baseRef ?? '',
     base_repo: reviewMetadata.baseRepo ?? '',
     base_sha: reviewMetadata.baseSha ?? '',
+    coverage_state: 'complete',
     disposition_ids: reviewMetadata.dispositionIds ?? [],
     finding_ids: findings.map((finding) => finding.id),
     findings,
@@ -1273,7 +1551,11 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
     schema_version: FINAL_REVIEW_SCHEMA,
     scope_kind: reviewMetadata.scopeKind ?? 'default',
     stack_id: reviewMetadata.stackId ?? '',
+    stack_order_digest: reviewMetadata.stackOrderDigest ?? '',
     stack_position: reviewMetadata.stackPosition ?? '',
+    usage,
+    workflow_path: FINAL_REVIEW_WORKFLOW_PATH,
+    workflow_run_id: reviewMetadata.workflowRunId ?? 0,
   })} -->`
 
   const marker = `<!-- final-ai-review head=${headSha} model=${FINAL_REVIEW_MODEL} -->`
@@ -1285,28 +1567,11 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
     `Reviewed commit \`${headSha.slice(0, 12)}\`. This is a single diff-led operational review, not a full production-readiness audit.`,
     '',
   ].join('\n')
-  const warnings = (result.warnings ?? [])
-    .map(
-      (warning) => warning.message ?? warning.code ?? JSON.stringify(warning)
-    )
-    .filter(Boolean)
-
   const blocks = result.comments.map((comment, index) =>
     findingBlock(comment, index, findings[index])
   )
   if (blocks.length === 0) {
     blocks.push('No actionable findings were generated.')
-  }
-  if (warnings.length > 0) {
-    blocks.push(
-      [
-        '### Coverage warnings',
-        '',
-        ...warnings.map(
-          (warning, index) => `${index + 1}.\n\n${fencedBlock(warning)}`
-        ),
-      ].join('\n')
-    )
   }
 
   let report = header
@@ -1334,6 +1599,8 @@ async function publishFinalReview({
   scopeKind,
   stackId,
   stackPosition,
+  stackOrderDigest,
+  dispositionDigest,
   resultPath,
 }) {
   const pull = await getPull(github, context, prNumber)
@@ -1348,6 +1615,8 @@ async function publishFinalReview({
       scopeKind,
       stackId,
       stackPosition,
+      stackOrderDigest,
+      dispositionDigest,
     }) ||
     pull.base.sha !== baseSha ||
     pull.head.sha !== headSha
@@ -1370,7 +1639,9 @@ async function publishFinalReview({
     rulesDigest: plan.rulesDigest,
     scopeKind: plan.scopeKind,
     stackId: plan.stackId,
+    stackOrderDigest: plan.stackOrderDigest,
     stackPosition: plan.stackPosition,
+    workflowRunId: context.runId,
   })
   const review = await github.rest.pulls.createReview({
     owner: context.repo.owner,
@@ -1428,6 +1699,7 @@ async function finalizeFinalReview({
   scopeKind,
   stackId,
   stackPosition,
+  stackOrderDigest,
   reviewOutcome,
   cleanupOutcome,
   publishOutcome,
@@ -1449,7 +1721,8 @@ async function finalizeFinalReview({
       eligibility.eligible &&
       eligibility.scopeKind === scopeKind &&
       eligibility.stackId === stackId &&
-      eligibility.stackPosition === stackPosition,
+      eligibility.stackPosition === stackPosition &&
+      eligibility.stackOrderDigest === stackOrderDigest,
     reviewOutcome,
     cleanupOutcome,
     publishOutcome,
@@ -1491,6 +1764,7 @@ module.exports = {
   FINAL_REVIEW_CONTEXT,
   FINAL_REVIEW_MODEL,
   FINAL_REVIEW_SCHEMA,
+  FINAL_REVIEW_WORKFLOW_PATH,
   PROMOTION_FILE,
   authorizeFinalReview,
   buildExpectedPromotionContent,
