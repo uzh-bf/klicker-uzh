@@ -464,7 +464,13 @@ async function resolvePullEligibility({
 
   const stack = await getNativeStackMembership({ github, context, pull })
   if (!stack) {
-    return { eligible: false, scopeKind: '', stackId: '', stackPosition: '' }
+    return {
+      eligible: false,
+      scopeKind: '',
+      stackId: '',
+      stackPosition: '',
+      stackOrderDigest: '',
+    }
   }
   return {
     eligible: true,
@@ -619,6 +625,7 @@ function parseReviewMetadata(body) {
       !/^[0-9a-f]{40}$/.test(metadata.base_sha ?? '') ||
       !/^[0-9a-f]{40}$/.test(metadata.head_sha ?? '') ||
       !/^[0-9a-f]{40}$/.test(metadata.root_head ?? '') ||
+      !/^[0-9a-f]{40}$/.test(metadata.workflow_head_sha ?? '') ||
       !/^[0-9a-f]{64}$/.test(metadata.rules_digest ?? '') ||
       !/^[0-9a-f]{64}$/.test(metadata.background_digest ?? '') ||
       metadata.workflow_path !== FINAL_REVIEW_WORKFLOW_PATH ||
@@ -705,6 +712,8 @@ function parseDispositionRecord(body) {
       record.schema_version !== DISPOSITION_SCHEMA ||
       typeof record.review_id !== 'string' ||
       typeof record.root_head !== 'string' ||
+      !Number.isSafeInteger(record.workflow_run_id) ||
+      record.workflow_run_id <= 0 ||
       !Array.isArray(record.entries)
     ) {
       return null
@@ -808,7 +817,8 @@ async function latestFullReview({ github, context, pull }) {
       workflow.id !== candidate.metadata.workflow_run_id ||
       workflow.path !== FINAL_REVIEW_WORKFLOW_PATH ||
       workflow.event !== 'issue_comment' ||
-      workflow.head_sha !== candidate.metadata.head_sha ||
+      workflow.head_branch !== context.payload.repository.default_branch ||
+      workflow.head_sha !== candidate.metadata.workflow_head_sha ||
       workflow.conclusion !== 'success' ||
       workflow.repository?.full_name !== repositoryName(context)
     ) {
@@ -887,6 +897,7 @@ async function latestTrustedDisposition({ github, context, pull, rootReview }) {
       !record ||
       record.review_id !== rootReview.metadata.review_id ||
       record.root_head !== rootReview.metadata.head_sha ||
+      record.workflow_run_id !== rootReview.metadata.workflow_run_id ||
       !artifact.user?.login
     ) {
       continue
@@ -945,7 +956,9 @@ function isRelatedCompanionPath(filePath, rootFindingPaths) {
   }
   const stem = companionStem(filePath)
   return [...rootFindingPaths].some(
-    (rootPath) => companionStem(rootPath) === stem
+    (rootPath) =>
+      companionStem(rootPath) === stem &&
+      path.posix.dirname(rootPath) === path.posix.dirname(filePath)
   )
 }
 
@@ -1129,6 +1142,12 @@ async function buildReviewPlan({ github, context, pull }) {
   })
   if (rootFindingIds.length > 0 && !disposition) return fullPlan
 
+  const background = buildIncrementalBackground({
+    baseBackground,
+    rootReview,
+    disposition,
+  })
+
   return {
     ...fullPlan,
     mode: 'incremental',
@@ -1136,14 +1155,8 @@ async function buildReviewPlan({ github, context, pull }) {
     rootReviewId: root.review_id,
     dispositionIds: disposition?.entries.map((entry) => entry.finding_id) ?? [],
     dispositionDigest: disposition?.disposition_digest ?? '',
-    ...(() => {
-      const background = buildIncrementalBackground({
-        baseBackground,
-        rootReview,
-        disposition,
-      })
-      return { background, backgroundDigest: sha256(background) }
-    })(),
+    background,
+    backgroundDigest: sha256(background),
   }
 }
 
@@ -1313,7 +1326,6 @@ async function startFinalReview({
     description: 'Gemini final review is running for this head',
   })
   core?.setOutput('background', plan.background)
-  core?.setOutput('disposition_digest', plan.dispositionDigest)
   return true
 }
 
@@ -1405,9 +1417,16 @@ function buildFindingMetadata(comment, index) {
   }
 }
 
-function buildReviewId({ baseSha, headSha, mode, rootHead, rulesDigest }) {
+function buildReviewId({
+  baseSha,
+  headSha,
+  mode,
+  rootHead,
+  rulesDigest,
+  workflowRunId = 0,
+}) {
   return `frv-${sha256(
-    [baseSha, headSha, mode, rootHead, rulesDigest].join('|')
+    [baseSha, headSha, mode, rootHead, rulesDigest, workflowRunId].join('|')
   ).slice(0, 24)}`
 }
 
@@ -1529,6 +1548,7 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
       mode,
       rootHead,
       rulesDigest: reviewMetadata.rulesDigest ?? '',
+      workflowRunId: reviewMetadata.workflowRunId ?? 0,
     })
   const metadataMarker = `<!-- ${FINAL_REVIEW_SCHEMA} ${JSON.stringify({
     background_digest: reviewMetadata.backgroundDigest ?? '',
@@ -1555,6 +1575,7 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
     stack_position: reviewMetadata.stackPosition ?? '',
     usage,
     workflow_path: FINAL_REVIEW_WORKFLOW_PATH,
+    workflow_head_sha: reviewMetadata.workflowHeadSha ?? '',
     workflow_run_id: reviewMetadata.workflowRunId ?? 0,
   })} -->`
 
@@ -1641,6 +1662,7 @@ async function publishFinalReview({
     stackId: plan.stackId,
     stackOrderDigest: plan.stackOrderDigest,
     stackPosition: plan.stackPosition,
+    workflowHeadSha: context.sha,
     workflowRunId: context.runId,
   })
   const review = await github.rest.pulls.createReview({

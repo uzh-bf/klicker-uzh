@@ -241,6 +241,7 @@ function completeReviewMetadata(headSha = 'a'.repeat(40), overrides = {}) {
     headRepo: 'uzh-bf/klicker-uzh',
     mode: 'full',
     rulesDigest: '2'.repeat(64),
+    workflowHeadSha: 'd'.repeat(40),
     workflowRunId: 123,
     ...overrides,
     headSha,
@@ -352,8 +353,17 @@ test('renders findings without making finding count a failure', () => {
   assert.match(report, /```[\s\S]*\n## Injected heading\n```/)
   const metadata = parseReviewMetadata(report)
   assert.equal(metadata.schema_version, FINAL_REVIEW_SCHEMA)
+  assert.equal(metadata.workflow_head_sha, 'd'.repeat(40))
   assert.equal(metadata.finding_ids.length, 1)
   assert.match(report, new RegExp(metadata.finding_ids[0]))
+  const rerunMetadata = parseReviewMetadata(
+    renderFinalReviewChunks(
+      result,
+      'a'.repeat(40),
+      completeReviewMetadata('a'.repeat(40), { workflowRunId: 124 })
+    )[0]
+  )
+  assert.notEqual(rerunMetadata.review_id, metadata.review_id)
   const tampered = report.replace(
     /"finding_ids":\["fr-[0-9a-f]{16}"\]/u,
     '"finding_ids":["fr-0000000000000000"]'
@@ -491,6 +501,7 @@ test('selects incremental attestation only for bounded repaired changes', async 
     scopeKind: rootPlan.scopeKind,
     stackId: rootPlan.stackId,
     stackOrderDigest: rootPlan.stackOrderDigest,
+    workflowHeadSha: 'd'.repeat(40),
     workflowRunId: 123,
   })
   const rootMetadata = parseReviewMetadata(rootBody)
@@ -498,6 +509,7 @@ test('selects incremental attestation only for bounded repaired changes', async 
     schema_version: 'final-ai-disposition/v1',
     review_id: rootMetadata.review_id,
     root_head: rootHead,
+    workflow_run_id: 123,
     entries: [
       {
         finding_id: rootMetadata.finding_ids[0],
@@ -532,7 +544,8 @@ test('selects incremental attestation only for bounded repaired changes', async 
     id: 123,
     path: '.github/workflows/check-ocr-final-review.yml',
     event: 'issue_comment',
-    head_sha: rootHead,
+    head_branch: 'v3',
+    head_sha: 'd'.repeat(40),
     conclusion: 'success',
     repository: { full_name: 'uzh-bf/klicker-uzh' },
   }
@@ -581,7 +594,7 @@ test('selects incremental attestation only for bounded repaired changes', async 
 
   state.comparison = {
     status: 'ahead',
-    files: [{ filename: 'tests/example.test.ts', additions: 4, deletions: 2 }],
+    files: [{ filename: 'src/example.test.ts', additions: 4, deletions: 2 }],
   }
   const relatedCompanion = await buildReviewPlan({
     github,
@@ -674,6 +687,7 @@ test('selects incremental attestation only for bounded repaired changes', async 
         schema_version: 'final-ai-disposition/v1',
         review_id: rootMetadata.review_id,
         root_head: rootHead,
+        workflow_run_id: 123,
         entries: [
           {
             finding_id: rootMetadata.finding_ids[0],
