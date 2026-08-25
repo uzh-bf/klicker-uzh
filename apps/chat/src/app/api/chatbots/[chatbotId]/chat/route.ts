@@ -1257,6 +1257,29 @@ export async function POST(
     })
   }
 
+  const normalizeCredits = (
+    rawCreditsUsed: number | null,
+    phase: 'complete' | 'abort' | 'metadata'
+  ) => {
+    if (rawCreditsUsed === null) {
+      return { rawCreditsUsed: null, creditsUsed: null }
+    }
+
+    try {
+      return {
+        rawCreditsUsed,
+        creditsUsed: roundChatUsageCredits(rawCreditsUsed).toNumber(),
+      }
+    } catch (error) {
+      console.error('Failed to normalize chat usage credits:', {
+        requestId,
+        phase,
+        errorType: error instanceof Error ? error.name : typeof error,
+      })
+      return { rawCreditsUsed: null, creditsUsed: null }
+    }
+  }
+
   const streamStartedAtMs = Date.now()
   let hasLoggedFirstChunk = false
   let firstError: SerializedStreamError | null = null
@@ -1430,17 +1453,17 @@ export async function POST(
           })
           return
         }
-        const rawCreditsUsed = result.usage
+        const computedRawCreditsUsed = result.usage
           ? calcCost(
               selectedModelConfig.cost,
               result.usage.inputTokens || 0,
               result.usage.outputTokens || 0
             ) + imageDescriptionCost
           : null
-        const creditsUsed =
-          rawCreditsUsed === null
-            ? null
-            : roundChatUsageCredits(rawCreditsUsed).toNumber()
+        const { rawCreditsUsed, creditsUsed } = normalizeCredits(
+          computedRawCreditsUsed,
+          'complete'
+        )
         const finishedReasoningContent =
           normalizeReasoningContent(joinReasoningFromSteps(result.steps)) ??
           normalizeReasoningContent(
@@ -1526,10 +1549,8 @@ export async function POST(
             rawCreditsUsed = totalCost + imageDescriptionCost
           }
         }
-        const creditsUsed =
-          rawCreditsUsed === null
-            ? null
-            : roundChatUsageCredits(rawCreditsUsed).toNumber()
+        const { rawCreditsUsed: normalizedRawCreditsUsed, creditsUsed } =
+          normalizeCredits(rawCreditsUsed, 'abort')
 
         const abortedAssistantContent = buildAbortedAssistantContent(
           Array.isArray(steps?.steps) ? steps.steps : undefined,
@@ -1555,7 +1576,7 @@ export async function POST(
         await finalizeAssistantLifecycle({
           content: abortedAssistantContent,
           reasoningContent: abortedReasoningContent,
-          rawCreditsUsed,
+          rawCreditsUsed: normalizedRawCreditsUsed,
           phase: 'abort',
         })
 
@@ -1663,17 +1684,17 @@ export async function POST(
         return undefined
       }
 
-      const rawCreditsUsed = part.totalUsage
+      const computedRawCreditsUsed = part.totalUsage
         ? calcCost(
             selectedModelConfig.cost,
             part.totalUsage.inputTokens || 0,
             part.totalUsage.outputTokens || 0
           ) + imageDescriptionCost
         : null
-      const creditsUsed =
-        rawCreditsUsed === null
-          ? null
-          : roundChatUsageCredits(rawCreditsUsed).toNumber()
+      const { creditsUsed } = normalizeCredits(
+        computedRawCreditsUsed,
+        'metadata'
+      )
 
       return {
         finishReason: part.finishReason,

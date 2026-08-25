@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   ensureImagePreviewBase64: vi.fn(),
   generateText: vi.fn(),
   streamText: vi.fn(),
+  roundChatUsageCredits: vi.fn(),
   streamConfig: null as Record<string, unknown> | null,
   responseOptions: null as Record<string, unknown> | null,
   ChatTurnConflictError: class ChatTurnConflictError extends Error {},
@@ -82,9 +83,7 @@ vi.mock('@/src/services/accountUsage', () => {
     finalizeChatTurn: mocks.finalizeChatTurn,
     isChatAccountUsageAvailable: mocks.isChatAccountUsageAvailable,
     isChatTurnKeyClaimed: mocks.isChatTurnKeyClaimed,
-    roundChatUsageCredits: (value: number) => ({
-      toNumber: () => Number(value.toFixed(6)),
-    }),
+    roundChatUsageCredits: mocks.roundChatUsageCredits,
   }
 })
 
@@ -222,6 +221,9 @@ describe('account usage chat route', () => {
     mocks.getAggregatedMCPTools.mockResolvedValue({})
     mocks.isChatTurnKeyClaimed.mockResolvedValue(false)
     mocks.isChatAccountUsageAvailable.mockResolvedValue(true)
+    mocks.roundChatUsageCredits.mockImplementation((value: number) => ({
+      toNumber: () => Number(value.toFixed(6)),
+    }))
     mocks.getUserCredits.mockResolvedValue({ current: 5, total: 5 })
     mocks.threadFindFirst.mockResolvedValue({ id: 'thread-1' })
     mocks.attachmentFindMany.mockResolvedValue([])
@@ -434,6 +436,65 @@ describe('account usage chat route', () => {
       steps: [{ content: [{ type: 'text', text: 'Answer.' }] }],
       reasoningText: '',
     })
+
+    expect(mocks.finalizeChatTurn).toHaveBeenCalledWith(
+      expect.objectContaining({ rawCreditsUsed: null })
+    )
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
+  })
+
+  test('keeps invalid complete usage uncharged and metadata safe', async () => {
+    mocks.roundChatUsageCredits.mockImplementation(() => {
+      throw new RangeError('synthetic invalid cost')
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(200)
+
+    await expect(
+      streamCallbacks().onEnd({
+        usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+        steps: [{ content: [{ type: 'text', text: 'Answer.' }] }],
+      })
+    ).resolves.toBeUndefined()
+
+    expect(mocks.finalizeChatTurn).toHaveBeenCalledWith(
+      expect.objectContaining({ rawCreditsUsed: null })
+    )
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
+    expect(
+      responseOptions().messageMetadata({
+        part: {
+          type: 'finish',
+          finishReason: 'stop',
+          totalUsage: { inputTokens: 10, outputTokens: 5 },
+        },
+      })
+    ).toMatchObject({ creditsUsed: null })
+  })
+
+  test('keeps invalid aborted usage uncharged without throwing', async () => {
+    mocks.roundChatUsageCredits.mockImplementation(() => {
+      throw new RangeError('synthetic invalid cost')
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(200)
+
+    await expect(
+      streamCallbacks().onAbort({
+        steps: [
+          {
+            content: [{ type: 'text', text: 'Partial answer.' }],
+            usage: { inputTokens: 10, outputTokens: 5 },
+          },
+        ],
+      })
+    ).resolves.toBeUndefined()
 
     expect(mocks.finalizeChatTurn).toHaveBeenCalledWith(
       expect.objectContaining({ rawCreditsUsed: null })
