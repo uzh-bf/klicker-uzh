@@ -13,7 +13,7 @@ const DELETE_CONCURRENCY = 5
 export type ActivityBatchDeletionOutcome = {
   activity: ActivityInfo
   status: 'deleted' | 'failed' | 'uncertain'
-  failureReason?: 'request-failed'
+  failureReason?: 'request-failed' | 'not-deletable-or-not-found'
 }
 
 export type ActivityBatchDeletionProgress = {
@@ -100,7 +100,8 @@ function useActivityBatchDeletion() {
       const deleted = await deleteActivity(activity)
       return {
         activity,
-        status: deleted ? 'deleted' : 'failed',
+        status: deleted ? 'deleted' : 'uncertain',
+        failureReason: deleted ? undefined : 'not-deletable-or-not-found',
       }
     } catch (error) {
       console.error('Batch activity deletion failed', {
