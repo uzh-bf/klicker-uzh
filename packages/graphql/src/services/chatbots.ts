@@ -2,6 +2,7 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma } from '@klicker-uzh/prisma/client'
 import { z } from 'zod'
 import type { Context, ContextWithUser } from '../lib/context.js'
+import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
 
 const chatModelSchema = z
   .object({
@@ -271,6 +272,7 @@ export async function getParticipantCourseChatbots(
 }
 
 export async function getChatbotsInfo(ctx: ContextWithUser) {
+  await assertManageAiEnabled(ctx)
   const chatbots = await ctx.prisma.chatbot.findMany({
     where: { ownerId: ctx.user.sub },
     select: {
@@ -460,6 +462,7 @@ export async function updateChatbotModelSettings(
   args: UpdateChatbotModelSettingsArgs,
   ctx: ContextWithUser
 ) {
+  await assertManageAiEnabled(ctx)
   const chatbot = await ctx.prisma.chatbot.findFirst({
     where: {
       id: args.chatbotId,

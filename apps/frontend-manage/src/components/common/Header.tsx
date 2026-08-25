@@ -3,7 +3,11 @@ import {
   faPlayCircle,
   faQuestionCircle,
 } from '@fortawesome/free-regular-svg-icons'
-import { faBolt, faUser } from '@fortawesome/free-solid-svg-icons'
+import {
+  faBolt,
+  faUser,
+  faWandMagicSparkles,
+} from '@fortawesome/free-solid-svg-icons'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   CountCatalogSharingRequestsDocument,
@@ -25,6 +29,7 @@ import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useAiFeaturesEnabled } from '../../lib/hooks/useAiFeaturesEnabled'
 import SupportModal from './SupportModal'
 
 type UserProfile = NonNullable<UserProfileQuery['userProfile']>
@@ -34,6 +39,7 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
+  const aiFeaturesEnabled = useAiFeaturesEnabled()
 
   const { data: pendingRequestData } = useQuery(
     CountCatalogSharingRequestsDocument
@@ -50,30 +56,12 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
 
   const resourceElements: NavigationMenuItemProps[] = [
     {
-      key: 'knowledge-bases-item',
-      type: 'link' as const,
-      label: t('kb.title'),
-      onClick: () => router.push('/resources/knowledgeBases'),
-      data: { cy: 'knowledge-bases' },
-    },
-    {
       key: 'answer-collections-item',
       type: 'link' as const,
       label: t('manage.resources.answerCollections'),
       onClick: () => router.push('/resources/answerCollections'),
       data: { cy: 'answer-collections' },
     },
-    ...(user?.privatePreview
-      ? [
-          {
-            key: 'chatbots-item',
-            type: 'link' as const,
-            label: t('manage.resources.chatbots'),
-            onClick: () => router.push('/resources/chatbots'),
-            data: { cy: 'chatbots' },
-          },
-        ]
-      : []),
     {
       key: 'catalog-item',
       type: 'link' as const,
@@ -153,9 +141,7 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
       label: t('manage.general.resources'),
       icon: faBolt,
       active:
-        router.pathname.startsWith('/resources/knowledgeBases') ||
         router.pathname === '/resources/answerCollections' ||
-        router.pathname === '/resources/chatbots' ||
         router.pathname === '/resources/catalog' ||
         router.pathname === '/resources/userGroups' ||
         router.pathname === '/resources/mediaLibrary',
@@ -169,6 +155,52 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
         content: 'flex flex-col gap-0.5',
       },
     },
+    ...(aiFeaturesEnabled
+      ? [
+          {
+            type: 'dropdown',
+            key: 'ai-menubar-item',
+            label: t('manage.general.ai'),
+            icon: faWandMagicSparkles,
+            active:
+              router.pathname.startsWith('/resources/knowledgeBases') ||
+              router.pathname === '/resources/chatbots',
+            elements: [
+              {
+                key: 'knowledge-bases-item',
+                type: 'link' as const,
+                label: t('kb.title'),
+                onClick: () => router.push('/resources/knowledgeBases'),
+                badge: t('manage.general.betaFeatures'),
+                data: { cy: 'knowledge-bases' },
+                className: {
+                  label: 'bg-opacity-100',
+                  text: 'mr-8',
+                  badge: 'bg-green-700 hover:bg-green-800',
+                },
+              },
+              {
+                key: 'chatbots-item',
+                type: 'link' as const,
+                label: t('manage.resources.chatbots'),
+                onClick: () => router.push('/resources/chatbots'),
+                badge: t('manage.general.betaFeatures'),
+                data: { cy: 'chatbots' },
+                className: {
+                  label: 'bg-opacity-100',
+                  text: 'mr-8',
+                  badge: 'bg-green-700 hover:bg-green-800',
+                },
+              },
+            ],
+            data: { cy: 'ai' },
+            className: {
+              icon: 'text-orange-400',
+              content: 'flex flex-col gap-0.5',
+            },
+          } as NavigationItemProps,
+        ]
+      : []),
   ]
 
   const analyticsElements: NavigationDropdownItemProps['elements'] = [

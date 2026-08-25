@@ -1735,6 +1735,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       openInNewTab: 'Open assistant in a new tab',
       elementCreatedToast: 'Draft "{name}" added to your question pool',
     },
+    ai: {
+      unavailableTitle: 'AI features unavailable',
+      unavailableDescription:
+        'The AI features are in beta and not yet available for your account. Please contact your administrator for access.',
+    },
     general: {
       qrCode: 'QR Code',
       presentQrCode: 'Present QR code',
@@ -1745,6 +1750,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       liveQuizzes: 'Live Quizzes',
       courses: 'Courses',
       resources: 'Resources',
+      ai: 'AI',
+      betaFeatures: 'Beta features',
       catalog: 'Catalog',
       mediaLibrary: 'Media Library',
       userGroups: 'User Groups',

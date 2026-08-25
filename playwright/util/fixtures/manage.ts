@@ -146,6 +146,14 @@ export async function prepareSeededAnalyticsActivities() {
   })
 }
 
+export async function updateLecturerAiAccess(enabled: boolean) {
+  const prisma = await getPrisma()
+  await prisma.user.update({
+    where: { shortname: LECTURER_SHORTNAME },
+    data: { aiFeaturesEnabled: enabled },
+  })
+}
+
 export async function validateFeatureAvailabilityFixture(
   page: Page,
   options: ValidateFeatureAvailabilityOptions
