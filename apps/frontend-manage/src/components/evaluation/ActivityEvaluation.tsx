@@ -160,7 +160,8 @@ function ActivityEvaluation({
 
   const evaluationUnavailable =
     typeof activeStack === 'number' &&
-    (stacks[activeStack]?.instances.length === 0 ||
+    (typeof stacks[activeStack] === 'undefined' ||
+      stacks[activeStack]?.instances.length === 0 ||
       typeof instanceResults[activeInstance] === 'undefined')
 
   return (

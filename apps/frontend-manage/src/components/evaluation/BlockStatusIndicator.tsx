@@ -20,6 +20,9 @@ function BlockStatusIndicator({
 }: BlockStatusIndicatorProps) {
   const t = useTranslations()
   const formatter = useFormatter()
+  const closedAtDate = closedAt ? new Date(closedAt) : null
+  const hasValidClosedAt =
+    closedAtDate !== null && !Number.isNaN(closedAtDate.getTime())
 
   const getTooltipContent = () => {
     switch (status) {
@@ -54,10 +57,10 @@ function BlockStatusIndicator({
             <div className="font-semibold">
               {t('manage.evaluation.instanceExecuted')}
             </div>
-            {closedAt && (
+            {hasValidClosedAt && closedAtDate && (
               <div className="mt-1 text-xs text-gray-600">
                 {t('manage.evaluation.instanceExecutionDate')}:{' '}
-                {formatter.dateTime(new Date(closedAt), {
+                {formatter.dateTime(closedAtDate, {
                   dateStyle: 'medium',
                   timeStyle: 'short',
                 })}

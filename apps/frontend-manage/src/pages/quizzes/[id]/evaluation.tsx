@@ -16,7 +16,7 @@ function LiveQuizEvaluation() {
   )
 
   // fetch evaluation data
-  const { data, loading, networkStatus, stopPolling } = useQuery(
+  const { data, loading, networkStatus } = useQuery(
     GetLiveQuizEvaluationDocument,
     {
       variables: {
@@ -37,15 +37,6 @@ function LiveQuizEvaluation() {
       setLastRefetchTime(new Date())
     }
   }, [data?.liveQuizEvaluation, networkStatus])
-
-  useEffect(() => {
-    if (
-      networkStatus === NetworkStatus.ready &&
-      data?.liveQuizEvaluation === null
-    ) {
-      stopPolling()
-    }
-  }, [data?.liveQuizEvaluation, networkStatus, stopPolling])
 
   if (loading && !data?.liveQuizEvaluation) {
     return <Loader />

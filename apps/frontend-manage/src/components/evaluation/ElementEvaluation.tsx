@@ -31,7 +31,7 @@ import { TextSizeType } from './textSizes'
 
 interface ElementEvaluationProps {
   currentInstance: ElementInstanceEvaluation
-  currentStack: StackEvaluation
+  currentStack?: StackEvaluation
   activeInstance: number
   activeStack: number
   courseLanguage?: LocaleType | null
@@ -99,14 +99,16 @@ function ElementEvaluation({
     }
   }, [currentInstance.id, requireShowResultsConfirmation])
 
+  const currentStackStatus = currentStack?.status
+
   // if the entire block is scheduled and not yet executed, display the unavailable notification without element body
-  if (currentStack.status === ElementBlockStatus.Scheduled) {
+  if (!currentStack || currentStackStatus === ElementBlockStatus.Scheduled) {
     return (
       <div className={twMerge('relative flex h-full flex-col', className)}>
-        {type === 'LiveQuiz' && (
+        {type === 'LiveQuiz' && currentStack && currentStackStatus && (
           <div className="absolute bottom-4 left-4 z-10">
             <BlockStatusIndicator
-              status={currentStack.status}
+              status={currentStackStatus}
               lastRefetchTime={lastRefetchTime}
               closedAt={currentStack.closedAt}
             />
