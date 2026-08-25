@@ -71,9 +71,50 @@ fi
 export CI=true
 export npm_config_verify_deps_before_run=false
 
+# Profile selection (devrouter >= 0.0.36). DEVROUTER_PROFILE is injected by
+# `devrouter ensure --profile <name>`; empty means the config default (`full`).
+# The profile is part of the process fingerprint so switching profiles replaces
+# the owned turbo process group instead of mixing two app sets.
+: "${DEVROUTER_PROFILE:=full}"
+export DEVROUTER_PROFILE
+echo "[post-start] Profile: ${DEVROUTER_PROFILE}"
+
 : "${DEVROUTER_PROCESS_HELPER:?Run devrouter ensure to start this managed application process.}"
 
-export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,NODE_EXTRA_CA_CERTS'
+export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,NODE_EXTRA_CA_CERTS,DEVROUTER_PROFILE'
+
+# Map the profile(s) to turbo dev filters. api + auth are needed by every
+# profile; workers only run where response ingestion is routed (live-quiz/full).
+# The MCP fixture stays always-on (cheap, and seeded chat depends on it).
+# NOTE: one turbo --filter flag per package — this turbo version treats a quoted
+# comma list as a single literal package name.
+# DEVROUTER_PROFILE may be a merged selection (e.g. "chat,pwa", canonicalized
+# sorted by devrouter); match on contained profile names, not the exact string.
+case ",${DEVROUTER_PROFILE}," in
+  *,full,*)
+    DEV_TURBO_FILTERS=''
+    ;;
+  *,live-quiz,*)
+    DEV_TURBO_FILTERS='--filter=@klicker-uzh/backend-docker --filter=@klicker-uzh/auth --filter=@klicker-uzh/frontend-pwa --filter=@klicker-uzh/frontend-control --filter=@klicker-uzh/response-api --filter=@klicker-uzh/hatchet-worker-general --filter=@klicker-uzh/hatchet-worker-response-processor'
+    ;;
+  *)
+    DEV_TURBO_FILTERS='--filter=@klicker-uzh/backend-docker --filter=@klicker-uzh/auth'
+    for profile_name in $(echo "${DEVROUTER_PROFILE}" | tr ',' ' '); do
+      case "${profile_name}" in
+        manage) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/frontend-manage" ;;
+        pwa) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/frontend-pwa" ;;
+        chat) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/chat" ;;
+        control) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/frontend-control" ;;
+        olat-api) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/olat-api" ;;
+        lti) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/lti-service" ;;
+        response-api) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/response-api" ;;
+        *)
+          echo "[post-start] WARNING: unknown profile component '${profile_name}', ignoring." >&2
+          ;;
+      esac
+    done
+    ;;
+esac
 
 # The test seed connects Benibot's Tutor and Explainer modes to this local,
 # read-only MCP fixture. Keep it in the app container so the seeded
@@ -98,14 +139,23 @@ for attempt in $(seq 1 20); do
   sleep 1
 done
 
-# Run every routed app plus both Hatchet workers without Infisical. Devrouter
+# Run the profile's apps (or everything for `full`) without Infisical. Devrouter
 # owns generic locking, process-group identity, and bounded replacement; this
 # repository owns only the application command and environment above.
-"$DEVROUTER_PROCESS_HELPER" ensure \
-  --name klicker-dev \
-  --match 'turbo run dev' \
-  --log /tmp/dev.log \
-  -- pnpm run dev:container
+if [ -n "${DEV_TURBO_FILTERS}" ]; then
+  # shellcheck disable=SC2086 # intentional word splitting of filter flags
+  "$DEVROUTER_PROCESS_HELPER" ensure \
+    --name klicker-dev \
+    --match 'turbo run dev' \
+    --log /tmp/dev.log \
+    -- pnpm exec turbo run dev ${DEV_TURBO_FILTERS}
+else
+  "$DEVROUTER_PROCESS_HELPER" ensure \
+    --name klicker-dev \
+    --match 'turbo run dev' \
+    --log /tmp/dev.log \
+    -- pnpm run dev:container
+fi
 
 if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
   cat <<EOF
