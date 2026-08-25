@@ -85,16 +85,14 @@ export async function replaceControlledSearchValue(
   value: string
 ) {
   await expect(searchInput).toBeVisible()
-  if ((await searchInput.inputValue()) !== '') {
-    const resetIcon = searchInput.locator(
-      'xpath=following-sibling::*[@data-icon="xmark"]'
-    )
-    await expect(resetIcon).toBeVisible()
-    await resetIcon.click()
-    await expect(searchInput).toHaveValue('')
+  await searchInput.press('ControlOrMeta+A')
+
+  if (value === '') {
+    await searchInput.press('Backspace')
+  } else {
+    await searchInput.pressSequentially(value)
   }
 
-  await searchInput.fill(value)
   await expect(searchInput).toHaveValue(value)
 }
 
