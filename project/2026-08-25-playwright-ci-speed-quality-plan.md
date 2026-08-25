@@ -1,132 +1,176 @@
-# Playwright CI speed and reliability package
+# Playwright CI speed, quality, and shard feedback package
 
 ## Goal
 
-Reduce avoidable Playwright CI diagnostic cost while preserving the current
-test manifest, test intent, failure evidence, and shared-state execution model.
-Use PR #5446 as the failure case, but do not claim that this package fixes its
-course-duplication worker failure.
+Reduce avoidable Playwright CI time and diagnostic cost while preserving the
+current test intent, serial/shared-state execution model, and complete failure
+evidence. Use PR #5446 as the observed failure case, and make shard timing a
+reviewable automated feedback loop.
 
-## Problem
+## Scope
 
-- PR #5446's Playwright run repeatedly spends about 57.5 minutes in shard 8
-  after course-duplication jobs fail to reach a terminal status within 150
-  seconds. The other seven shards complete in roughly 10-15 minutes.
-- CI retains video, traces, screenshots, HTML reports, and the service log in
-  one artifact upload. A failed shard artifact is about 260 MB.
-- CI retries every test once. That multiplies the cost of deterministic
-  course-duplication failures and leaves later stateful tests observing the
-  resulting residual state.
-- The custom file-level sharder uses stale timing data, but a one-off timing
-  edit is not a durable timing pipeline and does not explain the worker stall.
-- `workers: 1` and `fullyParallel: false` are deliberate safety boundaries for
-  specs that share seeded users, database rows, Redis keys, and Hatchet workers.
+- Repair the deterministic course-duplication test timeout caused by the test
+  observer missing the GET form of the status query.
+- Keep the existing CI artifact policy: compact JUnit results always upload;
+  heavy diagnostics upload only for failed shards; CI video stays disabled.
+- Make file-level shard packing deterministic and validate its timing input.
+- Aggregate complete successful JUnit runs and open or update one human-reviewed
+  timing pull request from a guarded `workflow_run` workflow.
 
-## Evidence
+The package does not change the test count, retries, timeout values, workers,
+`fullyParallel`, shard count, worker behavior, database fixtures, or production
+and staging services. Test-level sharding remains a later fixture-hermeticity
+package because the suite deliberately shares seeded users, database rows,
+Redis keys, and Hatchet workers.
 
-- PR #5446 run `32796194924` has four consecutive failed shard-8 attempts. The
-  fourth attempt reports 113 passing tests in 57.5 minutes and repeated
-  `Course duplication job ... did not reach a terminal status within 150000ms`
-  errors, followed by strict-mode failures caused by residual duplicate state.
-- The CI worker registers `process-course-duplication` before the test starts.
-  Registration does not prove event delivery, handler execution, lease or
-  heartbeat renewal, database reconciliation, or terminal status persistence.
-- The current Playwright manifest contains 881 tests in 31 files. The baseline
-  manifest is captured in `/tmp/pw-analysis/current-list.txt` for this local
-  verification.
-- The current branch is `fix/course-duplication-timeout` at
-  `93a84c6296021fd758a5292710b76a6d9ce92dbe`, equal to its upstream and 68
-  commits ahead of, 10 commits behind, `origin/v3`. Relevant package paths
-  have been compared with current `origin/v3`; the artifact slice changes no
-  duplicated or worker-owned paths. The three pre-existing generated GraphQL
-  modifications remain excluded.
+## Fresh state and baseline
+
+- Freshness was re-established on 2026-08-25 with `git fetch origin` in the
+  matching worktree.
+- The worktree is `/Volumes/HOME/Git/klicker/klicker-uzh/trees/fix-course-duplication-timeout`.
+- Branch `fix/course-duplication-timeout` is at `f41161ca23`, equal to the live
+  PR #5446 head and 72 commits ahead of `origin/v3`.
+- The current Playwright manifest is 886 tests in 31 active files. Five tests
+  added by the current branch's latest-base integration are part of the
+  baseline and must remain unchanged.
+- The only pre-existing dirty paths are generated GraphQL files:
+  `packages/graphql/src/ops.ts`,
+  `packages/graphql/src/public/client.json`, and
+  `packages/graphql/src/public/server.json`. They are excluded from every
+  package commit.
+
+## Evidence and root cause
+
+PR #5446's shard 8 repeatedly spent about 57 minutes while the other shards
+finished much earlier. Its duplication journeys waited 150 seconds each and
+then retried. The CI trace showed `GetCourseDuplicationStatuses` responses
+reaching `RUNNING` and then `COMPLETED` with a created course id, but the test
+listener only recognized POST responses whose body contained the operation
+name. The live request was a GET with the operation name in the URL query.
+
+Therefore the failure is a deterministic false-observation timeout in
+`playwright/tests/N-course.spec.ts`, not evidence that the worker failed to
+deliver the job. The repair must observe both request shapes while retaining
+response-success validation, job-ID correlation, the explicit `COMPLETED` or
+`FAILED` assertion, and the existing 150-second bound.
+
+One historical CI trace also contained a lecturer session token. It is not
+copied into this repository or plan. If that token is still valid, it must be
+expired or rotated.
 
 ## Sol validation
 
-- GPT-5.6 Sol planner returned `DONE_WITH_CONCERNS` on 2026-08-25.
-- Sol approved only the artifact-policy slice as implementation-ready.
-- Sol rejected increasing the browser wait, removing retries globally,
-  changing worker count, changing sharding, or adding cleanup without tracing
-  the failed job lifecycle. Those changes could hide coverage loss or permit
-  duplicate course state.
-- Sol deferred timing redesign until several recent successful JUnit histories
-  are available and deferred in-shard parallelism until fixture hermeticity is
-  established.
+GPT-5.6 Sol returned `DONE_WITH_CONCERNS` on 2026-08-25 and found no missing
+evidence for local execution. Sol's required constraints are:
 
-## Decision
+- Match POST bodies as today and GET requests by exact URL
+  `operationName=GetCourseDuplicationStatuses`; do not increase the timeout.
+- Aggregate every JUnit testcase time, including repeated testcase entries from
+  retries; do not deduplicate testcase names.
+- Require eight valid JUnit artifacts, exactly-once coverage of all 31 active
+  specs, and zero failures, errors, or skipped tests before writing timings.
+- Use a standard-library XML parser, reject malformed or oversized XML without
+  logging its content, and keep generated timing paths canonical.
+- Keep file-level sharding, with duration-descending and path-ascending ties.
+- Use a human-reviewed bot PR rather than a direct `v3` commit or an artifact-
+  only update. A default `GITHUB_TOKEN` PR does not trigger its own required
+  checks in this repository. The future workflow therefore requires a
+  dedicated non-admin GitHub App or fine-grained bot credential, documented but
+  not provisioned or exercised in this task.
 
-Execute one narrow CI diagnostics slice now:
+## Decisions
 
-- Disable video only in CI. Keep local `retain-on-failure` video behavior.
-- Keep JUnit results as an always-uploaded compact artifact.
-- Upload HTML reports, traces, screenshots, and `service.log` only when the
-  shard job fails.
-- Keep test selection, retries, timeouts, workers, shard count, and test
-  assertions unchanged.
+### Duplication observer
 
-Defer the following to separate packages or follow-up slices:
+Extend the existing response predicate to accept either the current POST body
+operation name or the exact GET URL query operation name. Keep all existing
+status parsing, correlation, terminal-state, and success-UI assertions.
 
-- Course-duplication root-cause repair: trace publication acknowledgement,
-  Hatchet run state, handler start, Redis lease and heartbeat, transaction,
-  retry, and terminal status before changing code.
-- Timing maintenance: aggregate several recent successful JUnit reports,
-  validate positive finite durations and duplicate basenames, record freshness,
-  and prove deterministic exact-once shard assignment before changing the
-  workflow.
-- In-shard parallelism: inventory shared mutable fixtures and prove repeated
-  clean runs with isolated state before raising worker count or enabling
-  `fullyParallel`.
+### Timing schema and sharding
 
-## Risk
+Use timing schema version 1:
 
-- Failed tests that pass on retry will retain only the JUnit result in this
-  slice's always-uploaded artifact. A later CI-quality slice should preserve
-  retry diagnostics without restoring video for every test.
-- The artifact policy reduces transfer and storage cost but does not reduce the
-  execution time of a stuck course-duplication job.
-- The package cannot claim PR #5446 is green until a fresh CI run proves the
-  duplication job lifecycle reaches a terminal state.
+```json
+{
+  "version": 1,
+  "durations": [
+    { "spec": "tests/N-course.spec.ts", "duration": 273.123 }
+  ]
+}
+```
 
-## Test portfolio
+The updater emits lexically ordered canonical `tests/<file>.spec.ts` entries.
+It sums all testcase `time` values for each suite, including retry attempts.
+It requires every active spec exactly once and removes stale entries from the
+generated file. The sharder accepts the existing unversioned file for
+compatibility, validates version 1 when present, rejects duplicate or invalid
+entries, warns about stale entries, and uses a 30-second fallback for active
+specs without timing data.
 
-| Behavior | Obligation | Primary check |
-| --- | --- | --- |
-| CI uses no video but local failure video remains | Extend existing configuration | Config inspection and focused Playwright TypeScript check |
-| JUnit is available when a shard passes or fails | No new browser test | Workflow path and artifact-condition inspection |
-| Failure diagnostics remain available | No new browser test | Workflow path inspection; later failed-CI artifact proof |
-| Test coverage and ordering are unchanged | No new test | Before/after `playwright test --list --project=chromium` manifest comparison |
-| Course duplication completes reliably | Deferred | Traced failed job plus repeated clean CI shard-8 run |
-| Shards remain balanced | Deferred | Multi-run timing aggregation and live shard wall-time comparison |
-| In-shard parallelism is safe | Deferred | Isolation inventory and repeated parallel runs |
+File-level greedy packing remains the safe boundary. Stable duration-descending,
+path-ascending ordering and lowest-index tie resolution make each allocation
+reproducible. A later package may evaluate test-level distribution only after
+fixture isolation and repeated parallel-run evidence exist.
+
+### Automated feedback
+
+Add a separate `.github/workflows/update-playwright-timings.yml` workflow that:
+
+1. listens for a completed `test-playwright` workflow;
+2. continues only for a successful direct push to `v3` from this repository;
+3. downloads the triggering run's eight compact JUnit artifacts;
+4. validates and aggregates them with the standard-library updater;
+5. creates or updates one branch `automation/playwright-timings`; and
+6. opens one non-draft human-reviewed PR into `v3` when the generated file
+   changes, with no auto-merge and no PR for unchanged output.
+
+The writer requires `PLAYWRIGHT_TIMINGS_BOT_TOKEN` with only the repository
+contents and pull-request permissions needed for this branch/PR workflow. The
+default `GITHUB_TOKEN` is not an acceptable substitute because its PR does not
+start the required checks. Secret provisioning, workflow activation, push,
+timing PR creation, merge, and any live run remain outside this task.
+
+## Acceptance checks
+
+| Area | Acceptance |
+| --- | --- |
+| Duplication observation | Existing POST and traced GET forms are accepted; terminal and success assertions remain; no timeout/retry/test-count change |
+| Timing input | Malformed JSON, unsupported version, duplicate paths, non-positive/non-finite durations, and invalid shard arguments fail clearly |
+| Timing aggregation | Standard-library XML parsing rejects malformed/oversized/partial input; eight artifacts, zero failures/errors/skips, and all 31 specs are required; retries are summed |
+| Shard allocation | All 886 tests remain listed; every active file is assigned exactly once across eight deterministic outputs; tie ordering is stable |
+| Workflow guard | Only successful direct `v3` pushes can write; PR runs, failed/partial runs, filter-skipped runs, timing-only loops, and unchanged output do not create a timing PR |
+| Repository safety | Generated GraphQL changes remain unstaged; no secret, real personal data, push, PR publication, merge, deployment, or live-service action occurs |
 
 ## Delegation map
 
 | Slice | Owner | Dependency | Acceptance |
 | --- | --- | --- | --- |
-| S0 — reviewed plan | main | Sol challenge complete | Plan committed without staging pre-existing dirty files |
-| S1 — artifact policy | main | S0 | Manifest parity, formatting, TypeScript/config checks, exact diff scope |
-| S2 — duplication root cause | main, proposed follow-up | Failed-job lifecycle evidence | Repeated clean duplication journey and fresh shard-8 CI success |
-| S3 — timing pipeline | separate task (proposed) | Recent successful JUnit history | Deterministic exact-once packing and improved live balance |
-| S4 — hermetic parallelism | separate task (proposed) | Fixture isolation design | Repeated parallel runs with unchanged coverage and lower wall time |
+| S0 — reviewed plan amendment | main | Sol challenge complete | Root cause, timing design, credential boundary, and current baseline are recorded |
+| S1 — duplication observer repair | main | S0 | Focused checks and existing duplication journey validate GET/POST observation |
+| S2 — timing schema and tooling | main | S1 | Script fixtures cover retries, malformed/partial input, stale entries, ties, and exact assignment |
+| S3 — guarded workflow | main | S2 | YAML/format checks pass; no workflow or PR is executed |
+| S4 — integrated verification | main | S3 | Manifest parity, exact diff accounting, simplifier, final review, and progress are complete |
+
+All slices stay with the main session because the shared worktree is dirty and
+the test, timing, workflow, and plan changes need exact-path integration.
 
 ## Authority
 
-- Authorized: local plan creation, local edits, focused checks, review, and
-  local commits on `fix/course-duplication-timeout`.
-- Withheld: push, PR update, merge, branch deletion, deployment, cluster
-  changes, production access, and live-service changes.
-- Preserve and exclude the pre-existing changes in:
-  `packages/graphql/src/ops.ts`,
-  `packages/graphql/src/public/client.json`, and
-  `packages/graphql/src/public/server.json`.
+Authorized: local plan amendment, in-scope edits, repository-native checks,
+read-only review, and local conventional commits on the existing branch.
+
+Withheld: push, PR update or publication, merge, branch/worktree deletion,
+secret provisioning, workflow activation, deployment, cluster changes,
+production access, and live-service changes.
 
 ## Terminal
 
-This package reaches its local terminal when the reviewed plan and the artifact
-policy slice are committed, focused checks pass, the exact diff is inspected,
-and the remaining CI and parallelization gates are reported as deferred. It
-does not reach a green-PR or published-delivery terminal without a later
-authorized push and fresh CI evidence.
+The local package reaches its terminal after the reviewed plan amendment,
+observer repair, timing tooling, guarded workflow, focused checks, deterministic
+fixture validation, exact diff inspection, final review, and local commits are
+complete. It does not claim a green PR or active timing automation without a
+future authorized push, credential provisioning, workflow run, timing PR, and
+fresh CI evidence.
 
 ## Boundary owner
 
@@ -134,23 +178,15 @@ authorized push and fresh CI evidence.
 
 ## Pause
 
-Pause before any push, PR update, merge, deployment, live-service access, or
-change to the course-duplication worker behavior. Pause if the artifact policy
-requires changing test selection, retries, timeouts, or the shared-state
-execution model.
+Pause before any push, PR update, merge, secret provisioning, workflow
+activation, live-service access, or change to the course-duplication worker.
 
 ## Progress
 
-- 2026-08-25: Freshness gate completed. The matching PR worktree is reused;
+- 2026-08-25: Freshness gate completed; the matching PR worktree is reused and
   the primary checkout remains untouched.
 - 2026-08-25: Sol planner challenge completed with `DONE_WITH_CONCERNS`.
-- 2026-08-25: S0 plan committed as `f5f7c7b07`.
-- 2026-08-25: S1 artifact policy committed as `4c59e6883`. Prettier and the
-  Playwright package TypeScript check passed; the before/after manifest is
-  identical at 881 tests in 31 files.
-- 2026-08-25: The repository pre-commit hook was attempted but failed in the
-  pre-existing generated `apps/chat/.next/dev/types/validator.ts`; the two
-  package commits were made with `HUSKY=0` after focused checks.
-- 2026-08-25: Final Sol review found no implementation issue and required only
-  this progress correction. Fresh CI artifact proof remains deferred by the
-  authority boundary.
+- 2026-08-25: Current baseline refreshed to 886 tests in 31 files after the
+  latest-base integration; earlier 881-test notes are stale.
+- 2026-08-25: S0 plan amendment is in progress. The prior artifact-policy
+  commits remain `f5f7c7b07`, `4c59e6883`, and `da473b1f8`.
