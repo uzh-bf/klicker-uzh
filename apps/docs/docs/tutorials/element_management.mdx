@@ -62,7 +62,7 @@ When creating a new element, the following fields are available:
   - States can help to organize elements when collaborating with others
 - **Question Content**:
   - The heart piece of the element, where the actual question is defined
-  - Insert your content with the provided editor, offering formatting, lists, LaTeX formula parsing, images, and more
+  - Insert your content with the provided editor, offering formatting, lists, LaTeX formulas, images, and [YouTube or Kaltura videos](#embedding-a-youtube-or-kaltura-video)
 - **Generic Explanation**:
   - Optional for all question types (not CT / FC)
   - Displayed immediately after interaction in Microlearning or Practice Quiz activities (independent of response)
@@ -86,6 +86,22 @@ When creating a new element, the following fields are available:
   - Currently in private preview testing (not visible to all users)
   - List of all interactions of users with this element (creation / modifications / sharing operations / ...)
   - Support of comments to allow for detailed content reviews in combination with the element status
+
+### Embedding a YouTube or Kaltura Video
+
+You can embed a video in the main **Content** field of any element:
+
+1. Select the **video-camera icon** in the editor toolbar.
+2. Paste a YouTube or Kaltura video URL. For Kaltura videos, you can paste the MediaSpace page URL directly.
+3. Select **Insert video** or press **Enter**.
+
+The video appears in the preview, allowing you to check it before saving the element. If the URL is not supported, the editor asks you to enter a valid YouTube or Kaltura URL.
+
+![Embedding a YouTube or Kaltura video in the element editor](/img/elements/element_video_embedding.png)
+
+:::info
+KlickerUZH does not upload or copy the video. It remains hosted by YouTube or Kaltura and is loaded from that provider when the element is displayed. The insertion button is available for an element's main content, but not for answer options, explanations, or activity descriptions.
+:::
 
 ## How can I modify an Element?
 
@@ -132,9 +148,15 @@ To share an element with other users and collaborate on it, find the element in 
 
 ![Element Sharing Option](/img/elements/element_sharing.png)
 
+### Archiving or Restoring an Element
+
+Archiving keeps an element for later use while removing it from your active element library. Open the element's three-dot menu and select **Move to archive**. This action is available if you own the element or have Admin permission for it.
+
+To bring an element back, enable **Show archived** in the library filters, open the element's three-dot menu, and select **Restore from archive**. These menu actions affect one element at a time. To archive or restore several elements at once, use [element batch operations](/tutorials/element_batch_operations/).
+
 ### Deleting an Element
 
-You may choose to deleted unwanted elements from the library by selecting the corresponding option on the specific element. Please carefully review the stated consequences of this action, as the deletion is irreversible. **Instances of this element in existing activities will not be affected by the deletion**. However, you will no longer be able to modify the content of the deleted element or add it to new activities. If you want to keep the element for later use, consider archiving it instead (see [library organization](#how-can-i-organize-my-element-library)).
+You may choose to delete unwanted elements from the library by selecting the corresponding option on the specific element. Please carefully review the stated consequences of this action, as the deletion is irreversible. **Instances of this element in existing activities will not be affected by the deletion**. However, you will no longer be able to modify the content of the deleted element or add it to new activities. If you want to keep the element for later use, consider [archiving it instead](#archiving-or-restoring-an-element).
 
 ![Element Deletion Option](/img/elements/element_deletion.png)
 
@@ -164,4 +186,4 @@ Elements (questions, flashcards, and content elements) are the building blocks o
 - **Grouping**: Use tags to categorize elements. Filters on the element library allow you to quickly find elements by tags, type, or status.
 - **Searching**: A simple search function on the element library allows you to search for elements by title or content.
 - **Sorting**: List elements by creation/modification date or alphabetically (A-Z or Z-A)
-- **Archiving**: Keep your element pool tidy by archiving and later retrieving elements
+- **Archiving**: Keep your element pool tidy by [archiving elements and restoring them later](#archiving-or-restoring-an-element)
