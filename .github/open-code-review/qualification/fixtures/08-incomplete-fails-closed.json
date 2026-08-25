@@ -6,7 +6,7 @@
   "review": {
     "schema_version": "ocr.run-manifest/v1",
     "status": "complete",
-    "model": "synthetic/model-v1",
+    "llm": { "model": "synthetic/model-v1" },
     "finish_reason": "stop",
     "warnings": [],
     "summary": {

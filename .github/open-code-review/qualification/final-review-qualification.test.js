@@ -21,7 +21,7 @@ function minimalFixture(overrides = {}) {
     review: {
       schema_version: 'ocr.run-manifest/v1',
       status: 'complete',
-      model: 'synthetic/model-v1',
+      llm: { model: 'synthetic/model-v1' },
       finish_reason: 'stop',
       warnings: [],
       summary: {
@@ -51,6 +51,7 @@ function findingComment(overrides = {}) {
     end_line: 2,
     category: 'bug',
     severity: 'high',
+    expected_disposition: 'follow-up',
     content:
       'Confidence: 90/100\nAutofix: manual\nMotivating line: `return value`\nThe cumulative change can fail after merge.',
     ...overrides,
@@ -152,6 +153,46 @@ test('rejects a finding outside the known category and severity enums', () => {
   })
   const evaluation = evaluate(fixture)
   assert.equal(evaluation.valid, false)
+})
+
+test('rejects a receipt with the wrong model or a non-stop finish reason', () => {
+  const wrongModel = minimalFixture({
+    review: {
+      ...minimalFixture().review,
+      llm: { model: 'other/model' },
+    },
+  })
+  const wrongFinishReason = minimalFixture({
+    expected_outcome: 'fails-closed',
+    expected_adjudication: null,
+    review: {
+      ...minimalFixture().review,
+      finish_reason: 'length',
+    },
+  })
+  assert.equal(evaluate(wrongModel).valid, false)
+  assert.equal(evaluate(wrongFinishReason).valid, false)
+  assert.match(evaluate(wrongModel).reasons.join(' '), /model/)
+  assert.match(evaluate(wrongFinishReason).reasons.join(' '), /finish_reason/)
+})
+
+test('rejects unknown receipt properties and coerced line numbers', () => {
+  const unknownProperty = minimalFixture({
+    review: { ...minimalFixture().review, extra: true },
+  })
+  const stringLine = minimalFixture({
+    expected_outcome: 'fails-closed',
+    expected_adjudication: null,
+    review: {
+      ...minimalFixture().review,
+      summary: { ...minimalFixture().review.summary, comments: 1 },
+      comments: [findingComment({ start_line: '2' })],
+    },
+  })
+  assert.equal(evaluate(unknownProperty).valid, false)
+  assert.equal(evaluate(stringLine).valid, false)
+  assert.match(evaluate(unknownProperty).reasons.join(' '), /unknown property/)
+  assert.match(evaluate(stringLine).reasons.join(' '), /start_line/)
 })
 
 test('rejects inverted line ranges', () => {
@@ -293,13 +334,34 @@ test('rejects a stack finding on a layer that does not own the path', () => {
   assert.match(evaluation.reasons.join(' '), /invalid layer owners/)
 })
 
-test('adjudicates deterministic labels from category and severity', () => {
+test('requires explicit owners for every stack finding', () => {
+  const stack = twoLayerStack()
+  const fixture = minimalFixture({
+    expected_outcome: 'fails-closed',
+    expected_adjudication: null,
+    review: {
+      ...minimalFixture().review,
+      summary: { ...minimalFixture().review.summary, comments: 1 },
+      stack,
+      comments: [findingComment({ path: 'src/two.ts' })],
+    },
+  })
+  const evaluation = evaluate(fixture)
+  assert.equal(evaluation.valid, false)
+  assert.match(evaluation.reasons.join(' '), /layer_numbers/)
+})
+
+test('adjudicates explicit finding dispositions without inferring severity', () => {
   const review = minimalFixture().review
   assert.equal(
     adjudicate({
       ...review,
       comments: [
-        findingComment({ category: 'security', severity: 'critical' }),
+        findingComment({
+          category: 'security',
+          severity: 'critical',
+          expected_disposition: 'blocker',
+        }),
       ],
     }),
     'blocker'
@@ -307,16 +369,14 @@ test('adjudicates deterministic labels from category and severity', () => {
   assert.equal(
     adjudicate({
       ...review,
-      comments: [
-        findingComment({ category: 'maintainability', severity: 'low' }),
-      ],
+      comments: [findingComment({ expected_disposition: 'follow-up' })],
     }),
     'follow-up'
   )
   assert.equal(
     adjudicate({
       ...review,
-      comments: [findingComment({ category: 'style', severity: 'low' })],
+      comments: [findingComment({ expected_disposition: 'rejected' })],
     }),
     'rejected'
   )
@@ -333,8 +393,20 @@ test('fixture validation rejects an unknown expected label', () => {
 test('reports a deterministic digest across repeated runs', () => {
   const first = runQualification(fixturesDir)
   const second = runQualification(fixturesDir)
+  const third = runQualification(fixturesDir)
   assert.equal(first.total, 8)
   assert.equal(first.failed, 0)
+  assert.equal(first.metrics.matched_count, 8)
+  assert.equal(first.metrics.false_blocker_fixtures, 2)
+  assert.deepEqual(first.metrics.token_totals, {
+    input_tokens: 600,
+    output_tokens: 200,
+    total_tokens: 800,
+  })
+  assert.equal(first.metrics.first_trigger_success, null)
+  assert.equal(first.metrics.github_action_minutes, null)
+  assert.equal(first.metrics.cost_usd, null)
   assert.match(first.digest, /^[0-9a-f]{64}$/)
   assert.equal(second.digest, first.digest)
+  assert.equal(third.digest, first.digest)
 })

@@ -6,7 +6,7 @@
   "review": {
     "schema_version": "ocr.run-manifest/v1",
     "status": "complete",
-    "model": "synthetic/model-v1",
+    "llm": { "model": "synthetic/model-v1" },
     "finish_reason": "stop",
     "warnings": [],
     "summary": {
@@ -29,6 +29,7 @@
         "end_line": 3,
         "category": "style",
         "severity": "high",
+        "expected_disposition": "rejected",
         "content": "Confidence: 95/100\nAutofix: mechanical\nMotivating line: `return value.toUpperCase()`\nThe formatter should keep the casing as authored. Not a blocker, but the suggested change is a false positive."
       }
     ]

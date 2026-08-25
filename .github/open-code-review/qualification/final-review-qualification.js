@@ -5,6 +5,7 @@ const path = require('node:path')
 const FIXTURE_SCHEMA = 'qualification-fixture/v1'
 const OCR_SCHEMA = 'ocr.run-manifest/v1'
 const STACK_SCHEMA = 'final-ai-stack-manifest/v1'
+const QUALIFICATION_MODEL = 'synthetic/model-v1'
 const FINDING_CATEGORIES = new Set([
   'bug',
   'security',
@@ -18,6 +19,7 @@ const FINDING_CATEGORIES = new Set([
 const FINDING_SEVERITIES = new Set(['critical', 'high', 'medium', 'low'])
 const OUTCOMES = new Set(['accepts', 'fails-closed'])
 const ADJUDICATIONS = new Set(['blocker', 'follow-up', 'rejected', 'clean'])
+const FINDING_DISPOSITIONS = new Set(['blocker', 'follow-up', 'rejected'])
 const HEX_SHA = /^[0-9a-f]{40}$/
 
 function sha256(value) {
@@ -29,9 +31,30 @@ function fail(reasons, message) {
   return false
 }
 
+function checkObject(value, reasons, label) {
+  if (value == null || typeof value !== 'object' || Array.isArray(value)) {
+    return fail(reasons, `${label} must be an object`)
+  }
+  return true
+}
+
+function checkExactKeys(value, allowed, required, reasons, label) {
+  if (!checkObject(value, reasons, label)) return false
+  const allowedKeys = new Set(allowed)
+  const unknown = Object.keys(value).find((key) => !allowedKeys.has(key))
+  if (unknown != null) {
+    return fail(reasons, `${label} has unknown property ${unknown}`)
+  }
+  const missing = required.find((key) => !Object.hasOwn(value, key))
+  if (missing != null) {
+    return fail(reasons, `${label} is missing ${missing}`)
+  }
+  return true
+}
+
 function checkString(value, reasons, label, { min = 1, max = Infinity } = {}) {
   if (typeof value !== 'string' || value.length < min || value.length > max) {
-    return fail(reasons, `${label} must be a string`)
+    return fail(reasons, `${label} must be a string of length ${min}-${max}`)
   }
   return true
 }
@@ -44,13 +67,43 @@ function checkInteger(value, reasons, label, { min = 0 } = {}) {
 }
 
 function validateFindingComment(comment, index, reasons, { stack } = {}) {
-  const filePath = String(comment?.path ?? '')
-  const startLine = Number(comment?.start_line)
-  const endLine = Number(comment?.end_line)
-  const category = String(comment?.category ?? '')
-  const severity = String(comment?.severity ?? '')
-  const content = String(comment?.content ?? '')
-  const layers = comment?.layer_numbers
+  const requiredKeys = [
+    'path',
+    'start_line',
+    'end_line',
+    'category',
+    'severity',
+    'content',
+    'expected_disposition',
+  ]
+  if (stack) requiredKeys.push('layer_numbers')
+  if (
+    !checkExactKeys(
+      comment,
+      [
+        'path',
+        'start_line',
+        'end_line',
+        'category',
+        'severity',
+        'content',
+        'layer_numbers',
+        'expected_disposition',
+      ],
+      requiredKeys,
+      reasons,
+      `comment ${index + 1}`
+    )
+  ) {
+    return false
+  }
+  const filePath = comment.path
+  const startLine = comment.start_line
+  const endLine = comment.end_line
+  const category = comment.category
+  const severity = comment.severity
+  const content = comment.content
+  const layers = comment.layer_numbers
   if (
     !checkString(filePath, reasons, `comment ${index + 1} path`, {
       min: 1,
@@ -62,14 +115,24 @@ function validateFindingComment(comment, index, reasons, { stack } = {}) {
     !checkInteger(endLine, reasons, `comment ${index + 1} end_line`, {
       min: 1,
     }) ||
-    !FINDING_CATEGORIES.has(category) ||
-    !FINDING_SEVERITIES.has(severity) ||
     !checkString(content, reasons, `comment ${index + 1} content`, {
       min: 1,
       max: 12000,
     })
   ) {
     return false
+  }
+  if (!FINDING_CATEGORIES.has(category)) {
+    return fail(reasons, `comment ${index + 1} has an unknown category`)
+  }
+  if (!FINDING_SEVERITIES.has(severity)) {
+    return fail(reasons, `comment ${index + 1} has an unknown severity`)
+  }
+  if (!FINDING_DISPOSITIONS.has(comment.expected_disposition)) {
+    return fail(
+      reasons,
+      `comment ${index + 1} has an unknown expected disposition`
+    )
   }
   if (endLine < startLine) {
     return fail(reasons, `comment ${index + 1} has an inverted line range`)
@@ -82,51 +145,127 @@ function validateFindingComment(comment, index, reasons, { stack } = {}) {
         `comment ${index + 1} path is not owned by any stack layer`
       )
     }
-    if (layers != null) {
-      if (
-        !Array.isArray(layers) ||
-        layers.length === 0 ||
-        new Set(layers).size !== layers.length ||
-        layers.some(
-          (layer) =>
-            !Number.isSafeInteger(layer) ||
-            layer < 1 ||
-            layer > stack.layer_count ||
-            !owners.includes(layer)
-        )
-      ) {
-        return fail(reasons, `comment ${index + 1} names invalid layer owners`)
-      }
+    if (
+      !Array.isArray(layers) ||
+      layers.length === 0 ||
+      new Set(layers).size !== layers.length ||
+      layers.some(
+        (layer) =>
+          !Number.isSafeInteger(layer) ||
+          layer < 1 ||
+          layer > stack.layer_count ||
+          !owners.includes(layer)
+      )
+    ) {
+      return fail(reasons, `comment ${index + 1} names invalid layer owners`)
     }
+  } else if (Object.hasOwn(comment, 'layer_numbers')) {
+    return fail(
+      reasons,
+      `comment ${index + 1} has stack owners without a stack`
+    )
   }
   return true
 }
 
 function validateReview(review, reasons) {
+  if (
+    !checkExactKeys(
+      review,
+      [
+        'schema_version',
+        'status',
+        'llm',
+        'finish_reason',
+        'warnings',
+        'summary',
+        'manifest',
+        'comments',
+        'stack',
+      ],
+      [
+        'schema_version',
+        'status',
+        'llm',
+        'finish_reason',
+        'warnings',
+        'summary',
+        'manifest',
+        'comments',
+      ],
+      reasons,
+      'review'
+    )
+  ) {
+    return false
+  }
   if (review?.schema_version !== OCR_SCHEMA) {
     return fail(reasons, `review schema_version must be ${OCR_SCHEMA}`)
   }
   if (review.status !== 'complete') {
     return fail(reasons, 'review status must be complete')
   }
+  if (
+    !checkExactKeys(review.llm, ['model'], ['model'], reasons, 'review llm')
+  ) {
+    return false
+  }
+  if (review.llm.model !== QUALIFICATION_MODEL) {
+    return fail(reasons, `review llm model must be ${QUALIFICATION_MODEL}`)
+  }
+  if (review.finish_reason !== 'stop') {
+    return fail(reasons, 'review finish_reason must be stop')
+  }
+  if (!Array.isArray(review.warnings) || review.warnings.length > 0) {
+    return fail(reasons, 'review must not carry coverage warnings')
+  }
   const summary = review.summary
-  if (!summary || typeof summary !== 'object') {
-    return fail(reasons, 'review summary is missing')
+  if (
+    !checkExactKeys(
+      summary,
+      [
+        'coverage',
+        'comments',
+        'files_reviewed',
+        'elapsed',
+        'input_tokens',
+        'output_tokens',
+        'total_tokens',
+      ],
+      [
+        'coverage',
+        'comments',
+        'files_reviewed',
+        'elapsed',
+        'input_tokens',
+        'output_tokens',
+        'total_tokens',
+      ],
+      reasons,
+      'review summary'
+    )
+  ) {
+    return false
   }
   if (summary.coverage !== 'complete') {
     return fail(reasons, 'review coverage must be complete')
   }
-  if (review.manifest?.schema_version !== OCR_SCHEMA) {
+  if (
+    !checkExactKeys(
+      review.manifest,
+      ['schema_version', 'terminal_state'],
+      ['schema_version', 'terminal_state'],
+      reasons,
+      'review manifest'
+    )
+  ) {
+    return false
+  }
+  if (review.manifest.schema_version !== OCR_SCHEMA) {
     return fail(reasons, `review manifest schema_version must be ${OCR_SCHEMA}`)
   }
-  if (review.manifest?.terminal_state !== 'complete') {
+  if (review.manifest.terminal_state !== 'complete') {
     return fail(reasons, 'review manifest terminal_state must be complete')
-  }
-  if (
-    review.warnings != null &&
-    (!Array.isArray(review.warnings) || review.warnings.length > 0)
-  ) {
-    return fail(reasons, 'review must not carry coverage warnings')
   }
   const comments = review.comments
   if (!Array.isArray(comments)) {
@@ -163,6 +302,31 @@ function validateReview(review, reasons) {
 }
 
 function validateStack(stack, reasons) {
+  if (
+    !checkExactKeys(
+      stack,
+      [
+        'schema_version',
+        'stack_id',
+        'ultimate_base',
+        'stack_order',
+        'layers',
+        'path_index',
+      ],
+      [
+        'schema_version',
+        'stack_id',
+        'ultimate_base',
+        'stack_order',
+        'layers',
+        'path_index',
+      ],
+      reasons,
+      'review stack'
+    )
+  ) {
+    return false
+  }
   if (stack?.schema_version !== STACK_SCHEMA) {
     return fail(reasons, `stack schema_version must be ${STACK_SCHEMA}`)
   }
@@ -184,6 +348,17 @@ function validateStack(stack, reasons) {
   }
   const ultimate = stack.ultimate_base
   if (
+    !checkExactKeys(
+      ultimate,
+      ['ref', 'sha'],
+      ['ref', 'sha'],
+      reasons,
+      'stack ultimate_base'
+    )
+  ) {
+    return false
+  }
+  if (
     !ultimate ||
     !checkString(ultimate.ref, reasons, 'ultimate_base ref', { min: 1 }) ||
     !checkString(ultimate.sha, reasons, 'ultimate_base sha', {
@@ -198,6 +373,35 @@ function validateStack(stack, reasons) {
   for (let index = 0; index < layers.length; index += 1) {
     const layer = layers[index]
     const position = index + 1
+    if (
+      !checkExactKeys(
+        layer,
+        [
+          'position',
+          'pull_request',
+          'base_ref',
+          'base_sha',
+          'head_ref',
+          'head_sha',
+          'title',
+          'files',
+        ],
+        [
+          'position',
+          'pull_request',
+          'base_ref',
+          'base_sha',
+          'head_ref',
+          'head_sha',
+          'title',
+          'files',
+        ],
+        reasons,
+        `stack layer ${position}`
+      )
+    ) {
+      return false
+    }
     if (layer?.position !== position) {
       return fail(reasons, `layer ${position} position is not ${position}`)
     }
@@ -264,6 +468,17 @@ function validateStack(stack, reasons) {
     }
     for (const file of files) {
       if (
+        !checkExactKeys(
+          file,
+          ['filename', 'status', 'additions', 'deletions'],
+          ['filename', 'status', 'additions', 'deletions'],
+          reasons,
+          `stack layer ${position} file`
+        )
+      ) {
+        return false
+      }
+      if (
         !checkString(file?.filename, reasons, `layer ${position} filename`, {
           min: 1,
           max: 500,
@@ -299,6 +514,17 @@ function validateStack(stack, reasons) {
   }
   const indexedFilenames = new Set()
   for (const entry of stack.path_index) {
+    if (
+      !checkExactKeys(
+        entry,
+        ['filename', 'additions', 'deletions', 'layers'],
+        ['filename', 'additions', 'deletions', 'layers'],
+        reasons,
+        'stack path_index entry'
+      )
+    ) {
+      return false
+    }
     if (indexedFilenames.has(entry?.filename)) {
       return fail(reasons, `stack path_index repeats ${entry.filename}`)
     }
@@ -327,6 +553,31 @@ function validateStack(stack, reasons) {
 }
 
 function validateFixture(fixture, reasons) {
+  if (
+    !checkExactKeys(
+      fixture,
+      [
+        'schema_version',
+        'scenario',
+        'expected_outcome',
+        'expected_adjudication',
+        'review',
+        'notes',
+      ],
+      [
+        'schema_version',
+        'scenario',
+        'expected_outcome',
+        'expected_adjudication',
+        'review',
+        'notes',
+      ],
+      reasons,
+      'fixture'
+    )
+  ) {
+    return false
+  }
   if (fixture?.schema_version !== FIXTURE_SCHEMA) {
     return fail(reasons, `fixture schema_version must be ${FIXTURE_SCHEMA}`)
   }
@@ -351,6 +602,12 @@ function validateFixture(fixture, reasons) {
     return false
   }
   const stack = fixture.review.stack
+  if (
+    Object.hasOwn(fixture.review, 'stack') &&
+    !checkObject(stack, reasons, 'review stack')
+  ) {
+    return false
+  }
   if (stack != null && !validateStack(stack, reasons)) {
     return false
   }
@@ -364,21 +621,13 @@ function validateFixture(fixture, reasons) {
 }
 
 function adjudicate(review) {
-  for (const comment of review.comments) {
-    if (
-      (comment.category === 'bug' || comment.category === 'security') &&
-      (comment.severity === 'critical' || comment.severity === 'high')
-    ) {
-      return 'blocker'
-    }
-  }
-  let hasActionable = false
-  for (const comment of review.comments) {
-    if (comment.category === 'other') return 'clean'
-    if (comment.category === 'style') return 'rejected'
-    hasActionable = true
-  }
-  return hasActionable ? 'follow-up' : 'clean'
+  const dispositions = new Set(
+    review.comments.map((comment) => comment.expected_disposition)
+  )
+  if (dispositions.has('blocker')) return 'blocker'
+  if (dispositions.has('follow-up')) return 'follow-up'
+  if (dispositions.has('rejected')) return 'rejected'
+  return 'clean'
 }
 
 function evaluate(fixture) {
@@ -409,7 +658,45 @@ function loadFixtures(directory) {
     })
 }
 
+function canonicalize(value) {
+  if (Array.isArray(value)) return value.map(canonicalize)
+  if (value != null && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, canonicalize(value[key])])
+    )
+  }
+  return value
+}
+
+function canonicalJson(value) {
+  return JSON.stringify(canonicalize(value))
+}
+
+function reviewTokenTotals(loaded) {
+  return loaded.reduce(
+    (totals, entry) => {
+      const summary = entry.fixture?.review?.summary
+      if (
+        !summary ||
+        !['input_tokens', 'output_tokens', 'total_tokens'].every(
+          (key) => Number.isSafeInteger(summary[key]) && summary[key] >= 0
+        )
+      ) {
+        return totals
+      }
+      totals.input_tokens += summary.input_tokens
+      totals.output_tokens += summary.output_tokens
+      totals.total_tokens += summary.total_tokens
+      return totals
+    },
+    { input_tokens: 0, output_tokens: 0, total_tokens: 0 }
+  )
+}
+
 function runQualification(directory) {
+  const startedAt = process.hrtime.bigint()
   const loaded = loadFixtures(directory)
   const results = []
   let failed = 0
@@ -421,6 +708,9 @@ function runQualification(directory) {
         adjudication: null,
         reasons: [`fixture is not parseable JSON: ${entry.error}`],
         matched: false,
+        expected_adjudication: null,
+        expected_outcome: null,
+        fixture_digest: null,
       })
       failed += 1
       continue
@@ -441,11 +731,26 @@ function runQualification(directory) {
       matched,
       expected_adjudication: evaluation.expected_adjudication,
       expected_outcome: evaluation.expected_outcome,
+      fixture_digest: sha256(canonicalJson(entry.fixture)),
     })
   }
+  const runtimeMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000
+  const matchedCount = results.filter((result) => result.matched).length
   return {
     digest: suiteDigest(results),
     failed,
+    metrics: {
+      fixture_count: results.length,
+      matched_count: matchedCount,
+      false_blocker_fixtures: results.filter(
+        (result) => result.expected_adjudication === 'rejected'
+      ).length,
+      runtime_ms: Math.round(runtimeMs * 1000) / 1000,
+      token_totals: reviewTokenTotals(loaded),
+      first_trigger_success: null,
+      github_action_minutes: null,
+      cost_usd: null,
+    },
     results,
     total: results.length,
   }
@@ -453,18 +758,18 @@ function runQualification(directory) {
 
 function suiteDigest(results) {
   return sha256(
-    results
-      .map(
-        (result) =>
-          result.name +
-          '|' +
-          result.valid +
-          '|' +
-          result.adjudication +
-          '|' +
-          result.matched
-      )
-      .join('\n')
+    canonicalJson(
+      results.map((result) => ({
+        adjudication: result.adjudication,
+        expected_adjudication: result.expected_adjudication,
+        expected_outcome: result.expected_outcome,
+        fixture_digest: result.fixture_digest,
+        matched: result.matched,
+        name: result.name,
+        reasons: result.reasons,
+        valid: result.valid,
+      }))
+    )
   )
 }
 
@@ -515,6 +820,10 @@ if (require.main === module) {
       suite.total +
       ' failed ' +
       suite.failed
+  )
+  console.log(`metrics ${JSON.stringify(suite.metrics)}`)
+  console.log(
+    'live metrics unavailable: first_trigger_success, github_action_minutes, cost_usd'
   )
   process.exitCode = suite.failed > 0 ? 1 : 0
 }

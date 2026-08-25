@@ -6,7 +6,7 @@
   "review": {
     "schema_version": "ocr.run-manifest/v1",
     "status": "complete",
-    "model": "synthetic/model-v1",
+    "llm": { "model": "synthetic/model-v1" },
     "finish_reason": "stop",
     "warnings": [],
     "summary": {
@@ -29,6 +29,7 @@
         "end_line": 18,
         "category": "security",
         "severity": "high",
+        "expected_disposition": "blocker",
         "content": "Confidence: 85/100\nAutofix: manual\nMotivating line: `res.status(200).send(result)`\nThe endpoint returns an unauthenticated execution receipt; the documented contract requires a signed receipt from the gateway."
       }
     ]

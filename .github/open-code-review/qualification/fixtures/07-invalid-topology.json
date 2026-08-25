@@ -6,7 +6,7 @@
   "review": {
     "schema_version": "ocr.run-manifest/v1",
     "status": "complete",
-    "model": "synthetic/model-v1",
+    "llm": { "model": "synthetic/model-v1" },
     "finish_reason": "stop",
     "warnings": [],
     "summary": {
@@ -30,11 +30,7 @@
         "ref": "v3",
         "sha": "fa0f80a3b99181661d386f460ecd5fc23ec144cc"
       },
-      "stack_order": [
-        71,
-        72,
-        73
-      ],
+      "stack_order": [71, 72, 73],
       "layers": [
         {
           "position": 1,
@@ -93,25 +89,19 @@
           "filename": "src/a.ts",
           "additions": 1,
           "deletions": 0,
-          "layers": [
-            1
-          ]
+          "layers": [1]
         },
         {
           "filename": "src/b.ts",
           "additions": 1,
           "deletions": 0,
-          "layers": [
-            2
-          ]
+          "layers": [2]
         },
         {
           "filename": "src/c.ts",
           "additions": 1,
           "deletions": 0,
-          "layers": [
-            3
-          ]
+          "layers": [3]
         }
       ]
     }

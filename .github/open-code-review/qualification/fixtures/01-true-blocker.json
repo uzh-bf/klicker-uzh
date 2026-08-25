@@ -6,7 +6,7 @@
   "review": {
     "schema_version": "ocr.run-manifest/v1",
     "status": "complete",
-    "model": "synthetic/model-v1",
+    "llm": { "model": "synthetic/model-v1" },
     "finish_reason": "stop",
     "warnings": [],
     "summary": {
@@ -29,6 +29,7 @@
         "end_line": 12,
         "category": "bug",
         "severity": "critical",
+        "expected_disposition": "blocker",
         "content": "Confidence: 90/100\nAutofix: manual\nMotivating line: `return rawPayload`\nThe new endpoint returns the unvalidated payload field as the record id, which collides with an existing index and drops earlier records."
       }
     ]

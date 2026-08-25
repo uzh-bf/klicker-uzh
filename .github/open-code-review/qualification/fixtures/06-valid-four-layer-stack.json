@@ -6,7 +6,7 @@
   "review": {
     "schema_version": "ocr.run-manifest/v1",
     "status": "complete",
-    "model": "synthetic/model-v1",
+    "llm": { "model": "synthetic/model-v1" },
     "finish_reason": "stop",
     "warnings": [],
     "summary": {
@@ -25,14 +25,12 @@
     "comments": [
       {
         "path": "src/mid.ts",
-        "layer_numbers": [
-          2,
-          3
-        ],
+        "layer_numbers": [2, 3],
         "start_line": 14,
         "end_line": 14,
         "category": "bug",
         "severity": "high",
+        "expected_disposition": "blocker",
         "content": "Confidence: 80/100\nAutofix: manual\nMotivating line: `value *= scale`\nLayer 3 scales the value that layer 2 already scaled, double-counting the conversion for downstream consumers."
       }
     ],
@@ -43,12 +41,7 @@
         "ref": "v3",
         "sha": "fa0f80a3b99181661d386f460ecd5fc23ec144cc"
       },
-      "stack_order": [
-        41,
-        42,
-        43,
-        44
-      ],
+      "stack_order": [41, 42, 43, 44],
       "layers": [
         {
           "position": 1,
@@ -124,26 +117,19 @@
           "filename": "src/base.ts",
           "additions": 5,
           "deletions": 1,
-          "layers": [
-            1
-          ]
+          "layers": [1]
         },
         {
           "filename": "src/mid.ts",
           "additions": 24,
           "deletions": 1,
-          "layers": [
-            2,
-            3
-          ]
+          "layers": [2, 3]
         },
         {
           "filename": "src/top.ts",
           "additions": 9,
           "deletions": 0,
-          "layers": [
-            4
-          ]
+          "layers": [4]
         }
       ]
     }

@@ -4,7 +4,14 @@
   "description": "Public-safe synthetic fixture contract for the offline final-review evaluator. Synthetic values only; no private repository, pull-request, tracker, credential, or provider data.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "scenario", "expected_outcome", "expected_adjudication", "review", "notes"],
+  "required": [
+    "schema_version",
+    "scenario",
+    "expected_outcome",
+    "expected_adjudication",
+    "review",
+    "notes"
+  ],
   "properties": {
     "schema_version": { "const": "qualification-fixture/v1" },
     "scenario": { "type": "string", "minLength": 1, "maxLength": 80 },
@@ -18,18 +25,29 @@
     "review": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schema_version", "status", "summary", "comments"],
+      "required": [
+        "schema_version",
+        "status",
+        "llm",
+        "finish_reason",
+        "warnings",
+        "summary",
+        "manifest",
+        "comments"
+      ],
       "properties": {
         "schema_version": { "const": "ocr.run-manifest/v1" },
         "status": { "const": "complete" },
-        "model": { "type": "string", "minLength": 1 },
-        "finish_reason": { "enum": ["stop", "length", "content_filter"] },
-        "warnings": {
-          "anyOf": [
-            { "type": "array", "maxItems": 0 },
-            { "type": "null" }
-          ]
+        "llm": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["model"],
+          "properties": {
+            "model": { "const": "synthetic/model-v1" }
+          }
         },
+        "finish_reason": { "const": "stop" },
+        "warnings": { "type": "array", "maxItems": 0 },
         "summary": {
           "type": "object",
           "additionalProperties": false,
@@ -119,9 +137,18 @@
                     "items": {
                       "type": "object",
                       "additionalProperties": false,
-                      "required": ["filename", "status", "additions", "deletions"],
+                      "required": [
+                        "filename",
+                        "status",
+                        "additions",
+                        "deletions"
+                      ],
                       "properties": {
-                        "filename": { "type": "string", "minLength": 1, "maxLength": 500 },
+                        "filename": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 500
+                        },
                         "status": { "type": "string", "minLength": 1 },
                         "additions": { "type": "integer", "minimum": 0 },
                         "deletions": { "type": "integer", "minimum": 0 }
@@ -138,7 +165,11 @@
                 "additionalProperties": false,
                 "required": ["filename", "additions", "deletions", "layers"],
                 "properties": {
-                  "filename": { "type": "string", "minLength": 1, "maxLength": 500 },
+                  "filename": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
                   "additions": { "type": "integer", "minimum": 0 },
                   "deletions": { "type": "integer", "minimum": 0 },
                   "layers": {
@@ -164,7 +195,8 @@
               "end_line",
               "category",
               "severity",
-              "content"
+              "content",
+              "expected_disposition"
             ],
             "properties": {
               "path": { "type": "string", "minLength": 1, "maxLength": 500 },
@@ -177,14 +209,53 @@
               "start_line": { "type": "integer", "minimum": 1 },
               "end_line": { "type": "integer", "minimum": 1 },
               "category": {
-                "enum": ["bug", "security", "performance", "maintainability", "test", "style", "documentation", "other"]
+                "enum": [
+                  "bug",
+                  "security",
+                  "performance",
+                  "maintainability",
+                  "test",
+                  "style",
+                  "documentation",
+                  "other"
+                ]
               },
               "severity": { "enum": ["critical", "high", "medium", "low"] },
-              "content": { "type": "string", "minLength": 1, "maxLength": 12000 }
+              "content": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 12000
+              },
+              "expected_disposition": {
+                "enum": ["blocker", "follow-up", "rejected"]
+              }
             }
           }
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": { "required": ["stack"] },
+          "then": {
+            "properties": {
+              "comments": {
+                "items": {
+                  "required": [
+                    "path",
+                    "start_line",
+                    "end_line",
+                    "category",
+                    "severity",
+                    "content",
+                    "layer_numbers",
+                    "expected_disposition"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
     },
     "notes": { "type": "string", "minLength": 1 }
   }
