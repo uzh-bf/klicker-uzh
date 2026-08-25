@@ -669,7 +669,13 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   `handleDisabledReasonChange` callback only forwarded its value to React's
   stable `setDisabledAnnouncement` state setter. The wrapper is removed and the
   setter is passed directly to `LiveQuizQuestionsStep`; `useCallback` remains for
-  `handleSubmit`. Focused frontend-manage type and Biome format checks plus
+  `handleSubmit`. The fallback slice-reviewer finding that `ElementHandle`
+  re-resolves like a `Locator` is rejected: Context7 against Playwright 1.58.2
+  confirms that an `ElementHandle` stays bound to the particular DOM element
+  captured at that moment, while a `Locator` re-resolves. The existing
+  pre-transition handle with post-transition `isConnected` and `textContent`
+  checks is therefore the intended identity guard; `O-live-quiz.spec.ts`
+  remains unchanged. Focused frontend-manage type and Biome format checks plus
   `git diff --check` passed. Final review and CI completion are not claimed.
 
 ### Historical execution evidence before final runtime proof
