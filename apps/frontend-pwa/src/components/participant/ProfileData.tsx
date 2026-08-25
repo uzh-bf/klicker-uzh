@@ -129,6 +129,7 @@ function ProfileData({
               <ReceivedAchievementTile
                 key={achievement.id}
                 instance={achievement}
+                isSelf={isSelf}
               />
             ))}
             {isSelf &&

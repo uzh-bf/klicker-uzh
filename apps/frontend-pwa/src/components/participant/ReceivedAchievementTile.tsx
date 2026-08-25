@@ -1,19 +1,64 @@
+import { useMutation } from '@apollo/client'
 import type { ParticipantAchievementInstance } from '@klicker-uzh/graphql/dist/ops'
+import { AcknowledgeAchievementReceiptDocument } from '@klicker-uzh/graphql/dist/ops'
 import dayjs from 'dayjs'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
+import { useEffect, useRef, useState } from 'react'
 
 function ReceivedAchievementTile({
   instance,
+  isSelf,
 }: {
   instance: ParticipantAchievementInstance
+  isSelf: boolean
 }) {
   const { locale } = useRouter()
   const achievement = instance.achievement
   const t = useTranslations()
-  // receipt is pending when the student has not yet seen this award
-  const receiptPending = !instance.receiptAcknowledgedAt
+  const [acknowledgeAchievementReceipt] = useMutation(
+    AcknowledgeAchievementReceiptDocument
+  )
+  const [receiptAcknowledged, setReceiptAcknowledged] = useState(false)
+  const acknowledgementAttempted = useRef(false)
+
+  useEffect(() => {
+    if (
+      !isSelf ||
+      instance.receiptAcknowledgedAt !== null ||
+      acknowledgementAttempted.current
+    ) {
+      return
+    }
+
+    acknowledgementAttempted.current = true
+
+    void acknowledgeAchievementReceipt({
+      variables: { achievementInstanceId: instance.id },
+    })
+      .then(({ data }) => {
+        if (data?.acknowledgeAchievementReceipt) {
+          setReceiptAcknowledged(true)
+        }
+      })
+      .catch(() => {
+        // A failed acknowledgement remains pending and is retried when the
+        // profile is mounted again.
+      })
+  }, [
+    acknowledgeAchievementReceipt,
+    instance.id,
+    instance.receiptAcknowledgedAt,
+    isSelf,
+  ])
+
+  // Public profiles do not receive the private receipt field. They must not
+  // display a pending receipt or attempt to acknowledge it.
+  const receiptPending =
+    isSelf === true &&
+    instance.receiptAcknowledgedAt === null &&
+    !receiptAcknowledged
 
   return (
     <div className="flex w-full flex-row items-center gap-4 rounded border px-3 py-2">
