@@ -420,25 +420,42 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 ## Progress
 
-- Status: replacement S1 through S3, the bounded correction, and the devrouter
-  0.0.37 consumer adaptation are committed and verified. The current HEAD
-  before this evidence commit is
-  `f98f320391779d7ffa9dc16b7f0edc9ca03825ec`.
-- Freshness: before this plan edit, the branch was clean and 14 commits ahead
-  and 3 behind `origin/v3`. The three newer upstream commits are limited to CI,
-  deployment, and documentation paths with no W2 overlap; no third rebase was
-  performed.
+- Status: replacement S1 through S3, the bounded correction, the devrouter
+  0.0.37 consumer adaptation, and the final accessibility correction are
+  committed and verified. The current HEAD before this evidence commit is
+  `eefb977d5b449a8b5c4f645727e8fcc09605660d`.
+- Freshness: before this plan edit, the branch was clean, 16 commits ahead and
+  4 behind `origin/v3`. The four upstream-only commits remain limited to CI,
+  deployment, and documentation paths with no W2 overlap; no further rebase
+  was performed.
+- Independent Sol integrated final review of HEAD `b4c5e516d` found one
+  actionable P3: the dynamically changing empty-block validation reason lacked
+  a polite live region. All other package lenses were accepted, including W2
+  scope, devrouter 0.0.37, the Playwright runtime-blocker disclosure, and the W8
+  debt classification. The finding was verified against the current Web
+  Interface Guidelines rule that asynchronous validation updates need
+  `aria-live="polite"`.
+- Correction commit `eefb977d5b449a8b5c4f645727e8fcc09605660d` keeps the
+  final-step reason mounted as a stable `aria-live="polite"` region, preserves
+  conditional `aria-describedby` only while a reason exists, and extends the O
+  journey across invalid and recovery transitions.
+- Correction checks passed: Biome format/check, Prettier, frontend-manage
+  check, Playwright check, O-spec collection with 81 tests, `git diff --check`,
+  full commit hooks, staged secret/credential/PII audit, and a clean worktree.
 - Current-base static verification passed sequentially: feature-flags build;
   GraphQL build with warnings only; frontend-manage check; Playwright check; B,
   O, and P collection with 154 tests in 3 files; Biome format for all 8 changed
   non-Playwright TS/TSX/i18n files; Prettier for all 7 changed
   Markdown/YAML/Playwright files; base-to-head `git diff --check`; and a clean
   worktree before this evidence update.
-- Exact runtime readiness passed on the rebased HEAD: canonical `devrouter
-  ensure` resolved workspace `rs-ux-review-question-library` with 10 routes.
-  Three consecutive readiness rounds returned Manage 200, Auth 200, PWA 200,
-  and API 404. Turbo and the required Manage, Auth, API, and PWA processes were
-  present, with no new OOM, kill, or Turbo-failure evidence.
+- Correction-specific exact devrouter proof passed on the current HEAD after
+  one transient 502 attempt and one discarded invalid container-origin probe.
+  Fancy-domain HTTPS is host-facing; the producing run used only host-side
+  exact namespaced URLs, and the discarded container curl error 7 is not a
+  product or runtime failure. Three consecutive producing rounds returned
+  Manage 200, Auth 200, PWA 200, and API 404. Required processes were present,
+  and bounded logs contained no relevant crash, OOM, kill, Turbo failure, or
+  compile error.
 - Final current-base exact-domain smoke passed through the exact Auth route with
   the documented seeded local lecturer account at
   `https://manage.klicker.rs-ux-review-question-library.localhost/`. EN and DE
@@ -459,6 +476,16 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   outcome actions, one-block-per-element placement, the empty-block disabled
   reason and `aria-describedby` association, recovery after deleting the empty
   block, and draft cancellation without submission.
+- The final accessibility proof showed the same stable reason DOM node in EN
+  and DE. In the valid state it was empty, Create was enabled, and
+  `aria-describedby` was absent. An empty block produced the localized reason,
+  disabled Create, and associated Create with the reason. Recovery left the
+  same node empty, re-enabled Create, and removed `aria-describedby`; both
+  unsaved flows were cancelled.
+- Correction screenshots are gitignored at
+  `project/_local/evidence/w2-runtime-2026-08-25/activity-validation-reason-en-invalid-1440x900.png`
+  and
+  `project/_local/evidence/w2-runtime-2026-08-25/activity-validation-reason-de-invalid-1440x900.png`.
 - Microlearning EN and DE browser flows passed singular/plural labels, distinct
   existing-stack, new-stack, and one-stack-per-element outcomes, expected
   placement/removal behavior, and draft cancellation without submission.
@@ -481,14 +508,15 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   hostname, SNI, and HTTP-status checks against the served leaf without `-k`.
   Append-only SAN growth remains unresolved, including the observed 295 stale
   SANs; no manual route, TLS, certificate, or SAN change was made.
-- Final lifecycle is complete: canonical stop for the exact source reported
-  provider state `Stopped`, freed 10 routes, and left 0 exact W2 routes. No new
-  worktree and no manual Docker, DevPod, route, TLS, certificate, or lock edit
+- Final lifecycle after the current-HEAD proof is complete: the browser session
+  was closed and absent; canonical stop freed 10 routes; provider state was
+  `Stopped`; route state was absent; and the exact W2 route count was 0. No new
+  worktree or manual Docker, DevPod, route, TLS, certificate, or lock edit
   occurred.
-- Remaining work is only an independent integrated final review of
-  `origin/v3...HEAD` and recording its disposition. Push, PR or stack mutation,
-  merge, deploy, publication, cleanup, and deletion remain withheld.
-- Next action: run the independent integrated final review, then prepare a local
+- Remaining work is only integrated final re-review of `origin/v3...HEAD` and
+  recording its disposition. Push, PR or stack mutation, merge, deploy,
+  publication, cleanup, and deletion remain withheld.
+- Next action: obtain final reviewer correction readback, then prepare a local
   handoff. Do not push, open or update a PR, merge, deploy, or publish.
 
 ### Historical execution evidence before final runtime proof
