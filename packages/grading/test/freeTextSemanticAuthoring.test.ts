@@ -30,11 +30,15 @@ describe('semantic free-text authoring helpers', () => {
     })
 
     expect(config.rubric_schema.name).toBe('Freitext-Bewertung')
-    expect(config.outcome_bands?.map((band) => band.label)).toEqual([
-      'Nicht korrekt',
-      'Teilweise korrekt',
-      'Korrekt',
-    ])
+    expect(
+      Object.fromEntries(
+        config.outcome_bands?.map((band) => [band.category, band.label]) ?? []
+      )
+    ).toEqual({
+      INCORRECT: 'Nicht korrekt',
+      PARTIAL: 'Teilweise korrekt',
+      CORRECT: 'Korrekt',
+    })
     config.reference_solution = 'Eine vollständige Referenzlösung'
     expect(validateSemanticFreeTextConfig(config)).toEqual([])
   })

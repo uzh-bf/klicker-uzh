@@ -41,7 +41,11 @@ export function createSemanticFreeTextConfig({
             ['teilweise erfüllt', 'Das Kriterium ist teilweise erfüllt.', 50],
             ['erfüllt', 'Das Kriterium ist erfüllt.', 100],
           ] as const,
-          outcomeLabels: ['Nicht korrekt', 'Teilweise korrekt', 'Korrekt'],
+          outcomeLabels: {
+            INCORRECT: 'Nicht korrekt',
+            PARTIAL: 'Teilweise korrekt',
+            CORRECT: 'Korrekt',
+          },
         }
       : {
           schemaName: 'Free-text evaluation',
@@ -55,7 +59,11 @@ export function createSemanticFreeTextConfig({
             ['partially met', 'The criterion is partially met.', 50],
             ['met', 'The criterion is met.', 100],
           ] as const,
-          outcomeLabels: ['Incorrect', 'Partially correct', 'Correct'],
+          outcomeLabels: {
+            INCORRECT: 'Incorrect',
+            PARTIAL: 'Partially correct',
+            CORRECT: 'Correct',
+          },
         }
 
   return {
@@ -65,9 +73,9 @@ export function createSemanticFreeTextConfig({
     solution_reveal_enabled: true,
     accepted_exact_answers: [...legacySolutions],
     reference_solution: '',
-    outcome_bands: getDefaultFreeTextOutcomeBands().map((band, index) => ({
+    outcome_bands: getDefaultFreeTextOutcomeBands().map((band) => ({
       ...band,
-      label: copy.outcomeLabels[index]!,
+      label: copy.outcomeLabels[band.category],
     })),
     rubric_schema: {
       schema_version: '1',

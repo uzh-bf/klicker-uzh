@@ -26,8 +26,10 @@ import {
   type FieldArrayRenderProps,
   type FormikProps,
 } from 'formik'
+import { nanoid } from 'nanoid'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import type { ElementFormTypesFreeText } from '../types'
 import FreeTextOutcomeBandEditor from './FreeTextOutcomeBandEditor'
 import FreeTextRubricEditor from './FreeTextRubricEditor'
@@ -54,21 +56,24 @@ function SemanticFreeTextOptions({
   const advancedMetadata = config
     ? getSemanticFreeTextAdvancedMetadata(config.rubric_schema)
     : null
+  const [exactAnswerKeys, setExactAnswerKeys] = useState(
+    () => config?.accepted_exact_answers.map(() => nanoid()) ?? []
+  )
 
   const setEnabled = (enabled: boolean) => {
     if (!canEdit) return
 
     if (enabled) {
       const language = router.locale === 'de' ? 'de' : 'en'
-      setFieldValue(
-        'options.semanticEvaluation',
-        createSemanticFreeTextConfig({
-          language,
-          legacySolutions: values.options.solutions ?? [],
-        })
-      )
+      const newConfig = createSemanticFreeTextConfig({
+        language,
+        legacySolutions: values.options.solutions ?? [],
+      })
+      setExactAnswerKeys(newConfig.accepted_exact_answers.map(() => nanoid()))
+      setFieldValue('options.semanticEvaluation', newConfig)
       setFieldValue('options.hasSampleSolution', true)
     } else {
+      setExactAnswerKeys([])
       setFieldValue(
         'options.solutions',
         config?.accepted_exact_answers ?? values.options.solutions
@@ -78,12 +83,19 @@ function SemanticFreeTextOptions({
   }
 
   const availability = capability?.availability
-  const availabilityMessage =
-    availability === SemanticFreeTextCapabilityAvailability.Available
-      ? t('manage.elements.semanticEvaluatorAvailable')
-      : availability === SemanticFreeTextCapabilityAvailability.Degraded
-        ? t('manage.elements.semanticEvaluatorDegraded')
-        : t('manage.elements.semanticEvaluatorUnavailable')
+  let availabilityMessage = t('manage.elements.semanticEvaluatorUnavailable')
+  if (availability === SemanticFreeTextCapabilityAvailability.Available) {
+    availabilityMessage = t('manage.elements.semanticEvaluatorAvailable')
+  } else if (availability === SemanticFreeTextCapabilityAvailability.Degraded) {
+    availabilityMessage = t('manage.elements.semanticEvaluatorDegraded')
+  }
+
+  let entitlementMessage = t('manage.elements.semanticNotEntitled')
+  if (loading) {
+    entitlementMessage = t('shared.generic.loading')
+  } else if (entitled) {
+    entitlementMessage = t('manage.elements.semanticEntitled')
+  }
 
   return (
     <section
@@ -116,11 +128,7 @@ function SemanticFreeTextOptions({
           <span className="font-semibold">
             {t('manage.elements.semanticEntitlement')}:{' '}
           </span>
-          {loading
-            ? t('shared.generic.loading')
-            : entitled
-              ? t('manage.elements.semanticEntitled')
-              : t('manage.elements.semanticNotEntitled')}
+          {entitlementMessage}
         </div>
         <div
           className="rounded border border-gray-200 bg-white p-2 text-sm"
@@ -204,7 +212,7 @@ function SemanticFreeTextOptions({
                 <div className="flex flex-col gap-2">
                   {config.accepted_exact_answers.map((_answer, index) => (
                     <div
-                      key={index}
+                      key={exactAnswerKeys[index]!}
                       className="flex flex-col gap-2 sm:flex-row sm:items-end"
                     >
                       <FormikTextField
@@ -218,7 +226,14 @@ function SemanticFreeTextOptions({
                       {canEdit && (
                         <Button
                           destructive
-                          onClick={() => remove(index)}
+                          onClick={() => {
+                            setExactAnswerKeys((keys) =>
+                              keys.filter(
+                                (_key, keyIndex) => keyIndex !== index
+                              )
+                            )
+                            remove(index)
+                          }}
                           data={{ cy: `semantic-delete-exact-answer-${index}` }}
                         >
                           {t('shared.generic.delete')}
@@ -228,7 +243,10 @@ function SemanticFreeTextOptions({
                   ))}
                   {canEdit && (
                     <Button
-                      onClick={() => push('')}
+                      onClick={() => {
+                        setExactAnswerKeys((keys) => [...keys, nanoid()])
+                        push('')
+                      }}
                       data={{ cy: 'semantic-add-exact-answer' }}
                     >
                       {t('manage.elements.semanticAddExactAnswer')}

@@ -5,7 +5,9 @@ import {
   FormikTextField,
 } from '@uzh-bf/design-system'
 import { FieldArray, type FieldArrayRenderProps } from 'formik'
+import { nanoid } from 'nanoid'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import type { ElementFormTypesFreeText } from '../types'
 
 function FreeTextOutcomeBandEditor({
@@ -17,6 +19,7 @@ function FreeTextOutcomeBandEditor({
 }) {
   const t = useTranslations()
   const bands = values.options.semanticEvaluation?.outcome_bands ?? []
+  const [bandKeys, setBandKeys] = useState(() => bands.map(() => nanoid()))
 
   return (
     <section className="flex flex-col gap-3" data-cy="semantic-outcome-bands">
@@ -31,9 +34,9 @@ function FreeTextOutcomeBandEditor({
       <FieldArray name="options.semanticEvaluation.outcome_bands">
         {({ push, remove }: FieldArrayRenderProps) => (
           <div className="flex flex-col gap-2">
-            {bands.map((band, index) => (
+            {bands.map((_band, index) => (
               <div
-                key={band.id || index}
+                key={bandKeys[index]!}
                 className="grid gap-2 rounded-md border border-gray-300 p-2 md:grid-cols-[1fr_1fr_7rem_7rem_10rem_auto] md:items-end"
                 data-cy={`semantic-outcome-band-${index}`}
               >
@@ -96,7 +99,12 @@ function FreeTextOutcomeBandEditor({
                   <Button
                     destructive
                     disabled={bands.length <= 1}
-                    onClick={() => remove(index)}
+                    onClick={() => {
+                      setBandKeys((keys) =>
+                        keys.filter((_key, keyIndex) => keyIndex !== index)
+                      )
+                      remove(index)
+                    }}
                     data={{ cy: `semantic-delete-outcome-${index}` }}
                   >
                     {t('shared.generic.delete')}
@@ -106,15 +114,16 @@ function FreeTextOutcomeBandEditor({
             ))}
             {!disabled && (
               <Button
-                onClick={() =>
+                onClick={() => {
+                  setBandKeys((keys) => [...keys, nanoid()])
                   push({
-                    id: `outcome-${bands.length + 1}`,
+                    id: `outcome-${nanoid()}`,
                     label: '',
                     min_score: 0,
                     max_score: 100,
                     category: 'PARTIAL',
                   })
-                }
+                }}
                 data={{ cy: 'semantic-add-outcome-band' }}
               >
                 {t('manage.elements.semanticAddOutcomeBand')}

@@ -4,7 +4,9 @@ import {
   FormikTextField,
 } from '@uzh-bf/design-system'
 import { FieldArray, type FieldArrayRenderProps } from 'formik'
+import { nanoid } from 'nanoid'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import type { ElementFormTypesFreeText } from '../types'
 
 function FreeTextRubricEditor({
@@ -16,6 +18,12 @@ function FreeTextRubricEditor({
 }) {
   const t = useTranslations()
   const rubrics = values.options.semanticEvaluation?.rubric_schema.rubrics ?? []
+  const [rubricKeys, setRubricKeys] = useState(() =>
+    rubrics.map(() => nanoid())
+  )
+  const [levelKeys, setLevelKeys] = useState(() =>
+    rubrics.map((rubric) => rubric.achievement_levels.map(() => nanoid()))
+  )
 
   return (
     <section className="flex flex-col gap-3" data-cy="semantic-rubrics">
@@ -32,7 +40,7 @@ function FreeTextRubricEditor({
           <div className="flex flex-col gap-3">
             {rubrics.map((rubric, rubricIndex) => (
               <div
-                key={rubric.id || rubricIndex}
+                key={rubricKeys[rubricIndex]!}
                 className="rounded-md border border-gray-300 p-3"
                 data-cy={`semantic-rubric-${rubricIndex}`}
               >
@@ -85,9 +93,9 @@ function FreeTextRubricEditor({
                       <h5 className="text-sm font-semibold">
                         {t('manage.elements.semanticAchievementLevels')}
                       </h5>
-                      {rubric.achievement_levels.map((level, levelIndex) => (
+                      {rubric.achievement_levels.map((_level, levelIndex) => (
                         <div
-                          key={`${level.name}-${levelIndex}`}
+                          key={levelKeys[rubricIndex]![levelIndex]!}
                           className="grid gap-2 rounded bg-gray-50 p-2 md:grid-cols-[1fr_2fr_8rem_auto] md:items-end"
                           data-cy={`semantic-rubric-${rubricIndex}-level-${levelIndex}`}
                         >
@@ -125,7 +133,19 @@ function FreeTextRubricEditor({
                             <Button
                               destructive
                               disabled={rubric.achievement_levels.length <= 1}
-                              onClick={() => removeLevel(levelIndex)}
+                              onClick={() => {
+                                setLevelKeys((keys) =>
+                                  keys.map((rubricLevelKeys, index) =>
+                                    index === rubricIndex
+                                      ? rubricLevelKeys.filter(
+                                          (_key, keyIndex) =>
+                                            keyIndex !== levelIndex
+                                        )
+                                      : rubricLevelKeys
+                                  )
+                                )
+                                removeLevel(levelIndex)
+                              }}
                               data={{
                                 cy: `semantic-rubric-${rubricIndex}-delete-level-${levelIndex}`,
                               }}
@@ -137,13 +157,20 @@ function FreeTextRubricEditor({
                       ))}
                       {!disabled && (
                         <Button
-                          onClick={() =>
+                          onClick={() => {
+                            setLevelKeys((keys) =>
+                              keys.map((rubricLevelKeys, index) =>
+                                index === rubricIndex
+                                  ? [...rubricLevelKeys, nanoid()]
+                                  : rubricLevelKeys
+                              )
+                            )
                             pushLevel({
                               name: '',
                               description: '',
                               normalized_score: 0,
                             })
-                          }
+                          }}
                           data={{
                             cy: `semantic-rubric-${rubricIndex}-add-level`,
                           }}
@@ -159,7 +186,19 @@ function FreeTextRubricEditor({
                   <Button
                     destructive
                     disabled={rubrics.length <= 1}
-                    onClick={() => remove(rubricIndex)}
+                    onClick={() => {
+                      setRubricKeys((keys) =>
+                        keys.filter(
+                          (_key, keyIndex) => keyIndex !== rubricIndex
+                        )
+                      )
+                      setLevelKeys((keys) =>
+                        keys.filter(
+                          (_key, keyIndex) => keyIndex !== rubricIndex
+                        )
+                      )
+                      remove(rubricIndex)
+                    }}
                     className={{ root: 'mt-3' }}
                     data={{ cy: `semantic-delete-rubric-${rubricIndex}` }}
                   >
@@ -170,9 +209,11 @@ function FreeTextRubricEditor({
             ))}
             {!disabled && (
               <Button
-                onClick={() =>
+                onClick={() => {
+                  setRubricKeys((keys) => [...keys, nanoid()])
+                  setLevelKeys((keys) => [...keys, [nanoid()]])
                   push({
-                    id: `rubric-${rubrics.length + 1}`,
+                    id: `rubric-${nanoid()}`,
                     name: '',
                     description: '',
                     weight: 0,
@@ -184,7 +225,7 @@ function FreeTextRubricEditor({
                       },
                     ],
                   })
-                }
+                }}
                 data={{ cy: 'semantic-add-rubric' }}
               >
                 {t('manage.elements.semanticAddRubric')}
