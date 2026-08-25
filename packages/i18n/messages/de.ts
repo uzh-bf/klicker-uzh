@@ -3197,7 +3197,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         '{count} {count, plural, one {Antwort} other {Antworten}} konnten aufgrund des Anzeigelimits oder aufgrund von Platzmangel nicht angezeigt werden.',
       wordCloudModeSentences: 'Vollständige Antworten',
       wordCloudNoResponses:
-        'Für diese Frage wurden noch keine Antworten von Teilnehmenden gespeichert 😔.',
+        'Für diese Frage wurden noch keine Antworten von Teilnehmenden gespeichert.',
       wordCloudNoResponsesFiltered:
         'Keine Antworten entsprechen den aktuellen Filtereinstellungen 🧐.',
       wordCloudNoResponsesDisplayed:

@@ -3146,7 +3146,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         '{count} {count, plural, one {response} other {responses}} could not be displayed due to the display limit or space constraints.',
       wordCloudModeSentences: 'Full responses',
       wordCloudNoResponses:
-        'No participants have submitted responses for this question 😔.',
+        'No participants have submitted responses for this question.',
       wordCloudNoResponsesFiltered:
         'No responses match the current filter settings 🧐.',
       wordCloudNoResponsesDisplayed:

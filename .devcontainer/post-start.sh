@@ -34,7 +34,7 @@ if [ ! -s /etc/devrouter/mkcert-rootCA.pem ]; then
   export NEXT_PUBLIC_PWA_URL=http://localhost:3001
   export NEXT_PUBLIC_ASSESSMENT_URL=http://localhost:3001
   export NEXT_PUBLIC_CONTROL_URL=http://localhost:3003
-  export NEXT_PUBLIC_ADD_RESPONSE_URL=http://localhost:7078
+  export NEXT_PUBLIC_ADD_RESPONSE_URL=http://localhost:7078/AddResponse
   export NEXT_PUBLIC_CHAT_URL=http://localhost:3004
   export CORS_ALLOWED_ORIGINS=http://localhost:3001
   export NODE_EXTRA_CA_CERTS=""
@@ -58,7 +58,7 @@ elif [ -n "${WORKSPACE:-}" ]; then
   export NEXT_PUBLIC_PWA_URL=https://pwa.klicker.${WORKSPACE}.localhost
   export NEXT_PUBLIC_ASSESSMENT_URL=https://pwa.klicker.${WORKSPACE}.localhost
   export NEXT_PUBLIC_CONTROL_URL=https://control.klicker.${WORKSPACE}.localhost
-  export NEXT_PUBLIC_ADD_RESPONSE_URL=https://response-api.klicker.${WORKSPACE}.localhost
+  export NEXT_PUBLIC_ADD_RESPONSE_URL=https://response-api.klicker.${WORKSPACE}.localhost/AddResponse
   export CORS_ALLOWED_ORIGINS=https://pwa.klicker.${WORKSPACE}.localhost
   export AUTH_LECTURER_ALLOWED_HOSTS=manage.klicker.${WORKSPACE}.localhost,127.0.0.1:3002
   export AUTH_STUDENT_ALLOWED_HOSTS=pwa.klicker.${WORKSPACE}.localhost,127.0.0.1:3001
