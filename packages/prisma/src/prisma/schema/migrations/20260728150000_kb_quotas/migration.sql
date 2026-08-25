@@ -1,2 +1,0 @@
-ALTER TABLE "public"."KBUploadTicket"
-ADD COLUMN "sizeBytes" INTEGER NOT NULL DEFAULT 0;
