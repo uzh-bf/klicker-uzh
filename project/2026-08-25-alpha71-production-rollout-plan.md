@@ -30,14 +30,14 @@ prove the exact deployed revision without exposing production data or secrets.
   the production migration hook as disabled. Production enabled it with the
   first migrator-bearing release, so the rollout package must correct both
   pages.
-- Current `origin/v3` explicitly forbids recreating the retired `docs/index.md`,
-  `docs/log.md`, and `docs/log/` paths. The wiki-maintenance skill still
-  instructs agents to update those paths, so its directly conflicting guidance
-  must be corrected in this package.
+- The task worktree's authoritative `origin/v3` content already contains the
+  corrected wiki-maintenance skill and explicitly forbids recreating the retired
+  `docs/index.md`, `docs/log.md`, and `docs/log/` paths. The dirty primary
+  checkout has an older copy; it is outside this package and remains untouched.
 - The read-only planner returned `DONE_WITH_CONCERNS`. The plan accepts its
   corrections: separate local, publication, and production gates; remove the
-  stale authority claim; add clean-Argo, backup/recovery, registry-manifest,
-  rollback, and exact live-proof gates; and correct the wiki-maintenance skill.
+  stale authority claim; and add clean-Argo, backup/recovery,
+  registry-manifest, rollback, and exact live-proof gates.
 
 ## Decision
 
@@ -46,22 +46,22 @@ prove the exact deployed revision without exposing production data or secrets.
   `v3.4.0-alpha.71`. Keep `migrator.enabled: true` and every unrelated value
   unchanged.
 - Correct only the stale production-migrator statements in the two deployment
-  wiki pages and the retired-index/log instructions in the wiki-maintenance
-  skill. No ADR, chart, schema, migration, dependency, application code, index,
-  log, archive, or navigation-structure changes belong in this package.
+  wiki pages. No skill, ADR, chart, schema, migration, dependency, application
+  code, index, log, archive, or navigation-structure changes belong in this
+  package.
 - Treat the package as full path because merging it executes production
   database migrations. The implementation stays in the main session because
   production GitOps state, publication, and live proof are tightly coupled.
 
 ## Authority
 
-- Pending one explicit user approval of this plan: commit the plan and scoped
-  changes in the isolated worktree; push `rs/deploy-roll-prd-alpha71`; open a
-  non-draft PR to `v3`; wait for required CI; perform values-free read-only
-  registry and managed-backup preflight; squash-merge after every gate passes;
-  allow the existing ArgoCD auto-sync; and use already-configured, read-only
-  production ArgoCD and Kubernetes access for migration-job, workload-image,
-  revision, readiness, and public-health proof.
+- Approved by the user on 2026-08-25: commit the plan and scoped changes in the
+  isolated worktree; push `rs/deploy-roll-prd-alpha71`; open a non-draft PR to
+  `v3`; wait for required CI; perform values-free read-only registry and
+  managed-backup preflight; squash-merge after every gate passes; allow the
+  existing ArgoCD auto-sync; and use already-configured, read-only production
+  ArgoCD and Kubernetes access for migration-job, workload-image, revision,
+  readiness, and public-health proof.
 - Withheld: secret values, production data, manual database migration, manual
   ArgoCD sync, retry or replay, rollback, force push, branch/worktree cleanup,
   establishing new cluster connectivity or a tunnel, and any unrelated
@@ -88,14 +88,14 @@ failure and request the smallest next authority.
 
 | Slice | Owner | Dependency | Acceptance |
 | --- | --- | --- | --- |
-| Prepare the rollout package and correct wiki guidance | main | Corrected plan approved for local work | Only the plan, 15 production pins, two operator docs, and the wiki-maintenance skill change; retired wiki paths remain absent; scoped formatting, Helm, diff, and review checks pass |
+| Prepare the rollout package and correct operator guidance | main | Corrected plan approved for local work | Only the plan, 15 production pins, and two operator docs; retired wiki paths remain absent; scoped formatting, Helm, diff, and review checks pass |
 | Publish and qualify the PR | main | Prepared committed package and approved publication | Release, migrations, registry manifests, final review, required PR CI, and PR scope pass; stop before merge if production gates are not green |
 | Preflight, merge, and prove production | main | Qualified PR and approved production action | Backup/recovery and clean-Argo gates pass; exact revision, migration hook, images, readiness, and public probes are proven |
 
 Execution-tier skip reason: critical-path coupling across production GitOps
 state, migration safety, publication, and live verification.
 
-## Slice 1: Prepare the rollout package and correct wiki guidance
+## Slice 1: Prepare the rollout package and correct operator guidance
 
 Problem:
 
@@ -115,17 +115,13 @@ Do:
 - Preserve `migrator.enabled: true` and every unrelated production value.
 - Correct the stale production-migrator descriptions in
   `docs/ci-and-deployment.md` and `docs/data-and-migrations.md`.
-- Correct `.agents/skills/klicker-wiki-maintenance/SKILL.md` so it follows the
-  current repository contract and never instructs agents to recreate or update
-  `docs/index.md`, `docs/log.md`, or `docs/log/`.
 
 Check:
 
 - Require 15 alpha.71 pins, zero alpha.70 pins, unchanged migrator enablement,
   only the planned files, `git diff --check`, repository formatting for the
-  touched YAML/Markdown, successful Helm lint/template for production, no
-  retired wiki paths, and no remaining skill instruction to create or update
-  them.
+  touched YAML/Markdown, successful Helm lint/template for production, and no
+  retired wiki paths.
 - Test obligation: no new automated test. Existing chart rendering, release CI,
   PR CI, migration inspection, and live status checks cover this configuration
   promotion.
