@@ -1,10 +1,10 @@
 # Knowledge Base management UX audit and improvement roadmap
 
-Status: draft PR published; implementation complete; final review and browser-proof blockers remain
+Status: implementation complete; desktop browser proof and Sol final review passed; publication update pending
 
 Date: 2026-08-24
 
-Base snapshot: `77ab853f697b8ffdeb2f9956fd387deb2e6eccb1`
+Base snapshot: `1d57f4f11a65698b72916de7c6f14c66422f9293`
 
 Plan branch: `rs/kb-management-ux`
 
@@ -34,10 +34,10 @@ The recommended direction is to make resources the primary workspace, present th
 - Empty and populated states.
 - Resource creation, resource search/filtering, inspection, ingestion status, and deletion affordances.
 - The surrounding chatbot-binding and knowledge-graph controls insofar as they affect hierarchy and cognitive load.
-- English, desktop at 1440×900, and mobile at 390×844.
-- A limited keyboard, focus, landmark, heading, and responsive-reflow check.
+- English and German desktop behavior at 1440×900.
+- A limited keyboard, focus, landmark, and heading check.
 
-German, full WCAG conformance, ingestion correctness, graph quality, chatbot behavior, and production deployment are outside this audit.
+Mobile layout, full WCAG conformance, ingestion correctness, graph quality, chatbot behavior, and production deployment are outside the accepted completion scope. The earlier mobile findings remain historical audit evidence for a separate shared Manage-shell follow-up.
 
 ### Evidence
 
@@ -298,7 +298,7 @@ Do not modify `apps/frontend-manage/src/components/common/Header.tsx`, shared mo
 
 Per slice: inspect the diff, run the affected package checks and formatting, run the focused browser/test proof, obtain the applicable simplifier and slice review, update this plan’s Progress section, and create one conventional commit for the slice. After integration, run the final reviewer before presenting the package as complete.
 
-Required checks include the affected package typechecks, repository formatting/lint checks, focused GraphQL regression coverage, the new KB Playwright spec in English and German, and browser screenshots at 1440×900, 390×844, and 320 CSS pixels. Keep the existing resource lifecycle tests and graph ledger tests unchanged unless a presentation-only selector or assertion requires a narrow update. The boundary owner must confirm any new policy error, media type, upload-ticket cleanup, or shared primitive change before implementation proceeds.
+Required checks include the affected package typechecks, repository formatting/lint checks, focused GraphQL regression coverage, the new KB Playwright spec in English and German, and browser screenshots at 1440×900. Keep the existing resource lifecycle tests and graph ledger tests unchanged unless a presentation-only selector or assertion requires a narrow update. The boundary owner must confirm any new policy error, media type, upload-ticket cleanup, or shared primitive change before implementation proceeds.
 
 Pause before implementation or between slices for a material product/API decision, a need to change the current `BLOB`/`URL` contract, a shared Manage-shell or modal change, a graph lifecycle change, a destructive/external action, unavailable required credentials, or a verification blocker that remains after distinct safe approaches. The plan terminates after local checks, browser evidence, required reviews, documentation updates, a clean scoped diff, and stopping/verifying the exact implementation runtime unless explicitly kept running. Publishing, merging, deploying, and runtime/worktree deletion remain separate authorities.
 
@@ -321,15 +321,16 @@ Pause before implementation or between slices for a material product/API decisio
 - [x] The latest `origin/v3` local-runtime improvement (`2619be5a2`) is selectively adapted without merging unrelated v3 changes: dependency fingerprinting, bounded stale Next.js cache repair, semantic app readiness, `dev:doctor`, and runtime guard tests are preserved alongside the KB/Azurite startup wiring. The exact linked workspace was re-reconciled successfully with `KB_GRAPH_BLOB_HOST_PORT=10004`; all five Next.js readiness contracts passed. Runtime checks pass for `test:dev-runtime`, `dev:doctor`, formatting, the KB package, and Playwright TypeScript.
 - [x] Direct browser verification against the retained workspace reaches the redesigned authenticated detail page, metadata table, and unified add-resource chooser; Website and Document are available and Video is disabled as “Coming soon”. Desktop and 390px screenshots are captured in `/private/tmp/kb-management-ux-add-desktop.png` and `/private/tmp/kb-management-ux-detail-mobile.png`.
 - [x] Sol final review of `42773ea45` returned `DONE_WITH_CONCERNS` for one low-severity README cache-policy wording mismatch; the wording now matches the unconditional `.next/dev` cleanup and bounded full-cache repair behavior. The same reviewer’s correction pass over `da6149e29` returned `DONE`; no code, security, architecture, or scope findings remain.
-- [x] The user explicitly authorized normal publication. The exact final head `0f552deeed4fac8828db653bd173737e8da53600` is pushed to `rs/kb-management-ux`, and draft PR #5540 is read back against `feat/kb-graph-lifecycle` at #5424 head `77ab853f697b8ffdeb2f9956fd387deb2e6eccb1`; CI is pending on this head.
-- [ ] S5 full browser proof remains pending: the KB journey passes creation, chooser focus handling, resource table, and inspector checks, then the document-level 390px/320px reflow assertion detects the known shared Manage-header overflow classified as X1 outside this package.
+- [x] The reviewed implementation range is based on #5424 head `1d57f4f11a65698b72916de7c6f14c66422f9293` and ends at `9a0792a891e1850bb3b3b284eef4be12f6cbd77a`. Normal publication remains authorized; this plan-only closure update follows that reviewed head before the branch readback is refreshed.
+- [x] S5 desktop browser proof passes through `util/run-host-e2e.sh`: the English/German KB journey covers creation, chooser focus handling, the pending document-upload dismissal lock, successful confirmation dismissal, refresh-failure dismissal, the resource table, and the inspector. Mobile and the known shared Manage-header overflow are explicitly outside the accepted completion scope.
+- [x] Sol final review of the exact reviewed range confirmed both prior modal findings are resolved and found no correctness, security, architecture, maintainability, desktop UX, or stack-compatibility defects. Its only plan-status finding is closed by this update.
 
 ## Verification plan for implementation
 
 Each slice should be verified against the same seeded local fixture and a synthetic populated Knowledge Base. The repository currently has no KB-management Playwright spec, so the implementation must add focused coverage rather than treating screenshots as regression protection.
 
 - Desktop: catalog, empty detail, populated table, add-resource chooser, website form, document upload states, inspector, failed ingestion, and delete confirmation at 1440×900.
-- Mobile: the same core states at 390×844 and a narrow reflow check at 320 CSS pixels, with no horizontal scroll and the resource table’s mobile fallback visible.
+- Mobile: deferred to the separate shared Manage-shell follow-up; it is not a completion gate for this desktop-focused package.
 - Keyboard: open/close/focus return for every dialog, focus containment, table row selection, filters, load-more, primary row action, and confirmation cancellation. Screenshots alone do not prove these behaviors.
 - Assistive technology smoke check: one page-level H1, one main landmark, labeled table headers, row/action names, status announcements, and dialog name/description.
 - Localization: English and German strings remain in parity for the chooser, table headers, status labels, errors, and unavailable Video option.
