@@ -5,18 +5,18 @@
 - Date: 2026-08-23
 - Last reconciled: 2026-08-25
 - Status: W6 achievement receipt boundary closure is implemented on branch
-  `rs/gamification-achievement-receipts` through `bad4663f2`; final integrated
+  `rs/gamification-achievement-receipts` through `c1c4d8d54`; final integrated
   verification and review remain in progress. The branch is not being pushed
   or updated remotely in this task. See Progress and the W6 execution plan for
   the current evidence and remaining local checks.
 - Repository: `uzh-bf/klicker-uzh`
 - Authoritative remote base checked: remote `v3` at
-  `de60498532f67b5c26e811e3761c180c43b605f0`
+  `1d19ad9efc6e7af57cff2b805255b4746de25c29`
 - Roadmap worktree: branch `rs/gamification-achievement-receipts` at
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/gamification-roadmap`
 - The worktree was rebaselined onto the fresh `origin/v3` before W6; it is
-  currently 36 commits ahead and 0 behind that base.
-- Delivery layer: local commits are complete through `bad4663f2`. Push,
+  currently 43 commits ahead and 0 behind that base.
+- Delivery layer: local commits are complete through `c1c4d8d54`. Push,
   pull-request update, merge, ClickUp reconciliation, deployment, and
   live-data actions remain separate authority boundaries.
 - Audience: an engineer or execution agent with no earlier session context.
@@ -915,3 +915,14 @@ Append entries; do not rewrite history.
   Playwright checks pass. The normal commit hook still fails on unrelated
   upstream frontend-manage feature-flag typing errors from the fresh `v3`
   merge; the scoped correction commit therefore used `--no-verify`.
+- 2026-08-25 — W6 documentation was committed in `c1c4d8d54`; the final
+  verification record now reports that GraphQL generation, focused GraphQL
+  receipt tests (2/2),
+  GraphQL check/build, PWA and Playwright package checks, formatting, and the
+  repository build. The focused Chromium test is structurally loadable but
+  cannot launch because the DevPod lacks the pinned Playwright executable. The
+  full `check:all` gate remains blocked only by the analytics pandas build
+  requiring an unavailable C compiler and five unrelated frontend-manage
+  feature-flag typing errors introduced by fresh `origin/v3`. The unrelated
+  untracked Prisma `schema/views/` directory remains untouched; final
+  integrated review is the remaining W6 finish gate.

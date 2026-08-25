@@ -404,9 +404,19 @@ finish gate for the complete package.
   correction commit used `--no-verify`. The follow-up generic-continuity
   review passed with no remaining findings; the native route remained
   unavailable with provider HTTP 402.
+- 2026-08-25: S4 documentation was committed as `c1c4d8d54`. Fresh integrated
+  verification on the branch tip passed GraphQL generation, the focused
+  achievement-receipt tests (2/2), GraphQL check and build, PWA and Playwright
+  package checks, formatting, and the repository build. The Playwright test
+  list includes the focused receipt test, but the focused Chromium run still
+  cannot launch because the DevPod lacks the pinned browser executable. The
+  full `check:all` gate is blocked outside W6: analytics cannot build pandas
+  without a C compiler, and fresh `origin/v3` frontend-manage feature-flag
+  typing errors remain in five unrelated files. `git diff --check` is clean;
+  the unrelated untracked Prisma `schema/views/` directory remains untouched.
 
 ## Next step
 
-Proceed with S4: commit the documentation updates, run fresh integrated checks,
-then complete the single final integrated review before marking the goal
-`pr_ready`.
+Complete the single final integrated review against the committed W6 package,
+then reconcile its result and the recorded environment blockers before marking
+the goal `pr_ready`.
