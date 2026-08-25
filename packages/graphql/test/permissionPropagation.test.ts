@@ -1,14 +1,21 @@
+import type { Context } from '@hatchet-dev/typescript-sdk'
 import { prisma as sharedPrisma } from '@klicker-uzh/prisma'
 import {
   ObjectType,
   PermissionLevel,
   PermissionPropagationMode,
+  type PermissionPropagationWork,
   type PrismaClient,
 } from '@klicker-uzh/prisma/client'
+import type {
+  HatchetHandlerGlobalContext,
+  PermissionPropagationTaskInput,
+} from '@klicker-uzh/types'
 import { randomUUID } from 'node:crypto'
 import {
   PERMISSION_PROPAGATION_RECOVERY_SLO_MS,
   acquirePermissionPropagationFence,
+  handlePermissionPropagationWork,
   markPermissionPropagationDispatched,
   permissionPropagationKey,
   upsertPermissionPropagationWork,
@@ -94,6 +101,17 @@ describe('durable permission propagation state', () => {
       await acquirePermissionPropagationFence(tx)
       return upsertPermissionPropagationWork(tx, { scope, ...input })
     })
+  }
+
+  function workerContexts(client: PrismaClient = prisma) {
+    const loggerError = vi.fn()
+    return {
+      globalCtx: { prisma: client } as HatchetHandlerGlobalContext,
+      executionCtx: {
+        logger: { error: loggerError },
+      } as unknown as Context<unknown>,
+      loggerError,
+    }
   }
 
   it('rolls source and durable work back in the same fenced transaction', async () => {
@@ -359,5 +377,170 @@ describe('durable permission propagation state', () => {
         },
       })
     ).rejects.toThrow()
+  })
+  it('coalesces a stale task onto the latest generation and makes duplicate delivery a no-op', async () => {
+    const { catalogCollectionId, scope, sharedUserId } =
+      await createCatalogPermissionFixture('Permission propagation worker test')
+
+    const first = await prisma.$transaction(async (tx) => {
+      await acquirePermissionPropagationFence(tx)
+      await tx.permission.create({
+        data: {
+          catalogCollectionId,
+          userId: sharedUserId,
+          permissionLevel: PermissionLevel.READ,
+        },
+      })
+      return upsertPermissionPropagationWork(tx, {
+        scope,
+        updateAccessRequests: false,
+      })
+    })
+    const latest = await prisma.$transaction(async (tx) => {
+      await acquirePermissionPropagationFence(tx)
+      await tx.permission.update({
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId,
+            userId: sharedUserId,
+          },
+        },
+        data: { permissionLevel: PermissionLevel.WRITE },
+      })
+      return upsertPermissionPropagationWork(tx, {
+        scope,
+        updateAccessRequests: false,
+      })
+    })
+    const taskInput: PermissionPropagationTaskInput = {
+      workKey: first.key,
+      taskGeneration: first.generation.toString(),
+    }
+    const { globalCtx, executionCtx, loggerError } = workerContexts()
+
+    await expect(
+      handlePermissionPropagationWork(taskInput, globalCtx, executionCtx)
+    ).resolves.toEqual({
+      status: 'processed',
+      processedGeneration: latest.generation.toString(),
+    })
+    await expect(
+      prisma.derivedPermission.findUnique({
+        where: {
+          catalogCollectionId_userId: {
+            catalogCollectionId,
+            userId: sharedUserId,
+          },
+        },
+      })
+    ).resolves.toMatchObject({ permissionLevel: PermissionLevel.WRITE })
+    await expect(
+      prisma.permissionPropagationWork.findUniqueOrThrow({
+        where: { key: first.key },
+      })
+    ).resolves.toMatchObject({
+      generation: 2n,
+      processedGeneration: 2n,
+    })
+
+    await expect(
+      handlePermissionPropagationWork(taskInput, globalCtx, executionCtx)
+    ).resolves.toEqual({
+      status: 'already-processed',
+      processedGeneration: latest.generation.toString(),
+    })
+    expect(loggerError).not.toHaveBeenCalled()
+  })
+
+  it('persists one failure against the latest generation observed under the fence', async () => {
+    const scope = trackScope({
+      objectType: ObjectType.ANSWER_COLLECTION,
+      objectId: 'not-an-integer',
+      mode: PermissionPropagationMode.OBJECT,
+    } as const)
+    const first = await upsertWorkUnderFence(scope, {
+      updateAccessRequests: false,
+    })
+    const latest = await upsertWorkUnderFence(scope, {
+      updateAccessRequests: false,
+    })
+    const taskInput: PermissionPropagationTaskInput = {
+      workKey: first.key,
+      taskGeneration: first.generation.toString(),
+    }
+    const { globalCtx, executionCtx, loggerError } = workerContexts()
+
+    await expect(
+      handlePermissionPropagationWork(taskInput, globalCtx, executionCtx)
+    ).rejects.toThrow('numeric object ID is invalid')
+    await expect(
+      handlePermissionPropagationWork(taskInput, globalCtx, executionCtx)
+    ).rejects.toThrow('numeric object ID is invalid')
+
+    await expect(
+      prisma.permissionPropagationFailure.findMany({
+        where: { workKey: first.key },
+      })
+    ).resolves.toEqual([
+      expect.objectContaining({
+        workKey: first.key,
+        generation: latest.generation,
+        code: 'WORKER_EXECUTION_FAILED',
+      }),
+    ])
+    await expect(
+      prisma.permissionPropagationWork.findUniqueOrThrow({
+        where: { key: first.key },
+      })
+    ).resolves.toMatchObject({
+      generation: 2n,
+      processedGeneration: 0n,
+    })
+    expect(loggerError).not.toHaveBeenCalled()
+  })
+
+  it('rejects malformed durable counters before acknowledging work', async () => {
+    const scope = objectScope()
+    const now = new Date()
+    const malformedWork: PermissionPropagationWork = {
+      key: permissionPropagationKey(scope),
+      objectType: scope.objectType,
+      objectId: scope.objectId,
+      mode: scope.mode,
+      userId: null,
+      generation: 1n,
+      processedGeneration: 2n,
+      dispatchedGeneration: 0n,
+      updateAccessRequests: false,
+      lastDispatchedAt: null,
+      dirtyAt: now,
+      recoverBy: now,
+      createdAt: now,
+      updatedAt: now,
+    }
+    const transactionClient = {
+      $executeRaw: vi.fn().mockResolvedValue(undefined),
+      permissionPropagationWork: {
+        findUnique: vi.fn().mockResolvedValue(malformedWork),
+      },
+    }
+    const client = {
+      $transaction: vi.fn(
+        async (callback: (tx: typeof transactionClient) => unknown) =>
+          callback(transactionClient)
+      ),
+      permissionPropagationFailure: {
+        upsert: vi.fn().mockResolvedValue(undefined),
+      },
+    } as unknown as PrismaClient
+    const { globalCtx, executionCtx } = workerContexts(client)
+
+    await expect(
+      handlePermissionPropagationWork(
+        { workKey: malformedWork.key, taskGeneration: '1' },
+        globalCtx,
+        executionCtx
+      )
+    ).rejects.toThrow('work counters are invalid')
   })
 })
