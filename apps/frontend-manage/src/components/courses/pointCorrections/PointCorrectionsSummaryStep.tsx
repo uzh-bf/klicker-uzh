@@ -28,8 +28,12 @@ function PointCorrectionsSummaryStep({
     [PointCorrectionType.Multiple]: t(
       'manage.pointCorrections.participantScopeMultiple'
     ),
-    [PointCorrectionType.Participating]: t(
-      'manage.pointCorrections.participantScopeParticipating'
+    [PointCorrectionType.Participating]:
+      values.scopeType === 'instance'
+        ? t('manage.pointCorrections.participantScopeParticipatingElement')
+        : t('manage.pointCorrections.participantScopeParticipating'),
+    [PointCorrectionType.ParticipatingQuiz]: t(
+      'manage.pointCorrections.participantScopeParticipatingQuiz'
     ),
     [PointCorrectionType.AllCourse]: t(
       'manage.pointCorrections.participantScopeCourse'

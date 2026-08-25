@@ -1135,6 +1135,56 @@ async function upsertResponseAppliedCorrection(
   }
 }
 
+type ParticipantResponseMap = Record<
+  string,
+  Record<number, DB.LiveQuizResponse>
+>
+
+async function getLiveQuizParticipantResponseMap(
+  liveQuizId: string,
+  prisma: DB.PrismaClient
+): Promise<ParticipantResponseMap | null> {
+  const liveQuiz = await prisma.liveQuiz.findUnique({
+    where: { id: liveQuizId },
+    include: {
+      blocks: {
+        include: { elements: { include: { liveQuizResponses: true } } },
+      },
+    },
+  })
+
+  if (!liveQuiz) return null
+
+  const participantResponseMap = liveQuiz.blocks.reduce<ParticipantResponseMap>(
+    (blockAcc, block) => {
+      block.elements.forEach((instance) => {
+        instance.liveQuizResponses
+          .filter(
+            (response) => response.elementBlockExecution === block.execution
+          )
+          .forEach((response) => {
+            if (!blockAcc[response.participantId]) {
+              blockAcc[response.participantId] = {}
+            }
+
+            blockAcc[response.participantId]![instance.id] = response
+          })
+      })
+
+      return blockAcc
+    },
+    {}
+  )
+
+  return Object.fromEntries(
+    Object.entries(participantResponseMap).filter(([, instanceResponseMap]) =>
+      Object.values(instanceResponseMap).some(
+        (response) => response.correctionOnly === false
+      )
+    )
+  )
+}
+
 export async function correctAssessmentPointsInstance(
   {
     instanceId,
@@ -1159,7 +1209,7 @@ export async function correctAssessmentPointsInstance(
     deductBonusPoints?: boolean | null // true = deduct, null / undefined = no change
     reason: string
     studentReason: string
-    scope: DB.PointCorrectionType // SINGLE = single participant, MULTIPLE = multiple participants, PARTICIPATING = all participants with a response to this instance, ALL_COURSE = all participants of the assessment course
+    scope: DB.PointCorrectionType // SINGLE = single participant, MULTIPLE = multiple participants, PARTICIPATING = all participants with a response to this instance, PARTICIPATING_QUIZ = all participants with a response to this quiz, ALL_COURSE = all participants of the assessment course
     participantId?: string | null
     participantIds?: string[] | null
   },
@@ -1418,6 +1468,86 @@ export async function correctAssessmentPointsInstance(
     return createdCorrection
   }
 
+  // if the points of all quiz participants should be modified, update the
+  // selected instance for everyone with at least one genuine quiz response
+  if (scope === PointCorrectionType.PARTICIPATING_QUIZ) {
+    const participantResponseMap = await getLiveQuizParticipantResponseMap(
+      instance.elementBlock.liveQuiz.id,
+      ctx.prisma
+    )
+
+    if (!participantResponseMap) return null
+
+    const createdCorrection = await ctx.prisma.$transaction(
+      async (tx) => {
+        const correction = await tx.pointCorrection.create({
+          data: {
+            basePoints: awardBasePoints
+              ? true
+              : deductBasePoints
+                ? false
+                : null,
+            correctnessPoints: awardCorrectnessPoints
+              ? true
+              : deductCorrectnessPoints
+                ? false
+                : null,
+            bonusPoints: awardBonusPoints
+              ? true
+              : deductBonusPoints
+                ? false
+                : null,
+            reason,
+            studentReason,
+            type: PointCorrectionType.PARTICIPATING_QUIZ,
+            correctedBy: { connect: { id: ctx.user.sub } },
+            instance: { connect: { id: instanceId } },
+          },
+          include: { correctedBy: true, instance: true },
+        })
+
+        const logEntries: { message: { info: string } }[] = []
+
+        await Promise.all(
+          Object.entries(participantResponseMap).map(
+            async ([pId, instanceResponseMap]) => {
+              const logEntry = await upsertResponseAppliedCorrection(
+                {
+                  correctionId: correction.id,
+                  instance: instance as DB.ElementInstance & {
+                    elementBlock: DB.ElementBlock
+                  },
+                  response: instanceResponseMap[instanceId],
+                  participantId: pId,
+                  awardBasePoints,
+                  awardCorrectnessPoints,
+                  awardBonusPoints,
+                  deductBasePoints,
+                  deductCorrectnessPoints,
+                  deductBonusPoints,
+                  availableBasePoints,
+                  availableCorrectnessPoints,
+                  availableBonusPoints,
+                },
+                tx,
+                ctx
+              )
+
+              logEntries.push(logEntry)
+            }
+          )
+        )
+
+        await ctx.tasks.createAuditLogEntry.runNoWait(logEntries)
+
+        return correction
+      },
+      { timeout: 300000 }
+    )
+
+    return createdCorrection
+  }
+
   // if the points of multiple students / all students in the course should be modified, fetch all responses and update them
   if (
     scope === PointCorrectionType.ALL_COURSE ||
@@ -1558,6 +1688,11 @@ export async function correctAssessmentPointsLiveQuiz(
   },
   ctx: ContextWithUser
 ) {
+  // the quiz-participant audience only applies to a correction on one instance
+  if (scope === PointCorrectionType.PARTICIPATING_QUIZ) {
+    return null
+  }
+
   // if the scope is set to a single participant, but no participant is provided, return early
   if (scope === PointCorrectionType.SINGLE && !participantId) {
     return null
@@ -1762,46 +1897,12 @@ export async function correctAssessmentPointsLiveQuiz(
 
   // if the points of all participating students should be modified, fetch all responses with a participantId and update them
   if (scope === PointCorrectionType.PARTICIPATING) {
-    // fetch the live quiz again, this time including all responses
-    const quizWithResponses = await ctx.prisma.liveQuiz.findUnique({
-      where: { id: liveQuiz.id },
-      include: {
-        blocks: {
-          include: { elements: { include: { liveQuizResponses: true } } },
-        },
-      },
-    })
-
-    if (!quizWithResponses) return null
-
-    // create a map between the participant ids and the instances they have answered with their responses
-    const participantResponseMap = quizWithResponses.blocks.reduce<{
-      [pId: string]: { [instanceId: number]: DB.LiveQuizResponse }
-    }>((blockAcc, block) => {
-      block.elements.forEach((instance) => {
-        instance.liveQuizResponses
-          .filter(
-            (response) => response.elementBlockExecution === block.execution
-          )
-          .forEach((response) => {
-            if (!blockAcc[response.participantId]) {
-              blockAcc[response.participantId] = {}
-            }
-
-            blockAcc[response.participantId]![instance.id] = response
-          })
-      })
-      return blockAcc
-    }, {})
-
-    // exclude all participants that only have null responses (only corrections, but no actual submission)
-    const filteredParticipantResponseMap = Object.fromEntries(
-      Object.entries(participantResponseMap).filter(([, instanceResponseMap]) =>
-        Object.values(instanceResponseMap).some(
-          (lqr) => lqr.correctionOnly === false
-        )
-      )
+    const participantResponseMap = await getLiveQuizParticipantResponseMap(
+      liveQuiz.id,
+      ctx.prisma
     )
+
+    if (!participantResponseMap) return null
 
     // update the responses of all participants that have submitted at least one response to the live quiz
     const createdCorrection = await ctx.prisma.$transaction(
@@ -1848,7 +1949,7 @@ export async function correctAssessmentPointsLiveQuiz(
                 } = availablePoints[instance.id]!
 
                 await Promise.all(
-                  Object.entries(filteredParticipantResponseMap).map(
+                  Object.entries(participantResponseMap).map(
                     async ([pId, instanceResponseMap]) => {
                       const response = instanceResponseMap[instance.id]
 

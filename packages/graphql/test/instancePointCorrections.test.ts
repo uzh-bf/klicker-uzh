@@ -222,6 +222,111 @@ describe('Unit tests covering point corrections for instances', () => {
     expect(res6).toBeNull()
   })
 
+  it('[Instance Point Updates] Verify that quiz participants can be corrected on one instance', async () => {
+    const {
+      instanceId1,
+      instanceId2,
+      participant1,
+      participant2,
+      participant3,
+      p1Response2,
+    } = await seedLiveQuizWithResponses({
+      userOneCtx,
+      userTwoCtx,
+      userThreeCtx,
+      userFourCtx,
+    })
+
+    // Create a correction-only response for the non-participant. This must not
+    // qualify them as a quiz participant for the new audience.
+    await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId1,
+        reason: 'Test Reason',
+        studentReason: 'Student Test Reason',
+        awardBasePoints: true,
+        scope: PointCorrectionType.ALL_COURSE,
+      },
+      userOneCtx
+    )
+
+    const correctionOnlyResponse = await prisma.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId: instanceId1,
+          elementBlockExecution: 0,
+          participantId: participant3.id,
+        },
+      },
+    })
+    expect(correctionOnlyResponse?.correctionOnly).toBe(true)
+
+    const correction = await correctAssessmentPointsInstance(
+      {
+        instanceId: instanceId2,
+        reason: 'Quiz participation correction',
+        studentReason: 'Quiz participation correction',
+        awardCorrectnessPoints: true,
+        scope: PointCorrectionType.PARTICIPATING_QUIZ,
+      },
+      userOneCtx
+    )
+
+    expect(correction).not.toBeNull()
+    expect(correction!.type).toBe(PointCorrectionType.PARTICIPATING_QUIZ)
+    expect(correction!.instance?.id).toBe(instanceId2)
+
+    const participantOneCorrection =
+      await prisma.appliedPointCorrection.findFirst({
+        where: {
+          pointCorrectionId: correction!.id,
+          responseId: p1Response2.id,
+        },
+      })
+    expect(participantOneCorrection).not.toBeNull()
+
+    const participantTwoResponse = await prisma.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId: instanceId2,
+          elementBlockExecution: 0,
+          participantId: participant2.id,
+        },
+      },
+    })
+    expect(participantTwoResponse).not.toBeNull()
+    expect(participantTwoResponse!.correctionOnly).toBe(true)
+    expect(participantTwoResponse!.correctnessPoints).toBe(100)
+
+    const participantThreeResponse = await prisma.liveQuizResponse.findUnique({
+      where: {
+        instanceId_elementBlockExecution_participantId: {
+          instanceId: instanceId2,
+          elementBlockExecution: 0,
+          participantId: participant3.id,
+        },
+      },
+    })
+    expect(participantThreeResponse).toBeNull()
+
+    const appliedCorrectionCount = await prisma.appliedPointCorrection.count({
+      where: { pointCorrectionId: correction!.id },
+    })
+    expect(appliedCorrectionCount).toBe(2)
+
+    const correctedParticipantIds = await prisma.liveQuizResponse.findMany({
+      where: {
+        instanceId: instanceId2,
+        appliedCorrections: { some: { pointCorrectionId: correction!.id } },
+      },
+      select: { participantId: true },
+      orderBy: { participantId: 'asc' },
+    })
+    expect(
+      correctedParticipantIds.map(({ participantId }) => participantId)
+    ).toEqual([participant1.id, participant2.id].sort())
+  })
+
   it('[Instance Point Updates] Verify that only course admins can modify points', async () => {
     const { instanceId1, participant2 } = await seedLiveQuizWithResponses({
       userOneCtx,

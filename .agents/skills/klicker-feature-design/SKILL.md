@@ -18,7 +18,7 @@ Non-trivial work gets a plan in `project/plans_wip/PLAN-<slug>.md` (existing fil
 3. **Auth** — who may call it? Pick the layer-1 scope object (`asUser`/`asParticipant`/…) and, for object-scoped operations, the `PermissionLevel` (READ/EXECUTE/WRITE/ADMIN). ([docs/graphql-api-layer.md](../../../docs/graphql-api-layer.md))
 4. **Gamification impact** — does it award points/XP or touch leaderboards? Points and XP are separate tracks with different conditions; changes here need the domain page open.
 5. **Async impact** — does it publish/schedule/aggregate anything? Then Hatchet workers are in scope, including local verification needs ([docs/async-and-workers.md](../../../docs/async-and-workers.md)).
-6. **UI surface** — which app(s)? pages-router conventions vs chat island? New user-visible strings (de+en) and new `data-cy` hooks?
+6. **UI surface** — which app(s)? pages-router conventions vs chat island? New user-visible strings (de+en) and new `data-cy` hooks? If an enum option is only valid under one parent scope, design the server-side applicability check together with UI filtering and stale-value reset behavior.
 7. **Test level + evidence** — per `klicker-testing-verification`: what will you run, what will CI cover, what browser evidence will you capture?
 8. **Seeds/fixtures** — do e2e tests need new fixtures? Then all relevant seed paths (dev/Playwright) are in scope.
 

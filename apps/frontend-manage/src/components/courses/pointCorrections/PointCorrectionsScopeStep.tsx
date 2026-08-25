@@ -3,6 +3,7 @@ import {
   faListCheck,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { PointCorrectionType } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, FormikSelectField } from '@uzh-bf/design-system'
 import { useField } from 'formik'
@@ -31,6 +32,8 @@ function PointCorrectionsScopeStep({
     useField<PointCorrectionsFormValues['scopeType']>('scopeType')
   const [quizField, , quizHelpers] = useField('quizId')
   const [instanceField, , instanceHelpers] = useField('instanceId')
+  const [participantScopeField, , participantScopeHelpers] =
+    useField<PointCorrectionsFormValues['participantScope']>('participantScope')
 
   const selectedQuiz = quizzes.find((quiz) => quiz.id === quizField.value)
   const quizOptions = quizzes.map((quiz) => ({
@@ -44,6 +47,14 @@ function PointCorrectionsScopeStep({
   }))
 
   useEffect(() => {
+    // the quiz-participant audience only applies to a single instance
+    if (
+      scopeField.value !== 'instance' &&
+      participantScopeField.value === PointCorrectionType.ParticipatingQuiz
+    ) {
+      participantScopeHelpers.setValue('')
+    }
+
     // if scope is not 'instance', clear instance selection
     if (scopeField.value !== 'instance' && instanceField.value) {
       instanceHelpers.setValue('')
@@ -79,6 +90,8 @@ function PointCorrectionsScopeStep({
     quizHelpers,
     selectedQuiz,
     instanceHelpers,
+    participantScopeField.value,
+    participantScopeHelpers,
   ])
 
   return (

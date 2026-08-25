@@ -147,6 +147,7 @@ model LiveQuizResponse {
 enum PointCorrectionType {
   ALL_COURSE
   PARTICIPATING
+  PARTICIPATING_QUIZ
   SINGLE
   MULTIPLE
 }

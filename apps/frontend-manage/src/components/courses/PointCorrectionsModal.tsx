@@ -134,6 +134,7 @@ function PointCorrectionsModal({
           PointCorrectionType.Single,
           PointCorrectionType.Multiple,
           PointCorrectionType.Participating,
+          PointCorrectionType.ParticipatingQuiz,
           PointCorrectionType.AllCourse,
         ])
         .required(),

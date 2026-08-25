@@ -16,6 +16,8 @@ function PointCorrectionsAudienceStep({
   const t = useTranslations()
   const [participantScopeField] =
     useField<PointCorrectionsFormValues['participantScope']>('participantScope')
+  const [scopeField] =
+    useField<PointCorrectionsFormValues['scopeType']>('scopeType')
   const [participantField, _, participantHelpers] = useField('participantId')
   const [participantsField, __, participantsHelpers] =
     useField('participantIds')
@@ -59,8 +61,23 @@ function PointCorrectionsAudienceStep({
               },
               {
                 value: PointCorrectionType.Participating,
-                label: t('manage.pointCorrections.audienceOptionParticipating'),
+                label:
+                  scopeField.value === 'instance'
+                    ? t(
+                        'manage.pointCorrections.audienceOptionParticipatingElement'
+                      )
+                    : t('manage.pointCorrections.audienceOptionParticipating'),
               },
+              ...(scopeField.value === 'instance'
+                ? [
+                    {
+                      value: PointCorrectionType.ParticipatingQuiz,
+                      label: t(
+                        'manage.pointCorrections.audienceOptionParticipatingQuiz'
+                      ),
+                    },
+                  ]
+                : []),
               {
                 value: PointCorrectionType.AllCourse,
                 label: t('manage.pointCorrections.audienceOptionCourse'),
