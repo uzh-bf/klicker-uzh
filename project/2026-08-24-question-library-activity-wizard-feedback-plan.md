@@ -528,6 +528,27 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   and deletion.
 - Next action: the user may choose whether to push or open a PR in a separately
   authorized delivery step; no delivery authority is implied here.
+- Final-review closure at `fb86b209a`: the prior committed Progress predates
+  `b1d7b730a` and `fb86b209a`. `b1d7b730a` stabilized O/P activity-wizard
+  selection coverage, and branch-owned CI Playwright shards 1 and 3 passed. The
+  unchanged shard-8 cleanup test `MA-elements-operations.spec.ts` failed twice
+  in cleanup; the branch does not touch that test, and no further retry is
+  authorized or appropriate. `fb86b209a` removed empty-state layout height while
+  preserving the mounted polite live region. Exact namespaced devrouter/browser
+  proof measured the visible reason at 20px with `gap-1` and the empty region at
+  0px without `gap-1` or `aria-describedby`; Create changed from disabled to
+  enabled as the block became valid. That proof used devrouter workspace
+  `rs-ux-review-question-library` and canonical
+  `https://manage.klicker.rs-ux-review-question-library.localhost`. The focused
+  frontend-manage type check and Biome passed, the pre-push full build passed,
+  and runtime shutdown left zero routes and no exact-workspace containers.
+  Independent final review at `fb86b209a` found no code defects and only this
+  stale Progress record. At the time of this record, current-head CI had 16
+  successes, 13 intentional skips, 0 failures, and 3 pending checks (Playwright,
+  OpenCodeReview, and Final AI review); terminal CI is not claimed. Merge,
+  mark-ready, deployment, deletion/cleanup, and screenshot attachment remain
+  withheld. PR delivery remains gated on terminal required CI/reviews and
+  screenshot attachment.
 
 ### Historical execution evidence before final runtime proof
 
