@@ -12,6 +12,7 @@ import { readFile } from 'node:fs/promises'
 import {
   chooseActivityAction,
   chooseCourseAction,
+  filterActivitiesByName,
   openCourseActionMenu,
 } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
@@ -965,14 +966,8 @@ async function openCourseInManage(page: Page, courseName: string) {
     await page.getByRole('menuitem', { name: 'Courses' }).click()
   }
   const courseButton = page.getByTestId(`course-list-button-${courseName}`)
-  if (await courseButton.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await courseButton.click()
-  } else {
-    await page
-      .getByRole('button', { name: new RegExp(escapeRegExp(courseName)) })
-      .first()
-      .click()
-  }
+  await expect(courseButton).toBeVisible({ timeout: 30_000 })
+  await courseButton.click()
   const liveQuizzesTab = page.getByTestId('tab-liveQuizzes')
   if (await liveQuizzesTab.isVisible({ timeout: 5000 }).catch(() => false)) {
     await expect(liveQuizzesTab).toBeVisible({ timeout: 30_000 })
@@ -1172,6 +1167,15 @@ async function expectActivityOverviewPermission(
   activityName: string,
   permissionLevel: string
 ) {
+  if (
+    await page
+      .getByTestId('activities-search-input')
+      .isVisible()
+      .catch(() => false)
+  ) {
+    await filterActivitiesByName(page, activityName)
+  }
+
   const activityRow = page.getByTestId(`activity-${type}-${activityName}`)
   await expect(activityRow).toBeVisible()
   await expect(
@@ -2959,7 +2963,13 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       )
     ).toBeVisible()
     await expect(page).toHaveURL(sourceCourseUrl)
-    await page
+    const successToast = page
+      .getByLabel(/Notifications/)
+      .getByRole('listitem')
+      .filter({ hasText: copyName })
+    await expect(successToast).toBeVisible()
+    await successToast.hover()
+    await successToast
       .getByRole('button', {
         name: messages.manage.courseList.courseDuplicationOpenCourse,
       })

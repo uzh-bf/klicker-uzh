@@ -4,6 +4,7 @@ import questionsData from '../fixtures/questions.json' with { type: 'json' }
 import {
   chooseActionByTestId,
   chooseActivityAction,
+  filterActivitiesByName,
   openActionMenuByTestId,
 } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
@@ -1150,7 +1151,19 @@ test.describe('Create different types of elements (with and without sample solut
     }) => {
       await loginLecturer()
 
-      await deleteElement(page, data.update.title3)
+      await page.getByTestId('elements-search-input').fill(data.update.title3)
+      await page.getByTestId('elements-search-input').press('Enter')
+      const obsoleteElement = page.getByTestId(
+        `element-item-${data.update.title3}`
+      )
+      if (
+        await obsoleteElement
+          .waitFor({ state: 'visible', timeout: 5000 })
+          .then(() => true)
+          .catch(() => false)
+      ) {
+        await deleteElement(page, data.update.title3)
+      }
 
       await page.getByTestId('activities').click()
       for (const quiz of [
@@ -1158,9 +1171,7 @@ test.describe('Create different types of elements (with and without sample solut
         data.update.liveQuiz2,
         data.update.liveQuiz3,
       ]) {
-        await page.getByTestId('activities-search-input').clear()
-        await page.getByTestId('activities-search-input').fill(quiz)
-        await page.keyboard.press('Enter')
+        await filterActivitiesByName(page, quiz)
         await Promise.all([
           page.waitForURL(/\/cockpit/, { timeout: 30000 }),
           page.getByTestId(`live-quiz-cockpit-${quiz}`).click(),
@@ -1172,9 +1183,7 @@ test.describe('Create different types of elements (with and without sample solut
         await page.waitForTimeout(500)
         await page.reload()
         await page.getByTestId('activities').click()
-        await expect(page.getByTestId('activities-search-input')).toBeVisible()
-        await page.getByTestId('activities-search-input').fill(quiz)
-        await page.keyboard.press('Enter')
+        await filterActivitiesByName(page, quiz)
         await chooseActivityAction(
           page,
           'LIVE_QUIZ',

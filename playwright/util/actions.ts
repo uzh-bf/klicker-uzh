@@ -72,6 +72,18 @@ export async function chooseActivityAction(
   await chooseActionByTestId(page, `actions-${type}-${name}`, actionTestId)
 }
 
+export async function filterActivitiesByName(page: Page, activityName: string) {
+  const searchInput = page.getByTestId('activities-search-input')
+
+  await expect(searchInput).toBeVisible()
+  await searchInput.fill('')
+  await expect(searchInput).toHaveValue('')
+  await searchInput.fill(activityName)
+  await expect(searchInput).toHaveValue(activityName)
+  await searchInput.press('Enter')
+  await expect(searchInput).toHaveValue(activityName)
+}
+
 export async function openCourseActionMenu(
   page: Page,
   expectedActionTestId?: string
