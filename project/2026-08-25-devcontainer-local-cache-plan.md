@@ -160,8 +160,8 @@ critical-path coupling; delegation would cost more than the bounded edits.
 
 ## Progress
 
-- Status: all three slices are committed; final runtime verification and the
-  integrated final review are in progress.
+- Status: all three slices and the accepted final-review corrections are
+  committed; correction re-review is pending.
 - Completed: remote `v3` freshness readback, clean task worktree, planner pass,
   plan commit `585f0c1b4`, shared pnpm-store commit `3355b0829`, mocked
   initializer success/idempotence/failure checks, shell syntax, ShellCheck on
@@ -192,6 +192,10 @@ critical-path coupling; delegation would cost more than the bounded edits.
   shell, Compose, and runtime tests pass. Installed devrouter 0.0.37 cannot
   parse the upstream `profiles` key; the already-built local devrouter 0.0.38
   checkout validates the rebased configuration with five passing checks.
+- Final-head runtime: exact commit `b381b01a1` started with the devrouter 0.0.38
+  `full` profile. The external-store mount was exact, a commit-specific
+  `.next/dev` marker survived a settled stop/start cycle, and all five
+  `dev:doctor` contracts passed after restart.
 - Slice 1 review: done through trusted generic-continuity specialists after the
   configured Gemini routes failed pre-work with provider `402`; the accepted
   simplification uses Docker's idempotent named-volume creation directly. No
@@ -206,8 +210,13 @@ critical-path coupling; delegation would cost more than the bounded edits.
 - Runtime lifecycle: the exact workspace is stopped with zero containers and
   routes. The local `klicker-uzh-pnpm-store-v1` volume remains intentionally
   retained.
-- Active gate: integrated final review.
-- Next: commit this evidence and run the final reviewer.
+- Final review: the first integrated pass found no high or critical issue. Its
+  two medium findings and one low finding were accepted: documentation now
+  requires devrouter 0.0.38, final-head live proof is recorded above, and the
+  source-format-dependent pnpm assertion was removed while executable argument
+  coverage remains in the focused runtime test.
+- Active gate: correction re-review.
+- Next: commit this evidence and run the focused correction re-review.
 - Required delivery: committed local branch.
 - Achieved delivery: all three implementation slices committed and slice-level
   reviews complete.
