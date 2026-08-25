@@ -443,6 +443,32 @@ describe('account usage chat route', () => {
     expect(mocks.decrementCredits).not.toHaveBeenCalled()
   })
 
+  test('finalizes an empty terminal result and charges reliable usage once', async () => {
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(200)
+
+    await streamCallbacks().onEnd({
+      usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+      steps: [],
+    })
+
+    expect(mocks.finalizeChatTurn).toHaveBeenCalledOnce()
+    expect(mocks.finalizeChatTurn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: [],
+        rawCreditsUsed: 0.00006,
+      })
+    )
+    expect(mocks.decrementCredits).toHaveBeenCalledOnce()
+    expect(mocks.decrementCredits).toHaveBeenCalledWith(
+      'participant-1',
+      'chatbot-1',
+      0.00006
+    )
+  })
+
   test('keeps invalid complete usage uncharged and metadata safe', async () => {
     mocks.roundChatUsageCredits.mockImplementation(() => {
       throw new RangeError('synthetic invalid cost')

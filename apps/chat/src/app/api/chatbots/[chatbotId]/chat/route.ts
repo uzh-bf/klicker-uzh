@@ -1502,14 +1502,12 @@ export async function POST(
           hadAbort: sawAbort,
         })
 
-        if (result.steps && result.steps.length > 0) {
-          await finalizeAssistantLifecycle({
-            content: mapAssistantStepContent(result.steps),
-            reasoningContent: finishedReasoningContent,
-            rawCreditsUsed,
-            phase: 'complete',
-          })
-        }
+        await finalizeAssistantLifecycle({
+          content: mapAssistantStepContent(result.steps),
+          reasoningContent: finishedReasoningContent,
+          rawCreditsUsed,
+          phase: 'complete',
+        })
 
         if (!firstError) {
           emitFinalOnce('success', {
