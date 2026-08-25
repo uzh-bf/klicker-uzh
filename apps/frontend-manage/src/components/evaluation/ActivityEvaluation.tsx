@@ -267,7 +267,7 @@ function ActivityEvaluation({
                     <div className="mx-auto max-w-2xl text-xl">
                       {leaderboard && leaderboard.length > 0 ? (
                         <Leaderboard
-                          leaderboard={leaderboard ?? []}
+                          leaderboard={leaderboard}
                           podiumImgSrc={{
                             rank1: Rank1Img,
                             rank2: Rank2Img,
