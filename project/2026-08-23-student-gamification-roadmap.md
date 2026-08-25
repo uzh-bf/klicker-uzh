@@ -14,8 +14,8 @@
   `1d19ad9efc6e7af57cff2b805255b4746de25c29`
 - Roadmap worktree: branch `rs/gamification-achievement-receipts` at
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/gamification-roadmap`
-- The worktree was rebaselined onto the fresh `origin/v3` before W6; it is
-  currently 46 commits ahead and 0 behind that base.
+- The worktree was rebaselined onto the fresh `origin/v3` before W6; the task
+  branch is ahead of that base and has no commits behind it.
 - Delivery layer: local implementation and verification commits are complete.
   Push, pull-request update, merge, ClickUp reconciliation, deployment, and
   live-data actions remain separate authority boundaries.
