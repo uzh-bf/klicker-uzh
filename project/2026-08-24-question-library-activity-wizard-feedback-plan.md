@@ -134,8 +134,9 @@ lifecycle.
   `klicker-playwright-e2e`, `klicker-testing-verification`,
   `klicker-wiki-maintenance`, and `devrouter`.
 - `$rs-local-runtime-lifecycle` governs runtime lifecycle boundaries. This
-  task reuses the already-running exact checkout and must not start, stop, or
-  repair it.
+  exact runtime is stopped; canonical devrouter ensure/exec and the final
+  non-destructive exact stop are authorized after the official 0.0.37
+  adaptation. Manual route, TLS, and certificate repair remain withheld.
 - The established repository plan format and the fully read sliced-workflow
   contract provide this plan's durable format.
 
@@ -507,6 +508,12 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   `devrouter repo devcontainer verify --json` passed without starting the
   runtime. Repository Prettier and `git diff --check` passed for the owned
   consumer and plan changes.
+- Post-adaptation slice review: the configured simplifier and slice-reviewer
+  failed before work with upstream HTTP 402. A Luna max generic-continuity
+  simplifier found no simplification, and a separate Luna max
+  generic-continuity correctness/TLS review accepted the adaptation subject
+  only to correcting the stale Skill routing authority above. This plan-only
+  correction resolves that finding; no code or configuration defect was found.
 - Runtime proof status: no fancy-domain browser matrix or focused B, O, or P
   test ran. No localhost or fixed-port browser fallback and no manual route,
   certificate, runtime, or configuration change, repair, or workaround
