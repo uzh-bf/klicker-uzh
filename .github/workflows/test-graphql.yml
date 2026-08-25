@@ -218,6 +218,7 @@ jobs:
           fi
 
           cd packages/graphql
+          pnpm vitest run test/liveQuizResponseCounts.test.ts
           pnpm vitest run
         env:
           DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod

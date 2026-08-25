@@ -9,13 +9,14 @@
 **Goal:** Show a lecturer the received and processed answer counts for every
 element in an active or executed live quiz block.
 
-**Architecture:** The response API records an exact numeric received counter;
-response processors record an exact numeric processed counter only after a
-complete aggregation batch succeeds. A bounded processed replay-claim set
-prevents duplicate non-idempotent writes. The authorized `cockpitQuiz` query
-reads the new counters and compatibility values and decorates the matching
-`ElementInstance`; the existing two-second cockpit polling renders the values
-without a new subscription.
+**Architecture:** The response API records a best-effort numeric received
+counter; response processors record a best-effort numeric processed counter only
+after a complete aggregation batch succeeds. Redis tracking failures can
+undercount otherwise accepted or successfully aggregated events. A bounded
+processed replay-claim set prevents duplicate non-idempotent writes. The
+authorized `cockpitQuiz` query reads the new counters and compatibility values
+and decorates the matching `ElementInstance`; the existing two-second cockpit
+polling renders the values without a new subscription.
 
 **Tech Stack:** TypeScript 6, ioredis 5.4.1, Hatchet 1.9.4, Pothos GraphQL,
 Apollo Client, Next.js 16, React 19, next-intl, Vitest, Playwright.
