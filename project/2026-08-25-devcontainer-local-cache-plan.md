@@ -13,18 +13,19 @@ Next.js development caches, and retain the existing bounded stale-cache repair.
 - Do not add a registry, dependency, prebuilt application image, runtime
   profile, or database snapshot.
 - Do not replace `devrouter ensure` as the canonical lifecycle command.
-- Do not push, create a pull request, merge, delete a runtime, or remove the
-  shared cache volume.
+- Do not create a pull request, merge, delete a runtime, or remove the shared
+  cache volume.
 
 ## Execution contract
 
 - Authority: create and edit the task worktree, run repository checks, use the
   exact devrouter runtime when available, create local commits, and run the
-  required read-only specialist reviews.
-- Withheld: push, pull-request creation, merge, runtime or worktree deletion,
+  required read-only specialist reviews. The user separately authorized pushing
+  the complete branch to `origin/rs/devcontainer-local-cache` on 2026-08-26.
+- Withheld: pull-request creation, merge, runtime or worktree deletion,
   shared-volume removal, and broad Docker cleanup.
-- Terminal: a committed local branch with fresh focused and repository checks,
-  exact runtime lifecycle accounting, and an integrated final review.
+- Terminal: a pushed branch with fresh focused and repository checks, exact
+  runtime lifecycle accounting, and an integrated final review.
 - Boundary owner: self.
 - Pause: a material scope or isolation change, an unsafe cache deletion path,
   or a lifecycle lock that prevents required runtime verification.
@@ -220,6 +221,7 @@ critical-path coupling; delegation would cost more than the bounded edits.
   coverage remains in the focused runtime test. The focused correction
   re-review returned `DONE` with no remaining findings.
 - Active gate: none.
-- Next: optional push and pull-request creation require separate user approval.
-- Required delivery: committed local branch.
-- Achieved delivery: complete, verified, reviewed local branch.
+- Next: optional pull-request creation requires separate user approval.
+- Required delivery: pushed remote branch.
+- Achieved delivery: complete, verified, reviewed branch pushed to
+  `origin/rs/devcontainer-local-cache`.
