@@ -32,6 +32,24 @@ inventing `authScopes` variants.
 - `services/*.ts` — all business logic, Prisma access, Redis, pubSub publishes. Import style: `import * as XService from '../services/x.js'`.
 - Context (`packages/graphql/src/lib/context.ts`): `Context` has optional `user`; `t.withAuth` narrows to `ContextWithUser` (`user.sub`, `role`, `scope`, catalyst flags) — services take `ctx` and rely on that narrowing.
 
+### Private achievement receipts
+
+`ParticipantAchievementInstance.receiptAcknowledgedAt` is a self-only field.
+The shared field resolver in `packages/graphql/src/schema/achievement.ts`
+returns the timestamp only when the instance belongs to `ctx.user.sub`; it
+returns `null` for another participant. The public participant-profile
+operation omits the field entirely, while `SelfWithAchievements` retains it
+for the authenticated participant.
+
+`acknowledgeAchievementReceipt` is exposed through the participant-authenticated
+mutation and delegates to `packages/graphql/src/services/participants.ts`.
+The service checks ownership, conditionally writes the timestamp only when it
+is still null, and rereads the instance so first and repeated acknowledgements
+return the same successful result without replacing the first timestamp.
+Missing or foreign instances return `false` without a write. Historical
+instances are acknowledged by the Prisma rollout migration; new achievement
+instances remain nullable until the student sees them.
+
 ## Validation and errors
 
 - Arg validation via the Pothos **Zod plugin** — pass `validate:` on args (email/regex/length examples in `mutation.ts`); issues are joined into a `GraphQLError` by the shaper in `builder.ts`.

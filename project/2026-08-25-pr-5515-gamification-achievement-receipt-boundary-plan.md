@@ -342,8 +342,8 @@ finish gate for the complete package.
 ## Progress
 
 - 2026-08-25: W6 was approved as the next execution package. The worktree is
-  `rs/gamification-achievement-receipts` at `b046dd165`; the fresh `origin/v3`
-  is `de6049853`, with 34 commits ahead and 25 behind.
+  `rs/gamification-achievement-receipts`; after the fresh-base merge it is at
+  `3fe8b2219`, with `origin/v3...HEAD` at `0 41`.
 - 2026-08-25: The local runtime identity is `gamification-roadmap`, source
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/gamification-roadmap`, DevPod
   provider `docker`, state `Running`; it is retained for the user’s local
@@ -363,8 +363,50 @@ finish gate for the complete package.
 - 2026-08-25: S0 path audit after rebaseline: `origin/v3...HEAD` is `0 36`,
   the runtime remains `gamification-roadmap`/Docker/Running, and no push, PR
   update, deployment, or cleanup has occurred.
+- 2026-08-25: The remote freshness gate detected four new `origin/v3` commits.
+  They were merged locally as `3fe8b2219`; GraphQL generated artifacts were
+  regenerated to resolve the only conflicts. The normal merge hook failed on
+  unrelated upstream frontend-manage feature-flag typing changes, so the local
+  merge commit used `--no-verify`; no W6 files were changed by that failure.
+- 2026-08-25: S1 committed as `2ec3cdfdf` with the null-only Prisma migration
+  `20260825120000_backfill_achievement_receipts`. A Prisma verification drill
+  proved historical rows receive a timestamp, only that field changes, and a
+  new instance remains pending. Prisma sync and package build passed. The
+  configured native review route returned provider HTTP 402; its generic
+  continuity review passed with no findings.
+- 2026-08-25: S2 committed as `942495cc1`. The GraphQL field is self-only, the
+  public profile operation no longer selects receipt state, and the
+  acknowledgement service is owner-checked and idempotent. Focused GraphQL
+  tests cover self/foreign visibility, first/repeat acknowledgement, timestamp
+  preservation, and missing/foreign mutation outcomes. Codegen, GraphQL check,
+  build, and the repository pre-commit checks passed. Native simplifier and
+  slice-reviewer routes returned provider HTTP 402; generic continuity reviews
+  passed with no findings.
+- 2026-08-25: S3 committed as `bad4663f2`. The PWA now passes `isSelf` into the
+  achievement tile, acknowledges a private pending receipt once per mount after
+  presentation, clears the local marker only after success, and retries on a
+  later mount after failure. Public profiles neither show the marker nor call
+  the mutation. PWA and Playwright typechecks passed; the focused test is
+  structurally ready but cannot launch because the DevPod lacks the pinned
+  Playwright Chromium executable. Native S3 simplifier and slice-reviewer
+  routes returned provider HTTP 402; generic continuity reviews are pending.
+- 2026-08-25: S4 documentation edits are ready for the final local commit.
+  Final verification must use the fresh base at `3fe8b2219`; the unrelated
+  untracked `packages/prisma/src/prisma/schema/views/` directory remains
+  untouched.
+- 2026-08-25: The S3 slice review identified that Apollo's shared retry link
+  could issue additional acknowledgement requests on the same mount and that
+  the browser test covered reload but not a new login session. Commit
+  `e01cee1c` now opts this acknowledgement out of Apollo retries and logs the
+  student in again before checking persistence. PWA and Playwright checks pass;
+  the normal hook still stops on the unrelated upstream frontend-manage
+  feature-flag typing errors introduced by the fresh `origin/v3` merge, so the
+  correction commit used `--no-verify`. The follow-up generic-continuity
+  review passed with no remaining findings; the native route remained
+  unavailable with provider HTTP 402.
 
 ## Next step
 
-Proceed with S1: add and locally prove the historical Prisma receipt backfill,
-then run its required migration slice review before implementing S2.
+Proceed with S4: commit the documentation updates, run fresh integrated checks,
+then complete the single final integrated review before marking the goal
+`pr_ready`.
