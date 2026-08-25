@@ -3,6 +3,11 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 
+const {
+  compareRange: compareNativeRange,
+  resolveNativeStackMembership,
+} = require('./native-stack.js')
+
 const FINAL_REVIEW_COMMAND = '/final-review'
 const FINAL_REVIEW_CONTEXT = 'final-ai-review'
 const FINAL_REVIEW_MODEL = 'google/gemini-3.7-flash'
@@ -297,136 +302,24 @@ function isEligibleDefaultPull({ pull, context, baseSha, headSha }) {
   )
 }
 
-function stackRecordIsValid(record) {
-  return (
-    record &&
-    Number.isSafeInteger(record.number) &&
-    record.number > 0 &&
-    typeof record.state === 'string' &&
-    typeof record.draft === 'boolean'
-  )
-}
-
 async function compareGitRange({ github, context, baseSha, headSha }) {
-  const params = {
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-  }
-  if (typeof github.rest.repos.compareCommitsWithBasehead === 'function') {
-    return github.rest.repos.compareCommitsWithBasehead({
-      ...params,
-      basehead: `${baseSha}...${headSha}`,
-    })
-  }
-  if (typeof github.rest.repos.compareCommits === 'function') {
-    return github.rest.repos.compareCommits({
-      ...params,
-      base: baseSha,
-      head: headSha,
-    })
-  }
-  return null
+  return compareNativeRange({ github, context, baseSha, headSha })
 }
 
 async function getNativeStackMembership({ github, context, pull }) {
-  if (typeof github.request !== 'function') return null
-
-  const response = await github.request('GET /repos/{owner}/{repo}/stacks', {
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    headers: { accept: 'application/vnd.github+json' },
+  const membership = await resolveNativeStackMembership({
+    github,
+    context,
+    pullNumber: pull.number,
+    pull,
   })
-  if (!Array.isArray(response.data)) return null
-  const repository = repositoryName(context)
-
-  for (const stack of response.data) {
-    if (
-      !stack ||
-      (typeof stack.id === 'string' && !stack.id) ||
-      (typeof stack.id !== 'string' && !Number.isSafeInteger(stack.id)) ||
-      !Array.isArray(stack.pull_requests) ||
-      stack.pull_requests.length === 0 ||
-      !stack.pull_requests.every(stackRecordIsValid)
-    ) {
-      return null
-    }
-
-    const memberIndex = stack.pull_requests.findIndex(
-      (record) => record.number === pull.number
-    )
-    const member =
-      memberIndex >= 0 ? stack.pull_requests[memberIndex] : undefined
-    if (!member) continue
-
-    if (
-      member.state !== pull.state ||
-      member.draft !== pull.draft ||
-      pull.head.repo?.full_name !== repository
-    ) {
-      return null
-    }
-
-    const id = String(stack.id)
-    const members = []
-    for (const record of stack.pull_requests) {
-      const memberPull =
-        record.number === pull.number
-          ? pull
-          : await getPull(github, context, record.number)
-      if (
-        memberPull.state !== 'open' ||
-        memberPull.draft ||
-        memberPull.base.repo?.full_name !== repository ||
-        memberPull.head.repo?.full_name !== repository ||
-        record.state !== memberPull.state ||
-        record.draft !== memberPull.draft
-      ) {
-        return null
-      }
-      members.push(memberPull)
-    }
-
-    if (
-      members[0].base.ref !== context.payload.repository.default_branch ||
-      members[0].base.repo.full_name !== repository
-    ) {
-      return null
-    }
-    for (let index = 1; index < members.length; index += 1) {
-      const parent = members[index - 1]
-      const memberPull = members[index]
-      if (
-        memberPull.base.ref !== parent.head.ref ||
-        memberPull.base.sha !== parent.head.sha ||
-        memberPull.base.repo.full_name !== repository
-      ) {
-        return null
-      }
-    }
-
-    for (let index = 0; index < members.length; index += 1) {
-      const baseSha =
-        index === 0 ? members[0].base.sha : members[index - 1].head.sha
-      const comparison = await compareGitRange({
-        github,
-        context,
-        baseSha,
-        headSha: members[index].head.sha,
-      })
-      if (comparison?.data.status !== 'ahead') return null
-    }
-
-    return {
-      id,
-      isTop: memberIndex === members.length - 1,
-      position: memberIndex,
-      orderDigest: sha256(
-        JSON.stringify(stack.pull_requests.map((record) => record.number))
-      ),
-    }
+  if (!membership?.valid) return null
+  return {
+    id: membership.id,
+    isTop: membership.position === membership.members.length - 1,
+    position: membership.position,
+    orderDigest: membership.orderDigest,
   }
-
-  return null
 }
 
 async function resolvePullEligibility({

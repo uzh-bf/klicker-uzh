@@ -7,6 +7,7 @@ const {
   isTrustedPermission,
   normalizeTitle,
 } = require('./final-ai-review.js')
+const { resolveNativeStackMembership } = require('./native-stack.js')
 
 const STACK_REVIEW_COMMAND = '/final-review-stack'
 const STACK_REVIEW_CONTEXT = 'final-ai-stack-review'
@@ -60,24 +61,6 @@ function safeRepositoryPath(value) {
   )
 }
 
-function stackId(value) {
-  if (typeof value === 'string' && value.length > 0 && value.length <= 200) {
-    return value
-  }
-  if (Number.isSafeInteger(value) && value > 0) return String(value)
-  return ''
-}
-
-function stackRecordIsValid(record) {
-  return (
-    record &&
-    Number.isSafeInteger(record.number) &&
-    record.number > 0 &&
-    typeof record.state === 'string' &&
-    typeof record.draft === 'boolean'
-  )
-}
-
 async function getPull(github, context, pullNumber) {
   const response = await github.rest.pulls.get({
     owner: context.repo.owner,
@@ -101,177 +84,14 @@ async function getPermission(github, context, username) {
   }
 }
 
-async function compareRange({ github, context, baseSha, headSha }) {
-  const params = {
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-  }
-  if (typeof github.rest.repos.compareCommitsWithBasehead === 'function') {
-    return github.rest.repos.compareCommitsWithBasehead({
-      ...params,
-      basehead: `${baseSha}...${headSha}`,
-    })
-  }
-  if (typeof github.rest.repos.compareCommits === 'function') {
-    return github.rest.repos.compareCommits({
-      ...params,
-      base: baseSha,
-      head: headSha,
-    })
-  }
-  return null
-}
-
-function stackOrderDigest(numbers) {
-  return sha256(JSON.stringify(numbers))
-}
-
-async function fetchStackResponse({ github, context }) {
-  if (typeof github.request !== 'function') {
-    return { stacks: null, reason: 'native stack API is unavailable' }
-  }
-  const response = await github.request('GET /repos/{owner}/{repo}/stacks', {
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    per_page: 100,
-    headers: { accept: 'application/vnd.github+json' },
-  })
-  if (!Array.isArray(response.data)) {
-    return {
-      stacks: null,
-      reason: 'native stack API returned a malformed list',
-    }
-  }
-  const stacks = []
-  for (const stack of response.data) {
-    if (
-      !stackId(stack?.id) ||
-      !Array.isArray(stack.pull_requests) ||
-      stack.pull_requests.length === 0 ||
-      !stack.pull_requests.every(stackRecordIsValid)
-    ) {
-      return {
-        stacks: null,
-        reason: 'native stack API returned a malformed stack',
-      }
-    }
-    const numbers = stack.pull_requests.map((record) => record.number)
-    if (new Set(numbers).size !== numbers.length) {
-      return {
-        stacks: null,
-        reason: 'native stack API returned duplicate members',
-      }
-    }
-    stacks.push({
-      id: stackId(stack.id),
-      pull_requests: stack.pull_requests,
-    })
-  }
-  return { stacks, reason: '' }
-}
-
-function repositoryMatches(pull, repository) {
-  return (
-    pull.base?.repo?.full_name === repository &&
-    pull.head?.repo?.full_name === repository
-  )
-}
-
 async function resolveStackMembership({ github, context, pullNumber }) {
-  const response = await fetchStackResponse({ github, context })
-  if (!response.stacks) return { valid: false, reason: response.reason }
-  const matches = response.stacks.filter((stack) =>
-    stack.pull_requests.some((record) => record.number === pullNumber)
-  )
-  if (matches.length === 0) return null
-  if (matches.length !== 1) {
-    return { valid: false, reason: 'pull request belongs to multiple stacks' }
-  }
-
-  const stack = matches[0]
-  const repository = repositoryName(context)
-  const members = []
-  const reasons = []
-  for (const record of stack.pull_requests) {
-    let pull
-    try {
-      pull = await getPull(github, context, record.number)
-    } catch {
-      reasons.push(`could not fetch stack member ${record.number}`)
-      continue
-    }
-    members.push({ number: record.number, record, pull })
-    if (
-      pull.state !== 'open' ||
-      pull.draft ||
-      !repositoryMatches(pull, repository) ||
-      record.state !== pull.state ||
-      record.draft !== pull.draft
-    ) {
-      reasons.push(
-        `stack member ${record.number} is not open and ready in the repository`
-      )
-    }
-  }
-
-  const top = members.at(-1)?.pull
-  if (members.length !== stack.pull_requests.length) {
-    reasons.push('stack member data is incomplete')
-  }
-  if (members[0]) {
-    if (
-      members[0].pull.base?.ref !== context.payload.repository.default_branch ||
-      members[0].pull.base?.repo?.full_name !== repository
-    ) {
-      reasons.push('stack root does not target the default branch')
-    }
-  }
-  for (let index = 1; index < members.length; index += 1) {
-    const parent = members[index - 1].pull
-    const child = members[index].pull
-    if (
-      child.base?.ref !== parent.head?.ref ||
-      child.base?.sha !== parent.head?.sha ||
-      child.base?.repo?.full_name !== repository
-    ) {
-      reasons.push(`stack edge ${index} does not match its parent head exactly`)
-    }
-  }
-
-  const ranges = []
-  if (reasons.length === 0) {
-    for (let index = 0; index < members.length; index += 1) {
-      const baseSha =
-        index === 0
-          ? members[0].pull.base.sha
-          : members[index - 1].pull.head.sha
-      const response = await compareRange({
-        github,
-        context,
-        baseSha,
-        headSha: members[index].pull.head.sha,
-      })
-      if (response?.data?.status !== 'ahead') {
-        reasons.push(
-          `stack layer ${index + 1} is not a strict descendant range`
-        )
-      }
-      ranges.push({ baseSha, headSha: members[index].pull.head.sha, response })
-    }
-  }
-
-  const numbers = stack.pull_requests.map((record) => record.number)
-  return {
-    valid: reasons.length === 0,
-    reason: reasons.join('; '),
-    id: stack.id,
-    members,
-    ranges,
-    numbers,
-    orderDigest: stackOrderDigest(numbers),
-    position: numbers.indexOf(pullNumber),
-    top,
-  }
+  const pull = await getPull(github, context, pullNumber)
+  return resolveNativeStackMembership({
+    github,
+    context,
+    pullNumber,
+    pull,
+  })
 }
 
 function stackPlan(membership, context) {
@@ -295,6 +115,18 @@ function stackPlan(membership, context) {
     topNumber: top.number,
     background: buildStackBackground(membership, context),
   }
+}
+
+function stackPlanMatches(
+  plan,
+  { expectedStackId, expectedOrderDigest, expectedMemberNumbers }
+) {
+  return (
+    plan.eligible &&
+    plan.stackId === expectedStackId &&
+    plan.stackOrderDigest === expectedOrderDigest &&
+    JSON.stringify(plan.memberNumbers) === JSON.stringify(expectedMemberNumbers)
+  )
 }
 
 function buildStackBackground(membership, context) {
@@ -650,11 +482,11 @@ async function startStackReview({
   })
   const plan = stackPlan(membership, context)
   if (
-    !plan.eligible ||
-    plan.stackId !== expectedStackId ||
-    plan.stackOrderDigest !== expectedOrderDigest ||
-    JSON.stringify(plan.memberNumbers) !==
-      JSON.stringify(expectedMemberNumbers) ||
+    !stackPlanMatches(plan, {
+      expectedStackId,
+      expectedOrderDigest,
+      expectedMemberNumbers,
+    }) ||
     plan.baseSha !== baseSha ||
     plan.headSha !== headSha
   ) {
@@ -839,7 +671,6 @@ function findingMetadata(finding, kind) {
   }
   return {
     ...identity,
-    content_digest: contentDigest,
     id: `sfr-${sha256(JSON.stringify(identity)).slice(0, 16)}`,
   }
 }
@@ -886,12 +717,13 @@ function renderStackReview({
 }) {
   const code = validateOCRResult(codeResult)
   const manifest = manifestBundle.manifest
-  const knownPaths = new Set(manifest.path_index.map((entry) => entry.filename))
+  const pathOwners = new Map(
+    manifest.path_index.map((entry) => [entry.filename, entry.layers])
+  )
+  const knownPaths = new Set(pathOwners.keys())
   const codeComments = code.comments.map((comment, index) => {
     const validated = validateFindingComment(comment, index, knownPaths)
-    const owners = manifest.path_index.find(
-      (entry) => entry.filename === validated.path
-    ).layers
+    const owners = pathOwners.get(validated.path)
     return { ...validated, layerNumbers: owners }
   })
   const topology = validateTopologyResult(topologyResult, manifest)
@@ -1150,11 +982,11 @@ async function publishStackReview({
   })
   const plan = stackPlan(membership, context)
   if (
-    !plan.eligible ||
-    plan.stackId !== expectedStackId ||
-    plan.stackOrderDigest !== expectedOrderDigest ||
-    JSON.stringify(plan.memberNumbers) !==
-      JSON.stringify(expectedMemberNumbers) ||
+    !stackPlanMatches(plan, {
+      expectedStackId,
+      expectedOrderDigest,
+      expectedMemberNumbers,
+    }) ||
     plan.baseSha !== baseSha ||
     plan.headSha !== headSha
   ) {
@@ -1242,12 +1074,11 @@ async function finalizeStackReview({
   const plan = stackPlan(membership, context)
   const currentHead = plan.headSha ?? headSha
   const eligible =
-    plan.eligible &&
-    plan.stackId === expectedStackId &&
-    plan.stackOrderDigest === expectedOrderDigest &&
-    JSON.stringify(plan.memberNumbers) ===
-      JSON.stringify(expectedMemberNumbers) &&
-    plan.baseSha === baseSha
+    stackPlanMatches(plan, {
+      expectedStackId,
+      expectedOrderDigest,
+      expectedMemberNumbers,
+    }) && plan.baseSha === baseSha
   await setStackStatus({
     github,
     context,
