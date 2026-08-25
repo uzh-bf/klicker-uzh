@@ -50,6 +50,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
+      issues: read
       pull-requests: read
       statuses: read
     outputs:
@@ -57,6 +58,14 @@ jobs:
       pr_number: ${{ steps.authorize.outputs.pr_number }}
       base_sha: ${{ steps.authorize.outputs.base_sha }}
       head_sha: ${{ steps.authorize.outputs.head_sha }}
+      mode: ${{ steps.authorize.outputs.mode }}
+      root_head: ${{ steps.authorize.outputs.root_head }}
+      root_review_id: ${{ steps.authorize.outputs.root_review_id }}
+      rules_digest: ${{ steps.authorize.outputs.rules_digest }}
+      background_digest: ${{ steps.authorize.outputs.background_digest }}
+      scope_kind: ${{ steps.authorize.outputs.scope_kind }}
+      stack_id: ${{ steps.authorize.outputs.stack_id }}
+      stack_position: ${{ steps.authorize.outputs.stack_position }}
       background: ${{ steps.authorize.outputs.background }}
     steps:
       - name: Checkout trusted final-review policy
@@ -85,6 +94,7 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: read
+      issues: read
       pull-requests: write
       statuses: write
     steps:
@@ -105,6 +115,14 @@ jobs:
           PR_NUMBER: ${{ needs.authorize.outputs.pr_number }}
           BASE_SHA: ${{ needs.authorize.outputs.base_sha }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+          REVIEW_MODE: ${{ needs.authorize.outputs.mode }}
+          ROOT_HEAD: ${{ needs.authorize.outputs.root_head }}
+          ROOT_REVIEW_ID: ${{ needs.authorize.outputs.root_review_id }}
+          RULES_DIGEST: ${{ needs.authorize.outputs.rules_digest }}
+          BACKGROUND_DIGEST: ${{ needs.authorize.outputs.background_digest }}
+          SCOPE_KIND: ${{ needs.authorize.outputs.scope_kind }}
+          STACK_ID: ${{ needs.authorize.outputs.stack_id }}
+          STACK_POSITION: ${{ needs.authorize.outputs.stack_position }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -115,6 +133,14 @@ jobs:
               prNumber: Number(process.env.PR_NUMBER),
               baseSha: process.env.BASE_SHA,
               headSha: process.env.HEAD_SHA,
+              mode: process.env.REVIEW_MODE,
+              rootHead: process.env.ROOT_HEAD,
+              rootReviewId: process.env.ROOT_REVIEW_ID,
+              rulesDigest: process.env.RULES_DIGEST,
+              backgroundDigest: process.env.BACKGROUND_DIGEST,
+              scopeKind: process.env.SCOPE_KIND,
+              stackId: process.env.STACK_ID,
+              stackPosition: process.env.STACK_POSITION,
             })
             core.setOutput('run_review', String(shouldRun))
 
@@ -125,17 +151,26 @@ jobs:
           PR_NUMBER: ${{ needs.authorize.outputs.pr_number }}
           BASE_SHA: ${{ needs.authorize.outputs.base_sha }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+          REVIEW_MODE: ${{ needs.authorize.outputs.mode }}
+          ROOT_HEAD: ${{ needs.authorize.outputs.root_head }}
         run: |
           set -euo pipefail
           [[ "${PR_NUMBER}" =~ ^[0-9]+$ ]]
           [[ "${BASE_SHA}" =~ ^[0-9a-f]{40}$ ]]
           [[ "${HEAD_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${REVIEW_MODE}" == "full" || "${REVIEW_MODE}" == "incremental" ]]
+          [[ "${ROOT_HEAD}" =~ ^[0-9a-f]{40}$ ]]
           git fetch --no-tags origin "pull/${PR_NUMBER}/head"
           test "$(git rev-parse FETCH_HEAD)" = "${HEAD_SHA}"
-          git cat-file -e "${BASE_SHA}^{commit}"
-          MERGE_BASE="$(git merge-base "${BASE_SHA}" "${HEAD_SHA}")"
-          [[ "${MERGE_BASE}" =~ ^[0-9a-f]{40}$ ]]
-          echo "merge_base=${MERGE_BASE}" >>"${GITHUB_OUTPUT}"
+          if [[ "${REVIEW_MODE}" == "incremental" ]]; then
+            REVIEW_FROM="${ROOT_HEAD}"
+          else
+            git cat-file -e "${BASE_SHA}^{commit}"
+            REVIEW_FROM="$(git merge-base "${BASE_SHA}" "${HEAD_SHA}")"
+          fi
+          git cat-file -e "${REVIEW_FROM}^{commit}"
+          [[ "${REVIEW_FROM}" =~ ^[0-9a-f]{40}$ ]]
+          echo "review_from=${REVIEW_FROM}" >>"${GITHUB_OUTPUT}"
 
       - name: Install pinned OpenCodeReview CLI
         if: steps.start.outputs.run_review == 'true'
@@ -159,13 +194,13 @@ jobs:
         env:
           BACKGROUND: ${{ needs.authorize.outputs.background }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
-          MERGE_BASE: ${{ steps.range.outputs.merge_base }}
+          REVIEW_FROM: ${{ steps.range.outputs.review_from }}
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
           STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
         run: |
           set -euo pipefail
           ocr review \
-            --from "${MERGE_BASE}" \
+            --from "${REVIEW_FROM}" \
             --to "${HEAD_SHA}" \
             --audience agent \
             --format json \
@@ -188,6 +223,14 @@ jobs:
           PR_NUMBER: ${{ needs.authorize.outputs.pr_number }}
           BASE_SHA: ${{ needs.authorize.outputs.base_sha }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+          REVIEW_MODE: ${{ needs.authorize.outputs.mode }}
+          ROOT_HEAD: ${{ needs.authorize.outputs.root_head }}
+          ROOT_REVIEW_ID: ${{ needs.authorize.outputs.root_review_id }}
+          RULES_DIGEST: ${{ needs.authorize.outputs.rules_digest }}
+          BACKGROUND_DIGEST: ${{ needs.authorize.outputs.background_digest }}
+          SCOPE_KIND: ${{ needs.authorize.outputs.scope_kind }}
+          STACK_ID: ${{ needs.authorize.outputs.stack_id }}
+          STACK_POSITION: ${{ needs.authorize.outputs.stack_position }}
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
         with:
           github-token: ${{ github.token }}
@@ -199,6 +242,14 @@ jobs:
               prNumber: Number(process.env.PR_NUMBER),
               baseSha: process.env.BASE_SHA,
               headSha: process.env.HEAD_SHA,
+              mode: process.env.REVIEW_MODE,
+              rootHead: process.env.ROOT_HEAD,
+              rootReviewId: process.env.ROOT_REVIEW_ID,
+              rulesDigest: process.env.RULES_DIGEST,
+              backgroundDigest: process.env.BACKGROUND_DIGEST,
+              scopeKind: process.env.SCOPE_KIND,
+              stackId: process.env.STACK_ID,
+              stackPosition: process.env.STACK_POSITION,
               resultPath: process.env.RESULT_PATH,
             })
             core.info(`Published ${url}`)
@@ -210,6 +261,9 @@ jobs:
           PR_NUMBER: ${{ needs.authorize.outputs.pr_number }}
           BASE_SHA: ${{ needs.authorize.outputs.base_sha }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+          SCOPE_KIND: ${{ needs.authorize.outputs.scope_kind }}
+          STACK_ID: ${{ needs.authorize.outputs.stack_id }}
+          STACK_POSITION: ${{ needs.authorize.outputs.stack_position }}
           REVIEW_OUTCOME: ${{ steps.run_review.outcome }}
           CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
           PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
@@ -223,6 +277,9 @@ jobs:
               prNumber: Number(process.env.PR_NUMBER),
               baseSha: process.env.BASE_SHA,
               headSha: process.env.HEAD_SHA,
+              scopeKind: process.env.SCOPE_KIND,
+              stackId: process.env.STACK_ID,
+              stackPosition: process.env.STACK_POSITION,
               reviewOutcome: process.env.REVIEW_OUTCOME,
               cleanupOutcome: process.env.CLEANUP_OUTCOME,
               publishOutcome: process.env.PUBLISH_OUTCOME,
