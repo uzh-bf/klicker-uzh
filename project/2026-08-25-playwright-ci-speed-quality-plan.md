@@ -195,5 +195,27 @@ activation, live-service access, or change to the course-duplication worker.
 - 2026-08-25: Sol planner challenge completed with `DONE_WITH_CONCERNS`.
 - 2026-08-25: Current baseline refreshed to 886 tests in 31 files after the
   latest-base integration; earlier 881-test notes are stale.
-- 2026-08-25: S0 plan amendment is in progress. The prior artifact-policy
-  commits remain `f5f7c7b07`, `4c59e6883`, and `da473b1f8`.
+- 2026-08-25: S0 plan amendment committed as `d20f1d8d4`.
+- 2026-08-25: S1 duplication observer repair committed as `e1a5704f2`.
+- 2026-08-25: S2 timing schema, deterministic sharder, and standard-library
+  JUnit aggregator committed as `559239ec3`.
+- 2026-08-25: S3 guarded workflow and documentation committed as `83cf09132`;
+  `b092bdb01` adds the explicit bot credential setup required for its future
+  branch push. The prior artifact-policy commits remain `f5f7c7b07`,
+  `4c59e6883`, and `da473b1f8`.
+- 2026-08-25: Focused checks pass at Node 24: Prettier, Playwright TypeScript,
+  YAML parsing, JavaScript/Python syntax, GET operation-name parsing, exact-once
+  deterministic eight-shard allocation, retry-inclusive JUnit aggregation, and
+  malformed/partial timing fixture rejection. The manifest remains 886 tests
+  in 31 files.
+- 2026-08-25: No exact runtime for this worktree was available, so the browser
+  duplication journey was not started. Fresh CI proof and timing-workflow
+  activation remain withheld with push, credential, and live-service actions.
+- 2026-08-25: The live PR head is `559239ec3`; the local workflow commits after
+  that head remain unpushed by this task. The generated GraphQL paths remain
+  dirty and unstaged.
+- 2026-08-25: The native simplifier and slice-reviewer routes returned provider
+  `402` credit errors. A lightweight GPT-5.6 Sol fallback reviewed the exact
+  package and found no material implementation risk after this progress update;
+  the native specialist review limitation remains disclosed rather than treated
+  as a green CI result.
