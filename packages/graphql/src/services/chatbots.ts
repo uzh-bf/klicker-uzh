@@ -558,6 +558,9 @@ export async function createChatbot(
   if (!course) {
     throw new GraphQLError('Course not found')
   }
+  if (args.name === '') {
+    throw new GraphQLError('Chatbot name must not be empty')
+  }
 
   const created = await ctx.prisma.chatbot.create({
     data: {
@@ -600,6 +603,9 @@ export async function updateChatbot(
   })
   if (!existing) {
     return null
+  }
+  if (args.name === '') {
+    throw new GraphQLError('Chatbot name must not be empty')
   }
 
   const updated = await ctx.prisma.chatbot.update({

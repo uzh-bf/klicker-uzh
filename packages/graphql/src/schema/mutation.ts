@@ -1462,7 +1462,10 @@ export const Mutation = builder.mutationType({
         .field({
           type: Chatbot,
           args: {
-            name: t.arg.string({ required: true }),
+            name: t.arg.string({
+              required: true,
+              validate: { minLength: 1 },
+            }),
             description: t.arg.string({ required: false }),
             avatar: t.arg.string({ required: false }),
             courseId: t.arg.string({ required: true }),
@@ -1479,7 +1482,10 @@ export const Mutation = builder.mutationType({
           type: Chatbot,
           args: {
             id: t.arg.string({ required: true }),
-            name: t.arg.string({ required: false }),
+            name: t.arg.string({
+              required: false,
+              validate: { minLength: 1 },
+            }),
             description: t.arg.string({ required: false }),
             avatar: t.arg.string({ required: false }),
           },

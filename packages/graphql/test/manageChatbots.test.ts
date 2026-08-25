@@ -92,6 +92,22 @@ describe('Integration tests for lecturer chatbot create/update', () => {
       })
       expect(count).toBe(0)
     })
+
+    it('rejects an empty name after checking course ownership', async () => {
+      const course = await seedCourse({}, userOneCtx)
+
+      await expect(
+        createChatbot({ name: '', courseId: course.id }, userOneCtx)
+      ).rejects.toThrow('Chatbot name must not be empty')
+    })
+
+    it('keeps the course ownership error for an empty name', async () => {
+      const course = await seedCourse({}, userOneCtx)
+
+      await expect(
+        createChatbot({ name: '', courseId: course.id }, userTwoCtx)
+      ).rejects.toThrow('Course not found')
+    })
   })
 
   describe('updateChatbot', () => {
@@ -125,11 +141,19 @@ describe('Integration tests for lecturer chatbot create/update', () => {
       })
     })
 
+    it('rejects an empty name after checking chatbot ownership', async () => {
+      const { chatbot } = await seedOwnedChatbot()
+
+      await expect(
+        updateChatbot({ id: chatbot.id, name: '' }, userOneCtx)
+      ).rejects.toThrow('Chatbot name must not be empty')
+    })
+
     it('returns null and makes no change for a non-owner', async () => {
       const { chatbot } = await seedOwnedChatbot()
 
       const result = await updateChatbot(
-        { id: chatbot.id, name: 'Hijacked' },
+        { id: chatbot.id, name: '' },
         userTwoCtx
       )
 
