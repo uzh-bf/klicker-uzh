@@ -228,6 +228,78 @@ describe('Unit tests for live quiz evaluation service', () => {
     expect(evaluation).toBeNull()
   })
 
+  it('strips evaluation content for authenticated non-published quizzes', async () => {
+    const course = await seedCourse({}, userOneCtx)
+
+    const question = await prisma.element.create({
+      data: {
+        status: 'READY',
+        type: 'SC',
+        name: 'Draft Question',
+        content: 'Draft Question Content',
+        explanation: 'Draft Question Explanation',
+        options: {
+          choices: [
+            { ix: 0, value: 'A', correct: true },
+            { ix: 1, value: 'B', correct: false },
+          ],
+          displayMode: 'LIST',
+          hasSampleSolution: true,
+          hasAnswerFeedbacks: true,
+        },
+        ownerId: userOneCtx.user.sub,
+      },
+    })
+
+    const liveQuiz = await prisma.liveQuiz.create({
+      data: {
+        name: 'Draft Quiz',
+        displayName: 'Draft Quiz',
+        status: PublicationStatus.DRAFT,
+        ownerId: userOneCtx.user.sub,
+        courseId: course.id,
+        blocks: {
+          create: [
+            {
+              order: 0,
+              status: ElementBlockStatus.EXECUTED,
+              elements: {
+                create: [
+                  {
+                    type: ElementInstanceType.LIVE_QUIZ,
+                    elementId: question.id,
+                    elementType: ElementType.SC,
+                    order: 0,
+                    options: {},
+                    elementData: processElementData(question),
+                    results: getInitialInstanceResults(
+                      processElementData(question)
+                    ),
+                    anonymousResults: getInitialInstanceResults(
+                      processElementData(question)
+                    ),
+                    ownerId: userOneCtx.user.sub,
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    })
+
+    const evaluation = await getLiveQuizEvaluation(
+      { id: liveQuiz.id },
+      userOneCtx
+    )
+
+    expect(evaluation).not.toBeNull()
+    expect(evaluation?.status).toEqual(PublicationStatus.DRAFT)
+    expect(evaluation?.results).toHaveLength(1)
+    expect(evaluation?.results[0]?.instanceCount).toBe(1)
+    expect(evaluation?.results[0]?.instances).toEqual([])
+  })
+
   it('deduplicates active block in-place instead of appending duplicate block', async () => {
     const course = await seedCourse({}, userOneCtx)
 

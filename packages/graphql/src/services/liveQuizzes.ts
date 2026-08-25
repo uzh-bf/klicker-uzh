@@ -2255,6 +2255,10 @@ export async function getLiveQuizEvaluation(
     return null
   }
 
+  const shouldExposeEvaluationResults =
+    liveQuiz.status === DB.PublicationStatus.PUBLISHED ||
+    liveQuiz.status === DB.PublicationStatus.ENDED
+
   if (typeof hmac === 'string') {
     const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
     hmacEncoder.update(liveQuiz.namespace + liveQuiz.id)
@@ -2275,7 +2279,11 @@ export async function getLiveQuizEvaluation(
   let activeBlockWithResults:
     | (DB.ElementBlock & { elements: DB.ElementInstance[] })
     | undefined
-  if (liveQuiz.activeBlockId && liveQuiz.activeBlock) {
+  if (
+    shouldExposeEvaluationResults &&
+    liveQuiz.activeBlockId &&
+    liveQuiz.activeBlock
+  ) {
     const cachedResults = await getCachedBlockResults({
       redisExec: redis,
       activeBlock: liveQuiz.activeBlock,
@@ -2297,6 +2305,13 @@ export async function getLiveQuizEvaluation(
   }
 
   const preparedBlocks = liveQuiz.blocks.map((block) => {
+    if (!shouldExposeEvaluationResults) {
+      return {
+        ...block,
+        elements: [],
+        evaluationInstanceCount: block.elements.length,
+      }
+    }
     if (
       typeof activeBlockWithResults !== 'undefined' &&
       block.id === liveQuiz.activeBlockId
