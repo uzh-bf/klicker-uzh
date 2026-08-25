@@ -24,8 +24,14 @@ function stackRecordIsValid(record) {
     Number.isSafeInteger(record.number) &&
     record.number > 0 &&
     typeof record.state === 'string' &&
-    typeof record.draft === 'boolean'
+    typeof record.draft === 'boolean' &&
+    stackRecordHeadSha(record) !== ''
   )
+}
+
+function stackRecordHeadSha(record) {
+  const sha = record?.head?.sha ?? record?.head_sha
+  return /^[0-9a-f]{40}$/.test(sha ?? '') ? sha : ''
 }
 
 function repositoryMatches(pull, repository) {
@@ -167,14 +173,12 @@ async function resolveNativeStackMembership({
     }
   }
 
-  const topNumber = stack.pull_requests.at(-1)?.number
-  const topMember = members.at(-1)
-  const top =
-    members.length === stack.pull_requests.length &&
-    topMember?.number === topNumber &&
-    pullIdentityIsValid(topMember.pull, repository, topNumber)
-      ? topMember.pull
-      : undefined
+  const topRecord = stack.pull_requests.at(-1)
+  const topNumber = topRecord?.number
+  const topMember = members.find(({ number }) => number === topNumber)
+  const top = pullIdentityIsValid(topMember?.pull, repository, topNumber)
+    ? topMember.pull
+    : undefined
   if (members.length !== stack.pull_requests.length) {
     reasons.push('stack member data is incomplete')
   }
@@ -242,12 +246,8 @@ async function resolveNativeStackMembership({
   }))
   const identityDigest =
     members.length === stack.pull_requests.length &&
-    identities.every(
-      ({ base_ref, base_sha, head_ref, head_sha }) =>
-        typeof base_ref === 'string' &&
-        typeof head_ref === 'string' &&
-        /^[0-9a-f]{40}$/.test(base_sha ?? '') &&
-        /^[0-9a-f]{40}$/.test(head_sha ?? '')
+    members.every(({ number, pull: memberPull }) =>
+      pullIdentityIsValid(memberPull, repository, number)
     )
       ? sha256(JSON.stringify(identities))
       : ''
@@ -261,6 +261,7 @@ async function resolveNativeStackMembership({
     orderDigest: sha256(JSON.stringify(numbers)),
     identityDigest,
     position: numbers.indexOf(pullNumber),
+    topHeadSha: top?.head?.sha ?? stackRecordHeadSha(topRecord),
     topNumber,
     top,
   }

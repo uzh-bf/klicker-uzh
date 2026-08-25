@@ -153,10 +153,30 @@ function stackFixture() {
         {
           id: 99,
           pull_requests: [
-            { number: 11, state: 'open', draft: false },
-            { number: 12, state: 'open', draft: false },
-            { number: 13, state: 'open', draft: false },
-            { number: 14, state: 'open', draft: false },
+            {
+              number: 11,
+              state: 'open',
+              draft: false,
+              head: { sha: 'c'.repeat(40) },
+            },
+            {
+              number: 12,
+              state: 'open',
+              draft: false,
+              head: { sha: 'd'.repeat(40) },
+            },
+            {
+              number: 13,
+              state: 'open',
+              draft: false,
+              head: { sha: 'e'.repeat(40) },
+            },
+            {
+              number: 14,
+              state: 'open',
+              draft: false,
+              head: { sha: 'f'.repeat(40) },
+            },
           ],
         },
       ],
@@ -230,8 +250,18 @@ test('accepts a verified two-layer stack as a distinct topology', async () => {
       {
         id: 98,
         pull_requests: [
-          { number: 11, state: 'open', draft: false },
-          { number: 12, state: 'open', draft: false },
+          {
+            number: 11,
+            state: 'open',
+            draft: false,
+            head: { sha: 'c'.repeat(40) },
+          },
+          {
+            number: 12,
+            state: 'open',
+            draft: false,
+            head: { sha: 'd'.repeat(40) },
+          },
         ],
       },
     ],
@@ -298,7 +328,7 @@ test('invalidates the top status when a lower layer changes', async () => {
   assert.equal(state.createdStatuses.at(-1).state, 'pending')
 })
 
-test('does not target a lower status when the top member cannot be fetched', async () => {
+test('supersedes the top status when the top member cannot be fetched', async () => {
   const { github, pulls, state } = stackFixture()
   const originalGet = github.rest.pulls.get
   github.rest.pulls.get = async ({ pull_number }) => {
@@ -310,9 +340,29 @@ test('does not target a lower status when the top member cannot be fetched', asy
   eventContext.payload.pull_request = pulls[12]
   assert.equal(
     await initializeStackReview({ github, context: eventContext }),
-    false
+    true
   )
-  assert.equal(state.createdStatuses.length, 0)
+  assert.equal(state.createdStatuses.at(-1).sha, pulls[14].head.sha)
+  assert.equal(state.createdStatuses.at(-1).state, 'error')
+  github.rest.pulls.get = originalGet
+})
+
+test('supersedes the top status when a lower member cannot be fetched', async () => {
+  const { github, pulls, state } = stackFixture()
+  const originalGet = github.rest.pulls.get
+  github.rest.pulls.get = async ({ pull_number }) => {
+    if (pull_number === 13) throw new Error('lower member unavailable')
+    return { data: pulls[pull_number] }
+  }
+  const eventContext = context(12)
+  eventContext.eventName = 'pull_request_target'
+  eventContext.payload.pull_request = pulls[12]
+  assert.equal(
+    await initializeStackReview({ github, context: eventContext }),
+    true
+  )
+  assert.equal(state.createdStatuses.at(-1).sha, pulls[14].head.sha)
+  assert.equal(state.createdStatuses.at(-1).state, 'error')
   github.rest.pulls.get = originalGet
 })
 

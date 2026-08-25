@@ -84,8 +84,8 @@ async function getPermission(github, context, username) {
   }
 }
 
-async function resolveStackMembership({ github, context, pullNumber, pull }) {
-  const targetPull = pull ?? (await getPull(github, context, pullNumber))
+async function resolveStackMembership({ github, context, pullNumber }) {
+  const targetPull = await getPull(github, context, pullNumber)
   return resolveNativeStackMembership({
     github,
     context,
@@ -206,7 +206,6 @@ async function initializeStackReview({ github, context }) {
       github,
       context,
       pullNumber: pull.number,
-      pull,
     })
   } catch (error) {
     console.warn(
@@ -215,9 +214,13 @@ async function initializeStackReview({ github, context }) {
     throw error
   }
   if (!membership) return false
+  const eventTopSha =
+    membership.topNumber === pull.number &&
+    /^[0-9a-f]{40}$/.test(pull.head?.sha ?? '')
+      ? pull.head.sha
+      : ''
   const topSha =
-    membership.top?.head?.sha ??
-    (membership.topNumber === pull.number ? pull.head.sha : '')
+    membership.top?.head?.sha || membership.topHeadSha || eventTopSha
   if (!topSha) {
     console.warn(
       `Native stack top ${membership.topNumber ?? 'unknown'} could not be verified; no status changed`

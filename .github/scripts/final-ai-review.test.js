@@ -418,11 +418,13 @@ test('authorizes a verified native stack member', async () => {
             number: 41,
             state: 'open',
             draft: false,
+            head: { sha: 'c'.repeat(40) },
           },
           {
             number: 42,
             state: 'open',
             draft: false,
+            head: { sha: 'a'.repeat(40) },
           },
         ],
       },
