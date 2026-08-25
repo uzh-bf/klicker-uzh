@@ -144,9 +144,10 @@ review gates remain required.
 - Push normally and open a draft PR against `v3`.
 - Rename this plan to include the assigned PR number, update its identity,
   commit, and push normally.
-- Require successful `check`, `check-gitleaks`, and `test-unit` on one exact PR
-  head. Confirm the unit log contains one install, the dependency-build chain,
-  and all four test steps.
+- Obtain successful `check`, `check-gitleaks`, and `test-unit` runs on one exact
+  PR head. Confirm the unit log contains one install, the dependency-build
+  chain, and all four test steps. `test-unit` remains path-filtered and is not
+  added to branch protection.
 
 ## Slice 3: migrate branch protection
 
@@ -190,15 +191,18 @@ Do not delete a workflow if any readback differs from the expected set.
 
 ## Progress
 
-- Status: slice 1 implemented and locally verified; specialist review pending.
+- Status: slice 1 implemented, locally verified, and specialist-reviewed;
+  review correction pending commit.
 - Completed: plan commit and post-commit freshness check; replacement workflow
   implementation; Actions audit, validation, and discovery; exact Node 24
   dependency builds; all four unit suites; Prettier and diff checks; and the
   full monorepo build. The root `check:all` gate reached 6 of 7 tasks but the
   analytics lint task could not build pandas because the devcontainer has no C
-  compiler; this is unrelated to the workflow-only diff.
-- Remaining: commit slice 1, run slice reviews, push and open the draft PR,
-  prove replacement contexts, request settings authority, complete the cutover,
-  and run final review.
+  compiler; this is unrelated to the workflow-only diff. The specialist review
+  accepted the consolidation and identified one least-privilege gap: GraphQL's
+  filter and status jobs now receive workflow-level `contents: read`.
+- Remaining: commit the review correction, push and open the draft PR, prove
+  replacement contexts, request settings authority, complete the cutover, and
+  run final review.
 - Delivery boundary: branch-protection mutation, ready transition, merge,
   deployment, and cleanup remain withheld.
