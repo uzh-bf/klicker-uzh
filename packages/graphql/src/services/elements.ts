@@ -24,7 +24,7 @@ import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import EventEmitter from 'events'
 import { GraphQLError } from 'graphql'
-import { prop, sortBy, swapIndices, uniqueBy } from 'remeda'
+import { prop, sortBy, swapIndices } from 'remeda'
 import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
