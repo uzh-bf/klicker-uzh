@@ -553,6 +553,40 @@ describe('Integration tests for batch operations on activities', () => {
     })
   })
 
+  it('returns null when a group activity disappears before soft deletion', async () => {
+    const groupActivityUpdate = vi.fn().mockRejectedValue({ code: 'P2025' })
+    const groupActivityCtx = {
+      prisma: {
+        groupActivity: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'group-activity-id',
+            status: PublicationStatus.PUBLISHED,
+            scheduledCompletionTaskId: null,
+            activityInstances: [{ id: 'instance-id' }],
+            stacks: [],
+          }),
+        },
+        $transaction: vi.fn(async (callback) =>
+          callback({ groupActivity: { update: groupActivityUpdate } })
+        ),
+      },
+      emitter: new EventEmitter(),
+    } as unknown as ContextWithUser
+
+    await expect(
+      deleteGroupActivity({ id: 'group-activity-id' }, groupActivityCtx)
+    ).resolves.toBeNull()
+
+    expect(groupActivityUpdate).toHaveBeenCalledWith({
+      where: { id: 'group-activity-id' },
+      data: {
+        isDeleted: true,
+        directPermissions: { deleteMany: {} },
+        scheduledCompletionTaskId: null,
+      },
+    })
+  })
+
   it('Verify that the case of missing activity ids and a wrong courseId are handled correctly', async () => {
     // seed a course
     const course = await seedCourse({ ownerId: userTwoCtx.user.sub }, prisma)

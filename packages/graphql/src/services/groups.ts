@@ -2012,17 +2012,23 @@ export async function deleteGroupActivity(
       }
 
       // soft delete the group activity and remove all direct permissions
-      const updatedActivity = await prisma.groupActivity.update({
-        where: { id },
-        data: {
-          isDeleted: true,
-          directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
-          scheduledCompletionTaskId:
-            groupActivityForSoftDelete.status === DB.PublicationStatus.PUBLISHED
-              ? null
-              : undefined,
-        },
-      })
+      const updatedActivity = await deleteWithPublicationStatusGuard(() =>
+        prisma.groupActivity.update({
+          where: { id },
+          data: {
+            isDeleted: true,
+            directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
+            scheduledCompletionTaskId:
+              groupActivityForSoftDelete.status === DB.PublicationStatus.PUBLISHED
+                ? null
+                : undefined,
+          },
+        })
+      )
+
+      if (!updatedActivity) {
+        return null
+      }
 
       // update derived permissions for this group activity (after soft deletion)
       // this function call automatically includes permission updates for all linked elements
