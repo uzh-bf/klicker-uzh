@@ -588,6 +588,13 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   canceled, the browser was closed, and the workspace was stopped with zero
   routes and no exact `default-rs-315ff` containers. CI and reviews after push
   remain pending; PR merge, mark-ready, and deployment remain withheld.
+- Official devrouter 0.0.38 default-profile verification after merge commit
+  `5d1c41417109bf7592a7959d73ea10e8084d084a` also passed. `ensure . --json`
+  returned profile `full`; all readiness contracts passed; and all 10 canonical
+  namespaced routes were present: `api`, `auth`, `pwa`, `manage`, `control`,
+  `olat-api`, `response-api`, `db` over TCP/Postgres, `lti`, and `chat`. The
+  exact workspace stop freed 10 routes; follow-up verification found zero
+  matching routes and no `default-rs-315ff` containers.
 
 ### Historical execution evidence before final runtime proof
 
