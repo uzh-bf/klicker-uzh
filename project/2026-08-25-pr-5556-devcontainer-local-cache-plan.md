@@ -1,4 +1,4 @@
-# Devcontainer Local Cache Plan
+# PR #5556 Devcontainer Local Cache Plan
 
 ## Goal
 
@@ -13,31 +13,31 @@ Next.js development caches, and retain the existing bounded stale-cache repair.
 - Do not add a registry, dependency, prebuilt application image, runtime
   profile, or database snapshot.
 - Do not replace `devrouter ensure` as the canonical lifecycle command.
-- Do not create a pull request, merge, delete a runtime, or remove the shared
-  cache volume.
+- Do not merge, delete a runtime, or remove the shared cache volume.
 
 ## Execution contract
 
 - Authority: create and edit the task worktree, run repository checks, use the
   exact devrouter runtime when available, create local commits, and run the
   required read-only specialist reviews. The user separately authorized pushing
-  the complete branch to `origin/rs/devcontainer-local-cache` on 2026-08-26.
-- Withheld: pull-request creation, merge, runtime or worktree deletion,
-  shared-volume removal, and broad Docker cleanup.
-- Terminal: a pushed branch with fresh focused and repository checks, exact
-  runtime lifecycle accounting, and an integrated final review.
+  the complete branch to `origin/rs/devcontainer-local-cache` and creating a
+  pull request on 2026-08-26.
+- Withheld: merge, runtime or worktree deletion, shared-volume removal, and
+  broad Docker cleanup.
+- Terminal: a draft pull request with fresh focused and repository checks,
+  exact runtime lifecycle accounting, and an integrated final review.
 - Boundary owner: self.
 - Pause: a material scope or isolation change, an unsafe cache deletion path,
   or a lifecycle lock that prevents required runtime verification.
 
 ## Plan identity
 
-- Plan: `project/2026-08-25-devcontainer-local-cache-plan.md`
+- Plan: `project/2026-08-25-pr-5556-devcontainer-local-cache-plan.md`
 - Branch: `rs/devcontainer-local-cache`
 - Worktree: `trees/devcontainer-local-cache`
 - Target: `v3`
 - Base: `e4ef09e5bfc64a4019bace0b472630d5a21408c5`
-- Pull request: none
+- Pull request: [#5556](https://github.com/uzh-bf/klicker-uzh/pull/5556)
 
 ## Decisions and assumptions
 
@@ -220,8 +220,9 @@ critical-path coupling; delegation would cost more than the bounded edits.
   source-format-dependent pnpm assertion was removed while executable argument
   coverage remains in the focused runtime test. The focused correction
   re-review returned `DONE` with no remaining findings.
-- Active gate: none.
-- Next: optional pull-request creation requires separate user approval.
-- Required delivery: pushed remote branch.
-- Achieved delivery: complete, verified, reviewed branch pushed to
-  `origin/rs/devcontainer-local-cache`.
+- Active gate: required GitHub checks are pending on draft PR #5556.
+- Next: address GitHub review or check findings. Ready-for-review and merge
+  remain separately withheld.
+- Required delivery: draft pull request.
+- Achieved delivery: complete, verified, reviewed branch published as draft
+  PR [#5556](https://github.com/uzh-bf/klicker-uzh/pull/5556).
