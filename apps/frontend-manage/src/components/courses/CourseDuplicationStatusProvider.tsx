@@ -469,6 +469,12 @@ export function CourseDuplicationProvider({
           const result = await fetchStatuses({
             variables: { ids: batchJobIds },
           })
+          if (result.errors && !cancelled) {
+            console.error(
+              'Failed to poll course duplication status',
+              result.errors
+            )
+          }
           const statuses = result.data?.courseDuplicationStatuses
 
           if (!cancelled && statuses) {

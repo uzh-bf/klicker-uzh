@@ -85,27 +85,6 @@ async function seedCourseDuplicationStress() {
     pinCode += 1
   }
 
-  await prisma.course.upsert(
-    prepareCourse({
-      id: COURSE_ID_DUPLICATION_STRESS,
-      name: 'Course duplication stress fixture',
-      displayName: 'Course duplication stress fixture',
-      description:
-        'Development-only course with many empty activities for duplication stress testing.',
-      isGamificationEnabled: false,
-      isAssessmentEnabled: false,
-      isGroupCreationEnabled: false,
-      ownerId: USER_ID_TEST,
-      color: '#016272',
-      pinCode,
-      startDate: new Date('2026-01-01T00:00:00.000Z'),
-      endDate: new Date('2030-01-01T00:00:00.000Z'),
-      groupDeadlineDate: new Date('2029-12-01T00:00:00.000Z'),
-      maxGroupSize: 5,
-      preferredGroupSize: 3,
-    })
-  )
-
   const expectedActivityIds = Array.from(
     { length: STRESS_ACTIVITY_COUNT },
     (_, index) => activityId(index)
@@ -126,38 +105,64 @@ async function seedCourseDuplicationStress() {
     )
   }
 
-  for (
-    let batchStart = 0;
-    batchStart < expectedActivityIds.length;
-    batchStart += STRESS_ACTIVITY_CONCURRENCY
-  ) {
-    await Promise.all(
-      expectedActivityIds
-        .slice(batchStart, batchStart + STRESS_ACTIVITY_CONCURRENCY)
-        .map(async (id, batchIndex) => {
-          const index = batchStart + batchIndex
-          const name = `Duplication stress activity ${index + 1}`
-          const data = {
-            name,
-            displayName: name,
-            description: 'Empty development stress-test activity.',
-            ownerId: USER_ID_TEST,
-            courseId: COURSE_ID_DUPLICATION_STRESS,
-            status: Prisma.PublicationStatus.DRAFT,
-            isDeleted: false,
-          }
-          await prisma.liveQuiz.upsert({
-            where: { id },
-            create: { id, ...data },
-            update: data,
-          })
+  await prisma.$transaction(
+    async (tx) => {
+      await tx.course.upsert(
+        prepareCourse({
+          id: COURSE_ID_DUPLICATION_STRESS,
+          name: 'Course duplication stress fixture',
+          displayName: 'Course duplication stress fixture',
+          description:
+            'Development-only course with many empty activities for duplication stress testing.',
+          isGamificationEnabled: false,
+          isAssessmentEnabled: false,
+          isGroupCreationEnabled: false,
+          ownerId: USER_ID_TEST,
+          color: '#016272',
+          pinCode,
+          startDate: new Date('2026-01-01T00:00:00.000Z'),
+          endDate: new Date('2030-01-01T00:00:00.000Z'),
+          groupDeadlineDate: new Date('2029-12-01T00:00:00.000Z'),
+          maxGroupSize: 5,
+          preferredGroupSize: 3,
         })
-    )
-  }
+      )
 
-  await recomputeDerivedPermissions(
-    { courseId: COURSE_ID_DUPLICATION_STRESS, userId: USER_ID_TEST },
-    prisma
+      for (
+        let batchStart = 0;
+        batchStart < expectedActivityIds.length;
+        batchStart += STRESS_ACTIVITY_CONCURRENCY
+      ) {
+        await Promise.all(
+          expectedActivityIds
+            .slice(batchStart, batchStart + STRESS_ACTIVITY_CONCURRENCY)
+            .map(async (id, batchIndex) => {
+              const index = batchStart + batchIndex
+              const name = `Duplication stress activity ${index + 1}`
+              const data = {
+                name,
+                displayName: name,
+                description: 'Empty development stress-test activity.',
+                ownerId: USER_ID_TEST,
+                courseId: COURSE_ID_DUPLICATION_STRESS,
+                status: Prisma.PublicationStatus.DRAFT,
+                isDeleted: false,
+              }
+              await tx.liveQuiz.upsert({
+                where: { id },
+                create: { id, ...data },
+                update: data,
+              })
+            })
+        )
+      }
+
+      await recomputeDerivedPermissions(
+        { courseId: COURSE_ID_DUPLICATION_STRESS, userId: USER_ID_TEST },
+        tx
+      )
+    },
+    { timeout: 60_000 }
   )
 
   const [course, activities, coursePermission, activityPermissions] =
@@ -198,6 +203,7 @@ async function seedCourseDuplicationStress() {
     ])
 
   const expectedIds = new Set(expectedActivityIds)
+  const activityIds = new Set(activities.map((activity) => activity.id))
   const verificationErrors: string[] = []
 
   if (!course) {
@@ -222,7 +228,7 @@ async function seedCourseDuplicationStress() {
   }
 
   const missingActivityIds = expectedActivityIds.filter(
-    (id) => !activities.some((activity) => activity.id === id)
+    (id) => !activityIds.has(id)
   )
   const unexpectedActivityIds = activities
     .filter((activity) => !expectedIds.has(activity.id))

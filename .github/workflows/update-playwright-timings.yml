@@ -71,7 +71,8 @@ jobs:
         run: |
           set -euo pipefail
           subject="$(git log -1 --format='%s' "${RUN_SHA}")"
-          changed_files="$(git diff-tree --no-commit-id --name-only -r -m "${RUN_SHA}" | sort -u)"
+          parent_sha="$(git rev-parse "${RUN_SHA}^1")"
+          changed_files="$(git diff --name-only "${parent_sha}" "${RUN_SHA}" | sort -u)"
           if [ "${subject}" = 'ci(playwright): update shard timings' ] || [ "${changed_files}" = 'playwright/timings.json' ]; then
             echo '::notice::The source run only changed shard timings; skipping feedback.'
             echo 'should_update=false' >> "${GITHUB_OUTPUT}"
@@ -112,7 +113,6 @@ jobs:
           python3 .github/scripts/update-playwright-timings.py
           "${RUNNER_TEMP}/playwright-timing-artifacts"
           playwright/timings.json
-          8
 
       - name: Open or update the timing pull request
         if: steps.run-gate.outputs.should_run == 'true' && steps.source-gate.outputs.should_update == 'true'

@@ -3,7 +3,11 @@ const path = require('path')
 
 const DEFAULT_DURATION_SECONDS = 30
 const SUPPORTED_TIMING_VERSION = 1
-const compareNames = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+function compareNames(a, b) {
+  if (a < b) return -1
+  if (a > b) return 1
+  return 0
+}
 
 function fail(message) {
   console.error(`Invalid Playwright shard timing input: ${message}`)

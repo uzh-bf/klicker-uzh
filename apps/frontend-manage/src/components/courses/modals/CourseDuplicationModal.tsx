@@ -806,7 +806,7 @@ function CourseDuplicationModal({
                 <div
                   aria-live="polite"
                   className="absolute inset-0 z-10 flex items-center justify-center bg-white/90 px-4 text-center"
-                  data-cy="course-duplication-loading"
+                  data-cy="course-duplication-modal-loading"
                   role="status"
                 >
                   <CourseDuplicationProgress />

@@ -54,12 +54,24 @@ def active_specs(tests_dir: Path) -> list[str]:
     )
 
 
-def find_junit_files(artifact_dir: Path, expected_shards: int) -> list[Path]:
+def find_junit_files(artifact_dir: Path) -> list[Path]:
     junit_files = sorted(artifact_dir.rglob("junit.xml"))
-    if len(junit_files) != expected_shards:
-        fail(
-            f"expected {expected_shards} JUnit artifacts, found {len(junit_files)}"
-        )
+    if not junit_files:
+        fail("found no JUnit artifacts")
+
+    shard_totals: set[int] = set()
+    for junit_file in junit_files:
+        relative_path = junit_file.relative_to(artifact_dir).as_posix()
+        match = SHARD_ARTIFACT_PATTERN.search(relative_path)
+        if match is None:
+            fail("JUnit artifact is not under a shard artifact directory")
+        shard_totals.add(int(match.group(2)))
+
+    if len(shard_totals) != 1:
+        fail("JUnit artifacts report different shard totals")
+    expected_shards = shard_totals.pop()
+    if expected_shards < 1:
+        fail("JUnit artifacts report an invalid shard total")
 
     shard_indexes: set[int] = set()
     for junit_file in junit_files:
@@ -168,11 +180,7 @@ def main() -> None:
     )
     parser.add_argument("artifact_dir", type=Path)
     parser.add_argument("output_path", type=Path)
-    parser.add_argument("expected_shards", type=int)
     args = parser.parse_args()
-
-    if args.expected_shards < 1:
-        fail("expected shard count must be positive")
 
     tests_dir = args.output_path.parent / "tests"
     if not tests_dir.is_dir():
@@ -182,7 +190,7 @@ def main() -> None:
     if not expected_specs:
         fail("active spec directory contains no spec files")
 
-    junit_files = find_junit_files(args.artifact_dir, args.expected_shards)
+    junit_files = find_junit_files(args.artifact_dir)
     durations = collect_durations(junit_files, expected_specs)
     missing_specs = sorted(expected_specs - durations.keys())
     if missing_specs:

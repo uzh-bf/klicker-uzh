@@ -181,15 +181,26 @@ manage_list_ready=false
 manage_course_ready=false
 manage_course_path="${APP_ORIGIN_MANAGE}/courses/__devrouter_warmup"
 probe_manage_route() {
-  if ((${#MANAGE_CURL_CA[@]} > 0)); then
-    curl "${MANAGE_CURL_CA[@]}" --location --silent --show-error \
-      --max-time 5 --output /dev/null --write-out '%{http_code} %{size_download}' \
-      "$1"
-  else
-    curl --location --silent --show-error \
-      --max-time 5 --output /dev/null --write-out '%{http_code} %{size_download}' \
-      "$1"
-  fi || true
+  local remaining_seconds=$((manage_probe_deadline - SECONDS))
+  if (( remaining_seconds <= 0 )); then
+    printf '000 0'
+    return
+  fi
+
+  local max_time=5
+  if (( remaining_seconds < max_time )); then
+    max_time=$remaining_seconds
+  fi
+
+  local probe_args=(
+    --location
+    --silent
+    --show-error
+    --max-time "$max_time"
+    --output /dev/null
+    --write-out '%{http_code} %{size_download}'
+  )
+  curl "${MANAGE_CURL_CA[@]}" "${probe_args[@]}" "$1" || true
 }
 
 manage_list_probe='000 0'
@@ -204,7 +215,8 @@ while (( SECONDS < manage_probe_deadline )); do
     [[ "$manage_course_probe" =~ ^200\ [1-9][0-9]*$ ]] && manage_course_ready=true
   fi
   [[ "$manage_list_ready" == true && "$manage_course_ready" == true ]] && break
-  sleep 1
+  remaining_seconds=$((manage_probe_deadline - SECONDS))
+  (( remaining_seconds > 0 )) && sleep "$remaining_seconds"
 done
 
 if [[ "$manage_list_ready" == false || "$manage_course_ready" == false ]]; then
