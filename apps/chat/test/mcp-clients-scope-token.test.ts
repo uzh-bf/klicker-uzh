@@ -83,6 +83,18 @@ describe('doc-query MCP scope authentication', () => {
     expect(headers[DOC_QUERY_SCOPE_TOKEN_HEADER]).toMatch(/^Bearer /)
   })
 
+  test.each([
+    'none',
+    'bearer',
+  ])('rejects %s KB auth without a transport secret', async (authType) => {
+    await expect(
+      createAuthHeaders(
+        { ...SCOPE_SERVER, authType, authSecret: undefined },
+        TEST_CONTEXT
+      )
+    ).rejects.toThrow('Doc Query transport authentication is invalid')
+  })
+
   test('skips scoped servers when no enabled KB was resolved', () => {
     expect(
       canLoadMCPServer(SCOPE_SERVER, {
@@ -132,6 +144,34 @@ describe('doc-query MCP scope authentication', () => {
           ...SCOPE_SERVER,
           parameters: { scope_token: { header: 'authorization' } },
         },
+        TEST_CONTEXT
+      )
+    ).rejects.toThrow('Invalid Doc Query scope-token header')
+  })
+
+  test('accepts a valid custom scope header', async () => {
+    const headers = await createAuthHeaders(
+      {
+        ...SCOPE_SERVER,
+        parameters: { scope_token: { header: 'X-Custom-Scope' } },
+      },
+      TEST_CONTEXT
+    )
+
+    expect(headers['X-Custom-Scope']).toMatch(/^Bearer /)
+    expect(headers.Authorization).toBe('Bearer transport-token')
+  })
+
+  test.each([
+    '__proto__',
+    'constructor',
+    'prototype',
+    'Content-Type',
+    'Chatbot-ID',
+  ])('rejects reserved scope header %s', async (header) => {
+    await expect(
+      createAuthHeaders(
+        { ...SCOPE_SERVER, parameters: { scope_token: { header } } },
         TEST_CONTEXT
       )
     ).rejects.toThrow('Invalid Doc Query scope-token header')

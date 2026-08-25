@@ -57,6 +57,14 @@ export interface MCPRequestOptions {
 }
 
 const HTTP_HEADER_NAME_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/
+const RESERVED_DOC_QUERY_SCOPE_HEADERS = new Set([
+  'authorization',
+  'chatbot-id',
+  'content-type',
+  '__proto__',
+  'constructor',
+  'prototype',
+])
 
 function resolveDocQueryScopeHeader(server: MCPServerConfig): string {
   const parameters =
@@ -80,7 +88,7 @@ function resolveDocQueryScopeHeader(server: MCPServerConfig): string {
   if (
     typeof header !== 'string' ||
     HTTP_HEADER_NAME_PATTERN.test(header) === false ||
-    header.toLowerCase() === 'authorization'
+    RESERVED_DOC_QUERY_SCOPE_HEADERS.has(header.toLowerCase())
   ) {
     throw new Error('Invalid Doc Query scope-token header')
   }
@@ -172,6 +180,10 @@ export async function createAuthHeaders(
     // Shared multi-tenant Doc Query keeps transport authentication in
     // Authorization and carries retrieval scope in its dedicated header.
     // Scope-only rows remain valid only for explicitly standalone deployments.
+    if (!server.authSecret && authType !== 'scope_token') {
+      throw new Error('Doc Query transport authentication is invalid')
+    }
+
     if (server.authSecret) {
       if (authType !== 'bearer' && authType !== 'scope_token') {
         throw new Error('Doc Query transport authentication is invalid')
