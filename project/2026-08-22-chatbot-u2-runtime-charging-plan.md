@@ -469,7 +469,12 @@ contract retains its focused regression test.
   shard 5. The refreshed Phase 5 review accepted `367784db6` as the exact U2
   implementation boundary and authorized a documentation-only reconciliation
   before proceeding to U3.
-- Current state: reconcile the plan, roadmap, and draft PR to the accepted
-  `367784db6` boundary, publish that documentation-only commit, account for its
-  current-head CI, then continue to U3. Readiness, merge, deployment, live
-  traffic or proof, closure, cleanup, and deletion remain withheld.
+- 2026-08-25: the latest review follow-up preserves assistant lifecycle closure
+  when cost rounding rejects unusable provider usage, leaving the turn
+  uncharged, and now finalizes empty terminal step arrays instead of skipping
+  persistence and reliable charging. The rebased focused route suite passes
+  15/15 in the exact Node 24 DevPod. Both corrections passed their simplifier
+  and lifecycle-integrity reviews.
+- Current state: U2 is ready for stack-aware publication at its rebased head.
+  Merge, deployment, live traffic or proof, closure, cleanup, and deletion
+  remain withheld.
