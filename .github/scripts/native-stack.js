@@ -35,6 +35,19 @@ function repositoryMatches(pull, repository) {
   )
 }
 
+function pullIdentityIsValid(pull, repository, expectedNumber) {
+  return (
+    pull &&
+    typeof pull === 'object' &&
+    (expectedNumber == null || pull.number === expectedNumber) &&
+    repositoryMatches(pull, repository) &&
+    typeof pull.base?.ref === 'string' &&
+    typeof pull.head?.ref === 'string' &&
+    /^[0-9a-f]{40}$/.test(pull.base?.sha ?? '') &&
+    /^[0-9a-f]{40}$/.test(pull.head?.sha ?? '')
+  )
+}
+
 async function defaultGetPull({ github, context, pullNumber }) {
   const response = await github.rest.pulls.get({
     owner: context.repo.owner,
@@ -136,17 +149,17 @@ async function resolveNativeStackMembership({
       reasons.push(`could not fetch stack member ${record.number}`)
       continue
     }
+    if (!memberPull || typeof memberPull !== 'object') {
+      reasons.push(`stack member ${record.number} returned no PR data`)
+      continue
+    }
     members.push({ number: record.number, record, pull: memberPull })
     if (
       memberPull.state !== 'open' ||
       memberPull.draft ||
-      !repositoryMatches(memberPull, repository) ||
+      !pullIdentityIsValid(memberPull, repository, record.number) ||
       record.state !== memberPull.state ||
-      record.draft !== memberPull.draft ||
-      typeof memberPull.base?.ref !== 'string' ||
-      typeof memberPull.head?.ref !== 'string' ||
-      !/^[0-9a-f]{40}$/.test(memberPull.base?.sha ?? '') ||
-      !/^[0-9a-f]{40}$/.test(memberPull.head?.sha ?? '')
+      record.draft !== memberPull.draft
     ) {
       reasons.push(
         `stack member ${record.number} is not open and ready in the repository`
@@ -154,7 +167,14 @@ async function resolveNativeStackMembership({
     }
   }
 
-  const top = members.at(-1)?.pull
+  const topNumber = stack.pull_requests.at(-1)?.number
+  const topMember = members.at(-1)
+  const top =
+    members.length === stack.pull_requests.length &&
+    topMember?.number === topNumber &&
+    pullIdentityIsValid(topMember.pull, repository, topNumber)
+      ? topMember.pull
+      : undefined
   if (members.length !== stack.pull_requests.length) {
     reasons.push('stack member data is incomplete')
   }
@@ -241,6 +261,7 @@ async function resolveNativeStackMembership({
     orderDigest: sha256(JSON.stringify(numbers)),
     identityDigest,
     position: numbers.indexOf(pullNumber),
+    topNumber,
     top,
   }
 }

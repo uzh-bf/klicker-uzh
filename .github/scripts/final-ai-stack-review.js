@@ -84,13 +84,13 @@ async function getPermission(github, context, username) {
   }
 }
 
-async function resolveStackMembership({ github, context, pullNumber }) {
-  const pull = await getPull(github, context, pullNumber)
+async function resolveStackMembership({ github, context, pullNumber, pull }) {
+  const targetPull = pull ?? (await getPull(github, context, pullNumber))
   return resolveNativeStackMembership({
     github,
     context,
     pullNumber,
-    pull,
+    pull: targetPull,
   })
 }
 
@@ -206,19 +206,24 @@ async function initializeStackReview({ github, context }) {
       github,
       context,
       pullNumber: pull.number,
+      pull,
     })
   } catch (error) {
-    await setStackStatus({
-      github,
-      context,
-      sha: pull.head.sha,
-      state: 'error',
-      description: 'Native stack eligibility could not be verified',
-    })
+    console.warn(
+      'Native stack eligibility could not be verified; no status changed'
+    )
     throw error
   }
   if (!membership) return false
-  const topSha = membership.top?.head?.sha ?? pull.head.sha
+  const topSha =
+    membership.top?.head?.sha ??
+    (membership.topNumber === pull.number ? pull.head.sha : '')
+  if (!topSha) {
+    console.warn(
+      `Native stack top ${membership.topNumber ?? 'unknown'} could not be verified; no status changed`
+    )
+    return false
+  }
   const plan = stackPlan(membership, context)
   await setStackStatus({
     github,

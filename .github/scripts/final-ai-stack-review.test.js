@@ -298,6 +298,24 @@ test('invalidates the top status when a lower layer changes', async () => {
   assert.equal(state.createdStatuses.at(-1).state, 'pending')
 })
 
+test('does not target a lower status when the top member cannot be fetched', async () => {
+  const { github, pulls, state } = stackFixture()
+  const originalGet = github.rest.pulls.get
+  github.rest.pulls.get = async ({ pull_number }) => {
+    if (pull_number === 14) throw new Error('top member unavailable')
+    return { data: pulls[pull_number] }
+  }
+  const eventContext = context(12)
+  eventContext.eventName = 'pull_request_target'
+  eventContext.payload.pull_request = pulls[12]
+  assert.equal(
+    await initializeStackReview({ github, context: eventContext }),
+    false
+  )
+  assert.equal(state.createdStatuses.length, 0)
+  github.rest.pulls.get = originalGet
+})
+
 test('rejects a forked member and a one-layer stack', async () => {
   const { github, pulls } = stackFixture()
   const originalGet = github.rest.pulls.get
@@ -351,6 +369,28 @@ test('fails closed on a member with missing identity fields', async () => {
   assert.equal(membership.valid, false)
   assert.equal(membership.identityDigest, '')
   assert.match(membership.reason, /open and ready/)
+  github.rest.pulls.get = originalGet
+})
+
+test('fails closed on a null or mismatched member response', async () => {
+  const { github, pulls } = stackFixture()
+  const originalGet = github.rest.pulls.get
+  github.rest.pulls.get = async ({ pull_number }) => ({
+    data:
+      pull_number === 13
+        ? undefined
+        : pull_number === 14
+          ? { ...pulls[pull_number], number: 999 }
+          : pulls[pull_number],
+  })
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  assert.equal(membership.valid, false)
+  assert.equal(membership.top, undefined)
+  assert.match(membership.reason, /returned no PR data/)
   github.rest.pulls.get = originalGet
 })
 
