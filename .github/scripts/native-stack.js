@@ -1,4 +1,5 @@
 const crypto = require('node:crypto')
+const MAX_COMPARE_FILES = 300
 
 function sha256(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex')
@@ -77,6 +78,7 @@ async function resolveNativeStackMembership({
   const response = await github.request('GET /repos/{owner}/{repo}/stacks', {
     owner: context.repo.owner,
     repo: context.repo.repo,
+    pull_request: pullNumber,
     per_page: 100,
     headers: { accept: 'application/vnd.github+json' },
   })
@@ -140,7 +142,11 @@ async function resolveNativeStackMembership({
       memberPull.draft ||
       !repositoryMatches(memberPull, repository) ||
       record.state !== memberPull.state ||
-      record.draft !== memberPull.draft
+      record.draft !== memberPull.draft ||
+      typeof memberPull.base?.ref !== 'string' ||
+      typeof memberPull.head?.ref !== 'string' ||
+      !/^[0-9a-f]{40}$/.test(memberPull.base?.sha ?? '') ||
+      !/^[0-9a-f]{40}$/.test(memberPull.head?.sha ?? '')
     ) {
       reasons.push(
         `stack member ${record.number} is not open and ready in the repository`
@@ -190,6 +196,14 @@ async function resolveNativeStackMembership({
           `stack layer ${index + 1} is not a strict descendant range`
         )
       }
+      if (
+        !Array.isArray(comparison?.data?.files) ||
+        comparison.data.files.length >= MAX_COMPARE_FILES
+      ) {
+        reasons.push(
+          `stack layer ${index + 1} did not return a complete bounded file list`
+        )
+      }
       ranges.push({
         baseSha,
         headSha: members[index].pull.head.sha,
@@ -207,6 +221,17 @@ async function resolveNativeStackMembership({
     ranges,
     numbers,
     orderDigest: sha256(JSON.stringify(numbers)),
+    identityDigest: sha256(
+      JSON.stringify(
+        members.map(({ number, pull: memberPull }) => ({
+          base_ref: memberPull.base.ref,
+          base_sha: memberPull.base.sha,
+          head_ref: memberPull.head.ref,
+          head_sha: memberPull.head.sha,
+          number,
+        }))
+      )
+    ),
     position: numbers.indexOf(pullNumber),
     top,
   }
@@ -214,5 +239,6 @@ async function resolveNativeStackMembership({
 
 module.exports = {
   compareRange,
+  MAX_COMPARE_FILES,
   resolveNativeStackMembership,
 }

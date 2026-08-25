@@ -10,6 +10,7 @@ const {
   buildStackSnapshot,
   callTopologyModel,
   decideStackStatus,
+  finalizeStackReview,
   initializeStackReview,
   isStackReviewCommand,
   renderStackReview,
@@ -162,7 +163,7 @@ function stackFixture() {
     }),
     paginate: async (endpoint) => (endpoint === reviewsEndpoint ? [] : []),
   }
-  return { github, pulls, state }
+  return { files, github, pulls, responses, state }
 }
 
 function completeOCRResult(comments = []) {
@@ -279,6 +280,7 @@ test('authorizes only the verified top pull request', async () => {
     true
   )
   assert.equal(outputs.get('stack_id'), '99')
+  assert.match(outputs.get('stack_identity_digest'), /^[0-9a-f]{64}$/)
   assert.equal(outputs.get('member_numbers'), '11,12,13,14')
   assert.equal(
     await authorizeStackReview({ github, context: context(12), core }),
@@ -332,6 +334,25 @@ test('rejects a forked member and a one-layer stack', async () => {
   assert.equal(oneLayer.valid, false)
 })
 
+test('fails closed when a comparison reaches the GitHub file-list cap', async () => {
+  const { files, github } = stackFixture()
+  files.set(
+    'b'.repeat(40),
+    Array.from({ length: 300 }, (_, index) => ({
+      filename: `src/file-${index}.ts`,
+      additions: 1,
+      deletions: 0,
+    }))
+  )
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  assert.equal(membership.valid, false)
+  assert.match(membership.reason, /complete bounded file list/)
+})
+
 test('starts a review only when the stack snapshot remains identical', async () => {
   const { github, state } = stackFixture()
   const membership = await resolveStackMembership({
@@ -350,6 +371,7 @@ test('starts a review only when the stack snapshot remains identical', async () 
     headSha: membership.top.head.sha,
     stackId: membership.id,
     stackOrderDigest: membership.orderDigest,
+    stackIdentityDigest: membership.identityDigest,
     memberNumbers: membership.numbers,
     manifestPath,
     core: { setOutput: (name, value) => outputs.set(name, value) },
@@ -358,6 +380,35 @@ test('starts a review only when the stack snapshot remains identical', async () 
   assert.equal(fs.existsSync(manifestPath), true)
   assert.match(outputs.get('manifest_digest'), /^[0-9a-f]{64}$/)
   assert.equal(state.createdStatuses.at(-1).state, 'pending')
+})
+
+test('rejects a successful finish after lower-layer identity drift', async () => {
+  const { github, pulls, responses, state } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  pulls[13].head.sha = 'a'.repeat(40)
+  pulls[14].base.sha = 'a'.repeat(40)
+  responses.set('d'.repeat(40), 'a'.repeat(40))
+  responses.set('a'.repeat(40), 'f'.repeat(40))
+  await finalizeStackReview({
+    github,
+    context: context(),
+    prNumber: 14,
+    baseSha: membership.members[0].pull.base.sha,
+    headSha: membership.top.head.sha,
+    stackId: membership.id,
+    stackOrderDigest: membership.orderDigest,
+    stackIdentityDigest: membership.identityDigest,
+    memberNumbers: membership.numbers,
+    codeOutcome: 'success',
+    topologyOutcome: 'success',
+    cleanupOutcome: 'success',
+    publishOutcome: 'success',
+  })
+  assert.equal(state.createdStatuses.at(-1).state, 'error')
 })
 
 test('renders consolidated code and topology findings with one stack marker', async () => {
@@ -469,6 +520,25 @@ test('sends strict high-reasoning topology requests and rejects invalid owners',
         manifestBundle.manifest
       ),
     /invalid/
+  )
+  assert.throws(
+    () =>
+      validateTopologyResult(
+        { ...topologyResult(), summary: { coverage: 'partial', comments: 0 } },
+        manifestBundle.manifest
+      ),
+    /incomplete/
+  )
+  assert.throws(
+    () =>
+      validateTopologyResult(
+        {
+          ...topologyResult(),
+          usage: { total_tokens: 99, prompt_tokens: 35, completion_tokens: 15 },
+        },
+        manifestBundle.manifest
+      ),
+    /usage/
   )
 })
 

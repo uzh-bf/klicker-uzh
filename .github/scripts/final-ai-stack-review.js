@@ -109,6 +109,7 @@ function stackPlan(membership, context) {
     mode: 'full',
     stackId: membership.id,
     stackOrderDigest: membership.orderDigest,
+    stackIdentityDigest: membership.identityDigest,
     memberNumbers: membership.numbers,
     baseSha: membership.members[0].pull.base.sha,
     headSha: top.head.sha,
@@ -119,12 +120,18 @@ function stackPlan(membership, context) {
 
 function stackPlanMatches(
   plan,
-  { expectedStackId, expectedOrderDigest, expectedMemberNumbers }
+  {
+    expectedStackId,
+    expectedOrderDigest,
+    expectedIdentityDigest,
+    expectedMemberNumbers,
+  }
 ) {
   return (
     plan.eligible &&
     plan.stackId === expectedStackId &&
     plan.stackOrderDigest === expectedOrderDigest &&
+    plan.stackIdentityDigest === expectedIdentityDigest &&
     JSON.stringify(plan.memberNumbers) === JSON.stringify(expectedMemberNumbers)
   )
 }
@@ -274,6 +281,7 @@ async function authorizeStackReview({ github, context, core }) {
   setOutput(core, 'head_sha', plan.headSha)
   setOutput(core, 'stack_id', plan.stackId)
   setOutput(core, 'stack_order_digest', plan.stackOrderDigest)
+  setOutput(core, 'stack_identity_digest', plan.stackIdentityDigest)
   setOutput(core, 'member_numbers', plan.memberNumbers)
   core.setOutput('background', plan.background)
   return true
@@ -390,6 +398,7 @@ async function buildStackSnapshot({ github, context, membership }) {
     stack_id: membership.id,
     stack_order: membership.numbers,
     stack_order_digest: membership.orderDigest,
+    stack_identity_digest: membership.identityDigest,
     ultimate_base: {
       ref: ultimateBase.base_ref,
       repo: ultimateBase.base_repo,
@@ -445,6 +454,7 @@ function snapshotMatchesMembership(manifest, membership) {
   if (
     manifest.stack_id !== membership.id ||
     manifest.stack_order_digest !== membership.orderDigest ||
+    manifest.stack_identity_digest !== membership.identityDigest ||
     JSON.stringify(manifest.stack_order) !==
       JSON.stringify(membership.numbers) ||
     manifest.layers.length !== membership.members.length
@@ -471,6 +481,7 @@ async function startStackReview({
   headSha,
   stackId: expectedStackId,
   stackOrderDigest: expectedOrderDigest,
+  stackIdentityDigest: expectedIdentityDigest,
   memberNumbers: expectedMemberNumbers,
   manifestPath,
   core,
@@ -485,6 +496,7 @@ async function startStackReview({
     !stackPlanMatches(plan, {
       expectedStackId,
       expectedOrderDigest,
+      expectedIdentityDigest,
       expectedMemberNumbers,
     }) ||
     plan.baseSha !== baseSha ||
@@ -511,7 +523,8 @@ function validateUsage(usage, label) {
   const keys = ['total_tokens', 'prompt_tokens', 'completion_tokens']
   if (
     !usage ||
-    keys.some((key) => !Number.isSafeInteger(usage[key]) || usage[key] < 0)
+    keys.some((key) => !Number.isSafeInteger(usage[key]) || usage[key] < 0) ||
+    usage.total_tokens !== usage.prompt_tokens + usage.completion_tokens
   ) {
     throw new Error(`${label} has incomplete usage counters`)
   }
@@ -597,8 +610,7 @@ function validateTopologyResult(result, manifest) {
     result.model !== FINAL_REVIEW_MODEL ||
     !Array.isArray(result.comments) ||
     result.summary?.comments !== result.comments.length ||
-    typeof result.summary?.coverage !== 'string' ||
-    !result.summary.coverage.trim() ||
+    result.summary?.coverage !== 'complete' ||
     (result.warnings != null &&
       (!Array.isArray(result.warnings) || result.warnings.length > 0))
   ) {
@@ -775,6 +787,7 @@ function renderStackReview({
     review_id: reviewId,
     schema_version: STACK_REVIEW_SCHEMA,
     stack_id: manifest.stack_id,
+    stack_identity_digest: manifest.stack_identity_digest,
     stack_order_digest: manifest.stack_order_digest,
     topology_pass: {
       comments: topology.comments.length,
@@ -970,6 +983,7 @@ async function publishStackReview({
   headSha,
   stackId: expectedStackId,
   stackOrderDigest: expectedOrderDigest,
+  stackIdentityDigest: expectedIdentityDigest,
   memberNumbers: expectedMemberNumbers,
   manifestPath,
   resultPath,
@@ -985,6 +999,7 @@ async function publishStackReview({
     !stackPlanMatches(plan, {
       expectedStackId,
       expectedOrderDigest,
+      expectedIdentityDigest,
       expectedMemberNumbers,
     }) ||
     plan.baseSha !== baseSha ||
@@ -1060,6 +1075,7 @@ async function finalizeStackReview({
   headSha,
   stackId: expectedStackId,
   stackOrderDigest: expectedOrderDigest,
+  stackIdentityDigest: expectedIdentityDigest,
   memberNumbers: expectedMemberNumbers,
   codeOutcome,
   topologyOutcome,
@@ -1077,6 +1093,7 @@ async function finalizeStackReview({
     stackPlanMatches(plan, {
       expectedStackId,
       expectedOrderDigest,
+      expectedIdentityDigest,
       expectedMemberNumbers,
     }) && plan.baseSha === baseSha
   await setStackStatus({

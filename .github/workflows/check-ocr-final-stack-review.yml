@@ -31,7 +31,7 @@ jobs:
       - name: Checkout trusted stack-review policy
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ github.sha }}
           persist-credentials: false
           sparse-checkout: .github/scripts
 
@@ -62,13 +62,14 @@ jobs:
       head_sha: ${{ steps.authorize.outputs.head_sha }}
       stack_id: ${{ steps.authorize.outputs.stack_id }}
       stack_order_digest: ${{ steps.authorize.outputs.stack_order_digest }}
+      stack_identity_digest: ${{ steps.authorize.outputs.stack_identity_digest }}
       member_numbers: ${{ steps.authorize.outputs.member_numbers }}
       background: ${{ steps.authorize.outputs.background }}
     steps:
       - name: Checkout trusted stack-review policy
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ github.sha }}
           persist-credentials: false
           sparse-checkout: .github/scripts
 
@@ -98,7 +99,7 @@ jobs:
       - name: Checkout trusted stack-review implementation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -114,6 +115,7 @@ jobs:
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
           STACK_ID: ${{ needs.authorize.outputs.stack_id }}
           STACK_ORDER_DIGEST: ${{ needs.authorize.outputs.stack_order_digest }}
+          STACK_IDENTITY_DIGEST: ${{ needs.authorize.outputs.stack_identity_digest }}
           MEMBER_NUMBERS: ${{ needs.authorize.outputs.member_numbers }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
         with:
@@ -129,6 +131,7 @@ jobs:
               headSha: process.env.HEAD_SHA,
               stackId: process.env.STACK_ID,
               stackOrderDigest: process.env.STACK_ORDER_DIGEST,
+              stackIdentityDigest: process.env.STACK_IDENTITY_DIGEST,
               memberNumbers,
               manifestPath: process.env.MANIFEST_PATH,
               core,
@@ -226,6 +229,7 @@ jobs:
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
           STACK_ID: ${{ needs.authorize.outputs.stack_id }}
           STACK_ORDER_DIGEST: ${{ needs.authorize.outputs.stack_order_digest }}
+          STACK_IDENTITY_DIGEST: ${{ needs.authorize.outputs.stack_identity_digest }}
           MEMBER_NUMBERS: ${{ needs.authorize.outputs.member_numbers }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
           RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
@@ -243,6 +247,7 @@ jobs:
               headSha: process.env.HEAD_SHA,
               stackId: process.env.STACK_ID,
               stackOrderDigest: process.env.STACK_ORDER_DIGEST,
+              stackIdentityDigest: process.env.STACK_IDENTITY_DIGEST,
               memberNumbers,
               manifestPath: process.env.MANIFEST_PATH,
               resultPath: process.env.RESULT_PATH,
@@ -261,6 +266,7 @@ jobs:
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
           STACK_ID: ${{ needs.authorize.outputs.stack_id }}
           STACK_ORDER_DIGEST: ${{ needs.authorize.outputs.stack_order_digest }}
+          STACK_IDENTITY_DIGEST: ${{ needs.authorize.outputs.stack_identity_digest }}
           MEMBER_NUMBERS: ${{ needs.authorize.outputs.member_numbers }}
           CODE_OUTCOME: ${{ steps.code_review.outcome }}
           TOPOLOGY_OUTCOME: ${{ steps.topology_review.outcome }}
@@ -279,6 +285,7 @@ jobs:
               headSha: process.env.HEAD_SHA,
               stackId: process.env.STACK_ID,
               stackOrderDigest: process.env.STACK_ORDER_DIGEST,
+              stackIdentityDigest: process.env.STACK_IDENTITY_DIGEST,
               memberNumbers,
               codeOutcome: process.env.CODE_OUTCOME,
               topologyOutcome: process.env.TOPOLOGY_OUTCOME,

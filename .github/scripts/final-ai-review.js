@@ -431,7 +431,7 @@ async function getReviewRulesDigest({ github, context }) {
     github,
     context,
     FINAL_REVIEW_RULES_PATH,
-    context.payload.repository.default_branch
+    context.sha ?? context.payload.repository.default_branch
   )
   return sha256(
     JSON.stringify({
