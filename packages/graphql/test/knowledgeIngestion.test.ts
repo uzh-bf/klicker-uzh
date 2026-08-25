@@ -20,8 +20,14 @@ describe('Integration tests for knowledge base ingestion', () => {
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
+  let previousGrowthbookEnvironment: string | undefined
+  let previousFeatureFlagsForcedOn: string | undefined
 
   beforeAll(async () => {
+    previousGrowthbookEnvironment = process.env.GROWTHBOOK_ENV
+    previousFeatureFlagsForcedOn = process.env.FEATURE_FLAGS_FORCED_ON
+    process.env.GROWTHBOOK_ENV = 'development'
+    process.env.FEATURE_FLAGS_FORCED_ON = 'ai-beta'
     prisma = prismaClient
     await testCleanup(prisma)
     hatchet = {
@@ -33,6 +39,16 @@ describe('Integration tests for knowledge base ingestion', () => {
   afterAll(async () => {
     await testCleanup(prisma)
     await prisma.$disconnect()
+    if (previousGrowthbookEnvironment === undefined) {
+      delete process.env.GROWTHBOOK_ENV
+    } else {
+      process.env.GROWTHBOOK_ENV = previousGrowthbookEnvironment
+    }
+    if (previousFeatureFlagsForcedOn === undefined) {
+      delete process.env.FEATURE_FLAGS_FORCED_ON
+    } else {
+      process.env.FEATURE_FLAGS_FORCED_ON = previousFeatureFlagsForcedOn
+    }
   })
 
   beforeEach(async () => {
@@ -41,7 +57,7 @@ describe('Integration tests for knowledge base ingestion', () => {
     userTwoCtx = initialized.userTwoCtx
     await prisma.user.updateMany({
       where: { id: { in: [userOneCtx.user.sub, userTwoCtx.user.sub] } },
-      data: { privatePreview: true },
+      data: { aiFeaturesEnabled: true },
     })
   })
 

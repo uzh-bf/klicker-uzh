@@ -30,12 +30,16 @@ import {
   detachKbFromChatbot,
   getKb,
   getKbChatbotBindings,
+  getKbKnowledgeGraphConfig,
+  getKbKnowledgeGraphNeighbors,
+  getKbKnowledgeGraphOverview,
   getKbResourceIngestionRuns,
   getKbResourcesConnection,
   getUserKbsConnection,
   ingestKbResource,
   rebuildKbKnowledgeGraph,
   requestKbFileUpload,
+  searchKbKnowledgeGraph,
   setKbKnowledgeGraphEnabled,
 } from '../src/services/knowledge.js'
 import { seedCourse, testCleanup, testInitialization } from './helpers.js'
@@ -154,7 +158,9 @@ describe('Integration tests for knowledge base CRUD', () => {
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
-  let nonPreviewCtx: ContextWithUser
+  let nonAiCtx: ContextWithUser
+  let previousGrowthbookEnvironment: string | undefined
+  let previousFeatureFlagsForcedOn: string | undefined
   let previousBlobAccountName: string | undefined
   let previousBlobAccessKey: string | undefined
   let previousBlobAccountUrl: string | undefined
@@ -182,6 +188,10 @@ describe('Integration tests for knowledge base CRUD', () => {
   >
 
   beforeAll(async () => {
+    previousGrowthbookEnvironment = process.env.GROWTHBOOK_ENV
+    previousFeatureFlagsForcedOn = process.env.FEATURE_FLAGS_FORCED_ON
+    process.env.GROWTHBOOK_ENV = 'development'
+    process.env.FEATURE_FLAGS_FORCED_ON = 'ai-beta'
     prisma = prismaClient
     await testCleanup(prisma)
     hatchet = {
@@ -193,19 +203,28 @@ describe('Integration tests for knowledge base CRUD', () => {
   afterAll(async () => {
     await testCleanup(prisma)
     await prisma.$disconnect()
+    if (previousGrowthbookEnvironment === undefined) {
+      delete process.env.GROWTHBOOK_ENV
+    } else {
+      process.env.GROWTHBOOK_ENV = previousGrowthbookEnvironment
+    }
+    if (previousFeatureFlagsForcedOn === undefined) {
+      delete process.env.FEATURE_FLAGS_FORCED_ON
+    } else {
+      process.env.FEATURE_FLAGS_FORCED_ON = previousFeatureFlagsForcedOn
+    }
   })
 
   beforeEach(async () => {
     const initialized = await testInitialization(prisma, hatchet, emitter)
     userOneCtx = initialized.userOneCtx
     userTwoCtx = initialized.userTwoCtx
-    nonPreviewCtx = initialized.userThreeCtx
-    // the shared fixture users default to privatePreview: false; the KB workspace
-    // gate requires preview access, so opt both active owners in explicitly and
-    // leave nonPreviewCtx's backing user at the default (privatePreview: false)
+    nonAiCtx = initialized.userThreeCtx
+    // The shared fixture users default to no AI entitlement. Opt both active
+    // owners in and leave nonAiCtx's backing user at the default.
     await prisma.user.updateMany({
       where: { id: { in: [userOneCtx.user.sub, userTwoCtx.user.sub] } },
-      data: { privatePreview: true },
+      data: { aiFeaturesEnabled: true },
     })
     await prisma.chatbotMCPServer.upsert({
       where: { name: 'KB' },
@@ -2431,27 +2450,27 @@ describe('Integration tests for knowledge base CRUD', () => {
     ).resolves.toMatchObject({ deletedAt: null })
   })
 
-  it('rejects every KB entry point for a non-preview user', async () => {
-    const nonPreviewUser = await prisma.user.findUnique({
-      where: { id: nonPreviewCtx.user.sub },
+  it('rejects every KB entry point without an AI entitlement', async () => {
+    const nonAiUser = await prisma.user.findUnique({
+      where: { id: nonAiCtx.user.sub },
     })
-    expect(nonPreviewUser?.privatePreview).toBe(false)
+    expect(nonAiUser?.aiFeaturesEnabled).toBe(false)
 
     const kbId = randomUUID()
     const resourceId = randomUUID()
     const chatbotId = randomUUID()
 
     const entryPoints: Array<() => Promise<unknown>> = [
-      () => createKb({ name: 'Blocked KB' }, nonPreviewCtx),
-      () => deleteKb({ id: kbId }, nonPreviewCtx),
+      () => createKb({ name: 'Blocked KB' }, nonAiCtx),
+      () => deleteKb({ id: kbId }, nonAiCtx),
       () =>
         createKbUrlResource(
           { kbId, url: 'https://example.com/blocked', title: 'Blocked' },
-          nonPreviewCtx
+          nonAiCtx
         ),
-      () => deleteKbResource({ id: resourceId }, nonPreviewCtx),
-      () => deleteKbResources({ kbId, ids: [resourceId] }, nonPreviewCtx),
-      () => ingestKbResource({ id: resourceId }, nonPreviewCtx),
+      () => deleteKbResource({ id: resourceId }, nonAiCtx),
+      () => deleteKbResources({ kbId, ids: [resourceId] }, nonAiCtx),
+      () => ingestKbResource({ id: resourceId }, nonAiCtx),
       () =>
         requestKbFileUpload(
           {
@@ -2460,7 +2479,7 @@ describe('Integration tests for knowledge base CRUD', () => {
             contentType: 'application/pdf',
             sizeBytes: 1024,
           },
-          nonPreviewCtx
+          nonAiCtx
         ),
       () =>
         confirmKbFileUpload(
@@ -2472,21 +2491,28 @@ describe('Integration tests for knowledge base CRUD', () => {
             mimeType: 'application/pdf',
             sizeBytes: 1024,
           },
-          nonPreviewCtx
+          nonAiCtx
         ),
-      () => attachKbToChatbot({ kbId, chatbotId }, nonPreviewCtx),
-      () => detachKbFromChatbot({ kbId, chatbotId }, nonPreviewCtx),
-      () => getUserKbsConnection({}, nonPreviewCtx),
-      () => getKb({ id: kbId }, nonPreviewCtx),
-      () => getKbResourcesConnection({ kbId }, nonPreviewCtx),
-      () => getKbChatbotBindings({ kbId }, nonPreviewCtx),
-      () => getKbResourceIngestionRuns({ resourceId }, nonPreviewCtx),
+      () => attachKbToChatbot({ kbId, chatbotId }, nonAiCtx),
+      () => detachKbFromChatbot({ kbId, chatbotId }, nonAiCtx),
+      () => getUserKbsConnection({}, nonAiCtx),
+      () => getKb({ id: kbId }, nonAiCtx),
+      () => getKbResourcesConnection({ kbId }, nonAiCtx),
+      () => getKbChatbotBindings({ kbId }, nonAiCtx),
+      () => getKbResourceIngestionRuns({ resourceId }, nonAiCtx),
+      () => getKbKnowledgeGraphConfig({ kbId }, nonAiCtx),
+      () => getKbKnowledgeGraphOverview({ kbId }, nonAiCtx),
+      () => searchKbKnowledgeGraph({ kbId, query: 'blocked' }, nonAiCtx),
+      () =>
+        getKbKnowledgeGraphNeighbors({ kbId, nodeId: 'blocked' }, nonAiCtx),
+      () => setKbKnowledgeGraphEnabled({ kbId, enabled: true }, nonAiCtx),
+      () => rebuildKbKnowledgeGraph({ kbId }, nonAiCtx),
     ]
 
-    expect(entryPoints).toHaveLength(15)
+    expect(entryPoints).toHaveLength(21)
     for (const callEntryPoint of entryPoints) {
       await expect(callEntryPoint()).rejects.toMatchObject({
-        extensions: { code: 'KB_PREVIEW_ACCESS_REQUIRED' },
+        extensions: { code: 'AI_BETA_ACCESS_REQUIRED' },
       })
     }
   })
