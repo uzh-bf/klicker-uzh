@@ -44,6 +44,18 @@ import {
 } from '../src/services/knowledge.js'
 import { seedCourse, testCleanup, testInitialization } from './helpers.js'
 
+const previousManageAiEnvironment = vi.hoisted(() => {
+  const previousGrowthbookEnvironment = process.env.GROWTHBOOK_ENV
+  const previousFeatureFlagsForcedOn = process.env.FEATURE_FLAGS_FORCED_ON
+  process.env.GROWTHBOOK_ENV = 'development'
+  process.env.FEATURE_FLAGS_FORCED_ON = 'ai-beta'
+
+  return {
+    previousGrowthbookEnvironment,
+    previousFeatureFlagsForcedOn,
+  }
+})
+
 function createDeferred<T>() {
   let resolve!: (value: T) => void
   const promise = new Promise<T>((resolvePromise) => {
@@ -159,8 +171,6 @@ describe('Integration tests for knowledge base CRUD', () => {
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
   let nonAiCtx: ContextWithUser
-  let previousGrowthbookEnvironment: string | undefined
-  let previousFeatureFlagsForcedOn: string | undefined
   let previousBlobAccountName: string | undefined
   let previousBlobAccessKey: string | undefined
   let previousBlobAccountUrl: string | undefined
@@ -188,10 +198,6 @@ describe('Integration tests for knowledge base CRUD', () => {
   >
 
   beforeAll(async () => {
-    previousGrowthbookEnvironment = process.env.GROWTHBOOK_ENV
-    previousFeatureFlagsForcedOn = process.env.FEATURE_FLAGS_FORCED_ON
-    process.env.GROWTHBOOK_ENV = 'development'
-    process.env.FEATURE_FLAGS_FORCED_ON = 'ai-beta'
     prisma = prismaClient
     await testCleanup(prisma)
     hatchet = {
@@ -203,15 +209,21 @@ describe('Integration tests for knowledge base CRUD', () => {
   afterAll(async () => {
     await testCleanup(prisma)
     await prisma.$disconnect()
-    if (previousGrowthbookEnvironment === undefined) {
+    if (
+      previousManageAiEnvironment.previousGrowthbookEnvironment === undefined
+    ) {
       delete process.env.GROWTHBOOK_ENV
     } else {
-      process.env.GROWTHBOOK_ENV = previousGrowthbookEnvironment
+      process.env.GROWTHBOOK_ENV =
+        previousManageAiEnvironment.previousGrowthbookEnvironment
     }
-    if (previousFeatureFlagsForcedOn === undefined) {
+    if (
+      previousManageAiEnvironment.previousFeatureFlagsForcedOn === undefined
+    ) {
       delete process.env.FEATURE_FLAGS_FORCED_ON
     } else {
-      process.env.FEATURE_FLAGS_FORCED_ON = previousFeatureFlagsForcedOn
+      process.env.FEATURE_FLAGS_FORCED_ON =
+        previousManageAiEnvironment.previousFeatureFlagsForcedOn
     }
   })
 

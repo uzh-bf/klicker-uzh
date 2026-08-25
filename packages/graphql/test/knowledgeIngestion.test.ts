@@ -11,6 +11,18 @@ import {
 } from '../src/services/knowledge.js'
 import { testCleanup, testInitialization } from './helpers.js'
 
+const previousManageAiEnvironment = vi.hoisted(() => {
+  const previousGrowthbookEnvironment = process.env.GROWTHBOOK_ENV
+  const previousFeatureFlagsForcedOn = process.env.FEATURE_FLAGS_FORCED_ON
+  process.env.GROWTHBOOK_ENV = 'development'
+  process.env.FEATURE_FLAGS_FORCED_ON = 'ai-beta'
+
+  return {
+    previousGrowthbookEnvironment,
+    previousFeatureFlagsForcedOn,
+  }
+})
+
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 
@@ -20,14 +32,8 @@ describe('Integration tests for knowledge base ingestion', () => {
   let emitter: EventEmitter
   let userOneCtx: ContextWithUser
   let userTwoCtx: ContextWithUser
-  let previousGrowthbookEnvironment: string | undefined
-  let previousFeatureFlagsForcedOn: string | undefined
 
   beforeAll(async () => {
-    previousGrowthbookEnvironment = process.env.GROWTHBOOK_ENV
-    previousFeatureFlagsForcedOn = process.env.FEATURE_FLAGS_FORCED_ON
-    process.env.GROWTHBOOK_ENV = 'development'
-    process.env.FEATURE_FLAGS_FORCED_ON = 'ai-beta'
     prisma = prismaClient
     await testCleanup(prisma)
     hatchet = {
@@ -39,15 +45,21 @@ describe('Integration tests for knowledge base ingestion', () => {
   afterAll(async () => {
     await testCleanup(prisma)
     await prisma.$disconnect()
-    if (previousGrowthbookEnvironment === undefined) {
+    if (
+      previousManageAiEnvironment.previousGrowthbookEnvironment === undefined
+    ) {
       delete process.env.GROWTHBOOK_ENV
     } else {
-      process.env.GROWTHBOOK_ENV = previousGrowthbookEnvironment
+      process.env.GROWTHBOOK_ENV =
+        previousManageAiEnvironment.previousGrowthbookEnvironment
     }
-    if (previousFeatureFlagsForcedOn === undefined) {
+    if (
+      previousManageAiEnvironment.previousFeatureFlagsForcedOn === undefined
+    ) {
       delete process.env.FEATURE_FLAGS_FORCED_ON
     } else {
-      process.env.FEATURE_FLAGS_FORCED_ON = previousFeatureFlagsForcedOn
+      process.env.FEATURE_FLAGS_FORCED_ON =
+        previousManageAiEnvironment.previousFeatureFlagsForcedOn
     }
   })
 
