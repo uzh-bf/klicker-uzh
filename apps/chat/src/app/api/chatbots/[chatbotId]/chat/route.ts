@@ -850,8 +850,28 @@ export async function POST(
     },
   }))
 
-  // MCP availability is checked before creating a thread or doing any image,
-  // credit, provider, or message-persistence work.
+  if (!selectedModelConfig.fallback) {
+    const userCredits = await CreditsService.getUserCredits(
+      participantId,
+      chatbotId
+    )
+    if (userCredits.current <= 0) {
+      const fallbackModelId = getParticipantFallbackModelId(
+        selectedModelConfig.usageClass,
+        chatbot.allowedModelIds as string[]
+      )
+      if (!fallbackModelId) {
+        return chatModelUnavailableResponse(selectedModelConfig.usageClass)
+      }
+
+      selectedModel = fallbackModelId
+      selectedModelConfig = modelRegistry.find(
+        (modelConfig) => modelConfig.id === fallbackModelId
+      )!
+    }
+  }
+
+  // Resolve participant credits before performing external MCP discovery.
   let mcpTools: ToolSet
   try {
     mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
@@ -881,27 +901,6 @@ export async function POST(
     selectedMode,
     toolNames
   )
-
-  if (!selectedModelConfig.fallback) {
-    const userCredits = await CreditsService.getUserCredits(
-      participantId,
-      chatbotId
-    )
-    if (userCredits.current <= 0) {
-      const fallbackModelId = getParticipantFallbackModelId(
-        selectedModelConfig.usageClass,
-        chatbot.allowedModelIds as string[]
-      )
-      if (!fallbackModelId) {
-        return chatModelUnavailableResponse(selectedModelConfig.usageClass)
-      }
-
-      selectedModel = fallbackModelId
-      selectedModelConfig = modelRegistry.find(
-        (modelConfig) => modelConfig.id === fallbackModelId
-      )!
-    }
-  }
 
   // Create and validate the thread only after account authorization succeeds,
   // but before any provider or message work starts.

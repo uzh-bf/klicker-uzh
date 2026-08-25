@@ -311,6 +311,7 @@ describe('account usage chat route', () => {
       ownerId: 'owner-1',
       usageClass: 'ADVANCED',
     })
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 

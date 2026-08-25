@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
   createThread: vi.fn(),
+  getUserCredits: vi.fn(),
   isChatAccountUsageAvailable: vi.fn(),
   isChatTurnKeyClaimed: vi.fn(),
 }))
@@ -36,6 +37,12 @@ vi.mock('@/src/services/mcpClients', () => ({
 vi.mock('@/src/services/threads', () => ({
   ThreadService: {
     createThread: mocks.createThread,
+  },
+}))
+
+vi.mock('@/src/services/credits', () => ({
+  CreditsService: {
+    getUserCredits: mocks.getUserCredits,
   },
 }))
 
@@ -78,6 +85,7 @@ describe('required MCP chat preflight', () => {
       accepted: true,
     })
     mocks.isChatAccountUsageAvailable.mockResolvedValue(true)
+    mocks.getUserCredits.mockResolvedValue({ current: 5, total: 5 })
     mocks.isChatTurnKeyClaimed.mockResolvedValue(false)
     mocks.findUnique.mockResolvedValue({
       id: 'chatbot-1',
