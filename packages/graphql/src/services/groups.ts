@@ -1894,9 +1894,9 @@ export async function deleteGroupActivity(
     isUnpublished ||
     (!onlyIfUnpublished && groupActivity.activityInstances.length === 0)
   ) {
-    // Recheck publication status in the delete statement because the initial
-    // read can become stale while the user confirms the batch.
-    let deletedItem: DB.GroupActivity | null = null
+    // Recheck publication status and instance state in the delete statement
+    // because the initial read can become stale while the user confirms the batch.
+    let deletedItem: DB.GroupActivity | null
     if (onlyIfUnpublished) {
       deletedItem = await deleteWithPublicationStatusGuard(() =>
         ctx.prisma.groupActivity.delete({
@@ -1904,12 +1904,17 @@ export async function deleteGroupActivity(
         })
       )
     } else {
-      const deleteResult = await ctx.prisma.groupActivity.deleteMany({
-        where: { id, activityInstances: { none: {} } },
-      })
-      if (deleteResult.count === 1) {
-        deletedItem = groupActivity
-      }
+      deletedItem = await deleteWithPublicationStatusGuard(() =>
+        ctx.prisma.groupActivity.delete({
+          where: {
+            id,
+            OR: [
+              { status: { in: UNPUBLISHED_ACTIVITY_STATUSES } },
+              { activityInstances: { none: {} } },
+            ],
+          },
+        })
+      )
     }
 
     if (deletedItem) {

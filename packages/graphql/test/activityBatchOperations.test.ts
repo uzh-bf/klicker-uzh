@@ -468,7 +468,12 @@ describe('Integration tests for batch operations on activities', () => {
   })
 
   it('guards group activity hard deletion with an instance predicate', async () => {
-    const groupActivityDeleteMany = vi.fn().mockResolvedValue({ count: 1 })
+    const groupActivityDelete = vi.fn().mockResolvedValue({
+      id: 'group-activity-id',
+      status: PublicationStatus.PUBLISHED,
+      scheduledPublicationTaskId: null,
+      scheduledCompletionTaskId: null,
+    })
     const groupActivityCtx = {
       prisma: {
         groupActivity: {
@@ -480,7 +485,7 @@ describe('Integration tests for batch operations on activities', () => {
             activityInstances: [],
             stacks: [],
           }),
-          deleteMany: groupActivityDeleteMany,
+          delete: groupActivityDelete,
         },
       },
       emitter: new EventEmitter(),
@@ -490,10 +495,60 @@ describe('Integration tests for batch operations on activities', () => {
       deleteGroupActivity({ id: 'group-activity-id' }, groupActivityCtx)
     ).resolves.toMatchObject({ id: 'group-activity-id' })
 
-    expect(groupActivityDeleteMany).toHaveBeenCalledWith({
+    expect(groupActivityDelete).toHaveBeenCalledWith({
       where: {
         id: 'group-activity-id',
-        activityInstances: { none: {} },
+        OR: [
+          {
+            status: {
+              in: [PublicationStatus.DRAFT, PublicationStatus.SCHEDULED],
+            },
+          },
+          { activityInstances: { none: {} } },
+        ],
+      },
+    })
+  })
+
+  it('hard-deletes an unpublished group activity with instances', async () => {
+    const groupActivityDelete = vi.fn().mockResolvedValue({
+      id: 'group-activity-id',
+      status: PublicationStatus.SCHEDULED,
+      scheduledPublicationTaskId: null,
+      scheduledCompletionTaskId: null,
+    })
+    const groupActivityCtx = {
+      prisma: {
+        groupActivity: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'group-activity-id',
+            status: PublicationStatus.SCHEDULED,
+            scheduledPublicationTaskId: null,
+            scheduledCompletionTaskId: null,
+            activityInstances: [{ id: 'instance-id' }],
+            stacks: [],
+          }),
+          delete: groupActivityDelete,
+        },
+      },
+      emitter: new EventEmitter(),
+    } as unknown as ContextWithUser
+
+    await expect(
+      deleteGroupActivity({ id: 'group-activity-id' }, groupActivityCtx)
+    ).resolves.toMatchObject({ id: 'group-activity-id' })
+
+    expect(groupActivityDelete).toHaveBeenCalledWith({
+      where: {
+        id: 'group-activity-id',
+        OR: [
+          {
+            status: {
+              in: [PublicationStatus.DRAFT, PublicationStatus.SCHEDULED],
+            },
+          },
+          { activityInstances: { none: {} } },
+        ],
       },
     })
   })

@@ -104,15 +104,17 @@ function useElementActions({
         refreshFailed = true
       }
 
+      const actionMessage = isArchived
+        ? t('manage.questionPool.elementRestoredSuccessfully')
+        : t('manage.questionPool.elementArchivedSuccessfully')
+
       if ((result === 'success' || result === 'unchanged') && !refreshFailed) {
         toast({
           type: 'success',
           message:
             result === 'unchanged'
               ? t('manage.questionPool.elementArchiveActionUnchanged')
-              : isArchived
-                ? t('manage.questionPool.elementRestoredSuccessfully')
-                : t('manage.questionPool.elementArchivedSuccessfully'),
+              : actionMessage,
           options: { duration: 3000 },
         })
       } else if (result === 'success' || result === 'unchanged') {

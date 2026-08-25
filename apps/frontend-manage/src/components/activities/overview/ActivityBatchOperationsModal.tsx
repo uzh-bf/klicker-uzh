@@ -300,6 +300,25 @@ function ActivityBatchOperationsModal({
   }
 
   async function executeBatchDeletion() {
+    if (activitiesToDelete.length === 0) {
+      setDeleting(false)
+      setDeletionConfirmationOpen(false)
+      resetSelectedActivities()
+
+      try {
+        await refetchActivities()
+      } catch (error) {
+        console.error(error)
+      }
+
+      toast({
+        type: 'warning',
+        message: t('manage.activities.batchDeletionNoEligibleActivities'),
+        options: { duration: 5000 },
+      })
+      return
+    }
+
     setDeleting(true)
     setDeletionProgress({ completed: 0, total: activitiesToDelete.length })
 
