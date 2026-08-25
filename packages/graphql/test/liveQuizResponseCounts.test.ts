@@ -350,11 +350,7 @@ describe('live quiz cockpit response counts', () => {
       )
       await userOneCtx.redisExec.set(trackingKeys[0]!, '1')
       await userOneCtx.redisExec.set(trackingKeys[1]!, '1')
-      await userOneCtx.redisExec.zadd(
-        trackingKeys[2]!,
-        Date.now(),
-        'message-1'
-      )
+      await userOneCtx.redisExec.zadd(trackingKeys[2]!, Date.now(), 'message-1')
       await userOneCtx.redisExec.sadd(trackingKeys[3]!, 'legacy-received')
       await userOneCtx.redisExec.sadd(trackingKeys[4]!, 'legacy-processed')
 
@@ -365,9 +361,7 @@ describe('live quiz cockpit response counts', () => {
       for (const key of [instanceInfoKey, ...trackingKeys]) {
         const ttl = await userOneCtx.redisExec.ttl(key)
         expect(ttl).toBeGreaterThan(0)
-        expect(ttl).toBeLessThanOrEqual(
-          LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
-        )
+        expect(ttl).toBeLessThanOrEqual(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
       }
 
       const notificationTexts = teamsPost.mock.calls.map(
