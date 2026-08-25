@@ -83,12 +83,13 @@ function useElementActions({
           },
         })
         const updatedCount = data?.applyElementBatchOperations
-        result =
-          updatedCount === 1
-            ? 'success'
-            : updatedCount === 0
-              ? 'unchanged'
-              : 'failure'
+        if (updatedCount === 1) {
+          result = 'success'
+        } else if (updatedCount === 0) {
+          result = 'unchanged'
+        } else {
+          result = 'failure'
+        }
       } catch (error) {
         console.error(error)
         result = 'uncertain'

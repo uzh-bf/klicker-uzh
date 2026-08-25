@@ -21,6 +21,10 @@ export type ActivityBatchDeletionProgress = {
   total: number
 }
 
+function assertNever(value: never): never {
+  throw new Error(`Unsupported activity type: ${String(value)}`)
+}
+
 function useActivityBatchDeletion() {
   const [deleteLiveQuiz] = useMutation(DeleteLiveQuizDocument)
   const [deletePracticeQuiz] = useMutation(DeletePracticeQuizBatchDocument)
@@ -28,35 +32,34 @@ function useActivityBatchDeletion() {
   const [deleteGroupActivity] = useMutation(DeleteGroupActivityBatchDocument)
 
   async function deleteActivity(activity: ActivityInfo) {
-    if (activity.type === ActivityType.LiveQuiz) {
-      const { data } = await deleteLiveQuiz({
-        variables: { id: activity.id },
-      })
-      return data?.deleteLiveQuiz?.id === activity.id
+    switch (activity.type) {
+      case ActivityType.LiveQuiz: {
+        const { data } = await deleteLiveQuiz({
+          variables: { id: activity.id },
+        })
+        return data?.deleteLiveQuiz?.id === activity.id
+      }
+      case ActivityType.PracticeQuiz: {
+        const { data } = await deletePracticeQuiz({
+          variables: { id: activity.id },
+        })
+        return data?.deletePracticeQuiz?.id === activity.id
+      }
+      case ActivityType.MicroLearning: {
+        const { data } = await deleteMicroLearning({
+          variables: { id: activity.id },
+        })
+        return data?.deleteMicroLearning?.id === activity.id
+      }
+      case ActivityType.GroupActivity: {
+        const { data } = await deleteGroupActivity({
+          variables: { id: activity.id },
+        })
+        return data?.deleteGroupActivity?.id === activity.id
+      }
+      default:
+        return assertNever(activity.type)
     }
-
-    if (activity.type === ActivityType.PracticeQuiz) {
-      const { data } = await deletePracticeQuiz({
-        variables: { id: activity.id },
-      })
-      return data?.deletePracticeQuiz?.id === activity.id
-    }
-
-    if (activity.type === ActivityType.MicroLearning) {
-      const { data } = await deleteMicroLearning({
-        variables: { id: activity.id },
-      })
-      return data?.deleteMicroLearning?.id === activity.id
-    }
-
-    if (activity.type === ActivityType.GroupActivity) {
-      const { data } = await deleteGroupActivity({
-        variables: { id: activity.id },
-      })
-      return data?.deleteGroupActivity?.id === activity.id
-    }
-
-    return false
   }
 
   async function deleteActivityWithOutcome(

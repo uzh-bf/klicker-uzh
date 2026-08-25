@@ -11,7 +11,7 @@ import {
 import { Button, Modal, toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useTranslations } from 'next-intl'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { isShallowEqual } from 'remeda'
 import { twMerge } from 'tailwind-merge'
 import ActivityBatchDeletionConfirmationModal from './batchOperations/ActivityBatchDeletionConfirmationModal'
@@ -48,7 +48,15 @@ function ActivityBatchOperationsModal({
   const [deleting, setDeleting] = useState(false)
   const [deletionProgress, setDeletionProgress] =
     useState<ActivityBatchDeletionProgress>({ completed: 0, total: 0 })
+  const isMountedRef = useRef(true)
   const deleteActivitiesBatch = useActivityBatchDeletion()
+
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   // database mutation to execute activity batch operations
   const [applyActivityBatchOperations, { loading: applying }] = useMutation(
@@ -311,6 +319,8 @@ function ActivityBatchOperationsModal({
         console.error(error)
       }
 
+      if (!isMountedRef.current) return
+
       toast({
         type: 'warning',
         message: t('manage.activities.batchDeletionNoEligibleActivities'),
@@ -325,8 +335,12 @@ function ActivityBatchOperationsModal({
     try {
       const outcomes = await deleteActivitiesBatch(
         activitiesToDelete,
-        (progress) => setDeletionProgress(progress)
+        (progress) => {
+          if (isMountedRef.current) setDeletionProgress(progress)
+        }
       )
+      if (!isMountedRef.current) return
+
       const deletedCount = outcomes.filter(
         (outcome) => outcome.status === 'deleted'
       ).length
@@ -335,7 +349,7 @@ function ActivityBatchOperationsModal({
       ).length
       const hadOutcome = deletedCount > 0 || uncertainCount > 0
 
-      if (hadOutcome) {
+      if (deletedCount > 0 && uncertainCount === 0) {
         resetSelectedActivities()
       }
 
@@ -348,6 +362,8 @@ function ActivityBatchOperationsModal({
           refreshFailed = true
         }
       }
+
+      if (!isMountedRef.current) return
 
       if (refreshFailed) {
         toast({
@@ -382,11 +398,13 @@ function ActivityBatchOperationsModal({
       }
 
       setDeleting(false)
-      if (deletedCount > 0 || uncertainCount > 0) {
+      if (deletedCount > 0 && uncertainCount === 0) {
         onClose()
       }
     } catch (error) {
       console.error(error)
+      if (!isMountedRef.current) return
+
       setDeleting(false)
       toast({
         type: 'error',
