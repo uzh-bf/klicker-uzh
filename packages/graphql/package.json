@@ -95,6 +95,7 @@
     "dev:ts": "cross-env NODE_ENV=development rollup -c --watch",
     "generate": "graphql-codegen --config codegen.ts",
     "pretest": "pnpm run generate",
+    "pretest:watch": "pnpm run generate",
     "script": "../../util/_run_with_infisical.sh --env dev tsx --env-file=.env",
     "script:invitations:dev": "CONFIG=dev ../../util/_run_with_infisical.sh --env dev tsx src/scripts/importParticipantInvitations.ts",
     "script:invitations:prd": "CONFIG=prd ../../util/_run_with_infisical.sh --env prd tsx src/scripts/importParticipantInvitations.ts",

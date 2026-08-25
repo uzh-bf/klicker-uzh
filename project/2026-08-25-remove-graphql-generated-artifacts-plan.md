@@ -51,5 +51,7 @@
 ## Progress
 
 - `Conflict repair:` Merging the current `v3` produced three modify/delete conflicts in generated artifacts. Keep `ops.ts`, `public/client.json`, and `public/server.json` deleted; the merged `QUserProfile.graphql` source regenerates them.
-- `Discovered gap:` The package build, check, CI test, and image paths already generate the artifacts, but a direct `pnpm --filter @klicker-uzh/graphql test` did not. Add the package lifecycle generation barrier and validate tests from an output-absent state.
+- `Discovered gap:` The package build, check, CI test, and image paths already generate the artifacts, but direct `test` and `test:watch` package commands did not. Add package lifecycle generation barriers and validate tests from an output-absent state.
+- `Verification:` From an output-absent checkout, direct test and watch setup, package check/build, and the exact `build:test` path regenerate the required files. Tracked-only backend and manage image builds contain the generated server and client maps in their final package outputs.
+- `Review disposition:` A reported `build:test` ordering failure did not reproduce: the exact command succeeds because its nested package build generates before Rollup. Keep that pre-existing script unchanged and add only the missing direct test lifecycle barriers.
 - `Delivery:` Branch update, merge, and deployment remain pending until verification and the applicable authority gates complete.

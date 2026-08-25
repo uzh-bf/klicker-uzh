@@ -124,7 +124,8 @@ or recomputation errors are logged server-side and exposed only as the generic
 The hand-written operation file is named `MShareElementsBatch.graphql`; in line
 with repository conventions, its operation is `ShareElementsBatch` and its
 generated document is `ShareElementsBatchDocument`. GraphQL code generation
-artifacts and persisted-query maps are committed with the change.
+produces the ignored typed document and persisted-query maps during the package
+build; the tracked public schema snapshot is committed with the change.
 
 ## Service design and consistency
 
