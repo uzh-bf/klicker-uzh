@@ -12,41 +12,321 @@ import {
   recomputeAnswerCollectionPermissionsObject,
   recomputeAnswerCollectionPermissionsUser,
 } from './answerCollection.js'
-import { inversePermissionLevelMap, type UserAccessMap } from './constants.js'
-import {
-  getMaxAccessLevelCombined,
-  getMaxAccessLevelIndividual,
-} from './util.js'
 
-// WHERE clause component to filter relevant activities, which would result in permissions on the contained elements
-const ACTIVITY_PERMISSIONS_WHERE_CLAUSE = [
-  // ? ADMIN / OWNER permissions on activity
-  {
-    permissionLevel: {
-      in: [DB.PermissionLevel.ADMIN, DB.PermissionLevel.OWNER],
-    },
-  },
-  // ? propagation enabled & READ / WRITE / EXECUTE permissions on activity
-  // --> if this is modified, the logic in the function body below also needs to be adapted
-  {
-    permissionLevel: {
-      in: [
-        DB.PermissionLevel.READ,
-        DB.PermissionLevel.EXECUTE,
-        DB.PermissionLevel.WRITE,
-      ],
-    },
-    directPermission: {
-      propagation: true,
-      OR: [
-        { liveQuizId: { not: null } },
-        { practiceQuizId: { not: null } },
-        { microLearningId: { not: null } },
-        { groupActivityId: { not: null } },
-      ],
-    },
-  },
-]
+async function recomputeElementPermissionsSetBased(
+  { id, userId }: { id: number; userId?: string },
+  prisma: PrismaTransactionClient
+) {
+  await prisma.$executeRaw(
+    DB.Prisma.sql`
+      WITH target_scope AS (
+        SELECT ${userId ?? null}::uuid AS "userId"
+      ),
+      target_element AS (
+        SELECT
+          element."id",
+          element."ownerId",
+          element."isDeleted"
+        FROM "Element" element
+        WHERE element."id" = ${id}
+      ),
+      expanded_group_users AS (
+        SELECT
+          permission."id" AS "permissionId",
+          group_data."ownerId" AS "userId"
+        FROM "Permission" permission
+        INNER JOIN "UserGroup" group_data
+          ON group_data."id" = permission."userGroupId"
+        WHERE permission."elementId" = ${id}
+          AND permission."userId" IS NULL
+
+        UNION
+
+        SELECT
+          permission."id" AS "permissionId",
+          members."A" AS "userId"
+        FROM "Permission" permission
+        INNER JOIN "_UserGroupMembers" members
+          ON members."B" = permission."userGroupId"
+        WHERE permission."elementId" = ${id}
+          AND permission."userId" IS NULL
+
+        UNION
+
+        SELECT
+          permission."id" AS "permissionId",
+          admins."A" AS "userId"
+        FROM "Permission" permission
+        INNER JOIN "_UserGroupAdmins" admins
+          ON admins."B" = permission."userGroupId"
+        WHERE permission."elementId" = ${id}
+          AND permission."userId" IS NULL
+      ),
+      expanded_permissions AS (
+        SELECT
+          permission."id" AS "permissionId",
+          permission."permissionLevel",
+          permission."propagation",
+          permission."userId"
+        FROM "Permission" permission
+        CROSS JOIN target_scope
+        WHERE permission."elementId" = ${id}
+          AND permission."userId" IS NOT NULL
+          AND (
+            target_scope."userId" IS NULL
+            OR permission."userId" = target_scope."userId"
+          )
+
+        UNION ALL
+
+        SELECT
+          permission."id" AS "permissionId",
+          permission."permissionLevel",
+          permission."propagation",
+          expanded_group_users."userId"
+        FROM expanded_group_users
+        INNER JOIN "Permission" permission
+          ON permission."id" = expanded_group_users."permissionId"
+        CROSS JOIN target_scope
+        WHERE target_scope."userId" IS NULL
+          OR expanded_group_users."userId" = target_scope."userId"
+      ),
+      direct_candidates AS (
+        SELECT
+          expanded_permissions."userId",
+          expanded_permissions."permissionLevel",
+          expanded_permissions."permissionId" AS "directPermissionId",
+          false AS "derived",
+          'DIRECT'::text AS "sourceType",
+          expanded_permissions."propagation",
+          expanded_permissions."permissionId"::text AS "sourceKey"
+        FROM expanded_permissions
+        CROSS JOIN target_element
+        WHERE NOT target_element."isDeleted"
+      ),
+      activity_permissions AS (
+        SELECT
+          permission."userId",
+          permission."permissionLevel",
+          permission."directPermissionId",
+          'LIVE_QUIZ:' || block."liveQuizId"::text || ':' || instance."id"::text
+            AS "sourceKey"
+        FROM "ElementInstance" instance
+        INNER JOIN "ElementBlock" block
+          ON block."id" = instance."elementBlockId"
+        INNER JOIN "DerivedPermission" permission
+          ON permission."liveQuizId" = block."liveQuizId"
+        CROSS JOIN target_scope
+        WHERE instance."elementId" = ${id}
+          AND (
+            target_scope."userId" IS NULL
+            OR permission."userId" = target_scope."userId"
+          )
+
+        UNION ALL
+
+        SELECT
+          permission."userId",
+          permission."permissionLevel",
+          permission."directPermissionId",
+          'PRACTICE_QUIZ:' || stack."practiceQuizId"::text || ':' || instance."id"::text
+            AS "sourceKey"
+        FROM "ElementInstance" instance
+        INNER JOIN "ElementStack" stack
+          ON stack."id" = instance."elementStackId"
+        INNER JOIN "DerivedPermission" permission
+          ON permission."practiceQuizId" = stack."practiceQuizId"
+        CROSS JOIN target_scope
+        WHERE instance."elementId" = ${id}
+          AND stack."practiceQuizId" IS NOT NULL
+          AND (
+            target_scope."userId" IS NULL
+            OR permission."userId" = target_scope."userId"
+          )
+
+        UNION ALL
+
+        SELECT
+          permission."userId",
+          permission."permissionLevel",
+          permission."directPermissionId",
+          'MICROLEARNING:' || stack."microLearningId"::text || ':' || instance."id"::text
+            AS "sourceKey"
+        FROM "ElementInstance" instance
+        INNER JOIN "ElementStack" stack
+          ON stack."id" = instance."elementStackId"
+        INNER JOIN "DerivedPermission" permission
+          ON permission."microLearningId" = stack."microLearningId"
+        CROSS JOIN target_scope
+        WHERE instance."elementId" = ${id}
+          AND stack."microLearningId" IS NOT NULL
+          AND (
+            target_scope."userId" IS NULL
+            OR permission."userId" = target_scope."userId"
+          )
+
+        UNION ALL
+
+        SELECT
+          permission."userId",
+          permission."permissionLevel",
+          permission."directPermissionId",
+          'GROUP_ACTIVITY:' || stack."groupActivityId"::text || ':' || instance."id"::text
+            AS "sourceKey"
+        FROM "ElementInstance" instance
+        INNER JOIN "ElementStack" stack
+          ON stack."id" = instance."elementStackId"
+        INNER JOIN "DerivedPermission" permission
+          ON permission."groupActivityId" = stack."groupActivityId"
+        CROSS JOIN target_scope
+        WHERE instance."elementId" = ${id}
+          AND stack."groupActivityId" IS NOT NULL
+          AND (
+            target_scope."userId" IS NULL
+            OR permission."userId" = target_scope."userId"
+          )
+      ),
+      activity_candidates AS (
+        SELECT
+          activity_permissions."userId",
+          CASE activity_permissions."permissionLevel"
+            WHEN 'OWNER' THEN 'ADMIN'::"PermissionLevel"
+            WHEN 'ADMIN' THEN 'ADMIN'::"PermissionLevel"
+            WHEN 'WRITE' THEN 'WRITE'::"PermissionLevel"
+            WHEN 'EXECUTE' THEN 'READ'::"PermissionLevel"
+            WHEN 'READ' THEN 'READ'::"PermissionLevel"
+          END AS "permissionLevel",
+          activity_permissions."directPermissionId",
+          true AS "derived",
+          'ACTIVITY'::text AS "sourceType",
+          false AS "propagation",
+          activity_permissions."sourceKey"
+        FROM activity_permissions
+        LEFT JOIN "Permission" direct_permission
+          ON direct_permission."id" = activity_permissions."directPermissionId"
+        WHERE
+          activity_permissions."permissionLevel" IN ('OWNER', 'ADMIN')
+          OR (
+            activity_permissions."permissionLevel" IN ('READ', 'EXECUTE', 'WRITE')
+            AND direct_permission."propagation"
+            AND (
+              direct_permission."liveQuizId" IS NOT NULL
+              OR direct_permission."practiceQuizId" IS NOT NULL
+              OR direct_permission."microLearningId" IS NOT NULL
+              OR direct_permission."groupActivityId" IS NOT NULL
+            )
+          )
+      ),
+      candidates AS (
+        SELECT
+          target_element."ownerId" AS "userId",
+          'OWNER'::"PermissionLevel" AS "permissionLevel",
+          NULL::integer AS "directPermissionId",
+          false AS "derived",
+          'OWNER'::text AS "sourceType",
+          false AS "propagation",
+          ''::text AS "sourceKey"
+        FROM target_element
+        CROSS JOIN target_scope
+        WHERE NOT target_element."isDeleted"
+          AND (
+            target_scope."userId" IS NULL
+            OR target_element."ownerId" = target_scope."userId"
+          )
+
+        UNION ALL
+
+        SELECT * FROM direct_candidates
+
+        UNION ALL
+
+        SELECT * FROM activity_candidates
+      ),
+      ranked_candidates AS (
+        SELECT
+          candidates.*,
+          ROW_NUMBER() OVER (
+            PARTITION BY candidates."userId"
+            ORDER BY
+              CASE candidates."permissionLevel"
+                WHEN 'OWNER' THEN 5
+                WHEN 'ADMIN' THEN 4
+                WHEN 'WRITE' THEN 3
+                WHEN 'EXECUTE' THEN 2
+                WHEN 'READ' THEN 1
+              END DESC,
+              CASE
+                WHEN candidates."sourceType" = 'OWNER' THEN 0
+                WHEN
+                  candidates."permissionLevel" = 'ADMIN'
+                  AND candidates."sourceType" = 'DIRECT'
+                THEN 1
+                WHEN candidates."sourceType" = 'ACTIVITY' THEN 2
+                ELSE 3
+              END,
+              candidates."propagation" DESC,
+              CASE
+                WHEN candidates."sourceType" = 'DIRECT'
+                THEN candidates."directPermissionId"
+              END DESC,
+              candidates."sourceKey"
+          ) AS "permissionRank"
+        FROM candidates
+      ),
+      desired_permissions AS (
+        SELECT
+          ranked_candidates."userId",
+          ranked_candidates."permissionLevel",
+          ranked_candidates."directPermissionId",
+          ranked_candidates."derived"
+        FROM ranked_candidates
+        WHERE ranked_candidates."permissionRank" = 1
+      ),
+      deleted_permissions AS (
+        DELETE FROM "DerivedPermission" derived_permission
+        USING target_element, target_scope
+        WHERE derived_permission."elementId" = target_element."id"
+          AND (
+            target_scope."userId" IS NULL
+            OR derived_permission."userId" = target_scope."userId"
+          )
+          AND NOT EXISTS (
+            SELECT 1
+            FROM desired_permissions
+            WHERE desired_permissions."userId" = derived_permission."userId"
+          )
+      )
+      INSERT INTO "DerivedPermission" (
+        "permissionLevel",
+        "directPermissionId",
+        "derived",
+        "userId",
+        "elementId",
+        "createdAt",
+        "updatedAt"
+      )
+      SELECT
+        desired_permissions."permissionLevel",
+        desired_permissions."directPermissionId",
+        desired_permissions."derived",
+        desired_permissions."userId",
+        ${id},
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+      FROM desired_permissions
+      ON CONFLICT ("elementId", "userId")
+      DO UPDATE SET
+        "permissionLevel" = EXCLUDED."permissionLevel",
+        "directPermissionId" = EXCLUDED."directPermissionId",
+        "derived" = EXCLUDED."derived",
+        "updatedAt" = CURRENT_TIMESTAMP
+      WHERE
+        "DerivedPermission"."permissionLevel" IS DISTINCT FROM EXCLUDED."permissionLevel"
+        OR "DerivedPermission"."directPermissionId" IS DISTINCT FROM EXCLUDED."directPermissionId"
+        OR "DerivedPermission"."derived" IS DISTINCT FROM EXCLUDED."derived"
+    `
+  )
+}
 
 /**
  * Dispatch function for the recomputation of derived permissions for elements.
@@ -90,16 +370,15 @@ export async function recomputeElementPermissions(
 /**
  * Recomputes derived permissions for a specific user on an element.
  *
- * This function removes any existing derived permission for the user and then
- * computes the highest granted permission level for that same user from the
- * following potential sources of access permissions:
+ * The set-based recomputation updates or removes only the selected user's row,
+ * choosing the highest permission from these sources:
  * - direct permission granted to the individual user
  * - direct permission granted to a user group the user is part of
  * - ownership of the element
  * - any derived permission granted to the individual user on an activity where
  *   an instance of the element is included, according to the following rules:
- *   READ on activity --> no access to element
- *   WRITE on activity --> no access to element
+ *   propagated READ / EXECUTE on activity --> READ on element
+ *   propagated WRITE on activity --> WRITE on element
  *   ADMIN on activity --> ADMIN on element
  *   OWNER on activity --> ADMIN on element
  *
@@ -126,282 +405,37 @@ export async function recomputeElementPermissionsUser(
   }: { id: number; userId: string; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
-  // check if a permission for this user exists
-  const existingPermission = await prisma.derivedPermission.findUnique({
-    where: {
-      elementId_userId: {
-        elementId: id,
-        userId,
-      },
-    },
+  const targetElement = await prisma.element.findUnique({
+    where: { id },
+    select: { isDeleted: true, answerCollectionId: true },
   })
 
-  // check if the user has a direct permission or ownership on the element, fetch linked answer collections and activities the element is included in
-  const element = await prisma.element.findUnique({
-    where: {
-      id,
-    },
-    include: {
-      directPermissions: {
-        where: {
-          OR: [
-            { userId },
-            {
-              userGroup: {
-                OR: [
-                  { ownerId: userId },
-                  { members: { some: { id: userId } } },
-                  { admins: { some: { id: userId } } },
-                ],
-              },
-            },
-          ],
-        },
-      },
-      // fetch all instances that are included in acitvities where the user has admin / owner permissions -> derived admin permissions
-      elementInstances: {
-        take: 1, // a single instance in the corresponding activity is sufficient for admin permissions
-        where: {
-          OR: [
-            {
-              elementStack: {
-                OR: [
-                  {
-                    practiceQuiz: {
-                      permissions: {
-                        some: {
-                          userId,
-                          OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
-                        },
-                      },
-                    },
-                  },
-                  {
-                    microLearning: {
-                      permissions: {
-                        some: {
-                          userId,
-                          OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
-                        },
-                      },
-                    },
-                  },
-                  {
-                    groupActivity: {
-                      permissions: {
-                        some: {
-                          userId,
-                          OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
-                        },
-                      },
-                    },
-                  },
-                ],
-              },
-            },
-            {
-              elementBlock: {
-                liveQuiz: {
-                  permissions: {
-                    some: {
-                      userId,
-                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
-                    },
-                  },
-                },
-              },
-            },
-          ],
-        },
-        include: {
-          elementBlock: {
-            include: {
-              liveQuiz: {
-                include: {
-                  permissions: {
-                    where: {
-                      userId,
-                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
-                    },
-                  },
-                },
-              },
-            },
-          },
-          elementStack: {
-            include: {
-              practiceQuiz: {
-                include: {
-                  permissions: {
-                    where: {
-                      userId,
-                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
-                    },
-                  },
-                },
-              },
-              microLearning: {
-                include: {
-                  permissions: {
-                    where: {
-                      userId,
-                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
-                    },
-                  },
-                },
-              },
-              groupActivity: {
-                include: {
-                  permissions: {
-                    where: {
-                      userId,
-                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  })
-
-  // if the element does not exist, return
-  if (!element) {
+  if (!targetElement) {
     return
   }
 
-  // determine the maximum access level of the user
-  let maxAccessLevel: DB.PermissionLevel | undefined = undefined
-  let parentPermissionId: number | undefined = undefined
-  let derived = false
+  await recomputeElementPermissionsSetBased({ id, userId }, prisma)
 
-  if (element.ownerId === userId && !element.isDeleted) {
-    maxAccessLevel = DB.PermissionLevel.OWNER
-  } else {
-    // determine the highest available direct permission level (groups and individual direct permissions)
-    // if the element is soft-deleted, no direct permissions are valid anymore
-    if (element.directPermissions.length > 0 && !element.isDeleted) {
-      const { maxDirectPermission, directPermissionId } =
-        getMaxAccessLevelIndividual({
-          directPermissions: element.directPermissions,
-        })
-
-      maxAccessLevel = inversePermissionLevelMap[maxDirectPermission]
-      parentPermissionId = directPermissionId
-    }
-
-    // if the element is included in an activity where the user has ADMIN / OWNER permissions or propagation is enabled
-    // --> owner requires derived admin permissions (at least) - skip if direct ADMIN permissions are already granted
-    if (
-      element.elementInstances.length > 0 &&
-      maxAccessLevel !== DB.PermissionLevel.ADMIN
-    ) {
-      const instance = element.elementInstances[0]!
-      const permission =
-        instance.elementBlock?.liveQuiz?.permissions[0] ??
-        instance.elementStack?.practiceQuiz?.permissions[0] ??
-        instance.elementStack?.microLearning?.permissions[0] ??
-        instance.elementStack?.groupActivity?.permissions[0]
-
-      // OWNER / ADMIN permissions on the activity -> ADMIN on element
-      if (
-        permission &&
-        (permission.permissionLevel === DB.PermissionLevel.OWNER ||
-          permission.permissionLevel === DB.PermissionLevel.ADMIN)
-      ) {
-        maxAccessLevel = DB.PermissionLevel.ADMIN
-        parentPermissionId = permission.directPermissionId ?? undefined
-        derived = true // permission was derived from an activity
-      }
-      // READ / EXECUTE / WRITE on the activity AND propagation enabled (only these are fetched above!)
-      // --> READ / WRITE on element
-      else if (permission) {
-        maxAccessLevel =
-          permission.permissionLevel === DB.PermissionLevel.WRITE
-            ? DB.PermissionLevel.WRITE
-            : DB.PermissionLevel.READ
-        parentPermissionId = permission.directPermissionId ?? undefined
-        derived = true // permission was derived from an activity
-      }
-    }
-  }
-
-  // if the user has access, add a corresponding derived permission
-  if (
-    typeof maxAccessLevel !== 'undefined' &&
-    (!existingPermission ||
-      existingPermission.permissionLevel !== maxAccessLevel ||
-      existingPermission.derived !== derived ||
-      existingPermission.directPermissionId !== parentPermissionId)
-  ) {
-    await prisma.derivedPermission.upsert({
-      where: {
-        elementId_userId: {
-          elementId: id,
-          userId,
-        },
-      },
-      create: {
-        permissionLevel: maxAccessLevel,
-        derived,
-        directPermission:
-          typeof parentPermissionId !== 'undefined'
-            ? { connect: { id: parentPermissionId } }
-            : undefined,
-        element: { connect: { id } },
-        user: { connect: { id: userId } },
-      },
-      update: {
-        permissionLevel: maxAccessLevel,
-        derived,
-        directPermission:
-          typeof parentPermissionId !== 'undefined'
-            ? { connect: { id: parentPermissionId } }
-            : { disconnect: true },
-      },
-    })
-  }
-  // if a derived permission exists, remove it
-  else if (existingPermission && typeof maxAccessLevel === 'undefined') {
-    await prisma.derivedPermission.delete({
-      where: {
-        elementId_userId: {
-          elementId: id,
-          userId,
-        },
-      },
-    })
-  }
-
-  // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
     await updateAccessRequestInstances(
-      { elementId: id, userId, objectSoftDeleted: element.isDeleted },
+      { elementId: id, userId, objectSoftDeleted: targetElement.isDeleted },
       prisma
     )
   }
 
-  // compute derived permissions for answer collections that are linked to the element (= PROPAGATION = MIN. REQUIRED)
-  if (element.answerCollectionId !== null) {
+  if (targetElement.answerCollectionId !== null) {
     await recomputeAnswerCollectionPermissionsUser(
-      { id: element.answerCollectionId, userId, updateAccessRequests },
+      { id: targetElement.answerCollectionId, userId, updateAccessRequests },
       prisma
     )
   }
-
-  return
 }
 
 /**
  * Recomputes derived permissions for all users on an element.
  *
- * This function deletes all existing derived permissions for the element
- * and then recomputes them. Permissions are directly deduplicated for the
- * derived permissions table to only contain the highest permission level
- * for each user. The following sources for direct permissions on elements
- * are considered:
+ * The set-based recomputation converges all rows for the element, choosing the
+ * highest permission per user from these sources:
  * - direct permissions granted to users
  * - direct permissions granted to user groups
  * - ownership of the element
@@ -428,243 +462,28 @@ export async function recomputeElementPermissionsObject(
   { id, updateAccessRequests }: { id: number; updateAccessRequests: boolean },
   prisma: PrismaTransactionClient
 ) {
-  // fetch the object and all direct permissions on it, including user groups, as well as activities the element is used in
-  // (ADMIN / OWNER permissions on the activity should automatically imply ADMIN permissions on the contained elements to enable propagation)
-  const element = await prisma.element.findUnique({
-    where: {
-      id,
-    },
-    include: {
-      directPermissions: {
-        include: {
-          userGroup: {
-            include: {
-              members: true,
-              admins: true,
-            },
-          },
-        },
-      },
-      elementInstances: {
-        include: {
-          elementBlock: {
-            include: {
-              liveQuiz: {
-                include: {
-                  permissions: {
-                    where: {
-                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
-                    },
-                  },
-                },
-              },
-            },
-          },
-          elementStack: {
-            include: {
-              practiceQuiz: {
-                include: {
-                  permissions: {
-                    where: {
-                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
-                    },
-                  },
-                },
-              },
-              microLearning: {
-                include: {
-                  permissions: {
-                    where: {
-                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
-                    },
-                  },
-                },
-              },
-              groupActivity: {
-                include: {
-                  permissions: {
-                    where: {
-                      OR: ACTIVITY_PERMISSIONS_WHERE_CLAUSE,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
+  const targetElement = await prisma.element.findUnique({
+    where: { id },
+    select: { isDeleted: true, answerCollectionId: true },
   })
 
-  if (!element) {
+  if (!targetElement) {
     console.error(`Element with id ${id} not found`)
     return
   }
 
-  // determine the access map based on ownership and direct permissions
-  const directUserAccess = getMaxAccessLevelCombined({
-    directPermissions: element.directPermissions,
-    objectDeleted: element.isDeleted,
-    ownerId: element.ownerId,
-  })
+  await recomputeElementPermissionsSetBased({ id }, prisma)
 
-  // get all activity permissions (ADMIN and OWNER level), which make a user qualify for ADMIN access on the element
-  const activityPermissions: DB.DerivedPermission[] =
-    element.elementInstances.flatMap((instance) => [
-      ...(instance.elementBlock?.liveQuiz.permissions ?? []),
-      ...(instance.elementStack?.practiceQuiz?.permissions ?? []),
-      ...(instance.elementStack?.microLearning?.permissions ?? []),
-      ...(instance.elementStack?.groupActivity?.permissions ?? []),
-    ])
-
-  // extend the user access map based on the activity permissions resulting in derived ADMIN access
-  const userAccess =
-    activityPermissions.length > 0
-      ? activityPermissions.reduce<UserAccessMap>(
-          (acc, permission) => {
-            // if the user already has a ADMIN / OWNER permission, no derived access can be higher
-            if (
-              typeof acc[permission.userId] !== 'undefined' &&
-              (acc[permission.userId]!.maxAccessLevel ===
-                DB.PermissionLevel.ADMIN ||
-                acc[permission.userId]!.maxAccessLevel ===
-                  DB.PermissionLevel.OWNER)
-            ) {
-              return acc
-            }
-
-            // if the user has ADMIN / OWNER permissions on the activity, grant ADMIN access on the element
-            if (
-              permission.permissionLevel === DB.PermissionLevel.OWNER ||
-              permission.permissionLevel === DB.PermissionLevel.ADMIN
-            ) {
-              if (acc[permission.userId]) {
-                acc[permission.userId]!.maxAccessLevel =
-                  DB.PermissionLevel.ADMIN
-                acc[permission.userId]!.parentPermissionId =
-                  permission.directPermissionId ?? undefined
-                acc[permission.userId]!.derived = true // permission was derived from an activity with ADMIN permissions
-              } else {
-                acc[permission.userId] = {
-                  maxAccessLevel: DB.PermissionLevel.ADMIN,
-                  parentPermissionId:
-                    permission.directPermissionId ?? undefined,
-                  derived: true, // permission was derived from an activity with ADMIN permissions
-                }
-              }
-            }
-            // if the user has WRITE permissions on the activity and propagation is enabled, grant WRITE access on the element
-            // ? where clause already ensures that fetched WRITE permissions have propagation enabled on activity
-            else if (permission.permissionLevel === DB.PermissionLevel.WRITE) {
-              if (acc[permission.userId]) {
-                acc[permission.userId]!.maxAccessLevel =
-                  DB.PermissionLevel.WRITE
-                acc[permission.userId]!.parentPermissionId =
-                  permission.directPermissionId ?? undefined
-                acc[permission.userId]!.derived = true // permission was derived from an activity with WRITE permissions
-              } else {
-                acc[permission.userId] = {
-                  maxAccessLevel: DB.PermissionLevel.WRITE,
-                  parentPermissionId:
-                    permission.directPermissionId ?? undefined,
-                  derived: true, // permission was derived from an activity with WRITE permissions
-                }
-              }
-            }
-            // if the user has READ / EXECUTE permissions on the activity and propagation is enabled, grant READ access on the element
-            // ? where clause already ensures that fetched READ / EXECUTE permissions have propagation enabled on activity
-            else if (
-              permission.permissionLevel === DB.PermissionLevel.READ ||
-              permission.permissionLevel === DB.PermissionLevel.EXECUTE
-            ) {
-              if (acc[permission.userId]) {
-                acc[permission.userId]!.maxAccessLevel = DB.PermissionLevel.READ
-                acc[permission.userId]!.parentPermissionId =
-                  permission.directPermissionId ?? undefined
-                acc[permission.userId]!.derived = true // permission was derived from an activity with READ / EXECUTE permissions
-              } else {
-                acc[permission.userId] = {
-                  maxAccessLevel: DB.PermissionLevel.READ,
-                  parentPermissionId:
-                    permission.directPermissionId ?? undefined,
-                  derived: true, // permission was derived from an activity with READ / EXECUTE permissions
-                }
-              }
-            }
-
-            return acc
-          },
-          { ...directUserAccess }
-        )
-      : directUserAccess
-
-  // remove the derived permissions for all users that do not have access (anymore)
-  await prisma.derivedPermission.deleteMany({
-    where: {
-      elementId: id,
-      userId: {
-        notIn: Object.keys(userAccess),
-      },
-    },
-  })
-
-  // create / update derived permissions for each user with access
-  const results = await Promise.allSettled(
-    Object.entries(userAccess).map(
-      async ([userId, { maxAccessLevel, parentPermissionId, derived }]) =>
-        await prisma.derivedPermission.upsert({
-          where: {
-            elementId_userId: {
-              elementId: id,
-              userId,
-            },
-          },
-          create: {
-            permissionLevel: maxAccessLevel,
-            derived,
-            directPermission:
-              typeof parentPermissionId !== 'undefined'
-                ? { connect: { id: parentPermissionId } }
-                : undefined,
-            element: { connect: { id } },
-            user: { connect: { id: userId } },
-          },
-          update: {
-            permissionLevel: maxAccessLevel,
-            derived,
-            directPermission:
-              typeof parentPermissionId !== 'undefined'
-                ? { connect: { id: parentPermissionId } }
-                : { disconnect: true },
-          },
-        })
-    )
-  )
-
-  // check if any promise was rejected and throw an error
-  const rejectedPromises = results.filter(
-    (result): result is PromiseRejectedResult => result.status === 'rejected'
-  )
-  if (rejectedPromises.length > 0) {
-    throw new Error(
-      `Failed to update derived permissions for element (ID: ${element.id}): ${rejectedPromises
-        .map((result) => result.reason?.message || 'Unknown error')
-        .join(', ')}`
-    )
-  }
-
-  // if the corresponding flag is set, update the access requests for the object
   if (updateAccessRequests) {
     await updateAccessRequestInstances(
-      { elementId: id, objectSoftDeleted: element.isDeleted },
+      { elementId: id, objectSoftDeleted: targetElement.isDeleted },
       prisma
     )
   }
 
-  // compute derived permissions for answer collections that are linked to the element (= PROPAGATION = MIN. REQUIRED)
-  if (element.answerCollectionId !== null) {
+  if (targetElement.answerCollectionId !== null) {
     await recomputeAnswerCollectionPermissionsObject(
-      { id: element.answerCollectionId, updateAccessRequests },
+      { id: targetElement.answerCollectionId, updateAccessRequests },
       prisma
     )
   }

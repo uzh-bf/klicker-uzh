@@ -6154,26 +6154,28 @@ const acceptedPermissionLevels: {
   ],
 }
 
-export type PermissionCheck =
-  | {
-      catalogCollectionId: string
-      minimumPermissionLevel: DB.PermissionLevel
-    }
-  | {
-      answerCollectionId: number
-      minimumPermissionLevel: DB.PermissionLevel
-    }
-  | { elementId: number; minimumPermissionLevel: DB.PermissionLevel }
-  | { liveQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
-  | { practiceQuizId: string; minimumPermissionLevel: DB.PermissionLevel }
-  | { microLearningId: string; minimumPermissionLevel: DB.PermissionLevel }
-  | { groupActivityId: string; minimumPermissionLevel: DB.PermissionLevel }
-  | { courseId: string; minimumPermissionLevel: DB.PermissionLevel }
+export type ObjectSelector =
+  | { catalogCollectionId: string }
+  | { answerCollectionId: number }
+  | { elementId: number }
+  | { courseId: string }
+  | { liveQuizId: string }
+  | { practiceQuizId: string }
+  | { microLearningId: string }
+  | { groupActivityId: string }
+
+export type PermissionCheck = ObjectSelector & {
+  minimumPermissionLevel: DB.PermissionLevel
+}
 
 export async function checkAccess(
   checks: PermissionCheck[],
   ctx: PrismaTransactionContextWithUser
 ) {
+  if (checks.length === 0) {
+    throw new Error('At least one permission check is required.')
+  }
+
   for (const check of checks) {
     if (
       'catalogCollectionId' in check &&
@@ -6471,17 +6473,7 @@ export async function checkCatalogAssignment(
   return assignment !== null
 }
 
-export type ObjectSelectorFunction = (
-  args: any
-) =>
-  | { catalogCollectionId: string }
-  | { answerCollectionId: number }
-  | { elementId: number }
-  | { courseId: string }
-  | { liveQuizId: string }
-  | { practiceQuizId: string }
-  | { microLearningId: string }
-  | { groupActivityId: string }
+export type ObjectSelectorFunction = (args: any) => ObjectSelector
 
 // higher-level interface function that returns a wrapped resolver
 // (simplified notation for calls in mutation.ts and query.ts)

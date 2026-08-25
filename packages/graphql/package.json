@@ -52,6 +52,7 @@
     "@istanbuljs/nyc-config-typescript": "~1.0.2",
     "@klicker-uzh/hatchet": "workspace:*",
     "@parcel/watcher": "~2.4.1",
+    "@prisma/adapter-pg": "~7.8.0",
     "@rollup/plugin-node-resolve": "~15.3.1",
     "@rollup/plugin-typescript": "~12.1.4",
     "@types/bcryptjs": "^2.4.6",
@@ -80,6 +81,8 @@
     "web-push": "~3.6.7"
   },
   "scripts": {
+    "benchmark:permission-propagation": "pnpm --filter @klicker-uzh/util build && cross-env PERMISSION_RECOMPUTE_BENCHMARK=1 tsx test/benchmarks/permissionPropagationBenchmark.ts",
+    "benchmark:permission-propagation:run": "pnpm --filter @klicker-uzh/util build && cross-env DRY_RUN=false PERMISSION_RECOMPUTE_BENCHMARK=1 tsx test/benchmarks/permissionPropagationBenchmark.ts",
     "build": "cross-env NODE_ENV=production run-s --npm-path pnpm generate build:ts",
     "build:instrument": "nyc instrument --compact=false src instrumented",
     "build:test": "run-s --npm-path pnpm build:instrument build",
@@ -92,6 +95,8 @@
     "dev:test": "pnpm run dev",
     "dev:ts": "cross-env NODE_ENV=development rollup -c --watch",
     "generate": "graphql-codegen --config codegen.ts",
+    "prototype:permission-propagation-contract": "cross-env PERMISSION_PROPAGATION_PROTOTYPE=1 tsx test/prototypes/permissionPropagationContract.ts",
+    "prototype:permission-propagation-contract:run": "cross-env DRY_RUN=false PERMISSION_PROPAGATION_PROTOTYPE=1 tsx test/prototypes/permissionPropagationContract.ts",
     "script": "../../util/_run_with_infisical.sh --env dev tsx --env-file=.env",
     "script:invitations:dev": "CONFIG=dev ../../util/_run_with_infisical.sh --env dev tsx src/scripts/importParticipantInvitations.ts",
     "script:invitations:prd": "CONFIG=prd ../../util/_run_with_infisical.sh --env prd tsx src/scripts/importParticipantInvitations.ts",
