@@ -665,6 +665,12 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   the normal push and PR body update as authorized but pending and omits an exact
   ahead/behind count. No new exact local head or CI result is claimed before
   push.
+- The accepted Ox simplifier finding is verified: the stable
+  `handleDisabledReasonChange` callback only forwarded its value to React's
+  stable `setDisabledAnnouncement` state setter. The wrapper is removed and the
+  setter is passed directly to `LiveQuizQuestionsStep`; `useCallback` remains for
+  `handleSubmit`. Focused frontend-manage type and Biome format checks plus
+  `git diff --check` passed. Final review and CI completion are not claimed.
 
 ### Historical execution evidence before final runtime proof
 

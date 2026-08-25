@@ -286,10 +286,6 @@ function LiveQuizWizard({
   )
   const [startLiveQuiz] = useMutation(StartLiveQuizDocument)
 
-  const handleDisabledReasonChange = useCallback((reason?: string) => {
-    setDisabledAnnouncement(reason)
-  }, [])
-
   const handleSubmit = useCallback(
     (values: LiveQuizFormValues) => {
       return submitLiveQuizForm({
@@ -499,7 +495,7 @@ function LiveQuizWizard({
           stepValidity={stepValidity}
           validationSchema={questionsValidationSchema}
           setStepValidity={setStepValidity}
-          onDisabledReasonChange={handleDisabledReasonChange}
+          onDisabledReasonChange={setDisabledAnnouncement}
           onSubmit={(newValues: LiveQuizFormValues) =>
             handleSubmit({ ...formData, ...newValues })
           }
