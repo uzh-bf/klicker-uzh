@@ -284,6 +284,7 @@ describe('account usage chat route', () => {
       code: 'CHAT_MODEL_UNAVAILABLE_BASE',
     })
     expect(mocks.ensureImagePreviewBase64).not.toHaveBeenCalled()
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.threadFindFirst).not.toHaveBeenCalled()
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
@@ -306,7 +307,10 @@ describe('account usage chat route', () => {
       error: 'Chat model usage is unavailable',
       code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
     })
-    expect(mocks.isChatAccountUsageAvailable).not.toHaveBeenCalled()
+    expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      usageClass: 'ADVANCED',
+    })
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
@@ -328,7 +332,10 @@ describe('account usage chat route', () => {
     await expect(response.json()).resolves.toMatchObject({
       code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
     })
-    expect(mocks.isChatAccountUsageAvailable).not.toHaveBeenCalled()
+    expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      usageClass: 'ADVANCED',
+    })
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 

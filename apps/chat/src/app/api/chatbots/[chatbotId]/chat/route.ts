@@ -760,6 +760,57 @@ export async function POST(
     return completedTurnResponse()
   }
 
+  const modelRegistry = getChatModelRegistry()
+  const allowedIds =
+    chatbot.allowedModelIds.length > 0
+      ? new Set(chatbot.allowedModelIds as string[])
+      : null
+
+  if (!chatbot.modelSelection) {
+    const automaticModelId = getAutomaticModelId(
+      chatbot.allowedModelIds as string[]
+    )
+    if (!automaticModelId) {
+      return NextResponse.json(
+        { error: 'No model is available for this chatbot' },
+        { status: 400 }
+      )
+    }
+    selectedModel = automaticModelId
+  }
+
+  let selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
+  if (!selectedModelConfig) {
+    return NextResponse.json(
+      { error: `Unknown model: ${selectedModel}` },
+      { status: 400 }
+    )
+  }
+
+  // Enforce per-chatbot model allow-list
+  if (allowedIds && !allowedIds.has(selectedModelConfig.id)) {
+    return NextResponse.json(
+      { error: `Model not available for this chatbot: ${selectedModel}` },
+      { status: 400 }
+    )
+  }
+
+  let accountUsageAvailable = false
+  try {
+    accountUsageAvailable = await isChatAccountUsageAvailable({
+      ownerId: chatbot.ownerId,
+      usageClass: selectedModelConfig.usageClass,
+    })
+  } catch (error) {
+    console.error('Failed to check account chat usage:', {
+      requestId,
+      error,
+    })
+  }
+  if (!accountUsageAvailable) {
+    return chatModelUnavailableResponse(selectedModelConfig.usageClass)
+  }
+
   const enabledMCPConfigurations = chatbot.mcpConfigurations ?? []
   const selectedMCPConfigurations = enabledMCPConfigurations.filter(
     (config) => config.chatMode === selectedMode
@@ -799,8 +850,8 @@ export async function POST(
     },
   }))
 
-  // MCP availability is checked before creating a thread or doing any model,
-  // credit, image-generation, or message-persistence work.
+  // MCP availability is checked before creating a thread or doing any image,
+  // credit, provider, or message-persistence work.
   let mcpTools: ToolSet
   try {
     mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
@@ -831,41 +882,6 @@ export async function POST(
     toolNames
   )
 
-  const modelRegistry = getChatModelRegistry()
-  const allowedIds =
-    chatbot.allowedModelIds.length > 0
-      ? new Set(chatbot.allowedModelIds as string[])
-      : null
-
-  if (!chatbot.modelSelection) {
-    const automaticModelId = getAutomaticModelId(
-      chatbot.allowedModelIds as string[]
-    )
-    if (!automaticModelId) {
-      return NextResponse.json(
-        { error: 'No model is available for this chatbot' },
-        { status: 400 }
-      )
-    }
-    selectedModel = automaticModelId
-  }
-
-  let selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
-  if (!selectedModelConfig) {
-    return NextResponse.json(
-      { error: `Unknown model: ${selectedModel}` },
-      { status: 400 }
-    )
-  }
-
-  // Enforce per-chatbot model allow-list
-  if (allowedIds && !allowedIds.has(selectedModelConfig.id)) {
-    return NextResponse.json(
-      { error: `Model not available for this chatbot: ${selectedModel}` },
-      { status: 400 }
-    )
-  }
-
   if (!selectedModelConfig.fallback) {
     const userCredits = await CreditsService.getUserCredits(
       participantId,
@@ -885,22 +901,6 @@ export async function POST(
         (modelConfig) => modelConfig.id === fallbackModelId
       )!
     }
-  }
-
-  let accountUsageAvailable = false
-  try {
-    accountUsageAvailable = await isChatAccountUsageAvailable({
-      ownerId: chatbot.ownerId,
-      usageClass: selectedModelConfig.usageClass,
-    })
-  } catch (error) {
-    console.error('Failed to check account chat usage:', {
-      requestId,
-      error,
-    })
-  }
-  if (!accountUsageAvailable) {
-    return chatModelUnavailableResponse(selectedModelConfig.usageClass)
   }
 
   // Create and validate the thread only after account authorization succeeds,

@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
   createThread: vi.fn(),
+  isChatAccountUsageAvailable: vi.fn(),
   isChatTurnKeyClaimed: vi.fn(),
 }))
 
@@ -42,7 +43,7 @@ vi.mock('@/src/services/accountUsage', () => ({
   CHAT_TURN_ALREADY_COMPLETED_CODE: 'CHAT_TURN_ALREADY_COMPLETED',
   ChatTurnConflictError: class ChatTurnConflictError extends Error {},
   finalizeChatTurn: vi.fn(),
-  isChatAccountUsageAvailable: vi.fn(),
+  isChatAccountUsageAvailable: mocks.isChatAccountUsageAvailable,
   isChatTurnKeyClaimed: mocks.isChatTurnKeyClaimed,
   roundChatUsageCredits: (value: number) => ({ toNumber: () => value }),
 }))
@@ -76,9 +77,13 @@ describe('required MCP chat preflight', () => {
       required: false,
       accepted: true,
     })
+    mocks.isChatAccountUsageAvailable.mockResolvedValue(true)
     mocks.isChatTurnKeyClaimed.mockResolvedValue(false)
     mocks.findUnique.mockResolvedValue({
       id: 'chatbot-1',
+      ownerId: 'owner-1',
+      allowedModelIds: ['gpt-4.1'],
+      modelSelection: true,
       systemPrompts: { tutor: { prompt: 'Use course material.' } },
       mcpConfigurations: [
         {
@@ -115,6 +120,10 @@ describe('required MCP chat preflight', () => {
       error: 'Required MCP tool unavailable',
       code: REQUIRED_MCP_UNAVAILABLE_CODE,
     })
+    expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      usageClass: 'BASE',
+    })
     expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
       [
         expect.objectContaining({
@@ -142,6 +151,9 @@ describe('required MCP chat preflight', () => {
   test('rejects a mode without its required MCP binding', async () => {
     mocks.findUnique.mockResolvedValueOnce({
       id: 'chatbot-1',
+      ownerId: 'owner-1',
+      allowedModelIds: ['gpt-4.1'],
+      modelSelection: true,
       systemPrompts: {
         tutor: { prompt: 'Use course material.' },
         explainer: { prompt: 'Explain course material.' },
