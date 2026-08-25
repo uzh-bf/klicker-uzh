@@ -85,14 +85,7 @@ export async function replaceControlledSearchValue(
   value: string
 ) {
   await expect(searchInput).toBeVisible()
-  await searchInput.press('ControlOrMeta+A')
-
-  if (value === '') {
-    await searchInput.press('Backspace')
-  } else {
-    await searchInput.pressSequentially(value)
-  }
-
+  await searchInput.fill(value)
   await expect(searchInput).toHaveValue(value)
 }
 
