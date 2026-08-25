@@ -2019,7 +2019,8 @@ export async function deleteGroupActivity(
             isDeleted: true,
             directPermissions: { deleteMany: {} }, // delete all direct permissions on the activity
             scheduledCompletionTaskId:
-              groupActivityForSoftDelete.status === DB.PublicationStatus.PUBLISHED
+              groupActivityForSoftDelete.status ===
+              DB.PublicationStatus.PUBLISHED
                 ? null
                 : undefined,
           },
