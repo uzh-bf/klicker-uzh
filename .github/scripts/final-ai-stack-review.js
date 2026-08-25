@@ -7,7 +7,9 @@ const {
   isTrustedPermission,
   normalizeTitle,
 } = require('./final-ai-review.js')
-const { resolveNativeStackMembership } = require('./native-stack.js')
+const {
+  resolveNativeStackMembership: resolveStackMembership,
+} = require('./native-stack.js')
 
 const STACK_REVIEW_COMMAND = '/final-review-stack'
 const STACK_REVIEW_CONTEXT = 'final-ai-stack-review'
@@ -73,14 +75,6 @@ async function getPermission(github, context, username) {
     if (error.status === 404) return ''
     throw error
   }
-}
-
-async function resolveStackMembership({ github, context, pullNumber }) {
-  return resolveNativeStackMembership({
-    github,
-    context,
-    pullNumber,
-  })
 }
 
 function stackPlan(membership, context) {
