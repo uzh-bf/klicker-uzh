@@ -138,7 +138,7 @@ done
 runtime_fingerprint="$(bash "$RUNTIME_SCRIPT" fingerprint)"
 bash "$RUNTIME_SCRIPT" start "$runtime_fingerprint" 0 -- true
 for app in "${NEXT_APPS[@]}"; do
-  assert_absent "$ROOT/apps/$app/.next/dev"
+  assert_exists "$ROOT/apps/$app/.next/dev/cache.bin"
   assert_exists "$ROOT/apps/$app/.next/production.bin"
 done
 
@@ -152,10 +152,13 @@ assert_absent "$ROOT/.devcontainer/.runtime/next-repair-request"
 
 write_file "$TEST_ROOT/outside-cache/marker" 'must survive'
 ln -s "$TEST_ROOT/outside-cache" "$ROOT/apps/chat/.next"
-if bash "$RUNTIME_SCRIPT" start "$runtime_fingerprint" 1 -- true >/dev/null 2>&1; then
+bash "$RUNTIME_SCRIPT" request-repair chat >/dev/null
+assert_equal "$(bash "$RUNTIME_SCRIPT" generation)" '2'
+if bash "$RUNTIME_SCRIPT" start "$runtime_fingerprint" 2 -- true >/dev/null 2>&1; then
   fail 'symlinked cache was accepted'
 fi
 assert_exists "$TEST_ROOT/outside-cache/marker"
+assert_exists "$ROOT/.devcontainer/.runtime/next-repair-request"
 
 if bash "$RUNTIME_SCRIPT" request-repair unsupported >/dev/null 2>&1; then
   fail 'unsupported repair target was accepted'
@@ -165,6 +168,7 @@ fi
 # full .next repair in one start, untouched apps keep their production output,
 # and repeated requests for the same app stay deduplicated.
 rm -f "$ROOT/apps/chat/.next"
+rm -f "$ROOT/.devcontainer/.runtime/next-repair-request"
 for app in "${NEXT_APPS[@]}"; do
   write_file "$ROOT/apps/$app/.next/dev/cache.bin" 'development cache'
   write_file "$ROOT/apps/$app/.next/production.bin" 'production cache'
@@ -173,11 +177,11 @@ done
 bash "$RUNTIME_SCRIPT" request-repair frontend-manage >/dev/null
 bash "$RUNTIME_SCRIPT" request-repair chat >/dev/null
 bash "$RUNTIME_SCRIPT" request-repair chat >/dev/null
-assert_equal "$(bash "$RUNTIME_SCRIPT" generation)" '4'
+assert_equal "$(bash "$RUNTIME_SCRIPT" generation)" '5'
 assert_equal \
   "$(LC_ALL=C sort "$ROOT/.devcontainer/.runtime/next-repair-request" | tr '\n' ' ')" \
   'chat frontend-manage '
-bash "$RUNTIME_SCRIPT" start "$runtime_fingerprint" 4 -- true
+bash "$RUNTIME_SCRIPT" start "$runtime_fingerprint" 5 -- true
 assert_absent "$ROOT/apps/chat/.next"
 assert_absent "$ROOT/apps/frontend-manage/.next"
 assert_exists "$ROOT/apps/auth/.next/production.bin"

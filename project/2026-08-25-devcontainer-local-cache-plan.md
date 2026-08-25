@@ -160,14 +160,17 @@ critical-path coupling; delegation would cost more than the bounded edits.
 
 ## Progress
 
-- Status: Slice 1 committed, reviewed, and corrected; Slice 2 is active.
+- Status: Slice 1 committed, reviewed, and corrected; Slice 2 focused
+  verification passed and its commit is in progress.
 - Completed: remote `v3` freshness readback, clean task worktree, planner pass,
   plan commit `04352a869`, shared pnpm-store commit `6bc9ff3fe`, mocked
   initializer success/idempotence/failure checks, shell syntax, ShellCheck on
   changed production scripts, and both resolved Compose overlays.
 - Focused evidence: `bash util/test-dev-runtime.sh` passed; both Compose models
   expose only `pnpm_store` as external and retain project-scoped
-  `node_modules_root` and `pgdata`.
+  `node_modules_root` and `pgdata`. The updated runtime test proves ordinary
+  starts retain all five `.next/dev` caches, explicit repair remains exact and
+  deduplicated, and symlinked repair targets fail without touching their data.
 - Runtime limitation: exact runtime verification is not yet available because
   devrouter reports `could not determine process identity for host route update lock`.
 - Slice 1 review: done through trusted generic-continuity specialists after the
@@ -176,8 +179,7 @@ critical-path coupling; delegation would cost more than the bounded edits.
   blocking correctness or isolation finding remained. Reports:
   `project/_local/reviews/2026-08-25-devcontainer-cache-slice-1-simplifier.md`
   and `project/_local/reviews/2026-08-25-devcontainer-cache-slice-1-review.md`.
-- Active slice: Slice 2 implementation.
-- Next: commit the Slice 1 review correction, then preserve healthy Next.js
-  development caches with focused repair tests.
+- Active slice: Slice 2 commit and specialist review.
+- Next: commit Slice 2, then run its simplifier and slice reviewer.
 - Required delivery: committed local branch.
-- Achieved delivery: reviewed Slice 1 commit; correction uncommitted.
+- Achieved delivery: reviewed and corrected Slice 1 commits.
