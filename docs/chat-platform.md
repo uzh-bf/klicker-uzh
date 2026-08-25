@@ -494,8 +494,10 @@ runtime policy `{ "required": true, "toolAlias": "<name>" }`. A strict config mu
 one matching raw tool. Klicker exposes that tool under the configured alias (for example, the
 course-specific video expert can become `IW_doc_query`) before prompt assembly and prompt-cache
 identity are built. Missing, inactive, unavailable, malformed, or colliding strict bindings return
-`503 REQUIRED_MCP_UNAVAILABLE` before a thread, model request, credit read, or message write. MCP
-configs without the reserved keys retain the existing optional/fail-open behavior.
+`503 REQUIRED_MCP_UNAVAILABLE` after any read-only effective-credit preview but before credit
+initialization, reset, decrement, or equivalent state mutation, thread creation, model or image
+work, or message write. MCP configs without the reserved keys retain the existing optional/fail-open
+behavior.
 
 - `resolveCitationSource` resolves `[n]` only for `1 <= n <= N`. Anything outside that range stays
   literal text in the answer — which is the intended failure mode, not a bug.

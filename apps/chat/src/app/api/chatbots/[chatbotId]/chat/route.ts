@@ -851,27 +851,22 @@ export async function POST(
   }))
 
   if (!selectedModelConfig.fallback) {
-    const userCredits = await CreditsService.getUserCredits(
+    const creditPreview = await CreditsService.previewUserCredits(
       participantId,
       chatbotId
     )
-    if (userCredits.current <= 0) {
-      const fallbackModelId = getParticipantFallbackModelId(
+    if (
+      creditPreview.current <= 0 &&
+      !getParticipantFallbackModelId(
         selectedModelConfig.usageClass,
         chatbot.allowedModelIds as string[]
       )
-      if (!fallbackModelId) {
-        return chatModelUnavailableResponse(selectedModelConfig.usageClass)
-      }
-
-      selectedModel = fallbackModelId
-      selectedModelConfig = modelRegistry.find(
-        (modelConfig) => modelConfig.id === fallbackModelId
-      )!
+    ) {
+      return chatModelUnavailableResponse(selectedModelConfig.usageClass)
     }
   }
 
-  // Resolve participant credits before performing external MCP discovery.
+  // Discover MCP tools only after read-only participant authorization.
   let mcpTools: ToolSet
   try {
     mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
@@ -901,6 +896,27 @@ export async function POST(
     selectedMode,
     toolNames
   )
+
+  if (!selectedModelConfig.fallback) {
+    const userCredits = await CreditsService.getUserCredits(
+      participantId,
+      chatbotId
+    )
+    if (userCredits.current <= 0) {
+      const fallbackModelId = getParticipantFallbackModelId(
+        selectedModelConfig.usageClass,
+        chatbot.allowedModelIds as string[]
+      )
+      if (!fallbackModelId) {
+        return chatModelUnavailableResponse(selectedModelConfig.usageClass)
+      }
+
+      selectedModel = fallbackModelId
+      selectedModelConfig = modelRegistry.find(
+        (modelConfig) => modelConfig.id === fallbackModelId
+      )!
+    }
+  }
 
   // Create and validate the thread only after account authorization succeeds,
   // but before any provider or message work starts.

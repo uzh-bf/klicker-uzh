@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   transaction: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
   createThread: vi.fn(),
+  previewUserCredits: vi.fn(),
   getUserCredits: vi.fn(),
   decrementCredits: vi.fn(),
   isChatTurnKeyClaimed: vi.fn(),
@@ -71,6 +72,7 @@ vi.mock('@/src/services/threads', () => ({
 
 vi.mock('@/src/services/credits', () => ({
   CreditsService: {
+    previewUserCredits: mocks.previewUserCredits,
     getUserCredits: mocks.getUserCredits,
     decrementCredits: mocks.decrementCredits,
   },
@@ -224,6 +226,7 @@ describe('account usage chat route', () => {
     mocks.roundChatUsageCredits.mockImplementation((value: number) => ({
       toNumber: () => Number(value.toFixed(6)),
     }))
+    mocks.previewUserCredits.mockResolvedValue({ current: 5, total: 5 })
     mocks.getUserCredits.mockResolvedValue({ current: 5, total: 5 })
     mocks.threadFindFirst.mockResolvedValue({ id: 'thread-1' })
     mocks.attachmentFindMany.mockResolvedValue([])
@@ -295,7 +298,7 @@ describe('account usage chat route', () => {
         allowedModelIds: ['gpt-5.6-luna', 'gpt-4.1-mini'],
       })
     )
-    mocks.getUserCredits.mockResolvedValueOnce({ current: 0, total: 5 })
+    mocks.previewUserCredits.mockResolvedValueOnce({ current: 0, total: 5 })
 
     const response = await POST(
       createRequest({ selectedModel: 'gpt-5.6-luna' }),
@@ -312,6 +315,7 @@ describe('account usage chat route', () => {
       usageClass: 'ADVANCED',
     })
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.getUserCredits).not.toHaveBeenCalled()
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
@@ -323,7 +327,7 @@ describe('account usage chat route', () => {
         allowedModelIds: ['auto', 'gpt-4.1-mini'],
       })
     )
-    mocks.getUserCredits.mockResolvedValueOnce({ current: 0, total: 5 })
+    mocks.previewUserCredits.mockResolvedValueOnce({ current: 0, total: 5 })
 
     const response = await POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
@@ -364,7 +368,7 @@ describe('account usage chat route', () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({ allowedModelIds: ['gpt-4.1'] })
     )
-    mocks.getUserCredits.mockResolvedValueOnce({ current: 0, total: 5 })
+    mocks.previewUserCredits.mockResolvedValueOnce({ current: 0, total: 5 })
 
     const response = await POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
@@ -378,6 +382,7 @@ describe('account usage chat route', () => {
   })
 
   test('finalizes a same-class fallback once and returns the rounded amount', async () => {
+    mocks.previewUserCredits.mockResolvedValueOnce({ current: 0, total: 5 })
     mocks.getUserCredits.mockResolvedValueOnce({ current: 0, total: 5 })
 
     const response = await POST(createRequest(), {

@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
   createThread: vi.fn(),
+  previewUserCredits: vi.fn(),
   getUserCredits: vi.fn(),
   isChatAccountUsageAvailable: vi.fn(),
   isChatTurnKeyClaimed: vi.fn(),
@@ -42,6 +43,7 @@ vi.mock('@/src/services/threads', () => ({
 
 vi.mock('@/src/services/credits', () => ({
   CreditsService: {
+    previewUserCredits: mocks.previewUserCredits,
     getUserCredits: mocks.getUserCredits,
   },
 }))
@@ -85,6 +87,7 @@ describe('required MCP chat preflight', () => {
       accepted: true,
     })
     mocks.isChatAccountUsageAvailable.mockResolvedValue(true)
+    mocks.previewUserCredits.mockResolvedValue({ current: 5, total: 5 })
     mocks.getUserCredits.mockResolvedValue({ current: 5, total: 5 })
     mocks.isChatTurnKeyClaimed.mockResolvedValue(false)
     mocks.findUnique.mockResolvedValue({
@@ -132,6 +135,10 @@ describe('required MCP chat preflight', () => {
       ownerId: 'owner-1',
       usageClass: 'BASE',
     })
+    expect(mocks.previewUserCredits).toHaveBeenCalledWith(
+      'participant-1',
+      'chatbot-1'
+    )
     expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
       [
         expect.objectContaining({
@@ -140,6 +147,7 @@ describe('required MCP chat preflight', () => {
       ],
       'chatbot-1'
     )
+    expect(mocks.getUserCredits).not.toHaveBeenCalled()
     expect(mocks.createThread).not.toHaveBeenCalled()
   })
 
