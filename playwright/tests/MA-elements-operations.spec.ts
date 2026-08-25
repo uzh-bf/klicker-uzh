@@ -296,7 +296,10 @@ async function openShareModalForElement(page: Page, elementName: string) {
   const searchInput = page.getByTestId('elements-search-input')
   await replaceControlledSearchValue(searchInput, elementName)
   await searchInput.press('Enter')
-  await page.getByTestId(`actions-element-${elementName}`).click()
+
+  const element = page.getByTestId(`element-item-${elementName}`).first()
+  await expect(element).toBeVisible()
+  await element.getByTestId(`actions-element-${elementName}`).click()
   await page.getByTestId(`share-element-${elementName}`).click()
 }
 
