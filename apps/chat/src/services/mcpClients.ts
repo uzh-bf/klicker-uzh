@@ -242,7 +242,7 @@ export async function createAuthHeaders(
 
         for (const [name, value] of Object.entries(parsed.headers)) {
           if (
-            !/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(name) ||
+            !HTTP_HEADER_NAME_PATTERN.test(name) ||
             name === '__proto__' ||
             name === 'constructor' ||
             name === 'prototype' ||
