@@ -112,6 +112,18 @@ runtime proof remain follow-up gates after merge and an authorized sync.
 - [x] Refreshed `origin/v3-ai` and created the isolated worktree at its exact
   head.
 - [x] Confirmed the stale model block and the leaderboard-opt-in coupling.
-- [ ] Implement the service, test, values, documentation, and skill changes.
-- [ ] Run targeted and full verification.
+- [x] Implemented the service, test, values, documentation, and skill changes.
+- [x] Verified the focused GraphQL spec: 8 tests passed, including the four new
+  authorization cases.
+- [x] Verified the focused GraphQL type check and schema-generation check.
+- [x] Rendered the staging Chat ConfigMap and confirmed `auto`,
+  `klickeruzh/azure/auto-router`, and Responses API support.
+- [x] Completed the repository-wide build: 26 of 26 tasks passed.
+- [x] Ran `check:all`: all 29 TypeScript check tasks passed, but the command
+  exited non-zero because the managed container lacks a C compiler for the
+  analytics package's first-time `pandas==2.2.2` build.
+- [x] Ran the wiki validator: it reported 19 existing bundle-wide frontmatter
+  errors and no new error in either changed guide.
+- [x] Rechecked target drift. `origin/v3-ai` advanced by one unrelated Manage
+  assistant-URL commit; no changed path overlaps this package.
 - [ ] Commit, push, and create the draft PR.
