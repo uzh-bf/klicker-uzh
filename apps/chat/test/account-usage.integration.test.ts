@@ -21,6 +21,7 @@ const TEST_KEY = `u2-account-${OWNER_ID.slice(0, 8)}`
 
 let prisma: PrismaClient
 let accountUsage: typeof import('../src/services/accountUsage')
+let threadService: typeof import('../src/services/threads')
 
 type UnclaimedTurnInput = Omit<FinalizeChatTurnInput, 'lifecycleAttemptId'>
 
@@ -65,6 +66,21 @@ async function claimedTurnInput(
 }
 
 async function resetUsage(usedCredits = 0, budgetCredits = 10) {
+  await prisma.chatThread.createMany({
+    data: [
+      {
+        id: THREAD_ONE_ID,
+        participantId: PARTICIPANT_ID,
+        chatbotId: CHATBOT_ID,
+      },
+      {
+        id: THREAD_TWO_ID,
+        participantId: PARTICIPANT_ID,
+        chatbotId: CHATBOT_ID,
+      },
+    ],
+    skipDuplicates: true,
+  })
   await prisma.chatMessage.deleteMany({
     where: { threadId: { in: [THREAD_ONE_ID, THREAD_TWO_ID] } },
   })
@@ -115,6 +131,7 @@ describePostgres('account usage PostgreSQL integration', () => {
   beforeAll(async () => {
     ;({ prisma } = await import('@klicker-uzh/prisma'))
     accountUsage = await import('../src/services/accountUsage')
+    threadService = await import('../src/services/threads')
     await prisma.$connect()
     await cleanup()
 
@@ -350,6 +367,48 @@ describePostgres('account usage PostgreSQL integration', () => {
       },
     })
     expect(usage.usedCredits.toString()).toBe('0.25')
+  })
+
+  test('atomically discards a transient claim during a concurrent retry', async () => {
+    const threadId = randomUUID()
+    const messageId = randomUUID()
+    await prisma.chatThread.create({
+      data: {
+        id: threadId,
+        participantId: PARTICIPANT_ID,
+        chatbotId: CHATBOT_ID,
+      },
+    })
+    const initialClaim = await accountUsage.claimChatTurn({
+      ownerId: OWNER_ID,
+      chatbotId: CHATBOT_ID,
+      threadId,
+      assistantMessageId: messageId,
+      parentId: null,
+    })
+    expect(initialClaim.outcome).toBe('claimed')
+
+    const [deletion, retry] = await Promise.allSettled([
+      threadService.ThreadService.deleteThread(
+        threadId,
+        PARTICIPANT_ID,
+        CHATBOT_ID
+      ),
+      accountUsage.claimChatTurn({
+        ownerId: OWNER_ID,
+        chatbotId: CHATBOT_ID,
+        threadId,
+        assistantMessageId: messageId,
+        parentId: null,
+      }),
+    ])
+
+    expect(deletion).toEqual({ status: 'fulfilled', value: true })
+    if (retry.status === 'fulfilled') {
+      expect(retry.value.outcome).not.toBe('claimed')
+    }
+    expect(await prisma.chatThread.count({ where: { id: threadId } })).toBe(0)
+    expect(await prisma.chatMessage.count({ where: { id: messageId } })).toBe(0)
   })
 
   test('rejects a late callback after a failed turn is reclaimed', async () => {

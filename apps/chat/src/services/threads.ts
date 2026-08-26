@@ -159,26 +159,14 @@ export class ThreadService {
     participantId: string,
     chatbotId: string
   ): Promise<boolean> {
-    // verify ownership
-    const existingThread = await this.getThreadById(
-      threadId,
-      participantId,
-      chatbotId
-    )
-
-    if (!existingThread) return false
-
-    // delete messages first
-    await prisma.chatMessage.deleteMany({
-      where: { threadId },
+    // One ownership-scoped parent deletion lets the database cascade messages
+    // atomically, so no retry can insert a new claim between child and parent
+    // cleanup.
+    const result = await prisma.chatThread.deleteMany({
+      where: { id: threadId, participantId, chatbotId },
     })
 
-    // then delete thread
-    await prisma.chatThread.delete({
-      where: { id: threadId },
-    })
-
-    return true
+    return result.count > 0
   } /**
    * Updates thread's updatedAt timestamp
    */

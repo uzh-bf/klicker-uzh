@@ -190,14 +190,23 @@ describe('required MCP chat preflight', () => {
   })
 
   test('fails the claim after transient thread cleanup fails', async () => {
-    mocks.deleteThread.mockResolvedValueOnce(false)
+    let finishDeletion: (deleted: boolean) => void = () => {}
+    mocks.deleteThread.mockReturnValueOnce(
+      new Promise<boolean>((resolve) => {
+        finishDeletion = resolve
+      })
+    )
 
-    const response = await POST(createRequest(), {
+    const responsePromise = POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
 
+    await vi.waitFor(() => expect(mocks.deleteThread).toHaveBeenCalledOnce())
+    expect(mocks.failChatTurn).not.toHaveBeenCalled()
+    finishDeletion(false)
+
+    const response = await responsePromise
     expect(response.status).toBe(503)
-    expect(mocks.deleteThread).toHaveBeenCalledOnce()
     expect(mocks.failChatTurn).toHaveBeenCalledWith({
       assistantMessageId: 'assistant-1',
       threadId: 'thread-1',

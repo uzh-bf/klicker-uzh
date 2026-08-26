@@ -515,8 +515,17 @@ contract retains its focused regression test.
   route verification passes 22 tests, the complete Chat suite passes 406 tests
   with 11 expected integration skips, all 11 enabled PostgreSQL lifecycle
   integration tests pass, all 25 repository checks pass, and the Chat
-  production build succeeds. The refreshed correction reviews remain in
-  progress.
+  production build succeeds. The refreshed lifecycle review found that the
+  shared thread service still deleted messages and their parent in two
+  statements, leaving a smaller claim-insertion gap inside cleanup. Thread
+  deletion is now one participant-and-chatbot-scoped parent statement and uses
+  the existing database cascade for atomic claim cleanup. A deferred route test
+  protects delete-before-fail ordering, and a PostgreSQL concurrency test
+  protects delete-versus-retry behavior. The focused route suite passes 22
+  tests, the complete Chat suite passes 406 tests with 12 expected integration
+  skips, all 12 enabled PostgreSQL lifecycle integration tests pass, all 25
+  repository checks pass, and the Chat production build succeeds. Refreshed
+  correction reviews remain in progress.
 - Current state: U2 is under final-review correction before stack-aware
   publication.
   Merge, deployment, live traffic or proof, closure, cleanup, and deletion
