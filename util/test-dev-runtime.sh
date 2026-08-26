@@ -67,6 +67,11 @@ write_file "$FAKE_BIN/mkcert" '#!/usr/bin/env bash
 [ "${1:-}" = "-CAROOT" ] || exit 1
 printf "%s\n" "$KLICKER_TEST_MKCERT_CAROOT"'
 write_file "$FAKE_BIN/docker" '#!/usr/bin/env bash
+if [ "$1 $2" = "volume inspect" ]; then
+  [ "$3" = "klicker-uzh-pnpm-store-v1" ] || exit 2
+  [ -f "$KLICKER_TEST_DOCKER_VOLUME_STATE" ] || exit 1
+  exit 0
+fi
 if [ "$1 $2" = "volume create" ]; then
   [ "$3" = "klicker-uzh-pnpm-store-v1" ] || exit 2
   [ "${KLICKER_TEST_DOCKER_CREATE_FAIL:-false}" != "true" ] || exit 9
