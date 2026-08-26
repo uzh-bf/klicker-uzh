@@ -87,7 +87,7 @@ export async function replaceControlledSearchValue(
   await expect(searchInput).toBeVisible()
   if ((await searchInput.inputValue()) !== '') {
     const resetIcon = searchInput.locator(
-      'xpath=following-sibling::*[@data-icon="xmark"]'
+      'xpath=following-sibling::*[@data-icon="x"]'
     )
     await expect(resetIcon).toBeVisible()
     await resetIcon.click()
