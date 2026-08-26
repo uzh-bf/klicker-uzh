@@ -1,3 +1,4 @@
+import { EventEmitter } from 'node:events'
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import {
   enhanceContext,
@@ -8,8 +9,9 @@ import {
 import { prisma as prismaBase } from '@klicker-uzh/prisma'
 // import * as Sentry from '@sentry/node'
 // import '@sentry/tracing'
-import { createInMemoryCache, type Cache } from '@envelop/response-cache'
+import { type Cache, createInMemoryCache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
+import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
 import {
   getKBGraphTerminalResult,
   hatchetClient,
@@ -18,12 +20,21 @@ import {
 import { useServer } from 'graphql-ws/lib/use/ws'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
-import { EventEmitter } from 'node:events'
 import * as WebSocket from 'ws'
 import prepareApp from './app.js'
 import { migrate } from './migration.js'
 
 const emitter = new EventEmitter()
+const featureFlags = new NodeFeatureFlagClient({
+  apiHost: process.env.GROWTHBOOK_API_HOST,
+  clientKey: process.env.GROWTHBOOK_CLIENT_KEY,
+  environment: process.env.GROWTHBOOK_ENV ?? process.env.NODE_ENV,
+  forcedOn: process.env.FEATURE_FLAGS_FORCED_ON,
+  refreshIntervalMs: process.env.GROWTHBOOK_REFRESH_INTERVAL_MS
+    ? Number(process.env.GROWTHBOOK_REFRESH_INTERVAL_MS)
+    : undefined,
+})
+process.once('exit', () => featureFlags.destroy())
 
 let prisma = prismaBase
 
@@ -110,7 +121,13 @@ const pubSub = createPubSub({ eventTarget })
 
 // ! Server and context setup
 // #region
-migrate(prisma).then(() => {
+migrate(prisma).then(async () => {
+  await featureFlags.initialize()
+  console.log(
+    '[feature-flags] Backend evaluator ready.',
+    featureFlags.getStatus()
+  )
+
   // initialize tasks to be able to call / schedule them inside service functions
   const tasks = prepareHatchetTasks({
     hatchet: hatchetClient,
@@ -147,6 +164,7 @@ migrate(prisma).then(() => {
     emitter,
     hatchet: hatchetClient,
     tasks,
+    featureFlags,
   })
 
   // Validate required environment variables at startup
@@ -173,6 +191,7 @@ migrate(prisma).then(() => {
           pubSub,
           emitter,
           tasks,
+          featureFlags,
         }),
         execute: (args: any) => args.rootValue.execute(args),
         subscribe: (args: any) => args.rootValue.subscribe(args),

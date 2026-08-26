@@ -220,6 +220,9 @@ importers:
       '@hatchet-dev/typescript-sdk':
         specifier: 1.9.4
         version: 1.9.4
+      '@klicker-uzh/feature-flags':
+        specifier: workspace:*
+        version: link:../../packages/feature-flags
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql
