@@ -426,6 +426,32 @@ test('accepts a trusted clean stack status without requiring a review body', asy
     cleanEvidence
   )
 
+  const cleanEvidenceText = state.checkRuns[0].output.text
+  const tamperedAliases = [
+    ...new Set([...cleanEvidence.reviewed_path_aliases, 'src/tampered.ts']),
+  ].sort(compareRepositoryPaths)
+  const tampered = {
+    ...cleanEvidence,
+    reviewed_path_aliases: tamperedAliases,
+    reviewed_path_aliases_digest: crypto
+      .createHash('sha256')
+      .update(JSON.stringify(tamperedAliases))
+      .digest('hex'),
+  }
+  state.checkRuns[0].output.text =
+    `<!-- final-ai-stack-clean-evidence/v1 ${encodeMetadata(tampered)} -->`
+  assert.ok(parseStackCleanEvidence(state.checkRuns[0].output.text))
+  assert.equal(
+    await getVerifiedStackCleanEvidence({
+      github,
+      context: stackContext,
+      headSha: plan.headSha,
+      evidenceDigest,
+    }),
+    null
+  )
+  state.checkRuns[0].output.text = cleanEvidenceText
+
   assert.equal(
     await hasCurrentSuccessfulStackReview({
       github,

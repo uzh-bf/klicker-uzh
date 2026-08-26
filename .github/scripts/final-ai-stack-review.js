@@ -119,17 +119,8 @@ function sha256(value) {
 function buildStackCleanReviewEvidenceDigest({ plan, membership }) {
   const paths = stackReviewPathsFromMembership(membership)
   if (!paths) throw new Error('Stack clean evidence paths are incomplete')
-  const layerIdentities = membership.members.map(({ number, pull }, index) => ({
-    base_ref: pull.base.ref,
-    base_repo: pull.base.repo?.full_name ?? '',
-    base_sha:
-      plan.baseAdvancePreserved && index === 0 ? plan.baseSha : pull.base.sha,
-    head_ref: pull.head.ref,
-    head_repo: pull.head.repo?.full_name ?? '',
-    head_sha: pull.head.sha,
-    pull_request: number,
-  }))
-  return buildFinalReviewEvidenceDigest({
+  const layerIdentities = canonicalStackLayerIdentities(plan, membership)
+  return buildStackCleanEvidenceDigest({
     kind: 'stack-clean/v2',
     base_sha: plan.baseSha,
     head_sha: plan.headSha,
@@ -151,6 +142,68 @@ function buildStackCleanReviewEvidenceDigest({ plan, membership }) {
     reviewed_path_aliases_digest: sha256(
       JSON.stringify(paths.reviewedPathAliases)
     ),
+  })
+}
+
+function buildStackCleanEvidenceDigest({
+  kind,
+  base_sha,
+  head_sha,
+  stack_id,
+  stack_order_digest,
+  stack_identity_digest,
+  member_numbers,
+  layer_identities,
+  mode,
+  root_head,
+  root_review_id,
+  policy_digest,
+  disposition_digest,
+  disposition_ids,
+  review_ranges,
+  reviewed_paths_digest,
+  reviewed_path_aliases_digest,
+}) {
+  return buildFinalReviewEvidenceDigest({
+    kind,
+    base_sha,
+    head_sha,
+    stack_id,
+    stack_order_digest,
+    stack_identity_digest,
+    member_numbers,
+    layer_identities,
+    mode,
+    root_head,
+    root_review_id,
+    policy_digest,
+    disposition_digest,
+    disposition_ids,
+    review_ranges,
+    reviewed_paths_digest,
+    reviewed_path_aliases_digest,
+  })
+}
+
+function buildStackCleanEvidenceDigestFromMetadata(metadata) {
+  return buildStackCleanEvidenceDigest({
+    kind: 'stack-clean/v2',
+    base_sha: metadata.base_sha,
+    head_sha: metadata.head_sha,
+    stack_id: metadata.stack_id,
+    stack_order_digest: metadata.stack_order_digest,
+    stack_identity_digest: metadata.stack_identity_digest,
+    member_numbers: metadata.member_numbers,
+    layer_identities: metadata.layer_identities,
+    mode: metadata.mode,
+    root_head: metadata.root_head,
+    root_review_id: metadata.root_review_id,
+    policy_digest: metadata.policy_digest,
+    disposition_digest: metadata.disposition_digest,
+    disposition_ids: metadata.disposition_ids,
+    review_ranges: metadata.review_ranges,
+    reviewed_paths_digest: metadata.reviewed_paths_digest,
+    reviewed_path_aliases_digest: metadata.reviewed_path_aliases_digest,
   })
 }
 
@@ -1535,6 +1588,8 @@ async function getVerifiedStackCleanEvidence({
   if (
     !metadata ||
     metadata.evidence_digest !== evidenceDigest ||
+    metadata.evidence_digest !==
+      buildStackCleanEvidenceDigestFromMetadata(metadata) ||
     metadata.head_sha !== headSha ||
     metadata.workflow_run_id !== workflowRunId ||
     metadata.workflow_url !== workflowRunUrl(context, workflowRunId) ||
