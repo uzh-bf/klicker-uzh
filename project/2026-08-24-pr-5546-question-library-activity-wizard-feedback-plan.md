@@ -69,9 +69,9 @@ uncrowned regardless of Catalyst entitlement.
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/ux-review-question-library`.
 - Branch: `rs/question-library-activity-wizard-feedback`.
 - Current integrated base and merge-base:
-  `2385ed7ffc05c7ef220f55a179f84b7fdfa20e8c` (the merged `origin/v3`
-  head). The branch fully integrates that base; exact ahead/behind counts are
-  intentionally omitted while local correction commits continue.
+  `61a7f8108477a58595505d97618d68f3eeb35aff` (the integrated `origin/v3`
+  base). The branch fully integrates that base; volatile ahead/behind counts
+  are intentionally omitted.
 - Historical/superseded evidence: old base
   `7ea45772be3b177978de52e3ede7c95e34cec0b1`; old plan commit
   `a1c9853312907c923127ce81664f06890dd35c6e`; obsolete S1 commit
@@ -445,9 +445,16 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   and non-destructive shutdown are complete through the local correction and
   review-disposition commits.
 - Freshness: `origin/v3` at
-  `2385ed7ffc05c7ef220f55a179f84b7fdfa20e8c` is fully integrated and is the
+  `61a7f8108477a58595505d97618d68f3eeb35aff` is fully integrated and is the
   current merge-base. Exact ahead/behind counts are not treated as durable
   Progress state while local correction commits continue.
+- Sol final-review disposition for reviewed pre-correction local head
+  `5ca2804370bc4cd6fa165d6158d611adb258c627`: both non-behavioral findings are
+  accepted. The plan records the integrated base and merge-base, and the
+  free-user activity-choice loop relies on its guidance helper instead of
+  repeating the enabled assertion. This review correction, its normal push,
+  and exact-head CI remain pending; merge, mark-ready, and deployment remain
+  withheld.
 - Independent Sol integrated final review of HEAD `b4c5e516d` found one
   actionable P3: the dynamically changing empty-block validation reason lacked
   a polite live region. All other package lenses were accepted, including W2

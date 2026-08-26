@@ -113,7 +113,6 @@ test.describe('Tests the availability of standard activity creation formats', ()
     await expectStandardActivityChoiceGuidance(page)
 
     for (const activity of standardActivityDescriptions) {
-      await expect(page.getByTestId(activity.button)).not.toBeDisabled()
       await page.getByTestId(activity.button).click()
       await expect(page.getByTestId(activity.firstStep)).toBeVisible()
       await page.getByTestId('cancel-activity-creation').click()
