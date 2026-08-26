@@ -16,6 +16,7 @@ import {
 const DEFAULT_TIMEOUT_MS = 2000
 const DEFAULT_REFRESH_INTERVAL_MS = 30_000
 const DEFAULT_MAX_STALE_MS = 120_000
+const MIN_REFRESH_INTERVAL_MS = 100
 
 function normalizeDuration(
   value: number | undefined,
@@ -71,11 +72,14 @@ export class NodeFeatureFlagClient<
     )
     this.fetcher = config.fetch ?? globalThis.fetch.bind(globalThis)
     this.timeoutMs = normalizeDuration(config.timeoutMs, DEFAULT_TIMEOUT_MS, 1)
-    this.refreshIntervalMs = normalizeDuration(
-      config.refreshIntervalMs,
-      DEFAULT_REFRESH_INTERVAL_MS,
-      0
-    )
+    this.refreshIntervalMs =
+      config.refreshIntervalMs === 0
+        ? 0
+        : normalizeDuration(
+            config.refreshIntervalMs,
+            DEFAULT_REFRESH_INTERVAL_MS,
+            MIN_REFRESH_INTERVAL_MS
+          )
     this.maxStaleMs = normalizeDuration(
       config.maxStaleMs,
       DEFAULT_MAX_STALE_MS,

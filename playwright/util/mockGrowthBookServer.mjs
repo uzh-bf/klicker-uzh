@@ -1,7 +1,11 @@
 import { createServer } from 'node:http'
 
 const host = '127.0.0.1'
-const port = Number(process.env.GROWTHBOOK_TEST_PORT ?? 4010)
+const rawPort = process.env.GROWTHBOOK_TEST_PORT ?? '4010'
+const port = Number(rawPort)
+if (!Number.isInteger(port) || port <= 0 || port > 65_535) {
+  throw new Error(`Invalid GROWTHBOOK_TEST_PORT: ${rawPort}`)
+}
 const clientKey = 'sdk-test'
 // Synthetic lecturer fixture from playwright/util/constants.ts.
 const enabledUserId = '76047345-3801-4628-ae7b-adbebcfe8821'
@@ -54,6 +58,11 @@ const server = createServer((request, response) => {
 
   response.writeHead(404)
   response.end()
+})
+
+server.on('error', (error) => {
+  console.error(`[growthbook-test] failed to start server: ${error.message}`)
+  process.exit(1)
 })
 
 server.listen(port, host, () => {

@@ -6,8 +6,8 @@ import {
 import { UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
-import AnalyticsLoadingView from '../analytics/AnalyticsLoadingView'
-import Layout from '../Layout'
+import AnalyticsLoadingView from '~/components/analytics/AnalyticsLoadingView'
+import Layout from '~/components/Layout'
 
 export default function LearningAnalyticsRouteGuard({
   children,

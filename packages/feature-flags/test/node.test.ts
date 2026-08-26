@@ -76,7 +76,7 @@ function createClient(
 
 describe('NodeFeatureFlagClient', () => {
   beforeEach(() => {
-    mockFetch = vi.fn().mockResolvedValue(featureResponse())
+    mockFetch = vi.fn().mockImplementation(() => featureResponse())
   })
 
   afterEach(() => {
@@ -213,17 +213,20 @@ describe('NodeFeatureFlagClient', () => {
     expect(client.getStatus().stale).toBe(true)
   })
 
-  it('refreshes periodically and stops its lifecycle when destroyed', async () => {
+  it('clamps unsafe refresh intervals and stops when destroyed', async () => {
     vi.useFakeTimers()
     mockFetch
       .mockResolvedValueOnce(featureResponse(true))
-      .mockResolvedValue(featureResponse(false))
-    const client = createClient({ refreshIntervalMs: 50, maxStaleMs: 500 })
+      .mockImplementation(() => featureResponse(false))
+    const client = createClient({ refreshIntervalMs: -1, maxStaleMs: 500 })
 
     expect(await client.initialize()).toBe(true)
     expect(client.isEnabled('default-on-flag', enabledAttributes)).toBe(true)
 
-    await vi.advanceTimersByTimeAsync(50)
+    await vi.advanceTimersByTimeAsync(99)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(1)
 
     expect(client.isEnabled('default-on-flag', enabledAttributes)).toBe(false)
     expect(mockFetch).toHaveBeenCalledTimes(2)

@@ -113,7 +113,8 @@ export function FeatureFlagProvider({
       value={
         !evaluationAvailable ||
         (attributesSettled &&
-          (!attributesAvailable || (attributesReady && initializationSettled)))
+          attributesReady &&
+          (!attributesAvailable || initializationSettled))
       }
     >
       <FeatureFlagEvaluationAvailableContext.Provider
