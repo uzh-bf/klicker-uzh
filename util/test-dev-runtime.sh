@@ -74,6 +74,10 @@ if [ "$1 $2" = "volume inspect" ]; then
 fi
 if [ "$1 $2" = "volume create" ]; then
   [ "$3" = "klicker-uzh-pnpm-store-v1" ] || exit 2
+  if [ "${KLICKER_TEST_DOCKER_CREATE_RACE:-false}" = "true" ]; then
+    touch "$KLICKER_TEST_DOCKER_VOLUME_STATE"
+    exit 9
+  fi
   [ "${KLICKER_TEST_DOCKER_CREATE_FAIL:-false}" != "true" ] || exit 9
   if [ ! -f "$KLICKER_TEST_DOCKER_VOLUME_STATE" ]; then
     touch "$KLICKER_TEST_DOCKER_VOLUME_STATE"
@@ -108,6 +112,12 @@ if KLICKER_TEST_DOCKER_CREATE_FAIL=true bash "$INIT_ROOT/initialize.sh" \
   >/dev/null 2>&1; then
   fail 'initializer ignored a Docker volume creation failure'
 fi
+rm -f "$DOCKER_VOLUME_STATE"
+if ! KLICKER_TEST_DOCKER_CREATE_RACE=true bash "$INIT_ROOT/initialize.sh" \
+  >/dev/null 2>&1; then
+  fail 'initializer did not tolerate a concurrent Docker volume creation'
+fi
+assert_exists "$DOCKER_VOLUME_STATE"
 
 base_fingerprint="$(bash "$RUNTIME_SCRIPT" fingerprint)"
 write_file "$ROOT/apps/chat/src/app/api/example/route.ts" 'export const GET = false'
