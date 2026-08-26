@@ -25,7 +25,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/|packages/|playwright/|\.github/workflows/test-playwright\.yml|\.github/actions/changed-paths/|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh)'
+          pattern: '^(apps/|packages/|playwright/|\.github/workflows/test-playwright\.yml|\.github/workflows/update-playwright-timings\.yml|\.github/actions/changed-paths/|\.github/scripts/get-shard-files\.js|\.github/scripts/update-playwright-timings\.py|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh)'
 
   build-and-compile:
     needs: filter
@@ -354,11 +354,20 @@ jobs:
           APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
           APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
-      - name: Upload Playwright artifacts
+      - name: Upload Playwright JUnit results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-artifacts-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
+          name: playwright-results-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
+          path: playwright/test-results/junit.xml
+          if-no-files-found: ignore
+          retention-days: 1
+
+      - name: Upload Playwright diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-diagnostics-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
           path: |
             playwright/playwright-report
             playwright/test-results
@@ -373,6 +382,18 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
+      - name: Record filter decision for downstream timing feedback
+        run: |
+          printf 'should_run=%s\n' "${{ needs.filter.outputs.should_run }}" > playwright-run-metadata.txt
+
+      - name: Upload run metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-run-metadata
+          path: playwright-run-metadata.txt
+          retention-days: 1
+
       - name: Check result
         run: |
           # A run cancelled by concurrency (duplicate push, quick re-push) must not
