@@ -37,7 +37,7 @@
 - Branch: `rs/ci-workflow-efficiency-cleanup` for the follow-up cutover.
 - Worktree: `trees/ci-workflow-efficiency`.
 - Target: current `origin/v3` at
-  `61a7f8108477a58595505d97618d68f3eeb35aff`, including merged [PR
+  `db75cd2e829259df8f064c4525354084410ccf7b`, including merged [PR
   #5446](https://github.com/uzh-bf/klicker-uzh/pull/5446)'s Playwright timing and
   eight-shard changes.
 - Pull request: [#5551](https://github.com/uzh-bf/klicker-uzh/pull/5551) was
@@ -205,8 +205,9 @@ Do not delete a workflow if any readback differs from the expected set.
 ## Progress
 
 - Status: branch is synced with current `origin/v3` through normal merge commit
-  `5abae129b`; [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) needs
-  fresh exact-head verification before it can be marked ready.
+  `5870b5227`; [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) needs
+  this refreshed head pushed and its exact-head checks before it can be marked
+  ready.
 - Completed: plan commit and post-commit freshness check; replacement workflow
   implementation; Actions audit, validation, and discovery; exact Node 24
   dependency builds; all four unit suites; Prettier and diff checks; and the
@@ -223,12 +224,12 @@ Do not delete a workflow if any readback differs from the expected set.
   its exact-head Playwright run `32919404126` passed the filter, build, all
   eight shards, and `test-playwright-status`. The branch preserves that
   baseline and the subsequent `v3` release commits through merge commit
-  `5abae129b`. Current exact synced-head local verification passes the full
+  `5870b5227`. Current exact synced-head local verification passes the full
   monorepo build (23/23 tasks) and `check:all` (7/7 orchestration tasks,
   25/25 checks) under the pinned Node 24 and pnpm 11.5 toolchain.
-- Remaining: update [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553)
-  with the synced-base evidence, run fresh exact-head hosted checks, and mark
-  it ready if all required contexts pass. Merge remains withheld.
+- Remaining: push the refreshed [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553)
+  head, update its synced-base evidence, run fresh exact-head hosted checks, and
+  mark it ready if all required contexts pass. Merge remains withheld.
 - Follow-up verification: the safe Actions audit, syntax validation, and job
   discovery pass with only `check`, `check-gitleaks`, and `test-unit` present for
   the consolidated scope. Prettier passes under the repository-pinned Node 24
