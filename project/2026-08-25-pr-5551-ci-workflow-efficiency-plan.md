@@ -249,9 +249,10 @@ Do not delete a workflow if any readback differs from the expected set.
   package eight times. The corrective hosted run at the pre-merge head
   `96ec9e41d` passed all eight shards and `test-playwright-status`; it is
   historical evidence and must be repeated for the final merged head.
-- Remaining: push the current `v3`-synchronized head, record the final review,
-  refresh the PR description, and keep the PR ready with all required contexts
-  passing on that exact head. Merge remains withheld.
+- Remaining: finish the exact-head hosted checks for the published head
+  `7e02a43c1`, record the final review, and refresh the PR description. [PR
+  #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) is already ready for
+  review; merge remains withheld.
 - Follow-up verification: the safe Actions audit, syntax validation, and job
   discovery pass with only `check`, `check-gitleaks`, and `test-unit` present for
   the consolidated scope. Prettier passes under the repository-pinned Node 24
@@ -278,9 +279,9 @@ Do not delete a workflow if any readback differs from the expected set.
 
 ## Next Steps
 
-- Push the exact `v3`-synchronized head, finish its exact-head checks, and
-  record the final reviewer result.
-- Refresh the PR description against `origin/v3` and mark [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553)
-  ready once the final hosted checks and review state remain green.
+- Finish the exact-head checks for the published head, record the final review,
+  and refresh the PR description against `origin/v3`.
+- Keep [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) ready once the
+  final hosted checks and review state remain green.
 - Keep the deferred image-workflow optimizations as separate packages with
   their own hosted proof and contract review.
