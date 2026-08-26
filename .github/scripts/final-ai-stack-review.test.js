@@ -856,6 +856,33 @@ test('rejects a successful finish after lower-layer identity drift', async () =>
     context: context(),
     pullNumber: 14,
   })
+  const initialPlan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership,
+  })
+  await finalizeStackReview({
+    github,
+    context: context(),
+    prNumber: 14,
+    baseSha: membership.members[0].pull.base.sha,
+    headSha: membership.top.head.sha,
+    stackId: membership.id,
+    stackOrderDigest: membership.orderDigest,
+    stackIdentityDigest: membership.identityDigest,
+    memberNumbers: membership.numbers,
+    mode: initialPlan.mode,
+    rootHead: initialPlan.rootHead,
+    rootReviewId: initialPlan.rootReviewId,
+    policyDigest: initialPlan.policyDigest,
+    dispositionDigest: initialPlan.dispositionDigest,
+    codeOutcome: 'success',
+    topologyOutcome: 'success',
+    cleanupOutcome: 'success',
+    publishOutcome: 'success',
+  })
+  assert.equal(state.createdStatuses.at(-1).state, 'success')
+
   pulls[13].head.sha = 'a'.repeat(40)
   pulls[14].base.sha = 'a'.repeat(40)
   responses.set('d'.repeat(40), 'a'.repeat(40))
@@ -870,6 +897,11 @@ test('rejects a successful finish after lower-layer identity drift', async () =>
     stackOrderDigest: membership.orderDigest,
     stackIdentityDigest: membership.identityDigest,
     memberNumbers: membership.numbers,
+    mode: initialPlan.mode,
+    rootHead: initialPlan.rootHead,
+    rootReviewId: initialPlan.rootReviewId,
+    policyDigest: initialPlan.policyDigest,
+    dispositionDigest: initialPlan.dispositionDigest,
     codeOutcome: 'success',
     topologyOutcome: 'success',
     cleanupOutcome: 'success',
