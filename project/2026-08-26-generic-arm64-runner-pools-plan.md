@@ -61,7 +61,7 @@
 - `rs-sliced-development-workflow`: plan, slices, commits, and final review.
 - `rs-model-routing`: planner and review routing.
 - `klicker-playwright-e2e`: Playwright CI invariants and artifact behavior.
-- `klicker-wiki-maintenance`: same-change documentation and wiki log.
+- `klicker-wiki-maintenance`: same-change documentation; this repository intentionally has no wiki log.
 - `rs-local-runtime-lifecycle`: no runtime is needed; record that no DevPod or devcontainer was started.
 
 ## Planning review
@@ -80,7 +80,7 @@
 | Eight shard artifacts retain names | Current Playwright uploads | Preserve matrix and artifact expressions in both paths | Reusable shards |
 | Required status remains stable | `test-playwright-status` | Preserve job name and aggregate both possible shard results | Public PR routing |
 | Pools cannot be mixed | Fresh-host provisioning validation | Validate exact profile-specific names, group, and labels | Generic provisioning |
-| Documentation matches operations | Existing CI wiki and Playwright skill | Update both plus one wiki log | Operations documentation |
+| Documentation matches operations | Existing CI wiki and Playwright skill | Update both in the same change set | Operations documentation |
 
 ## Delegation map
 
@@ -112,8 +112,8 @@
 ## Progress
 
 - Status: plan approved through the user's explicit 3-public/2-private ruling.
-- Active slice: generic, disjoint provisioning profiles.
-- Completed: fresh worktree, current `v3` baseline, documentation research, and planner review.
-- Remaining: three implementation slices, focused verification, local commits, and integrated final review.
+- Active slice: operations documentation.
+- Completed: fresh worktree, current `v3` baseline, documentation research, planner review, generic provisioning commit `c454a8195`, and public PR Playwright routing commit `8dec6a4cf`.
+- Remaining: documentation commit, integrated verification, and final review.
 - Delivery layer: local committed branch; publication remains withheld.
 - Runtime: none started.

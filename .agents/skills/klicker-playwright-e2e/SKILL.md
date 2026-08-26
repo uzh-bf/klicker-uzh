@@ -155,6 +155,7 @@ Cleanup dialogs:
 ## CI Notes
 
 - For Chromium-only CI, run with `--project=chromium`.
+- The public ARM64 pool is an opt-in path for same-repository, non-draft, non-bot PRs only. Keep `filter`, `build-and-compile`, and `test-playwright-status` GitHub-hosted; keep fork PRs and pushes on the hosted shard job. The called workflow must repeat the event, repository-visibility, head-repository, bot, draft, and rollout checks before requesting the `public-pr-arm64` group. Preserve all eight shard artifact names when changing either path.
 - To avoid browser install hangs, prefer the Playwright Docker image matching the lockfile-resolved Playwright version, such as `mcr.microsoft.com/playwright:v<version>-noble`, and remove the separate browser install step.
 - In GitHub job containers, service dependencies are reached by service hostnames, not localhost: `postgres`, `redis_exec`, `redis_cache`, `redis_assessment_exec`, and `hatchet`.
 - App URLs can still be `127.0.0.1:<port>` when the apps run in the same job container as Playwright.
