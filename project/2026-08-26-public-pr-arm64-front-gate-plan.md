@@ -121,8 +121,8 @@ changes, merge, or post-merge execution.
 - [x] Fresh remote state and isolated worktree established.
 - [x] Planner reviewed the full-path design.
 - [x] S0 plan recorded.
-- [ ] S1 workflow routing implemented and verified.
-- [ ] S2 documentation aligned and verified.
+- [x] S1 workflow routing implemented and statically verified.
+- [x] S2 documentation aligned and verified.
 - [ ] Slice and final reviews completed.
 - [ ] Branch pushed and draft PR opened or updated.
 - [ ] S3 post-merge canary authorized and executed.
