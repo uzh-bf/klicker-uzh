@@ -138,6 +138,9 @@ jobs:
             packages/util/dist
           retention-days: 1
 
+  # The hosted and public-PR predicates below are intentional complements.
+  # Only the exact lowercase value "true" enables the self-hosted path; every
+  # other value fails closed to GitHub-hosted runners.
   test-playwright-hosted:
     needs: [filter, build-and-compile]
     if: >-
@@ -451,6 +454,15 @@ jobs:
           fi
           if [ "$hosted_result" = "skipped" ] && [ "$public_pr_result" = "success" ]; then
             exit 0
+          fi
+          if [ "$hosted_result" = "skipped" ] && [ "$public_pr_result" = "skipped" ]; then
+            echo "Routing error: both Playwright execution paths were skipped."
+            echo "Check that the hosted and public-PR predicates remain complementary."
+          elif [ "$hosted_result" = "success" ] && [ "$public_pr_result" = "success" ]; then
+            echo "Routing error: both Playwright execution paths ran."
+            echo "Check that the hosted and public-PR predicates remain mutually exclusive."
+          else
+            echo "Playwright execution failed or produced an unexpected result."
           fi
           echo "Expected exactly one successful Playwright path."
           echo "Hosted result: $hosted_result"

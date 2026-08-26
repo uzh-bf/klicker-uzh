@@ -119,11 +119,11 @@
 
 ## Progress
 
-- Status: draft PR published; repository-restricted runner-group bootstrap relaxation implemented and verified.
-- Active slice: none.
-- Completed: fresh worktree, current `v3` baseline, documentation research, planner review, generic provisioning commit `3ad4b98d2`, public PR Playwright routing commit `046b56e6b`, documentation commit `bd70de85e`, isolation corrections commit `c7d8ac3df`, integrated local verification, the final review correction pass, reset-script publication, and the operator-requested workflow-allowlist relaxation.
+- Status: all five organization runners are online; PR finalization corrections are being verified.
+- Active slice: review-feedback corrections and exact-head final review.
+- Completed: fresh worktree, current `v3` baseline, documentation research, planner review, generic provisioning commit `3ad4b98d2`, public PR Playwright routing commit `046b56e6b`, documentation commit `bd70de85e`, isolation corrections commit `c7d8ac3df`, integrated local verification, the earlier final review correction pass, reset-script publication, the operator-requested workflow-allowlist relaxation, in-place reset of all five hosts, and successful organization registration of `public-pr-arm64-01` through `-03` plus `trusted-arm64-01` and `-02`.
 - Slice review: `DONE_WITH_CONCERNS` via the trusted generic-continuity reviewer after the configured external route exhausted its provider credit. No broader access control was removed; live runner-group readback and canary execution remain required.
-- Final review: the earlier integrated result remains valid outside the deliberately changed runner-group workflow policy. Live GitHub scheduling and container behavior remain unproved until the merged workflow is canaried.
-- Remaining: operator reprovisioning, runner-group readback, repository-variable changes, live canary, and token revocation.
+- Final review: pending on the final review-feedback correction commit. Live GitHub scheduling and container behavior remain unproved until the merged workflow is canaried.
+- Remaining: final review, PR ready transition, token revocation confirmation, post-merge canary variable, live Playwright proof, and optional workflow allowlisting.
 - Delivery layer: draft PR #5576; merge and live actions remain withheld.
 - Runtime: none started.

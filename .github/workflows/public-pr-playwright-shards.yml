@@ -72,7 +72,7 @@ jobs:
         image: postgres:15
         env:
           POSTGRES_USER: klicker-prod
-          POSTGRES_PASSWORD: klicker
+          POSTGRES_PASSWORD: klicker #ggignore: fixed local test-service credential
           POSTGRES_DB: klicker-prod
         options: >-
           --health-cmd "pg_isready -U klicker-prod -d klicker-prod"

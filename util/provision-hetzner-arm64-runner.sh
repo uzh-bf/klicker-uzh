@@ -872,18 +872,19 @@ write_managed_state() {
 
 install_runner_archive() {
   local archive_path="${TEMP_DIR}/${RUNNER_ARCHIVE}"
+  local expected_path installed_path package_dir relative_path
   local runner_owner=''
 
   if [[ -x "$RUNNER_DIR/run.sh" ]]; then
     runner_owner=$(stat -c '%U' "$RUNNER_DIR/run.sh")
   fi
 
-  if [[ -z "$runner_owner" || "$runner_owner" == 'root' ]]; then
-    CURRENT_STAGE='verified GitHub runner download'
-    curl --disable --fail --location --proto '=https' --tlsv1.2 --retry 3 \
-      --output "$archive_path" "$RUNNER_ARCHIVE_URL"
-    printf '%s  %s\n' "$RUNNER_ARCHIVE_SHA256" "$archive_path" | sha256sum --check --status
+  CURRENT_STAGE='verified GitHub runner download'
+  curl --disable --fail --location --proto '=https' --tlsv1.2 --retry 3 \
+    --output "$archive_path" "$RUNNER_ARCHIVE_URL"
+  printf '%s  %s\n' "$RUNNER_ARCHIVE_SHA256" "$archive_path" | sha256sum --check --status
 
+  if [[ -z "$runner_owner" || "$runner_owner" == 'root' ]]; then
     tar --extract --gzip --no-same-owner --no-overwrite-dir \
       --file "$archive_path" --directory "$RUNNER_DIR"
     chmod 0700 "$RUNNER_DIR"
@@ -892,8 +893,32 @@ install_runner_archive() {
     "$RUNNER_DIR/bin/installdependencies.sh"
     chown -R "$RUNNER_USER:$RUNNER_USER" "$RUNNER_DIR"
   elif [[ "$runner_owner" == "$RUNNER_USER" ]]; then
-    [[ -x "$RUNNER_DIR/config.sh" ]] ||
-      die 'runner installation is incomplete; refusing an automatic replacement'
+    CURRENT_STAGE='installed GitHub runner integrity validation'
+    package_dir="${TEMP_DIR}/runner-package"
+    install -d -m 0700 -o root -g root "$package_dir"
+    tar --extract --gzip --no-same-owner --no-overwrite-dir \
+      --file "$archive_path" --directory "$package_dir"
+
+    while IFS= read -r -d '' expected_path; do
+      relative_path=${expected_path#"${package_dir}/"}
+      installed_path="${RUNNER_DIR}/${relative_path}"
+      if [[ -d "$expected_path" && ! -L "$expected_path" ]]; then
+        [[ -d "$installed_path" && ! -L "$installed_path" ]] ||
+          die "installed runner package path is missing or invalid: ${relative_path}"
+      elif [[ -f "$expected_path" && ! -L "$expected_path" ]]; then
+        [[ -f "$installed_path" && ! -L "$installed_path" ]] ||
+          die "installed runner package file is missing or invalid: ${relative_path}"
+        cmp --silent "$expected_path" "$installed_path" ||
+          die "installed runner package file differs from the pinned archive: ${relative_path}"
+      elif [[ -L "$expected_path" ]]; then
+        [[ -L "$installed_path" ]] ||
+          die "installed runner package link is missing or invalid: ${relative_path}"
+        [[ "$(readlink -- "$installed_path")" == "$(readlink -- "$expected_path")" ]] ||
+          die "installed runner package link differs from the pinned archive: ${relative_path}"
+      else
+        die "pinned runner archive contains an unsupported path type: ${relative_path}"
+      fi
+    done < <(find "$package_dir" -mindepth 1 -print0)
   else
     die 'runner installation has unexpected ownership'
   fi
@@ -984,11 +1009,10 @@ register_and_start_runner() {
         set -Eeuo pipefail
         IFS= read -r registration_token
         cd "$1"
-        ./config.sh \
+        ACTIONS_RUNNER_INPUT_TOKEN="$registration_token" ./config.sh \
           --unattended \
           --no-default-labels \
           --url "$2" \
-          --token "$registration_token" \
           --name "$3" \
           --labels "$4" \
           --work "$5" \
