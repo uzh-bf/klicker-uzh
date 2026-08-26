@@ -55,6 +55,28 @@ export class ThreadService {
   }
 
   /**
+   * Finds the participant-owned thread for a failed assistant attempt so a
+   * retry without a thread ID can reclaim the original lifecycle key.
+   */
+  static async findFailedTurnThreadId(
+    participantId: string,
+    chatbotId: string,
+    assistantMessageId: string
+  ): Promise<string | null> {
+    const message = await prisma.chatMessage.findFirst({
+      where: {
+        id: assistantMessageId,
+        role: 'assistant',
+        lifecycleStatus: 'FAILED',
+        thread: { participantId, chatbotId },
+      },
+      select: { threadId: true },
+    })
+
+    return message?.threadId ?? null
+  }
+
+  /**
    * Retrieves all threads for a specific participant and chatbot ordered by most recently updated
    */
   static async getAllThreads(
@@ -71,6 +93,7 @@ export class ThreadService {
       // thread with the mode it was last used in (D6).
       include: {
         messages: {
+          where: { lifecycleStatus: 'COMPLETED' },
           orderBy: { createdAt: 'desc' },
           take: 1,
           select: { chatMode: true },
@@ -136,26 +159,14 @@ export class ThreadService {
     participantId: string,
     chatbotId: string
   ): Promise<boolean> {
-    // verify ownership
-    const existingThread = await this.getThreadById(
-      threadId,
-      participantId,
-      chatbotId
-    )
-
-    if (!existingThread) return false
-
-    // delete messages first
-    await prisma.chatMessage.deleteMany({
-      where: { threadId },
+    // One ownership-scoped parent deletion lets the database cascade messages
+    // atomically, so no retry can insert a new claim between child and parent
+    // cleanup.
+    const result = await prisma.chatThread.deleteMany({
+      where: { id: threadId, participantId, chatbotId },
     })
 
-    // then delete thread
-    await prisma.chatThread.delete({
-      where: { id: threadId },
-    })
-
-    return true
+    return result.count > 0
   } /**
    * Updates thread's updatedAt timestamp
    */

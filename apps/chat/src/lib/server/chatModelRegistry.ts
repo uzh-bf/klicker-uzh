@@ -251,26 +251,25 @@ export function getAllowedReasoningEffortsForModel(
   return intersection.length > 0 ? intersection : supportedEfforts
 }
 
+function filterRegistryByAllowList(
+  allowedModelIds?: readonly string[]
+): ChatModelConfig[] {
+  const registry = getChatModelRegistry()
+  if (!allowedModelIds || allowedModelIds.length === 0) return registry
+
+  const allowed = new Set(allowedModelIds)
+  return registry.filter((model) => allowed.has(model.id))
+}
+
 /**
- * Filters the global model registry by a chatbot's allow-list and credit availability.
+ * Filters the global model registry by a chatbot's allow-list.
  * Empty allowedModelIds means all models are available (backward-compatible default).
  */
-export function getModelsForChatbot(
-  chatbot: {
-    allowedModelIds: string[]
-    allowedReasoningEffortsByModel?: unknown
-  },
-  credits: { current: number }
-): ChatModelConfig[] {
-  let models = getChatModelRegistry()
-  if (chatbot.allowedModelIds.length > 0) {
-    const allowed = new Set(chatbot.allowedModelIds)
-    models = models.filter((m) => allowed.has(m.id) || m.fallback)
-  }
-  if (credits.current <= 0) {
-    models = models.filter((m) => m.fallback)
-  }
-  return models.map((model) => ({
+export function getModelsForChatbot(chatbot: {
+  allowedModelIds: string[]
+  allowedReasoningEffortsByModel?: unknown
+}): ChatModelConfig[] {
+  return filterRegistryByAllowList(chatbot.allowedModelIds).map((model) => ({
     ...model,
     supportedReasoningEfforts: getAllowedReasoningEffortsForModel(
       model,
@@ -279,25 +278,13 @@ export function getModelsForChatbot(
   }))
 }
 
-export function getAutomaticModelId(
-  credits: { current: number },
-  allowedModelIds?: string[]
-): string {
-  let registry = getChatModelRegistry()
-
-  if (allowedModelIds && allowedModelIds.length > 0) {
-    const allowed = new Set(allowedModelIds)
-    const filtered = registry.filter((m) => allowed.has(m.id) || m.fallback)
-    if (filtered.length > 0) {
-      registry = filtered
-    }
-  }
+export function getAutomaticModelId(allowedModelIds?: string[]): string | null {
+  const registry = filterRegistryByAllowList(allowedModelIds)
+  if (registry.length === 0) return null
 
   const configuredPrimary = process.env.CHAT_PRIMARY_MODEL_ID
-  const configuredFallback = process.env.CHAT_FALLBACK_MODEL_ID
 
   const defaultPrimary = registry.find((model) => model.fallback === false)
-  const defaultFallback = registry.find((model) => model.fallback === true)
 
   const primary =
     (configuredPrimary &&
@@ -311,26 +298,28 @@ export function getAutomaticModelId(
     )
   }
 
-  const fallbackCandidate = configuredFallback
-    ? registry.find((model) => model.id === configuredFallback)
+  return primary.id
+}
+
+export function getParticipantFallbackModelId(
+  usageClass: ChatModelConfig['usageClass'],
+  allowedModelIds?: string[]
+): string | null {
+  const candidates = filterRegistryByAllowList(allowedModelIds).filter(
+    (model) => model.fallback && model.usageClass === usageClass
+  )
+  if (candidates.length === 0) return null
+
+  const configuredFallback = process.env.CHAT_FALLBACK_MODEL_ID
+  const configuredCandidate = configuredFallback
+    ? candidates.find((model) => model.id === configuredFallback)
     : undefined
 
-  const fallback =
-    (fallbackCandidate?.fallback ? fallbackCandidate : null) ||
-    defaultFallback ||
-    primary
-
-  if (configuredFallback && fallback.id !== configuredFallback) {
-    if (fallbackCandidate) {
-      console.warn(
-        `[chat] CHAT_FALLBACK_MODEL_ID="${configuredFallback}" is not marked as fallback; using "${fallback.id}".`
-      )
-    } else {
-      console.warn(
-        `[chat] CHAT_FALLBACK_MODEL_ID="${configuredFallback}" is not in the registry; using "${fallback.id}".`
-      )
-    }
+  if (configuredFallback && !configuredCandidate) {
+    console.warn(
+      `[chat] CHAT_FALLBACK_MODEL_ID="${configuredFallback}" is not an allowed ${usageClass} fallback; using "${candidates[0].id}".`
+    )
   }
 
-  return credits.current > 0 ? primary.id : fallback.id
+  return configuredCandidate?.id ?? candidates[0].id
 }

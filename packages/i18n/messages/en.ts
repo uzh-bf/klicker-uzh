@@ -30,7 +30,7 @@ export default {
       usingPrimaryModel:
         'The standard model is used while credits are available.',
       usingFallbackModel:
-        'No credits remain, so new messages use the smaller model.',
+        'No credits remain. Some models may no longer be available.',
       reasoningEffortLabel: 'Reasoning Effort',
       selectReasoningEffort: 'Select reasoning effort',
       reasoningEffortHint:
@@ -51,9 +51,9 @@ export default {
       resetAt: 'Refills on {date}.',
       resetNone: 'These credits do not refill automatically.',
       exhausted:
-        'You have used up all your credits. However, you can still use the smaller model.',
+        'Your credits are used up. Some models may no longer be available.',
       fallbackNotice:
-        'Your credits are used up. New messages use the smaller model.',
+        'Your credits are used up. Some models may no longer be available.',
     },
     sidebar: {
       newChat: 'New Chat',

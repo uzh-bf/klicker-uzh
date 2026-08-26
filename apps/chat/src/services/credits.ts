@@ -116,6 +116,64 @@ export class CreditsService {
   }
 
   /**
+   * Reads effective credits without initializing or resetting participant state
+   * so callers can authorize external work without a credit side effect.
+   */
+  static async previewUserCredits(
+    participantId: string,
+    chatbotId: string
+  ): Promise<UserCredits> {
+    const credits = await prisma.chatUsageCredits.findUnique({
+      where: {
+        participantId_chatbotId: {
+          participantId,
+          chatbotId,
+        },
+      },
+    })
+
+    const chatbot = await prisma.chatbot.findUnique({
+      where: { id: chatbotId },
+      select: {
+        creditInitialCredits: true,
+        creditResetPeriod: true,
+        creditResetAmount: true,
+        creditMaxCredits: true,
+      },
+    })
+
+    if (!credits) {
+      return {
+        current: chatbot?.creditInitialCredits ?? 1,
+        total: chatbot?.creditMaxCredits ?? 1,
+      }
+    }
+
+    if (!chatbot || chatbot.creditResetPeriod === CreditResetPeriod.NONE) {
+      return {
+        current: credits.current.toNumber(),
+        total: credits.total.toNumber(),
+      }
+    }
+
+    const periodStartedAt = credits.periodStartedAt || credits.createdAt
+    if (isPeriodExpired(periodStartedAt, chatbot.creditResetPeriod)) {
+      return {
+        current: Math.min(
+          credits.current.toNumber() + chatbot.creditResetAmount,
+          chatbot.creditMaxCredits
+        ),
+        total: chatbot.creditMaxCredits,
+      }
+    }
+
+    return {
+      current: credits.current.toNumber(),
+      total: credits.total.toNumber(),
+    }
+  }
+
+  /**
    * Decrements user credits by a specific amount atomically
    * Prevents race conditions and ensures credits cannot go below zero
    */
