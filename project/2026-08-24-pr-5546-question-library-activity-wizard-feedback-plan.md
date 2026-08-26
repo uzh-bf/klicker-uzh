@@ -30,11 +30,13 @@ uncrowned regardless of Catalyst entitlement.
   guidance prerequisite, do not change devrouter, devcontainer, local-origin,
   environment, application routes, or Turborepo routing configuration.
 - Draft PR #5546 points to published head
-  `510ab4308e516b69294fcb1dae69adbb6c9feea2`. The new contract correction
-  remains local and uncommitted. GitHub is authoritative for volatile PR and
-  check state; the normal push and PR body update are authorized but pending.
-  PR merge, mark-ready, deployment, publication, worktree cleanup, and branch,
-  worktree, or runtime-data deletion remain withheld.
+  `510ab4308e516b69294fcb1dae69adbb6c9feea2`. The contract correction is
+  committed locally at `c65e52413752a47dd16e29b60e05dbe7fd0d7417` and
+  integrated through merge commit `cd26abb4cd8678cdea1bd04695bf36083c754501`.
+  GitHub is authoritative for volatile PR and check state; the normal push and
+  PR body update are authorized but pending. PR merge, mark-ready, deployment,
+  publication, worktree cleanup, and branch, worktree, or runtime-data deletion
+  remain withheld.
 
 ## Execution contract
 
@@ -70,8 +72,11 @@ uncrowned regardless of Catalyst entitlement.
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/ux-review-question-library`.
 - Branch: `rs/question-library-activity-wizard-feedback`.
 - Current integrated base and merge-base:
-  `861afd19383412a7338f491de46ad4ce3b761750`, which is also the current
-  `origin/v3`; volatile ahead/behind counts are intentionally omitted.
+  `ac84460d2209c51842f0857da75cf7d7f258ae09`, which is also the current
+  `origin/v3`. Its CI-only Playwright workflow fix restores
+  `packages/graphql/dist/client.json` into the generated public path before
+  tests and was merged normally; volatile ahead/behind counts are intentionally
+  omitted.
 - The merge integrated `7515632f229c9421a7ac7d62668e1743147ba158` and its
   generated GraphQL policy: typed and persisted artifacts are generated and
   ignored, while the public SDL remains tracked.
@@ -93,11 +98,12 @@ uncrowned regardless of Catalyst entitlement.
   Catalyst signaling because ADR-0037 makes the three formerly gated formats
   standard full-access capabilities.
 - Draft PR #5546 points to published head
-  `510ab4308e516b69294fcb1dae69adbb6c9feea2`; the new contract correction
-  remains local and uncommitted. GitHub is authoritative for volatile PR and
-  check state. The normal push and PR body update are authorized but pending;
-  PR merge, mark-ready, deployment, publication, cleanup, and deletion remain
-  withheld.
+  `510ab4308e516b69294fcb1dae69adbb6c9feea2`; local merge commit
+  `cd26abb4cd8678cdea1bd04695bf36083c754501` integrates contract-fix commit
+  `c65e52413752a47dd16e29b60e05dbe7fd0d7417` over the current base. GitHub is
+  authoritative for volatile PR and check state. The normal push and PR body
+  update are authorized but pending; PR merge, mark-ready, deployment,
+  publication, cleanup, and deletion remain withheld.
 - Authoritative roadmap:
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/question-library-feedback-recovery/project/2026-08-23-question-library-ux-audit-and-roadmap.md`
   on `rs/question-library-feedback-recovery` at `5d7c0284890db55a93da1cb66a1ca87ab03f2e0d`.
@@ -154,9 +160,10 @@ lifecycle.
   `klicker-playwright-e2e`, `klicker-testing-verification`,
   `klicker-wiki-maintenance`, and `devrouter`.
 - `$rs-local-runtime-lifecycle` governs runtime lifecycle boundaries. This
-  exact runtime is stopped; canonical devrouter ensure/exec and the final
-  non-destructive exact stop are authorized after the official 0.0.38
-  adaptation. Manual route, TLS, and certificate repair remain withheld.
+  exact runtime was `Running` at the last read. The final canonical stop is
+  blocked while the earlier `devrouter ensure .` process, PID 39295, remains
+  active in the managed post-start path. No stopped or routes-cleared state is
+  claimed. Manual route, TLS, and certificate repair remain withheld.
 - The established repository plan format and the fully read sliced-workflow
   contract provide this plan's durable format.
 
@@ -372,11 +379,15 @@ Runtime contract:
 
 - The official devrouter 0.0.38 consumer version pin and generated guidance are
   the only authorized configuration changes. Canonical exact-checkout
-  verification and the final non-destructive exact stop are complete.
-- Verification used `devrouter ensure`, exact-path `devrouter exec`, and
-  `devrouter workspace stop`. It did not use bare DevPod/Docker lifecycle
-  commands, manual routes, localhost fixed ports, or another checkout's
-  runtime.
+  verification is recorded below, but the final non-destructive exact stop is
+  not complete.
+- The earlier canonical `devrouter ensure .` process, PID 39295, is still active
+  in the managed post-start path, so `devrouter stop . --json` is blocked by its
+  managed lifecycle lock. Exact DevPod `rs-ux-review-question-library` was
+  `Running` at the last read. No stopped or routes-cleared state is claimed.
+- Verification used canonical devrouter commands and did not use raw
+  DevPod/Docker lifecycle mutations, manual routes, localhost fixed ports, or
+  another checkout's runtime.
 - Browser validation uses only the fancy namespaced origins:
   `https://manage.klicker.rs-ux-review-question-library.localhost` and
   `https://api.klicker.rs-ux-review-question-library.localhost`.
@@ -419,8 +430,9 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 - Finalize plan `Progress` in a local commit and report commits, checks,
   review disposition, browser/runtime evidence, and remaining withheld actions.
   Draft PR #5546 exists and GitHub remains authoritative for volatile PR and
-  check state. The new contract correction remains local; its normal push and
-  PR body update are authorized but pending. PR merge, mark-ready,
+  check state. Local merge commit
+  `cd26abb4cd8678cdea1bd04695bf36083c754501` remains unpublished; its normal
+  push and PR body update are authorized but pending. PR merge, mark-ready,
   deployment, publication, worktree cleanup, and branch or worktree deletion
   remain withheld.
 
@@ -447,18 +459,18 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   browser evidence, and the environment-blocked repository Playwright run.
 - Host readback proves branch and PR-body synchronization for each published
   head. GitHub is authoritative for volatile current PR and check state. The
-  new contract correction remains local; its normal push and PR body update are
-  authorized but pending. PR merge, mark-ready, deployment,
+  latest local merge remains unpublished; its normal push and PR body update
+  are authorized but pending. PR merge, mark-ready, deployment,
   publication, cleanup, and deletion remain withheld.
 
 ## Progress
 
-- Status: W2 is locally complete through its authorized terminal condition.
-  Implementation, checks, exact devrouter proof, independent review, evidence,
-  and non-destructive shutdown are complete through the local correction and
-  review-disposition commits.
+- Status: W2 implementation, checks, exact devrouter proof, independent review,
+  evidence, the contract correction, and its upstream merge are complete
+  locally. Runtime lifecycle closure is not complete while the earlier managed
+  ensure remains active.
 - Freshness: the integrated base and merge-base are
-  `861afd19383412a7338f491de46ad4ce3b761750`, which is also the current
+  `ac84460d2209c51842f0857da75cf7d7f258ae09`, which is also the current
   `origin/v3`. Exact ahead/behind counts are not durable Progress state.
 - Sol final-review disposition for reviewed pre-correction local head
   `5ca2804370bc4cd6fa165d6158d611adb258c627`: both non-behavioral findings are
@@ -811,6 +823,21 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   exact-head CI is claimed, and the OpenCodeReview thread remains unresolved.
   Review, PR merge, mark-ready, deployment, publication, cleanup, deletion, and
   review-thread resolution remain withheld.
+- Current local integration is merge commit
+  `cd26abb4cd8678cdea1bd04695bf36083c754501` over contract-fix commit
+  `c65e52413752a47dd16e29b60e05dbe7fd0d7417` and current `origin/v3`
+  `ac84460d2209c51842f0857da75cf7d7f258ae09`. The upstream parent is a CI-only
+  Playwright workflow correction that restores
+  `packages/graphql/dist/client.json` into the generated public path before
+  tests; it was merged normally. Draft PR #5546 remains published at
+  `510ab4308e516b69294fcb1dae69adbb6c9feea2`. Runtime lifecycle closure is
+  pending: the earlier canonical `devrouter ensure .` process, PID 39295,
+  remains active in the managed post-start path, canonical
+  `devrouter stop . --json` is blocked by that managed lock, and exact DevPod
+  `rs-ux-review-question-library` was `Running` at the last read. No stopped or
+  routes-cleared state, new push, exact-head CI, or thread resolution is
+  claimed; merge, mark-ready, deployment, publication, cleanup, and deletion
+  remain withheld.
 
 ### Historical execution evidence before final runtime proof
 
