@@ -45,11 +45,11 @@ inventing `authScopes` variants.
 ## Student-owned practice elements
 
 Personal-element resolvers use `t.withAuth(asParticipant)` and delegate to
-`services/personalElements.ts`. The service receives an explicit participant
-actor together with the Prisma client so the same server-only entry can be
-used by GraphQL and the Chat route. It re-checks course participation and row
-ownership, rejects temporary participants, and reports conflicts through
-`GraphQLError.extensions.code`.
+`services/personalElements.ts`. The GraphQL and Chat entry boundaries
+authenticate the participant role and reject temporary participants before
+invoking the service. The service receives the participant ID together with
+the Prisma client, then re-checks course participation and row ownership. It
+reports conflicts through `GraphQLError.extensions.code`.
 
 The participant API consists of `getPersonalElements`,
 `createPersonalElements`, `respondToPersonalElement`,
