@@ -65,3 +65,6 @@ Pause for unexpected scope expansion, a conflict with the refreshed `v3-ai` base
 - 2026-08-26: Node 24.16.0 regression reproduced before the fix: the focused Hatchet run failed because the pinned lookup returned a scalar address for `all: true` (104 passed, 1 failed).
 - 2026-08-26: The callback now returns the validated pinned IPv4 in Node's requested shape. The focused/full Hatchet run passed 105 tests; package type-check, build, and affected-file Biome checks passed.
 - 2026-08-26: The retained failed staging RFC fixture was not retried. Staging proof remains separately gated after merge and deployment.
+- 2026-08-26: The configured slice-reviewer provider failed with a credit-limit error. The Sol fallback completed the same immutable correctness/security review of `e663e6ca1` with `DONE` and no findings.
+- 2026-08-26: The exact runtime `rs-kb-ingestion-pinned-lookup` was stopped after verification; DevPod reported `Stopped` and devrouter freed 11 routes.
+- 2026-08-26: With explicit approval, the unpublished branch rebased cleanly onto `origin/v3-ai@bd35688fb256def04b531d9fb4285969947afbe3`; the upstream chat-only paths did not overlap this package.
