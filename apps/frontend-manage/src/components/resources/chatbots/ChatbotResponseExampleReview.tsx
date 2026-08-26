@@ -9,6 +9,7 @@ import {
   ResponseExampleStyle,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Markdown } from '@klicker-uzh/markdown'
+import { citationTargetIdFor } from '@klicker-uzh/util/citations'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
   Badge,
@@ -386,6 +387,8 @@ function ChatbotResponseExampleReview({
                       <Markdown
                         className={{ root: 'leading-6' }}
                         content={example.referenceAnswer}
+                        citationLinkScope={example.id}
+                        withCitationLinks
                       />
                     </dd>
                   </div>
@@ -438,6 +441,10 @@ function ChatbotResponseExampleReview({
                             </span>
                             <span
                               aria-hidden="true"
+                              id={citationTargetIdFor(
+                                reference.citationIndex,
+                                example.id
+                              )}
                               className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded bg-blue-50 font-mono text-xs font-semibold text-blue-700"
                             >
                               {reference.citationIndex}

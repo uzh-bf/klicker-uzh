@@ -913,6 +913,9 @@ importers:
       '@klicker-uzh/types':
         specifier: workspace:*
         version: link:../../packages/types
+      '@klicker-uzh/util':
+        specifier: workspace:*
+        version: link:../../packages/util
       '@socialgouv/matomo-next':
         specifier: 1.9.1
         version: 1.9.1(next@16.2.10(@babel/core@7.28.3)(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
