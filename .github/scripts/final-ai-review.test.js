@@ -39,6 +39,7 @@ const {
   removeOCRConfig,
   resolveFinalReviewLockKey,
   renderFinalReviewChunks,
+  resolveCleanReviewRange,
   requiresColdIncrementalReview,
   startFinalReview,
   validatePromotionContract,
@@ -883,6 +884,47 @@ test('publishes clean individual evidence as a check without a pull-request comm
     new RegExp(`${FINAL_REVIEW_CLEAN_STATUS_PREFIX}[0-9a-f]{64}`)
   )
   assert.equal(state.reviews.length, 0)
+})
+
+test('binds incremental clean evidence to the root and repair paths', async () => {
+  const baseSha = 'b'.repeat(40)
+  const rootHead = '1'.repeat(40)
+  const headSha = '2'.repeat(40)
+  const comparisons = {
+    [`${baseSha}...${rootHead}`]: {
+      status: 'ahead',
+      files: [{ filename: 'src/original.ts' }],
+    },
+    [`${rootHead}...${headSha}`]: {
+      status: 'ahead',
+      files: [{ filename: 'src/repair.ts' }],
+    },
+  }
+  const github = {
+    rest: {
+      repos: {
+        compareCommits: async ({ base, head }) => ({
+          data: comparisons[`${base}...${head}`],
+        }),
+      },
+    },
+  }
+
+  const range = await resolveCleanReviewRange({
+    github,
+    context: reviewContext(),
+    baseSha,
+    headSha,
+    mode: 'incremental',
+    rootHead,
+    rootReviewBaseSha: baseSha,
+  })
+
+  assert.deepEqual(range, {
+    reviewFromSha: rootHead,
+    reviewedPaths: ['src/original.ts', 'src/repair.ts'],
+    reviewedPathAliases: ['src/original.ts', 'src/repair.ts'],
+  })
 })
 
 test('preserves comment-free individual clean evidence across unrelated default-base advancement', async () => {

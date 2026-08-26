@@ -48,7 +48,7 @@ const PROMOTION_FILE = 'deploy/env-uzh-stg/values.yaml'
 const REPORT_LIMIT = 55_000
 const MAX_INCREMENTAL_PATHS = 20
 const MAX_INCREMENTAL_LINES = 1_000
-const MAX_CLEAN_EVIDENCE_PATHS = MAX_COMPARE_FILES
+const MAX_CLEAN_EVIDENCE_PATHS = MAX_COMPARE_FILES + MAX_INCREMENTAL_PATHS
 const FINDING_CATEGORIES = new Set([
   'bug',
   'security',
@@ -188,6 +188,7 @@ async function resolveCleanReviewRange({
   headSha,
   mode,
   rootHead,
+  rootReviewBaseSha = '',
 }) {
   const rangeBaseSha = mode === 'incremental' ? rootHead : baseSha
   if (!validSha(rangeBaseSha) || !validSha(headSha)) return null
@@ -206,7 +207,28 @@ async function resolveCleanReviewRange({
         ? comparison.data.merge_base_commit?.sha
         : ''
   if (!validSha(reviewFromSha) || reviewFromSha === headSha) return null
-  return { ...paths, reviewFromSha }
+  if (mode !== 'incremental') return { ...paths, reviewFromSha }
+  if (!validSha(rootReviewBaseSha) || !validSha(rootHead)) return null
+  const rootComparison = await compareGitRange({
+    github,
+    context,
+    baseSha: rootReviewBaseSha,
+    headSha: rootHead,
+  })
+  const rootPaths = sortedReviewPaths(rootComparison)
+  if (!rootPaths) return null
+  return {
+    reviewFromSha,
+    reviewedPaths: [
+      ...new Set([...rootPaths.reviewedPaths, ...paths.reviewedPaths]),
+    ].sort(),
+    reviewedPathAliases: [
+      ...new Set([
+        ...rootPaths.reviewedPathAliases,
+        ...paths.reviewedPathAliases,
+      ]),
+    ].sort(),
+  }
 }
 
 function validCleanEvidencePathList(paths, limit) {
@@ -2842,6 +2864,18 @@ async function finalizeFinalReview({
         dispositionDigest,
         dispositionIds,
       }
+      let rootReviewBaseSha = ''
+      if (mode === 'incremental') {
+        const rootReview = await latestFullReview({ github, context, pull })
+        if (
+          !rootReview ||
+          rootReview.metadata.review_id !== rootReviewId ||
+          rootReview.metadata.head_sha !== rootHead
+        ) {
+          throw new Error('Incremental clean evidence root review is missing')
+        }
+        rootReviewBaseSha = rootReview.metadata.base_sha
+      }
       const range = await resolveCleanReviewRange({
         github,
         context,
@@ -2849,6 +2883,7 @@ async function finalizeFinalReview({
         headSha,
         mode,
         rootHead,
+        rootReviewBaseSha,
       })
       cleanEvidenceMetadata = buildIndividualCleanEvidenceMetadata({
         context,
@@ -3248,6 +3283,7 @@ module.exports = {
   publishFinalReview,
   removeOCRConfig,
   resolveFinalReviewLockKey,
+  resolveCleanReviewRange,
   renderFinalReviewChunks,
   requiresColdIncrementalReview,
   runGhApi,
