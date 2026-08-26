@@ -506,10 +506,11 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   `pnpm --filter @klicker-uzh/playwright run check` exit 0; Playwright
   `--list --project=chromium` collected 154 tests in B/O/P spec files, exit 0.
   Biome on the changed source files reported 6 errors/15 warnings, all on
-  origin/v3 pre-existing lines (parseInt radix, ternary, import-type,
-  no-explicit-any, static-element a11y, no-array-index-key, organize-imports);
-  the origin/v3 base comparison established the same diagnostics on the base
-  versions, so none are branch regressions and no source fix was applied.
+  lines outside the branch's changed hunks (parseInt radix, ternary,
+  import-type, no-explicit-any, static-element a11y, no-array-index-key,
+  organize-imports), so they pre-exist on origin/v3 and are not branch
+  regressions; the repository gates (check:all 25/25, lint 7/7) passed and no
+  source fix was applied.
   Browser proof was not possible this pass: canonical `devrouter ensure`
   failed closed because the frontend-manage Turbopack dev server panicked on a
   corrupted cache (missing SST file
