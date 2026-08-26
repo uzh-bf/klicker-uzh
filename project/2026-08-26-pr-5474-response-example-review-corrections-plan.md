@@ -460,11 +460,11 @@ Neither follow-up is authorized by this plan.
 - Corrected local K1 head: `c70bf0e8a` (latest documentation and evidence commit atop the corrected implementation)
 - Active slice: K2 lecturer-review workflow corrections
 - Plan commit: `c525e6c60 docs(project): plan response-example review corrections`
-- K2 implementation commit: `7bb04ae6c fix(manage): align response-example review workflow`
-- K2 follow-up corrections pending commit: restore the AI-beta gate and
-  invalid-chatbot handling, reset review state when switching chatbots, compute
-  the seeded digest canonically, and seed the chatbot/examples inside the
-  focused Playwright journey
+- K2 implementation commit: `81082e32a fix(manage): align response-example review workflow`
+- K2 follow-up corrections commit: `a00c300a0 fix(manage): close response-example review gaps`
+  restores the AI-beta gate and invalid-chatbot handling, resets review state
+  when switching chatbots, computes the seeded digest canonically, and seeds
+  the chatbot/examples inside the focused Playwright journey
 - K2 fallback reviews: native and generic continuity routes were unavailable
   with `unreadable_encrypted_agent_task`; trusted GPT-5.6 Luna max fallback
   reports are recorded under `project/_local/reviews/`. Their findings were
