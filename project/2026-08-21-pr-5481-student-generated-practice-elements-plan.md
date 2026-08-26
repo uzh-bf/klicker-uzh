@@ -995,6 +995,21 @@ Settled rulings for this implementation:
 
 ## Progress
 
+- 2026-08-27 (current `v3` reconciliation): The linear A → B → C stack now
+  contains current `origin/v3` at `4f20cff96`, including the merged Chat
+  account-usage work. The student-generation route reuses the account-usage
+  assistant message while keeping account-usage claims and card-generation
+  leases as separate lifecycles. Simplifier findings removed the ordinary-turn
+  history query and duplicate stream metadata path, and accepted-plan turns now
+  expose only `generate_cards`. The risk review identified and closed a setup
+  failure that could retain an accepted-plan lease before provider streaming;
+  its regression test verifies lease release. The focused route suite passes
+  38 tests, the full Chat suite passes 58 files and 563 tests with one file and
+  13 tests skipped, Chat TypeScript and ESLint pass, and the four touched files
+  pass Biome formatting. Publication to the existing three PR refs, exact-head
+  CI, and runtime shutdown remain open. Merge, deployment, and flag enablement
+  remain disabled.
+
 - 2026-08-26: Exact task runtime was reconciled and passed `pnpm run
   dev:doctor` for auth, Chat, control, manage, and PWA. Agent-browser proof
   covered the practice-area Lecturer elements / Own elements links, the

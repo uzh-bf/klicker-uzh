@@ -1046,20 +1046,22 @@ export async function POST(
     userMessageId = lastMessage.id
   }
 
-  const threadHistory = await prisma.chatMessage.findMany({
-    where: {
-      threadId: currentThreadId,
-      thread: { participantId, chatbotId },
-    },
-    select: {
-      id: true,
-      parentId: true,
-      role: true,
-      content: true,
-      createdAt: true,
-    },
-    orderBy: { createdAt: 'asc' },
-  })
+  const threadHistory = approvedPlan
+    ? await prisma.chatMessage.findMany({
+        where: {
+          threadId: currentThreadId,
+          thread: { participantId, chatbotId },
+        },
+        select: {
+          id: true,
+          parentId: true,
+          role: true,
+          content: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'asc' },
+      })
+    : []
 
   let turnClaim
   try {
@@ -1113,6 +1115,7 @@ export async function POST(
   }
 
   let providerStreamStarted = false
+  let abortCardGenerationLease: (() => Promise<void>) | null = null
   try {
     // Discover MCP tools only after read-only participant authorization.
     const mcpScopeSessionId = resolveMcpScopeSessionId({
@@ -1326,6 +1329,7 @@ export async function POST(
         { status: cardGeneration.status }
       )
     }
+    abortCardGenerationLease = cardGeneration.abortLease
     systemPrompt = cardGeneration.instructions
     const generationTools = cardGeneration.tools
     const explicitToolOrder = cardGeneration.toolOrder
@@ -2152,34 +2156,6 @@ export async function POST(
 
         return 'An error occurred while processing the request.'
       },
-      messageMetadata: ({ part }) => {
-        if (part.type !== 'finish') {
-          return undefined
-        }
-
-        const computedRawCreditsUsed = part.totalUsage
-          ? calcCost(
-              selectedModelConfig.cost,
-              part.totalUsage.inputTokens || 0,
-              part.totalUsage.outputTokens || 0
-            ) +
-            imageDescriptionCost +
-            cardGeneration.getNestedGenerationCost()
-          : null
-        const { creditsUsed } = normalizeCredits(
-          computedRawCreditsUsed,
-          'metadata'
-        )
-
-        return {
-          finishReason: part.finishReason,
-          chatMode: selectedMode,
-          modelId: selectedModelConfig.id,
-          reasoningEffort: appliedReasoningEffort,
-          reasoningContent: assistantReasoningContent,
-          creditsUsed,
-        }
-      },
     })
 
     let sawClientError = false
@@ -2235,6 +2211,7 @@ export async function POST(
       consumeSseStream: consumeStream,
     })
   } catch (error) {
+    await abortCardGenerationLease?.()
     if (providerStreamStarted) await failAssistantClaim('request')
     else await failOrDiscardUnstartedClaim('request')
     throw error

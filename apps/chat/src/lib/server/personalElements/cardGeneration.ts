@@ -322,7 +322,7 @@ export async function createCardGeneration({
     toolOrder = [...baseToolNames, ...personalToolNames]
   }
 
-  if (personalToolsEligible && retrievalRequired) {
+  if (personalToolsEligible && retrievalRequired && !acceptedPlanReference) {
     tools = {
       ...tools,
       [RETRIEVAL_UNAVAILABLE_TOOL_NAME]: createRetrievalUnavailableTool(),
@@ -330,7 +330,7 @@ export async function createCardGeneration({
     toolOrder = [...toolOrder, RETRIEVAL_UNAVAILABLE_TOOL_NAME]
   }
 
-  if (generationEligible) {
+  if (generationEligible && !acceptedPlanReference) {
     tools = {
       ...tools,
       propose_card_plan: createProposeCardPlanTool({
@@ -528,18 +528,13 @@ export async function createCardGeneration({
         docQueryTool: baseTools[docQueryToolName] as ExecutableTool,
       }),
     }
-    toolOrder = [
-      ...baseToolNames,
-      ...personalToolNames,
-      'propose_card_plan',
-      'generate_cards',
-    ]
+    toolOrder = [...baseToolNames, ...personalToolNames, 'generate_cards']
   }
 
-  if (generationEligible) {
+  if (generationEligible && !acceptedPlan) {
     systemPrompt = `${systemPrompt}\n\nWhen the student asks for flashcards in any configured mode, retrieve course material first, then call propose_card_plan. Never generate or save cards before the student accepts the plan.`
   }
-  if (duplicateCheckRequired) {
+  if (duplicateCheckRequired && !acceptedPlan) {
     systemPrompt = `${systemPrompt}\n\nBefore proposing cards, avoid repeating existing personal cards. The server compares every proposed title against the complete saved-title list with a conservative local similarity check and removes potential duplicates.`
   }
   if (personalToolsEligible) {
