@@ -441,7 +441,7 @@ Neither follow-up is authorized by this plan.
 
 ## Progress
 
-- Status: K1 correction findings applied and committed locally; awaiting required risk review and Gate 2 user acceptance before K2
+- Status: K1 correction findings and risk review are complete locally; awaiting explicit Gate 2 user acceptance before K2
 - Completed: external review analysis; focused correction scope; fresh Git,
   GitHub PR, GitHub stack, sibling-worktree, and local-stack evidence; planning
   specialist review; complete correction plan; local stack tracking repair;
