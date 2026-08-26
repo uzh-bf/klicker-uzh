@@ -21,6 +21,10 @@ data:
   # interim kill switch: refuses new KB content ingestion while reads/deletes/serving stay live
   KB_INGESTION_DISABLED: {{ .Values.backendGraphql.kbIngestionDisabled | quote }}
   {{ end }}
+  {{- if .Values.backendGraphql.kbGraphDisabled }}
+  # parked graph lifecycle: refuses new graph opt-ins and dispatches
+  KB_GRAPH_DISABLED: {{ .Values.backendGraphql.kbGraphDisabled | quote }}
+  {{ end }}
   {{- if .Values.heartbeats.dailyGroupScores }}
   HEARTBEAT_DAILY_GROUP_SCORES: {{ .Values.heartbeats.dailyGroupScores | quote }}
   {{ end }}

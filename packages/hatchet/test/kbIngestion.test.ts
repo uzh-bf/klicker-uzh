@@ -144,12 +144,27 @@ describe('KB ingestion dispatch', () => {
     expect(() => validateKBIngestionWorkerConfig({})).not.toThrow()
   })
 
+  it('requires external API config when the worker gate is explicitly open', () => {
+    expect(() =>
+      validateKBIngestionWorkerConfig({}, { required: true })
+    ).toThrow('KB_INGESTION_API_URL must be configured')
+  })
+
   it('fails fast when external API config is only partially configured', () => {
     expect(() =>
       validateKBIngestionWorkerConfig({
         KB_INGESTION_API_URL: 'https://ingestion.example',
       })
     ).toThrow('KB_INGESTION_API_KEY must be configured')
+  })
+
+  it('fails fast when the source gateway is not configured', () => {
+    expect(() =>
+      validateKBIngestionWorkerConfig({
+        KB_INGESTION_API_URL: 'https://ingestion.example',
+        KB_INGESTION_API_KEY: 'ingestion-key',
+      })
+    ).toThrow('KB_SOURCE_GATEWAY_URL must be configured')
   })
 
   it('prepares source bytes, awaits API acceptance, and persists correlation', async () => {

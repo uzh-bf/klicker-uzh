@@ -45,6 +45,11 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
 
+      - name: Set up Helm
+        uses: azure/setup-helm@v5
+        with:
+          version: v3.21.4
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -73,6 +78,9 @@ jobs:
 
       - name: Check removed engineering-wiki paths
         run: pnpm run check:removed-doc-artifacts
+
+      - name: Check KB ingestion staging render
+        run: pnpm run check:kb-ingestion-stg
 
       - name: Build packages for typecheck (turbo)
         run: |

@@ -159,6 +159,9 @@ Participant practice questions reach the chat through a second FastMCP server, n
 Three properties matter when debugging it:
 
 - The lookup runs **only in `tutor` mode** (`src/app/api/chatbots/[chatbotId]/chat/route.ts`); other modes never register `start_student_practice_quiz`.
+- Student practice authorization requires a matching chatbot/course pair and an
+  existing `Participation` row for the participant. `Participation.isActive`
+  is only the course-leaderboard opt-in and must not gate MCP practice access.
 - A failed lookup degrades silently: the route logs `Student practice lookup failed; continuing without quiz candidates` and answers without the tool. A missing practice quiz is therefore an infrastructure symptom, not necessarily a model one.
 - `getStudentPracticeMcpUrl` falls back to `http://localhost:7080` **only** when `NODE_ENV=development`; in production an unset `MCP_STUDENT_URL`/`MCP_STUDENT_HOST` yields `null` and the feature is simply off. The devcontainer starts both `mcp-student` and `mcp-lecturer` through `package.json:dev:container`, so tutor-mode practice tools and lecturer tools are available without a separate MCP process.
 
@@ -247,6 +250,11 @@ internal.
 Both staging and production now use `auto` as the global automatic-model
 primary, so chatbots using automatic model selection use Auto by default.
 Chatbots with an explicit model selection can continue using that selection.
+Keep the `v3-ai` staging values aligned with this block when resolving merges:
+`CHAT_PRIMARY_MODEL_ID=auto`, the `auto` registry entry targets
+`klickeruzh/azure/auto-router`, and that entry sets `usesResponsesApi: true`.
+This repository controls those consumer values but does not prove that the
+external LiteLLM key or team is authorized for the deployment.
 Model registry capabilities separate the student-facing reasoning-effort
 selector from the provider protocol: `supportsReasoning` controls whether the
 effort picker is offered, while `usesResponsesApi` selects OpenAI Responses so

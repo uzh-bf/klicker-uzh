@@ -1,4 +1,4 @@
-import { expect, Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 import { getPrisma } from '../../global-setup.js'
 
 export type ElementOptions = {
@@ -6,6 +6,21 @@ export type ElementOptions = {
   status?: 'Draft' | 'Review' | 'Ready'
   text?: string
   answers?: { text: string }[]
+}
+
+export async function clearRichTextField(field: Locator) {
+  await field.scrollIntoViewIfNeeded()
+  await field.selectText()
+  await field.press('Backspace')
+  await expect
+    .poll(async () => {
+      const textNodes = await field
+        .locator('[data-slate-string="true"]')
+        .allTextContents()
+
+      return textNodes.join('')
+    })
+    .toBe('')
 }
 
 /**
@@ -102,7 +117,7 @@ export async function fillEditorField(
   const editor = page.getByTestId(testId)
   await editor.scrollIntoViewIfNeeded()
   await editor.click()
-  if (clear) await editor.clear()
+  if (clear) await clearRichTextField(editor)
   await editor.pressSequentially(text)
   await expect(editor).toContainText(text)
 }
@@ -141,7 +156,7 @@ export async function fillAnswerField(
   const field = page.getByTestId(`insert-answer-field-${index}`)
   await field.scrollIntoViewIfNeeded()
   await field.click()
-  if (clear) await field.clear()
+  if (clear) await clearRichTextField(field)
   await field.pressSequentially(text)
   await expect(field).toContainText(text)
 }
@@ -158,7 +173,7 @@ export async function fillFeedbackField(
   const field = page.getByTestId(`insert-answer-feedback-${index}`)
   await field.scrollIntoViewIfNeeded()
   await field.click()
-  if (clear) await field.clear()
+  if (clear) await clearRichTextField(field)
   await field.pressSequentially(text)
   await expect(field).toContainText(text)
 }

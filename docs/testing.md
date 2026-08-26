@@ -1,7 +1,7 @@
 ---
 type: Testing Guide
 title: Testing
-description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
+description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
 timestamp: '2026-08-26'
 tags:
   - testing
@@ -90,6 +90,16 @@ Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.
 | CI            | official Playwright container, 8-way shard, all PRs        |
 
 The seed paths (dev `seedTEST.ts` and Playwright `global-setup.ts`) are **independent** — a fixture added to one does not exist in the other ([Data & Migrations](./data-and-migrations.md)). `*:raw` script variants skip Infisical. `_run_app_dependencies.sh` applies the schema with `prisma:push` without forcing a reset.
+
+The Playwright stack starts
+`playwright/util/mockGrowthBookServer.mjs` alongside the applications. The
+test-origin wrapper points backend SDK evaluation at this synthetic feature
+endpoint, while each browser test still controls its own public SDK
+response with Playwright routing. This separation lets the learning-analytics
+allow and deny tests exercise the real browser → persisted GraphQL →
+backend-entitlement path without a live GrowthBook deployment or management
+credential. The test wrapper shortens backend polling to 250 ms; production
+keeps the package's 30-second default.
 
 For authoring specifics, helper patterns, and failure triage, use the `klicker-playwright-e2e` skill ([.agents/skills/](../.agents/skills/)).
 

@@ -74,6 +74,14 @@ assets. The Dockerfiles declare and export matching build arguments before the
 Next build. See [Feature Flags](./feature-flags.md) for the complete runtime and
 operator contract.
 
+The Manage assistant target is also build-time browser configuration.
+`apps/frontend-manage/.env.stg` and `.env.prd` both map
+`NEXT_PUBLIC_CHAT_URL` from their environment-specific `APP_ORIGIN_CHAT`.
+`apps/frontend-manage/Dockerfile` checks that exact mapping after the STG or PRD
+workflow has installed its file as `.env.production`; an image build fails
+instead of producing a Manage bundle that silently hides the assistant
+launcher.
+
 ## Release flow
 
 Version bumps are **local and manual** via standard-version: `pnpm run release[:alpha|:beta|:rc]` bumps the root plus ~20 package.jsons (`.versionrc.js`), writes the changelog, commits, and tags. Pushing the tag triggers the prd image builds; strict `vX.Y.Z` tags additionally create a GitHub Release (`release.yml`) — alpha tags build prd images without a Release. The Helm `Chart.yaml` auto-bump is commented out in `.versionrc.js`, which is why the chart version drifts.
@@ -91,6 +99,7 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
 - **KB graph builds couple two values**: `hatchet.kbGraph.workflowName` and `backendGraphql.knowledgeGraph.host` must be set together, or the chart stops at render time with an explicit `fail`.
 - **KB graph token ordering**: the general worker's external secret must already carry `KB_GRAPH_HATCHET_CLIENT_TOKEN` before `hatchet.kbGraph.workflowName` is set. The token alone does not arm the worker's startup gate (so a secret rollout cannot stop unrelated jobs), but once any chart-owned `KB_GRAPH_*` value is present the token is required and startup fails without it.
+- **KB ingestion staging contract is rendered explicitly**: `pnpm run check:kb-ingestion-stg` renders the STG backend and worker ConfigMaps and requires this layer's exact state. The readiness layer requires both ingestion kill switches; the activation layer requires those false-valued keys to be absent. Both layers require the exact cluster-local ingestion and source-gateway endpoints, both graph kill switches, response-processor isolation, and no ingestion secret keys in ConfigMaps.
 
 ## Deployment migrations
 

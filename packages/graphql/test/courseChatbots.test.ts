@@ -1,12 +1,13 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
 import {
   ChatbotStatus,
-  PrismaClient,
+  type PrismaClient,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import { EventEmitter } from 'events'
+import type { EventEmitter } from 'events'
 import type { Context, ContextWithUser } from '../src/lib/context.js'
 import { getParticipantCourseChatbots } from '../src/services/chatbots.js'
+import { getStudentMcpCoursePracticeQuiz } from '../src/services/courses.js'
 import {
   initializePrisma,
   seedCourse,
@@ -66,14 +67,14 @@ describe('Integration tests for the public courseChatbots query', () => {
   }
 
   // participant tokens carry no scope (see createParticipantToken)
-  function participantContext(participantId: string): Context {
+  function participantContext(participantId: string): ContextWithUser {
     return {
       ...userOneCtx,
       user: {
         sub: participantId,
         role: UserRole.PARTICIPANT,
       },
-    } as unknown as Context
+    } as unknown as ContextWithUser
   }
 
   it('returns an empty list for anonymous visitors instead of throwing', async () => {
@@ -164,5 +165,83 @@ describe('Integration tests for the public courseChatbots query', () => {
     )
 
     expect(chatbots).toEqual([])
+  })
+
+  it('allows a leaderboard-inactive participant to load student MCP practice', async () => {
+    const { course, chatbot } = await seedCourseWithChatbot()
+    const participant = await prisma.participant.create({
+      data: {
+        username: 'studentMcpParticipantEnrolled',
+        password: 'abcdabcd',
+        participations: {
+          create: [{ courseId: course.id, isActive: false }],
+        },
+      },
+    })
+
+    const quiz = await getStudentMcpCoursePracticeQuiz(
+      { chatbotId: chatbot.id, courseId: course.id },
+      participantContext(participant.id)
+    )
+
+    expect(quiz?.courseId).toBe(course.id)
+    expect(
+      await prisma.participation.findUnique({
+        where: {
+          courseId_participantId: {
+            courseId: course.id,
+            participantId: participant.id,
+          },
+        },
+        select: { isActive: true },
+      })
+    ).toEqual({ isActive: false })
+  })
+
+  it('rejects student MCP practice for a participant outside the course', async () => {
+    const { course, chatbot } = await seedCourseWithChatbot()
+    const participant = await prisma.participant.create({
+      data: {
+        username: 'studentMcpParticipantUnenrolled',
+        password: 'abcdabcd',
+      },
+    })
+
+    const quiz = await getStudentMcpCoursePracticeQuiz(
+      { chatbotId: chatbot.id, courseId: course.id },
+      participantContext(participant.id)
+    )
+
+    expect(quiz).toBeNull()
+  })
+
+  it('rejects student MCP practice when the chatbot belongs to another course', async () => {
+    const { course } = await seedCourseWithChatbot()
+    const { chatbot: otherChatbot } = await seedCourseWithChatbot()
+    const participant = await prisma.participant.create({
+      data: {
+        username: 'studentMcpParticipantWrongChatbot',
+        password: 'abcdabcd',
+        participations: { create: [{ courseId: course.id }] },
+      },
+    })
+
+    const quiz = await getStudentMcpCoursePracticeQuiz(
+      { chatbotId: otherChatbot.id, courseId: course.id },
+      participantContext(participant.id)
+    )
+
+    expect(quiz).toBeNull()
+  })
+
+  it('rejects student MCP practice for a lecturer', async () => {
+    const { course, chatbot } = await seedCourseWithChatbot()
+
+    const quiz = await getStudentMcpCoursePracticeQuiz(
+      { chatbotId: chatbot.id, courseId: course.id },
+      userOneCtx
+    )
+
+    expect(quiz).toBeNull()
   })
 })

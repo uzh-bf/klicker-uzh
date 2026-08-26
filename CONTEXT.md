@@ -117,6 +117,10 @@ name; it never contains an email address or a matriculation number.
 (derived from edu-ID affiliation) or individual (subscribed). It gates feature
 limits and capacities, and is a property of the user rather than of any course.
 
+**Feature entitlement**: An account-level condition for using a
+rollout-controlled capability. It is additional to role, scope, and resource
+permissions and never replaces them.
+
 **Delegated login**: Signing in as a user through a `UserLogin` record with a
 scope, rather than through edu-ID. The scope becomes the session's authority
 and is enforced field-by-field in the API layer.

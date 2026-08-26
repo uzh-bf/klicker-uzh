@@ -22,6 +22,12 @@ hatchet:
   client:
     tlsStrategy: 'none'
     apiUrl: 'http://app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080'
+  kbIngestion:
+    apiUrl: 'http://ingestion-resource-api.stg-ingestion.svc.cluster.local:8000'
+    sourceGatewayUrl: 'http://klicker-backend.stg-klicker.svc.cluster.local:3000'
+    workerDisabled: false
+  kbGraph:
+    disabled: true
   workers:
     general:
       replicaCount: 1
@@ -346,7 +352,7 @@ chat:
 mcpStudent:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'b11e14489da2'
+    rollout.klicker.uzh.ch/release: 'c8e1c9b22c96'
 
   replicaCount: 1
 
@@ -619,7 +625,8 @@ backendGraphql:
   appStudentDomain: pwa.klicker.stg.df-app.ch
   appControlDomain: control.klicker.stg.df-app.ch
   cookieDomain: .klicker.stg.df-app.ch
-  # kbIngestionDisabled: true # interim kill switch — set to true to refuse new KB ingestion during an incident
+  kbIngestionDisabled: false
+  kbGraphDisabled: true
 
   ingress:
     className: haproxy

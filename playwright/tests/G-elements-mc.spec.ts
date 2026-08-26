@@ -11,6 +11,7 @@ import { MC_DATA as MC } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   addAnswerChoices,
+  clearRichTextField,
   deleteElement,
   fillAnswerField,
   fillEditorField,
@@ -50,8 +51,7 @@ test.describe('Test creation and editing functionalities for Multiple Choice ele
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clearing an answer disables save
-    await page.getByTestId('insert-answer-field-1').click()
-    await page.getByTestId('insert-answer-field-1').clear()
+    await clearRichTextField(page.getByTestId('insert-answer-field-1'))
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
     await fillAnswerField(page, 1, MC.choices[1])
     await page.getByTestId('insert-question-title').click()
@@ -180,8 +180,7 @@ test.describe('Test creation and editing functionalities for Multiple Choice ele
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clear feedback 1 re-disables
-    await page.getByTestId('insert-answer-feedback-1').click()
-    await page.getByTestId('insert-answer-feedback-1').clear()
+    await clearRichTextField(page.getByTestId('insert-answer-feedback-1'))
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
     await fillFeedbackField(page, 1, MC.choicesFeedbacks[1])
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
