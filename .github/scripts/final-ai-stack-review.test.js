@@ -14,6 +14,7 @@ const {
   buildStackReviewPlan,
   buildStackSnapshot,
   callTopologyModel,
+  compareRepositoryPaths,
   combineOCRResults,
   decideStackStatus,
   encodeMetadata,
@@ -672,6 +673,12 @@ test('builds a bounded immutable manifest with exact layer owners', async () => 
     membership,
   })
   assert.equal(bundle.manifest.layers.length, 4)
+  assert.deepEqual(
+    ['b/file.ts', 'A/file.ts', '_file.ts', 'a/file.ts'].sort(
+      compareRepositoryPaths
+    ),
+    ['A/file.ts', '_file.ts', 'a/file.ts', 'b/file.ts']
+  )
   assert.deepEqual(
     bundle.manifest.path_index.find((entry) => entry.filename === 'src/one.ts')
       .layers,
@@ -2353,8 +2360,10 @@ test('sends strict high-reasoning topology requests and rejects invalid owners',
   assert.equal(response.status, 'complete')
   assert.equal(request.provider.require_parameters, true)
   assert.equal(request.reasoning.effort, 'high')
+  assert.equal(request.max_tokens, 4096)
   assert.equal(request.response_format.json_schema.strict, true)
   assert.equal(request.messages[0].content.includes('dummy-token'), false)
+  assert.doesNotMatch(request.messages[1].content, /patch_hunks|operations/)
   assert.throws(
     () =>
       validateTopologyResult(

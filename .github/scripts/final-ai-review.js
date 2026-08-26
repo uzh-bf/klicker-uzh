@@ -20,6 +20,7 @@ const DISPOSITION_SCHEMA = 'final-ai-disposition/v1'
 const FINAL_REVIEW_WORKFLOW_PATH =
   '.github/workflows/check-ocr-final-review.yml'
 const FINAL_REVIEW_CLEAN_STATUS_PREFIX = `${FINAL_REVIEW_MODEL} final review clean; evidence=`
+const GENERATED_PROMOTION_STATUS = 'Verified generated staging promotion'
 const FINAL_REVIEW_RULES_PATH =
   '.github/open-code-review/final-review-rules.json'
 const FINAL_STACK_REVIEW_WORKFLOW_PATH =
@@ -295,6 +296,29 @@ async function verifyPromotionBuilds({
 
   const results = await Promise.all(
     workflowPaths.map(async (workflowPath) => {
+      let trustedDefinition
+      let targetDefinition
+      try {
+        const definitions = await Promise.all([
+          getFileText(github, context, workflowPath, trustedSha),
+          getFileText(github, context, workflowPath, targetSha),
+        ])
+        trustedDefinition = definitions[0]
+        targetDefinition = definitions[1]
+      } catch {
+        return {
+          reason: 'workflow definition could not be verified',
+          verified: false,
+          workflowPath,
+        }
+      }
+      if (sha256(trustedDefinition) !== sha256(targetDefinition)) {
+        return {
+          reason: 'workflow definition differs from trusted policy',
+          verified: false,
+          workflowPath,
+        }
+      }
       const runs = await github.paginate(
         github.rest.actions.listWorkflowRunsForRepo,
         {
@@ -319,15 +343,19 @@ async function verifyPromotionBuilds({
               run?.repository?.full_name === repositoryName(context)
           )
         : false
-      return { verified, workflowPath }
+      return {
+        reason: verified ? '' : 'successful exact-SHA run is missing',
+        verified,
+        workflowPath,
+      }
     })
   )
-  const missing = results
-    .filter(({ verified }) => !verified)
-    .map(({ workflowPath }) => workflowPath)
-  if (missing.length > 0) {
+  const failures = results.filter(({ verified }) => !verified)
+  if (failures.length > 0) {
     return invalidPromotion(
-      `staging build evidence is missing for ${missing.join(', ')}`
+      `staging build evidence or trusted workflow definition is missing for ${failures
+        .map(({ reason, workflowPath }) => `${workflowPath} (${reason})`)
+        .join(', ')}`
     )
   }
   return {
@@ -653,6 +681,83 @@ async function hasVerifiedCleanFinalReviewStatus({
       workflow.repository?.full_name === repositoryName(context) &&
       (await hasSuccessfulFinalReview(github, context, headSha, workflowRunId))
   )
+}
+
+async function getStagingSourceBranch({ github, context, defaultBranch }) {
+  if (typeof github.rest.actions?.getRepoVariable !== 'function') {
+    return defaultBranch
+  }
+  try {
+    const response = await github.rest.actions.getRepoVariable({
+      name: 'STG_SOURCE_BRANCH',
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+    })
+    const value = response.data?.value
+    return /^[A-Za-z0-9_.-]+$/.test(value ?? '') ? value : defaultBranch
+  } catch (error) {
+    if (error.status === 404) return defaultBranch
+    throw error
+  }
+}
+
+async function hasVerifiedGeneratedPromotionStatus({
+  github,
+  context,
+  pull,
+  sourceBranch,
+  trustedSha,
+}) {
+  const status = await getLatestFinalReviewStatus(
+    github,
+    context,
+    pull.head.sha
+  )
+  if (
+    status?.state !== 'success' ||
+    status.description !== GENERATED_PROMOTION_STATUS
+  ) {
+    return false
+  }
+  const workflowRunId = workflowRunIdFromUrl(context, status.target_url)
+  if (
+    workflowRunId == null ||
+    typeof github.rest.actions?.getWorkflowRun !== 'function'
+  ) {
+    return false
+  }
+  const workflow = (
+    await github.rest.actions.getWorkflowRun({
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      run_id: workflowRunId,
+    })
+  )?.data
+  if (
+    !workflow ||
+    workflow.id !== workflowRunId ||
+    workflow.path !== FINAL_REVIEW_WORKFLOW_PATH ||
+    workflow.event !== 'pull_request_target' ||
+    workflow.head_branch !== context.payload.repository.default_branch ||
+    workflow.conclusion !== 'success' ||
+    workflow.repository?.full_name !== repositoryName(context) ||
+    !(await hasSuccessfulFinalReview(
+      github,
+      context,
+      pull.head.sha,
+      workflowRunId
+    ))
+  ) {
+    return false
+  }
+  const promotion = await inspectPromotion({
+    github,
+    context,
+    pull,
+    sourceBranch,
+    trustedSha,
+  })
+  return promotion.valid === true
 }
 
 async function getFileText(github, context, filePath, ref) {
@@ -2284,6 +2389,11 @@ function createGhGithub({ repository, defaultBranch }) {
   const github = {
     rest: {
       actions: {
+        getRepoVariable: async ({ name }) => ({
+          data: runGhApi(
+            endpoint(`actions/variables/${encodeURIComponent(name)}`)
+          ),
+        }),
         getWorkflowRun: async ({ run_id }) => ({
           data: runGhApi(endpoint(`actions/runs/${run_id}`)),
         }),
@@ -2379,9 +2489,23 @@ async function verifyCurrentIndividualFinalReview({ repository, prNumber }) {
   }
   const pull = await getPull(github, context, prNumber)
   const plan = await buildReviewPlan({ github, context, pull, trustedSha })
+  const promotion = isPromotionCandidate(pull.head?.ref)
+    ? await hasVerifiedGeneratedPromotionStatus({
+        github,
+        context,
+        pull,
+        sourceBranch: await getStagingSourceBranch({
+          github,
+          context,
+          defaultBranch,
+        }),
+        trustedSha,
+      })
+    : false
   const current =
-    plan.eligible &&
-    (await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }))
+    promotion ||
+    (plan.eligible &&
+      (await hasCurrentSuccessfulFinalReview({ github, context, pull, plan })))
   return {
     current,
     head_sha: pull.head?.sha ?? '',
@@ -2434,6 +2558,7 @@ module.exports = {
   FINAL_REVIEW_BOT,
   FINAL_REVIEW_CONTEXT,
   FINAL_REVIEW_CLEAN_STATUS_PREFIX,
+  GENERATED_PROMOTION_STATUS,
   FINAL_REVIEW_MODEL,
   FINAL_REVIEW_POLICY_SCHEMA,
   FINAL_REVIEW_SCHEMA,
@@ -2463,6 +2588,7 @@ module.exports = {
   getReviewPolicyDigest,
   ghRepositoryPath,
   hasCurrentSuccessfulFinalReview,
+  hasVerifiedGeneratedPromotionStatus,
   verifyCurrentIndividualFinalReview,
   normalizeTitle,
   listReviewArtifacts,
