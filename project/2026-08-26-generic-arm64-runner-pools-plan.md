@@ -38,7 +38,7 @@
 - Same-repository PR Playwright shards may use the public pool. Fork PRs and every push use GitHub-hosted runners.
 - The public workflow receives no secrets and has read-only repository contents permission.
 - The reusable workflow independently checks the event and source repository before requesting a public runner.
-- The runner group must allow only selected public repositories and the reusable workflow at `refs/heads/v3`.
+- Runner groups must use selected-repository access and preserve the public/private repository split. Workflow allowlists are deferred so the groups and runners can be created before the reusable workflows land.
 - The trusted group must not grant access to public PR workflows.
 - Three public runners execute eight Playwright shards in three waves: 3, 3, and 2.
 
@@ -119,10 +119,10 @@
 
 ## Progress
 
-- Status: draft PR published; in-place host reset correction in progress.
-- Active slice: in-place legacy host reset.
-- Completed: fresh worktree, current `v3` baseline, documentation research, planner review, generic provisioning commit `3ad4b98d2`, public PR Playwright routing commit `046b56e6b`, documentation commit `bd70de85e`, isolation corrections commit `c7d8ac3df`, integrated local verification, and the final review correction pass.
-- Final review: `DONE_WITH_CONCERNS`; all source-level security and operational findings are resolved. Live GitHub scheduling and container behavior remain unproved until the merged workflow is canaried.
-- Remaining: reset-script review and publication, operator cleanup and reprovisioning, runner-group and repository-variable changes, live canary, and token revocation.
+- Status: draft PR published; repository-restricted runner-group bootstrap relaxation implemented and verified.
+- Active slice: none.
+- Completed: fresh worktree, current `v3` baseline, documentation research, planner review, generic provisioning commit `3ad4b98d2`, public PR Playwright routing commit `046b56e6b`, documentation commit `bd70de85e`, isolation corrections commit `c7d8ac3df`, integrated local verification, the final review correction pass, reset-script publication, and the operator-requested workflow-allowlist relaxation.
+- Final review: the earlier result is invalidated only for the changed runner-group policy; a focused security review of that policy remains. Live GitHub scheduling and container behavior remain unproved until the merged workflow is canaried.
+- Remaining: focused runner-group policy review, operator reprovisioning, repository-variable changes, live canary, and token revocation.
 - Delivery layer: draft PR #5576; merge and live actions remain withheld.
 - Runtime: none started.

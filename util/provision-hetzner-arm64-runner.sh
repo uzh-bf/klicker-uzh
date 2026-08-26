@@ -18,7 +18,6 @@ readonly STATE_FILE="${STATE_DIR}/bootstrap.env"
 readonly SSH_HARDENING_FILE='/etc/ssh/sshd_config.d/00-actions-runner-hardening.conf'
 readonly CLEANUP_SCRIPT='/usr/local/sbin/actions-runner-disk-cleanup'
 readonly LOCK_FILE='/run/lock/actions-runner-bootstrap.lock'
-readonly PUBLIC_PR_WORKFLOW='uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3'
 
 MODE='plan'
 PROFILE=''
@@ -414,16 +413,14 @@ local_check() {
 
 print_plan() {
   local storage_description='local NVMe (/var/lib/docker and runner _work)'
-  local workflow_description='selected workflows from the selected private repositories'
   [[ -n "$VOLUME_MOUNT" ]] && storage_description="attached volume ${VOLUME_MOUNT} (Docker data and runner work only)"
-  [[ "$PROFILE" == 'public-pr' ]] && workflow_description="only ${PUBLIC_PR_WORKFLOW}"
 
   cat <<EOF
 Planned runner bootstrap (read-only):
   Registration: organization ${ORGANIZATION}
   Profile: ${PROFILE}
   Runner group: ${RUNNER_GROUP}
-  Workflow policy: ${workflow_description}
+  Workflow policy: not enforced; any workflow in a selected repository may target this group
   Runner name: ${RUNNER_NAME:-<prompt during --apply>}
   Labels: ${RUNNER_LABELS}
   Storage: ${storage_description}
@@ -496,8 +493,8 @@ list_runners() {
 }
 
 validate_runner_group_policy() {
-  local groups_json group_json group_count repositories_json workflows
-  local repository_count unexpected_repository_count allows_public workflow_repository_count
+  local groups_json group_json group_count repositories_json
+  local repository_count unexpected_repository_count allows_public
 
   CURRENT_STAGE='restricted runner-group validation'
   groups_json=$(github_api GET "/orgs/${ORGANIZATION}/actions/runner-groups?per_page=100&page=1") ||
@@ -526,12 +523,6 @@ validate_runner_group_policy() {
     [[ "$allows_public" == 'false' ]] ||
       die 'trusted group must not allow public repositories'
   fi
-  [[ "$(jq -r '.restricted_to_workflows // false' <<<"$group_json")" == 'true' ]] ||
-    die 'runner group must restrict access to selected workflows'
-  workflows=$(jq -c '.selected_workflows // [] | sort' <<<"$group_json")
-  [[ "$(jq 'length' <<<"$workflows")" -gt 0 ]] ||
-    die 'runner group must allow at least one selected reusable workflow'
-
   RUNNER_GROUP_ID=$(jq -r '.id // empty' <<<"$group_json")
   [[ "$RUNNER_GROUP_ID" =~ ^[0-9]+$ ]] || die 'runner group has no valid numeric id'
   repositories_json=$(github_api GET \
@@ -541,8 +532,6 @@ validate_runner_group_policy() {
   ((repository_count > 0 && repository_count <= 100)) ||
     die 'runner group must select between 1 and 100 repositories'
   if [[ "$PROFILE" == 'public-pr' ]]; then
-    [[ "$workflows" == "$(jq -cn --arg workflow "$PUBLIC_PR_WORKFLOW" '[$workflow]')" ]] ||
-      die "public-pr group must allow only ${PUBLIC_PR_WORKFLOW}"
     unexpected_repository_count=$(jq '[.repositories[] | select(.private != false)] | length' \
       <<<"$repositories_json")
     ((unexpected_repository_count == 0)) ||
@@ -552,12 +541,6 @@ validate_runner_group_policy() {
       <<<"$repositories_json")
     ((unexpected_repository_count == 0)) ||
       die 'trusted group must contain only private repositories'
-    workflow_repository_count=$(jq --argjson workflows "$workflows" '
-      [.repositories[].full_name] as $repositories
-      | [$workflows[] | split("/.github/workflows/")[0] | select(. as $repository | $repositories | index($repository) == null)]
-      | length' <<<"$repositories_json")
-    ((workflow_repository_count == 0)) ||
-      die 'trusted group workflows must belong to its selected private repositories'
   fi
 }
 
