@@ -35,7 +35,7 @@ hatchet:
           cpu: 50m
           memory: 64Mi
         limits:
-          memory: 512Mi
+          memory: 2Gi
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:

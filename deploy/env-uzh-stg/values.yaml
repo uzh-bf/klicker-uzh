@@ -32,6 +32,9 @@ hatchet:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
         tag: v3-ai
+      resources:
+        limits:
+          memory: 2Gi
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
