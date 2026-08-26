@@ -46,9 +46,11 @@ uncrowned regardless of Catalyst entitlement.
 - Current authority is this explicitly approved replacement execution in the
   existing checkout.
 - The user's 2026-08-26 ruling replaces the failed Ox Alpha execution owner
-  with the configured DeepSeek executor. DeepSeek owns plan `Progress`,
-  repository-native checks, the exact-checkout runtime lifecycle, and the
-  plan-only local commit for this pass. Configured native specialist roles
+  with the configured DeepSeek executor for the 2026-08-26 verification and
+  plan-only pass only. DeepSeek owns plan `Progress`, repository-native
+  checks, the exact-checkout runtime lifecycle, and the plan-only local commit
+  for that pass. It did not implement replacement S1, S2, or S3, whose
+  historical ownership remains Ox Alpha's. Configured native specialist roles
   remain preferred and are review gates, not slice owners.
 - Historical Ox Alpha evidence and its earlier ownership of replacement S1,
   checks, commits, integration, and review gates are preserved as history and
@@ -64,7 +66,7 @@ uncrowned regardless of Catalyst entitlement.
   devrouter 0.0.38 shared-readiness consumer prerequisite, canonical exact W2
   revalidation, and the final non-destructive exact-runtime stop. It does not
   authorize manual route, TLS, or certificate changes.
-- Pause conditions: the Ox Alpha route fails terminally; an authorized alternate
+- Pause conditions: the configured DeepSeek route fails terminally; an authorized alternate
   reviewer is unavailable after a configured-role failure; a material review
   finding remains unresolved; devrouter cannot prove the exact checkout and
   fancy domains; acceptance needs a file outside owned seams; or implementation
@@ -165,7 +167,8 @@ lifecycle.
   verification cadence, native reviews, correction budget, and final delivery.
 - `$rs-model-routing` governs specialist independence and review-gate routing.
   The 2026-08-26 user ruling binds the configured DeepSeek executor for this
-  pass; historical Ox Alpha identity remains recorded as superseded.
+  verification and plan-only pass; historical Ox Alpha identity remains
+  recorded as superseded.
 - `$rs-product-primitives` records the primitive disposition above.
 - Repository skills: `klicker-feature-design`, `klicker-frontend-ui`,
   `klicker-playwright-e2e`, `klicker-testing-verification`,
@@ -214,9 +217,8 @@ lifecycle.
 - Configured Gemini S1 reviewers failed before work with HTTP 402. Existing
   continuity reports cover only the superseded S1 and do not validate this
   replacement.
-- The current execution route is Ox Alpha itself; no separate launch marker is
-  applicable to this explicitly authorized in-place run. The 2026-08-26 ruling
-  replaced that route with the configured DeepSeek executor.
+- The current execution route is the configured DeepSeek executor; no separate
+  launch marker applies to this explicitly authorized in-place run.
 
 ## Planner review and disposition
 
@@ -249,9 +251,9 @@ Historical planner provenance: original native planner task
 
 | Workstream | Slices | Owner | Dependency | Acceptance boundary |
 | --- | --- | --- | --- | --- |
-| Activity guidance | Replacement S1 | DeepSeek executor (2026-08-26 ruling), sole writer for this pass | committed corrected plan | Four visible descriptions/links, stable associations/hooks, enabled paths, no Catalyst signaling, and non-browser checks pass. |
-| Count and validation feedback | Replacement S2 | DeepSeek executor (2026-08-26 ruling), sole writer for this pass | accepted replacement S1 | Block and stack labels plus empty-block reason pass focused static and exact-domain browser flow checks; repository Playwright execution remains environment-blocked. |
-| Durable convention | Replacement S3 | DeepSeek executor (2026-08-26 ruling), sole writer for this pass | accepted replacement S1 and S2 | `docs/frontend-conventions.md` validates and matches verified behavior. |
+| Activity guidance | Replacement S1 | Ox Alpha, sole writer (historical) | committed corrected plan | Four visible descriptions/links, stable associations/hooks, enabled paths, no Catalyst signaling, and non-browser checks pass. |
+| Count and validation feedback | Replacement S2 | Ox Alpha, sole writer (historical) | accepted replacement S1 | Block and stack labels plus empty-block reason pass focused static and exact-domain browser flow checks; repository Playwright execution remains environment-blocked. |
+| Durable convention | Replacement S3 | Ox Alpha, sole writer (historical) | accepted replacement S1 and S2 | `docs/frontend-conventions.md` validates and matches verified behavior. |
 | Reviews | replacement S1, S2, final | configured native specialists preferred; authorized Luna simplification and separate Sol correctness/risk/final alternates when unavailable | immutable commits | Read-only findings are verified and dispositioned independently of the execution owner; unavailable alternates or unresolved material findings stop progression. |
 
 No parallel implementation writer is permitted because both UI slices share
@@ -498,10 +500,11 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   `git diff --check` over origin/v3..HEAD passed and the worktree stayed
   clean. Repository-native checks inside the exact devcontainer via canonical
   `devrouter exec` passed: `pnpm run check:all` completed 25/25 check tasks
-  and 7/7 lint tasks with zero warnings (AGENTS.md check, Prisma sync,
-  syncpack valid; the devrouter tunnel wrapper lost its final exit-status
-  report twice, so the wrapper exit is not claimed, but every task summary is
-  green); `pnpm run build` completed 23/23 tasks with wrapper exit 0;
+  and 7/7 lint tasks; the AGENTS.md check emitted zero warnings, Prisma sync
+  and syncpack validated, and other tasks emitted their normal warnings only.
+  The devrouter tunnel wrapper lost its final exit-status report twice, so the
+  wrapper exit is not claimed, but every task summary is green. `pnpm run
+  build` completed 23/23 tasks with wrapper exit 0;
   focused `pnpm --filter @klicker-uzh/frontend-manage run check` exit 0;
   `pnpm --filter @klicker-uzh/playwright run check` exit 0; Playwright
   `--list --project=chromium` collected 154 tests in B/O/P spec files, exit 0.
