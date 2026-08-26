@@ -29,11 +29,13 @@ uncrowned regardless of Catalyst entitlement.
 - Except for the official devrouter 0.0.38 consumer version pin and generated
   guidance prerequisite, do not change devrouter, devcontainer, local-origin,
   environment, application routes, or Turborepo routing configuration.
-- Draft PR #5546 exists. The branch and PR body were synchronized through the
-  prior published head. Current PR and check state is volatile, and GitHub is
-  authoritative. Normal pushes and PR body updates are authorized and performed
-  as required. PR merge, mark-ready, deployment, publication, worktree cleanup,
-  and branch, worktree, or runtime-data deletion remain withheld.
+- Draft PR #5546 exists and still points to published head
+  `024c8813c4b51bdf4bf9562041c7594d30725e3e`. Reviewed local head
+  `38bfd4bb472c1d1d8ac0a9f983d59e1909681b49` remains unpublished. GitHub is
+  authoritative for volatile PR and check state; the normal push and PR body
+  update are authorized but pending. PR merge, mark-ready, deployment,
+  publication, worktree cleanup, and branch, worktree, or runtime-data deletion
+  remain withheld.
 
 ## Execution contract
 
@@ -69,9 +71,17 @@ uncrowned regardless of Catalyst entitlement.
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/ux-review-question-library`.
 - Branch: `rs/question-library-activity-wizard-feedback`.
 - Current integrated base and merge-base:
-  `61a7f8108477a58595505d97618d68f3eeb35aff` (the integrated `origin/v3`
-  base). The branch fully integrates that base; volatile ahead/behind counts
-  are intentionally omitted.
+  `97d26bb03f79d10cb85043d7041e880a7d96c3c8`. Current `origin/v3` at
+  `7f628ab56a71f22fa93fb6dd340dd9b3dcee65e3` is only an unmerged staging-values
+  promotion; volatile ahead/behind counts are intentionally omitted.
+- The merge integrated `7515632f229c9421a7ac7d62668e1743147ba158` and its
+  generated GraphQL policy: typed and persisted artifacts are generated and
+  ignored, while the public SDL remains tracked.
+- Approved package scope additionally includes the trace-backed
+  `MA-elements-operations.spec.ts` repair at
+  `b4d4a40eee142a576595005727f233c7e9dece76`, with dialog-close waits and
+  deterministic retry suffixes, plus the duplicate activity assertion cleanup
+  at `024c8813c4b51bdf4bf9562041c7594d30725e3e`.
 - Historical/superseded evidence: old base
   `7ea45772be3b177978de52e3ede7c95e34cec0b1`; old plan commit
   `a1c9853312907c923127ce81664f06890dd35c6e`; obsolete S1 commit
@@ -81,11 +91,12 @@ uncrowned regardless of Catalyst entitlement.
   `01a03490-059c-7381-adb8-91b77e89f5f9` accepted rebuilding S1 without
   Catalyst signaling because ADR-0037 makes the three formerly gated formats
   standard full-access capabilities.
-- Draft PR #5546 exists. The branch and PR body were synchronized through the
-  prior published head. Current PR and check state is volatile, and GitHub is
-  authoritative. Normal pushes and PR body updates are authorized and performed
-  as required. PR merge, mark-ready, deployment, publication, cleanup, and
-  deletion remain withheld.
+- Draft PR #5546 still points to published head
+  `024c8813c4b51bdf4bf9562041c7594d30725e3e`; reviewed local head
+  `38bfd4bb472c1d1d8ac0a9f983d59e1909681b49` remains unpublished. GitHub is
+  authoritative for volatile PR and check state. The normal push and PR body
+  update are authorized but pending; PR merge, mark-ready, deployment,
+  publication, cleanup, and deletion remain withheld.
 - Authoritative roadmap:
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/question-library-feedback-recovery/project/2026-08-23-question-library-ux-audit-and-roadmap.md`
   on `rs/question-library-feedback-recovery` at `5d7c0284890db55a93da1cb66a1ca87ab03f2e0d`.
@@ -406,11 +417,11 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   alternate or an unresolved material finding stops delivery.
 - Finalize plan `Progress` in a local commit and report commits, checks,
   review disposition, browser/runtime evidence, and remaining withheld actions.
-  Draft PR #5546 exists; the branch and PR body were synchronized through the
-  prior published head. Current PR and check state is volatile, and GitHub is
-  authoritative. Normal pushes and PR body updates are authorized and performed
-  as required. PR merge, mark-ready, deployment, publication, worktree cleanup,
-  and branch or worktree deletion remain withheld.
+  Draft PR #5546 exists and GitHub remains authoritative for volatile PR and
+  check state. The latest reviewed corrections remain local; their normal push
+  and PR body update are authorized but pending. PR merge, mark-ready,
+  deployment, publication, worktree cleanup, and branch or worktree deletion
+  remain withheld.
 
 ## Risks and stop conditions
 
@@ -434,9 +445,10 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 - Command/result ledger for targeted checks, diff hygiene, reviews, exact-domain
   browser evidence, and the environment-blocked repository Playwright run.
 - Host readback proves branch and PR-body synchronization for each published
-  head. GitHub is authoritative for volatile current PR and check state. Normal
-  pushes and PR body updates are authorized and performed as required; PR merge,
-  mark-ready, deployment, publication, cleanup, and deletion remain withheld.
+  head. GitHub is authoritative for volatile current PR and check state. The
+  latest reviewed corrections remain local; their normal push and PR body
+  update are authorized but pending. PR merge, mark-ready, deployment,
+  publication, cleanup, and deletion remain withheld.
 
 ## Progress
 
@@ -444,10 +456,10 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   Implementation, checks, exact devrouter proof, independent review, evidence,
   and non-destructive shutdown are complete through the local correction and
   review-disposition commits.
-- Freshness: `origin/v3` at
-  `61a7f8108477a58595505d97618d68f3eeb35aff` is fully integrated and is the
-  current merge-base. Exact ahead/behind counts are not treated as durable
-  Progress state while local correction commits continue.
+- Freshness: the integrated base and merge-base are
+  `97d26bb03f79d10cb85043d7041e880a7d96c3c8`. Current `origin/v3` at
+  `7f628ab56a71f22fa93fb6dd340dd9b3dcee65e3` is only an unmerged staging-values
+  promotion. Exact ahead/behind counts are not durable Progress state.
 - Sol final-review disposition for reviewed pre-correction local head
   `5ca2804370bc4cd6fa165d6158d611adb258c627`: both non-behavioral findings are
   accepted. The plan records the integrated base and merge-base, and the
@@ -749,6 +761,24 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   passed; focused B/O Chromium discovery collected 89 tests; plan Prettier and
   `git diff --check` passed. No runtime or browser was started. Push, thread
   resolution, PR-state changes, merge, and deployment remain withheld.
+- Final local evidence for reviewed head
+  `38bfd4bb472c1d1d8ac0a9f983d59e1909681b49`: canonical `devrouter ensure`
+  used only namespaced `*.localhost` routes. `pnpm run check:all` passed 25/25
+  check tasks and 7/7 lint tasks after recreating only the ignored analytics
+  virtual environment under the existing Python 3.12 pin; no source or
+  configuration workaround was used. `pnpm run build` passed 23/23 tasks.
+  `devrouter stop . --json` freed 10 routes and reported `stopped: true`;
+  scoped workspace readback was ownership-valid and stopped with `ownerStatus`
+  present, `devpodStatus: owned`, and `routeCount: 0`.
+- Final independent review found no additional correction: Luna simplification
+  returned no findings, and Sol found no code, accessibility, security, test,
+  or generated-artifact finding. Sol's sole finding was this stale durable-plan
+  state; it is accepted and corrected without changing product or test behavior.
+- Delivery remains pending from the reviewed local head. Draft PR #5546 still
+  points to `024c8813c4b51bdf4bf9562041c7594d30725e3e`; no push or exact-head CI
+  is claimed. The two OpenCodeReview threads remain unresolved until new
+  exact-head CI is green. PR merge, mark-ready, deployment, publication,
+  cleanup, deletion, and review-thread resolution remain withheld.
 
 ### Historical execution evidence before final runtime proof
 
