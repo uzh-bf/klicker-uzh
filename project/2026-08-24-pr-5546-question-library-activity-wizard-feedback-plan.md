@@ -31,14 +31,14 @@ uncrowned regardless of Catalyst entitlement.
   environment, application routes, or Turborepo routing configuration.
 - Draft PR #5546 remains draft and GitHub is authoritative for volatile PR and
   check state. Current origin/v3 and merge-base is
-  `a36c2162631792eecd23388d13aa6cc83fb3ffea`; the normal local merge
-  `689a89d9f4e6c051258f5d4eadee0ac832a3b554` imports only
-  `deploy/env-uzh-stg/values.yaml`. The pre-plan-update exact head
-  `6ad04f4a18f69d62b231d78d60567897aff7f71d` was pushed to draft PR #5546,
-  its PR body was updated, and all seven review threads are resolved; this
-  plan-only commit supersedes that head and requires its own exact-head CI. PR
-  merge, mark-ready, deployment, publication, worktree cleanup, and branch,
-  worktree, or runtime-data deletion remain withheld.
+  `ff9e9fae3b58c5955ff80ec58559ecd655c071d8`; the normal no-rebase, no-force
+  merge `92de9d06e6dc5245b376a049da30aa07246dab1a` integrates it. The
+  pre-plan-update exact head `6ad04f4a18f69d62b231d78d60567897aff7f71d` was
+  pushed to draft PR #5546, its PR body was updated, and all seven review
+  threads are resolved; the current merge head and this plan-only commit
+  supersede it and require their own exact-head CI after push. PR merge,
+  mark-ready, deployment, publication, worktree cleanup, and branch, worktree,
+  or runtime-data deletion remain withheld.
 
 ## Execution contract
 
@@ -81,11 +81,12 @@ uncrowned regardless of Catalyst entitlement.
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/ux-review-question-library`.
 - Branch: `rs/question-library-activity-wizard-feedback`.
 - Current integrated base and merge-base:
-  `a36c2162631792eecd23388d13aa6cc83fb3ffea`, which is also the current
+  `ff9e9fae3b58c5955ff80ec58559ecd655c071d8`, which is also the current
   `origin/v3`. The normal no-rebase, no-force local merge
-  `689a89d9f4e6c051258f5d4eadee0ac832a3b554` imports only
-  `deploy/env-uzh-stg/values.yaml`; volatile ahead/behind counts are
-  intentionally omitted.
+  `92de9d06e6dc5245b376a049da30aa07246dab1a` integrates it with no
+  conflicts, importing 26 upstream files (CI workflow consolidation and ARM64
+  runner pools, deploy/env-uzh-prd values, docs, and util scripts); volatile
+  ahead/behind counts are intentionally omitted.
 - The merge integrated `7515632f229c9421a7ac7d62668e1743147ba158` and its
   generated GraphQL policy: typed and persisted artifacts are generated and
   ignored, while the public SDL remains tracked.
@@ -108,14 +109,13 @@ uncrowned regardless of Catalyst entitlement.
   standard full-access capabilities.
 - Draft PR #5546 remains draft and GitHub is authoritative for volatile PR and
   check state. The current normal local merge
-  `689a89d9f4e6c051258f5d4eadee0ac832a3b554` integrates current origin/v3
-  `a36c2162631792eecd23388d13aa6cc83fb3ffea`, importing only
-  `deploy/env-uzh-stg/values.yaml`. The pre-plan-update exact head
-  `6ad04f4a18f69d62b231d78d60567897aff7f71d` was pushed normally, the PR
-  body was synchronized, and all seven review threads were resolved; this
-  plan-only commit supersedes that head and requires its own exact-head CI. PR
-  merge, mark-ready, deployment, publication, cleanup, and deletion remain
-  withheld.
+  `92de9d06e6dc5245b376a049da30aa07246dab1a` integrates current origin/v3
+  `ff9e9fae3b58c5955ff80ec58559ecd655c071d8`. The pre-plan-update exact
+  head `6ad04f4a18f69d62b231d78d60567897aff7f71d` was pushed normally, the
+  PR body was synchronized, and all seven review threads were resolved; the
+  current merge head and this plan-only commit supersede it and require their
+  own exact-head CI after push. PR merge, mark-ready, deployment, publication,
+  cleanup, and deletion remain withheld.
 - Authoritative roadmap:
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/question-library-feedback-recovery/project/2026-08-23-question-library-ux-audit-and-roadmap.md`
   on `rs/question-library-feedback-recovery` at `5d7c0284890db55a93da1cb66a1ca87ab03f2e0d`.
@@ -441,9 +441,10 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   executable-code, security, accessibility, or architecture defect; its sole
   finding was that canonical current-state sections of this durable plan were
   stale, and this documentation correction resolves that finding.
-- Current merge `689a89d9f4e6c051258f5d4eadee0ac832a3b554` adds only the
-  `deploy/env-uzh-stg/values.yaml` change from current base
-  `a36c2162631792eecd23388d13aa6cc83fb3ffea`. The independent reviewer also
+- Current merge `92de9d06e6dc5245b376a049da30aa07246dab1a` adds only the 26
+  upstream files from current base
+  `ff9e9fae3b58c5955ff80ec58559ecd655c071d8`; no branch-owned file changed.
+  The independent reviewer also
   proposed removing O-live-quiz lines 2414-2435; that removal was rejected
   because the retained cycles cover distinct filling versus deletion recovery,
   including an empty block among valid blocks, so removing them would weaken
@@ -459,10 +460,13 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   and check state. Final local review and delta verification are complete
   through reviewed pre-correction head
   `3e72795c13f5e1102e55e7e7dc2a464a0ea8e763`; the pushed pre-plan-update
-  exact head `6ad04f4a18f69d62b231d78d60567897aff7f71d` carries the
-  completed exact-head CI and resolved review threads, while this plan-only
-  commit supersedes it and requires its own exact-head CI. PR merge,
-  mark-ready, deployment, publication, worktree cleanup, and branch or
+  exact head `6ad04f4a18f69d62b231d78d60567897aff7f71d` passed all
+  executable code-quality, GraphQL, and build checks and all eight Playwright
+  shards, with its mechanical aggregate still queued and OpenCodeReview failed
+  pre-inference (HTTP 402, zero tokens or comments), and its seven review
+  threads are resolved. The current merge head and this plan-only commit
+  supersede that head and require their own exact-head CI after push. PR
+  merge, mark-ready, deployment, publication, worktree cleanup, and branch or
   worktree deletion remain withheld.
 
 ## Risks and stop conditions
@@ -490,11 +494,34 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   head. GitHub is authoritative for volatile current PR and check state. The
   pre-plan-update exact head `6ad04f4a18f69d62b231d78d60567897aff7f71d` was
   pushed to draft PR #5546 with its PR body synchronized and all seven review
-  threads resolved; this plan-only commit supersedes that head and requires its
-  own exact-head CI. PR merge, mark-ready, deployment, publication, cleanup,
-  and deletion remain withheld.
+  threads resolved, and its executable code-quality, GraphQL, and build checks
+  plus all eight Playwright shards passed while the mechanical aggregate
+  remained queued and OpenCodeReview failed pre-inference (HTTP 402, zero
+  tokens or comments); the current merge head and this plan-only commit
+  supersede that head and require their own exact-head CI after push. PR
+  merge, mark-ready, deployment, publication, cleanup, and deletion remain
+  withheld.
 
 ## Progress
+
+- 2026-08-26 current v3 integration: authoritative git ls-remote reported
+  origin/v3 at ff9e9fae3b58c5955ff80ec58559ecd655c071d8, four commits beyond
+  prior base a36c2162. A read-only merge-tree showed no conflicts. The normal
+  no-rebase, no-force merge 92de9d06e6dc5245b376a049da30aa07246dab1a
+  (parents 94692eeb144b887505274255812bb4a6774d8a86 and
+  ff9e9fae3b58c5955ff80ec58559ecd655c071d8) integrated current origin/v3,
+  importing only its 26 upstream files (CI workflow consolidation and ARM64
+  runner pools, deploy/env-uzh-prd values, docs, and util scripts); no
+  branch-owned file changed and the worktree is clean. This record also
+  corrects the earlier overstatement about head 6ad04f4a: its exact-head CI
+  passed all executable code-quality, GraphQL, and build checks and all eight
+  Playwright shards in run 32992893012, while the mechanical Playwright
+  aggregate remained queued and OpenCodeReview run 32992892615 failed
+  pre-inference with HTTP 402 and zero tokens or comments, so no code-review
+  success is claimed. The final plan-only and current merge head requires its
+  own exact-head CI after push; GitHub remains authoritative for volatile
+  check state. All seven review threads stay resolved; PR #5546 remains draft
+  with mark-ready, merge, deploy, publication, cleanup, and deletion withheld.
 
 - 2026-08-26 W2 draft delivery: the pre-plan-update exact head
   `6ad04f4a18f69d62b231d78d60567897aff7f71d` was pushed normally to draft PR
@@ -623,11 +650,10 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   `3e72795c13f5e1102e55e7e7dc2a464a0ea8e763`. Runtime closure retains fresh
   exact-source provider state `Stopped` and zero exact routes.
 - Freshness: the integrated base and merge-base are
-  `a36c2162631792eecd23388d13aa6cc83fb3ffea`, which is also the current
+  `ff9e9fae3b58c5955ff80ec58559ecd655c071d8`, which is also the current
   `origin/v3`, integrated by the normal local merge
-  `689a89d9f4e6c051258f5d4eadee0ac832a3b554` importing only
-  `deploy/env-uzh-stg/values.yaml`. Exact ahead/behind counts are not durable
-  Progress state.
+  `92de9d06e6dc5245b376a049da30aa07246dab1a` importing only its 26 upstream
+  files. Exact ahead/behind counts are not durable Progress state.
 - Sol final-review disposition for reviewed pre-correction local head
   `5ca2804370bc4cd6fa165d6158d611adb258c627`: both non-behavioral findings are
   accepted. The plan records the integrated base and merge-base, and the
