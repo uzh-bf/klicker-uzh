@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "coverage": { "type": "string", "const": "complete" },
+        "comments": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["coverage", "comments"]
+    },
+    "comments": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "layer_numbers": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "uniqueItems": true,
+            "items": { "type": "integer", "minimum": 1 }
+          },
+          "start_line": { "type": "integer", "minimum": 1 },
+          "end_line": { "type": "integer", "minimum": 1 },
+          "category": {
+            "type": "string",
+            "enum": [
+              "bug",
+              "security",
+              "performance",
+              "maintainability",
+              "test",
+              "style",
+              "documentation",
+              "other"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"]
+          },
+          "content": { "type": "string", "minLength": 1, "maxLength": 12000 }
+        },
+        "required": [
+          "path",
+          "layer_numbers",
+          "start_line",
+          "end_line",
+          "category",
+          "severity",
+          "content"
+        ]
+      }
+    }
+  },
+  "required": ["summary", "comments"]
+}
