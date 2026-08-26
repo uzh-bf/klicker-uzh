@@ -1049,6 +1049,7 @@ export type StudentAssessmentInstanceResponse = {
 export enum PointCorrectionType {
   ALL_COURSE = 'ALL_COURSE',
   PARTICIPATING = 'PARTICIPATING',
+  PARTICIPATING_QUIZ = 'PARTICIPATING_QUIZ',
   SINGLE = 'SINGLE',
   MULTIPLE = 'MULTIPLE',
 }

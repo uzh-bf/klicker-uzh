@@ -3614,12 +3614,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       historyScopeUnknown: 'Scope unavailable',
       audienceTitle: 'Choose the Audience',
       audienceDescription:
-        'Select to whose responses the point correction should be applied to. You can choose a single participant, all participating users in scope, or all assessment course participants. Participating users for a question are those who have submitted an answer for the corresponding question in the quiz, while participating users of a quiz must have submitted an answer for at least one question in the respective quiz. Users that are selected but have not submitted a corresponding response will still receive the specified points.',
+        'Select whose points should be corrected. For a single question, you can target users who answered that question or all users with at least one answer anywhere in the quiz. Selected users without a response to the question will still receive the specified points.',
       audienceLabel: 'Audience',
       audiencePlaceholder: 'Select an audience',
       audienceOptionSingle: 'Single participant',
       audienceOptionMultiple: 'Multiple participants',
       audienceOptionParticipating: 'All participating users',
+      audienceOptionParticipatingElement:
+        'All participating users (this element)',
+      audienceOptionParticipatingQuiz: 'All participating users (entire quiz)',
       audienceOptionCourse: 'All assessment course participants',
       participantLabel: 'Participant',
       participantsLabel: 'Participants',
@@ -3628,6 +3631,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       participantScopeSingle: 'Selected participant',
       participantScopeMultiple: 'Selected participants',
       participantScopeParticipating: 'All participating users',
+      participantScopeParticipatingElement:
+        'All participating users (this element)',
+      participantScopeParticipatingQuiz:
+        'All participating users (entire quiz)',
       participantScopeCourse: 'All assessment course participants',
       adjustmentsTitle: 'Adjust Points',
       adjustmentsDescription:

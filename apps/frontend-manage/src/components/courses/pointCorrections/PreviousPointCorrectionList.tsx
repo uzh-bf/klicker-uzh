@@ -108,9 +108,11 @@ function PreviousPointCorrectionList({
                       : 'manage.pointCorrections.historyScopeParticipatingQuiz',
                     { name: instanceName ?? '' }
                   )
-                : correction.type === PointCorrectionType.AllCourse
-                  ? t('manage.pointCorrections.historyScopeCourse')
-                  : null,
+                : correction.type === PointCorrectionType.ParticipatingQuiz
+                  ? t('manage.pointCorrections.historyScopeParticipatingQuiz')
+                  : correction.type === PointCorrectionType.AllCourse
+                    ? t('manage.pointCorrections.historyScopeCourse')
+                    : null,
         ].filter((entry): entry is string => Boolean(entry))
 
         const scopeDisplay =

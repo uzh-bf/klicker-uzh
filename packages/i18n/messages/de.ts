@@ -3673,12 +3673,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       historyScopeUnknown: 'Bereich nicht verfügbar',
       audienceTitle: 'Zielgruppe wählen',
       audienceDescription:
-        'Bestimmen Sie, auf die Antworten welcher Nutzer die Punktkorrektur angewendet werden soll. Sie können eine einzelne Person, alle teilnehmenden Nutzer oder alle Nutzer im Assessment-Kurs auswählen. Teilnehmende Nutzer bei einer Frage sind jene, die eine Antwort für die entsprechende Frage im Quiz abgegeben haben, während teilnehmende Nutzer eines Quizzes mindestens für eine Frage im entsprechenden Quiz eine Antwort abgegeben haben müssen. Nutzer welche ausgewählt wurden, aber keine entsprechende Antwort besitzen erhalten dennoch die ausgewählten Punkte.',
+        'Bestimmen Sie, wessen Punkte korrigiert werden sollen. Bei einer einzelnen Frage können Sie Personen auswählen, die diese Frage beantwortet haben, oder alle Personen mit mindestens einer Antwort im gesamten Quiz. Ausgewählte Personen ohne Antwort auf die Frage erhalten dennoch die festgelegten Punkte.',
       audienceLabel: 'Zielgruppe',
       audiencePlaceholder: 'Zielgruppe auswählen',
       audienceOptionSingle: 'Einzelne Person',
       audienceOptionMultiple: 'Mehrere Personen',
       audienceOptionParticipating: 'Alle teilnehmenden Nutzer',
+      audienceOptionParticipatingElement:
+        'Alle teilnehmenden Nutzer (dieses Element)',
+      audienceOptionParticipatingQuiz:
+        'Alle teilnehmenden Nutzer (gesamtes Quiz)',
       audienceOptionCourse: 'Alle Teilnehmer des Assessment-Kurses',
       participantLabel: 'Teilnehmende Person',
       participantsLabel: 'Teilnehmende Personen',
@@ -3687,6 +3691,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       participantScopeSingle: 'Ausgewählte Person',
       participantScopeMultiple: 'Ausgewählte Personen',
       participantScopeParticipating: 'Alle teilnehmenden Nutzer',
+      participantScopeParticipatingElement:
+        'Alle teilnehmenden Nutzer (dieses Element)',
+      participantScopeParticipatingQuiz:
+        'Alle teilnehmenden Nutzer (gesamtes Quiz)',
       participantScopeCourse: 'Alle Teilnehmer des Assessment-Kurses',
       adjustmentsTitle: 'Punkte anpassen',
       adjustmentsDescription:
