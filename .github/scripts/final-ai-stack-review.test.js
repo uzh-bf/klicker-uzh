@@ -390,6 +390,7 @@ test('accepts a trusted clean stack status without requiring a review body', asy
       head_sha: plan.headSha,
       status: 'completed',
       conclusion: 'success',
+      app: { slug: 'github-actions' },
       details_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
       external_id: '700',
       completed_at: '2026-08-25T00:00:00Z',
@@ -401,6 +402,15 @@ test('accepts a trusted clean stack status without requiring a review body', asy
   assert.deepEqual(
     parseStackCleanEvidence(state.checkRuns[0].output.text),
     cleanEvidence
+  )
+  assert.equal(
+    parseStackCleanEvidence(
+      `<!-- final-ai-stack-clean-evidence/v1 ${encodeMetadata({
+        ...cleanEvidence,
+        reviewed_path_aliases: ['src/tampered.ts'],
+      })} -->`
+    ),
+    null
   )
   github.rest.actions = {
     getWorkflowRun: async () => ({ data: state.workflowRun }),
@@ -1328,6 +1338,7 @@ test('preserves comment-free clean evidence across unrelated default-base advanc
       head_sha: originalPlan.headSha,
       status: 'completed',
       conclusion: 'success',
+      app: { slug: 'github-actions' },
       details_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
       external_id: '700',
       completed_at: '2026-08-25T00:00:00Z',

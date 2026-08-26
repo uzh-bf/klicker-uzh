@@ -8,10 +8,13 @@ const {
   FINAL_REVIEW_SCHEMA,
   FINAL_REVIEW_MODEL,
   FINAL_REVIEW_CLEAN_STATUS_PREFIX,
+  FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME,
+  FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA,
   GENERATED_PROMOTION_STATUS,
   PROMOTION_FILE,
   authorizeFinalReview,
   buildIndividualCleanReviewEvidenceDigest,
+  buildIndividualCleanEvidenceMetadata,
   buildExpectedPromotionContent,
   buildOCRConfig,
   buildReviewPlan,
@@ -29,6 +32,7 @@ const {
   isTrustedPermission,
   normalizeTitle,
   parseDispositionRecord,
+  parseIndividualCleanEvidence,
   parseReviewMetadata,
   publishFinalReview,
   promotionBody,
@@ -61,6 +65,25 @@ test('accepts only the exact command and calculated write permissions', () => {
   assert.equal(isTrustedPermission('admin'), true)
   assert.equal(isTrustedPermission('read'), false)
   assert.equal(isTrustedPermission('maintain'), false)
+})
+
+test('grants clean evidence check access only to the required workflow jobs', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  const permissionsFor = (jobName) =>
+    workflow.match(
+      new RegExp(
+        `\\n {2}${jobName}:\\n([\\s\\S]*?)(?=\\n {2}[a-z][\\w-]*:\\n|$)`
+      )
+    )?.[1] ?? ''
+
+  for (const jobName of ['initialize', 'authorize', 'start']) {
+    assert.match(permissionsFor(jobName), /permissions:[^]*checks: read/)
+  }
+  assert.match(permissionsFor('finalize'), /permissions:[^]*checks: write/)
+  assert.doesNotMatch(permissionsFor('review'), / {6}checks:/)
 })
 
 test('pins trusted review code to the event workflow commit when the default branch moves', () => {
@@ -406,6 +429,7 @@ function reviewGithub({
 }) {
   const reviewsEndpoint = {}
   const commentsEndpoint = {}
+  const checksEndpoint = async () => ({ data: state.checkRuns ?? [] })
   const state = {
     comparison,
     comparisons,
@@ -417,9 +441,23 @@ function reviewGithub({
     policyFiles,
     rules,
     workflowRun,
+    createdCheckRuns: [],
+    createdStatuses: [],
   }
   const github = {
     rest: {
+      checks: {
+        listForRef: checksEndpoint,
+        create: async (check) => {
+          const created = {
+            ...check,
+            app: { slug: 'github-actions' },
+            id: state.createdCheckRuns.length + 1,
+          }
+          state.createdCheckRuns.push(created)
+          return { data: created }
+        },
+      },
       pulls: {
         get: async ({ pull_number }) => ({
           data: pullsByNumber[pull_number] ?? state.pull,
@@ -435,6 +473,10 @@ function reviewGithub({
           data: { user: { permission: state.permission } },
         }),
         listCommitStatusesForRef: async () => ({ data: state.statuses }),
+        createCommitStatus: async (status) => {
+          state.createdStatuses.push(status)
+          return { data: status }
+        },
         getContent: async ({ path: filePath }) => ({
           data: {
             type: 'file',
@@ -452,9 +494,11 @@ function reviewGithub({
     paginate: async (endpoint, params) =>
       endpoint === github.rest.repos.listCommitStatusesForRef
         ? (await endpoint(params)).data
-        : endpoint === reviewsEndpoint
-          ? state.reviews
-          : state.comments,
+        : endpoint === checksEndpoint
+          ? (state.checkRuns ?? [])
+          : endpoint === reviewsEndpoint
+            ? state.reviews
+            : state.comments,
     request: async () => ({ data: stackResponse ?? [] }),
   }
   return { github, state }
@@ -685,18 +729,41 @@ test('accepts a trusted clean status without requiring a review body', async () 
       repo: { full_name: 'uzh-bf/klicker-uzh' },
     },
   }
-  const { github, state } = reviewGithub({ pull })
+  const { github, state } = reviewGithub({
+    pull,
+    comparison: {
+      status: 'ahead',
+      files: [{ filename: 'src/example.ts', additions: 4, deletions: 2 }],
+    },
+  })
   const context = reviewContext()
   const plan = await buildReviewPlan({ github, context, pull })
+  const cleanEvidence = buildIndividualCleanEvidenceMetadata({
+    context,
+    pull,
+    plan,
+    trustedSha: 'd'.repeat(40),
+    range: {
+      reviewFromSha: pull.base.sha,
+      reviewedPaths: ['src/example.ts'],
+      reviewedPathAliases: ['src/example.ts'],
+    },
+  })
   const evidenceDigest = buildIndividualCleanReviewEvidenceDigest({
     pull,
     plan,
+    reviewFromSha: cleanEvidence.review_from_sha,
+    reviewedPaths: cleanEvidence.reviewed_paths,
+    reviewedPathAliases: cleanEvidence.reviewed_path_aliases,
   })
   assert.notEqual(
     evidenceDigest,
     buildIndividualCleanReviewEvidenceDigest({
       pull: { ...pull, base: { ...pull.base, sha: 'c'.repeat(40) } },
       plan,
+      reviewFromSha: cleanEvidence.review_from_sha,
+      reviewedPaths: cleanEvidence.reviewed_paths,
+      reviewedPathAliases: cleanEvidence.reviewed_path_aliases,
     })
   )
   state.statuses = [
@@ -707,11 +774,27 @@ test('accepts a trusted clean status without requiring a review body', async () 
       target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
     },
   ]
+  state.checkRuns = [
+    {
+      name: FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME,
+      head_sha: pull.head.sha,
+      status: 'completed',
+      conclusion: 'success',
+      app: { slug: 'github-actions' },
+      details_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+      external_id: '123',
+      completed_at: '2026-08-25T00:00:00Z',
+      output: {
+        text: `<!-- ${FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA} ${encodeMetadata(cleanEvidence)} -->`,
+      },
+    },
+  ]
   state.workflowRun = {
     id: 123,
     path: '.github/workflows/check-ocr-final-review.yml',
     event: 'issue_comment',
     head_branch: 'v3',
+    head_sha: context.sha,
     conclusion: 'success',
     repository: { full_name: 'uzh-bf/klicker-uzh' },
   }
@@ -734,6 +817,258 @@ test('accepts a trusted clean status without requiring a review body', async () 
       cleanEvidenceDigest: evidenceDigest,
     }).description,
     `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${evidenceDigest}`
+  )
+})
+
+test('publishes clean individual evidence as a check without a pull-request comment', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Empty final review',
+    base: {
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/empty-final-review',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github, state } = reviewGithub({
+    pull,
+    comparison: {
+      status: 'ahead',
+      files: [{ filename: 'src/example.ts', additions: 4, deletions: 2 }],
+    },
+  })
+  const context = reviewContext()
+  const plan = await buildReviewPlan({ github, context, pull })
+
+  await finalizeFinalReview({
+    github,
+    context,
+    prNumber: pull.number,
+    baseSha: pull.base.sha,
+    headSha: pull.head.sha,
+    mode: plan.mode,
+    rootHead: plan.rootHead,
+    rootReviewId: plan.rootReviewId,
+    backgroundDigest: plan.backgroundDigest,
+    scopeKind: plan.scopeKind,
+    stackId: plan.stackId,
+    stackPosition: plan.stackPosition,
+    stackOrderDigest: plan.stackOrderDigest,
+    dispositionDigest: plan.dispositionDigest,
+    dispositionIds: plan.dispositionIds,
+    policyDigest: plan.policyDigest,
+    trustedSha: 'd'.repeat(40),
+    reviewOutcome: 'success',
+    cleanupOutcome: 'success',
+    publishOutcome: 'success',
+    cleanReview: 'true',
+  })
+
+  assert.equal(state.createdCheckRuns.length, 1)
+  assert.equal(
+    state.createdCheckRuns[0].name,
+    FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME
+  )
+  assert.equal(state.createdCheckRuns[0].head_sha, pull.head.sha)
+  assert.equal(state.createdStatuses.at(-1).state, 'success')
+  assert.match(
+    state.createdStatuses.at(-1).description,
+    new RegExp(`${FINAL_REVIEW_CLEAN_STATUS_PREFIX}[0-9a-f]{64}`)
+  )
+  assert.equal(state.reviews.length, 0)
+})
+
+test('preserves comment-free individual clean evidence across unrelated default-base advancement', async () => {
+  const baseSha = 'b'.repeat(40)
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Empty final review',
+    base: {
+      ref: 'v3',
+      sha: baseSha,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/empty-final-review',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github, state } = reviewGithub({
+    pull,
+    comparison: {
+      status: 'ahead',
+      files: [{ filename: 'src/example.ts', additions: 4, deletions: 2 }],
+    },
+  })
+  const context = reviewContext()
+  const plan = await buildReviewPlan({ github, context, pull })
+  const cleanEvidence = buildIndividualCleanEvidenceMetadata({
+    context,
+    pull,
+    plan,
+    trustedSha: 'd'.repeat(40),
+    range: {
+      reviewFromSha: baseSha,
+      reviewedPaths: ['src/example.ts'],
+      reviewedPathAliases: ['src/example.ts'],
+    },
+  })
+  state.statuses = [
+    {
+      context: 'final-ai-review',
+      state: 'success',
+      description: `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${cleanEvidence.evidence_digest}`,
+      target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+    },
+  ]
+  state.workflowRun = {
+    id: 123,
+    path: '.github/workflows/check-ocr-final-review.yml',
+    event: 'issue_comment',
+    head_branch: 'v3',
+    head_sha: context.sha,
+    conclusion: 'success',
+    repository: { full_name: 'uzh-bf/klicker-uzh' },
+  }
+  state.checkRuns = [
+    {
+      name: FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME,
+      head_sha: pull.head.sha,
+      status: 'completed',
+      conclusion: 'success',
+      app: { slug: 'github-actions' },
+      details_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+      external_id: '123',
+      output: {
+        text: `<!-- ${FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA} ${encodeMetadata(cleanEvidence)} -->`,
+      },
+    },
+  ]
+
+  const advancedBase = 'c'.repeat(40)
+  state.pull = {
+    ...pull,
+    base: { ...pull.base, sha: advancedBase },
+  }
+  state.comparisons[`${baseSha}...${advancedBase}`] = {
+    status: 'ahead',
+    files: [{ filename: 'docs/unrelated.md', additions: 1, deletions: 0 }],
+  }
+  const advancedPlan = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(
+    await hasCurrentSuccessfulFinalReview({
+      github,
+      context,
+      pull: state.pull,
+      plan: advancedPlan,
+    }),
+    true
+  )
+
+  state.comparisons[`${baseSha}...${advancedBase}`] = {
+    status: 'ahead',
+    files: [{ filename: 'src/example.ts', additions: 1, deletions: 1 }],
+  }
+  assert.equal(
+    await hasCurrentSuccessfulFinalReview({
+      github,
+      context,
+      pull: state.pull,
+      plan: advancedPlan,
+    }),
+    false
+  )
+})
+
+test('rejects tampered individual clean path evidence', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Empty final review',
+    base: {
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/empty-final-review',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github, state } = reviewGithub({ pull })
+  const context = reviewContext()
+  const plan = await buildReviewPlan({ github, context, pull })
+  const cleanEvidence = buildIndividualCleanEvidenceMetadata({
+    context,
+    pull,
+    plan,
+    trustedSha: 'd'.repeat(40),
+    range: {
+      reviewFromSha: pull.base.sha,
+      reviewedPaths: ['src/example.ts'],
+      reviewedPathAliases: ['src/example.ts'],
+    },
+  })
+  const tampered = {
+    ...cleanEvidence,
+    reviewed_path_aliases: ['src/other.ts'],
+  }
+  assert.equal(
+    parseIndividualCleanEvidence(
+      `<!-- ${FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA} ${encodeMetadata(tampered)} -->`
+    ),
+    null
+  )
+  state.statuses = [
+    {
+      context: 'final-ai-review',
+      state: 'success',
+      description: `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${cleanEvidence.evidence_digest}`,
+      target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+    },
+  ]
+  state.workflowRun = {
+    id: 123,
+    path: '.github/workflows/check-ocr-final-review.yml',
+    event: 'issue_comment',
+    head_branch: 'v3',
+    head_sha: context.sha,
+    conclusion: 'success',
+    repository: { full_name: 'uzh-bf/klicker-uzh' },
+  }
+  state.checkRuns = [
+    {
+      name: FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME,
+      head_sha: pull.head.sha,
+      status: 'completed',
+      conclusion: 'success',
+      app: { slug: 'github-actions' },
+      details_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+      external_id: '123',
+      output: {
+        text: `<!-- ${FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA} ${encodeMetadata(tampered)} -->`,
+      },
+    },
+  ]
+  assert.equal(
+    await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
+    false
   )
 })
 

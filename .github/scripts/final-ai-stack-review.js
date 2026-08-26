@@ -117,6 +117,8 @@ function sha256(value) {
 }
 
 function buildStackCleanReviewEvidenceDigest({ plan, membership }) {
+  const paths = stackReviewPathsFromMembership(membership)
+  if (!paths) throw new Error('Stack clean evidence paths are incomplete')
   const layerIdentities = membership.members.map(({ number, pull }, index) => ({
     base_ref: pull.base.ref,
     base_repo: pull.base.repo?.full_name ?? '',
@@ -145,6 +147,10 @@ function buildStackCleanReviewEvidenceDigest({ plan, membership }) {
     disposition_digest: plan.dispositionDigest,
     disposition_ids: plan.dispositionIds ?? [],
     review_ranges: plan.reviewRanges ?? [],
+    reviewed_paths_digest: sha256(JSON.stringify(paths.reviewedPaths)),
+    reviewed_path_aliases_digest: sha256(
+      JSON.stringify(paths.reviewedPathAliases)
+    ),
   })
 }
 
@@ -213,7 +219,11 @@ function buildStackCleanEvidenceMetadata({
     model: FINAL_REVIEW_MODEL,
     policy_digest: plan.policyDigest,
     reviewed_path_aliases: paths.reviewedPathAliases,
+    reviewed_path_aliases_digest: sha256(
+      JSON.stringify(paths.reviewedPathAliases)
+    ),
     reviewed_paths: paths.reviewedPaths,
+    reviewed_paths_digest: sha256(JSON.stringify(paths.reviewedPaths)),
     review_ranges: plan.reviewRanges ?? [],
     root_head: plan.rootHead,
     root_review_id: plan.rootReviewId,
@@ -305,7 +315,9 @@ function parseStackCleanEvidence(body) {
       'policy_digest',
       'review_ranges',
       'reviewed_path_aliases',
+      'reviewed_path_aliases_digest',
       'reviewed_paths',
+      'reviewed_paths_digest',
       'root_head',
       'root_review_id',
       'schema_version',
@@ -415,6 +427,12 @@ function parseStackCleanEvidence(body) {
       metadata.reviewed_paths.some(
         (filePath) => !metadata.reviewed_path_aliases.includes(filePath)
       ) ||
+      !validDigest(metadata.reviewed_paths_digest) ||
+      metadata.reviewed_paths_digest !==
+        sha256(JSON.stringify(metadata.reviewed_paths)) ||
+      !validDigest(metadata.reviewed_path_aliases_digest) ||
+      metadata.reviewed_path_aliases_digest !==
+        sha256(JSON.stringify(metadata.reviewed_path_aliases)) ||
       !validCleanEvidenceReviewRanges(metadata.review_ranges, metadata.mode) ||
       !Array.isArray(metadata.disposition_ids) ||
       metadata.disposition_ids.some((id) => typeof id !== 'string')
@@ -980,12 +998,7 @@ function currentStackRangePaths(membership) {
     for (const file of files) {
       const candidates = [file.filename, file.previous_filename].filter(Boolean)
       for (const filePath of candidates) {
-        if (
-          !safeRepositoryPath(filePath) ||
-          requiresColdIncrementalReview(filePath)
-        ) {
-          return null
-        }
+        if (!safeRepositoryPath(filePath)) return null
         paths.add(filePath)
       }
     }
@@ -1424,9 +1437,11 @@ async function hasSuccessfulStackReview(
   github,
   context,
   headSha,
-  runId = null
+  runId = null,
+  statusOverride = null
 ) {
-  const status = await latestStackStatus(github, context, headSha)
+  const status =
+    statusOverride ?? (await latestStackStatus(github, context, headSha))
   return (
     status?.state === 'success' &&
     (runId == null || status.target_url === workflowRunUrl(context, runId))
@@ -1444,6 +1459,7 @@ async function listCheckRunsForRef({ github, context, ref }) {
     owner: context.repo.owner,
     repo: context.repo.repo,
     ref,
+    filter: 'all',
     per_page: 100,
   })
   return Array.isArray(checkRuns) ? checkRuns : []
@@ -1454,9 +1470,11 @@ async function getVerifiedStackCleanEvidence({
   context,
   headSha,
   evidenceDigest,
+  status: statusOverride,
 }) {
   if (!validSha(headSha) || !validDigest(evidenceDigest)) return null
-  const status = await latestStackStatus(github, context, headSha)
+  const status =
+    statusOverride ?? (await latestStackStatus(github, context, headSha))
   if (
     status?.state !== 'success' ||
     status.description !==
@@ -1486,7 +1504,13 @@ async function getVerifiedStackCleanEvidence({
     workflow.head_branch !== context.payload.repository.default_branch ||
     workflow.conclusion !== 'success' ||
     workflow.repository?.full_name !== repositoryName(context) ||
-    !(await hasSuccessfulStackReview(github, context, headSha, workflowRunId))
+    !(await hasSuccessfulStackReview(
+      github,
+      context,
+      headSha,
+      workflowRunId,
+      status
+    ))
   ) {
     return null
   }
@@ -1497,6 +1521,7 @@ async function getVerifiedStackCleanEvidence({
         candidate.head_sha === headSha &&
         candidate.status === 'completed' &&
         candidate.conclusion === 'success' &&
+        candidate.app?.slug === 'github-actions' &&
         candidate.details_url === workflowRunUrl(context, workflowRunId) &&
         String(candidate.external_id ?? '') === String(workflowRunId)
     )
@@ -1535,23 +1560,8 @@ async function latestVerifiedStackCleanEvidence({ github, context, headSha }) {
     context,
     headSha,
     evidenceDigest: status.description.slice(prefix.length),
+    status,
   })
-}
-
-async function hasVerifiedCleanStackReviewStatus({
-  github,
-  context,
-  headSha,
-  evidenceDigest,
-}) {
-  return Boolean(
-    await getVerifiedStackCleanEvidence({
-      github,
-      context,
-      headSha,
-      evidenceDigest,
-    })
-  )
 }
 
 function stackReviewMetadataMatchesPlan(metadata, plan, membership) {
@@ -1622,12 +1632,14 @@ async function hasCurrentSuccessfulStackReview({
   ) {
     return true
   }
-  return hasVerifiedCleanStackReviewStatus({
-    github,
-    context,
-    headSha: plan.headSha,
-    evidenceDigest: buildStackCleanReviewEvidenceDigest({ plan, membership }),
-  })
+  return Boolean(
+    await getVerifiedStackCleanEvidence({
+      github,
+      context,
+      headSha: plan.headSha,
+      evidenceDigest: buildStackCleanReviewEvidenceDigest({ plan, membership }),
+    })
+  )
 }
 
 async function initializeStackReview({ github, context, trustedSha }) {
@@ -3328,10 +3340,10 @@ async function finalizeStackReview({
     cleanupOutcome,
     publishOutcome,
     cleanReview,
-    cleanEvidenceDigest: buildStackCleanReviewEvidenceDigest({
-      plan,
-      membership,
-    }),
+    cleanEvidenceDigest:
+      cleanReview === 'true'
+        ? buildStackCleanReviewEvidenceDigest({ plan, membership })
+        : '',
   })
   if (status.state === 'success' && cleanReview === 'true') {
     try {

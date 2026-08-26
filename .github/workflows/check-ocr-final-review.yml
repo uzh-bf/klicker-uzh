@@ -97,6 +97,7 @@ jobs:
       cancel-in-progress: false
     permissions:
       actions: read
+      checks: read
       contents: read
       pull-requests: read
       statuses: write
@@ -136,6 +137,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
+      checks: read
       issues: read
       pull-requests: read
       statuses: read
@@ -193,6 +195,7 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: read
+      checks: read
       pull-requests: read
       statuses: write
       actions: read
@@ -421,6 +424,7 @@ jobs:
       group: final-ai-status-lock-${{ needs.authorize.outputs.status_lock_key }}
       cancel-in-progress: false
     permissions:
+      checks: write
       contents: read
       pull-requests: read
       statuses: write
@@ -454,6 +458,7 @@ jobs:
           PUBLISH_OUTCOME: ${{ needs.review.outputs.publish_outcome || needs.review.result }}
           CLEAN_REVIEW: ${{ needs.review.outputs.clean_review || 'false' }}
           POLICY_DIGEST: ${{ needs.authorize.outputs.policy_digest }}
+          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -479,6 +484,7 @@ jobs:
               publishOutcome: process.env.PUBLISH_OUTCOME,
               cleanReview: process.env.CLEAN_REVIEW,
               policyDigest: process.env.POLICY_DIGEST,
+              trustedSha: process.env.TRUSTED_SHA,
             })
 
       - name: Finalize failure fallback

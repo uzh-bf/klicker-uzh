@@ -20,6 +20,8 @@ const DISPOSITION_SCHEMA = 'final-ai-disposition/v1'
 const FINAL_REVIEW_WORKFLOW_PATH =
   '.github/workflows/check-ocr-final-review.yml'
 const FINAL_REVIEW_CLEAN_STATUS_PREFIX = `${FINAL_REVIEW_MODEL} final review clean; evidence=`
+const FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA = 'final-ai-clean-evidence/v1'
+const FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME = 'Final AI clean evidence'
 const GENERATED_PROMOTION_STATUS = 'Verified generated staging promotion'
 const FINAL_REVIEW_RULES_PATH =
   '.github/open-code-review/final-review-rules.json'
@@ -46,6 +48,7 @@ const PROMOTION_FILE = 'deploy/env-uzh-stg/values.yaml'
 const REPORT_LIMIT = 55_000
 const MAX_INCREMENTAL_PATHS = 20
 const MAX_INCREMENTAL_LINES = 1_000
+const MAX_CLEAN_EVIDENCE_PATHS = MAX_COMPARE_FILES
 const FINDING_CATEGORIES = new Set([
   'bug',
   'security',
@@ -63,13 +66,27 @@ function sha256(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex')
 }
 
+function validSha(value) {
+  return /^[0-9a-f]{40}$/.test(value ?? '')
+}
+
+function validDigest(value) {
+  return /^[0-9a-f]{64}$/.test(value ?? '')
+}
+
 function buildFinalReviewEvidenceDigest(value) {
   return sha256(JSON.stringify(value))
 }
 
-function buildIndividualCleanReviewEvidenceDigest({ pull, plan }) {
+function buildIndividualCleanReviewEvidenceDigest({
+  pull,
+  plan,
+  reviewFromSha = '',
+  reviewedPaths = [],
+  reviewedPathAliases = [],
+}) {
   return buildFinalReviewEvidenceDigest({
-    kind: 'individual-clean/v1',
+    kind: 'individual-clean/v2',
     pull_request: pull.number,
     base_ref: pull.base.ref,
     base_repo: pull.base.repo?.full_name ?? '',
@@ -88,6 +105,9 @@ function buildIndividualCleanReviewEvidenceDigest({ pull, plan }) {
     stack_order_digest: plan.stackOrderDigest,
     disposition_digest: plan.dispositionDigest,
     disposition_ids: plan.dispositionIds ?? [],
+    review_from_sha: reviewFromSha,
+    reviewed_paths_digest: sha256(JSON.stringify(reviewedPaths)),
+    reviewed_path_aliases_digest: sha256(JSON.stringify(reviewedPathAliases)),
   })
 }
 
@@ -133,6 +153,264 @@ function isSafeRepositoryPath(value) {
     !value.split('/').includes('..') &&
     !/[\p{Cc}\p{Cf}`]/u.test(value)
   )
+}
+
+function sortedReviewPaths(comparison) {
+  const files = comparison?.data?.files
+  if (
+    !Array.isArray(files) ||
+    files.length === 0 ||
+    files.length >= MAX_COMPARE_FILES
+  ) {
+    return null
+  }
+  const reviewedPaths = new Set()
+  const reviewedPathAliases = new Set()
+  for (const file of files) {
+    if (!isSafeRepositoryPath(file?.filename)) return null
+    reviewedPaths.add(file.filename)
+    reviewedPathAliases.add(file.filename)
+    if (file.previous_filename) {
+      if (!isSafeRepositoryPath(file.previous_filename)) return null
+      reviewedPathAliases.add(file.previous_filename)
+    }
+  }
+  return {
+    reviewedPaths: [...reviewedPaths].sort(),
+    reviewedPathAliases: [...reviewedPathAliases].sort(),
+  }
+}
+
+async function resolveCleanReviewRange({
+  github,
+  context,
+  baseSha,
+  headSha,
+  mode,
+  rootHead,
+}) {
+  const rangeBaseSha = mode === 'incremental' ? rootHead : baseSha
+  if (!validSha(rangeBaseSha) || !validSha(headSha)) return null
+  const comparison = await compareGitRange({
+    github,
+    context,
+    baseSha: rangeBaseSha,
+    headSha,
+  })
+  const paths = sortedReviewPaths(comparison)
+  if (!paths) return null
+  const reviewFromSha =
+    comparison?.data?.status === 'ahead'
+      ? rangeBaseSha
+      : ['behind', 'diverged'].includes(comparison?.data?.status)
+        ? comparison.data.merge_base_commit?.sha
+        : ''
+  if (!validSha(reviewFromSha) || reviewFromSha === headSha) return null
+  return { ...paths, reviewFromSha }
+}
+
+function validCleanEvidencePathList(paths, limit) {
+  return (
+    Array.isArray(paths) &&
+    paths.length > 0 &&
+    paths.length <= limit &&
+    paths.every(
+      (filePath, index) =>
+        isSafeRepositoryPath(filePath) &&
+        (index === 0 || paths[index - 1] < filePath)
+    )
+  )
+}
+
+function buildIndividualCleanEvidenceMetadata({
+  context,
+  pull,
+  plan,
+  trustedSha,
+  range,
+}) {
+  if (
+    !validSha(context.sha) ||
+    !validSha(trustedSha) ||
+    !Number.isSafeInteger(context.runId) ||
+    context.runId <= 0 ||
+    !range ||
+    !validSha(range.reviewFromSha) ||
+    !validCleanEvidencePathList(
+      range.reviewedPaths,
+      MAX_CLEAN_EVIDENCE_PATHS
+    ) ||
+    !validCleanEvidencePathList(
+      range.reviewedPathAliases,
+      MAX_CLEAN_EVIDENCE_PATHS * 2
+    )
+  ) {
+    throw new Error('Individual clean evidence is incomplete')
+  }
+  const evidenceDigest = buildIndividualCleanReviewEvidenceDigest({
+    pull,
+    plan,
+    reviewFromSha: range.reviewFromSha,
+    reviewedPaths: range.reviewedPaths,
+    reviewedPathAliases: range.reviewedPathAliases,
+  })
+  return {
+    background_digest: plan.backgroundDigest,
+    base_ref: pull.base.ref,
+    base_repo: pull.base.repo?.full_name ?? '',
+    base_sha: pull.base.sha,
+    disposition_digest: plan.dispositionDigest,
+    disposition_ids: plan.dispositionIds ?? [],
+    evidence_digest: evidenceDigest,
+    head_ref: pull.head.ref,
+    head_repo: pull.head.repo?.full_name ?? '',
+    head_sha: pull.head.sha,
+    kind: 'clean',
+    mode: plan.mode,
+    model: FINAL_REVIEW_MODEL,
+    policy_digest: plan.policyDigest,
+    pull_request: pull.number,
+    review_from_sha: range.reviewFromSha,
+    reviewed_path_aliases: range.reviewedPathAliases,
+    reviewed_path_aliases_digest: sha256(
+      JSON.stringify(range.reviewedPathAliases)
+    ),
+    reviewed_paths: range.reviewedPaths,
+    reviewed_paths_digest: sha256(JSON.stringify(range.reviewedPaths)),
+    root_head: plan.rootHead,
+    root_review_id: plan.rootReviewId,
+    schema_version: FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA,
+    scope_kind: plan.scopeKind,
+    stack_id: plan.stackId,
+    stack_order_digest: plan.stackOrderDigest,
+    stack_position: plan.stackPosition,
+    trusted_policy_sha: trustedSha,
+    workflow_head_sha: context.sha,
+    workflow_path: FINAL_REVIEW_WORKFLOW_PATH,
+    workflow_run_id: context.runId,
+    workflow_sha: trustedSha,
+    workflow_url: workflowRunUrl(context),
+  }
+}
+
+function parseIndividualCleanEvidence(body) {
+  const match = String(body ?? '').match(
+    new RegExp(
+      `<!-- ${FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA.replace('/', '\\/')} ([A-Za-z0-9_-]+) -->`
+    )
+  )
+  if (!match) return null
+  try {
+    const metadata = decodeMetadata(match[1])
+    const expectedKeys = new Set([
+      'background_digest',
+      'base_ref',
+      'base_repo',
+      'base_sha',
+      'disposition_digest',
+      'disposition_ids',
+      'evidence_digest',
+      'head_ref',
+      'head_repo',
+      'head_sha',
+      'kind',
+      'mode',
+      'model',
+      'policy_digest',
+      'pull_request',
+      'review_from_sha',
+      'reviewed_path_aliases',
+      'reviewed_path_aliases_digest',
+      'reviewed_paths',
+      'reviewed_paths_digest',
+      'root_head',
+      'root_review_id',
+      'schema_version',
+      'scope_kind',
+      'stack_id',
+      'stack_order_digest',
+      'stack_position',
+      'trusted_policy_sha',
+      'workflow_head_sha',
+      'workflow_path',
+      'workflow_run_id',
+      'workflow_sha',
+      'workflow_url',
+    ])
+    const validText = (value, max = 500) =>
+      typeof value === 'string' &&
+      value.length > 0 &&
+      value.length <= max &&
+      !/[\p{Cc}\p{Cf}]/u.test(value)
+    const validOptionalText = (value, max = 500) =>
+      typeof value === 'string' &&
+      value.length <= max &&
+      !/[\p{Cc}\p{Cf}]/u.test(value)
+    if (
+      !metadata ||
+      typeof metadata !== 'object' ||
+      Object.keys(metadata).some((key) => !expectedKeys.has(key)) ||
+      metadata.schema_version !== FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA ||
+      metadata.kind !== 'clean' ||
+      metadata.model !== FINAL_REVIEW_MODEL ||
+      !['full', 'incremental'].includes(metadata.mode) ||
+      !Number.isSafeInteger(metadata.pull_request) ||
+      metadata.pull_request <= 0 ||
+      !validText(metadata.base_ref) ||
+      !validText(metadata.base_repo) ||
+      !validSha(metadata.base_sha) ||
+      !validText(metadata.head_ref) ||
+      !validText(metadata.head_repo) ||
+      !validSha(metadata.head_sha) ||
+      !validSha(metadata.review_from_sha) ||
+      metadata.review_from_sha === metadata.head_sha ||
+      !validSha(metadata.root_head) ||
+      (metadata.root_review_id !== '' &&
+        !/^frv-[0-9a-f]{24}$/.test(metadata.root_review_id ?? '')) ||
+      !validDigest(metadata.evidence_digest) ||
+      !validDigest(metadata.policy_digest) ||
+      !validDigest(metadata.background_digest) ||
+      (metadata.disposition_digest !== '' &&
+        !validDigest(metadata.disposition_digest)) ||
+      !validText(metadata.scope_kind, 50) ||
+      !validOptionalText(metadata.stack_id, 200) ||
+      !validOptionalText(metadata.stack_position, 50) ||
+      (metadata.stack_order_digest !== '' &&
+        !validDigest(metadata.stack_order_digest)) ||
+      !validSha(metadata.trusted_policy_sha) ||
+      !validSha(metadata.workflow_head_sha) ||
+      !validSha(metadata.workflow_sha) ||
+      metadata.workflow_sha !== metadata.trusted_policy_sha ||
+      metadata.workflow_path !== FINAL_REVIEW_WORKFLOW_PATH ||
+      !validText(metadata.workflow_url, 2_000) ||
+      !Number.isSafeInteger(metadata.workflow_run_id) ||
+      metadata.workflow_run_id <= 0 ||
+      !validCleanEvidencePathList(
+        metadata.reviewed_paths,
+        MAX_CLEAN_EVIDENCE_PATHS
+      ) ||
+      !validCleanEvidencePathList(
+        metadata.reviewed_path_aliases,
+        MAX_CLEAN_EVIDENCE_PATHS * 2
+      ) ||
+      metadata.reviewed_paths.some(
+        (filePath) => !metadata.reviewed_path_aliases.includes(filePath)
+      ) ||
+      !validDigest(metadata.reviewed_paths_digest) ||
+      metadata.reviewed_paths_digest !==
+        sha256(JSON.stringify(metadata.reviewed_paths)) ||
+      !validDigest(metadata.reviewed_path_aliases_digest) ||
+      metadata.reviewed_path_aliases_digest !==
+        sha256(JSON.stringify(metadata.reviewed_path_aliases)) ||
+      !Array.isArray(metadata.disposition_ids) ||
+      metadata.disposition_ids.some((id) => typeof id !== 'string')
+    ) {
+      return null
+    }
+    return metadata
+  } catch {
+    return null
+  }
 }
 
 function buildReviewBackground(title) {
@@ -673,9 +951,12 @@ async function hasSuccessfulFinalReview(
   github,
   context,
   headSha,
-  workflowRunId = null
+  workflowRunId = null,
+  statusOverride = null
 ) {
-  const status = await getLatestFinalReviewStatus(github, context, headSha)
+  const status =
+    statusOverride ??
+    (await getLatestFinalReviewStatus(github, context, headSha))
   return (
     status?.state === 'success' &&
     (workflowRunId == null ||
@@ -683,27 +964,47 @@ async function hasSuccessfulFinalReview(
   )
 }
 
-async function hasVerifiedCleanFinalReviewStatus({
+async function listCheckRunsForRef({ github, context, ref }) {
+  if (
+    typeof github.paginate !== 'function' ||
+    typeof github.rest.checks?.listForRef !== 'function'
+  ) {
+    return []
+  }
+  const checkRuns = await github.paginate(github.rest.checks.listForRef, {
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    ref,
+    filter: 'all',
+    per_page: 100,
+  })
+  return Array.isArray(checkRuns) ? checkRuns : []
+}
+
+async function getVerifiedCleanFinalReviewEvidence({
   github,
   context,
   headSha,
   evidenceDigest,
+  status: statusOverride,
 }) {
-  if (!/^[0-9a-f]{64}$/.test(evidenceDigest)) return false
-  const status = await getLatestFinalReviewStatus(github, context, headSha)
+  if (!validSha(headSha) || !validDigest(evidenceDigest)) return null
+  const status =
+    statusOverride ??
+    (await getLatestFinalReviewStatus(github, context, headSha))
   if (
     status?.state !== 'success' ||
     status.description !==
       `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${evidenceDigest}`
   ) {
-    return false
+    return null
   }
   const workflowRunId = workflowRunIdFromUrl(context, status.target_url)
   if (
     workflowRunId == null ||
     typeof github.rest.actions?.getWorkflowRun !== 'function'
   ) {
-    return false
+    return null
   }
   const workflow = (
     await github.rest.actions.getWorkflowRun({
@@ -712,16 +1013,81 @@ async function hasVerifiedCleanFinalReviewStatus({
       run_id: workflowRunId,
     })
   )?.data
-  return Boolean(
-    workflow &&
-      workflow.id === workflowRunId &&
-      workflow.path === FINAL_REVIEW_WORKFLOW_PATH &&
-      workflow.event === 'issue_comment' &&
-      workflow.head_branch === context.payload.repository.default_branch &&
-      workflow.conclusion === 'success' &&
-      workflow.repository?.full_name === repositoryName(context) &&
-      (await hasSuccessfulFinalReview(github, context, headSha, workflowRunId))
-  )
+  if (
+    !workflow ||
+    workflow.id !== workflowRunId ||
+    workflow.path !== FINAL_REVIEW_WORKFLOW_PATH ||
+    workflow.event !== 'issue_comment' ||
+    workflow.head_branch !== context.payload.repository.default_branch ||
+    workflow.conclusion !== 'success' ||
+    workflow.repository?.full_name !== repositoryName(context) ||
+    !(await hasSuccessfulFinalReview(
+      github,
+      context,
+      headSha,
+      workflowRunId,
+      status
+    ))
+  ) {
+    return null
+  }
+  const availableCheckRuns = await listCheckRunsForRef({
+    github,
+    context,
+    ref: headSha,
+  })
+  const check = availableCheckRuns
+    .filter(
+      (candidate) =>
+        candidate?.name === FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME &&
+        candidate.head_sha === headSha &&
+        candidate.status === 'completed' &&
+        candidate.conclusion === 'success' &&
+        candidate.app?.slug === 'github-actions' &&
+        candidate.details_url === workflowRunUrl(context, workflowRunId) &&
+        String(candidate.external_id ?? '') === String(workflowRunId)
+    )
+    .sort(
+      (left, right) =>
+        (Date.parse(right.completed_at ?? right.updated_at ?? '') || 0) -
+        (Date.parse(left.completed_at ?? left.updated_at ?? '') || 0)
+    )[0]
+  if (!check) return null
+  const metadata = parseIndividualCleanEvidence(check.output?.text ?? '')
+  if (
+    !metadata ||
+    metadata.evidence_digest !== evidenceDigest ||
+    metadata.head_sha !== headSha ||
+    metadata.workflow_run_id !== workflowRunId ||
+    metadata.workflow_url !== workflowRunUrl(context, workflowRunId) ||
+    metadata.workflow_head_sha !== workflow.head_sha
+  ) {
+    return null
+  }
+  return metadata
+}
+
+async function latestVerifiedCleanFinalReviewEvidence({
+  github,
+  context,
+  headSha,
+}) {
+  const status = await getLatestFinalReviewStatus(github, context, headSha)
+  const prefix = FINAL_REVIEW_CLEAN_STATUS_PREFIX
+  if (
+    status?.state !== 'success' ||
+    typeof status.description !== 'string' ||
+    !status.description.startsWith(prefix)
+  ) {
+    return null
+  }
+  return getVerifiedCleanFinalReviewEvidence({
+    github,
+    context,
+    headSha,
+    evidenceDigest: status.description.slice(prefix.length),
+    status,
+  })
 }
 
 async function getStagingSourceBranch({ github, context, defaultBranch }) {
@@ -1226,6 +1592,82 @@ function finalReviewMetadataMatchesPlan(metadata, plan, pull) {
   )
 }
 
+function individualCleanEvidenceMatchesPlan(metadata, plan, pull) {
+  if (
+    !metadata ||
+    metadata.model !== FINAL_REVIEW_MODEL ||
+    metadata.mode !== plan.mode ||
+    metadata.pull_request !== pull.number ||
+    metadata.base_ref !== pull.base.ref ||
+    metadata.base_repo !== pull.base.repo?.full_name ||
+    metadata.head_ref !== pull.head.ref ||
+    metadata.head_repo !== pull.head.repo?.full_name ||
+    metadata.head_sha !== pull.head.sha ||
+    metadata.root_head !== plan.rootHead ||
+    metadata.root_review_id !== plan.rootReviewId ||
+    metadata.policy_digest !== plan.policyDigest ||
+    metadata.background_digest !== plan.backgroundDigest ||
+    metadata.scope_kind !== plan.scopeKind ||
+    metadata.stack_id !== plan.stackId ||
+    metadata.stack_position !== plan.stackPosition ||
+    metadata.stack_order_digest !== plan.stackOrderDigest ||
+    metadata.disposition_digest !== plan.dispositionDigest ||
+    JSON.stringify(metadata.disposition_ids) !==
+      JSON.stringify(plan.dispositionIds ?? [])
+  ) {
+    return false
+  }
+  const expectedDigest = buildIndividualCleanReviewEvidenceDigest({
+    pull: {
+      ...pull,
+      base: { ...pull.base, sha: metadata.base_sha },
+    },
+    plan,
+    reviewFromSha: metadata.review_from_sha,
+    reviewedPaths: metadata.reviewed_paths,
+    reviewedPathAliases: metadata.reviewed_path_aliases,
+  })
+  return metadata.evidence_digest === expectedDigest
+}
+
+async function individualCleanEvidenceIsCurrent({
+  github,
+  context,
+  metadata,
+  plan,
+  pull,
+}) {
+  if (!individualCleanEvidenceMatchesPlan(metadata, plan, pull)) return false
+  if (metadata.base_sha === pull.base.sha) return true
+  const baseAdvance = await compareGitRange({
+    github,
+    context,
+    baseSha: metadata.base_sha,
+    headSha: pull.base.sha,
+  })
+  const baseFiles = baseAdvance?.data?.files
+  if (
+    baseAdvance?.data?.status !== 'ahead' ||
+    !Array.isArray(baseFiles) ||
+    baseFiles.length > MAX_INCREMENTAL_PATHS
+  ) {
+    return false
+  }
+  const reviewedPaths = new Set(metadata.reviewed_path_aliases)
+  return baseFiles.every((file) => {
+    const filePath = String(file.filename ?? '')
+    const previousPath = String(file.previous_filename ?? '')
+    return (
+      isSafeRepositoryPath(filePath) &&
+      (!previousPath || isSafeRepositoryPath(previousPath)) &&
+      !requiresColdIncrementalReview(filePath) &&
+      (!previousPath || !requiresColdIncrementalReview(previousPath)) &&
+      !reviewedPaths.has(filePath) &&
+      (!previousPath || !reviewedPaths.has(previousPath))
+    )
+  })
+}
+
 async function hasCurrentSuccessfulFinalReview({
   github,
   context,
@@ -1284,16 +1726,21 @@ async function hasCurrentSuccessfulFinalReview({
       return true
     }
   }
-  const evidenceDigest = buildIndividualCleanReviewEvidenceDigest({
-    pull,
-    plan,
-  })
-  return hasVerifiedCleanFinalReviewStatus({
+  const evidence = await latestVerifiedCleanFinalReviewEvidence({
     github,
     context,
     headSha: pull.head.sha,
-    evidenceDigest,
   })
+  return Boolean(
+    evidence &&
+      (await individualCleanEvidenceIsCurrent({
+        github,
+        context,
+        metadata: evidence,
+        plan,
+        pull,
+      }))
+  )
 }
 
 function dispositionEntries(metadata) {
@@ -2222,6 +2669,32 @@ async function publishFinalReview({
   return review.data.html_url
 }
 
+async function publishIndividualCleanEvidence({ github, context, metadata }) {
+  if (typeof github.rest.checks?.create !== 'function') {
+    throw new Error('Individual clean evidence check creation is unavailable')
+  }
+  const text = `<!-- ${FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA} ${encodeMetadata(metadata)} -->`
+  if (text.length > REPORT_LIMIT) {
+    throw new Error('Individual clean evidence exceeds the check output limit')
+  }
+  await github.rest.checks.create({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    name: FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME,
+    head_sha: metadata.head_sha,
+    status: 'completed',
+    conclusion: 'success',
+    completed_at: new Date().toISOString(),
+    details_url: workflowRunUrl(context),
+    external_id: String(context.runId),
+    output: {
+      title: `${FINAL_REVIEW_MODEL} final review clean`,
+      summary: 'No actionable findings were generated.',
+      text,
+    },
+  })
+}
+
 function decideFinalStatus({
   reviewedHead,
   currentHead,
@@ -2305,6 +2778,7 @@ async function finalizeFinalReview({
   publishOutcome,
   cleanReview,
   policyDigest = '',
+  trustedSha = '',
 }) {
   const ownsLatestStatus = async () => {
     const latestStatus = await getLatestFinalReviewStatus(
@@ -2340,24 +2814,22 @@ async function finalizeFinalReview({
     })
     return
   }
-  const status = decideFinalStatus({
-    reviewedHead: headSha,
-    currentHead: pull.head.sha,
-    reviewedBase: baseSha,
-    currentBase: pull.base.sha,
-    eligible:
-      eligibility.eligible &&
-      eligibility.scopeKind === scopeKind &&
-      eligibility.stackId === stackId &&
-      eligibility.stackPosition === stackPosition &&
-      eligibility.stackOrderDigest === stackOrderDigest,
-    reviewOutcome,
-    cleanupOutcome,
-    publishOutcome,
-    cleanReview,
-    cleanEvidenceDigest: buildIndividualCleanReviewEvidenceDigest({
-      pull,
-      plan: {
+  const eligible =
+    eligibility.eligible &&
+    eligibility.scopeKind === scopeKind &&
+    eligibility.stackId === stackId &&
+    eligibility.stackPosition === stackPosition &&
+    eligibility.stackOrderDigest === stackOrderDigest
+  let cleanEvidenceMetadata = null
+  if (
+    eligible &&
+    reviewOutcome === 'success' &&
+    cleanupOutcome === 'success' &&
+    publishOutcome === 'success' &&
+    cleanReview === 'true'
+  ) {
+    try {
+      const plan = {
         mode,
         rootHead,
         rootReviewId,
@@ -2369,8 +2841,46 @@ async function finalizeFinalReview({
         stackOrderDigest,
         dispositionDigest,
         dispositionIds,
-      },
-    }),
+      }
+      const range = await resolveCleanReviewRange({
+        github,
+        context,
+        baseSha,
+        headSha,
+        mode,
+        rootHead,
+      })
+      cleanEvidenceMetadata = buildIndividualCleanEvidenceMetadata({
+        context,
+        pull,
+        plan,
+        trustedSha,
+        range,
+      })
+    } catch (error) {
+      if (await ownsLatestStatus()) {
+        await setCommitStatus({
+          github,
+          context,
+          sha: headSha,
+          state: 'failure',
+          description: `${FINAL_REVIEW_MODEL} clean evidence publication failed; inspect the workflow run`,
+        })
+      }
+      throw error
+    }
+  }
+  const status = decideFinalStatus({
+    reviewedHead: headSha,
+    currentHead: pull.head.sha,
+    reviewedBase: baseSha,
+    currentBase: pull.base.sha,
+    eligible,
+    reviewOutcome,
+    cleanupOutcome,
+    publishOutcome,
+    cleanReview,
+    cleanEvidenceDigest: cleanEvidenceMetadata?.evidence_digest ?? '',
   })
   const latestStatus = await getLatestFinalReviewStatus(
     github,
@@ -2383,6 +2893,26 @@ async function finalizeFinalReview({
   ) {
     return
   }
+  if (status.state === 'success' && cleanEvidenceMetadata) {
+    try {
+      await publishIndividualCleanEvidence({
+        github,
+        context,
+        metadata: cleanEvidenceMetadata,
+      })
+    } catch (error) {
+      if (!(await ownsLatestStatus())) return
+      await setCommitStatus({
+        github,
+        context,
+        sha: headSha,
+        state: 'failure',
+        description: `${FINAL_REVIEW_MODEL} clean evidence publication failed; inspect the workflow run`,
+      })
+      throw error
+    }
+  }
+  if (!(await ownsLatestStatus())) return
   await setCommitStatus({
     github,
     context,
@@ -2557,6 +3087,7 @@ function createGhGithub({ repository, defaultBranch }) {
       if (method.ghName === 'checks') {
         return runGhPaginated(
           ghQuery(endpoint(`commits/${params.ref}/check-runs`), {
+            filter: 'all',
             per_page: 100,
           }),
           (page) => page?.check_runs
@@ -2669,6 +3200,8 @@ module.exports = {
   FINAL_REVIEW_COMMAND,
   FINAL_REVIEW_BOT,
   FINAL_REVIEW_CONTEXT,
+  FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME,
+  FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA,
   FINAL_REVIEW_CLEAN_STATUS_PREFIX,
   GENERATED_PROMOTION_STATUS,
   FINAL_REVIEW_MODEL,
@@ -2682,6 +3215,7 @@ module.exports = {
   authorizeFinalReview,
   buildFinalReviewEvidenceDigest,
   buildIndividualCleanReviewEvidenceDigest,
+  buildIndividualCleanEvidenceMetadata,
   buildExpectedPromotionContent,
   buildOCRPolicy,
   buildOCRConfig,
@@ -2705,6 +3239,7 @@ module.exports = {
   hasVerifiedGeneratedPromotionStatus,
   verifyCurrentIndividualFinalReview,
   normalizeTitle,
+  parseIndividualCleanEvidence,
   listReviewArtifacts,
   parseDispositionRecord,
   parseReviewMetadata,
