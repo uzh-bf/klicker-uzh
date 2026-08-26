@@ -942,9 +942,12 @@ test('binds incremental clean evidence to the root and repair paths', async () =
   })
 })
 
-test('rejects oversized individual clean evidence before publication', async () => {
+test('fails finalization without publishing oversized individual clean evidence', async () => {
   const pull = {
     number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Oversized clean evidence',
     base: {
       ref: 'v3',
       sha: 'b'.repeat(40),
@@ -956,29 +959,42 @@ test('rejects oversized individual clean evidence before publication', async () 
       repo: { full_name: 'uzh-bf/klicker-uzh' },
     },
   }
-  const { github } = reviewGithub({ pull })
-  const context = reviewContext()
-  const plan = await buildReviewPlan({ github, context, pull })
   const paths = Array.from(
-    { length: 300 },
+    { length: 299 },
     (_, index) => `src/${String(index).padStart(3, '0')}-${'x'.repeat(150)}.ts`
   )
+  const { github, state } = reviewGithub({
+    pull,
+    comparison: {
+      status: 'ahead',
+      files: paths.map((filename) => ({ filename })),
+    },
+  })
+  const context = reviewContext()
 
-  assert.throws(
-    () =>
-      buildIndividualCleanEvidenceMetadata({
-        context,
-        pull,
-        plan,
-        trustedSha: 'd'.repeat(40),
-        range: {
-          reviewFromSha: pull.base.sha,
-          reviewedPaths: paths,
-          reviewedPathAliases: paths,
-        },
-      }),
+  await assert.rejects(
+    finalizeFinalReview({
+      github,
+      context,
+      prNumber: pull.number,
+      baseSha: pull.base.sha,
+      headSha: pull.head.sha,
+      mode: 'full',
+      rootHead: pull.head.sha,
+      scopeKind: 'default',
+      stackId: '',
+      stackPosition: '',
+      stackOrderDigest: '',
+      trustedSha: 'd'.repeat(40),
+      reviewOutcome: 'success',
+      cleanupOutcome: 'success',
+      publishOutcome: 'success',
+      cleanReview: 'true',
+    }),
     /check output limit/
   )
+  assert.equal(state.createdCheckRuns.length, 0)
+  assert.equal(state.createdStatuses.at(-1).state, 'failure')
 })
 
 test('preserves comment-free individual clean evidence across unrelated default-base advancement', async () => {

@@ -313,10 +313,6 @@ function buildIndividualCleanEvidenceMetadata({
     workflow_sha: trustedSha,
     workflow_url: workflowRunUrl(context),
   }
-  const text = `<!-- ${FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA} ${encodeMetadata(metadata)} -->`
-  if (text.length > REPORT_LIMIT) {
-    throw new Error('Individual clean evidence exceeds the check output limit')
-  }
   return metadata
 }
 
