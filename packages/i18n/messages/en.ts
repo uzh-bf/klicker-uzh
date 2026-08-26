@@ -4182,6 +4182,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       mediaLibraryAvailableSoon:
         'Your media library will be available here soon, allowing you to access all your uploaded resources.',
       chatbots: 'Chatbots',
+      resources: 'Resources',
+      switchChatbot: 'Switch chatbot',
+      chatbotNotFound:
+        'This chatbot could not be found or you do not have access to it.',
       availableChatbots: 'Available Chatbots',
       noChatbots: 'No chatbots have been created yet.',
       chatbotDetails: 'Chatbot Details',
@@ -4256,6 +4260,68 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       mcpPriority: 'Priority',
       mcpAllowedTools: 'Allowed tools',
       openChatbot: 'Open Chatbot',
+      responseExamples: 'Response examples',
+      responseExamplesDescription:
+        'Review response examples before making them live.',
+      responseExamplesLoading: 'Loading response examples...',
+      responseExamplesError:
+        'Response examples could not be loaded. Please try again.',
+      responseExamplesEmpty:
+        'No response examples are available for this chatbot.',
+      responseExampleCandidate: 'Candidate',
+      responseExampleApproved: 'Approved',
+      responseExampleRejected: 'Rejected',
+      responseExampleNeedsReview: 'Needs review',
+      responseExampleQuestion: 'Question',
+      responseExampleReferenceAnswer: 'Expected chatbot answer',
+      responseExampleResponseStyle: 'Response style',
+      responseExampleSources: 'Evidence lineage',
+      responseExampleSourcesDescription:
+        'These references show where citations point. Source content is not shown here.',
+      responseExampleCitationParityComplete:
+        'All attached evidence is cited in this answer.',
+      responseExampleCitationParityIncomplete:
+        'The evidence and citations need review before approval.',
+      responseExampleNoSources: 'No evidence lineage is attached.',
+      responseExampleSourceId: 'Source ID',
+      responseExampleChunkId: 'Chunk ID',
+      responseExampleCitationIndex: 'Citation',
+      responseExampleCitationAnchor: 'Citation anchor',
+      responseExampleContentHash: 'Content hash',
+      responseExampleSourceDetails: 'Technical source details',
+      responseExampleCitationLabel: 'Citation {index}',
+      responseExampleSourceAvailable: 'Evidence is eligible',
+      responseExampleSourceUnavailable: 'Evidence needs review',
+      responseExampleStyleGuidedQuestions: 'Ask guiding questions',
+      responseExampleStyleStepByStepExplanation: 'Explain step by step',
+      responseExampleStyleConciseAnswer: 'Give a concise answer',
+      responseExampleStyleClarifyingQuestion: 'Ask for clarification',
+      responseExampleStyleWorkedExample: 'Work through an example',
+      responseExampleStyleCompareOptions: 'Compare options',
+      responseExampleSourcesRequired:
+        'A source must be attached and cited as [1], [2], ... before approving.',
+      responseExampleModeUnavailable:
+        'Select one of this chatbot’s available chat modes.',
+      responseExampleDuplicate:
+        'A response example with this question already exists for this chat mode.',
+      responseExampleApprove: 'Approve',
+      responseExampleEditAndApprove: 'Edit and approve',
+      responseExampleReject: 'Reject',
+      responseExampleEditTitle: 'Edit response example',
+      responseExampleEditChatMode: 'Chat mode',
+      responseExampleEditQuestion: 'Question',
+      responseExampleEditReferenceAnswer: 'Expected chatbot answer',
+      responseExampleEditReferenceAnswerPlaceholder:
+        'Write the full expected chatbot answer. Formatting is applied automatically; cite sources as [1], [2], ...',
+      responseExampleEditReferenceAnswerLength: '{count} / {max} characters',
+      responseExampleEditResponseStyle: 'Response style',
+      responseExampleSave: 'Save and approve',
+      responseExampleReviewActionError:
+        'This response example could not be updated. Please try again.',
+      responseExampleStaleUpdate:
+        'This example changed while you were editing. Your draft is still open. Close this dialog and reopen the example before saving again.',
+      responseExampleReviewForbidden:
+        'Only the chatbot owner can review response examples.',
       answerCollections: 'Answer Collections',
       answerCollectionsDescription:
         'Here you can find all your answer collections. You need these to create certain complex question types, such as selection questions and case studies. To import existing answer collections form other users or request access to these, please visit the <link>catalog</link>.',

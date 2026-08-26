@@ -4264,6 +4264,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       mediaLibraryAvailableSoon:
         'Bald wird hier Ihre Mediathek verfügbar sein und Ihnen ermöglichen, hochgeladene Ressourcen einzusehen.',
       chatbots: 'Chatbots',
+      resources: 'Ressourcen',
+      switchChatbot: 'Chatbot wechseln',
+      chatbotNotFound:
+        'Dieser Chatbot wurde nicht gefunden oder Ihnen fehlt der Zugriff.',
       availableChatbots: 'Verfügbare Chatbots',
       noChatbots: 'Es wurden noch keine Chatbots erstellt.',
       chatbotDetails: 'Chatbot-Details',
@@ -4339,6 +4343,68 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       mcpPriority: 'Priorität',
       mcpAllowedTools: 'Erlaubte Tools',
       openChatbot: 'Chatbot öffnen',
+      responseExamples: 'Antwortbeispiele',
+      responseExamplesDescription:
+        'Überprüfen Sie Antwortbeispiele, bevor Sie sie aktivieren.',
+      responseExamplesLoading: 'Antwortbeispiele werden geladen ...',
+      responseExamplesError:
+        'Die Antwortbeispiele konnten nicht geladen werden. Bitte versuchen Sie es erneut.',
+      responseExamplesEmpty:
+        'Für diesen Chatbot sind keine Antwortbeispiele verfügbar.',
+      responseExampleCandidate: 'Vorschlag',
+      responseExampleApproved: 'Freigegeben',
+      responseExampleRejected: 'Abgelehnt',
+      responseExampleNeedsReview: 'Überprüfung erforderlich',
+      responseExampleQuestion: 'Frage',
+      responseExampleReferenceAnswer: 'Erwartete Chatbot-Antwort',
+      responseExampleResponseStyle: 'Antwortstil',
+      responseExampleSources: 'Quellennachweise',
+      responseExampleSourcesDescription:
+        'Diese Verweise zeigen, worauf sich die Zitate beziehen. Der Quelleninhalt wird hier nicht angezeigt.',
+      responseExampleCitationParityComplete:
+        'Alle hinterlegten Nachweise sind in dieser Antwort zitiert.',
+      responseExampleCitationParityIncomplete:
+        'Nachweise und Zitate müssen vor der Freigabe geprüft werden.',
+      responseExampleNoSources: 'Es sind keine Quellennachweise hinterlegt.',
+      responseExampleSourceId: 'Quellen-ID',
+      responseExampleChunkId: 'Chunk-ID',
+      responseExampleCitationIndex: 'Zitat',
+      responseExampleCitationAnchor: 'Zitationsanker',
+      responseExampleContentHash: 'Inhaltshash',
+      responseExampleSourceDetails: 'Technische Quelldetails',
+      responseExampleCitationLabel: 'Zitat {index}',
+      responseExampleSourceAvailable: 'Nachweis ist zugelassen',
+      responseExampleSourceUnavailable: 'Nachweis muss geprüft werden',
+      responseExampleStyleGuidedQuestions: 'Leitende Fragen stellen',
+      responseExampleStyleStepByStepExplanation: 'Schritt für Schritt erklären',
+      responseExampleStyleConciseAnswer: 'Kurz antworten',
+      responseExampleStyleClarifyingQuestion: 'Rückfrage stellen',
+      responseExampleStyleWorkedExample: 'An einem Beispiel erklären',
+      responseExampleStyleCompareOptions: 'Optionen vergleichen',
+      responseExampleSourcesRequired:
+        'Vor der Freigabe muss eine Quelle hinterlegt und als [1], [2], ... zitiert sein.',
+      responseExampleModeUnavailable:
+        'Wählen Sie einen verfügbaren Chat-Modus dieses Chatbots.',
+      responseExampleDuplicate:
+        'Ein Antwortbeispiel mit dieser Frage existiert für diesen Chat-Modus bereits.',
+      responseExampleApprove: 'Freigeben',
+      responseExampleEditAndApprove: 'Bearbeiten und freigeben',
+      responseExampleReject: 'Ablehnen',
+      responseExampleEditTitle: 'Antwortbeispiel bearbeiten',
+      responseExampleEditChatMode: 'Chat-Modus',
+      responseExampleEditQuestion: 'Frage',
+      responseExampleEditReferenceAnswer: 'Erwartete Chatbot-Antwort',
+      responseExampleEditReferenceAnswerPlaceholder:
+        'Schreiben Sie die erwartete Chatbot-Antwort aus. Formatierung wird automatisch angewendet; Quellen als [1], [2], ... zitieren.',
+      responseExampleEditReferenceAnswerLength: '{count} / {max} Zeichen',
+      responseExampleEditResponseStyle: 'Antwortstil',
+      responseExampleSave: 'Speichern und freigeben',
+      responseExampleReviewActionError:
+        'Dieses Antwortbeispiel konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut.',
+      responseExampleStaleUpdate:
+        'Dieses Beispiel wurde während Ihrer Bearbeitung geändert. Ihr Entwurf ist weiterhin geöffnet. Schliessen Sie den Dialog und öffnen Sie das Beispiel erneut, bevor Sie wieder speichern.',
+      responseExampleReviewForbidden:
+        'Nur die Eigentümerin oder der Eigentümer des Chatbots kann Antwortbeispiele überprüfen.',
       answerCollections: 'Antwort-Sammlungen',
       answerCollectionsDescription:
         'Hier finden Sie alle Ihre Antwort-Sammlungen. Sie benötigen diese zur Erstellung bestimmter komplexer Fragetypen, wie beispielsweise Auswahl-Fragen und Fallstudien. Um bestehende Antwort-Sammlungen anderer Nutzer zu importieren oder Zugriff auf diese zu beantragen, besuchen Sie bitte den <link>Katalog</link>.',
