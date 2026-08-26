@@ -20,7 +20,7 @@ and production remain withheld.
   `trees/rs/kb-roadmap-reconcile` on `rs/kb-ingestion-stg-readiness`.
 - Reconciled source refs:
   - KlickerUZH `origin/v3-ai` at
-    `d110469d1510bbe683f384824baa6f86502d75e1`;
+    `a1c63c644fdcdc52ff3dcddbbd3f58fcf363261d`;
   - data-ingestion `origin/main` at
     `66e22bff67276e46a5d82b3545edfa6df7844500`;
   - deployment `origin/main` at
@@ -56,10 +56,11 @@ and production remain withheld.
   rebase W8 after any material target advance; never edit the synchronization
   task's checkout.
 - The 2026-08-26 synchronization advanced `v3-ai` from `40452c32d` to
-  `d110469d` by merging `v3@bad33cae`. The W8 worktree is rebased. Changes in
-  watched files are unrelated course-duplication concurrency and STG rollout
-  annotations; the ingestion config, workflow registration, and gate gaps in
-  this plan remain unchanged.
+  `d110469d` by merging `v3@bad33cae`, then to `a1c63c644` with an unrelated
+  STG GraphQL memory-limit correction. The W8 worktree is rebased. Changes in
+  watched files are unrelated course-duplication concurrency, STG rollout
+  annotations, and GraphQL resources; the ingestion configuration, workflow
+  registration, and gate gaps in this plan remain unchanged.
 
 ## Goal and non-goals
 
@@ -439,3 +440,24 @@ roadmaps are task-owned in this worktree and ship with the readiness PR.
   normal pushes, draft PR/MR publication, reviews, preview CI, and exact-head
   readback. The portfolio coordinator cleared the shared df-cloud path on
   `stg@9f1586a1` under the consumer-specific alias contract. S0 is active.
+- 2026-08-26: Established the three source worktrees and committed their plan
+  ledgers. Rebased the Klicker readiness branch onto
+  `v3-ai@a1c63c644fdcdc52ff3dcddbbd3f58fcf363261d` after the latest target
+  advance; the incoming change only raises the STG GraphQL memory limit. No
+  deployment producer or validator source has been edited.
+- 2026-08-26: Implemented the df-cloud STG-only workload aliases at
+  `2622292c`. The Azure-helper build, focused three-case credential test,
+  existing five-case Doc Query test, TypeScript check, and scoped formatting
+  check passed with the pinned Node 20 and pnpm 9 toolchain. The simplifier
+  found no issue. The security/data-boundary reviewer confirmed the projection
+  contract and found one missing MR CI invocation; `c93c1fa6` adds that exact
+  test to `unit-tests-app-config`, and the focused test passed again.
+- 2026-08-26: Started S1 in the managed Klicker runtime using the supported
+  `KB_GRAPH_BLOB_HOST_PORT=10005` override because ports 10003 and 10004 were
+  already allocated. The seven focused worker-selection tests and both the
+  general-worker and Hatchet package TypeScript checks pass. The Hatchet
+  package's 102 tests also pass, including a new fail-fast assertion for the
+  required source-gateway URL. Root `check:all` reached the W8 checks but ended
+  on an unrelated analytics environment failure: uv selected Python 3.14,
+  pandas 2.2.2 had no wheel, and the container has no C compiler. S1 remains
+  active pending its exact commit and reviewers.

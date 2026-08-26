@@ -152,6 +152,15 @@ describe('KB ingestion dispatch', () => {
     ).toThrow('KB_INGESTION_API_KEY must be configured')
   })
 
+  it('fails fast when the source gateway is not configured', () => {
+    expect(() =>
+      validateKBIngestionWorkerConfig({
+        KB_INGESTION_API_URL: 'https://ingestion.example',
+        KB_INGESTION_API_KEY: 'ingestion-key',
+      })
+    ).toThrow('KB_SOURCE_GATEWAY_URL must be configured')
+  })
+
   it('prepares source bytes, awaits API acceptance, and persists correlation', async () => {
     const prisma = dispatchPrisma({
       status: KBResourceStatus.QUEUED,

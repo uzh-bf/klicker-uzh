@@ -1,3 +1,8 @@
+import { createHash } from 'node:crypto'
+import { lookup } from 'node:dns/promises'
+import { request as httpRequest, type IncomingMessage } from 'node:http'
+import { request as httpsRequest } from 'node:https'
+import type { LookupFunction } from 'node:net'
 import {
   BlobServiceClient,
   StorageSharedKeyCredential,
@@ -8,11 +13,6 @@ import {
   isPublicIPv4Address,
   normalizePublicHttpUrl,
 } from '@klicker-uzh/util/public-url'
-import { createHash } from 'node:crypto'
-import { lookup } from 'node:dns/promises'
-import { request as httpRequest, type IncomingMessage } from 'node:http'
-import { request as httpsRequest } from 'node:https'
-import type { LookupFunction } from 'node:net'
 
 const KB_INGESTION_PROJECT_ID = 'klicker-course-materials'
 const KB_INGESTION_PRODUCER = 'klicker'
@@ -129,6 +129,12 @@ function getOrigin(env: NodeJS.ProcessEnv, name: string): string {
     throw new Error(`${name} must be an HTTP(S) origin`)
   }
   return value.origin
+}
+
+export function getKBSourceGatewayOrigin(
+  env: NodeJS.ProcessEnv = process.env
+): string {
+  return getOrigin(env, 'KB_SOURCE_GATEWAY_URL')
 }
 
 // Key comparison guards an exact-shape contract check, so the order must be
@@ -566,7 +572,7 @@ export function buildKBIngestionSource(
     input.type === 'BLOB'
       ? new URL(
           `/api/ingestion/resources/${input.resourceId}/versions/${input.resourceVersion}`,
-          getOrigin(env, 'KB_SOURCE_GATEWAY_URL')
+          getKBSourceGatewayOrigin(env)
         ).toString()
       : normalizePublicHttpUrl(input.sourceUrl)
 
