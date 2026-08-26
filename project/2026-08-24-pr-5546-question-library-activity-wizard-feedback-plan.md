@@ -35,10 +35,11 @@ uncrowned regardless of Catalyst entitlement.
   merge `92de9d06e6dc5245b376a049da30aa07246dab1a` integrates it. The
   pre-plan-update exact head `6ad04f4a18f69d62b231d78d60567897aff7f71d` was
   pushed to draft PR #5546, its PR body was updated, and all seven review
-  threads are resolved; the current merge head and this plan-only commit
-  supersede it and require their own exact-head CI after push. PR merge,
-  mark-ready, deployment, publication, worktree cleanup, and branch, worktree,
-  or runtime-data deletion remain withheld.
+  threads are resolved; the final plan-only commit at HEAD requires one
+  exact-head CI run after its normal push, which covers its ancestor merge
+  without hardcoding the future final head. PR merge, mark-ready, deployment,
+  publication, worktree cleanup, and branch, worktree, or runtime-data
+  deletion remain withheld.
 
 ## Execution contract
 
@@ -113,9 +114,10 @@ uncrowned regardless of Catalyst entitlement.
   `ff9e9fae3b58c5955ff80ec58559ecd655c071d8`. The pre-plan-update exact
   head `6ad04f4a18f69d62b231d78d60567897aff7f71d` was pushed normally, the
   PR body was synchronized, and all seven review threads were resolved; the
-  current merge head and this plan-only commit supersede it and require their
-  own exact-head CI after push. PR merge, mark-ready, deployment, publication,
-  cleanup, and deletion remain withheld.
+  final plan-only commit at HEAD requires one exact-head CI run after its
+  normal push, which covers its ancestor merge without hardcoding the future
+  final head. PR merge, mark-ready, deployment, publication, cleanup, and
+  deletion remain withheld.
 - Authoritative roadmap:
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/question-library-feedback-recovery/project/2026-08-23-question-library-ux-audit-and-roadmap.md`
   on `rs/question-library-feedback-recovery` at `5d7c0284890db55a93da1cb66a1ca87ab03f2e0d`.
@@ -464,10 +466,11 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   executable code-quality, GraphQL, and build checks and all eight Playwright
   shards, with its mechanical aggregate still queued and OpenCodeReview failed
   pre-inference (HTTP 402, zero tokens or comments), and its seven review
-  threads are resolved. The current merge head and this plan-only commit
-  supersede that head and require their own exact-head CI after push. PR
-  merge, mark-ready, deployment, publication, worktree cleanup, and branch or
-  worktree deletion remain withheld.
+  threads are resolved. The final plan-only commit at HEAD requires one
+  exact-head CI run after its normal push, which covers its ancestor merge
+  without hardcoding the future final head. PR merge, mark-ready, deployment,
+  publication, worktree cleanup, and branch or worktree deletion remain
+  withheld.
 
 ## Risks and stop conditions
 
@@ -497,10 +500,10 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   threads resolved, and its executable code-quality, GraphQL, and build checks
   plus all eight Playwright shards passed while the mechanical aggregate
   remained queued and OpenCodeReview failed pre-inference (HTTP 402, zero
-  tokens or comments); the current merge head and this plan-only commit
-  supersede that head and require their own exact-head CI after push. PR
-  merge, mark-ready, deployment, publication, cleanup, and deletion remain
-  withheld.
+  tokens or comments); the final plan-only commit at HEAD requires one
+  exact-head CI run after its normal push, which covers its ancestor merge
+  without hardcoding the future final head. PR merge, mark-ready, deployment,
+  publication, cleanup, and deletion remain withheld.
 
 ## Progress
 
@@ -518,10 +521,21 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   Playwright shards in run 32992893012, while the mechanical Playwright
   aggregate remained queued and OpenCodeReview run 32992892615 failed
   pre-inference with HTTP 402 and zero tokens or comments, so no code-review
-  success is claimed. The final plan-only and current merge head requires its
-  own exact-head CI after push; GitHub remains authoritative for volatile
-  check state. All seven review threads stay resolved; PR #5546 remains draft
-  with mark-ready, merge, deploy, publication, cleanup, and deletion withheld.
+  success is claimed. The final plan-only commit at HEAD requires one
+  exact-head CI run after its normal push, which covers its ancestor merge
+  without hardcoding the future final head; GitHub remains authoritative for
+  volatile check state. All seven review threads stay resolved; PR #5546
+  remains draft with mark-ready, merge, deploy, publication, cleanup, and
+  deletion withheld.
+
+- 2026-08-26 Sol final-review disposition: Sol verified the normal merge
+  `92de9d06e6dc5245b376a049da30aa07246dab1a` imports exactly the 26
+  authorized paths byte-for-byte, leaves W2 unchanged, and found no
+  executable, security, test, architecture, or CI defect. This wording
+  correction closes its sole Minor finding on the distinct-final plural CI
+  claims; the single contract is that the final plan-only commit at HEAD
+  requires one exact-head CI run after its normal push, which covers its
+  ancestor merge without hardcoding the future final head.
 
 - 2026-08-26 W2 draft delivery: the pre-plan-update exact head
   `6ad04f4a18f69d62b231d78d60567897aff7f71d` was pushed normally to draft PR
