@@ -893,11 +893,21 @@ test('binds incremental clean evidence to the root and repair paths', async () =
   const comparisons = {
     [`${baseSha}...${rootHead}`]: {
       status: 'ahead',
-      files: [{ filename: 'src/original.ts' }],
+      files: [
+        {
+          filename: 'src/original-renamed.ts',
+          previous_filename: 'src/original.ts',
+        },
+      ],
     },
     [`${rootHead}...${headSha}`]: {
       status: 'ahead',
-      files: [{ filename: 'src/repair.ts' }],
+      files: [
+        {
+          filename: 'src/repair-renamed.ts',
+          previous_filename: 'src/repair.ts',
+        },
+      ],
     },
   }
   const github = {
@@ -922,9 +932,53 @@ test('binds incremental clean evidence to the root and repair paths', async () =
 
   assert.deepEqual(range, {
     reviewFromSha: rootHead,
-    reviewedPaths: ['src/original.ts', 'src/repair.ts'],
-    reviewedPathAliases: ['src/original.ts', 'src/repair.ts'],
+    reviewedPaths: ['src/original-renamed.ts', 'src/repair-renamed.ts'],
+    reviewedPathAliases: [
+      'src/original-renamed.ts',
+      'src/original.ts',
+      'src/repair-renamed.ts',
+      'src/repair.ts',
+    ],
   })
+})
+
+test('rejects oversized individual clean evidence before publication', async () => {
+  const pull = {
+    number: 42,
+    base: {
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/oversized-clean-evidence',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github } = reviewGithub({ pull })
+  const context = reviewContext()
+  const plan = await buildReviewPlan({ github, context, pull })
+  const paths = Array.from(
+    { length: 300 },
+    (_, index) => `src/${String(index).padStart(3, '0')}-${'x'.repeat(150)}.ts`
+  )
+
+  assert.throws(
+    () =>
+      buildIndividualCleanEvidenceMetadata({
+        context,
+        pull,
+        plan,
+        trustedSha: 'd'.repeat(40),
+        range: {
+          reviewFromSha: pull.base.sha,
+          reviewedPaths: paths,
+          reviewedPathAliases: paths,
+        },
+      }),
+    /check output limit/
+  )
 })
 
 test('preserves comment-free individual clean evidence across unrelated default-base advancement', async () => {

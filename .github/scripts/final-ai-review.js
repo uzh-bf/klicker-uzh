@@ -276,7 +276,7 @@ function buildIndividualCleanEvidenceMetadata({
     reviewedPaths: range.reviewedPaths,
     reviewedPathAliases: range.reviewedPathAliases,
   })
-  return {
+  const metadata = {
     background_digest: plan.backgroundDigest,
     base_ref: pull.base.ref,
     base_repo: pull.base.repo?.full_name ?? '',
@@ -313,6 +313,11 @@ function buildIndividualCleanEvidenceMetadata({
     workflow_sha: trustedSha,
     workflow_url: workflowRunUrl(context),
   }
+  const text = `<!-- ${FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA} ${encodeMetadata(metadata)} -->`
+  if (text.length > REPORT_LIMIT) {
+    throw new Error('Individual clean evidence exceeds the check output limit')
+  }
+  return metadata
 }
 
 function parseIndividualCleanEvidence(body) {
