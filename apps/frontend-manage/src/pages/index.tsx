@@ -160,9 +160,6 @@ function Index() {
     await refetchElements()
   }, [refetchElements])
 
-  const acceptedTypes = creationMode
-    ? getActivityAcceptedElementTypes(creationMode)
-    : undefined
   const visibleElements = acceptedTypes
     ? elements.filter((element) => acceptedTypes.includes(element.type))
     : elements
