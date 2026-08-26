@@ -633,7 +633,8 @@ write_file_from_stdin() {
 
   destination_dir=$(dirname -- "$destination")
   destination_name=$(basename -- "$destination")
-  install -d -m 0755 -o root -g root "$destination_dir"
+  [[ -d "$destination_dir" && ! -L "$destination_dir" ]] ||
+    die "managed file parent is missing or invalid: ${destination_dir}"
   temporary_file=$(mktemp "${destination_dir}/.${destination_name}.XXXXXX")
   if ! cat >"$temporary_file" ||
     ! chmod "$mode" "$temporary_file" ||
