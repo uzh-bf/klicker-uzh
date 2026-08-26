@@ -80,9 +80,17 @@ async function confirmResponseDeletionIfAvailable(
 ) {
   const dialog = page.getByRole('dialog', { name: 'Delete Live Quiz' })
   const responseSummary = dialog.getByText(
-    /\d+ response\(s\) in this live quiz/
+    /^\d+ response\(s\) in this live quiz submitted by students will be deleted\.$/
   )
   const confirmResponses = page.getByTestId('confirm-deletion-responses')
+  const noResponsesSummary = dialog.getByText(
+    'For this live quiz no responses have been collected yet.',
+    { exact: true }
+  )
+
+  await expect(
+    confirmResponses.or(responseSummary).or(noResponsesSummary).first()
+  ).toBeVisible()
 
   if (await confirmResponses.isVisible().catch(() => false)) {
     if (expectedResponsesText) {
@@ -98,9 +106,7 @@ async function confirmResponseDeletionIfAvailable(
       .getByRole('button', { name: 'Confirm' })
       .click()
   } else {
-    await expect(dialog).toContainText(
-      'For this live quiz no responses have been collected yet.'
-    )
+    await expect(noResponsesSummary).toBeVisible()
   }
 }
 

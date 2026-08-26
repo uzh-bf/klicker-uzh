@@ -1,4 +1,12 @@
 import { useQuery } from '@apollo/client'
+import CourseCalendarView from '@components/courses/CourseCalendarView'
+import CourseGamificationInfos from '@components/courses/CourseGamificationInfos'
+import CourseOverviewHeader from '@components/courses/CourseOverviewHeader'
+import GroupActivityList from '@components/courses/GroupActivityList'
+import LiveQuizList from '@components/courses/LiveQuizList'
+import MicroLearningList from '@components/courses/MicroLearningList'
+import PracticeQuizList from '@components/courses/PracticeQuizList'
+import Layout from '@components/Layout'
 import {
   faCrown,
   faList,
@@ -20,19 +28,11 @@ import {
   Tabs,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { GetStaticPropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import Layout from '../../../components/Layout'
-import CourseCalendarView from '../../../components/courses/CourseCalendarView'
-import CourseGamificationInfos from '../../../components/courses/CourseGamificationInfos'
-import CourseOverviewHeader from '../../../components/courses/CourseOverviewHeader'
-import GroupActivityList from '../../../components/courses/GroupActivityList'
-import LiveQuizList from '../../../components/courses/LiveQuizList'
-import MicroLearningList from '../../../components/courses/MicroLearningList'
-import PracticeQuizList from '../../../components/courses/PracticeQuizList'
 
 function CourseOverviewPage() {
   const t = useTranslations()
@@ -48,6 +48,7 @@ function CourseOverviewPage() {
   const { loading, error, data } = useQuery(GetSingleCourseDocument, {
     variables: { courseId: router.query.id as string },
     skip: !router.query.id,
+    ssr: false,
     fetchPolicy: 'network-only', // critical query, should always be up to date
   })
 
@@ -125,6 +126,30 @@ function CourseOverviewPage() {
     )
 
   const { course } = data
+
+  const createAssessmentActivityTab = (
+    id: string,
+    value: string,
+    activityType: string,
+    dataCy: string
+  ) => ({
+    id,
+    value,
+    label: (
+      <div className="flex flex-row items-center gap-2.5">
+        <span>{activityType}</span>
+        <FontAwesomeIcon icon={faCrown} className="text-orange-400" />
+      </div>
+    ),
+    disabled: course.isAssessmentEnabled,
+    tooltip: course.isAssessmentEnabled
+      ? t('manage.course.activityNotAvailableAssessment', {
+          activityType,
+        })
+      : undefined,
+    tooltipDelay: 0,
+    data: { cy: dataCy },
+  })
 
   return (
     <Layout>
@@ -279,69 +304,24 @@ function CourseOverviewPage() {
                 label: t('manage.general.liveQuizzes'),
                 data: { cy: 'tab-liveQuizzes' },
               },
-              {
-                id: 'tab-practiceQuizzes',
-                value: 'practiceQuizzes',
-                label: (
-                  <div className="flex flex-row items-center gap-2.5">
-                    <span>{t('shared.generic.practiceQuizzes')}</span>
-                    <FontAwesomeIcon
-                      icon={faCrown}
-                      className="text-orange-400"
-                    />
-                  </div>
-                ),
-                disabled: course.isAssessmentEnabled,
-                tooltip: course.isAssessmentEnabled
-                  ? t('manage.course.activityNotAvailableAssessment', {
-                      activityType: t('shared.generic.practiceQuizzes'),
-                    })
-                  : undefined,
-                tooltipDelay: 0,
-                data: { cy: 'tab-practiceQuizzes' },
-              },
-              {
-                id: 'tab-microLearnings',
-                value: 'microLearnings',
-                label: (
-                  <div className="flex flex-row items-center gap-2.5">
-                    <span>{t('shared.generic.microlearnings')}</span>
-                    <FontAwesomeIcon
-                      icon={faCrown}
-                      className="text-orange-400"
-                    />
-                  </div>
-                ),
-                disabled: course.isAssessmentEnabled,
-                tooltip: course.isAssessmentEnabled
-                  ? t('manage.course.activityNotAvailableAssessment', {
-                      activityType: t('shared.generic.microlearnings'),
-                    })
-                  : undefined,
-                tooltipDelay: 0,
-                data: { cy: 'tab-microLearnings' },
-              },
-              {
-                id: 'tab-groupActivities',
-                value: 'groupActivities',
-                label: (
-                  <div className="flex flex-row items-center gap-2.5">
-                    <span>{t('shared.generic.groupActivities')}</span>
-                    <FontAwesomeIcon
-                      icon={faCrown}
-                      className="text-orange-400"
-                    />
-                  </div>
-                ),
-                disabled: course.isAssessmentEnabled,
-                tooltip: course.isAssessmentEnabled
-                  ? t('manage.course.activityNotAvailableAssessment', {
-                      activityType: t('shared.generic.groupActivities'),
-                    })
-                  : undefined,
-                tooltipDelay: 0,
-                data: { cy: 'tab-groupActivities' },
-              },
+              createAssessmentActivityTab(
+                'tab-practiceQuizzes',
+                'practiceQuizzes',
+                t('shared.generic.practiceQuizzes'),
+                'tab-practiceQuizzes'
+              ),
+              createAssessmentActivityTab(
+                'tab-microLearnings',
+                'microLearnings',
+                t('shared.generic.microlearnings'),
+                'tab-microLearnings'
+              ),
+              createAssessmentActivityTab(
+                'tab-groupActivities',
+                'groupActivities',
+                t('shared.generic.groupActivities'),
+                'tab-groupActivities'
+              ),
             ]}
             className={{ root: 'flex-1 basis-3/5' }}
           >

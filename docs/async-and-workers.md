@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-08-24'
+timestamp: '2026-08-26'
 tags:
   - backend
   - hatchet
@@ -61,15 +61,21 @@ has expired. The legacy
 `lq:<quiz-id>:i:<instance-id>:responses:processed` set is read only during the
 worker rollout and provides the initial processed-counter baseline. A
 processing retry after a lost Redis reply therefore cannot apply the same
-completed batch twice during that horizon. The script validates command
-targets and numeric increment fields before any aggregation mutation. If
-validation fails, it returns an explicit aggregation failure without creating
-a claim so the worker can retry safely. If an unexpected command failure occurs
-after an earlier command has applied, the script retains the claim and returns
-`reconciliation_required`; the worker acknowledges the message and logs the
-partial result instead of retrying and duplicating non-idempotent updates. A
-command failure before any command applies releases the claim and remains
-retryable.
+completed batch twice during that horizon. The script rejects malformed JSON,
+wrong command arity, commands outside the current
+`lq:<quiz>:i:<instance>:` namespace, invalid target types, and invalid numeric
+increment fields before any aggregation mutation.
+If validation fails, it returns an explicit aggregation failure without
+creating a claim so the worker can retry safely. If an unexpected command
+failure occurs after an earlier command has applied, the script changes the
+claim to a negative-score reconciliation marker and returns
+`reconciliation_required`. The worker throws, and every retry returns the same
+status without repeating the non-idempotent updates, so Hatchet retains a
+visible failed task for manual reconciliation. A command failure before any
+command applies releases the claim and remains retryable.
+Processed-counter, baseline, or retention errors after successful aggregation
+use the same reconciliation marker instead of silently acknowledging metric
+drift.
 
 The legacy received set
 `lq:<quiz-id>:i:<instance-id>:responses:received` is read-only compatibility
@@ -97,8 +103,9 @@ claim as a bounded replay guard for completed batches: after a successful
 claim-and-aggregation, a retry is a no-op. Preflight command errors release no
 claim, are logged as aggregation failures, do not increment the processed
 counter, and cause the worker to retry. Unexpected errors after a command has
-applied retain the claim, return `reconciliation_required`, and are
-acknowledged without retry; errors before any command applies release the claim
+applied persist a negative-score reconciliation marker, return
+`reconciliation_required`, and keep the Hatchet task failed without repeating
+already-applied commands; errors before any command applies release the claim
 and remain retryable.
 
 Counters stay persistent while their element instance is active, matching the
@@ -136,10 +143,22 @@ because old workers do not increment the new processed counter.
 `apps/hatchet-worker-general` (`src/index.ts`) — selects workflows via the `HATCHET_WORKFLOWS` env var (default all; unknown keys are rejected at startup):
 
 - `create-audit-log-entry` (event-driven)
+- `process-course-duplication` — async course duplication worker implemented by `packages/graphql/src/services/courseDuplication.ts`. A task-local constant concurrency bucket allows one running duplication globally and queues additional duplication jobs for up to 60 minutes with group round-robin scheduling; unrelated Hatchet tasks retain their own concurrency. The GraphQL mutation stores job state in Redis and returns a job id; it retries an ambiguous Hatchet event publication with the same job id, and republishes an existing pending job on a later mutation retry, so a lost acknowledgement cannot open a second copy or strand the job. Each attempt allows 30 minutes, above the ten-minute database transaction limit, and waits 60 seconds before the first retry so a crashed worker's lease can expire. The worker uses a renewable, token-checked process lease plus a separate 120-second heartbeat key refreshed on the same cadence; rethrows generic failures for Hatchet retries; and records only access or partial-copy failures as terminal. Stale-job normalization (`COURSE_DUPLICATION_STALE_AFTER_MS`, currently 75 minutes — 15 minutes beyond the queue timeout) only fires when the record is old **and** no fresh heartbeat exists, then reconciles against Postgres before declaring failure: because a running attempt refreshes the record before starting and the copied course carries the job id as its primary key, live or committed work is not misclassified as a stale failure. Terminal records strip the stored mutation payload (including any notification email) and identity fields for the remainder of their TTL. A scheduled sweep (`sweep-stale-course-duplications`, every 5 minutes) normalizes abandoned jobs server-side, so recovery no longer depends on a user polling. The manage frontend polls `courseDuplicationStatuses` until the job completes or fails, then shows a localized action to open the copied course without navigating automatically.
+- `sweep-stale-course-duplications` — cron task (every 5 minutes) scanning non-terminal duplication records and applying stale normalization with heartbeat + Postgres reconciliation.
 - `publish-scheduled-*` / `end-expired-*` — activity lifecycle
 - `aggregate-block-closure-*` — live-quiz block aggregation
 - Daily crons (`0 0 * * *`): `updateGroupAverageScores`, `runningRandomGroupAssignments`, `finalRandomGroupAssignments`, `updateWeeklyTimelineEntries`
 
+## Course duplication operations
+
+Job state lives in Redis under three key families (all self-expiring): status records `course-duplication:job:<jobId>` and per-user/per-course source locks `course-duplication:source:<userId>:<sourceCourseId>` expire after **24 hours**; process leases `course-duplication:job:<jobId>:processing` and heartbeats `course-duplication:job:<jobId>:heartbeat` expire after 60/120 seconds. Postgres is the source of truth for outcomes: a committed course row whose id equals the job id proves the copy succeeded regardless of Redis state.
+
+To correlate a user report ("my duplication vanished") with only a course name or approximate time: list their keys with `SCAN 0 MATCH "course-duplication:source:<userId>:*"` (keys carry the source course id), read the referenced job record with `GET course-duplication:job:<jobId>` while it exists, and check `prisma.course.findUnique({ where: { id: <jobId> } })` for the outcome. Permission `AuditLogEntry` rows written inside a successful copy transaction outlive the Redis record. Worker logs carry the job id.
+
+**Rolling back this feature:** old code never registers the `process-course-duplication` workflow, so already-enqueued events stay QUEUED in Hatchet and mid-flight job records simply age out at their TTLs; users lose completion signals until the rollback completes, but no partial copies exist at any point (the copy is one database transaction). Recovery-by-resubmit works immediately after rollback because the legacy synchronous path ignores duplication locks. To release held source locks without waiting for TTL expiry: `SCAN 0 MATCH "course-duplication:source:*"` then `DEL` the listed keys.
+
 ## Running locally (config-derived — verify on your machine)
 
 The Hatchet engine runs as the `hatchet` compose service using `hatchet-lite-dev` (gRPC 7077, UI 8888, no UI authentication required); workers pick up the client token automatically minted to `/config/authdisabled-token` or populated by `./util/_create_hatchet_token.sh`. Workers must see the **same `DATABASE_URL`, `APP_SECRET`, and Redis settings** as the app stack — a worker pointed at the wrong database happily processes events into nowhere. The `packages/graphql` vitest suite also requires a live Hatchet + `HATCHET_CLIENT_TOKEN` (see [Testing](./testing.md)).
+
+Both development workers compile with Rollup and run the emitted JavaScript under nodemon. Do not replace that runner with `tsx --watch` or `node --watch`: their in-process watch protocols reach Hatchet's heartbeat worker-thread listener, which treats the watch message as a logger method and crashes with `TypeError: this.logger[message.type] is not a function`. When checking worker health, verify that the process stays alive for more than one four-second heartbeat interval; the initial `Connection established using LISTEN_STRATEGY_V2` message alone is insufficient. See [Hatchet heartbeat workers crash under in-process watch mode](./solutions/runtime-error/hatchet-heartbeat-workers-crash-under-in-process-watch-mode.md).

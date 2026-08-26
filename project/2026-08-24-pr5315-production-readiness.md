@@ -23,17 +23,21 @@ No remote merge, deployment, or production-data access was performed.
   lost replies therefore cannot apply a successfully completed aggregation
   twice within the replay horizon. Preflight and first-command failures release
   the claim and are retryable; a later failure retains the claim and returns
-  `reconciliation_required` so non-idempotent writes are not retried.
+  `reconciliation_required` so non-idempotent writes are not repeated.
 - New ingress writes a numeric received counter. The legacy received set is
   read-only compatibility input, and the cockpit adds its cardinality while
   old response-api instances drain.
 - The processing script captures per-command Redis errors with `redis.pcall`.
   A failure before any aggregation command succeeds releases the replay claim,
   returns `aggregation_failed`, and the worker throws so Hatchet can retry. A
-  later failure retains the claim, returns `reconciliation_required`, and the
-  worker acknowledges and logs the message for reconciliation instead of
-  retrying already-applied non-idempotent updates. Connection-level failures
-  still throw so the worker can retry.
+  later failure changes the claim to a negative-score reconciliation marker,
+  returns `reconciliation_required`, and keeps the Hatchet task failed. Retries
+  preserve that visible failure without repeating already-applied
+  non-idempotent updates. Connection-level failures still throw so the worker
+  can retry.
+- Processed-counter and retention failures after successful aggregation use
+  the same persistent reconciliation state, preventing silent metric drift
+  without replaying successful result commands.
 - Cockpit response-count resolution degrades all response counts to `null`
   when its count pipeline fails; the rest of the authorized cockpit query
   remains available.
@@ -69,7 +73,7 @@ No remote merge, deployment, or production-data access was performed.
 | Check                                        | Result                                                                                                                                                                                                                                                                                                                                             |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Response-processor typecheck                 | Passed                                                                                                                                                                                                                                                                                                                                             |
-| Response-processor unit tests                | 9 passed across regular and assessment processors, including atomic script calls, replay guards, partial-failure handling, reconciliation acknowledgement, and connection-level failure propagation                                                                                                                                                |
+| Response-processor unit tests                | 9 passed across regular and assessment processors, including atomic script calls, replay guards, partial-failure handling, persistent reconciliation failures, and connection-level failure propagation                                                                                                                                           |
 | Util tests                                   | 54 passed across the real-Redis integration suite, including command preflight, replay retention, and same-message partial-failure deduplication                                                                                                                                                                                                   |
 | GraphQL cockpit count tests                  | Predecessor evidence: 3 passed covering compatibility reads, scheduled nulls, and pipeline-failure degradation. The corrected ENDED-before-retention recovery test remains pending exact-head CI validation.                                                                                                                                      |
 | Cockpit Redis fault-injection test           | Passed; a failed count pipeline returned the cockpit with `null` response counts                                                                                                                                                                                                                                                                   |

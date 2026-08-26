@@ -732,10 +732,13 @@ export async function processResponseMessage(
             sessionId: message.sessionId,
             instanceId: message.instanceId,
             commandErrors: processingResult.commandErrors ?? [],
+            trackingErrors: processingResult.trackingErrors ?? [],
           },
         }
       )
-      return { status: 200 }
+      throw new Error(
+        `Redis response aggregation requires reconciliation: ${(processingResult.commandErrors ?? []).join('; ') || 'unknown command error'}`
+      )
     }
     if (
       processingResult.status !== 'processed' &&

@@ -7,11 +7,30 @@ export const LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS =
 // Redis runs this script atomically. Replay claims are age-trimmed so each
 // identifier gets the full horizon without retaining expired members forever.
 export const LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT = `
-local commands = cjson.decode(ARGV[3])
 local commandErrors = {}
 local trackingErrors = {}
+local decodeOk, commands = pcall(cjson.decode, ARGV[3])
+if not decodeOk or type(commands) ~= 'table' then
+  table.insert(commandErrors, 'invalid Redis commands JSON payload')
+  return cjson.encode({
+    status = 'aggregation_failed',
+    counted = false,
+    commandErrors = commandErrors,
+    trackingErrors = trackingErrors,
+  })
+end
+
 local instanceInfoTtl = redis.call('TTL', KEYS[3])
 local replayClaimTtl = tonumber(ARGV[2])
+if not replayClaimTtl or replayClaimTtl <= 0 then
+  table.insert(commandErrors, 'invalid replay claim TTL')
+  return cjson.encode({
+    status = 'aggregation_failed',
+    counted = false,
+    commandErrors = commandErrors,
+    trackingErrors = trackingErrors,
+  })
+end
 -- Keep replay claims for the full horizon even when instance-info expires
 -- sooner. Retries must remain idempotent after tracking data is gone.
 
@@ -38,10 +57,7 @@ if type(legacyMemberResult) == 'table' and legacyMemberResult.err then
   })
 end
 
-if legacyMemberResult == 1 or (
-  existingClaimResult ~= false and
-  currentTime - tonumber(existingClaimResult) < replayClaimTtl
-) then
+if legacyMemberResult == 1 then
   return cjson.encode({
     status = 'already_processed',
     counted = false,
@@ -50,12 +66,40 @@ if legacyMemberResult == 1 or (
   })
 end
 
+if existingClaimResult ~= false then
+  local existingClaimScore = tonumber(existingClaimResult)
+  if existingClaimScore < 0 and currentTime + existingClaimScore < replayClaimTtl then
+    return cjson.encode({
+      status = 'reconciliation_required',
+      counted = false,
+      commandErrors = { 'partial aggregation requires reconciliation' },
+      trackingErrors = trackingErrors,
+    })
+  elseif existingClaimScore >= 0 and currentTime - existingClaimScore < replayClaimTtl then
+    return cjson.encode({
+      status = 'already_processed',
+      counted = false,
+      commandErrors = commandErrors,
+      trackingErrors = trackingErrors,
+    })
+  end
+end
+
 local function isInteger(value)
   return value ~= nil and string.match(tostring(value), '^%-?%d+$') ~= nil
 end
 
+local instanceCommandPrefix = string.match(KEYS[3], '^(.*:)info$')
+
 local function validateCommands()
   for commandIndex, command in ipairs(commands) do
+    if #command ~= 4 then
+      return string.format(
+        'Redis command at index %d must contain exactly 4 arguments',
+        commandIndex
+      )
+    end
+
     local operation = command[1]
     local key = command[2]
     if type(operation) ~= 'string' or type(key) ~= 'string' then
@@ -66,6 +110,17 @@ local function validateCommands()
       return string.format(
         'unsupported Redis command %s at index %d',
         operation,
+        commandIndex
+      )
+    end
+
+    if
+      not instanceCommandPrefix or
+      string.sub(instanceCommandPrefix, 1, 3) ~= 'lq:' or
+      string.sub(key, 1, string.len(instanceCommandPrefix)) ~= instanceCommandPrefix
+    then
+      return string.format(
+        'Redis command at index %d targets an invalid namespace',
         commandIndex
       )
     end
@@ -139,11 +194,27 @@ end
 local trimResult = redis.pcall(
   'ZREMRANGEBYSCORE',
   KEYS[1],
-  '-inf',
+  0,
   currentTime - replayClaimTtl
 )
 if type(trimResult) == 'table' and trimResult.err then
   table.insert(commandErrors, trimResult.err)
+  return cjson.encode({
+    status = 'aggregation_failed',
+    counted = false,
+    commandErrors = commandErrors,
+    trackingErrors = trackingErrors,
+  })
+end
+
+local reconciliationTrimResult = redis.pcall(
+  'ZREMRANGEBYSCORE',
+  KEYS[1],
+  -(currentTime - replayClaimTtl),
+  0
+)
+if type(reconciliationTrimResult) == 'table' and reconciliationTrimResult.err then
+  table.insert(commandErrors, reconciliationTrimResult.err)
   return cjson.encode({
     status = 'aggregation_failed',
     counted = false,
@@ -170,7 +241,22 @@ local function expireCounter()
   end
 end
 
+local function markReconciliation()
+  local reconciliationResult = redis.pcall(
+    'ZADD',
+    KEYS[1],
+    -currentTime,
+    ARGV[1]
+  )
+  if type(reconciliationResult) == 'table' and reconciliationResult.err then
+    table.insert(trackingErrors, reconciliationResult.err)
+  end
+end
+
 local function releaseClaim()
+  -- Mark the claim first. If removal fails, a retry must remain visibly
+  -- blocked instead of treating the incomplete aggregation as processed.
+  markReconciliation()
   local releaseResult = redis.pcall('ZREM', KEYS[1], ARGV[1])
   if type(releaseResult) == 'table' and releaseResult.err then
     table.insert(trackingErrors, releaseResult.err)
@@ -225,8 +311,9 @@ if #commandErrors > 0 then
     releaseClaim()
   else
     -- Keep the claim when a non-idempotent command already applied. Retrying
-    -- the batch could duplicate the successful commands; reconciliation must
-    -- inspect the partial result instead.
+    -- the batch could duplicate the successful commands. A negative claim
+    -- score records the unresolved state so every retry remains visible.
+    markReconciliation()
     return cjson.encode({
       status = 'reconciliation_required',
       counted = false,
@@ -245,6 +332,18 @@ if #commandErrors == 0 then
     counted = true
     expireCounter()
   end
+end
+
+if #trackingErrors > 0 then
+  -- Aggregation completed, but the processed metric or its retention did not.
+  -- Keep this state visible without ever replaying the non-idempotent batch.
+  markReconciliation()
+  return cjson.encode({
+    status = 'reconciliation_required',
+    counted = counted,
+    commandErrors = { 'response tracking update requires reconciliation' },
+    trackingErrors = trackingErrors,
+  })
 end
 
 return cjson.encode({

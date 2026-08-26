@@ -23,6 +23,9 @@
     "@rollup/plugin-node-resolve": "~15.3.1",
     "@rollup/plugin-typescript": "~12.1.4",
     "@types/node": "^24.10.1",
+    "cross-env": "~7.0.3",
+    "nodemon": "~3.1.14",
+    "npm-run-all": "~4.1.5",
     "rollup": "~4.34.9",
     "tsx": "~4.19.4",
     "typescript": "~6.0.3"
@@ -32,12 +35,14 @@
     "build:test": "pnpm run build",
     "build:ts": "cross-env NODE_ENV=production rollup -c",
     "check": "tsc --noEmit --tsBuildInfoFile dist/tsconfig.check.tsbuildinfo",
-    "dev": "run-p --npm-path pnpm dev:ts",
+    "dev": "cross-env NODE_ENV=development run-s --npm-path pnpm build:ts dev:watch",
     "dev:assessment": "pnpm run dev",
+    "dev:build": "rollup -c --watch",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
     "dev:offline": "pnpm run dev",
+    "dev:run": "nodemon -w dist/ --exec 'node --env-file .env dist/index.js'",
     "dev:test": "cross-env NODE_ENV=test tsx --env-file .env src/index.ts",
-    "dev:ts": "cross-env NODE_ENV=development tsx --watch --env-file .env src/index.ts",
+    "dev:watch": "run-p --npm-path pnpm dev:build dev:run",
     "start:test": "node --env-file .env dist/index.js"
   },
   "engines": {

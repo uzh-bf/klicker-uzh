@@ -46,16 +46,18 @@ increments the numeric processed counter only when no command reports an error.
 Assessment aggregation uses the same contract. Preflight validation and
 failures before any aggregation command succeeds release the replay claim and
 allow the worker to throw so Hatchet can retry. A failure after an earlier
-command succeeds retains the replay claim and returns
-`reconciliation_required`; the worker acknowledges and logs that outcome for
-reconciliation instead of automatically retrying non-idempotent updates.
-Tracking-command failures are logged separately as best-effort metric errors.
+command succeeds stores a negative-score reconciliation marker and returns
+`reconciliation_required`; the worker keeps the Hatchet task failed, while
+retries return the same status without repeating non-idempotent updates.
+Processed-counter or retention failures use the same reconciliation state, so
+metric drift is visible without replaying successful aggregation commands.
 
 The difference between the two values is an operational signal, not a strict
 queue-depth metric. It can include work that is still queued as well as invalid,
 duplicate, rejected, or failed responses that were accepted at ingress but not
-incorporated into results. Best-effort tracking failures can also make either
-value lower than the corresponding pipeline activity.
+incorporated into results. Best-effort ingress tracking can make received lower
+than the corresponding pipeline activity; processed tracking failures remain
+visible for reconciliation and can keep processed lower until repaired.
 
 ## Architecture
 
@@ -70,10 +72,11 @@ claim:
 - `lq:<quiz-id>:i:<instance-id>:responses:processed:count` is a numeric counter
   incremented only after a complete aggregation command batch succeeds;
 - `lq:<quiz-id>:i:<instance-id>:responses:processed:claims` is a sorted-set
-  replay claim for message IDs or correlation IDs. Scores are claim timestamps,
-  and members older than the 24-hour replay horizon are trimmed before each
-  claim. The key remains for the full 24-hour replay horizon independently of
-  instance-info and counter retention;
+  replay claim for message IDs or correlation IDs. Positive scores are
+  completed-claim timestamps; negative scores mark unresolved partial
+  aggregation at the corresponding timestamp. Members older than the 24-hour
+  replay horizon are trimmed before each claim. The key remains for the full
+  24-hour replay horizon independently of instance-info and counter retention;
 - `lq:<quiz-id>:i:<instance-id>:responses:processed` remains the legacy replay
   set during the worker rollout and is read only for compatibility and the
   initial processed-counter baseline.
@@ -84,10 +87,11 @@ processed-set cardinality once, checks both the age-trimmed claims and the
 legacy set, and records each new claim with its own timestamp. Preflight or
 first-command errors release the claim and leave the processed counter
 unchanged so the worker can retry. If a later command fails after an earlier
-command has succeeded, the script retains the claim and returns
-`reconciliation_required`; the worker acknowledges and logs the outcome for
-reconciliation instead of repeating non-idempotent updates. Connection-level
-script failures still throw so Hatchet can retry.
+command has succeeded, the script stores a negative-score reconciliation
+marker and returns `reconciliation_required`; the worker keeps the Hatchet task
+failed, and later retries preserve that failure without repeating
+non-idempotent updates. Connection-level script failures still throw so Hatchet
+can retry.
 
 The legacy received set
 `lq:<quiz-id>:i:<instance-id>:responses:received` is read-only compatibility
@@ -197,8 +201,9 @@ not change leaderboard data.
   aggregation failure after the replay claim is released; it does not increment
   the processed counter and triggers a worker retry.
 - A processing-script failure after an earlier command succeeds retains the
-  replay claim, returns `reconciliation_required`, and is acknowledged and
-  logged for reconciliation; it does not trigger an automatic retry.
+  replay claim as a negative-score reconciliation marker, returns
+  `reconciliation_required`, and keeps the Hatchet task failed without
+  repeating already-applied commands on retry.
 - A connection-level processing-script failure throws so Hatchet can retry; if
   Redis completed the script, the replay claim makes that retry a no-op.
 - Worker retries do not increase the processed counter for the same tracking

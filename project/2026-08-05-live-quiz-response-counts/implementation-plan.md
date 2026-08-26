@@ -74,9 +74,10 @@ records the identifier with its claim timestamp, and applies every command
 with `redis.pcall`. It increments the counter only when no command fails. A
 preflight or first-command failure returns `aggregation_failed` and releases
 the claim so the worker can throw and Hatchet can retry. An unexpected failure
-after an earlier command has applied retains the claim and returns
-`reconciliation_required`; the worker acknowledges the message and logs the
-partial result instead of retrying non-idempotent writes. It returns
+after an earlier command has applied stores a negative-score reconciliation
+marker and returns `reconciliation_required`; the worker keeps the Hatchet task
+failed, while retries preserve that state without repeating non-idempotent
+writes. It returns
 `already_processed`, `processed`, `aggregation_failed`, or
 `reconciliation_required`. The legacy
 received set is read-only compatibility input; GraphQL adds its cardinality to

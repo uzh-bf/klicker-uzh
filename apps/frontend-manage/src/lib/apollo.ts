@@ -29,6 +29,8 @@ interface PageProps {
 
 export const APOLLO_STATE_PROP_NAME = '__APOLLO_STATE__'
 
+const MAX_QUERY_RETRY_ATTEMPTS = 3
+
 let apolloClient: ApolloClient<NormalizedCacheObject>
 
 function createIsomorphLink() {
@@ -104,8 +106,20 @@ function createIsomorphLink() {
         max: Infinity,
         jitter: true,
       },
-      attempts: {
-        max: 3,
+      attempts: (count, operation, error) => {
+        const definition = getOperationAST(
+          operation.query,
+          operation.operationName
+        )
+
+        if (
+          definition?.kind === 'OperationDefinition' &&
+          definition.operation === 'mutation'
+        ) {
+          return false
+        }
+
+        return count < MAX_QUERY_RETRY_ATTEMPTS && !!error
       },
     })
 

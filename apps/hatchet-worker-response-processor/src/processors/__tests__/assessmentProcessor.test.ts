@@ -100,7 +100,7 @@ describe('aggregateAssessmentResponses atomic processing', () => {
     )
   })
 
-  it('acknowledges reconciliation results without retrying partial writes', async () => {
+  it('keeps reconciliation results failed and visible to Hatchet', async () => {
     setupHappyPath()
     hoisted.assessmentClient.eval.mockResolvedValue(
       JSON.stringify({
@@ -111,9 +111,9 @@ describe('aggregateAssessmentResponses atomic processing', () => {
     )
     const ctx = createContext()
 
-    const result = await aggregateAssessmentResponses(createMessage(), ctx)
-
-    expect(result).toEqual({ status: 200 })
+    await expect(
+      aggregateAssessmentResponses(createMessage(), ctx)
+    ).rejects.toThrow('Redis pipeline for results aggregation failed')
     expect(ctx.logger.error).toHaveBeenCalledWith(
       'Redis assessment aggregation requires reconciliation; replay claim retained',
       expect.objectContaining({

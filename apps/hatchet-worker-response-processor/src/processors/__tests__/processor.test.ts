@@ -116,7 +116,7 @@ describe('processResponseMessage atomicity', () => {
     )
   })
 
-  it('acknowledges reconciliation results without retrying partial writes', async () => {
+  it('keeps reconciliation results failed and visible to Hatchet', async () => {
     setupHappyPath(hoisted.regularClient)
     hoisted.regularClient.eval.mockResolvedValue(
       JSON.stringify({
@@ -127,9 +127,9 @@ describe('processResponseMessage atomicity', () => {
     )
     const ctx = createContext()
 
-    const result = await processResponseMessage(createMessage(), ctx)
-
-    expect(result).toEqual({ status: 200 })
+    await expect(processResponseMessage(createMessage(), ctx)).rejects.toThrow(
+      'Redis transaction failed'
+    )
     expect(ctx.logger.error).toHaveBeenCalledWith(
       'Redis response aggregation requires reconciliation; replay claim retained',
       expect.objectContaining({

@@ -22,9 +22,12 @@ only new processors.
 
 Preflight validation and a failure before any aggregation command succeeds
 release the replay claim and allow Hatchet to retry. A failure after a
-non-idempotent command succeeds retains the claim, returns
-`reconciliation_required`, and is acknowledged and logged for reconciliation
-instead of being automatically retried.
+non-idempotent command succeeds changes the claim to a negative-score
+reconciliation marker and returns `reconciliation_required`. The worker keeps
+the Hatchet task failed, while retries return the same status without repeating
+already-applied commands, until the partial result is reconciled manually.
+Processed-counter or retention failures after successful aggregation use the
+same marker so metric drift also remains operationally visible.
 
 Replay claims remain for the full 24-hour replay horizon, independently of the
 shorter instance-info and counter retention. The end-live-quiz mutation
@@ -41,6 +44,7 @@ removed only in a deliberate follow-up after the old bundle is retired.
 ## Consequences
 
 Counters remain bounded, replay claims protect the full replay horizon, and
-duplicate retries do not repeat already-applied commands. Post-write
-reconciliation is operational work, and the rollout gate remains until
-compatibility or the required deployment order is proven.
+duplicate retries do not repeat already-applied commands. Partial writes remain
+visible as failed Hatchet tasks and require operational reconciliation. The
+rollout gate remains until compatibility or the required deployment order is
+proven.
