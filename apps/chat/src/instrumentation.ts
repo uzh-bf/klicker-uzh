@@ -1,5 +1,3 @@
-import { getChatModelRegistry } from './lib/server/chatModelRegistry'
-
 const isAiTelemetryEnabled = () =>
   process.env.CHAT_ENABLE_AI_TELEMETRY !== 'false'
 
@@ -8,6 +6,9 @@ export async function register() {
     return
   }
 
+  const { getChatModelRegistry } = await import(
+    './lib/server/chatModelRegistry'
+  )
   getChatModelRegistry()
 
   if (!isAiTelemetryEnabled()) return
