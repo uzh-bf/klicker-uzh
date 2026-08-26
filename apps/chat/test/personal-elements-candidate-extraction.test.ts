@@ -177,7 +177,7 @@ describe('unsaved candidate extraction', () => {
     expect(isFailedGenerationContent(content)).toBe(true)
   })
 
-  test('marks a terminal partial run retryable while retaining successful candidates', () => {
+  test('does not retain candidates from an unsettled terminal partial run', () => {
     const content = [
       {
         type: 'tool-call',
@@ -205,6 +205,25 @@ describe('unsaved candidate extraction', () => {
           ),
         ],
         new Set(['partial-generation']),
+        new Set()
+      )
+    ).toEqual(new Map())
+  })
+
+  test('retains candidates from a settled terminal partial run', () => {
+    const result = {
+      status: 'partial',
+      settlement: 'partial',
+      total: 2,
+      completed: 2,
+      candidates: [{ ...candidate, candidateId: 'successful-card' }],
+      failedCards: [{ candidateId: 'failed-card', code: 'generation_failed' }],
+    }
+
+    expect(
+      extractUnsavedCandidates(
+        [message('settled-partial-generation', result)],
+        new Set(['settled-partial-generation']),
         new Set()
       )
     ).toHaveProperty('size', 1)
