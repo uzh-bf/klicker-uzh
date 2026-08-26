@@ -401,19 +401,25 @@
 
 ## Progress
 
-- Status: K0-K4 implemented on the task branch; upstream 0.0.39 is published
-  and npm-verified; K5 integrated proof remains.
-- Active slice: K5 integrated runtime matrix.
+- Status: K0-K5 are implemented and the integrated runtime matrix passes.
+  Devrouter 0.0.40 is merged; its exact-head GitHub Actions run and npm release
+  remain queued before downstream publication.
+- Active slice: Upstream release completion, integrated final review, and PR
+  readiness.
 - Completed: Fresh downstream worktree, dependency and process mapping,
   first-party Dev Container and DevPod research, upstream package decomposition,
   and required planning review.
-- Remaining: K5 integrated proof (exact runtime matrix, lifecycle cleanup, full
-  checks, final review), then PR readiness.
+- Remaining: Publish and npm-verify devrouter 0.0.40 after exact-head CI starts,
+  run the integrated final review, push the final Klicker commits, update PR
+  #5574, and prove the exact runtime stopped.
 - Latest verified base: `origin/v3` at `cd5cfd574`; branch was 0 ahead and 0
   behind before implementation.
-- Runtime: No runtime was started for planning.
+- Runtime: The exact linked-worktree runtime is active on the `mcp` profile for
+  final checks. It will be stopped without deletion after the final
+  runtime-dependent check.
 - Active children: none.
-- Unresolved gates: K5 execution; PR merge remains separately authorized.
+- Unresolved gates: GitHub Actions has not assigned a job to devrouter main run
+  32984746600. Klicker PR merge remains separately authorized.
 - 2026-08-26 upstream publication: devrouter PR #37 was squash-merged at
   `af55b23`, GitHub release `v0.0.39` was published, and the release workflow
   completed successfully. `npm view @devrouter/cli` reports version 0.0.39;
@@ -436,13 +442,40 @@
 - 2026-08-26 K4: Updated `.devcontainer/README.md` (profile table, base
   contract, transition guarantees), `AGENTS.md`, and the bundled devrouter
   skill for the three-dimension profile model.
-- Verification so far: resolver and dev-runtime shell suites pass; Turbo dry
-  JSON passes for all four dev tasks; published 0.0.39 CLI accepts the new
-  contract; native `devcontainer.json` is unchanged. The integrated runtime
-  matrix (K5) has not run yet.
+- 2026-08-26 upstream correction: A failed first cold selective transition
+  exposed that devrouter 0.0.39 removed the generated Dev Container config and
+  left DevPod metadata temporarily unstoppable. Devrouter PR #38 adds rollback
+  coverage for cold and warm transitions and was squash-merged at
+  `bc38a7d3697b8658618e538b1d6bacd19ab0d98b`. The 0.0.40 source candidate
+  passes 659 tests and package smoke; exact-head main CI run 32984746600 is
+  still queued without an assigned job, so the release is not yet published.
+- 2026-08-26 K5 matrix: Cold `chat` recaptured a late Hatchet token before app
+  startup. Every standalone profile (`manage`, `pwa`, `chat`, `live-quiz`,
+  `ai`, `mcp`, `email`), omitted/full, `chat,ai`, reversed `ai,chat`,
+  `chat,mcp`, `chat,ai,mcp`, and `manage,email` reached `ready` with zero drift.
+  The exact `full` to `mcp` to `chat,ai,mcp` to `full` chain removed and restored
+  apps, services, and owned processes without recreation. An unknown profile
+  failed before mutation. Repeating canonical full retained every exact
+  container ID and managed process identity.
+- 2026-08-26 capability and route proof: LiteLLM liveliness passed without a
+  completion request; direct synthetic MCP input returned
+  `KLICKER_LOCAL_MCP_OK`; MailHog accepted one synthetic local-only SMTP
+  message without body inspection. A fresh browser session loaded Chat without
+  a model request, followed its `Open KlickerUZH` link to the PWA login form,
+  and loaded the namespaced Auth route.
+- 2026-08-26 static proof: Resolver and process-helper suites, Compose
+  validation for linked and primary checkouts, formatting, all 25 TypeScript
+  checks, and lint for all 29 container-supported workspaces pass. The full
+  production build completed all 23 tasks. Repository-wide `check:all` reaches
+  the excluded analytics package, where uv selects Python 3.14 and tries to
+  compile pandas 2.2.2 without a C compiler; analytics remains outside this
+  devcontainer by contract. DevPod occasionally omits its remote exit status
+  after printing devrouter's exit-zero marker, so those successful workload
+  results are read from the marker and task totals rather than the wrapper exit.
 - Required delivery layer: locally committed, release-compatible consumer
   package with exact runtime stopped.
-- Achieved delivery layer: reviewed local plan only.
-- Next action: Run the K5 matrix: cold selective start, capability-only, warm
-  replacement, invalid preservation, full restore, exact stop, then full repo
-  checks and the final review.
+- Achieved delivery layer: Integrated local implementation and runtime proof;
+  upstream bugfix merged but not yet released.
+- Next action: Complete devrouter 0.0.40 publication when exact-head CI starts,
+  run final review, publish the Klicker branch and PR update, then stop the exact
+  runtime and prove no owned resource remains active.
