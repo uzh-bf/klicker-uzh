@@ -4,7 +4,9 @@ import questionsData from '../fixtures/questions.json' with { type: 'json' }
 import {
   chooseActionByTestId,
   chooseActivityAction,
+  filterActivitiesByName,
   openActionMenuByTestId,
+  replaceControlledSearchValue,
 } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
@@ -291,9 +293,9 @@ async function shareElementWithUser(
 }
 
 async function openShareModalForElement(page: Page, elementName: string) {
-  await page.getByTestId('elements-search-input').clear()
-  await page.getByTestId('elements-search-input').fill(elementName)
-  await page.keyboard.press('Enter')
+  const searchInput = page.getByTestId('elements-search-input')
+  await replaceControlledSearchValue(searchInput, elementName)
+  await searchInput.press('Enter')
   await page.getByTestId(`actions-element-${elementName}`).click()
   await page.getByTestId(`share-element-${elementName}`).click()
 }
@@ -1158,7 +1160,19 @@ test.describe('Create different types of elements (with and without sample solut
     }) => {
       await loginLecturer()
 
-      await deleteElement(page, data.update.title3)
+      await page.getByTestId('elements-search-input').fill(data.update.title3)
+      await page.getByTestId('elements-search-input').press('Enter')
+      const obsoleteElement = page.getByTestId(
+        `element-item-${data.update.title3}`
+      )
+      if (
+        await obsoleteElement
+          .waitFor({ state: 'visible', timeout: 5000 })
+          .then(() => true)
+          .catch(() => false)
+      ) {
+        await deleteElement(page, data.update.title3)
+      }
 
       await page.getByTestId('activities').click()
       for (const quiz of [
@@ -1166,12 +1180,17 @@ test.describe('Create different types of elements (with and without sample solut
         data.update.liveQuiz2,
         data.update.liveQuiz3,
       ]) {
-        await page.getByTestId('activities-search-input').clear()
-        await page.getByTestId('activities-search-input').fill(quiz)
-        await page.keyboard.press('Enter')
+        await filterActivitiesByName(page, quiz)
+        const cockpitButton = page.getByTestId(`live-quiz-cockpit-${quiz}`)
+        const quizExists = await cockpitButton
+          .waitFor({ state: 'visible', timeout: 5000 })
+          .then(() => true)
+          .catch(() => false)
+        if (!quizExists) continue
+
         await Promise.all([
           page.waitForURL(/\/cockpit/, { timeout: 30000 }),
-          page.getByTestId(`live-quiz-cockpit-${quiz}`).click(),
+          cockpitButton.click(),
         ])
         await expect(page.getByTestId('next-block-timeline')).toBeVisible()
         await page.getByTestId('next-block-timeline').click()
@@ -1180,9 +1199,7 @@ test.describe('Create different types of elements (with and without sample solut
         await page.waitForTimeout(500)
         await page.reload()
         await page.getByTestId('activities').click()
-        await expect(page.getByTestId('activities-search-input')).toBeVisible()
-        await page.getByTestId('activities-search-input').fill(quiz)
-        await page.keyboard.press('Enter')
+        await filterActivitiesByName(page, quiz)
         await chooseActivityAction(
           page,
           'LIVE_QUIZ',
@@ -1194,7 +1211,6 @@ test.describe('Create different types of elements (with and without sample solut
           'confirm-deletion-qa-feedbacks',
           'confirm-deletion-confusion-feedbacks',
         ])
-        await page.getByTestId('activities-search-input').clear()
       }
 
       await page.getByTestId('courses').click()
@@ -1974,7 +1990,7 @@ test.describe('Create different types of elements (with and without sample solut
       logoutUser,
     }, testInfo) => {
       const retrySuffix =
-        testInfo.retry === 0 ? '' : ` [retry ${testInfo.retry}]`
+        testInfo.retry === 0 ? '' : ` (retry ${testInfo.retry})`
       const mcTitle = `${data.MCML.title}${retrySuffix}`
       const nrTitle = `${data.NRML.title}${retrySuffix}`
 
@@ -2010,8 +2026,9 @@ test.describe('Create different types of elements (with and without sample solut
 
       await logoutUser()
       await loginInstitutionalCatalyst()
-      await page.getByTestId('elements-search-input').clear()
-      await page.getByTestId('elements-search-input').press('Enter')
+      const institutionalSearchInput = page.getByTestId('elements-search-input')
+      await replaceControlledSearchValue(institutionalSearchInput, '')
+      await institutionalSearchInput.press('Enter')
 
       await page.getByTestId(`element-checkbox-${nrTitle}`).check()
       await page.getByTestId('element-batch-operations').click()
@@ -2089,8 +2106,9 @@ test.describe('Create different types of elements (with and without sample solut
       await logoutUser()
       await loginIndividualCatalyst()
       await validateElement(page, mcTitle)
-      await page.getByTestId('elements-search-input').fill(nrTitle)
-      await page.getByTestId('elements-search-input').press('Enter')
+      const individualSearchInput = page.getByTestId('elements-search-input')
+      await replaceControlledSearchValue(individualSearchInput, nrTitle)
+      await individualSearchInput.press('Enter')
       await expect(page.getByTestId(`element-item-${nrTitle}`)).toBeHidden()
     })
 

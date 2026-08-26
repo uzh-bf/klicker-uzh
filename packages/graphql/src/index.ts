@@ -40,6 +40,10 @@ import './schema/subscription.js'
 // }
 
 import {
+  handleProcessCourseDuplication,
+  handleSweepStaleCourseDuplications,
+} from './services/courseDuplication.js'
+import {
   handleEndExpiredGroupActivity,
   handleFinalRandomGroupAssignments,
   handlePublishScheduledGroupActivity,
@@ -83,4 +87,6 @@ export const handlers: HatchetHandlers = {
   handlePublishScheduledMicroLearning,
   handleStandardLiveQuizBlockClosureAggregation,
   handleAssessmentLiveQuizBlockClosureAggregation,
+  handleProcessCourseDuplication,
+  handleSweepStaleCourseDuplications,
 }
