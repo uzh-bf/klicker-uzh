@@ -704,6 +704,34 @@ describe('KB retention maintenance', () => {
     expect(enqueueKBGraphBuild).toHaveBeenCalledWith(BUILD_ID)
   })
 
+  it('keeps graph recovery active without dispatching ingestion retries', async () => {
+    const prisma = maintenancePrisma({
+      pendingGraphDispatch: [{ id: BUILD_ID, kbId: KB_ID }],
+    })
+    const apiClient = client()
+    const enqueueKBGraphBuild = vi.fn().mockResolvedValue(undefined)
+
+    await maintainKBResources({
+      prisma: prisma as never,
+      client: apiClient,
+      ingestionDispatchEnabled: false,
+      now: () => NOW,
+      enqueueKBGraphBuild,
+    })
+
+    expect(enqueueKBGraphBuild).toHaveBeenCalledWith(BUILD_ID)
+    expect(apiClient.acceptResource).not.toHaveBeenCalled()
+    expect(apiClient.deleteResource).not.toHaveBeenCalled()
+    expect(prisma.kBResource.count).toHaveBeenCalledOnce()
+    expect(prisma.kBResource.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        activeResourceVersion: null,
+        activeContentSha256: null,
+        ingestionRuns: expect.any(Object),
+      }),
+    })
+  })
+
   it('retries a stranded UPSERT dispatch stuck in the crash window with its stable attempt id', async () => {
     const stranded = {
       id: RESOURCE_ID,

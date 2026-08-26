@@ -11,9 +11,15 @@ metadata:
 data:
   HATCHET_CLIENT_TLS_STRATEGY: {{ .Values.hatchet.client.tlsStrategy | quote }}
   HATCHET_API_URL: {{ .Values.hatchet.client.apiUrl | quote }}
+  {{- if .Values.hatchet.kbIngestion.workerDisabled }}
+  KB_INGESTION_WORKER_DISABLED: {{ .Values.hatchet.kbIngestion.workerDisabled | quote }}
+  {{- end }}
   KB_INGESTION_API_URL: {{ .Values.hatchet.kbIngestion.apiUrl | quote }}
   KB_INGESTION_PROJECT_ID: {{ .Values.hatchet.kbIngestion.projectId | quote }}
   KB_SOURCE_GATEWAY_URL: {{ .Values.hatchet.kbIngestion.sourceGatewayUrl | quote }}
+  {{- if .Values.hatchet.kbGraph.disabled }}
+  KB_GRAPH_DISABLED: {{ .Values.hatchet.kbGraph.disabled | quote }}
+  {{- end }}
   {{- if .Values.hatchet.kbGraph.workflowName }}
   KB_GRAPH_HATCHET_CLIENT_HOST_PORT: {{ .Values.hatchet.kbGraph.hostPort | quote }}
   KB_GRAPH_HATCHET_API_URL: {{ .Values.hatchet.kbGraph.apiUrl | quote }}

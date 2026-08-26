@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import {
   BlobServiceClient,
   StorageSharedKeyCredential,
@@ -20,7 +21,6 @@ import type {
   IngestKBResourceInput,
 } from '@klicker-uzh/types'
 import { getBlobStorageAccountUrl } from '@klicker-uzh/util'
-import { randomUUID } from 'node:crypto'
 import { getKBGraphArtifactBlobName } from './kbGraphIngestionApi.js'
 import {
   dispatchKBDeletion,
@@ -64,6 +64,7 @@ const KB_GRAPH_ARCHIVED_ARTIFACT_STATUSES: KBGraphBuildStatus[] = [
 type KBMaintenanceDependencies = {
   prisma: PrismaClient
   client?: KBIngestionApiClient
+  ingestionDispatchEnabled?: boolean
   env?: NodeJS.ProcessEnv
   now?: () => Date
   logger?: KBIngestionLogger
@@ -160,6 +161,7 @@ export async function maintainKBResources(
     dependencies.deleteBlob ??
     ((ownerId, blobName) => deleteKBBlob(ownerId, blobName, env))
   const deleteGraph = dependencies.deleteGraph ?? deleteKnowledgeGraph
+  const ingestionDispatchEnabled = dependencies.ingestionDispatchEnabled ?? true
 
   const deletionRetryWhere = {
     deletedAt: { not: null },
@@ -167,31 +169,35 @@ export async function maintainKBResources(
     ingestionAttemptId: { not: null },
     OR: [{ externalOperationId: null }, { status: KBResourceStatus.FAILED }],
   } satisfies Prisma.KBResourceWhereInput
-  const deletionRetryCount = await dependencies.prisma.kBResource.count({
-    where: deletionRetryWhere,
-  })
+  const deletionRetryCount = ingestionDispatchEnabled
+    ? await dependencies.prisma.kBResource.count({
+        where: deletionRetryWhere,
+      })
+    : 0
   const deletionRetryOffset = getBatchOffset(deletionRetryCount, now)
-  const deletionRetries = await dependencies.prisma.kBResource.findMany({
-    where: deletionRetryWhere,
-    select: {
-      id: true,
-      kbId: true,
-      status: true,
-      ingestionAttemptId: true,
-      resourceVersion: true,
-      externalOperationId: true,
-      ingestionRuns: {
-        where: {
-          operation: KBIngestionOperation.DELETE,
-          status: { in: KB_TERMINAL_DELETION_STATUSES },
+  const deletionRetries = ingestionDispatchEnabled
+    ? await dependencies.prisma.kBResource.findMany({
+        where: deletionRetryWhere,
+        select: {
+          id: true,
+          kbId: true,
+          status: true,
+          ingestionAttemptId: true,
+          resourceVersion: true,
+          externalOperationId: true,
+          ingestionRuns: {
+            where: {
+              operation: KBIngestionOperation.DELETE,
+              status: { in: KB_TERMINAL_DELETION_STATUSES },
+            },
+            select: { id: true },
+          },
         },
-        select: { id: true },
-      },
-    },
-    orderBy: { id: 'asc' },
-    ...(deletionRetryOffset > 0 ? { skip: deletionRetryOffset } : {}),
-    take: KB_MAINTENANCE_BATCH_SIZE,
-  })
+        orderBy: { id: 'asc' },
+        ...(deletionRetryOffset > 0 ? { skip: deletionRetryOffset } : {}),
+        take: KB_MAINTENANCE_BATCH_SIZE,
+      })
+    : []
   const retryableDeletions = deletionRetries.filter(
     (resource) =>
       !resource.externalOperationId ||
@@ -297,29 +303,33 @@ export async function maintainKBResources(
     ingestionAttemptId: { not: null },
     updatedAt: { lte: upsertRetryStaleBefore },
   } satisfies Prisma.KBResourceWhereInput
-  const upsertRetryCount = await dependencies.prisma.kBResource.count({
-    where: upsertRetryWhere,
-  })
+  const upsertRetryCount = ingestionDispatchEnabled
+    ? await dependencies.prisma.kBResource.count({
+        where: upsertRetryWhere,
+      })
+    : 0
   const upsertRetryOffset = getBatchOffset(upsertRetryCount, now)
-  const upsertRetries = await dependencies.prisma.kBResource.findMany({
-    where: upsertRetryWhere,
-    select: {
-      id: true,
-      kbId: true,
-      title: true,
-      type: true,
-      blobName: true,
-      mimeType: true,
-      sizeBytes: true,
-      sourceUrl: true,
-      ingestionAttemptId: true,
-      resourceVersion: true,
-      kb: { select: { ownerId: true } },
-    },
-    orderBy: { id: 'asc' },
-    ...(upsertRetryOffset > 0 ? { skip: upsertRetryOffset } : {}),
-    take: KB_MAINTENANCE_BATCH_SIZE,
-  })
+  const upsertRetries = ingestionDispatchEnabled
+    ? await dependencies.prisma.kBResource.findMany({
+        where: upsertRetryWhere,
+        select: {
+          id: true,
+          kbId: true,
+          title: true,
+          type: true,
+          blobName: true,
+          mimeType: true,
+          sizeBytes: true,
+          sourceUrl: true,
+          ingestionAttemptId: true,
+          resourceVersion: true,
+          kb: { select: { ownerId: true } },
+        },
+        orderBy: { id: 'asc' },
+        ...(upsertRetryOffset > 0 ? { skip: upsertRetryOffset } : {}),
+        take: KB_MAINTENANCE_BATCH_SIZE,
+      })
+    : []
   if (upsertRetries.length > 0) {
     await runBounded(upsertRetries, async (resource) => {
       // The same attempt id is reused (never a new one, never a status

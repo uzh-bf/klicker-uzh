@@ -2,72 +2,30 @@
 
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import { handlers, settleKbKnowledgeGraphResult } from '@klicker-uzh/graphql'
-import type { PreparedHatchetTasks } from '@klicker-uzh/hatchet'
 import {
   getKBGraphTerminalResult,
   hatchetClient,
   prepareHatchetTasks,
-  validateKBGraphWorkerConfig,
-  validateKBIngestionWorkerConfig,
 } from '@klicker-uzh/hatchet'
 import { prisma } from '@klicker-uzh/prisma'
 import EventEmitter from 'events'
 import { createPubSub } from 'graphql-yoga'
 import { Redis } from 'ioredis'
 import logger from './logger.js'
+import {
+  selectWorkflows,
+  validateKBWorkerConfiguration,
+} from './workflowSelection.js'
 
 const HATCHET_WORKER_NAME =
   process.env.HATCHET_WORKER_NAME ?? 'hatchet-worker-general'
 
-function selectWorkflows(workflows: PreparedHatchetTasks) {
-  // Select which workflows to load using an env var and keep it type-safe.
-  // If no env var is provided, default to ALL available workflows dynamically.
-  const defaultWorkflowKeys = Object.keys(workflows) as Array<
-    keyof PreparedHatchetTasks
-  >
-
-  // Parse requested keys; treat empty/whitespace as "unset" so we default to all
-  const envRaw = process.env.HATCHET_WORKFLOWS
-  const requestedKeysRaw = envRaw
-    ? envRaw
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean)
-    : undefined
-
-  const hasRequested =
-    Array.isArray(requestedKeysRaw) && requestedKeysRaw.length > 0
-
-  const validSelectedKeys = (
-    hasRequested
-      ? requestedKeysRaw.filter(
-          (k): k is keyof PreparedHatchetTasks => k in workflows
-        )
-      : defaultWorkflowKeys
-  ) as Array<keyof PreparedHatchetTasks>
-
-  if (hasRequested) {
-    const unknown = requestedKeysRaw.filter((k) => !(k in workflows))
-    if (unknown.length) {
-      logger.warn(
-        {
-          unknownKeys: unknown,
-          availableKeys: Object.keys(workflows),
-        },
-        'HATCHET_WORKFLOWS contains unknown task keys'
-      )
-    }
-  }
-
-  const selectedWorkflows = validSelectedKeys.map((k) => workflows[k])
-
-  return selectedWorkflows
-}
-
 async function main() {
-  validateKBIngestionWorkerConfig()
-  validateKBGraphWorkerConfig()
-  logger.info({ workerName: HATCHET_WORKER_NAME }, 'Starting Hatchet worker')
+  const integrationState = validateKBWorkerConfiguration()
+  logger.info(
+    { workerName: HATCHET_WORKER_NAME, ...integrationState },
+    'Starting Hatchet worker'
+  )
 
   const redisExec = new Redis({
     family: 4,
@@ -129,6 +87,8 @@ async function main() {
     redisCache,
     handlers,
     getKBGraphTerminalResult,
+    kbIngestionDispatchEnabled: !integrationState.ingestionDisabled,
+    kbGraphDispatchEnabled: !integrationState.graphDisabled,
     settleKBGraphTerminalResult: ({
       buildId,
       result,
@@ -142,10 +102,26 @@ async function main() {
       ),
   })
 
-  const workflows = selectWorkflows(preparedWorkflows)
-  const selectedKeys = Object.keys(preparedWorkflows).filter((k) =>
-    workflows.includes((preparedWorkflows as any)[k])
-  )
+  const selection = selectWorkflows(preparedWorkflows, {
+    ...integrationState,
+    requestedWorkflowNames: process.env.HATCHET_WORKFLOWS,
+  })
+  if (selection.unknownKeys.length > 0) {
+    logger.warn(
+      {
+        unknownKeys: selection.unknownKeys,
+        availableKeys: Object.keys(preparedWorkflows),
+      },
+      'HATCHET_WORKFLOWS contains unknown task keys'
+    )
+  }
+  if (selection.disabledKeys.length > 0) {
+    logger.info(
+      { disabledKeys: selection.disabledKeys },
+      'KB integration gates excluded workflows'
+    )
+  }
+  const { workflows, selectedKeys } = selection
   logger.info({ selectedKeys }, 'Selected workflows')
 
   logger.info(
