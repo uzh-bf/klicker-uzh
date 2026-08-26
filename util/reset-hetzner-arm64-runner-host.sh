@@ -22,6 +22,7 @@ CURRENT_STAGE='initial validation'
 SOURCE_STATE_FILE=''
 MANAGED_RUNNER_NAME=''
 LEGACY_STATE_PRESENT='false'
+FIREWALL_STATUS='unknown'
 
 usage() {
   cat <<'EOF'
@@ -398,7 +399,11 @@ validate_firewall() {
   local firewall_rules normalized_rules unexpected_rules
 
   command -v ufw >/dev/null 2>&1 || die 'UFW is missing'
-  ufw status | grep -Fxq 'Status: active' || die 'UFW is not active'
+  if ufw status | grep -Fxq 'Status: inactive'; then
+    FIREWALL_STATUS='inactive; apply will replace its rules with SSH-only ingress'
+    return 0
+  fi
+  ufw status | grep -Fxq 'Status: active' || die 'UFW returned an unexpected status'
   ufw status verbose | grep -Fq 'Default: deny (incoming), allow (outgoing)' ||
     die 'UFW does not deny inbound traffic by default'
   firewall_rules=$(ufw status numbered)
@@ -410,6 +415,7 @@ validate_firewall() {
     <<<"$normalized_rules" || true)
   [[ -z "$unexpected_rules" ]] ||
     die "UFW contains a non-SSH rule: ${unexpected_rules//$'\n'/, }"
+  FIREWALL_STATUS='active with SSH-only ingress'
 }
 
 is_reset_ready() {
@@ -465,6 +471,7 @@ Runner host cleanup plan (read-only):
   Target profile: ${TARGET_PROFILE}
   Remove: runner service, ${RUNNER_USER}, ${RUNNER_DIR}, Docker packages and local Docker data
   Preserve: ${ADMIN_USER}, SSH keys and hardening, UFW, OpenSSH, sudo, OS updates
+  Firewall: ${FIREWALL_STATUS}
   Storage: local 80 GB disk only
 
 No changes were made. Cleanup does not securely erase disk blocks and cannot
@@ -479,6 +486,20 @@ acquire_mutation_lock() {
   install -d -m 0755 -o root -g root /run/lock
   exec 9>"$LOCK_FILE"
   flock --nonblock 9 || die 'runner provisioning or cleanup is already active'
+}
+
+configure_ssh_only_firewall() {
+  [[ "$FIREWALL_STATUS" != 'active with SSH-only ingress' ]] || return 0
+
+  CURRENT_STAGE='SSH-only firewall configuration'
+  ufw --force reset >/dev/null
+  ufw default deny incoming >/dev/null
+  ufw default allow outgoing >/dev/null
+  ufw allow OpenSSH >/dev/null
+  ufw --force enable >/dev/null
+  validate_firewall
+  [[ "$FIREWALL_STATUS" == 'active with SSH-only ingress' ]] ||
+    die 'UFW did not become active with SSH-only ingress'
 }
 
 confirm_cleanup_boundary() {
@@ -652,8 +673,9 @@ EOF
 
 apply_cleanup() {
   if is_reset_ready; then
+    acquire_mutation_lock
+    configure_ssh_only_firewall
     if [[ "$LEGACY_STATE_PRESENT" == 'true' ]]; then
-      acquire_mutation_lock
       rm -f -- "$LEGACY_STATE_FILE"
       rmdir "$LEGACY_STATE_DIR"
       LEGACY_STATE_PRESENT='false'
@@ -664,6 +686,7 @@ apply_cleanup() {
 
   acquire_mutation_lock
   confirm_cleanup_boundary
+  configure_ssh_only_firewall
   stop_services
   remove_systemd_assets
   remove_runner_and_docker
