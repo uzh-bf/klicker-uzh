@@ -78,6 +78,7 @@ import { MicroLearning } from './microLearning.js'
 import {
   PersonalElement,
   PersonalElementCandidateInput,
+  PersonalElementSourceInput,
 } from './personalElement.js'
 import {
   AvatarSettingsInput,
@@ -663,6 +664,7 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.string({ required: true }),
           response: t.arg({ type: FlashcardCorrectnessType, required: true }),
+          expectedVersion: t.arg.int({ required: true }),
         },
         resolve: async (_, args, ctx) => {
           return await PersonalElementService.respondToPersonalElement(args, {
@@ -681,6 +683,10 @@ export const Mutation = builder.mutationType({
           name: t.arg.string({ required: false }),
           content: t.arg.string({ required: false }),
           explanation: t.arg.string({ required: false }),
+          sources: t.arg({
+            type: [PersonalElementSourceInput],
+            required: false,
+          }),
         },
         resolve: async (_, args, ctx) => {
           return await PersonalElementService.updatePersonalElement(
@@ -690,6 +696,12 @@ export const Mutation = builder.mutationType({
               name: args.name ?? undefined,
               content: args.content ?? undefined,
               explanation: args.explanation ?? undefined,
+              sources: args.sources?.map((source) => ({
+                ...source,
+                title: source.title ?? undefined,
+                url: source.url ?? undefined,
+                metadata: source.metadata ?? undefined,
+              })),
             },
             {
               prisma: ctx.prisma,

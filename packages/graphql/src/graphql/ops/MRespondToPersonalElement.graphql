@@ -1,8 +1,13 @@
 mutation MRespondToPersonalElement(
   $id: String!
   $response: FlashcardCorrectnessType!
+  $expectedVersion: Int!
 ) {
-  respondToPersonalElement(id: $id, response: $response) {
+  respondToPersonalElement(
+    id: $id
+    response: $response
+    expectedVersion: $expectedVersion
+  ) {
     ...FPersonalElement
   }
 }

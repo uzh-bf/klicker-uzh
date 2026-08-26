@@ -53,39 +53,43 @@ const sourceSchema = z
     }
   })
 
+const sourcesSchema = z
+  .array(sourceSchema)
+  .min(1)
+  .max(MAX_SOURCE_COUNT)
+  .superRefine((sources, refinementContext) => {
+    const chunkIds = sources.map((source) => source.chunkId)
+    if (new Set(chunkIds).size !== chunkIds.length) {
+      refinementContext.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [],
+        message: 'Source chunk IDs must be unique',
+      })
+    }
+
+    if (
+      Buffer.byteLength(JSON.stringify(sources), 'utf8') > MAX_METADATA_BYTES
+    ) {
+      refinementContext.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [],
+        message: 'Source metadata exceeds the 64 KiB limit',
+      })
+    }
+  })
+
 const candidateSchema = z
   .object({
     candidateId: z.string().trim().min(1).max(MAX_ID_LENGTH),
     name: z.string().trim().min(1).max(MAX_TITLE_LENGTH),
     content: z.string().trim().min(1).max(8_192),
     explanation: z.string().trim().min(1).max(8_192),
-    sources: z.array(sourceSchema).min(1).max(MAX_SOURCE_COUNT),
+    sources: sourcesSchema,
     sourceMessageId: z.string().trim().min(1).max(MAX_ID_LENGTH),
     sourceToolCallId: z.string().trim().min(1).max(MAX_ID_LENGTH),
     origin: z.enum(['AI_GENERATED', 'AUTHORED']).optional(),
   })
   .strict()
-  .superRefine((candidate, refinementContext) => {
-    const chunkIds = candidate.sources.map((source) => source.chunkId)
-    if (new Set(chunkIds).size !== chunkIds.length) {
-      refinementContext.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['sources'],
-        message: 'Source chunk IDs must be unique',
-      })
-    }
-
-    if (
-      Buffer.byteLength(JSON.stringify(candidate.sources), 'utf8') >
-      MAX_METADATA_BYTES
-    ) {
-      refinementContext.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['sources'],
-        message: 'Source metadata exceeds the 64 KiB limit',
-      })
-    }
-  })
 
 export type PersonalElementSource = z.infer<typeof sourceSchema>
 
@@ -102,6 +106,7 @@ export type UpdatePersonalElementInput = {
   name?: string
   content?: string
   explanation?: string
+  sources?: readonly PersonalElementSource[]
 }
 
 export type PersonalElementActor = {
@@ -209,6 +214,21 @@ function candidateKey(candidate: {
   return `${candidate.sourceMessageId ?? ''}\u0000${candidate.sourceToolCallId ?? ''}\u0000${candidate.candidateId ?? ''}`
 }
 
+const NEW_PERSONAL_ELEMENT_STATE = {
+  eFactor: 2.5,
+  interval: 1,
+  correctCountStreak: 0,
+  correctCount: 0,
+  partialCorrectCount: 0,
+  wrongCount: 0,
+  nextDueAt: null,
+  lastAnsweredAt: null,
+  lastCorrectAt: null,
+  lastPartialCorrectAt: null,
+  lastWrongAt: null,
+  lastResponseCorrectness: null,
+} as const
+
 async function runSerializable<T>(
   prisma: DB.PrismaClient,
   callback: (transaction: PrismaTransactionClient) => Promise<T>
@@ -249,6 +269,7 @@ function toCreateData(
     explanation: candidate.explanation,
     options: {},
     sources: candidate.sources,
+    ...NEW_PERSONAL_ELEMENT_STATE,
     origin:
       candidate.origin === 'AUTHORED'
         ? DB.PersonalElementOrigin.AUTHORED
@@ -378,10 +399,17 @@ export async function getPersonalElementCounts(
 }
 
 export async function respondToPersonalElement(
-  { id, response }: { id: string; response: FlashcardCorrectness },
+  {
+    id,
+    response,
+    expectedVersion,
+  }: { id: string; response: FlashcardCorrectness; expectedVersion: number },
   context: PersonalElementServiceContext
 ) {
   assertParticipantActor(context.actor)
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    throw personalElementError('PERSONAL_ELEMENT_INVALID_VERSION')
+  }
   if (!Object.values(FlashcardCorrectness).includes(response)) {
     throw personalElementError('PERSONAL_ELEMENT_INVALID_RESPONSE')
   }
@@ -398,6 +426,12 @@ export async function respondToPersonalElement(
       context.actor,
       element.courseId
     )
+    if (element.version !== expectedVersion) {
+      throw personalElementError(
+        'PERSONAL_ELEMENT_VERSION_CONFLICT',
+        'The card was changed by another request'
+      )
+    }
 
     const correct = response === FlashcardCorrectness.CORRECT
     const partial = response === FlashcardCorrectness.PARTIAL
@@ -416,8 +450,12 @@ export async function respondToPersonalElement(
     })
     const now = new Date()
 
-    return transaction.personalElement.update({
-      where: { id },
+    const result = await transaction.personalElement.updateMany({
+      where: {
+        id,
+        participantId: context.actor.participantId,
+        version: expectedVersion,
+      },
       data: {
         correctCount: { increment: correct ? 1 : 0 },
         correctCountStreak: nextStreak,
@@ -433,6 +471,14 @@ export async function respondToPersonalElement(
         nextDueAt: spacedRepetition.nextDueAt,
       },
     })
+    if (result.count !== 1) {
+      throw personalElementError(
+        'PERSONAL_ELEMENT_VERSION_CONFLICT',
+        'The card was changed by another request'
+      )
+    }
+
+    return transaction.personalElement.findUniqueOrThrow({ where: { id } })
   })
 }
 
@@ -449,6 +495,7 @@ export async function updatePersonalElement(
     name: input.name?.trim(),
     content: input.content?.trim(),
     explanation: input.explanation?.trim(),
+    sources: input.sources,
   }
   const parsedUpdate = parsePersonalElementInput(
     z
@@ -456,6 +503,7 @@ export async function updatePersonalElement(
         name: z.string().min(1).max(MAX_TITLE_LENGTH).optional(),
         content: z.string().min(1).max(8_192).optional(),
         explanation: z.string().min(1).max(8_192).optional(),
+        sources: sourcesSchema.optional(),
       })
       .strict(),
     updateData
@@ -486,11 +534,26 @@ export async function updatePersonalElement(
       )
     }
 
+    const semanticChanged =
+      (parsedUpdate.content !== undefined &&
+        parsedUpdate.content !== element.content) ||
+      (parsedUpdate.explanation !== undefined &&
+        parsedUpdate.explanation !== element.explanation) ||
+      (parsedUpdate.sources !== undefined &&
+        JSON.stringify(parsedUpdate.sources) !==
+          JSON.stringify(element.sources))
+
+    if (!semanticChanged && parsedUpdate.name === undefined) {
+      return element
+    }
+
     return transaction.personalElement.update({
       where: { id: input.id },
       data: {
         ...parsedUpdate,
-        version: { increment: 1 },
+        ...(semanticChanged
+          ? { version: { increment: 1 }, ...NEW_PERSONAL_ELEMENT_STATE }
+          : {}),
       },
     })
   })
