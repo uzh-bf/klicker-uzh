@@ -37,11 +37,13 @@
 - Branch: `rs/ci-workflow-efficiency-cleanup` for the follow-up cutover.
 - Worktree: `trees/ci-workflow-efficiency`.
 - Target: current `origin/v3` at
-  `ac84460d2209c51842f0857da75cf7d7f258ae09`, including merged [PR
+  `bad33cae19680ab6e8f5be81cc5739caa19c8be6`, including merged [PR
   #5446](https://github.com/uzh-bf/klicker-uzh/pull/5446)'s Playwright timing and
   eight-shard changes, [PR #5567](https://github.com/uzh-bf/klicker-uzh/pull/5567)'s
-  generated-client handoff, and the latest staging promotion and
-  devcontainer-cache commits.
+  generated-client handoff, [PR #5565](https://github.com/uzh-bf/klicker-uzh/pull/5565)'s
+  latest shard timings, [PR #5568](https://github.com/uzh-bf/klicker-uzh/pull/5568)'s
+  worker limit, [PR #5570](https://github.com/uzh-bf/klicker-uzh/pull/5570)'s
+  redirect fix, and the `3.4.0-alpha.73` release commit.
 - Pull request: [#5551](https://github.com/uzh-bf/klicker-uzh/pull/5551) was
   squash-merged externally before the planned cleanup; follow-up draft
   [#5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) contains the cutover.
@@ -211,9 +213,8 @@ Do not delete a workflow if any readback differs from the expected set.
 ## Progress
 
 - Status: branch is synced with current `origin/v3` through normal merge commit
-  `e90a39619`; [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) is
-  pushed at `1a71e2e00` and its exact-head required checks are in flight before
-  the final review and ready transition.
+  `3c4b0d01a`; the latest published PR head and exact-head checks are recorded
+  in the PR description as the branch advances.
 - Completed: plan commit and post-commit freshness check; replacement workflow
   implementation; Actions audit, validation, and discovery; exact Node 24
   dependency builds; all four unit suites; Prettier and diff checks; and the
@@ -245,9 +246,9 @@ Do not delete a workflow if any readback differs from the expected set.
   package eight times. The corrective hosted run at the pre-merge head
   `96ec9e41d` passed all eight shards and `test-playwright-status`; it is
   historical evidence and must be repeated for the final merged head.
-- Remaining: finish the exact-head hosted checks for the pushed branch, record
-  the final review, refresh the PR description against the current base, and
-  mark the PR ready if all required contexts pass. Merge remains withheld.
+- Remaining: keep the branch at the current `v3` baseline, finish exact-head
+  hosted checks, record the final review, refresh the PR description, and mark
+  the PR ready if all required contexts pass. Merge remains withheld.
 - Follow-up verification: the safe Actions audit, syntax validation, and job
   discovery pass with only `check`, `check-gitleaks`, and `test-unit` present for
   the consolidated scope. Prettier passes under the repository-pinned Node 24
