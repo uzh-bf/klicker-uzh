@@ -940,14 +940,20 @@ export async function POST(
     }
   }
 
-  const owningThread = await prisma.chatThread.findFirst({
-    where: {
-      id: currentThreadId,
-      participantId,
-      chatbotId,
-    },
-    select: { id: true },
-  })
+  let owningThread
+  try {
+    owningThread = await prisma.chatThread.findFirst({
+      where: {
+        id: currentThreadId,
+        participantId,
+        chatbotId,
+      },
+      select: { id: true },
+    })
+  } catch (error) {
+    await discardCreatedThread('thread.ownership.error')
+    throw error
+  }
   if (!owningThread) {
     await discardCreatedThread('thread.ownership')
     return NextResponse.json(
@@ -975,6 +981,7 @@ export async function POST(
       await discardCreatedThread('claim.conflict')
       return completedTurnResponse()
     }
+    await discardCreatedThread('claim.error')
     throw error
   }
   if (turnClaim.outcome === 'completed') {

@@ -333,6 +333,45 @@ describe('account usage chat route', () => {
     )
   })
 
+  test('discards a transient thread when its ownership lookup fails', async () => {
+    mocks.createThread.mockResolvedValueOnce({ id: 'thread-new' })
+    mocks.threadFindFirst.mockRejectedValueOnce(new Error('ownership failed'))
+
+    await expect(
+      POST(createRequest({ threadId: null }), {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      })
+    ).rejects.toThrow('ownership failed')
+
+    expect(mocks.deleteThread).toHaveBeenCalledWith(
+      'thread-new',
+      'participant-1',
+      'chatbot-1'
+    )
+    expect(mocks.claimChatTurn).not.toHaveBeenCalled()
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+  })
+
+  test('discards a transient thread when claim acquisition fails', async () => {
+    mocks.createThread.mockResolvedValueOnce({ id: 'thread-new' })
+    mocks.threadFindFirst.mockResolvedValueOnce({ id: 'thread-new' })
+    mocks.claimChatTurn.mockRejectedValueOnce(new Error('claim failed'))
+
+    await expect(
+      POST(createRequest({ threadId: null }), {
+        params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+      })
+    ).rejects.toThrow('claim failed')
+
+    expect(mocks.deleteThread).toHaveBeenCalledWith(
+      'thread-new',
+      'participant-1',
+      'chatbot-1'
+    )
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
   test('denies unavailable BASE usage before image, thread, or provider work', async () => {
     mocks.isChatAccountUsageAvailable.mockResolvedValueOnce(false)
 

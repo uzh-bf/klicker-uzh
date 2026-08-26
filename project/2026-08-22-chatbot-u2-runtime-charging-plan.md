@@ -528,6 +528,15 @@ contract retains its focused regression test.
   lifecycle-integrity review passed. The simplifier removed duplicated shared
   fixture creation from the PostgreSQL reset helper; the affected 12-test
   integration suite still passes.
+- 2026-08-26: the integrated exact-stack review found that unexpected thread
+  ownership or claim-acquisition errors could bypass transient first-turn
+  cleanup. Both error paths now discard the participant-and-chatbot-scoped
+  request-owned thread before rethrowing, while known claim collisions retain
+  their generic response. Two route regressions protect the ownership and claim
+  failures. The focused route portfolio passes 24 tests, the complete Chat
+  suite passes 413 tests with 12 expected integration skips, all 25 repository
+  checks pass, and the Chat production build succeeds. Correction reviews
+  remain in progress.
 - Current state: U2 is under final-review correction before stack-aware
   publication.
   Merge, deployment, live traffic or proof, closure, cleanup, and deletion
