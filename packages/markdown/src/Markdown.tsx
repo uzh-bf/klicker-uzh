@@ -17,7 +17,11 @@ import { unified } from 'unified'
 import ImgWithModal from './ImgWithModal.js'
 import { VideoEmbed } from './VideoEmbed.js'
 import { parseVideoEmbedUrl } from './VideoEmbedUrl.js'
-import { normalizeMarkdownContent, remarkCitationMarkers } from './citations.js'
+import {
+  normalizeMarkdownContent,
+  parseCitationHref,
+  remarkCitationMarkers,
+} from './citations.js'
 
 export interface MarkdownProps {
   className?: {
@@ -41,6 +45,7 @@ export interface MarkdownProps {
   }
   withModal?: boolean
   withLinkButtons?: boolean
+  withCitationLinks?: boolean
   withProse?: boolean
   singleDollarTextMath?: boolean
   data?: {
@@ -55,6 +60,7 @@ function Markdown({
   components = {},
   withModal = true,
   withLinkButtons = true,
+  withCitationLinks = false,
   withProse = false,
   singleDollarTextMath = false,
   data,
@@ -66,11 +72,16 @@ function Markdown({
     try {
       const contentUnescaped = normalizeMarkdownContent(content)
 
+      const processor = unified()
+        .use(remarkParse)
+        .use(remarkMath, { singleDollarTextMath })
+
+      if (withCitationLinks) {
+        processor.use(remarkCitationMarkers)
+      }
+
       return (
-        unified()
-          .use(remarkParse)
-          .use(remarkMath, { singleDollarTextMath })
-          .use(remarkCitationMarkers)
+        processor
           // .use(remarkGfm)
           // .use(remarkDirective)
           .use(remarkRehype, { allowDangerousHtml: false })
@@ -147,6 +158,18 @@ function Markdown({
                   return <VideoEmbed {...video} />
                 }
 
+                if (withCitationLinks && parseCitationHref(href) !== null) {
+                  return (
+                    <a
+                      className="font-medium text-primary-100 hover:underline"
+                      href={href}
+                      {...rest}
+                    >
+                      [{children}]
+                    </a>
+                  )
+                }
+
                 if (withLinkButtons) {
                   const isExcel = href?.includes('.xls')
                   const isPDF = href?.includes('.pdf')
@@ -184,7 +207,7 @@ function Markdown({
       console.error(e)
       return 'Failed to parse content.'
     }
-  }, [content, singleDollarTextMath])
+  }, [content, singleDollarTextMath, withCitationLinks])
 
   if (withProse) {
     // sizes available: prose-sm, prose-base, prose-lg, prose-xl, prose-2xl

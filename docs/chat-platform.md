@@ -38,9 +38,9 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 - `src/lib/sources/` — the doc_query source normalizer (`normalizeSources.ts`) and the display helpers shared by cards and citation previews (`sourceDisplay.ts`).
 - `src/components/source-preview-content.tsx` — the shared title, locator, excerpt, and optional navigation hint rendered inside source and citation tooltips.
 - `src/lib/config/` — shared vocabulary and prompt configuration: chat modes, reasoning efforts, MCP tool-name matching, starter suggestions, models, prompts, allowed tools.
-- `packages/markdown/src/remarkCitationMarkers.ts` — the shared, opt-in remark
-  plugin that rewrites `[n]` markers into citation links for response-example
-  rendering and checks. The student chat renderer keeps its app-local plugin.
+- `packages/util/src/citations.ts` — the shared, React-free Markdown citation
+  parser and opt-in `[n]` marker transformer used by response-example checks
+  and rendering. The student chat renderer keeps its app-local plugin.
 - `src/lib/toolOutput.ts` — live-SSE tool-result normalization (the streaming half of the provider-error redaction boundary).
 - `src/lib/attachments/` — image attachment adapter plus attachment state and UI helpers.
 - Local model proxy: the `litellm` compose service (port 4000).

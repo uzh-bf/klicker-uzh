@@ -1586,7 +1586,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      approveResponseExample: t.withAuth(asUser).field({
+      approveResponseExample: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: ResponseExampleSet,
         args: {
@@ -1597,7 +1597,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      editAndApproveResponseExample: t.withAuth(asUser).field({
+      editAndApproveResponseExample: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: ResponseExampleSet,
         args: {
@@ -1616,7 +1616,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      rejectResponseExample: t.withAuth(asUser).field({
+      rejectResponseExample: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: ResponseExampleSet,
         args: {

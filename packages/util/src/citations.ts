@@ -13,8 +13,12 @@ export interface MarkdownAstNode {
 const SKIPPED_PARENT_TYPES = new Set(['link', 'linkReference'])
 const RENDERER_UNESCAPED_ENTITIES = /&amp;|&lt;|&gt;|&#39;|&quot;/g
 
+export function citationTargetIdFor(index: number): string {
+  return `response-example-citation-${index}`
+}
+
 export function citationHrefFor(index: number): string {
-  return `#response-example-citation-${index}`
+  return `#${citationTargetIdFor(index)}`
 }
 
 export function parseCitationHref(

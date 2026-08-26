@@ -4,16 +4,29 @@ import { describe, expect, it } from 'vitest'
 import Markdown from '../src/Markdown.js'
 
 describe('citation rendering', () => {
+  it('leaves numbered markers unchanged by default', () => {
+    const rendered = renderToStaticMarkup(
+      React.createElement(Markdown, {
+        content: 'A numbered statement [1].',
+      })
+    )
+
+    expect(rendered).toContain('A numbered statement [1].')
+    expect(rendered).not.toContain('response-example-citation-1')
+  })
+
   it('renders numbered markers as citation anchors', () => {
     const rendered = renderToStaticMarkup(
       React.createElement(Markdown, {
         content:
           'Grounded answer [1]. Code `[2]`, math $$x[3]$$, and [link [4]](https://example.test/[5]).',
-        withLinkButtons: false,
+        withCitationLinks: true,
       })
     )
 
-    expect(rendered).toContain('<a href="#response-example-citation-1">1</a>')
+    expect(rendered).toContain(
+      '<a class="font-medium text-primary-100 hover:underline" href="#response-example-citation-1">[1]</a>'
+    )
     expect(rendered).toContain('<code>[2]</code>')
     expect(rendered).toContain('<annotation encoding="application/x-tex">x[3]')
     expect(rendered).toContain('https://example.test/%5B5%5D')

@@ -147,9 +147,11 @@ must change together (`packages/graphql/src/schema/query.ts:Query.userElements`,
 
 ## Chatbot response examples
 
-`getChatbotResponseExamples` and the `approveResponseExample`,
-`editAndApproveResponseExample`, and `rejectResponseExample` mutations use
-`t.withAuth(asUser)`. The service scopes every lookup through
+`getChatbotResponseExamples` uses `t.withAuth(asUser)`. The
+`approveResponseExample`, `editAndApproveResponseExample`, and
+`rejectResponseExample` mutations require `t.withAuth(asUserFullAccess)`, so
+read-only and session-execution delegated logins cannot modify examples. The
+service also scopes every lookup through
 `set.chatbot.ownerId = ctx.user.sub`, so another lecturer receives `null` even
 if they know the chatbot or example UUID. The mutations return the refreshed set
 and digest; they do not create candidates or change evidence eligibility.
@@ -165,9 +167,10 @@ example. It also exposes server-computed action flags and
 `hasCompleteEligibleCitationParity`; approval requires every cited index to
 have an eligible lineage row. Edit-and-approve requires the row's
 `expectedUpdatedAt` value, so stale lecturer forms fail with a coded conflict
-instead of overwriting a newer edit. The shared citation parser lives in
-`@klicker-uzh/markdown/citations` and follows the renderer's Markdown AST
-semantics, including exclusions for code, links, math, and HTML.
+instead of overwriting a newer edit. The canonical citation parser lives in
+`@klicker-uzh/util/citations` and follows the renderer's Markdown AST semantics,
+including exclusions for code, links, math, and HTML.
+`@klicker-uzh/markdown/citations` is a compatibility re-export.
 
 ## Subscriptions
 
