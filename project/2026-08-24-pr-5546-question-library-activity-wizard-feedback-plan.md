@@ -488,6 +488,53 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 ## Progress
 
+- 2026-08-26 W2 runtime verification and Progress pass: the configured DeepSeek
+  executor merged the fresh upstream normally and repaired the approved Manage
+  runtime blocker. Fresh origin/v3 a36c2162631792eecd23388d13aa6cc83fb3ffea
+  was confirmed via git ls-remote origin v3; the normal no-rebase, no-force
+  merge committed 689a89d9f4e6c051258f5d4eadee0ac832a3b554 (parents
+  a97b8790eb8af074fbeeea7a40ea6e3dacc362e2 and origin/v3) importing only
+  deploy/env-uzh-stg/values.yaml. git diff --check passed and the
+  worktree stayed clean. Canonical devrouter ensure with the manage profile
+  exposed only the three fancy namespaced routes
+  api|auth|manage.klicker.rs-ux-review-question-library.localhost (route
+  count 3, all running); curl readiness returned 200 for manage and auth and
+  the expected root 404 for api. The user-approved cache clear deleted only the
+  generated ignored directory apps/frontend-manage/.next/dev/cache/turbopack
+  (195 MiB, verified present before deletion and absent after) through
+  devrouter exec; no other .next content or cache was touched. The first
+  post-clear boot logged a Turbopack persistence error and the auth
+  /api/auth/* NextAuth routes returned 404 (HTML), so the exact runtime was
+  stopped canonically (stopped: true, freed 3 routes) and re-ensured with
+  the manage profile; the clean restart returned auth to 200 with valid
+  providers/session/csrf JSON. Browser proof used only the namespaced origins
+  and delegated local login (lecturer/abcd, seeded synthetic data). EN
+  1440x900 and DE 1440x900 screenshots prove all four activity choices with
+  visible linked guidance and enabled buttons; the choice-region DOM check
+  proved aria-describedby associations on all four buttons, four focusable
+  guidance links, and zero nested interactive controls. The DE live-quiz
+  Fragen-und-Bloecke empty-block state proved the persistent polite announcer
+  (role=status, aria-live=polite, aria-atomic=true,
+  data-cy=activity-creation-disabled-announcement), the visible described
+  reason beside disabled Create, and aria-describedby on the final action;
+  screenshots are
+  project/_local/evidence/w2-runtime-2026-08-26/all-choices-en-1440x900.png,
+  all-choices-de-1440x900.png, and
+  empty-block-reason-de-1440x900.png (all gitignored). The W2 matrix was
+  not fully re-proven this pass: the one/many block and stack action labels,
+  the recovery transition clearing feedback and re-enabling Create, the
+  microlearning stack journey, the narrow 390x844 checks, and the keyboard
+  focus-order walk remain unproven after the bounded stop instruction; the
+  already-disclosed later-step W8 narrow-layout debt is unchanged. Focused
+  checks inside the exact DevPod passed after the repair: frontend-manage
+  check exit 0, playwright check exit 0, B/O/P Chromium collection 154 tests
+  in 3 files, Biome format on all 7 changed TSX files, Prettier on changed
+  specs/docs, and git diff --check. The exact runtime was stopped canonically:
+  devrouter stop ... --json reported stopped: true, freedRoutes: 3; workspace
+  readback is owner-valid (ownerStatus: present, devpodStatus: owned),
+  provider state Stopped, and exact route count 0. No push, PR-state change,
+  merge, deployment, publication, or cleanup occurred.
+
 - 2026-08-26 DeepSeek execution pass: the user ruled that the configured
   DeepSeek executor replaces the failed Ox Alpha execution owner for W2. The
   exact existing checkout at
