@@ -71,16 +71,17 @@ die() {
 
 on_error() {
   local exit_code=$?
+  local failed_line=${1:-unknown}
 
   if ((BASH_SUBSHELL > 0)); then
     exit "$exit_code"
   fi
-  printf '\nCleanup stopped during: %s\n' "$CURRENT_STAGE" >&2
+  printf '\nCleanup stopped during: %s (line %s)\n' "$CURRENT_STAGE" "$failed_line" >&2
   printf 'The cleanup is rerunnable; correct the reported condition and run --check again.\n' >&2
   exit "$exit_code"
 }
 
-trap on_error ERR
+trap 'on_error "$LINENO"' ERR
 
 require_tty() {
   [[ -r /dev/tty ]] || die 'interactive apply requires a terminal'
@@ -155,14 +156,14 @@ validate_platform() {
 assert_regular_or_absent() {
   local path=$1
 
-  [[ ! -e "$path" && ! -L "$path" ]] && return
+  [[ ! -e "$path" && ! -L "$path" ]] && return 0
   [[ -f "$path" && ! -L "$path" ]] || die "managed path is not a regular file: ${path}"
 }
 
 assert_directory_or_absent() {
   local path=$1
 
-  [[ ! -e "$path" && ! -L "$path" ]] && return
+  [[ ! -e "$path" && ! -L "$path" ]] && return 0
   [[ -d "$path" && ! -L "$path" ]] || die "managed path is not a directory: ${path}"
 }
 
@@ -191,7 +192,7 @@ validate_state_file() {
     [[ -z "$(state_value "$file" VOLUME_MOUNT)" ]] ||
       die 'the reset marker unexpectedly names an attached volume'
     MANAGED_RUNNER_NAME=''
-    return
+    return 0
   fi
 
   [[ "$file" == "$LEGACY_STATE_FILE" ]] ||
@@ -225,7 +226,7 @@ validate_state_directory() {
   local directory=$1 unexpected
 
   assert_directory_or_absent "$directory"
-  [[ -d "$directory" ]] || return
+  [[ -d "$directory" ]] || return 0
   [[ "$(stat -c '%U:%G:%a' "$directory")" == 'root:root:700' ]] ||
     die "managed state directory has unexpected ownership or mode: ${directory}"
   unexpected=$(find "$directory" -mindepth 1 -maxdepth 1 ! -name bootstrap.env -print -quit)
@@ -280,7 +281,7 @@ validate_ssh_hardening_file() {
   local file=$1
 
   assert_regular_or_absent "$file"
-  [[ ! -f "$file" ]] && return
+  [[ ! -f "$file" ]] && return 0
   [[ "$(stat -c '%U:%G:%a' "$file")" == 'root:root:644' ]] ||
     die "managed SSH hardening has unexpected ownership or mode: ${file}"
   if [[ "$(wc -l <"$file" | tr -d ' ')" != '5' ]] ||
@@ -302,7 +303,7 @@ validate_ssh_hardening() {
 }
 
 expected_runner_units() {
-  [[ -n "$MANAGED_RUNNER_NAME" ]] || return
+  [[ -n "$MANAGED_RUNNER_NAME" ]] || return 0
   printf '%s\n' \
     "actions.runner.uzh-bf-klicker-uzh.${MANAGED_RUNNER_NAME}.service" \
     "actions.runner.uzh-bf.${MANAGED_RUNNER_NAME}.service"
@@ -418,7 +419,7 @@ is_reset_ready() {
 validate_reset_ready_state() {
   local path
 
-  is_reset_ready || return
+  is_reset_ready || return 0
   ! id "$RUNNER_USER" >/dev/null 2>&1 || die "${RUNNER_USER} still exists after reset"
   [[ ! -e "$RUNNER_DIR" && ! -L "$RUNNER_DIR" ]] || die "${RUNNER_DIR} still exists after reset"
   ! command -v docker >/dev/null 2>&1 || die 'Docker still exists after reset'
@@ -563,7 +564,7 @@ validate_package_removal_plan() {
   for package in docker.io docker-cli containerd runc; do
     package_installed "$package" && installed_packages+=("$package")
   done
-  ((${#installed_packages[@]} > 0)) || return
+  ((${#installed_packages[@]} > 0)) || return 0
 
   removal_plan=$(LC_ALL=C apt-get -s purge -y "${installed_packages[@]}")
   unexpected=$(awk '/^(Remv|Purg) / {print $2}' <<<"$removal_plan" |
@@ -658,7 +659,7 @@ apply_cleanup() {
       LEGACY_STATE_PRESENT='false'
     fi
     log 'Runner host is already reset and ready for provisioning'
-    return
+    return 0
   fi
 
   acquire_mutation_lock
