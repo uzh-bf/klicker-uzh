@@ -25,7 +25,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/|packages/|playwright/|\.github/workflows/test-playwright\.yml|\.github/workflows/update-playwright-timings\.yml|\.github/actions/changed-paths/|\.github/scripts/get-shard-files\.js|\.github/scripts/update-playwright-timings\.py|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh)'
+          pattern: '^(apps/|packages/|playwright/|\.github/workflows/test-playwright\.yml|\.github/workflows/public-pr-playwright-shards\.yml|\.github/workflows/update-playwright-timings\.yml|\.github/actions/changed-paths/|\.github/scripts/get-shard-files\.js|\.github/scripts/update-playwright-timings\.py|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh)'
 
   build-and-compile:
     needs: filter
@@ -138,9 +138,19 @@ jobs:
             packages/util/dist
           retention-days: 1
 
-  test-playwright:
+  # The hosted and public-PR predicates below are intentional complements.
+  # Only the exact lowercase value "true" or an exact canary PR number enables
+  # the self-hosted path; every other value fails closed to GitHub-hosted runners.
+  test-playwright-hosted:
     needs: [filter, build-and-compile]
-    if: needs.filter.outputs.should_run == 'true'
+    if: >-
+      needs.filter.outputs.should_run == 'true' &&
+      (github.event_name != 'pull_request' ||
+        github.event.pull_request.draft == true ||
+        github.event.pull_request.head.repo.full_name != github.repository ||
+        endsWith(github.event.pull_request.user.login, '[bot]') ||
+        (vars.PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED != 'true' &&
+          vars.PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR != format('{0}', github.event.pull_request.number)))
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble
@@ -381,10 +391,28 @@ jobs:
           if-no-files-found: ignore
           retention-days: 1
 
+  test-playwright-public-pr:
+    needs: [filter, build-and-compile]
+    if: >-
+      needs.filter.outputs.should_run == 'true' &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !endsWith(github.event.pull_request.user.login, '[bot]') &&
+      (vars.PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED == 'true' ||
+        vars.PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR == format('{0}', github.event.pull_request.number))
+    uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3
+
   # Always reports a status even when the tests are skipped by the path filter,
   # so this job can be used as a required check in branch protection.
   test-playwright-status:
-    needs: [filter, test-playwright]
+    needs:
+      [
+        filter,
+        build-and-compile,
+        test-playwright-hosted,
+        test-playwright-public-pr,
+      ]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -404,7 +432,10 @@ jobs:
         run: |
           # A run cancelled by concurrency (duplicate push, quick re-push) must not
           # leave a red required check behind: the surviving run is the real signal.
-          if [ "${{ needs.filter.result }}" = "cancelled" ] || [ "${{ needs.test-playwright.result }}" = "cancelled" ]; then
+          if [ "${{ needs.filter.result }}" = "cancelled" ] || \
+             [ "${{ needs.build-and-compile.result }}" = "cancelled" ] || \
+             [ "${{ needs.test-playwright-hosted.result }}" = "cancelled" ] || \
+             [ "${{ needs.test-playwright-public-pr.result }}" = "cancelled" ]; then
             echo "Superseded by a newer run; jobs were cancelled by concurrency."
             exit 0
           fi
@@ -416,7 +447,24 @@ jobs:
             echo "Tests skipped by path filter."
             exit 0
           fi
-          if [ "${{ needs.test-playwright.result }}" != "success" ]; then
-            echo "test-playwright result: ${{ needs.test-playwright.result }}"
-            exit 1
+          hosted_result="${{ needs.test-playwright-hosted.result }}"
+          public_pr_result="${{ needs.test-playwright-public-pr.result }}"
+          if [ "$hosted_result" = "success" ] && [ "$public_pr_result" = "skipped" ]; then
+            exit 0
           fi
+          if [ "$hosted_result" = "skipped" ] && [ "$public_pr_result" = "success" ]; then
+            exit 0
+          fi
+          if [ "$hosted_result" = "skipped" ] && [ "$public_pr_result" = "skipped" ]; then
+            echo "Routing error: both Playwright execution paths were skipped."
+            echo "Check that the hosted and public-PR predicates remain complementary."
+          elif [ "$hosted_result" = "success" ] && [ "$public_pr_result" = "success" ]; then
+            echo "Routing error: both Playwright execution paths ran."
+            echo "Check that the hosted and public-PR predicates remain mutually exclusive."
+          else
+            echo "Playwright execution failed or produced an unexpected result."
+          fi
+          echo "Expected exactly one successful Playwright path."
+          echo "Hosted result: $hosted_result"
+          echo "Public PR result: $public_pr_result"
+          exit 1
