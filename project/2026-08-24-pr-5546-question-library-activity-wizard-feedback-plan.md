@@ -45,9 +45,14 @@ uncrowned regardless of Catalyst entitlement.
 
 - Current authority is this explicitly approved replacement execution in the
   existing checkout.
-- Ox Alpha owns replacement S1, plan `Progress`, repository-native checks,
-  local commits, integration, and required review gates. Configured native
-  specialist roles remain preferred and are review gates, not slice owners.
+- The user's 2026-08-26 ruling replaces the failed Ox Alpha execution owner
+  with the configured DeepSeek executor. DeepSeek owns plan `Progress`,
+  repository-native checks, the exact-checkout runtime lifecycle, and the
+  plan-only local commit for this pass. Configured native specialist roles
+  remain preferred and are review gates, not slice owners.
+- Historical Ox Alpha evidence and its earlier ownership of replacement S1,
+  checks, commits, integration, and review gates are preserved as history and
+  superseded by the 2026-08-26 ruling.
 - The user's 2026-08-24 ruling authorizes independent read-only alternate review
   agents when those configured roles are unavailable: Luna for simplification
   and a separate Sol agent for correctness, risk, and integrated final review.
@@ -159,7 +164,8 @@ lifecycle.
 - `$rs-sliced-development-workflow` governs package ceremony, slice commits,
   verification cadence, native reviews, correction budget, and final delivery.
 - `$rs-model-routing` governs specialist independence and review-gate routing.
-  Exact Ox Alpha identity is binding; no implementation fallback.
+  The 2026-08-26 user ruling binds the configured DeepSeek executor for this
+  pass; historical Ox Alpha identity remains recorded as superseded.
 - `$rs-product-primitives` records the primitive disposition above.
 - Repository skills: `klicker-feature-design`, `klicker-frontend-ui`,
   `klicker-playwright-e2e`, `klicker-testing-verification`,
@@ -209,7 +215,8 @@ lifecycle.
   continuity reports cover only the superseded S1 and do not validate this
   replacement.
 - The current execution route is Ox Alpha itself; no separate launch marker is
-  applicable to this explicitly authorized in-place run.
+  applicable to this explicitly authorized in-place run. The 2026-08-26 ruling
+  replaced that route with the configured DeepSeek executor.
 
 ## Planner review and disposition
 
@@ -242,10 +249,10 @@ Historical planner provenance: original native planner task
 
 | Workstream | Slices | Owner | Dependency | Acceptance boundary |
 | --- | --- | --- | --- | --- |
-| Activity guidance | Replacement S1 | Ox Alpha, sole writer | committed corrected plan | Four visible descriptions/links, stable associations/hooks, enabled paths, no Catalyst signaling, and non-browser checks pass. |
-| Count and validation feedback | Replacement S2 | Ox Alpha, sole writer | accepted replacement S1 | Block and stack labels plus empty-block reason pass focused static and exact-domain browser flow checks; repository Playwright execution remains environment-blocked. |
-| Durable convention | Replacement S3 | Ox Alpha, sole writer | accepted replacement S1 and S2 | `docs/frontend-conventions.md` validates and matches verified behavior. |
-| Reviews | replacement S1, S2, final | configured native specialists preferred; authorized Luna simplification and separate Sol correctness/risk/final alternates when unavailable | immutable commits | Read-only findings are verified and dispositioned independently of Ox Alpha; unavailable alternates or unresolved material findings stop progression. |
+| Activity guidance | Replacement S1 | DeepSeek executor (2026-08-26 ruling), sole writer for this pass | committed corrected plan | Four visible descriptions/links, stable associations/hooks, enabled paths, no Catalyst signaling, and non-browser checks pass. |
+| Count and validation feedback | Replacement S2 | DeepSeek executor (2026-08-26 ruling), sole writer for this pass | accepted replacement S1 | Block and stack labels plus empty-block reason pass focused static and exact-domain browser flow checks; repository Playwright execution remains environment-blocked. |
+| Durable convention | Replacement S3 | DeepSeek executor (2026-08-26 ruling), sole writer for this pass | accepted replacement S1 and S2 | `docs/frontend-conventions.md` validates and matches verified behavior. |
+| Reviews | replacement S1, S2, final | configured native specialists preferred; authorized Luna simplification and separate Sol correctness/risk/final alternates when unavailable | immutable commits | Read-only findings are verified and dispositioned independently of the execution owner; unavailable alternates or unresolved material findings stop progression. |
 
 No parallel implementation writer is permitted because both UI slices share
 activity creation, Playwright coverage, and the same exact runtime.
@@ -460,8 +467,8 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   questions step, and prove unaffected callers compile and render unchanged.
 - ICU syntax errors can fail at runtime despite typechecking. Exact-domain EN/DE
   rendering proved the S2 count labels after the paired catalog changes.
-- If exact Ox Alpha execution becomes unavailable, stop. Do not silently use
-  another provider for implementation.
+- If the configured DeepSeek execution owner becomes unavailable, stop and
+  report the blocker; do not silently use another provider for implementation.
 - If current upstream changes touch an owned seam before the first commit,
   rerun mapping and planner review instead of implementing against stale facts.
 
@@ -479,6 +486,43 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 ## Progress
 
+- 2026-08-26 DeepSeek execution pass: the user ruled that the configured
+  DeepSeek executor replaces the failed Ox Alpha execution owner for W2. The
+  exact existing checkout at
+  `/Users/rschlae/Git/klicker/klicker-uzh/trees/ux-review-question-library`
+  was verified clean at merge HEAD
+  `17823fd82337de057e78783128700b0d04179d58` (parents
+  `8c28a9726093a0656ba58676830478edfab92cd4` and current origin/v3
+  `1a55ce2392350396ed4daf60bcef1ee925030151`, confirmed via
+  `git ls-remote origin v3`). The merge was not redone or rewritten.
+  `git diff --check` over origin/v3..HEAD passed and the worktree stayed
+  clean. Repository-native checks inside the exact devcontainer via canonical
+  `devrouter exec` passed: `pnpm run check:all` completed 25/25 check tasks
+  and 7/7 lint tasks with zero warnings (AGENTS.md check, Prisma sync,
+  syncpack valid; the devrouter tunnel wrapper lost its final exit-status
+  report twice, so the wrapper exit is not claimed, but every task summary is
+  green); `pnpm run build` completed 23/23 tasks with wrapper exit 0;
+  focused `pnpm --filter @klicker-uzh/frontend-manage run check` exit 0;
+  `pnpm --filter @klicker-uzh/playwright run check` exit 0; Playwright
+  `--list --project=chromium` collected 154 tests in B/O/P spec files, exit 0.
+  Biome on the changed source files reported 6 errors/15 warnings, all on
+  origin/v3 pre-existing lines (parseInt radix, ternary, import-type,
+  no-explicit-any, static-element a11y, no-array-index-key, organize-imports);
+  the origin/v3 base comparison established the same diagnostics on the base
+  versions, so none are branch regressions and no source fix was applied.
+  Browser proof was not possible this pass: canonical `devrouter ensure`
+  failed closed because the frontend-manage Turbopack dev server panicked on a
+  corrupted cache (missing SST file
+  `.next/dev/cache/turbopack/v16.2.10/00000016.sst`, "Failed to restore task
+  data"), so the exact workspace kept routeCount 0 and no fancy namespaced
+  route was exposed. No cache, source, config, route, TLS, or certificate
+  repair was applied. The exact runtime was stopped canonically with
+  `devrouter stop ... --json`: `stopped: true`, `freedRoutes: 0`; DevPod
+  provider readback reports `state: Stopped`, and devrouter route readback
+  reports EXACT_ROUTE_COUNT=0. Remaining external actions: independent final
+  review, normal push, exact-head CI, PR #5546 body update, and review-thread
+  resolution; PR merge, mark-ready, deployment, publication, cleanup, and
+  deletion remain withheld.
 - Status: W2 implementation, checks, exact devrouter proof, evidence, the code
   correction, completed independent integrated final review, and runtime
   lifecycle closure remain complete. The same independent reviewer passed the
