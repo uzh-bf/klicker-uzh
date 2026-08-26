@@ -24,6 +24,7 @@ function prepareApp({
   cache,
   emitter,
   hatchet,
+  elementGenerationRuntime,
   tasks,
   featureFlags,
 }: any) {
@@ -175,6 +176,7 @@ function prepareApp({
       pubSub,
       emitter,
       hatchet,
+      elementGenerationRuntime,
       tasks,
       featureFlags,
     }),

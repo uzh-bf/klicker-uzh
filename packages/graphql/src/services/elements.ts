@@ -9,7 +9,10 @@ import {
   ActivityLogModificationDetails,
   ActivityLogModificationFieldType,
   ActivityType,
+  DisplayMode,
   ElementManipulationInput,
+  GeneratedFlashcard,
+  GeneratedQuestionEditable,
   SharingType,
   SortByType,
 } from '@klicker-uzh/types'
@@ -23,16 +26,113 @@ import {
 import { randomUUID } from 'crypto'
 import dayjs from 'dayjs'
 import EventEmitter from 'events'
+import { GraphQLError } from 'graphql'
 import { prop, sortBy, swapIndices } from 'remeda'
 import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
+import { validateElementDifficultyLevel } from '../lib/validateElementDifficultyLevel.js'
 import validateElementInputs from '../lib/validateElementInputs.js'
 import { getAnswerCollectionsElements } from './resources.js'
 import { checkAccess } from './sharing.js'
 import { getActivityAnswerCollectionIds } from './templates.js'
+
+export function generatedFlashcardElementInput(
+  flashcard: GeneratedFlashcard
+): ElementManipulationInput {
+  return {
+    type: DB.ElementType.FLASHCARD,
+    status: DB.ElementStatus.REVIEW,
+    name: flashcard.name,
+    content: flashcard.front,
+    explanation: flashcard.back,
+    basePoints: false,
+    pointsMultiplier: 1,
+    tags: flashcard.tags,
+  }
+}
+
+export function generatedSCElementInput(
+  draft: GeneratedQuestionEditable,
+  difficultyLevel: number
+): ElementManipulationInput {
+  return generatedChoicesElementInput(draft, difficultyLevel, DB.ElementType.SC)
+}
+
+export function generatedMCElementInput(
+  draft: GeneratedQuestionEditable,
+  difficultyLevel: number
+): ElementManipulationInput {
+  const correctCount = draft.choices.filter((choice) => choice.correct).length
+  if (
+    draft.choices.length !== 5 ||
+    draft.choices.map((choice) => choice.label).join('') !== 'ABCDE' ||
+    correctCount < 2 ||
+    correctCount > 4
+  ) {
+    throw new Error(
+      'A generated MC draft requires five choices with two to four correct answers'
+    )
+  }
+  return generatedChoicesElementInput(draft, difficultyLevel, DB.ElementType.MC)
+}
+
+export function generatedKPRIMElementInput(
+  draft: GeneratedQuestionEditable,
+  difficultyLevel: number
+): ElementManipulationInput {
+  if (draft.choices.length !== 4) {
+    throw new Error('A generated KPRIM draft requires exactly four statements')
+  }
+  return generatedChoicesElementInput(
+    draft,
+    difficultyLevel,
+    DB.ElementType.KPRIM
+  )
+}
+
+function generatedChoicesElementInput(
+  draft: GeneratedQuestionEditable,
+  difficultyLevel: number,
+  type:
+    | typeof DB.ElementType.SC
+    | typeof DB.ElementType.MC
+    | typeof DB.ElementType.KPRIM
+): ElementManipulationInput {
+  validateElementDifficultyLevel(difficultyLevel, type)
+  const feedbackCount = draft.choices.filter((choice) =>
+    Boolean(choice.feedback?.trim())
+  ).length
+  if (feedbackCount !== 0 && feedbackCount !== draft.choices.length) {
+    throw new Error(
+      'Answer feedback must be provided for either every choice or no choice'
+    )
+  }
+  return {
+    type,
+    status: DB.ElementStatus.REVIEW,
+    name: draft.name,
+    content: [draft.context, draft.stem].filter(Boolean).join('\n\n'),
+    explanation: draft.explanation,
+    basePoints: true,
+    pointsMultiplier: 1,
+    difficultyLevel,
+    tags: [],
+    options: {
+      displayMode: DisplayMode.LIST,
+      hasSampleSolution: true,
+      hasAnswerFeedbacks: feedbackCount === draft.choices.length,
+      choices: draft.choices.map((choice, ix) => ({
+        ix,
+        value: choice.text,
+        correct: choice.correct,
+        feedback: choice.feedback,
+      })),
+    },
+  }
+}
 
 export async function getUserElements(
   {
@@ -420,6 +520,7 @@ export async function manipulateElement(
     options,
     basePoints,
     pointsMultiplier,
+    difficultyLevel,
     tags,
     templateId,
   }: ElementManipulationInput,
@@ -458,6 +559,14 @@ export async function manipulateElement(
         },
       })
     : undefined
+
+  if (elementPrev && elementPrev.type !== type) {
+    throw new GraphQLError('Element type cannot be changed', {
+      extensions: { code: 'ELEMENT_TYPE_MISMATCH' },
+    })
+  }
+
+  validateElementDifficultyLevel(difficultyLevel, elementPrev?.type ?? type)
 
   // determine which tags have been deconnected
   if (elementPrev?.tags) {
@@ -542,6 +651,7 @@ export async function manipulateElement(
           ? false
           : basePoints!,
       pointsMultiplier: pointsMultiplier!,
+      difficultyLevel: difficultyLevel ?? null,
       options: processedOptions,
       owner: { connect: { id: ctx.user.sub } },
       // connect to the tags which already exist by name and otherwise create a new tag with the given name
@@ -576,6 +686,8 @@ export async function manipulateElement(
           ? false
           : basePoints!,
       pointsMultiplier: pointsMultiplier ?? 1,
+      difficultyLevel:
+        typeof difficultyLevel === 'undefined' ? undefined : difficultyLevel,
       version: { increment: 1 },
       options: options ? processedOptions : undefined,
       // connect or create new tags and disconnect previous ones if they are selected anymore

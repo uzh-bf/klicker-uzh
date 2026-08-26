@@ -10,6 +10,8 @@ import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
+import * as ElementGenerationService from '../services/elementGeneration.js'
+import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as KnowledgeService from '../services/knowledge.js'
@@ -39,6 +41,18 @@ import {
   Tag,
   TemplateBlockInput,
 } from './element.js'
+import {
+  ElementGenerationBuildInputRef,
+  ElementGenerationBuildRef,
+  ElementGenerationSaveResultRef,
+  GeneratedElementDraftInputRef,
+  GeneratedElementDraftRef,
+  PublishIncompleteElementGenerationInputRef,
+  ReviewElementGenerationInputRef,
+  SetGeneratedElementDecisionInputRef,
+  StartElementGenerationInputRef,
+  UpdateGeneratedElementDraftInputRef,
+} from './elementGeneration.js'
 import { ElementStatus, ElementType } from './elementData.js'
 import {
   GroupActivity,
@@ -1997,6 +2011,149 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.setKbKnowledgeGraphEnabled(args, ctx)
+        },
+      }),
+
+      startElementGeneration: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: ElementGenerationBuildRef,
+        args: {
+          input: t.arg({
+            type: StartElementGenerationInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, { input }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.startElementGeneration(input, ctx)
+          )
+        },
+      }),
+
+      reviewElementGeneration: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: ElementGenerationBuildRef,
+        args: {
+          input: t.arg({
+            type: ReviewElementGenerationInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, { input }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.reviewElementGeneration(
+              input.gate,
+              input,
+              ctx
+            )
+          )
+        },
+      }),
+
+      updateGeneratedElementDraft: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: GeneratedElementDraftRef,
+        args: {
+          input: t.arg({
+            type: UpdateGeneratedElementDraftInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, { input }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.updateGeneratedElementDraft(input, ctx)
+          )
+        },
+      }),
+
+      duplicateGeneratedElementDraft: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: GeneratedElementDraftRef,
+        args: {
+          input: t.arg({
+            type: GeneratedElementDraftInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, { input }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.duplicateGeneratedElementDraft(
+              input.draftId,
+              ctx
+            )
+          )
+        },
+      }),
+
+      setGeneratedElementDecision: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: GeneratedElementDraftRef,
+        args: {
+          input: t.arg({
+            type: SetGeneratedElementDecisionInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, { input }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.setGeneratedElementDecision(
+              input.draftId,
+              input.decision,
+              ctx
+            )
+          )
+        },
+      }),
+
+      saveGeneratedElements: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: ElementGenerationSaveResultRef,
+        args: {
+          input: t.arg({
+            type: ElementGenerationBuildInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, { input }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.saveGeneratedElements(input.buildId, ctx)
+          )
+        },
+      }),
+
+      retryElementGeneration: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: ElementGenerationBuildRef,
+        args: {
+          input: t.arg({
+            type: ElementGenerationBuildInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, { input }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.retryElementGeneration(input.buildId, ctx)
+          )
+        },
+      }),
+
+      publishIncompleteElementGeneration: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: ElementGenerationBuildRef,
+        args: {
+          input: t.arg({
+            type: PublishIncompleteElementGenerationInputRef,
+            required: true,
+          }),
+        },
+        resolve: async (_, { input }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.publishIncompleteElementGeneration(
+              input.buildId,
+              input.warningsAcknowledged,
+              ctx
+            )
+          )
         },
       }),
 

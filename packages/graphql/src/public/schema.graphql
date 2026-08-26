@@ -544,6 +544,7 @@ type CaseStudyElement {
   content: String!
   createdAt: Date
   derivedAccess: Boolean
+  difficultyLevel: Int
   explanation: String
   id: Int!
   isArchived: Boolean
@@ -865,6 +866,7 @@ type ChoicesElement {
   content: String!
   createdAt: Date
   derivedAccess: Boolean
+  difficultyLevel: Int
   explanation: String
   id: Int!
   isArchived: Boolean
@@ -967,6 +969,7 @@ type ContentElement {
   content: String!
   createdAt: Date
   derivedAccess: Boolean
+  difficultyLevel: Int
   explanation: String
   id: Int!
   isArchived: Boolean
@@ -1302,6 +1305,214 @@ type ElementFeedback {
   upvote: Boolean!
 }
 
+enum ElementGenerationBloomLevel {
+  analyze
+  apply
+  evaluate
+  remember
+  understand
+}
+
+type ElementGenerationBuild {
+  completedAt: Date
+  configuration: ElementGenerationConfiguration!
+  createdAt: Date!
+  designSummary: ElementGenerationDesignSummary
+  drafts: [GeneratedElementDraft!]!
+  elementType: GeneratableElementType!
+  errorCode: String
+  errorMessage: String
+  errorRetryable: Boolean
+  generatedElementCount: Int!
+  graphBuildId: ID!
+  id: ID!
+  incompletePublishedAt: Date
+  planSummary: ElementGenerationPlanSummary
+  requestedElementCount: Int!
+  retryCount: Int!
+  reviews: [ElementGenerationReview!]!
+  stage: String!
+  startedAt: Date
+  status: ElementGenerationBuildStatus!
+  unresolvedElementCount: Int!
+  updatedAt: Date!
+  warningCount: Int!
+}
+
+input ElementGenerationBuildInput {
+  buildId: ID!
+}
+
+enum ElementGenerationBuildStatus {
+  AWAITING_INCOMPLETE_PUBLICATION
+  COMPLETED
+  DESIGNING
+  FAILED
+  FINALIZING
+  GENERATING_ITEMS
+  INCOMPLETE
+  PREPARING_INPUT
+  PUBLISHING_INCOMPLETE
+  QUEUED
+  REJECTED
+  RUNNING
+  WAITING_FOR_DESIGN_REVIEW
+  WAITING_FOR_PLAN_REVIEW
+}
+
+type ElementGenerationCapabilities {
+  bloomLevels: [ElementGenerationBloomLevel!]!
+  configured: Boolean!
+  difficultyLevels: [Int!]!
+  elementTypes: [GeneratableElementType!]!
+  languages: [ElementGenerationLanguage!]!
+  supportsIndividualRegeneration: Boolean!
+  typeCapabilities: [ElementGenerationTypeCapability!]!
+}
+
+type ElementGenerationConfiguration {
+  bloomLevels: [ElementGenerationBloomLevel!]!
+  difficultyCounts: ElementGenerationDifficultyCounts
+  difficultyPreset: ElementGenerationDifficultyPreset
+  elementCount: Int!
+  elementType: GeneratableElementType!
+  language: ElementGenerationLanguage!
+  objectives: [ElementGenerationObjective!]!
+  sourceScopes: [ElementGenerationConfigurationSourceScope!]!
+}
+
+type ElementGenerationConfigurationSourceScope {
+  pageFrom: Int
+  pageTo: Int
+  resourceId: ID!
+}
+
+type ElementGenerationDesignModule {
+  elementCount: Int!
+  moduleId: ID!
+  moduleName: String!
+}
+
+type ElementGenerationDesignSummary {
+  elementCount: Int!
+  modules: [ElementGenerationDesignModule!]!
+  objectives: [ElementGenerationObjective!]!
+  sources: [ElementGenerationReviewSource!]!
+  title: String!
+  warnings: [ElementGenerationWarning!]!
+}
+
+type ElementGenerationDifficultyCounts {
+  d1: Int!
+  d2: Int!
+  d3: Int!
+  d4: Int!
+  d5: Int!
+}
+
+enum ElementGenerationDifficultyPreset {
+  EASY
+  HARD
+  MIXED
+}
+
+enum ElementGenerationLanguage {
+  de
+  en
+}
+
+type ElementGenerationObjective {
+  bloomLevel: ElementGenerationBloomLevel
+  id: ID!
+  text: String!
+}
+
+input ElementGenerationObjectiveInput {
+  bloomLevel: ElementGenerationBloomLevel
+  text: String!
+}
+
+type ElementGenerationPlanElement {
+  bloomLevel: ElementGenerationBloomLevel
+  preview: String!
+  sourceElementId: ID!
+  sources: [ElementGenerationReviewSource!]!
+  targetDifficulty: Int
+}
+
+type ElementGenerationPlanSummary {
+  elementCount: Int!
+  elements: [ElementGenerationPlanElement!]!
+  warnings: [ElementGenerationWarning!]!
+}
+
+type ElementGenerationReview {
+  decision: ElementGenerationReviewDecision!
+  gate: ElementGenerationReviewGate!
+  id: ID!
+  reviewedAt: Date!
+  warningsAcknowledged: Boolean!
+}
+
+enum ElementGenerationReviewDecision {
+  APPROVE
+  REJECT
+}
+
+enum ElementGenerationReviewGate {
+  DESIGN
+  PLAN
+}
+
+type ElementGenerationReviewSource {
+  pageFrom: Int
+  pageTo: Int
+  sourceFile: String!
+}
+
+type ElementGenerationSaveResult {
+  alreadySavedElementIds: [Int!]!
+  createdElementIds: [Int!]!
+}
+
+type ElementGenerationSource {
+  graphBuildId: ID!
+  indexedAt: Date!
+  isStale: Boolean!
+  kbId: ID!
+  kbName: String!
+  sourceCount: Int!
+  sources: [ElementGenerationSourceScope!]!
+}
+
+type ElementGenerationSourceScope {
+  pageCount: Int
+  resourceId: ID!
+  sourceFile: String!
+  title: String!
+}
+
+input ElementGenerationSourceScopeInput {
+  pageFrom: Int
+  pageTo: Int
+  resourceId: ID!
+}
+
+type ElementGenerationTypeCapability {
+  elementType: GeneratableElementType!
+  reviewGates: [ElementGenerationReviewGate!]!
+  supportsBloomLevels: Boolean!
+  supportsDifficulty: Boolean!
+  supportsIncompletePublication: Boolean!
+  supportsRetry: Boolean!
+  supportsSourceScopes: Boolean!
+}
+
+type ElementGenerationWarning {
+  code: String!
+  message: String!
+}
+
 type ElementInstance {
   correlationKey: String
   elementData: ElementData!
@@ -1461,6 +1672,7 @@ type FlashcardElement {
   content: String!
   createdAt: Date
   derivedAccess: Boolean
+  difficultyLevel: Int
   explanation: String
   id: Int!
   isArchived: Boolean
@@ -1550,6 +1762,7 @@ type FreeTextElement {
   content: String!
   createdAt: Date
   derivedAccess: Boolean
+  difficultyLevel: Int
   explanation: String
   id: Int!
   isArchived: Boolean
@@ -1620,6 +1833,96 @@ input FreeTextRestrictionsInput {
   maxLength: Int
   minLength: Int
   pattern: String
+}
+
+enum GeneratableElementType {
+  FLASHCARD
+  KPRIM
+  MC
+  SC
+}
+
+enum GeneratedElementCardType {
+  calculation
+  definition
+  formula
+}
+
+type GeneratedElementChoice {
+  correct: Boolean!
+  feedback: String
+  id: ID!
+  label: String!
+  text: String!
+}
+
+input GeneratedElementChoiceInput {
+  correct: Boolean!
+  feedback: String
+  id: ID!
+  label: String!
+  text: String!
+}
+
+type GeneratedElementCitation {
+  chunkIds: [String!]!
+  pageFrom: Int
+  pageTo: Int
+  resourceId: ID!
+  sourceFile: String!
+}
+
+enum GeneratedElementDecision {
+  ACCEPTED
+  OPEN
+  REJECTED
+}
+
+type GeneratedElementDraft {
+  bloomLevel: ElementGenerationBloomLevel
+  citations: [GeneratedElementCitation!]!
+  createdAt: Date!
+  current: GeneratedElementEditable!
+  decision: GeneratedElementDecision!
+  duplicationIndex: Int!
+  elementType: GeneratableElementType!
+  id: ID!
+  order: Int!
+  original: GeneratedElementEditable!
+  parentDraftId: ID
+  predictedDifficulty: Float
+  provenance: Json
+  qualityFlags: [String!]!
+  revision: Int!
+  savedAt: Date
+  savedElementId: Int
+  sourceElementId: ID!
+  targetDifficulty: Int
+  updatedAt: Date!
+}
+
+input GeneratedElementDraftInput {
+  draftId: ID!
+}
+
+type GeneratedElementEditable {
+  cardType: GeneratedElementCardType
+  choices: [GeneratedElementChoice!]!
+  context: String
+  explanation: String
+  name: String!
+  prompt: String!
+  tags: [String!]!
+}
+
+input GeneratedElementEditableInput {
+  cardType: GeneratedElementCardType
+  choices: [GeneratedElementChoiceInput!]
+  context: String
+  explanation: String
+  name: String!
+  prompt: String!
+  tags: [String!]
 }
 
 type GroupAchievementInstance {
@@ -2258,6 +2561,7 @@ type Mutation {
   demoteGroupAdminToMember(adminId: String!, groupId: Int!): Boolean!
   detachKbFromChatbot(chatbotId: ID!, kbId: ID!): Boolean!
   duplicateAnswerCollection(id: Int!): AnswerCollection
+  duplicateGeneratedElementDraft(input: GeneratedElementDraftInput!): GeneratedElementDraft!
   editActivityTemplate(activityId: String!, activityType: ActivityType!, description: String!, instructions: String!, name: String!, templateId: String!): Boolean!
   editAnswerCollectionEntry(collectionId: Int!, id: Int!, value: String!): AnswerCollectionEntry
   editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
@@ -2311,6 +2615,7 @@ type Mutation {
   promoteGroupMemberToAdmin(groupId: Int!, memberId: String!): Boolean!
   publishFeedback(id: Int!, isPublished: Boolean!, liveQuizId: String!): Feedback
   publishGroupActivity(id: String!): GroupActivity
+  publishIncompleteElementGeneration(input: PublishIncompleteElementGenerationInput!): ElementGenerationBuild!
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(availableFrom: Date, id: String!): PracticeQuiz
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
@@ -2330,19 +2635,24 @@ type Mutation {
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, liveQuizId: String!, responseContent: String!): Feedback
+  retryElementGeneration(input: ElementGenerationBuildInput!): ElementGenerationBuild!
+  reviewElementGeneration(input: ReviewElementGenerationInput!): ElementGenerationBuild!
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
+  saveGeneratedElements(input: ElementGenerationBuildInput!): ElementGenerationSaveResult!
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
   setAiFeatures(email: String!, enabled: Boolean!): Int
   setBetaFeatures(enabled: Boolean!): Boolean
   setChatAccountUsageBudgets(advancedBudgetCredits: Float!, baseBudgetCredits: Float!, ownerId: String!): ChatAccountUsageOverview
+  setGeneratedElementDecision(input: SetGeneratedElementDecisionInput!): GeneratedElementDraft!
   setKbKnowledgeGraphEnabled(enabled: Boolean!, kbId: ID!): KBKnowledgeGraphConfig!
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startCourseDuplication(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String!, startDate: Date!): CourseDuplicationStatus
+  startElementGeneration(input: StartElementGenerationInput!): ElementGenerationBuild!
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
@@ -2359,6 +2669,7 @@ type Mutation {
   updateChatbotModelSettings(allowedModelIds: [String!]!, allowedReasoningEffortsByModel: [ChatbotReasoningConfigInput!], chatbotId: String!, modelSelection: Boolean!): Chatbot
   updateCourseSettings(color: String, description: String, displayName: String, endDate: Date, groupDeadlineDate: Date, id: String!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean, language: LocaleType!, name: String, notificationEmail: String, startDate: Date): Course
   updateElementInstances(elementId: Int!, includeTemplates: Boolean!): [ElementInstance!]
+  updateGeneratedElementDraft(input: UpdateGeneratedElementDraftInput!): GeneratedElementDraft!
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
   updateParticipantProfile(email: String!, isProfilePublic: Boolean, password: String, username: String!): Participant
   updateTagOrdering(originIx: Int!, targetIx: Int!): [Tag!]
@@ -2385,6 +2696,7 @@ type NumericalElement {
   content: String!
   createdAt: Date
   derivedAccess: Boolean
+  difficultyLevel: Int
   explanation: String
   id: Int!
   isArchived: Boolean
@@ -2790,6 +3102,11 @@ enum PublicationStatus {
   TEMPLATE
 }
 
+input PublishIncompleteElementGenerationInput {
+  buildId: ID!
+  warningsAcknowledged: Boolean!
+}
+
 type PushSubscription {
   endpoint: String!
   id: Int!
@@ -2822,6 +3139,9 @@ type Query {
   courseDuplicationStatuses(ids: [String!]!): [CourseDuplicationStatus!]!
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   element(id: Int!): Element
+  elementGenerationBuild(id: ID!): ElementGenerationBuild!
+  elementGenerationCapabilities: ElementGenerationCapabilities!
+  elementGenerationSources: [ElementGenerationSource!]!
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
   feedbacks(quizId: String!): [Feedback!]
   getActiveUserCourses(activityId: String, activityType: ActivityType): [Course!]
@@ -2977,6 +3297,13 @@ input ResponseInput {
   value: String
 }
 
+input ReviewElementGenerationInput {
+  buildId: ID!
+  decision: ElementGenerationReviewDecision!
+  gate: ElementGenerationReviewGate!
+  warningsAcknowledged: Boolean!
+}
+
 enum ReviewStatus {
   INCOMPLETE
   MODIFIED_AFTER_REVIEW
@@ -2999,6 +3326,7 @@ type SelectionElement {
   content: String!
   createdAt: Date
   derivedAccess: Boolean
+  difficultyLevel: Int
   explanation: String
   id: Int!
   isArchived: Boolean
@@ -3073,6 +3401,11 @@ type SelectionInstanceEvaluation {
   selectionResponses: [SingleSelectionResponse!]
   xp: Int
   xpAwarded: Int
+}
+
+input SetGeneratedElementDecisionInput {
+  decision: GeneratedElementDecision!
+  draftId: ID!
 }
 
 type SharingRequestResponse {
@@ -3206,6 +3539,18 @@ input StackResponseInput {
   type: ElementType!
 }
 
+input StartElementGenerationInput {
+  bloomLevels: [ElementGenerationBloomLevel!]
+  difficultyPreset: ElementGenerationDifficultyPreset
+  elementCount: Int!
+  elementType: GeneratableElementType!
+  graphBuildId: ID!
+  idempotencyKey: String!
+  language: ElementGenerationLanguage!
+  objectives: [ElementGenerationObjectiveInput!]
+  sourceScopes: [ElementGenerationSourceScopeInput!]
+}
+
 type Statistics {
   max: Float!
   mean: Float!
@@ -3331,6 +3676,7 @@ input TemplateElementManipulationInput {
   caseStudyOptions: OptionsCaseStudyInput
   choicesOptions: OptionsChoicesInput
   content: String
+  difficultyLevel: Int
   explanation: String
   freeTextOptions: OptionsFreeTextInput
   id: Int
@@ -3345,6 +3691,12 @@ input TemplateElementManipulationInput {
 
 type Title {
   id: Int!
+}
+
+input UpdateGeneratedElementDraftInput {
+  current: GeneratedElementEditableInput!
+  draftId: ID!
+  expectedRevision: Int!
 }
 
 type User {
