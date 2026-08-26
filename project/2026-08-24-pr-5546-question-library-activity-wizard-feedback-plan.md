@@ -31,7 +31,7 @@ uncrowned regardless of Catalyst entitlement.
   environment, application routes, or Turborepo routing configuration.
 - Draft PR #5546 exists and still points to published head
   `024c8813c4b51bdf4bf9562041c7594d30725e3e`. Reviewed local head
-  `38bfd4bb472c1d1d8ac0a9f983d59e1909681b49` remains unpublished. GitHub is
+  `333e9cb4d36599cf7ed3d5527a9a9320e25fb435` remains unpublished. GitHub is
   authoritative for volatile PR and check state; the normal push and PR body
   update are authorized but pending. PR merge, mark-ready, deployment,
   publication, worktree cleanup, and branch, worktree, or runtime-data deletion
@@ -71,12 +71,14 @@ uncrowned regardless of Catalyst entitlement.
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/ux-review-question-library`.
 - Branch: `rs/question-library-activity-wizard-feedback`.
 - Current integrated base and merge-base:
-  `97d26bb03f79d10cb85043d7041e880a7d96c3c8`. Current `origin/v3` at
-  `7f628ab56a71f22fa93fb6dd340dd9b3dcee65e3` is only an unmerged staging-values
-  promotion; volatile ahead/behind counts are intentionally omitted.
+  `861afd19383412a7338f491de46ad4ce3b761750`, which is also the current
+  `origin/v3`; volatile ahead/behind counts are intentionally omitted.
 - The merge integrated `7515632f229c9421a7ac7d62668e1743147ba158` and its
   generated GraphQL policy: typed and persisted artifacts are generated and
   ignored, while the public SDL remains tracked.
+- The normal upstream reconciliation also integrated the cache policy: only the
+  pnpm content store is shared, while `node_modules`, `.next`, database, and
+  application state remain isolated per workspace.
 - Approved package scope additionally includes the trace-backed
   `MA-elements-operations.spec.ts` repair at
   `b4d4a40eee142a576595005727f233c7e9dece76`, with dialog-close waits and
@@ -93,7 +95,7 @@ uncrowned regardless of Catalyst entitlement.
   standard full-access capabilities.
 - Draft PR #5546 still points to published head
   `024c8813c4b51bdf4bf9562041c7594d30725e3e`; reviewed local head
-  `38bfd4bb472c1d1d8ac0a9f983d59e1909681b49` remains unpublished. GitHub is
+  `333e9cb4d36599cf7ed3d5527a9a9320e25fb435` remains unpublished. GitHub is
   authoritative for volatile PR and check state. The normal push and PR body
   update are authorized but pending; PR merge, mark-ready, deployment,
   publication, cleanup, and deletion remain withheld.
@@ -457,9 +459,8 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   and non-destructive shutdown are complete through the local correction and
   review-disposition commits.
 - Freshness: the integrated base and merge-base are
-  `97d26bb03f79d10cb85043d7041e880a7d96c3c8`. Current `origin/v3` at
-  `7f628ab56a71f22fa93fb6dd340dd9b3dcee65e3` is only an unmerged staging-values
-  promotion. Exact ahead/behind counts are not durable Progress state.
+  `861afd19383412a7338f491de46ad4ce3b761750`, which is also the current
+  `origin/v3`. Exact ahead/behind counts are not durable Progress state.
 - Sol final-review disposition for reviewed pre-correction local head
   `5ca2804370bc4cd6fa165d6158d611adb258c627`: both non-behavioral findings are
   accepted. The plan records the integrated base and merge-base, and the
@@ -761,7 +762,7 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   passed; focused B/O Chromium discovery collected 89 tests; plan Prettier and
   `git diff --check` passed. No runtime or browser was started. Push, thread
   resolution, PR-state changes, merge, and deployment remain withheld.
-- Final local evidence for reviewed head
+- Prior local evidence for reviewed head
   `38bfd4bb472c1d1d8ac0a9f983d59e1909681b49`: canonical `devrouter ensure`
   used only namespaced `*.localhost` routes. `pnpm run check:all` passed 25/25
   check tasks and 7/7 lint tasks after recreating only the ignored analytics
@@ -774,7 +775,20 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   returned no findings, and Sol found no code, accessibility, security, test,
   or generated-artifact finding. Sol's sole finding was this stale durable-plan
   state; it is accepted and corrected without changing product or test behavior.
-- Delivery remains pending from the reviewed local head. Draft PR #5546 still
+- Current integrated evidence for pre-plan-update head
+  `333e9cb4d36599cf7ed3d5527a9a9320e25fb435` supersedes the prior `1f199c`
+  evidence snapshot. The normal upstream reconciliation completed
+  `pnpm install` in 1.3 seconds and retained only the shared pnpm content store;
+  `node_modules`, `.next`, database, and application state stayed isolated.
+  Canonical `devrouter ensure` succeeded using only
+  `*.klicker.rs-ux-review-question-library.localhost` routes.
+  `devrouter exec . -- bash util/test-dev-runtime.sh` passed;
+  `devrouter exec . -- pnpm run check:all` passed 25/25 check tasks and all lint
+  tasks; and `devrouter exec . -- pnpm run build` passed 23/23 tasks from cache
+  after the prior exact integrated build. No manual route, TLS, hostname, or
+  consumer workaround was used.
+- Delivery remains pending from pre-plan-update head
+  `333e9cb4d36599cf7ed3d5527a9a9320e25fb435`. Draft PR #5546 still
   points to `024c8813c4b51bdf4bf9562041c7594d30725e3e`; no push or exact-head CI
   is claimed. The two OpenCodeReview threads remain unresolved until new
   exact-head CI is green. PR merge, mark-ready, deployment, publication,
