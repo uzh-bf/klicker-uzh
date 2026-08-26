@@ -6,6 +6,7 @@ metadata:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: response-api
   annotations:
+    argocd.argoproj.io/sync-wave: "1"
     reloader.stakater.com/auto: "true"
 spec:
   revisionHistoryLimit: 5
@@ -94,6 +95,8 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: response-api-assessment
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   revisionHistoryLimit: 5
   {{- with .Values.assessment.responseApi.strategy }}

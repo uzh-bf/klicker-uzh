@@ -1,26 +1,34 @@
+import { createHash, createHmac } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  ElementData,
-  ElementInstanceResults,
-  ElementResultsCaseStudy,
-  ElementResultsOpen,
-  HatchetHandlers,
   type ElementBlockInput,
+  type ElementData,
+  type ElementInstanceResults,
+  type ElementResultsCaseStudy,
   type ElementResultsChoices,
+  type ElementResultsOpen,
   type ElementResultsSelection,
   type ElementStackInput,
+  type HatchetHandlers,
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
   getCachedBlockResults,
   getInitialInstanceResults,
+  getLiveQuizInstanceInfoKey,
+  getLiveQuizLegacyResponseProcessedKey,
+  getLiveQuizLegacyResponseReceivedKey,
+  getLiveQuizResponseCountKey,
+  getLiveQuizResponseReconciliationKey,
+  getLiveQuizResponseReplayClaimKey,
+  LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
   levelFromXp,
+  type PrismaTransactionClient,
   propagateActivityToElements,
   recomputeDerivedPermissions,
   signJWT,
   updateLiveQuizBlockResultsFromCache,
-  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import generatePassword from 'generate-password'
@@ -28,7 +36,6 @@ import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import { min } from 'mathjs'
 import schedule from 'node-schedule'
-import { createHash, createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
@@ -988,6 +995,213 @@ export async function getCockpitQuiz(
     ? ctx.redisAssessmentExec
     : ctx.redisExec
 
+  const responseCounts = new Map<
+    number,
+    { received: number; processed: number | null }
+  >()
+  let responseCountsUnavailable = false
+  const startedInstances = liveQuiz.blocks.flatMap((block) =>
+    block.status === DB.ElementBlockStatus.SCHEDULED ? [] : block.elements
+  )
+
+  if (startedInstances.length > 0) {
+    // best-effort: count resolution failures must degrade to absent counts
+    // (rendered as null by the mapping below), never fail the cockpit query
+    try {
+      const responseCountPipeline = redis.pipeline()
+      startedInstances.forEach((instance) => {
+        responseCountPipeline.get(
+          getLiveQuizResponseCountKey({
+            liveQuizId: id,
+            instanceId: instance.id,
+            status: 'received',
+          })
+        )
+        responseCountPipeline.scard(
+          getLiveQuizLegacyResponseReceivedKey({
+            liveQuizId: id,
+            instanceId: instance.id,
+          })
+        )
+        responseCountPipeline.get(
+          getLiveQuizResponseCountKey({
+            liveQuizId: id,
+            instanceId: instance.id,
+            status: 'processed',
+          })
+        )
+        responseCountPipeline.scard(
+          getLiveQuizLegacyResponseProcessedKey({
+            liveQuizId: id,
+            instanceId: instance.id,
+          })
+        )
+        responseCountPipeline.sintercard(
+          2,
+          getLiveQuizLegacyResponseReceivedKey({
+            liveQuizId: id,
+            instanceId: instance.id,
+          }),
+          getLiveQuizLegacyResponseProcessedKey({
+            liveQuizId: id,
+            instanceId: instance.id,
+          })
+        )
+        responseCountPipeline.hget(
+          `lq:${id}:i:${instance.id}:results`,
+          'participants'
+        )
+        responseCountPipeline.zcount(
+          getLiveQuizResponseReplayClaimKey({
+            liveQuizId: id,
+            instanceId: instance.id,
+          }),
+          '-inf',
+          '(0'
+        )
+        responseCountPipeline.hlen(
+          getLiveQuizResponseReconciliationKey({
+            liveQuizId: id,
+            instanceId: instance.id,
+          })
+        )
+      })
+
+      const responseCountResults = await responseCountPipeline.exec()
+      if (!responseCountResults) {
+        throw new Error(`Failed to load response counts for live quiz ${id}`)
+      }
+
+      startedInstances.forEach((instance, index) => {
+        const resultOffset = index * 8
+        const receivedResult = responseCountResults[resultOffset]
+        const legacyReceivedResult = responseCountResults[resultOffset + 1]
+        const processedResult = responseCountResults[resultOffset + 2]
+        const legacyProcessedResult = responseCountResults[resultOffset + 3]
+        const legacyProcessedOverlapResult =
+          responseCountResults[resultOffset + 4]
+        const aggregatedResult = responseCountResults[resultOffset + 5]
+        const legacyReconciliationResult =
+          responseCountResults[resultOffset + 6]
+        const reconciliationResult = responseCountResults[resultOffset + 7]
+
+        if (!receivedResult || receivedResult[0]) {
+          throw (
+            receivedResult?.[0] ?? new Error('Missing received response count')
+          )
+        }
+        if (!legacyReceivedResult || legacyReceivedResult[0]) {
+          throw (
+            legacyReceivedResult?.[0] ??
+            new Error('Missing legacy received response count')
+          )
+        }
+        if (!processedResult || processedResult[0]) {
+          throw (
+            processedResult?.[0] ??
+            new Error('Missing processed response count')
+          )
+        }
+        if (!legacyProcessedResult || legacyProcessedResult[0]) {
+          throw (
+            legacyProcessedResult?.[0] ??
+            new Error('Missing legacy processed response count')
+          )
+        }
+        if (!legacyProcessedOverlapResult || legacyProcessedOverlapResult[0]) {
+          throw (
+            legacyProcessedOverlapResult?.[0] ??
+            new Error('Missing legacy processed response overlap')
+          )
+        }
+        if (!aggregatedResult || aggregatedResult[0]) {
+          throw (
+            aggregatedResult?.[0] ??
+            new Error('Missing aggregated participant count')
+          )
+        }
+        if (!legacyReconciliationResult || legacyReconciliationResult[0]) {
+          throw (
+            legacyReconciliationResult?.[0] ??
+            new Error('Missing legacy reconciliation response count')
+          )
+        }
+        if (!reconciliationResult || reconciliationResult[0]) {
+          throw (
+            reconciliationResult?.[0] ??
+            new Error('Missing reconciliation response count')
+          )
+        }
+
+        const parseCount = (value: unknown, label: string) => {
+          const count = Number(value ?? 0)
+          if (!Number.isSafeInteger(count) || count < 0) {
+            throw new Error(`Invalid ${label} response count: ${String(value)}`)
+          }
+          return count
+        }
+
+        const receivedCount = parseCount(receivedResult[1], 'received counter')
+        const legacyReceivedCount = parseCount(
+          legacyReceivedResult[1],
+          'legacy received set'
+        )
+        const processedCount = parseCount(
+          processedResult[1],
+          'processed counter'
+        )
+        const legacyProcessedCount = parseCount(
+          legacyProcessedResult[1],
+          'legacy processed set'
+        )
+        const legacyProcessedOverlapCount = parseCount(
+          legacyProcessedOverlapResult[1],
+          'legacy processed overlap'
+        )
+        const aggregatedCount = parseCount(
+          aggregatedResult[1],
+          'aggregated participant count'
+        )
+        const legacyReconciliationCount = parseCount(
+          legacyReconciliationResult[1],
+          'legacy reconciliation response count'
+        )
+        const reconciliationCount = parseCount(
+          reconciliationResult[1],
+          'reconciliation response count'
+        )
+        const trackedReceivedCount = Math.max(
+          receivedCount,
+          legacyReceivedCount
+        )
+        const trackedProcessedOverlap = Math.min(
+          processedCount + legacyProcessedOverlapCount,
+          trackedReceivedCount
+        )
+
+        responseCounts.set(instance.id, {
+          // The participant aggregate contains all successfully processed
+          // responses. Add only tracked received responses that have not yet
+          // joined that aggregate. The readiness-gated worker-first rollout
+          // ensures every new ingress claim can update this overlap counter.
+          received:
+            aggregatedCount +
+            Math.max(trackedReceivedCount - trackedProcessedOverlap, 0),
+          processed:
+            reconciliationCount > 0 || legacyReconciliationCount > 0
+              ? null
+              : Math.max(legacyProcessedCount, aggregatedCount),
+        })
+      })
+    } catch (error) {
+      responseCountsUnavailable = true
+      console.error(
+        'Failed to load live quiz response counts, degrading to null:',
+        error
+      )
+    }
+  }
+
   // number of participants per block
   const blockParticipants = liveQuiz.blocks.reduce<Record<number, number>>(
     (acc, block) => {
@@ -1035,16 +1249,29 @@ export async function getCockpitQuiz(
         ...block,
         numOfParticipants: blockParticipants[block.id],
         elements: block.elements.map((instance) => {
+          const counts =
+            block.status === DB.ElementBlockStatus.SCHEDULED ||
+            responseCountsUnavailable
+              ? null
+              : (responseCounts.get(instance.id) ?? {
+                  received: 0,
+                  processed: 0,
+                })
+          const responseCountFields = {
+            numOfResponsesReceived: counts?.received ?? null,
+            numOfResponsesProcessed: counts?.processed ?? null,
+          }
           const elementData = instance.elementData
           if (
             !elementData ||
             typeof elementData !== 'object' ||
             Array.isArray(elementData)
           ) {
-            return instance
+            return { ...instance, ...responseCountFields }
           } else {
             return {
               ...instance,
+              ...responseCountFields,
               elementData: {
                 ...elementData,
                 options: null,
@@ -1257,6 +1484,11 @@ export async function activateLiveQuizBlock(
             elementData.options.answerCollectionSolutionIds
           ),
           numberOfInputs: elementData.options.numberOfInputs,
+          selectionAnswerIds: JSON.stringify(
+            elementData.options.answerCollection?.entries.map(
+              (entry) => entry.id
+            ) ?? []
+          ),
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
@@ -1282,6 +1514,16 @@ export async function activateLiveQuizBlock(
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
           solutions: solutions ? JSON.stringify(solutions) : undefined,
+          caseStudyResponseShape: JSON.stringify({
+            caseIds: elementData.options.cases.map((caseItem) => caseItem.id),
+            itemIds:
+              elementData.options.items?.map((item) => item.id) ??
+              elementData.options.collectionItemIds ??
+              [],
+            criterionIds: elementData.options.criteria.map(
+              (criterion) => criterion.id
+            ),
+          }),
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
@@ -1409,7 +1651,7 @@ export async function deactivateLiveQuizBlock(
   return true
 }
 
-async function removeCacheEntriesBlock({
+export async function removeCacheEntriesBlock({
   liveQuizId,
   blockId,
   block,
@@ -1422,20 +1664,61 @@ async function removeCacheEntriesBlock({
   isLastBlock: boolean
   redis: Redis
 }) {
+  const instanceIds = block.elements.map((instance) => instance.id)
+
+  if (instanceIds.length > 0) {
+    const instanceInfoExpiry = redis.pipeline()
+    for (const instanceId of instanceIds) {
+      instanceInfoExpiry.expire(
+        getLiveQuizInstanceInfoKey({ liveQuizId, instanceId }),
+        LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
+        'LT'
+      )
+    }
+
+    const expiryResults = await instanceInfoExpiry.exec()
+    if (expiryResults === null) {
+      throw new Error(
+        `Failed to start cache retention for live quiz block ${blockId}`
+      )
+    }
+
+    const expiryErrors = expiryResults.flatMap(([error]) =>
+      error ? [error] : []
+    )
+    if (expiryErrors.length > 0) {
+      throw new Error(
+        `Failed to start cache retention for live quiz block ${blockId}: ${expiryErrors.join('; ')}`
+      )
+    }
+  }
+
   if (isLastBlock) {
     // if the last block was closed, clean up the entire cache for this live quiz
     const keys = await redis.keys(`lq:${liveQuizId}:*`)
     if (keys.length > 0) {
       const pipe = redis.pipeline()
       for (const key of keys) {
-        // set an expiration time of 1 day to all hash sets of the live quiz
-        pipe.expire(key, 60 * 60 * 24)
+        // set an expiration time of 1 day to all cache keys of the live quiz
+        pipe.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS, 'LT')
       }
-      await pipe.exec()
+      const expiryResults = await pipe.exec()
+      if (expiryResults === null) {
+        throw new Error(
+          `Failed to start cache retention for live quiz block ${blockId}`
+        )
+      }
+      const expiryErrors = expiryResults.flatMap(([error]) =>
+        error ? [error] : []
+      )
+      if (expiryErrors.length > 0) {
+        throw new Error(
+          `Failed to start cache retention for live quiz block ${blockId}: ${expiryErrors.join('; ')}`
+        )
+      }
     }
   } else {
     // only remove information from the cache that is specific to the closed block and the instances therein
-    const instanceIds = block.elements.map((instance) => instance.id)
     const instanceKeysNested = await Promise.all(
       instanceIds.map(
         async (id) => await redis.keys(`lq:${liveQuizId}:i:${id}:*`)
@@ -1448,10 +1731,117 @@ async function removeCacheEntriesBlock({
     if (keys.length > 0) {
       const pipe = redis.pipeline()
       for (const key of keys) {
-        // set an expiration time of 1 day to all hash sets of the live quiz
-        pipe.expire(key, 60 * 60 * 24)
+        // set an expiration time of 1 day to all cache keys of the live quiz
+        pipe.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS, 'LT')
       }
-      await pipe.exec()
+      const expiryResults = await pipe.exec()
+      if (expiryResults === null) {
+        throw new Error(
+          `Failed to start cache retention for live quiz block ${blockId}`
+        )
+      }
+      const expiryErrors = expiryResults.flatMap(([error]) =>
+        error ? [error] : []
+      )
+      if (expiryErrors.length > 0) {
+        throw new Error(
+          `Failed to start cache retention for live quiz block ${blockId}: ${expiryErrors.join('; ')}`
+        )
+      }
+    }
+  }
+}
+
+async function startLiveQuizResponseTrackingRetention({
+  liveQuizId,
+  blocks,
+  redis,
+}: {
+  liveQuizId: string
+  blocks: (DB.ElementBlock & { elements: DB.ElementInstance[] })[]
+  redis: Redis
+}) {
+  const instanceInfoKeys = blocks.flatMap((block) =>
+    block.elements.map((instance) =>
+      getLiveQuizInstanceInfoKey({
+        liveQuizId,
+        instanceId: instance.id,
+      })
+    )
+  )
+  if (instanceInfoKeys.length > 0) {
+    const instanceInfoExpiry = redis.multi()
+    for (const key of instanceInfoKeys) {
+      instanceInfoExpiry.expire(
+        key,
+        LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
+        'LT'
+      )
+    }
+    const expiryResults = await instanceInfoExpiry.exec()
+    if (expiryResults === null) {
+      throw new Error('Redis returned no instance-info expiry results')
+    }
+    const expiryErrors = expiryResults.flatMap((result) =>
+      result?.[0] ? [result[0]] : []
+    )
+    if (expiryErrors.length > 0) {
+      throw new Error(
+        `Failed to start instance-info retention: ${expiryErrors.join('; ')}`
+      )
+    }
+  }
+
+  const trackingKeys = [
+    ...new Set(
+      blocks.flatMap((block) =>
+        block.elements.flatMap((instance) => [
+          getLiveQuizResponseCountKey({
+            liveQuizId,
+            instanceId: instance.id,
+            status: 'received',
+          }),
+          getLiveQuizResponseCountKey({
+            liveQuizId,
+            instanceId: instance.id,
+            status: 'processed',
+          }),
+          getLiveQuizResponseReplayClaimKey({
+            liveQuizId,
+            instanceId: instance.id,
+          }),
+          getLiveQuizResponseReconciliationKey({
+            liveQuizId,
+            instanceId: instance.id,
+          }),
+          getLiveQuizLegacyResponseReceivedKey({
+            liveQuizId,
+            instanceId: instance.id,
+          }),
+          getLiveQuizLegacyResponseProcessedKey({
+            liveQuizId,
+            instanceId: instance.id,
+          }),
+        ])
+      )
+    ),
+  ]
+  if (trackingKeys.length > 0) {
+    const pipe = redis.multi()
+    for (const key of trackingKeys) {
+      pipe.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS, 'LT')
+    }
+    const trackingExpiryResults = await pipe.exec()
+    if (trackingExpiryResults === null) {
+      throw new Error('Redis returned no response-tracking expiry results')
+    }
+    const trackingExpiryErrors = trackingExpiryResults.flatMap((result) =>
+      result?.[0] ? [result[0]] : []
+    )
+    if (trackingExpiryErrors.length > 0) {
+      throw new Error(
+        `Failed to start response-tracking retention: ${trackingExpiryErrors.join('; ')}`
+      )
     }
   }
 }
@@ -1655,7 +2045,32 @@ export async function endLiveQuiz(
     return null
   }
 
+  // depending on the quiz assessment setting, select the corresponding redis instance
+  const redis = quiz.isAssessmentEnabled
+    ? ctx.redisAssessmentExec
+    : ctx.redisExec
+
   if (quiz.status === DB.PublicationStatus.ENDED) {
+    try {
+      // An earlier end attempt may have persisted ENDED before retention failed.
+      // Re-run retention on repeated calls so the caller can recover from a
+      // transient Redis failure without repeating end-of-quiz side effects.
+      await startLiveQuizResponseTrackingRetention({
+        liveQuizId: id,
+        blocks: quiz.blocks,
+        redis,
+      })
+    } catch (error) {
+      console.error('Failed to clean up response tracking keys for live quiz', {
+        liveQuizId: id,
+        error,
+      })
+      await sendTeamsNotification({
+        scope: 'graphql/endLiveQuiz',
+        text: `ERROR - failed to finish retention for ended live quiz ${quiz.name} with id ${quiz.id}: ${error}`,
+      })
+      throw error
+    }
     return quiz
   }
   if (
@@ -1664,11 +2079,6 @@ export async function endLiveQuiz(
   ) {
     return null
   }
-
-  // depending on the quiz assessment setting, select the corresponding redis instance
-  const redis = quiz.isAssessmentEnabled
-    ? ctx.redisAssessmentExec
-    : ctx.redisExec
 
   // update course leaderboard and participant XP
   try {
@@ -1726,7 +2136,7 @@ export async function endLiveQuiz(
       })
 
       // track the achievement ids, which should be awarded to the participants
-      let newAchievements: Record<string, number> = {}
+      const newAchievements: Record<string, number> = {}
 
       // only award achievements, if the live quiz did contain questions with sample
       // solutions and at least three participants collected points
@@ -1929,9 +2339,19 @@ export async function endLiveQuiz(
       },
     })
 
+    // ENDED is durable before sending the one-time completion notification.
+    // Retention is retryable and must not suppress that notification.
     await sendTeamsNotification({
       scope: 'graphql/endLiveQuiz',
       text: `END Live quiz ${quiz.name} with id ${quiz.id}.`,
+    })
+
+    // If Redis cleanup fails, the repeated ENDED branch can retry it without
+    // repeating the end-of-quiz notification or other end effects.
+    await startLiveQuizResponseTrackingRetention({
+      liveQuizId: id,
+      blocks: quiz.blocks,
+      redis,
     })
 
     return endedLiveQuiz
@@ -3368,6 +3788,7 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
         executionCtx.logger.error(
           `Error removing cache entries for block with ID ${blockId} in quiz with ID ${liveQuizId}: ${error}`
         )
+        throw error
       }
 
       return true
@@ -3443,6 +3864,7 @@ export const handleAssessmentLiveQuizBlockClosureAggregation: HatchetHandlers['h
       executionCtx.logger.error(
         `Error removing cache entries for block with ID ${blockId} in quiz with ID ${liveQuizId}: ${error}`
       )
+      throw error
     }
 
     executionCtx.logger.info(

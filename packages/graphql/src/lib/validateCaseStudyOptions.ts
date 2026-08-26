@@ -1,4 +1,7 @@
-import { ElementOptionsInput } from '@klicker-uzh/types'
+import {
+  type ElementOptionsInput,
+  MAX_LIVE_QUIZ_CASE_STUDY_RESPONSE_ENTRIES,
+} from '@klicker-uzh/types'
 
 function validateCaseStudyOptions(options?: ElementOptionsInput | null) {
   // options and hasSampleSolution need to be defined
@@ -92,6 +95,17 @@ function validateCaseStudyOptions(options?: ElementOptionsInput | null) {
       console.error('Cases need to have a title and description')
       return false
     }
+  }
+
+  const responseEntryCount =
+    options.cases.length *
+    options.collectionItemIds.length *
+    options.criteria.length
+  if (responseEntryCount > MAX_LIVE_QUIZ_CASE_STUDY_RESPONSE_ENTRIES) {
+    console.error(
+      `Case study responses may contain at most ${MAX_LIVE_QUIZ_CASE_STUDY_RESPONSE_ENTRIES} entries`
+    )
+    return false
   }
 
   if (options.hasSampleSolution) {

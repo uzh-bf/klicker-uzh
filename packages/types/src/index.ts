@@ -109,6 +109,13 @@ export type CaseStudyResponseObject = {
   }
 }
 
+// These limits bound the amount of work one live-quiz response can schedule
+// in the response processor. Keep the Redis command ceiling in
+// liveQuizResponseTracking.ts above the worst-case command count implied here.
+export const MAX_LIVE_QUIZ_CHOICES = 1000
+export const MAX_LIVE_QUIZ_SELECTION_INPUTS = 100
+export const MAX_LIVE_QUIZ_CASE_STUDY_RESPONSE_ENTRIES = 1000
+
 export type ChoiceInput = {
   ix: number
   value: string

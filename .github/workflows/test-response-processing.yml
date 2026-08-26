@@ -1,4 +1,4 @@
-name: Test util package functionalities
+name: Test response processing packages
 
 on:
   push:
@@ -12,32 +12,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test-util:
+  test-response-processing:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    services:
-      redis:
-        image: redis:7.2-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     permissions:
       contents: read
-      packages: write
+      packages: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Check for changes
         id: filter
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(packages/util/|packages/prisma/|packages/types/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-util\.yml|\.github/actions/changed-paths/)'
+          pattern: '^(apps/(response-api|hatchet-worker-response-processor)/|packages/(grading|hatchet|prisma|types|util)/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|tsconfig\.json|\.github/workflows/test-response-processing\.yml|\.github/actions/changed-paths/)'
 
       - name: Define node version
         if: steps.filter.outputs.should_run == 'true'
@@ -51,22 +43,16 @@ jobs:
           version: 11.5.0
           run_install: true
 
-      - name: Build dependencies
+      - name: Build response processing packages and dependencies
         if: steps.filter.outputs.should_run == 'true'
-        shell: bash
         run: |
-          cd packages/prisma
-          pnpm run build
-          cd ../types
-          pnpm run build
+          pnpm --filter @klicker-uzh/response-api... run build
+          pnpm --filter @klicker-uzh/hatchet-worker-response-processor... run build
 
-      - name: Test util package
+      - name: Test response API
         if: steps.filter.outputs.should_run == 'true'
-        shell: bash
-        env:
-          LIVE_QUIZ_REDIS_INTEGRATION: 'true'
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-        run: |
-          cd packages/util
-          pnpm run test
+        run: pnpm --filter @klicker-uzh/response-api run test
+
+      - name: Test response processor
+        if: steps.filter.outputs.should_run == 'true'
+        run: pnpm --filter @klicker-uzh/hatchet-worker-response-processor run test

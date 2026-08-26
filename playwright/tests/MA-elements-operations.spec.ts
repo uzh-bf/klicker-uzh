@@ -1179,7 +1179,6 @@ test.describe('Create different types of elements (with and without sample solut
           .then(() => true)
           .catch(() => false)
         if (!quizExists) continue
-
         await Promise.all([
           page.waitForURL(/\/cockpit/, { timeout: 30000 }),
           cockpitButton.click(),
