@@ -535,8 +535,9 @@ contract retains its focused regression test.
   their generic response. Two route regressions protect the ownership and claim
   failures. The focused route portfolio passes 24 tests, the complete Chat
   suite passes 413 tests with 12 expected integration skips, all 25 repository
-  checks pass, and the Chat production build succeeds. Correction reviews
-  remain in progress.
+  checks pass, and the Chat production build succeeds. The correction
+  simplifier and lifecycle-integrity review both passed through the native Sol
+  fallback after the specialist transports failed terminally.
 - Current state: U2 is under final-review correction before stack-aware
   publication.
   Merge, deployment, live traffic or proof, closure, cleanup, and deletion
