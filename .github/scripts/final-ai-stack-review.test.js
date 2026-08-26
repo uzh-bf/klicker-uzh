@@ -1314,7 +1314,7 @@ test('preserves current stack evidence across unrelated default-base advancement
             finding_id: parseStackReviewMetadata(rootReport).finding_ids[0],
             state: 'fixed',
             reference: 'commit:8'.padEnd(46, '0'),
-            paths: ['src/one.ts'],
+            paths: ['src/one.ts', 'src/new-repair.ts'],
           },
         ],
       })} -->`,
@@ -1340,11 +1340,37 @@ test('preserves current stack evidence across unrelated default-base advancement
   responses.set('f'.repeat(40), repairedHead)
   files.set('f'.repeat(40), [
     {
-      filename: 'src/one.ts',
+      filename: 'src/new-repair.ts',
       additions: 1,
       deletions: 1,
       patch: '@@ -4,1 +4,1 @@\n-old line\n+new line',
     },
+  ])
+
+  files.set('b'.repeat(40), [
+    { filename: 'src/new-repair.ts', additions: 1, deletions: 0 },
+  ])
+  files.set('e'.repeat(40), [
+    { filename: 'src/new-repair.ts', additions: 1, deletions: 0 },
+  ])
+  assert.equal(
+    await authorizeStackReview({
+      github,
+      context: reviewContext,
+      core: {
+        notice: (message) => baseAdvanceNotices.push(message),
+        setOutput: () => {},
+      },
+    }),
+    false
+  )
+  assert.match(baseAdvanceNotices.at(-1), /strict descendant range/)
+
+  files.set('b'.repeat(40), [
+    { filename: 'docs/base.md', additions: 1, deletions: 0 },
+  ])
+  files.set('e'.repeat(40), [
+    { filename: 'src/three.ts', additions: 1, deletions: 0 },
   ])
 
   const repairOutputs = new Map()

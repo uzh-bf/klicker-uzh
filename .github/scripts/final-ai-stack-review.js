@@ -655,6 +655,27 @@ function stackReviewMatchesCurrentHeadsExceptRootBase(
   })
 }
 
+function currentStackRangePaths(membership) {
+  const paths = new Set()
+  for (const range of membership.ranges ?? []) {
+    const files = range.response?.data?.files
+    if (!Array.isArray(files)) return null
+    for (const file of files) {
+      const candidates = [file.filename, file.previous_filename].filter(Boolean)
+      for (const filePath of candidates) {
+        if (
+          !safeRepositoryPath(filePath) ||
+          requiresColdIncrementalReview(filePath)
+        ) {
+          return null
+        }
+        paths.add(filePath)
+      }
+    }
+  }
+  return paths
+}
+
 async function canPreserveStackReviewAcrossBaseAdvance({
   github,
   context,
@@ -734,7 +755,12 @@ async function canPreserveStackReviewAcrossBaseAdvance({
     ) {
       return false
     }
-    const stackPaths = new Set(metadata.reviewed_paths)
+    const currentRangePaths = currentStackRangePaths(membership)
+    if (!currentRangePaths) return false
+    const stackPaths = new Set([
+      ...metadata.reviewed_paths,
+      ...currentRangePaths,
+    ])
     return baseFiles.every((file) => {
       const filePath = String(file.filename ?? '')
       const previousPath = String(file.previous_filename ?? '')
