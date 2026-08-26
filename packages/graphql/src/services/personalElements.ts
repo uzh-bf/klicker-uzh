@@ -2,6 +2,7 @@ import * as DB from '@klicker-uzh/prisma/client'
 import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import { FlashcardCorrectness } from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
+import { isDeepEqual } from 'remeda'
 import { z } from 'zod'
 import { updateSpacedRepetition } from './stacks.js'
 
@@ -216,7 +217,7 @@ function candidateKey(candidate: {
 
 const NEW_PERSONAL_ELEMENT_STATE = {
   eFactor: 2.5,
-  interval: 1,
+  interval: 0,
   correctCountStreak: 0,
   correctCount: 0,
   partialCorrectCount: 0,
@@ -540,8 +541,7 @@ export async function updatePersonalElement(
       (parsedUpdate.explanation !== undefined &&
         parsedUpdate.explanation !== element.explanation) ||
       (parsedUpdate.sources !== undefined &&
-        JSON.stringify(parsedUpdate.sources) !==
-          JSON.stringify(element.sources))
+        !isDeepEqual(parsedUpdate.sources, element.sources))
 
     if (!semanticChanged && parsedUpdate.name === undefined) {
       return element
