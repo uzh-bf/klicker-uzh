@@ -65,11 +65,17 @@ jobs:
 
       - name: Re-resolve stack and invalidate top status
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          TRUSTED_SHA: ${{ needs.trusted_policy.outputs.trusted_sha }}
         with:
           github-token: ${{ github.token }}
           script: |
             const helper = require('./.github/scripts/final-ai-stack-review.js')
-            await helper.initializeStackReview({ github, context })
+            await helper.initializeStackReview({
+              github,
+              context,
+              trustedSha: process.env.TRUSTED_SHA,
+            })
 
   authorize:
     needs: trusted_policy

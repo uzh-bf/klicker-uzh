@@ -268,6 +268,7 @@ function parseStackReviewMetadata(body) {
       'stack_identity_digest',
       'stack_order_digest',
       'topology_pass',
+      'trusted_policy_sha',
       'workflow_head_sha',
       'workflow_path',
       'workflow_run_id',
@@ -286,6 +287,7 @@ function parseStackReviewMetadata(body) {
       (metadata.root_review_id !== '' &&
         !/^fsr-[0-9a-f]{24}$/.test(metadata.root_review_id ?? '')) ||
       !validSha(metadata.workflow_head_sha) ||
+      !validSha(metadata.trusted_policy_sha) ||
       !validDigest(metadata.manifest_digest) ||
       !validDigest(metadata.policy_digest) ||
       !validDigest(metadata.stack_identity_digest) ||
@@ -520,6 +522,7 @@ async function canPreserveStackReviewAcrossBaseAdvance({
   github,
   context,
   membership,
+  trustedSha,
 }) {
   try {
     if (
@@ -562,7 +565,7 @@ async function canPreserveStackReviewAcrossBaseAdvance({
       metadata.base_sha === rootPull.base.sha ||
       !stackReviewMatchesCurrentHeadsExceptRootBase(metadata, membership) ||
       metadata.policy_digest !==
-        (await getReviewPolicyDigest({ github, context }))
+        (await getReviewPolicyDigest({ github, context, trustedSha }))
     ) {
       return false
     }
@@ -879,12 +882,12 @@ function statusTimestamp(status) {
 async function latestStackStatus(github, context, headSha) {
   if (
     typeof github.paginate !== 'function' ||
-    typeof github.rest.repos?.getCombinedStatusForRef !== 'function'
+    typeof github.rest.repos?.listCommitStatusesForRef !== 'function'
   ) {
     throw new Error('Commit-status pagination is unavailable')
   }
   const statuses = await github.paginate(
-    github.rest.repos.getCombinedStatusForRef,
+    github.rest.repos.listCommitStatusesForRef,
     {
       owner: context.repo.owner,
       repo: context.repo.repo,
@@ -979,7 +982,7 @@ async function hasCurrentSuccessfulStackReview({
   )
 }
 
-async function initializeStackReview({ github, context }) {
+async function initializeStackReview({ github, context, trustedSha }) {
   if (context.eventName !== 'pull_request_target') return false
   const pull = context.payload.pull_request
   let membership
@@ -1024,6 +1027,7 @@ async function initializeStackReview({ github, context }) {
       github,
       context,
       membership,
+      trustedSha,
     }))
   ) {
     return false
@@ -1916,6 +1920,7 @@ function renderStackReview({
   dispositionDigest = '',
   reviewRanges = [],
   policyDigest,
+  trustedPolicySha,
   workflowUrl,
   workflowHeadSha,
   workflowRunId,
@@ -1996,6 +2001,7 @@ function renderStackReview({
   }
   if (
     !/^[0-9a-f]{40}$/.test(workflowHeadSha ?? '') ||
+    !validSha(trustedPolicySha ?? workflowHeadSha) ||
     !Number.isSafeInteger(workflowRunId) ||
     workflowRunId <= 0 ||
     typeof workflowUrl !== 'string' ||
@@ -2059,6 +2065,7 @@ function renderStackReview({
     },
     workflow_path: STACK_REVIEW_WORKFLOW_PATH,
     workflow_url: workflowUrl,
+    trusted_policy_sha: trustedPolicySha ?? workflowHeadSha,
     workflow_head_sha: workflowHeadSha,
     workflow_run_id: workflowRunId,
   }
@@ -2343,7 +2350,8 @@ async function publishStackReview({
     policyDigest: plan.policyDigest,
     topologyResult,
     workflowUrl: workflowRunUrl(context),
-    workflowHeadSha: trustedSha ?? context.sha,
+    trustedPolicySha: trustedSha ?? context.sha,
+    workflowHeadSha: context.sha,
     workflowRunId: context.runId,
   })
   const review = await github.rest.pulls.createReview({

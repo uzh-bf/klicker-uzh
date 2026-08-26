@@ -424,12 +424,12 @@ function statusTimestamp(status) {
 async function getLatestFinalReviewStatus(github, context, headSha) {
   if (
     typeof github.paginate !== 'function' ||
-    typeof github.rest.repos?.getCombinedStatusForRef !== 'function'
+    typeof github.rest.repos?.listCommitStatusesForRef !== 'function'
   ) {
     throw new Error('Commit-status pagination is unavailable')
   }
   const statuses = await github.paginate(
-    github.rest.repos.getCombinedStatusForRef,
+    github.rest.repos.listCommitStatusesForRef,
     {
       owner: context.repo.owner,
       repo: context.repo.repo,
@@ -614,6 +614,7 @@ function parseReviewMetadata(body) {
       !/^[0-9a-f]{40}$/.test(metadata.head_sha ?? '') ||
       !/^[0-9a-f]{40}$/.test(metadata.root_head ?? '') ||
       !/^[0-9a-f]{40}$/.test(metadata.workflow_head_sha ?? '') ||
+      !/^[0-9a-f]{40}$/.test(metadata.trusted_policy_sha ?? '') ||
       !/^[0-9a-f]{64}$/.test(metadata.policy_digest ?? '') ||
       !/^[0-9a-f]{64}$/.test(metadata.background_digest ?? '') ||
       metadata.workflow_path !== FINAL_REVIEW_WORKFLOW_PATH ||
@@ -1541,6 +1542,14 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
   if (!/^[0-9a-f]{40}$/.test(rootHead)) {
     throw new Error('Final review root head is not a full commit SHA')
   }
+  const workflowHeadSha = reviewMetadata.workflowHeadSha ?? ''
+  const trustedPolicySha = reviewMetadata.trustedPolicySha ?? workflowHeadSha
+  if (!/^[0-9a-f]{40}$/.test(workflowHeadSha)) {
+    throw new Error('Final review workflow provenance is incomplete')
+  }
+  if (!/^[0-9a-f]{40}$/.test(trustedPolicySha)) {
+    throw new Error('Final review policy provenance commit is incomplete')
+  }
   if (!/^[0-9a-f]{64}$/.test(reviewMetadata.policyDigest ?? '')) {
     throw new Error('Final review policy provenance is incomplete')
   }
@@ -1589,7 +1598,8 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
     stack_position: reviewMetadata.stackPosition ?? '',
     usage,
     workflow_path: FINAL_REVIEW_WORKFLOW_PATH,
-    workflow_head_sha: reviewMetadata.workflowHeadSha ?? '',
+    trusted_policy_sha: trustedPolicySha,
+    workflow_head_sha: workflowHeadSha,
     workflow_run_id: reviewMetadata.workflowRunId ?? 0,
   })} -->`
 
@@ -1677,7 +1687,8 @@ async function publishFinalReview({
     stackId: plan.stackId,
     stackOrderDigest: plan.stackOrderDigest,
     stackPosition: plan.stackPosition,
-    workflowHeadSha: trustedSha ?? context.sha,
+    trustedPolicySha: trustedSha ?? context.sha,
+    workflowHeadSha: context.sha,
     workflowRunId: context.runId,
   })
   const review = await github.rest.pulls.createReview({

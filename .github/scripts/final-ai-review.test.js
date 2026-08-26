@@ -89,7 +89,7 @@ test('authorizes and starts only the immutable ready PR range', async () => {
             content: Buffer.from(rules).toString('base64'),
           },
         }),
-        getCombinedStatusForRef: async () => ({
+        listCommitStatusesForRef: async () => ({
           data: { statuses: combinedStatuses },
         }),
         getCollaboratorPermissionLevel: async () => ({
@@ -98,7 +98,7 @@ test('authorizes and starts only the immutable ready PR range', async () => {
       },
     },
     paginate: async (endpoint) =>
-      endpoint === github.rest.repos.getCombinedStatusForRef
+      endpoint === github.rest.repos.listCommitStatusesForRef
         ? combinedStatuses
         : endpoint === reviewsEndpoint || endpoint === commentsEndpoint
           ? []
@@ -180,7 +180,13 @@ test('authorizes and starts only the immutable ready PR range', async () => {
   ]
   assert.equal(await authorizeFinalReview({ github, context, core }), true)
 
-  combinedStatuses = [{ context: 'final-ai-review', state: 'success' }]
+  combinedStatuses = [
+    ...Array.from({ length: 100 }, (_, index) => ({
+      context: `other-${index}`,
+      state: 'success',
+    })),
+    { context: 'final-ai-review', state: 'success' },
+  ]
   assert.equal(await authorizeFinalReview({ github, context, core }), false)
   assert.equal(
     await startFinalReview({
@@ -314,7 +320,7 @@ function reviewGithub({
         getCollaboratorPermissionLevel: async () => ({
           data: { user: { permission: state.permission } },
         }),
-        getCombinedStatusForRef: async () => ({
+        listCommitStatusesForRef: async () => ({
           data: { statuses: state.statuses },
         }),
         getContent: async ({ path: filePath }) => ({
@@ -332,7 +338,7 @@ function reviewGithub({
       },
     },
     paginate: async (endpoint) =>
-      endpoint === github.rest.repos.getCombinedStatusForRef
+      endpoint === github.rest.repos.listCommitStatusesForRef
         ? state.statuses
         : endpoint === reviewsEndpoint
           ? state.reviews
@@ -373,6 +379,7 @@ test('renders findings without making finding count a failure', () => {
   const metadata = parseReviewMetadata(report)
   assert.equal(metadata.schema_version, FINAL_REVIEW_SCHEMA)
   assert.equal(metadata.workflow_head_sha, 'd'.repeat(40))
+  assert.equal(metadata.trusted_policy_sha, 'd'.repeat(40))
   assert.equal(metadata.finding_ids.length, 1)
   assert.match(report, new RegExp(metadata.finding_ids[0]))
   const rerunMetadata = parseReviewMetadata(
@@ -829,7 +836,10 @@ test('rejects incomplete or wrong-model OCR results', () => {
           ],
         },
         'a'.repeat(40),
-        { policyDigest: '2'.repeat(64) }
+        {
+          policyDigest: '2'.repeat(64),
+          workflowHeadSha: 'd'.repeat(40),
+        }
       ),
     /confidence score/
   )
@@ -921,7 +931,10 @@ test('rejects a report that would require partial publication', () => {
           ],
         },
         'a'.repeat(40),
-        { policyDigest: '2'.repeat(64) }
+        {
+          policyDigest: '2'.repeat(64),
+          workflowHeadSha: 'd'.repeat(40),
+        }
       ),
     /report limit/
   )

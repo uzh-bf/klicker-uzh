@@ -205,7 +205,7 @@ function stackFixture() {
         getCollaboratorPermissionLevel: async () => ({
           data: { user: { permission: 'write' } },
         }),
-        getCombinedStatusForRef: async () => ({
+        listCommitStatusesForRef: async () => ({
           data: { statuses: state.statuses },
         }),
         getContent: async ({ path: filePath }) => ({
@@ -258,7 +258,7 @@ function stackFixture() {
       ],
     }),
     paginate: async (endpoint) =>
-      endpoint === github.rest.repos.getCombinedStatusForRef
+      endpoint === github.rest.repos.listCommitStatusesForRef
         ? state.statuses
         : endpoint === reviewsEndpoint
           ? []
@@ -1002,7 +1002,7 @@ test('preserves current stack evidence across unrelated default-base advancement
     getWorkflowRun: async () => ({ data: state.workflowRun }),
   }
   github.paginate = async (endpoint) =>
-    endpoint === github.rest.repos.getCombinedStatusForRef
+    endpoint === github.rest.repos.listCommitStatusesForRef
       ? state.statuses
       : endpoint === github.rest.pulls.listReviews
         ? state.reviews
@@ -1361,7 +1361,7 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
     user: { login: 'github-actions[bot]' },
   })
   github.paginate = async (endpoint) =>
-    endpoint === github.rest.repos.getCombinedStatusForRef
+    endpoint === github.rest.repos.listCommitStatusesForRef
       ? state.statuses
       : endpoint === github.rest.pulls.listReviews
         ? state.reviews
@@ -1560,7 +1560,7 @@ test('attests bounded repairs across changed lower stack layers', async () => {
     },
   ]
   github.paginate = async (endpoint) =>
-    endpoint === github.rest.repos.getCombinedStatusForRef
+    endpoint === github.rest.repos.listCommitStatusesForRef
       ? state.statuses
       : endpoint === github.rest.pulls.listReviews
         ? state.reviews
@@ -1782,6 +1782,7 @@ test('renders consolidated code and topology findings with one stack marker', as
       ].map((finding) => ({ ...finding, category: 'maintainability' }))
     ),
     policyDigest: plan.policyDigest,
+    trustedPolicySha: 'c'.repeat(40),
     workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
     workflowHeadSha: 'a'.repeat(40),
     workflowRunId: 700,
@@ -1794,6 +1795,9 @@ test('renders consolidated code and topology findings with one stack marker', as
   assert.match(report, /Cumulative code review/)
   assert.match(report, /Cross-layer topology review/)
   assert.match(report, /src\/one\.ts/)
+  const metadata = parseStackReviewMetadata(report)
+  assert.equal(metadata.trusted_policy_sha, 'c'.repeat(40))
+  assert.equal(metadata.workflow_head_sha, 'a'.repeat(40))
   assert.equal(
     (report.match(/<!-- final-ai-stack-review\/v2/g) ?? []).length,
     1
