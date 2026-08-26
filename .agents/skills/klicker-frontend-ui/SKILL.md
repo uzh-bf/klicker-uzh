@@ -60,5 +60,7 @@ For participant-owned practice cards, keep `/course/[courseId]/personal`
 directly reachable until the complete chatbot generation path is active. Use
 the generated `QPersonalElements` and personal-element mutations, the shared
 `Flashcard` adapter, and explicit `data-cy` hooks for runner, list, and delete
-states. Do not link personal cards into pooled practice; home Practice and
-`/repetition` links are activated only with the generation flow.
+states. Show source-linked origin and course-review wording while a card is
+being practised, and pass the content version with every response. Do not link
+personal cards into pooled practice; home Practice and `/repetition` provide
+separate lecturer-element and own-element actions for each course.

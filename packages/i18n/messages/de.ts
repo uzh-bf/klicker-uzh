@@ -1120,13 +1120,19 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Karten konnten nicht geladen oder aktualisiert werden. Bitte versuchen Sie es erneut.',
       aiGenerated: 'KI-generiert',
       authored: 'Selbst erstellt',
-      verified: 'verifiziert',
-      unverified: 'unverifiziert',
+      sourceLinked: 'mit Quellen verknüpft',
+      notReviewed: 'nicht vom Kursteam geprüft',
+      sources: 'Quellen',
       previous: 'Zurück',
       next: 'Weiter',
       delete: 'Löschen',
       deleteConfirm:
         'Diese Karte löschen? Dies kann nicht rückgängig gemacht werden.',
+      lecturerElements: 'Elemente der Dozierenden',
+      ownElements:
+        '{count, plural, =0 {Eigene Elemente} one {Eigene Elemente · # fällig} other {Eigene Elemente · # fällig}}',
+      practiceDescription:
+        'Üben Sie Ihre eigenen Karten mit derselben Navigation und demselben Fortschritt wie in einem Übungs-Quiz.',
       homeLink: 'Meine persönlichen Karten',
       repetitionLink:
         '{count, plural, =0 {Meine persönlichen Karten} one {Meine persönlichen Karten · # fällig} other {Meine persönlichen Karten · # fällig}}',
