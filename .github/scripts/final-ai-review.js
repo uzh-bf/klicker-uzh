@@ -1,10 +1,12 @@
 const crypto = require('node:crypto')
+const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 
 const {
   compareRange: compareNativeRange,
+  MAX_COMPARE_FILES,
   resolveNativeStackMembership,
 } = require('./native-stack.js')
 
@@ -1245,7 +1247,7 @@ async function latestTrustedDisposition({ github, context, pull, rootReview }) {
 
 function requiresColdIncrementalReview(filePath) {
   return (
-    /^\.github\/(workflows|actions)\//i.test(filePath) ||
+    /^\.github\//i.test(filePath) ||
     /(^|\/)(package\.json|pnpm-lock\.yaml|package-lock\.json|yarn\.lock|bun\.lockb)$/i.test(
       filePath
     ) ||
@@ -1390,9 +1392,6 @@ async function buildReviewPlan({ github, context, pull, trustedSha }) {
   }
 
   const rootFindingIds = dispositionEntries(root)
-  const rootFindingPaths = new Set(
-    (root.findings ?? []).map((finding) => finding.path)
-  )
   const disposition = await latestTrustedDisposition({
     github,
     context,
@@ -1406,6 +1405,25 @@ async function buildReviewPlan({ github, context, pull, trustedSha }) {
   if (rootFindingIds.length === 0) return fullPlan
 
   if (root.base_sha !== pull.base.sha) {
+    const rootRange = await compareGitRange({
+      github,
+      context,
+      baseSha: root.base_sha,
+      headSha: root.head_sha,
+    })
+    const rootFiles = rootRange?.data?.files
+    if (
+      rootRange?.data?.status !== 'ahead' ||
+      !Array.isArray(rootFiles) ||
+      rootFiles.length >= MAX_COMPARE_FILES
+    ) {
+      return fullPlan
+    }
+    const rootReviewedPaths = new Set(
+      rootFiles.flatMap((file) =>
+        [file.filename, file.previous_filename].filter(Boolean)
+      )
+    )
     const baseAdvance = await compareGitRange({
       github,
       context,
@@ -1425,10 +1443,10 @@ async function buildReviewPlan({ github, context, pull, trustedSha }) {
           (previousPath && !isSafeRepositoryPath(previousPath)) ||
           requiresColdIncrementalReview(filePath) ||
           (previousPath && requiresColdIncrementalReview(previousPath)) ||
-          rootFindingPaths.has(filePath) ||
+          rootReviewedPaths.has(filePath) ||
           remediationPaths.has(filePath) ||
           (previousPath &&
-            (rootFindingPaths.has(previousPath) ||
+            (rootReviewedPaths.has(previousPath) ||
               remediationPaths.has(previousPath)))
         )
       })
@@ -2015,6 +2033,7 @@ async function publishFinalReview({
     baseRef: pull.base.ref,
     baseRepo: pull.base.repo.full_name,
     baseSha: pull.base.sha,
+    dispositionDigest: plan.dispositionDigest,
     dispositionIds: plan.dispositionIds ?? [],
     headRef: pull.head.ref,
     headRepo: pull.head.repo?.full_name ?? '',
@@ -2212,6 +2231,165 @@ async function finalizeFinalReview({
   })
 }
 
+function ghRepositoryPath(repository) {
+  if (!/^[^/]+\/[^/]+$/.test(repository ?? '')) {
+    throw new Error('Repository must use the OWNER/REPOSITORY form')
+  }
+  return repository
+    .split('/')
+    .map((part) => encodeURIComponent(part))
+    .join('/')
+}
+
+function ghQuery(pathname, values) {
+  const query = new URLSearchParams(
+    Object.entries(values).filter(([, value]) => value != null)
+  ).toString()
+  return query ? `${pathname}?${query}` : pathname
+}
+
+function runGhApi(endpoint, paginate = false) {
+  const args = ['api']
+  if (paginate) args.push('--paginate', '--slurp')
+  args.push(endpoint)
+  const output = execFileSync('gh', args, {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  if (!output.trim()) throw new Error('GitHub CLI returned no JSON')
+  return JSON.parse(output)
+}
+
+function runGhPaginated(endpoint) {
+  const pages = runGhApi(endpoint, true)
+  if (!Array.isArray(pages))
+    throw new Error('GitHub CLI pagination is malformed')
+  return pages.flatMap((page) => (Array.isArray(page) ? page : []))
+}
+
+function namedGhEndpoint(name) {
+  const endpoint = () => undefined
+  endpoint.ghName = name
+  return endpoint
+}
+
+function createGhGithub({ repository, defaultBranch }) {
+  const repoPath = ghRepositoryPath(repository)
+  const [owner, repo] = repository.split('/')
+  const endpoint = (path) => `repos/${repoPath}/${path}`
+  const statusesEndpoint = namedGhEndpoint('statuses')
+  const reviewsEndpoint = namedGhEndpoint('reviews')
+  const commentsEndpoint = namedGhEndpoint('comments')
+
+  const github = {
+    rest: {
+      actions: {
+        getWorkflowRun: async ({ run_id }) => ({
+          data: runGhApi(endpoint(`actions/runs/${run_id}`)),
+        }),
+      },
+      issues: { listComments: commentsEndpoint },
+      pulls: {
+        get: async ({ pull_number }) => ({
+          data: runGhApi(endpoint(`pulls/${pull_number}`)),
+        }),
+        listReviews: reviewsEndpoint,
+      },
+      repos: {
+        compareCommits: async ({ base, head }) => ({
+          data: runGhApi(endpoint(`compare/${base}...${head}`)),
+        }),
+        compareCommitsWithBasehead: async ({ basehead }) => ({
+          data: runGhApi(endpoint(`compare/${basehead}`)),
+        }),
+        getCollaboratorPermissionLevel: async ({ username }) => ({
+          data: runGhApi(
+            endpoint(`collaborators/${encodeURIComponent(username)}/permission`)
+          ),
+        }),
+        getContent: async ({ path: filePath, ref }) => ({
+          data: runGhApi(
+            ghQuery(
+              endpoint(
+                `contents/${filePath.split('/').map(encodeURIComponent).join('/')}`
+              ),
+              { ref }
+            )
+          ),
+        }),
+        listCommitStatusesForRef: statusesEndpoint,
+      },
+    },
+    paginate: async (method, params) => {
+      if (method.ghName === 'statuses') {
+        return runGhPaginated(
+          ghQuery(endpoint(`commits/${params.ref}/statuses`), { per_page: 100 })
+        )
+      }
+      if (method.ghName === 'reviews') {
+        return runGhPaginated(
+          ghQuery(endpoint(`pulls/${params.pull_number}/reviews`), {
+            per_page: 100,
+          })
+        )
+      }
+      if (method.ghName === 'comments') {
+        return runGhPaginated(
+          ghQuery(endpoint(`issues/${params.issue_number}/comments`), {
+            per_page: 100,
+          })
+        )
+      }
+      throw new Error('GitHub CLI pagination endpoint is unsupported')
+    },
+    request: async (_route, params) => ({
+      data: runGhApi(
+        ghQuery(endpoint('stacks'), {
+          pull_request: params.pull_request,
+          page: params.page,
+          per_page: params.per_page,
+        })
+      ),
+    }),
+  }
+  return { defaultBranch, github, owner, repo }
+}
+
+async function verifyCurrentIndividualFinalReview({ repository, prNumber }) {
+  const repoPath = ghRepositoryPath(repository)
+  const repositoryData = runGhApi(`repos/${repoPath}`)
+  const defaultBranch = repositoryData.default_branch
+  if (!/^[A-Za-z0-9_.-]+$/.test(defaultBranch ?? '')) {
+    throw new Error('Repository default branch is missing or unsafe')
+  }
+  const trustedSha = runGhApi(
+    `repos/${repoPath}/git/ref/heads/${encodeURIComponent(defaultBranch)}`
+  )?.object?.sha
+  if (!/^[0-9a-f]{40}$/.test(trustedSha ?? '')) {
+    throw new Error('Default-branch policy commit is missing')
+  }
+  const { github } = createGhGithub({ repository, defaultBranch })
+  const context = {
+    eventName: 'issue_comment',
+    payload: { repository: { default_branch: defaultBranch } },
+    repo: { owner: repository.split('/')[0], repo: repository.split('/')[1] },
+    runId: 0,
+    serverUrl: 'https://github.com',
+    sha: trustedSha,
+  }
+  const pull = await getPull(github, context, prNumber)
+  const plan = await buildReviewPlan({ github, context, pull, trustedSha })
+  const current =
+    plan.eligible &&
+    (await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }))
+  return {
+    current,
+    head_sha: pull.head?.sha ?? '',
+    mode: plan.mode,
+    scope: 'individual',
+  }
+}
+
 function runCli() {
   const command = process.argv[2]
   if (command === 'configure-ocr') {
@@ -2224,16 +2402,31 @@ function runCli() {
     console.log('Ephemeral OCR configuration removed')
     return
   }
+  if (command === 'verify-clean-status') {
+    const repository = process.argv[3]
+    const prNumber = Number(process.argv[4])
+    if (!repository || !Number.isSafeInteger(prNumber) || prNumber <= 0) {
+      throw new Error(
+        'Usage: final-ai-review.js verify-clean-status <owner/repository> <pr-number>'
+      )
+    }
+    return verifyCurrentIndividualFinalReview({ repository, prNumber }).then(
+      (result) => {
+        console.log(JSON.stringify(result))
+        if (!result.current) process.exitCode = 1
+      }
+    )
+  }
   throw new Error(`Unknown command: ${command}`)
 }
 
 if (require.main === module) {
-  try {
-    runCli()
-  } catch (error) {
-    console.error(error.message)
-    process.exitCode = 1
-  }
+  Promise.resolve()
+    .then(() => runCli())
+    .catch((error) => {
+      console.error(error.message)
+      process.exitCode = 1
+    })
 }
 
 module.exports = {
@@ -2257,6 +2450,7 @@ module.exports = {
   buildOCRConfig,
   buildReviewPlan,
   buildReviewBackground,
+  createGhGithub,
   decodeMetadata,
   decideFinalStatus,
   encodeMetadata,
@@ -2267,7 +2461,9 @@ module.exports = {
   isPromotionCandidate,
   isTrustedPermission,
   getReviewPolicyDigest,
+  ghRepositoryPath,
   hasCurrentSuccessfulFinalReview,
+  verifyCurrentIndividualFinalReview,
   normalizeTitle,
   listReviewArtifacts,
   parseDispositionRecord,
@@ -2278,6 +2474,7 @@ module.exports = {
   removeOCRConfig,
   renderFinalReviewChunks,
   requiresColdIncrementalReview,
+  runGhApi,
   startFinalReview,
   validateDispositionRecord,
   validatePromotionContract,

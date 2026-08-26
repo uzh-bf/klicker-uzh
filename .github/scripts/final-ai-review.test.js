@@ -30,6 +30,7 @@ const {
   promotionBody,
   removeOCRConfig,
   renderFinalReviewChunks,
+  requiresColdIncrementalReview,
   startFinalReview,
   validatePromotionContract,
   writeOCRConfig,
@@ -823,6 +824,52 @@ test('selects incremental attestation only for bounded repaired changes', async 
   assert.equal(incremental.rootHead, rootHead)
   assert.equal(incremental.rootReviewId, rootMetadata.review_id)
   assert.deepEqual(incremental.dispositionIds, [rootMetadata.finding_ids[0]])
+  const [incrementalBody] = renderFinalReviewChunks(rootResult, headSha, {
+    backgroundDigest: incremental.backgroundDigest,
+    baseRef: state.pull.base.ref,
+    baseRepo: state.pull.base.repo.full_name,
+    baseSha: state.pull.base.sha,
+    dispositionDigest: incremental.dispositionDigest,
+    dispositionIds: incremental.dispositionIds,
+    headRef: state.pull.head.ref,
+    headRepo: state.pull.head.repo.full_name,
+    mode: incremental.mode,
+    rootHead: incremental.rootHead,
+    rootReviewId: incremental.rootReviewId,
+    policyDigest: incremental.policyDigest,
+    scopeKind: incremental.scopeKind,
+    stackId: incremental.stackId,
+    stackOrderDigest: incremental.stackOrderDigest,
+    stackPosition: incremental.stackPosition,
+    trustedPolicySha: 'd'.repeat(40),
+    workflowHeadSha: 'd'.repeat(40),
+    workflowSha: 'd'.repeat(40),
+    workflowRunId: 123,
+  })
+  const incrementalMetadata = parseReviewMetadata(incrementalBody)
+  assert.equal(
+    incrementalMetadata.disposition_digest,
+    incremental.dispositionDigest
+  )
+  state.reviews = [
+    state.reviews[0],
+    {
+      body: incrementalBody,
+      commit_id: headSha,
+      state: 'COMMENTED',
+      submitted_at: '2026-08-25T02:00:00Z',
+      user: { login: 'github-actions[bot]' },
+    },
+  ]
+  assert.equal(
+    await hasCurrentSuccessfulFinalReview({
+      github,
+      context,
+      pull: state.pull,
+      plan: incremental,
+    }),
+    true
+  )
 
   state.comments = []
   const withoutDisposition = await buildReviewPlan({
@@ -920,6 +967,10 @@ test('selects incremental attestation only for bounded repaired changes', async 
     status: 'ahead',
     files: [{ filename: 'src/unrelated.ts', additions: 3, deletions: 1 }],
   }
+  state.comparisons[`${baseSha}...${rootHead}`] = {
+    status: 'ahead',
+    files: [{ filename: 'src/example.ts', additions: 4, deletions: 2 }],
+  }
   const advancedBase = await buildReviewPlan({
     github,
     context,
@@ -951,6 +1002,17 @@ test('selects incremental attestation only for bounded repaired changes', async 
     })
     assert.equal(renamedBase.mode, 'full')
   }
+  assert.equal(requiresColdIncrementalReview('.github/review-policy.md'), true)
+  state.comparisons[`${baseSha}...${'c'.repeat(40)}`] = {
+    status: 'ahead',
+    files: [{ filename: 'src/example.ts', additions: 3, deletions: 1 }],
+  }
+  const reviewedBasePath = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(reviewedBasePath.mode, 'full')
   state.comparisons[`${baseSha}...${'c'.repeat(40)}`] = {
     status: 'ahead',
     files: [{ filename: 'src/example.ts', additions: 3, deletions: 1 }],

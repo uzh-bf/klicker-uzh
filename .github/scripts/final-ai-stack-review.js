@@ -6,8 +6,10 @@ const {
   FINAL_REVIEW_BOT,
   FINAL_REVIEW_MODEL,
   buildFinalReviewEvidenceDigest,
+  createGhGithub,
   decodeMetadata,
   encodeMetadata,
+  ghRepositoryPath,
   getReviewPolicyDigest,
   MAX_INCREMENTAL_LINES,
   MAX_INCREMENTAL_PATHS,
@@ -18,6 +20,7 @@ const {
   validateDispositionRecord,
   validateFinding,
   requiresColdIncrementalReview,
+  runGhApi,
 } = require('./final-ai-review.js')
 const {
   compareRange: compareNativeRange,
@@ -58,6 +61,18 @@ function validSha(value) {
 
 function validDigest(value) {
   return /^[0-9a-f]{64}$/.test(value ?? '')
+}
+
+function stackReviewedPaths(membership) {
+  return [
+    ...new Set(
+      (membership?.ranges ?? []).flatMap(({ response }) =>
+        (response?.data?.files ?? []).flatMap((file) =>
+          [file?.filename, file?.previous_filename].filter(Boolean)
+        )
+      )
+    ),
+  ].sort()
 }
 
 function sha256(value) {
@@ -186,6 +201,7 @@ function stackPlan(membership, context) {
     dispositionIds: [],
     dispositionDigest: '',
     reviewRanges: [],
+    reviewedPaths: stackReviewedPaths(membership),
     baseAdvancePreserved: Boolean(membership.baseAdvancePreserved),
     topNumber: top.number,
     background: buildStackBackground(membership, context),
@@ -328,6 +344,7 @@ function parseStackReviewMetadata(body) {
       'review_id',
       'root_head',
       'root_review_id',
+      'reviewed_paths',
       'review_ranges',
       'schema_version',
       'stack_id',
@@ -401,6 +418,14 @@ function parseStackReviewMetadata(body) {
           !validSha(identity.head_sha) ||
           !Number.isSafeInteger(identity.pull_request) ||
           identity.pull_request <= 0
+      ) ||
+      !Array.isArray(metadata.reviewed_paths) ||
+      metadata.reviewed_paths.length === 0 ||
+      metadata.reviewed_paths.length > MAX_MANIFEST_FILES ||
+      metadata.reviewed_paths.some(
+        (filePath, index, paths) =>
+          !safeRepositoryPath(filePath) ||
+          (index > 0 && paths[index - 1] >= filePath)
       ) ||
       !Array.isArray(metadata.review_ranges) ||
       metadata.review_ranges.some(
@@ -687,13 +712,14 @@ async function canPreserveStackReviewAcrossBaseAdvance({
     ) {
       return false
     }
-    const stackPaths = new Set(
-      membership.ranges.flatMap(({ response }) =>
-        (response?.data?.files ?? []).flatMap((file) =>
-          [file.filename, file.previous_filename].filter(Boolean)
-        )
-      )
-    )
+    if (
+      !Array.isArray(metadata.reviewed_paths) ||
+      metadata.reviewed_paths.length === 0 ||
+      metadata.reviewed_paths.some((filePath) => !safeRepositoryPath(filePath))
+    ) {
+      return false
+    }
+    const stackPaths = new Set(metadata.reviewed_paths)
     return baseFiles.every((file) => {
       const filePath = String(file.filename ?? '')
       const previousPath = String(file.previous_filename ?? '')
@@ -2283,6 +2309,7 @@ function renderStackReview({
     policy_digest: policyDigest,
     review_id: reviewId,
     review_ranges: effectiveReviewRanges,
+    reviewed_paths: manifest.path_index.map((entry) => entry.filename),
     root_head: rootHead,
     root_review_id: rootReviewId,
     schema_version: STACK_REVIEW_SCHEMA,
@@ -2777,6 +2804,56 @@ async function finalizeStackReview({
   })
 }
 
+async function verifyCurrentStackReview({ repository, prNumber }) {
+  const repoPath = ghRepositoryPath(repository)
+  const repositoryData = runGhApi(`repos/${repoPath}`)
+  const defaultBranch = repositoryData.default_branch
+  if (!/^[A-Za-z0-9_.-]+$/.test(defaultBranch ?? '')) {
+    throw new Error('Repository default branch is missing or unsafe')
+  }
+  const trustedSha = runGhApi(
+    `repos/${repoPath}/git/ref/heads/${encodeURIComponent(defaultBranch)}`
+  )?.object?.sha
+  if (!validSha(trustedSha)) {
+    throw new Error('Default-branch policy commit is missing')
+  }
+  const { github } = createGhGithub({ repository, defaultBranch })
+  const context = {
+    eventName: 'issue_comment',
+    payload: { repository: { default_branch: defaultBranch } },
+    repo: { owner: repository.split('/')[0], repo: repository.split('/')[1] },
+    runId: 0,
+    serverUrl: 'https://github.com',
+    sha: trustedSha,
+  }
+  const pull = (await github.rest.pulls.get({ pull_number: prNumber })).data
+  const membership = await resolveReviewStackMembership({
+    github,
+    context,
+    pullNumber: prNumber,
+  })
+  const plan = await buildStackReviewPlan({
+    github,
+    context,
+    membership,
+    trustedSha,
+  })
+  const current =
+    plan.eligible &&
+    (await hasCurrentSuccessfulStackReview({
+      github,
+      context,
+      plan,
+      membership,
+    }))
+  return {
+    current,
+    head_sha: pull.head?.sha ?? '',
+    mode: plan.mode,
+    scope: 'stack',
+  }
+}
+
 function runTopologyCli() {
   const [, , command, ...args] = process.argv
   if (command === 'combine-ocr') {
@@ -2862,11 +2939,32 @@ function runTopologyCli() {
 }
 
 if (require.main === module) {
-  try {
-    runTopologyCli()
-  } catch (error) {
-    console.error(error.message)
-    process.exitCode = 1
+  if (process.argv[2] === 'verify-clean-status') {
+    const repository = process.argv[3]
+    const prNumber = Number(process.argv[4])
+    if (!repository || !Number.isSafeInteger(prNumber) || prNumber <= 0) {
+      console.error(
+        'Usage: final-ai-stack-review.js verify-clean-status <owner/repository> <pr-number>'
+      )
+      process.exitCode = 1
+    } else {
+      verifyCurrentStackReview({ repository, prNumber })
+        .then((result) => {
+          console.log(JSON.stringify(result))
+          if (!result.current) process.exitCode = 1
+        })
+        .catch((error) => {
+          console.error(error.message)
+          process.exitCode = 1
+        })
+    }
+  } else {
+    try {
+      runTopologyCli()
+    } catch (error) {
+      console.error(error.message)
+      process.exitCode = 1
+    }
   }
 }
 
@@ -2904,5 +3002,6 @@ module.exports = {
   stackReviewMetadataMatchesPlan,
   startStackReview,
   validateTopologyResult,
+  verifyCurrentStackReview,
   writeSnapshotBundle,
 }
