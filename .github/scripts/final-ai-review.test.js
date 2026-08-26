@@ -16,10 +16,12 @@ const {
   buildOCRConfig,
   buildReviewPlan,
   buildReviewBackground,
+  createGhGithub,
   decodeMetadata,
   decideFinalStatus,
   encodeMetadata,
   finalizeFinalReview,
+  getStagingSourceBranch,
   verifyPromotionBuilds,
   hasCurrentSuccessfulFinalReview,
   hasVerifiedGeneratedPromotionStatus,
@@ -31,6 +33,7 @@ const {
   publishFinalReview,
   promotionBody,
   removeOCRConfig,
+  resolveFinalReviewLockKey,
   renderFinalReviewChunks,
   requiresColdIncrementalReview,
   startFinalReview,
@@ -99,10 +102,21 @@ test('serializes every final-review status writer without canceling it', () => {
     )
     for (const jobName of ['initialize', 'start', 'finalize']) {
       const block = job(source, jobName)
-      assert.match(block, /group: final-ai-status-lock\n/)
+      assert.match(
+        block,
+        jobName === 'initialize'
+          ? /group: final-ai-status-lock-\$\{\{ needs\.resolve_lock\.outputs\.lock_key \}\}\n/
+          : /group: final-ai-status-lock-\$\{\{ needs\.authorize\.outputs\.status_lock_key \}\}\n/
+      )
       assert.match(block, /cancel-in-progress: false\n/)
       assert.doesNotMatch(block, /queue:/)
     }
+    assert.match(source, /resolve_lock:\n/)
+    assert.match(source, /needs: \[trusted_policy, resolve_lock\]/)
+    assert.match(
+      source,
+      /status_lock_key: \$\{\{ steps\.authorize\.outputs\.status_lock_key \}\}/
+    )
     assert.doesNotMatch(job(source, 'review'), /statuses: write\n/)
     if (workflowName.includes('stack')) {
       assert.match(source, /statusLockHeld: true,\n/)
@@ -445,6 +459,66 @@ function reviewGithub({
   }
   return { github, state }
 }
+
+test('scopes status locks to a verified native stack when available', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    base: {
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/stack-root',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const github = {
+    rest: {
+      repos: {
+        compareCommitsWithBasehead: async () => ({
+          data: { status: 'ahead', files: [] },
+        }),
+      },
+    },
+    request: async () => ({
+      data: [
+        {
+          id: 'stack-42',
+          pull_requests: [
+            {
+              number: 42,
+              state: 'open',
+              draft: false,
+              head: { sha: pull.head.sha },
+            },
+          ],
+        },
+      ],
+    }),
+  }
+  const lockKey = await resolveFinalReviewLockKey({
+    github,
+    context: reviewContext(),
+    pull,
+    pullNumber: pull.number,
+  })
+  assert.match(lockKey, /^stack-[0-9a-f]{64}$/)
+
+  github.request = async () => ({ data: [] })
+  assert.equal(
+    await resolveFinalReviewLockKey({
+      github,
+      context: reviewContext(),
+      pull,
+      pullNumber: pull.number,
+    }),
+    'pr-42'
+  )
+})
 
 test('renders findings without making finding count a failure', () => {
   const result = completeReviewResult([
@@ -1585,6 +1659,70 @@ test('requires every trusted exact-SHA staging build run for a promotion', async
   })
   assert.equal(changedDefinition.valid, false)
   assert.match(changedDefinition.reason, /definition/)
+})
+
+test('CLI verifier adapter covers promotion pagination and missing variables', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'final-review-gh-'))
+  const executable = path.join(directory, 'gh')
+  fs.writeFileSync(
+    executable,
+    `#!/usr/bin/env node
+const endpoint = process.argv.at(-1)
+if (endpoint.includes('/actions/variables/')) {
+  process.stderr.write('gh: 404 Not Found')
+  process.exit(1)
+}
+if (endpoint.includes('/pulls/42/commits')) {
+  process.stdout.write(JSON.stringify([[{ sha: 'commit' }]]))
+} else if (endpoint.includes('/pulls/42/files')) {
+  process.stdout.write(JSON.stringify([[{ filename: 'deploy/env-uzh-stg/values.yaml' }]]))
+} else if (endpoint.includes('/actions/workflows/v3_auth-stg.yml/runs')) {
+  process.stdout.write(JSON.stringify([[{ conclusion: 'success', head_sha: 'a'.repeat(40) }]]))
+} else {
+  process.stdout.write(JSON.stringify({ ok: true }))
+}
+`,
+    { mode: 0o700 }
+  )
+  const originalPath = process.env.PATH
+  process.env.PATH = `${directory}:${originalPath ?? ''}`
+  try {
+    const { github } = createGhGithub({
+      repository: 'uzh-bf/klicker-uzh',
+      defaultBranch: 'v3',
+    })
+    assert.deepEqual(
+      await github.paginate(github.rest.pulls.listCommits, {
+        pull_number: 42,
+      }),
+      [{ sha: 'commit' }]
+    )
+    assert.deepEqual(
+      await github.paginate(github.rest.pulls.listFiles, { pull_number: 42 }),
+      [{ filename: 'deploy/env-uzh-stg/values.yaml' }]
+    )
+    assert.deepEqual(
+      await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+        workflow_id: '.github/workflows/v3_auth-stg.yml',
+        event: 'push',
+        head_sha: 'a'.repeat(40),
+        status: 'completed',
+      }),
+      [{ conclusion: 'success', head_sha: 'a'.repeat(40) }]
+    )
+    assert.equal(
+      await getStagingSourceBranch({
+        github,
+        context: reviewContext(),
+        defaultBranch: 'v3',
+      }),
+      'v3'
+    )
+  } finally {
+    if (originalPath == null) delete process.env.PATH
+    else process.env.PATH = originalPath
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
 })
 
 test('verifies the generated-promotion no-report status through the repository verifier', async () => {

@@ -384,6 +384,70 @@ test('accepts a trusted clean stack status without requiring a review body', asy
   )
 })
 
+test('canonicalizes clean stack evidence across unrelated default-base advancement', async () => {
+  const { github } = stackFixture()
+  const stackContext = context(14)
+  const membership = await resolveStackMembership({
+    github,
+    context: stackContext,
+    pullNumber: 14,
+  })
+  const originalPlan = await buildStackReviewPlan({
+    github,
+    context: stackContext,
+    membership,
+  })
+  const advancedBase = '9'.repeat(40)
+  const advancedMembership = {
+    ...membership,
+    baseAdvancePreserved: true,
+    valid: true,
+    members: membership.members.map((member, index) =>
+      index === 0
+        ? {
+            ...member,
+            pull: {
+              ...member.pull,
+              base: { ...member.pull.base, sha: advancedBase },
+            },
+          }
+        : member
+    ),
+    ranges: membership.ranges.map((range, index) =>
+      index === 0
+        ? {
+            ...range,
+            response: {
+              ...range.response,
+              data: {
+                ...range.response.data,
+                merge_base_commit: { sha: 'b'.repeat(40) },
+                status: 'behind',
+              },
+            },
+          }
+        : range
+    ),
+  }
+  const advancedPlan = await buildStackReviewPlan({
+    github,
+    context: stackContext,
+    membership: advancedMembership,
+  })
+
+  assert.equal(advancedPlan.baseAdvancePreserved, true)
+  assert.equal(
+    buildStackCleanReviewEvidenceDigest({
+      plan: originalPlan,
+      membership,
+    }),
+    buildStackCleanReviewEvidenceDigest({
+      plan: advancedPlan,
+      membership: advancedMembership,
+    })
+  )
+})
+
 test('resolves a four-layer native stack and exact ancestry', async () => {
   const { github } = stackFixture()
   const membership = await resolveStackMembership({

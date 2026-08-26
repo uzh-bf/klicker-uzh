@@ -49,13 +49,51 @@ jobs:
             }
             core.setOutput('trusted_sha', workflowSha)
 
-  initialize:
+  resolve_lock:
     needs: trusted_policy
-    if: github.event_name == 'pull_request_target'
+    if: >-
+      needs.trusted_policy.result == 'success' &&
+      github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      lock_key: ${{ steps.resolve.outputs.lock_key }}
+    steps:
+      - name: Checkout trusted final-review policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.trusted_policy.outputs.trusted_sha }}
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - name: Resolve status-lock identity
+        id: resolve
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const helper = require('./.github/scripts/final-ai-review.js')
+            const lockKey = await helper.resolveFinalReviewLockKey({
+              github,
+              context,
+              pullNumber: context.payload.pull_request.number,
+              pull: context.payload.pull_request,
+            })
+            core.setOutput('lock_key', lockKey)
+
+  initialize:
+    needs: [trusted_policy, resolve_lock]
+    if: >-
+      needs.trusted_policy.result == 'success' &&
+      needs.resolve_lock.result == 'success' &&
+      github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     concurrency:
-      group: final-ai-status-lock
+      group: final-ai-status-lock-${{ needs.resolve_lock.outputs.lock_key }}
       cancel-in-progress: false
     permissions:
       actions: read
@@ -115,6 +153,7 @@ jobs:
       policy_digest: ${{ steps.authorize.outputs.policy_digest }}
       disposition_digest: ${{ steps.authorize.outputs.disposition_digest }}
       review_ranges: ${{ steps.authorize.outputs.review_ranges }}
+      status_lock_key: ${{ steps.authorize.outputs.status_lock_key }}
       background: ${{ steps.authorize.outputs.background }}
     steps:
       - name: Checkout trusted stack-review policy
@@ -146,7 +185,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     concurrency:
-      group: final-ai-status-lock
+      group: final-ai-status-lock-${{ needs.authorize.outputs.status_lock_key }}
       cancel-in-progress: false
     permissions:
       actions: read
@@ -454,7 +493,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     concurrency:
-      group: final-ai-status-lock
+      group: final-ai-status-lock-${{ needs.authorize.outputs.status_lock_key }}
       cancel-in-progress: false
     permissions:
       actions: read

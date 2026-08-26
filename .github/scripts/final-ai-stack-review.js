@@ -9,6 +9,7 @@ const {
   createGhGithub,
   decodeMetadata,
   encodeMetadata,
+  finalReviewStatusLockKey,
   ghRepositoryPath,
   getReviewPolicyDigest,
   MAX_INCREMENTAL_LINES,
@@ -74,24 +75,27 @@ function sha256(value) {
 }
 
 function buildStackCleanReviewEvidenceDigest({ plan, membership }) {
+  const layerIdentities = membership.members.map(({ number, pull }, index) => ({
+    base_ref: pull.base.ref,
+    base_repo: pull.base.repo?.full_name ?? '',
+    base_sha:
+      plan.baseAdvancePreserved && index === 0 ? plan.baseSha : pull.base.sha,
+    head_ref: pull.head.ref,
+    head_repo: pull.head.repo?.full_name ?? '',
+    head_sha: pull.head.sha,
+    pull_request: number,
+  }))
   return buildFinalReviewEvidenceDigest({
-    kind: 'stack-clean/v1',
+    kind: 'stack-clean/v2',
     base_sha: plan.baseSha,
     head_sha: plan.headSha,
     stack_id: plan.stackId,
     stack_order_digest: plan.stackOrderDigest,
-    stack_identity_digest: plan.stackIdentityDigest,
+    stack_identity_digest: plan.baseAdvancePreserved
+      ? stackIdentityDigestFromLayerIdentities(layerIdentities)
+      : plan.stackIdentityDigest,
     member_numbers: plan.memberNumbers,
-    layer_identities: membership.members.map(({ number, pull }) => ({
-      base_ref: pull.base.ref,
-      base_repo: pull.base.repo?.full_name ?? '',
-      base_sha: pull.base.sha,
-      head_ref: pull.head.ref,
-      head_repo: pull.head.repo?.full_name ?? '',
-      head_sha: pull.head.sha,
-      pull_request: number,
-    })),
-    base_advance_preserved: Boolean(plan.baseAdvancePreserved),
+    layer_identities: layerIdentities,
     mode: plan.mode,
     root_head: plan.rootHead,
     root_review_id: plan.rootReviewId,
@@ -1337,6 +1341,14 @@ async function authorizeStackReview({ github, context, core, trustedSha }) {
   setOutput(core, 'root_review_id', plan.rootReviewId)
   setOutput(core, 'policy_digest', plan.policyDigest)
   setOutput(core, 'disposition_digest', plan.dispositionDigest)
+  setOutput(
+    core,
+    'status_lock_key',
+    finalReviewStatusLockKey({
+      pullNumber: plan.topNumber,
+      stackId: plan.stackId,
+    })
+  )
   core.setOutput('review_ranges', JSON.stringify(plan.reviewRanges ?? []))
   core.setOutput('background', plan.background)
   return true

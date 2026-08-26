@@ -604,6 +604,43 @@ async function resolvePullEligibility({
   }
 }
 
+function finalReviewStatusLockKey({ pullNumber, stackId = '' }) {
+  if (stackId) return `stack-${sha256(stackId)}`
+  return `pr-${String(pullNumber)}`
+}
+
+async function resolveFinalReviewLockKey({
+  github,
+  context,
+  pullNumber,
+  pull,
+}) {
+  const number = Number(pullNumber)
+  if (!Number.isSafeInteger(number) || number <= 0) {
+    throw new Error('Pull request number is invalid')
+  }
+  const resolvedPull = pull ?? (await getPull(github, context, number))
+
+  try {
+    const stack = await getNativeStackMembership({
+      github,
+      context,
+      pull: resolvedPull,
+    })
+    if (stack?.id) {
+      return finalReviewStatusLockKey({
+        pullNumber: number,
+        stackId: stack.id,
+      })
+    }
+  } catch {
+    // The status writer revalidates eligibility and fails closed if the stack
+    // API is unavailable. Keep the lock scoped to this PR in the meantime.
+  }
+
+  return finalReviewStatusLockKey({ pullNumber: number })
+}
+
 async function getLatestFinalReviewStatus(github, context, headSha) {
   if (
     typeof github.paginate !== 'function' ||
@@ -696,7 +733,12 @@ async function getStagingSourceBranch({ github, context, defaultBranch }) {
     const value = response.data?.value
     return /^[A-Za-z0-9_.-]+$/.test(value ?? '') ? value : defaultBranch
   } catch (error) {
-    if (error.status === 404) return defaultBranch
+    if (
+      error?.status === 404 ||
+      /\b404\b|not found/i.test(String(error?.stderr ?? ''))
+    ) {
+      return defaultBranch
+    }
     throw error
   }
 }
@@ -1730,6 +1772,15 @@ async function authorizeFinalReview({ github, context, core, trustedSha }) {
   core.setOutput('stack_order_digest', plan.stackOrderDigest)
   core.setOutput('disposition_digest', plan.dispositionDigest)
   core.setOutput('disposition_ids', JSON.stringify(plan.dispositionIds ?? []))
+  core.setOutput(
+    'status_lock_key',
+    await resolveFinalReviewLockKey({
+      github,
+      context,
+      pullNumber: pull.number,
+      pull,
+    })
+  )
   core.setOutput('background', plan.background)
   return true
 }
@@ -2385,6 +2436,9 @@ function createGhGithub({ repository, defaultBranch }) {
   const statusesEndpoint = namedGhEndpoint('statuses')
   const reviewsEndpoint = namedGhEndpoint('reviews')
   const commentsEndpoint = namedGhEndpoint('comments')
+  const commitsEndpoint = namedGhEndpoint('commits')
+  const filesEndpoint = namedGhEndpoint('files')
+  const workflowRunsEndpoint = namedGhEndpoint('workflow-runs')
 
   const github = {
     rest: {
@@ -2397,12 +2451,15 @@ function createGhGithub({ repository, defaultBranch }) {
         getWorkflowRun: async ({ run_id }) => ({
           data: runGhApi(endpoint(`actions/runs/${run_id}`)),
         }),
+        listWorkflowRunsForRepo: workflowRunsEndpoint,
       },
       issues: { listComments: commentsEndpoint },
       pulls: {
         get: async ({ pull_number }) => ({
           data: runGhApi(endpoint(`pulls/${pull_number}`)),
         }),
+        listCommits: commitsEndpoint,
+        listFiles: filesEndpoint,
         listReviews: reviewsEndpoint,
       },
       repos: {
@@ -2448,6 +2505,41 @@ function createGhGithub({ repository, defaultBranch }) {
           ghQuery(endpoint(`issues/${params.issue_number}/comments`), {
             per_page: 100,
           })
+        )
+      }
+      if (method.ghName === 'commits') {
+        return runGhPaginated(
+          ghQuery(endpoint(`pulls/${params.pull_number}/commits`), {
+            per_page: 100,
+          })
+        )
+      }
+      if (method.ghName === 'files') {
+        return runGhPaginated(
+          ghQuery(endpoint(`pulls/${params.pull_number}/files`), {
+            per_page: 100,
+          })
+        )
+      }
+      if (method.ghName === 'workflow-runs') {
+        const workflowPath = String(params.workflow_id ?? '')
+        if (
+          !/^\.github\/workflows\/[A-Za-z0-9_.-]+\.ya?ml$/.test(workflowPath)
+        ) {
+          throw new Error('GitHub CLI workflow path is unsupported')
+        }
+        return runGhPaginated(
+          ghQuery(
+            endpoint(
+              `actions/workflows/${encodeURIComponent(path.posix.basename(workflowPath))}/runs`
+            ),
+            {
+              event: params.event,
+              head_sha: params.head_sha,
+              status: params.status,
+              per_page: 100,
+            }
+          )
         )
       }
       throw new Error('GitHub CLI pagination endpoint is unsupported')
@@ -2580,12 +2672,14 @@ module.exports = {
   decideFinalStatus,
   encodeMetadata,
   finalizeFinalReview,
+  finalReviewStatusLockKey,
   finalizeFinalReviewFailure,
   initializeFinalReview,
   isFinalReviewCommand,
   isPromotionCandidate,
   isTrustedPermission,
   getReviewPolicyDigest,
+  getStagingSourceBranch,
   ghRepositoryPath,
   hasCurrentSuccessfulFinalReview,
   hasVerifiedGeneratedPromotionStatus,
@@ -2598,6 +2692,7 @@ module.exports = {
   promotionBody,
   publishFinalReview,
   removeOCRConfig,
+  resolveFinalReviewLockKey,
   renderFinalReviewChunks,
   requiresColdIncrementalReview,
   runGhApi,
