@@ -83,70 +83,54 @@ echo "[post-start] Profile: ${DEVROUTER_PROFILE}"
 
 export DEVROUTER_PROCESS_FINGERPRINT_ENV='APP_ORIGIN_API,APP_ORIGIN_AUTH,APP_ORIGIN_PWA,APP_ORIGIN_MANAGE,APP_ORIGIN_CONTROL,APP_ORIGIN_ASSESSMENT_API,APP_ORIGIN_ASSESSMENT_PWA,APP_ORIGIN_LTI,APP_ORIGIN_CHAT,APP_MANAGE_SUBDOMAIN,APP_STUDENT_SUBDOMAIN,APP_CONTROL_SUBDOMAIN,NEXTAUTH_URL,COOKIE_DOMAIN,NEXT_PUBLIC_API_URL,NEXT_PUBLIC_AUTH_URL,NEXT_PUBLIC_MANAGE_URL,NEXT_PUBLIC_PWA_URL,NEXT_PUBLIC_ASSESSMENT_URL,NEXT_PUBLIC_CONTROL_URL,NEXT_PUBLIC_ADD_RESPONSE_URL,NEXT_PUBLIC_CHAT_URL,CORS_ALLOWED_ORIGINS,AUTH_LECTURER_ALLOWED_HOSTS,AUTH_STUDENT_ALLOWED_HOSTS,NODE_EXTRA_CA_CERTS,DEVROUTER_PROFILE'
 
-# Map the profile(s) to turbo dev filters. api + auth are needed by every
-# profile; workers only run where response ingestion is routed (live-quiz/full).
-# The MCP fixture stays always-on (cheap, and seeded chat depends on it).
-# NOTE: one turbo --filter flag per package — this turbo version treats a quoted
-# comma list as a single literal package name.
-# DEVROUTER_PROFILE may be a merged selection (e.g. "chat,pwa", canonicalized
-# sorted by devrouter); match on contained profile names, not the exact string.
-# READINESS_APPS lists the Next apps the profile starts, so the dev-runtime
-# readiness contract only probes servers that are actually running.
-case ",${DEVROUTER_PROFILE}," in
-  *,full,*)
-    DEV_TURBO_FILTERS=''
-    READINESS_APPS='auth chat frontend-control frontend-manage frontend-pwa'
-    ;;
-  *,live-quiz,*)
-    DEV_TURBO_FILTERS='--filter=@klicker-uzh/backend-docker --filter=@klicker-uzh/auth --filter=@klicker-uzh/frontend-pwa --filter=@klicker-uzh/frontend-control --filter=@klicker-uzh/response-api --filter=@klicker-uzh/hatchet-worker-general --filter=@klicker-uzh/hatchet-worker-response-processor'
-    READINESS_APPS='auth frontend-control frontend-pwa'
-    ;;
-  *)
-    DEV_TURBO_FILTERS='--filter=@klicker-uzh/backend-docker --filter=@klicker-uzh/auth'
-    READINESS_APPS='auth'
-    for profile_name in $(echo "${DEVROUTER_PROFILE}" | tr ',' ' '); do
-      case "${profile_name}" in
-        manage) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/frontend-manage"; READINESS_APPS="${READINESS_APPS} frontend-manage" ;;
-        pwa) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/frontend-pwa"; READINESS_APPS="${READINESS_APPS} frontend-pwa" ;;
-        chat) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/chat"; READINESS_APPS="${READINESS_APPS} chat" ;;
-        control) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/frontend-control"; READINESS_APPS="${READINESS_APPS} frontend-control" ;;
-        olat-api) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/olat-api" ;;
-        lti) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/lti-service" ;;
-        response-api) DEV_TURBO_FILTERS="${DEV_TURBO_FILTERS} --filter=@klicker-uzh/response-api" ;;
-        *)
-          echo "[post-start] WARNING: unknown profile component '${profile_name}', ignoring." >&2
-          ;;
-      esac
-    done
-    # Canonical order for stable logs; dev-runtime probes each app independently.
-    READINESS_APPS=$(printf '%s\n' ${READINESS_APPS} | sort -u | tr '\n' ' ' | sed 's/ $//')
-    ;;
-esac
+# Resolve the complete selection first through the pure table in
+# util/profile-resolver.sh: exact turbo roots, readiness apps, and process
+# markers. An unknown component fails closed before any process or service
+# changes. Pure capability selections (ai/mcp/email) start no turbo process.
+# shellcheck source=/dev/null
+. ./util/profile-resolver.sh
+profile_wants klicker-dev
+PROFILE_DEV_STATUS=$?
+[ "$PROFILE_DEV_STATUS" -le 1 ] || {
+  echo "[post-start] ERROR: unknown profile component in '${DEVROUTER_PROFILE}'." >&2
+  exit 2
+}
+PROFILE_WANTS_DEV=$([ "$PROFILE_DEV_STATUS" -eq 0 ] && echo yes || echo no)
+if profile_wants klicker-local-mcp; then
+  PROFILE_WANTS_MCP=yes
+else
+  PROFILE_WANTS_MCP=no
+fi
+DEV_TURBO_FILTERS="$(profile_turbo_filters)"
+READINESS_APPS="$(profile_readiness_apps)"
 export READINESS_APPS
 
 # The test seed connects Benibot's Tutor and Explainer modes to this local,
-# read-only MCP fixture. Keep it in the app container so the seeded
-# http://localhost:1417/mcp endpoint remains valid in every workspace. Prove
-# readiness before starting Chat so its first request cannot miss the fixture.
-MCP_FIXTURE_SHA256=$(sha256sum apps/chat/scripts/local-mcp-server.mjs)
-MCP_FIXTURE_SHA256=${MCP_FIXTURE_SHA256%% *}
-"$DEVROUTER_PROCESS_HELPER" ensure \
-  --name klicker-local-mcp \
-  --match 'apps/chat/scripts/local-mcp-server.mjs' \
-  --log /tmp/local-mcp.log \
-  -- node apps/chat/scripts/local-mcp-server.mjs "$MCP_FIXTURE_SHA256"
+# read-only MCP fixture; it is opt-in via the mcp capability (or full). When the
+# selection drops it, stop the exact owned process instead of leaving it stale.
+if [ "$PROFILE_WANTS_MCP" = yes ]; then
+  MCP_FIXTURE_SHA256=$(sha256sum apps/chat/scripts/local-mcp-server.mjs)
+  MCP_FIXTURE_SHA256=${MCP_FIXTURE_SHA256%% *}
+  "$DEVROUTER_PROCESS_HELPER" ensure \
+    --name klicker-local-mcp \
+    --match 'apps/chat/scripts/local-mcp-server.mjs' \
+    --log /tmp/local-mcp.log \
+    -- node apps/chat/scripts/local-mcp-server.mjs "$MCP_FIXTURE_SHA256"
 
-# Keep startup bounded: this fixture check must not delay managed-app readiness.
-for attempt in $(seq 1 20); do
-  if curl --fail --silent --show-error http://localhost:1417/health >/dev/null; then
-    break
-  fi
-  if [ "$attempt" -eq 20 ]; then
-    echo '[post-start] ERROR: local MCP fixture did not become healthy.' >&2
-    exit 1
-  fi
-  sleep 1
-done
+  # Keep startup bounded: this fixture check must not delay managed-app readiness.
+  for attempt in $(seq 1 20); do
+    if curl --fail --silent --show-error http://localhost:1417/health >/dev/null; then
+      break
+    fi
+    if [ "$attempt" -eq 20 ]; then
+      echo '[post-start] ERROR: local MCP fixture did not become healthy.' >&2
+      exit 1
+    fi
+    sleep 1
+  done
+else
+  "$DEVROUTER_PROCESS_HELPER" stop --name klicker-local-mcp >/dev/null 2>&1 || true
+fi
 
 # Run the profile's apps (or everything for `full`) without Infisical. Devrouter
 # owns generic locking, process-group identity, and bounded replacement; this
@@ -174,7 +158,12 @@ start_managed_runtime() {
   fi
 }
 
-start_managed_runtime
+if [ "$PROFILE_WANTS_DEV" = yes ]; then
+  start_managed_runtime
+else
+  # Pure capability selection: stop the exact owned app process; no Turbo run.
+  "$DEVROUTER_PROCESS_HELPER" stop --name klicker-dev >/dev/null 2>&1 || true
+fi
 
 # Probe the profile's Next apps' readiness contract. 20 is the confirmed
 # stale-route signature from util/dev-runtime.sh; any other failure fails closed
@@ -230,7 +219,10 @@ fi
 # request. Prime the Manage course routes before a browser can request them so
 # a cold Turbopack start cannot turn the first course visit into a 404. Keep
 # both probes inside one short deadline so devrouter retains startup ownership.
-if [[ "${APP_ORIGIN_MANAGE}" == https://* ]] &&
+# Only profiles that actually start Manage pay the warm-up cost.
+if [ "$PROFILE_WANTS_DEV" = yes ] &&
+  [[ "${READINESS_APPS}" == *frontend-manage* ]] &&
+  [[ "${APP_ORIGIN_MANAGE}" == https://* ]] &&
   [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
   MANAGE_CURL_CA=(--cacert /etc/devrouter/mkcert-rootCA.pem)
 else
@@ -284,7 +276,15 @@ if [[ "$manage_list_ready" == false || "$manage_course_ready" == false ]]; then
   echo "[post-start] WARN: Manage course-route warm-up did not finish; list=${manage_list_probe} (${APP_ORIGIN_MANAGE}/courses), course=${manage_course_probe} (${manage_course_path}); leaving readiness to devrouter." >&2
 fi
 
-if [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
+if [ "$PROFILE_WANTS_DEV" != yes ]; then
+  cat <<EOF
+[post-start] Capability-only selection '${DEVROUTER_PROFILE}': no application process started.
+[post-start]   LiteLLM (ai) -> http://litellm:4000 (in-network) when selected
+[post-start]   MCP (mcp)   -> http://localhost:1417/mcp when selected
+[post-start]   MailHog     -> http://localhost:8025 (email) when selected
+[post-start] Lifecycle -> on the host: devrouter ensure <this-checkout> [--profile <selection>]
+EOF
+elif [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
   cat <<EOF
 [post-start] Apps (via devrouter; first compile can take a minute):
 [post-start]   API          -> ${APP_ORIGIN_API}
