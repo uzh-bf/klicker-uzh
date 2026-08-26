@@ -123,6 +123,8 @@ changes, merge, or post-merge execution.
 - [x] S0 plan recorded.
 - [x] S1 workflow routing implemented and statically verified.
 - [x] S2 documentation aligned and verified.
-- [ ] Slice and final reviews completed.
-- [ ] Branch pushed and draft PR opened or updated.
+- [x] Simplification and security/status slice reviews completed through the
+  trusted continuity route after the configured provider failed before work.
+- [x] Final review explicitly skipped at the user's request.
+- [x] Branch pushed; draft PR creation authorized.
 - [ ] S3 post-merge canary authorized and executed.
