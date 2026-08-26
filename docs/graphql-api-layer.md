@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-07-30'
+timestamp: '2026-08-01'
 tags:
   - backend
   - graphql
@@ -45,9 +45,9 @@ pnpm --filter @klicker-uzh/graphql generate
 
 and **commit the regenerated outputs** (`src/ops.ts`, `src/ops.schema.json`, `src/public/schema.graphql`, `src/public/client.json`, `src/public/server.json`) in the same change. They are git-tracked and load-bearing: frontends import typed documents from `@klicker-uzh/graphql/dist/ops`, and outside dev/test the backend only executes hashes present in `server.json` (see [Architecture Overview](./architecture-overview.md)). Stale artifacts fail in two distinct ways: typecheck errors (missing document) or runtime persisted-query rejection (unknown hash).
 
-`getUserKbsConnection` and `getKbResources` are owner-scoped cursor connections with a maximum page size of 50 and exact `totalCount`. KBs use `(updatedAt DESC, id DESC)`; resources use immutable `(createdAt DESC, id DESC)` so operation polling cannot move rows between pages. Opaque cursors are bound to the owner and normalized search/filter set and reject malformed, foreign, or mismatched reuse. Resource page and count predicates reassert the live, non-deleted owned parent relation after the initial authorization check. Search runs server-side across KB name/description or resource title/filename/URL, with resource type and latest-ingestion-status filters. `getKb` returns metadata and exact derived usage/consumer metrics rather than an unbounded child list. The former unbounded `getUserKbs` field and the misleading nested `KB.resources` field are not exposed; callers use the bounded connections.
+`getUserKbsConnection` and `getKbResources` are owner-scoped cursor connections with a maximum page size of 50 and exact `totalCount`. KBs use `(updatedAt DESC, id DESC)`; resources use immutable `(createdAt DESC, id DESC)` so operation polling cannot move rows between pages. Opaque cursors are bound to the owner and normalized search/filter set and reject malformed, foreign, or mismatched reuse. Resource page and count predicates reassert the live, non-deleted owned parent relation after the initial authorization check. Search runs server-side across KB name/description or resource title/filename/URL, with resource type and current-operation-status filters. `getKb` returns metadata and exact derived usage/consumer metrics rather than an unbounded child list. The former unbounded `getUserKbs` field and the misleading nested `KB.resources` field are not exposed; callers use the bounded connections.
 
-The resource connection includes only each row's latest ingestion run. Full attempt history remains the separate owner-checked `getKbResourceIngestionRuns` query: it returns at most the five newest runs and is requested only from the inspector. Do not nest full history under the polled connection or expose the unbounded ledger.
+The resource connection includes only the run identified by each row's stored `ingestionAttemptId`, which is the lecturer's current operation. A signed platform refresh appends its own historic ledger row without changing that projection or its status filter. Full attempt history remains the separate owner-checked `getKbResourceIngestionRuns` query: it returns at most the five newest runs and is requested only from the inspector. Do not nest full history under the polled connection or expose the unbounded ledger.
 
 Knowledge-base/chatbot binding uses `getKbChatbotBindings`, `attachKbToChatbot`, and `detachKbFromChatbot`. The query and mutations are owner-scoped, attach/detach require full-access scope, and `packages/graphql/src/services/knowledge.ts` locks both owner rows before replacing a binding. Attach atomically enables the one selected link and reconciles exactly the `tutor` and `explainer` KB MCP configurations; detach disables those configurations when no enabled link remains.
 

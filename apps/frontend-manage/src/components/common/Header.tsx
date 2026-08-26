@@ -54,6 +54,13 @@ function Header({ user }: { user?: User | null }): React.ReactElement {
         ]
       : []),
     {
+      key: 'knowledge-bases-item',
+      type: 'link' as const,
+      label: t('kb.title'),
+      onClick: () => router.push('/resources/knowledgeBases'),
+      data: { cy: 'knowledge-bases' },
+    },
+    {
       key: 'answer-collections-item',
       type: 'link' as const,
       label: t('manage.resources.answerCollections'),

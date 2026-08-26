@@ -1,5 +1,11 @@
 # Log
 
+## 2026-08-01
+
+- **Update**: [domain-model](./domain-model.md) and `klicker-data-model` document KB-owned graph builds: a reader trusts only a successful build belonging to the requested KB, each completed build has its own graph name, and retired graphs plus GraphML share bounded retention while the active and published graphs remain protected. `turbo.json` now passes the matching `KB_FALKORDB_*` configuration through task runs.
+
+- **Update**: [domain-model](./domain-model.md), [async-and-workers](./async-and-workers.md), and [graphql-api-layer](./graphql-api-layer.md) document the signed, platform-initiated `resource.content_refreshed` event: a terminal ledger entry correlated to the platform operation, serving-identity-only advancement, repeat-delivery deduplication, stale-refresh preservation, and current-attempt resource-list projection. The `klicker-data-model` and `klicker-testing-verification` skills now require the same two-axis, idempotency, and projection checks.
+
 ## 2026-07-30
 
 - **Update**: [getting-started](./getting-started.md) documents the managed DevPod's routed Azurite Blob service, exact local CORS setup, and separate browser-facing and internal account URLs. Matching environment-doctor and testing-verification procedures cover local Blob diagnosis and real KB upload proof without exposing SAS queries.

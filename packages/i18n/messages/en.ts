@@ -1371,6 +1371,31 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     chatbotDetachError: 'The chatbot could not be disconnected.',
     previewAccessError:
       'The knowledge base workspace is not available for your account yet.',
+    graphTitle: 'Knowledge graph',
+    graphDescription:
+      'Build a graph from the knowledge base resources and inspect the published result.',
+    graphQualityTierLabel: 'Build quality',
+    graphQualityStandard: 'Standard (lower cost)',
+    graphQualityHigh: 'High (higher cost)',
+    graphBuild: 'Build graph',
+    graphRebuild: 'Rebuild graph',
+    graphBuildCost:
+      'Each build uses the configured external AI workflow and its associated budget.',
+    graphStatusLabel: 'Status',
+    graphStatusEmpty: 'No build',
+    graphStatusQueued: 'Queued',
+    graphStatusProcessing: 'Processing',
+    graphStatusSucceeded: 'Succeeded',
+    graphStatusFailed: 'Failed',
+    graphStale: 'Stale',
+    graphBuildId: 'Build {buildId}',
+    graphLoading: 'Loading graph status…',
+    graphLoadError: 'The graph status could not be loaded.',
+    graphRetry: 'Retry',
+    graphBuildError: 'The graph build could not be started.',
+    graphPreviewTitle: 'Published graph',
+    graphPreviewUnavailable:
+      'Build and publish a graph before opening the lecturer viewer.',
     ingestionDisabledError:
       'Adding new content to knowledge bases is temporarily disabled.',
   },

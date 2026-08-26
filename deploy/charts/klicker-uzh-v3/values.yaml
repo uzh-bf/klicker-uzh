@@ -59,6 +59,16 @@ hatchet:
     apiUrl: ""
     projectId: "klicker-course-materials"
     sourceGatewayUrl: ""
+  kbGraph:
+    hostPort: ""
+    apiUrl: ""
+    tlsStrategy: ""
+    workflowName: ""
+    timeoutSeconds: "21600"
+    standardGenerationModel: ""
+    standardCleaningModel: ""
+    highGenerationModel: ""
+    highCleaningModel: ""
   workers:
     general:
       replicaCount: 1
@@ -383,6 +393,12 @@ frontendControl:
 
 backendGraphql:
   priorityClassName: production-workload
+
+  knowledgeGraph:
+    host: ''
+    port: '6379'
+    tls: 'false'
+    queryTimeoutMs: '5000'
 
   replicaCount: 3
 

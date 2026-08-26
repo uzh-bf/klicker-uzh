@@ -4,10 +4,22 @@ import {
   generateBlobSASQueryParameters,
   StorageSharedKeyCredential,
 } from '@azure/storage-blob'
+import {
+  computeKBContentDigest,
+  getKnowledgeGraphName,
+  getPublishedKnowledgeGraph,
+  hashKBContentDigestEntries,
+  KnowledgeGraphNotPublishedError,
+  readKnowledgeGraphNeighbors,
+  readKnowledgeGraphOverview,
+  searchKnowledgeGraph,
+  type PublishedKnowledgeGraph,
+} from '@klicker-uzh/knowledge-graph'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   DeleteKBResourceInput,
   IngestKBResourceInput,
+  KnowledgeGraphResponse,
 } from '@klicker-uzh/types'
 import {
   MAX_KB_RESOURCE_COUNT,
@@ -724,14 +736,10 @@ export async function getKbResourcesConnection(
     ? await ctx.prisma.$queryRaw<Array<{ id: string }>>`
         SELECT resource."id"
         FROM "public"."KBResource" AS resource
+        INNER JOIN "public"."KBIngestionRun" AS run
+          ON run."id" = resource."ingestionAttemptId"
         WHERE resource."kbId" = CAST(${kbId} AS UUID)
-          AND (
-            SELECT run."status"
-            FROM "public"."KBIngestionRun" AS run
-            WHERE run."resourceId" = resource."id"
-            ORDER BY run."createdAt" DESC, run."id" DESC
-            LIMIT 1
-          ) = CAST(${status} AS "KBIngestionStatus")
+          AND run."status" = CAST(${status} AS "KBIngestionStatus")
       `
     : null
   const searchWhere: DB.Prisma.KBResourceWhereInput = normalizedSearch
@@ -789,19 +797,35 @@ export async function getKbResourcesConnection(
     ctx.prisma.kBResource.findMany({
       where,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      include: {
-        ingestionRuns: {
-          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-          take: 1,
-        },
-      },
       take: pageSize + 1,
     }),
     ctx.prisma.kBResource.count({ where: baseWhere }),
   ])
+  const currentAttemptIds = items.flatMap(({ ingestionAttemptId }) =>
+    ingestionAttemptId ? [ingestionAttemptId] : []
+  )
+  const currentRuns =
+    currentAttemptIds.length === 0
+      ? []
+      : await ctx.prisma.kBIngestionRun.findMany({
+          where: { id: { in: currentAttemptIds } },
+        })
+  const currentRunsById = new Map(currentRuns.map((run) => [run.id, run]))
+  const itemsWithCurrentRuns = items.map((resource) => {
+    const currentRun = resource.ingestionAttemptId
+      ? currentRunsById.get(resource.ingestionAttemptId)
+      : undefined
+
+    // A platform refresh appends a historic ledger row but must not replace
+    // the lecturer operation currently recorded on the resource.
+    return {
+      ...resource,
+      ingestionRuns: currentRun ? [currentRun] : [],
+    }
+  })
 
   return createPaginationResult(
-    items,
+    itemsWithCurrentRuns,
     pageSize,
     (resource) => ({
       version: KB_CURSOR_VERSION,
@@ -1058,6 +1082,13 @@ export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
   const { kb, deletionInputs } = await ctx.prisma.$transaction(
     async (prisma) => {
       await lockOwnedKbOrThrow(prisma, id, ctx.user.sub)
+      const graphState = await prisma.kB.findUniqueOrThrow({
+        where: { id },
+        select: { activeGraphBuildId: true },
+      })
+      if (graphState.activeGraphBuildId) {
+        throw new GraphQLError('KB cannot be deleted while a graph build runs')
+      }
       await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT "id"
       FROM "public"."KBResource"
@@ -1102,7 +1133,11 @@ export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
 
       await prisma.kB.update({
         where: { id },
-        data: { deletedAt, deletedById: ctx.user.sub },
+        data: {
+          deletedAt,
+          deletedById: ctx.user.sub,
+          publishedGraphBuildId: null,
+        },
       })
       const bindingCandidates = await prisma.kBChatbot.findMany({
         where: { kbId: id, isEnabled: true },
@@ -1738,4 +1773,314 @@ export async function ingestKbResource(
   return ctx.prisma.kBResource.findUniqueOrThrow({
     where: { id: resource.id },
   })
+}
+
+export interface KBKnowledgeGraphConfig {
+  kbId: string
+  buildId: string | null
+  status: DB.KBGraphBuildStatus | null
+  statusMessage: string | null
+  qualityTier: DB.KBGraphQualityTier | null
+  sourceContentDigest: string | null
+  activeBuildId: string | null
+  publishedBuildId: string | null
+  isStale: boolean
+  startedAt: Date | null
+  finishedAt: Date | null
+  createdAt: Date | null
+  updatedAt: Date | null
+}
+
+function getKBGraphArtifactBlobName(buildId: string): string {
+  return `knowledge-graphs/${buildId}.graphml`
+}
+
+const KB_GRAPH_BUILD_CONFIG_SELECT = {
+  id: true,
+  status: true,
+  statusMessage: true,
+  qualityTier: true,
+  sourceContentDigest: true,
+  startedAt: true,
+  finishedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies DB.Prisma.KBGraphBuildSelect
+
+function getKBGraphBuildConfig(
+  kb: {
+    id: string
+    activeGraphBuildId: string | null
+    publishedGraphBuildId: string | null
+  },
+  build: {
+    id: string
+    status: DB.KBGraphBuildStatus
+    statusMessage: string | null
+    qualityTier: DB.KBGraphQualityTier
+    sourceContentDigest: string
+    startedAt: Date | null
+    finishedAt: Date | null
+    createdAt: Date
+    updatedAt: Date
+  } | null,
+  isStale: boolean
+): KBKnowledgeGraphConfig {
+  return {
+    kbId: kb.id,
+    buildId: build?.id ?? null,
+    status: build?.status ?? null,
+    statusMessage: build?.statusMessage ?? null,
+    qualityTier: build?.qualityTier ?? null,
+    sourceContentDigest: build?.sourceContentDigest ?? null,
+    activeBuildId: kb.activeGraphBuildId,
+    publishedBuildId: kb.publishedGraphBuildId,
+    isStale,
+    startedAt: build?.startedAt ?? null,
+    finishedAt: build?.finishedAt ?? null,
+    createdAt: build?.createdAt ?? null,
+    updatedAt: build?.updatedAt ?? null,
+  }
+}
+
+export async function getKbKnowledgeGraphConfig(
+  { kbId }: { kbId: string },
+  ctx: ContextWithUser
+): Promise<KBKnowledgeGraphConfig> {
+  await assertKbPreviewAccess(ctx)
+  const kb = await getOwnedKbOrThrow(ctx, kbId)
+  const preferredBuildId = kb.activeGraphBuildId ?? kb.publishedGraphBuildId
+  const build = preferredBuildId
+    ? await ctx.prisma.kBGraphBuild.findFirst({
+        where: { id: preferredBuildId, kbId: kb.id },
+        select: KB_GRAPH_BUILD_CONFIG_SELECT,
+      })
+    : await ctx.prisma.kBGraphBuild.findFirst({
+        where: { kbId: kb.id },
+        select: KB_GRAPH_BUILD_CONFIG_SELECT,
+        orderBy: { createdAt: 'desc' },
+      })
+  const isStale =
+    build?.status === DB.KBGraphBuildStatus.SUCCEEDED
+      ? build.sourceContentDigest !==
+        (await computeKBContentDigest(ctx.prisma, kb.id))
+      : false
+  return getKBGraphBuildConfig(kb, build, isStale)
+}
+
+async function readOwnedPublishedKBGraph(
+  kbId: string,
+  ctx: ContextWithUser,
+  read: (graph: PublishedKnowledgeGraph) => Promise<KnowledgeGraphResponse>
+) {
+  await assertKbPreviewAccess(ctx)
+  await getOwnedKbOrThrow(ctx, kbId)
+  try {
+    return await read(await getPublishedKnowledgeGraph(ctx.prisma, kbId))
+  } catch (error) {
+    if (error instanceof KnowledgeGraphNotPublishedError) {
+      throw new GraphQLError('KB knowledge graph is not published', {
+        extensions: { code: `KB_GRAPH_${error.code}` },
+      })
+    }
+    throw error
+  }
+}
+
+export async function getKbKnowledgeGraphOverview(
+  { kbId }: { kbId: string },
+  ctx: ContextWithUser
+) {
+  return readOwnedPublishedKBGraph(kbId, ctx, readKnowledgeGraphOverview)
+}
+
+export async function searchKbKnowledgeGraph(
+  { kbId, query }: { kbId: string; query: string },
+  ctx: ContextWithUser
+) {
+  return readOwnedPublishedKBGraph(kbId, ctx, (graph) =>
+    searchKnowledgeGraph(graph, query)
+  )
+}
+
+export async function getKbKnowledgeGraphNeighbors(
+  { kbId, nodeId }: { kbId: string; nodeId: string },
+  ctx: ContextWithUser
+) {
+  return readOwnedPublishedKBGraph(kbId, ctx, (graph) =>
+    readKnowledgeGraphNeighbors(graph, nodeId)
+  )
+}
+
+type GraphBuildSnapshotResource = {
+  id: string
+  title: string
+  type: DB.KBResourceType
+  sourceUrl: string | null
+  blobName: string | null
+  activeContentSha256: string | null
+}
+
+function validateGraphBuildSnapshotResource(
+  resource: GraphBuildSnapshotResource
+) {
+  if (!resource.activeContentSha256) {
+    throw new GraphQLError('KB graph source is not serving content')
+  }
+  if (resource.type === DB.KBResourceType.BLOB && !resource.blobName) {
+    throw new GraphQLError('KB graph blob source is invalid')
+  }
+  if (resource.type === DB.KBResourceType.URL && !resource.sourceUrl) {
+    throw new GraphQLError('KB graph URL source is invalid')
+  }
+  return resource.activeContentSha256
+}
+
+export async function rebuildKbKnowledgeGraph(
+  {
+    kbId,
+    qualityTier: requestedQualityTier,
+  }: {
+    kbId: string
+    qualityTier?: DB.KBGraphQualityTier | null
+  },
+  ctx: ContextWithUser
+): Promise<KBKnowledgeGraphConfig> {
+  const qualityTier = requestedQualityTier ?? DB.KBGraphQualityTier.STANDARD
+  await assertKbPreviewAccess(ctx)
+  const result = await ctx.prisma.$transaction(async (prisma) => {
+    await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
+    const kb = await prisma.kB.findUniqueOrThrow({
+      where: { id: kbId },
+      select: {
+        id: true,
+        activeGraphBuildId: true,
+        publishedGraphBuildId: true,
+      },
+    })
+
+    if (kb.activeGraphBuildId) {
+      const activeBuild = await prisma.kBGraphBuild.findFirst({
+        where: { id: kb.activeGraphBuildId, kbId },
+        select: KB_GRAPH_BUILD_CONFIG_SELECT,
+      })
+      if (
+        activeBuild &&
+        (activeBuild.status === DB.KBGraphBuildStatus.QUEUED ||
+          activeBuild.status === DB.KBGraphBuildStatus.PROCESSING)
+      ) {
+        return { kb, build: activeBuild, queueBuildId: null }
+      }
+      await prisma.kB.updateMany({
+        where: { id: kbId, activeGraphBuildId: kb.activeGraphBuildId },
+        data: { activeGraphBuildId: null },
+      })
+    }
+
+    const resources = await prisma.kBResource.findMany({
+      where: {
+        kbId,
+        deletedAt: null,
+        activeContentSha256: { not: null },
+      },
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        sourceUrl: true,
+        blobName: true,
+        activeContentSha256: true,
+      },
+      orderBy: { id: 'asc' },
+    })
+    if (resources.length === 0) {
+      throw new GraphQLError('KB has no active graph sources', {
+        extensions: { code: 'KB_GRAPH_EMPTY' },
+      })
+    }
+
+    const validatedResources = resources.map((resource) => ({
+      resource,
+      contentSha256: validateGraphBuildSnapshotResource(resource),
+    }))
+    const sourceContentDigest = hashKBContentDigestEntries(
+      validatedResources.map(({ resource, contentSha256 }) => ({
+        resourceId: resource.id,
+        contentSha256,
+      }))
+    )
+    const buildId = randomUUID()
+    const build = await prisma.kBGraphBuild.create({
+      data: {
+        id: buildId,
+        kbId,
+        requestedById: ctx.user.sub,
+        qualityTier,
+        sourceContentDigest,
+        graphName: getKnowledgeGraphName(kbId, buildId),
+        graphmlBlobName: getKBGraphArtifactBlobName(buildId),
+        sources: {
+          create: validatedResources.map(({ resource, contentSha256 }) => ({
+            resourceId: resource.id,
+            title: resource.title,
+            type: resource.type,
+            sourceUrl: resource.sourceUrl,
+            blobName: resource.blobName,
+            contentSha256,
+          })),
+        },
+      },
+      select: KB_GRAPH_BUILD_CONFIG_SELECT,
+    })
+    const claimed = await prisma.kB.updateMany({
+      where: { id: kbId, activeGraphBuildId: null },
+      data: { activeGraphBuildId: buildId },
+    })
+    if (claimed.count !== 1) {
+      throw new Error('KB graph build slot could not be claimed')
+    }
+    return {
+      kb: { ...kb, activeGraphBuildId: buildId },
+      build,
+      queueBuildId: buildId,
+    }
+  })
+
+  if (result.queueBuildId) {
+    try {
+      await ctx.tasks.buildKBGraph.runNoWait({ buildId: result.queueBuildId })
+    } catch {
+      const finishedAt = new Date()
+      await ctx.prisma.$transaction(async (prisma) => {
+        const failed = await prisma.kBGraphBuild.updateMany({
+          where: {
+            id: result.queueBuildId!,
+            kbId,
+            externalOperationId: null,
+            status: DB.KBGraphBuildStatus.QUEUED,
+          },
+          data: {
+            status: DB.KBGraphBuildStatus.FAILED,
+            statusMessage: 'The KB graph build could not be queued.',
+            errorCode: 'KB_GRAPH_QUEUE_DISPATCH_FAILED',
+            finishedAt,
+          },
+        })
+        if (failed.count === 1) {
+          await prisma.kB.updateMany({
+            where: { id: kbId, activeGraphBuildId: result.queueBuildId! },
+            data: { activeGraphBuildId: null },
+          })
+        }
+      })
+      throw new GraphQLError('KB graph build could not be queued')
+    }
+  }
+
+  const isStale =
+    result.build.status === DB.KBGraphBuildStatus.SUCCEEDED
+      ? result.build.sourceContentDigest !==
+        (await computeKBContentDigest(ctx.prisma, kbId))
+      : false
+  return getKBGraphBuildConfig(result.kb, result.build, isStale)
 }

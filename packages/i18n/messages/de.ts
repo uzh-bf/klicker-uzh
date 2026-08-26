@@ -1381,6 +1381,31 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       'Die Verknüpfung des Chatbots konnte nicht aufgehoben werden.',
     previewAccessError:
       'Der Wissensdatenbank-Arbeitsbereich ist für Ihr Konto noch nicht verfügbar.',
+    graphTitle: 'Wissensgraph',
+    graphDescription:
+      'Erstellen Sie aus den Ressourcen der Wissensdatenbank einen Graphen und prüfen Sie das veröffentlichte Ergebnis.',
+    graphQualityTierLabel: 'Qualität des Aufbaus',
+    graphQualityStandard: 'Standard (geringere Kosten)',
+    graphQualityHigh: 'Hoch (höhere Kosten)',
+    graphBuild: 'Graph erstellen',
+    graphRebuild: 'Graph neu erstellen',
+    graphBuildCost:
+      'Jeder Aufbau verwendet den konfigurierten externen KI-Vorgang und das zugehörige Budget.',
+    graphStatusLabel: 'Status',
+    graphStatusEmpty: 'Kein Aufbau',
+    graphStatusQueued: 'In Warteschlange',
+    graphStatusProcessing: 'In Verarbeitung',
+    graphStatusSucceeded: 'Erfolgreich',
+    graphStatusFailed: 'Fehlgeschlagen',
+    graphStale: 'Veraltet',
+    graphBuildId: 'Aufbau {buildId}',
+    graphLoading: 'Graphstatus wird geladen…',
+    graphLoadError: 'Der Graphstatus konnte nicht geladen werden.',
+    graphRetry: 'Erneut versuchen',
+    graphBuildError: 'Der Graphaufbau konnte nicht gestartet werden.',
+    graphPreviewTitle: 'Veröffentlichter Graph',
+    graphPreviewUnavailable:
+      'Erstellen und veröffentlichen Sie einen Graphen, bevor Sie die Dozierendenansicht öffnen.',
     ingestionDisabledError:
       'Das Hinzufügen neuer Inhalte zu Wissensdatenbanken ist vorübergehend deaktiviert.',
   },

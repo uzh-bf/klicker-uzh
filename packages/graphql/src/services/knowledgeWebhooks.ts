@@ -20,6 +20,7 @@ const EVENT_TYPES = [
   'resource.processing_progress',
   'resource.processing_succeeded',
   'resource.processing_failed',
+  'resource.content_refreshed',
   'resource.subresources_updated',
   'kb.metrics_updated',
 ] as const
@@ -227,6 +228,7 @@ function transitionForEvent(payload: OperationStatusEvent) {
           payload.statusDetail ?? 'The ingestion operation failed.',
         finishedAt: new Date(payload.occurredAt),
       }
+    case 'resource.content_refreshed':
     case 'resource.subresources_updated':
     case 'kb.metrics_updated':
       return null
@@ -299,6 +301,89 @@ export async function handleKBIngestionWebhook({
 
   const transition = transitionForEvent(payload)
   await prisma.$transaction(async (tx) => {
+    if (payload.eventType === 'resource.content_refreshed') {
+      const activeResourceVersion = payload.serving.active_resource_version
+      const activeContentSha256 = payload.serving.active_sha256
+      if (
+        activeResourceVersion === null ||
+        activeContentSha256 === null ||
+        activeResourceVersion !== payload.resource_version ||
+        payload.error_code !== null
+      ) {
+        return
+      }
+
+      const resources = await tx.$queryRaw<
+        Array<{
+          id: string
+          deletedAt: Date | null
+          activeResourceVersion: number | null
+          ingestedAt: Date | null
+        }>
+      >`
+        SELECT
+          resource."id",
+          resource."deletedAt",
+          resource."activeResourceVersion",
+          resource."ingestedAt"
+        FROM "public"."KBResource" AS resource
+        WHERE resource."id" = CAST(${payload.external_resource_id} AS UUID)
+        FOR UPDATE
+      `
+      const resource = resources[0]
+      if (!resource || resource.deletedAt !== null) {
+        return
+      }
+
+      const existingRun = await tx.kBIngestionRun.findFirst({
+        where: {
+          resourceId: payload.external_resource_id,
+          externalOperationId: payload.operation_id,
+        },
+        select: { id: true },
+      })
+      if (existingRun) {
+        return
+      }
+
+      const occurredAt = new Date(payload.occurredAt)
+      const refreshWasSuperseded =
+        resource.activeResourceVersion !== null &&
+        (resource.activeResourceVersion > activeResourceVersion ||
+          (resource.activeResourceVersion === activeResourceVersion &&
+            resource.ingestedAt !== null &&
+            resource.ingestedAt >= occurredAt))
+
+      await tx.kBIngestionRun.create({
+        data: {
+          id: payload.eventId,
+          operation: KBIngestionOperation.UPSERT,
+          status: refreshWasSuperseded
+            ? KBIngestionStatus.SUPERSEDED
+            : KBIngestionStatus.SUCCEEDED,
+          resourceVersion: payload.resource_version,
+          contentSha256: activeContentSha256,
+          externalOperationId: payload.operation_id,
+          statusMessage: refreshWasSuperseded
+            ? 'The platform refresh was superseded by a newer serving revision.'
+            : payload.statusDetail,
+          finishedAt: occurredAt,
+          resourceId: payload.external_resource_id,
+        },
+      })
+      if (!refreshWasSuperseded) {
+        await tx.kBResource.update({
+          where: { id: resource.id },
+          data: {
+            activeResourceVersion,
+            activeContentSha256,
+            ingestedAt: occurredAt,
+          },
+        })
+      }
+      return
+    }
+
     const resource = await tx.kBResource.findFirst({
       where: {
         id: payload.external_resource_id,

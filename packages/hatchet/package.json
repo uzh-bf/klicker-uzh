@@ -10,6 +10,7 @@
   "dependencies": {
     "@azure/storage-blob": "12.25.0",
     "@hatchet-dev/typescript-sdk": "1.9.4",
+    "@klicker-uzh/knowledge-graph": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*"

@@ -6,6 +6,7 @@ import type { PreparedHatchetTasks } from '@klicker-uzh/hatchet'
 import {
   hatchetClient,
   prepareHatchetTasks,
+  validateKBGraphWorkerConfig,
   validateKBIngestionWorkerConfig,
 } from '@klicker-uzh/hatchet'
 import EventEmitter from 'events'
@@ -63,6 +64,7 @@ function selectWorkflows(workflows: PreparedHatchetTasks) {
 
 async function main() {
   validateKBIngestionWorkerConfig()
+  validateKBGraphWorkerConfig()
   logger.info({ workerName: HATCHET_WORKER_NAME }, 'Starting Hatchet worker')
 
   const redisExec = new Redis({

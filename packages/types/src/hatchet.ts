@@ -53,6 +53,10 @@ export type DeleteKBResourceInput = JsonObject & {
   resourceVersion: number
 }
 
+export type BuildKBGraphInput = JsonObject & {
+  buildId: string
+}
+
 // Shared contract for Hatchet task handler injections.
 export interface HatchetHandlers {
   handleSendTeamsNotification: (
@@ -137,6 +141,7 @@ export interface PreparedHatchetTasks {
     DeleteKBResourceInput,
     { success: boolean }
   >
+  buildKBGraph: TaskWorkflowDeclaration<BuildKBGraphInput, { success: boolean }>
   createAuditLogEntry: TaskWorkflowDeclaration<
     {
       message: Record<string, string | undefined> & {

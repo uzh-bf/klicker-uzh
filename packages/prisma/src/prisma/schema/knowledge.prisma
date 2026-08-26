@@ -27,6 +27,19 @@ enum KBIngestionOperation {
   DELETE
 }
 
+enum KBGraphBuildStatus {
+  QUEUED
+  PROCESSING
+  SUCCEEDED
+  FAILED // includes builds failed by the reconciliation timeout
+  SUPERSEDED
+}
+
+enum KBGraphQualityTier {
+  STANDARD
+  HIGH
+}
+
 model KB {
   id          String  @id @default(uuid()) @db.Uuid
   name        String
@@ -39,9 +52,15 @@ model KB {
   deletedBy   User?     @relation("KBDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
   deletedById String?   @db.Uuid
 
+  // at most one build may hold the slot at a time; claimed with a conditional update
+  activeGraphBuildId String? @db.Uuid
+  // the build FalkorDB currently serves, kept in place even once its digest goes stale
+  publishedGraphBuildId String? @db.Uuid
+
   resources     KBResource[]
   uploadTickets KBUploadTicket[]
   chatbots      KBChatbot[]
+  graphBuilds   KBGraphBuild[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -117,6 +136,73 @@ model KBIngestionRun {
 
   @@index([resourceId, createdAt])
   @@index([status])
+}
+
+// Append-only ledger of knowledge graph build attempts, mirroring KBIngestionRun.
+// The id is supplied by KlickerUZH and doubles as the idempotency key handed to the
+// external generation service, which answers with its own externalOperationId.
+model KBGraphBuild {
+  id String @id @db.Uuid
+
+  status      KBGraphBuildStatus @default(QUEUED)
+  qualityTier KBGraphQualityTier @default(STANDARD)
+
+  // digest over the KB's active serving set at request time; pins what this build represents
+  sourceContentDigest String
+  // FalkorDB graph the completed build is written to, in one step at the end
+  graphName String
+  // GraphML export retained on Blob for versioning, once the build succeeds
+  graphmlBlobName String?
+
+  externalOperationId String?
+  externalStartedAt   DateTime?
+  statusMessage       String?
+  errorCode           String?
+  startedAt           DateTime?
+  finishedAt          DateTime?
+  // terminal builds keep their ledger row; maintenance records once their
+  // external graph and GraphML artifact have been removed.
+  // Set before external deletion so late external completions cannot publish
+  // while retention cleanup is in flight. Stale claims are reclaimable after
+  // the retention grace window.
+  cleanupStartedAt DateTime?
+  cleanedAt           DateTime?
+
+  // builds spend the requesting lecturer's AI budget, so the requester is recorded
+  requestedBy   User?   @relation(fields: [requestedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  requestedById String? @db.Uuid
+
+  kb   KB     @relation(fields: [kbId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  kbId String @db.Uuid
+
+  // The graph must remain explainable even if a source resource is later
+  // deleted or replaced, so this is a build-local snapshot rather than a FK.
+  sources KBGraphBuildSource[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kbId, createdAt])
+  @@index([status])
+}
+
+model KBGraphBuildSource {
+  id String @id @default(uuid()) @db.Uuid
+
+  resourceId    String         @db.Uuid
+  title         String
+  type          KBResourceType
+  contentSha256 String
+  sourceUrl     String?
+  blobName      String?
+
+  build   KBGraphBuild @relation(fields: [buildId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  buildId String       @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@unique([buildId, resourceId])
+  @@index([resourceId])
 }
 
 model KBUploadTicket {

@@ -19,7 +19,7 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 
 Never run root `pnpm run test:run` blind — its turbo fan-out includes Cypress, which needs a running seeded stack.
 
-The focused `knowledge.test.ts`, `knowledgeIngestion.test.ts`, and `knowledgeWebhooks.test.ts` suites use real PostgreSQL but deliberately stub or avoid Hatchet, so they can verify owner-scoped binding replacement, MCP configuration, attempt-ledger, and serving-state transitions without a client token. Keep the full GraphQL suite on `test:local`.
+The focused `knowledge.test.ts`, `knowledgeIngestion.test.ts`, and `knowledgeWebhooks.test.ts` suites use real PostgreSQL but deliberately stub or avoid Hatchet, so they can verify owner-scoped binding replacement, MCP configuration, attempt-ledger, platform-refresh idempotency, current-attempt list projection, and serving-state transitions without a client token. Keep the full GraphQL suite on `test:local`.
 
 For KB deletion changes, add real-PostgreSQL coverage for owner-hidden tombstones and KB-first create/delete races, plus Hatchet unit coverage for the exact external delete request, operation fencing, empty-serving cutover, ticket expiry, blob-before-row ordering, and idempotent maintenance retry.
 

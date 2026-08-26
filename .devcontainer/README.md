@@ -86,6 +86,7 @@ the selected checkout identity in every proxy upstream.
 | OLAT API          | `https://olat-api.klicker.<workspace>.localhost`     | `${WORKSPACE}-app:3030`      |
 | Response API      | `https://response-api.klicker.<workspace>.localhost` | `${WORKSPACE}-app:7078`      |
 | Blob Storage      | `https://blob.klicker.<workspace>.localhost`         | `${WORKSPACE}-azurite:10000` |
+| Graph Blob source | `http://127.0.0.1:10003` (host only)                 | `${WORKSPACE}-azurite:10000` |
 | LTI Service       | `https://lti.klicker.<workspace>.localhost`          | `${WORKSPACE}-app:4000`      |
 | Chat App          | `https://chat.klicker.<workspace>.localhost`         | `${WORKSPACE}-app:3004`      |
 | Postgres          | `db.klicker.<workspace>.localhost:5432`              | `${WORKSPACE}-db:5432`       |
@@ -99,7 +100,11 @@ Azurite's browser-facing account URL is
 use the workspace-specific Azurite alias over HTTP; `post-start.sh` configures
 the exact Manage origin as Blob CORS on that local emulator. This split keeps
 browser uploads production-like without making Node trust the host's routed
-certificate or requiring Azure credentials.
+certificate or requiring Azure credentials. The linked DevRouter overlay also
+maps the same Azurite container to host port `10003`. The committed
+`KB_GRAPH_BLOB_ACCOUNT_URL=http://127.0.0.1:10003/klickerdev` setting is used
+only for signed source URLs consumed by the host-side graph worker; it does not
+change the browser-facing upload URL.
 
 Infra (the 3× Redis, MailHog, Hatchet) is **not** routed — the apps reach it by
 compose DNS (`redis_exec`, `redis_cache`, `redis_assessment`, `mailhog`,
@@ -164,6 +169,89 @@ container-recreate budget.
 
 The image also carries uv `0.11.12` and selects Python 3.12, matching the
 analytics image and lint CI so the root quality gate runs inside the container.
+
+## Local KB ingestion and graph builder
+
+The Klicker worker uses the producer-neutral `data-ingestion` resource API for
+KB resource acceptance. It is not part of this DevPod compose project. Start
+the sibling service on the host before clicking **Ingest**:
+
+```bash
+DATA_INGESTION_REPO=/path/to/data-ingestion \
+KLICKER_KB_APP_ORIGIN=https://api.klicker.<workspace>.localhost \
+  ./util/start-local-kb-ingestion.sh
+```
+
+This starts the real `modules/ingestion-api` service on
+`http://127.0.0.1:18081` with an ignored SQLite state file and a local-only
+Klicker producer registry. Port `18081` keeps the local API separate from the
+host's existing `18080` port-forward. The DevPod reaches it through
+`http://host.docker.internal:18081`; the app's source-gateway URL is rewritten
+to the namespaced API route so blob sources remain addressable by a host-side
+worker. The API service accepts operations durably; running the separate
+data-ingestion dispatcher/worker fleet is still required for downstream
+fetching, embeddings, and vector-store activation.
+
+For the full local dispatcher/fetch-worker path, point the API at the same
+PostgreSQL state store as the worker fleet. SQLite remains the default for
+API-only development:
+
+```bash
+KB_INGESTION_STATE_BACKEND=postgres \
+KB_INGESTION_STATE_DSN=postgresql://hatchet:hatchet@127.0.0.1:<pg-port>/hatchet \
+KB_INGESTION_STATE_SCHEMA=ingestion_state_local \
+DATA_INGESTION_REPO=/path/to/data-ingestion \
+KLICKER_KB_APP_ORIGIN=https://api.klicker.<workspace>.localhost \
+  ./util/start-local-kb-ingestion.sh --foreground
+```
+
+The worker-side `INGESTION_STATE_DSN`, `INGESTION_STATE_SCHEMA`, and
+`INGESTION_STATE_ENSURE_SCHEMA` must use the same values.
+
+When the worker fleet runs on the host and the app is reached through
+DevRouter, trust the generated local CA so Python can fetch the HTTPS source
+gateway:
+
+```bash
+export SSL_CERT_FILE=/opt/homebrew/etc/openssl@3/cert.pem
+export SSL_CERT_DIR=/path/to/klicker-uzh/.devcontainer/certs
+```
+
+The CA directory is generated locally and is ignored by Git. Keep the
+source-gateway credential in the worker environment; do not put it in a
+committed file.
+
+For the graph-builder boundary, start the canonical
+`kg-content-generation/lightrag_research` local Hatchet/FalkorDB stack, then
+write its local token into the ignored DevPod env file:
+
+```bash
+KG_CONTENT_GENERATION_REPO=/path/to/kg-content-generation
+(
+  cd "$KG_CONTENT_GENERATION_REPO"
+  FALKORDB_HOST_PORT=16379 \
+  ./lightrag_research/scripts/hatchet/start_local_stack.sh
+)
+
+KB_GRAPH_FALKORDB_HOST_PORT=16379 \
+KG_CONTENT_GENERATION_REPO="$KG_CONTENT_GENERATION_REPO" \
+  ./util/configure-local-kb-graph-builder.sh
+```
+
+`FALKORDB_HOST_PORT=16379` maps the graph container's internal `6379` to an
+alternate host port, leaving DevRouter's existing host `6379` untouched. The
+host-side graph worker and the DevPod use the same alternate port. If the
+doc-processing checkout is not available, add `DOC_PROCESSING_START_LOCAL=0`
+to the stack command; that skips only the optional local document-processing
+processes.
+
+Restart or re-run `devrouter ensure <checkout>` after generating that file so
+the app worker loads the local Hatchet and FalkorDB connection. No graph token
+is committed. Keep the graph worker's
+`LIGHTRAG_GRAPHML_BLOB_CONNECTION_STRING` on the same target Azurite mapping
+(`10003`) so GraphML artifacts are written to the browser-visible emulator.
+Without this optional file, the graph integration remains
+disabled and the rest of the DevPod still starts normally.
 
 ## Notes
 

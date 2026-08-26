@@ -1,0 +1,30 @@
+query GetKbKnowledgeGraphNeighbors($kbId: ID!, $nodeId: ID!) {
+  getKbKnowledgeGraphNeighbors(kbId: $kbId, nodeId: $nodeId) {
+    kbId
+    buildId
+    isStale
+    nodes {
+      id
+      labels
+      kind
+      displayLabel
+      summary
+      content
+      degree
+      sourceReferences {
+        resourceId
+        title
+        reference
+      }
+    }
+    edges {
+      id
+      source
+      target
+      type
+      label
+      properties
+    }
+    truncated
+  }
+}
