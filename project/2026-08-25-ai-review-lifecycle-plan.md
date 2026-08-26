@@ -49,9 +49,9 @@
 - Planning baseline: `origin/v3` at
   `5ffc6a6d2bc4b12f6f38b5119718a7545e039256`.
 - Fresh remote check: `origin/v3` is now at
-  `db75cd2e829259df8f064c4525354084410ccf7b`; this task branch is eleven
-  commits behind and forty-nine commits ahead. Rebase, merge, and publication
-  remain outside the approved authority.
+  `de103a52d982a29af72022069ad668bc68f84094`; this task branch is seventeen
+  commits behind and sixty commits ahead. Rebase, merge, and publication remain
+  outside the approved authority.
 - Historical inputs:
   `project/2026-08-24-open-code-review-plan.md` and
   `project/2026-08-25-manual-final-ai-review-gate-plan.md`.
@@ -118,12 +118,17 @@ hex evidence digest>`, and the stack status description is
 individual evidence digest covers the PR range, review mode, root review,
 stack identity, dispositions, and policy. The stack evidence digest covers
 the ordered layer identities, topology identity, exact range, dispositions,
-and policy. Current success detection accepts either a finding-bearing report
-or one of these markers only after verifying the evidence digest and
-successful trusted workflow provenance. The generated staging-promotion
-workflow may use its separate documented `Verified generated staging
-promotion` no-report exemption. Merge readiness is the composition of current
-review evidence, green required CI, and terminally dispositioned findings.
+and policy. Each clean run also creates an immutable GitHub check with a
+versioned, base64url metadata marker. The marker binds the clean status to the
+exact reviewed paths, rename aliases, workflow run, trusted workflow commit,
+and review plan. Current success detection accepts either a finding-bearing
+report or one of these verified clean markers. Unrelated forward-only base
+movement can preserve a clean result only when it is bounded, safe, and
+disjoint from the reviewed paths; otherwise a new review is required. The
+generated staging-promotion workflow may use its separate documented `Verified
+generated staging promotion` no-report exemption. Merge readiness is the
+composition of current review evidence, green required CI, and terminally
+dispositioned findings.
 
 ## Full review and descendant attestation
 
@@ -267,9 +272,11 @@ Every relevant member event, including synchronize, edited base, draft
 transition, close, and reopen, re-resolves the stack. A changed lower-layer head
 must set a newer `final-ai-stack-review` state on the top SHA even when that SHA
 has not changed; status evaluation always selects the latest matching context.
-Native stack landing may preserve the same code identities while PR topology
-changes, but that behavior is not yet qualified. Stack evidence is pre-merge
-procedural evidence until a controlled landing proves the exact survival rules.
+Clean stack evidence is accepted only from the matching immutable clean-evidence
+check, whose digest includes canonical reviewed paths and rename aliases. Native
+stack landing may preserve the same code identities while PR topology changes,
+but that behavior is not yet qualified. Stack evidence is pre-merge procedural
+evidence until a controlled landing proves the exact survival rules.
 
 ## Security, data, cost, and reliability controls
 
@@ -280,10 +287,11 @@ procedural evidence until a controlled landing proves the exact survival rules.
   untrusted instructions. Accepted ADRs, tests, and documentation remain
   evidence of intended behavior and must be consulted before recommending a
   contract change.
-- Preserve least-privilege job permissions. Install the pinned OCR CLI before
-  exposing a mode-`0600` ephemeral key config, remove it on every exit path, do
-  not upload raw artifacts, and never log request bodies, tokens, or private
-  tracker content.
+- Preserve least-privilege job permissions. Clean-evidence readers have
+  `checks: read`; only finalizers have `checks: write`. Install the pinned OCR
+  CLI before exposing a mode-`0600` ephemeral key config, remove it on every
+  exit path, do not upload raw artifacts, and never log request bodies, tokens,
+  or private tracker content.
 - Keep DeepSeek on drafts because observed value and cost justify it. Use one
   cumulative strong code pass and one topology pass per stack, not one strong
   pass per layer by default.
@@ -505,10 +513,11 @@ real runs before proposing any parameter retune or branch-protection context.
 
 ## Progress
 
-- Status: implementation and local verification are complete on both task
-  branches. The current correction commits are ready for a fresh simplifier,
-  risk review, and integrated final review; publication and live qualification
-  remain withheld.
+- Status: implementation, corrections, and local verification are complete on
+  both task branches. The clean-evidence correction series and the final
+  digest simplification are committed with green focused suites. Publication
+  to a PR is authorized by the user; merge and live qualification remain
+  withheld.
 - Delivered: draft reviews stay cheap and non-blocking; manual final review is
   the merge gate; native-stack reviews reconstruct the verified layer path,
   preserve cumulative findings and topology, and attest bounded repairs across
@@ -526,9 +535,11 @@ real runs before proposing any parameter retune or branch-protection context.
 - Correction commits: KlickerUZH `307fa5dcb`, `49f6611cd`, `f5718ae15`,
   `7bc1d6abf`, `58a485f13`, `ca234d351`, `51dda1954`, `72ca104f1`,
   `1c28fa75b`, `33571b172`, `66541c7b7`, `0b5adb907`, and `e38a0db09`;
-  dotfiles `01c4f10`, `9032b1b`, `cf970a4`, `d2d7a88`, `daf165d`, `5454d0e`,
-  `a9b2c57`, and `ab9abcb`. The Klicker worktree has only this plan update
-  pending; the dotfiles worktree is clean.
+  clean-evidence series `bb5245a55`, `eefccce6e`, `29b511e7f`,
+  `0970ed8c4`, `bda464e39`, `6047592fa`, and simplification
+  `d8afc59ec`; dotfiles `01c4f10`, `9032b1b`, `cf970a4`, `d2d7a88`,
+  `daf165d`, `5454d0e`, `a9b2c57`, and `ab9abcb`. The Klicker worktree
+  has only this plan update pending; the dotfiles worktree is clean.
 - Completed: S1 draft-only discovery, S2 individual descendant attestation, S3
   native-stack attestation, S4 offline qualification assets and documentation,
   and S5 bounded shared babysit state-machine guidance. The implementation
@@ -547,8 +558,9 @@ real runs before proposing any parameter retune or branch-protection context.
   satisfied: commands, statuses, metadata, finding IDs, dispositions, round
   semantics, and cold-review triggers are fixed and covered. G5 remains
   withheld for a separately authorized post-publication qualification.
-- Verification: the final review/stack tests pass 67 of 67, the qualification
-  tests pass 20 of 20, and the combined Node suite passes 87 of 87. The offline
+- Verification: after the final simplification, the combined Node suite
+  (`final-ai-review`, `final-ai-stack-review`, and qualification suites)
+  passes 79 of 79 and Biome formatting is clean on the touched file. The offline
   evaluator passes all 8 fixtures with digest
   `e553bd3adbb893f515d2a87b4a6834b864e8694e433d8fcfe9eb940ebcb2c2df`.
   `pnpm run check` passes 25 of 25 packages, and formatting, both
@@ -578,14 +590,17 @@ real runs before proposing any parameter retune or branch-protection context.
   identical. Rebase and merge remain withheld by this plan. The live API may
   not retain a removed member's closed stack record; when it does not, the
   initializer can only fail closed on the event head. This remains a G5 live
-  proof item.
+  proof item. The final simplifier finding (duplicate stack digest projector)
+  was applied in `d8afc59ec`; per the user's takeover direction, no further
+  per-commit reviewer loops are run — the integrated branch carries fresh
+  green suites instead.
 - Runtime: the exact task DevPod supported all container checks, but its
   post-start auth readiness contract failed because the task environment lacks
   the expected `.env`; no runtime or browser proof is required for this
   CI/skill-only package. Stop and verify the exact runtime after the final
   review.
-- Next: commit this progress update, rerun the required simplifier and risk
-  reviews, then run the integrated final reviewer and stop the exact task
-  runtime. Do not push, create PRs, write
-  ClickUp tasks, alter branch protection, merge, deploy, or delete the task
-  worktrees.
+- Next: commit this progress update, push the branch, and open the
+  user-authorized PR against `v3`. Do not merge, deploy, write ClickUp
+  tasks, alter branch protection, or delete the task worktrees; `origin/v3`
+  has advanced and any rebase stays user-gated. Stop and verify the exact
+  task runtime after publication.
