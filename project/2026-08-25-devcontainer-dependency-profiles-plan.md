@@ -402,24 +402,23 @@
 ## Progress
 
 - Status: K0-K5 are implemented and the integrated runtime matrix passes.
-  Devrouter 0.0.40 is merged; its exact-head GitHub Actions run and npm release
-  remain queued before downstream publication.
-- Active slice: Upstream release completion, integrated final review, and PR
-  readiness.
+  Devrouter 0.0.40 is released and its published artifact passes the
+  representative downstream lifecycle matrix.
+- Active slice: Integrated final review and PR readiness.
 - Completed: Fresh downstream worktree, dependency and process mapping,
   first-party Dev Container and DevPod research, upstream package decomposition,
   and required planning review.
-- Remaining: Publish and npm-verify devrouter 0.0.40 after exact-head CI starts,
-  run the integrated final review, push the final Klicker commits, update PR
-  #5574, and prove the exact runtime stopped.
-- Latest verified base: `origin/v3` at `cd5cfd574`; branch was 0 ahead and 0
-  behind before implementation.
-- Runtime: The exact linked-worktree runtime is active on the `live-quiz`
+- Remaining: Run the integrated final review, push the final Klicker commits,
+  update PR #5574, and prove the exact runtime stopped.
+- Latest verified target: `origin/v3` at `a36c21626`. The package is ten
+  commits ahead and two deployment-only commits behind; those target commits
+  touch only `deploy/env-uzh-stg/values.yaml`, outside this package's diff.
+- Runtime: The exact linked-worktree runtime is active on the `ai,chat,mcp`
   profile for final checks. It will be stopped without deletion after the final
   runtime-dependent check.
 - Active children: none.
-- Unresolved gates: GitHub Actions has not assigned a job to devrouter main run
-  32984746600. Klicker PR merge remains separately authorized.
+- Unresolved gates: Integrated final review and downstream exact-head CI.
+  Klicker PR merge remains separately withheld.
 - 2026-08-26 upstream publication: devrouter PR #37 was squash-merged at
   `af55b23`, GitHub release `v0.0.39` was published, and the release workflow
   completed successfully. `npm view @devrouter/cli` reports version 0.0.39;
@@ -451,6 +450,13 @@
   `bc38a7d3697b8658618e538b1d6bacd19ab0d98b`. The 0.0.40 source candidate
   passes 659 tests and package smoke; exact-head main CI run 32984746600 is
   still queued without an assigned job, so the release is not yet published.
+- 2026-08-26 upstream release: The immutable `v0.0.40` tag resolves to
+  `bc38a7d3697b8658618e538b1d6bacd19ab0d98b`. Exact-tag non-publishing CI run
+  32992245103 passed before release. GitHub release v0.0.40 is published, and
+  explicit publication run 32992503893 passed both `check` and `publish`.
+  npm reports `@devrouter/cli` 0.0.40 with tarball SHA-1
+  `400aadd7049c35f7c80eacf4788f49dd1b12b059`. The release stays scoped to the
+  rollback fix; a later Devsy commit on `main` remains unreleased.
 - 2026-08-26 K5 matrix: Cold `chat` recaptured a late Hatchet token before app
   startup. Every standalone profile (`manage`, `pwa`, `chat`, `live-quiz`,
   `ai`, `mcp`, `email`), omitted/full, `chat,ai`, reversed `ai,chat`,
@@ -482,10 +488,18 @@
   A real `live-quiz` reconciliation reached Response API `200 application/json`
   at `/healthz` and proved live general and response-processor worker runtimes
   as descendants of the exact managed Turbo root before reporting zero drift.
+- 2026-08-26 published-artifact proof: npm-executed devrouter 0.0.40 reported
+  the matching consumer version. After an exact stop, cold `mcp` started only
+  Postgres, Hatchet, the idle app container, and the MCP process. A warm
+  `chat,ai,mcp` transition reached ready with LiteLLM and all three Redis
+  services healthy, both managed processes running, and zero drift. One
+  stale-Chat repair advanced the runtime generation as designed; the following
+  steady-state repeat retained every exact container ID and both process PIDs.
+  An unknown profile failed at configuration validation and read-only status
+  confirmed the prior `ai,chat,mcp` state remained ready with zero drift.
 - Required delivery layer: locally committed, release-compatible consumer
   package with exact runtime stopped.
-- Achieved delivery layer: Integrated local implementation and runtime proof;
-  upstream bugfix merged but not yet released.
-- Next action: Complete devrouter 0.0.40 publication when exact-head CI starts,
-  run final review, publish the Klicker branch and PR update, then stop the exact
-  runtime and prove no owned resource remains active.
+- Achieved delivery layer: Integrated local implementation, released upstream
+  dependency, and source-built plus published-artifact runtime proof.
+- Next action: Run final review, publish the Klicker branch and PR update, then
+  stop the exact runtime and prove no owned resource remains active.
