@@ -160,10 +160,10 @@ lifecycle.
   `klicker-playwright-e2e`, `klicker-testing-verification`,
   `klicker-wiki-maintenance`, and `devrouter`.
 - `$rs-local-runtime-lifecycle` governs runtime lifecycle boundaries. This
-  exact runtime was `Running` at the last read. The final canonical stop is
-  blocked while the earlier `devrouter ensure .` process, PID 39295, remains
-  active in the managed post-start path. No stopped or routes-cleared state is
-  claimed. Manual route, TLS, and certificate repair remain withheld.
+  exact runtime is stopped with fresh source-path provider and route readback.
+  No workaround, cache clearing, route, TLS, or configuration change, raw
+  DevPod/Docker mutation, or deletion was used. Manual route, TLS, and
+  certificate repair remain withheld.
 - The established repository plan format and the fully read sliced-workflow
   contract provide this plan's durable format.
 
@@ -379,15 +379,16 @@ Runtime contract:
 
 - The official devrouter 0.0.38 consumer version pin and generated guidance are
   the only authorized configuration changes. Canonical exact-checkout
-  verification is recorded below, but the final non-destructive exact stop is
-  not complete.
-- The earlier canonical `devrouter ensure .` process, PID 39295, is still active
-  in the managed post-start path, so `devrouter stop . --json` is blocked by its
-  managed lifecycle lock. Exact DevPod `rs-ux-review-question-library` was
-  `Running` at the last read. No stopped or routes-cleared state is claimed.
-- Verification used canonical devrouter commands and did not use raw
-  DevPod/Docker lifecycle mutations, manual routes, localhost fixed ports, or
-  another checkout's runtime.
+  verification and the final non-destructive exact stop are complete.
+- After the earlier canonical `devrouter ensure .` process, PID 39295, exited,
+  `devrouter stop . --json` exited 0 with `stopped: true` and `freedRoutes: 0`.
+  The exact source path matched DevPod `rs-ux-review-question-library`;
+  `devpod status` reported provider `docker` in state `Stopped`, and
+  `devrouter ls --json` reported zero routes for the exact source path.
+- Verification used canonical devrouter lifecycle commands and read-only
+  source-path provider/route readback. It did not use a workaround, cache
+  clearing, route, TLS, or configuration change, raw DevPod/Docker mutation,
+  deletion, localhost fixed ports, or another checkout's runtime.
 - Browser validation uses only the fancy namespaced origins:
   `https://manage.klicker.rs-ux-review-question-library.localhost` and
   `https://api.klicker.rs-ux-review-question-library.localhost`.
@@ -467,8 +468,8 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 - Status: W2 implementation, checks, exact devrouter proof, independent review,
   evidence, the contract correction, and its upstream merge are complete
-  locally. Runtime lifecycle closure is not complete while the earlier managed
-  ensure remains active.
+  locally. Runtime lifecycle closure is complete with fresh exact-source
+  provider and zero-route readback.
 - Freshness: the integrated base and merge-base are
   `ac84460d2209c51842f0857da75cf7d7f258ae09`, which is also the current
   `origin/v3`. Exact ahead/behind counts are not durable Progress state.
@@ -816,8 +817,9 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   `devrouter exec . -- pnpm --filter @klicker-uzh/frontend-manage run check`,
   full `devrouter exec . -- pnpm run check:all` with 25/25 check tasks and all
   lint tasks, and full `devrouter exec . -- pnpm run build` with 23/23 tasks and
-  exit 0. Exact runtime stop and scoped route readback remain pending. Local
-  review, push, and exact-head CI remain pending.
+  exit 0. At that evidence checkpoint, exact runtime stop and scoped route
+  readback remained pending; the current lifecycle entry below records their
+  later completion. Local review, push, and exact-head CI remain pending.
 - Delivery remains pending for the local contract correction. Draft PR #5546
   still points to `510ab4308e516b69294fcb1dae69adbb6c9feea2`; no new push or
   exact-head CI is claimed, and the OpenCodeReview thread remains unresolved.
@@ -830,14 +832,17 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   Playwright workflow correction that restores
   `packages/graphql/dist/client.json` into the generated public path before
   tests; it was merged normally. Draft PR #5546 remains published at
-  `510ab4308e516b69294fcb1dae69adbb6c9feea2`. Runtime lifecycle closure is
-  pending: the earlier canonical `devrouter ensure .` process, PID 39295,
-  remains active in the managed post-start path, canonical
-  `devrouter stop . --json` is blocked by that managed lock, and exact DevPod
-  `rs-ux-review-question-library` was `Running` at the last read. No stopped or
-  routes-cleared state, new push, exact-head CI, or thread resolution is
-  claimed; merge, mark-ready, deployment, publication, cleanup, and deletion
-  remain withheld.
+  `510ab4308e516b69294fcb1dae69adbb6c9feea2`. After the earlier canonical
+  `devrouter ensure .` process, PID 39295, exited, canonical
+  `devrouter stop . --json` exited 0 with `stopped: true` and `freedRoutes: 0`.
+  The exact source path matched DevPod `rs-ux-review-question-library`;
+  `devpod status` reported provider `docker` in state `Stopped`, and
+  `devrouter ls --json` reported an exact source-path route count of 0. No
+  workaround, cache clearing, route, TLS, or configuration change, raw
+  DevPod/Docker mutation, or deletion occurred. The earlier failed-closed Chat
+  Turbopack readiness evidence remains unchanged. No new push, exact-head CI,
+  or thread resolution is claimed; merge, mark-ready, deployment, publication,
+  cleanup, and deletion remain withheld.
 
 ### Historical execution evidence before final runtime proof
 
