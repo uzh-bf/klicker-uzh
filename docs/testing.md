@@ -50,8 +50,10 @@ KB scale coverage uses real PostgreSQL for tied keyset traversal, cursor/filter 
 
 The response-example foundation test uses the GraphQL local database suite and
 creates its candidate and evidence rows directly inside the test fixture. It
-does not add a dev seed or production mutation, so a green test proves the
-owner lifecycle and cascade contract without populating normal environments.
+The development seed and focused Playwright journey also add deterministic
+synthetic chatbot/examples for local review; none of these paths mutate
+production data. A green GraphQL test proves the owner lifecycle and cascade
+contract without relying on the development seed.
 
 For OpenAI-compatible chat stream changes, run
 `apps/chat/test/openai-chat-streaming.test.ts` first. It injects an
