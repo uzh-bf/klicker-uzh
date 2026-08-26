@@ -130,6 +130,7 @@ jobs:
             packages/export/dist
             packages/grading/dist
             packages/graphql/dist
+            packages/graphql/src/public/client.json
             packages/hatchet/dist
             packages/markdown/dist
             packages/prisma/dist
