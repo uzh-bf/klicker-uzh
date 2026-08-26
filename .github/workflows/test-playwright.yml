@@ -272,8 +272,9 @@ jobs:
         with:
           name: playwright-build-artifact
 
-      - name: Restore generated GraphQL client map
+      - name: Restore generated GraphQL client
         run: |
+          mkdir -p packages/graphql/src/public
           test -s packages/graphql/dist/client.json
           cp packages/graphql/dist/client.json packages/graphql/src/public/client.json
 
