@@ -8,11 +8,11 @@ function ChatbotList({
   chatbots,
   loading,
   onOpen,
-}: {
+}: Readonly<{
   chatbots?: Chatbot[]
   loading: boolean
   onOpen: (chatbot: Chatbot) => void
-}) {
+}>) {
   const t = useTranslations()
 
   if (loading) {

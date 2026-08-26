@@ -9,10 +9,10 @@ import { getChatbotStatusTranslationKey } from './chatbotStatus'
 function ChatbotItem({
   chatbot,
   onOpen,
-}: {
+}: Readonly<{
   chatbot: Chatbot
   onOpen: () => void
-}) {
+}>) {
   const t = useTranslations()
   const courseNames = chatbot.courses?.map((course) => course.name) ?? []
 

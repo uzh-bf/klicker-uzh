@@ -107,7 +107,22 @@ function actionErrorCode(error: unknown) {
   ).graphQLErrors?.[0]?.extensions?.code
 }
 
-function ChatbotResponseExampleReview({ chatbotId }: { chatbotId: string }) {
+function approvalErrorKey(code: string | undefined) {
+  switch (code) {
+    case 'RESPONSE_EXAMPLE_SOURCES_REQUIRED':
+      return 'manage.resources.responseExampleSourcesRequired' as const
+    case 'RESPONSE_EXAMPLE_MODE_UNAVAILABLE':
+      return 'manage.resources.responseExampleModeUnavailable' as const
+    case 'RESPONSE_EXAMPLE_DUPLICATE':
+      return 'manage.resources.responseExampleDuplicate' as const
+    default:
+      return 'manage.resources.responseExampleReviewActionError' as const
+  }
+}
+
+function ChatbotResponseExampleReview({
+  chatbotId,
+}: Readonly<{ chatbotId: string }>) {
   const t = useTranslations()
   const [editValues, setEditValues] = useState<EditState | null>(null)
   const [activeActionId, setActiveActionId] = useState<string | null>(null)
@@ -185,15 +200,7 @@ function ChatbotResponseExampleReview({ chatbotId }: { chatbotId: string }) {
         return
       }
     } catch (error) {
-      setReviewError(
-        actionErrorCode(error) === 'RESPONSE_EXAMPLE_SOURCES_REQUIRED'
-          ? t('manage.resources.responseExampleSourcesRequired')
-          : actionErrorCode(error) === 'RESPONSE_EXAMPLE_MODE_UNAVAILABLE'
-            ? t('manage.resources.responseExampleModeUnavailable')
-            : actionErrorCode(error) === 'RESPONSE_EXAMPLE_DUPLICATE'
-              ? t('manage.resources.responseExampleDuplicate')
-              : t('manage.resources.responseExampleReviewActionError')
-      )
+      setReviewError(t(approvalErrorKey(actionErrorCode(error))))
     } finally {
       setActiveActionId(null)
     }
@@ -254,15 +261,7 @@ function ChatbotResponseExampleReview({ chatbotId }: { chatbotId: string }) {
         return
       }
 
-      setReviewError(
-        code === 'RESPONSE_EXAMPLE_SOURCES_REQUIRED'
-          ? t('manage.resources.responseExampleSourcesRequired')
-          : code === 'RESPONSE_EXAMPLE_MODE_UNAVAILABLE'
-            ? t('manage.resources.responseExampleModeUnavailable')
-            : code === 'RESPONSE_EXAMPLE_DUPLICATE'
-              ? t('manage.resources.responseExampleDuplicate')
-              : t('manage.resources.responseExampleReviewActionError')
-      )
+      setReviewError(t(approvalErrorKey(code)))
     }
   }
 
