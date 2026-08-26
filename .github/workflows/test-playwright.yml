@@ -139,8 +139,8 @@ jobs:
           retention-days: 1
 
   # The hosted and public-PR predicates below are intentional complements.
-  # Only the exact lowercase value "true" enables the self-hosted path; every
-  # other value fails closed to GitHub-hosted runners.
+  # Only the exact lowercase value "true" or an exact canary PR number enables
+  # the self-hosted path; every other value fails closed to GitHub-hosted runners.
   test-playwright-hosted:
     needs: [filter, build-and-compile]
     if: >-
