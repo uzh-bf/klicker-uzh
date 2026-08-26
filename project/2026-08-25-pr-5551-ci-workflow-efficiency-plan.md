@@ -37,10 +37,11 @@
 - Branch: `rs/ci-workflow-efficiency-cleanup` for the follow-up cutover.
 - Worktree: `trees/ci-workflow-efficiency`.
 - Target: current `origin/v3` at
-  `861afd19383412a7338f491de46ad4ce3b761750`, including merged [PR
+  `ac84460d2209c51842f0857da75cf7d7f258ae09`, including merged [PR
   #5446](https://github.com/uzh-bf/klicker-uzh/pull/5446)'s Playwright timing and
-  eight-shard changes plus the latest staging promotion and devcontainer-cache
-  commits.
+  eight-shard changes, [PR #5567](https://github.com/uzh-bf/klicker-uzh/pull/5567)'s
+  generated-client handoff, and the latest staging promotion and
+  devcontainer-cache commits.
 - Pull request: [#5551](https://github.com/uzh-bf/klicker-uzh/pull/5551) was
   squash-merged externally before the planned cleanup; follow-up draft
   [#5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) contains the cutover.
@@ -210,8 +211,8 @@ Do not delete a workflow if any readback differs from the expected set.
 ## Progress
 
 - Status: branch is synced with current `origin/v3` through normal merge commit
-  `905dbadc1a`; [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) needs
-  this latest head pushed and its exact-head checks before it can be marked
+  `e90a39619`; [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) needs
+  this current head pushed and its exact-head checks before it can be marked
   ready.
 - Completed: plan commit and post-commit freshness check; replacement workflow
   implementation; Actions audit, validation, and discovery; exact Node 24
@@ -227,9 +228,12 @@ Do not delete a workflow if any readback differs from the expected set.
   app ID 15368 preserved. The current baseline additionally contains merged
   [PR #5446](https://github.com/uzh-bf/klicker-uzh/pull/5446) at `cd5cfd574`;
   its exact-head Playwright run `32919404126` passed the filter, build, all
-  eight shards, and `test-playwright-status`. The branch preserves that
-  baseline and all subsequent `v3` commits through normal merge commit
-  `905dbadc1a`. Current exact synced-head local verification passes `check:all`
+  eight shards, and `test-playwright-status`. While hosted verification was in
+  flight, merged [PR #5567](https://github.com/uzh-bf/klicker-uzh/pull/5567)
+  added the generated-client restore step to `v3`; the branch preserves that
+  step through normal merge commit `e90a39619` and adds an explicit non-empty
+  artifact assertion while keeping the ignored source copy out of the upload
+  list. Current exact synced-head local verification passes `check:all`
   (7/7 orchestration tasks, 25/25 checks) under the pinned Node 24 and pnpm
   11.5 toolchain. The latest normal push hook also passed the full build with
   23/23 tasks. An earlier standalone full-build repeat was stopped after
@@ -238,10 +242,12 @@ Do not delete a workflow if any readback differs from the expected set.
   hit restored `packages/graphql/dist/client.json` but not the ignored source
   copy consumed by three course-sharing specs. The workflow now asserts the
   built map exists and restores it in each shard without regenerating the
-  package eight times.
-- Remaining: push the latest Playwright handoff fix, update the synced-base
-  evidence, run fresh exact-head hosted checks, and mark the PR ready if all
-  required contexts pass. Merge remains withheld.
+  package eight times. The corrective hosted run at the pre-merge head
+  `96ec9e41d` passed all eight shards and `test-playwright-status`; it is
+  historical evidence and must be repeated for the final merged head.
+- Remaining: commit this baseline refresh, push the merged branch, update the
+  synced-base evidence, run fresh exact-head hosted checks, and mark the PR
+  ready if all required contexts pass. Merge remains withheld.
 - Follow-up verification: the safe Actions audit, syntax validation, and job
   discovery pass with only `check`, `check-gitleaks`, and `test-unit` present for
   the consolidated scope. Prettier passes under the repository-pinned Node 24
@@ -268,7 +274,7 @@ Do not delete a workflow if any readback differs from the expected set.
 
 ## Next Steps
 
-- Push the latest synced branch, refresh the PR description against
+- Push the current merged branch, refresh the PR description against
   `origin/v3`, and wait for all required exact-head contexts.
 - Mark [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) ready
   once the final hosted checks and review state remain green.
