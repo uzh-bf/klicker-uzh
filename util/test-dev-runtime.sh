@@ -68,13 +68,25 @@ write_file "$FAKE_BIN/mkcert" '#!/usr/bin/env bash
 [ "${1:-}" = "-CAROOT" ] || exit 1
 printf "%s\n" "$KLICKER_TEST_MKCERT_CAROOT"'
 write_file "$FAKE_BIN/docker" '#!/usr/bin/env bash
-if [ "$1 $2" = "volume inspect" ]; then
-  [ "$3" = "$KLICKER_TEST_DOCKER_VOLUME_NAME" ] || exit 2
+volume_action=""
+volume_name_present=false
+previous=""
+for arg in "$@"; do
+  if [ "$previous" = "volume" ]; then
+    volume_action="$arg"
+  fi
+  if [ "$arg" = "$KLICKER_TEST_DOCKER_VOLUME_NAME" ]; then
+    volume_name_present=true
+  fi
+  previous="$arg"
+done
+
+[ "$volume_name_present" = "true" ] || exit 2
+if [ "$volume_action" = "inspect" ]; then
   [ -f "$KLICKER_TEST_DOCKER_VOLUME_STATE" ] || exit 1
   exit 0
 fi
-if [ "$1 $2" = "volume create" ]; then
-  [ "$3" = "$KLICKER_TEST_DOCKER_VOLUME_NAME" ] || exit 2
+if [ "$volume_action" = "create" ]; then
   if [ "${KLICKER_TEST_DOCKER_CREATE_RACE:-false}" = "true" ]; then
     touch "$KLICKER_TEST_DOCKER_VOLUME_STATE"
     exit 9
@@ -82,7 +94,7 @@ if [ "$1 $2" = "volume create" ]; then
   [ "${KLICKER_TEST_DOCKER_CREATE_FAIL:-false}" != "true" ] || exit 9
   if [ ! -f "$KLICKER_TEST_DOCKER_VOLUME_STATE" ]; then
     touch "$KLICKER_TEST_DOCKER_VOLUME_STATE"
-    printf "%s\n" "$3" >>"$KLICKER_TEST_DOCKER_LOG"
+    printf "%s\n" "$KLICKER_TEST_DOCKER_VOLUME_NAME" >>"$KLICKER_TEST_DOCKER_LOG"
   fi
   exit 0
 fi
