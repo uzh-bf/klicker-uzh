@@ -1,31 +1,32 @@
-import * as DB from '@klicker-uzh/prisma/client'
-import {
-  type AvatarSettingsInput as AvatarSettingsInputType,
-  type AvatarSettings as AvatarSettingsType,
-  type SubscriptionKeysInput as SubscriptionKeysInputType,
-  type SubscriptionObjectInput as SubscriptionObjectInputType,
+import type * as DB from '@klicker-uzh/prisma/client'
+import type {
+  AvatarSettingsInput as AvatarSettingsInputType,
+  AvatarSettings as AvatarSettingsType,
+  SubscriptionKeysInput as SubscriptionKeysInputType,
+  SubscriptionObjectInput as SubscriptionObjectInputType,
 } from '@klicker-uzh/types'
 import { levelFromXp } from '@klicker-uzh/util'
 import builder from '../builder.js'
+import type { ParticipantDataUseFields } from '../lib/learningAnalytics.js'
 import {
+  AchievementRef,
   type IAchievement,
   type IParticipantAchievementInstance,
-  AchievementRef,
   ParticipantAchievementInstanceRef,
 } from './achievement.js'
 import {
+  CourseRef,
+  GroupLeaderboardEntry,
   type ICourse,
   type IGroupLeaderboardEntry,
   type ILeaderboardEntry,
   type ILeaderboardStatistics,
-  CourseRef,
-  GroupLeaderboardEntry,
   LeaderboardEntryRef,
   LeaderboardStatistics,
 } from './course.js'
 import {
-  type IGroupActivityInstance,
   GroupActivityInstanceRef,
+  type IGroupActivityInstance,
 } from './groupActivity.js'
 import { LocaleType, UserRole } from './user.js'
 
@@ -99,6 +100,35 @@ export const AvatarSettings = AvatarSettingsRef.implement({
     hairColor: t.exposeString('hairColor'),
     clothing: t.exposeString('clothing'),
     clothingColor: t.exposeString('clothingColor'),
+  }),
+})
+
+export const ParticipantDataUseRef =
+  builder.objectRef<ParticipantDataUseFields>('ParticipantDataUse')
+export const ParticipantDataUse = ParticipantDataUseRef.implement({
+  fields: (t) => ({
+    researchConsent: t.exposeBoolean('researchConsent'),
+    researchConsentChoiceAt: t.expose('researchConsentChoiceAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+    researchConsentDisclosureVersion: t.exposeString(
+      'researchConsentDisclosureVersion',
+      { nullable: true }
+    ),
+    learningAnalyticsConsent: t.exposeBoolean('learningAnalyticsConsent'),
+    learningAnalyticsChoiceAt: t.expose('learningAnalyticsChoiceAt', {
+      type: 'Date',
+      nullable: true,
+    }),
+    learningAnalyticsDisclosureVersion: t.exposeString(
+      'learningAnalyticsDisclosureVersion',
+      { nullable: true }
+    ),
+    learningAnalyticsIncludedFrom: t.expose('learningAnalyticsIncludedFrom', {
+      type: 'Date',
+      nullable: true,
+    }),
   }),
 })
 

@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-08-21'
+timestamp: '2026-08-26'
 tags:
   - backend
   - graphql
@@ -48,6 +48,32 @@ pnpm --filter @klicker-uzh/graphql generate
 ```
 
 The package build runs this generation before Rollup. Commit the handwritten operation/schema sources and the generated `src/public/schema.graphql` SDL snapshot; do not commit `src/ops.ts` or `src/public/{client,server}.json`, which are ignored build outputs. Frontends import typed documents from `@klicker-uzh/graphql/dist/ops`, and outside dev/test the backend only executes hashes present in `server.json` (see [Architecture Overview](./architecture-overview.md)). A missing generation step fails in two distinct ways: typecheck errors for missing documents or runtime persisted-query rejection for an unknown hash.
+
+### Participant data-use API
+
+`selfDataUse` is the only GraphQL read for participant research and
+learning-analytics choices. It requires an authenticated `PARTICIPANT` login
+and returns exactly the seven current-state `Participant` fields: the two
+Boolean choices, their choice timestamps and disclosure versions, and the
+learning-analytics inclusion boundary. The generic `Participant` object does
+not expose any of these fields, so public profiles and lecturer-facing queries
+cannot reveal them.
+
+`setResearchConsent` and `setLearningAnalyticsConsent` are separate participant
+mutations. Each accepts only a Boolean `consent`; the server records disclosure
+version `v1`. The mutations retain current state only. Same-value requests with
+recorded `v1` metadata are no-ops; a new disclosure version updates choice
+metadata without moving the learning-analytics boundary. Learning-analytics
+changes use PostgreSQL `clock_timestamp()` and the global advisory gate after a
+bounded `SET LOCAL lock_timeout`; research changes do not take that gate.
+
+Existing individual analytics reads apply the learning-analytics predicate in
+their source queries. A participant result is returned only when the current
+choice is true, all choice metadata and the inclusion boundary are present, and
+the course's `analyticsLastComputedAt` is on or after that boundary. Aggregate
+and canonical outputs are unaffected. The read paths use a repeatable database
+snapshot while resolving eligible participant IDs, so withdrawn or not-yet-
+recomputed individual rows never reach the response for that snapshot.
 
 ### Assessment invitation API
 
