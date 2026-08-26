@@ -1,0 +1,11 @@
+mutation SetLearningAnalyticsConsent($consent: Boolean!) {
+  setLearningAnalyticsConsent(consent: $consent) {
+    researchConsent
+    researchConsentChoiceAt
+    researchConsentDisclosureVersion
+    learningAnalyticsConsent
+    learningAnalyticsChoiceAt
+    learningAnalyticsDisclosureVersion
+    learningAnalyticsIncludedFrom
+  }
+}

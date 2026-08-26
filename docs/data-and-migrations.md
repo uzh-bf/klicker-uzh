@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-08-25'
+timestamp: '2026-08-26'
 tags:
   - backend
   - prisma
@@ -35,13 +35,21 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 
 Participant-global data-use state lives in `Participant`: both research and
 learning-analytics choices default to `false` and retain only the current
-choice, choice time, and disclosure version. A future research export may
-include all stored canonical data when research consent is `true` and none when
-it is `false`. Learning-analytics re-enable uses
+choice, choice time, and disclosure version. The participant-only
+`selfDataUse` query exposes those seven fields; the generic `Participant`
+GraphQL object does not. The two Boolean mutations store server-owned
+disclosure version `v1` and use PostgreSQL transaction time. Learning-analytics
+changes take the global advisory gate with a bounded lock timeout; research
+changes do not take that gate.
+
+A future research export may include all stored canonical data when research
+consent is `true` and none when it is `false`. Learning-analytics re-enable uses
 `learningAnalyticsIncludedFrom` as a prospective boundary, with no backfill.
-`Participation` remains course membership and carries no
-per-course data-use choice or history. The schema foundation is inert until
-the owning export and analytics paths explicitly consume these fields.
+The existing individual analytics reads also require true current consent,
+complete metadata and `Course.analyticsLastComputedAt >=
+Participant.learningAnalyticsIncludedFrom`; aggregate and canonical outputs are
+unchanged. `Participation` remains course membership and carries no
+per-course data-use choice or history.
 
 Analytics tables keyed by a chatbot or live quiz do not duplicate `courseId`;
 course scope resolves through the owning `Chatbot` or `LiveQuiz`. This prevents

@@ -1,0 +1,11 @@
+query GetParticipantDataUse {
+  selfDataUse {
+    researchConsent
+    researchConsentChoiceAt
+    researchConsentDisclosureVersion
+    learningAnalyticsConsent
+    learningAnalyticsChoiceAt
+    learningAnalyticsDisclosureVersion
+    learningAnalyticsIncludedFrom
+  }
+}

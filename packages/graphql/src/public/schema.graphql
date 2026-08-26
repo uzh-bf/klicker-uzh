@@ -2082,7 +2082,9 @@ type Mutation {
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
+  setLearningAnalyticsConsent(consent: Boolean!): ParticipantDataUse
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
+  setResearchConsent(consent: Boolean!): ParticipantDataUse
   shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startCourseDuplication(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String!, startDate: Date!): CourseDuplicationStatus
@@ -2358,6 +2360,16 @@ type ParticipantCourseActivity {
   activeWeeks: Int!
   activityLevel: ActivityLevel!
   meanElementsPerDay: Float!
+}
+
+type ParticipantDataUse {
+  learningAnalyticsChoiceAt: Date
+  learningAnalyticsConsent: Boolean!
+  learningAnalyticsDisclosureVersion: String
+  learningAnalyticsIncludedFrom: Date
+  researchConsent: Boolean!
+  researchConsentChoiceAt: Date
+  researchConsentDisclosureVersion: String
 }
 
 type ParticipantGroup {
@@ -2643,6 +2655,7 @@ type Query {
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
   self(liveQuizId: String): Participant
+  selfDataUse: ParticipantDataUse
   selfWithAchievements: ParticipantWithAchievements
   shortnameQuizzes(shortname: String!): [LiveQuiz!]
   studentAssessmentResults(courseId: String!): StudentAssessmentResults
