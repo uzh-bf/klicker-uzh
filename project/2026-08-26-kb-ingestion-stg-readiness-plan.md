@@ -505,3 +505,22 @@ roadmaps are task-owned in this worktree and ship with the readiness PR.
   response-processor isolation, ConfigMap secret exclusion, deterministic Helm
   setup, preservation of the upstream GraphQL memory resources, and matching
   documentation. S2 is complete at the reviewed source layer.
+- 2026-08-26: Created upper stack branch `rs/kb-ingestion-stg-activation` from
+  readiness head `bd8e320f9`. The layer opens only the worker and backend basic
+  ingestion gates and updates their exact render expectations. Both graph gates
+  remain closed. This source layer stays draft and merge-blocked until the
+  readiness, secret-projection, and producer prerequisites are delivered and
+  proven; no live action occurred.
+- 2026-08-26: The activation Helm proof passed. The chart represents an open
+  ingestion gate by omitting `KB_INGESTION_DISABLED` and
+  `KB_INGESTION_WORKER_DISABLED`, so the upper-layer check requires those keys
+  to be absent rather than rendered as `"false"`. It still requires both graph
+  gates as `"true"`, exact endpoints, response-processor isolation, and no
+  secret keys in ConfigMaps. Chart lint, scoped Biome, Prettier, and diff checks
+  passed.
+- 2026-08-26: The exact S5 range `bd8e320f9..59caba946` passed
+  simplification and deployment/data-integrity review with no findings. The
+  reviewers confirmed the two ingestion-only value changes, omitted open
+  kill-switch keys, explicit closed graph gates, unchanged endpoints and
+  isolation, direct stack ancestry, and draft/merge-blocked delivery boundary.
+  S5 is complete at the reviewed source layer.

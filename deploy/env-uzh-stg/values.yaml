@@ -25,7 +25,7 @@ hatchet:
   kbIngestion:
     apiUrl: 'http://ingestion-resource-api.stg-ingestion.svc.cluster.local:8000'
     sourceGatewayUrl: 'http://klicker-backend.stg-klicker.svc.cluster.local:3000'
-    workerDisabled: true
+    workerDisabled: false
   kbGraph:
     disabled: true
   workers:
@@ -592,7 +592,7 @@ backendGraphql:
   appStudentDomain: pwa.klicker.stg.df-app.ch
   appControlDomain: control.klicker.stg.df-app.ch
   cookieDomain: .klicker.stg.df-app.ch
-  kbIngestionDisabled: true
+  kbIngestionDisabled: false
   kbGraphDisabled: true
 
   ingress:
