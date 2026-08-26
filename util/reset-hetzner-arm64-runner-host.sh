@@ -380,13 +380,16 @@ package_installed() {
 }
 
 validate_docker_packages() {
-  local package
+  local docker_binary docker_provider package
 
   for package in docker-ce docker-ce-cli containerd.io podman-docker; do
     ! package_installed "$package" || die "unsupported container package is installed: ${package}"
   done
   if command -v docker >/dev/null 2>&1; then
-    package_installed docker.io || die 'docker exists but is not provided by the managed docker.io package'
+    docker_binary=$(readlink -f "$(command -v docker)")
+    docker_provider=$(dpkg-query -S "$docker_binary" 2>/dev/null | awk -F: 'NR == 1 {print $1}')
+    [[ "$docker_provider" == 'docker.io' || "$docker_provider" == 'docker-cli' ]] ||
+      die 'docker exists but is not provided by a managed Ubuntu package'
   fi
 }
 
@@ -557,14 +560,14 @@ validate_package_removal_plan() {
   local package removal_plan unexpected
   local -a installed_packages=()
 
-  for package in docker.io containerd runc; do
+  for package in docker.io docker-cli containerd runc; do
     package_installed "$package" && installed_packages+=("$package")
   done
   ((${#installed_packages[@]} > 0)) || return
 
   removal_plan=$(LC_ALL=C apt-get -s purge -y "${installed_packages[@]}")
   unexpected=$(awk '/^(Remv|Purg) / {print $2}' <<<"$removal_plan" |
-    grep -Ev '^(docker\.io|containerd|runc)$' || true)
+    grep -Ev '^(docker\.io|docker-cli|containerd|runc)$' || true)
   [[ -z "$unexpected" ]] ||
     die "Docker package removal would also remove unmanaged packages: ${unexpected//$'\n'/, }"
 }
@@ -581,7 +584,7 @@ remove_runner_and_docker() {
 
   CURRENT_STAGE='Docker package removal'
   validate_package_removal_plan
-  for package in docker.io containerd runc; do
+  for package in docker.io docker-cli containerd runc; do
     package_installed "$package" && installed_packages+=("$package")
   done
   if ((${#installed_packages[@]} > 0)); then
