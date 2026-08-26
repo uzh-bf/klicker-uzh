@@ -13,7 +13,6 @@ on:
       - 'tsconfig.json'
       - '.github/workflows/test-olat-api.yml'
   pull_request:
-    branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'apps/olat-api/**'
