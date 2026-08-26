@@ -33,6 +33,7 @@ import { GraphQLError } from 'graphql'
 import { validate as validateUuid } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
 import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
+import { getKBGraphBundleCoordinates } from './kbGraphBundleCoordinates.js'
 import {
   getKBGraphRemainingQuota,
   releaseKBGraphCostReservation,
@@ -2192,6 +2193,7 @@ export async function rebuildKbKnowledgeGraph(
       }))
     )
     const buildId = randomUUID()
+    const graphBundleCoordinates = getKBGraphBundleCoordinates(buildId)
     const reservation = await reserveKBGraphCost(prisma, {
       ownerId: ctx.user.sub,
       qualityTier,
@@ -2205,6 +2207,8 @@ export async function rebuildKbKnowledgeGraph(
         sourceContentDigest,
         graphName: getKnowledgeGraphName(kbId, buildId),
         graphmlBlobName: getKBGraphArtifactBlobName(buildId),
+        graphBundleContainerName: graphBundleCoordinates.containerName,
+        graphBundleBlobPrefix: graphBundleCoordinates.blobPrefix,
         estimatedCostMinorUnits: reservation.estimatedCostMinorUnits,
         costCurrency: reservation.currency,
         costPricingVersion: reservation.pricingVersion,

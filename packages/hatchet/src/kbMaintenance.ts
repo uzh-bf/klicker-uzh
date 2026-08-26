@@ -48,6 +48,9 @@ const KB_GRAPH_RETENTION_GRACE_MS = 24 * 60 * 60 * 1000
 // restorable, so a lecturer can be rolled back to any earlier successful graph.
 const KB_GRAPH_DELETION_GRACE_MS = 30 * 24 * 60 * 60 * 1000
 const KB_BLOB_DELETE_TIMEOUT_MS = 30_000
+const KB_ARTIFACT_CONTAINER_PATTERN =
+  /^(?!.*--)[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$/
+const KB_ARTIFACT_SHA256_PATTERN = /^[0-9a-f]{64}$/
 const KB_TERMINAL_DELETION_STATUSES = [
   KBIngestionStatus.FAILED,
   KBIngestionStatus.SUPERSEDED,
@@ -69,6 +72,10 @@ type KBMaintenanceDependencies = {
   now?: () => Date
   logger?: KBIngestionLogger
   deleteBlob?: (ownerId: string, blobName: string) => Promise<void>
+  deleteArtifactPrefix?: (
+    containerName: string,
+    blobPrefix: string
+  ) => Promise<void>
   deleteGraph?: (graphName: string) => Promise<void>
   // Maintenance holds no task handles, so the caller supplies the re-enqueue.
   enqueueKBGraphBuild?: (buildId: string) => Promise<void>
@@ -148,6 +155,90 @@ async function deleteKBBlob(
     })
 }
 
+function isCanonicalArtifactPrefix(value: string, buildId: string) {
+  const segments = value.split('/')
+  return (
+    value.length <= 1024 &&
+    value.trim() === value &&
+    !value.startsWith('/') &&
+    !value.endsWith('/') &&
+    !value.includes('\\') &&
+    !value.includes('?') &&
+    !value.includes('#') &&
+    !Array.from(value).some((character) => character.charCodeAt(0) <= 31) &&
+    segments.length >= 2 &&
+    segments.at(-1) === buildId &&
+    segments.every((segment) => segment && segment !== '.' && segment !== '..')
+  )
+}
+
+async function deleteKBArtifactPrefix(
+  containerName: string,
+  blobPrefix: string,
+  env: NodeJS.ProcessEnv
+) {
+  if (
+    !KB_ARTIFACT_CONTAINER_PATTERN.test(containerName) ||
+    !blobPrefix ||
+    blobPrefix.startsWith('/') ||
+    blobPrefix.endsWith('/') ||
+    blobPrefix.includes('\\') ||
+    blobPrefix.includes('?') ||
+    blobPrefix.includes('#') ||
+    Array.from(blobPrefix).some((character) => character.charCodeAt(0) <= 31) ||
+    blobPrefix.split('/').some((segment) => !segment || segment === '..')
+  ) {
+    throw new Error('KB artifact cleanup prefix is invalid')
+  }
+
+  const generationConnectionString =
+    env.KB_GENERATION_AZURE_STORAGE_CONNECTION_STRING?.trim()
+  let serviceClient: BlobServiceClient
+  if (generationConnectionString) {
+    serviceClient = BlobServiceClient.fromConnectionString(
+      generationConnectionString
+    )
+  } else {
+    const accountName = env.BLOB_STORAGE_ACCOUNT_NAME?.trim()
+    const accessKey = env.BLOB_STORAGE_ACCESS_KEY?.trim()
+    if (!accountName || !accessKey) {
+      throw new Error('Blob storage is not configured')
+    }
+    serviceClient = new BlobServiceClient(
+      getBlobStorageAccountUrl(
+        accountName,
+        env.BLOB_STORAGE_INTERNAL_ACCOUNT_URL ?? env.BLOB_STORAGE_ACCOUNT_URL
+      ),
+      new StorageSharedKeyCredential(accountName, accessKey)
+    )
+  }
+
+  const container = serviceClient.getContainerClient(containerName)
+  for await (const blob of container.listBlobsFlat({
+    prefix: `${blobPrefix}/`,
+  })) {
+    await container.getBlobClient(blob.name).deleteIfExists({
+      abortSignal: AbortSignal.timeout(KB_BLOB_DELETE_TIMEOUT_MS),
+    })
+  }
+}
+
+function artifactReference(value: Prisma.JsonValue | null) {
+  if (value === null || Array.isArray(value) || typeof value !== 'object') {
+    return null
+  }
+  const ref = value as Record<string, unknown>
+  return typeof ref.containerName === 'string' &&
+    typeof ref.blobName === 'string' &&
+    typeof ref.sha256 === 'string'
+    ? {
+        containerName: ref.containerName,
+        blobName: ref.blobName,
+        sha256: ref.sha256,
+      }
+    : null
+}
+
 function isExpectedKBGraphArtifactName(blobName: string, buildId: string) {
   return blobName === getKBGraphArtifactBlobName(buildId)
 }
@@ -160,6 +251,10 @@ export async function maintainKBResources(
   const deleteBlob =
     dependencies.deleteBlob ??
     ((ownerId, blobName) => deleteKBBlob(ownerId, blobName, env))
+  const deleteArtifactPrefix =
+    dependencies.deleteArtifactPrefix ??
+    ((containerName, blobPrefix) =>
+      deleteKBArtifactPrefix(containerName, blobPrefix, env))
   const deleteGraph = dependencies.deleteGraph ?? deleteKnowledgeGraph
   const ingestionDispatchEnabled = dependencies.ingestionDispatchEnabled ?? true
 
@@ -687,7 +782,7 @@ export async function maintainKBResources(
     now.getTime() - KB_GRAPH_DELETION_GRACE_MS
   )
   const archivePurgeWhere = {
-    graphmlPurgedAt: null,
+    OR: [{ graphmlPurgedAt: null }, { generationArtifactsPurgedAt: null }],
     kb: { deletedAt: { lte: purgeArchiveBefore } },
   } satisfies Prisma.KBGraphBuildWhereInput
   const archivePurgeCount = await dependencies.prisma.kBGraphBuild.count({
@@ -701,7 +796,22 @@ export async function maintainKBResources(
       kbId: true,
       graphName: true,
       graphmlBlobName: true,
+      graphmlPurgedAt: true,
+      graphBundleContainerName: true,
+      graphBundleBlobPrefix: true,
+      graphBundleSha256: true,
+      graphManifestArtifact: true,
+      generationArtifactsPurgedAt: true,
       cleanedAt: true,
+      elementGenerationBuilds: {
+        select: {
+          id: true,
+          inputArtifactContainer: true,
+          inputArtifactPrefix: true,
+          outputArtifactContainer: true,
+          outputArtifactPrefix: true,
+        },
+      },
       kb: { select: { ownerId: true } },
     },
     orderBy: { id: 'asc' },
@@ -718,6 +828,7 @@ export async function maintainKBResources(
       return
     }
     if (
+      build.graphmlPurgedAt === null &&
       build.graphmlBlobName !== null &&
       !isExpectedKBGraphArtifactName(build.graphmlBlobName, build.id)
     ) {
@@ -728,19 +839,114 @@ export async function maintainKBResources(
       )
       return
     }
+    const graphManifest = artifactReference(build.graphManifestArtifact)
+    const hasGraphBundleEvidence =
+      build.graphBundleContainerName !== null ||
+      build.graphBundleBlobPrefix !== null ||
+      build.graphBundleSha256 !== null ||
+      build.graphManifestArtifact !== null
+    const hasSettledGraphBundleEvidence =
+      build.graphBundleSha256 !== null || build.graphManifestArtifact !== null
+    if (
+      build.generationArtifactsPurgedAt === null &&
+      hasGraphBundleEvidence &&
+      (build.graphBundleContainerName === null ||
+        build.graphBundleBlobPrefix === null ||
+        !KB_ARTIFACT_CONTAINER_PATTERN.test(build.graphBundleContainerName) ||
+        !isCanonicalArtifactPrefix(build.graphBundleBlobPrefix, build.id) ||
+        !build.graphBundleBlobPrefix.endsWith(`/${build.id}/${build.id}`) ||
+        (hasSettledGraphBundleEvidence &&
+          (build.graphBundleSha256 === null ||
+            !KB_ARTIFACT_SHA256_PATTERN.test(build.graphBundleSha256) ||
+            graphManifest === null ||
+            graphManifest.containerName !== build.graphBundleContainerName ||
+            graphManifest.blobName !==
+              `${build.graphBundleBlobPrefix}/${build.graphBundleSha256}/manifest.json` ||
+            !KB_ARTIFACT_SHA256_PATTERN.test(graphManifest.sha256))))
+    ) {
+      await logMaintenanceError(
+        dependencies.logger,
+        'KB graph archive purge rejected invalid generation artifacts',
+        { buildId: build.id, kbId: build.kbId }
+      )
+      return
+    }
+    if (
+      build.generationArtifactsPurgedAt === null &&
+      build.elementGenerationBuilds.some(
+        (generation) =>
+          generation.inputArtifactContainer === null ||
+          generation.inputArtifactPrefix === null ||
+          generation.outputArtifactContainer === null ||
+          generation.outputArtifactPrefix === null ||
+          !KB_ARTIFACT_CONTAINER_PATTERN.test(
+            generation.inputArtifactContainer
+          ) ||
+          !KB_ARTIFACT_CONTAINER_PATTERN.test(
+            generation.outputArtifactContainer
+          ) ||
+          !isCanonicalArtifactPrefix(
+            generation.inputArtifactPrefix,
+            generation.id
+          ) ||
+          !isCanonicalArtifactPrefix(
+            generation.outputArtifactPrefix,
+            generation.id
+          )
+      )
+    ) {
+      await logMaintenanceError(
+        dependencies.logger,
+        'KB graph archive purge rejected invalid element-generation prefixes',
+        { buildId: build.id, kbId: build.kbId }
+      )
+      return
+    }
     try {
-      if (build.graphmlBlobName) {
+      if (build.graphmlPurgedAt === null && build.graphmlBlobName) {
         await deleteBlob(build.kb.ownerId, build.graphmlBlobName)
       }
       if (build.cleanedAt === null) {
         await deleteGraph(build.graphName)
       }
+      if (build.generationArtifactsPurgedAt === null) {
+        if (
+          hasGraphBundleEvidence &&
+          build.graphBundleContainerName &&
+          build.graphBundleBlobPrefix
+        ) {
+          await deleteArtifactPrefix(
+            build.graphBundleContainerName,
+            build.graphBundleBlobPrefix
+          )
+        }
+        for (const generation of build.elementGenerationBuilds) {
+          await deleteArtifactPrefix(
+            generation.inputArtifactContainer!,
+            generation.inputArtifactPrefix!
+          )
+          await deleteArtifactPrefix(
+            generation.outputArtifactContainer!,
+            generation.outputArtifactPrefix!
+          )
+        }
+      }
       // The ledger row survives the purge (ADR 0013 keeps its cost evidence);
       // only the stamps recording that the artifacts are gone are written.
       await dependencies.prisma.kBGraphBuild.updateMany({
-        where: { id: build.id, kbId: build.kbId, graphmlPurgedAt: null },
+        where: {
+          id: build.id,
+          kbId: build.kbId,
+          OR: [
+            { graphmlPurgedAt: null },
+            { generationArtifactsPurgedAt: null },
+          ],
+        },
         data: {
-          graphmlPurgedAt: now,
+          ...(build.graphmlPurgedAt === null ? { graphmlPurgedAt: now } : {}),
+          ...(build.generationArtifactsPurgedAt === null
+            ? { generationArtifactsPurgedAt: now }
+            : {}),
           ...(build.cleanedAt === null ? { cleanedAt: now } : {}),
         },
       })

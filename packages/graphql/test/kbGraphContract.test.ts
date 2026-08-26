@@ -26,6 +26,7 @@ const validResult: KbGraphTerminalResult = {
     container_name: 'kb-44444444-4444-4444-8444-444444444444',
     blob_name: 'knowledge-graphs/11111111-1111-4111-8111-111111111111.graphml',
   },
+  graph_bundle: null,
   metered_cost: {
     currency: 'CHF',
     amount_minor_units: 120,
@@ -72,6 +73,32 @@ describe('kbGraphContract', () => {
       )
       expect(validation.result.metered_cost?.amount_minor_units).toBe(120)
     }
+  })
+
+  it('accepts an immutable generation bundle on the graph build result', () => {
+    const validation = validateKbGraphTerminalResult(
+      {
+        ...validResult,
+        graph_bundle: {
+          storage_name: '11111111-1111-4111-8111-111111111111',
+          manifest_schema_version: 2,
+          bundle_sha256:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          graph_sha256:
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          manifest_artifact: {
+            container_name: 'kb-44444444-4444-4444-8444-444444444444',
+            blob_name:
+              'knowledge-graphs/11111111-1111-4111-8111-111111111111/manifest.json',
+            sha256:
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          },
+        },
+      },
+      validExpectation
+    )
+
+    expect(validation.ok).toBe(true)
   })
 
   it('rejects a result with a mismatched build id', () => {

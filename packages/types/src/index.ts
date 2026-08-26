@@ -19,6 +19,9 @@ export * from './hatchet.js'
 // ----- KNOWLEDGE GRAPH TYPES -----
 export * from './knowledgeGraph.js'
 
+// ----- GENERATED KLICKER ELEMENT TYPES -----
+export * from './elementGeneration.js'
+
 // ----- ACTIVITY LOG TYPES -----
 // #region
 export enum ActivityLogModificationFieldType {

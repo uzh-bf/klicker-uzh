@@ -1,14 +1,15 @@
+import { randomUUID } from 'node:crypto'
 import { computeKBContentDigest } from '@klicker-uzh/knowledge-graph'
 import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
-import { randomUUID } from 'node:crypto'
+import { expectedKBGraphManifestBlobName } from './kbGraphBundleCoordinates.js'
 import {
   KB_GRAPH_DATABASE_INT_MAX,
-  validateKbGraphTerminalResult,
   type KbGraphTerminalResult,
+  validateKbGraphTerminalResult,
 } from './kbGraphContract.js'
 import {
-  getKBGraphCostConfiguration,
+  type getKBGraphCostConfiguration,
   getKBGraphEstimate,
   requireKBGraphCostConfiguration,
 } from './knowledgeGraphCost.js'
@@ -361,6 +362,8 @@ export async function settleKBGraphBuildCost(
       sourceContentDigest: true,
       graphName: true,
       graphmlBlobName: true,
+      graphBundleContainerName: true,
+      graphBundleBlobPrefix: true,
       createdAt: true,
       estimatedCostMinorUnits: true,
       costCurrency: true,
@@ -426,12 +429,27 @@ export async function settleKBGraphBuildCost(
   }
 
   const result = validation.result
+  const expectedGraphManifestBlobName =
+    result.graph_bundle === null || build.graphBundleBlobPrefix === null
+      ? null
+      : expectedKBGraphManifestBlobName(
+          build.graphBundleBlobPrefix,
+          result.graph_bundle.bundle_sha256
+        )
   if (
     result.source_content_digest !== build.sourceContentDigest ||
     result.graph_name !== build.graphName ||
     (result.graphml_artifact !== null &&
       (result.graphml_artifact.blob_name !== build.graphmlBlobName ||
-        result.graphml_artifact.container_name !== `kb-${build.kb.ownerId}`))
+        result.graphml_artifact.container_name !== `kb-${build.kb.ownerId}`)) ||
+    (result.graph_bundle !== null &&
+      (build.graphBundleContainerName === null ||
+        build.graphBundleBlobPrefix === null ||
+        result.graph_bundle.storage_name !== build.id ||
+        result.graph_bundle.manifest_artifact.container_name !==
+          build.graphBundleContainerName ||
+        result.graph_bundle.manifest_artifact.blob_name !==
+          expectedGraphManifestBlobName))
   ) {
     return markCostNeedsHumanReview(
       prisma,
@@ -543,6 +561,21 @@ export async function settleKBGraphBuildCost(
         actualOutputTokens: usage.outputTokens,
         actualEmbeddingTokens: usage.embeddingTokens,
         actualRequestCount: usage.requestCount,
+        ...(result.graph_bundle === null
+          ? {}
+          : {
+              graphBundleStorageName: result.graph_bundle.storage_name,
+              graphBundleSha256: result.graph_bundle.bundle_sha256,
+              graphSha256: result.graph_bundle.graph_sha256,
+              graphManifestSchemaVersion:
+                result.graph_bundle.manifest_schema_version,
+              graphManifestArtifact: {
+                containerName:
+                  result.graph_bundle.manifest_artifact.container_name,
+                blobName: result.graph_bundle.manifest_artifact.blob_name,
+                sha256: result.graph_bundle.manifest_artifact.sha256,
+              },
+            }),
         costStatus: DB.KBGraphCostStatus.SETTLED,
         meteredCost: result.metered_cost,
         finishedAt,

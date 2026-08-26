@@ -144,8 +144,11 @@ model User {
   kbs                        KB[]
   deletedKbs                 KB[]                   @relation("KBDeletedBy")
   deletedKbResources         KBResource[]           @relation("KBResourceDeletedBy")
-  requestedKbGraphBuilds     KBGraphBuild[]
-  kbGraphQuotas               KBGraphQuota[]
+  requestedKbGraphBuilds       KBGraphBuild[]
+  kbGraphQuotas                KBGraphQuota[]
+  elementGenerationBuilds      ElementGenerationBuild[]  @relation("ElementGenerationBuildOwner")
+  elementGenerationReviews     ElementGenerationReview[] @relation("ElementGenerationReviewReviewer")
+  incompleteElementGenerations ElementGenerationBuild[] @relation("ElementGenerationIncompletePublisher")
   revokedVerificationRecords VerifiableCredential[] @relation("RevokedVerifiableCredentials")
 
   userGroups                UserGroup[]         @relation("UserGroupMembers")

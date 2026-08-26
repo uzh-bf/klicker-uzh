@@ -465,6 +465,7 @@ describe('KB graph external dispatch', () => {
         },
       ],
       upload_markdown: false,
+      upload_graph_artifacts: true,
       export_to_falkordb: true,
       falkordb_graph_name: `klickeruzh:kb:${KB_ID}:${BUILD_ID}`,
       speed_mode: 'balanced',
