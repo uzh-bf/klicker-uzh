@@ -183,10 +183,10 @@ No new product primitive is created or retired.
 
 | Item | Current evidence | Consequence |
 | --- | --- | --- |
-| `origin/v3-ai` | `332e044f34a1a5a0c8be00075795d8b3a19e7397`; sibling `trees/v3-ai-sync` is clean and exactly synchronized | The base-reconciliation dependency is resolved. This task still must not mutate the sibling worktree or branch. |
-| Current task head | K1 at `3659e5b22`, clean; 0 behind and 16 ahead of current `origin/v3-ai` | K1 corrections, review dispositions, and Gate 2 evidence are committed locally; K2 starts from its preserved pre-correction ref and is being restacked onto this K1 head. |
+| `origin/v3-ai` | `a1c63c644fdcdc52ff3dcddbbd3f58fcf363261d`; sibling `trees/v3-ai-sync` is clean and exactly synchronized | The base-reconciliation dependency is resolved. This task still must not mutate the sibling worktree or branch. |
+| Current task heads | K1 `3d30349441d4f042b65d92d42a950fc1df1df8e2` and K2 `be259ad5a82f56053ceac1248ddb6985f3837c92`, both clean and 0 behind current `origin/v3-ai` (20 and 27 commits ahead) | The corrected layers are locally complete and ready for publication after final evidence. |
 | PR #5474 | remote K1 head `eef688e0fa4b4d34ad00a02f1d8a65509d5c7189`; base has moved and GitHub merge state is recalculating | Treat the old head and CI as historical only. |
-| PR #5498 | remote K2 head `3d54fbdbee5378212e65ff97bccf6dbc87f8ceba`; currently conflicting | Restack after K1 is rebased and corrected. |
+| PR #5498 | remote K2 head `3d54fbdbee5378212e65ff97bccf6dbc87f8ceba`; GitHub currently reports `DIRTY` against its old published parent | Publish the reviewed corrected K1 then K2 heads with stack-aware force-with-lease; do not change remote topology. |
 | GitHub stack #5503 | remote order is K1 then K2 with the expected PRs and published heads | Preserve this topology. |
 | Local `gh-stack` metadata | repaired for local stack work; no remote topology mutation | Keep the existing K1 -> K2 order and use stack-aware force-with-lease only at the final publication boundary. |
 
@@ -441,9 +441,9 @@ Neither follow-up is authorized by this plan.
 
 ## Progress
 
-- Status: K1 Gate 2 evidence accepted; K2 correction implementation and
-  fallback/final reviews are complete locally; browser evidence and publication
-  remain pending
+- Status: K1 Gate 2 evidence accepted; K2 correction implementation, focused
+  browser journey, screenshots, and final integrated review are complete
+  locally; publication and corrected-head CI remain pending
 - Completed: external review analysis; focused correction scope; fresh Git,
   GitHub PR, GitHub stack, sibling-worktree, and local-stack evidence; planning
   specialist review; complete correction plan; local stack tracking repair;
@@ -457,7 +457,8 @@ Neither follow-up is authorized by this plan.
   `3d54fbdbee5378212e65ff97bccf6dbc87f8ceba`
 - Rebased local heads before correction: K1 `ec254bea755bfa3a3d9a93b760aa9ad715643444`;
   K2 `3b54dfb36cf747f4063341ea1bc85e4ade6aa67d`
-- Corrected local K1 head: `3d3034944` (latest documentation and evidence commit atop the corrected implementation)
+- Corrected local K1 head: `3d30349441d4f042b65d92d42a950fc1df1df8e2` (latest documentation and evidence commit atop the corrected implementation)
+- Corrected local K2 head: `be259ad5a82f56053ceac1248ddb6985f3837c92` (latest fixture-path and browser-journey correction atop K1)
 - Active slice: K2 lecturer-review workflow corrections
 - Plan commit: `6531937e3 docs(project): plan response-example review corrections`
 - K2 implementation commit: `3a1cbd45b fix(manage): align response-example review workflow`
@@ -465,18 +466,26 @@ Neither follow-up is authorized by this plan.
   restores the AI-beta gate and invalid-chatbot handling, resets review state
   when switching chatbots, computes the seeded digest canonically, and seeds
   the chatbot/examples inside the focused Playwright journey
+- K2 fixture-path correction commit: `6f63a11ca fix(test): resolve chatbot seed prompts from module`
+  anchors seed prompt files to the module instead of the caller's working
+  directory; the focused journey then exposed one unsupported Modal fixture
+  prop, corrected in `be259ad5a fix(test): expose response example modal fixture`
 - K2 fallback reviews: native and generic continuity routes were unavailable
   with `unreadable_encrypted_agent_task`; trusted GPT-5.6 Luna max fallback
   reports are recorded under `project/_local/reviews/`. Their findings were
   verified and dispositioned in the follow-up corrections.
-- Final integrated review found only the browser-verification gate and two low
-  documentation issues. The fixture wording and rebased Progress identities
-  are corrected; the browser gate remains open.
+- Final integrated review over `a1c63c644..be259ad5a` found no actionable
+  findings. It verified the fixture-path and supported Modal fixture fixes,
+  the owner workflow, migration/schema provenance, GraphQL contract, stale-write
+  integrity, parser boundary, UX/accessibility, and plan compliance.
 - K2 verification so far: direct Manage, Prisma-data, and Playwright TypeScript
   checks pass; focused Manage ESLint and Prettier checks pass; Markdown citation
   tests and focused response-example GraphQL contract/service tests pass; the
   isolated response-example seed runner exits successfully against the task
-  runtime.
+  runtime; the repository-native focused Playwright journey passes 1 test in
+  40.3 seconds against the disposable local database after global reset and
+  self-seeding.
+- Current browser screenshots: [EN desktop](../../../.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-en-desktop-be259ad5a.png), [DE mobile](../../../.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-de-mobile-be259ad5a.png), and [DE desktop](../../../.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-de-desktop-be259ad5a.png). They were captured from the reviewed K2 head; the fixture-only changes do not alter the rendered workflow.
 - Upstream boundary: the KB task's W8 work remains responsible for ingestion
   and producer activation seams. This package has no implementation overlap and
   does not assume graph delivery; response-example runtime activation remains
@@ -496,8 +505,7 @@ Neither follow-up is authorized by this plan.
   findings, including the documentation and non-owner edit follow-ups, were
   applied and reverified over immutable K1 range
   `332e044f34a1a5a0c8be00075795d8b3a19e7397..a86d5ae96`.
-- Next: obtain authorized focused Playwright and browser evidence, record the
-  final review disposition, publish the two corrected branches, update their
-  existing PRs, and wait once for corrected-head CI.
-- Delivery pending: browser evidence, corrected branch push, PR updates,
-  corrected-head CI, merge, deployment, runtime activation, K3, and Test & Teach
+- Next: publish the two corrected branches, update their existing PRs, and
+  wait once for corrected-head CI.
+- Delivery pending: corrected branch push, PR updates, corrected-head CI,
+  merge, deployment, runtime activation, K3, and Test & Teach
