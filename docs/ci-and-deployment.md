@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-08-25'
+timestamp: '2026-08-26'
 tags:
   - ci
   - deployment
@@ -96,6 +96,7 @@ The `rollout.klicker.uzh.ch/release` annotation exists to break that tie: it lan
 Operational notes.
 
 - Set the repository variable `STG_SOURCE_BRANCH` to select the active supported `v3*` branch; it falls back to `v3` when unset. Set it explicitly to `v3-ai` for the current staging source. A new successful image build on that branch triggers reconciliation. If the selected commit is already built and no new push will occur, also dispatch this promoter with that commit SHA and `dry_run=false`. The branch name must be a Docker-safe image tag because the build workflows publish branch-name tags.
+- **Direct-source caveat:** the promoter always checks out and writes `v3`. If the external ArgoCD `Application` temporarily targets `v3-ai` directly, promotion commits on `v3` do not change the live manifests. Before changing `targetRevision`, render the staging chart from the branch ArgoCD will track and verify all workload image tags use that branch. After the sync, require both `Synced` and `Healthy`; a successful sync alone can still leave workloads in `ImagePullBackOff` or `OOMKilled`.
 - It needs `secrets.STG_PROMOTE_TOKEN`, an **admin-owned PAT** with `contents: write` + `pull-requests: write`. Two independent reasons it cannot be the default `GITHUB_TOKEN` or a plain App token: a PR opened with `GITHUB_TOKEN` does not trigger workflows, so its required checks never report and auto-merge never fires; and `v3`'s push restrictions carry an _empty_ user/team/app allowlist, which only repository admins bypass.
 - Two settings outside this repo are load-bearing. `squash_merge_commit_title` must stay `PR_TITLE`, or the `[skip ci]` marker never reaches the squash commit and every promotion rebuilds all 13 images. The workflow does not rely on it alone — the guard also refuses to promote any commit whose subject starts with `chore(deploy): promote ` — but the belt is worth keeping. Auto-merge must be enabled on the repository.
 - The annotation records which commit _triggered_ the rollout, not which bits are in the image: two merges minutes apart cancel the first build (`cancel-in-progress: true`) and the selected source tag then holds the later images. Immutable per-commit tags are the fix if that ever matters.
