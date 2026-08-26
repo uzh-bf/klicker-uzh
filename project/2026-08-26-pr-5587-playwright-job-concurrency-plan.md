@@ -1,4 +1,4 @@
-# Reliable public ARM64 Playwright routing
+# PR #5587: Reliable public ARM64 Playwright routing
 
 ## Goal
 
@@ -56,6 +56,13 @@ container.
 - Pause: only for a contradictory workflow contract, a required check that
   cannot run, or a new failure outside scheduling and mounted-workspace trust.
 
+## Plan identity
+
+- Path: `project/2026-08-26-pr-5587-playwright-job-concurrency-plan.md`
+- Branch: `rs/playwright-job-concurrency`
+- Target: `v3`
+- Pull request: [#5587](https://github.com/uzh-bf/klicker-uzh/pull/5587)
+
 ## Planning review
 
 GPT-5.6 Sol returned `DONE_WITH_CONCERNS`. It accepted job-level cancellation
@@ -109,3 +116,8 @@ long-lived architecture decision.
   steps, runner safety, shard count, and run-specific volumes. Prettier,
   engineering-wiki checks, removed-doc checks, and diff hygiene pass; committed
   review, push, and pull request remain.
+- 2026-08-26: The user directed the package to skip subagent review after the
+  configured intermediate routes failed before producing work. The main
+  session inspected the exact diff and reran all focused checks. The branch is
+  published in draft PR #5587; plan metadata, final push, ready state, and host
+  read-back remain.
