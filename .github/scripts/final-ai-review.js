@@ -1363,7 +1363,7 @@ async function authorizeFinalReview({ github, context, core, trustedSha }) {
   core.setOutput('pr_number', String(pull.number))
   core.setOutput('base_sha', pull.base.sha)
   core.setOutput('head_sha', pull.head.sha)
-  core.setOutput('trusted_sha', trustedSha ?? context.sha)
+  core.setOutput('trusted_sha', trustedSha ?? '')
   core.setOutput('mode', plan.mode)
   core.setOutput('root_head', plan.rootHead)
   core.setOutput('root_review_id', plan.rootReviewId)
@@ -1641,8 +1641,8 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
     throw new Error('Final review root head is not a full commit SHA')
   }
   const workflowHeadSha = reviewMetadata.workflowHeadSha ?? ''
-  const workflowSha = reviewMetadata.workflowSha ?? workflowHeadSha
-  const trustedPolicySha = reviewMetadata.trustedPolicySha ?? workflowHeadSha
+  const workflowSha = reviewMetadata.workflowSha ?? ''
+  const trustedPolicySha = reviewMetadata.trustedPolicySha ?? ''
   if (!/^[0-9a-f]{40}$/.test(workflowHeadSha)) {
     throw new Error('Final review workflow provenance is incomplete')
   }
@@ -1791,7 +1791,7 @@ async function publishFinalReview({
     stackId: plan.stackId,
     stackOrderDigest: plan.stackOrderDigest,
     stackPosition: plan.stackPosition,
-    trustedPolicySha: trustedSha ?? context.sha,
+    trustedPolicySha: trustedSha ?? '',
     workflowHeadSha: context.sha,
     workflowSha: workflowSha ?? '',
     workflowRunId: context.runId,

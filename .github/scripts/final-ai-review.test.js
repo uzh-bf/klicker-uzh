@@ -274,7 +274,9 @@ function completeReviewMetadata(headSha = 'a'.repeat(40), overrides = {}) {
     headRepo: 'uzh-bf/klicker-uzh',
     mode: 'full',
     policyDigest: '2'.repeat(64),
+    trustedPolicySha: 'd'.repeat(40),
     workflowHeadSha: 'd'.repeat(40),
+    workflowSha: 'd'.repeat(40),
     workflowRunId: 123,
     ...overrides,
     headSha,
@@ -548,7 +550,9 @@ test('selects incremental attestation only for bounded repaired changes', async 
     scopeKind: rootPlan.scopeKind,
     stackId: rootPlan.stackId,
     stackOrderDigest: rootPlan.stackOrderDigest,
+    trustedPolicySha: 'd'.repeat(40),
     workflowHeadSha: 'd'.repeat(40),
+    workflowSha: 'd'.repeat(40),
     workflowRunId: 123,
   })
   const rootMetadata = parseReviewMetadata(rootBody)
@@ -882,7 +886,9 @@ test('rejects incomplete or wrong-model OCR results', () => {
         'a'.repeat(40),
         {
           policyDigest: '2'.repeat(64),
+          trustedPolicySha: 'd'.repeat(40),
           workflowHeadSha: 'd'.repeat(40),
+          workflowSha: 'd'.repeat(40),
         }
       ),
     /confidence score/
@@ -977,7 +983,9 @@ test('rejects a report that would require partial publication', () => {
         'a'.repeat(40),
         {
           policyDigest: '2'.repeat(64),
+          trustedPolicySha: 'd'.repeat(40),
           workflowHeadSha: 'd'.repeat(40),
+          workflowSha: 'd'.repeat(40),
         }
       ),
     /report limit/

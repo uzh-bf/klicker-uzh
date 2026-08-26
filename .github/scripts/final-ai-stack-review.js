@@ -1064,7 +1064,10 @@ async function initializeStackReview({ github, context, trustedSha }) {
     (sha, index, shas) => validSha(sha) && shas.indexOf(sha) === index
   )
   if (topShas.length === 0) {
-    if (/^[0-9a-f]{40}$/.test(pull.head?.sha ?? '')) {
+    const previousStatus = /^[0-9a-f]{40}$/.test(pull.head?.sha ?? '')
+      ? await latestStackStatus(github, context, pull.head.sha)
+      : null
+    if (previousStatus) {
       await setStackStatus({
         github,
         context,
@@ -1164,7 +1167,7 @@ async function authorizeStackReview({ github, context, core, trustedSha }) {
   setOutput(core, 'pr_number', plan.topNumber)
   setOutput(core, 'base_sha', plan.baseSha)
   setOutput(core, 'head_sha', plan.headSha)
-  setOutput(core, 'trusted_sha', trustedSha ?? context.sha)
+  setOutput(core, 'trusted_sha', trustedSha ?? '')
   setOutput(core, 'stack_id', plan.stackId)
   setOutput(core, 'stack_order_digest', plan.stackOrderDigest)
   setOutput(core, 'stack_identity_digest', plan.stackIdentityDigest)
@@ -1976,7 +1979,7 @@ function renderStackReview({
   trustedPolicySha,
   workflowUrl,
   workflowHeadSha,
-  workflowSha = workflowHeadSha,
+  workflowSha,
   workflowRunId,
 }) {
   const code = validateOCRResult(codeResult)
@@ -2068,9 +2071,9 @@ function renderStackReview({
   }
   if (
     !/^[0-9a-f]{40}$/.test(workflowHeadSha ?? '') ||
-    !validSha(trustedPolicySha ?? workflowHeadSha) ||
+    !validSha(trustedPolicySha) ||
     !validSha(workflowSha) ||
-    workflowSha !== (trustedPolicySha ?? workflowHeadSha) ||
+    workflowSha !== trustedPolicySha ||
     !Number.isSafeInteger(workflowRunId) ||
     workflowRunId <= 0 ||
     typeof workflowUrl !== 'string' ||
@@ -2134,7 +2137,7 @@ function renderStackReview({
     },
     workflow_path: STACK_REVIEW_WORKFLOW_PATH,
     workflow_url: workflowUrl,
-    trusted_policy_sha: trustedPolicySha ?? workflowHeadSha,
+    trusted_policy_sha: trustedPolicySha,
     workflow_head_sha: workflowHeadSha,
     workflow_sha: workflowSha,
     workflow_run_id: workflowRunId,
@@ -2449,7 +2452,7 @@ async function publishStackReview({
     policyDigest: plan.policyDigest,
     topologyResult,
     workflowUrl: workflowRunUrl(context),
-    trustedPolicySha: trustedSha ?? context.sha,
+    trustedPolicySha: trustedSha ?? '',
     workflowHeadSha: context.sha,
     workflowSha: workflowSha ?? '',
     workflowRunId: context.runId,
@@ -2559,7 +2562,6 @@ async function finalizeStackReview({
     })
     return
   }
-  const currentHead = plan.headSha ?? headSha
   const eligible = stackReviewPlanMatches(plan, {
     expectedStackId,
     expectedOrderDigest,
@@ -2577,10 +2579,10 @@ async function finalizeStackReview({
   await setStackStatus({
     github,
     context,
-    sha: currentHead,
+    sha: headSha,
     ...decideStackStatus({
       eligible,
-      currentHead,
+      currentHead: plan.headSha ?? headSha,
       reviewedHead: headSha,
       reviewMode: plan.mode,
       codeOutcome,

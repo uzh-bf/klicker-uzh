@@ -665,6 +665,8 @@ test('builds a bounded immutable manifest with exact layer owners', async () => 
     policyDigest: plan.policyDigest,
     topologyResult: topologyResult(),
     workflowHeadSha: 'a'.repeat(40),
+    trustedPolicySha: 'a'.repeat(40),
+    workflowSha: 'a'.repeat(40),
     workflowRunId: 700,
     workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
   })
@@ -996,6 +998,32 @@ test('retains the former top when bounded stack history is capped', async () => 
   assert.equal(state.createdStatuses.at(-1).state, 'error')
 })
 
+test('does not invalidate an unrelated head when bounded stack history has no match', async () => {
+  const { github, pulls, state } = stackFixture()
+  const history = Array.from({ length: 1_000 }, (_, index) => ({
+    id: `history-${index}`,
+    open: false,
+    pull_requests: [
+      {
+        number: 1_000 + index,
+        state: 'closed',
+        draft: false,
+        head: { sha: '0'.repeat(40) },
+      },
+    ],
+  }))
+  github.request = async () => ({ data: history.slice(0, 100) })
+  const eventContext = context(11)
+  eventContext.eventName = 'pull_request_target'
+  eventContext.payload.pull_request = pulls[11]
+
+  assert.equal(
+    await initializeStackReview({ github, context: eventContext }),
+    false
+  )
+  assert.equal(state.createdStatuses.length, 0)
+})
+
 test('preserves current stack evidence across unrelated default-base advancement', async () => {
   const { files, github, pulls, responses, state } = stackFixture()
   const membership = await resolveStackMembership({
@@ -1021,6 +1049,8 @@ test('preserves current stack evidence across unrelated default-base advancement
     policyDigest: plan.policyDigest,
     workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
     workflowHeadSha: 'a'.repeat(40),
+    trustedPolicySha: 'a'.repeat(40),
+    workflowSha: 'a'.repeat(40),
     workflowRunId: 700,
   })
   state.reviews = [
@@ -1324,6 +1354,8 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
     policyDigest: initialPlan.policyDigest,
     workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
     workflowHeadSha: 'a'.repeat(40),
+    trustedPolicySha: 'a'.repeat(40),
+    workflowSha: 'a'.repeat(40),
     workflowRunId: 700,
   })
   const rootMetadata = parseStackReviewMetadata(rootReport)
@@ -1360,6 +1392,8 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
     topologyResult: topologyResult(),
     workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
     workflowHeadSha: 'a'.repeat(40),
+    trustedPolicySha: 'a'.repeat(40),
+    workflowSha: 'a'.repeat(40),
     workflowRunId: 700,
   })
   assert.match(
@@ -1579,6 +1613,8 @@ test('attests bounded repairs across changed lower stack layers', async () => {
     policyDigest: initialPlan.policyDigest,
     workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
     workflowHeadSha: 'a'.repeat(40),
+    trustedPolicySha: 'a'.repeat(40),
+    workflowSha: 'a'.repeat(40),
     workflowRunId: 700,
   })
   const rootMetadata = parseStackReviewMetadata(rootReport)
@@ -1754,6 +1790,8 @@ test('publishes incremental code findings with their exact owning repair layer',
     policyDigest: plan.policyDigest,
     workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
     workflowHeadSha: 'a'.repeat(40),
+    trustedPolicySha: 'a'.repeat(40),
+    workflowSha: 'a'.repeat(40),
     workflowRunId: 700,
   })
   const metadata = parseStackReviewMetadata(report)
@@ -1788,6 +1826,8 @@ test('publishes incremental code findings with their exact owning repair layer',
         policyDigest: plan.policyDigest,
         workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
         workflowHeadSha: 'a'.repeat(40),
+        trustedPolicySha: 'a'.repeat(40),
+        workflowSha: 'a'.repeat(40),
         workflowRunId: 700,
       }),
     /invalid layer provenance/
@@ -1830,6 +1870,7 @@ test('rejects a successful finish after lower-layer identity drift', async () =>
 
   pulls[13].head.sha = 'a'.repeat(40)
   pulls[14].base.sha = 'a'.repeat(40)
+  pulls[14].head.sha = '9'.repeat(40)
   responses.set('d'.repeat(40), 'a'.repeat(40))
   responses.set('a'.repeat(40), 'f'.repeat(40))
   await finalizeStackReview({
@@ -1852,6 +1893,7 @@ test('rejects a successful finish after lower-layer identity drift', async () =>
     cleanupOutcome: 'success',
     publishOutcome: 'success',
   })
+  assert.equal(state.createdStatuses.at(-1).sha, membership.top.head.sha)
   assert.equal(state.createdStatuses.at(-1).state, 'error')
 })
 
