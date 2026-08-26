@@ -622,23 +622,27 @@ async function resolveFinalReviewLockKey({
   const resolvedPull = pull ?? (await getPull(github, context, number))
 
   try {
-    const stack = await getNativeStackMembership({
+    const membership = await resolveNativeStackMembership({
       github,
       context,
+      pullNumber: number,
       pull: resolvedPull,
     })
-    if (stack?.id) {
+    if (membership === null) {
+      return finalReviewStatusLockKey({ pullNumber: number })
+    }
+    if (membership?.id) {
       return finalReviewStatusLockKey({
         pullNumber: number,
-        stackId: stack.id,
+        stackId: membership.id,
       })
     }
   } catch {
-    // The status writer revalidates eligibility and fails closed if the stack
-    // API is unavailable. Keep the lock scoped to this PR in the meantime.
+    // Use the shared fallback lock when the stack identity cannot be read.
+    return 'global'
   }
 
-  return finalReviewStatusLockKey({ pullNumber: number })
+  return 'global'
 }
 
 async function getLatestFinalReviewStatus(github, context, headSha) {
@@ -2416,11 +2420,14 @@ function runGhApi(endpoint, paginate = false) {
   return JSON.parse(output)
 }
 
-function runGhPaginated(endpoint) {
+function runGhPaginated(endpoint, extractPage = (page) => page) {
   const pages = runGhApi(endpoint, true)
   if (!Array.isArray(pages))
     throw new Error('GitHub CLI pagination is malformed')
-  return pages.flatMap((page) => (Array.isArray(page) ? page : []))
+  return pages.flatMap((page) => {
+    const items = extractPage(page)
+    return Array.isArray(items) ? items : []
+  })
 }
 
 function namedGhEndpoint(name) {
@@ -2539,7 +2546,8 @@ function createGhGithub({ repository, defaultBranch }) {
               status: params.status,
               per_page: 100,
             }
-          )
+          ),
+          (page) => page?.workflow_runs
         )
       }
       throw new Error('GitHub CLI pagination endpoint is unsupported')

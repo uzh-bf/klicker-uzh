@@ -1249,17 +1249,58 @@ test('preserves current stack evidence across unrelated default-base advancement
 
   const reviewContext = context(14)
   reviewContext.payload.comment.user = { login: 'reviewer' }
+  const baseAdvanceNotices = []
   assert.equal(
     await authorizeStackReview({
       github,
       context: reviewContext,
       core: {
-        notice: () => {},
+        notice: (message) => baseAdvanceNotices.push(message),
         setOutput: () => {},
       },
     }),
     false
   )
+  assert.equal(
+    baseAdvanceNotices.at(-1),
+    'Stack review already succeeded for the current top head'
+  )
+
+  files.set('b'.repeat(40), [
+    { filename: 'src/one.ts', additions: 1, deletions: 0 },
+  ])
+  assert.equal(
+    await authorizeStackReview({
+      github,
+      context: reviewContext,
+      core: {
+        notice: (message) => baseAdvanceNotices.push(message),
+        setOutput: () => {},
+      },
+    }),
+    false
+  )
+  assert.match(baseAdvanceNotices.at(-1), /strict descendant range/)
+
+  files.set('b'.repeat(40), [
+    { filename: '.github/workflows/changed.yml', additions: 1, deletions: 0 },
+  ])
+  assert.equal(
+    await authorizeStackReview({
+      github,
+      context: reviewContext,
+      core: {
+        notice: (message) => baseAdvanceNotices.push(message),
+        setOutput: () => {},
+      },
+    }),
+    false
+  )
+  assert.match(baseAdvanceNotices.at(-1), /strict descendant range/)
+
+  files.set('b'.repeat(40), [
+    { filename: 'docs/base.md', additions: 1, deletions: 0 },
+  ])
 
   state.comments = [
     {

@@ -278,6 +278,7 @@ async function resolveReviewStackMembership({
   context,
   pullNumber,
   pull,
+  trustedSha,
 }) {
   const membership = await resolveStackMembership({
     github,
@@ -285,7 +286,14 @@ async function resolveReviewStackMembership({
     pullNumber,
     pull,
   })
-  return canUseStackReviewBaseAdvance(membership, context)
+  return canUseStackReviewBaseAdvance(membership, context) &&
+    (await canPreserveStackReviewAcrossBaseAdvance({
+      github,
+      context,
+      membership,
+      trustedSha,
+      allowHeadChanges: true,
+    }))
     ? {
         ...membership,
         baseAdvancePreserved: true,
@@ -618,13 +626,18 @@ async function latestStackReview({
   return null
 }
 
-function stackReviewMatchesCurrentHeadsExceptRootBase(metadata, membership) {
+function stackReviewMatchesCurrentHeadsExceptRootBase(
+  metadata,
+  membership,
+  allowHeadChanges = false
+) {
   if (
     metadata.stack_id !== membership.id ||
     metadata.stack_order_digest !== membership.orderDigest ||
     metadata.layer_head_shas.length !== membership.members.length ||
     metadata.layer_head_shas.some(
-      (headSha, index) => headSha !== membership.members[index].pull.head.sha
+      (headSha, index) =>
+        !allowHeadChanges && headSha !== membership.members[index].pull.head.sha
     ) ||
     metadata.layer_identities.length !== membership.members.length
   ) {
@@ -635,7 +648,7 @@ function stackReviewMatchesCurrentHeadsExceptRootBase(metadata, membership) {
     return (
       identity.base_ref === pull.base.ref &&
       identity.head_ref === pull.head.ref &&
-      identity.head_sha === pull.head.sha &&
+      (allowHeadChanges || identity.head_sha === pull.head.sha) &&
       identity.pull_request === pull.number &&
       (index === 0 || identity.base_sha === pull.base.sha)
     )
@@ -647,6 +660,7 @@ async function canPreserveStackReviewAcrossBaseAdvance({
   context,
   membership,
   trustedSha,
+  allowHeadChanges = false,
 }) {
   try {
     if (
@@ -686,9 +700,13 @@ async function canPreserveStackReviewAcrossBaseAdvance({
     const metadata = previousReview?.metadata
     if (
       !metadata ||
-      metadata.head_sha !== topPull.head.sha ||
+      (!allowHeadChanges && metadata.head_sha !== topPull.head.sha) ||
       metadata.base_sha === rootPull.base.sha ||
-      !stackReviewMatchesCurrentHeadsExceptRootBase(metadata, membership) ||
+      !stackReviewMatchesCurrentHeadsExceptRootBase(
+        metadata,
+        membership,
+        allowHeadChanges
+      ) ||
       metadata.policy_digest !==
         (await getReviewPolicyDigest({ github, context, trustedSha }))
     ) {
@@ -1304,6 +1322,7 @@ async function authorizeStackReview({ github, context, core, trustedSha }) {
     github,
     context,
     pullNumber: context.issue.number,
+    trustedSha,
   })
   const plan = await buildStackReviewPlan({
     github,
@@ -1773,6 +1792,7 @@ async function startStackReview({
       github,
       context,
       pullNumber: prNumber,
+      trustedSha,
     })
   } catch {
     let ownsStatus = statusLockHeld
@@ -2621,6 +2641,7 @@ async function publishStackReview({
     github,
     context,
     pullNumber: prNumber,
+    trustedSha,
   })
   const plan = await buildStackReviewPlan({
     github,
@@ -2770,6 +2791,7 @@ async function finalizeStackReview({
       github,
       context,
       pullNumber: prNumber,
+      trustedSha,
     })
   } catch {
     if (!(await ownsLatestStatus())) return
@@ -2865,6 +2887,7 @@ async function verifyCurrentStackReview({ repository, prNumber }) {
     github,
     context,
     pullNumber: prNumber,
+    trustedSha,
   })
   const plan = await buildStackReviewPlan({
     github,

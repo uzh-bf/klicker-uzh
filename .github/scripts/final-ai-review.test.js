@@ -508,6 +508,44 @@ test('scopes status locks to a verified native stack when available', async () =
   })
   assert.match(lockKey, /^stack-[0-9a-f]{64}$/)
 
+  github.request = async () => ({
+    data: [
+      {
+        id: 'stack-42',
+        pull_requests: [
+          {
+            number: 42,
+            state: 'open',
+            draft: false,
+            head: { sha: 'c'.repeat(40) },
+          },
+        ],
+      },
+    ],
+  })
+  assert.match(
+    await resolveFinalReviewLockKey({
+      github,
+      context: reviewContext(),
+      pull,
+      pullNumber: pull.number,
+    }),
+    /^stack-[0-9a-f]{64}$/
+  )
+
+  github.request = async () => {
+    throw new Error('temporary native stack failure')
+  }
+  assert.equal(
+    await resolveFinalReviewLockKey({
+      github,
+      context: reviewContext(),
+      pull,
+      pullNumber: pull.number,
+    }),
+    'global'
+  )
+
   github.request = async () => ({ data: [] })
   assert.equal(
     await resolveFinalReviewLockKey({
@@ -1677,7 +1715,7 @@ if (endpoint.includes('/pulls/42/commits')) {
 } else if (endpoint.includes('/pulls/42/files')) {
   process.stdout.write(JSON.stringify([[{ filename: 'deploy/env-uzh-stg/values.yaml' }]]))
 } else if (endpoint.includes('/actions/workflows/v3_auth-stg.yml/runs')) {
-  process.stdout.write(JSON.stringify([[{ conclusion: 'success', head_sha: 'a'.repeat(40) }]]))
+  process.stdout.write(JSON.stringify([{ workflow_runs: [{ conclusion: 'success', head_sha: 'a'.repeat(40) }] }]))
 } else {
   process.stdout.write(JSON.stringify({ ok: true }))
 }
