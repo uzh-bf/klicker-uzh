@@ -37,7 +37,7 @@
 - Branch: `rs/ci-workflow-efficiency-cleanup` for the follow-up cutover.
 - Worktree: `trees/ci-workflow-efficiency`.
 - Target: current `origin/v3` at
-  `97d26bb03f79d10cb85043d7041e880a7d96c3c8`, including merged [PR
+  `7f628ab56a71f22fa93fb6dd340dd9b3dcee65e3`, including merged [PR
   #5446](https://github.com/uzh-bf/klicker-uzh/pull/5446)'s Playwright timing and
   eight-shard changes plus the latest staging promotion commit.
 - Pull request: [#5551](https://github.com/uzh-bf/klicker-uzh/pull/5551) was
@@ -209,7 +209,7 @@ Do not delete a workflow if any readback differs from the expected set.
 ## Progress
 
 - Status: branch is synced with current `origin/v3` through normal merge commit
-  `f9bbc745b`; [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) needs
+  `b74b0b2ea`; [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) needs
   this refreshed head pushed and its exact-head checks before it can be marked
   ready.
 - Completed: plan commit and post-commit freshness check; replacement workflow
@@ -228,7 +228,7 @@ Do not delete a workflow if any readback differs from the expected set.
   its exact-head Playwright run `32919404126` passed the filter, build, all
   eight shards, and `test-playwright-status`. The branch preserves that
   baseline and the subsequent `v3` release, generated-artifact, and staging
-  promotion commits through merge commit `f9bbc745b`. Current exact synced-head local
+  promotion commits through merge commit `b74b0b2ea`. Current exact synced-head local
   verification passes `check:all` (7/7 orchestration tasks, 25/25 checks)
   under the pinned Node 24 and pnpm 11.5 toolchain. An explicit full-build
   repeat on `f9bbc745b` was stopped after GraphQL Rollup remained idle for over
