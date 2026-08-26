@@ -254,6 +254,89 @@ function invalidPromotion(reason) {
   return { valid: false, reason }
 }
 
+async function verifyPromotionBuilds({
+  github,
+  context,
+  sourceBranch,
+  targetSha,
+  trustedSha,
+}) {
+  if (!/^[0-9a-f]{40}$/.test(trustedSha ?? '')) {
+    return invalidPromotion('trusted promotion workflow commit is missing')
+  }
+  if (
+    typeof github.paginate !== 'function' ||
+    typeof github.rest.actions?.listWorkflowRunsForRepo !== 'function'
+  ) {
+    return invalidPromotion('staging build evidence is unavailable')
+  }
+  const response = await github.rest.repos.getContent({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    path: '.github/workflows',
+    ref: trustedSha,
+  })
+  const workflowPaths = Array.isArray(response.data)
+    ? response.data
+        .filter(
+          (entry) =>
+            entry?.type === 'file' &&
+            /^v3_.*-stg\.yml$/.test(String(entry.name ?? ''))
+        )
+        .map((entry) => String(entry.path ?? ''))
+        .filter(Boolean)
+        .sort()
+    : []
+  if (workflowPaths.length === 0) {
+    return invalidPromotion('no staging build workflows were found')
+  }
+
+  const results = await Promise.all(
+    workflowPaths.map(async (workflowPath) => {
+      const runs = await github.paginate(
+        github.rest.actions.listWorkflowRunsForRepo,
+        {
+          owner: context.repo.owner,
+          repo: context.repo.repo,
+          workflow_id: workflowPath,
+          event: 'push',
+          head_sha: targetSha,
+          status: 'completed',
+          per_page: 100,
+        }
+      )
+      const verified = Array.isArray(runs)
+        ? runs.some(
+            (run) =>
+              run?.path === workflowPath &&
+              run?.event === 'push' &&
+              run?.head_branch === sourceBranch &&
+              run?.head_sha === targetSha &&
+              run?.status === 'completed' &&
+              run?.conclusion === 'success' &&
+              run?.repository?.full_name === repositoryName(context)
+          )
+        : false
+      return { verified, workflowPath }
+    })
+  )
+  const missing = results
+    .filter(({ verified }) => !verified)
+    .map(({ workflowPath }) => workflowPath)
+  if (missing.length > 0) {
+    return invalidPromotion(
+      `staging build evidence is missing for ${missing.join(', ')}`
+    )
+  }
+  return {
+    valid: true,
+    reason: `verified ${workflowPaths.length} staging build runs for the target SHA`,
+    sourceBranch,
+    targetSha,
+    workflowPaths,
+  }
+}
+
 function validatePromotionContract(input) {
   const {
     pull,
@@ -266,6 +349,7 @@ function validatePromotionContract(input) {
     baseContent,
     headContent,
     targetIsAncestor,
+    buildEvidence,
   } = input
 
   if (pull.state !== 'open' || pull.draft) {
@@ -303,6 +387,15 @@ function validatePromotionContract(input) {
   }
   if (!targetIsAncestor) {
     return invalidPromotion('promotion target is not on the staging source')
+  }
+  if (
+    !buildEvidence?.valid ||
+    buildEvidence.targetSha !== targetSha ||
+    buildEvidence.sourceBranch !== sourceBranch
+  ) {
+    return invalidPromotion(
+      'exact successful staging build evidence is missing'
+    )
   }
 
   if (commits.length !== 1) {
@@ -633,14 +726,20 @@ async function getReviewPolicyDigest({ github, context, trustedSha }) {
   )
 }
 
-async function inspectPromotion({ github, context, pull, sourceBranch }) {
+async function inspectPromotion({
+  github,
+  context,
+  pull,
+  sourceBranch,
+  trustedSha,
+}) {
   const permission = await getPermission(github, context, pull.user.login)
   const targetSha = parsePromotionTarget(pull.body)
   if (!targetSha) {
     return invalidPromotion('promotion target SHA is missing')
   }
 
-  const [commits, files, baseContent, headContent, comparison] =
+  const [commits, files, baseContent, headContent, comparison, buildEvidence] =
     await Promise.all([
       github.paginate(github.rest.pulls.listCommits, {
         owner: context.repo.owner,
@@ -660,6 +759,13 @@ async function inspectPromotion({ github, context, pull, sourceBranch }) {
         owner: context.repo.owner,
         repo: context.repo.repo,
         basehead: `${targetSha}...${sourceBranch}`,
+      }),
+      verifyPromotionBuilds({
+        github,
+        context,
+        sourceBranch,
+        targetSha,
+        trustedSha,
       }),
     ])
 
@@ -692,6 +798,7 @@ async function inspectPromotion({ github, context, pull, sourceBranch }) {
     targetIsAncestor:
       comparison.data.status === 'ahead' ||
       comparison.data.status === 'identical',
+    buildEvidence,
   })
 }
 
@@ -1370,7 +1477,13 @@ async function buildReviewPlan({ github, context, pull, trustedSha }) {
   }
 }
 
-async function initializeFinalReview({ github, context, core, sourceBranch }) {
+async function initializeFinalReview({
+  github,
+  context,
+  core,
+  sourceBranch,
+  trustedSha,
+}) {
   const pull = context.payload.pull_request
   let state = 'pending'
   let description = `Manual ${FINAL_REVIEW_MODEL} final review required for this head`
@@ -1385,6 +1498,7 @@ async function initializeFinalReview({ github, context, core, sourceBranch }) {
         context,
         pull,
         sourceBranch,
+        trustedSha,
       })
       core.info(`Promotion exemption: ${promotion.reason}`)
       if (promotion.valid) {
@@ -1970,6 +2084,27 @@ function decideFinalStatus({
   }
 }
 
+async function finalizeFinalReviewFailure({ github, context, headSha }) {
+  const latestStatus = await getLatestFinalReviewStatus(
+    github,
+    context,
+    headSha
+  )
+  if (
+    latestStatus?.target_url &&
+    latestStatus.target_url !== workflowRunUrl(context)
+  ) {
+    return
+  }
+  await setCommitStatus({
+    github,
+    context,
+    sha: headSha,
+    state: 'failure',
+    description: 'Final review finalization failed; inspect the workflow run',
+  })
+}
+
 async function finalizeFinalReview({
   github,
   context,
@@ -1992,14 +2127,40 @@ async function finalizeFinalReview({
   cleanReview,
   policyDigest = '',
 }) {
-  const pull = await getPull(github, context, prNumber)
-  const eligibility = await resolvePullEligibility({
-    github,
-    context,
-    pull,
-    baseSha,
-    headSha,
-  })
+  const ownsLatestStatus = async () => {
+    const latestStatus = await getLatestFinalReviewStatus(
+      github,
+      context,
+      headSha
+    )
+    return (
+      !latestStatus?.target_url ||
+      latestStatus.target_url === workflowRunUrl(context)
+    )
+  }
+  let pull
+  let eligibility
+  try {
+    pull = await getPull(github, context, prNumber)
+    eligibility = await resolvePullEligibility({
+      github,
+      context,
+      pull,
+      baseSha,
+      headSha,
+    })
+  } catch {
+    if (!(await ownsLatestStatus())) return
+    await setCommitStatus({
+      github,
+      context,
+      sha: headSha,
+      state: 'error',
+      description:
+        'Final review provenance could not be re-verified after review',
+    })
+    return
+  }
   const status = decideFinalStatus({
     reviewedHead: headSha,
     currentHead: pull.head.sha,
@@ -2100,6 +2261,7 @@ module.exports = {
   decideFinalStatus,
   encodeMetadata,
   finalizeFinalReview,
+  finalizeFinalReviewFailure,
   initializeFinalReview,
   isFinalReviewCommand,
   isPromotionCandidate,
@@ -2120,5 +2282,6 @@ module.exports = {
   validateDispositionRecord,
   validatePromotionContract,
   validateFinding,
+  verifyPromotionBuilds,
   writeOCRConfig,
 }

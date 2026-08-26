@@ -59,6 +59,7 @@ jobs:
       cancel-in-progress: false
       queue: max
     permissions:
+      actions: read
       contents: read
       pull-requests: read
       statuses: write
@@ -74,6 +75,7 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           SOURCE_BRANCH: ${{ vars.STG_SOURCE_BRANCH || 'v3' }}
+          TRUSTED_SHA: ${{ needs.trusted_policy.outputs.trusted_sha }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -83,6 +85,7 @@ jobs:
               context,
               core,
               sourceBranch: process.env.SOURCE_BRANCH,
+              trustedSha: process.env.TRUSTED_SHA,
             })
 
   authorize:
@@ -440,4 +443,19 @@ jobs:
               publishOutcome: process.env.PUBLISH_OUTCOME,
               cleanReview: process.env.CLEAN_REVIEW,
               policyDigest: process.env.POLICY_DIGEST,
+            })
+
+      - name: Finalize failure fallback
+        if: failure()
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const helper = require('./.github/scripts/final-ai-review.js')
+            await helper.finalizeFinalReviewFailure({
+              github,
+              context,
+              headSha: process.env.HEAD_SHA,
             })

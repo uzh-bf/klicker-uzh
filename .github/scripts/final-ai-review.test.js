@@ -19,6 +19,7 @@ const {
   decideFinalStatus,
   encodeMetadata,
   finalizeFinalReview,
+  verifyPromotionBuilds,
   hasCurrentSuccessfulFinalReview,
   isFinalReviewCommand,
   isTrustedPermission,
@@ -136,6 +137,10 @@ test('propagates a clean publication result to final status', () => {
       /CLEAN_REVIEW: \$\{\{ needs\.review\.outputs\.clean_review \|\| 'false' \}\}/
     )
     assert.match(source, /cleanReview: process\.env\.CLEAN_REVIEW/)
+    if (workflowName === 'check-ocr-final-review.yml') {
+      assert.match(source, /name: Finalize failure fallback/)
+      assert.match(source, /finalizeFinalReviewFailure/)
+    }
   }
 })
 
@@ -1237,6 +1242,59 @@ test('only succeeds a status for a complete review on the current head', () => {
   assert.equal(failed.state, 'failure')
 })
 
+test('terminalizes the individual status when revalidation throws', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    base: {
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/final-review-failure',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const context = reviewContext()
+  const { github, state } = reviewGithub({
+    pull,
+    statuses: [
+      {
+        context: 'final-ai-review',
+        state: 'pending',
+        target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+      },
+    ],
+  })
+  github.rest.pulls.get = async () => {
+    throw new Error('temporary PR revalidation failure')
+  }
+  github.rest.repos.createCommitStatus = async (status) => {
+    state.statuses.unshift(status)
+  }
+
+  await finalizeFinalReview({
+    github,
+    context,
+    prNumber: pull.number,
+    baseSha: pull.base.sha,
+    headSha: pull.head.sha,
+    reviewOutcome: 'failure',
+    cleanupOutcome: 'failure',
+    publishOutcome: 'failure',
+    cleanReview: 'false',
+  })
+
+  assert.equal(state.statuses[0].state, 'error')
+  assert.equal(
+    state.statuses[0].description,
+    'Final review provenance could not be re-verified after review'
+  )
+})
+
 test('does not overwrite a newer individual-review status during finalization', async () => {
   const baseSha = 'b'.repeat(40)
   const headSha = 'a'.repeat(40)
@@ -1359,6 +1417,11 @@ function validPromotionInput(sourceBranch = 'v3') {
     baseContent,
     headContent: expected.content,
     targetIsAncestor: true,
+    buildEvidence: {
+      valid: true,
+      sourceBranch,
+      targetSha,
+    },
   }
 }
 
@@ -1368,6 +1431,58 @@ test('accepts current and source-switch generated promotions', () => {
     validatePromotionContract(validPromotionInput('release-candidate')).valid,
     true
   )
+})
+
+test('requires every trusted exact-SHA staging build run for a promotion', async () => {
+  const workflowPaths = [
+    '.github/workflows/v3_auth-stg.yml',
+    '.github/workflows/v3_chat-stg.yml',
+  ]
+  const targetSha = 'a'.repeat(40)
+  const context = reviewContext()
+  const github = {
+    rest: {
+      repos: {
+        getContent: async () => ({
+          data: workflowPaths.map((workflowPath) => ({
+            name: workflowPath.split('/').at(-1),
+            path: workflowPath,
+            type: 'file',
+          })),
+        }),
+      },
+      actions: {
+        listWorkflowRunsForRepo: async (params) => ({
+          data: {
+            workflow_runs: [
+              {
+                conclusion: 'success',
+                event: 'push',
+                head_branch: 'v3',
+                head_sha: targetSha,
+                path: params.workflow_id,
+                repository: { full_name: 'uzh-bf/klicker-uzh' },
+                status: 'completed',
+              },
+            ],
+          },
+        }),
+      },
+    },
+    paginate: async (endpoint, params) =>
+      (await endpoint(params)).data.workflow_runs,
+  }
+
+  const evidence = await verifyPromotionBuilds({
+    github,
+    context,
+    sourceBranch: 'v3',
+    targetSha,
+    trustedSha: 'd'.repeat(40),
+  })
+
+  assert.equal(evidence.valid, true)
+  assert.deepEqual(evidence.workflowPaths, workflowPaths)
 })
 
 test('rejects every material promotion-contract deviation', () => {
@@ -1401,6 +1516,9 @@ test('rejects every material promotion-contract deviation', () => {
     },
     (input) => {
       input.targetIsAncestor = false
+    },
+    (input) => {
+      input.buildEvidence.valid = false
     },
   ]
 
