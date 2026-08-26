@@ -68,15 +68,20 @@ const RESERVED_DOC_QUERY_SCOPE_HEADERS = new Set([
 ])
 
 function resolveDocQueryScopeHeader(server: MCPServerConfig): string {
-  const parameters =
-    server.parameters &&
-    typeof server.parameters === 'object' &&
-    !Array.isArray(server.parameters)
-      ? (server.parameters as Record<string, unknown>)
-      : undefined
+  if (
+    server.parameters !== undefined &&
+    (!server.parameters ||
+      typeof server.parameters !== 'object' ||
+      Array.isArray(server.parameters))
+  ) {
+    throw new Error('Invalid Doc Query scope-token configuration')
+  }
+
+  const parameters = server.parameters as Record<string, unknown> | undefined
   const rawScopeToken = parameters?.scope_token
   if (
-    rawScopeToken !== undefined &&
+    parameters &&
+    Object.prototype.hasOwnProperty.call(parameters, 'scope_token') &&
     (!rawScopeToken ||
       typeof rawScopeToken !== 'object' ||
       Array.isArray(rawScopeToken))
@@ -84,7 +89,10 @@ function resolveDocQueryScopeHeader(server: MCPServerConfig): string {
     throw new Error('Invalid Doc Query scope-token configuration')
   }
   const scopeToken = rawScopeToken as Record<string, unknown> | undefined
-  const header = scopeToken?.header ?? DOC_QUERY_SCOPE_TOKEN_HEADER
+  const header =
+    scopeToken && Object.prototype.hasOwnProperty.call(scopeToken, 'header')
+      ? scopeToken.header
+      : DOC_QUERY_SCOPE_TOKEN_HEADER
 
   if (
     typeof header !== 'string' ||

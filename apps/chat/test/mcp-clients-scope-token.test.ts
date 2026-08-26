@@ -190,6 +190,27 @@ describe('doc-query MCP scope authentication', () => {
     ).rejects.toThrow('Invalid Doc Query scope-token configuration')
   })
 
+  test.each([null, [], 'scope_token'])(
+    'rejects malformed server parameters %j',
+    async (parameters) => {
+      await expect(
+        createAuthHeaders({ ...SCOPE_SERVER, parameters }, TEST_CONTEXT)
+      ).rejects.toThrow('Invalid Doc Query scope-token configuration')
+    }
+  )
+
+  test('rejects an explicitly null scope-token header', async () => {
+    await expect(
+      createAuthHeaders(
+        {
+          ...SCOPE_SERVER,
+          parameters: { scope_token: { header: null } },
+        },
+        TEST_CONTEXT
+      )
+    ).rejects.toThrow('Invalid Doc Query scope-token header')
+  })
+
   test('keeps the citation card aligned with the runtime tool name', () => {
     expect(DOC_QUERY_TOOL_NAME).toBe('KB_doc_query')
   })
