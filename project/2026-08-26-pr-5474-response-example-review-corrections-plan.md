@@ -4,7 +4,7 @@
 
 - Date: 2026-08-26
 - Ceremony: full path
-- Status: executing S0 stack recovery under approved Gate 1 authority
+- Status: executing K1 Gate 2 evidence under the approved full-path goal
 - Plan: `project/2026-08-26-pr-5474-response-example-review-corrections-plan.md`
 - Historical design:
   [chatbot response-example design](./2026-08-21-chatbot-response-example-design.md)
@@ -12,7 +12,7 @@
   [chatbot response examples implementation plan](./2026-08-21-chatbot-response-examples-implementation-plan.md)
 - Repository: `uzh-bf/klicker-uzh`
 - Worktree: `trees/chatbot-response-examples-design`
-- Current branch: `feat/response-examples-review`
+- Current branch: `feat/response-examples-foundation`
 - Target branch: `v3-ai`
 - Existing stack: PR #5474 `feat/response-examples-foundation` -> `v3-ai`,
   then PR #5498 `feat/response-examples-review` ->
@@ -183,12 +183,12 @@ No new product primitive is created or retired.
 
 | Item | Current evidence | Consequence |
 | --- | --- | --- |
-| `origin/v3-ai` | `25aa1a45af775fa6d8edb0d0c62b193c6c192c3a`; sibling `trees/v3-ai-sync` is clean and exactly synchronized | The base-reconciliation dependency is resolved. This task still must not mutate the sibling worktree or branch. |
-| Current task head | K2 at `3d54fbdbee5378212e65ff97bccf6dbc87f8ceba`, clean; 56 behind and 79 ahead of current `origin/v3-ai` | Rebase and conflict resolution precede correction implementation. |
+| `origin/v3-ai` | `332e044f34a1a5a0c8be00075795d8b3a19e7397`; sibling `trees/v3-ai-sync` is clean and exactly synchronized | The base-reconciliation dependency is resolved. This task still must not mutate the sibling worktree or branch. |
+| Current task head | K1 at `2a506dcb4fac8a134b0e59dd5753a6eaf5aeab30`, clean; 0 behind and 11 ahead of current `origin/v3-ai` | K1 corrections are committed locally; K2 remains on its preserved pre-correction ref until Gate 2 acceptance. |
 | PR #5474 | remote K1 head `eef688e0fa4b4d34ad00a02f1d8a65509d5c7189`; base has moved and GitHub merge state is recalculating | Treat the old head and CI as historical only. |
 | PR #5498 | remote K2 head `3d54fbdbee5378212e65ff97bccf6dbc87f8ceba`; currently conflicting | Restack after K1 is rebased and corrected. |
 | GitHub stack #5503 | remote order is K1 then K2 with the expected PRs and published heads | Preserve this topology. |
-| Local `gh-stack` metadata | reports obsolete K1/K2 heads and an old trunk | Repair local tracking before using stack-aware rebase or push. |
+| Local `gh-stack` metadata | repaired for local stack work; no remote topology mutation | Keep the existing K1 -> K2 order and use stack-aware force-with-lease only at the final publication boundary. |
 
 ### Code findings
 
@@ -441,33 +441,35 @@ Neither follow-up is authorized by this plan.
 
 ## Progress
 
-- Status: K1 foundation correction committed locally; awaiting required risk review and Gate 2 user acceptance before K2
+- Status: K1 correction findings applied and committed locally; awaiting required risk review and Gate 2 user acceptance before K2
 - Completed: external review analysis; focused correction scope; fresh Git,
   GitHub PR, GitHub stack, sibling-worktree, and local-stack evidence; planning
   specialist review; complete correction plan; local stack tracking repair;
   recovery refs; K1 and K2 rebase onto the selected `v3-ai` base
 - Current base: `origin/v3-ai` at
-  `25aa1a45af775fa6d8edb0d0c62b193c6c192c3a`; sibling `v3-ai` worktree is clean
+  `332e044f34a1a5a0c8be00075795d8b3a19e7397`; sibling `v3-ai` worktree is clean
   and synchronized
 - Pre-correction published heads: K1
   `eef688e0fa4b4d34ad00a02f1d8a65509d5c7189`; K2
   `3d54fbdbee5378212e65ff97bccf6dbc87f8ceba`
 - Rebased local heads before correction: K1 `ec254bea755bfa3a3d9a93b760aa9ad715643444`;
   K2 `3b54dfb36cf747f4063341ea1bc85e4ade6aa67d`
-- Corrected local K1 head: `a10c6f50c` (`fix(chatbot): harden response-example review contract`)
+- Corrected local K1 head: `2a506dcb4` (`fix(chatbot): harden response-example review contract`)
 - Active slice: K1 Gate 2 evidence and risk review
 - Plan commit: `c525e6c60 docs(project): plan response-example review corrections`
 - K1 evidence: focused Markdown citation tests pass, including 100,000 unmatched
-  brackets; focused response-example GraphQL service tests pass; Markdown and
-  GraphQL package checks pass; Prisma schema validation passes; generated GraphQL
-  artifacts are current; the database migration status is up to date in the
-  task runtime. The root pre-commit hook passes after rebuilding workspace
-  declarations; Node 26 emits the repository's existing Node 24 engine warning.
+  brackets and 5,000 nested blockquotes; focused response-example GraphQL
+  contract and service tests pass, including every transition, rejected edit,
+  stale-write invariants, and all input bounds; Markdown and GraphQL package
+  checks pass; Prisma schema validation passes; generated GraphQL artifacts are
+  current; the database migration status is up to date in the task runtime. The
+  root pre-commit hook passes with 29/29 Turbo tasks; Node 26 emits the
+  repository's existing Node 24 engine warning.
 - Review continuity: configured K1 specialist routes failed before launch with
-  `unreadable_encrypted_agent_task`; a documented native fallback review is
-  running over the immutable K1 range at
-  `project/_local/reviews/2026-08-26-k1-simplifier-fallback.md`.
-- Next: complete the K1 risk review, update the immutable Gate 2 evidence, and
-  ask the user to accept or reject the K1 evidence before starting K2.
+  `unreadable_encrypted_agent_task`; the generic continuity risk review is
+  recorded at
+  `project/_local/reviews/2026-08-26-k1-risk-review-fallback.md`. All four
+  findings were applied and reverified over immutable K1 head `2a506dcb4`.
+- Next: obtain the required K1 Gate 2 acceptance before starting K2.
 - Delivery pending: K1 Gate 2 acceptance, K2 correction, corrected branch push, PR updates,
   corrected-head CI, merge, deployment, runtime activation, K3, and Test & Teach
