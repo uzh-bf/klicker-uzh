@@ -46,8 +46,12 @@
 - Primary repository: `uzh-bf/klicker-uzh`.
 - Branch: `rs/ai-review-lifecycle`.
 - Worktree: `trees/rs-ai-review-lifecycle`.
-- Baseline: `origin/v3` at
+- Planning baseline: `origin/v3` at
   `5ffc6a6d2bc4b12f6f38b5119718a7545e039256`.
+- Fresh remote check: `origin/v3` is now at
+  `2385ed7ffc05c7ef220f55a179f84b7fdfa20e8c`; this task branch is five
+  commits behind and twenty-one commits ahead. Rebase, merge, and publication
+  remain outside the approved authority.
 - Historical inputs:
   `project/2026-08-24-open-code-review-plan.md` and
   `project/2026-08-25-manual-final-ai-review-gate-plan.md`.
@@ -468,34 +472,54 @@ real runs before proposing any parameter retune or branch-protection context.
 
 ## Progress
 
-- Status: S2 completed locally; S3 is the next execution slice.
-- Completed: fresh `origin/v3` baseline, primary-worktree ownership audit,
-  current workflow/helper/rule inspection, native stack endpoint probe,
-  OpenRouter documentation check, shared-skill dirty-diff preservation audit,
-  product-primitive mapping, required planner challenge, approved plan commit,
-  S1 draft-only workflow implementation, and S2 individual attestation
-  implementation.
-- Planner disposition: accepted bounded descendant attestation, latest-status
-  semantics, lower-layer invalidation, compact manifest metadata, terminal
-  dispositions, and removal of generated-promotion special handling. Rejected
-  only the claim that `writing-for-agents` was unavailable.
-- S1 evidence: YAML parsing and `git diff --check` passed; `actionlint` is not
-  installed; the pinned action's documented diagnostics remain unproven and
-  were not added. The configured Gemini simplifier and slice-reviewer routes
-  failed before producing reports at the provider credit limit, so trusted Sol
-  fallbacks reviewed the immutable slice and returned `DONE` with no findings.
-- S2 evidence: 13 focused tests passed in the managed task container; Biome
-  check passed; workflow YAML parsing, `git diff --check`, and staged gitleaks
-  scanning passed. The suite covers default and native-stack eligibility,
-  latest status selection, deterministic finding metadata, trusted dispositions,
-  exact workflow provenance, ancestry, digest, base-advance, bounds, duplicate,
-  report-limit, and material-change fallbacks. `actionlint` remains unavailable.
-  The configured Gemini simplifier and slice-reviewer routes again failed at the
-  provider credit limit; trusted Sol fallbacks reviewed the correction range.
-  Their high-severity provenance findings were corrected in `93a19531e`.
-- Commits: plan `2b83fbb49`; S1 `6f80a97f2`; S2 implementation `f7920c6fe`,
-  correction `e5c7be23`, and provenance correction `93a19531e`.
-- Remaining: G1-G4, slices S3-S5, verification, required reviews, local commits,
-  and the cross-repository progress record.
-- Delivery boundary: pushes, PRs, live qualification, ClickUp writes, branch
-  protection, merge, deployment, and cleanup remain withheld.
+- Status: implementation is complete locally; the final integrated review and
+  runtime shutdown are the remaining local steps. Publication and live
+  qualification remain withheld.
+- Completed: S1 draft-only discovery, S2 individual descendant attestation, S3
+  native-stack attestation, S4 offline qualification assets and documentation,
+  and S5 bounded shared babysit state-machine guidance. The implementation
+  ranges are KlickerUZH `2b83fbb49^..1fbd5bdec` and dotfiles
+  `2ec825bc^..3c52228`.
+- G1 is satisfied locally: the native stacks endpoint was probed, its missing
+  base-ref limitation was recorded, and every member is cross-checked through
+  PR data and Git ancestry. Valid two- and four-layer plus malformed and drift
+  fixtures pass the offline contract tests. G2 remains intentionally open:
+  the pinned cheap-review action exposes no documented bounded diagnostics, so
+  no undocumented output parsing was added.
+- G3 is satisfied for the local wire contract: dummy-token tests verify the
+  high-reasoning strict schema, `provider.require_parameters`, bounded input,
+  and token exclusion. No live OpenRouter qualification call was made. G4 is
+  satisfied: commands, statuses, metadata, finding IDs, dispositions, round
+  semantics, and cold-review triggers are fixed and covered. G5 remains
+  withheld for a separately authorized post-publication qualification.
+- Verification: the focused review, stack, and qualification suite passes 55
+  tests; the offline evaluator passes all 8 fixtures with digest
+  `0cd238be8315a055cb4f99120bfd45b9ca820b48865fe04a7c10d37de826e442`; and
+  `pnpm run check` passes 25 of 25 packages. JSON/YAML/Markdown formatting,
+  `git diff --check`, staged secret scanning, and the shared-skill validator
+  pass. `actionlint` is unavailable. `pnpm run check:all` remains blocked only
+  by the analytics lint environment: pandas 2.2.2 cannot build because the
+  DevPod image has no C compiler (`cc`, `gcc`, or `clang`).
+- Review routing: the configured Gemini simplifier and slice-reviewer routes
+  failed before producing reports because OpenRouter returned the remaining
+  credit/context-budget limit. Trusted Sol fallbacks reviewed the immutable
+  slices. They found and led to fixes for provenance binding, stack-root and
+  lower-layer invalidation, top-layer identity drift, consolidated report
+  ranges, missing Actions read permission, incremental-root replacement, and
+  shared-skill capability/platform contradictions. The latest dotfiles
+  correction range `d0c45ee..3c52228` received two clean fallback reviews with
+  no actionable findings. The integrated final reviewer is still required.
+- Slice reviews: S1, S2, S3, S4, and S5 are complete; the final S5 correction
+  review was accepted unchanged. No safe simplifier reduction remains. The
+  reviewer suggestion to extract duplicated trusted lifecycle logic is a
+  non-blocking follow-up and was not expanded into this package.
+- Runtime: the exact task DevPod supported all container checks, but its
+  post-start auth readiness contract failed because the task environment lacks
+  the expected `.env`; no runtime or browser proof is required for this
+  CI/skill-only package. The exact runtime will be stopped and verified after
+  the final review.
+- Next: run one integrated trusted final-reviewer pass over both complete
+  committed ranges, record its disposition here, make no further behavior
+  changes unless it finds an actionable issue, then commit this Progress
+  update. Do not push, create PRs, write ClickUp tasks, alter branch protection,
+  merge, deploy, or delete the task worktrees.
