@@ -32,11 +32,13 @@ uncrowned regardless of Catalyst entitlement.
 - Draft PR #5546 points to published head
   `510ab4308e516b69294fcb1dae69adbb6c9feea2`. The contract correction is
   committed locally at `c65e52413752a47dd16e29b60e05dbe7fd0d7417` and
-  integrated through merge commit `cd26abb4cd8678cdea1bd04695bf36083c754501`.
-  GitHub is authoritative for volatile PR and check state; the normal push and
-  PR body update are authorized but pending. PR merge, mark-ready, deployment,
-  publication, worktree cleanup, and branch, worktree, or runtime-data deletion
-  remain withheld.
+  integrated through the reviewed branch history. Current base-only merge
+  `79e356831c8354dade4c24ce83a52a08bff0cfda` remains local. GitHub is
+  authoritative for volatile PR and check state; read-only final-review delta
+  verification, normal push, PR body update, exact-head CI, and thread
+  resolution remain pending. PR merge, mark-ready, deployment, publication,
+  worktree cleanup, and branch, worktree, or runtime-data deletion remain
+  withheld.
 
 ## Execution contract
 
@@ -72,11 +74,11 @@ uncrowned regardless of Catalyst entitlement.
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/ux-review-question-library`.
 - Branch: `rs/question-library-activity-wizard-feedback`.
 - Current integrated base and merge-base:
-  `ac84460d2209c51842f0857da75cf7d7f258ae09`, which is also the current
-  `origin/v3`. Its CI-only Playwright workflow fix restores
-  `packages/graphql/dist/client.json` into the generated public path before
-  tests and was merged normally; volatile ahead/behind counts are intentionally
-  omitted.
+  `de103a52d982a29af72022069ad668bc68f84094`, which is also the current
+  `origin/v3`. Its CI-only change touches only `playwright/timings.json` and was
+  merged normally in `79e356831c8354dade4c24ce83a52a08bff0cfda` over reviewed
+  head `67f5a43363557a3e464831bb35d2dba6ea6805a9`; volatile ahead/behind counts
+  are intentionally omitted.
 - The merge integrated `7515632f229c9421a7ac7d62668e1743147ba158` and its
   generated GraphQL policy: typed and persisted artifacts are generated and
   ignored, while the public SDL remains tracked.
@@ -98,11 +100,12 @@ uncrowned regardless of Catalyst entitlement.
   Catalyst signaling because ADR-0037 makes the three formerly gated formats
   standard full-access capabilities.
 - Draft PR #5546 points to published head
-  `510ab4308e516b69294fcb1dae69adbb6c9feea2`; local merge commit
-  `cd26abb4cd8678cdea1bd04695bf36083c754501` integrates contract-fix commit
-  `c65e52413752a47dd16e29b60e05dbe7fd0d7417` over the current base. GitHub is
-  authoritative for volatile PR and check state. The normal push and PR body
-  update are authorized but pending; PR merge, mark-ready, deployment,
+  `510ab4308e516b69294fcb1dae69adbb6c9feea2`; current local merge commit
+  `79e356831c8354dade4c24ce83a52a08bff0cfda` integrates the CI-only current
+  base over reviewed head `67f5a43363557a3e464831bb35d2dba6ea6805a9`.
+  GitHub is authoritative for volatile PR and check state. Read-only
+  final-review delta verification, normal push, PR body update, exact-head CI,
+  and thread resolution remain pending; PR merge, mark-ready, deployment,
   publication, cleanup, and deletion remain withheld.
 - Authoritative roadmap:
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/question-library-feedback-recovery/project/2026-08-23-question-library-ux-audit-and-roadmap.md`
@@ -422,17 +425,24 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   head `259f92a6be3a2a2cb3808f1c1d1305e6a276383d`. It covered integrated base
   `ac84460d2209c51842f0857da75cf7d7f258ae09` through the code correction,
   normal upstream merge, and final runtime-lifecycle evidence.
+- Current merge `79e356831c8354dade4c24ce83a52a08bff0cfda` adds only the
+  `playwright/timings.json` change from current base
+  `de103a52d982a29af72022069ad668bc68f84094` over reviewed head
+  `67f5a43363557a3e464831bb35d2dba6ea6805a9`. Read-only final-review delta
+  verification of that base-only merge and the resulting plan update is pending
+  before push.
 - Review lenses were correctness, plan compliance, user workflow, bilingual
   i18n, accessibility, shared navigation compatibility, test sufficiency,
   maintainability, bounded frontend security, and diff scope. The reviewer
   found no code, security, regression, maintainability, or test issue.
 - The review's sole finding was the contradictory final-review status in this
   durable plan. That documentation finding is accepted and resolved by this
-  edit; local final review is complete.
+  edit; the completed code review remains valid for its reviewed range.
 - Draft PR #5546 exists and GitHub remains authoritative for volatile PR and
-  check state. Normal push, PR body update, exact-head CI, and review-thread
-  resolution remain pending. PR merge, mark-ready, deployment, publication,
-  worktree cleanup, and branch or worktree deletion remain withheld.
+  check state. The read-only final-review delta verification, normal push, PR
+  body update, exact-head CI, and review-thread resolution remain pending. PR
+  merge, mark-ready, deployment, publication, worktree cleanup, and branch or
+  worktree deletion remain withheld.
 
 ## Risks and stop conditions
 
@@ -457,19 +467,23 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   browser evidence, and the environment-blocked repository Playwright run.
 - Host readback proves branch and PR-body synchronization for each published
   head. GitHub is authoritative for volatile current PR and check state. The
-  reviewed local head `259f92a6be3a2a2cb3808f1c1d1305e6a276383d`
-  remains unpublished. Normal push, PR body update, exact-head CI, and
-  review-thread resolution remain pending. PR merge, mark-ready, deployment,
-  publication, cleanup, and deletion remain withheld.
+  current local merge `79e356831c8354dade4c24ce83a52a08bff0cfda`
+  remains unpublished. Read-only final-review delta verification of its
+  base-only change and this plan update, normal push, PR body update, exact-head
+  CI, and review-thread resolution remain pending. PR merge, mark-ready,
+  deployment, publication, cleanup, and deletion remain withheld.
 
 ## Progress
 
-- Status: W2 implementation, checks, exact devrouter proof, evidence, the
-  contract correction, its upstream merge, runtime lifecycle closure, and the
-  required independent integrated final review are complete locally. Runtime
-  closure has fresh exact-source provider and zero-route readback.
+- Status: W2 implementation, checks, exact devrouter proof, evidence, the code
+  correction, completed independent integrated final review, and runtime
+  lifecycle closure remain complete through reviewed head
+  `67f5a43363557a3e464831bb35d2dba6ea6805a9`. Read-only final-review delta
+  verification of the new base-only merge and this plan update is pending before
+  push. Runtime closure retains fresh exact-source provider and zero-route
+  readback.
 - Freshness: the integrated base and merge-base are
-  `ac84460d2209c51842f0857da75cf7d7f258ae09`, which is also the current
+  `de103a52d982a29af72022069ad668bc68f84094`, which is also the current
   `origin/v3`. Exact ahead/behind counts are not durable Progress state.
 - Sol final-review disposition for reviewed pre-correction local head
   `5ca2804370bc4cd6fa165d6158d611adb258c627`: both non-behavioral findings are
@@ -824,12 +838,11 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   remain pending. PR merge, mark-ready, deployment, publication, cleanup, and
   deletion remain withheld.
 - Current local integration is merge commit
-  `cd26abb4cd8678cdea1bd04695bf36083c754501` over contract-fix commit
-  `c65e52413752a47dd16e29b60e05dbe7fd0d7417` and current `origin/v3`
-  `ac84460d2209c51842f0857da75cf7d7f258ae09`. The upstream parent is a CI-only
-  Playwright workflow correction that restores
-  `packages/graphql/dist/client.json` into the generated public path before
-  tests; it was merged normally. Draft PR #5546 remains published at
+  `79e356831c8354dade4c24ce83a52a08bff0cfda` over reviewed head
+  `67f5a43363557a3e464831bb35d2dba6ea6805a9` and current `origin/v3`
+  `de103a52d982a29af72022069ad668bc68f84094`. The upstream parent is CI-only
+  and changes only `playwright/timings.json`; it was merged normally. Draft PR
+  #5546 remains published at
   `510ab4308e516b69294fcb1dae69adbb6c9feea2`. After the earlier canonical
   `devrouter ensure .` process, PID 39295, exited, canonical
   `devrouter stop . --json` exited 0 with `stopped: true` and `freedRoutes: 0`.
@@ -838,19 +851,22 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   `devrouter ls --json` reported an exact source-path route count of 0. No
   workaround, cache clearing, route, TLS, or configuration change, raw
   DevPod/Docker mutation, or deletion occurred. The earlier failed-closed Chat
-  Turbopack readiness evidence remains unchanged. No new push, exact-head CI,
-  or thread resolution is claimed; merge, mark-ready, deployment, publication,
-  cleanup, and deletion remain withheld.
+  Turbopack readiness evidence remains unchanged. Read-only final-review delta
+  verification of the base-only merge and this resulting plan update is pending
+  before push. No new push, PR body update, exact-head CI, or thread resolution
+  is claimed; merge, mark-ready, deployment, publication, cleanup, and deletion
+  remain withheld.
 - Required independent integrated final review completed on exact immutable
   head `259f92a6be3a2a2cb3808f1c1d1305e6a276383d`, covering integrated base
   `ac84460d2209c51842f0857da75cf7d7f258ae09` through the code correction,
   normal merge, and final runtime-lifecycle evidence. The reviewer found no
   code, security, regression, maintainability, or test issue; its sole finding
   was this plan's contradictory review status. This edit accepts and resolves
-  that documentation finding, so local final review is complete. Normal push,
-  PR body update, exact-head CI, and review-thread resolution remain pending;
-  PR merge, mark-ready, deployment, publication, cleanup, and deletion remain
-  withheld.
+  that documentation finding, so final review of that immutable range is
+  complete. Read-only delta verification of the current base-only merge and
+  resulting plan update, normal push, PR body update, exact-head CI, and
+  review-thread resolution remain pending; PR merge, mark-ready, deployment,
+  publication, cleanup, and deletion remain withheld.
 
 ### Historical execution evidence before final runtime proof
 
