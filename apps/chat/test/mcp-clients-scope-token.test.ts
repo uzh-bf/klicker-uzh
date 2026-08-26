@@ -83,17 +83,17 @@ describe('doc-query MCP scope authentication', () => {
     expect(headers[DOC_QUERY_SCOPE_TOKEN_HEADER]).toMatch(/^Bearer /)
   })
 
-  test.each(['none', 'bearer'])(
-    'rejects %s KB auth without a transport secret',
-    async (authType) => {
-      await expect(
-        createAuthHeaders(
-          { ...SCOPE_SERVER, authType, authSecret: undefined },
-          TEST_CONTEXT
-        )
-      ).rejects.toThrow('Doc Query transport authentication is invalid')
-    }
-  )
+  test.each([
+    'none',
+    'bearer',
+  ])('rejects %s KB auth without a transport secret', async (authType) => {
+    await expect(
+      createAuthHeaders(
+        { ...SCOPE_SERVER, authType, authSecret: undefined },
+        TEST_CONTEXT
+      )
+    ).rejects.toThrow('Doc Query transport authentication is invalid')
+  })
 
   test('skips scoped servers when no enabled KB was resolved', () => {
     expect(
@@ -190,14 +190,15 @@ describe('doc-query MCP scope authentication', () => {
     ).rejects.toThrow('Invalid Doc Query scope-token configuration')
   })
 
-  test.each([null, [], 'scope_token'])(
-    'rejects malformed server parameters %j',
-    async (parameters) => {
-      await expect(
-        createAuthHeaders({ ...SCOPE_SERVER, parameters }, TEST_CONTEXT)
-      ).rejects.toThrow('Invalid Doc Query scope-token configuration')
-    }
-  )
+  test.each([
+    null,
+    [],
+    'scope_token',
+  ])('rejects malformed server parameters %j', async (parameters) => {
+    await expect(
+      createAuthHeaders({ ...SCOPE_SERVER, parameters }, TEST_CONTEXT)
+    ).rejects.toThrow('Invalid Doc Query scope-token configuration')
+  })
 
   test('rejects an explicitly null scope-token header', async () => {
     await expect(
