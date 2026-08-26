@@ -38,9 +38,9 @@ learning-analytics choices default to `false` and retain only the current
 choice, choice time, and disclosure version. The participant-only
 `selfDataUse` query exposes those seven fields; the generic `Participant`
 GraphQL object does not. The two Boolean mutations store server-owned
-disclosure version `v1` and use PostgreSQL transaction time. Learning-analytics
-changes take the global advisory gate with a bounded lock timeout; research
-changes do not take that gate.
+disclosure version `v1` and capture PostgreSQL `clock_timestamp()` immediately
+before the write. Learning-analytics changes take the global advisory gate with
+a bounded lock timeout; research changes do not take that gate.
 
 A future research export may include all stored canonical data when research
 consent is `true` and none when it is `false`. Learning-analytics re-enable uses
