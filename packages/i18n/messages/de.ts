@@ -1753,6 +1753,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       openInNewTab: 'Assistent in einem neuen Tab öffnen',
       elementCreatedToast: 'Entwurf "{name}" zum Fragepool hinzugefügt',
     },
+    ai: {
+      unavailableTitle: 'KI-Funktionen nicht verfügbar',
+      unavailableDescription:
+        'Die KI-Funktionen befinden sich in der Beta-Phase und sind für Ihr Konto noch nicht verfügbar. Bitte wenden Sie sich für den Zugang an Ihre Administratorin oder Ihren Administrator.',
+    },
     general: {
       qrCode: 'QR Code',
       presentQrCode: 'QR-Code präsentieren',
@@ -1763,6 +1768,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       liveQuizzes: 'Live Quizzes',
       courses: 'Kurse',
       resources: 'Ressourcen',
+      ai: 'KI',
+      betaFeatures: 'Beta-Funktionen',
       catalog: 'Katalog',
       mediaLibrary: 'Mediathek',
       userGroups: 'Benutzergruppen',

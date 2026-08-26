@@ -32,6 +32,7 @@ import { createHash, randomUUID } from 'crypto'
 import { GraphQLError } from 'graphql'
 import { validate as validateUuid } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
+import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
 import {
   getKBGraphRemainingQuota,
   releaseKBGraphCostReservation,
@@ -314,18 +315,6 @@ async function assertKbQuotaAvailable(
   if (usage.sizeBytes + sizeBytes > MAX_KB_TOTAL_SIZE_BYTES) {
     throw new GraphQLError('KB storage limit reached', {
       extensions: { code: 'KB_STORAGE_LIMIT_REACHED' },
-    })
-  }
-}
-
-async function assertKbPreviewAccess(ctx: ContextWithUser) {
-  const user = await ctx.prisma.user.findUnique({
-    where: { id: ctx.user.sub },
-    select: { privatePreview: true },
-  })
-  if (!user?.privatePreview) {
-    throw new GraphQLError('KB workspace preview access is required', {
-      extensions: { code: 'KB_PREVIEW_ACCESS_REQUIRED' },
     })
   }
 }
@@ -622,7 +611,7 @@ export async function getUserKbsConnection(
   },
   ctx: ContextWithUser
 ): Promise<KBConnection> {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   const pageSize = normalizePageSize(first)
   const normalizedSearch = normalizeSearch(search)
   const filterHash = getFilterHash({
@@ -704,7 +693,7 @@ export async function getUserKbsConnection(
 }
 
 export async function getKb({ id }: { id: string }, ctx: ContextWithUser) {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   const kb = await ctx.prisma.kB.findFirst({
     where: { id, ownerId: ctx.user.sub, deletedAt: null },
   })
@@ -735,7 +724,7 @@ export async function getKbResourcesConnection(
   },
   ctx: ContextWithUser
 ): Promise<KBResourceConnection> {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   await getOwnedKbOrThrow(ctx, kbId)
   const pageSize = normalizePageSize(first)
   const normalizedSearch = normalizeSearch(search)
@@ -857,7 +846,7 @@ export async function getKbChatbotBindings(
   { kbId }: { kbId: string },
   ctx: ContextWithUser
 ) {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   await getOwnedKbOrThrow(ctx, kbId)
 
   const chatbots = await ctx.prisma.chatbot.findMany({
@@ -888,7 +877,7 @@ export async function attachKbToChatbot(
   { kbId, chatbotId }: { kbId: string; chatbotId: string },
   ctx: ContextWithUser
 ) {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   return ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
     await lockOwnedChatbotOrThrow(prisma, chatbotId, ctx.user.sub)
@@ -956,7 +945,7 @@ export async function detachKbFromChatbot(
   { kbId, chatbotId }: { kbId: string; chatbotId: string },
   ctx: ContextWithUser
 ) {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   return ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
     await lockOwnedChatbotOrThrow(prisma, chatbotId, ctx.user.sub)
@@ -987,7 +976,7 @@ export async function getKbResourceIngestionRuns(
   { resourceId }: { resourceId: string },
   ctx: ContextWithUser
 ) {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   await getOwnedKbResourceOrThrow(ctx, resourceId)
 
   return ctx.prisma.kBIngestionRun.findMany({
@@ -1013,7 +1002,7 @@ export async function createKb(
   },
   ctx: ContextWithUser
 ) {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   const normalizedName = name.trim()
   if (!normalizedName) {
     throw new GraphQLError('KB name is required')
@@ -1093,7 +1082,7 @@ async function queueKbDeletions(
 }
 
 export async function deleteKb({ id }: { id: string }, ctx: ContextWithUser) {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   const { kb, deletionInputs } = await ctx.prisma.$transaction(
     async (prisma) => {
       await lockOwnedKbOrThrow(prisma, id, ctx.user.sub)
@@ -1251,7 +1240,7 @@ export async function requestKbFileUpload(
   },
   ctx: ContextWithUser
 ) {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   assertKbIngestionEnabled()
   await getOwnedKbOrThrow(ctx, kbId)
   const validated = validateKbFile({ fileName, contentType, sizeBytes })
@@ -1353,7 +1342,7 @@ export async function confirmKbFileUpload(
   },
   ctx: ContextWithUser
 ) {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   const validated = validateKbFile({
     fileName: originalFilename,
     contentType: mimeType,
@@ -1474,7 +1463,7 @@ export async function createKbUrlResource(
   },
   ctx: ContextWithUser
 ) {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   assertKbIngestionEnabled()
   await getOwnedKbOrThrow(ctx, kbId)
 
@@ -1508,7 +1497,7 @@ export async function deleteKbResource(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   const { resource, deletionInput } = await ctx.prisma.$transaction(
     async (prisma) => {
       const kbId = await lockOwnedKbForResourceOrThrow(prisma, id, ctx.user.sub)
@@ -1568,7 +1557,7 @@ export async function deleteKbResources(
   { kbId, ids }: { kbId: string; ids: string[] },
   ctx: ContextWithUser
 ) {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   if (
     ids.length === 0 ||
     ids.length > KB_BULK_DELETE_LIMIT ||
@@ -1670,7 +1659,7 @@ export async function ingestKbResource(
   { id }: { id: string },
   ctx: ContextWithUser
 ) {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   assertKbIngestionEnabled()
   const resource = await getOwnedKbResourceOrThrow(ctx, id)
   if (
@@ -1965,7 +1954,7 @@ export async function getKbKnowledgeGraphConfig(
   { kbId }: { kbId: string },
   ctx: ContextWithUser
 ): Promise<KBKnowledgeGraphConfig> {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   const kb = await getOwnedKbOrThrow(ctx, kbId)
   const costConfiguration = getKBGraphCostConfiguration()
   const [build, publishedBuild] = await Promise.all([
@@ -2012,7 +2001,7 @@ async function readOwnedPublishedKBGraph(
   ctx: ContextWithUser,
   read: (graph: PublishedKnowledgeGraph) => Promise<KnowledgeGraphResponse>
 ) {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   await getOwnedKbOrThrow(ctx, kbId)
   try {
     return await read(await getPublishedKnowledgeGraph(ctx.prisma, kbId))
@@ -2055,7 +2044,7 @@ export async function setKbKnowledgeGraphEnabled(
   { kbId, enabled }: { kbId: string; enabled: boolean },
   ctx: ContextWithUser
 ): Promise<KBKnowledgeGraphConfig> {
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   if (enabled) {
     assertKbGraphGenerationEnabled()
     requireKBGraphCostConfiguration()
@@ -2126,7 +2115,7 @@ export async function rebuildKbKnowledgeGraph(
   ctx: ContextWithUser
 ): Promise<KBKnowledgeGraphConfig> {
   const qualityTier = requestedQualityTier ?? DB.KBGraphQualityTier.STANDARD
-  await assertKbPreviewAccess(ctx)
+  await assertManageAiEnabled(ctx)
   assertKbGraphGenerationEnabled()
   const result = await ctx.prisma.$transaction(async (prisma) => {
     await lockOwnedKbOrThrow(prisma, kbId, ctx.user.sub)
