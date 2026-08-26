@@ -47,6 +47,13 @@ enum KBGraphCostStatus {
   NEEDS_HUMAN_REVIEW
 }
 
+enum KBGraphQuotaSpendClass {
+  GRAPH_BUILD
+  QUESTION_GENERATION
+  FLASHCARD_GENERATION
+  FLASHCARD_RETRY
+}
+
 enum ElementGenerationBuildStatus {
   PREPARING_INPUT
   QUEUED
@@ -211,6 +218,7 @@ model KBGraphBuild {
   graphManifestArtifact      Json?
 
   // Cost reservation is part of the build ledger so settlement is idempotent by build id.
+  spendClass              KBGraphQuotaSpendClass @default(GRAPH_BUILD)
   estimatedCostMinorUnits Int?
   actualCostMinorUnits    Int?
   actualInputTokens       Int?
@@ -282,6 +290,7 @@ model KBGraphQuota {
   reservedMinorUnits   Int @default(0)
   settledMinorUnits    Int @default(0)
   graphBuilds          KBGraphBuild[]
+  elementGenerationSpends ElementGenerationSpend[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -330,6 +339,10 @@ model ElementGenerationBuild {
   warningCount           Int                          @default(0)
   status                 ElementGenerationBuildStatus @default(PREPARING_INPUT)
   stage                  String                       @default("preparing_input")
+
+  // NULL identifies pre-accounting rows if this migration is deployed over an
+  // earlier draft environment; all new builds write version 1.
+  costAccountingVersion Int?
 
   providerEventId                String?
   providerWorkflowRunId          String?
@@ -385,6 +398,7 @@ model ElementGenerationBuild {
 
   reviews ElementGenerationReview[]
   drafts  GeneratedElementDraft[]
+  spends  ElementGenerationSpend[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -393,6 +407,34 @@ model ElementGenerationBuild {
   @@index([ownerId, createdAt])
   @@index([sourceGraphBuildId, status])
   @@index([status, syncLeaseUntil])
+}
+
+model ElementGenerationSpend {
+  id String @id @default(uuid()) @db.Uuid
+
+  build   ElementGenerationBuild @relation(fields: [buildId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  buildId String                 @db.Uuid
+
+  quota   KBGraphQuota @relation(fields: [quotaId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  quotaId String       @db.Uuid
+
+  dispatchAttemptId String @unique @db.Uuid
+  spendClass       KBGraphQuotaSpendClass
+  semesterKey      String
+
+  estimatedCostMinorUnits Int
+  actualCostMinorUnits    Int?
+  costCurrency            String
+  costPricingVersion      String
+  costStatus              KBGraphCostStatus @default(RESERVED)
+  dispatchClaimedAt       DateTime?
+  finishedAt              DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([buildId, createdAt])
+  @@index([quotaId])
 }
 
 model ElementGenerationReview {

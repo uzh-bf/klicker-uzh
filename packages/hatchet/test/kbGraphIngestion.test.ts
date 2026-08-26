@@ -50,6 +50,7 @@ const externalEnv = {
   KB_GRAPH_STANDARD_CLEANING_MODEL: 'klickeruzh/azure/gpt-4.1-nano',
   KB_GRAPH_HIGH_GENERATION_MODEL: 'klickeruzh/azure/gpt-5.4-high',
   KB_GRAPH_HIGH_CLEANING_MODEL: 'klickeruzh/azure/gpt-4.1',
+  KB_GRAPH_UPLOAD_GENERATION_ARTIFACTS: 'true',
   KB_FALKORDB_HOST: 'falkordb.other',
   KB_FALKORDB_PORT: '6379',
   KB_FALKORDB_TLS: 'false',
@@ -480,6 +481,17 @@ describe('KB graph external dispatch', () => {
         graphml_blob_name: `knowledge-graphs/${BUILD_ID}.graphml`,
       },
     })
+  })
+
+  it('does not request generation artifacts when element generation is disabled', () => {
+    const build = createBuild()
+
+    expect(
+      buildExternalKBGraphPayload(build, [SOURCE_URL], {
+        ...externalEnv,
+        KB_GRAPH_UPLOAD_GENERATION_ARTIFACTS: 'false',
+      }).upload_graph_artifacts
+    ).toBe(false)
   })
 
   it('creates an exact-blob, read-only, HTTPS-only SAS for a private source', () => {

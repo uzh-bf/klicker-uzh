@@ -10,6 +10,7 @@ import {
 const SHA256_PATTERN = /^[0-9a-f]{64}$/
 const CONTAINER_PATTERN = /^(?!.*--)[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$/
 const MAX_QUESTION_OUTPUT_PREFIX_LENGTH = 901
+const MAX_BUFFERED_ARTIFACT_BYTES = 10 * 1024 * 1024
 
 export type QuestionWorkflowStartPayload = {
   schema_version: 3
@@ -92,7 +93,8 @@ export interface QuestionGenerationRuntime {
   start(
     payload: QuestionWorkflowStartPayload,
     scope: string,
-    dispatchAttemptId: string
+    dispatchAttemptId: string,
+    beforeProviderDispatch: () => Promise<void>
   ): Promise<{ eventId: string }>
   review(
     event: QuestionWorkflowReviewEvent,
@@ -127,7 +129,8 @@ export interface FlashcardGenerationRuntime extends QuestionGenerationRuntime {
   startFlashcards(
     payload: FlashcardWorkflowStartPayload,
     scope: string,
-    dispatchAttemptId: string
+    dispatchAttemptId: string,
+    beforeProviderDispatch: () => Promise<void>
   ): Promise<{ eventId: string }>
   publishIncompleteFlashcards(
     event: FlashcardWorkflowIncompletePublicationEvent,
@@ -179,7 +182,7 @@ type RuntimeBlobServiceClient = {
         bytes: Buffer,
         options: { conditions: { ifNoneMatch: string } }
       ): Promise<unknown>
-      downloadToBuffer(): Promise<Buffer>
+      downloadToBuffer(offset?: number, count?: number): Promise<Buffer>
       download(): Promise<{
         readableStreamBody?: AsyncIterable<Uint8Array>
       }>
@@ -521,7 +524,7 @@ class ProductionQuestionGenerationRuntime
       bytes = await this.blobService
         .getContainerClient(containerName)
         .getBlockBlobClient(blobName)
-        .downloadToBuffer()
+        .downloadToBuffer(0, MAX_BUFFERED_ARTIFACT_BYTES + 1)
     } catch (error) {
       if (
         typeof error === 'object' &&
@@ -541,13 +544,20 @@ class ProductionQuestionGenerationRuntime
         true
       )
     }
+    if (bytes.byteLength > MAX_BUFFERED_ARTIFACT_BYTES) {
+      throw questionGenerationServiceError(
+        'ARTIFACT_INVALID',
+        'Question-generation artifact exceeds the size limit'
+      )
+    }
     return bytes
   }
 
   async start(
     payload: QuestionWorkflowStartPayload,
     scope: string,
-    dispatchAttemptId: string
+    dispatchAttemptId: string,
+    beforeProviderDispatch: () => Promise<void>
   ): Promise<{ eventId: string }> {
     assertArtifactReference(
       {
@@ -587,6 +597,7 @@ class ProductionQuestionGenerationRuntime
       )
     }
 
+    await beforeProviderDispatch()
     try {
       const event = await this.hatchet.events.push(
         'course-question-blueprint-generation:requested',
@@ -647,7 +658,8 @@ class ProductionQuestionGenerationRuntime
   async startFlashcards(
     payload: FlashcardWorkflowStartPayload,
     scope: string,
-    dispatchAttemptId: string
+    dispatchAttemptId: string,
+    beforeProviderDispatch: () => Promise<void>
   ): Promise<{ eventId: string }> {
     assertArtifactReference(
       {
@@ -687,6 +699,7 @@ class ProductionQuestionGenerationRuntime
       )
     }
 
+    await beforeProviderDispatch()
     try {
       const event = await this.hatchet.events.push(
         'course-flashcard-generation:requested',

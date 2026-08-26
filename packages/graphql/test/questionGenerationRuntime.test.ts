@@ -23,10 +23,11 @@ const runtimeEnvironment = {
 }
 
 function createRuntimeHarness(
-  environment: Record<string, string | undefined> = runtimeEnvironment
+  environment: Record<string, string | undefined> = runtimeEnvironment,
+  downloadedBytes = Buffer.from('artifact')
 ) {
   const uploadData = vi.fn(async () => ({}))
-  const downloadToBuffer = vi.fn(async () => Buffer.from('artifact'))
+  const downloadToBuffer = vi.fn(async () => downloadedBytes)
   const download = vi.fn(async () => ({
     readableStreamBody: Readable.from([Buffer.from('artifact')]),
   }))
@@ -240,6 +241,11 @@ describe('question-generation runtime', () => {
       })
     ).rejects.toMatchObject({ code: 'ARTIFACT_DIGEST_MISMATCH' })
 
+    expect(harness.downloadToBuffer).toHaveBeenCalledWith(
+      0,
+      10 * 1024 * 1024 + 1
+    )
+
     await expect(
       collectStream(
         harness.runtime.downloadVerifiedStream({
@@ -258,6 +264,24 @@ describe('question-generation runtime', () => {
         })
       )
     ).rejects.toMatchObject({ code: 'ARTIFACT_DIGEST_MISMATCH' })
+  })
+
+  it('rejects oversized artifacts after a bounded range read', async () => {
+    const harness = createRuntimeHarness(
+      runtimeEnvironment,
+      Buffer.alloc(10 * 1024 * 1024 + 1)
+    )
+
+    await expect(
+      harness.runtime.downloadImmutable(
+        'question-results',
+        'question-builds/build/result.json'
+      )
+    ).rejects.toMatchObject({ code: 'ARTIFACT_INVALID', retryable: false })
+    expect(harness.downloadToBuffer).toHaveBeenCalledWith(
+      0,
+      10 * 1024 * 1024 + 1
+    )
   })
 
   it('derives immutable references only for configured output paths', async () => {
@@ -301,10 +325,17 @@ describe('question-generation runtime', () => {
     ])
     const scope = `question-build:${payload.question_build_id}`
     const dispatchAttemptId = '223e4567-e89b-42d3-a456-426614174000'
+    const beforeProviderDispatch = vi.fn(async () => undefined)
 
     await expect(
-      harness.runtime.start(payload, scope, dispatchAttemptId)
+      harness.runtime.start(
+        payload,
+        scope,
+        dispatchAttemptId,
+        beforeProviderDispatch
+      )
     ).resolves.toEqual({ eventId: 'event-1' })
+    expect(beforeProviderDispatch).toHaveBeenCalledOnce()
     expect(harness.push).toHaveBeenCalledWith(
       'course-question-blueprint-generation:requested',
       payload,
@@ -395,6 +426,7 @@ describe('question-generation runtime', () => {
       KB_GRAPH_ARTIFACT_CONTAINER: 'question-results',
     })
     const payload = startPayload('a'.repeat(64))
+    const beforeProviderDispatch = vi.fn(async () => undefined)
     payload.graph_manifest = {
       container_name: 'question-results',
       blob_name: 'question-builds/graph/manifest.json',
@@ -405,9 +437,11 @@ describe('question-generation runtime', () => {
       harness.runtime.start(
         payload,
         `question-build:${payload.question_build_id}`,
-        '223e4567-e89b-42d3-a456-426614174000'
+        '223e4567-e89b-42d3-a456-426614174000',
+        beforeProviderDispatch
       )
     ).rejects.toMatchObject({ code: 'CONFIGURATION_INVALID' })
+    expect(beforeProviderDispatch).not.toHaveBeenCalled()
     expect(harness.push).not.toHaveBeenCalled()
   })
 
@@ -417,10 +451,17 @@ describe('question-generation runtime', () => {
     const scope = `flashcard-build:${payload.flashcard_build_id}`
     const startAttemptId = '223e4567-e89b-42d3-a456-426614174001'
     const publicationAttemptId = '323e4567-e89b-42d3-a456-426614174001'
+    const beforeProviderDispatch = vi.fn(async () => undefined)
 
     await expect(
-      harness.runtime.startFlashcards(payload, scope, startAttemptId)
+      harness.runtime.startFlashcards(
+        payload,
+        scope,
+        startAttemptId,
+        beforeProviderDispatch
+      )
     ).resolves.toEqual({ eventId: 'event-1' })
+    expect(beforeProviderDispatch).toHaveBeenCalledOnce()
     expect(harness.push).toHaveBeenCalledWith(
       'course-flashcard-generation:requested',
       payload,

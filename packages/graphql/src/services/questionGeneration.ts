@@ -16,6 +16,12 @@ import {
   normalizeElementGenerationIdempotencyKey,
 } from './elementGenerationProvider.js'
 import {
+  assertElementGenerationCostAccounted,
+  createElementGenerationBuildWithSpend,
+  releaseUnclaimedElementGenerationSpend,
+} from './elementGenerationAccounting.js'
+import { dispatchCostAccountedElementGeneration } from './elementGenerationDispatch.js'
+import {
   generatedKPRIMElementInput,
   generatedMCElementInput,
   generatedSCElementInput,
@@ -170,7 +176,10 @@ function artifactsEqual(
 function assertMatchingIdempotentBuild(
   build: Pick<
     DB.ElementGenerationBuild,
-    'configurationHash' | 'sourceGraphBuildId' | 'elementType'
+    | 'configurationHash'
+    | 'sourceGraphBuildId'
+    | 'elementType'
+    | 'costAccountingVersion'
   >,
   expected: { configurationHash: string; graphBuildId: string }
 ) {
@@ -184,6 +193,7 @@ function assertMatchingIdempotentBuild(
       'Idempotency key is already used for a different question build'
     )
   }
+  assertElementGenerationCostAccounted(build)
 }
 
 async function findOwnedBuild(buildId: string, ctx: ContextWithUser) {
@@ -218,32 +228,44 @@ async function recordBuildFailure(
           'Question generation could not be started',
           true
         )
-  await ctx.prisma.elementGenerationBuild.updateMany({
-    where: {
-      id: buildId,
-      ownerId: ctx.user.sub,
-      ...(leaseOwner ? { syncLeaseOwner: leaseOwner } : {}),
-    },
-    data: normalized.retryable
-      ? {
-          status: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
-          stage: 'preparing_input',
-          errorCode: normalized.code,
-          errorMessage: normalized.message,
-          errorRetryable: true,
-          syncLeaseOwner: null,
-          syncLeaseUntil: null,
-        }
-      : {
-          status: DB.ElementGenerationBuildStatus.FAILED,
-          stage: 'failed',
-          errorCode: normalized.code,
-          errorMessage: normalized.message,
-          errorRetryable: false,
-          completedAt: new Date(),
-          syncLeaseOwner: null,
-          syncLeaseUntil: null,
-        },
+  await ctx.prisma.$transaction(async (transaction) => {
+    const updated = await transaction.elementGenerationBuild.updateMany({
+      where: {
+        id: buildId,
+        ownerId: ctx.user.sub,
+        ...(leaseOwner ? { syncLeaseOwner: leaseOwner } : {}),
+      },
+      data: normalized.retryable
+        ? {
+            status: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
+            stage: 'preparing_input',
+            errorCode: normalized.code,
+            errorMessage: normalized.message,
+            errorRetryable: true,
+            syncLeaseOwner: null,
+            syncLeaseUntil: null,
+          }
+        : {
+            status: DB.ElementGenerationBuildStatus.FAILED,
+            stage: 'failed',
+            errorCode: normalized.code,
+            errorMessage: normalized.message,
+            errorRetryable: false,
+            completedAt: new Date(),
+            syncLeaseOwner: null,
+            syncLeaseUntil: null,
+          },
+    })
+    if (!normalized.retryable && updated.count === 1) {
+      const build = await transaction.elementGenerationBuild.findUniqueOrThrow({
+        where: { id: buildId },
+        select: { providerDispatchAttemptId: true },
+      })
+      await releaseUnclaimedElementGenerationSpend(
+        transaction,
+        build.providerDispatchAttemptId
+      )
+    }
   })
   throw normalized
 }
@@ -315,38 +337,20 @@ async function dispatchPreparingQuestionBuild(
     { ...build, blueprintArtifact },
     runtime
   )
-  let eventId: string | null = null
-  let recoveredRunId: string | null = null
-  const alreadyDispatched = await runtime.findRunByBuildId(
-    build.id,
-    build.providerDispatchAttemptId
-  )
-  if (alreadyDispatched) {
-    recoveredRunId = alreadyDispatched.runId
-  } else {
-    try {
-      eventId = (
-        await runtime.start(
+  const { eventId, recoveredRunId } =
+    await dispatchCostAccountedElementGeneration({
+      prisma: ctx.prisma,
+      dispatchAttemptId: build.providerDispatchAttemptId,
+      recover: () =>
+        runtime.findRunByBuildId(build.id, build.providerDispatchAttemptId),
+      dispatch: (beforeProviderDispatch) =>
+        runtime.start(
           payload,
           `question-build:${build.id}`,
-          build.providerDispatchAttemptId
-        )
-      ).eventId
-    } catch (error) {
-      if (
-        !(error instanceof QuestionGenerationServiceError) ||
-        error.code !== 'WORKFLOW_DISPATCH_UNCERTAIN'
-      ) {
-        throw error
-      }
-      const recovered = await runtime.findRunByBuildId(
-        build.id,
-        build.providerDispatchAttemptId
-      )
-      if (!recovered) throw error
-      recoveredRunId = recovered.runId
-    }
-  }
+          build.providerDispatchAttemptId,
+          beforeProviderDispatch
+        ),
+    })
 
   const updated = await ctx.prisma.elementGenerationBuild.updateMany({
     where: {
@@ -444,47 +448,38 @@ export async function startQuestionGeneration(
   }
 
   const buildId = randomUUID()
-  try {
-    await ctx.prisma.elementGenerationBuild.create({
-      data: {
-        id: buildId,
-        ownerId: ctx.user.sub,
-        sourceGraphBuildId: graph.id,
-        elementType: normalized.configuration.itemType,
-        idempotencyKey,
-        configurationHash: normalized.configurationHash,
-        configuration: normalized.configuration,
-        requestedElementCount: normalized.configuration.questionCount,
-        inputArtifactContainer: runtime.questionInputContainer,
-        inputArtifactPrefix: `question-builds/${buildId}`,
-        outputArtifactContainer: runtime.questionOutputContainer,
-        outputArtifactPrefix: `${runtime.questionOutputPrefix}/${buildId}`,
-      },
+  const creation = await createElementGenerationBuildWithSpend(ctx.prisma, {
+    ownerId: ctx.user.sub,
+    idempotencyKey,
+    spendClass: DB.KBGraphQuotaSpendClass.QUESTION_GENERATION,
+    data: {
+      id: buildId,
+      ownerId: ctx.user.sub,
+      sourceGraphBuildId: graph.id,
+      elementType: normalized.configuration.itemType,
+      idempotencyKey,
+      configurationHash: normalized.configurationHash,
+      configuration: normalized.configuration,
+      requestedElementCount: normalized.configuration.questionCount,
+      inputArtifactContainer: runtime.questionInputContainer,
+      inputArtifactPrefix: `question-builds/${buildId}`,
+      outputArtifactContainer: runtime.questionOutputContainer,
+      outputArtifactPrefix: `${runtime.questionOutputPrefix}/${buildId}`,
+    },
+  })
+  if (!creation.created) {
+    const raced = await findOwnedBuild(creation.buildId, ctx)
+    assertMatchingIdempotentBuild(raced, {
+      configurationHash: normalized.configurationHash,
+      graphBuildId: graph.id,
     })
-  } catch (error) {
-    if (
-      error instanceof DB.Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2002'
-    ) {
-      const raced = await ctx.prisma.elementGenerationBuild.findUniqueOrThrow({
-        where: {
-          ownerId_idempotencyKey: { ownerId: ctx.user.sub, idempotencyKey },
-        },
-        include: buildInclude,
-      })
-      assertMatchingIdempotentBuild(raced, {
-        configurationHash: normalized.configurationHash,
-        graphBuildId: graph.id,
-      })
-      return raced.status === DB.ElementGenerationBuildStatus.PREPARING_INPUT
-        ? resumePreparingQuestionBuild(raced, runtime, ctx)
-        : raced
-    }
-    throw error
+    return raced.status === DB.ElementGenerationBuildStatus.PREPARING_INPUT
+      ? resumePreparingQuestionBuild(raced, runtime, ctx)
+      : raced
   }
 
   return resumePreparingQuestionBuild(
-    await findOwnedBuild(buildId, ctx),
+    await findOwnedBuild(creation.buildId, ctx),
     runtime,
     ctx
   )
@@ -497,6 +492,7 @@ async function synchronizeLeasedBuild(
   ctx: ContextWithUser
 ) {
   const configuration = build.configuration as QuestionGenerationConfiguration
+  let workflowSucceeded = false
   const artifactPath = (
     suffix: string
   ): Promise<{
@@ -559,6 +555,7 @@ async function synchronizeLeasedBuild(
         })
         return
       }
+      workflowSucceeded = run.status === 'SUCCEEDED'
     }
 
     if (build.status === DB.ElementGenerationBuildStatus.DESIGNING) {
@@ -806,20 +803,32 @@ async function synchronizeLeasedBuild(
   } catch (error) {
     if (
       error instanceof QuestionGenerationServiceError &&
-      error.code === 'ARTIFACT_NOT_FOUND'
+      error.code === 'ARTIFACT_NOT_FOUND' &&
+      !workflowSucceeded
     ) {
       return
     }
-    if (error instanceof QuestionGenerationServiceError && error.retryable) {
+    if (
+      error instanceof QuestionGenerationServiceError &&
+      error.code !== 'ARTIFACT_NOT_FOUND' &&
+      error.retryable
+    ) {
       return
     }
     const normalized =
-      error instanceof QuestionGenerationServiceError
-        ? error
-        : questionGenerationServiceError(
+      error instanceof QuestionGenerationServiceError &&
+      error.code === 'ARTIFACT_NOT_FOUND' &&
+      workflowSucceeded
+        ? questionGenerationServiceError(
             'ARTIFACT_INVALID',
-            'Question-generation output could not be validated'
+            'Question-generation workflow succeeded without its required artifact'
           )
+        : error instanceof QuestionGenerationServiceError
+          ? error
+          : questionGenerationServiceError(
+              'ARTIFACT_INVALID',
+              'Question-generation output could not be validated'
+            )
     await ctx.prisma.elementGenerationBuild.updateMany({
       where: { id: build.id, syncLeaseOwner: leaseOwner },
       data: {
@@ -842,6 +851,7 @@ export async function getQuestionGenerationBuild(
   const build = await findOwnedBuild(buildId, ctx)
   const runtime = ctx.elementGenerationRuntime
   if (!runtime || TERMINAL_STATUSES.has(build.status)) return build
+  assertElementGenerationCostAccounted(build)
   if (build.status === DB.ElementGenerationBuildStatus.PREPARING_INPUT) {
     return resumePreparingQuestionBuild(build, runtime, ctx)
   }
@@ -1063,6 +1073,7 @@ async function reviewQuestionGenerationGate(
   await assertQuestionGenerationPreviewAccess(ctx)
   const runtime = requireRuntime(ctx)
   const build = await findOwnedBuild(input.buildId, ctx)
+  assertElementGenerationCostAccounted(build)
   const expectedStatus =
     gate === DB.ElementGenerationReviewGate.DESIGN
       ? DB.ElementGenerationBuildStatus.WAITING_FOR_DESIGN_REVIEW
