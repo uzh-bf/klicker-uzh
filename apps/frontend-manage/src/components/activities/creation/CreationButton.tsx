@@ -11,7 +11,7 @@ interface CreationButtonProps {
   onClick?: () => void
   disabled?: boolean
   data: {
-    cy?: string
+    cy: string
     test?: string
   }
 }
@@ -27,8 +27,7 @@ function CreationButton({
 }: CreationButtonProps) {
   const t = useTranslations()
 
-  const describedById =
-    data.cy && description ? `description-${data.cy}` : undefined
+  const describedById = description ? `description-${data.cy}` : undefined
 
   const button = (
     <Button
@@ -62,7 +61,7 @@ function CreationButton({
   return (
     <div className="flex flex-col gap-1">
       {button}
-      {description && describedById ? (
+      {description ? (
         <div id={describedById} data-cy={describedById} className="text-sm">
           {description}
         </div>

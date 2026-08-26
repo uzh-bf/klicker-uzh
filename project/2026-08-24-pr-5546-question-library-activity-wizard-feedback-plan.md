@@ -29,13 +29,12 @@ uncrowned regardless of Catalyst entitlement.
 - Except for the official devrouter 0.0.38 consumer version pin and generated
   guidance prerequisite, do not change devrouter, devcontainer, local-origin,
   environment, application routes, or Turborepo routing configuration.
-- Draft PR #5546 exists and still points to published head
-  `024c8813c4b51bdf4bf9562041c7594d30725e3e`. Reviewed local head
-  `333e9cb4d36599cf7ed3d5527a9a9320e25fb435` remains unpublished. GitHub is
-  authoritative for volatile PR and check state; the normal push and PR body
-  update are authorized but pending. PR merge, mark-ready, deployment,
-  publication, worktree cleanup, and branch, worktree, or runtime-data deletion
-  remain withheld.
+- Draft PR #5546 points to published head
+  `510ab4308e516b69294fcb1dae69adbb6c9feea2`. The new contract correction
+  remains local and uncommitted. GitHub is authoritative for volatile PR and
+  check state; the normal push and PR body update are authorized but pending.
+  PR merge, mark-ready, deployment, publication, worktree cleanup, and branch,
+  worktree, or runtime-data deletion remain withheld.
 
 ## Execution contract
 
@@ -93,12 +92,12 @@ uncrowned regardless of Catalyst entitlement.
   `01a03490-059c-7381-adb8-91b77e89f5f9` accepted rebuilding S1 without
   Catalyst signaling because ADR-0037 makes the three formerly gated formats
   standard full-access capabilities.
-- Draft PR #5546 still points to published head
-  `024c8813c4b51bdf4bf9562041c7594d30725e3e`; reviewed local head
-  `333e9cb4d36599cf7ed3d5527a9a9320e25fb435` remains unpublished. GitHub is
-  authoritative for volatile PR and check state. The normal push and PR body
-  update are authorized but pending; PR merge, mark-ready, deployment,
-  publication, cleanup, and deletion remain withheld.
+- Draft PR #5546 points to published head
+  `510ab4308e516b69294fcb1dae69adbb6c9feea2`; the new contract correction
+  remains local and uncommitted. GitHub is authoritative for volatile PR and
+  check state. The normal push and PR body update are authorized but pending;
+  PR merge, mark-ready, deployment, publication, cleanup, and deletion remain
+  withheld.
 - Authoritative roadmap:
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/question-library-feedback-recovery/project/2026-08-23-question-library-ux-audit-and-roadmap.md`
   on `rs/question-library-feedback-recovery` at `5d7c0284890db55a93da1cb66a1ca87ab03f2e0d`.
@@ -420,8 +419,8 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 - Finalize plan `Progress` in a local commit and report commits, checks,
   review disposition, browser/runtime evidence, and remaining withheld actions.
   Draft PR #5546 exists and GitHub remains authoritative for volatile PR and
-  check state. The latest reviewed corrections remain local; their normal push
-  and PR body update are authorized but pending. PR merge, mark-ready,
+  check state. The new contract correction remains local; its normal push and
+  PR body update are authorized but pending. PR merge, mark-ready,
   deployment, publication, worktree cleanup, and branch or worktree deletion
   remain withheld.
 
@@ -448,8 +447,8 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   browser evidence, and the environment-blocked repository Playwright run.
 - Host readback proves branch and PR-body synchronization for each published
   head. GitHub is authoritative for volatile current PR and check state. The
-  latest reviewed corrections remain local; their normal push and PR body
-  update are authorized but pending. PR merge, mark-ready, deployment,
+  new contract correction remains local; its normal push and PR body update are
+  authorized but pending. PR merge, mark-ready, deployment,
   publication, cleanup, and deletion remain withheld.
 
 ## Progress
@@ -787,12 +786,31 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   tasks; and `devrouter exec . -- pnpm run build` passed 23/23 tasks from cache
   after the prior exact integrated build. No manual route, TLS, hostname, or
   consumer workaround was used.
-- Delivery remains pending from pre-plan-update head
-  `333e9cb4d36599cf7ed3d5527a9a9320e25fb435`. Draft PR #5546 still
-  points to `024c8813c4b51bdf4bf9562041c7594d30725e3e`; no push or exact-head CI
-  is claimed. The two OpenCodeReview threads remain unresolved until new
-  exact-head CI is green. PR merge, mark-ready, deployment, publication,
-  cleanup, deletion, and review-thread resolution remain withheld.
+- Published-head evidence for
+  `510ab4308e516b69294fcb1dae69adbb6c9feea2`: all 21 workflows were green or
+  expected to skip. Playwright run `32958200868` was green across all eight
+  shards and the aggregate; shard 8 reported 138 passed, with deletion cleanup
+  and batch-sharing tests passing on attempt zero. OpenCodeReview then added
+  `PRRT_kwDOBXNwx86cbIuR`: `CreationButtonProps` allowed a description without
+  `data.cy`, while rendering silently required both. The verified local
+  correction requires `data.cy`, keeps `data.test` optional, derives the
+  description association whenever a truthy description is supplied, and
+  preserves the existing suppression of falsy React nodes. Focused Biome
+  format/check, plan Prettier, and `git diff --check` passed. Canonical
+  `devrouter ensure . --json` failed closed because an unrelated Chat Turbopack
+  persistence panic stopped the app process before Auth readiness. No cache
+  cleanup, request repair, route, TLS, hostname, consumer, or devrouter
+  workaround was applied. Managed checks still succeeded:
+  `devrouter exec . -- pnpm --filter @klicker-uzh/frontend-manage run check`,
+  full `devrouter exec . -- pnpm run check:all` with 25/25 check tasks and all
+  lint tasks, and full `devrouter exec . -- pnpm run build` with 23/23 tasks and
+  exit 0. Exact runtime stop and scoped route readback remain pending. Local
+  review, push, and exact-head CI remain pending.
+- Delivery remains pending for the local contract correction. Draft PR #5546
+  still points to `510ab4308e516b69294fcb1dae69adbb6c9feea2`; no new push or
+  exact-head CI is claimed, and the OpenCodeReview thread remains unresolved.
+  Review, PR merge, mark-ready, deployment, publication, cleanup, deletion, and
+  review-thread resolution remain withheld.
 
 ### Historical execution evidence before final runtime proof
 
