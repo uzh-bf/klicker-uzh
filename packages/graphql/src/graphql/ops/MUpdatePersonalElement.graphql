@@ -4,6 +4,7 @@ mutation MUpdatePersonalElement(
   $name: String
   $content: String
   $explanation: String
+  $sources: [PersonalElementSourceInput!]
 ) {
   updatePersonalElement(
     id: $id
@@ -11,6 +12,7 @@ mutation MUpdatePersonalElement(
     name: $name
     content: $content
     explanation: $explanation
+    sources: $sources
   ) {
     ...FPersonalElement
   }

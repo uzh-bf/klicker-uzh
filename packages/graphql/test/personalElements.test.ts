@@ -148,7 +148,7 @@ describe('personal elements service', () => {
     expect(first[0]?.sources).toEqual(input.sources)
   })
 
-  it('progresses SM-2, resets after a wrong answer, and guards revisions by version', async () => {
+  it('progresses SM-2 and guards revisions by version', async () => {
     const { course, participant } = await createFixture()
     const [element] = await createPersonalElements(
       { courseId: course.id, candidates: [candidate()] },
@@ -157,23 +157,39 @@ describe('personal elements service', () => {
     expect(element).toBeDefined()
 
     const first = await respondToPersonalElement(
-      { id: element!.id, response: FlashcardCorrectness.CORRECT },
+      {
+        id: element!.id,
+        response: FlashcardCorrectness.CORRECT,
+        expectedVersion: 1,
+      },
       context(participant.id)
     )
     expect(first.interval).toBe(2)
     expect(first.correctCountStreak).toBe(1)
     const second = await respondToPersonalElement(
-      { id: element!.id, response: FlashcardCorrectness.CORRECT },
+      {
+        id: element!.id,
+        response: FlashcardCorrectness.CORRECT,
+        expectedVersion: 1,
+      },
       context(participant.id)
     )
     expect(second.interval).toBe(6)
     const third = await respondToPersonalElement(
-      { id: element!.id, response: FlashcardCorrectness.CORRECT },
+      {
+        id: element!.id,
+        response: FlashcardCorrectness.CORRECT,
+        expectedVersion: 1,
+      },
       context(participant.id)
     )
     expect(third.interval).toBeGreaterThan(6)
     const reset = await respondToPersonalElement(
-      { id: element!.id, response: FlashcardCorrectness.INCORRECT },
+      {
+        id: element!.id,
+        response: FlashcardCorrectness.INCORRECT,
+        expectedVersion: 1,
+      },
       context(participant.id)
     )
     expect(reset.interval).toBe(1)
@@ -199,6 +215,141 @@ describe('personal elements service', () => {
     ).rejects.toMatchObject({
       extensions: { code: 'PERSONAL_ELEMENT_VERSION_CONFLICT' },
     })
+  })
+
+  it('resets learning state for semantic revisions but not title edits', async () => {
+    const { course, participant } = await createFixture()
+    const [element] = await createPersonalElements(
+      { courseId: course.id, candidates: [candidate()] },
+      context(participant.id)
+    )
+    await respondToPersonalElement(
+      {
+        id: element!.id,
+        response: FlashcardCorrectness.CORRECT,
+        expectedVersion: 1,
+      },
+      context(participant.id)
+    )
+
+    const revised = await updatePersonalElement(
+      {
+        id: element!.id,
+        expectedVersion: 1,
+        content: 'What is the value of the next-best alternative?',
+      },
+      context(participant.id)
+    )
+    expect(revised.version).toBe(2)
+    expect(revised.eFactor).toBe(2.5)
+    expect(revised.interval).toBe(1)
+    expect(revised.correctCountStreak).toBe(0)
+    expect(revised.correctCount).toBe(0)
+    expect(revised.partialCorrectCount).toBe(0)
+    expect(revised.wrongCount).toBe(0)
+    expect(revised.nextDueAt).toBeNull()
+    expect(revised.lastAnsweredAt).toBeNull()
+    expect(revised.lastCorrectAt).toBeNull()
+    expect(revised.lastPartialCorrectAt).toBeNull()
+    expect(revised.lastWrongAt).toBeNull()
+    expect(revised.lastResponseCorrectness).toBeNull()
+
+    const answered = await respondToPersonalElement(
+      {
+        id: element!.id,
+        response: FlashcardCorrectness.CORRECT,
+        expectedVersion: 2,
+      },
+      context(participant.id)
+    )
+    const renamed = await updatePersonalElement(
+      { id: element!.id, expectedVersion: 2, name: 'Alternative cost' },
+      context(participant.id)
+    )
+    expect(renamed.version).toBe(2)
+    expect(renamed.name).toBe('Alternative cost')
+    expect(renamed.interval).toBe(answered.interval)
+    expect(renamed.correctCountStreak).toBe(answered.correctCountStreak)
+    expect(renamed.correctCount).toBe(answered.correctCount)
+    expect(renamed.nextDueAt).toEqual(answered.nextDueAt)
+  })
+
+  it('resets learning state when sources change', async () => {
+    const { course, participant } = await createFixture()
+    const input = candidate()
+    const [element] = await createPersonalElements(
+      { courseId: course.id, candidates: [input] },
+      context(participant.id)
+    )
+    await respondToPersonalElement(
+      {
+        id: element!.id,
+        response: FlashcardCorrectness.PARTIAL,
+        expectedVersion: 1,
+      },
+      context(participant.id)
+    )
+
+    const revised = await updatePersonalElement(
+      {
+        id: element!.id,
+        expectedVersion: 1,
+        sources: [
+          {
+            sourceId: 'course-material',
+            chunkId: randomUUID(),
+            title: 'Updated economics notes',
+          },
+        ],
+      },
+      context(participant.id)
+    )
+
+    expect(revised.version).toBe(2)
+    expect(revised.sources).toHaveLength(1)
+    expect(revised.sources?.[0]).toMatchObject({
+      sourceId: 'course-material',
+      title: 'Updated economics notes',
+    })
+    expect(revised.sources?.[0]?.chunkId).not.toBe(input.sources[0]?.chunkId)
+    expect(revised.interval).toBe(1)
+    expect(revised.partialCorrectCount).toBe(0)
+    expect(revised.lastResponseCorrectness).toBeNull()
+  })
+
+  it('rejects a stale response without changing scheduling state', async () => {
+    const { course, participant } = await createFixture()
+    const [element] = await createPersonalElements(
+      { courseId: course.id, candidates: [candidate()] },
+      context(participant.id)
+    )
+    const revised = await updatePersonalElement(
+      { id: element!.id, expectedVersion: 1, content: 'Revised prompt' },
+      context(participant.id)
+    )
+
+    await expect(
+      respondToPersonalElement(
+        {
+          id: element!.id,
+          response: FlashcardCorrectness.CORRECT,
+          expectedVersion: 1,
+        },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENT_VERSION_CONFLICT' },
+    })
+
+    const persisted = await prisma.personalElement.findUnique({
+      where: { id: element!.id },
+    })
+    expect(persisted?.version).toBe(revised.version)
+    expect(persisted?.correctCount).toBe(0)
+    expect(persisted?.correctCountStreak).toBe(0)
+    expect(persisted?.nextDueAt).toBeNull()
+    expect(persisted?.lastAnsweredAt).toBeNull()
+    expect(persisted?.lastResponseCorrectness).toBeNull()
   })
 
   it('serializes concurrent saves at the course cap', async () => {

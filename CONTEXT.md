@@ -84,17 +84,11 @@ _Avoid_: draft (that word names publication and element editing states).
 
 **Card plan**: The list of proposed personal elements the chatbot presents
 after retrieving material on the requested topic, which the student approves
-before any element is generated. _Avoid_: outline, proposal (see element
-proposal).
+before any element is generated. _Avoid_: outline, proposal.
 
 **Origin**: How an element's content came to exist: AI-generated or authored by
 a person. Who owns it is a separate fact. _Avoid_: source (that word names
 citations).
-
-**Element proposal**: A student's explicit request that a lecturer review a
-personal element for possible course adoption. Adoption creates a new lecturer
-element; it never re-parents the personal element. _Avoid_: submission
-(answering), proposal alone (credit configuration).
 
 **Activity**: The umbrella for the four things a course can run — **live
 quiz**, **practice quiz**, **microlearning**, and **group activity**. Use the
