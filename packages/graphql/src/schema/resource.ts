@@ -94,6 +94,10 @@ export const CreditResetPeriod = builder.enumType('CreditResetPeriod', {
   values: Object.values(DB.CreditResetPeriod),
 })
 
+export const ChatbotStatus = builder.enumType('ChatbotStatus', {
+  values: Object.values(DB.ChatbotStatus),
+})
+
 export interface IChatbotReasoningConfig {
   modelId: string
   efforts: string[]
@@ -160,6 +164,11 @@ export interface IChatbot {
   creditResetPeriod: DB.CreditResetPeriod
   creditResetAmount: number
   creditMaxCredits: number
+  status: DB.ChatbotStatus
+  publicationUseCase?: string | null
+  expectedStudentCount?: number | null
+  reviewComment?: string | null
+  publishedAt?: Date | null
   courses?: ICourseListEntry[]
   createdAt?: Date | null
   updatedAt?: Date | null
@@ -287,6 +296,15 @@ export const Chatbot = ChatbotRef.implement({
     }),
     creditResetAmount: t.exposeInt('creditResetAmount'),
     creditMaxCredits: t.exposeInt('creditMaxCredits'),
+    status: t.expose('status', { type: ChatbotStatus }),
+    publicationUseCase: t.exposeString('publicationUseCase', {
+      nullable: true,
+    }),
+    expectedStudentCount: t.exposeInt('expectedStudentCount', {
+      nullable: true,
+    }),
+    reviewComment: t.exposeString('reviewComment', { nullable: true }),
+    publishedAt: t.expose('publishedAt', { type: 'Date', nullable: true }),
     courses: t.field({
       type: [CourseListEntryRef],
       resolve: (chatbot) => chatbot.courses ?? [],

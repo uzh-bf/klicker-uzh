@@ -1,5 +1,5 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { Prisma } from '@klicker-uzh/prisma/client'
+import { ChatbotStatus, Prisma } from '@klicker-uzh/prisma/client'
 import { jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -66,12 +66,21 @@ export async function getChatbotOr404<TSelect extends Prisma.ChatbotSelect>(
     }
   }
 
-  const chatbot = await prisma.chatbot.findUnique({
+  const row = (await prisma.chatbot.findUnique({
     where: { id: parsedId.data },
-    select,
-  })
+    // `status` is always selected on top of the caller's projection so this one
+    // guard can enforce publication for every participant route.
+    select: { ...select, status: true },
+  })) as
+    | (Prisma.ChatbotGetPayload<{ select: TSelect }> & {
+        status: ChatbotStatus
+      })
+    | null
 
-  if (!chatbot) {
+  // Participants may only reach a PUBLISHED chatbot. A draft, pending, paused,
+  // or rejected bot 404s exactly like a missing one, so its existence is never
+  // confirmed to a participant.
+  if (!row || row.status !== ChatbotStatus.PUBLISHED) {
     return {
       response: NextResponse.json(
         { error: 'Chatbot not found' },
@@ -80,7 +89,14 @@ export async function getChatbotOr404<TSelect extends Prisma.ChatbotSelect>(
     }
   }
 
-  return { chatbot }
+  // Drop the guard-only status field unless the caller explicitly selected it,
+  // so routes that serialize the chatbot wholesale (e.g. GET /api/chatbots/:id)
+  // never expose owner-only lifecycle metadata on a participant surface (F7).
+  if (select.status !== true) {
+    delete (row as Record<string, unknown>).status
+  }
+
+  return { chatbot: row }
 }
 
 export async function withChatbotAuth(

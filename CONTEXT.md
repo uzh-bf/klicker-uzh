@@ -140,3 +140,77 @@ and is enforced field-by-field in the API layer.
   results. Editing the source element bumps that element's version and flags
   the instance as outdated; it never rewrites what participants already saw or
   answered.
+
+## Chatbot usage
+
+These terms define the language for lecturer authorization, model usage, and
+the two usage lanes shown for chatbot accounts.
+
+### Authorization and lifecycle
+
+**AI usage authorization**:
+An account-level approval that requires an approved cost center and permits
+both base and advanced model usage. It is separate from publication approval.
+_Avoid_: base authorization, advanced authorization, per-model approval
+
+**Publication approval**:
+The per-chatbot approval that makes a chatbot reachable by students. It does
+not authorize model usage by itself.
+_Avoid_: usage approval, activation
+
+### Model classes and budgets
+
+**Usage class**:
+The explicit registry classification `BASE` or `ADVANCED` for a model. It
+describes the model lane and is independent of who covers the usage.
+_Avoid_: funding tier, price tier
+
+**Base model usage**:
+Usage from `BASE` models. The teaching center covers a limited amount per
+lecturer, but the covered amount is internal and never shown. Base usage above
+that contribution remains in the base lane and may consume the authorized
+paid budget.
+_Avoid_: Luna usage, unlimited usage, lecturer-funded usage
+
+**Advanced model usage**:
+Usage from `ADVANCED` models. The teaching center does not cover this usage;
+the lecturer's authorized budget applies.
+_Avoid_: premium usage, lecturer-funded usage
+
+**Monthly usage budget**:
+A lecturer-defined, account-wide configured limit for one usage class. The
+limit persists until the lecturer changes it; only used credits reset at the
+Europe/Zurich month boundary. A base budget does not state how much the
+teaching center covers.
+_Avoid_: chatbot budget, subsidy allowance
+
+**Usage lane**:
+The lecturer-facing projection of one usage class. The UI has exactly two
+lanes, base model usage and advanced model usage, each showing its configured
+budget, used credits, remaining credits, and reset date.
+_Avoid_: funding lane, cost center lane
+
+**Hidden base contribution**:
+The teaching center's internal base-usage contribution. Its amount, covered
+usage, remaining contribution, and settlement details are never returned to
+lecturer or participant clients.
+_Avoid_: free allowance, unlimited allowance, subsidy balance
+
+### Legacy and boundary terms
+
+**Participant usage credits**:
+The existing per-participant, per-chatbot allowance. It remains separate from
+the account-wide monthly usage budgets; any fallback must stay within the
+same usage class.
+_Avoid_: lecturer budget, account credits
+
+**Auto model**:
+The automatic model choice, classified as `ADVANCED` for the MVP until every
+routed billable step can be attributed to a usage class.
+_Avoid_: base fallback, unclassified model
+
+**Class exhaustion**:
+The state in which one class has reached its monthly budget. It disables only
+that class, never triggers an automatic cross-class switch, and exposes a
+class-specific denial code at the participant API boundary.
+_Avoid_: chatbot exhaustion, global lockout

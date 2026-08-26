@@ -117,7 +117,7 @@ cache hits, latency, or cost savings.
 
 ## Auth guard pattern (route handlers)
 
-Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`. The composed helper `withChatbotAuth(req, chatbotId)` (`src/lib/server/apiGuards.ts`) covers the standard `{ courseId: true }` case — use it for new routes; fall back to the individual guards only for a custom chatbot `select`. Participant identity comes from the same participant JWT cookies as the PWA ([Auth Model](./auth-model.md)); local chat dev therefore needs the backend's `APP_SECRET` and `DATABASE_URL` visible to the chat app, or cookies won't verify and Prisma can't load chatbots.
+Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`. The composed helper `withChatbotAuth(req, chatbotId)` (`src/lib/server/apiGuards.ts`) covers the standard `{ courseId: true }` case — use it for new routes; fall back to the individual guards only for a custom chatbot `select`. `getChatbotOr404` returns 404 for any non-`PUBLISHED` chatbot (`DRAFT`, `PENDING_APPROVAL`, `PAUSED`, `REJECTED`) and reads `status` as a guard-only field, so a participant can never reach an unpublished bot regardless of the projection a caller passes — the publication gate holds on every route (see [ADR 0020](./adr/0020-two-tier-chatbot-approval.md)). Participant identity comes from the same participant JWT cookies as the PWA ([Auth Model](./auth-model.md)); local chat dev therefore needs the backend's `APP_SECRET` and `DATABASE_URL` visible to the chat app, or cookies won't verify and Prisma can't load chatbots.
 
 ## Model registry and credits
 
@@ -177,8 +177,34 @@ policy. The deployed LiteLLM configuration is external; a local summary proves
 the development path only, and staging still needs a Responses + tool-loop
 smoke test before a production compatibility claim.
 
+The approved account-usage policy is a follow-up to the Phase 0 lifecycle
+foundations. One account-level AI usage authorization, backed by an approved
+cost center, covers both model classes. Registry entries will carry explicit
+`BASE` or `ADVANCED` metadata; `Auto` is `ADVANCED` until every routed billable
+step can be attributed. Lecturers will define account-wide monthly budgets for
+both classes, and the manage UI will show exactly two lanes — base model usage
+and advanced model usage — with budget, used, remaining, and reset date. The
+teaching center's limited base contribution is internal and hidden; advanced
+usage receives no contribution. Class exhaustion disables only that class and
+never triggers an automatic cross-class switch. Participant-facing APIs must
+return stable class-specific exhaustion codes without cost-center or hidden
+funding fields.
+
+This Phase 0 branch does not implement those account counters or lanes. The
+existing `ChatUsageCredits` balance remains a separate participant usage
+credit, and its current fallback behavior is legacy. The follow-up must use a
+same-class fallback only, charge reliable provider usage after generation with
+atomic counters, and accept the documented bounded final/concurrent overrun;
+strict reservations, immutable ledgers, automated refunds, invoices,
+per-chatbot allocation, and participant-credit migration are deferred.
+
 - Omitted `supportsImageAttachments` defaults to **false** — every image-capable model must set it explicitly in deployment values or the attach button disappears.
-- Zero-credit course chatbots need a usable fallback model (`CHAT_FALLBACK_MODEL_ID`, default `gpt-4.1-mini`) AND explicit chatbot `allowedModelIds` must include it. Audit/fix with `packages/prisma-data/src/scripts/2026-06-15_ensure_chatbot_fallback_model.ts`.
+- The legacy zero-credit participant path needs a usable fallback model
+  (`CHAT_FALLBACK_MODEL_ID`, default `gpt-4.1-mini`) AND explicit chatbot
+  `allowedModelIds` must include it. The account-usage follow-up must replace
+  this with a same-class fallback and stop when no model in the selected class
+  is available. Audit the legacy path with
+  `packages/prisma-data/src/scripts/2026-06-15_ensure_chatbot_fallback_model.ts`.
 - OpenAI Responses backends: keep `CHAT_OPENAI_STORE_RESPONSES=true` in shared/staged deployments — with `store: false`, LiteLLM/Azure can return "item not found" when a model references prior response items across tool-call steps. Local OpenRouter-style setups can leave it false.
 
 Credit fields are Prisma `Decimal` — never truthy-check them ([Data & Migrations](./data-and-migrations.md)).
@@ -195,9 +221,11 @@ selection state uses the same plain-language contract. Known Tutor and Explainer
 localized purpose descriptions in `src/components/mode-switcher.tsx`; custom modes fall back to
 their configured description.
 
-In the sidebar layout, `src/components/credits-footer.tsx:MobileCreditsBar` keeps the current
-balance visible below the header at mobile widths, even while the design-system sidebar drawer
-is closed. When the balance reaches zero it also states that new messages use the smaller model.
+In the sidebar layout, `src/components/credits-footer.tsx:MobileCreditsBar` keeps the legacy
+participant usage-credit balance visible below the header at mobile widths, even while the
+design-system sidebar drawer is closed. When the balance reaches zero, the legacy path states
+that new messages use the smaller model; the account-usage follow-up must not silently switch
+between base and advanced classes.
 The bar is rendered only by `SidebarMain`; embedded mode continues to use its existing
 `EmbeddedCreditsBar` so the two compact readouts are never shown together.
 
@@ -292,9 +320,14 @@ and renders an "AI tutor" button (`data-cy="student-course-chatbot-link"`) next
 to the home/back button when the caller is a participant of the course. The
 button is a real anchor (`<Link target="_blank" rel="noopener">` wrapping the
 design-system `Button`, the same pattern as the sibling home button), so
-middle-click and copy-link behave as expected. It links `courseChatbots[0]`:
-courses are deliberately limited to a single chatbot for now, which is also why
-`Chatbot` carries no ordering or visibility field. Lifting that limit means
+middle-click and copy-link behave as expected. The data model and query can
+return multiple published chatbots, ordered by name and then creation time, but
+the current PWA exposes only `courseChatbots[0]` as its single header
+button. `Chatbot` carries no ordering field. It does carry a publication `status`
+(`DRAFT`/`PENDING_APPROVAL`/`PUBLISHED`/`PAUSED`/`REJECTED`, see
+[ADR 0020](./adr/0020-two-tier-chatbot-approval.md)) that gates participant
+visibility — only `PUBLISHED` bots are reachable — but that is a visibility
+gate, not a way to order or select among multiple bots. Lifting that limit means
 deciding the multi-chatbot affordance first — the header row does not wrap and
 the design-system button is `shrink-0`, so several buttons would squeeze the
 course title on a narrow viewport.
