@@ -1348,6 +1348,15 @@ importers:
       '@types/node':
         specifier: ^24.10.1
         version: 24.12.4
+      cross-env:
+        specifier: ~7.0.3
+        version: 7.0.3
+      nodemon:
+        specifier: ~3.1.14
+        version: 3.1.14
+      npm-run-all:
+        specifier: ~4.1.5
+        version: 4.1.5
       rollup:
         specifier: ~4.34.9
         version: 4.34.9
@@ -1391,6 +1400,15 @@ importers:
       '@types/node':
         specifier: ^24.10.1
         version: 24.12.4
+      cross-env:
+        specifier: ~7.0.3
+        version: 7.0.3
+      nodemon:
+        specifier: ~3.1.14
+        version: 3.1.14
+      npm-run-all:
+        specifier: ~4.1.5
+        version: 4.1.5
       rollup:
         specifier: ~4.34.9
         version: 4.34.9

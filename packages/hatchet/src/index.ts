@@ -1,8 +1,9 @@
+import type EventEmitter from 'node:events'
 import {
   ConcurrencyLimitStrategy,
-  Priority,
   type Context,
   type HatchetClient,
+  Priority,
 } from '@hatchet-dev/typescript-sdk'
 import { prisma } from '@klicker-uzh/prisma'
 import type {
@@ -10,8 +11,8 @@ import type {
   DeleteKBResourceInput,
   HatchetHandlers,
   IngestKBResourceInput,
+  PreparedHatchetTasks,
 } from '@klicker-uzh/types'
-import type EventEmitter from 'events'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 import {
@@ -28,6 +29,7 @@ import {
 } from './kbIngestion.js'
 import { maintainKBResources } from './kbMaintenance.js'
 
+export type { HatchetHandlers, PreparedHatchetTasks } from '@klicker-uzh/types'
 export * from './client.js'
 export * from './kbGraphIngestion.js'
 export * from './kbGraphIngestionApi.js'
@@ -35,7 +37,21 @@ export * from './kbIngestion.js'
 export * from './kbIngestionApi.js'
 export * from './kbMaintenance.js'
 
-export type { HatchetHandlers } from '@klicker-uzh/types'
+type AuditLogMessage = Record<string, string | undefined> & {
+  correlationId?: string
+  info: string
+}
+
+type AuditLogInput = AuditLogMessage | { message: AuditLogMessage }
+
+function isAuditLogMessage(input: unknown): input is AuditLogMessage {
+  return (
+    input !== null &&
+    typeof input === 'object' &&
+    !Array.isArray(input) &&
+    typeof (input as { info?: unknown }).info === 'string'
+  )
+}
 
 export function prepareHatchetTasks({
   hatchet,
@@ -63,6 +79,7 @@ export function prepareHatchetTasks({
     allowLateSuccess?: boolean
   }) => Promise<'SETTLED' | 'RELEASED' | 'NEEDS_HUMAN_REVIEW' | 'DUPLICATE'>
 }) {
+  let preparedTasks: PreparedHatchetTasks | undefined
   const globalContext = {
     hatchet,
     pubSub,
@@ -71,6 +88,14 @@ export function prepareHatchetTasks({
     redisAssessmentExec,
     redisCache,
     prisma,
+    get tasks() {
+      if (!preparedTasks) {
+        throw new Error(
+          'Hatchet tasks are not available until prepareHatchetTasks completes.'
+        )
+      }
+      return preparedTasks
+    },
   }
 
   // ! AUDIT LOGGING
@@ -80,17 +105,26 @@ export function prepareHatchetTasks({
     retries: 3,
     defaultPriority: Priority.LOW,
     onEvents: ['create-audit-log-entry'],
-    fn: (
-      message: Record<string, string | undefined> & {
-        correlationId?: string
-        info: string
-      },
-      ctx
-    ) => {
+    fn: (input: AuditLogInput, ctx) => {
+      // GraphQL task calls use the declared envelope; event producers send the
+      // audit message directly.
+      const messageInput =
+        input !== null && typeof input === 'object'
+          ? (input as { message?: unknown }).message
+          : undefined
+      let message: AuditLogMessage
+      if (isAuditLogMessage(messageInput)) {
+        message = messageInput
+      } else if (isAuditLogMessage(input)) {
+        message = input
+      } else {
+        throw new Error('Invalid audit log message input')
+      }
       const { info, ...args } = message
 
       // TODO: send the message to the actual audit log service with the correlation ID as a key?
       ctx.logger.info(`Audit log entry: ${info}`, args)
+      return { success: true }
     },
   })
 
@@ -436,7 +470,7 @@ export function prepareHatchetTasks({
     name: 'send-push-notifications',
     // retries: 3,
     // onCrons: ['*/5 * * * *'], // runs every 5 minutes
-    fn: async (_, executionContext) => {
+    fn: async (_, _executionContext) => {
       // TODO: clean implementation
       return { success: true }
       // const success = await handlers.handleSendPushNotifications({}, globalContext, executionContext)
@@ -445,7 +479,40 @@ export function prepareHatchetTasks({
   })
   // #endregion
 
-  return {
+  const processCourseDuplication = hatchet.task({
+    name: 'process-course-duplication',
+    retries: 3,
+    backoff: { factor: 60, maxSeconds: 120 },
+    executionTimeout: '30m',
+    defaultPriority: Priority.LOW,
+    onEvents: ['process-course-duplication'],
+    fn: async ({ jobId }: { jobId: string }, executionContext) => {
+      const success = await handlers.handleProcessCourseDuplication(
+        { jobId },
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
+  const sweepStaleCourseDuplications = hatchet.task({
+    name: 'sweep-stale-course-duplications',
+    retries: 0,
+    onCrons: [
+      '*/5 * * * *', // every 5 minutes (UTC)
+    ],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleSweepStaleCourseDuplications(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
+  const tasks = {
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,
@@ -466,8 +533,11 @@ export function prepareHatchetTasks({
     monitorKBGraphBuilds,
     maintainKBResources: maintainKBResourcesTask,
     createAuditLogEntry,
+    processCourseDuplication,
+    sweepStaleCourseDuplications,
   }
-}
 
-// Export the inferred type of the tasks dictionary so other packages can import it
-export type PreparedHatchetTasks = ReturnType<typeof prepareHatchetTasks>
+  preparedTasks = tasks
+
+  return tasks
+}

@@ -43,7 +43,12 @@ function Layout({
     loading: loadingUser,
     error: errorUser,
     data: dataUser,
-  } = useQuery(UserProfileDocument, { fetchPolicy: 'cache-and-network' })
+  } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-and-network',
+    // The profile is cookie-scoped; never make a server-rendered page depend on
+    // a request that cannot be reused safely across users.
+    ssr: false,
+  })
 
   const redirectToLogin = !dataUser && !loadingUser
 

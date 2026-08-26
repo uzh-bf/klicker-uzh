@@ -260,9 +260,10 @@ disabled and the rest of the DevPod still starts normally.
   `node_modules/.pnpm`, so one root volume covers the monorepo). Its dependency
   stamp prevents reuse after lockfile or workspace-manifest changes.
 - Reset the DB without seeding: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`.
-- `response-api` + both workers run `tsx --watch --env-file=.env`; node 24 errors
-  if `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir
-  (the container env from `devcontainer.env` is what actually applies).
+- `response-api` runs `tsx --watch --env-file=.env`; both Hatchet workers compile
+  with Rollup and run the emitted JavaScript under nodemon. Node 24 errors if
+  `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir (the
+  container env from `devcontainer.env` is what actually applies).
 - Tier 3 (`chat`) needs an upstream LLM key: set `UPSTREAM_OPENAI_API_KEY`.
 - Both MCP servers run plain `tsx` (no `--watch`) — `tsx --watch` is known to
   silently kill long-running Node 24 servers in this repo, so they deliberately
