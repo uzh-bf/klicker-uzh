@@ -1,0 +1,24 @@
+mutation UpdateGeneratedElementDraft(
+  $input: UpdateGeneratedElementDraftInput!
+) {
+  updateGeneratedElementDraft(input: $input) {
+    id
+    revision
+    current {
+      name
+      prompt
+      context
+      explanation
+      choices {
+        id
+        label
+        text
+        correct
+        feedback
+      }
+      cardType
+      tags
+    }
+    updatedAt
+  }
+}

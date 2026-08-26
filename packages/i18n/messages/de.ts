@@ -1740,6 +1740,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     graphRetry: 'Erneut versuchen',
     graphBuildError: 'Der Graphaufbau konnte nicht gestartet werden.',
     graphPreviewTitle: 'Veröffentlichter Graph',
+    graphGenerateElements: 'Klicker-Elemente generieren',
+    graphElementGenerationUnavailable:
+      'Dieser veröffentlichte Graph enthält noch kein Paket zur Elementgenerierung. Erstellen Sie ihn neu, um Klicker-Elemente zu generieren.',
     graphPreviewUnavailable:
       'Erstellen und veröffentlichen Sie einen Graphen, bevor Sie die Dozierendenansicht öffnen.',
     ingestionDisabledError:
@@ -2265,6 +2268,213 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       remainingValidity: 'Verbleibende Gültigkeit:',
       tokenExpired:
         'Ihr Token ist leider abgelaufen, bitte generieren Sie einen neuen.',
+    },
+    elementGeneration: {
+      eyebrow: 'KI-unterstützte Erstellung',
+      title: 'Elemente generieren',
+      description:
+        'Erstellen Sie Klicker-Elemente aus einem veröffentlichten Wissensgraphen. Single Choice, Multiple Choice, KPRIM und Karteikarten verwenden denselben Ablauf.',
+      actions: {
+        generate: 'Elemente generieren',
+        newGeneration: 'Neue Generierung',
+        retry: 'Erneut versuchen',
+        publishIncomplete: 'Generierte Elemente verwenden',
+      },
+      configure: {
+        sourceTitle: 'Wissensquelle',
+        sourceHelp:
+          'Wählen Sie eine Wissensbasis mit einem veröffentlichten Graphen. Die Generierung bleibt für die Nachvollziehbarkeit mit diesem Graph-Build verknüpft.',
+        sourceCount: '{count, plural, one {# Quelle} other {# Quellen}}',
+        indexedAt: 'Veröffentlicht {date}',
+        staleGraph: 'Aktualisierung verfügbar',
+        staleGraphHelp:
+          'Dieser veröffentlichte Graph kann weiterhin verwendet werden, aber die Wissensbasis enthält neuere Änderungen. Erstellen Sie ihn zuerst neu, wenn diese Änderungen einbezogen werden sollen.',
+        sourceDetails: 'Enthaltene Quellen',
+        pageFrom: 'Von Seite',
+        pageTo: 'Bis Seite',
+        elementTypeTitle: 'Klicker-Elementtyp',
+        elementTypeHelp:
+          'Alle Typen werden als Klicker-Elemente generiert. Wählen Sie das Format passend zum Lernziel.',
+        bloomTitle: 'Blooms Taxonomie',
+        bloomHelp: 'Wählen Sie die abzudeckenden kognitiven Stufen.',
+        settingsTitle: 'Einstellungen der Generierung',
+        elementCount: 'Anzahl Elemente',
+        language: 'Sprache',
+        difficulty: 'Schwierigkeitsverteilung',
+        objectives: 'Lernziele',
+        objectivesHelp: 'Optionale Vorgaben für die generierten Elemente.',
+        addObjective: 'Lernziel hinzufügen',
+        remove: 'Entfernen',
+        start: 'Elemente generieren',
+        starting: 'Wird gestartet…',
+        noSources: 'Kein veröffentlichter Wissensgraph verfügbar',
+        noSourcesHelp:
+          'Erstellen Sie eine Wissensbasis und veröffentlichen Sie ihren Wissensgraphen, bevor Sie Elemente generieren.',
+      },
+      elementTypes: {
+        SC: {
+          label: 'Single Choice',
+          description:
+            'Eine richtige Option aus mehreren Auswahlmöglichkeiten.',
+        },
+        MC: {
+          label: 'Multiple Choice',
+          description: 'Eine oder mehrere richtige Optionen.',
+        },
+        KPRIM: {
+          label: 'KPRIM',
+          description: 'Vier Aussagen als richtig oder falsch beurteilen.',
+        },
+        FLASHCARD: {
+          label: 'Karteikarte',
+          description:
+            'Ein Element mit Vorder- und Rückseite zum aktiven Abrufen.',
+        },
+      },
+      language: {
+        de: 'Deutsch',
+        en: 'Englisch',
+      },
+      bloom: {
+        remember: 'Erinnern',
+        understand: 'Verstehen',
+        apply: 'Anwenden',
+        analyze: 'Analysieren',
+        evaluate: 'Bewerten',
+      },
+      difficulty: {
+        EASY: 'Leicht',
+        MIXED: 'Gemischt',
+        HARD: 'Schwer',
+      },
+      summary: {
+        title: 'Zusammenfassung',
+        source: 'Wissensbasis',
+        type: 'Elementtyp',
+        count: 'Elemente',
+      },
+      validation: {
+        sourceRequired: 'Wählen Sie eine Wissensquelle.',
+        sourceScopeRequired: 'Wählen Sie mindestens eine Quelle.',
+        countRange: 'Wählen Sie zwischen 1 und 20 Elementen.',
+        pagePair:
+          'Geben Sie für einen Seitenbereich die erste und letzte Seite an.',
+        pageRange: 'Verwenden Sie einen gültigen Seitenbereich ab Seite 1.',
+        bloomRequired: 'Wählen Sie mindestens eine Bloom-Stufe.',
+      },
+      statuses: {
+        QUEUED: 'Eingereiht',
+        RUNNING: 'In Bearbeitung',
+        PREPARING_INPUT: 'Eingabe wird vorbereitet',
+        DESIGNING: 'Design wird erstellt',
+        WAITING_FOR_DESIGN_REVIEW: 'Designprüfung',
+        WAITING_FOR_PLAN_REVIEW: 'Planprüfung',
+        GENERATING_ITEMS: 'Elemente werden generiert',
+        FINALIZING: 'Wird abgeschlossen',
+        AWAITING_INCOMPLETE_PUBLICATION: 'Entscheidung erforderlich',
+        PUBLISHING_INCOMPLETE: 'Verfügbare Elemente werden vorbereitet',
+        COMPLETED: 'Zur Prüfung bereit',
+        INCOMPLETE: 'Teilweise bereit',
+        FAILED: 'Fehlgeschlagen',
+        REJECTED: 'Abgelehnt',
+      },
+      build: {
+        title: 'Generierung: {type}',
+        stage: 'Aktuelle Phase: {stage}',
+        generatedCount: '{generated} von {requested} generiert',
+        generated: 'Generiert',
+        unresolved: 'Ungelöst',
+        warnings: 'Warnungen',
+        retries: 'Wiederholungen',
+        processing: 'Die Elemente werden vorbereitet',
+        processingHelp:
+          'Diese Seite wird automatisch aktualisiert. Sie können sie verlassen und über dieselbe URL zurückkehren.',
+        failed: 'Generierung fehlgeschlagen',
+        failedHelp: 'Der Worker konnte die Generierung nicht abschliessen.',
+        incompleteTitle: 'Einige Elemente konnten nicht generiert werden',
+        incompleteHelp:
+          '{generated} von {requested} Elementen sind verfügbar. Versuchen Sie es erneut oder fahren Sie mit den verfügbaren Elementen fort.',
+        incompleteAcknowledge:
+          'Ich verstehe, dass das Ergebnis weniger Elemente als angefordert enthält.',
+        rejected: 'Diese Generierung wurde bei der Prüfung abgelehnt.',
+        noDrafts: 'Die Generierung wurde ohne prüfbare Elemente abgeschlossen.',
+      },
+      gate: {
+        eyebrow: 'Prüfschritt',
+        designTitle: 'Generierungsdesign prüfen',
+        designDescription:
+          'Prüfen Sie die Verteilung der angeforderten Elemente auf Module und Lernziele, bevor die Generierung fortgesetzt wird.',
+        planTitle: 'Elementplan prüfen',
+        planDescription:
+          'Prüfen Sie geplante Aufgaben, kognitive Stufen, Schwierigkeit und Quellenabdeckung, bevor die Generierung fortgesetzt wird.',
+        elementCount: '{count, plural, one {# Element} other {# Elemente}}',
+        elementNumber: 'Element {number}',
+        objectives: 'Lernziele',
+        noObjectives: 'Keine expliziten Lernziele.',
+        difficulty: 'Schwierigkeit {difficulty}',
+        warnings: '{count, plural, one {# Warnung} other {# Warnungen}}',
+        acknowledgeWarnings: 'Ich habe diese Warnungen geprüft und bestätigt.',
+        reject: 'Generierung ablehnen',
+        approve: 'Genehmigen und fortfahren',
+        submitting: 'Wird übermittelt…',
+      },
+      review: {
+        title: 'Generierte Elemente prüfen',
+        summary:
+          '{total} insgesamt · {accepted} angenommen · {open} noch offen',
+        elementNumber: 'Element {number}',
+        copy: 'Kopie {number}',
+        name: 'Interner Name',
+        prompt: 'Aufgabenstellung',
+        front: 'Vorderseite',
+        back: 'Rückseite',
+        context: 'Kontext',
+        choices: 'Antwortoptionen',
+        correctChoice: 'Antwort {label} als richtig markieren',
+        explanation: 'Erklärung',
+        cardType: 'Karteikartentyp',
+        tags: 'Tags',
+        tagsPlaceholder: 'Tags mit Kommas trennen',
+        qualityFlags:
+          '{count, plural, one {Qualitätshinweis} other {Qualitätshinweise}}',
+        citations:
+          '{count, plural, one {# Quellenbeleg} other {# Quellenbelege}}',
+        accept: 'Annehmen',
+        reject: 'Ablehnen',
+        duplicate: 'Duplizieren',
+        saveDraft: 'Änderungen speichern',
+        savingDraft: 'Wird gespeichert…',
+        saveElements: '{count} in Bibliothek speichern',
+        savingElements: 'Elemente werden gespeichert…',
+        savedElements:
+          '{count, plural, one {# Element ist in Ihrer Bibliothek.} other {# Elemente sind in Ihrer Bibliothek.}}',
+        actionError:
+          'Das Element konnte nicht aktualisiert werden. Versuchen Sie es erneut.',
+        saveElementsError:
+          'Die angenommenen Elemente konnten nicht gespeichert werden. Versuchen Sie es erneut.',
+      },
+      decisions: {
+        OPEN: 'Offen',
+        ACCEPTED: 'Angenommen',
+        REJECTED: 'Abgelehnt',
+      },
+      cardTypes: {
+        definition: 'Definition',
+        formula: 'Formel',
+        calculation: 'Berechnung',
+      },
+      errors: {
+        load: 'Die Einstellungen zur Elementgenerierung konnten nicht geladen werden.',
+        notConfigured:
+          'Die Elementgenerierung ist für diese Umgebung nicht konfiguriert.',
+        start:
+          'Die Generierung konnte nicht gestartet werden. Versuchen Sie es erneut.',
+        buildLoad: 'Diese Generierung konnte nicht geladen werden.',
+        action:
+          'Die Generierung konnte nicht aktualisiert werden. Versuchen Sie es erneut.',
+        withCode:
+          'Der Vorgang ist fehlgeschlagen ({code}). Versuchen Sie es erneut.',
+      },
     },
     questionPool: {
       createLiveQuiz: 'Live Quiz erstellen',

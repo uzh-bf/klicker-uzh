@@ -33,6 +33,7 @@ const KB_GRAPH_CONFIGURATION_ENVIRONMENT_VARIABLES = [
   'KB_GRAPH_STANDARD_CLEANING_MODEL',
   'KB_GRAPH_HIGH_GENERATION_MODEL',
   'KB_GRAPH_HIGH_CLEANING_MODEL',
+  'KB_GRAPH_UPLOAD_GENERATION_ARTIFACTS',
 ] as const
 
 export const KB_GRAPH_BUILD_METADATA_KEY = 'klickerKBGraphBuildId'
@@ -58,6 +59,7 @@ export type ExternalKBGraphPayload = {
     expected_content_sha256: string
   }>
   upload_markdown: false
+  upload_graph_artifacts: boolean
   export_to_falkordb: true
   falkordb_graph_name: string
   speed_mode: 'balanced' | 'quality'

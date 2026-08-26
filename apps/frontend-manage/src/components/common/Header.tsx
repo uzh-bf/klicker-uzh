@@ -164,8 +164,22 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
             icon: faWandMagicSparkles,
             active:
               router.pathname.startsWith('/resources/knowledgeBases') ||
-              router.pathname === '/resources/chatbots',
+              router.pathname === '/resources/chatbots' ||
+              router.pathname === '/elements/generate',
             elements: [
+              {
+                key: 'element-generation-item',
+                type: 'link' as const,
+                label: t('manage.elementGeneration.title'),
+                onClick: () => router.push('/elements/generate'),
+                badge: t('manage.general.betaFeatures'),
+                data: { cy: 'element-generation' },
+                className: {
+                  label: 'bg-opacity-100',
+                  text: 'mr-8',
+                  badge: 'bg-green-700 hover:bg-green-800',
+                },
+              },
               {
                 key: 'knowledge-bases-item',
                 type: 'link' as const,

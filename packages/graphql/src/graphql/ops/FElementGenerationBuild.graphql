@@ -1,0 +1,148 @@
+fragment ElementGenerationBuildData on ElementGenerationBuild {
+  id
+  graphBuildId
+  elementType
+  status
+  stage
+  requestedElementCount
+  generatedElementCount
+  unresolvedElementCount
+  warningCount
+  retryCount
+  errorCode
+  errorMessage
+  errorRetryable
+  startedAt
+  completedAt
+  incompletePublishedAt
+  createdAt
+  updatedAt
+  configuration {
+    elementType
+    language
+    elementCount
+    difficultyPreset
+    difficultyCounts {
+      d1
+      d2
+      d3
+      d4
+      d5
+    }
+    sourceScopes {
+      resourceId
+      pageFrom
+      pageTo
+    }
+    objectives {
+      id
+      text
+      bloomLevel
+    }
+    bloomLevels
+  }
+  designSummary {
+    title
+    elementCount
+    objectives {
+      id
+      text
+      bloomLevel
+    }
+    modules {
+      moduleId
+      moduleName
+      elementCount
+    }
+    sources {
+      sourceFile
+      pageFrom
+      pageTo
+    }
+    warnings {
+      code
+      message
+    }
+  }
+  planSummary {
+    elementCount
+    elements {
+      sourceElementId
+      preview
+      bloomLevel
+      targetDifficulty
+      sources {
+        sourceFile
+        pageFrom
+        pageTo
+      }
+    }
+    warnings {
+      code
+      message
+    }
+  }
+  reviews {
+    id
+    gate
+    decision
+    warningsAcknowledged
+    reviewedAt
+  }
+  drafts {
+    id
+    sourceElementId
+    order
+    duplicationIndex
+    parentDraftId
+    elementType
+    original {
+      name
+      prompt
+      context
+      explanation
+      choices {
+        id
+        label
+        text
+        correct
+        feedback
+      }
+      cardType
+      tags
+    }
+    current {
+      name
+      prompt
+      context
+      explanation
+      choices {
+        id
+        label
+        text
+        correct
+        feedback
+      }
+      cardType
+      tags
+    }
+    revision
+    decision
+    bloomLevel
+    targetDifficulty
+    predictedDifficulty
+    qualityFlags
+    citations {
+      resourceId
+      sourceFile
+      pageFrom
+      pageTo
+      chunkIds
+    }
+    provenance
+    savedElementId
+    savedAt
+    createdAt
+    updatedAt
+  }
+}

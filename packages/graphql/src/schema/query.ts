@@ -11,6 +11,8 @@ import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
+import * as ElementGenerationService from '../services/elementGeneration.js'
+import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as KnowledgeService from '../services/knowledge.js'
@@ -67,6 +69,11 @@ import {
   Tag,
   UserElementList,
 } from './element.js'
+import {
+  ElementGenerationBuildRef,
+  ElementGenerationCapabilitiesRef,
+  ElementGenerationSourceRef,
+} from './elementGeneration.js'
 import { ElementStatus, ElementType } from './elementData.js'
 import { ActivityEvaluation } from './evaluation.js'
 import {
@@ -1591,6 +1598,37 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await KnowledgeService.getKbKnowledgeGraphNeighbors(args, ctx)
+        },
+      }),
+
+      elementGenerationCapabilities: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: ElementGenerationCapabilitiesRef,
+        resolve: async (_, __, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.getElementGenerationCapabilities(ctx)
+          )
+        },
+      }),
+
+      elementGenerationSources: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: [ElementGenerationSourceRef],
+        resolve: async (_, __, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.getElementGenerationSources(ctx)
+          )
+        },
+      }),
+
+      elementGenerationBuild: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: ElementGenerationBuildRef,
+        args: { id: t.arg.id({ required: true }) },
+        resolve: async (_, { id }, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.getElementGenerationBuild(id, ctx)
+          )
         },
       }),
 

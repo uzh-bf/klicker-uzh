@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events'
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import {
+  createElementGenerationRuntimeFromEnv,
   enhanceContext,
   getChatModelRegistry,
   handlers,
@@ -36,6 +37,9 @@ const featureFlags = new NodeFeatureFlagClient({
     : undefined,
 })
 process.once('exit', () => featureFlags.destroy())
+const elementGenerationRuntime = createElementGenerationRuntimeFromEnv(
+  process.env
+)
 
 let prisma = prismaBase
 
@@ -166,6 +170,7 @@ migrate(prisma).then(async () => {
     cache,
     emitter,
     hatchet: hatchetClient,
+    elementGenerationRuntime,
     tasks,
     featureFlags,
   })
@@ -193,6 +198,8 @@ migrate(prisma).then(async () => {
           redisAssessmentExec,
           pubSub,
           emitter,
+          elementGenerationRuntime,
+          hatchet: hatchetClient,
           tasks,
           featureFlags,
         }),

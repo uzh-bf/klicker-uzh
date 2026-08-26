@@ -1,14 +1,19 @@
 import { computeKBContentDigest } from '@klicker-uzh/knowledge-graph'
 import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
-import { randomUUID } from 'node:crypto'
+import { expectedKBGraphManifestBlobName } from './kbGraphBundleCoordinates.js'
 import {
   KB_GRAPH_DATABASE_INT_MAX,
-  validateKbGraphTerminalResult,
   type KbGraphTerminalResult,
+  validateKbGraphTerminalResult,
 } from './kbGraphContract.js'
 import {
-  getKBGraphCostConfiguration,
+  ensureLockedKBGraphQuota,
+  lockKBGraphQuota,
+  reserveKBGraphQuotaAmount,
+} from './kbGraphQuota.js'
+import {
+  type getKBGraphCostConfiguration,
   getKBGraphEstimate,
   requireKBGraphCostConfiguration,
 } from './knowledgeGraphCost.js'
@@ -29,18 +34,6 @@ const SETTLEMENT_HOLD_STATUSES = [
   DB.KBGraphCostStatus.RESERVED,
   DB.KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
 ] as const
-
-async function lockQuota(
-  prisma: KBGraphCostTransaction,
-  quotaId: string
-): Promise<void> {
-  await prisma.$queryRaw<Array<{ id: string }>>`
-    SELECT "id"
-    FROM "public"."KBGraphQuota"
-    WHERE "id" = CAST(${quotaId} AS UUID)
-    FOR UPDATE
-  `
-}
 
 export async function reserveKBGraphCost(
   prisma: KBGraphCostTransaction,
@@ -64,66 +57,8 @@ export async function reserveKBGraphCost(
     })
   }
 
-  const candidateQuotaId = randomUUID()
-  await prisma.$executeRaw`
-    INSERT INTO "public"."KBGraphQuota"
-      ("id", "ownerId", "semesterKey", "currency", "limitMinorUnits", "updatedAt")
-    VALUES
-      (CAST(${candidateQuotaId} AS UUID), CAST(${ownerId} AS UUID),
-       ${config.semesterKey}, ${config.currency},
-       ${config.semesterQuotaMinorUnits}, ${now})
-    ON CONFLICT ("ownerId", "semesterKey") DO NOTHING
-  `
-  const quota = await prisma.kBGraphQuota.findUniqueOrThrow({
-    where: {
-      ownerId_semesterKey: {
-        ownerId,
-        semesterKey: config.semesterKey,
-      },
-    },
-    select: { id: true },
-  })
-  await lockQuota(prisma, quota.id)
-
-  const lockedQuota = await prisma.kBGraphQuota.findUniqueOrThrow({
-    where: { id: quota.id },
-    select: {
-      currency: true,
-      limitMinorUnits: true,
-      reservedMinorUnits: true,
-      settledMinorUnits: true,
-    },
-  })
-  if (
-    lockedQuota.currency !== config.currency ||
-    lockedQuota.limitMinorUnits !== config.semesterQuotaMinorUnits
-  ) {
-    throw new GraphQLError(
-      'KB graph quota configuration changed mid-semester',
-      {
-        extensions: { code: 'KB_GRAPH_QUOTA_CONFIGURATION_CHANGED' },
-      }
-    )
-  }
-
-  const usedMinorUnits =
-    lockedQuota.reservedMinorUnits + lockedQuota.settledMinorUnits
-  if (usedMinorUnits + estimatedCostMinorUnits > lockedQuota.limitMinorUnits) {
-    throw new GraphQLError('KB graph semester quota is insufficient', {
-      extensions: {
-        code: 'KB_GRAPH_QUOTA_EXCEEDED',
-        remainingMinorUnits: Math.max(
-          0,
-          lockedQuota.limitMinorUnits - usedMinorUnits
-        ),
-      },
-    })
-  }
-
-  await prisma.kBGraphQuota.update({
-    where: { id: quota.id },
-    data: { reservedMinorUnits: { increment: estimatedCostMinorUnits } },
-  })
+  const quota = await ensureLockedKBGraphQuota(prisma, ownerId, config, now)
+  await reserveKBGraphQuotaAmount(prisma, quota, estimatedCostMinorUnits)
 
   return {
     quotaId: quota.id,
@@ -158,7 +93,7 @@ export async function releaseKBGraphCostReservation(
   }
 
   if (build.quotaId) {
-    await lockQuota(prisma, build.quotaId)
+    await lockKBGraphQuota(prisma, build.quotaId)
   }
   const updated = await prisma.kBGraphBuild.updateMany({
     where: {
@@ -230,7 +165,7 @@ async function markCostNeedsHumanReview(
     WHERE "id" = CAST(${build.kbId} AS UUID)
     FOR UPDATE
   `
-  if (build.quotaId) await lockQuota(prisma, build.quotaId)
+  if (build.quotaId) await lockKBGraphQuota(prisma, build.quotaId)
   const updated = await prisma.kBGraphBuild.updateMany({
     where: {
       id: build.id,
@@ -361,6 +296,8 @@ export async function settleKBGraphBuildCost(
       sourceContentDigest: true,
       graphName: true,
       graphmlBlobName: true,
+      graphBundleContainerName: true,
+      graphBundleBlobPrefix: true,
       createdAt: true,
       estimatedCostMinorUnits: true,
       costCurrency: true,
@@ -426,12 +363,27 @@ export async function settleKBGraphBuildCost(
   }
 
   const result = validation.result
+  const expectedGraphManifestBlobName =
+    result.graph_bundle === null || build.graphBundleBlobPrefix === null
+      ? null
+      : expectedKBGraphManifestBlobName(
+          build.graphBundleBlobPrefix,
+          result.graph_bundle.bundle_sha256
+        )
   if (
     result.source_content_digest !== build.sourceContentDigest ||
     result.graph_name !== build.graphName ||
     (result.graphml_artifact !== null &&
       (result.graphml_artifact.blob_name !== build.graphmlBlobName ||
-        result.graphml_artifact.container_name !== `kb-${build.kb.ownerId}`))
+        result.graphml_artifact.container_name !== `kb-${build.kb.ownerId}`)) ||
+    (result.graph_bundle !== null &&
+      (build.graphBundleContainerName === null ||
+        build.graphBundleBlobPrefix === null ||
+        result.graph_bundle.storage_name !== build.id ||
+        result.graph_bundle.manifest_artifact.container_name !==
+          build.graphBundleContainerName ||
+        result.graph_bundle.manifest_artifact.blob_name !==
+          expectedGraphManifestBlobName))
   ) {
     return markCostNeedsHumanReview(
       prisma,
@@ -527,7 +479,7 @@ export async function settleKBGraphBuildCost(
       ? null
       : (lateRejection?.errorCode ??
         (succeeded ? null : (result.error_code ?? `KB_GRAPH_${result.status}`)))
-    await lockQuota(prisma, build.quotaId!)
+    await lockKBGraphQuota(prisma, build.quotaId!)
     const updated = await prisma.kBGraphBuild.updateMany({
       where: {
         id: build.id,
@@ -543,6 +495,21 @@ export async function settleKBGraphBuildCost(
         actualOutputTokens: usage.outputTokens,
         actualEmbeddingTokens: usage.embeddingTokens,
         actualRequestCount: usage.requestCount,
+        ...(result.graph_bundle === null
+          ? {}
+          : {
+              graphBundleStorageName: result.graph_bundle.storage_name,
+              graphBundleSha256: result.graph_bundle.bundle_sha256,
+              graphSha256: result.graph_bundle.graph_sha256,
+              graphManifestSchemaVersion:
+                result.graph_bundle.manifest_schema_version,
+              graphManifestArtifact: {
+                containerName:
+                  result.graph_bundle.manifest_artifact.container_name,
+                blobName: result.graph_bundle.manifest_artifact.blob_name,
+                sha256: result.graph_bundle.manifest_artifact.sha256,
+              },
+            }),
         costStatus: DB.KBGraphCostStatus.SETTLED,
         meteredCost: result.metered_cost,
         finishedAt,

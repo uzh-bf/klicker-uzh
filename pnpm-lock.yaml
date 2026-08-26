@@ -1861,6 +1861,9 @@ importers:
       dayjs:
         specifier: 1.11.20
         version: 1.11.20
+      exceljs:
+        specifier: 4.4.0
+        version: 4.4.0
       generate-password:
         specifier: 1.7.1
         version: 1.7.1
@@ -1888,6 +1891,12 @@ importers:
       remeda:
         specifier: 2.15.0
         version: 2.15.0
+      saxes:
+        specifier: 5.0.1
+        version: 5.0.1
+      stream-json:
+        specifier: 3.5.0
+        version: 3.5.0
       unique-names-generator:
         specifier: 4.7.1
         version: 4.7.1
@@ -19067,6 +19076,14 @@ packages:
 
   stopword@3.1.5:
     resolution: {integrity: sha512-OgLYGVFCNa430WOrj9tYZhQge5yg6vd6JsKredveAqEhdLVQkfrpnQIGjx0L9lLqzL4Kq4J8yNTcfQR/MpBwhg==}
+
+  stream-chain@4.2.5:
+    resolution: {integrity: sha512-Wtyq3bNE3ggLR0v2vftqvuhltym3WbZAkZpfIrkr5F/6vpeUmWmwTgXa16zD87gpahwJ/Qulq3zVfUlgIc0J2A==}
+    engines: {node: '>=22'}
+
+  stream-json@3.5.0:
+    resolution: {integrity: sha512-dobB7zipGW8o11PvdRljQSWuyMxifADLvoHeA4elwNWOTbZo6+BlNa+P6aCq7Y9jRiWTy2Ucu2xSv0Y2/T+/kQ==}
+    engines: {node: '>=22'}
 
   streamsearch@1.1.0:
     resolution: {integrity: sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg==}
@@ -41166,6 +41183,12 @@ snapshots:
   stoppable@1.1.0: {}
 
   stopword@3.1.5: {}
+
+  stream-chain@4.2.5: {}
+
+  stream-json@3.5.0:
+    dependencies:
+      stream-chain: 4.2.5
 
   streamsearch@1.1.0: {}
 

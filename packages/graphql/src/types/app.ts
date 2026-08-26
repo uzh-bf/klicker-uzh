@@ -7,8 +7,19 @@ import type {
   ElementInstanceOptions,
   ElementInstanceResults,
   ElementOptions,
+  FlashcardGenerationConfiguration,
+  GeneratedFlashcard,
+  GeneratedFlashcardEditable,
+  GeneratedQuestionCitation,
+  GeneratedQuestionEditable,
+  GeneratedQuestionOriginal,
   GroupActivityDecisions,
   GroupActivityResults,
+  QuestionGenerationArtifactRef,
+  QuestionGenerationConfiguration,
+  QuestionGenerationDesignSummary,
+  QuestionGenerationPlanSummary,
+  QuestionGenerationQuestionProvenance,
   SingleQuestionResponse,
   SingleQuestionResponseLiveQuiz,
 } from '@klicker-uzh/types'
@@ -60,6 +71,21 @@ declare global {
     type PrismaActivityLogModificationDetails = ActivityLogModificationDetails
     type PrismaAssessmentReportSnapshot = AssessmentReportSnapshot
     type PrismaKBGraphMeteredCost = KBGraphMeteredCost
+    type PrismaElementGenerationArtifactRef = QuestionGenerationArtifactRef
+    type PrismaElementGenerationConfiguration =
+      | QuestionGenerationConfiguration
+      | FlashcardGenerationConfiguration
+    type PrismaElementGenerationDesignSummary = QuestionGenerationDesignSummary
+    type PrismaElementGenerationPlanSummary = QuestionGenerationPlanSummary
+    type PrismaGeneratedElementOriginal =
+      | GeneratedQuestionOriginal
+      | GeneratedFlashcard
+    type PrismaGeneratedElementEditable =
+      | GeneratedQuestionEditable
+      | GeneratedFlashcardEditable
+    type PrismaGeneratedElementCitations = GeneratedQuestionCitation[]
+    type PrismaElementGenerationProvenance =
+      QuestionGenerationQuestionProvenance
   }
 }
 // #endregion

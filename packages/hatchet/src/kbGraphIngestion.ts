@@ -508,6 +508,7 @@ export function buildExternalKBGraphPayload(
       expected_content_sha256: source.contentSha256,
     })),
     upload_markdown: false,
+    upload_graph_artifacts: env.KB_GRAPH_UPLOAD_GENERATION_ARTIFACTS === 'true',
     export_to_falkordb: true,
     falkordb_graph_name: build.graphName,
     speed_mode: quality.speedMode,

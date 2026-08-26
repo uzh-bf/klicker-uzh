@@ -9,6 +9,7 @@ query GetKbKnowledgeGraphConfig($kbId: ID!) {
     sourceContentDigest
     activeBuildId
     publishedBuildId
+    elementGenerationReady
     isStale
     startedAt
     finishedAt
