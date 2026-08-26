@@ -32,6 +32,7 @@ import {
   claimChatTurn,
   failChatTurn,
   finalizeChatTurn,
+  isChatAccountUsageEnforcementEnabled,
   isChatAccountUsageAvailable,
   roundChatUsageCredits,
 } from '@/src/services/accountUsage'
@@ -793,20 +794,22 @@ export async function POST(
     )
   }
 
-  let accountUsageAvailable = false
-  try {
-    accountUsageAvailable = await isChatAccountUsageAvailable({
-      ownerId: chatbot.ownerId,
-      usageClass: selectedModelConfig.usageClass,
-    })
-  } catch (error) {
-    console.error('Failed to check account chat usage:', {
-      requestId,
-      error,
-    })
-  }
-  if (!accountUsageAvailable) {
-    return chatModelUnavailableResponse(selectedModelConfig.usageClass)
+  if (isChatAccountUsageEnforcementEnabled()) {
+    let accountUsageAvailable = false
+    try {
+      accountUsageAvailable = await isChatAccountUsageAvailable({
+        ownerId: chatbot.ownerId,
+        usageClass: selectedModelConfig.usageClass,
+      })
+    } catch (error) {
+      console.error('Failed to check account chat usage:', {
+        requestId,
+        error,
+      })
+    }
+    if (!accountUsageAvailable) {
+      return chatModelUnavailableResponse(selectedModelConfig.usageClass)
+    }
   }
 
   const enabledMCPConfigurations = chatbot.mcpConfigurations ?? []

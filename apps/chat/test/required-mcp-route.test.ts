@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   deleteThread: vi.fn(),
   previewUserCredits: vi.fn(),
   getUserCredits: vi.fn(),
+  isChatAccountUsageEnforcementEnabled: vi.fn(),
   isChatAccountUsageAvailable: vi.fn(),
   claimChatTurn: vi.fn(),
   failChatTurn: vi.fn(),
@@ -63,6 +64,8 @@ vi.mock('@/src/services/accountUsage', () => ({
   claimChatTurn: mocks.claimChatTurn,
   failChatTurn: mocks.failChatTurn,
   finalizeChatTurn: vi.fn(),
+  isChatAccountUsageEnforcementEnabled:
+    mocks.isChatAccountUsageEnforcementEnabled,
   isChatAccountUsageAvailable: mocks.isChatAccountUsageAvailable,
   roundChatUsageCredits: (value: number) => ({ toNumber: () => value }),
 }))
@@ -97,6 +100,7 @@ describe('required MCP chat preflight', () => {
       accepted: true,
     })
     mocks.isChatAccountUsageAvailable.mockResolvedValue(true)
+    mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(true)
     mocks.previewUserCredits.mockResolvedValue({ current: 5, total: 5 })
     mocks.getUserCredits.mockResolvedValue({ current: 5, total: 5 })
     mocks.createThread.mockResolvedValue({ id: 'thread-1' })

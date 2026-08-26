@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   decrementCredits: vi.fn(),
   claimChatTurn: vi.fn(),
   failChatTurn: vi.fn(),
+  isChatAccountUsageEnforcementEnabled: vi.fn(),
   isChatAccountUsageAvailable: vi.fn(),
   finalizeChatTurn: vi.fn(),
   ensureImagePreviewBase64: vi.fn(),
@@ -92,6 +93,8 @@ vi.mock('@/src/services/accountUsage', () => {
     claimChatTurn: mocks.claimChatTurn,
     failChatTurn: mocks.failChatTurn,
     finalizeChatTurn: mocks.finalizeChatTurn,
+    isChatAccountUsageEnforcementEnabled:
+      mocks.isChatAccountUsageEnforcementEnabled,
     isChatAccountUsageAvailable: mocks.isChatAccountUsageAvailable,
     roundChatUsageCredits: mocks.roundChatUsageCredits,
   }
@@ -237,6 +240,7 @@ describe('account usage chat route', () => {
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
     })
     mocks.failChatTurn.mockResolvedValue(undefined)
+    mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(true)
     mocks.isChatAccountUsageAvailable.mockResolvedValue(true)
     mocks.roundChatUsageCredits.mockImplementation((value: number) => ({
       toNumber: () => Number(value.toFixed(6)),
@@ -392,6 +396,25 @@ describe('account usage chat route', () => {
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.threadFindFirst).not.toHaveBeenCalled()
     expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  test('preserves the legacy path when account usage enforcement is disabled', async () => {
+    mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(false)
+    mocks.isChatAccountUsageAvailable.mockResolvedValue(false)
+
+    const response = await POST(
+      createRequest({ selectedModel: 'gpt-5.6-luna' }),
+      { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.isChatAccountUsageAvailable).not.toHaveBeenCalled()
+    expect(mocks.claimChatTurn).toHaveBeenCalledOnce()
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledOnce()
+    expect(mocks.claimChatTurn.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.getAggregatedMCPTools.mock.invocationCallOrder[0]
+    )
+    expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
   test('denies zero-credit ADVANCED usage instead of crossing to BASE', async () => {
