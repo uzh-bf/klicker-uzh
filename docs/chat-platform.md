@@ -121,7 +121,24 @@ Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`
 
 ## Model registry and credits
 
-`chatModelRegistry.ts` loads `CHAT_MODEL_REGISTRY_JSON` (deployment override in `deploy/env-uzh-*/values.yaml`). The backend keeps its own copy of the registry in `packages/graphql/src/services/chatbots.ts` for the lecturer-facing allow-list; both pods receive the same `CHAT_MODEL_REGISTRY_JSON` from the one `.Values.chat.modelRegistry` source (`cm-chat.yaml` and `cm-backend-graphql.yaml`), and `apps/chat/test/modelRegistryParity.test.ts` pins the two built-in defaults against each other — the deployed values.yaml registries are NOT covered by that test, so values-only drift still needs a manual check. Registry gotchas that have caused production incidents:
+`chatModelRegistry.ts` loads `CHAT_MODEL_REGISTRY_JSON` (deployment override in `deploy/env-uzh-*/values.yaml`). The backend keeps its own copy of the registry in `packages/graphql/src/services/chatbots.ts` for the lecturer-facing allow-list; both pods receive the same `CHAT_MODEL_REGISTRY_JSON` from the one `.Values.chat.modelRegistry` source (`cm-chat.yaml` and `cm-backend-graphql.yaml`), and `apps/chat/test/modelRegistryParity.test.ts` pins the two built-in defaults against each other AND parses both deployed values.yaml registries through both consumers, so a missing or inconsistent usage classification in either deployment file fails CI. Registry gotchas that have caused production incidents:
+
+Every registry entry carries an explicit `usageClass` (`BASE` or `ADVANCED`),
+the server-derived classification of the model lane ([ADR 0020](./adr/0020-two-tier-chatbot-approval.md)).
+`auto` is invariantly `ADVANCED` (both consumers reject any other class for
+it); reasoning-tier models are `ADVANCED`, standard small models are `BASE`.
+External registry JSON that omits `usageClass` normalizes to `ADVANCED` —
+conservative, because a missing class must never imply base usage.
+
+The account usage foundation stores one row per owner + usage class + Zurich
+calendar month in `ChatAccountUsage` (`packages/prisma/src/prisma/schema/chat.prisma`):
+`monthStart` is a DATE (first calendar day, `Europe/Zurich`), `budgetCredits`
+and `usedCredits` are `Decimal(18,6)` defaulting to zero, and the composite
+primary key prevents duplicate account/class/month rows. Counters start at
+zero at migration cutover; a missing row projects to budget 0 / used 0. The
+Zurich month boundary (including DST) is derived deterministically in
+`packages/util/src/chatUsage.ts`. U1 stores and classifies only — runtime
+charging (U2) and the lecturer-facing lanes (U3) are separate follow-ups.
 
 The deployed Klicker Auto option is a LiteLLM `auto-router` endpoint. The
 only in-repo record of its tier map is the comment above `modelRegistry` in
@@ -177,22 +194,23 @@ policy. The deployed LiteLLM configuration is external; a local summary proves
 the development path only, and staging still needs a Responses + tool-loop
 smoke test before a production compatibility claim.
 
-The approved account-usage policy is a follow-up to the Phase 0 lifecycle
-foundations. One account-level AI usage authorization, backed by an approved
-cost center, covers both model classes. Registry entries will carry explicit
-`BASE` or `ADVANCED` metadata; `Auto` is `ADVANCED` until every routed billable
-step can be attributed. Lecturers will define account-wide monthly budgets for
-both classes, and the manage UI will show exactly two lanes — base model usage
-and advanced model usage — with budget, used, remaining, and reset date. The
-teaching center's limited base contribution is internal and hidden; advanced
-usage receives no contribution. Class exhaustion disables only that class and
-never triggers an automatic cross-class switch. Participant-facing APIs must
-return stable class-specific exhaustion codes without cost-center or hidden
-funding fields.
+One account-level AI usage authorization, backed by an approved cost center,
+covers both model classes: the Phase 0 lifecycle foundations now store an
+account-scoped monthly budget and used-credit counter per `BASE` and
+`ADVANCED` class in `ChatAccountUsage`. Lecturers will define account-wide
+monthly budgets for both classes, and the manage UI will show exactly two
+lanes — base model usage and advanced model usage — with budget, used,
+remaining, and reset date. The teaching center's limited base contribution is
+internal and hidden; advanced usage receives no contribution. Class
+exhaustion disables only that class and never triggers an automatic
+cross-class switch. Participant-facing APIs must return stable class-specific
+exhaustion codes without cost-center or hidden funding fields.
 
-This Phase 0 branch does not implement those account counters or lanes. The
-existing `ChatUsageCredits` balance remains a separate participant usage
-credit, and its current fallback behavior is legacy. The follow-up must use a
+U1 in this Phase 0 branch implements the account-scoped counters and the
+registry classification only. It does not yet charge requests against them,
+and the manage UI does not expose them. The existing `ChatUsageCredits`
+balance remains a separate participant usage credit, and its current fallback
+behavior is legacy. The follow-up must use a
 same-class fallback only, charge reliable provider usage after generation with
 atomic counters, and accept the documented bounded final/concurrent overrun;
 strict reservations, immutable ledgers, automated refunds, invoices,

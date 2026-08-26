@@ -193,6 +193,7 @@ chat:
       supportsImageAttachments: true
       usesResponsesApi: true
       fallback: false
+      usageClass: ADVANCED
       cost:
         input: 1.25
         output: 10.0
@@ -202,6 +203,7 @@ chat:
       description: OpenAI model
       supportsImageAttachments: true
       fallback: false
+      usageClass: BASE
       cost:
         input: 2.0
         output: 8.0
@@ -218,6 +220,7 @@ chat:
         - medium
         - high
       fallback: false
+      usageClass: ADVANCED
       cost:
         input: 1.25
         output: 10.0
@@ -234,6 +237,7 @@ chat:
         - high
         - xhigh
       fallback: false
+      usageClass: ADVANCED
       cost:
         input: 1.25
         output: 10.0
@@ -250,6 +254,7 @@ chat:
         - high
         - xhigh
       fallback: false
+      usageClass: ADVANCED
       cost:
         input: 5.0
         output: 30.0
@@ -259,6 +264,7 @@ chat:
       description: Small OpenAI model
       supportsImageAttachments: true
       fallback: true
+      usageClass: BASE
       cost:
         input: 0.4
         output: 1.6
