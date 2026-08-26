@@ -715,12 +715,14 @@ function parseReviewMetadata(body) {
 }
 
 function parseDispositionRecord(body) {
-  const match = String(body ?? '').match(
-    /<!-- final-ai-disposition\/v1 (\{[^\r\n]*\}) -->/
-  )
-  if (!match) return null
+  const matches = [
+    ...String(body ?? '').matchAll(
+      /<!-- final-ai-disposition\/v1 (\{[^\r\n]*\}) -->/g
+    ),
+  ]
+  if (matches.length !== 1) return null
   try {
-    const record = JSON.parse(match[1])
+    const record = JSON.parse(matches[0][1])
     if (
       Object.keys(record).some(
         (key) =>
@@ -1910,6 +1912,17 @@ async function finalizeFinalReview({
     cleanupOutcome,
     publishOutcome,
   })
+  const latestStatus = await getLatestFinalReviewStatus(
+    github,
+    context,
+    headSha
+  )
+  if (
+    latestStatus?.target_url &&
+    latestStatus.target_url !== workflowRunUrl(context)
+  ) {
+    return
+  }
   await setCommitStatus({
     github,
     context,

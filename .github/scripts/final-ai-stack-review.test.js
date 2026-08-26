@@ -830,15 +830,17 @@ test('keeps actions read permission for stack revalidation', () => {
     path.join(__dirname, '../workflows/check-ocr-final-stack-review.yml'),
     'utf8'
   )
-  const reviewJob =
-    workflow.match(
-      /\n {2}review:\n([\s\S]*?)(?=\n {2}[a-z][\w-]*:\n|$)/
-    )?.[1] ?? ''
-  const permissions =
-    reviewJob.match(
-      /\n {4}permissions:\n([\s\S]*?)(?=\n {4}steps:\n|$)/
-    )?.[1] ?? ''
-  assert.match(permissions, / {6}actions: read\n/)
+  for (const jobName of ['initialize', 'review']) {
+    const job =
+      workflow.match(
+        new RegExp(
+          `\\n {2}${jobName}:\\n([\\s\\S]*?)(?=\\n {2}[a-z][\\w-]*:\\n|$)`
+        )
+      )?.[1] ?? ''
+    const permissions =
+      job.match(/\n {4}permissions:\n([\s\S]*?)(?=\n {4}steps:\n|$)/)?.[1] ?? ''
+    assert.match(permissions, / {6}actions: read\n/)
+  }
 })
 
 test('checks trusted review code out from the default branch', () => {
@@ -1938,6 +1940,30 @@ test('does not overwrite a newer invalidation status during finalization', async
     topologyOutcome: 'success',
     cleanupOutcome: 'success',
     publishOutcome: 'success',
+  })
+
+  assert.equal(state.createdStatuses.length, 0)
+})
+
+test('does not overwrite a newer status after stack revalidation failure', async () => {
+  const { github, state } = stackFixture()
+  github.request = async () => {
+    throw new Error('native stack unavailable')
+  }
+  state.statuses = [
+    {
+      context: 'final-ai-stack-review',
+      state: 'pending',
+      target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/701',
+    },
+  ]
+
+  await finalizeStackReview({
+    github,
+    context: context(),
+    prNumber: 14,
+    baseSha: 'b'.repeat(40),
+    headSha: 'f'.repeat(40),
   })
 
   assert.equal(state.createdStatuses.length, 0)

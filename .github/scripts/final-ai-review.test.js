@@ -16,9 +16,11 @@ const {
   decodeMetadata,
   decideFinalStatus,
   encodeMetadata,
+  finalizeFinalReview,
   isFinalReviewCommand,
   isTrustedPermission,
   normalizeTitle,
+  parseDispositionRecord,
   parseReviewMetadata,
   promotionBody,
   removeOCRConfig,
@@ -1043,6 +1045,84 @@ test('only succeeds a status for a complete review on the current head', () => {
     publishOutcome: 'failure',
   })
   assert.equal(failed.state, 'failure')
+})
+
+test('does not overwrite a newer individual-review status during finalization', async () => {
+  const baseSha = 'b'.repeat(40)
+  const headSha = 'a'.repeat(40)
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    base: {
+      ref: 'v3',
+      sha: baseSha,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'feature/review',
+      sha: headSha,
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const statuses = []
+  const statusEndpoint = async () => ({ data: [] })
+  const github = {
+    rest: {
+      pulls: { get: async () => ({ data: pull }) },
+      repos: {
+        createCommitStatus: async (status) => statuses.push(status),
+        listCommitStatusesForRef: statusEndpoint,
+      },
+    },
+    paginate: async (endpoint) => {
+      assert.equal(endpoint, statusEndpoint)
+      return [
+        {
+          context: 'final-ai-review',
+          state: 'pending',
+          target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/701',
+        },
+      ]
+    },
+  }
+  const context = {
+    payload: { repository: { default_branch: 'v3' } },
+    repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
+    runId: 702,
+    serverUrl: 'https://github.com',
+  }
+
+  await finalizeFinalReview({
+    github,
+    context,
+    prNumber: pull.number,
+    baseSha,
+    headSha,
+    scopeKind: 'default',
+    stackId: '',
+    stackPosition: '',
+    stackOrderDigest: '',
+    reviewOutcome: 'success',
+    cleanupOutcome: 'success',
+    publishOutcome: 'success',
+  })
+
+  assert.equal(statuses.length, 0)
+})
+
+test('rejects duplicate disposition markers as ambiguous', () => {
+  const record = {
+    schema_version: 'final-ai-disposition/v1',
+    review_id: `frv-${'a'.repeat(24)}`,
+    root_head: 'b'.repeat(40),
+    workflow_run_id: 1,
+    entries: [],
+  }
+  const marker = `<!-- final-ai-disposition/v1 ${JSON.stringify(record)} -->`
+
+  assert.deepEqual(parseDispositionRecord(marker), record)
+  assert.equal(parseDispositionRecord(`${marker}\n${marker}`), null)
 })
 
 function promotionFile(release, tag = 'v3') {

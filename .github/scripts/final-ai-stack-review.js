@@ -2538,6 +2538,13 @@ async function finalizeStackReview({
   cleanupOutcome,
   publishOutcome,
 }) {
+  const ownsLatestStatus = async () => {
+    const latestStatus = await latestStackStatus(github, context, headSha)
+    return (
+      !latestStatus?.target_url ||
+      latestStatus.target_url === workflowRunUrl(context)
+    )
+  }
   let membership
   try {
     membership = await resolveReviewStackMembership({
@@ -2546,6 +2553,7 @@ async function finalizeStackReview({
       pullNumber: prNumber,
     })
   } catch {
+    if (!(await ownsLatestStatus())) return
     await setStackStatus({
       github,
       context,
@@ -2564,6 +2572,7 @@ async function finalizeStackReview({
       trustedSha,
     })
   } catch {
+    if (!(await ownsLatestStatus())) return
     await setStackStatus({
       github,
       context,
@@ -2587,13 +2596,7 @@ async function finalizeStackReview({
     dispositionDigest,
     reviewRanges,
   })
-  const latestStatus = await latestStackStatus(github, context, headSha)
-  if (
-    latestStatus?.target_url &&
-    latestStatus.target_url !== workflowRunUrl(context)
-  ) {
-    return
-  }
+  if (!(await ownsLatestStatus())) return
   await setStackStatus({
     github,
     context,
