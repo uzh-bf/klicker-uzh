@@ -13,6 +13,7 @@ import type { PreparedHatchetTasks } from '@klicker-uzh/types'
 import type { Request, Response } from 'express'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
+import type { QuestionGenerationRuntime } from '../services/questionGenerationRuntime.js'
 
 interface BaseContext {
   req: Request & { locals: { user?: any } }
@@ -43,6 +44,8 @@ export interface Context extends BaseContext {
   tasks: PreparedHatchetTasks
   // request-local evaluations on a process-level, multi-user client
   featureFlags?: FeatureFlagEvaluator
+  // Catalyst adapter for generated Klicker elements and immutable artifacts.
+  elementGenerationRuntime?: QuestionGenerationRuntime
 }
 
 export interface ContextWithUser extends Context {

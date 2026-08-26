@@ -21,6 +21,9 @@ export * from './knowledgeGraph.js'
 
 // ----- GENERATED KLICKER ELEMENT TYPES -----
 export * from './elementGeneration.js'
+// Provider-wire compatibility types; product-facing code uses elementGeneration.
+export * from './questionGeneration.js'
+export * from './flashcardGeneration.js'
 
 // ----- ACTIVITY LOG TYPES -----
 // #region
@@ -245,6 +248,7 @@ export type ElementManipulationInput = {
   name?: string | null
   content?: string | null
   explanation?: string | null
+  difficultyLevel?: number | null
   options?: ElementOptionsInput | null
   choicesOptions?: OptionsChoicesInput | null
   numericalOptions?: OptionsNumericalInput | null

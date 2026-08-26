@@ -5289,6 +5289,7 @@ export async function copyElementToAccount(
           importCount > 0 ? `${element.name} (${importCount})` : element.name,
         content: element.content,
         explanation: element.explanation,
+        difficultyLevel: element.difficultyLevel,
         basePoints: element.basePoints,
         pointsMultiplier: element.pointsMultiplier,
         type: element.type,
