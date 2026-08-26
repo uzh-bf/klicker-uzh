@@ -411,7 +411,7 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-public-pr-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
-    uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3
+    uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@rs/arm64-runner-canary
 
   # Always reports a status even when the tests are skipped by the path filter,
   # so this job can be used as a required check in branch protection.

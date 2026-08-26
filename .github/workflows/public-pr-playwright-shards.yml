@@ -127,7 +127,7 @@ jobs:
         run: pnpm install
 
       - name: Build all packages and apps
-        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test
+        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test --concurrency=2
         env:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
