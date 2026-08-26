@@ -87,9 +87,11 @@
 - No `docs/log` or `docs/index` update is required: the authoritative `v3`
   instructions explicitly reserve those paths as absent, and the merged
   baseline keeps them absent.
-- No ADR is needed: this is a reversible CI-configuration consolidation that
-  preserves product, data, deployment, and public contracts. Reusable image
-  workflow extraction or promotion-contract changes would reopen the ADR gate.
+- No new ADR is needed: this is a reversible CI-configuration consolidation
+  that preserves product, data, deployment, and public contracts. The existing
+  ADR-0003 count is updated only to keep its current branch-protection
+  description accurate. Reusable image workflow extraction or
+  promotion-contract changes would reopen the ADR gate.
 
 ## Planner disposition and delegation
 
