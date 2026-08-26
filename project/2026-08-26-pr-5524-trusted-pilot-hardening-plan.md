@@ -337,17 +337,16 @@ repeat billable traffic for UI and policy corrections.
 | Publication approval | Clarify that approval controls reachability but is not an immutable configuration approval |
 | Participant credits | Preserve current behavior; defer the read/write race correction |
 
-The changed staged-enforcement and budget-ownership decision conflicts with the
-historical wording in ADR 0020. After rechecking all remote ADR names, 0041 is
-the next collision-free identifier. Add
-`docs/adr/0041-chatbot-trusted-pilot-boundary.md`, link it
-from the ADR index, and mark ADR 0020 superseded in part. Do not rewrite ADR
-0020 as if the original lecturer-budget decision never existed.
-
-Update `CONTEXT.md`, `docs/chat-platform.md`, `docs/testing.md`, and the roadmap.
-The updates must cover the new terms, startup failure behavior, CI service,
-soft-budget limitation, mutable publication boundary, and operational cutover
-separation. Add no `docs/log.md` or `docs/log/` artifact.
+The changed staged-enforcement and budget-ownership decision conflicted with the
+historical wording in ADR 0020. S4 completed that correction by adding the
+collision-free
+[`docs/adr/0041-chatbot-trusted-pilot-boundary.md`](../docs/adr/0041-chatbot-trusted-pilot-boundary.md),
+linking it from the ADR index, and marking ADR 0020 superseded in part while
+retaining its original lecturer-budget history. S4 also updated `CONTEXT.md`,
+`docs/chat-platform.md`, `docs/testing.md`, and this roadmap with the new
+terms, startup failure behavior, CI service, soft-budget limitation, mutable
+publication boundary, and operational cutover separation. No `docs/log.md` or
+`docs/log/` artifact was added.
 
 ## Feature-wide test portfolio
 

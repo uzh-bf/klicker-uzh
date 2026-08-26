@@ -1,8 +1,10 @@
 # HITL lecturer chatbot configuration roadmap
 
-Revision: 2026-08-21. This is the approved execution roadmap for the active
+Revision: 2026-08-26. This is the approved execution roadmap for the active
 `rs-roadmap-orchestrator` run. It sequences the work one horizon above
-implementation. The active transaction is milestone M1 only.
+implementation. The active transaction is M1 trusted-pilot finalization; the
+original U1–U3 implementation plan is historical context for the completed
+stack.
 
 The goal is a small, reviewable lecturer configuration beta: an approved
 account can use two explicit model-usage classes, configure a chatbot with
@@ -27,33 +29,35 @@ Governing ADRs:
 
 ## Goal, terminal condition, and authority
 
-The next execution session should produce draft stacked PRs based on PR #5460,
-with each layer independently reviewable and green under the repository's
-native checks. The execution terminal condition is the published draft stack
-set and its evidence, not merge, deployment, live traffic, or closing a
-superseded PR.
+The current execution session finalizes the existing five-PR stack based on
+PR #5460 after the approved U4 hardening and trusted-pilot corrections. Its
+terminal condition is the published, reviewed stack and its evidence, with
+exact-head CI observed and the validation runtime stopped. It does not include
+merge, deployment, live traffic, or closing a superseded PR.
 
 The active orchestrator owns task IDs, stack order, child assignment, question
-custody, roadmap `Progress`, and boundary verification. The M1 goal authorizes
-repo-local worktrees and branches, local commits, pushes, and draft PR
-publication for U1 through U3. A child owns exactly one W-item and must return
-the acceptance evidence for that item. Merge, deployment, live traffic, PR
-closure, cleanup, and deletion remain withheld. The orchestrator must not
-silently widen the scope to billing, student-content analytics, a new
-knowledge-base service, or live operations.
+custody, roadmap `Progress`, and boundary verification. The approved
+finalization plan authorizes the existing worktree, local U4 corrections,
+repository checks, synthetic browser proof, read-only reviews, plan and
+roadmap reconciliation, and publication of the same five PR branches. A child
+owns exactly one bounded review or verification task and must return its
+evidence. Merge, deployment, live traffic, PR closure, cleanup, and deletion
+remain withheld. The orchestrator must not silently widen the scope to
+billing, student-content analytics, a new knowledge-base service, or live
+operations.
 
 ## Current state and verified working context
 
 | Item | State and next-session action |
 | --- | --- |
-| Phase 0 base | PR [#5460](https://github.com/uzh-bf/klicker-uzh/pull/5460) is open at `d84140434dbfa25ca5e92333a139f7d61063d02c`, based on current `v3`; it is reviewed and CI-complete except for a known historical GitGuardian fixture finding. Do not rewrite it. |
-| Phase 0 scope | Lifecycle, account capability, publication mutations, prompt compile seam, and approval foundations are present. Account usage counters and usage-lane UI are not implemented. |
+| Phase 0 base | PR [#5460](https://github.com/uzh-bf/klicker-uzh/pull/5460) remains the immutable bottom of the existing five-PR stack. Its historical GitGuardian fixture finding remains a base-PR disposition; do not rewrite it. |
+| Phase 0 scope | Lifecycle, account capability, publication mutations, prompt compile seam, approval foundations, and the accepted M1 usage corrections are present in the current candidate. |
 | Superseded plan PR | PR [#5453](https://github.com/uzh-bf/klicker-uzh/pull/5453) is fully incorporated into #5460 and is now closed. The closure happened outside this orchestration run. |
-| Stack capability | GitHub stack support is enabled, but #5460 is not currently in a stack. The next session must create or adopt stack metadata only when it begins the named PR work. |
-| Worktree | Reuse repo-local `trees/feat-chatbot-lecturer-config-phase0`, now on `rs/chatbot-u1-usage-foundation`. The primary checkout contains unrelated user changes and is read-only control state. |
-| Freshness | At the last gate, the task branch was clean, fetched, and 29 commits ahead of `origin/v3` with no commits behind. The next session must fetch again after the session boundary. |
-| Runtime | No devcontainer, dev server, database reset, tunnel, watcher, or browser session is being left running by this planning pass. Start only the runtime needed for a future W-item and stop it after the final runtime-dependent check. |
-| Existing plan | `project/2026-08-20-chatbot-hitl-phase0-pr-5460-plan.md` records the delivered Phase 0 plan. This roadmap owns the follow-up topology; do not create a second plan root. |
+| Stack capability | The existing five-PR stack is the active topology: #5460 → #5475 → #5480 → #5490 → #5524. Preserve PR identity, order, and ready state; do not create a second stack or layer. |
+| Worktree | `trees/feat-chatbot-lecturer-config-phase0` is the implementation worktree on `rs/chatbot-u4-model-registry-policy`; the primary checkout contains unrelated user changes and is read-only control state. |
+| Freshness | The approved recascade used fresh `origin/v3` at `7515632f229c9421a7ac7d62668e1743147ba158`. Before publication, rerun the exact remote lease, base, head, and ready-state gate. |
+| Runtime | Synthetic DevPod/browser validation is part of the active finalization and must be stopped after the last runtime-dependent check. No production, staging, provider, secret, cluster, or live-data action is authorized. |
+| Existing plan | `project/2026-08-26-pr-5524-trusted-pilot-hardening-plan.md` is the active execution contract. The Phase 0 plan remains historical evidence; do not create a second plan root. |
 
 The last CI run was green for builds, tests, CodeQL, SonarCloud, checks, and
 all Playwright shards. GitGuardian still reports the known historical
@@ -188,12 +192,16 @@ identifier, for example `rs/chatbot-u1-usage-foundation`, and records the actual
 GitHub stack IDs in its control ledger. It must not use one long chain for all
 phases or attach unrelated open PRs to this stack.
 
-### M1 Gate 1 stack plan
+### M1 Gate 1 stack plan (historical)
 
 Feature: chatbot usage-funding MVP. Provider: GitHub. Base: PR #5460 on
 `feat/chatbot-lecturer-config-phase0`. Mode: guided because U1 introduces a
 database migration, public registry metadata, and the account-budget contract.
 The user validates the U1 foundation at Gate 2 before U2 starts.
+
+This section records the original U1–U3 topology and acceptance contracts. The
+stack has since completed that implementation sequence and is now governed by
+the trusted-pilot finalization plan named in the current-state table above.
 
 One stack lives in the existing repo-local worktree
 `trees/feat-chatbot-lecturer-config-phase0`. The orchestrator is the sole
@@ -663,25 +671,31 @@ Every W-item follows `$rs-sliced-development-workflow`:
 - A `BOUNDARY_CANDIDATE` packet must name the W-item, current evidence, the
   proposed boundary, and the smallest ruling needed. A `NEEDS_CONTEXT` packet
   must identify the missing external contract and the safe parked state.
-- No merge, rebase/force-push, PR closure, deploy, Argo sync, live smoke, or
-  worktree deletion is implied by this roadmap. Ask at the exact boundary.
+- No merge, PR closure, deploy, Argo sync, live smoke, or worktree deletion is
+  implied by this roadmap. The active finalization plan separately authorizes
+  only its guarded recascade and atomic force-with-lease publication of the
+  five existing branches; ask at every other boundary.
 
 ## Orchestrator takeover checklist
 
-The next session should perform these actions in order:
+If this work is resumed after a pause, the execution session should perform
+these actions in order:
 
-1. Run the freshness gate and re-read this roadmap, the Phase 0 plan, ADRs
-   0019–0022 and 0041, `CONTEXT.md`, and the current #5460 checks.
-2. Reuse the task worktree, carry the reconciled base-PR GitGuardian
-   disposition under A5, and maintain the orchestrator control ledger without
-   changing #5460.
-3. Apply the recorded A1 and A2 rulings during U1/C3 implementation. Resolve
-   A3–A4 only when their dependent milestone becomes current; park work with
-   the exact `NEEDS_CONTEXT` packet if a contract is missing.
-4. Create the M1 stack only: U1 → U2 → U3, with one child per W-item and
-   draft PRs based on #5460. Do not start M2–M5 implementation in parallel.
-5. Stop this orchestration run after M1 is accepted or explicitly parked. A
-   later, separately authorized run may begin M2 from the accepted top layer.
+1. Run the freshness gate and re-read this roadmap, the active trusted-pilot
+   finalization plan, ADRs 0019–0022 and 0041, `CONTEXT.md`, and current PR
+   checks.
+2. Reuse `trees/feat-chatbot-lecturer-config-phase0`, verify the recovery refs
+   and five-PR order, and carry the A5 GitGuardian disposition without
+   changing the Phase 0 contract.
+3. Complete only the remaining finalization gates: integrated checks,
+   synthetic browser proof, configured read-only reviews, and Progress
+   reconciliation. Do not reopen the historical U1–U3 implementation plan.
+4. Re-read exact remote leases, bases, heads, and ready states before the
+   authorized atomic publication of the same five branches; then observe
+   exact-head CI and update the existing PR evidence.
+5. Stop the exact validation runtime after the last runtime-dependent check.
+   Leave merge, deployment, live traffic, enforcement activation, PR closure,
+   cleanup, and deletion withheld unless separately authorized.
 
 ## Progress
 
