@@ -49,8 +49,8 @@
 - Planning baseline: `origin/v3` at
   `5ffc6a6d2bc4b12f6f38b5119718a7545e039256`.
 - Fresh remote check: `origin/v3` is now at
-  `2385ed7ffc05c7ef220f55a179f84b7fdfa20e8c`; this task branch is five
-  commits behind and twenty-one commits ahead. Rebase, merge, and publication
+  `db75cd2e829259df8f064c4525354084410ccf7b`; this task branch is eleven
+  commits behind and forty-nine commits ahead. Rebase, merge, and publication
   remain outside the approved authority.
 - Historical inputs:
   `project/2026-08-24-open-code-review-plan.md` and
@@ -100,7 +100,7 @@
 | --- | --- | --- | --- |
 | Draft discovery | PR is draft | DeepSeek reviews each draft head against its immediate base. A ready transition cancels any in-flight cheap run. | PR becomes ready and the last cheap run is terminal or cancelled. |
 | Ready freeze | PR is ready | Snapshot all existing feedback, classify it, and batch accepted fixes into at most one push for that head. Cheap review no longer starts. | CI and existing feedback are settled, or a real blocker needs a decision. |
-| Full final snapshot | Authorized collaborator posts `/final-review` or `/final-review-stack` | Gemini performs one complete blocker-only review of an immutable single-PR or stack snapshot. | A complete report and status exist, or the run fails closed. |
+| Full final snapshot | Authorized collaborator posts `/final-review` or `/final-review-stack` | `z-ai/glm-5.3` performs one complete blocker-only review of an immutable single-PR or stack snapshot. A clean run records an evidence-bound success status without a PR comment. | A complete report or trusted clean marker and status exist, or the run fails closed. |
 | Remediation attestation | A verified final blocker is fixed on a descendant head | The same manual command verifies the cumulative remediation delta against the complete root review instead of starting another cold review when the bounded contract holds. | Current-head attestation succeeds, a cold review is required, or the round cap stops automation. |
 | Ready | CI is green and all findings are terminal | No more review-triggered pushes occur. | Human chooses whether to merge. |
 
@@ -111,8 +111,19 @@ stops its automatic mutation loop.
 
 `final-ai-review` and `final-ai-stack-review` mean that the configured review
 completed for the recorded snapshot. Finding count does not control those
-statuses. Merge readiness is the composition of current review evidence, green
-required CI, and terminally dispositioned findings.
+statuses. A genuinely clean run intentionally emits no PR review body: the
+individual status description is `z-ai/glm-5.3 final review clean; evidence=<64-
+hex evidence digest>`, and the stack status description is
+`z-ai/glm-5.3 stack review clean; evidence=<64-hex evidence digest>`. The
+individual evidence digest covers the PR range, review mode, root review,
+stack identity, dispositions, and policy. The stack evidence digest covers
+the ordered layer identities, topology identity, exact range, dispositions,
+and policy. Current success detection accepts either a finding-bearing report
+or one of these markers only after verifying the evidence digest and
+successful trusted workflow provenance. The generated staging-promotion
+workflow may use its separate documented `Verified generated staging
+promotion` no-report exemption. Merge readiness is the composition of current
+review evidence, green required CI, and terminally dispositioned findings.
 
 ## Full review and descendant attestation
 
@@ -195,6 +206,9 @@ block merge readiness.
 - Count every head-changing action after ready against a two-round autonomous
   budget, including CI fixes and platform branch updates. Retries without code
   changes do not count.
+- Treat the default 12-tick monitor watch budget as an explicit read-only remote
+  observation cap. Reaching it is a blocked stop or a fresh invocation; it is
+  independent of the two-round head-changing budget.
 - After two rounds, do not make another automatic head change. A new verified
   blocker produces one batched human decision with the recommended fix. An
   explicitly authorized exceptional batch is recorded and consumes one round;
@@ -238,7 +252,7 @@ The strong stack run contains two independent passes:
 - one direct OpenRouter topology review over the bounded manifest, deterministic
   path-overlap data, layer intent, and normalized cumulative-review coverage.
 
-The topology call uses Gemini 3.7 Flash with high reasoning, strict JSON Schema,
+The topology call uses `z-ai/glm-5.3` with high reasoning, strict JSON Schema,
 `provider.require_parameters: true`, and fail-closed parsing. It reviews layer
 boundaries, dependency order, cross-layer integration, and coverage; the helper
 validates graph correctness deterministically. Findings are assigned from exact
@@ -273,6 +287,23 @@ procedural evidence until a controlled landing proves the exact survival rules.
 - Keep DeepSeek on drafts because observed value and cost justify it. Use one
   cumulative strong code pass and one topology pass per stack, not one strong
   pass per layer by default.
+- Use `z-ai/glm-5.3` for the manually triggered final code and topology passes.
+  This replaces the previously planned Gemini final route at the user's
+  explicit request; the new OpenRouter route remains unqualified live until a
+  separately authorized, costed continuation.
+- Serialize running final-status writers with the shared
+  `final-ai-status-lock` and `cancel-in-progress: false`. GitHub still permits
+  only one pending run per concurrency group and may replace an older pending
+  run, so exact-head, status-target, and provenance revalidation remains the
+  safety mechanism for every writer.
+- Bind generated staging-promotion evidence to the exact workflow definitions
+  at both the trusted policy commit and the promoted target commit. The
+  repository-owned clean-status verifier also rechecks this no-report
+  exemption instead of treating its status text alone as sufficient evidence.
+- Bound the stack topology provider request to one megabyte after removing
+  derivation-only patch operations from the serialized manifest, and request at
+  most 4,096 output tokens. A mixed-case-safe code-unit path comparator is
+  shared by manifest emission and metadata validation.
 - Set the first cheap-review trial to concurrency `4`, a 45-minute job timeout,
   and a 480-second model timeout. Expose only documented, bounded counters,
   terminal state, elapsed time, and token totals. If the pinned action has no
@@ -474,20 +505,36 @@ real runs before proposing any parameter retune or branch-protection context.
 
 ## Progress
 
-- Status: the final correction slice is implemented locally; correction reviews,
-  one integrated final review, and runtime shutdown remain. Publication and live
-  qualification remain withheld.
-- Active slice: close the two integrated-review findings. The shared babysitter
-  now paginates review threads and each thread's comments independently. Native
-  stack attestation now accepts bounded descendant repairs in any changed layer
-  and combines one complete OCR result per changed-layer range.
-- Correction commit: KlickerUZH `405922d11` and dotfiles `5823179` contain this
-  slice. Both worktrees are clean before the correction review gates.
+- Status: implementation and local verification are complete on both task
+  branches. The current correction commits are ready for a fresh simplifier,
+  risk review, and integrated final review; publication and live qualification
+  remain withheld.
+- Delivered: draft reviews stay cheap and non-blocking; manual final review is
+  the merge gate; native-stack reviews reconstruct the verified layer path,
+  preserve cumulative findings and topology, and attest bounded repairs across
+  any changed layer. Reports bind current head, workflow run, trusted policy
+  checkout, manifest, disposition digest, and exact review range. Metadata
+  markers are canonical base64url payloads (`final-ai-review/v4` and
+  `final-ai-stack-review/v3`). Finalization protects newer invalidation
+  statuses, and review concurrency serializes running status writers with the
+  supported `group` and `cancel-in-progress: false` fields while stale writers
+  still fail closed. Generated promotion no-report evidence is independently
+  reverified, and topology requests now discard derivation-only patch
+  operations and enforce request/output budgets. Babysitting now
+  paginates all relevant GitHub surfaces and stops after a 12-tick default
+  watch budget without creating another continuation.
+- Correction commits: KlickerUZH `307fa5dcb`, `49f6611cd`, `f5718ae15`,
+  `7bc1d6abf`, `58a485f13`, `ca234d351`, `51dda1954`, `72ca104f1`,
+  `1c28fa75b`, `33571b172`, `66541c7b7`, `0b5adb907`, and `e38a0db09`;
+  dotfiles `01c4f10`, `9032b1b`, `cf970a4`, `d2d7a88`, `daf165d`, `5454d0e`,
+  `a9b2c57`, and `ab9abcb`. The Klicker worktree has only this plan update
+  pending; the dotfiles worktree is clean.
 - Completed: S1 draft-only discovery, S2 individual descendant attestation, S3
   native-stack attestation, S4 offline qualification assets and documentation,
   and S5 bounded shared babysit state-machine guidance. The implementation
-  ranges are KlickerUZH `2b83fbb49^..405922d11` and dotfiles
-  `f09cf138^..5823179`.
+  review ranges are KlickerUZH `2b83fbb49^..e38a0db09` and dotfiles
+  `f09cf138^..ab9abcb`; the coordination update remains uncommitted until
+  the final review dispositions are recorded.
 - G1 is satisfied locally: the native stacks endpoint was probed, its missing
   base-ref limitation was recorded, and every member is cross-checked through
   PR data and Git ancestry. Valid two- and four-layer plus malformed and drift
@@ -500,36 +547,45 @@ real runs before proposing any parameter retune or branch-protection context.
   satisfied: commands, statuses, metadata, finding IDs, dispositions, round
   semantics, and cold-review triggers are fixed and covered. G5 remains
   withheld for a separately authorized post-publication qualification.
-- Verification: the focused review and stack suite passes 40 tests, the
-  qualification suite passes 20 tests, and the offline evaluator passes all 8
-  fixtures with digest
-  `0cd238be8315a055cb4f99120bfd45b9ca820b48865fe04a7c10d37de826e442`; and
-  `pnpm run check` passes 25 of 25 packages. JSON/YAML/Markdown formatting,
-  `git diff --check`, staged secret scanning, and the shared-skill validator
-  pass. `actionlint` is unavailable. `pnpm run check:all` remains blocked only
-  by the analytics lint environment: pandas 2.2.2 cannot build because the
-  DevPod image has no C compiler (`cc`, `gcc`, or `clang`).
-- Review routing: the configured Gemini simplifier and slice-reviewer routes
-  failed before producing reports because OpenRouter returned the remaining
-  credit/context-budget limit. Trusted Sol fallbacks reviewed the immutable
-  slices. They found and led to fixes for provenance binding, stack-root and
-  lower-layer invalidation, top-layer identity drift, consolidated report
+- Verification: the final review/stack tests pass 67 of 67, the qualification
+  tests pass 20 of 20, and the combined Node suite passes 87 of 87. The offline
+  evaluator passes all 8 fixtures with digest
+  `e553bd3adbb893f515d2a87b4a6834b864e8694e433d8fcfe9eb940ebcb2c2df`.
+  `pnpm run check` passes 25 of 25 packages, and formatting, both
+  `git diff --check` ranges, commit-range gitleaks scans, and the shared-skill
+  validator pass. `actionlint` is unavailable. `pnpm run check:all` remains
+  blocked only by the analytics lint environment: pandas 2.2.2 cannot build
+  because the DevPod image has no C compiler (`cc`, `gcc`, or `clang`).
+- Review routing: the configured Gemini simplifier and risk routes terminate
+  at the OpenRouter provider credit limit, so the required current-range gates
+  use trusted Sol (`gpt-5.6-sol`, `xhigh`) as the documented fallback. Earlier
+  trusted Sol reviews found and led to fixes for provenance binding, stack-root
+  and lower-layer invalidation, top-layer identity drift, consolidated report
   ranges, missing Actions read permission, incremental-root replacement, and
-  shared-skill capability/platform contradictions. The latest integrated final
-  reviewer found two actionable contract gaps: nested GitHub comment pagination
-  and the missing lower-layer attestation path. Both are now corrected; the
-  correction review pair and integrated rerun are still required.
-- Slice reviews: S1, S2, S3, S4, and S5 are complete; the final S5 correction
-  review was accepted unchanged. No safe simplifier reduction remains. The
-  reviewer suggestion to extract duplicated trusted lifecycle logic is a
-  non-blocking follow-up and was not expanded into this package.
+  shared-skill capability/platform contradictions. The latest correction pass
+  additionally covers stale finalization races, disposition-aware attestation,
+  historical stack-root reconstruction, safe metadata encoding, and the
+  babysit watch budget.
+- Review evidence: the previous current-range simplifier and risk review both found
+  actionable issues. The correction pass now removes unsupported workflow
+  syntax, binds promotion runs to trusted workflow definitions, makes
+  promotion statuses verifiable by the babysitter, reserves every
+  head-changing remediation path, canonicalizes reviewed-path ordering,
+  removes dead stack plan state, and bounds topology payloads. The integrated
+  final reviewer remain to be rerun over the correction commits. A read-only
+  `git merge-tree` check reports a current-base conflict only in
+  `docs/ci-and-deployment.md`, where the competing text is semantically
+  identical. Rebase and merge remain withheld by this plan. The live API may
+  not retain a removed member's closed stack record; when it does not, the
+  initializer can only fail closed on the event head. This remains a G5 live
+  proof item.
 - Runtime: the exact task DevPod supported all container checks, but its
   post-start auth readiness contract failed because the task environment lacks
   the expected `.env`; no runtime or browser proof is required for this
-  CI/skill-only package. The exact runtime will be stopped and verified after
-  the final review.
-- Next: run one trusted simplifier/risk pair over the exact correction ranges,
-  then run one integrated trusted final-reviewer
-  pass over both complete committed ranges. Record the final disposition and
-  stop the exact task runtime. Do not push, create PRs, write ClickUp tasks,
-  alter branch protection, merge, deploy, or delete the task worktrees.
+  CI/skill-only package. Stop and verify the exact runtime after the final
+  review.
+- Next: commit this progress update, rerun the required simplifier and risk
+  reviews, then run the integrated final reviewer and stop the exact task
+  runtime. Do not push, create PRs, write
+  ClickUp tasks, alter branch protection, merge, deploy, or delete the task
+  worktrees.
