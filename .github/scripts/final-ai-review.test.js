@@ -97,9 +97,9 @@ test('authorizes and starts only the immutable ready PR range', async () => {
         }),
       },
     },
-    paginate: async (endpoint) =>
+    paginate: async (endpoint, params) =>
       endpoint === github.rest.repos.listCommitStatusesForRef
-        ? combinedStatuses
+        ? (await endpoint(params)).data.statuses
         : endpoint === reviewsEndpoint || endpoint === commentsEndpoint
           ? []
           : [],
@@ -337,9 +337,9 @@ function reviewGithub({
         getWorkflowRun: async () => ({ data: state.workflowRun }),
       },
     },
-    paginate: async (endpoint) =>
+    paginate: async (endpoint, params) =>
       endpoint === github.rest.repos.listCommitStatusesForRef
-        ? state.statuses
+        ? (await endpoint(params)).data.statuses
         : endpoint === reviewsEndpoint
           ? state.reviews
           : state.comments,

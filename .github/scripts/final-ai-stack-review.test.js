@@ -257,9 +257,9 @@ function stackFixture() {
         },
       ],
     }),
-    paginate: async (endpoint) =>
+    paginate: async (endpoint, params) =>
       endpoint === github.rest.repos.listCommitStatusesForRef
-        ? state.statuses
+        ? (await endpoint(params)).data.statuses
         : endpoint === reviewsEndpoint
           ? []
           : [],
@@ -1001,9 +1001,9 @@ test('preserves current stack evidence across unrelated default-base advancement
   github.rest.actions = {
     getWorkflowRun: async () => ({ data: state.workflowRun }),
   }
-  github.paginate = async (endpoint) =>
+  github.paginate = async (endpoint, params) =>
     endpoint === github.rest.repos.listCommitStatusesForRef
-      ? state.statuses
+      ? (await endpoint(params)).data.statuses
       : endpoint === github.rest.pulls.listReviews
         ? state.reviews
         : state.comments
@@ -1360,9 +1360,9 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
     submitted_at: '2026-08-25T02:00:00Z',
     user: { login: 'github-actions[bot]' },
   })
-  github.paginate = async (endpoint) =>
+  github.paginate = async (endpoint, params) =>
     endpoint === github.rest.repos.listCommitStatusesForRef
-      ? state.statuses
+      ? (await endpoint(params)).data.statuses
       : endpoint === github.rest.pulls.listReviews
         ? state.reviews
         : state.comments
@@ -1559,9 +1559,9 @@ test('attests bounded repairs across changed lower stack layers', async () => {
       user: { login: 'reviewer' },
     },
   ]
-  github.paginate = async (endpoint) =>
+  github.paginate = async (endpoint, params) =>
     endpoint === github.rest.repos.listCommitStatusesForRef
-      ? state.statuses
+      ? (await endpoint(params)).data.statuses
       : endpoint === github.rest.pulls.listReviews
         ? state.reviews
         : state.comments
