@@ -932,7 +932,7 @@ export async function requestChatbotPublication(
     select: {
       id: true,
       status: true,
-      disclaimer: { select: { id: true, title: true, introText: true } },
+      disclaimer: { select: { title: true, introText: true } },
     },
   })
   if (!chatbot) {

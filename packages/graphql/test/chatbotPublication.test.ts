@@ -71,21 +71,24 @@ describe('Integration tests for the chatbot publication workflow', () => {
     extra: Record<string, unknown> = {}
   ) {
     const course = await seedCourse({}, userOneCtx)
-    const disclaimer = await prisma.chatbotDisclaimer.create({
-      data: {
-        name: 'Publication disclaimer',
-        title: 'Course chatbot disclaimer',
-        introText: 'Course-specific introduction',
-        ownerId: userOneCtx.user.sub,
-      },
-    })
+    const disclaimer =
+      extra.disclaimerId === null
+        ? null
+        : await prisma.chatbotDisclaimer.create({
+            data: {
+              name: 'Publication disclaimer',
+              title: 'Course chatbot disclaimer',
+              introText: 'Course-specific introduction',
+              ownerId: userOneCtx.user.sub,
+            },
+          })
     return prisma.chatbot.create({
       data: {
         name: 'Bot',
         courseId: course.id,
         ownerId: userOneCtx.user.sub,
         status,
-        disclaimerId: disclaimer.id,
+        disclaimerId: disclaimer?.id ?? null,
         ...extra,
       },
     })
