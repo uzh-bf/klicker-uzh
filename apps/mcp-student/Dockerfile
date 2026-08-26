@@ -41,6 +41,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
 COPY --from=builder /app/packages/grading/dist/ /app/packages/grading/dist/
+COPY --from=builder /app/packages/feature-flags/dist/ /app/packages/feature-flags/dist/
 COPY --from=builder /app/packages/graphql/dist/ /app/packages/graphql/dist/
 COPY --from=builder /app/packages/prisma/dist/ /app/packages/prisma/dist/
 COPY --from=builder /app/packages/types/dist/ /app/packages/types/dist/
