@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.73](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.72...v3.4.0-alpha.73) (2026-08-26)
+
+
+### Bug Fixes
+
+* **auth:** allow same-origin redirect callbacks ([#5570](https://github.com/uzh-bf/klicker-uzh/issues/5570)) ([c6f7c05](https://github.com/uzh-bf/klicker-uzh/commit/c6f7c058fcb8b1dc604d67f830e8a595973fef0b))
+* **course-duplication:** limit Hatchet worker concurrency ([#5568](https://github.com/uzh-bf/klicker-uzh/issues/5568)) ([378be34](https://github.com/uzh-bf/klicker-uzh/commit/378be3443ce97fdb56526b01f7250ddef114ff9b))
+
+
+### Refactors
+
+* **graphql:** build generated client artifacts ([#5537](https://github.com/uzh-bf/klicker-uzh/issues/5537)) ([7515632](https://github.com/uzh-bf/klicker-uzh/commit/7515632f229c9421a7ac7d62668e1743147ba158))
+
+
+### Enhancements
+
+* **dev:** reuse local devcontainer caches ([#5556](https://github.com/uzh-bf/klicker-uzh/issues/5556)) ([861afd1](https://github.com/uzh-bf/klicker-uzh/commit/861afd19383412a7338f491de46ad4ce3b761750))
+
+
+### Build and CI
+
+* **playwright:** restore generated client artifact ([#5567](https://github.com/uzh-bf/klicker-uzh/issues/5567)) ([ac84460](https://github.com/uzh-bf/klicker-uzh/commit/ac84460d2209c51842f0857da75cf7d7f258ae09))
+* **playwright:** update shard timings ([#5565](https://github.com/uzh-bf/klicker-uzh/issues/5565)) ([de103a5](https://github.com/uzh-bf/klicker-uzh/commit/de103a52d982a29af72022069ad668bc68f84094))
+
 ## [3.4.0-alpha.72](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.71...v3.4.0-alpha.72) (2026-08-26)
 
 
