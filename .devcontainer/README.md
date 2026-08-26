@@ -41,7 +41,7 @@ The primary checkout keeps fixed localhost ports and receives stable unnamespace
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.35 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.38 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -127,9 +127,10 @@ the hardcoded defaults only know `klicker.com`.
 | `litellm`                           | `ghcr.io/berriai/litellm-database:v1.96.2` | LLM proxy + Auto V2 complexity router for chat (port 4000 intra-net) |
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
-`post-create.sh` (install + build packages + prisma reset/push/seed + token) then
-host-side `devrouter ensure` delivers its matching process helper and invokes
-`post-start.sh` (set Klicker origins and call that helper). Runtime state is
+host-side `initialize.sh` creates the persistent machine-local pnpm store,
+`post-create.sh` links dependencies into the worktree-specific `node_modules`
+volume and builds/seeds the workspace, then `devrouter ensure` delivers its
+matching process helper and invokes `post-start.sh`. Runtime state is
 `/tmp/devrouter-process-klicker-dev.state` for the app stack and
 `/tmp/devrouter-process-klicker-local-mcp.state` for the seeded local MCP
 fixture. Exact workspace, command, adapter bytes, and declared non-secret
@@ -138,9 +139,9 @@ replaced boundedly, and unknown processes are never killed. The MCP command
 also carries the fixture source hash so a source edit forces managed
 replacement. The app command also fingerprints dependency inputs, Next.js route
 structure, configuration, and the checked-out commit. A true process start
-clears every Next app's `.next/dev` output, including the persistent Turbopack
-development cache, while production outputs survive; a changed dependency
-fingerprint runs one frozen install against the persistent `node_modules` volume.
+preserves each worktree's `.next/dev` output; a changed dependency fingerprint
+runs one frozen install against the persistent `node_modules` volume and shared
+pnpm content store.
 
 Before `post-start` reports success, it probes every Next app's readiness
 contract. Unauthenticated Chat must answer `401 application/json` on a nested
@@ -164,6 +165,13 @@ analytics image and lint CI so the root quality gate runs inside the container.
 - `node_modules` is a named volume (pnpm hoists natives into the root
   `node_modules/.pnpm`, so one root volume covers the monorepo). Its dependency
   stamp prevents reuse after lockfile or workspace-manifest changes.
+- `/pnpm/.pnpm-store` is the only machine-shared cache. The external Docker
+  volume `klicker-uzh-pnpm-store-v1` is created idempotently before Compose and
+  survives individual DevPod deletion. `node_modules`, `.next`, and PostgreSQL
+  data remain worktree-scoped.
+- Removing `klicker-uzh-pnpm-store-v1` is destructive cache cleanup. Stop every
+  Klicker DevPod that uses it first, then remove that exact volume manually with
+  `docker volume rm klicker-uzh-pnpm-store-v1`; never use broad Docker pruning.
 - Reset the DB without seeding: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`.
 - `response-api` runs `tsx --watch --env-file=.env`; both Hatchet workers compile
   with Rollup and run the emitted JavaScript under nodemon. Node 24 errors if
