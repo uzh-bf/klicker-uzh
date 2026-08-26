@@ -2,13 +2,23 @@ name: Public PR ARM64 Playwright shards
 
 on:
   workflow_call:
+    outputs:
+      should_run:
+        description: Whether Playwright-relevant paths changed
+        value: ${{ jobs.prepare.outputs.should_run }}
 
 permissions:
   contents: read
 
 jobs:
-  authorize:
-    runs-on: ubuntu-latest
+  prepare:
+    runs-on:
+      group: public-pr-arm64
+      labels: [linux, arm64, docker, public-pr-arm64, playwright]
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
     steps:
       - name: Verify public PR runner eligibility
         shell: bash
@@ -18,6 +28,7 @@ jobs:
           REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
           HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           ROLLOUT_ENABLED: ${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED }}
           CANARY_PR: ${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR }}
@@ -34,7 +45,7 @@ jobs:
             echo 'Fork pull requests must remain on GitHub-hosted runners.' >&2
             exit 1
           fi
-          if [[ "${{ github.event.pull_request.draft }}" != 'false' ]]; then
+          if [[ "$PR_DRAFT" != 'false' ]]; then
             echo 'Draft pull requests must remain on GitHub-hosted runners.' >&2
             exit 1
           fi
@@ -47,8 +58,136 @@ jobs:
             exit 1
           fi
 
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check for changes
+        id: check
+        uses: ./.github/actions/changed-paths
+        with:
+          pattern: '^(apps/|packages/|playwright/|\.github/workflows/test-playwright\.yml|\.github/workflows/public-pr-playwright-shards\.yml|\.github/workflows/update-playwright-timings\.yml|\.github/actions/changed-paths/|\.github/scripts/get-shard-files\.js|\.github/scripts/update-playwright-timings\.py|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh)'
+
+  build-and-compile:
+    needs: prepare
+    if: needs.prepare.outputs.should_run == 'true'
+    runs-on:
+      group: public-pr-arm64
+      labels: [linux, arm64, docker, public-pr-arm64, playwright]
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Define node version
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-${{ runner.arch }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-pnpm-store-
+
+      - name: Cache turbo build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            .turbo
+          key: ${{ runner.os }}-${{ runner.arch }}-turbo-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}-${{ github.ref_name }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-turbo-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}-
+            ${{ runner.os }}-${{ runner.arch }}-turbo-
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build all packages and apps
+        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test
+        env:
+          APP_SECRET: abcd
+          DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
+          NODE_ENV: test
+          REDIS_HOST: localhost
+          REDIS_PASS: ''
+          REDIS_PORT: 6379
+          REDIS_CACHE_HOST: localhost
+          REDIS_CACHE_PORT: 6379
+          REDIS_ASSESSMENT_PORT: 6379
+          REDIS_ASSESSMENT_PASS: ''
+          REDIS_ASSESSMENT_HOST: localhost
+          APP_ORIGIN_API: http://127.0.0.1:3000
+          APP_ORIGIN_AUTH: http://127.0.0.1:3010
+          APP_ORIGIN_LTI: http://127.0.0.1:4000
+          APP_ORIGIN_PWA: http://127.0.0.1:3001
+          APP_ORIGIN_MANAGE: http://127.0.0.1:3002
+          APP_ORIGIN_CONTROL: http://127.0.0.1:3003
+          APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
+          APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
+
+      - name: Archive Next build outputs
+        run: |
+          tar -cf playwright-next-builds.tar \
+            --exclude='apps/auth/.next/cache' \
+            --exclude='apps/auth/.next/standalone' \
+            --exclude='apps/chat/.next/cache' \
+            --exclude='apps/chat/.next/standalone' \
+            --exclude='apps/frontend-control/.next/cache' \
+            --exclude='apps/frontend-control/.next/standalone' \
+            --exclude='apps/frontend-manage/.next/cache' \
+            --exclude='apps/frontend-manage/.next/standalone' \
+            --exclude='apps/frontend-pwa/.next/cache' \
+            --exclude='apps/frontend-pwa/.next/standalone' \
+            apps/auth/.next \
+            apps/chat/.next \
+            apps/frontend-control/.next \
+            apps/frontend-manage/.next \
+            apps/frontend-pwa/.next
+
+      - name: Upload Playwright build outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-build-artifact
+          path: |
+            playwright-next-builds.tar
+            apps/backend-docker/dist
+            apps/hatchet-worker-general/dist
+            apps/hatchet-worker-response-processor/dist
+            apps/lti/dist
+            apps/mcp-lecturer/dist
+            apps/olat-api/dist
+            apps/response-api/dist
+            packages/export/dist
+            packages/grading/dist
+            packages/graphql/dist
+            packages/hatchet/dist
+            packages/markdown/dist
+            packages/prisma/dist
+            packages/types/dist
+            packages/util/dist
+          retention-days: 1
+
   test-playwright:
-    needs: authorize
+    needs: [prepare, build-and-compile]
+    if: needs.prepare.outputs.should_run == 'true'
     runs-on:
       group: public-pr-arm64
       labels: [linux, arm64, docker, public-pr-arm64, playwright]
