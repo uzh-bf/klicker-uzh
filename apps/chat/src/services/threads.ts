@@ -55,6 +55,28 @@ export class ThreadService {
   }
 
   /**
+   * Finds the participant-owned thread for a failed assistant attempt so a
+   * retry without a thread ID can reclaim the original lifecycle key.
+   */
+  static async findFailedTurnThreadId(
+    participantId: string,
+    chatbotId: string,
+    assistantMessageId: string
+  ): Promise<string | null> {
+    const message = await prisma.chatMessage.findFirst({
+      where: {
+        id: assistantMessageId,
+        role: 'assistant',
+        lifecycleStatus: 'FAILED',
+        thread: { participantId, chatbotId },
+      },
+      select: { threadId: true },
+    })
+
+    return message?.threadId ?? null
+  }
+
+  /**
    * Retrieves all threads for a specific participant and chatbot ordered by most recently updated
    */
   static async getAllThreads(

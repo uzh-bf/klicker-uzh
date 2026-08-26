@@ -28,7 +28,6 @@ import {
 } from '@/src/lib/server/persistedAssistantContent'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
-  CHAT_TURN_IN_PROGRESS_CODE,
   ChatTurnConflictError,
   claimChatTurn,
   failChatTurn,
@@ -100,16 +99,6 @@ function completedTurnResponse() {
     {
       error: 'Chat turn already completed',
       code: CHAT_TURN_ALREADY_COMPLETED_CODE,
-    },
-    { status: 409 }
-  )
-}
-
-function inProgressTurnResponse() {
-  return NextResponse.json(
-    {
-      error: 'Chat turn already in progress',
-      code: CHAT_TURN_IN_PROGRESS_CODE,
     },
     { status: 409 }
   )
@@ -899,16 +888,28 @@ export async function POST(
   // Resolve the participant-owned thread before acquiring the provider-work
   // claim. The claim must exist before MCP discovery, image description, or
   // model streaming can begin.
+  let createdThreadId: string | null = null
   if (!currentThreadId && messages.length > 0) {
     try {
-      const newThread = await ThreadService.createThread(
+      currentThreadId = await ThreadService.findFailedTurnThreadId(
         participantId,
         chatbotId,
-        null
+        assistantMessageId
       )
-      currentThreadId = newThread.id
+      if (!currentThreadId) {
+        const newThread = await ThreadService.createThread(
+          participantId,
+          chatbotId,
+          null
+        )
+        currentThreadId = newThread.id
+        createdThreadId = newThread.id
+      }
     } catch (error) {
-      console.error('Failed to create thread:', { requestId, error })
+      console.error('Failed to resolve or create thread:', {
+        requestId,
+        error,
+      })
     }
   }
   if (!currentThreadId) {
@@ -916,6 +917,26 @@ export async function POST(
       { error: 'Unable to resolve chat thread' },
       { status: 500 }
     )
+  }
+
+  const discardCreatedThread = async (phase: string) => {
+    if (!createdThreadId) return
+
+    const threadIdToDelete = createdThreadId
+    createdThreadId = null
+    try {
+      await ThreadService.deleteThread(
+        threadIdToDelete,
+        participantId,
+        chatbotId
+      )
+    } catch (error) {
+      console.error('Failed to discard a newly created chat thread:', {
+        requestId,
+        phase,
+        error,
+      })
+    }
   }
 
   const owningThread = await prisma.chatThread.findFirst({
@@ -927,6 +948,7 @@ export async function POST(
     select: { id: true },
   })
   if (!owningThread) {
+    await discardCreatedThread('thread.ownership')
     return NextResponse.json(
       { error: 'Chat thread not found' },
       { status: 404 }
@@ -949,15 +971,18 @@ export async function POST(
     })
   } catch (error) {
     if (error instanceof ChatTurnConflictError) {
+      await discardCreatedThread('claim.conflict')
       return completedTurnResponse()
     }
     throw error
   }
   if (turnClaim.outcome === 'completed') {
+    await discardCreatedThread('claim.completed')
     return completedTurnResponse()
   }
   if (turnClaim.outcome === 'in_progress') {
-    return inProgressTurnResponse()
+    await discardCreatedThread('claim.in_progress')
+    return completedTurnResponse()
   }
   const lifecycleAttemptId = turnClaim.lifecycleAttemptId
 
@@ -977,6 +1002,7 @@ export async function POST(
     }
   }
 
+  let providerStreamStarted = false
   try {
     // Discover MCP tools only after read-only participant authorization.
     let mcpTools: ToolSet
@@ -985,6 +1011,7 @@ export async function POST(
     } catch (error) {
       if (error instanceof RequiredMCPUnavailableError) {
         await failAssistantClaim('mcp.discovery')
+        await discardCreatedThread('mcp.discovery')
         return NextResponse.json(
           {
             error: 'Required MCP tool unavailable',
@@ -1446,8 +1473,9 @@ export async function POST(
       ? await getTraceIdForMessage(assistantMessageId)
       : null
 
-    const startStream = () =>
-      streamText({
+    const startStream = () => {
+      providerStreamStarted = true
+      return streamText({
         model,
         maxOutputTokens,
         telemetry: { isEnabled: isAiTelemetryEnabled },
@@ -1718,6 +1746,7 @@ export async function POST(
           await failAssistantClaim('stream.error')
         },
       })
+    }
 
     // The wrapper span only exists to put the derived trace id on the context the
     // AI SDK reads when it opens its own spans; it is created and closed around
@@ -1780,6 +1809,9 @@ export async function POST(
     })
   } catch (error) {
     await failAssistantClaim('request')
+    if (!providerStreamStarted) {
+      await discardCreatedThread('request')
+    }
     throw error
   }
 }

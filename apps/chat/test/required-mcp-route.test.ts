@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => ({
   findThread: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
   createThread: vi.fn(),
+  findFailedTurnThreadId: vi.fn(),
+  deleteThread: vi.fn(),
   previewUserCredits: vi.fn(),
   getUserCredits: vi.fn(),
   isChatAccountUsageAvailable: vi.fn(),
@@ -43,6 +45,8 @@ vi.mock('@/src/services/mcpClients', () => ({
 vi.mock('@/src/services/threads', () => ({
   ThreadService: {
     createThread: mocks.createThread,
+    findFailedTurnThreadId: mocks.findFailedTurnThreadId,
+    deleteThread: mocks.deleteThread,
   },
 }))
 
@@ -55,7 +59,6 @@ vi.mock('@/src/services/credits', () => ({
 
 vi.mock('@/src/services/accountUsage', () => ({
   CHAT_TURN_ALREADY_COMPLETED_CODE: 'CHAT_TURN_ALREADY_COMPLETED',
-  CHAT_TURN_IN_PROGRESS_CODE: 'CHAT_TURN_IN_PROGRESS',
   ChatTurnConflictError: class ChatTurnConflictError extends Error {},
   claimChatTurn: mocks.claimChatTurn,
   failChatTurn: mocks.failChatTurn,
@@ -97,6 +100,8 @@ describe('required MCP chat preflight', () => {
     mocks.previewUserCredits.mockResolvedValue({ current: 5, total: 5 })
     mocks.getUserCredits.mockResolvedValue({ current: 5, total: 5 })
     mocks.createThread.mockResolvedValue({ id: 'thread-1' })
+    mocks.findFailedTurnThreadId.mockResolvedValue(null)
+    mocks.deleteThread.mockResolvedValue(true)
     mocks.findThread.mockResolvedValue({ id: 'thread-1' })
     mocks.claimChatTurn.mockResolvedValue({
       outcome: 'claimed',
@@ -181,6 +186,11 @@ describe('required MCP chat preflight', () => {
       threadId: 'thread-1',
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
     })
+    expect(mocks.deleteThread).toHaveBeenCalledWith(
+      'thread-1',
+      'participant-1',
+      'chatbot-1'
+    )
   })
 
   test('rejects an unsupported mode before MCP and thread work', async () => {

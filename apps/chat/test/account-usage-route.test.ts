@@ -16,6 +16,8 @@ const mocks = vi.hoisted(() => ({
   transaction: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
   createThread: vi.fn(),
+  findFailedTurnThreadId: vi.fn(),
+  deleteThread: vi.fn(),
   previewUserCredits: vi.fn(),
   getUserCredits: vi.fn(),
   decrementCredits: vi.fn(),
@@ -68,7 +70,11 @@ vi.mock('@/src/services/mcpClients', () => ({
 }))
 
 vi.mock('@/src/services/threads', () => ({
-  ThreadService: { createThread: mocks.createThread },
+  ThreadService: {
+    createThread: mocks.createThread,
+    findFailedTurnThreadId: mocks.findFailedTurnThreadId,
+    deleteThread: mocks.deleteThread,
+  },
 }))
 
 vi.mock('@/src/services/credits', () => ({
@@ -82,7 +88,6 @@ vi.mock('@/src/services/credits', () => ({
 vi.mock('@/src/services/accountUsage', () => {
   return {
     CHAT_TURN_ALREADY_COMPLETED_CODE: 'CHAT_TURN_ALREADY_COMPLETED',
-    CHAT_TURN_IN_PROGRESS_CODE: 'CHAT_TURN_IN_PROGRESS',
     ChatTurnConflictError: mocks.ChatTurnConflictError,
     claimChatTurn: mocks.claimChatTurn,
     failChatTurn: mocks.failChatTurn,
@@ -188,17 +193,19 @@ function createRequest({
   selectedModel = 'gpt-4.1',
   assistantMessageId = 'assistant-1',
   images = [],
+  threadId = 'thread-1',
 }: {
   selectedModel?: string
   assistantMessageId?: string
   images?: string[]
+  threadId?: string | null
 } = {}) {
   return new NextRequest('http://localhost/api/chatbots/chatbot-1/chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       messages: [{ id: 'message-1', role: 'user', content: 'Explain this.' }],
-      threadId: 'thread-1',
+      threadId,
       selectedModel,
       selectedMode: 'tutor',
       assistantMessageId,
@@ -236,6 +243,8 @@ describe('account usage chat route', () => {
     }))
     mocks.previewUserCredits.mockResolvedValue({ current: 5, total: 5 })
     mocks.getUserCredits.mockResolvedValue({ current: 5, total: 5 })
+    mocks.findFailedTurnThreadId.mockResolvedValue(null)
+    mocks.deleteThread.mockResolvedValue(true)
     mocks.threadFindFirst.mockResolvedValue({ id: 'thread-1' })
     mocks.attachmentFindMany.mockResolvedValue([])
     mocks.messageUpdateMany.mockResolvedValue({ count: 0 })
@@ -296,12 +305,32 @@ describe('account usage chat route', () => {
 
     expect(response.status).toBe(409)
     await expect(response.json()).resolves.toEqual({
-      error: 'Chat turn already in progress',
-      code: 'CHAT_TURN_IN_PROGRESS',
+      error: 'Chat turn already completed',
+      code: 'CHAT_TURN_ALREADY_COMPLETED',
     })
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.ensureImagePreviewBase64).not.toHaveBeenCalled()
     expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  test('reuses a failed turn thread when a retry omits the thread ID', async () => {
+    mocks.findFailedTurnThreadId.mockResolvedValueOnce('thread-retry')
+    mocks.threadFindFirst.mockResolvedValueOnce({ id: 'thread-retry' })
+
+    const response = await POST(createRequest({ threadId: null }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.findFailedTurnThreadId).toHaveBeenCalledWith(
+      'participant-1',
+      'chatbot-1',
+      'assistant-1'
+    )
+    expect(mocks.createThread).not.toHaveBeenCalled()
+    expect(mocks.claimChatTurn).toHaveBeenCalledWith(
+      expect.objectContaining({ threadId: 'thread-retry' })
+    )
   })
 
   test('denies unavailable BASE usage before image, thread, or provider work', async () => {

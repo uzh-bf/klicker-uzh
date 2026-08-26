@@ -501,9 +501,10 @@ one matching raw tool. Klicker exposes that tool under the configured alias (for
 course-specific video expert can become `IW_doc_query`) before prompt assembly and prompt-cache
 identity are built. Missing, inactive, unavailable, malformed, or colliding strict bindings return
 `503 REQUIRED_MCP_UNAVAILABLE` may occur before or after a read-only effective-credit preview, but
-always before credit initialization, reset, decrement, or equivalent state mutation, thread
-creation, model or image work, or message write. MCP configs without the reserved keys retain the
-existing optional/fail-open behavior.
+always before credit initialization, reset, decrement, model or image work, or a retained thread or
+message write. Chat may create a short-lived thread and assistant lifecycle claim to serialize the
+preflight, but it marks the attempt failed and discards that new thread before returning `503`. MCP
+configs without the reserved keys retain the existing optional/fail-open behavior.
 
 - `resolveCitationSource` resolves `[n]` only for `1 <= n <= N`. Anything outside that range stays
   literal text in the answer — which is the intended failure mode, not a bug.
