@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { hashKBContentDigestEntries } from '@klicker-uzh/knowledge-graph'
 import { prisma as prismaClient } from '@klicker-uzh/prisma'
 import {
@@ -7,7 +8,6 @@ import {
   KBResourceStatus,
   KBResourceType,
 } from '@klicker-uzh/prisma/client'
-import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   releaseKBGraphCostReservation,
@@ -24,6 +24,7 @@ const LATE_CONTENT_SHA256 =
 const LATE_SOURCE_CONTENT_DIGEST = hashKBContentDigestEntries([
   { resourceId: LATE_RESOURCE_ID, contentSha256: LATE_CONTENT_SHA256 },
 ])
+const GRAPH_BUNDLE_CONTAINER = 'kg-graph-artifacts'
 
 const costEnv = {
   KB_GRAPH_COST_CURRENCY: 'CHF',
@@ -61,6 +62,7 @@ async function createBuild({
   const buildId = randomUUID()
   const runId = `run-${buildId}`
   const graphmlBlobName = `knowledge-graphs/${buildId}.graphml`
+  const graphBundleBlobPrefix = `graph-artifacts/${buildId}/${buildId}`
   const quota = await prisma.kBGraphQuota.findUniqueOrThrow({
     where: { ownerId_semesterKey: { ownerId, semesterKey: '2026-H2' } },
     select: { id: true },
@@ -75,6 +77,8 @@ async function createBuild({
       sourceContentDigest,
       graphName: `klickeruzh:kb:${kbId}:${buildId}`,
       graphmlBlobName,
+      graphBundleContainerName: GRAPH_BUNDLE_CONTAINER,
+      graphBundleBlobPrefix,
       estimatedCostMinorUnits: 100,
       costCurrency: 'CHF',
       costPricingVersion: 'test-v1',
@@ -94,7 +98,7 @@ async function createBuild({
       data: { activeGraphBuildId: buildId },
     })
   }
-  return { build, runId, graphmlBlobName }
+  return { build, runId, graphmlBlobName, graphBundleBlobPrefix }
 }
 
 function successfulResult({
@@ -126,6 +130,7 @@ function successfulResult({
       container_name: `kb-${ownerId}`,
       blob_name: graphmlBlobName,
     },
+    graph_bundle: null,
     metered_cost: {
       currency: 'CHF',
       amount_minor_units: amountMinorUnits,
@@ -223,14 +228,31 @@ describe('KB graph cost accounting', () => {
         now: NOW,
       })
     )
-    const { build, runId, graphmlBlobName } = await createBuild()
+    const { build, runId, graphmlBlobName, graphBundleBlobPrefix } =
+      await createBuild()
     expect(reservation.estimatedCostMinorUnits).toBe(100)
 
-    const result = successfulResult({
-      buildId: build.id,
-      runId,
-      graphmlBlobName,
-    })
+    const result = {
+      ...successfulResult({
+        buildId: build.id,
+        runId,
+        graphmlBlobName,
+      }),
+      graph_bundle: {
+        storage_name: build.id,
+        manifest_schema_version: 2 as const,
+        bundle_sha256:
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        graph_sha256:
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        manifest_artifact: {
+          container_name: GRAPH_BUNDLE_CONTAINER,
+          blob_name: `${graphBundleBlobPrefix}/${'a'.repeat(64)}/manifest.json`,
+          sha256:
+            'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        },
+      },
+    }
     await expect(
       prisma.$transaction((tx) =>
         settleKBGraphBuildCost(tx, {
@@ -268,12 +290,68 @@ describe('KB graph cost accounting', () => {
       actualOutputTokens: 13,
       actualEmbeddingTokens: 7,
       actualRequestCount: 2,
+      graphBundleStorageName: build.id,
+      graphManifestSchemaVersion: 2,
+      graphBundleSha256:
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      graphSha256:
+        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      graphManifestArtifact: {
+        containerName: GRAPH_BUNDLE_CONTAINER,
+        blobName: `${graphBundleBlobPrefix}/${'a'.repeat(64)}/manifest.json`,
+        sha256:
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+      },
     })
     await expect(
       prisma.kB.findUniqueOrThrow({ where: { id: kbId } })
     ).resolves.toMatchObject({
       activeGraphBuildId: null,
       publishedGraphBuildId: build.id,
+    })
+  })
+
+  it('holds a graph bundle whose manifest is not pinned to its build and digest', async () => {
+    await prisma.$transaction((tx) =>
+      reserveKBGraphCost(tx, {
+        ownerId,
+        qualityTier: KBGraphQualityTier.STANDARD,
+        env: costEnv,
+        now: NOW,
+      })
+    )
+    const { build, runId, graphmlBlobName } = await createBuild()
+    const bundleSha256 = 'a'.repeat(64)
+    const result = {
+      ...successfulResult({ buildId: build.id, runId, graphmlBlobName }),
+      graph_bundle: {
+        storage_name: build.id,
+        manifest_schema_version: 2 as const,
+        bundle_sha256: bundleSha256,
+        graph_sha256: 'b'.repeat(64),
+        manifest_artifact: {
+          container_name: GRAPH_BUNDLE_CONTAINER,
+          blob_name: `graph-artifacts/another-build/another-build/${bundleSha256}/manifest.json`,
+          sha256: 'c'.repeat(64),
+        },
+      },
+    }
+
+    await expect(
+      prisma.$transaction((tx) =>
+        settleKBGraphBuildCost(tx, {
+          buildId: build.id,
+          result,
+          finishedAt: NOW,
+        })
+      )
+    ).resolves.toBe('NEEDS_HUMAN_REVIEW')
+    await expect(
+      prisma.kBGraphBuild.findUniqueOrThrow({ where: { id: build.id } })
+    ).resolves.toMatchObject({
+      costStatus: KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
+      errorCode: 'KB_GRAPH_RESULT_IDENTITY_INVALID',
+      graphManifestArtifact: null,
     })
   })
 

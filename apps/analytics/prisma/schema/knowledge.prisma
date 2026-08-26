@@ -47,6 +47,39 @@ enum KBGraphCostStatus {
   NEEDS_HUMAN_REVIEW
 }
 
+enum ElementGenerationBuildStatus {
+  PREPARING_INPUT
+  QUEUED
+  RUNNING
+  DESIGNING
+  WAITING_FOR_DESIGN_REVIEW
+  GENERATING_ITEMS
+  WAITING_FOR_PLAN_REVIEW
+  FINALIZING
+  AWAITING_INCOMPLETE_PUBLICATION
+  PUBLISHING_INCOMPLETE
+  COMPLETED
+  INCOMPLETE
+  REJECTED
+  FAILED
+}
+
+enum ElementGenerationReviewGate {
+  DESIGN
+  PLAN
+}
+
+enum ElementGenerationReviewDecision {
+  APPROVE
+  REJECT
+}
+
+enum GeneratedElementDecision {
+  OPEN
+  ACCEPTED
+  REJECTED
+}
+
 model KB {
   id          String  @id @default(uuid()) @db.Uuid
   name        String
@@ -163,6 +196,20 @@ model KBGraphBuild {
   // GraphML export retained on Blob for versioning, once the build succeeds
   graphmlBlobName String?
 
+  // Optional immutable graph bundle consumed by generated Klicker-element
+  // workflows. The graph build remains the sole version identity; these fields
+  // only attach additional artifacts to that ledger entry.
+  // Container and prefix are pinned before dispatch; the digest-specific
+  // manifest coordinate is verified before the provider result is settled.
+  graphBundleContainerName   String?
+  graphBundleBlobPrefix      String?
+  graphBundleStorageName     String?
+  graphBundleSha256          String?
+  graphSha256                String?
+  graphManifestSchemaVersion Int?
+  /// [PrismaElementGenerationArtifactRef]
+  graphManifestArtifact      Json?
+
   // Cost reservation is part of the build ledger so settlement is idempotent by build id.
   estimatedCostMinorUnits Int?
   actualCostMinorUnits    Int?
@@ -200,6 +247,7 @@ model KBGraphBuild {
   // version stays restorable while the knowledge base exists. Tracked apart from
   // `cleanedAt` because whole-KB hard deletion keys off graph retirement.
   graphmlPurgedAt     DateTime?
+  generationArtifactsPurgedAt DateTime?
 
   // builds spend the requesting lecturer's AI budget, so the requester is recorded
   requestedBy   User?   @relation(fields: [requestedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
@@ -211,6 +259,8 @@ model KBGraphBuild {
   // The graph must remain explainable even if a source resource is later
   // deleted or replaced, so this is a build-local snapshot rather than a FK.
   sources KBGraphBuildSource[]
+
+  elementGenerationBuilds ElementGenerationBuild[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -257,6 +307,158 @@ model KBGraphBuildSource {
 
   @@unique([buildId, resourceId])
   @@index([resourceId])
+}
+
+model ElementGenerationBuild {
+  id String @id @default(uuid()) @db.Uuid
+
+  owner   User   @relation("ElementGenerationBuildOwner", fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String @db.Uuid
+
+  sourceGraphBuild   KBGraphBuild @relation(fields: [sourceGraphBuildId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  sourceGraphBuildId String       @db.Uuid
+
+  elementType       ElementType
+  idempotencyKey    String
+  configurationHash String
+  /// [PrismaElementGenerationConfiguration]
+  configuration Json
+
+  requestedElementCount  Int
+  generatedElementCount  Int                          @default(0)
+  unresolvedElementCount Int                          @default(0)
+  warningCount           Int                          @default(0)
+  status                 ElementGenerationBuildStatus @default(PREPARING_INPUT)
+  stage                  String                       @default("preparing_input")
+
+  providerEventId                String?
+  providerWorkflowRunId          String?
+  providerDispatchAttemptId      String  @default(uuid()) @db.Uuid
+  providerPublicationEventId     String?
+  providerPublicationWorkflowRunId String?
+  providerPublicationDispatchAttemptId String? @db.Uuid
+  retryCount                       Int @default(0)
+
+  // Prefixes are persisted so the canonical KB deletion lifecycle can remove
+  // all provider artifacts without depending on current runtime configuration.
+  inputArtifactContainer String?
+  inputArtifactPrefix    String?
+  outputArtifactContainer String?
+  outputArtifactPrefix    String?
+
+  /// [PrismaElementGenerationArtifactRef]
+  blueprintArtifact Json?
+  /// [PrismaElementGenerationArtifactRef]
+  designArtifact Json?
+  /// [PrismaElementGenerationArtifactRef]
+  planArtifact Json?
+  /// [PrismaElementGenerationArtifactRef]
+  resultManifestArtifact Json?
+  /// [PrismaElementGenerationArtifactRef]
+  startManifestArtifact Json?
+  /// [PrismaElementGenerationArtifactRef]
+  finalBankArtifact Json?
+  /// [PrismaElementGenerationArtifactRef]
+  provenanceIndexArtifact Json?
+  /// [PrismaElementGenerationArtifactRef]
+  checkpointArtifact Json?
+
+  /// [PrismaElementGenerationDesignSummary]
+  designSummary Json?
+  /// [PrismaElementGenerationPlanSummary]
+  planSummary Json?
+
+  lastSynchronizedAt DateTime?
+  syncLeaseOwner      String?
+  syncLeaseUntil      DateTime?
+
+  errorCode      String?
+  errorMessage   String?
+  errorRetryable Boolean?
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  incompletePublishedBy   User?     @relation("ElementGenerationIncompletePublisher", fields: [incompletePublishedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  incompletePublishedById String?   @db.Uuid
+  incompletePublishedAt   DateTime?
+
+  reviews ElementGenerationReview[]
+  drafts  GeneratedElementDraft[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, idempotencyKey])
+  @@index([ownerId, createdAt])
+  @@index([sourceGraphBuildId, status])
+  @@index([status, syncLeaseUntil])
+}
+
+model ElementGenerationReview {
+  id String @id @default(uuid()) @db.Uuid
+
+  build   ElementGenerationBuild @relation(fields: [buildId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  buildId String                 @db.Uuid
+
+  gate     ElementGenerationReviewGate
+  decision ElementGenerationReviewDecision
+
+  reviewer   User   @relation("ElementGenerationReviewReviewer", fields: [reviewerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  reviewerId String @db.Uuid
+
+  warningsAcknowledged Boolean @default(false)
+  /// [PrismaElementGenerationArtifactRef]
+  artifact Json
+  reviewedAt DateTime
+  createdAt  DateTime @default(now())
+
+  @@unique([buildId, gate])
+  @@index([reviewerId, reviewedAt])
+}
+
+model GeneratedElementDraft {
+  id String @id @default(uuid()) @db.Uuid
+
+  build   ElementGenerationBuild @relation(fields: [buildId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  buildId String                 @db.Uuid
+
+  sourceElementId  String
+  order            Int
+  duplicationIndex Int @default(0)
+  elementType      ElementType
+
+  parentDraft   GeneratedElementDraft?  @relation("GeneratedElementDraftDuplicates", fields: [parentDraftId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  parentDraftId String?                 @db.Uuid
+  duplicates    GeneratedElementDraft[] @relation("GeneratedElementDraftDuplicates")
+
+  /// [PrismaGeneratedElementOriginal]
+  original Json
+  /// [PrismaGeneratedElementEditable]
+  current  Json
+
+  revision Int                      @default(0)
+  decision GeneratedElementDecision @default(OPEN)
+
+  bloomLevel          String?
+  targetDifficulty    Int?
+  predictedDifficulty Float?
+  qualityFlags        String[] @default([])
+  /// [PrismaGeneratedElementCitations]
+  citations Json
+  /// [PrismaElementGenerationProvenance]
+  provenance Json?
+
+  savedElement   Element? @relation(fields: [savedElementId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  savedElementId Int?     @unique
+  savedAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([buildId, sourceElementId, duplicationIndex])
+  @@index([buildId, order])
+  @@index([buildId, decision, savedElementId])
 }
 
 model KBUploadTicket {

@@ -58,6 +58,7 @@ export type ExternalKBGraphPayload = {
     expected_content_sha256: string
   }>
   upload_markdown: false
+  upload_graph_artifacts: true
   export_to_falkordb: true
   falkordb_graph_name: string
   speed_mode: 'balanced' | 'quality'

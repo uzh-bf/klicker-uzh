@@ -636,6 +636,13 @@ describe('KB retention maintenance', () => {
           kbId: KB_ID,
           graphName: GRAPH_NAME,
           graphmlBlobName: GRAPHML_BLOB_NAME,
+          graphmlPurgedAt: null,
+          graphBundleContainerName: null,
+          graphBundleBlobPrefix: null,
+          graphBundleSha256: null,
+          graphManifestArtifact: null,
+          generationArtifactsPurgedAt: null,
+          elementGenerationBuilds: [],
           cleanedAt: NOW,
           kb: { ownerId: OWNER_ID },
         },
@@ -657,7 +664,10 @@ describe('KB retention maintenance', () => {
     expect(prisma.kBGraphBuild.findMany).toHaveBeenLastCalledWith(
       expect.objectContaining({
         where: {
-          graphmlPurgedAt: null,
+          OR: [
+            { graphmlPurgedAt: null },
+            { generationArtifactsPurgedAt: null },
+          ],
           kb: {
             deletedAt: {
               lte: new Date(NOW.getTime() - GRAPH_DELETION_GRACE_MS),
@@ -668,8 +678,123 @@ describe('KB retention maintenance', () => {
     )
     expect(deleteBlob).toHaveBeenCalledWith(OWNER_ID, GRAPHML_BLOB_NAME)
     expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith({
-      where: { id: BUILD_ID, kbId: KB_ID, graphmlPurgedAt: null },
-      data: { graphmlPurgedAt: NOW },
+      where: {
+        id: BUILD_ID,
+        kbId: KB_ID,
+        OR: [{ graphmlPurgedAt: null }, { generationArtifactsPurgedAt: null }],
+      },
+      data: {
+        graphmlPurgedAt: NOW,
+        generationArtifactsPurgedAt: NOW,
+      },
+    })
+  })
+
+  it('purges graph-bundle and generated-element prefixes after KB deletion', async () => {
+    const bundleSha256 = 'a'.repeat(64)
+    const manifestSha256 = 'b'.repeat(64)
+    const graphBundleBlobPrefix = `graph-artifacts/${BUILD_ID}/${BUILD_ID}`
+    const generationBuildId = 'e1fbd1fd-aabb-4dd4-8e64-2f9a13a971a6'
+    const prisma = maintenancePrisma({
+      purgeableArchives: [
+        {
+          id: BUILD_ID,
+          kbId: KB_ID,
+          graphName: GRAPH_NAME,
+          graphmlBlobName: GRAPHML_BLOB_NAME,
+          graphmlPurgedAt: NOW,
+          graphBundleContainerName: 'kg-graph-artifacts',
+          graphBundleBlobPrefix,
+          graphBundleSha256: bundleSha256,
+          graphManifestArtifact: {
+            containerName: 'kg-graph-artifacts',
+            blobName: `${graphBundleBlobPrefix}/${bundleSha256}/manifest.json`,
+            sha256: manifestSha256,
+          },
+          generationArtifactsPurgedAt: null,
+          cleanedAt: NOW,
+          elementGenerationBuilds: [
+            {
+              id: generationBuildId,
+              inputArtifactContainer: 'question-inputs',
+              inputArtifactPrefix: `question-builds/${generationBuildId}`,
+              outputArtifactContainer: 'question-results',
+              outputArtifactPrefix: `element-results/${generationBuildId}`,
+            },
+          ],
+          kb: { ownerId: OWNER_ID },
+        },
+      ],
+    })
+    const deleteArtifactPrefix = vi.fn().mockResolvedValue(undefined)
+
+    await maintainKBResources({
+      prisma: prisma as never,
+      client: client(),
+      now: () => NOW,
+      deleteBlob: vi.fn().mockResolvedValue(undefined),
+      deleteArtifactPrefix,
+      deleteGraph: vi.fn().mockResolvedValue(undefined),
+    })
+
+    expect(deleteArtifactPrefix.mock.calls).toEqual([
+      ['kg-graph-artifacts', graphBundleBlobPrefix],
+      ['question-inputs', `question-builds/${generationBuildId}`],
+      ['question-results', `element-results/${generationBuildId}`],
+    ])
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: BUILD_ID,
+        kbId: KB_ID,
+        OR: [{ graphmlPurgedAt: null }, { generationArtifactsPurgedAt: null }],
+      },
+      data: { generationArtifactsPurgedAt: NOW },
+    })
+  })
+
+  it('purges a pinned graph-bundle prefix when dispatch never settled a digest', async () => {
+    const graphBundleBlobPrefix = `graph-artifacts/${BUILD_ID}/${BUILD_ID}`
+    const prisma = maintenancePrisma({
+      purgeableArchives: [
+        {
+          id: BUILD_ID,
+          kbId: KB_ID,
+          graphName: GRAPH_NAME,
+          graphmlBlobName: null,
+          graphmlPurgedAt: NOW,
+          graphBundleContainerName: 'kg-graph-artifacts',
+          graphBundleBlobPrefix,
+          graphBundleSha256: null,
+          graphManifestArtifact: null,
+          generationArtifactsPurgedAt: null,
+          cleanedAt: NOW,
+          elementGenerationBuilds: [],
+          kb: { ownerId: OWNER_ID },
+        },
+      ],
+    })
+    const deleteArtifactPrefix = vi.fn().mockResolvedValue(undefined)
+
+    await maintainKBResources({
+      prisma: prisma as never,
+      client: client(),
+      now: () => NOW,
+      deleteBlob: vi.fn().mockResolvedValue(undefined),
+      deleteArtifactPrefix,
+      deleteGraph: vi.fn().mockResolvedValue(undefined),
+    })
+
+    expect(deleteArtifactPrefix).toHaveBeenCalledWith(
+      'kg-graph-artifacts',
+      graphBundleBlobPrefix
+    )
+    expect(prisma.kBGraphBuild.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: BUILD_ID,
+        kbId: KB_ID,
+        OR: [{ graphmlPurgedAt: null }, { generationArtifactsPurgedAt: null }],
+      },
+      data: { generationArtifactsPurgedAt: NOW },
     })
   })
 

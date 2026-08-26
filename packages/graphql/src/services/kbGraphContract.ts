@@ -36,6 +36,33 @@ const graphMlArtifactSchema = z
   })
   .strict()
 
+const immutableArtifactSchema = z
+  .object({
+    container_name: artifactName,
+    blob_name: artifactName,
+    sha256: sha256String,
+  })
+  .strict()
+
+const graphBundleSchema = z
+  .object({
+    storage_name: safeIdentifier,
+    manifest_schema_version: z.literal(2),
+    bundle_sha256: sha256String,
+    graph_sha256: sha256String,
+    manifest_artifact: immutableArtifactSchema,
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (!value.manifest_artifact.blob_name.endsWith('/manifest.json')) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'manifest_artifact must identify manifest.json',
+        path: ['manifest_artifact', 'blob_name'],
+      })
+    }
+  })
+
 const meteredCostComponentSchema = z
   .object({
     provider: safeIdentifier,
@@ -127,6 +154,7 @@ export const kbGraphTerminalResultSchema = z
     error_code: safeIdentifier.nullable().default(null),
     failed_document_count: z.number().int().min(0).default(0),
     graphml_artifact: graphMlArtifactSchema.nullable().default(null),
+    graph_bundle: graphBundleSchema.nullable().default(null),
     metered_cost: meteredCostSchema.nullable().default(null),
     node_count: z.number().int().min(0).default(0),
     processed_document_count: z.number().int().min(0).default(0),
@@ -169,12 +197,21 @@ export const kbGraphTerminalResultSchema = z
           path: ['error_code'],
         })
       }
-    } else if (value.error_code === null) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'non-success terminal results require error_code',
-        path: ['error_code'],
-      })
+    } else {
+      if (value.error_code === null) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'non-success terminal results require error_code',
+          path: ['error_code'],
+        })
+      }
+      if (value.graph_bundle !== null) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'non-success terminal results cannot carry a graph bundle',
+          path: ['graph_bundle'],
+        })
+      }
     }
   })
 
