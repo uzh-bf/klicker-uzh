@@ -166,8 +166,10 @@ single cross-provider stack.
    - Carry this plan and the two W8/graph roadmap reconciliations.
    - Add `KB_INGESTION_WORKER_DISABLED` as a dedicated operational gate. When
      true, the general worker must tolerate absent or partial ingestion config,
-     register no KB ingestion effect or reconciliation workflows, and continue
-     all unrelated workflows.
+     register no ingestion dispatch, deletion, or polling workflows, suppress
+     ingestion retry effects in shared maintenance, and continue all unrelated
+     workflows. Shared maintenance remains registered only when graph recovery
+     still needs it; both gates closed omit it entirely.
    - Set the exact non-secret ingestion API and source-gateway URLs in STG.
    - Set `backendGraphql.kbIngestionDisabled: true` explicitly.
    - Set the new worker gate true and `KB_GRAPH_DISABLED=true` explicitly for
@@ -244,7 +246,7 @@ bounded Klicker readiness edit only when dispatch costs less than the work.
 | --- | --- | --- | --- |
 | STG renders an empty or wrong endpoint | extend source checks | Helm render with STG values | backend or worker calls no service or the wrong namespace |
 | Partial configuration crashes the general worker | add focused tests | worker startup validation and selection | cross-repository delivery order takes unrelated workflows down |
-| Disabled worker still registers KB effects | add focused tests | prepared-workflow selection | readiness schedules dispatch, polling, deletion, or maintenance |
+| Disabled ingestion still reaches the provider | add focused tests | workflow selection and shared maintenance | readiness schedules dispatch, polling, deletion, or retry effects |
 | Enabled worker accepts partial configuration | extend focused tests | worker startup validation | activation starts an unusable ingestion runtime |
 | Readiness accidentally dispatches | add exact assertion | rendered GraphQL and worker ConfigMaps | merge activates provider calls before dependencies are ready |
 | Graph work activates with basic ingestion | add exact assertion | rendered backend/worker graph gate | W8 starts a parked graph lifecycle |
@@ -282,8 +284,9 @@ evidence is explicitly out of scope for the Manage app.
   and workflow-selection seam.
 - Keep unrelated workflows registered when ingestion is disabled. Keep enabled
   mode fail-closed on partial ingestion configuration.
-- Make graph workflow selection respect the existing graph gate while resource
-  maintenance remains available when basic ingestion is enabled.
+- Make graph workflow selection respect the existing graph gate. Keep shared
+  resource maintenance when either capability needs it, and independently gate
+  ingestion retries and graph re-enqueue inside that task.
 - Add focused tests for disabled, enabled, and partial configuration and exact
   workflow selection; update environment declarations and worker documentation.
 - Run the Hatchet and worker-focused tests, both package checks, and root
@@ -461,3 +464,16 @@ roadmaps are task-owned in this worktree and ship with the readiness PR.
   on an unrelated analytics environment failure: uv selected Python 3.14,
   pandas 2.2.2 had no wheel, and the container has no C compiler. S1 remains
   active pending its exact commit and reviewers.
+- 2026-08-26: Verified and corrected the S1 review findings. An absent legacy
+  ingestion configuration now auto-disables its workflows, while an explicitly
+  open gate requires all three settings. Shared maintenance remains available
+  for graph crash-window recovery but performs no ingestion retry queries or
+  provider calls while ingestion is disabled; both capability gates closed omit
+  the task. The environment example and worker wiki now describe the safe
+  default. The general-worker suite passes 10 tests, the Hatchet suite passes
+  104 tests, both package TypeScript checks pass, and scoped Biome/Prettier
+  checks pass with only the two pre-existing advisory diagnostics. The complete
+  W8 diff has no changes under `apps/analytics`, `uv.lock`, or `pyproject.toml`,
+  which isolates the earlier root-check failure to the base container's Python
+  3.14/pandas 2.2.2 toolchain mismatch. S1 remains active pending a correction
+  commit and exact-range re-review.

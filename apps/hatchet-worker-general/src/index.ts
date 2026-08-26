@@ -87,6 +87,7 @@ async function main() {
     redisCache,
     handlers,
     getKBGraphTerminalResult,
+    kbIngestionDispatchEnabled: !integrationState.ingestionDisabled,
     kbGraphDispatchEnabled: !integrationState.graphDisabled,
     settleKBGraphTerminalResult: ({
       buildId,

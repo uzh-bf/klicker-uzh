@@ -144,6 +144,12 @@ describe('KB ingestion dispatch', () => {
     expect(() => validateKBIngestionWorkerConfig({})).not.toThrow()
   })
 
+  it('requires external API config when the worker gate is explicitly open', () => {
+    expect(() =>
+      validateKBIngestionWorkerConfig({}, { required: true })
+    ).toThrow('KB_INGESTION_API_URL must be configured')
+  })
+
   it('fails fast when external API config is only partially configured', () => {
     expect(() =>
       validateKBIngestionWorkerConfig({

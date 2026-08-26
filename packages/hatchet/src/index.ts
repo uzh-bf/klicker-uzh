@@ -62,6 +62,7 @@ export function prepareHatchetTasks({
   redisCache,
   handlers,
   getKBGraphTerminalResult,
+  kbIngestionDispatchEnabled = true,
   kbGraphDispatchEnabled = true,
   settleKBGraphTerminalResult,
 }: {
@@ -73,6 +74,7 @@ export function prepareHatchetTasks({
   redisCache?: Redis
   handlers: HatchetHandlers
   getKBGraphTerminalResult: (runId: string) => Promise<unknown>
+  kbIngestionDispatchEnabled?: boolean
   kbGraphDispatchEnabled?: boolean
   settleKBGraphTerminalResult: (input: {
     buildId: string
@@ -461,6 +463,7 @@ export function prepareHatchetTasks({
       maintainKBResources({
         prisma,
         logger: ctx.logger,
+        ingestionDispatchEnabled: kbIngestionDispatchEnabled,
         ...(kbGraphDispatchEnabled
           ? {
               enqueueKBGraphBuild: async (buildId: string) => {

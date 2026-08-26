@@ -109,14 +109,15 @@ async function logInfoBestEffort(
 }
 
 export function validateKBIngestionWorkerConfig(
-  env: NodeJS.ProcessEnv = process.env
+  env: NodeJS.ProcessEnv = process.env,
+  options: { required?: boolean } = {}
 ): void {
   const configuredValues = [
     env.KB_INGESTION_API_URL,
     env.KB_INGESTION_API_KEY,
     env.KB_SOURCE_GATEWAY_URL,
   ].filter((value) => value?.trim())
-  if (configuredValues.length > 0) {
+  if (options.required || configuredValues.length > 0) {
     createKBIngestionApiClient({ env })
     getKBSourceGatewayOrigin(env)
   }

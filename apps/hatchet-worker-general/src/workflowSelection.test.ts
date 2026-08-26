@@ -54,6 +54,18 @@ describe('general worker KB workflow selection', () => {
     expect(selection.selectedKeys).not.toContain('monitorKBGraphBuilds')
   })
 
+  it('keeps resource maintenance when only ingestion work is disabled', () => {
+    const selection = selectWorkflows(workflows, {
+      ingestionDisabled: true,
+      graphDisabled: false,
+    })
+
+    expect(selection.selectedKeys).toContain('maintainKBResources')
+    expect(selection.selectedKeys).toContain('buildKBGraph')
+    expect(selection.selectedKeys).not.toContain('ingestKBResource')
+    expect(selection.selectedKeys).not.toContain('monitorKBIngestions')
+  })
+
   it('applies integration gates after an explicit workflow allow-list', () => {
     const selection = selectWorkflows(workflows, {
       ingestionDisabled: true,
@@ -95,7 +107,32 @@ describe('general worker KB configuration validation', () => {
     validateKBWorkerConfiguration(env)
 
     expect(configValidators.ingestion).toHaveBeenCalledOnce()
-    expect(configValidators.ingestion).toHaveBeenCalledWith(env)
+    expect(configValidators.ingestion).toHaveBeenCalledWith(env, {
+      required: true,
+    })
+  })
+
+  it('treats an unconfigured legacy environment as disabled', () => {
+    const integrationState = validateKBWorkerConfiguration({
+      KB_GRAPH_DISABLED: 'true',
+    })
+
+    expect(integrationState.ingestionDisabled).toBe(true)
+    expect(configValidators.ingestion).not.toHaveBeenCalled()
+  })
+
+  it('requires complete configuration when the gate is explicitly open', () => {
+    const env = {
+      KB_INGESTION_WORKER_DISABLED: 'false',
+      KB_GRAPH_DISABLED: 'true',
+    }
+
+    const integrationState = validateKBWorkerConfiguration(env)
+
+    expect(integrationState.ingestionDisabled).toBe(false)
+    expect(configValidators.ingestion).toHaveBeenCalledWith(env, {
+      required: true,
+    })
   })
 
   it('tolerates partial graph configuration while graph work is disabled', () => {
