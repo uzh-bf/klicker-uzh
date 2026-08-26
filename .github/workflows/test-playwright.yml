@@ -13,9 +13,13 @@ jobs:
   # The hosted and public-PR predicates are intentional complements. Only the
   # exact lowercase value "true" or an exact canary PR number enables the
   # self-hosted path; every other value fails closed to GitHub-hosted runners.
+  # v3-ai remains hosted until its assistant settings reach the trusted v3
+  # reusable workflow used by the public-runner route.
   filter-hosted:
     if: >-
       github.event_name != 'pull_request' ||
+      github.base_ref == 'v3-ai' ||
+      github.head_ref == 'v3-ai' ||
       github.event.repository.private != false ||
       github.event.pull_request.draft == true ||
       github.event.pull_request.head.repo.full_name != github.repository ||
@@ -409,6 +413,8 @@ jobs:
   test-playwright-public-pr:
     if: >-
       github.event_name == 'pull_request' &&
+      github.base_ref != 'v3-ai' &&
+      github.head_ref != 'v3-ai' &&
       github.event.repository.private == false &&
       github.event.pull_request.draft == false &&
       github.event.pull_request.head.repo.full_name == github.repository &&

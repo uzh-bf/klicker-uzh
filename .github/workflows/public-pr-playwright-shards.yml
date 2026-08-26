@@ -148,6 +148,7 @@ jobs:
           APP_ORIGIN_CONTROL: http://127.0.0.1:3003
           APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
           APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
+          APP_ORIGIN_CHAT: http://127.0.0.1:3004
 
       - name: Archive Next build outputs
         run: |
@@ -367,6 +368,7 @@ jobs:
         env:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+          FEATURE_FLAGS_FORCED_ON: ai-beta
           NODE_ENV: production
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
           URL_AUTH: http://127.0.0.1:3010

@@ -198,6 +198,28 @@ describe('Integration tests for the public courseChatbots query', () => {
     ).toEqual({ isActive: false })
   })
 
+  it('rejects student MCP practice for an unpublished chatbot', async () => {
+    const { course, chatbot } = await seedCourseWithChatbot()
+    await prisma.chatbot.update({
+      where: { id: chatbot.id },
+      data: { status: ChatbotStatus.PAUSED },
+    })
+    const participant = await prisma.participant.create({
+      data: {
+        username: 'studentMcpParticipantPausedChatbot',
+        password: 'abcdabcd',
+        participations: { create: [{ courseId: course.id }] },
+      },
+    })
+
+    const quiz = await getStudentMcpCoursePracticeQuiz(
+      { chatbotId: chatbot.id, courseId: course.id },
+      participantContext(participant.id)
+    )
+
+    expect(quiz).toBeNull()
+  })
+
   it('rejects student MCP practice for a participant outside the course', async () => {
     const { course, chatbot } = await seedCourseWithChatbot()
     const participant = await prisma.participant.create({
