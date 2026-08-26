@@ -1,5 +1,8 @@
 import { expect, test } from '../util/fixtures.js'
 import { URL_MANAGE } from '../util/constants.js'
+import { getPrisma } from '../global-setup.js'
+import { seedResponseExamples } from '../../packages/prisma-data/src/data/seedResponseExamples.js'
+import { ensureChatbotSeeded } from '../util/chat.js'
 import { gotoCommit } from '../util/workflow.js'
 
 const CHATBOT_ID_TEST = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
@@ -14,6 +17,8 @@ test.describe('Chatbot response-example review', () => {
     page,
   }, testInfo) => {
     const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await ensureChatbotSeeded()
+    await seedResponseExamples(await getPrisma())
     await loginLecturer()
     await gotoCommit(page, `${manageUrl}/resources/chatbots/${CHATBOT_ID_TEST}`)
 

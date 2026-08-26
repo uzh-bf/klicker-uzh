@@ -576,7 +576,7 @@ function ChatbotDetails({
           </div>
         )}
 
-        <ChatbotResponseExampleReview chatbotId={chatbot.id} />
+        <ChatbotResponseExampleReview key={chatbot.id} chatbotId={chatbot.id} />
 
         <div>
           <div className="mb-2 text-sm font-medium text-gray-700">

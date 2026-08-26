@@ -441,7 +441,9 @@ Neither follow-up is authorized by this plan.
 
 ## Progress
 
-- Status: K1 Gate 2 evidence accepted; K2 lecturer-review corrections are now in progress
+- Status: K1 Gate 2 evidence accepted; K2 correction implementation and fallback
+  review are complete locally; final integrated review and publication remain
+  pending
 - Completed: external review analysis; focused correction scope; fresh Git,
   GitHub PR, GitHub stack, sibling-worktree, and local-stack evidence; planning
   specialist review; complete correction plan; local stack tracking repair;
@@ -458,6 +460,22 @@ Neither follow-up is authorized by this plan.
 - Corrected local K1 head: `c70bf0e8a` (latest documentation and evidence commit atop the corrected implementation)
 - Active slice: K2 lecturer-review workflow corrections
 - Plan commit: `c525e6c60 docs(project): plan response-example review corrections`
+- K2 implementation commit: `7bb04ae6c fix(manage): align response-example review workflow`
+- K2 follow-up corrections pending commit: restore the AI-beta gate and
+  invalid-chatbot handling, reset review state when switching chatbots, compute
+  the seeded digest canonically, and seed the chatbot/examples inside the
+  focused Playwright journey
+- K2 fallback reviews: native and generic continuity routes were unavailable
+  with `unreadable_encrypted_agent_task`; trusted GPT-5.6 Luna max fallback
+  reports are recorded under `project/_local/reviews/`. Their findings were
+  verified and dispositioned in the follow-up corrections.
+- K2 verification so far: direct Manage, Prisma-data, and Playwright TypeScript
+  checks pass; focused Manage ESLint and Prettier checks pass; the isolated
+  response-example seed runner exits successfully against the task runtime.
+- Upstream boundary: the KB task's W8 work remains responsible for ingestion
+  and producer activation seams. This package has no implementation overlap and
+  does not assume graph delivery; response-example runtime activation remains
+  deferred.
 - K1 evidence: focused Markdown citation tests pass, including 100,000 unmatched
   brackets and 5,000 nested blockquotes; focused response-example GraphQL
   contract and service tests pass, including every transition, rejected edit,
@@ -473,6 +491,8 @@ Neither follow-up is authorized by this plan.
   findings, including the documentation and non-owner edit follow-ups, were
   applied and reverified over immutable K1 range
   `332e044f34a1a5a0c8be00075795d8b3a19e7397..a86d5ae96`.
-- Next: restack the preserved K2 branch onto the corrected K1 head and implement the lecturer-review corrections.
+- Next: commit the K2 follow-up corrections, run the final integrated review,
+  publish the two corrected branches, update their existing PRs, and wait once
+  for corrected-head CI.
 - Delivery pending: K2 correction, corrected branch push, PR updates,
   corrected-head CI, merge, deployment, runtime activation, K3, and Test & Teach

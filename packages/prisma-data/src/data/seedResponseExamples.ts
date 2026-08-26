@@ -1,4 +1,6 @@
+import { createHash } from 'node:crypto'
 import * as Prisma from '@klicker-uzh/prisma/client'
+import type { Prisma as PrismaTypes } from '@klicker-uzh/prisma/client'
 import { USER_ID_TEST } from './constants.js'
 import { CHATBOT_ID_TEST } from './seedChatbots.js'
 
@@ -133,6 +135,74 @@ function reviewMetadata(status: Prisma.ResponseExampleStatus) {
   }
 }
 
+function compareFields(left: object, right: object, fields: readonly string[]) {
+  for (const field of fields) {
+    const leftValue = String((left as Record<string, unknown>)[field])
+    const rightValue = String((right as Record<string, unknown>)[field])
+    if (leftValue < rightValue) return -1
+    if (leftValue > rightValue) return 1
+  }
+  return 0
+}
+
+function computeResponseExampleSetDigest(
+  set: PrismaTypes.ResponseExampleSetGetPayload<{
+    include: {
+      examples: { include: { evidenceReferences: true } }
+    }
+  }>
+) {
+  const canonical = {
+    setId: set.id,
+    chatbotId: set.chatbotId,
+    examples: [...set.examples]
+      .sort((left, right) =>
+        compareFields(left, right, [
+          'chatMode',
+          'studentMessage',
+          'referenceAnswer',
+          'responseStyle',
+          'status',
+          'id',
+          'setId',
+        ])
+      )
+      .map((example) => ({
+        id: example.id,
+        setId: example.setId,
+        chatMode: example.chatMode,
+        studentMessage: example.studentMessage,
+        referenceAnswer: example.referenceAnswer,
+        responseStyle: example.responseStyle,
+        status: example.status,
+        evidenceReferences: [...example.evidenceReferences]
+          .sort((left, right) =>
+            compareFields(left, right, [
+              'citationIndex',
+              'sourceId',
+              'chunkId',
+              'contentHash',
+              'citationAnchor',
+              'id',
+              'responseExampleId',
+            ])
+          )
+          .map((reference) => ({
+            id: reference.id,
+            responseExampleId: reference.responseExampleId,
+            citationIndex: reference.citationIndex,
+            sourceId: reference.sourceId,
+            chunkId: reference.chunkId,
+            contentHash: reference.contentHash,
+            citationAnchor: reference.citationAnchor,
+            evidenceEligible: reference.evidenceEligible,
+          })),
+      })),
+  }
+
+  return createHash('sha256').update(JSON.stringify(canonical)).digest('hex')
+}
+
 export async function seedResponseExamples(prisma: Prisma.PrismaClient) {
   const set = await prisma.responseExampleSet.upsert({
     where: { chatbotId: CHATBOT_ID_TEST },
@@ -195,4 +265,15 @@ export async function seedResponseExamples(prisma: Prisma.PrismaClient) {
       })
     }
   }
+
+  const seededSet = await prisma.responseExampleSet.findUnique({
+    where: { id: set.id },
+    include: { examples: { include: { evidenceReferences: true } } },
+  })
+  if (!seededSet) throw new Error('Response-example seed set was not found')
+
+  await prisma.responseExampleSet.update({
+    where: { id: seededSet.id },
+    data: { digest: computeResponseExampleSetDigest(seededSet) },
+  })
 }
