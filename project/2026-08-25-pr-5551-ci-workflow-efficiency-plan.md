@@ -37,7 +37,7 @@
 - Branch: `rs/ci-workflow-efficiency-cleanup` for the follow-up cutover.
 - Worktree: `trees/ci-workflow-efficiency`.
 - Target: current `origin/v3` at
-  `db75cd2e829259df8f064c4525354084410ccf7b`, including merged [PR
+  `7515632f229c9421a7ac7d62668e1743147ba158`, including merged [PR
   #5446](https://github.com/uzh-bf/klicker-uzh/pull/5446)'s Playwright timing and
   eight-shard changes.
 - Pull request: [#5551](https://github.com/uzh-bf/klicker-uzh/pull/5551) was
@@ -207,7 +207,7 @@ Do not delete a workflow if any readback differs from the expected set.
 ## Progress
 
 - Status: branch is synced with current `origin/v3` through normal merge commit
-  `5870b5227`; [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) needs
+  `a87610595`; [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) needs
   this refreshed head pushed and its exact-head checks before it can be marked
   ready.
 - Completed: plan commit and post-commit freshness check; replacement workflow
@@ -225,8 +225,9 @@ Do not delete a workflow if any readback differs from the expected set.
   [PR #5446](https://github.com/uzh-bf/klicker-uzh/pull/5446) at `cd5cfd574`;
   its exact-head Playwright run `32919404126` passed the filter, build, all
   eight shards, and `test-playwright-status`. The branch preserves that
-  baseline and the subsequent `v3` release commits through merge commit
-  `5870b5227`. Current exact synced-head local verification passes the full
+  baseline and the subsequent `v3` release and generated-artifact commits
+  through merge commit `a87610595`. Current exact synced-head local
+  verification passes the full
   monorepo build (23/23 tasks) and `check:all` (7/7 orchestration tasks,
   25/25 checks) under the pinned Node 24 and pnpm 11.5 toolchain.
 - Remaining: push the refreshed [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553)
