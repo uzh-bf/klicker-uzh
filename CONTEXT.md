@@ -174,7 +174,7 @@ _Avoid_: Luna usage, unlimited usage, lecturer-funded usage
 
 **Advanced model usage**:
 Usage from `ADVANCED` models. The teaching center does not cover this usage;
-the lecturer's authorized budget applies.
+the account's authorized budget applies.
 _Avoid_: premium usage, lecturer-funded usage
 
 **Monthly usage budget**:
@@ -187,8 +187,10 @@ _Avoid_: chatbot budget, subsidy allowance
 **Usage lane**:
 The lecturer-facing projection of one usage class. The UI has exactly two
 lanes, base model usage and advanced model usage, each showing its configured
-budget, used credits, remaining credits, and reset date. The values are
-estimates and read-only for lecturers; operations manages the budgets.
+budget, used credits, remaining credits, and reset date. Credit figures are
+estimates; the configured budget is a soft planning target and the reset date
+is exact. The lanes are read-only for lecturers; operations manages the
+budgets.
 _Avoid_: funding lane, cost center lane
 
 **Hidden base contribution**:

@@ -71,11 +71,12 @@ execution:
   approval; it is not split into per-model approval.
 - Registry entries carry the explicit usage class `BASE` or `ADVANCED`.
   `Auto` is `ADVANCED` for the MVP. Fallback stays within the selected class.
-- The lecturer defines one account-wide monthly budget for each class. Both
-  configured limits belong to the chatbot owner's account and persist until
-  an authorized owner changes them. Only used credits reset to zero at the
-  start of each calendar month in `Europe/Zurich`. Store usage as
-  `Decimal(18,6)` credits; the atomic charge persistence is the single
+- Operations manages one account-wide monthly budget for each class through an
+  `ADMIN`-only mutation with an explicit owner. Both configured limits belong
+  to the chatbot owner's account and persist until an authorized `ADMIN`
+  changes them; account owners retain read-only visibility. Only used credits
+  reset to zero at the start of each calendar month in `Europe/Zurich`. Store
+  usage as `Decimal(18,6)` credits; the atomic charge persistence is the single
   six-decimal rounding boundary.
 - The manage surface has exactly two lanes named **base model usage** and
   **advanced model usage**. Each lane shows configured budget, used credits,
@@ -117,7 +118,7 @@ execution:
 | Usage class registry | `apps/chat/src/lib/server/chatModelRegistry.ts:4-65,107-180` | Add explicit `BASE`/`ADVANCED` metadata and parity checks for every registry copy and repository-declared deployment configuration value | `Auto` remains `ADVANCED`; class is server-derived, not client-selected text |
 | Runtime charge | Participant `ChatUsageCredits` and decrement service in `apps/chat/src/services/credits.ts:18-132` | Add account-class pre-check and atomic post-generation charge while preserving legacy participant credits | Charge only reliable provider usage; idempotent per turn lifecycle |
 | Chatbot lifecycle | `ChatbotStatus` and publication mutations in `packages/graphql/src/services/chatbots.ts:633-825` | Reuse for creation, private testing, publication, and later custom review | Publication never doubles as AI usage authorization |
-| Lecturer usage lanes | `ChatbotDetails` usage summary in `apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx:362-434` | Add exactly two account-level lanes and budget controls | Never display the hidden base contribution |
+| Lecturer usage lanes | `ChatbotDetails` usage summary in `apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx:362-434` | Add exactly two account-level read-only lanes; operations uses the explicit-admin budget mutation | Never display the hidden base contribution |
 | Test thread | `ChatThread` and current participant-scoped access | Add explicit lecturer-owned test identity/flag | Never synthesize a student participant; exclude from student analytics |
 | Feedback | Nullable `ChatMessage.rating` and feedback route | Preserve current semantics first; add a table in M3 | No student text enters manage |
 | Knowledge | External KB MCP/resource lifecycle | Adapt the existing KB resource/binding API when verified | No parallel source model or retrieval-control UI in Klicker |
@@ -295,9 +296,9 @@ test-thread path would require different account/class charging semantics.
 
 ### U3 — lecturer usage API and two-lane manage UI
 
-**Outcome.** Let an authorized lecturer view and set the two account-wide
-monthly budgets and see the two usage lanes without exposing the hidden base
-contribution.
+**Outcome.** Let an authorized lecturer view the two account-wide monthly
+budgets and usage lanes without exposing the hidden base contribution;
+operations sets the budgets through the administrative mutation.
 
 **Owned paths.** GraphQL account query/mutations and generated operations,
 `apps/frontend-manage` usage components, translations, focused GraphQL tests,
@@ -312,8 +313,8 @@ approval appear to authorize usage.
 
 **Acceptance.** The UI uses the exact labels **base model usage** and
 **advanced model usage**. Each lane shows budget, used, remaining, and reset
-date. Owner/admin authorization checks hold for reads and writes; unrelated
-accounts and participants are denied. Empty and exhausted states render
+date. Owner reads and explicit-admin writes are authorized; unrelated accounts
+and participants are denied. Empty and exhausted states render
 deterministically. In a new month, each lane carries the latest configured
 limit, shows zero used credits and full remaining credits, and advances the
 reset date. The authorization status is clear; cost-center editing remains the
@@ -670,7 +671,7 @@ Every W-item follows `$rs-sliced-development-workflow`:
 The next session should perform these actions in order:
 
 1. Run the freshness gate and re-read this roadmap, the Phase 0 plan, ADRs
-   0019–0022, `CONTEXT.md`, and the current #5460 checks.
+   0019–0022 and 0041, `CONTEXT.md`, and the current #5460 checks.
 2. Reuse the task worktree, carry the reconciled base-PR GitGuardian
    disposition under A5, and maintain the orchestrator control ledger without
    changing #5460.
@@ -715,8 +716,9 @@ The next session should perform these actions in order:
   who covers usage.
 - **Base model usage** and **advanced model usage**: the two visible UI lanes;
   the base contribution remains hidden and advanced receives no contribution.
-- **Monthly usage budget**: lecturer-defined account-wide limit for one class
-  that persists until changed; its used-credit counter resets monthly.
+- **Monthly usage budget**: operations-managed account-wide limit for one class
+  that persists until an authorized `ADMIN` changes it; account owners can read
+  it and its used-credit counter resets monthly.
 - **Participant usage credits**: existing per-participant/per-chatbot legacy
   allowance, separate from account budgets.
 - **Test thread**: lecturer-owned private conversation, excluded from student

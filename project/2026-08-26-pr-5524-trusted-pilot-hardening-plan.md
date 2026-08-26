@@ -129,7 +129,11 @@ is part of this plan.
 
 ## Research and review findings
 
-### Current implementation evidence
+### Pre-S1–S3 baseline evidence (historical)
+
+The following observations describe the pre-hardening baseline. The completed
+S1–S3 sections below record the resulting changes and are authoritative for
+the current candidate.
 
 - `claimChatTurn` inserts the unique `IN_PROGRESS` assistant message before MCP
   discovery, image description, or provider generation. Duplicate lifecycle
@@ -336,7 +340,7 @@ repeat billable traffic for UI and policy corrections.
 The changed staged-enforcement and budget-ownership decision conflicts with the
 historical wording in ADR 0020. After rechecking all remote ADR names, 0041 is
 the next collision-free identifier. Add
-`docs/adr/0041-staged-chatbot-usage-enforcement-and-admin-budgets.md`, link it
+`docs/adr/0041-chatbot-trusted-pilot-boundary.md`, link it
 from the ADR index, and mark ADR 0020 superseded in part. Do not rewrite ADR
 0020 as if the original lecturer-budget decision never existed.
 

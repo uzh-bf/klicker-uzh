@@ -177,11 +177,11 @@ participant-credit, or per-model fields.
 The lecturer settings page requests this overview only after confirming an
 `ACCOUNT_OWNER` login scope. It shows two responsive lanes labelled “Base model
 usage” and “Advanced model usage” in English, with fixed German equivalents.
-Each lane names its estimated budget, used and remaining credits, reset date,
-and empty or exhausted status. The surface explains that operations manages
-soft planning targets and that in-flight requests may exceed them. It is
-read-only for account owners, and it does not expose internal funding or
-provider details.
+Each lane names its configured credit estimate, used and remaining credits,
+reset date, and empty or exhausted status. The configured budget is a soft
+planning target, while the reset date is exact; in-flight requests may exceed
+the target. It is read-only for account owners, and it does not expose
+internal funding or provider details.
 
 The deployed Klicker Auto option is a LiteLLM `auto-router` endpoint. The
 only in-repo record of its tier map is the comment above `modelRegistry` in
@@ -241,12 +241,12 @@ smoke test before a production compatibility claim.
 One account-level AI usage authorization, backed by an approved cost center,
 covers both model classes: the Phase 0 lifecycle foundations now store an
 account-scoped monthly budget and used-credit counter per `BASE` and
-`ADVANCED` class in `ChatAccountUsage`. Lecturers will define account-wide
-monthly budgets for both classes, and the manage UI will show exactly two
-lanes — base model usage and advanced model usage — with budget, used,
-remaining, and reset date. The teaching center's limited base contribution is
-internal and hidden; advanced usage receives no contribution. Class
-exhaustion disables only that class and never triggers an automatic
+`ADVANCED` class in `ChatAccountUsage`. Operations manages account-wide
+monthly budgets through the `ADMIN`-only mutation, while account owners see
+exactly two read-only lanes — base model usage and advanced model usage — with
+budget, used, remaining, and reset date. The teaching center's limited base
+contribution is internal and hidden; advanced usage receives no contribution.
+Class exhaustion disables only that class and never triggers an automatic
 cross-class switch. Participant-facing APIs must return stable class-specific
 exhaustion codes without cost-center or hidden funding fields.
 
@@ -280,7 +280,7 @@ is ignored. Missing reliable main-stream usage still closes the message key
 with `creditsUsed = null` and no account charge. History reads hide
 `IN_PROGRESS` and `FAILED` placeholders. The availability check is not a
 reservation, so the bounded final-turn and concurrent overrun accepted by
-[ADR 0020](./adr/0020-two-tier-chatbot-approval.md) remains possible; the next
+[ADR 0041](./adr/0041-chatbot-trusted-pilot-boundary.md) remains possible; the next
 request then fails its live check.
 
 The existing `ChatUsageCredits` balance remains a separate participant

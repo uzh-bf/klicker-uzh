@@ -36,11 +36,15 @@ per-edit:
    legacy per-chatbot allowance is separate from, and does not approve, the
    account-wide base and advanced usage budgets.
 
-Configuration edits are free within the account authorization and the
-lecturer-defined budgets, and apply immediately. Model selection does not
-require a new approval while the account authorization is valid. Publication
-approval remains a separate lifecycle decision; it does not serve as a usage
-funding or per-model approval.
+In the original design, configuration edits were free within the account
+authorization and lecturer-defined budgets, and applied immediately. The
+trusted-pilot boundary in [ADR 0041](./0041-chatbot-trusted-pilot-boundary.md)
+supersedes that budget write ownership: operations manages the configured
+limits through an `ADMIN`-only mutation with an explicit owner, while account
+owners retain read-only visibility. Model selection does not require a new
+approval while the account authorization is valid. Publication approval
+remains a separate lifecycle decision; it does not serve as a usage funding or
+per-model approval.
 
 Usage is tracked in two explicit model classes. Registry entries are classified
 as `BASE` or `ADVANCED`. GPT-5.6 Luna is the only `BASE` model and the
@@ -57,15 +61,17 @@ uses the accepted rounded accounting rate of 1 input / 5 output, based on the
 observed 90% Luna and 10% Sol generation mix whose exact weighted rate is 0.68
 input / 4.08 output. Classifier and embedding overhead are not represented.
 
-The lecturer defines one account-wide monthly budget for each class. Each
-configured limit persists until the lecturer changes it; only the used-credit
-counter resets at the Europe/Zurich month boundary. The lecturer-facing UI
-shows exactly two lanes — **base model usage** and **advanced model usage** —
-with the configured budget, used credits, remaining credits, and reset date.
-The teaching center contributes a limited, internal amount toward base usage,
-but the contribution and its settlement are never shown. Advanced usage
-receives no teaching-center contribution. Base usage above the hidden
-contribution remains base usage and may consume the authorized paid budget.
+The original design assigned one account-wide monthly budget per class to the
+lecturer. ADR 0041 supersedes that write ownership for the trusted pilot:
+operations manages each configured limit, which persists until an authorized
+`ADMIN` changes it; only the used-credit counter resets at the Europe/Zurich
+month boundary. The lecturer-facing UI shows exactly two read-only lanes —
+**base model usage** and **advanced model usage** — with the configured budget,
+used credits, remaining credits, and reset date. The teaching center
+contributes a limited, internal amount toward base usage, but the contribution
+and its settlement are never shown. Advanced usage receives no teaching-center
+contribution. Base usage above the hidden contribution remains base usage and
+may consume the authorized paid budget.
 
 The MVP performs an availability pre-check and charges reliable provider usage
 after generation with atomic counters. Bounded final-turn and concurrent
