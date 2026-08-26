@@ -236,7 +236,8 @@ The missing Microsoft Forms URL is tracked as an input for the later `v3-ai` tas
 - [x] Product boundary and urgent M2a scope defined.
 - [x] Initial planner review dispositioned into this plan.
 - [x] Stack Gate 1 approved by the user on 2026-08-27.
-- [ ] Layer 01 active: implement the GraphQL authoring contract.
+- [x] Layer 01 GraphQL authoring contract implemented without a database migration.
+- [x] Layer 01 focused GraphQL verification: 59 tests passed against the dedicated synthetic `klicker-qa` database. The repository `test:local` bootstrap could not run inside the current profile image because that image has no Docker CLI, so the same two Vitest specs used the running devcontainer's Postgres, Redis, and Hatchet services with temporary local Redis forwards.
 - [ ] Layer 01 implemented, reviewed, verified, and published as a draft PR.
 - [ ] Stack Gate 2 approved by the user.
 - [ ] Layers 02 and 03 implemented, reviewed, verified, and published as draft PRs.

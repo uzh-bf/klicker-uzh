@@ -1512,6 +1512,28 @@ export const Mutation = builder.mutationType({
           },
         }),
 
+      saveChatbotDisclaimer: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: Chatbot,
+          args: {
+            chatbotId: t.arg.string({ required: true }),
+            expectedDisclaimerId: t.arg.string({ required: false }),
+            title: t.arg.string({
+              required: true,
+              validate: { minLength: 1, maxLength: 160, regex: /\S/ },
+            }),
+            introText: t.arg.string({
+              required: true,
+              validate: { minLength: 1, maxLength: 10_000, regex: /\S/ },
+            }),
+          },
+          resolve: async (_, args, ctx) => {
+            return await ChatbotsService.saveChatbotDisclaimer(args, ctx)
+          },
+        }),
+
       requestChatbotPublication: t
         .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
         .field({
