@@ -459,7 +459,7 @@ Neither follow-up is authorized by this plan.
   K2 `3b54dfb36cf747f4063341ea1bc85e4ade6aa67d`
 - Corrected local K1 head: `3d3034944` (latest documentation and evidence commit atop the corrected implementation)
 - Active slice: K2 lecturer-review workflow corrections
-- Plan commit: `c525e6c60 docs(project): plan response-example review corrections`
+- Plan commit: `6531937e3 docs(project): plan response-example review corrections`
 - K2 implementation commit: `3a1cbd45b fix(manage): align response-example review workflow`
 - K2 follow-up corrections commit: `007fa0dcc fix(manage): close response-example review gaps`
   restores the AI-beta gate and invalid-chatbot handling, resets review state
