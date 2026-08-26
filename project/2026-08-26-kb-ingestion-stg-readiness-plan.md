@@ -489,3 +489,19 @@ roadmaps are task-owned in this worktree and ship with the readiness PR.
   The managed devcontainer does not include Helm, so the Helm-only assertions
   ran with the configured host binary while Node/package checks stayed in the
   container. S2 remains active pending its commit and exact-range reviews.
+- 2026-08-26: The S1 correction re-review confirmed the capability gates,
+  fail-closed startup behavior, graph recovery, test coverage, and analytics
+  isolation. Its one documentation finding is corrected by specifying that
+  only the three required connection settings auto-arm a legacy environment;
+  the optional project setting does not. The simplifier suggested wrapping both
+  complete retry sections in one condition. That change is not adopted because
+  it would reindent roughly 250 stable lines for no behavior or maintenance
+  gain; the two explicit guarded queries keep the patch local, and the focused
+  test proves that only independent cleanup and graph recovery remain active.
+  S1 is complete at the reviewed source layer.
+- 2026-08-26: The exact S2 range `c91e8e3fb..32b7b0902` passed both
+  simplification and cross-system review with no findings. The reviewers
+  confirmed the exact STG endpoints, closed worker and backend gates,
+  response-processor isolation, ConfigMap secret exclusion, deterministic Helm
+  setup, preservation of the upstream GraphQL memory resources, and matching
+  documentation. S2 is complete at the reviewed source layer.
