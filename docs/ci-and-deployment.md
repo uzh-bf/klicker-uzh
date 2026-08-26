@@ -31,18 +31,25 @@ neither Node nor pnpm.
 - **Unused code**: `check` runs Knip **advisory** (non-blocking); ratchet it to blocking only after the per-workspace entry config is tuned.
 - **Secret scanning**: `check-gitleaks` runs a **blocking** Gitleaks scan of commits introduced by the push or pull request (`.gitleaks.toml`, default ruleset + false-positive allowlist). For a branch-creation push, where GitHub supplies an all-zero `before` SHA, it fetches the repository default branch and scans from its merge base to the new tip; it fails closed when the default branch or merge base cannot be resolved. The configured push trigger covers `v3` and `v3*`; other branch names are covered when a pull request is opened or updated. A local husky pre-commit hook scans staged changes when the binary is present.
 - **Automation**: `claude-code-review.yml` auto-reviews every PR; `claude.yml` responds to @claude mentions; CodeQL (JS, weekly + PR) and SonarCloud run alongside — note that `sonar-project.properties` puts `packages/i18n/messages/**` in `sonar.cpd.exclusions`, because locale catalogs are parallel translations of one key structure and copy-paste detection reads that as duplication by construction, failing the new-code duplication gate on any string-heavy PR; the files stay in scope for every other rule, so do not remove the exclusion. Conventional commits per `.versionrc.js` (feat/enhance/fix/docs/refactor/…); PRs are squash-merged, so the PR title must be a valid conventional commit.
+- **Playwright timing feedback**: `update-playwright-timings.yml` listens for a successful direct `v3` run of `test-playwright`, validates all eight compact JUnit artifacts, and opens or updates one human-reviewed timing PR on `automation/playwright-timings`. It requires `PLAYWRIGHT_TIMINGS_BOT_TOKEN` with repository contents and pull-request write permissions. The default `GITHUB_TOKEN` is deliberately insufficient because PRs it creates do not trigger their required checks; the timing workflow never auto-merges.
 - **AI review**: OpenCodeReview runs the low-cost DeepSeek V4 Flash model through OpenRouter on every PR head, including drafts. When a PR is ready, a collaborator with calculated `write` or `admin` permission triggers one stronger review by posting the exact comment `/final-review`. That run uses Gemini 3.7 Flash with high reasoning, applies the repository's diff-led operational lenses, and publishes one consolidated review attached to the exact head commit. Findings remain advisory and are verified and dispositioned through the normal PR babysitting loop; the `final-ai-review` commit status records only that the pass completed successfully for that head. Every push resets it to pending. Generated staging-promotion PRs receive success only after the workflow reconstructs and verifies their exact one-file generated change. OpenRouter is an external model provider, so review diffs cross that provider boundary and incur usage cost. Add `final-ai-review` to branch protection only after this workflow has merged and a controlled live run has proved the status lifecycle.
 
 ## Image builds
 
-13 apps × stg + prd workflows (`v3_<app>-{stg,prd}.yml`), pushing to ghcr.io with separate `-arm`/`-amd` jobs:
+13 apps × stg + prd workflows (`v3_<app>-{stg,prd}.yml`) push ARM64
+images to ghcr.io through their `-arm` jobs. The legacy `-amd` image jobs stay
+defined but use an always-false job condition, so they publish no AMD64 images.
+Keeping the skipped `build-amd` job preserves the required status context while
+branch protection still requires that name. The no-op `Build Fallback`
+`build-amd` job remains enabled for pull requests that do not start an app image
+workflow.
 
 - **stg**: push to `v3`/`v3*` or PR touching the app's paths (PRs build but don't push).
 - **prd**: tags `v*.*.*` only.
 
 Build context is the repo root with `file: apps/<app>/Dockerfile` — Dockerfile changes must keep monorepo-root context assumptions.
 
-The five Next images (auth, chat, control, manage, PWA) consume Next's `.next/standalone` output. Auth and chat production builds use Turbopack. Control, manage, and PWA production builds explicitly use Webpack while `@ducanh2912/next-pwa` remains responsible for `sw.js`, Workbox chunks, and the custom worker bundle copied by their Dockerfiles. Before publishing a framework upgrade, run the mixed production build, inspect those artifacts, smoke the standalone server paths, and require both AMD and ARM image jobs. These are **config-derived** contracts until the corresponding command and CI check are recorded for the release SHA.
+The five Next images (auth, chat, control, manage, PWA) consume Next's `.next/standalone` output. Auth and chat production builds use Turbopack. Control, manage, and PWA production builds explicitly use Webpack while `@ducanh2912/next-pwa` remains responsible for `sw.js`, Workbox chunks, and the custom worker bundle copied by their Dockerfiles. Before publishing a framework upgrade, run the mixed production build, inspect those artifacts, smoke the standalone server paths, and require the ARM image jobs. These are **config-derived** contracts until the corresponding command and CI check are recorded for the release SHA.
 
 The same five images receive browser GrowthBook configuration at build time.
 Staging workflows use the repository variables
