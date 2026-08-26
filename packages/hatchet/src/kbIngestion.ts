@@ -367,7 +367,6 @@ export async function dispatchKBIngestion(
     }
 
     const client = dependencies.client ?? createKBIngestionApiClient({ env })
-    const startedAt = now()
     const operationId = await client.acceptResource({
       resourceId: input.resourceId,
       kbId: input.kbId,
@@ -375,6 +374,7 @@ export async function dispatchKBIngestion(
       ingestionAttemptId: input.ingestionAttemptId,
       source,
     })
+    const startedAt = now()
     const persisted = await dependencies.prisma.$transaction(async (tx) => {
       const resourceUpdate = await tx.kBResource.updateMany({
         where: {
