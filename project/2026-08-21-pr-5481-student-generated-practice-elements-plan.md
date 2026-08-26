@@ -995,6 +995,21 @@ Settled rulings for this implementation:
 
 ## Progress
 
+- 2026-08-27 (final integrated review corrections): The Sol final reviewer
+  inspected all 108 changed paths in `4f20cff96..ac5a1ec15` and returned three
+  bounded concerns. Layer A now describes participant-role enforcement at the
+  GraphQL and Chat entry boundaries instead of the shared service. Layer B no
+  longer renders a points multiplier for personal practice. Layer C retains
+  candidates from an interrupted partial generation only after the server has
+  durably marked the partial settlement. The focused candidate-history suite
+  passes 8 tests, Chat and PWA TypeScript checks pass, and agent-browser proof
+  shows a due personal card without points-award or multiplier copy. The
+  synthetic browser fixture was removed. The exact task runtime is stopped and
+  exposes zero routes. The Sol correction pass confirms all three findings are
+  resolved and the single-migration conclusion is unchanged. Atomic stack
+  publication and exact-head CI remain open. Merge, deployment, and flag
+  enablement remain disabled.
+
 - 2026-08-27 (current `v3` reconciliation): The linear A → B → C stack now
   contains current `origin/v3` at `4f20cff96`, including the merged Chat
   account-usage work. The student-generation route reuses the account-usage

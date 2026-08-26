@@ -1,5 +1,6 @@
 import {
   isFailedPersonalElementPart,
+  isSettledTerminalPartialPersonalElementPart,
   isTerminalPartialPersonalElementPart,
 } from '@/src/lib/personalElements/failure'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
@@ -149,7 +150,7 @@ export function extractUnsavedCandidates(
       }
       if (
         !completedGenerationMessageIds.has(message.id) &&
-        !isTerminalPartialPersonalElementPart(part, 'generate_cards')
+        !isSettledTerminalPartialPersonalElementPart(part, 'generate_cards')
       ) {
         continue
       }
