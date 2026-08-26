@@ -20,9 +20,13 @@ const KB_INGESTION_REQUEST_TIMEOUT_MS = 10_000
 const KB_SOURCE_FETCH_TIMEOUT_MS = 30_000
 const MAX_KB_SOURCE_BYTES = 25 * 1024 * 1024
 const MAX_KB_SOURCE_REDIRECTS = 3
-const SUPPORTED_INGESTION_MIME_TYPES = new Set([
+const SUPPORTED_BLOB_INGESTION_MIME_TYPES = new Set([
   'application/pdf',
   'text/plain',
+])
+const SUPPORTED_URL_INGESTION_MIME_TYPES = new Set([
+  ...SUPPORTED_BLOB_INGESTION_MIME_TYPES,
+  'text/html',
 ])
 const SHA256_PATTERN = /^[a-f0-9]{64}$/
 
@@ -418,7 +422,7 @@ async function prepareBlobSource(
     !response.readableStreamBody ||
     response.contentLength !== input.sizeBytes ||
     mimeType !== input.mimeType ||
-    !SUPPORTED_INGESTION_MIME_TYPES.has(mimeType)
+    !SUPPORTED_BLOB_INGESTION_MIME_TYPES.has(mimeType)
   ) {
     throw new Error('KB ingestion source is invalid')
   }
@@ -465,7 +469,7 @@ function requestPinnedUrl(url: URL, address: string): Promise<IncomingMessage> {
       url,
       {
         headers: {
-          Accept: [...SUPPORTED_INGESTION_MIME_TYPES].join(', '),
+          Accept: [...SUPPORTED_URL_INGESTION_MIME_TYPES].join(', '),
           Connection: 'close',
         },
         lookup: pinnedLookup,
@@ -519,7 +523,7 @@ async function preparePublicUrlSource(
       ?.split(';', 1)[0]
       .trim()
       .toLowerCase()
-    if (!mimeType || !SUPPORTED_INGESTION_MIME_TYPES.has(mimeType)) {
+    if (!mimeType || !SUPPORTED_URL_INGESTION_MIME_TYPES.has(mimeType)) {
       response.resume()
       throw new Error('KB ingestion source type is not supported')
     }
@@ -562,8 +566,12 @@ export function buildKBIngestionSource(
   sizeBytes: number,
   env: NodeJS.ProcessEnv = process.env
 ): KBIngestionSource {
+  const supportedMimeTypes =
+    input.type === 'BLOB'
+      ? SUPPORTED_BLOB_INGESTION_MIME_TYPES
+      : SUPPORTED_URL_INGESTION_MIME_TYPES
   if (
-    !SUPPORTED_INGESTION_MIME_TYPES.has(mimeType) ||
+    !supportedMimeTypes.has(mimeType) ||
     !SHA256_PATTERN.test(contentSha256) ||
     !Number.isSafeInteger(sizeBytes) ||
     sizeBytes <= 0 ||

@@ -365,6 +365,70 @@ describe('ingestion source preparation', () => {
     )
   })
 
+  it('accepts HTML only from a public URL source', async () => {
+    const content = Object.assign(
+      Readable.from([Buffer.from('<main>notes</main>')]),
+      {
+        statusCode: 200,
+        headers: {
+          'content-type': 'text/html; charset=utf-8',
+          'content-length': '18',
+        },
+      }
+    )
+    const input = {
+      resourceId: RESOURCE_ID,
+      kbId: KB_ID,
+      title: 'Course page',
+      ingestionAttemptId: ATTEMPT_ID,
+      resourceVersion: 3,
+      type: 'URL',
+      sourceUrl: 'https://example.com/course',
+    } satisfies IngestKBResourceInput
+
+    await expect(
+      prepareKBIngestionSource(input, env, {
+        resolvePublicIPv4: vi.fn().mockResolvedValue('93.184.216.34'),
+        requestPinnedUrl: vi.fn().mockResolvedValue(content),
+      })
+    ).resolves.toEqual({
+      kind: 'url',
+      url: 'https://example.com/course',
+      mimeType: 'text/html',
+      displayName: 'Course page',
+      contentSha256:
+        '02be75a2c26a8be5d1e87069b8a363798317869f732889d104f83fc4bfdc6ada',
+      sizeBytes: 18,
+    })
+
+    expect(() =>
+      buildKBIngestionSource(blobInput, 'text/html', CONTENT_SHA256, 18, env)
+    ).toThrow('KB ingestion source is invalid')
+  })
+
+  it('reconstructs persisted HTML only for URL resources', () => {
+    const input = {
+      resourceId: RESOURCE_ID,
+      kbId: KB_ID,
+      title: 'Course page',
+      ingestionAttemptId: ATTEMPT_ID,
+      resourceVersion: 3,
+      type: 'URL',
+      sourceUrl: 'https://example.com/course',
+    } satisfies IngestKBResourceInput
+
+    expect(
+      buildKBIngestionSource(input, 'text/html', CONTENT_SHA256, 18, env)
+    ).toEqual({
+      kind: 'url',
+      url: 'https://example.com/course',
+      mimeType: 'text/html',
+      displayName: 'Course page',
+      contentSha256: CONTENT_SHA256,
+      sizeBytes: 18,
+    })
+  })
+
   it('returns the pinned IPv4 in both Node lookup callback forms', async () => {
     const address = '93.184.216.34'
     const content = Object.assign(Readable.from([Buffer.from('notes')]), {
