@@ -90,7 +90,7 @@ describe('Integration tests for the chatbot publication workflow', () => {
       const result = await requestChatbotPublication(
         {
           id: bot.id,
-          useCase: 'Course Q&A',
+          useCase: '  Course Q&A\n',
           expectedStudentCount: 120,
           proposedCredits: 50,
         },
@@ -219,6 +219,7 @@ describe('Integration tests for the chatbot publication workflow', () => {
 
     it.each([
       ['empty', ''],
+      ['blank', ' \n\t '],
       ['overlong', 'x'.repeat(2001)],
     ])('rejects a %s use case', async (_, useCase) => {
       await enablePublishing()

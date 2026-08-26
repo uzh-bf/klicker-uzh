@@ -650,11 +650,11 @@ export async function requestChatbotPublication(
     return null
   }
 
-  if (
-    typeof args.useCase !== 'string' ||
-    args.useCase.length < 1 ||
-    args.useCase.length > 2000
-  ) {
+  if (typeof args.useCase !== 'string') {
+    throw new GraphQLError('useCase must be between 1 and 2000 characters long')
+  }
+  const normalizedUseCase = args.useCase.trim()
+  if (normalizedUseCase.length < 1 || normalizedUseCase.length > 2000) {
     throw new GraphQLError('useCase must be between 1 and 2000 characters long')
   }
 
@@ -706,7 +706,7 @@ export async function requestChatbotPublication(
     },
     data: {
       status: DB.ChatbotStatus.PENDING_APPROVAL,
-      publicationUseCase: args.useCase,
+      publicationUseCase: normalizedUseCase,
       expectedStudentCount: args.expectedStudentCount,
       reviewComment: null, // clear any prior rejection note on re-request
       // Proposed credit budget (gated cost class, D2): flat model — initial =

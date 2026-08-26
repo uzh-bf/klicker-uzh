@@ -478,6 +478,14 @@ pre-commit hook also passes, including the secret scan, staged formatting, all
 25 package checks, lint, syncpack, agent checks, and Prisma sync. This note does
 not claim a push, fresh CI, or merge.
 
+### Progress — 2026-08-26 (final review correction)
+
+The final integrated stack review found that publication requests accepted a
+whitespace-only use case. The Phase 0 service now validates the trimmed value,
+persists that normalized value, and covers both whitespace-only rejection and
+normalization in the existing publication workflow test. This correction does
+not change the publication state machine or authorization boundary.
+
 - GraphQL service-test output (transitions + authz + capability).
 - Migration diff + existing-row backfill proof; `prisma generate` clean.
 - Y-chat e2e result + one participant browser smoke.
