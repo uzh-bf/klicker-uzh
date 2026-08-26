@@ -17,8 +17,7 @@ const FINAL_REVIEW_POLICY_SCHEMA = 'final-ai-policy/v1'
 const DISPOSITION_SCHEMA = 'final-ai-disposition/v1'
 const FINAL_REVIEW_WORKFLOW_PATH =
   '.github/workflows/check-ocr-final-review.yml'
-const FINAL_REVIEW_CLEAN_STATUS_PREFIX =
-  'z-ai/glm-5.3 final review clean; policy='
+const FINAL_REVIEW_CLEAN_STATUS_PREFIX = `${FINAL_REVIEW_MODEL} final review clean; policy=`
 const FINAL_REVIEW_RULES_PATH =
   '.github/open-code-review/final-review-rules.json'
 const FINAL_STACK_REVIEW_WORKFLOW_PATH =
@@ -1341,7 +1340,7 @@ async function buildReviewPlan({ github, context, pull, trustedSha }) {
 async function initializeFinalReview({ github, context, core, sourceBranch }) {
   const pull = context.payload.pull_request
   let state = 'pending'
-  let description = 'Manual z-ai/glm-5.3 final review required for this head'
+  let description = `Manual ${FINAL_REVIEW_MODEL} final review required for this head`
 
   if (pull.state !== 'open') {
     state = 'error'
@@ -1519,7 +1518,7 @@ async function startFinalReview({
     context,
     sha: headSha,
     state: 'pending',
-    description: 'z-ai/glm-5.3 final review is running for this head',
+    description: `${FINAL_REVIEW_MODEL} final review is running for this head`,
   })
   core?.setOutput('background', plan.background)
   return true
@@ -1798,7 +1797,7 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
   const header = [
     marker,
     metadataMarker,
-    '## Final AI review · z-ai/glm-5.3 (high reasoning)',
+    `## Final AI review · ${FINAL_REVIEW_MODEL} (high reasoning)`,
     '',
     `Reviewed commit \`${headSha.slice(0, 12)}\`. This is a single diff-led operational review, not a full production-readiness audit.`,
     '',
@@ -1928,12 +1927,12 @@ function decideFinalStatus({
       description:
         cleanReview === 'true' && /^[0-9a-f]{64}$/.test(policyDigest)
           ? `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${policyDigest}`
-          : 'z-ai/glm-5.3 final review completed for this head',
+          : `${FINAL_REVIEW_MODEL} final review completed for this head`,
     }
   }
   return {
     state: 'failure',
-    description: 'z-ai/glm-5.3 final review failed; inspect the workflow run',
+    description: `${FINAL_REVIEW_MODEL} final review failed; inspect the workflow run`,
   }
 }
 

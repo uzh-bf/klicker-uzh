@@ -518,5 +518,4 @@ jobs:
               cleanupOutcome: process.env.CLEANUP_OUTCOME,
               publishOutcome: process.env.PUBLISH_OUTCOME,
               cleanReview: process.env.CLEAN_REVIEW,
-              policyDigest: process.env.POLICY_DIGEST,
             })
