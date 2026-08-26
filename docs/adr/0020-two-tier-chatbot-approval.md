@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted
+Accepted. The budget-control and pilot-cutover portions are superseded by
+[ADR 0041](./0041-chatbot-trusted-pilot-boundary.md); account authorization,
+publication approval, and usage-class semantics remain in force.
 
 ## Context
 

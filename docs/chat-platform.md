@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-25'
+timestamp: '2026-08-26'
 tags:
   - frontend
   - chat
@@ -165,7 +165,8 @@ owner ID. Other lecturer login scopes are denied by the service. Participant
 roles are denied by the schema, while the service repeats the role and scope
 checks as a direct-call safeguard.
 
-`setChatAccountUsageBudgets` validates both values against the shared
+`setChatAccountUsageBudgets` is an `ADMIN`-only operations mutation and requires
+an explicit target owner ID. It validates both values against the shared
 `Decimal(18,6)` credit contract and upserts the current BASE and ADVANCED rows
 in one transaction. It changes only `budgetCredits`, preserving existing or
 concurrent `usedCredits`. A newly created month becomes the latest configured
@@ -176,10 +177,11 @@ participant-credit, or per-model fields.
 The lecturer settings page requests this overview only after confirming an
 `ACCOUNT_OWNER` login scope. It shows two responsive lanes labelled “Base model
 usage” and “Advanced model usage” in English, with fixed German equivalents.
-Each lane names its budget, used and remaining credits, reset date, and empty or
-exhausted status. Authorized owners can update both monthly budgets together;
-disabled accounts see the live authorization state without an editor. The
-surface does not expose internal funding or provider details.
+Each lane names its estimated budget, used and remaining credits, reset date,
+and empty or exhausted status. The surface explains that operations manages
+soft planning targets and that in-flight requests may exceed them. It is
+read-only for account owners, and it does not expose internal funding or
+provider details.
 
 The deployed Klicker Auto option is a LiteLLM `auto-router` endpoint. The
 only in-repo record of its tier map is the comment above `modelRegistry` in

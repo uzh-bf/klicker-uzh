@@ -2,9 +2,10 @@
 
 ## Status
 
-Planner-reviewed proposal awaiting Gate 1 approval. No implementation, commit,
-recascade, remote publication, runtime start, merge, deployment, live data
-change, or enforcement activation is authorized by this document alone.
+Gate 1 is approved. The guarded recascade, S1 through S3 implementation
+commits, and S4 documentation are complete locally; S5 integrated proof
+remains in progress. No merge, deployment, live data change, provider or
+secret write, or enforcement activation is authorized by this document.
 
 This plan supersedes the remaining execution contract of
 [`2026-08-24-chatbot-u4-model-registry-policy-plan.md`](2026-08-24-chatbot-u4-model-registry-policy-plan.md)
@@ -649,7 +650,29 @@ process only when their dependencies and user authority exist.
   read-only planner returned `DONE_WITH_CONCERNS`; all concerns are incorporated
   through the candidate-not-live terminal, ADR 0041, existing `ADMIN` role,
   global 4096 cap, existing-consumer startup seams, and reserved-docs handling.
-- 2026-08-26: Gate 1 is pending. No plan commit, recovery ref, recascade, code
-  change, runtime start, remote publication, merge, deployment, live write,
-  provider call, enforcement activation, or cleanup has occurred under this
-  proposal.
+- 2026-08-26: Gate 1 was approved and the guarded local recascade completed
+  onto fresh `origin/v3` at `7515632f229c9421a7ac7d62668e1743147ba158`.
+  Recovery refs preserve the pre-recascade Phase 0 through U4 heads; the
+  lower-layer patches are unchanged and no remote ref moved.
+- 2026-08-26: S1 was accepted at `08a18497b` after focused route and
+  PostgreSQL integration tests, the full Chat suite, Chat typecheck, staged
+  gitleaks, and generic-continuity simplifier and data-integrity review. The
+  native reviewer routes were unavailable because their tasks were encrypted;
+  the continuity reports found no issues.
+- 2026-08-26: S2 was accepted at `fb395db9c`, then corrected at `4ef7ee43a`
+  to dynamically import the registry after the Node runtime guard. This keeps
+  startup validation before the telemetry early return without pulling Prisma
+  modules into Edge instrumentation. Focused tests, Chat and GraphQL checks,
+  and generic-continuity simplifier and architecture reviews pass.
+- 2026-08-26: S3 was committed at `2d6a985eb`. The budget mutation is now
+  `ADMIN`-only with an explicit owner ID, Manage is read-only for account
+  owners, and lifecycle labels plus PUBLISHED-only participant links are
+  localized. GraphQL schema generation, account authorization tests, Manage
+  typecheck/build, formatting, and staged gitleaks pass. Generic-continuity
+  simplifier and authorization/participant reviews found no blocking issues;
+  their two small copy/translation suggestions were corrected at `886c5b6c2`
+  and rereviewed successfully.
+- 2026-08-26: S4 documentation is complete in the ADR, context, Chat platform,
+  testing guide, plan, and roadmap updates. Markdown formatting and link
+  checks pass; no docs log or AGENTS.md change was made. S5 integrated proof,
+  final review, publication, exact-head CI, and runtime stop remain pending.
