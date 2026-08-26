@@ -64,6 +64,7 @@ export async function mockGrowthBookLearningAnalytics(
       contentType: 'application/json',
       body: JSON.stringify({
         features: {
+          'ai-beta': { defaultValue: true },
           'learning-analytics': { defaultValue: enabled },
         },
       }),
