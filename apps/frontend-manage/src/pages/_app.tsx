@@ -20,6 +20,7 @@ import { CourseDuplicationProvider } from '../components/courses/CourseDuplicati
 import ManageFeatureFlagProvider from '../components/featureFlags/ManageFeatureFlagProvider'
 import '../globals.css'
 import { useApollo } from '../lib/apollo'
+import { isPublicLiveQuizEvaluationRoute } from '../lib/isPublicLiveQuizEvaluationRoute'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -30,7 +31,9 @@ const MATOMO_URL = process.env.NEXT_PUBLIC_MATOMO_URL
 const MATOMO_SITE_ID = process.env.NEXT_PUBLIC_MATOMO_SITE_ID
 
 function App({ Component, pageProps }: AppProps) {
-  const { locale, pathname } = useRouter()
+  const router = useRouter()
+  const { locale, pathname } = router
+  const isPublicEvaluation = isPublicLiveQuizEvaluationRoute(router)
 
   const apolloClient = useApollo(pageProps)
 
@@ -70,9 +73,10 @@ function App({ Component, pageProps }: AppProps) {
                   <Component {...pageProps} />
                 )}
                 {/* Mounted here rather than in Layout so that navigating between
-                    Manage pages does not tear down the assistant and reload its
-                    iframe mid-conversation. */}
-                <ManageAssistantWidget />
+                    authenticated Manage pages does not tear down the assistant
+                    and reload its iframe mid-conversation. Public HMAC
+                    evaluations must not issue the assistant's identity query. */}
+                {isPublicEvaluation ? null : <ManageAssistantWidget />}
               </CourseDuplicationProvider>
             </DndProvider>
           </NextIntlClientProvider>

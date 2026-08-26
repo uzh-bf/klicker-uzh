@@ -10,6 +10,7 @@ import { cleanupTest } from '../util/cleanup.js'
 import { SC_DATA as SC } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
+  clearRichTextField,
   fillAnswerField,
   fillEditorField,
   fillFeedbackField,
@@ -58,8 +59,7 @@ test.describe('Test creation and editing functionalities for Single Choice eleme
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clearing answer option 1 should re-disable save
-    await page.getByTestId('insert-answer-field-1').click()
-    await page.getByTestId('insert-answer-field-1').clear()
+    await clearRichTextField(page.getByTestId('insert-answer-field-1'))
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
 
     await fillAnswerField(page, 1, SC.choices[1])
@@ -186,11 +186,9 @@ test.describe('Test creation and editing functionalities for Single Choice eleme
     await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
 
     // Clearing feedbacks re-disables save
-    await page.getByTestId('insert-answer-feedback-1').click()
-    await page.getByTestId('insert-answer-feedback-1').clear()
+    await clearRichTextField(page.getByTestId('insert-answer-feedback-1'))
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
-    await page.getByTestId('insert-answer-feedback-0').click()
-    await page.getByTestId('insert-answer-feedback-0').clear()
+    await clearRichTextField(page.getByTestId('insert-answer-feedback-0'))
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
     await fillFeedbackField(page, 0, SC.choicesFeedbacks[0])
     await expect(page.getByTestId('save-new-question')).toBeDisabled()
