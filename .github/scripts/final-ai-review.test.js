@@ -10,6 +10,7 @@ const {
   FINAL_REVIEW_CLEAN_STATUS_PREFIX,
   PROMOTION_FILE,
   authorizeFinalReview,
+  buildIndividualCleanReviewEvidenceDigest,
   buildExpectedPromotionContent,
   buildOCRConfig,
   buildReviewPlan,
@@ -96,12 +97,21 @@ test('serializes every final-review status writer without canceling it', () => {
       const block = job(source, jobName)
       assert.match(block, /group: final-ai-status-lock\n/)
       assert.match(block, /cancel-in-progress: false\n/)
+      assert.match(block, /queue: max\n/)
     }
     assert.doesNotMatch(job(source, 'review'), /statuses: write\n/)
     if (workflowName.includes('stack')) {
       assert.match(source, /statusLockHeld: true,\n/)
     }
   }
+  const individualSource = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  assert.match(
+    individualSource,
+    /needs\.start\.outputs\.run_review == 'true' \|\| needs\.start\.result == 'failure'/
+  )
 })
 
 test('propagates a clean publication result to final status', () => {
@@ -558,11 +568,22 @@ test('accepts a trusted clean status without requiring a review body', async () 
   const { github, state } = reviewGithub({ pull })
   const context = reviewContext()
   const plan = await buildReviewPlan({ github, context, pull })
+  const evidenceDigest = buildIndividualCleanReviewEvidenceDigest({
+    pull,
+    plan,
+  })
+  assert.notEqual(
+    evidenceDigest,
+    buildIndividualCleanReviewEvidenceDigest({
+      pull: { ...pull, base: { ...pull.base, sha: 'c'.repeat(40) } },
+      plan,
+    })
+  )
   state.statuses = [
     {
       context: 'final-ai-review',
       state: 'success',
-      description: `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${plan.policyDigest}`,
+      description: `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${evidenceDigest}`,
       target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
     },
   ]
@@ -590,9 +611,9 @@ test('accepts a trusted clean status without requiring a review body', async () 
       cleanupOutcome: 'success',
       publishOutcome: 'success',
       cleanReview: 'true',
-      policyDigest: plan.policyDigest,
+      cleanEvidenceDigest: evidenceDigest,
     }).description,
-    `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${plan.policyDigest}`
+    `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${evidenceDigest}`
   )
 })
 

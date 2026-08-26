@@ -10,6 +10,7 @@ const {
   STACK_REVIEW_CLEAN_STATUS_PREFIX,
   STACK_REVIEW_SCHEMA,
   authorizeStackReview,
+  buildStackCleanReviewEvidenceDigest,
   buildStackReviewPlan,
   buildStackSnapshot,
   callTopologyModel,
@@ -333,11 +334,15 @@ test('accepts a trusted clean stack status without requiring a review body', asy
     context: stackContext,
     membership,
   })
+  const evidenceDigest = buildStackCleanReviewEvidenceDigest({
+    plan,
+    membership,
+  })
   state.statuses = [
     {
       context: 'final-ai-stack-review',
       state: 'success',
-      description: `${STACK_REVIEW_CLEAN_STATUS_PREFIX}${plan.policyDigest}`,
+      description: `${STACK_REVIEW_CLEAN_STATUS_PREFIX}${evidenceDigest}`,
       target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
     },
   ]
@@ -371,10 +376,10 @@ test('accepts a trusted clean stack status without requiring a review body', asy
       topologyOutcome: 'success',
       cleanupOutcome: 'success',
       publishOutcome: 'success',
-      policyDigest: plan.policyDigest,
+      cleanEvidenceDigest: evidenceDigest,
       cleanReview: 'true',
     }).description,
-    `${STACK_REVIEW_CLEAN_STATUS_PREFIX}${plan.policyDigest}`
+    `${STACK_REVIEW_CLEAN_STATUS_PREFIX}${evidenceDigest}`
   )
 })
 

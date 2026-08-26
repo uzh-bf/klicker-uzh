@@ -57,6 +57,7 @@ jobs:
     concurrency:
       group: final-ai-status-lock
       cancel-in-progress: false
+      queue: max
     permissions:
       actions: read
       contents: read
@@ -148,6 +149,7 @@ jobs:
     concurrency:
       group: final-ai-status-lock
       cancel-in-progress: false
+      queue: max
     permissions:
       actions: read
       contents: read
@@ -456,6 +458,7 @@ jobs:
     concurrency:
       group: final-ai-status-lock
       cancel-in-progress: false
+      queue: max
     permissions:
       actions: read
       contents: read

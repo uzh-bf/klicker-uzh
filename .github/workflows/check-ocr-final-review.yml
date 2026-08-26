@@ -57,6 +57,7 @@ jobs:
     concurrency:
       group: final-ai-status-lock
       cancel-in-progress: false
+      queue: max
     permissions:
       contents: read
       pull-requests: read
@@ -115,6 +116,7 @@ jobs:
       stack_position: ${{ steps.authorize.outputs.stack_position }}
       stack_order_digest: ${{ steps.authorize.outputs.stack_order_digest }}
       disposition_digest: ${{ steps.authorize.outputs.disposition_digest }}
+      disposition_ids: ${{ steps.authorize.outputs.disposition_ids }}
       background: ${{ steps.authorize.outputs.background }}
     steps:
       - name: Checkout trusted final-review policy
@@ -148,6 +150,7 @@ jobs:
     concurrency:
       group: final-ai-status-lock
       cancel-in-progress: false
+      queue: max
     permissions:
       contents: read
       pull-requests: read
@@ -371,12 +374,13 @@ jobs:
     if: >-
       always() &&
       needs.authorize.outputs.authorized == 'true' &&
-      needs.start.outputs.run_review == 'true'
+      (needs.start.outputs.run_review == 'true' || needs.start.result == 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     concurrency:
       group: final-ai-status-lock
       cancel-in-progress: false
+      queue: max
     permissions:
       contents: read
       pull-requests: read
@@ -396,10 +400,16 @@ jobs:
           PR_NUMBER: ${{ needs.authorize.outputs.pr_number }}
           BASE_SHA: ${{ needs.authorize.outputs.base_sha }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+          REVIEW_MODE: ${{ needs.authorize.outputs.mode }}
+          ROOT_HEAD: ${{ needs.authorize.outputs.root_head }}
+          ROOT_REVIEW_ID: ${{ needs.authorize.outputs.root_review_id }}
+          BACKGROUND_DIGEST: ${{ needs.authorize.outputs.background_digest }}
           SCOPE_KIND: ${{ needs.authorize.outputs.scope_kind }}
           STACK_ID: ${{ needs.authorize.outputs.stack_id }}
           STACK_POSITION: ${{ needs.authorize.outputs.stack_position }}
           STACK_ORDER_DIGEST: ${{ needs.authorize.outputs.stack_order_digest }}
+          DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
+          DISPOSITION_IDS: ${{ needs.authorize.outputs.disposition_ids }}
           REVIEW_OUTCOME: ${{ needs.review.outputs.review_outcome || needs.review.result }}
           CLEANUP_OUTCOME: ${{ needs.review.outputs.cleanup_outcome || needs.review.result }}
           PUBLISH_OUTCOME: ${{ needs.review.outputs.publish_outcome || needs.review.result }}
@@ -415,10 +425,16 @@ jobs:
               prNumber: Number(process.env.PR_NUMBER),
               baseSha: process.env.BASE_SHA,
               headSha: process.env.HEAD_SHA,
+              mode: process.env.REVIEW_MODE,
+              rootHead: process.env.ROOT_HEAD,
+              rootReviewId: process.env.ROOT_REVIEW_ID,
+              backgroundDigest: process.env.BACKGROUND_DIGEST,
               scopeKind: process.env.SCOPE_KIND,
               stackId: process.env.STACK_ID,
               stackPosition: process.env.STACK_POSITION,
               stackOrderDigest: process.env.STACK_ORDER_DIGEST,
+              dispositionDigest: process.env.DISPOSITION_DIGEST,
+              dispositionIds: JSON.parse(process.env.DISPOSITION_IDS || '[]'),
               reviewOutcome: process.env.REVIEW_OUTCOME,
               cleanupOutcome: process.env.CLEANUP_OUTCOME,
               publishOutcome: process.env.PUBLISH_OUTCOME,

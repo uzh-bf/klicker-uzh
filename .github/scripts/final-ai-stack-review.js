@@ -5,6 +5,7 @@ const path = require('node:path')
 const {
   FINAL_REVIEW_BOT,
   FINAL_REVIEW_MODEL,
+  buildFinalReviewEvidenceDigest,
   decodeMetadata,
   encodeMetadata,
   getReviewPolicyDigest,
@@ -29,7 +30,7 @@ const STACK_REVIEW_CONTEXT = 'final-ai-stack-review'
 const STACK_REVIEW_SCHEMA = 'final-ai-stack-review/v3'
 const STACK_REVIEW_WORKFLOW_PATH =
   '.github/workflows/check-ocr-final-stack-review.yml'
-const STACK_REVIEW_CLEAN_STATUS_PREFIX = `${FINAL_REVIEW_MODEL} stack review clean; policy=`
+const STACK_REVIEW_CLEAN_STATUS_PREFIX = `${FINAL_REVIEW_MODEL} stack review clean; evidence=`
 const STACK_RULES_PATH =
   '.github/open-code-review/final-stack-topology-rules.json'
 const STACK_SCHEMA_PATH =
@@ -61,6 +62,35 @@ function validDigest(value) {
 
 function sha256(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex')
+}
+
+function buildStackCleanReviewEvidenceDigest({ plan, membership }) {
+  return buildFinalReviewEvidenceDigest({
+    kind: 'stack-clean/v1',
+    base_sha: plan.baseSha,
+    head_sha: plan.headSha,
+    stack_id: plan.stackId,
+    stack_order_digest: plan.stackOrderDigest,
+    stack_identity_digest: plan.stackIdentityDigest,
+    member_numbers: plan.memberNumbers,
+    layer_identities: membership.members.map(({ number, pull }) => ({
+      base_ref: pull.base.ref,
+      base_repo: pull.base.repo?.full_name ?? '',
+      base_sha: pull.base.sha,
+      head_ref: pull.head.ref,
+      head_repo: pull.head.repo?.full_name ?? '',
+      head_sha: pull.head.sha,
+      pull_request: number,
+    })),
+    base_advance_preserved: Boolean(plan.baseAdvancePreserved),
+    mode: plan.mode,
+    root_head: plan.rootHead,
+    root_review_id: plan.rootReviewId,
+    policy_digest: plan.policyDigest,
+    disposition_digest: plan.dispositionDigest,
+    disposition_ids: plan.dispositionIds ?? [],
+    review_ranges: plan.reviewRanges ?? [],
+  })
 }
 
 function stackIdentityDigestFromLayerIdentities(identities) {
@@ -1008,13 +1038,14 @@ async function hasVerifiedCleanStackReviewStatus({
   github,
   context,
   headSha,
-  policyDigest,
+  evidenceDigest,
 }) {
-  if (!/^[0-9a-f]{64}$/.test(policyDigest)) return false
+  if (!/^[0-9a-f]{64}$/.test(evidenceDigest)) return false
   const status = await latestStackStatus(github, context, headSha)
   if (
     status?.state !== 'success' ||
-    status.description !== `${STACK_REVIEW_CLEAN_STATUS_PREFIX}${policyDigest}`
+    status.description !==
+      `${STACK_REVIEW_CLEAN_STATUS_PREFIX}${evidenceDigest}`
   ) {
     return false
   }
@@ -1116,7 +1147,7 @@ async function hasCurrentSuccessfulStackReview({
     github,
     context,
     headSha: plan.headSha,
-    policyDigest: plan.policyDigest,
+    evidenceDigest: buildStackCleanReviewEvidenceDigest({ plan, membership }),
   })
 }
 
@@ -2611,7 +2642,7 @@ function decideStackStatus({
   cleanupOutcome,
   publishOutcome,
   cleanReview = 'false',
-  policyDigest = '',
+  cleanEvidenceDigest = '',
 }) {
   if (!eligible || currentHead !== reviewedHead) {
     return {
@@ -2628,8 +2659,8 @@ function decideStackStatus({
   ) {
     return {
       description:
-        cleanReview === 'true' && /^[0-9a-f]{64}$/.test(policyDigest)
-          ? `${STACK_REVIEW_CLEAN_STATUS_PREFIX}${policyDigest}`
+        cleanReview === 'true' && /^[0-9a-f]{64}$/.test(cleanEvidenceDigest)
+          ? `${STACK_REVIEW_CLEAN_STATUS_PREFIX}${cleanEvidenceDigest}`
           : reviewMode === 'incremental'
             ? `${FINAL_REVIEW_MODEL} bounded stack attestation completed for this head`
             : `${FINAL_REVIEW_MODEL} cumulative code and topology review completed for this stack`,
@@ -2738,7 +2769,10 @@ async function finalizeStackReview({
       cleanupOutcome,
       publishOutcome,
       cleanReview,
-      policyDigest,
+      cleanEvidenceDigest: buildStackCleanReviewEvidenceDigest({
+        plan,
+        membership,
+      }),
     }),
   })
 }
@@ -2848,6 +2882,7 @@ module.exports = {
   STACK_REVIEW_SCHEMA,
   STACK_REVIEW_WORKFLOW_PATH,
   authorizeStackReview,
+  buildStackCleanReviewEvidenceDigest,
   buildStackReviewId,
   buildStackReviewPlan,
   buildStackSnapshot,

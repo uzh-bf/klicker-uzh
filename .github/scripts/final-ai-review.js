@@ -17,7 +17,7 @@ const FINAL_REVIEW_POLICY_SCHEMA = 'final-ai-policy/v1'
 const DISPOSITION_SCHEMA = 'final-ai-disposition/v1'
 const FINAL_REVIEW_WORKFLOW_PATH =
   '.github/workflows/check-ocr-final-review.yml'
-const FINAL_REVIEW_CLEAN_STATUS_PREFIX = `${FINAL_REVIEW_MODEL} final review clean; policy=`
+const FINAL_REVIEW_CLEAN_STATUS_PREFIX = `${FINAL_REVIEW_MODEL} final review clean; evidence=`
 const FINAL_REVIEW_RULES_PATH =
   '.github/open-code-review/final-review-rules.json'
 const FINAL_STACK_REVIEW_WORKFLOW_PATH =
@@ -58,6 +58,34 @@ const DISPOSITION_STATES = new Set(['fixed', 'follow-up', 'rejected'])
 
 function sha256(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex')
+}
+
+function buildFinalReviewEvidenceDigest(value) {
+  return sha256(JSON.stringify(value))
+}
+
+function buildIndividualCleanReviewEvidenceDigest({ pull, plan }) {
+  return buildFinalReviewEvidenceDigest({
+    kind: 'individual-clean/v1',
+    pull_request: pull.number,
+    base_ref: pull.base.ref,
+    base_repo: pull.base.repo?.full_name ?? '',
+    base_sha: pull.base.sha,
+    head_ref: pull.head.ref,
+    head_repo: pull.head.repo?.full_name ?? '',
+    head_sha: pull.head.sha,
+    mode: plan.mode,
+    root_head: plan.rootHead,
+    root_review_id: plan.rootReviewId,
+    policy_digest: plan.policyDigest,
+    background_digest: plan.backgroundDigest,
+    scope_kind: plan.scopeKind,
+    stack_id: plan.stackId,
+    stack_position: plan.stackPosition,
+    stack_order_digest: plan.stackOrderDigest,
+    disposition_digest: plan.dispositionDigest,
+    disposition_ids: plan.dispositionIds ?? [],
+  })
 }
 
 function encodeMetadata(value) {
@@ -495,13 +523,14 @@ async function hasVerifiedCleanFinalReviewStatus({
   github,
   context,
   headSha,
-  policyDigest,
+  evidenceDigest,
 }) {
-  if (!/^[0-9a-f]{64}$/.test(policyDigest)) return false
+  if (!/^[0-9a-f]{64}$/.test(evidenceDigest)) return false
   const status = await getLatestFinalReviewStatus(github, context, headSha)
   if (
     status?.state !== 'success' ||
-    status.description !== `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${policyDigest}`
+    status.description !==
+      `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${evidenceDigest}`
   ) {
     return false
   }
@@ -995,11 +1024,15 @@ async function hasCurrentSuccessfulFinalReview({
       return true
     }
   }
+  const evidenceDigest = buildIndividualCleanReviewEvidenceDigest({
+    pull,
+    plan,
+  })
   return hasVerifiedCleanFinalReviewStatus({
     github,
     context,
     headSha: pull.head.sha,
-    policyDigest: plan.policyDigest,
+    evidenceDigest,
   })
 }
 
@@ -1459,6 +1492,7 @@ async function authorizeFinalReview({ github, context, core, trustedSha }) {
   core.setOutput('stack_position', plan.stackPosition)
   core.setOutput('stack_order_digest', plan.stackOrderDigest)
   core.setOutput('disposition_digest', plan.dispositionDigest)
+  core.setOutput('disposition_ids', JSON.stringify(plan.dispositionIds ?? []))
   core.setOutput('background', plan.background)
   return true
 }
@@ -1905,7 +1939,7 @@ function decideFinalStatus({
   cleanupOutcome,
   publishOutcome,
   cleanReview = 'false',
-  policyDigest = '',
+  cleanEvidenceDigest = '',
 }) {
   if (
     currentHead !== reviewedHead ||
@@ -1925,8 +1959,8 @@ function decideFinalStatus({
     return {
       state: 'success',
       description:
-        cleanReview === 'true' && /^[0-9a-f]{64}$/.test(policyDigest)
-          ? `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${policyDigest}`
+        cleanReview === 'true' && /^[0-9a-f]{64}$/.test(cleanEvidenceDigest)
+          ? `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${cleanEvidenceDigest}`
           : `${FINAL_REVIEW_MODEL} final review completed for this head`,
     }
   }
@@ -1942,15 +1976,21 @@ async function finalizeFinalReview({
   prNumber,
   baseSha,
   headSha,
+  mode = 'full',
+  rootHead = headSha,
+  rootReviewId = '',
+  backgroundDigest = '',
   scopeKind,
   stackId,
   stackPosition,
   stackOrderDigest,
+  dispositionDigest = '',
+  dispositionIds = [],
   reviewOutcome,
   cleanupOutcome,
   publishOutcome,
   cleanReview,
-  policyDigest,
+  policyDigest = '',
 }) {
   const pull = await getPull(github, context, prNumber)
   const eligibility = await resolvePullEligibility({
@@ -1975,7 +2015,22 @@ async function finalizeFinalReview({
     cleanupOutcome,
     publishOutcome,
     cleanReview,
-    policyDigest,
+    cleanEvidenceDigest: buildIndividualCleanReviewEvidenceDigest({
+      pull,
+      plan: {
+        mode,
+        rootHead,
+        rootReviewId,
+        policyDigest,
+        backgroundDigest,
+        scopeKind,
+        stackId,
+        stackPosition,
+        stackOrderDigest,
+        dispositionDigest,
+        dispositionIds,
+      },
+    }),
   })
   const latestStatus = await getLatestFinalReviewStatus(
     github,
@@ -2034,6 +2089,8 @@ module.exports = {
   MAX_INCREMENTAL_PATHS,
   PROMOTION_FILE,
   authorizeFinalReview,
+  buildFinalReviewEvidenceDigest,
+  buildIndividualCleanReviewEvidenceDigest,
   buildExpectedPromotionContent,
   buildOCRPolicy,
   buildOCRConfig,
