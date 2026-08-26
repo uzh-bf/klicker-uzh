@@ -2228,13 +2228,6 @@ export async function getLiveQuizEvaluation(
     where: {
       id,
       isDeleted: false,
-      ...(typeof hmac === 'string'
-        ? {
-            status: {
-              in: [DB.PublicationStatus.PUBLISHED, DB.PublicationStatus.ENDED],
-            },
-          }
-        : {}),
     },
     include: {
       activeBlock: { include: { elements: { orderBy: { order: 'asc' } } } },
@@ -2259,6 +2252,18 @@ export async function getLiveQuizEvaluation(
     liveQuiz.status === DB.PublicationStatus.PUBLISHED ||
     liveQuiz.status === DB.PublicationStatus.ENDED
 
+  const evaluationMetadata = {
+    id: liveQuiz.id,
+    status: liveQuiz.status,
+    name: liveQuiz.name,
+    displayName: liveQuiz.displayName,
+    description: liveQuiz.description,
+    courseLanguage: liveQuiz.course?.language,
+    courseName: liveQuiz.course?.name,
+    isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
+    pinCode: liveQuiz.pinCode,
+  }
+
   if (typeof hmac === 'string') {
     const hmacEncoder = createHmac('sha256', process.env.APP_SECRET as string)
     hmacEncoder.update(liveQuiz.namespace + liveQuiz.id)
@@ -2267,6 +2272,15 @@ export async function getLiveQuizEvaluation(
     // evaluate whether the hashed liveQuiz.namespace and liveQuiz.id equals the hmac
     if (quizHmac !== hmac) {
       return null
+    }
+
+    if (!shouldExposeEvaluationResults) {
+      return {
+        ...evaluationMetadata,
+        results: [],
+        feedbacks: null,
+        confusionFeedbacks: null,
+      }
     }
   }
 
@@ -2332,15 +2346,7 @@ export async function getLiveQuizEvaluation(
   const blockEvaluations = computeStackEvaluation(preparedBlocks)
 
   return {
-    id: liveQuiz.id,
-    status: liveQuiz.status,
-    name: liveQuiz.name,
-    displayName: liveQuiz.displayName,
-    description: liveQuiz.description,
-    courseLanguage: liveQuiz.course?.language,
-    courseName: liveQuiz.course?.name,
-    isAssessmentEnabled: liveQuiz.isAssessmentEnabled,
-    pinCode: liveQuiz.pinCode,
+    ...evaluationMetadata,
     results: blockEvaluations,
     feedbacks:
       liveQuiz.status === DB.PublicationStatus.ENDED

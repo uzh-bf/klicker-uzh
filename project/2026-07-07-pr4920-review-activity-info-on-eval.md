@@ -11,14 +11,14 @@ The feature is genuinely useful (context + status on embedded/inactive evaluatio
 - Shows activity name, status, course name, element name/type and a link to activity details inside `EvaluationUnavailableNotification` when an evaluation (or a single scheduled element) has no data yet — mainly for the PowerPoint-embedded view.
 - Adds a `BlockStatusIndicator` dot (Scheduled / Active / Executed) with tooltips incl. last-refresh and execution timestamps.
 - Extends the `ActivityEvaluation` GraphQL type with `status` and `courseName`; makes `displayName` non-nullable.
-- Backend: `getLiveQuizEvaluation` keeps scheduled blocks for status metadata, restricts HMAC access to `PUBLISHED/ENDED` quizzes, strips elements from non-executed blocks, and replaces the active block in place with cached results.
+- Backend: `getLiveQuizEvaluation` keeps scheduled blocks for status metadata, returns metadata-only payloads for valid HMAC requests before publication, strips elements from non-executed blocks after publication, and replaces the active block in place with cached results.
 - Unrelated: adds `NEXT_PUBLIC_IS_ASSESSMENT: "true"` to the assessment frontend Helm ConfigMap.
 
 ## Current branch status
 
 The blocker descriptions below are historical findings from the initial review. On the current branch:
 
-- HMAC evaluation access is restricted to published or ended quizzes, and non-executed blocks return metadata without element content.
+- Valid HMAC evaluation access returns activity metadata in every lifecycle state, but non-published quizzes return `results: []`; after publication, non-executed blocks return metadata without element content.
 - The active block is replaced in place, so it is returned once rather than appended a second time.
 - A completed null evaluation stops polling and renders `EvaluationUnavailableNotification` instead of an indefinite loader.
 - The local end-to-end path submitted a participant response, processed it through the response worker, and displayed one participant in the manage evaluation.
@@ -44,7 +44,7 @@ The current implementation is covered by regression tests in `packages/graphql/t
 
 The evaluation payload built by `computeStackEvaluation` → `computeInstanceEvaluation` includes per instance: question `content`, `explanation`, and for choice questions each choice with its **`correct` flag and `feedback`** (`packages/graphql/src/services/stacks.ts:3269-3275`, `:3742-3747`). This endpoint is reachable by **anyone holding the HMAC embed link** (no login — see `liveQuizEvaluation` resolver, `packages/graphql/src/schema/query.ts:668` ff.). PPT slide decks containing the embed URL are routinely shared with students, so this leaks upcoming questions *and their solutions* to students via the browser network tab, before the block is ever started. The frontend "hides" scheduled content only visually (`ElementEvaluation.tsx` renders `EvaluationUnavailableNotification` next to the data — and per the reviewer's screenshot doesn't even fully hide it).
 
-**Historical required fix:** keep returning scheduled/active blocks for the status indicator, but strip instance content for non-`EXECUTED` blocks and re-add the quiz-level status filter. The current branch implements both protections in `getLiveQuizEvaluation`.
+**Historical required fix:** keep returning scheduled/active blocks for the status indicator, but strip instance content for non-`EXECUTED` blocks and re-add the quiz-level status filter. The current branch preserves that data boundary while accommodating the later pre-start metadata requirement: it validates the HMAC for non-published quizzes and returns only activity metadata with `results: []`.
 
 ### 🔴 Blocker 2 — Stability: blocks rendered twice (historical; fixed)
 
@@ -88,7 +88,7 @@ Work on the `activity-info-on-eval` branch. After each step: commit with a conve
 
 1. **Update the branch.** **Complete.** The branch merged `origin/v3`, passed the repository pre-commit checks and production build, and was re-verified in the local runtime with a disposable seeded local account.
 2. **Fix Blocker 1 (server-side data exposure).** **Complete.** In `getLiveQuizEvaluation` (`packages/graphql/src/services/liveQuizzes.ts`):
-   - Re-add the quiz status filter for the HMAC path (or gate non-`PUBLISHED/ENDED` quizzes on authenticated `READ` access).
+   - Validate the HMAC before returning any non-published quiz data, then return only activity metadata with `results: []`.
    - Keep all blocks in the query for status metadata, but before calling `computeStackEvaluation`, replace the `elements` of every non-`EXECUTED`, non-active block with `[]` (or map scheduled blocks to metadata-only stacks). Verify with a raw GraphQL query (GraphiQL at `http://localhost:3000/api/graphql`, and via the HMAC URL) that a scheduled block returns **no** `content`, `explanation`, `correct`, or `feedback` fields.
 3. **Fix Blocker 2 (duplicate blocks).** **Complete.** The active block is replaced in place and the regression test verifies that each block appears exactly once with results.
 4. **Fix Blocker 3 (infinite loader).** **Complete.** After loading finishes, a null evaluation renders `EvaluationUnavailableNotification` and polling stops.
