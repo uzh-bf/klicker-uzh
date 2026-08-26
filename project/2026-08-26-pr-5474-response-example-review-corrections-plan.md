@@ -183,21 +183,23 @@ No new product primitive is created or retired.
 
 | Item | Current evidence | Consequence |
 | --- | --- | --- |
-| `origin/v3-ai` | `a1c63c644fdcdc52ff3dcddbbd3f58fcf363261d`; sibling `trees/v3-ai-sync` is clean and exactly synchronized | The base-reconciliation dependency is resolved. This task still must not mutate the sibling worktree or branch. |
-| Reviewed product-code heads | K1 `3d30349441d4f042b65d92d42a950fc1df1df8e2` and K2 `be259ad5a82f56053ceac1248ddb6985f3837c92`, both clean and 0 behind current `origin/v3-ai` at the review gate (20 and 27 commits ahead) | The corrected layers are locally complete. Documentation-only Progress commits follow the reviewed K2 code head; re-read the branch tip immediately before publication. |
-| PR #5474 | remote K1 head `eef688e0fa4b4d34ad00a02f1d8a65509d5c7189`; base has moved and GitHub merge state is recalculating | Treat the old head and CI as historical only. |
-| PR #5498 | remote K2 head `3d54fbdbee5378212e65ff97bccf6dbc87f8ceba`; GitHub currently reports `DIRTY` against its old published parent | Publish the reviewed corrected K1 then K2 heads with stack-aware force-with-lease; do not change remote topology. |
+| `origin/v3-ai` | `c8e1c9b22c96716288469d18dca85aecb1b3d990`; it advanced by three KB-ingestion commits during this package and both layers were rebased again without semantic conflicts | The final review and publication evidence use the actual current target. This task still must not mutate the sibling `v3-ai` worktree or branch. |
+| Reviewed product-code heads | K1 `2504e270edee043e22449a89d368122fa9002cd2` and K2 `84be8f3a549054dc737a331be4625f6c2091d13b`; both worktrees are clean, K1 is 0 behind current `origin/v3-ai`, and K2 is directly stacked on K1 | The corrected layers are locally complete pending the final integrated review and publication ledger commit. |
+| PR #5474 | remote K1 head `3d30349441d4f042b65d92d42a950fc1df1df8e2`; open and non-draft with historical failing checks on that superseded head | Publish the reviewed corrected K1 head with stack-aware force-with-lease; treat old CI as historical only. |
+| PR #5498 | remote K2 head `bdba64d94d7b0dc8ce6701ca2a0e3f8567acff85`; open and non-draft on K1 | Publish K1 then K2 without changing the remote topology. |
 | GitHub stack #5503 | remote order is K1 then K2 with the expected PRs and published heads | Preserve this topology. |
 | Local `gh-stack` metadata | repaired for local stack work; no remote topology mutation | Keep the existing K1 -> K2 order and use stack-aware force-with-lease only at the final publication boundary. |
 
 ### Code findings
 
-- `packages/util/src/citations.ts` is a roughly 2,000-line second Markdown
-  grammar with an avoidable repeated suffix scan and an open CodeQL discrepancy
-  around alternate HTML comment termination.
-- `packages/markdown` already owns `unified`, `remark-parse`, `remark-math`, and
-  the citation-marker AST transformer. Its `./citations` entry can be kept
-  React-free and consumed by GraphQL as a workspace dependency.
+- The pre-correction `packages/util/src/citations.ts` was a roughly 2,000-line
+  second Markdown grammar with an avoidable repeated suffix scan and an open
+  CodeQL discrepancy around alternate HTML comment termination.
+- The corrected package boundary keeps the canonical React-free citation AST
+  transformer and digest helper in `packages/util`. Markdown re-exports the
+  citation transformer for compatibility and uses it in the renderer; GraphQL
+  consumes the same utility contract without pulling UI peers into the
+  `mcp-student` pruned dependency closure.
 - The renderer normalizes Markdown before parsing. Validation must use that
   same normalization, Remark parser, math settings, and marker transformer;
   matching regexes are not sufficient.
@@ -219,9 +221,9 @@ No new product primitive is created or retired.
 - Verdict: `DONE_WITH_CONCERNS`
 - Accepted: final data and API contract belongs in K1; K2 owns only the
   lecturer workflow; one K1 migration replaces both current migration deltas;
-  the custom scanner is deleted rather than patched; the React-free Markdown
-  citations subpath becomes the shared parser; K1 receives a mandatory Gate 2;
-  local-only stack tracking repair is explicit authority.
+  the custom scanner is deleted rather than patched; one React-free citation
+  AST contract is shared by validation and Markdown rendering; K1 receives a
+  mandatory Gate 2; local-only stack tracking repair is explicit authority.
 - Verified correction: the review initially observed an active sibling base,
   but fresh readback now proves `v3-ai` is clean and synchronized at the
   revision above. The remaining pre-execution blocker is Gate 1 approval for
@@ -440,6 +442,32 @@ extending this stack:
 Neither follow-up is authorized by this plan.
 
 ## Progress
+
+- 2026-08-26 CI correction: moved canonical citation parsing and response-set
+  digest computation into React-free utility exports. GraphQL no longer pulls
+  Markdown and its UI peers into `mcp-student`; Markdown renders through the
+  same citation transformer. The exact `mcp-student` Docker builder target now
+  completes on both architectures' shared Dockerfile path.
+- 2026-08-26 review correction: preserved JavaScript code-unit ordering,
+  threaded the renderer's single-dollar math setting through citation parity,
+  removed the duplicate K2 seed digest implementation, centralized approval
+  error mapping, and made the three reported component prop objects readonly.
+  K1 simplification and risk correction reviews pass. K2 simplification passes;
+  its risk correction review and the integrated final review are in progress.
+- Current base: `origin/v3-ai` at
+  `c8e1c9b22c96716288469d18dca85aecb1b3d990`.
+- Current local heads: K1
+  `2504e270edee043e22449a89d368122fa9002cd2`; K2
+  `84be8f3a549054dc737a331be4625f6c2091d13b`.
+- Current runtime limitation: the K2 managed DevPod passes package checks, but
+  its post-start cannot resolve the workspace Azurite alias. Existing browser
+  screenshots remain valid because the CI correction does not alter rendered
+  UI. No local runtime or product code was changed to work around this route.
+- Active slice: F1 final review, publication, PR description refresh, and one
+  CI wait.
+
+The entries below are the retained pre-CI-correction execution history. Their
+hashes are historical and are superseded by the current heads above.
 
 - Status: K1 Gate 2 evidence accepted; K2 correction implementation, focused
   browser journey, screenshots, and final integrated review are complete
