@@ -121,7 +121,6 @@ function buildStackCleanReviewEvidenceDigest({ plan, membership }) {
   if (!paths) throw new Error('Stack clean evidence paths are incomplete')
   const layerIdentities = canonicalStackLayerIdentities(plan, membership)
   return buildStackCleanEvidenceDigest({
-    kind: 'stack-clean/v2',
     base_sha: plan.baseSha,
     head_sha: plan.headSha,
     stack_id: plan.stackId,
@@ -145,48 +144,8 @@ function buildStackCleanReviewEvidenceDigest({ plan, membership }) {
   })
 }
 
-function buildStackCleanEvidenceDigest({
-  kind,
-  base_sha,
-  head_sha,
-  stack_id,
-  stack_order_digest,
-  stack_identity_digest,
-  member_numbers,
-  layer_identities,
-  mode,
-  root_head,
-  root_review_id,
-  policy_digest,
-  disposition_digest,
-  disposition_ids,
-  review_ranges,
-  reviewed_paths_digest,
-  reviewed_path_aliases_digest,
-}) {
+function buildStackCleanEvidenceDigest(metadata) {
   return buildFinalReviewEvidenceDigest({
-    kind,
-    base_sha,
-    head_sha,
-    stack_id,
-    stack_order_digest,
-    stack_identity_digest,
-    member_numbers,
-    layer_identities,
-    mode,
-    root_head,
-    root_review_id,
-    policy_digest,
-    disposition_digest,
-    disposition_ids,
-    review_ranges,
-    reviewed_paths_digest,
-    reviewed_path_aliases_digest,
-  })
-}
-
-function buildStackCleanEvidenceDigestFromMetadata(metadata) {
-  return buildStackCleanEvidenceDigest({
     kind: 'stack-clean/v2',
     base_sha: metadata.base_sha,
     head_sha: metadata.head_sha,
@@ -1588,8 +1547,7 @@ async function getVerifiedStackCleanEvidence({
   if (
     !metadata ||
     metadata.evidence_digest !== evidenceDigest ||
-    metadata.evidence_digest !==
-      buildStackCleanEvidenceDigestFromMetadata(metadata) ||
+    metadata.evidence_digest !== buildStackCleanEvidenceDigest(metadata) ||
     metadata.head_sha !== headSha ||
     metadata.workflow_run_id !== workflowRunId ||
     metadata.workflow_url !== workflowRunUrl(context, workflowRunId) ||
