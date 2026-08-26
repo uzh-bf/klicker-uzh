@@ -273,6 +273,7 @@ model ParticipantActivityPerformance {
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
 
+  // Database constraint enforces that exactly one of practiceQuizId and microLearningId is set.
   practiceQuiz   PracticeQuiz? @relation(fields: [practiceQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   practiceQuizId String?       @db.Uuid
 

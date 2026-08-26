@@ -50,6 +50,13 @@ table support indexes use one-statement `CREATE INDEX CONCURRENTLY` migrations;
 only indexes on newly created empty analytics tables stay in the schema-creation
 migration.
 
+`ParticipantActivityPerformance` must reference exactly one activity owner:
+either `practiceQuizId` or `microLearningId`, never neither or both. The
+participant data-use and analytics schema migration performs a redacted,
+count-only preflight before adding the PostgreSQL check constraint. Any
+malformed rows fail the migration without automatic remediation or row-level
+output.
+
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.

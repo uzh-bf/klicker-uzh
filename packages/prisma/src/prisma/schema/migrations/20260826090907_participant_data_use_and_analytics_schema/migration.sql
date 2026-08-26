@@ -1,3 +1,32 @@
+-- Check the existing rows without exposing identifiers before changing the schema.
+DO $$
+DECLARE
+    both_null_count BIGINT;
+    both_set_count BIGINT;
+BEGIN
+    SELECT
+        count(*) FILTER (WHERE "practiceQuizId" IS NULL AND "microLearningId" IS NULL),
+        count(*) FILTER (WHERE "practiceQuizId" IS NOT NULL AND "microLearningId" IS NOT NULL)
+    INTO both_null_count, both_set_count
+    FROM "ParticipantActivityPerformance";
+
+    IF both_null_count > 0 OR both_set_count > 0 THEN
+        RAISE EXCEPTION
+            'ParticipantActivityPerformance owner preflight failed: both-null rows %, both-set rows %; no schema changes applied',
+            both_null_count,
+            both_set_count;
+    END IF;
+END
+$$;
+
+-- Each performance row must belong to exactly one supported activity type.
+ALTER TABLE "ParticipantActivityPerformance"
+    ADD CONSTRAINT "ParticipantActivityPerformance_exactly_one_owner_check"
+    CHECK (
+        ("practiceQuizId" IS NOT NULL AND "microLearningId" IS NULL)
+        OR ("practiceQuizId" IS NULL AND "microLearningId" IS NOT NULL)
+    );
+
 -- CreateEnum
 CREATE TYPE "ChatDoseBucket" AS ENUM ('NONE', 'LOW', 'MED', 'HIGH');
 
