@@ -3,11 +3,6 @@ enum PersonalElementOrigin {
   AUTHORED
 }
 
-enum PersonalElementVerification {
-  UNVERIFIED
-  VERIFIED
-}
-
 enum ChatGenerationApprovalStatus {
   CLAIMED
   COMPLETED
@@ -35,8 +30,7 @@ model PersonalElement {
   /// [PrismaPersonalElementSources]
   sources Json?
 
-  origin       PersonalElementOrigin       @default(AI_GENERATED)
-  verification PersonalElementVerification @default(UNVERIFIED)
+  origin PersonalElementOrigin @default(AI_GENERATED)
 
   sourceMessageId  String? @db.Uuid
   sourceToolCallId String?

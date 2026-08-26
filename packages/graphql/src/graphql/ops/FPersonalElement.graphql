@@ -14,7 +14,6 @@ fragment FPersonalElement on PersonalElement {
     metadata
   }
   origin
-  verification
   sourceMessageId
   sourceToolCallId
   candidateId

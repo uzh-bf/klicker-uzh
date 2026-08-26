@@ -1,8 +1,4 @@
-import {
-  ElementType,
-  PersonalElementVerification,
-  UserRole,
-} from '@klicker-uzh/prisma/client'
+import { ElementType, UserRole } from '@klicker-uzh/prisma/client'
 import { prisma } from '@klicker-uzh/prisma'
 import { FlashcardCorrectness } from '@klicker-uzh/types'
 import { randomUUID } from 'node:crypto'
@@ -183,10 +179,6 @@ describe('personal elements service', () => {
     expect(reset.interval).toBe(1)
     expect(reset.correctCountStreak).toBe(0)
 
-    await prisma.personalElement.update({
-      where: { id: element!.id },
-      data: { verification: PersonalElementVerification.VERIFIED },
-    })
     const revised = await updatePersonalElement(
       {
         id: element!.id,
@@ -196,7 +188,6 @@ describe('personal elements service', () => {
       context(participant.id)
     )
     expect(revised.version).toBe(2)
-    expect(revised.verification).toBe(PersonalElementVerification.UNVERIFIED)
     expect(revised.content).toBe(
       'What is the value of the next-best alternative?'
     )

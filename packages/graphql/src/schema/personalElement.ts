@@ -12,11 +12,6 @@ export const PersonalElementOrigin = builder.enumType('PersonalElementOrigin', {
   values: Object.values(DB.PersonalElementOrigin),
 })
 
-export const PersonalElementVerification = builder.enumType(
-  'PersonalElementVerification',
-  { values: Object.values(DB.PersonalElementVerification) }
-)
-
 export const PersonalElementSourceRef =
   builder.objectRef<PersonalElementSourceValue>('PersonalElementSource')
 
@@ -78,9 +73,6 @@ export const PersonalElement = builder.objectType(PersonalElementRef, {
         null,
     }),
     origin: t.expose('origin', { type: PersonalElementOrigin }),
-    verification: t.expose('verification', {
-      type: PersonalElementVerification,
-    }),
     sourceMessageId: t.exposeString('sourceMessageId', { nullable: true }),
     sourceToolCallId: t.exposeString('sourceToolCallId', { nullable: true }),
     candidateId: t.exposeString('candidateId', { nullable: true }),
