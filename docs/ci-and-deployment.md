@@ -59,6 +59,14 @@ assets. The Dockerfiles declare and export matching build arguments before the
 Next build. See [Feature Flags](./feature-flags.md) for the complete runtime and
 operator contract.
 
+The Manage assistant target is also build-time browser configuration.
+`apps/frontend-manage/.env.stg` and `.env.prd` both map
+`NEXT_PUBLIC_CHAT_URL` from their environment-specific `APP_ORIGIN_CHAT`.
+`apps/frontend-manage/Dockerfile` checks that exact mapping after the STG or PRD
+workflow has installed its file as `.env.production`; an image build fails
+instead of producing a Manage bundle that silently hides the assistant
+launcher.
+
 ## Release flow
 
 Version bumps are **local and manual** via standard-version: `pnpm run release[:alpha|:beta|:rc]` bumps the root plus ~20 package.jsons (`.versionrc.js`), writes the changelog, commits, and tags. Pushing the tag triggers the prd image builds; strict `vX.Y.Z` tags additionally create a GitHub Release (`release.yml`) — alpha tags build prd images without a Release. The Helm `Chart.yaml` auto-bump is commented out in `.versionrc.js`, which is why the chart version drifts.
