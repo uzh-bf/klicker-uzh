@@ -441,9 +441,9 @@ Neither follow-up is authorized by this plan.
 
 ## Progress
 
-- Status: K1 Gate 2 evidence accepted; K2 correction implementation and fallback
-  review are complete locally; final integrated review and publication remain
-  pending
+- Status: K1 Gate 2 evidence accepted; K2 correction implementation and
+  fallback/final reviews are complete locally; browser evidence and publication
+  remain pending
 - Completed: external review analysis; focused correction scope; fresh Git,
   GitHub PR, GitHub stack, sibling-worktree, and local-stack evidence; planning
   specialist review; complete correction plan; local stack tracking repair;
@@ -457,11 +457,11 @@ Neither follow-up is authorized by this plan.
   `3d54fbdbee5378212e65ff97bccf6dbc87f8ceba`
 - Rebased local heads before correction: K1 `ec254bea755bfa3a3d9a93b760aa9ad715643444`;
   K2 `3b54dfb36cf747f4063341ea1bc85e4ade6aa67d`
-- Corrected local K1 head: `c70bf0e8a` (latest documentation and evidence commit atop the corrected implementation)
+- Corrected local K1 head: `3d3034944` (latest documentation and evidence commit atop the corrected implementation)
 - Active slice: K2 lecturer-review workflow corrections
 - Plan commit: `c525e6c60 docs(project): plan response-example review corrections`
-- K2 implementation commit: `81082e32a fix(manage): align response-example review workflow`
-- K2 follow-up corrections commit: `a00c300a0 fix(manage): close response-example review gaps`
+- K2 implementation commit: `3a1cbd45b fix(manage): align response-example review workflow`
+- K2 follow-up corrections commit: `007fa0dcc fix(manage): close response-example review gaps`
   restores the AI-beta gate and invalid-chatbot handling, resets review state
   when switching chatbots, computes the seeded digest canonically, and seeds
   the chatbot/examples inside the focused Playwright journey
@@ -469,9 +469,14 @@ Neither follow-up is authorized by this plan.
   with `unreadable_encrypted_agent_task`; trusted GPT-5.6 Luna max fallback
   reports are recorded under `project/_local/reviews/`. Their findings were
   verified and dispositioned in the follow-up corrections.
+- Final integrated review found only the browser-verification gate and two low
+  documentation issues. The fixture wording and rebased Progress identities
+  are corrected; the browser gate remains open.
 - K2 verification so far: direct Manage, Prisma-data, and Playwright TypeScript
-  checks pass; focused Manage ESLint and Prettier checks pass; the isolated
-  response-example seed runner exits successfully against the task runtime.
+  checks pass; focused Manage ESLint and Prettier checks pass; Markdown citation
+  tests and focused response-example GraphQL contract/service tests pass; the
+  isolated response-example seed runner exits successfully against the task
+  runtime.
 - Upstream boundary: the KB task's W8 work remains responsible for ingestion
   and producer activation seams. This package has no implementation overlap and
   does not assume graph delivery; response-example runtime activation remains
@@ -491,8 +496,8 @@ Neither follow-up is authorized by this plan.
   findings, including the documentation and non-owner edit follow-ups, were
   applied and reverified over immutable K1 range
   `332e044f34a1a5a0c8be00075795d8b3a19e7397..a86d5ae96`.
-- Next: commit the K2 follow-up corrections, run the final integrated review,
-  publish the two corrected branches, update their existing PRs, and wait once
-  for corrected-head CI.
-- Delivery pending: K2 correction, corrected branch push, PR updates,
+- Next: obtain authorized focused Playwright and browser evidence, record the
+  final review disposition, publish the two corrected branches, update their
+  existing PRs, and wait once for corrected-head CI.
+- Delivery pending: browser evidence, corrected branch push, PR updates,
   corrected-head CI, merge, deployment, runtime activation, K3, and Test & Teach
