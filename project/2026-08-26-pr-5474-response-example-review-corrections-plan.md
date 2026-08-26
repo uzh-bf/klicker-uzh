@@ -448,14 +448,14 @@ Neither follow-up is authorized by this plan.
   recovery refs; K1 and K2 rebase onto the selected `v3-ai` base; K1 Gate 2
   evidence and acceptance
 - Current base: `origin/v3-ai` at
-  `332e044f34a1a5a0c8be00075795d8b3a19e7397`; sibling `v3-ai` worktree is clean
+  `a1c63c644fdcdc52ff3dcddbbd3f58fcf363261d`; sibling `v3-ai` worktree is clean
   and synchronized
 - Pre-correction published heads: K1
   `eef688e0fa4b4d34ad00a02f1d8a65509d5c7189`; K2
   `3d54fbdbee5378212e65ff97bccf6dbc87f8ceba`
 - Rebased local heads before correction: K1 `ec254bea755bfa3a3d9a93b760aa9ad715643444`;
   K2 `3b54dfb36cf747f4063341ea1bc85e4ade6aa67d`
-- Corrected local K1 head: `3659e5b22` (latest plan/evidence commit atop the corrected implementation)
+- Corrected local K1 head: `c70bf0e8a` (latest documentation and evidence commit atop the corrected implementation)
 - Active slice: K2 lecturer-review workflow corrections
 - Plan commit: `c525e6c60 docs(project): plan response-example review corrections`
 - K1 evidence: focused Markdown citation tests pass, including 100,000 unmatched
