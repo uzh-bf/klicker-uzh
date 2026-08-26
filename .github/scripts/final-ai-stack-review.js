@@ -31,7 +31,7 @@ const {
 
 const STACK_REVIEW_COMMAND = '/final-review-stack'
 const STACK_REVIEW_CONTEXT = 'final-ai-stack-review'
-const STACK_REVIEW_SCHEMA = 'final-ai-stack-review/v3'
+const STACK_REVIEW_SCHEMA = 'final-ai-stack-review/v4'
 const STACK_REVIEW_WORKFLOW_PATH =
   '.github/workflows/check-ocr-final-stack-review.yml'
 const STACK_REVIEW_CLEAN_STATUS_PREFIX = `${FINAL_REVIEW_MODEL} stack review clean; evidence=`
@@ -43,6 +43,7 @@ const OPENROUTER_API_KEY_ENV = 'OPENROUTER_API_KEY'
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 const REPORT_LIMIT = 55_000
 const MAX_MANIFEST_FILES = 2_000
+const MAX_REVIEWED_PATH_ALIASES = MAX_MANIFEST_FILES * 2
 const MAX_PATCH_LENGTH = 200_000
 const MAX_TOPOLOGY_REQUEST_BYTES = 1_000_000
 const MAX_TOPOLOGY_OUTPUT_TOKENS = 4_096
@@ -68,6 +69,15 @@ function validDigest(value) {
 
 function compareRepositoryPaths(left, right) {
   return left < right ? -1 : left > right ? 1 : 0
+}
+
+function pathAliasesFromFiles(files) {
+  const aliases = new Set()
+  for (const file of files ?? []) {
+    if (file?.filename) aliases.add(file.filename)
+    if (file?.previous_filename) aliases.add(file.previous_filename)
+  }
+  return [...aliases].sort(compareRepositoryPaths)
 }
 
 function sha256(value) {
@@ -350,6 +360,7 @@ function parseStackReviewMetadata(body) {
       'root_head',
       'root_review_id',
       'reviewed_paths',
+      'reviewed_path_aliases',
       'review_ranges',
       'schema_version',
       'stack_id',
@@ -431,6 +442,17 @@ function parseStackReviewMetadata(body) {
         (filePath, index, paths) =>
           !safeRepositoryPath(filePath) ||
           (index > 0 && paths[index - 1] >= filePath)
+      ) ||
+      !Array.isArray(metadata.reviewed_path_aliases) ||
+      metadata.reviewed_path_aliases.length === 0 ||
+      metadata.reviewed_path_aliases.length > MAX_REVIEWED_PATH_ALIASES ||
+      metadata.reviewed_path_aliases.some(
+        (filePath, index, paths) =>
+          !safeRepositoryPath(filePath) ||
+          (index > 0 && paths[index - 1] >= filePath)
+      ) ||
+      metadata.reviewed_paths.some(
+        (filePath) => !metadata.reviewed_path_aliases.includes(filePath)
       ) ||
       !Array.isArray(metadata.review_ranges) ||
       metadata.review_ranges.some(
@@ -755,10 +777,19 @@ async function canPreserveStackReviewAcrossBaseAdvance({
     ) {
       return false
     }
+    if (
+      !Array.isArray(metadata.reviewed_path_aliases) ||
+      metadata.reviewed_path_aliases.length === 0 ||
+      metadata.reviewed_path_aliases.some(
+        (filePath) => !safeRepositoryPath(filePath)
+      )
+    ) {
+      return false
+    }
     const currentRangePaths = currentStackRangePaths(membership)
     if (!currentRangePaths) return false
     const stackPaths = new Set([
-      ...metadata.reviewed_paths,
+      ...metadata.reviewed_path_aliases,
       ...currentRangePaths,
     ])
     return baseFiles.every((file) => {
@@ -2361,6 +2392,9 @@ function renderStackReview({
     review_id: reviewId,
     review_ranges: effectiveReviewRanges,
     reviewed_paths: manifest.path_index.map((entry) => entry.filename),
+    reviewed_path_aliases: pathAliasesFromFiles(
+      manifest.layers.flatMap((layer) => layer.files)
+    ),
     root_head: rootHead,
     root_review_id: rootReviewId,
     schema_version: STACK_REVIEW_SCHEMA,

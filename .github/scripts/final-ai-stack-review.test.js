@@ -813,6 +813,12 @@ test('builds a bounded immutable manifest with exact layer owners', async () => 
     parseStackReviewMetadata(report).findings[0].layer_numbers,
     [1]
   )
+  assert.equal(
+    parseStackReviewMetadata(report).reviewed_path_aliases.includes(
+      'src/rename-old.ts'
+    ),
+    true
+  )
   assert.equal(snapshotMatchesMembership(bundle.manifest, membership), true)
   assert.match(bundle.manifestDigest, /^[0-9a-f]{64}$/)
 })
@@ -1381,6 +1387,33 @@ test('preserves current stack evidence across unrelated default-base advancement
   ])
   files.set('e'.repeat(40), [
     { filename: 'src/new-repair.ts', additions: 1, deletions: 0 },
+  ])
+  assert.equal(
+    await authorizeStackReview({
+      github,
+      context: reviewContext,
+      core: {
+        notice: (message) => baseAdvanceNotices.push(message),
+        setOutput: () => {},
+      },
+    }),
+    false
+  )
+  assert.match(baseAdvanceNotices.at(-1), /strict descendant range/)
+
+  files.set('b'.repeat(40), [
+    {
+      filename: 'src/base-only.ts',
+      previous_filename: 'src/rename-old.ts',
+      additions: 1,
+      deletions: 1,
+    },
+  ])
+  files.set('d'.repeat(40), [
+    { filename: 'src/current-layer-three.ts', additions: 1, deletions: 0 },
+  ])
+  files.set('e'.repeat(40), [
+    { filename: 'src/three.ts', additions: 1, deletions: 0 },
   ])
   assert.equal(
     await authorizeStackReview({

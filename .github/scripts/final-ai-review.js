@@ -849,7 +849,7 @@ function reviewPolicySettings() {
     report_limit: REPORT_LIMIT,
     review_schemas: {
       individual: FINAL_REVIEW_SCHEMA,
-      stack: 'final-ai-stack-review/v3',
+      stack: 'final-ai-stack-review/v4',
       stack_manifest: 'final-ai-stack-manifest/v2',
     },
     workflow_paths: {
