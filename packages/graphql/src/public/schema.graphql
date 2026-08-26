@@ -1071,6 +1071,26 @@ type CourseAssessmentReportRecordPage {
   totalCount: Int!
 }
 
+enum CourseDuplicationJobStatus {
+  COMPLETED
+  FAILED
+  PENDING
+  RUNNING
+}
+
+type CourseDuplicationStatus {
+  createdAt: Date!
+  createdCourseId: String
+  errorMessage: String
+  errorType: String
+  id: ID!
+  sourceCourseId: String!
+  sourceCourseName: String!
+  status: CourseDuplicationJobStatus!
+  targetCourseName: String!
+  updatedAt: Date!
+}
+
 type CourseLeaderboard {
   averageActiveScore: Float!
   computedAt: Date
@@ -2067,6 +2087,7 @@ type Mutation {
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
+  startCourseDuplication(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String!, startDate: Date!): CourseDuplicationStatus
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
@@ -2541,6 +2562,7 @@ type Query {
   courseAssessmentReportRecordCount(courseId: String!): Int!
   courseAssessmentReportRecords(courseId: String!, numEntries: Int, offset: Int, searchString: String, statusFilter: [AssessmentReportCredentialStatus!]): CourseAssessmentReportRecordPage!
   courseChatbots(courseId: String!): [ChatbotPublic!]!
+  courseDuplicationStatuses(ids: [String!]!): [CourseDuplicationStatus!]!
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   element(id: Int!): Element
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]

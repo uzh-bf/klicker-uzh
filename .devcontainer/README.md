@@ -165,9 +165,10 @@ analytics image and lint CI so the root quality gate runs inside the container.
   `node_modules/.pnpm`, so one root volume covers the monorepo). Its dependency
   stamp prevents reuse after lockfile or workspace-manifest changes.
 - Reset the DB without seeding: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`.
-- `response-api` + both workers run `tsx --watch --env-file=.env`; node 24 errors
-  if `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir
-  (the container env from `devcontainer.env` is what actually applies).
+- `response-api` runs `tsx --watch --env-file=.env`; both Hatchet workers compile
+  with Rollup and run the emitted JavaScript under nodemon. Node 24 errors if
+  `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir (the
+  container env from `devcontainer.env` is what actually applies).
 - Tier 3 (`chat`) needs an upstream LLM key: set `UPSTREAM_OPENAI_API_KEY`.
 - Auto V2 sends its Luna-low classification and semantic embedding requests to
   the same upstream as the selected answer model. With OpenRouter, use only
