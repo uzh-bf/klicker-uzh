@@ -43,6 +43,7 @@ test('skips received tracking when the instance is no longer active', async () =
     redisClient,
     liveQuizId: 'quiz-1',
     instanceId: 7,
+    claimId: 'message-1',
   })
 
   assert.equal(tracked, false)
@@ -57,6 +58,7 @@ test('increments received tracking for an active instance', async () => {
     redisClient,
     liveQuizId: 'quiz-2',
     instanceId: '9',
+    claimId: 'message-2',
   })
 
   assert.equal(tracked, true)
@@ -65,6 +67,11 @@ test('increments received tracking for an active instance', async () => {
     (calls.eval[0] as unknown[])[2],
     'lq:quiz-2:i:9:responses:received:count'
   )
+  assert.equal(
+    (calls.eval[0] as unknown[])[4],
+    'lq:quiz-2:i:9:responses:received'
+  )
+  assert.equal((calls.eval[0] as unknown[])[6], 'message-2')
 })
 
 test('surfaces invalid tracking responses to the ingress handler', async () => {
@@ -77,6 +84,7 @@ test('surfaces invalid tracking responses to the ingress handler', async () => {
       redisClient,
       liveQuizId: 'quiz-3',
       instanceId: 11,
+      claimId: 'message-3',
     }),
     /Unexpected token|invalid result/
   )
@@ -93,6 +101,7 @@ test('surfaces defensive tracking failures to the ingress handler', async () => 
       redisClient,
       liveQuizId: 'quiz-4',
       instanceId: 12,
+      claimId: 'message-4',
     }),
     /tracking failed: WRONGTYPE/
   )
@@ -108,6 +117,7 @@ test('times out a stalled tracking command so ingress can continue', async () =>
       redisClient,
       liveQuizId: 'quiz-5',
       instanceId: 13,
+      claimId: 'message-5',
     }),
     /tracking timed out after 250ms/
   )

@@ -3,6 +3,7 @@ export type LiveQuizResponseCountStatus = 'received' | 'processed'
 export const LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS = 60 * 60 * 24
 export const LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS =
   LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
+export const LIVE_QUIZ_RESPONSE_MAX_AGGREGATION_COMMANDS = 2048
 
 // Redis runs this script atomically. Replay claims are age-trimmed so each
 // identifier gets the full horizon without retaining expired members forever.
@@ -12,6 +13,24 @@ local trackingErrors = {}
 local decodeOk, commands = pcall(cjson.decode, ARGV[3])
 if not decodeOk or type(commands) ~= 'table' then
   table.insert(commandErrors, 'invalid Redis commands JSON payload')
+  return cjson.encode({
+    status = 'aggregation_failed',
+    counted = false,
+    commandErrors = commandErrors,
+    trackingErrors = trackingErrors,
+  })
+end
+
+local maxCommandCount = tonumber(
+  ARGV[4] or '${LIVE_QUIZ_RESPONSE_MAX_AGGREGATION_COMMANDS}'
+)
+if
+  not maxCommandCount or
+  maxCommandCount <= 0 or
+  maxCommandCount ~= math.floor(maxCommandCount) or
+  #commands > maxCommandCount
+then
+  table.insert(commandErrors, 'Redis aggregation command budget exceeded')
   return cjson.encode({
     status = 'aggregation_failed',
     counted = false,
@@ -35,6 +54,26 @@ end
 -- sooner. Retries must remain idempotent after tracking data is gone.
 
 local currentTime = tonumber(redis.call('TIME')[1])
+local reconciliationResult = redis.pcall('HGET', KEYS[5], ARGV[1])
+if type(reconciliationResult) == 'table' and reconciliationResult.err then
+  table.insert(commandErrors, reconciliationResult.err)
+  return cjson.encode({
+    status = 'aggregation_failed',
+    counted = false,
+    commandErrors = commandErrors,
+    trackingErrors = trackingErrors,
+  })
+end
+
+if reconciliationResult ~= false then
+  return cjson.encode({
+    status = 'reconciliation_required',
+    counted = false,
+    commandErrors = { 'partial aggregation requires reconciliation' },
+    trackingErrors = trackingErrors,
+  })
+end
+
 local existingClaimResult = redis.pcall('ZSCORE', KEYS[1], ARGV[1])
 if type(existingClaimResult) == 'table' and existingClaimResult.err then
   table.insert(commandErrors, existingClaimResult.err)
@@ -68,7 +107,7 @@ end
 
 if existingClaimResult ~= false then
   local existingClaimScore = tonumber(existingClaimResult)
-  if existingClaimScore < 0 and currentTime + existingClaimScore < replayClaimTtl then
+  if existingClaimScore < 0 then
     return cjson.encode({
       status = 'reconciliation_required',
       counted = false,
@@ -89,7 +128,36 @@ local function isInteger(value)
   return value ~= nil and string.match(tostring(value), '^%-?%d+$') ~= nil
 end
 
+local liveQuizKey = string.match(KEYS[3], '^(lq:.-):i:.-:info$')
 local instanceCommandPrefix = string.match(KEYS[3], '^(.*:)info$')
+
+local function isAllowedCommandKey(key)
+  if not liveQuizKey or not instanceCommandPrefix then
+    return false
+  end
+
+  if string.sub(key, 1, string.len(instanceCommandPrefix)) == instanceCommandPrefix then
+    return true
+  end
+
+  if
+    key == liveQuizKey .. ':lb' or
+    key == liveQuizKey .. ':lbTemporary' or
+    key == liveQuizKey .. ':xp'
+  then
+    return true
+  end
+
+  local blockKeyPrefix = liveQuizKey .. ':b:'
+  if string.sub(key, 1, string.len(blockKeyPrefix)) ~= blockKeyPrefix then
+    return false
+  end
+
+  local blockKeySuffix = string.sub(key, string.len(blockKeyPrefix) + 1)
+  return
+    string.match(blockKeySuffix, '^[^:]+:lb$') ~= nil or
+    string.match(blockKeySuffix, '^[^:]+:lbTemporary$') ~= nil
+end
 
 local function validateCommands()
   for commandIndex, command in ipairs(commands) do
@@ -106,7 +174,11 @@ local function validateCommands()
       return string.format('invalid Redis command at index %d', commandIndex)
     end
 
-    if operation ~= 'HINCRBY' and operation ~= 'HSET' then
+    if
+      operation ~= 'HINCRBY' and
+      operation ~= 'HSET' and
+      operation ~= 'HSETNX'
+    then
       return string.format(
         'unsupported Redis command %s at index %d',
         operation,
@@ -115,9 +187,7 @@ local function validateCommands()
     end
 
     if
-      not instanceCommandPrefix or
-      string.sub(instanceCommandPrefix, 1, 3) ~= 'lq:' or
-      string.sub(key, 1, string.len(instanceCommandPrefix)) ~= instanceCommandPrefix
+      not isAllowedCommandKey(key)
     then
       return string.format(
         'Redis command at index %d targets an invalid namespace',
@@ -207,22 +277,6 @@ if type(trimResult) == 'table' and trimResult.err then
   })
 end
 
-local reconciliationTrimResult = redis.pcall(
-  'ZREMRANGEBYSCORE',
-  KEYS[1],
-  -(currentTime - replayClaimTtl),
-  0
-)
-if type(reconciliationTrimResult) == 'table' and reconciliationTrimResult.err then
-  table.insert(commandErrors, reconciliationTrimResult.err)
-  return cjson.encode({
-    status = 'aggregation_failed',
-    counted = false,
-    commandErrors = commandErrors,
-    trackingErrors = trackingErrors,
-  })
-end
-
 local counterTtl
 if instanceInfoTtl >= 0 then
   counterTtl = math.max(instanceInfoTtl, 1)
@@ -241,39 +295,64 @@ local function expireCounter()
   end
 end
 
-local function markReconciliation()
+local function markReconciliation(appliedCommandCount)
   local reconciliationResult = redis.pcall(
-    'ZADD',
-    KEYS[1],
-    -currentTime,
-    ARGV[1]
+    'HSET',
+    KEYS[5],
+    ARGV[1],
+    cjson.encode({
+      appliedCommandCount = appliedCommandCount,
+      commandErrors = commandErrors,
+      trackingErrors = trackingErrors,
+    })
   )
   if type(reconciliationResult) == 'table' and reconciliationResult.err then
     table.insert(trackingErrors, reconciliationResult.err)
+    local fallbackResult = redis.pcall(
+      'ZADD',
+      KEYS[1],
+      -currentTime,
+      ARGV[1]
+    )
+    if type(fallbackResult) == 'table' and fallbackResult.err then
+      table.insert(trackingErrors, fallbackResult.err)
+      return
+    end
+
+    if instanceInfoTtl == -1 then
+      -- A negative claim is the last replay-safety barrier when the richer
+      -- reconciliation hash cannot be written. Keep it durable for the whole
+      -- active instance; block cleanup later applies the bounded retention.
+      local persistResult = redis.pcall('PERSIST', KEYS[1])
+      if type(persistResult) == 'table' and persistResult.err then
+        table.insert(trackingErrors, persistResult.err)
+      end
+    end
+    return
+  end
+
+  if counterTtl then
+    local reconciliationExpiryResult = redis.pcall(
+      'EXPIRE',
+      KEYS[5],
+      counterTtl,
+      'LT'
+    )
+    if
+      type(reconciliationExpiryResult) == 'table' and
+      reconciliationExpiryResult.err
+    then
+      table.insert(trackingErrors, reconciliationExpiryResult.err)
+    end
   end
 end
 
 local function releaseClaim()
-  -- Mark the claim first. If removal fails, a retry must remain visibly
-  -- blocked instead of treating the incomplete aggregation as processed.
-  markReconciliation()
   local releaseResult = redis.pcall('ZREM', KEYS[1], ARGV[1])
   if type(releaseResult) == 'table' and releaseResult.err then
     table.insert(trackingErrors, releaseResult.err)
-  end
-end
-
--- Initialize a new counter from the legacy processed set once. This keeps
--- counts visible during the key-shape cutover without double-counting new
--- claims. Validation runs before this mutation so malformed batches remain
--- safely retryable.
-local legacyProcessedCount = redis.pcall('SCARD', KEYS[4])
-if type(legacyProcessedCount) == 'table' and legacyProcessedCount.err then
-  table.insert(trackingErrors, legacyProcessedCount.err)
-else
-  local baselineResult = redis.pcall('SETNX', KEYS[2], legacyProcessedCount)
-  if type(baselineResult) == 'table' and baselineResult.err then
-    table.insert(trackingErrors, baselineResult.err)
+    -- A failed claim release must remain visibly blocked until repaired.
+    markReconciliation(0)
   end
 end
 
@@ -313,7 +392,7 @@ if #commandErrors > 0 then
     -- Keep the claim when a non-idempotent command already applied. Retrying
     -- the batch could duplicate the successful commands. A negative claim
     -- score records the unresolved state so every retry remains visible.
-    markReconciliation()
+    markReconciliation(appliedCommandCount)
     return cjson.encode({
       status = 'reconciliation_required',
       counted = false,
@@ -325,19 +404,27 @@ end
 
 local counted = false
 if #commandErrors == 0 then
-  local countResult = redis.pcall('INCR', KEYS[2])
-  if type(countResult) == 'table' and countResult.err then
-    table.insert(trackingErrors, countResult.err)
-  else
-    counted = true
-    expireCounter()
+  local receivedClaimResult = redis.pcall('SISMEMBER', KEYS[6], ARGV[1])
+  if type(receivedClaimResult) == 'table' and receivedClaimResult.err then
+    table.insert(trackingErrors, receivedClaimResult.err)
+  elseif receivedClaimResult == 1 then
+    -- This counter measures the overlap between received tracking and the
+    -- participant aggregate. GraphQL subtracts it to form an exact union
+    -- across a worker-first rolling deployment.
+    local countResult = redis.pcall('INCR', KEYS[2])
+    if type(countResult) == 'table' and countResult.err then
+      table.insert(trackingErrors, countResult.err)
+    else
+      counted = true
+      expireCounter()
+    end
   end
 end
 
 if #trackingErrors > 0 then
   -- Aggregation completed, but the processed metric or its retention did not.
   -- Keep this state visible without ever replaying the non-idempotent batch.
-  markReconciliation()
+  markReconciliation(appliedCommandCount)
   return cjson.encode({
     status = 'reconciliation_required',
     counted = counted,
@@ -362,6 +449,29 @@ if instanceInfoTtl == -2 then
   return cjson.encode({ status = 'inactive' })
 end
 
+local trackingTtlLimit = tonumber(ARGV[1])
+if not trackingTtlLimit or trackingTtlLimit <= 0 then
+  return cjson.encode({
+    status = 'tracking_failed',
+    error = 'invalid received response tracking TTL',
+  })
+end
+
+if type(ARGV[2]) ~= 'string' or ARGV[2] == '' then
+  return cjson.encode({
+    status = 'tracking_failed',
+    error = 'received response claim is missing',
+  })
+end
+
+local addClaimResult = redis.pcall('SADD', KEYS[3], ARGV[2])
+if type(addClaimResult) == 'table' and addClaimResult.err then
+  return cjson.encode({
+    status = 'tracking_failed',
+    error = addClaimResult.err,
+  })
+end
+
 local currentCountResult = redis.pcall('GET', KEYS[1])
 if type(currentCountResult) == 'table' and currentCountResult.err then
   return cjson.encode({
@@ -371,7 +481,7 @@ if type(currentCountResult) == 'table' and currentCountResult.err then
 end
 
 local currentCount = currentCountResult
-local nextCount = 1
+local nextCount
 if currentCount then
   local numericCount = tonumber(currentCount)
   if not numericCount then
@@ -380,15 +490,31 @@ if currentCount then
       error = 'received response counter is not numeric',
     })
   end
-  nextCount = numericCount + 1
+  nextCount = numericCount + addClaimResult
+else
+  local claimCountResult = redis.pcall('SCARD', KEYS[3])
+  if type(claimCountResult) == 'table' and claimCountResult.err then
+    return cjson.encode({
+      status = 'tracking_failed',
+      error = claimCountResult.err,
+    })
+  end
+  nextCount = claimCountResult
 end
 
 -- SET with EX commits the value and its retention together. Active instance
 -- info without an expiry keeps the counter persistent until cleanup starts.
 local setResult
 if instanceInfoTtl >= 0 then
-  local trackingTtl = math.max(math.min(instanceInfoTtl, tonumber(ARGV[1])), 1)
+  local trackingTtl = math.max(math.min(instanceInfoTtl, trackingTtlLimit), 1)
   setResult = redis.pcall('SET', KEYS[1], nextCount, 'EX', trackingTtl)
+  local claimExpiryResult = redis.pcall('EXPIRE', KEYS[3], trackingTtl, 'LT')
+  if type(claimExpiryResult) == 'table' and claimExpiryResult.err then
+    return cjson.encode({
+      status = 'tracking_failed',
+      error = claimExpiryResult.err,
+    })
+  end
 else
   setResult = redis.pcall('SET', KEYS[1], nextCount)
 end
@@ -433,6 +559,16 @@ export function getLiveQuizResponseReplayClaimKey({
   instanceId: string | number
 }): string {
   return `lq:${liveQuizId}:i:${instanceId}:responses:processed:claims`
+}
+
+export function getLiveQuizResponseReconciliationKey({
+  liveQuizId,
+  instanceId,
+}: {
+  liveQuizId: string
+  instanceId: string | number
+}): string {
+  return `lq:${liveQuizId}:i:${instanceId}:responses:reconciliation`
 }
 
 export function getLiveQuizLegacyResponseProcessedKey({

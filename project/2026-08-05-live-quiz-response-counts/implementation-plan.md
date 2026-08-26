@@ -9,14 +9,13 @@
 **Goal:** Show a lecturer the received and processed answer counts for every
 element in an active or executed live quiz block.
 
-**Architecture:** The response API records a best-effort numeric received
-counter; response processors record a best-effort numeric processed counter only
-after a complete aggregation batch succeeds. Redis tracking failures can
-undercount otherwise accepted or successfully aggregated events. A bounded
-processed replay-claim set prevents duplicate non-idempotent writes. The
-authorized `cockpitQuiz` query reads the new counters and compatibility values
-and decorates the matching `ElementInstance`; the existing two-second cockpit
-polling renders the values without a new subscription.
+**Architecture:** The response API records a best-effort received claim and
+counter. Response processors atomically aggregate results and count the overlap
+with those ingress claims. GraphQL forms the received union with the existing
+processed-participant aggregate. An age-bounded completed-claim set prevents
+duplicate writes, while persistent active-instance reconciliation metadata
+blocks partial-batch replay. The authorized `cockpitQuiz` query decorates each
+matching `ElementInstance`; existing two-second polling renders the values.
 
 **Tech Stack:** TypeScript 6, ioredis 5.4.1, Hatchet 1.9.4, Pothos GraphQL,
 Apollo Client, Next.js 16, React 19, next-intl, Vitest, Playwright.
@@ -32,14 +31,14 @@ Apollo Client, Next.js 16, React 19, next-intl, Vitest, Playwright.
   and database uniqueness checks. The received metric intentionally counts
   accepted transport events before that downstream boundary.
 - Keep the existing `numOfParticipants` field and behavior unchanged.
-- Use numeric Redis counters for reporting. Use the age-trimmed
-  processed-claims sorted set only as a replay claim, not as the processed
-  count. Keep the old processed set read-only for rollout compatibility and the
-  initial counter baseline.
+- Use the received claim set, numeric received/overlap counters, participant
+  aggregate, age-trimmed completed claims, and reconciliation hash for
+  reporting and replay safety.
 - Keep tracking keys under `lq:<quiz-id>:i:<instance-id>:*` so existing expiry
   and cleanup logic applies.
-- Do not change Prisma, response validation rules, scoring, XP, leaderboards,
-  cockpit polling, or subscription behavior.
+- Do not change Prisma, scoring, XP, leaderboards, cockpit polling, or
+  subscription behavior. Choice validation may be tightened to the configured
+  cardinality and index range before aggregation.
 - Add no runtime dependencies. The response processor adds the repository's
   existing Vitest version as a test-only dependency so its focused contract
   tests run in isolation.
@@ -60,40 +59,43 @@ real Redis contract now provides the stable seam for the replacement behavior.
 
 Decision: Use these keys for new writes:
 
-- `responses:received:count` — numeric ingress counter;
-- `responses:processed:count` — numeric successful-aggregation counter;
+- `responses:received` and `responses:received:count` — deduplicated ingress
+  claims and their cardinality;
+- `responses:processed:count` — successfully processed overlap with received
+  claims;
 - `responses:processed:claims` — age-trimmed sorted-set replay claim with a
   24-hour horizon;
-- `responses:processed` — legacy processed set read only for compatibility and
-  the initial counter baseline.
+- `responses:reconciliation` — claim-specific partial-write metadata that stays
+  persistent while the instance remains active.
 
-The processing script trims expired claim timestamps, initializes a missing
-processed counter once from the legacy processed-set cardinality, checks both
-claim stores, validates command target types and numeric increment fields,
-records the identifier with its claim timestamp, and applies every command
-with `redis.pcall`. It increments the counter only when no command fails. A
+The processing script trims expired completed claims, checks reconciliation
+first, validates command namespaces, arity, target types and numeric fields,
+records the identifier, and applies every command with `redis.pcall`. It
+increments the overlap counter only after complete aggregation and only for a
+claim written by new ingress. A
 preflight or first-command failure returns `aggregation_failed` and releases
 the claim so the worker can throw and Hatchet can retry. An unexpected failure
-after an earlier command has applied stores a negative-score reconciliation
-marker and returns `reconciliation_required`; the worker keeps the Hatchet task
-failed, while retries preserve that state without repeating non-idempotent
-writes. It returns
+after an earlier command has applied stores the applied count and errors in the
+reconciliation hash and returns `reconciliation_required`; the worker stays
+failed, while retries preserve that state beyond the normal replay horizon
+without repeating non-idempotent writes. It returns
 `already_processed`, `processed`, `aggregation_failed`, or
-`reconciliation_required`. The legacy
-received set is read-only compatibility input; GraphQL adds its cardinality to
-the new received counter. A missing processed counter falls back to the legacy
-processed-set cardinality as an opaque pre-cutover baseline.
+`reconciliation_required`. GraphQL reports received as the participant
+aggregate plus tracked received claims not yet represented by the overlap; the
+participant aggregate is the processed count.
 
-Risk: The compatibility bridge cannot make old workers increment the new
-processed counter. The current staging values roll the fifteen components as
-one promotion, so they cannot provide the required GraphQL-before-ingress and
-old-worker-drain ordering by themselves. Do not promote this cutover through
-the ordinary staging path until mixed-version workers are counter-compatible or
-an explicit rollout can deploy GraphQL first, drain old response processors,
-initialize the counters, and then run only the new processors. A post-write
-command failure retains the replay claim and requires reconciliation because
-retrying could duplicate a non-idempotent update; safe preflight and
-first-command failures remain retryable.
+The Helm chart enforces rolling-deployment compatibility: both response
+processors are ArgoCD sync wave `0`, and both response APIs are wave `1`.
+GraphQL and Manage may share wave `0`. Before ingress cutover, old traffic is a
+lower bound until it is processed; afterward the union converges exactly. A
+post-write failure makes only processed nullable; received remains visible.
+Selection/case-study payloads must match cached instance shapes, authoring caps
+choices and case-study response entries at 1,000, and the Lua script caps
+atomic batches at 2,048 commands while retaining the 600-command compatibility
+regression.
+`EXPIRE ... LT` prevents block or quiz cleanup retries from extending
+retention. If the reconciliation hash cannot be written, its negative-claim
+fallback remains persistent until cleanup starts retention.
 
 Delegation Map:
 
@@ -108,7 +110,7 @@ Authority: The user approved the redesign and local implementation, tests,
 documentation, reviews, and commits, and requested that PR #5315 receive the
 conflict-resolved branch. After the final review, publish this branch to the
 PR head `feat/live-quiz-response-counts`; merging, deployment, worker draining,
-and rollout remain withheld.
+and rollout remain out of scope.
 
 Terminal: The local branch contains the verified redesign and readiness
 evidence, with deployment compatibility conditions recorded. Pause only for a
@@ -119,8 +121,8 @@ Progress: Published to PR #5315. The PR status and readiness report maintain
 the current branch head, base, CI, and exact-head review state. The
 counter/replay redesign is formatted, typechecked, covered by five focused
 response-api tests, nine worker tests, and real-Redis util tests. Current-head
-CI and the exact-head final review remain the delivery gates; the mixed-version
-staging rollout remains explicitly withheld.
+CI and the exact-head final review remain the delivery gates; mixed-version
+count convergence is covered by the GraphQL integration suite.
 
 This addendum supersedes the earlier set-cardinality details in Tasks 1–6;
 those sections remain as implementation history for the original package.

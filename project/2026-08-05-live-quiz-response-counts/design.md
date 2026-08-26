@@ -17,40 +17,33 @@ cockpit does not sum these into a block total.
 - Aggregating element response counts into a block total.
 - Adding participant-level processing details or a response failure list.
 - Persisting operational response counts in PostgreSQL.
-- Changing response validation, deduplication, scoring, XP, or leaderboards.
+- Changing response deduplication, scoring, XP, or leaderboard semantics.
 - Adding a new subscription or changing the cockpit polling interval.
 
 ## Semantics
 
 `numOfResponsesReceived` is the number of response events accepted by the
-response API for one element instance and successfully recorded by the numeric
-received counter. The response API increments that counter before handing the
-event to Hatchet. Tracking uses Redis clients that explicitly connect during
-startup, disable offline queueing and per-request retries, and apply a 250ms
-command timeout. A timeout or other
-tracking failure is logged and the participant event is still handed to
-Hatchet. The client timeout bounds the response API's wait and pending retry
-work, but it cannot cancel a Lua script that Redis has already started.
-Tracking is best-effort so an unavailable metric store never rejects a
-participant response; such a failure can temporarily undercount received
-responses. During the key-shape transition, the cockpit also includes the
-legacy received-set cardinality, so old and new ingress instances remain
-visible without writing new unbounded sets. Assessment admission continues to
-use its existing participant and database uniqueness boundary, while this
-metric counts accepted transport events before that downstream boundary.
+response API for one element instance. Ingress records the unique message or
+correlation claim in a received set and maintains its numeric cardinality
+before handing the event to Hatchet. Tracking has a 250 ms deadline and is
+best-effort, so an unavailable metric store never rejects an answer. Retrying
+the same claim does not increment the count twice, including when a client-side
+timeout races a Lua script that completes in Redis.
 
 `numOfResponsesProcessed` is the number of response events whose complete Redis
-aggregation command batch succeeded. For regular quizzes, the atomic processing
-script claims a bounded replay identifier, applies the result commands, and
-increments the numeric processed counter only when no command reports an error.
-Assessment aggregation uses the same contract. Preflight validation and
-failures before any aggregation command succeeds release the replay claim and
-allow the worker to throw so Hatchet can retry. A failure after an earlier
-command succeeds stores a negative-score reconciliation marker and returns
-`reconciliation_required`; the worker keeps the Hatchet task failed, while
-retries return the same status without repeating non-idempotent updates.
-Processed-counter or retention failures use the same reconciliation state, so
-metric drift is visible without replaying successful aggregation commands.
+aggregation batch succeeded. The existing `results.participants` aggregate is
+the processed total. A separate numeric counter records the overlap between
+claims tracked by new ingress and successfully processed by the new worker.
+GraphQL reports the union of the participant aggregate and tracked-but-not-yet-
+processed claims. Assessment aggregation uses the same contract.
+
+Preflight and first-command failures release the replay claim and throw for a
+safe Hatchet retry. A later failure stores claim-specific reconciliation
+metadata, including the applied command count, in a persistent hash. Tracking
+failures after successful aggregation use the same state. Every retry checks
+that hash before the age-bounded completed-claim guard, so a delayed retry
+cannot replay an applied prefix. Reconciliation makes only processed nullable;
+the received value remains visible.
 
 The difference between the two values is an operational signal, not a strict
 queue-depth metric. It can include work that is still queued as well as invalid,
@@ -64,61 +57,55 @@ visible for reconciliation and can keep processed lower until repaired.
 ### Tracking
 
 Use the execution Redis instance selected by the live quiz's regular-versus-
-assessment mode. New writes use numeric counters and an age-trimmed replay
-claim:
+assessment mode:
 
-- `lq:<quiz-id>:i:<instance-id>:responses:received:count` is a numeric counter
-  incremented once for each accepted ingress event;
-- `lq:<quiz-id>:i:<instance-id>:responses:processed:count` is a numeric counter
-  incremented only after a complete aggregation command batch succeeds;
+- `lq:<quiz-id>:i:<instance-id>:responses:received` is the bounded-lifetime set
+  of ingress claims, and `:received:count` mirrors its cardinality;
+- `lq:<quiz-id>:i:<instance-id>:responses:processed:count` counts only
+  successfully processed claims that are members of the received set;
 - `lq:<quiz-id>:i:<instance-id>:responses:processed:claims` is a sorted-set
-  replay claim for message IDs or correlation IDs. Positive scores are
-  completed-claim timestamps; negative scores mark unresolved partial
-  aggregation at the corresponding timestamp. Members older than the 24-hour
-  replay horizon are trimmed before each claim. The key remains for the full
-  24-hour replay horizon independently of instance-info and counter retention;
-- `lq:<quiz-id>:i:<instance-id>:responses:processed` remains the legacy replay
-  set during the worker rollout and is read only for compatibility and the
-  initial processed-counter baseline.
+  replay guard for successfully completed message or correlation IDs within 24
+  hours;
+- `lq:<quiz-id>:i:<instance-id>:responses:reconciliation` is a hash of
+  unresolved claim metadata. It remains persistent while the instance is
+  active and expires with the underlying cache after closure.
 
-The received and processing scripts update their counters and retention in
-Redis Lua. Processing initializes a missing processed counter from the legacy
-processed-set cardinality once, checks both the age-trimmed claims and the
-legacy set, and records each new claim with its own timestamp. Preflight or
-first-command errors release the claim and leave the processed counter
-unchanged so the worker can retry. If a later command fails after an earlier
-command has succeeded, the script stores a negative-score reconciliation
-marker and returns `reconciliation_required`; the worker keeps the Hatchet task
-failed, and later retries preserve that failure without repeating
-non-idempotent updates. Connection-level script failures still throw so Hatchet
-can retry.
+The cockpit reports received as
+`participants + max(received - processed overlap, 0)` and processed as
+`participants`. This is an exact union after the worker-first rollout gate and
+a safe lower bound before ingress cutover. An unresolved reconciliation hash
+makes only processed unavailable (`null`).
 
-The legacy received set
-`lq:<quiz-id>:i:<instance-id>:responses:received` is read-only compatibility
-input while old response-api instances drain. The cockpit adds its cardinality
-to the new received counter. New code never appends to that set. For processed
-responses, the new counter takes precedence once initialized; otherwise the
-legacy processed-set cardinality is used as the opaque pre-cutover baseline.
+Choice payloads must enumerate every configured choice exactly once using
+unique in-range integer indices. The processing script accepts only the current
+instance plus the quiz's block/quiz leaderboard and XP key families and checks
+exact arity and value types before mutation. Selection and case-study payloads
+must match the active instance's cached input/identifier shape. Authoring caps
+selection inputs at 100, choices at 1,000, and case/item/criterion response
+entries at 1,000; the Lua script also rejects more than 2,048 aggregation
+commands before mutation. Real-Redis coverage includes a valid 600-command
+batch and an oversized batch.
 
 All keys remain under the existing
 `lq:<quiz-id>:i:<instance-id>:*` namespace. Active counters have constant key
-space, while sorted-set replay claims trim members after the bounded horizon and
-expire with the latest claim while the instance is active. Block closure and
-quiz termination start one-day retention on instance-info keys before expiring
-the response keys. Response counters mirror the remaining instance-info
-retention, or receive a one-day safety expiry when instance-info is already
-missing. Replay claims retain the full 24-hour horizon independently so late
-retries cannot repeat a completed batch.
+space, while completed replay claims trim after the bounded horizon.
+Reconciliation state persists while active; if its hash cannot be written, the
+negative replay fallback is also made persistent. Block closure and quiz
+termination start one-day retention on all response keys. Every expiry uses
+Redis's `LT` condition, so retryable cleanup can establish or shorten a TTL but
+never extend it.
 
-The rollout must deploy GraphQL before new ingress, drain old response
-processor replicas before initializing processed counters, and then run only
-the new processors. The persisted-operation manifest retains the previous
-`GetCockpitQuiz` hash while old Manage bundles drain; GraphQL generation
-rebuilds that compatibility entry with
+The Helm chart puts both regular and assessment response processors in ArgoCD
+sync wave `0` and both response APIs in wave `1`. ArgoCD therefore completes
+and health-checks the worker rollout before updating ingress, guaranteeing that
+every claim written by new ingress can update the overlap counter. GraphQL and
+Manage may share wave `0`. Old-ingress traffic is a lower bound until processed;
+after ingress cutover the union is exact. The persisted-operation manifest
+retains the previous `GetCockpitQuiz` hash while old Manage bundles drain;
+GraphQL generation rebuilds that compatibility entry with
 `packages/graphql/scripts/merge-persisted-query-compatibility.mjs`. This is
-required because an old processor can claim and aggregate without incrementing
-the new processed counter, and an old frontend must continue to resolve its
-persisted operation during the mixed-version window.
+required so an old frontend continues to resolve its persisted operation during
+the mixed-version window.
 
 ### Cockpit query
 
@@ -127,12 +114,14 @@ Extend GraphQL `ElementInstance` with nullable integer fields:
 - `numOfResponsesReceived`
 - `numOfResponsesProcessed`
 
-`getCockpitQuiz` reads the new counters plus the legacy bridge for every
-instance in started blocks and attaches them to that instance. Instances in
+`getCockpitQuiz` reads the new counters, legacy bridge, participant aggregate,
+and reconciliation markers for every instance in started blocks and attaches
+them to that instance. Instances in
 scheduled blocks return `null` for both fields, so the UI can distinguish “not
 started” from a started element with zero answers. Instances in active and
 executed blocks return explicit integer values, defaulting missing Redis keys to
-zero. Malformed or unavailable count reads degrade the cockpit counts to
+zero. An unresolved reconciliation marker makes only the processed value
+`null`. Malformed or unavailable count reads degrade all cockpit counts to
 `null`.
 
 The existing `numOfParticipants` calculation and field remain unchanged because
@@ -148,7 +137,11 @@ The live quiz cockpit block card keeps its block label, status, participant
 count, questions, and countdown. For every element in an active or executed
 block, the element row adds a compact response status with localized labels:
 
-> Question name — Received 12 · Processed 10
+> Question name — [inbox] 12 → [double-check] 10
+
+The visible pill is icon-led; its accessible label and tooltip use the localized
+“Received: 12 · Processed: 10” text. During reconciliation, the valid received
+value remains visible and processed renders as an en dash.
 
 Elements in scheduled blocks do not display response status. Each status gets a
 stable `data-cy` selector containing the element-instance ID for end-to-end
@@ -164,14 +157,14 @@ right-hand cell so row alignment remains stable without displaying counts.
 
 ## Layer Footprint
 
-- `apps/response-api`: increment the numeric received counter before handing the
-  response to asynchronous processing.
+- `apps/response-api`: record the ingress claim and received count before
+  handing the response to asynchronous processing.
 - `apps/hatchet-worker-response-processor`: atomically claim replay identifiers
-  and increment the numeric processed counter after successful regular or
+  and increment the received/processed overlap after successful regular or
   assessment aggregation.
 - `packages/graphql`: expose element-instance fields, read numeric counters plus
-  legacy cardinality baselines, update the cockpit operation, and regenerate
-  checked-in GraphQL artifacts.
+  the participant aggregate and reconciliation state, update the cockpit
+  operation, and regenerate checked-in GraphQL artifacts.
 - `apps/frontend-manage`: render the response status on cockpit block cards.
 - `packages/i18n`: add English and German labels.
 - `playwright`: extend the existing live quiz lifecycle coverage.
@@ -196,18 +189,22 @@ not change leaderboard data.
 - A received-counter Redis failure or the 250ms tracking deadline is logged and
   ingress continues; operational counts can therefore undercount during a
   tracking outage.
-- A Hatchet enqueue failure leaves a received marker without a processed marker.
+- A Hatchet enqueue failure leaves a received claim outside the participant
+  aggregate.
 - A processing-script preflight or first-command failure is logged as an
   aggregation failure after the replay claim is released; it does not increment
   the processed counter and triggers a worker retry.
-- A processing-script failure after an earlier command succeeds retains the
-  replay claim as a negative-score reconciliation marker, returns
+- A processing-script failure after an earlier command succeeds stores the
+  applied count and errors in the reconciliation hash, returns
   `reconciliation_required`, and keeps the Hatchet task failed without
-  repeating already-applied commands on retry.
+  repeating already-applied commands on retry or after the normal claim
+  horizon.
 - A connection-level processing-script failure throws so Hatchet can retry; if
   Redis completed the script, the replay claim makes that retry a no-op.
-- Worker retries do not increase the processed counter for the same tracking
-  identifier within the bounded replay horizon.
+- Worker retries do not increase results or the overlap counter for the same
+  completed tracking identifier within the bounded replay horizon, and
+  unresolved identifiers remain blocked by reconciliation state until repair
+  or post-closure retention expiry.
 - Duplicate standard submissions can legitimately increase received without
   processed because regular-response deduplication currently happens in the
   worker.

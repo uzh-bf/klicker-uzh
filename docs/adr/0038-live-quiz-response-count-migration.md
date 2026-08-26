@@ -5,46 +5,80 @@
 
 ## Context
 
-Live-quiz response counts are moving from legacy Redis sets to numeric
-counters and an age-trimmed replay-claim sorted set. Staging currently rolls
-all fifteen components together per promotion, so the migration has a real
-mixed-version gap. Processing also has a non-idempotent partial-write trade-off
-when one aggregation command succeeds before a later command fails.
+The lecturer cockpit needs per-element received and processed response counts
+without changing answer admission or result aggregation. The rollout overlaps
+old and new response APIs and workers, and result aggregation contains
+non-idempotent Redis increments that cannot safely be replayed after a partial
+write.
 
 ## Decision
 
-Use numeric received and processed counters for reporting. Keep the legacy
-sets read-only for compatibility and baseline initialization. Do not use the
-ordinary all-fifteen staging promotion for this cutover unless mixed versions
-are proven counter-compatible or an explicit rollout deploys GraphQL before
-ingress, drains old response processors, initializes counters, and then runs
-only new processors.
+Use the existing per-instance `results.participants` value as the processed
+total. New ingress also records each accepted `messageId` or assessment
+`correlationId` in the received set and maintains a numeric received counter.
+The new worker increments a processed-overlap counter only when that same claim
+was recorded by new ingress. The cockpit reports the set union:
 
-Preflight validation and a failure before any aggregation command succeeds
-release the replay claim and allow Hatchet to retry. A failure after a
-non-idempotent command succeeds changes the claim to a negative-score
-reconciliation marker and returns `reconciliation_required`. The worker keeps
-the Hatchet task failed, while retries return the same status without repeating
-already-applied commands, until the partial result is reconciled manually.
-Processed-counter or retention failures after successful aggregation use the
-same marker so metric drift also remains operationally visible.
+`participants + max(tracked received - tracked processed overlap, 0)`
 
-Replay claims remain for the full 24-hour replay horizon, independently of the
-shorter instance-info and counter retention. The end-live-quiz mutation
-persists `ENDED` before arming that retention. If retention fails, a repeated
-call retries only retention through the existing `ENDED` branch and does not
-repeat end-of-quiz side effects.
+This distinguishes old processed traffic from new traffic that is still queued
+or rejected. The Helm chart assigns both response-processing workers to ArgoCD
+sync wave `0` and both response APIs to wave `1`. ArgoCD waits for the regular
+and assessment workers to be healthy before updating ingress. GraphQL and
+Manage may deploy in wave `0` because their fields are additive and nullable.
+Before ingress cutover, traffic accepted by an old response API is a lower
+bound until it is processed; after the enforced worker-first gate and ingress
+cutover, the union converges exactly.
+
+The received Lua script writes the claim set and counter atomically. Repeating
+the same claim does not increment twice. A timeout can therefore complete in
+Redis and still be retried safely. Tracking remains best effort and never
+rejects a participant response.
+
+The processing script validates the complete command batch before mutation and
+restricts targets to the current instance and current quiz leaderboard/XP key
+families. Choice payloads must enumerate every configured choice exactly once
+with unique in-range integer indices. Selection and case-study payloads must
+match cached instance identifiers and sizes. Domain validation caps authored
+selection inputs at 100, choices at 1,000, and case/item/criterion response
+entries at 1,000; the script independently rejects batches above 2,048 commands
+before mutation. A real-Redis regression covers a valid 600-command batch and
+an oversized batch.
+
+A failure before any aggregation command succeeds releases the replay claim so
+Hatchet can retry. A failure after a non-idempotent command succeeds writes a
+claim-specific entry to the reconciliation hash containing the applied command
+count and error details. Successful aggregation followed by tracking failure
+uses the same state. The worker keeps the task failed, and every retry checks
+the reconciliation hash before the age-bounded replay claim, so the partial
+batch cannot replay after the normal 24-hour claim horizon. Reconciliation
+entries remain persistent while the instance is active and expire only with
+the underlying instance data after block/quiz retention starts, unless an
+operator repairs them earlier. The cockpit preserves the received count and
+reports only processed as `null` while any reconciliation entry remains.
+
+If the reconciliation hash cannot be written, the script falls back to a
+negative replay marker and removes that sorted set's TTL while the instance is
+active. Cleanup later establishes the normal post-closure retention. This keeps
+the fallback replay barrier beyond the completed-claim horizon without making
+participant metadata permanent after quiz closure.
+
+Completed replay claims retain a 24-hour horizon. Block and quiz cleanup apply
+Redis `EXPIRE ... LT` to instance, counter, claim, compatibility, and
+reconciliation keys, so retries can establish or shorten retention but never
+extend it. The end-live-quiz retry path does not repeat end side effects.
 
 The persisted-operation manifest retains the previous `GetCockpitQuiz` hash
 while older Manage bundles drain. The compatibility entry is rebuilt after
-GraphQL code generation by
+GraphQL generation by
 `packages/graphql/scripts/merge-persisted-query-compatibility.mjs` and is
-removed only in a deliberate follow-up after the old bundle is retired.
+removed only in a deliberate follow-up.
 
 ## Consequences
 
-Counters remain bounded, replay claims protect the full replay horizon, and
-duplicate retries do not repeat already-applied commands. Partial writes remain
-visible as failed Hatchet tasks and require operational reconciliation. The
-rollout gate remains until compatibility or the required deployment order is
-proven.
+Counts remain meaningful during the ordered rollout and exact after ingress
+cutover. Duplicate ingress attempts and completed worker retries do not inflate
+counts. Partial aggregation is operationally visible without risking replay.
+The rollout has an explicit worker-before-ingress gate, and unresolved
+reconciliation data shares the same post-closure retention boundary as the
+underlying live-quiz cache.

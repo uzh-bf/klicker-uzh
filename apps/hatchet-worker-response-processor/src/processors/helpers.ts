@@ -10,10 +10,13 @@ import {
   gradeQuestionSC,
   gradeQuestionSelection,
 } from '@klicker-uzh/grading'
-import type {
-  FreeTextRestrictions,
-  LiveQuizResponseInput,
-  NumericalRestrictions,
+import {
+  type FreeTextRestrictions,
+  type LiveQuizResponseInput,
+  MAX_LIVE_QUIZ_CASE_STUDY_RESPONSE_ENTRIES,
+  MAX_LIVE_QUIZ_CHOICES,
+  MAX_LIVE_QUIZ_SELECTION_INPUTS,
+  type NumericalRestrictions,
 } from '@klicker-uzh/types'
 import {
   DEFAULT_CORRECT_POINTS,
@@ -36,6 +39,66 @@ export interface RedisCommandCollector {
     field: string,
     value: number | string
   ): RedisCommandCollector
+  hsetnx(
+    key: string,
+    field: string,
+    value: number | string
+  ): RedisCommandCollector
+}
+
+export type LiveQuizResponseValidationShape = {
+  numberOfInputs?: number
+  selectionAnswerIds?: number[]
+  caseStudy?: {
+    caseIds: string[]
+    itemIds: number[]
+    criterionIds: string[]
+  }
+}
+
+export function getLiveQuizResponseValidationShape(
+  instanceInfo: Record<string, string>
+): LiveQuizResponseValidationShape {
+  const numberOfInputs = Number(instanceInfo.numberOfInputs)
+  const validationShape: LiveQuizResponseValidationShape = {
+    numberOfInputs:
+      Number.isSafeInteger(numberOfInputs) && numberOfInputs > 0
+        ? numberOfInputs
+        : undefined,
+  }
+
+  try {
+    const answerIds = JSON.parse(instanceInfo.selectionAnswerIds ?? 'null')
+    if (
+      Array.isArray(answerIds) &&
+      answerIds.every((answerId) => Number.isSafeInteger(answerId))
+    ) {
+      validationShape.selectionAnswerIds = answerIds
+    }
+  } catch {
+    // Blocks started before this metadata was added use the bounded fallback.
+  }
+
+  try {
+    const shape = JSON.parse(instanceInfo.caseStudyResponseShape ?? 'null')
+    if (
+      shape &&
+      Array.isArray(shape.caseIds) &&
+      shape.caseIds.every((caseId: unknown) => typeof caseId === 'string') &&
+      Array.isArray(shape.itemIds) &&
+      shape.itemIds.every((itemId: unknown) => Number.isSafeInteger(itemId)) &&
+      Array.isArray(shape.criterionIds) &&
+      shape.criterionIds.every(
+        (criterionId: unknown) => typeof criterionId === 'string'
+      )
+    ) {
+      validationShape.caseStudy = shape
+    }
+  } catch {
+    // Blocks started before this metadata was added use the bounded fallback.
+  }
+
+  return validationShape
 }
 
 export function createRedisCommandCollector(): RedisCommandCollector {
@@ -48,6 +111,10 @@ export function createRedisCommandCollector(): RedisCommandCollector {
     },
     hset(key, field, value) {
       commands.push(['HSET', key, field, value])
+      return collector
+    },
+    hsetnx(key, field, value) {
+      commands.push(['HSETNX', key, field, value])
       return collector
     },
   }
@@ -135,6 +202,8 @@ export function validateStudentResponse({
   type,
   response,
   restrictions,
+  choiceCount,
+  validationShape,
 }: {
   type:
     | 'SC'
@@ -147,6 +216,8 @@ export function validateStudentResponse({
     | 'CONTENT'
   response: LiveQuizResponseInput
   restrictions?: NumericalRestrictions | FreeTextRestrictions
+  choiceCount?: number
+  validationShape?: LiveQuizResponseValidationShape
 }): { valid: boolean; message?: string } {
   if (type === 'SC' || type === 'MC' || type === 'KPRIM') {
     // response should be of format { ix: number, selected: boolean | undefined }[]
@@ -162,6 +233,27 @@ export function validateStudentResponse({
       return {
         valid: false,
         message: `Invalid response submitted for choices question ${JSON.stringify(response)}`,
+      }
+    }
+
+    if (
+      typeof choiceCount !== 'number' ||
+      !Number.isSafeInteger(choiceCount) ||
+      choiceCount <= 0 ||
+      choiceCount > MAX_LIVE_QUIZ_CHOICES ||
+      response.choices.length !== choiceCount ||
+      new Set(response.choices.map((choice) => choice.ix)).size !==
+        response.choices.length ||
+      response.choices.some(
+        (choice) =>
+          !Number.isSafeInteger(choice.ix) ||
+          choice.ix < 0 ||
+          choice.ix >= choiceCount
+      )
+    ) {
+      return {
+        valid: false,
+        message: 'Choice response does not match the configured choices',
       }
     }
 
@@ -253,47 +345,140 @@ export function validateStudentResponse({
 
     return { valid: true }
   } else if (type === 'SELECTION') {
-    // response should be an array of numbers
+    const configuredInputCount = validationShape?.numberOfInputs
+    const configuredAnswerIds = validationShape?.selectionAnswerIds
+
+    // The configured input count bounds aggregation work. Answer ids are
+    // checked when the active instance contains its answer-collection shape;
+    // the length/type checks remain safe for blocks started before rollout.
     if (
       !Array.isArray(response.selection) ||
       response.selection.length === 0 ||
-      // TODO: re-introduce the following check once the incoming responses are guaranteed to be correct through response-api validation
-      // !response.selection.every((r) => typeof r === 'number') ||
-      response.selection.filter(
-        (r) => r !== -1 && typeof r !== 'undefined' && r !== null
-      ).length === 0 // at least one selection must be made (excluding skipped fields with value -1 / undefined / null)
+      response.selection.length > MAX_LIVE_QUIZ_SELECTION_INPUTS ||
+      response.selection.some(
+        (answerId) => !Number.isSafeInteger(answerId) || answerId < -1
+      )
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for selection question ${JSON.stringify(response)}`,
+        message: 'Selection response does not match the configured inputs',
+      }
+    }
+
+    const selectedAnswers = response.selection.filter(
+      (answerId) => answerId !== -1
+    )
+    if (
+      selectedAnswers.length === 0 ||
+      new Set(selectedAnswers).size !== selectedAnswers.length ||
+      (typeof configuredInputCount === 'number' &&
+        response.selection.length !== configuredInputCount) ||
+      (configuredAnswerIds &&
+        configuredAnswerIds.length > 0 &&
+        selectedAnswers.some(
+          (answerId) => !configuredAnswerIds.includes(answerId)
+        ))
+    ) {
+      return {
+        valid: false,
+        message: 'Selection response does not match the configured inputs',
       }
     }
 
     return { valid: true }
   } else if (type === 'CASE_STUDY') {
-    // response should be of the format { [caseId: string]: { [itemId: number]: { [criterionId: string]: number } } }
+    const assessment = response.assessment
     if (
-      !response.assessment ||
-      Object.keys(response.assessment).length === 0 ||
-      !Object.values(response.assessment).every(
-        (caseObj) =>
-          typeof caseObj === 'object' &&
-          caseObj !== null &&
-          Object.keys(caseObj).length > 0 &&
-          Object.values(caseObj).every(
-            (itemObj) =>
-              typeof itemObj === 'object' &&
-              itemObj !== null &&
-              Object.keys(itemObj).length > 0 &&
-              Object.values(itemObj).every(
-                (criterionResponse) => typeof criterionResponse === 'number'
-              )
-          )
-      )
+      !assessment ||
+      Array.isArray(assessment) ||
+      Object.keys(assessment).length === 0
     ) {
       return {
         valid: false,
-        message: `Invalid response submitted for case study question ${JSON.stringify(response)}`,
+        message: 'Invalid response submitted for case study question',
+      }
+    }
+
+    const configuredShape = validationShape?.caseStudy
+    const configuredCaseIds = configuredShape
+      ? new Set(configuredShape.caseIds)
+      : undefined
+    const configuredItemIds = configuredShape
+      ? new Set(configuredShape.itemIds)
+      : undefined
+    const configuredCriterionIds = configuredShape
+      ? new Set(configuredShape.criterionIds)
+      : undefined
+    let responseEntryCount = 0
+
+    if (
+      configuredShape &&
+      (Object.keys(assessment).length !== configuredShape.caseIds.length ||
+        configuredShape.caseIds.length === 0 ||
+        configuredShape.itemIds.length === 0 ||
+        configuredShape.criterionIds.length === 0)
+    ) {
+      return {
+        valid: false,
+        message: 'Case study response does not match the configured cases',
+      }
+    }
+
+    for (const [caseId, caseObj] of Object.entries(assessment)) {
+      if (
+        caseId.length > 128 ||
+        (configuredCaseIds && !configuredCaseIds.has(caseId)) ||
+        typeof caseObj !== 'object' ||
+        caseObj === null ||
+        Array.isArray(caseObj) ||
+        Object.keys(caseObj).length === 0 ||
+        (configuredShape &&
+          Object.keys(caseObj).length !== configuredShape.itemIds.length)
+      ) {
+        return {
+          valid: false,
+          message: 'Case study response does not match the configured cases',
+        }
+      }
+
+      for (const [itemIdValue, itemObj] of Object.entries(caseObj)) {
+        const itemId = Number(itemIdValue)
+        if (
+          !Number.isSafeInteger(itemId) ||
+          String(itemId) !== itemIdValue ||
+          (configuredItemIds && !configuredItemIds.has(itemId)) ||
+          typeof itemObj !== 'object' ||
+          itemObj === null ||
+          Array.isArray(itemObj) ||
+          Object.keys(itemObj).length === 0 ||
+          (configuredShape &&
+            Object.keys(itemObj).length !== configuredShape.criterionIds.length)
+        ) {
+          return {
+            valid: false,
+            message: 'Case study response does not match the configured items',
+          }
+        }
+
+        for (const [criterionId, criterionResponse] of Object.entries(
+          itemObj
+        )) {
+          responseEntryCount += 1
+          if (
+            responseEntryCount > MAX_LIVE_QUIZ_CASE_STUDY_RESPONSE_ENTRIES ||
+            criterionId.length > 128 ||
+            (configuredCriterionIds &&
+              !configuredCriterionIds.has(criterionId)) ||
+            typeof criterionResponse !== 'number' ||
+            !Number.isFinite(criterionResponse)
+          ) {
+            return {
+              valid: false,
+              message:
+                'Case study response does not match the configured criteria',
+            }
+          }
+        }
       }
     }
 

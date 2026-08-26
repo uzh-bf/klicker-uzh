@@ -87,6 +87,8 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: hatchet-worker-response-processor
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   revisionHistoryLimit: 5
   {{- with .Values.hatchet.workers.responseProcessor.strategy }}
@@ -168,6 +170,8 @@ metadata:
   labels:
     {{- include "chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: hatchet-worker-response-processor-assessment
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   revisionHistoryLimit: 5
   {{- with .Values.hatchet.workers.responseProcessorAssessment.strategy }}

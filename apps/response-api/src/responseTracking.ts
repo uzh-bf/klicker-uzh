@@ -1,5 +1,6 @@
 import {
   getLiveQuizInstanceInfoKey,
+  getLiveQuizLegacyResponseReceivedKey,
   getLiveQuizResponseCountKey,
   LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT,
   LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
@@ -25,10 +26,12 @@ export async function trackLiveQuizResponseIfActive({
   redisClient,
   liveQuizId,
   instanceId,
+  claimId,
 }: {
   redisClient: ResponseTrackingRedis
   liveQuizId: string
   instanceId: string | number
+  claimId: string
 }): Promise<boolean> {
   const instanceInfoKey = getLiveQuizInstanceInfoKey({
     liveQuizId,
@@ -39,14 +42,16 @@ export async function trackLiveQuizResponseIfActive({
       await withTimeout(
         redisClient.eval(
           LIVE_QUIZ_RESPONSE_RECEIVED_SCRIPT,
-          2,
+          3,
           getLiveQuizResponseCountKey({
             liveQuizId,
             instanceId,
             status: 'received',
           }),
           instanceInfoKey,
-          String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
+          getLiveQuizLegacyResponseReceivedKey({ liveQuizId, instanceId }),
+          String(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS),
+          claimId
         ),
         LIVE_QUIZ_RESPONSE_TRACKING_TIMEOUT_MS
       )

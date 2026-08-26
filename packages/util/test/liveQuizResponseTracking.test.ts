@@ -3,6 +3,7 @@ import {
   getLiveQuizInstanceInfoKey,
   getLiveQuizLegacyResponseProcessedKey,
   getLiveQuizResponseCountKey,
+  getLiveQuizResponseReconciliationKey,
   getLiveQuizResponseReplayClaimKey,
   LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS,
   LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
@@ -41,6 +42,13 @@ describe('live quiz response tracking', () => {
         instanceId: 43,
       })
     ).toBe('lq:quiz-id:i:43:responses:processed')
+
+    expect(
+      getLiveQuizResponseReconciliationKey({
+        liveQuizId: 'quiz-id',
+        instanceId: 43,
+      })
+    ).toBe('lq:quiz-id:i:43:responses:reconciliation')
   })
 
   it('builds the canonical instance info key', () => {

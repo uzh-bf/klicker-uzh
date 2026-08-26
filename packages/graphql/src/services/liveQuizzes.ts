@@ -1,15 +1,16 @@
+import { createHash, createHmac } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  ElementData,
-  ElementInstanceResults,
-  ElementResultsCaseStudy,
-  ElementResultsOpen,
-  HatchetHandlers,
   type ElementBlockInput,
+  type ElementData,
+  type ElementInstanceResults,
+  type ElementResultsCaseStudy,
   type ElementResultsChoices,
+  type ElementResultsOpen,
   type ElementResultsSelection,
   type ElementStackInput,
+  type HatchetHandlers,
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
@@ -19,14 +20,15 @@ import {
   getLiveQuizLegacyResponseProcessedKey,
   getLiveQuizLegacyResponseReceivedKey,
   getLiveQuizResponseCountKey,
+  getLiveQuizResponseReconciliationKey,
   getLiveQuizResponseReplayClaimKey,
   LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
   levelFromXp,
+  type PrismaTransactionClient,
   propagateActivityToElements,
   recomputeDerivedPermissions,
   signJWT,
   updateLiveQuizBlockResultsFromCache,
-  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import generatePassword from 'generate-password'
@@ -34,7 +36,6 @@ import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import { min } from 'mathjs'
 import schedule from 'node-schedule'
-import { createHash, createHmac } from 'node:crypto'
 import { omitBy, pick, prop, sortBy } from 'remeda'
 import { v4 as uuidv4 } from 'uuid'
 import type { Context, ContextWithUser } from '../lib/context.js'
@@ -996,7 +997,7 @@ export async function getCockpitQuiz(
 
   const responseCounts = new Map<
     number,
-    { received: number; processed: number }
+    { received: number; processed: number | null }
   >()
   let responseCountsUnavailable = false
   const startedInstances = liveQuiz.blocks.flatMap((block) =>
@@ -1035,6 +1036,24 @@ export async function getCockpitQuiz(
             instanceId: instance.id,
           })
         )
+        responseCountPipeline.hget(
+          `lq:${id}:i:${instance.id}:results`,
+          'participants'
+        )
+        responseCountPipeline.zcount(
+          getLiveQuizResponseReplayClaimKey({
+            liveQuizId: id,
+            instanceId: instance.id,
+          }),
+          '-inf',
+          '(0'
+        )
+        responseCountPipeline.hlen(
+          getLiveQuizResponseReconciliationKey({
+            liveQuizId: id,
+            instanceId: instance.id,
+          })
+        )
       })
 
       const responseCountResults = await responseCountPipeline.exec()
@@ -1043,10 +1062,15 @@ export async function getCockpitQuiz(
       }
 
       startedInstances.forEach((instance, index) => {
-        const receivedResult = responseCountResults[index * 4]
-        const legacyReceivedResult = responseCountResults[index * 4 + 1]
-        const processedResult = responseCountResults[index * 4 + 2]
-        const legacyProcessedResult = responseCountResults[index * 4 + 3]
+        const resultOffset = index * 7
+        const receivedResult = responseCountResults[resultOffset]
+        const legacyReceivedResult = responseCountResults[resultOffset + 1]
+        const processedResult = responseCountResults[resultOffset + 2]
+        const legacyProcessedResult = responseCountResults[resultOffset + 3]
+        const aggregatedResult = responseCountResults[resultOffset + 4]
+        const legacyReconciliationResult =
+          responseCountResults[resultOffset + 5]
+        const reconciliationResult = responseCountResults[resultOffset + 6]
 
         if (!receivedResult || receivedResult[0]) {
           throw (
@@ -1071,6 +1095,24 @@ export async function getCockpitQuiz(
             new Error('Missing legacy processed response count')
           )
         }
+        if (!aggregatedResult || aggregatedResult[0]) {
+          throw (
+            aggregatedResult?.[0] ??
+            new Error('Missing aggregated participant count')
+          )
+        }
+        if (!legacyReconciliationResult || legacyReconciliationResult[0]) {
+          throw (
+            legacyReconciliationResult?.[0] ??
+            new Error('Missing legacy reconciliation response count')
+          )
+        }
+        if (!reconciliationResult || reconciliationResult[0]) {
+          throw (
+            reconciliationResult?.[0] ??
+            new Error('Missing reconciliation response count')
+          )
+        }
 
         const parseCount = (value: unknown, label: string) => {
           const count = Number(value ?? 0)
@@ -1085,18 +1127,47 @@ export async function getCockpitQuiz(
           legacyReceivedResult[1],
           'legacy received set'
         )
-        const processedCount =
-          processedResult[1] === null
-            ? parseCount(legacyProcessedResult[1], 'legacy processed set')
-            : parseCount(processedResult[1], 'processed counter')
-        const totalReceivedCount = parseCount(
-          receivedCount + legacyReceivedCount,
-          'received total'
+        const processedCount = parseCount(
+          processedResult[1],
+          'processed counter'
+        )
+        const legacyProcessedCount = parseCount(
+          legacyProcessedResult[1],
+          'legacy processed set'
+        )
+        const aggregatedCount = parseCount(
+          aggregatedResult[1],
+          'aggregated participant count'
+        )
+        const legacyReconciliationCount = parseCount(
+          legacyReconciliationResult[1],
+          'legacy reconciliation response count'
+        )
+        const reconciliationCount = parseCount(
+          reconciliationResult[1],
+          'reconciliation response count'
+        )
+        const trackedReceivedCount = Math.max(
+          receivedCount,
+          legacyReceivedCount
+        )
+        const trackedProcessedOverlap = Math.min(
+          processedCount,
+          trackedReceivedCount
         )
 
         responseCounts.set(instance.id, {
-          received: totalReceivedCount,
-          processed: processedCount,
+          // The participant aggregate contains all successfully processed
+          // responses. Add only tracked received responses that have not yet
+          // joined that aggregate, yielding an exact union after the worker-
+          // first rollout gate and a safe lower bound before ingress cutover.
+          received:
+            aggregatedCount +
+            Math.max(trackedReceivedCount - trackedProcessedOverlap, 0),
+          processed:
+            reconciliationCount > 0 || legacyReconciliationCount > 0
+              ? null
+              : Math.max(legacyProcessedCount, aggregatedCount),
         })
       })
     } catch (error) {
@@ -1390,6 +1461,11 @@ export async function activateLiveQuizBlock(
             elementData.options.answerCollectionSolutionIds
           ),
           numberOfInputs: elementData.options.numberOfInputs,
+          selectionAnswerIds: JSON.stringify(
+            elementData.options.answerCollection?.entries.map(
+              (entry) => entry.id
+            ) ?? []
+          ),
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
@@ -1415,6 +1491,16 @@ export async function activateLiveQuizBlock(
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:info`, {
           ...commonInfo,
           solutions: solutions ? JSON.stringify(solutions) : undefined,
+          caseStudyResponseShape: JSON.stringify({
+            caseIds: elementData.options.cases.map((caseItem) => caseItem.id),
+            itemIds:
+              elementData.options.items?.map((item) => item.id) ??
+              elementData.options.collectionItemIds ??
+              [],
+            criterionIds: elementData.options.criteria.map(
+              (criterion) => criterion.id
+            ),
+          }),
         })
         redisMulti.hmset(`lq:${quiz.id}:i:${instance.id}:results`, {
           participants: 0,
@@ -1542,7 +1628,7 @@ export async function deactivateLiveQuizBlock(
   return true
 }
 
-async function removeCacheEntriesBlock({
+export async function removeCacheEntriesBlock({
   liveQuizId,
   blockId,
   block,
@@ -1562,7 +1648,8 @@ async function removeCacheEntriesBlock({
     for (const instanceId of instanceIds) {
       instanceInfoExpiry.expire(
         getLiveQuizInstanceInfoKey({ liveQuizId, instanceId }),
-        LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS
+        LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
+        'LT'
       )
     }
 
@@ -1590,7 +1677,7 @@ async function removeCacheEntriesBlock({
       const pipe = redis.pipeline()
       for (const key of keys) {
         // set an expiration time of 1 day to all cache keys of the live quiz
-        pipe.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
+        pipe.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS, 'LT')
       }
       const expiryResults = await pipe.exec()
       if (expiryResults === null) {
@@ -1622,7 +1709,7 @@ async function removeCacheEntriesBlock({
       const pipe = redis.pipeline()
       for (const key of keys) {
         // set an expiration time of 1 day to all cache keys of the live quiz
-        pipe.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
+        pipe.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS, 'LT')
       }
       const expiryResults = await pipe.exec()
       if (expiryResults === null) {
@@ -1662,7 +1749,11 @@ async function startLiveQuizResponseTrackingRetention({
   if (instanceInfoKeys.length > 0) {
     const instanceInfoExpiry = redis.multi()
     for (const key of instanceInfoKeys) {
-      instanceInfoExpiry.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
+      instanceInfoExpiry.expire(
+        key,
+        LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
+        'LT'
+      )
     }
     const expiryResults = await instanceInfoExpiry.exec()
     if (expiryResults === null) {
@@ -1696,6 +1787,10 @@ async function startLiveQuizResponseTrackingRetention({
             liveQuizId,
             instanceId: instance.id,
           }),
+          getLiveQuizResponseReconciliationKey({
+            liveQuizId,
+            instanceId: instance.id,
+          }),
           getLiveQuizLegacyResponseReceivedKey({
             liveQuizId,
             instanceId: instance.id,
@@ -1711,7 +1806,7 @@ async function startLiveQuizResponseTrackingRetention({
   if (trackingKeys.length > 0) {
     const pipe = redis.multi()
     for (const key of trackingKeys) {
-      pipe.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
+      pipe.expire(key, LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS, 'LT')
     }
     const trackingExpiryResults = await pipe.exec()
     if (trackingExpiryResults === null) {
@@ -2018,7 +2113,7 @@ export async function endLiveQuiz(
       })
 
       // track the achievement ids, which should be awarded to the participants
-      let newAchievements: Record<string, number> = {}
+      const newAchievements: Record<string, number> = {}
 
       // only award achievements, if the live quiz did contain questions with sample
       // solutions and at least three participants collected points

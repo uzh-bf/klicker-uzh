@@ -1,5 +1,7 @@
 // TODO: code from azure function, requires a complete rework to hatchet best practices (e.g., as a DAG etc. for immutability and retriability)
 
+import { strict as assert } from 'node:assert'
+import { createHash } from 'node:crypto'
 // TODO: add additional processor with assessment logic
 import type {
   Context,
@@ -12,23 +14,19 @@ import type {
   NumericalRestrictions,
 } from '@klicker-uzh/types'
 import {
-  getLiveQuizInstanceInfoKey,
-  getLiveQuizLegacyResponseProcessedKey,
-  getLiveQuizResponseCountKey,
+  getLiveQuizResponseReconciliationKey,
   getLiveQuizResponseReplayClaimKey,
   type JWTPayload,
-  LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-  LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS,
   verifyJWT,
 } from '@klicker-uzh/util'
-import { strict as assert } from 'node:assert'
-import { createHash } from 'node:crypto'
 import { getRedis } from '../redis.js'
+import { executeResponseAggregation } from './executeResponseAggregation.js'
 import {
   createRedisCommandCollector,
   getCaseStudyQuestionPoints,
   getChoicesQuestionPoints,
   getFreeTextQuestionPoints,
+  getLiveQuizResponseValidationShape,
   getNumericalQuestionPoints,
   getSelectionQuestionPoints,
   updateLeaderboards,
@@ -74,15 +72,6 @@ export async function processResponseMessage(
   const replayClaimKey = getLiveQuizResponseReplayClaimKey({
     liveQuizId: message.sessionId,
     instanceId: message.instanceId,
-  })
-  const legacyProcessedKey = getLiveQuizLegacyResponseProcessedKey({
-    liveQuizId: message.sessionId,
-    instanceId: message.instanceId,
-  })
-  const processedResponseCountKey = getLiveQuizResponseCountKey({
-    liveQuizId: message.sessionId,
-    instanceId: message.instanceId,
-    status: 'processed',
   })
   const transaction = createRedisCommandCollector()
 
@@ -153,10 +142,36 @@ export async function processResponseMessage(
             : participantData.sub
         ))
       ) {
-        ctx.logger.info(
-          'Participant has already responded to this question instance'
+        const [hasPersistentReconciliation, replayClaimScore] =
+          await Promise.all([
+            redisExec.hexists(
+              getLiveQuizResponseReconciliationKey({
+                liveQuizId: message.sessionId,
+                instanceId: message.instanceId,
+              }),
+              message.messageId
+            ),
+            redisExec.zscore(replayClaimKey, message.messageId),
+          ])
+        const hasLegacyReconciliation =
+          replayClaimScore !== null && Number(replayClaimScore) < 0
+        if (!hasPersistentReconciliation && !hasLegacyReconciliation) {
+          ctx.logger.info(
+            'Participant has already responded to this question instance'
+          )
+          return { status: 200 }
+        }
+
+        ctx.logger.error(
+          'Participant response requires reconciliation; continuing to the replay guard',
+          {
+            extra: {
+              messageId: message.messageId,
+              sessionId: message.sessionId,
+              instanceId: message.instanceId,
+            },
+          }
         )
-        return { status: 200 }
       }
     }
 
@@ -227,6 +242,8 @@ export async function processResponseMessage(
       type: type as any,
       response,
       restrictions: parsedRestrictions,
+      choiceCount: Number(choiceCount),
+      validationShape: getLiveQuizResponseValidationShape(instanceInfo),
     })
 
     if (!valid) {
@@ -308,7 +325,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            transaction.hset(
+            transaction.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -385,7 +402,7 @@ export async function processResponseMessage(
           if (parsedSolutions && pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            transaction.hset(
+            transaction.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -463,7 +480,7 @@ export async function processResponseMessage(
           if (pointsPercentage && !firstResponseReceivedAt) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            transaction.hset(
+            transaction.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -546,7 +563,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            transaction.hset(
+            transaction.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -647,7 +664,7 @@ export async function processResponseMessage(
           ) {
             // if we are processing a first response, set the timestamp on the instance
             // this will allow us to award points for response timing
-            transaction.hset(
+            transaction.hsetnx(
               `${instanceKey}:info`,
               'firstResponseReceivedAt',
               responseTimestamp
@@ -683,122 +700,18 @@ export async function processResponseMessage(
         instanceId: message.instanceId,
       },
     })
-    return { status: 500 }
+    throw e instanceof Error ? e : new Error(String(e))
   }
 
-  try {
-    const processingResult = JSON.parse(
-      String(
-        await redisExec.eval(
-          LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-          4,
-          replayClaimKey,
-          processedResponseCountKey,
-          getLiveQuizInstanceInfoKey({
-            liveQuizId: message.sessionId,
-            instanceId: message.instanceId,
-          }),
-          legacyProcessedKey,
-          message.messageId,
-          String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
-          JSON.stringify(transaction.commands)
-        )
-      )
-    ) as {
-      status:
-        | 'already_processed'
-        | 'processed'
-        | 'aggregation_failed'
-        | 'reconciliation_required'
-      counted?: boolean
-      commandErrors?: string[]
-      trackingErrors?: string[]
-    }
-
-    if (processingResult.status === 'already_processed') {
-      ctx.logger.info('Response already processed, skipping', {
-        messageId: message.messageId,
-        sessionId: message.sessionId,
-        instanceId: message.instanceId,
-      })
-      return { status: 200 }
-    }
-    if (processingResult.status === 'reconciliation_required') {
-      ctx.logger.error(
-        'Redis response aggregation requires reconciliation; replay claim retained',
-        {
-          extra: {
-            messageId: message.messageId,
-            sessionId: message.sessionId,
-            instanceId: message.instanceId,
-            commandErrors: processingResult.commandErrors ?? [],
-            trackingErrors: processingResult.trackingErrors ?? [],
-          },
-        }
-      )
-      throw new Error(
-        `Redis response aggregation requires reconciliation: ${(processingResult.commandErrors ?? []).join('; ') || 'unknown command error'}`
-      )
-    }
-    if (
-      processingResult.status !== 'processed' &&
-      processingResult.status !== 'aggregation_failed'
-    ) {
-      throw new Error('Redis response processing returned an invalid status')
-    }
-
-    if (
-      processingResult.status === 'aggregation_failed' ||
-      processingResult.commandErrors?.length
-    ) {
-      const commandErrors = processingResult.commandErrors ?? []
-      ctx.logger.error(
-        'Redis results aggregation commands failed; retrying response processing',
-        {
-          extra: {
-            messageId: message.messageId,
-            sessionId: message.sessionId,
-            instanceId: message.instanceId,
-            commandErrors,
-          },
-        }
-      )
-      throw new Error(
-        `Redis response aggregation failed: ${commandErrors.join('; ') || 'unknown command error'}`
-      )
-    }
-
-    if (processingResult.trackingErrors?.length) {
-      ctx.logger.error('Failed to track processed response', {
-        extra: {
-          messageId: message.messageId,
-          sessionId: message.sessionId,
-          instanceId: message.instanceId,
-          trackingErrors: processingResult.trackingErrors,
-        },
-      })
-    }
-
-    if (
-      processingResult.status === 'processed' &&
-      !processingResult.commandErrors?.length
-    ) {
-      ctx.logger.info("Successfully processed participant's response", {
-        messageId: message.messageId,
-        sessionId: message.sessionId,
-        instanceId: message.instanceId,
-      })
-    }
-    return { status: 200 }
-  } catch (e) {
-    ctx.logger.error('Redis transaction failed', {
-      error: e instanceof Error ? e : new Error(String(e)),
-      extra: {
-        messageId: message.messageId,
-        sessionId: message.sessionId,
-        instanceId: message.instanceId,
-      },
-    })
-    throw new Error(`Redis transaction failed ${String(e)}`)
-  }
+  return await executeResponseAggregation({
+    redis: redisExec,
+    ctx,
+    request: {
+      kind: 'regular',
+      claimId: message.messageId,
+      liveQuizId: message.sessionId,
+      instanceId: message.instanceId,
+      commands: transaction.commands,
+    },
+  })
 }

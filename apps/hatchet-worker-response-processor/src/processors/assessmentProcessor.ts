@@ -1,3 +1,5 @@
+import { strict as assert } from 'node:assert'
+import { createHash } from 'node:crypto'
 import {
   type Context,
   type DurableContext,
@@ -16,23 +18,15 @@ import type {
   LiveQuizResponseInput,
   NumericalRestrictions,
 } from '@klicker-uzh/types'
-import {
-  getLiveQuizInstanceInfoKey,
-  getLiveQuizLegacyResponseProcessedKey,
-  getLiveQuizResponseCountKey,
-  getLiveQuizResponseReplayClaimKey,
-  LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-  LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS,
-} from '@klicker-uzh/util'
-import { strict as assert } from 'node:assert'
-import { createHash } from 'node:crypto'
 import { DEFAULT_POINTS } from '../constants.js'
 import { getAssessmentRedis } from '../redis.js'
+import { executeResponseAggregation } from './executeResponseAggregation.js'
 import {
   createRedisCommandCollector,
   getCaseStudyQuestionPointsDetails,
   getChoicesQuestionPointsDetails,
   getFreeTextQuestionPointsDetails,
+  getLiveQuizResponseValidationShape,
   getNumericalQuestionPointsDetails,
   getSelectionQuestionPointsDetails,
   updateLeaderboards,
@@ -164,6 +158,8 @@ export async function processAssessmentResponse(
     type: type as any,
     response,
     restrictions: parsedRestrictions,
+    choiceCount: Number(choiceCount),
+    validationShape: getLiveQuizResponseValidationShape(instanceInfo),
   })
 
   if (!valid) {
@@ -489,19 +485,6 @@ export async function aggregateAssessmentResponses(
     response,
   } = message
 
-  const replayClaimKey = getLiveQuizResponseReplayClaimKey({
-    liveQuizId,
-    instanceId,
-  })
-  const legacyProcessedKey = getLiveQuizLegacyResponseProcessedKey({
-    liveQuizId,
-    instanceId,
-  })
-  const processedResponseCountKey = getLiveQuizResponseCountKey({
-    liveQuizId,
-    instanceId,
-    status: 'processed',
-  })
   // Collect commands locally; the processing script claims the marker and
   // applies this batch atomically.
   const transaction = createRedisCommandCollector()
@@ -623,118 +606,15 @@ export async function aggregateAssessmentResponses(
     }
   }
 
-  try {
-    const processingResult = JSON.parse(
-      String(
-        await redisExec.eval(
-          LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-          4,
-          replayClaimKey,
-          processedResponseCountKey,
-          getLiveQuizInstanceInfoKey({ liveQuizId, instanceId }),
-          legacyProcessedKey,
-          correlationId,
-          String(LIVE_QUIZ_RESPONSE_REPLAY_CLAIM_TTL_SECONDS),
-          JSON.stringify(transaction.commands)
-        )
-      )
-    ) as {
-      status:
-        | 'already_processed'
-        | 'processed'
-        | 'aggregation_failed'
-        | 'reconciliation_required'
-      counted?: boolean
-      commandErrors?: string[]
-      trackingErrors?: string[]
-    }
-
-    if (processingResult.status === 'already_processed') {
-      ctx.logger.info('Assessment response already processed, skipping', {
-        correlationId,
-        liveQuizId,
-        instanceId,
-      })
-      return { status: 200 }
-    }
-    if (processingResult.status === 'reconciliation_required') {
-      ctx.logger.error(
-        'Redis assessment aggregation requires reconciliation; replay claim retained',
-        {
-          extra: {
-            correlationId,
-            liveQuizId,
-            instanceId,
-            commandErrors: processingResult.commandErrors ?? [],
-            trackingErrors: processingResult.trackingErrors ?? [],
-          },
-        }
-      )
-      throw new Error(
-        `Redis assessment aggregation requires reconciliation: ${(processingResult.commandErrors ?? []).join('; ') || 'unknown command error'}`
-      )
-    }
-    if (
-      processingResult.status !== 'processed' &&
-      processingResult.status !== 'aggregation_failed'
-    ) {
-      throw new Error('Redis response processing returned an invalid status')
-    }
-
-    if (
-      processingResult.status === 'aggregation_failed' ||
-      processingResult.commandErrors?.length
-    ) {
-      const commandErrors = processingResult.commandErrors ?? []
-      ctx.logger.error(
-        'Redis results aggregation commands failed; retrying assessment processing',
-        {
-          extra: {
-            correlationId,
-            liveQuizId,
-            instanceId,
-            commandErrors,
-          },
-        }
-      )
-      throw new Error(
-        `Redis response aggregation failed: ${commandErrors.join('; ') || 'unknown command error'}`
-      )
-    }
-
-    if (processingResult.trackingErrors?.length) {
-      ctx.logger.error('Failed to track processed assessment response', {
-        extra: {
-          correlationId,
-          liveQuizId,
-          instanceId,
-          trackingErrors: processingResult.trackingErrors,
-        },
-      })
-    }
-
-    if (
-      processingResult.status === 'processed' &&
-      !processingResult.commandErrors?.length
-    ) {
-      ctx.logger.info("Successfully aggregated a participant's results", {
-        correlationId,
-        liveQuizId,
-        instanceId,
-      })
-    }
-    return { status: 200 }
-  } catch (e) {
-    ctx.logger.error('Redis pipeline for results aggregation failed', {
-      error: e instanceof Error ? e : new Error(String(e)),
-      extra: {
-        correlationId: message.correlationId,
-        liveQuizId: message.liveQuizId,
-        instanceId: message.instanceId,
-      },
-    })
-    throw new Error(
-      `Redis pipeline for results aggregation failed ${String(e)}`
-    )
-  }
+  return await executeResponseAggregation({
+    redis: redisExec,
+    ctx,
+    request: {
+      kind: 'assessment',
+      claimId: correlationId,
+      liveQuizId,
+      instanceId,
+      commands: transaction.commands,
+    },
+  })
 }

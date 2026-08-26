@@ -4,14 +4,22 @@ const hoisted = vi.hoisted(() => {
   const regularClient = {
     hgetall: vi.fn(),
     hexists: vi.fn(),
+    zscore: vi.fn(),
     eval: vi.fn(),
   }
 
-  return { regularClient }
+  const verifyJWT = vi.fn()
+
+  return { regularClient, verifyJWT }
 })
 
 vi.mock('../../redis.js', () => ({
   getRedis: () => hoisted.regularClient,
+}))
+
+vi.mock('@klicker-uzh/util', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@klicker-uzh/util')>()),
+  verifyJWT: hoisted.verifyJWT,
 }))
 
 import type {
@@ -49,10 +57,7 @@ function createMessage() {
 function setupHappyPath(client: typeof hoisted.regularClient) {
   client.hgetall.mockResolvedValue({
     type: 'SC',
-    solutions: JSON.stringify([
-      { ix: 0, correct: true },
-      { ix: 1, correct: false },
-    ]),
+    solutions: JSON.stringify([0]),
     sessionBlockId: '1',
     choiceCount: '2',
     basePoints: '5',
@@ -75,28 +80,42 @@ describe('processResponseMessage atomicity', () => {
 
   it('uses the atomic processing script before applying aggregation commands', async () => {
     setupHappyPath(hoisted.regularClient)
+    hoisted.verifyJWT.mockResolvedValue({
+      sub: 'participant-1',
+      role: 'PARTICIPANT',
+    })
+    hoisted.regularClient.hexists.mockResolvedValue(false)
 
     const result = await processResponseMessage(
-      createMessage(),
+      { ...createMessage(), cookie: 'participant_token=test-token' },
       createContext()
     )
 
     expect(result).toEqual({ status: 200 })
     expect(hoisted.regularClient.eval).toHaveBeenCalledWith(
       LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-      4,
+      6,
       'lq:quiz-1:i:inst-1:responses:processed:claims',
       'lq:quiz-1:i:inst-1:responses:processed:count',
       'lq:quiz-1:i:inst-1:info',
       'lq:quiz-1:i:inst-1:responses:processed',
+      'lq:quiz-1:i:inst-1:responses:reconciliation',
+      'lq:quiz-1:i:inst-1:responses:received',
       'msg-1',
       '86400',
-      expect.any(String)
+      expect.any(String),
+      '2048'
     )
     const commandList = JSON.parse(
-      hoisted.regularClient.eval.mock.calls[0]![8] as string
+      hoisted.regularClient.eval.mock.calls[0]![10] as string
     ) as string[][]
     expect(commandList.some(([command]) => command === 'HINCRBY')).toBe(true)
+    expect(commandList).toContainEqual([
+      'HSETNX',
+      'lq:quiz-1:i:inst-1:info',
+      'firstResponseReceivedAt',
+      expect.any(Number),
+    ])
   })
 
   it('accepts the atomic replay result without applying aggregation twice', async () => {
@@ -114,6 +133,82 @@ describe('processResponseMessage atomicity', () => {
       'Response already processed, skipping',
       expect.objectContaining({ messageId: 'msg-1' })
     )
+  })
+
+  it('rejects malformed choice indices before building a Redis batch', async () => {
+    setupHappyPath(hoisted.regularClient)
+    const message = createMessage()
+    message.response.choices = [
+      { ix: 0, selected: true },
+      { ix: 2, selected: false },
+    ]
+
+    const result = await processResponseMessage(message, createContext())
+
+    expect(result).toEqual({ status: 400 })
+    expect(hoisted.regularClient.eval).not.toHaveBeenCalled()
+  })
+
+  it('does not hide reconciliation behind the authenticated duplicate guard', async () => {
+    setupHappyPath(hoisted.regularClient)
+    hoisted.verifyJWT.mockResolvedValue({
+      sub: 'participant-1',
+      role: 'PARTICIPANT',
+    })
+    hoisted.regularClient.hexists.mockResolvedValue(true)
+    hoisted.regularClient.zscore.mockResolvedValue(
+      String(-Math.floor(Date.now() / 1000))
+    )
+    hoisted.regularClient.eval.mockResolvedValue(
+      JSON.stringify({
+        status: 'reconciliation_required',
+        commandErrors: ['partial aggregation requires reconciliation'],
+        trackingErrors: [],
+      })
+    )
+    const message = {
+      ...createMessage(),
+      cookie: 'participant_token=test-token',
+    }
+
+    await expect(
+      processResponseMessage(message, createContext())
+    ).rejects.toThrow('Redis transaction failed')
+    expect(hoisted.regularClient.eval).toHaveBeenCalledTimes(1)
+    const commands = JSON.parse(
+      hoisted.regularClient.eval.mock.calls[0]![10] as string
+    ) as string[][]
+    expect(commands.map((command) => command[1])).toEqual(
+      expect.arrayContaining([
+        'lq:quiz-1:i:inst-1:results',
+        'lq:quiz-1:b:1:lb',
+        'lq:quiz-1:lb',
+        'lq:quiz-1:xp',
+      ])
+    )
+  })
+
+  it('throws when the authenticated replay lookup fails so Hatchet retries', async () => {
+    setupHappyPath(hoisted.regularClient)
+    hoisted.verifyJWT.mockResolvedValue({
+      sub: 'participant-1',
+      role: 'PARTICIPANT',
+    })
+    hoisted.regularClient.hexists
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
+    hoisted.regularClient.zscore.mockRejectedValue(
+      new Error('redis connection lost')
+    )
+    const message = {
+      ...createMessage(),
+      cookie: 'participant_token=test-token',
+    }
+
+    await expect(
+      processResponseMessage(message, createContext())
+    ).rejects.toThrow('redis connection lost')
+    expect(hoisted.regularClient.eval).not.toHaveBeenCalled()
   })
 
   it('keeps reconciliation results failed and visible to Hatchet', async () => {

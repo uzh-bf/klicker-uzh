@@ -33,11 +33,16 @@ function createMessage() {
     liveQuizId: 'quiz-1',
     blockId: '1',
     instanceId: 'instance-1',
-    elementType: ElementType.CONTENT,
-    isGamificationEnabled: false,
-    pointsAwarded: 0,
-    xpAwarded: 0,
-    response: { viewed: true },
+    elementType: ElementType.SC,
+    isGamificationEnabled: true,
+    pointsAwarded: 5,
+    xpAwarded: 2,
+    response: {
+      choices: [
+        { ix: 0, selected: true },
+        { ix: 1, selected: false },
+      ],
+    },
   }
 }
 
@@ -67,18 +72,25 @@ describe('aggregateAssessmentResponses atomic processing', () => {
     expect(result).toEqual({ status: 200 })
     expect(hoisted.assessmentClient.eval).toHaveBeenCalledWith(
       LIVE_QUIZ_RESPONSE_PROCESSING_SCRIPT,
-      4,
+      6,
       'lq:quiz-1:i:instance-1:responses:processed:claims',
       'lq:quiz-1:i:instance-1:responses:processed:count',
       'lq:quiz-1:i:instance-1:info',
       'lq:quiz-1:i:instance-1:responses:processed',
+      'lq:quiz-1:i:instance-1:responses:reconciliation',
+      'lq:quiz-1:i:instance-1:responses:received',
       'correlation-1',
       '86400',
-      expect.any(String)
+      expect.any(String),
+      '2048'
     )
     expect(
-      JSON.parse(hoisted.assessmentClient.eval.mock.calls[0]![8] as string)
+      JSON.parse(hoisted.assessmentClient.eval.mock.calls[0]![10] as string)
     ).toEqual([
+      ['HINCRBY', 'lq:quiz-1:b:1:lb', 'participant-1', 5],
+      ['HINCRBY', 'lq:quiz-1:lb', 'participant-1', 5],
+      ['HINCRBY', 'lq:quiz-1:xp', 'participant-1', 2],
+      ['HINCRBY', 'lq:quiz-1:i:instance-1:results', '0', 1],
       ['HINCRBY', 'lq:quiz-1:i:instance-1:results', 'participants', 1],
     ])
   })

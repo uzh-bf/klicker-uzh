@@ -152,6 +152,7 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
       redisClient: redis,
       liveQuizId: String(liveQuizId),
       instanceId,
+      claimId: message.messageId,
     })
     if (!tracked) {
       console.debug(
@@ -349,6 +350,7 @@ async function handleAddAssessmentResponse(
       redisClient: assessmentTrackingRedis,
       liveQuizId: String(liveQuizId),
       instanceId,
+      claimId: correlationId,
     })
     if (!tracked) {
       console.debug(

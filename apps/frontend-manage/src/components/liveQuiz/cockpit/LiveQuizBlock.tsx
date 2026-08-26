@@ -55,7 +55,7 @@ function LiveQuizBlock({
     <div
       className={twMerge(
         className,
-        'bg-uzh-grey-40 min-w-44 max-w-full flex-1 rounded p-4',
+        'bg-uzh-grey-40 w-fit min-w-44 max-w-full shrink-0 rounded p-4',
         active && 'bg-green-300',
         inCooldown && 'bg-orange-200'
       )}
@@ -102,16 +102,15 @@ function LiveQuizBlock({
         {block.elements?.map((instance) => {
           const numOfResponsesReceived = instance.numOfResponsesReceived
           const numOfResponsesProcessed = instance.numOfResponsesProcessed
-          const hasResponseCounts =
+          const hasReceivedCount =
             numOfResponsesReceived !== null &&
-            typeof numOfResponsesReceived !== 'undefined' &&
-            numOfResponsesProcessed !== null &&
-            typeof numOfResponsesProcessed !== 'undefined'
-          const responseCountLabel = hasResponseCounts
+            typeof numOfResponsesReceived !== 'undefined'
+          const processedCountDisplay = numOfResponsesProcessed ?? '–'
+          const responseCountLabel = hasReceivedCount
             ? `${t('manage.cockpit.responsesReceived', {
                 number: numOfResponsesReceived,
               })} · ${t('manage.cockpit.responsesProcessed', {
-                number: numOfResponsesProcessed,
+                number: processedCountDisplay,
               })}`
             : undefined
 
@@ -130,7 +129,7 @@ function LiveQuizBlock({
                   icon={faExternalLink}
                 />
               </Link>
-              {hasResponseCounts ? (
+              {hasReceivedCount ? (
                 <span
                   aria-label={responseCountLabel}
                   className="inline-flex h-5 items-center justify-end gap-1 whitespace-nowrap rounded bg-black/5 px-1.5 py-0.5 text-xs leading-none text-gray-700 tabular-nums"
@@ -160,7 +159,7 @@ function LiveQuizBlock({
                       icon={faCheckDouble}
                     />
                   </span>
-                  <span aria-hidden="true">{numOfResponsesProcessed}</span>
+                  <span aria-hidden="true">{processedCountDisplay}</span>
                 </span>
               ) : (
                 <span aria-hidden="true" />

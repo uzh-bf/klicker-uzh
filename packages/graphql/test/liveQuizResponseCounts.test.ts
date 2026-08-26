@@ -6,18 +6,23 @@ import {
   type PrismaClient,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
-import axios from 'axios'
 import {
   getLiveQuizInstanceInfoKey,
   getLiveQuizLegacyResponseProcessedKey,
   getLiveQuizLegacyResponseReceivedKey,
   getLiveQuizResponseCountKey,
+  getLiveQuizResponseReconciliationKey,
   getLiveQuizResponseReplayClaimKey,
   LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS,
 } from '@klicker-uzh/util'
+import axios from 'axios'
 import { vi } from 'vitest'
-import type { ContextWithUser } from '../src/lib/context.js'
-import { endLiveQuiz, getCockpitQuiz } from '../src/services/liveQuizzes.js'
+import type { ContextWithUser } from '@/lib/context.js'
+import {
+  endLiveQuiz,
+  getCockpitQuiz,
+  removeCacheEntriesBlock,
+} from '@/services/liveQuizzes.js'
 import {
   initializePrisma,
   seedAnswerCollections,
@@ -115,12 +120,12 @@ describe('live quiz cockpit response counts', () => {
     await userOneCtx.redisExec.hset(
       `lq:${quiz.id}:i:${firstInstance.id}:results`,
       'participants',
-      1
+      2
     )
     await userOneCtx.redisExec.hset(
       `lq:${quiz.id}:i:${secondInstance.id}:results`,
       'participants',
-      0
+      2
     )
     await userOneCtx.redisExec.set(
       getLiveQuizResponseCountKey({
@@ -182,12 +187,12 @@ describe('live quiz cockpit response counts', () => {
     expect(returnedActiveBlock?.elements[0]).toMatchObject({
       id: firstInstance.id,
       numOfResponsesReceived: 3,
-      numOfResponsesProcessed: 1,
+      numOfResponsesProcessed: 2,
     })
     expect(returnedActiveBlock?.elements[1]).toMatchObject({
       id: secondInstance.id,
-      numOfResponsesReceived: 0,
-      numOfResponsesProcessed: 0,
+      numOfResponsesReceived: 2,
+      numOfResponsesProcessed: 2,
     })
     expect(returnedExecutedBlock?.elements[0]).toMatchObject({
       id: executedInstance.id,
@@ -197,6 +202,53 @@ describe('live quiz cockpit response counts', () => {
     expect(returnedScheduledBlock?.elements[0]).toMatchObject({
       id: scheduledInstance.id,
       numOfResponsesReceived: null,
+      numOfResponsesProcessed: null,
+    })
+  })
+
+  it('hides processed counts while a response requires reconciliation', async () => {
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
+    const { SC } = await seedElements(userOneCtx, AC1.id)
+    const quiz = await seedLiveQuiz(
+      {
+        elements: [{ id: SC.id, type: ElementType.SC }],
+        status: PublicationStatus.PUBLISHED,
+      },
+      userOneCtx
+    )
+    liveQuizId = quiz.id
+
+    const block = await prisma.elementBlock.findFirstOrThrow({
+      where: { liveQuizId: quiz.id },
+      include: { elements: true },
+    })
+    const instance = block.elements[0]!
+    await prisma.elementBlock.update({
+      where: { id: block.id },
+      data: {
+        status: ElementBlockStatus.ACTIVE,
+        activeInLiveQuiz: { connect: { id: quiz.id } },
+      },
+    })
+    await userOneCtx.redisExec.hset(
+      `lq:${quiz.id}:i:${instance.id}:results`,
+      'participants',
+      1
+    )
+    await userOneCtx.redisExec.hset(
+      getLiveQuizResponseReconciliationKey({
+        liveQuizId: quiz.id,
+        instanceId: instance.id,
+      }),
+      'response-needing-reconciliation',
+      JSON.stringify({ appliedCommandCount: 1 })
+    )
+
+    const cockpitQuiz = await getCockpitQuiz({ id: quiz.id }, userOneCtx)
+
+    expect(cockpitQuiz?.blocks[0]?.elements[0]).toMatchObject({
+      id: instance.id,
+      numOfResponsesReceived: 1,
       numOfResponsesProcessed: null,
     })
   })
@@ -257,6 +309,70 @@ describe('live quiz cockpit response counts', () => {
     } finally {
       userOneCtx.redisExec.pipeline = originalPipelineMethod
     }
+  })
+
+  it('does not extend retention when non-final block cleanup retries', async () => {
+    const { AC1 } = await seedAnswerCollections(userOneCtx)
+    const { SC, MC } = await seedElements(userOneCtx, AC1.id)
+    const quiz = await seedLiveQuiz(
+      {
+        elements: [
+          { id: SC.id, type: ElementType.SC },
+          { id: MC.id, type: ElementType.MC },
+        ],
+        status: PublicationStatus.PUBLISHED,
+      },
+      userOneCtx
+    )
+    liveQuizId = quiz.id
+
+    const blocks = await prisma.elementBlock.findMany({
+      where: { liveQuizId: quiz.id },
+      include: { elements: true },
+      orderBy: { order: 'asc' },
+    })
+    const block = blocks[0]!
+    const instance = block.elements[0]!
+    const retainedKeys = [
+      getLiveQuizInstanceInfoKey({
+        liveQuizId: quiz.id,
+        instanceId: instance.id,
+      }),
+      `lq:${quiz.id}:i:${instance.id}:results`,
+      `lq:${quiz.id}:b:${block.id}:lb`,
+    ]
+    await userOneCtx.redisExec.hset(retainedKeys[0]!, 'id', instance.id)
+    await userOneCtx.redisExec.hset(retainedKeys[1]!, 'participants', 1)
+    await userOneCtx.redisExec.hset(retainedKeys[2]!, 'participant-1', 1)
+    await Promise.all(
+      retainedKeys.map((key) => userOneCtx.redisExec.expire(key, 60))
+    )
+    const ttlBefore = await Promise.all(
+      retainedKeys.map((key) => userOneCtx.redisExec.ttl(key))
+    )
+
+    await removeCacheEntriesBlock({
+      liveQuizId: quiz.id,
+      blockId: block.id,
+      block,
+      isLastBlock: false,
+      redis: userOneCtx.redisExec,
+    })
+    await removeCacheEntriesBlock({
+      liveQuizId: quiz.id,
+      blockId: block.id,
+      block,
+      isLastBlock: false,
+      redis: userOneCtx.redisExec,
+    })
+
+    const ttlAfter = await Promise.all(
+      retainedKeys.map((key) => userOneCtx.redisExec.ttl(key))
+    )
+    ttlAfter.forEach((ttl, index) => {
+      expect(ttl).toBeGreaterThan(0)
+      expect(ttl).toBeLessThanOrEqual(ttlBefore[index]!)
+    })
   })
 
   it('persists ENDED before retention and repairs retention on retry', async () => {
@@ -333,6 +449,10 @@ describe('live quiz cockpit response counts', () => {
           liveQuizId: quiz.id,
           instanceId: instance.id,
         }),
+        getLiveQuizResponseReconciliationKey({
+          liveQuizId: quiz.id,
+          instanceId: instance.id,
+        }),
         getLiveQuizLegacyResponseReceivedKey({
           liveQuizId: quiz.id,
           instanceId: instance.id,
@@ -351,8 +471,13 @@ describe('live quiz cockpit response counts', () => {
       await userOneCtx.redisExec.set(trackingKeys[0]!, '1')
       await userOneCtx.redisExec.set(trackingKeys[1]!, '1')
       await userOneCtx.redisExec.zadd(trackingKeys[2]!, Date.now(), 'message-1')
-      await userOneCtx.redisExec.sadd(trackingKeys[3]!, 'legacy-received')
-      await userOneCtx.redisExec.sadd(trackingKeys[4]!, 'legacy-processed')
+      await userOneCtx.redisExec.hset(
+        trackingKeys[3]!,
+        'reconciliation-message',
+        JSON.stringify({ appliedCommandCount: 1 })
+      )
+      await userOneCtx.redisExec.sadd(trackingKeys[4]!, 'legacy-received')
+      await userOneCtx.redisExec.sadd(trackingKeys[5]!, 'legacy-processed')
 
       const recoveredQuiz = await endLiveQuiz({ id: quiz.id }, userOneCtx)
 
@@ -363,6 +488,24 @@ describe('live quiz cockpit response counts', () => {
         expect(ttl).toBeGreaterThan(0)
         expect(ttl).toBeLessThanOrEqual(LIVE_QUIZ_RESPONSE_TRACKING_TTL_SECONDS)
       }
+
+      const retainedKeys = [instanceInfoKey, ...trackingKeys]
+      await Promise.all(
+        retainedKeys.map((key) => userOneCtx.redisExec.expire(key, 60))
+      )
+      const ttlBeforeRetry = await Promise.all(
+        retainedKeys.map((key) => userOneCtx.redisExec.ttl(key))
+      )
+
+      await endLiveQuiz({ id: quiz.id }, userOneCtx)
+
+      const ttlAfterRetry = await Promise.all(
+        retainedKeys.map((key) => userOneCtx.redisExec.ttl(key))
+      )
+      ttlAfterRetry.forEach((ttl, index) => {
+        expect(ttl).toBeGreaterThan(0)
+        expect(ttl).toBeLessThanOrEqual(ttlBeforeRetry[index]!)
+      })
 
       const notificationTexts = teamsPost.mock.calls.map(
         ([, body]) => (body as { text: string }).text

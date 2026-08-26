@@ -68,6 +68,7 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 - **Hatchet endpoint pair**: `hatchet.client.apiUrl` in the environment values renders `HATCHET_API_URL`, while the external secret supplies `HATCHET_CLIENT_HOST_PORT`. They must resolve to the same Hatchet installation; worker health alone does not validate programmatic schedule creation over the HTTP API. Staging uses `app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080`, and production uses `app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080` (see [Async & Workers](./async-and-workers.md)).
 - **Hatchet general-worker resources**: staging and production set a `2Gi` memory limit on the general worker because it executes course duplication. The response-processor deployments retain their lower, independent limits.
 - **Rollout strategy**: use `RollingUpdate` in prd values; `Recreate` can leave a service with zero endpoints during slow image pulls (PDBs don't protect against Deployment-driven scale-downs). `maxUnavailable: 0` only for singletons.
+- **Response-ingress ordering**: ArgoCD sync wave `0` contains both regular and assessment response processors; wave `1` contains both response APIs. ArgoCD waits for the worker Deployments to become healthy before updating ingress. This is a correctness boundary for live-quiz received/processed overlap tracking and must not be removed or collapsed into one wave.
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
 
 ## Deployment migrations
@@ -86,6 +87,12 @@ Why this shape (ArgoCD-native hook, dedicated migrator image, manual demoted to 
 The `rollout.klicker.uzh.ch/release` annotation exists to break that tie: it lands in the **pod template**, so changing it is a real manifest change. It appears 15 times in `deploy/env-uzh-stg/values.yaml` and zero times in prd, which needs no such trigger because its pinned tags change on every release.
 
 `.github/workflows/deploy-stg-promote.yml` reads `STG_SOURCE_BRANCH`, aligns all 15 image tags with that branch, and writes the built commit's short SHA once **every** `v3_*-stg.yml` image build for the selected commit has succeeded — so a rollout can never start against a half-published source tag, and the PreSync migration hook always runs before the new pods. It publishes as an auto-merging PR rather than a direct push, because `v3` restricts pushes and requires 8 status checks with no bypass actor; the PR touches only `deploy/**`, so `Build Fallback` supplies `build-amd`/`build-arm` in seconds. `[skip ci]` in the PR title keeps the squash-merge from re-running the 13 builds and re-firing the promoter.
+
+Within that single GitOps sync, ArgoCD applies the response-processor
+Deployments in wave `0` and waits for both regular and assessment workers to be
+healthy before applying the corresponding response APIs in wave `1`. The
+promotion workflow may continue updating all release annotations together;
+the rendered Deployment waves enforce the required worker-before-ingress gate.
 
 Operational notes.
 
