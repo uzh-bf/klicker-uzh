@@ -518,11 +518,14 @@ roadmaps are task-owned in this worktree and ship with the readiness PR.
   gates as `"true"`, exact endpoints, response-processor isolation, and no
   secret keys in ConfigMaps. Chart lint, scoped Biome, Prettier, and diff checks
   passed.
-- 2026-08-26: The exact current S5 range `920c28b31..ab85641c6` passed
+- 2026-08-26: The restacked S5 behavior range `89570122c..736507c33` passed
   simplification and deployment/data-integrity review with no findings. The
   reviewers confirmed the two ingestion-only value changes, omitted open
   kill-switch keys, explicit closed graph gates, unchanged endpoints and
   isolation, direct stack ancestry, and draft/merge-blocked delivery boundary.
   A range-diff against the pre-restack slice is one-to-one, with no lost or
   broadened content. This supersedes the earlier pre-restack receipts ending at
-  `59caba946` and `49159597b`. S5 is complete at the reviewed source layer.
+  `59caba946`, `49159597b`, and `ab85641c6`. The final review found the lower
+  layer's wiki wording still described only the closed readiness state; the
+  activation layer now documents both closed and open render contracts
+  explicitly. S5 remains draft and merge-blocked pending exact-head re-review.
