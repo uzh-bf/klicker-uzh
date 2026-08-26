@@ -917,12 +917,7 @@ async function latestTrustedDisposition({ github, context, pull, rootReview }) {
     }
   }
 
-  return (
-    candidates.sort(
-      (left, right) =>
-        artifactTimestamp(right.artifact) - artifactTimestamp(left.artifact)
-    )[0]?.disposition ?? null
-  )
+  return candidates.length === 1 ? candidates[0].disposition : null
 }
 
 function requiresColdIncrementalReview(filePath) {
@@ -1078,6 +1073,9 @@ async function buildReviewPlan({ github, context, pull }) {
     rootReview,
   })
   if (rootFindingIds.length > 0 && !disposition) return fullPlan
+  if (disposition?.entries.some((entry) => entry.state !== 'fixed')) {
+    return fullPlan
+  }
   const remediationPaths = new Set(
     (disposition?.entries ?? []).flatMap((entry) => entry.paths)
   )

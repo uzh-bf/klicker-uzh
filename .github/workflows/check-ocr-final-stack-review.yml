@@ -256,7 +256,7 @@ jobs:
 
       - name: Remove ephemeral OpenRouter access after code review
         id: cleanup
-        if: always() && steps.configure.outcome == 'success'
+        if: always() && steps.start.outputs.run_review == 'true'
         run: node .github/scripts/final-ai-review.js cleanup-ocr
 
       - name: Run strict topology review

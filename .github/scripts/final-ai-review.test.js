@@ -639,6 +639,20 @@ test('selects incremental attestation only for bounded repaired changes', async 
   assert.equal(untrustedDisposition.mode, 'full')
   state.permission = 'write'
 
+  state.comments = [
+    {
+      body: disposition.replace('"state":"fixed"', '"state":"follow-up"'),
+      user: { login: 'reviewer' },
+    },
+  ]
+  const deferredDisposition = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(deferredDisposition.mode, 'full')
+  state.comments = [{ body: disposition, user: { login: 'reviewer' } }]
+
   state.rules = '{"rules":["changed"]}'
   const changedDigest = await buildReviewPlan({
     github,

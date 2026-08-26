@@ -110,6 +110,12 @@ async function resolveNativeStackMembership({
       reason: 'native stack API returned a malformed list',
     }
   }
+  if (response.data.length >= 100) {
+    return {
+      valid: false,
+      reason: 'native stack API returned a capped list',
+    }
+  }
   const stacks = []
   for (const stack of response.data) {
     if (

@@ -609,8 +609,44 @@ test('does not reuse a successful stack report after lower-layer drift', async (
       head_sha: pull.head.sha,
       pull_request: number,
     })),
+    root_head: plan.rootHead,
+    root_review_id: '',
+    disposition_digest: '',
+    disposition_ids: [],
+    review_ranges: [],
   }
   assert.equal(stackReviewMetadataMatchesPlan(metadata, plan, membership), true)
+  const incrementalPlan = {
+    ...plan,
+    mode: 'incremental',
+    rootHead: 'e'.repeat(40),
+    rootReviewId: `fsr-${'1'.repeat(24)}`,
+    dispositionDigest: 'a'.repeat(64),
+    dispositionIds: ['sfr-1234567890abcdef'],
+    reviewRanges: [
+      {
+        base_sha: 'e'.repeat(40),
+        head_sha: 'f'.repeat(40),
+        layer_number: 4,
+      },
+    ],
+  }
+  assert.equal(
+    stackReviewMetadataMatchesPlan(
+      {
+        ...metadata,
+        mode: 'incremental',
+        root_head: incrementalPlan.rootHead,
+        root_review_id: incrementalPlan.rootReviewId,
+        disposition_digest: incrementalPlan.dispositionDigest,
+        disposition_ids: incrementalPlan.dispositionIds,
+        review_ranges: incrementalPlan.reviewRanges,
+      },
+      incrementalPlan,
+      membership
+    ),
+    true
+  )
   const driftedMembership = {
     ...membership,
     members: membership.members.map((member, index) =>
@@ -685,6 +721,122 @@ test('anchors every stack review consumer to the frozen manifest digest', () => 
     workflow,
     /"\$\{MANIFEST_PATH\}" "\$\{CODE_RESULT_PATH\}" "\$\{TOPOLOGY_RESULT_PATH\}" \\\n\s+"\$\{MANIFEST_DIGEST\}"/
   )
+})
+
+test('does not publish stack status for ordinary PRs without stale stack evidence', async () => {
+  const { github, pulls, state } = stackFixture()
+  github.request = async () => ({ data: [] })
+  const eventContext = context(14)
+  eventContext.eventName = 'pull_request_target'
+  eventContext.payload.pull_request = pulls[14]
+  assert.equal(
+    await initializeStackReview({ github, context: eventContext }),
+    false
+  )
+  assert.equal(state.createdStatuses.length, 0)
+
+  state.statuses.push({
+    context: 'final-ai-stack-review',
+    state: 'success',
+    target_url: 'https://github.com/old-review',
+  })
+  assert.equal(
+    await initializeStackReview({ github, context: eventContext }),
+    true
+  )
+  assert.equal(state.createdStatuses.at(-1).sha, pulls[14].head.sha)
+  assert.equal(state.createdStatuses.at(-1).state, 'error')
+})
+
+test('preserves current stack evidence across unrelated default-base advancement', async () => {
+  const { files, github, pulls, responses, state } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const plan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership,
+  })
+  const rootReport = renderStackReview({
+    codeResult: completeOCRResult([codeFinding()]),
+    headSha: pulls[14].head.sha,
+    manifestBundle,
+    topologyResult: topologyResult(),
+    policyDigest: plan.policyDigest,
+    workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+    workflowHeadSha: 'a'.repeat(40),
+    workflowRunId: 700,
+  })
+  state.reviews = [
+    {
+      body: rootReport,
+      commit_id: pulls[14].head.sha,
+      state: 'COMMENTED',
+      submitted_at: '2026-08-25T00:00:00Z',
+      user: { login: 'github-actions[bot]' },
+    },
+  ]
+  state.comments = []
+  state.workflowRun = {
+    id: 700,
+    path: '.github/workflows/check-ocr-final-stack-review.yml',
+    event: 'issue_comment',
+    head_branch: 'v3',
+    head_sha: 'a'.repeat(40),
+    conclusion: 'success',
+    repository: { full_name: repository },
+  }
+  state.statuses = [
+    {
+      context: 'final-ai-stack-review',
+      state: 'success',
+      target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+    },
+  ]
+  github.rest.actions = {
+    getWorkflowRun: async () => ({ data: state.workflowRun }),
+  }
+  github.paginate = async (endpoint) =>
+    endpoint === github.rest.pulls.listReviews ? state.reviews : state.comments
+
+  const advancedBase = '9'.repeat(40)
+  pulls[11].base.sha = advancedBase
+  responses.set('b'.repeat(40), advancedBase)
+  files.set('b'.repeat(40), [
+    { filename: 'docs/base.md', additions: 1, deletions: 0 },
+  ])
+  files.set(advancedBase, [])
+  const eventContext = context(11)
+  eventContext.eventName = 'pull_request_target'
+  eventContext.payload.pull_request = pulls[11]
+
+  assert.equal(
+    await initializeStackReview({ github, context: eventContext }),
+    false
+  )
+  assert.equal(state.createdStatuses.length, 0)
+
+  const outputs = new Map()
+  const reviewContext = context(14)
+  reviewContext.payload.comment.user = { login: 'reviewer' }
+  const authorized = await authorizeStackReview({
+    github,
+    context: reviewContext,
+    core: {
+      notice: () => {},
+      setOutput: (name, value) => outputs.set(name, value),
+    },
+  })
+  assert.equal(authorized, true)
+  assert.equal(outputs.get('mode'), 'full')
 })
 
 test('invalidates the top status when a lower layer changes', async () => {
@@ -843,6 +995,23 @@ test('fails closed when a comparison reaches the GitHub file-list cap', async ()
   assert.match(membership.reason, /complete bounded file list/)
 })
 
+test('fails closed when native stack discovery reaches the page cap', async () => {
+  const { github } = stackFixture()
+  github.request = async () => ({
+    data: Array.from({ length: 100 }, () => ({
+      id: 'stack-duplicate-page',
+      pull_requests: [{ number: 14, state: 'open', draft: false }],
+    })),
+  })
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  assert.equal(membership.valid, false)
+  assert.match(membership.reason, /capped list/)
+})
+
 test('starts a review only when the stack snapshot remains identical', async () => {
   const { github, state } = stackFixture()
   const membership = await resolveStackMembership({
@@ -911,7 +1080,10 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
     rootReport.match(/<!-- final-ai-stack-review\/v2 ([^\n]+) -->/)?.[1]
   )
   const incrementalReport = renderStackReview({
-    codeResult: completeOCRResult([codeFinding()]),
+    codeResult: combineOCRResults(
+      [completeOCRResult([{ ...codeFinding(), path: 'src/three.ts' }])],
+      [4]
+    ),
     headSha: 'f'.repeat(40),
     manifestBundle,
     mode: 'incremental',
@@ -1044,6 +1216,21 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
   assert.match(plan.dispositionDigest, /^[0-9a-f]{64}$/)
   assert.match(plan.policyDigest, /^[0-9a-f]{64}$/)
   assert.match(plan.background, /incremental attestation/)
+
+  state.comments = state.comments.map((comment) => ({
+    ...comment,
+    body: comment.body.replace('"state":"fixed"', '"state":"rejected"'),
+  }))
+  const deferredPlan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership: await resolveStackMembership({
+      github,
+      context: context(),
+      pullNumber: 14,
+    }),
+  })
+  assert.equal(deferredPlan.mode, 'full')
 
   state.policyFiles[
     '.github/open-code-review/final-stack-topology-rules.json'
@@ -1209,12 +1396,84 @@ test('attests bounded repairs across changed lower stack layers', async () => {
 test('combines complete OCR results for per-layer attestation ranges', () => {
   const first = completeOCRResult([codeFinding()])
   const second = completeOCRResult([])
-  const combined = combineOCRResults([first, second])
+  const combined = combineOCRResults([first, second], [1, 3])
   assert.equal(combined.status, 'complete')
   assert.equal(combined.summary.comments, 1)
   assert.equal(combined.summary.files_reviewed, 6)
   assert.equal(combined.summary.total_tokens, 200)
+  assert.deepEqual(combined.comments[0].stack_layer_numbers, [1])
   assert.deepEqual(combined.warnings, [])
+})
+
+test('publishes incremental code findings with their exact owning repair layer', async () => {
+  const { github } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const plan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership,
+  })
+  const report = renderStackReview({
+    codeResult: combineOCRResults([completeOCRResult([codeFinding()])], [1]),
+    headSha: membership.top.head.sha,
+    manifestBundle,
+    mode: 'incremental',
+    rootHead: membership.members[0].pull.base.sha,
+    rootReviewId: `fsr-${'1'.repeat(24)}`,
+    dispositionIds: ['fr-1234567890abcdef'],
+    dispositionDigest: 'a'.repeat(64),
+    reviewRanges: [
+      {
+        base_sha: membership.members[0].pull.base.sha,
+        head_sha: membership.members[0].pull.head.sha,
+        layer_number: 1,
+      },
+    ],
+    topologyResult: topologyResult(),
+    policyDigest: plan.policyDigest,
+    workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+    workflowHeadSha: 'a'.repeat(40),
+    workflowRunId: 700,
+  })
+  const metadata = parseStackReviewMetadata(report)
+  assert.deepEqual(metadata.findings[0].layer_numbers, [1])
+
+  assert.throws(
+    () =>
+      renderStackReview({
+        codeResult: combineOCRResults(
+          [completeOCRResult([codeFinding()])],
+          [3]
+        ),
+        headSha: membership.top.head.sha,
+        manifestBundle,
+        mode: 'incremental',
+        rootHead: membership.members[0].pull.base.sha,
+        rootReviewId: `fsr-${'1'.repeat(24)}`,
+        reviewRanges: [
+          {
+            base_sha: membership.members[0].pull.base.sha,
+            head_sha: membership.members[0].pull.head.sha,
+            layer_number: 1,
+          },
+        ],
+        topologyResult: topologyResult(),
+        policyDigest: plan.policyDigest,
+        workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+        workflowHeadSha: 'a'.repeat(40),
+        workflowRunId: 700,
+      }),
+    /invalid layer provenance/
+  )
 })
 
 test('rejects a successful finish after lower-layer identity drift', async () => {

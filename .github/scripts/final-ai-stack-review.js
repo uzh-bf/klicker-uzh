@@ -18,6 +18,7 @@ const {
 } = require('./final-ai-review.js')
 const {
   compareRange: compareNativeRange,
+  MAX_COMPARE_FILES,
   resolveNativeStackMembership: resolveStackMembership,
 } = require('./native-stack.js')
 
@@ -122,6 +123,81 @@ function stackPlan(membership, context) {
     topNumber: top.number,
     background: buildStackBackground(membership, context),
   }
+}
+
+function canUseStackReviewBaseAdvance(membership, context) {
+  if (
+    membership?.valid ||
+    membership?.members?.length < 2 ||
+    membership.members.length !== membership.numbers?.length ||
+    membership.members.length !== membership.ranges?.length
+  ) {
+    return false
+  }
+  const rootRange = membership.ranges[0]?.response?.data
+  if (
+    !['behind', 'diverged'].includes(rootRange?.status) ||
+    membership.members[0].pull.base.ref !==
+      context.payload.repository.default_branch ||
+    membership.members[0].pull.base.repo?.full_name !== repositoryName(context)
+  ) {
+    return false
+  }
+  if (
+    !membership.members.every(
+      ({ pull, record }, index) =>
+        pull.state === 'open' &&
+        !pull.draft &&
+        pull.base.repo?.full_name === repositoryName(context) &&
+        pull.head.repo?.full_name === repositoryName(context) &&
+        record.number === pull.number &&
+        record.state === pull.state &&
+        record.draft === pull.draft &&
+        (index === 0 ||
+          (pull.base.ref === membership.members[index - 1].pull.head.ref &&
+            pull.base.sha === membership.members[index - 1].pull.head.sha))
+    )
+  ) {
+    return false
+  }
+  if (
+    !membership.ranges.every(({ response }, index) => {
+      const range = response?.data
+      if (
+        !range ||
+        !Array.isArray(range.files) ||
+        range.files.length >= MAX_COMPARE_FILES
+      ) {
+        return false
+      }
+      try {
+        range.files.forEach(validateFile)
+      } catch {
+        return false
+      }
+      return index === 0 || range.status === 'ahead'
+    })
+  ) {
+    return false
+  }
+  return true
+}
+
+async function resolveReviewStackMembership({
+  github,
+  context,
+  pullNumber,
+  pull,
+}) {
+  const membership = await resolveStackMembership({
+    github,
+    context,
+    pullNumber,
+    pull,
+  })
+  return canUseStackReviewBaseAdvance(membership, context)
+    ? { ...membership, reason: '', valid: true }
+    : membership
 }
 
 function stackPlanMatches(
@@ -334,7 +410,7 @@ function parseStackReviewMetadata(body) {
   }
 }
 
-async function latestStackRootReview({ github, context, pull }) {
+async function latestStackReview({ github, context, pull, modes = ['full'] }) {
   const artifacts = await listReviewArtifacts({ github, context, pull })
   const candidates = artifacts
     .map((artifact) => ({
@@ -344,7 +420,7 @@ async function latestStackRootReview({ github, context, pull }) {
     .filter(
       ({ artifact, metadata }) =>
         metadata?.head_sha &&
-        metadata.mode === 'full' &&
+        modes.includes(metadata.mode) &&
         metadata.model === FINAL_REVIEW_MODEL &&
         artifact.kind === 'review' &&
         artifact.user?.login === FINAL_REVIEW_BOT &&
@@ -397,6 +473,122 @@ async function latestStackRootReview({ github, context, pull }) {
   return null
 }
 
+async function latestStackRootReview({ github, context, pull }) {
+  return latestStackReview({ github, context, pull, modes: ['full'] })
+}
+
+function stackReviewMatchesCurrentHeadsExceptRootBase(metadata, membership) {
+  if (
+    metadata.stack_id !== membership.id ||
+    metadata.stack_order_digest !== membership.orderDigest ||
+    metadata.layer_head_shas.length !== membership.members.length ||
+    metadata.layer_head_shas.some(
+      (headSha, index) => headSha !== membership.members[index].pull.head.sha
+    ) ||
+    metadata.layer_identities.length !== membership.members.length
+  ) {
+    return false
+  }
+  return metadata.layer_identities.every((identity, index) => {
+    const pull = membership.members[index].pull
+    return (
+      identity.base_ref === pull.base.ref &&
+      identity.head_ref === pull.head.ref &&
+      identity.head_sha === pull.head.sha &&
+      identity.pull_request === pull.number &&
+      (index === 0 || identity.base_sha === pull.base.sha)
+    )
+  })
+}
+
+async function canPreserveStackReviewAcrossBaseAdvance({
+  github,
+  context,
+  membership,
+}) {
+  try {
+    if (
+      membership?.valid ||
+      membership?.members?.length < 2 ||
+      membership.members.length !== membership.ranges?.length
+    ) {
+      return false
+    }
+    const rootPull = membership.members[0].pull
+    const topPull = membership.members.at(-1).pull
+    const rootRange = membership.ranges[0]?.response?.data
+    const upperRanges = membership.ranges.slice(1)
+    if (
+      !['behind', 'diverged'].includes(rootRange?.status) ||
+      !upperRanges.every((range) => range.response?.data?.status === 'ahead') ||
+      rootPull.base.ref !== context.payload.repository.default_branch ||
+      rootPull.base.repo?.full_name !== repositoryName(context) ||
+      !membership.members.every(({ pull }, index) =>
+        index === 0
+          ? true
+          : pull.base.ref === membership.members[index - 1].pull.head.ref &&
+            pull.base.sha === membership.members[index - 1].pull.head.sha &&
+            pull.base.repo?.full_name === repositoryName(context)
+      )
+    ) {
+      return false
+    }
+
+    const previousReview = await latestStackReview({
+      github,
+      context,
+      pull: topPull,
+      modes: ['full', 'incremental'],
+    })
+    const metadata = previousReview?.metadata
+    if (
+      !metadata ||
+      metadata.head_sha !== topPull.head.sha ||
+      metadata.base_sha === rootPull.base.sha ||
+      !stackReviewMatchesCurrentHeadsExceptRootBase(metadata, membership) ||
+      metadata.policy_digest !==
+        (await getReviewPolicyDigest({ github, context }))
+    ) {
+      return false
+    }
+
+    const baseAdvance = await compareNativeRange({
+      github,
+      context,
+      baseSha: metadata.base_sha,
+      headSha: rootPull.base.sha,
+    })
+    const baseFiles = baseAdvance?.data?.files
+    if (
+      baseAdvance?.data?.status !== 'ahead' ||
+      !Array.isArray(baseFiles) ||
+      baseFiles.length >= MAX_COMPARE_FILES
+    ) {
+      return false
+    }
+    const stackPaths = new Set(
+      membership.ranges.flatMap(({ response }) =>
+        (response?.data?.files ?? []).flatMap((file) =>
+          [file.filename, file.previous_filename].filter(Boolean)
+        )
+      )
+    )
+    return baseFiles.every((file) => {
+      const filePath = String(file.filename ?? '')
+      const previousPath = String(file.previous_filename ?? '')
+      return (
+        safeRepositoryPath(filePath) &&
+        (!previousPath || safeRepositoryPath(previousPath)) &&
+        !requiresColdStackIncrementalReview(filePath) &&
+        !stackPaths.has(filePath) &&
+        (!previousPath || !stackPaths.has(previousPath))
+      )
+    })
+  } catch {
+    return false
+  }
+}
+
 async function latestTrustedStackDisposition({
   github,
   context,
@@ -430,17 +622,7 @@ async function latestTrustedStackDisposition({
     )
     if (disposition) candidates.push({ artifact, disposition })
   }
-  return (
-    candidates.sort(
-      (left, right) =>
-        (Date.parse(
-          right.artifact.submitted_at ?? right.artifact.created_at ?? ''
-        ) || 0) -
-        (Date.parse(
-          left.artifact.submitted_at ?? left.artifact.created_at ?? ''
-        ) || 0)
-    )[0]?.disposition ?? null
-  )
+  return candidates.length === 1 ? candidates[0].disposition : null
 }
 
 async function compareStackRange({ github, context, baseSha, headSha }) {
@@ -579,6 +761,9 @@ async function buildStackReviewPlan({ github, context, membership }) {
     rootReview,
   })
   if (root.finding_ids.length === 0 || !disposition) return fullPlan
+  if (disposition.entries.some((entry) => entry.state !== 'fixed')) {
+    return fullPlan
+  }
   const remediationPaths = new Set(
     disposition.entries.flatMap((entry) => entry.paths)
   )
@@ -720,7 +905,7 @@ async function hasSuccessfulStackReview(
 }
 
 function stackReviewMetadataMatchesPlan(metadata, plan, membership) {
-  if (!metadata || !plan?.eligible || plan.mode !== 'full') return false
+  if (!metadata || !plan?.eligible || metadata.mode !== plan.mode) return false
   const layerHeadShas = membership.members.map(({ pull }) => pull.head.sha)
   const layerIdentities = membership.members.map(({ number, pull }) => ({
     base_ref: pull.base.ref,
@@ -730,7 +915,6 @@ function stackReviewMetadataMatchesPlan(metadata, plan, membership) {
     pull_request: number,
   }))
   return (
-    metadata.mode === 'full' &&
     metadata.base_sha === plan.baseSha &&
     metadata.head_sha === plan.headSha &&
     metadata.stack_id === plan.stackId &&
@@ -740,7 +924,14 @@ function stackReviewMetadataMatchesPlan(metadata, plan, membership) {
     JSON.stringify(metadata.layer_head_shas) ===
       JSON.stringify(layerHeadShas) &&
     JSON.stringify(metadata.layer_identities) ===
-      JSON.stringify(layerIdentities)
+      JSON.stringify(layerIdentities) &&
+    metadata.root_head === plan.rootHead &&
+    metadata.root_review_id === plan.rootReviewId &&
+    metadata.disposition_digest === plan.dispositionDigest &&
+    JSON.stringify(metadata.disposition_ids) ===
+      JSON.stringify(plan.dispositionIds ?? []) &&
+    JSON.stringify(metadata.review_ranges) ===
+      JSON.stringify(plan.reviewRanges ?? [])
   )
 }
 
@@ -750,10 +941,11 @@ async function hasCurrentSuccessfulStackReview({
   plan,
   membership,
 }) {
-  const rootReview = await latestStackRootReview({
+  const rootReview = await latestStackReview({
     github,
     context,
     pull: membership.members.at(-1).pull,
+    modes: ['full', 'incremental'],
   })
   return Boolean(
     rootReview &&
@@ -784,16 +976,30 @@ async function initializeStackReview({ github, context }) {
     throw error
   }
   if (!membership) {
-    if (/^[0-9a-f]{40}$/.test(pull.head?.sha ?? '')) {
-      await setStackStatus({
-        github,
-        context,
-        sha: pull.head.sha,
-        state: 'error',
-        description: 'Native stack membership is no longer verified',
-      })
-      return true
-    }
+    if (!validSha(pull.head?.sha ?? '')) return false
+    const previousStatus = await latestStackStatus(
+      github,
+      context,
+      pull.head.sha
+    )
+    if (!previousStatus) return false
+    await setStackStatus({
+      github,
+      context,
+      sha: pull.head.sha,
+      state: 'error',
+      description: 'Native stack membership is no longer verified',
+    })
+    return true
+  }
+  if (
+    !membership.valid &&
+    (await canPreserveStackReviewAcrossBaseAdvance({
+      github,
+      context,
+      membership,
+    }))
+  ) {
     return false
   }
   const topShas = [membership.top?.head?.sha, membership.topHeadSha].filter(
@@ -869,7 +1075,7 @@ async function authorizeStackReview({ github, context, core }) {
   if (!isTrustedPermission(permission)) {
     return deny('The commenter does not have write permission')
   }
-  const membership = await resolveStackMembership({
+  const membership = await resolveReviewStackMembership({
     github,
     context,
     pullNumber: context.issue.number,
@@ -1123,7 +1329,7 @@ async function startStackReview({
 }) {
   let membership
   try {
-    membership = await resolveStackMembership({
+    membership = await resolveReviewStackMembership({
       github,
       context,
       pullNumber: prNumber,
@@ -1246,12 +1452,29 @@ function validateOCRResult(result, knownPaths = null) {
   return { comments: result.comments, summary, usage }
 }
 
-function combineOCRResults(results) {
+function combineOCRResults(results, layerNumbers = null) {
   if (!Array.isArray(results) || results.length === 0) {
     throw new Error('At least one OCR result is required')
   }
+  if (
+    layerNumbers !== null &&
+    (!Array.isArray(layerNumbers) ||
+      layerNumbers.length !== results.length ||
+      layerNumbers.some(
+        (layerNumber) => !Number.isSafeInteger(layerNumber) || layerNumber < 1
+      ) ||
+      new Set(layerNumbers).size !== layerNumbers.length)
+  ) {
+    throw new Error('OCR layer provenance is incomplete')
+  }
   const validated = results.map((result) => validateOCRResult(result))
-  const comments = validated.flatMap(({ comments: items }) => items)
+  const comments = validated.flatMap(({ comments: items }, resultIndex) =>
+    items.map((item) =>
+      layerNumbers === null
+        ? item
+        : { ...item, stack_layer_numbers: [layerNumbers[resultIndex]] }
+    )
+  )
   const summary = validated.reduce(
     (combined, { summary: current, usage }) => ({
       comments: combined.comments + current.comments,
@@ -1463,15 +1686,6 @@ function renderStackReview({
     manifest.path_index.map((entry) => [entry.filename, entry.layers])
   )
   const knownPaths = new Set(pathOwners.keys())
-  const codeComments = code.comments.map((comment, index) => {
-    const validated = validateFindingComment(comment, index, knownPaths)
-    const owners = pathOwners.get(validated.path)
-    return { ...validated, layerNumbers: owners }
-  })
-  const topology = validateTopologyResult(topologyResult, manifest)
-  if (manifest.top.sha !== headSha) {
-    throw new Error('Stack manifest top head does not match publication head')
-  }
   const effectiveReviewRanges =
     mode === 'incremental' && reviewRanges.length === 0
       ? [
@@ -1497,6 +1711,36 @@ function renderStackReview({
       ))
   ) {
     throw new Error('Incremental stack review ranges are incomplete')
+  }
+  const reviewedLayerNumbers = new Set(
+    effectiveReviewRanges.map((range) => range.layer_number)
+  )
+  const codeComments = code.comments.map((comment, index) => {
+    const validated = validateFindingComment(comment, index, knownPaths)
+    const owners = pathOwners.get(validated.path)
+    const layerNumbers =
+      mode === 'incremental' ? comment.stack_layer_numbers : owners
+    if (
+      mode === 'incremental' &&
+      (!Array.isArray(layerNumbers) ||
+        layerNumbers.length === 0 ||
+        new Set(layerNumbers).size !== layerNumbers.length ||
+        layerNumbers.some(
+          (layerNumber) =>
+            !Number.isSafeInteger(layerNumber) ||
+            !reviewedLayerNumbers.has(layerNumber) ||
+            !owners.includes(layerNumber)
+        ))
+    ) {
+      throw new Error(
+        `Incremental OCR finding ${index + 1} has invalid layer provenance`
+      )
+    }
+    return { ...validated, layerNumbers }
+  })
+  const topology = validateTopologyResult(topologyResult, manifest)
+  if (manifest.top.sha !== headSha) {
+    throw new Error('Stack manifest top head does not match publication head')
   }
   const reviewStart =
     mode === 'incremental' && effectiveReviewRanges.length === 1
@@ -1682,12 +1926,30 @@ function topologyCodeSummary(codeResult, manifest) {
     manifest.path_index.map((entry) => [entry.filename, entry.layers])
   )
   return {
-    comments: code.comments.map((comment) => ({
-      category: comment.category,
-      layers: owners.get(comment.path) ?? [],
-      path: comment.path,
-      severity: comment.severity,
-    })),
+    comments: code.comments.map((comment, index) => {
+      const pathLayers = owners.get(comment.path) ?? []
+      const layers = comment.stack_layer_numbers ?? pathLayers
+      if (
+        !Array.isArray(layers) ||
+        layers.length === 0 ||
+        new Set(layers).size !== layers.length ||
+        layers.some(
+          (layerNumber) =>
+            !Number.isSafeInteger(layerNumber) ||
+            !pathLayers.includes(layerNumber)
+        )
+      ) {
+        throw new Error(
+          `Cumulative OCR finding ${index + 1} has invalid layer provenance`
+        )
+      }
+      return {
+        category: comment.category,
+        layers,
+        path: comment.path,
+        severity: comment.severity,
+      }
+    }),
     files_reviewed: code.summary.files_reviewed,
     warnings: [],
   }
@@ -1786,7 +2048,7 @@ async function publishStackReview({
   resultPath,
   topologyResultPath,
 }) {
-  const membership = await resolveStackMembership({
+  const membership = await resolveReviewStackMembership({
     github,
     context,
     pullNumber: prNumber,
@@ -1909,7 +2171,7 @@ async function finalizeStackReview({
 }) {
   let membership
   try {
-    membership = await resolveStackMembership({
+    membership = await resolveReviewStackMembership({
       github,
       context,
       pullNumber: prNumber,
@@ -1981,10 +2243,21 @@ function runTopologyCli() {
     const results = resultPaths.map((resultPath) =>
       JSON.parse(fs.readFileSync(resultPath, 'utf8'))
     )
-    fs.writeFileSync(outputPath, JSON.stringify(combineOCRResults(results)), {
-      encoding: 'utf8',
-      mode: 0o600,
+    const layerNumbers = resultPaths.map((resultPath) => {
+      const layerNumber = Number(path.basename(resultPath, '.json'))
+      if (!Number.isSafeInteger(layerNumber) || layerNumber < 1) {
+        throw new Error('OCR result path does not identify a valid layer')
+      }
+      return layerNumber
     })
+    fs.writeFileSync(
+      outputPath,
+      JSON.stringify(combineOCRResults(results, layerNumbers)),
+      {
+        encoding: 'utf8',
+        mode: 0o600,
+      }
+    )
     console.log('OCR range results combined')
     return
   }
