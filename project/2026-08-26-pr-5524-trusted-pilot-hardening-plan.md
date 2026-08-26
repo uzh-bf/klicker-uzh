@@ -3,9 +3,10 @@
 ## Status
 
 Gate 1 is approved. The guarded recascade, S1 through S3 implementation
-commits, and S4 documentation are complete locally; S5 integrated proof
-remains in progress. No merge, deployment, live data change, provider or
-secret write, or enforcement activation is authorized by this document.
+commits, S4 documentation, and S5 local producing checks and browser proof are
+complete. The integrated final review, publication, and exact-head CI remain
+in progress. No merge, deployment, live data change, provider or secret write,
+or enforcement activation is authorized by this document.
 
 This plan supersedes the remaining execution contract of
 [`2026-08-24-chatbot-u4-model-registry-policy-plan.md`](2026-08-24-chatbot-u4-model-registry-policy-plan.md)
@@ -104,13 +105,28 @@ Gate 1 approval wording:
 
 ## Identity and freshness baseline
 
-The freshness gate ran on 2026-08-26. The task checkout is clean at
-`1392f485870fe76ab25e25531c5b8ad3eb59e907` on
-`rs/chatbot-u4-model-registry-policy`, with an exact upstream match. Fresh
-`origin/v3` is `61a7f8108477a58595505d97618d68f3eeb35aff`. The stack contains
-99 commits not on `v3` and is five current `v3` commits behind it. Those five
-commits are release/deployment changes plus the unrelated course-duplication
-timeout fix; this observation does not replace a fresh Gate 1 lease check.
+The freshness gate ran on 2026-08-26. The pre-evidence implementation head is
+`2b1bb3aeff6506e408f6254461d3ea2575a0989d` on
+`rs/chatbot-u4-model-registry-policy`; its remote tracking branch still points
+to the unrevised published head. Fresh `origin/v3` is
+`079dc722b6e2b61d9210aa785978f4e29e5d2bad`. The stack was recascaded again
+from the recorded recovery refs after the trunk advanced beyond the earlier
+`1a55ce239` baseline. The new candidate contains 106 patch-equivalent
+commits above `v3`; ancestry and the full-stack range-diff are clean. This
+local identity does not replace the final remote lease and PR-topology gate.
+
+Pre-evidence implementation heads are:
+
+| Layer | Pre-evidence implementation head |
+| --- | --- |
+| Phase 0 — lecturer configuration and publication gate | `ed0bad640b05a979957766d7e365ea5f3d04cefb` |
+| U1 — account usage foundation | `18b3813df1e0e173ff091171723547d5d4daecc5` |
+| U2 — runtime usage charging | `2a6ac883c6ec6835b9da11076e41e33d7ad736ab` |
+| U3 — lecturer usage lanes | `d48d03673d2983b77e1ff4b1f9a5bee8228b7d3f` |
+| U4 — registry and pilot hardening | `2b1bb3aeff6506e408f6254461d3ea2575a0989d` |
+
+The remote heads below remain the frozen publication leases until the final
+pre-push read. They must not be treated as the current local candidate.
 
 | Layer | Existing PR | Base | Current remote head | State |
 | --- | --- | --- | --- | --- |
@@ -120,9 +136,9 @@ timeout fix; this observation does not replace a fresh Gate 1 lease check.
 | U3 — lecturer usage lanes | [#5490](https://github.com/uzh-bf/klicker-uzh/pull/5490) | U2 | `703792be558d4179c722de85ca8f4ab616c62362` | Open, ready |
 | U4 — registry and pilot hardening | [#5524](https://github.com/uzh-bf/klicker-uzh/pull/5524) | U3 | `1392f485870fe76ab25e25531c5b8ad3eb59e907` | Open, ready; current layer |
 
-The four inter-layer parent links match; GitHub marks only the Phase 0 base as
-needing rebase because the trunk has advanced. The trunk freshness gap still
-requires a guarded five-layer recascade. The official `gh stack push --remote` path is the only planned publication
+The four inter-layer parent links match; GitHub marks only the published Phase
+0 head as conflicting because the remote stack still predates the completed
+local recascade. The official `gh stack push --remote` path is the only planned publication
 mechanism because it publishes the linked stack atomically with
 force-with-lease protection. No `gh stack sync`, merge, queue, or unstack action
 is part of this plan.
@@ -657,6 +673,28 @@ process only when their dependencies and user authority exist.
   onto fresh `origin/v3` at `7515632f229c9421a7ac7d62668e1743147ba158`.
   Recovery refs preserve the pre-recascade Phase 0 through U4 heads; the
   lower-layer patches are unchanged and no remote ref moved.
+- 2026-08-26: the final pre-publication read found `origin/v3` had advanced to
+  `1a55ce2392350396ed4daf60bcef1ee925030151`. The five branches were
+  recascaded again in lower-boundary order from the recovery refs without
+  conflicts. The candidate heads are Phase 0
+  `33121646e3ff649736a4631ec064fc5ba70e9b1f`, U1
+  `6c80f3e83e16376aadd0af1eaccd51d14b6f89ee`, U2
+  `ad335fc4c4d0fbe1e247ac650d9031d4487ecd99`, U3
+  `fc578e944b8b07e823529baed3b65218c6f767b5`, and U4
+  `65c4d4f3e647383cae9b85ebac587ede30656a1c`. The full 106-commit
+  range-diff reports equality for every old/new patch, and ancestry from the
+  fresh trunk is proven. No remote ref moved; S5 evidence and the final lease
+  gate remain pending.
+- 2026-08-26: a subsequent freshness read found `origin/v3` at
+  `079dc722b6e2b61d9210aa785978f4e29e5d2bad` through one staging deployment
+  promotion. The stack recascaded again without conflicts. Candidate heads are
+  Phase 0 `ed0bad640b05a979957766d7e365ea5f3d04cefb`, U1
+  `18b3813df1e0e173ff091171723547d5d4daecc5`, U2
+  `2a6ac883c6ec6835b9da11076e41e33d7ad736ab`, U3
+  `d48d03673d2983b77e1ff4b1f9a5bee8228b7d3f`, and U4
+  `2b1bb3aeff6506e408f6254461d3ea2575a0989d`. Ancestry is linear and the
+  106-commit range-diff reports equality for every patch. No remote ref moved;
+  S5 evidence and the final lease gate remain pending.
 - 2026-08-26: S1 was accepted at `08a18497b` after focused route and
   PostgreSQL integration tests, the full Chat suite, Chat typecheck, staged
   gitleaks, and generic-continuity simplifier and data-integrity review. The
@@ -679,3 +717,19 @@ process only when their dependencies and user authority exist.
   testing guide, plan, and roadmap updates. Markdown formatting and link
   checks pass; no docs log or AGENTS.md change was made. S5 integrated proof,
   final review, publication, exact-head CI, and runtime stop remain pending.
+- 2026-08-26: S5 producing checks pass on the unchanged stack patches. Focused
+  Chat tests pass 65/65 and the earlier isolated GraphQL producing run passes
+  22/22. The exact post-recascade Chat repeat also passes 65/65; a GraphQL
+  repeat against the shared seeded database found 11 users where its isolated
+  fixture requires 6 and is not represented as a pass. Chat, GraphQL, and
+  Manage checks pass; the production build completes 23/23 tasks. Root
+  `check:all` remains environment-blocked only in analytics because pandas
+  2.2.2 under CPython 3.14 lacks a C compiler in the image.
+- 2026-08-26: host synthetic browser proof covers Manage in English and German
+  at desktop and mobile widths, including Draft and Published lifecycle copy,
+  hidden and visible participant links, delegated lecturer access, and the
+  safe Luna policy without a provider request. The managed post-create run
+  built 13/13 workspace packages, applied migrations, and seeded the database;
+  its later route reconciliation timed out on Auth readiness after 90 seconds
+  and is not presented as a runtime pass. The exact workspace retains its
+  owned DevPod and has zero registered routes.
