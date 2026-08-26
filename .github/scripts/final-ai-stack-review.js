@@ -1,4 +1,14 @@
-const crypto = require('node:crypto')
+const {
+  getPermission,
+  listCheckRunsForRef,
+  repositoryName,
+  safeFence,
+  sha256,
+  validDigest,
+  validSha,
+  workflowRunIdFromUrl,
+  workflowRunUrl,
+} = require('./final-ai-review-shared')
 const fs = require('node:fs')
 const path = require('node:path')
 
@@ -62,14 +72,6 @@ const FINDING_CATEGORIES = new Set([
 ])
 const FINDING_SEVERITIES = new Set(['critical', 'high', 'medium', 'low'])
 
-function validSha(value) {
-  return /^[0-9a-f]{40}$/.test(value ?? '')
-}
-
-function validDigest(value) {
-  return /^[0-9a-f]{64}$/.test(value ?? '')
-}
-
 function compareRepositoryPaths(left, right) {
   return left < right ? -1 : left > right ? 1 : 0
 }
@@ -110,10 +112,6 @@ function stackReviewPathsFromMembership(membership) {
     return null
   }
   return { reviewedPaths: paths, reviewedPathAliases: aliases }
-}
-
-function sha256(value) {
-  return crypto.createHash('sha256').update(String(value)).digest('hex')
 }
 
 function buildStackCleanReviewEvidenceDigest({ plan, membership }) {
@@ -457,23 +455,6 @@ function parseStackCleanEvidence(body) {
   }
 }
 
-function repositoryName(context) {
-  return `${context.repo.owner}/${context.repo.repo}`
-}
-
-function workflowRunUrl(context, runId = context.runId) {
-  return `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`
-}
-
-function workflowRunIdFromUrl(context, targetUrl) {
-  const prefix = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/`
-  if (typeof targetUrl !== 'string' || !targetUrl.startsWith(prefix)) {
-    return null
-  }
-  const value = targetUrl.slice(prefix.length)
-  return /^[1-9][0-9]*$/.test(value) ? Number(value) : null
-}
-
 function isStackReviewCommand(body) {
   return body === STACK_REVIEW_COMMAND
 }
@@ -487,20 +468,6 @@ function safeRepositoryPath(value) {
       !filePath.split('/').includes('..') &&
       !/[\p{Cc}\p{Cf}`]/u.test(filePath)
   )
-}
-
-async function getPermission(github, context, username) {
-  try {
-    const response = await github.rest.repos.getCollaboratorPermissionLevel({
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      username,
-    })
-    return response.data.user?.permission ?? response.data.permission ?? ''
-  } catch (error) {
-    if (error.status === 404) return ''
-    throw error
-  }
 }
 
 function stackPlan(membership, context) {
@@ -1458,23 +1425,6 @@ async function hasSuccessfulStackReview(
     status?.state === 'success' &&
     (runId == null || status.target_url === workflowRunUrl(context, runId))
   )
-}
-
-async function listCheckRunsForRef({ github, context, ref }) {
-  if (
-    typeof github.paginate !== 'function' ||
-    typeof github.rest.checks?.listForRef !== 'function'
-  ) {
-    return []
-  }
-  const checkRuns = await github.paginate(github.rest.checks.listForRef, {
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    ref,
-    filter: 'all',
-    per_page: 100,
-  })
-  return Array.isArray(checkRuns) ? checkRuns : []
 }
 
 async function getVerifiedStackCleanEvidence({
@@ -2592,12 +2542,6 @@ function findingMetadata(finding, kind) {
     ...identity,
     id: `sfr-${sha256(JSON.stringify(identity)).slice(0, 16)}`,
   }
-}
-
-function safeFence(value) {
-  const runs = String(value).match(/`+/g) ?? []
-  const longest = runs.reduce((max, run) => Math.max(max, run.length), 0)
-  return '`'.repeat(Math.max(3, longest + 1))
 }
 
 function fenced(value) {
