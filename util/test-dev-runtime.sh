@@ -75,9 +75,11 @@ for arg in "$@"; do
   if [ "$previous" = "volume" ]; then
     volume_action="$arg"
   fi
-  if [ "$arg" = "$KLICKER_TEST_DOCKER_VOLUME_NAME" ]; then
-    volume_name_present=true
-  fi
+  case "$arg" in
+    "$KLICKER_TEST_DOCKER_VOLUME_NAME"|"--name=$KLICKER_TEST_DOCKER_VOLUME_NAME")
+      volume_name_present=true
+      ;;
+  esac
   previous="$arg"
 done
 
@@ -87,6 +89,8 @@ if [ "$volume_action" = "inspect" ]; then
   exit 0
 fi
 if [ "$volume_action" = "create" ]; then
+  # A concurrent create and a genuine create failure both return non-zero;
+  # initialize.sh distinguishes them by the follow-up inspect.
   if [ "${KLICKER_TEST_DOCKER_CREATE_RACE:-false}" = "true" ]; then
     touch "$KLICKER_TEST_DOCKER_VOLUME_STATE"
     exit 9
