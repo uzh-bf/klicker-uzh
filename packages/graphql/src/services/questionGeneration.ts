@@ -342,7 +342,11 @@ async function dispatchPreparingQuestionBuild(
       prisma: ctx.prisma,
       dispatchAttemptId: build.providerDispatchAttemptId,
       recover: () =>
-        runtime.findRunByBuildId(build.id, build.providerDispatchAttemptId),
+        runtime.findRunByBuildId(
+          build.id,
+          build.providerDispatchAttemptId,
+          build.createdAt
+        ),
       dispatch: (beforeProviderDispatch) =>
         runtime.start(
           payload,
@@ -945,7 +949,11 @@ async function dispatchQuestionReviewLeased(
   )
   if (build.status !== expectedStatus) return
 
-  let recovered = await runtime.findRunByQuestionReview(build.id, review.id)
+  let recovered = await runtime.findRunByQuestionReview(
+    build.id,
+    review.id,
+    review.createdAt
+  )
   if (!recovered) {
     const dispatchIsFresh =
       Date.now() - review.createdAt.getTime() <
@@ -964,7 +972,11 @@ async function dispatchQuestionReviewLeased(
       ) {
         throw error
       }
-      recovered = await runtime.findRunByQuestionReview(build.id, review.id)
+      recovered = await runtime.findRunByQuestionReview(
+        build.id,
+        review.id,
+        review.createdAt
+      )
       if (!recovered) throw error
     }
   }

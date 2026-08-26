@@ -118,6 +118,7 @@ function preparingBuild() {
     status: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
     providerDispatchAttemptId: fixtures.dispatchAttemptId,
     blueprintArtifact: null,
+    createdAt: new Date('2026-08-26T12:00:00.000Z'),
     reviews: [],
     drafts: [],
     sourceGraphBuild: {
@@ -136,6 +137,38 @@ function preparingBuild() {
       sources: [],
     },
   }
+}
+
+function resolvedDesignArtifact() {
+  return Buffer.from(
+    JSON.stringify({
+      schema_version: 1,
+      state: 'resolved',
+      assessment: {
+        id: fixtures.buildId,
+        title: 'Generated questions',
+        language: 'de',
+        target_questions: 1,
+      },
+      modules: [{ module_id: 'M1', module_name: 'All material' }],
+      objectives: [],
+      sources: [],
+      resolved_slots: [
+        {
+          design_slot_id: 'slot-1',
+          module_id: 'M1',
+          objective_id: '',
+          origin_mode: 'new',
+          item_format: 'single_choice',
+          difficulty_scale: 1,
+          bloom_level: 'remember',
+        },
+      ],
+      topic_overview: { coverage_warnings: [] },
+      generation_policy: 'new_only',
+      origin_counts: { new: 1, reuse: 0, update: 0 },
+    })
+  )
 }
 
 describe('question-generation preparation lifecycle', () => {
@@ -200,7 +233,8 @@ describe('question-generation preparation lifecycle', () => {
     expect(runtime.downloadVerified).toHaveBeenCalledOnce()
     expect(findRunByBuildId).toHaveBeenCalledWith(
       fixtures.buildId,
-      fixtures.dispatchAttemptId
+      fixtures.dispatchAttemptId,
+      build.createdAt
     )
     expect(start).not.toHaveBeenCalled()
     expect(updateMany).toHaveBeenNthCalledWith(
@@ -209,6 +243,104 @@ describe('question-generation preparation lifecycle', () => {
         data: expect.objectContaining({
           providerWorkflowRunId: 'recovered-run',
           status: DB.ElementGenerationBuildStatus.DESIGNING,
+        }),
+      })
+    )
+  })
+})
+
+describe('question-generation synchronization lifecycle', () => {
+  it('exposes a resolved Design while its Hatchet workflow waits for review', async () => {
+    const build = {
+      ...preparingBuild(),
+      status: DB.ElementGenerationBuildStatus.DESIGNING,
+      providerEventId: 'question-event',
+      providerWorkflowRunId: null,
+      lastSynchronizedAt: null,
+    }
+    const designArtifact = {
+      containerName: 'question-results',
+      blobName: `question-builds/${fixtures.buildId}/design/resolved.json`,
+      sha256: 'd'.repeat(64),
+    }
+    const designSummary = {
+      title: 'Generated questions',
+      questionCount: 1,
+      objectives: [],
+      modules: [
+        { moduleId: 'M1', moduleName: 'All material', questionCount: 1 },
+      ],
+      sources: [],
+      slots: [
+        {
+          sourceQuestionId: 'slot-1',
+          moduleId: 'M1',
+          objectiveId: null,
+          bloomLevel: 'remember',
+          targetDifficulty: 1,
+        },
+      ],
+      warnings: [],
+    }
+    const waiting = {
+      ...build,
+      providerWorkflowRunId: 'question-run',
+      designArtifact,
+      designSummary,
+      status: DB.ElementGenerationBuildStatus.WAITING_FOR_DESIGN_REVIEW,
+      stage: 'design_review',
+    }
+    const updateMany = vi.fn(async () => ({ count: 1 }))
+    const runtime = {
+      questionInputContainer: 'question-inputs',
+      questionOutputContainer: 'question-results',
+      questionOutputPrefix: 'question-builds',
+      uploadCreateOnly: vi.fn(),
+      downloadImmutable: vi.fn(async () => ({
+        ref: designArtifact,
+        bytes: resolvedDesignArtifact(),
+      })),
+      downloadVerified: vi.fn(),
+      downloadVerifiedStream: vi.fn(),
+      start: vi.fn(),
+      review: vi.fn(),
+      getRun: vi.fn(async () => ({
+        runId: 'question-run',
+        status: 'RUNNING' as const,
+      })),
+      getRunById: vi.fn(),
+      findRunByBuildId: vi.fn(),
+      findRunByQuestionReview: vi.fn(),
+    } satisfies QuestionGenerationRuntime
+    const ctx = {
+      user: { sub: fixtures.ownerId },
+      elementGenerationRuntime: runtime,
+      prisma: {
+        elementGenerationBuild: {
+          findFirst: vi
+            .fn()
+            .mockResolvedValueOnce(build)
+            .mockResolvedValueOnce(waiting),
+          updateMany,
+        },
+      },
+    }
+
+    await expect(
+      getQuestionGenerationBuild(fixtures.buildId, ctx as never)
+    ).resolves.toEqual(waiting)
+
+    expect(runtime.downloadImmutable).toHaveBeenCalledWith(
+      'question-results',
+      `question-builds/${fixtures.buildId}/design/resolved.json`
+    )
+    expect(runtime.getRun).toHaveBeenCalledWith('question-event')
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          designSummary,
+          status: DB.ElementGenerationBuildStatus.WAITING_FOR_DESIGN_REVIEW,
+          stage: 'design_review',
         }),
       })
     )
@@ -639,7 +771,8 @@ describe('question-generation review dispatch lifecycle', () => {
     expect(persistedReviewId).not.toBe('')
     expect(runtime.findRunByQuestionReview).toHaveBeenCalledWith(
       fixtures.buildId,
-      persistedReviewId
+      persistedReviewId,
+      review.createdAt
     )
     expect(dispatchReview).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -728,7 +861,8 @@ describe('question-generation review dispatch lifecycle', () => {
 
     expect(runtime.findRunByQuestionReview).toHaveBeenCalledWith(
       fixtures.buildId,
-      review.id
+      review.id,
+      review.createdAt
     )
     expect(dispatchReview).not.toHaveBeenCalled()
   })
@@ -874,7 +1008,8 @@ describe('flashcard incomplete-publication lifecycle', () => {
       1,
       fixtures.buildId,
       publicationAttemptId,
-      'publish-incomplete'
+      'publish-incomplete',
+      publishing.createdAt
     )
     expect(publishIncompleteFlashcards).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -978,7 +1113,8 @@ describe('flashcard incomplete-publication lifecycle', () => {
       3,
       fixtures.buildId,
       publicationAttemptId,
-      'publish-incomplete'
+      'publish-incomplete',
+      publishing.createdAt
     )
     expect(updateMany).toHaveBeenNthCalledWith(
       2,

@@ -289,7 +289,8 @@ async function dispatchPreparingBuild(
         runtime.findRunByFlashcardBuildId(
           build.id,
           build.providerDispatchAttemptId,
-          'start'
+          'start',
+          build.createdAt
         ),
       dispatch: (beforeProviderDispatch) =>
         runtime.startFlashcards(
@@ -468,7 +469,10 @@ async function recoverOrLoadRun(
   return runtime.findRunByFlashcardBuildId(
     build.id,
     dispatchAttemptId,
-    publication ? 'publish-incomplete' : 'start'
+    publication ? 'publish-incomplete' : 'start',
+    publication
+      ? (build.incompletePublishedAt ?? build.createdAt)
+      : build.createdAt
   )
 }
 
@@ -515,7 +519,8 @@ async function dispatchIncompletePublication(
   const alreadyDispatched = await runtime.findRunByFlashcardBuildId(
     build.id,
     dispatchAttemptId,
-    'publish-incomplete'
+    'publish-incomplete',
+    build.incompletePublishedAt ?? build.createdAt
   )
   if (alreadyDispatched) {
     recoveredRunId = alreadyDispatched.runId
@@ -536,7 +541,8 @@ async function dispatchIncompletePublication(
         const recovered = await runtime.findRunByFlashcardBuildId(
           build.id,
           dispatchAttemptId,
-          'publish-incomplete'
+          'publish-incomplete',
+          build.incompletePublishedAt ?? build.createdAt
         )
         if (!recovered) throw error
         recoveredRunId = recovered.runId

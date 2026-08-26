@@ -27,19 +27,48 @@ function createRuntimeHarness(
   downloadedBytes = Buffer.from('artifact')
 ) {
   const uploadData = vi.fn(async () => ({}))
-  const downloadToBuffer = vi.fn(async () => downloadedBytes)
+  const getProperties = vi.fn(
+    async (): Promise<{ contentLength?: number; etag?: string }> => ({
+      contentLength: downloadedBytes.byteLength,
+      etag: '"etag-1"',
+    })
+  )
+  const downloadToBuffer = vi.fn(
+    async (
+      _offset?: number,
+      count?: number,
+      _options?: { conditions?: { ifMatch?: string } }
+    ) => {
+      if (count !== undefined && count > downloadedBytes.byteLength) {
+        throw new Error(
+          `Stream drains before getting enough data needed. Data read: ${downloadedBytes.byteLength}, data need: ${count}`
+        )
+      }
+      return downloadedBytes
+    }
+  )
   const download = vi.fn(async () => ({
     readableStreamBody: Readable.from([Buffer.from('artifact')]),
   }))
   const getBlockBlobClient = vi.fn(() => ({
     uploadData,
+    getProperties,
     downloadToBuffer,
     download,
   }))
   const getContainerClient = vi.fn(() => ({ getBlockBlobClient }))
   const push = vi.fn(async () => ({ eventId: 'event-1' }))
   const list = vi.fn(async () => ({
-    rows: [{ taskExternalId: 'run-1' }],
+    rows: [
+      {
+        taskExternalId: 'task-1',
+        workflowRunExternalId: 'run-1',
+      },
+    ] as Array<{
+      taskExternalId: string
+      workflowRunExternalId: string
+      additionalMetadata?: Record<string, unknown>
+    }>,
   }))
   const getStatus = vi.fn(async () => 'COMPLETED')
   const createHatchetClient = vi.fn(() => ({
@@ -66,6 +95,7 @@ function createRuntimeHarness(
     getContainerClient,
     getBlockBlobClient,
     uploadData,
+    getProperties,
     downloadToBuffer,
     download,
   }
@@ -241,10 +271,9 @@ describe('question-generation runtime', () => {
       })
     ).rejects.toMatchObject({ code: 'ARTIFACT_DIGEST_MISMATCH' })
 
-    expect(harness.downloadToBuffer).toHaveBeenCalledWith(
-      0,
-      10 * 1024 * 1024 + 1
-    )
+    expect(harness.downloadToBuffer).toHaveBeenCalledWith(0, bytes.byteLength, {
+      conditions: { ifMatch: '"etag-1"' },
+    })
 
     await expect(
       collectStream(
@@ -266,7 +295,7 @@ describe('question-generation runtime', () => {
     ).rejects.toMatchObject({ code: 'ARTIFACT_DIGEST_MISMATCH' })
   })
 
-  it('rejects oversized artifacts after a bounded range read', async () => {
+  it('rejects oversized artifacts before downloading their content', async () => {
     const harness = createRuntimeHarness(
       runtimeEnvironment,
       Buffer.alloc(10 * 1024 * 1024 + 1)
@@ -278,10 +307,40 @@ describe('question-generation runtime', () => {
         'question-builds/build/result.json'
       )
     ).rejects.toMatchObject({ code: 'ARTIFACT_INVALID', retryable: false })
-    expect(harness.downloadToBuffer).toHaveBeenCalledWith(
-      0,
-      10 * 1024 * 1024 + 1
-    )
+    expect(harness.getProperties).toHaveBeenCalledOnce()
+    expect(harness.downloadToBuffer).not.toHaveBeenCalled()
+  })
+
+  it('retries when artifact metadata is incomplete or changes before download', async () => {
+    const missingMetadata = createRuntimeHarness()
+    missingMetadata.getProperties.mockResolvedValueOnce({
+      contentLength: undefined,
+      etag: '"etag-1"',
+    })
+
+    await expect(
+      missingMetadata.runtime.downloadImmutable(
+        'question-results',
+        'question-builds/build/result.json'
+      )
+    ).rejects.toMatchObject({
+      code: 'QUESTION_GENERATION_UNAVAILABLE',
+      retryable: true,
+    })
+    expect(missingMetadata.downloadToBuffer).not.toHaveBeenCalled()
+
+    const changedArtifact = createRuntimeHarness()
+    changedArtifact.downloadToBuffer.mockRejectedValueOnce({ statusCode: 412 })
+
+    await expect(
+      changedArtifact.runtime.downloadImmutable(
+        'question-results',
+        'question-builds/build/result.json'
+      )
+    ).rejects.toMatchObject({
+      code: 'QUESTION_GENERATION_UNAVAILABLE',
+      retryable: true,
+    })
   })
 
   it('derives immutable references only for configured output paths', async () => {
@@ -359,20 +418,35 @@ describe('question-generation runtime', () => {
     })
     expect(harness.getStatus).toHaveBeenCalledWith('run-1')
 
+    const recoveryAnchor = new Date('2026-08-26T12:00:00.000Z')
+    harness.list.mockResolvedValueOnce({
+      rows: [
+        {
+          taskExternalId: 'task-1',
+          workflowRunExternalId: 'run-1',
+          additionalMetadata: {
+            question_build_id: payload.question_build_id,
+            dispatch_attempt_id: dispatchAttemptId,
+            operation_kind: 'question-start',
+          },
+        },
+      ],
+    })
     await expect(
       harness.runtime.findRunByBuildId(
         payload.question_build_id,
-        dispatchAttemptId
+        dispatchAttemptId,
+        recoveryAnchor
       )
     ).resolves.toEqual({ runId: 'run-1', status: 'SUCCEEDED' })
     expect(harness.list).toHaveBeenLastCalledWith({
       additionalMetadata: {
-        question_build_id: payload.question_build_id,
         dispatch_attempt_id: dispatchAttemptId,
-        operation_kind: 'question-start',
       },
       onlyTasks: false,
-      limit: 2,
+      includePayloads: false,
+      limit: 10,
+      since: new Date(recoveryAnchor.getTime() - 5 * 60 * 1000),
     })
 
     const reviewAttemptId = '323e4567-e89b-42d3-a456-426614174000'
@@ -403,20 +477,34 @@ describe('question-generation runtime', () => {
       }
     )
 
+    harness.list.mockResolvedValueOnce({
+      rows: [
+        {
+          taskExternalId: 'task-1',
+          workflowRunExternalId: 'run-1',
+          additionalMetadata: {
+            question_build_id: payload.question_build_id,
+            dispatch_attempt_id: reviewAttemptId,
+            operation_kind: 'question-review',
+          },
+        },
+      ],
+    })
     await expect(
       harness.runtime.findRunByQuestionReview(
         payload.question_build_id,
-        reviewAttemptId
+        reviewAttemptId,
+        recoveryAnchor
       )
     ).resolves.toEqual({ runId: 'run-1', status: 'SUCCEEDED' })
     expect(harness.list).toHaveBeenLastCalledWith({
       additionalMetadata: {
-        question_build_id: payload.question_build_id,
         dispatch_attempt_id: reviewAttemptId,
-        operation_kind: 'question-review',
       },
       onlyTasks: false,
-      limit: 2,
+      includePayloads: false,
+      limit: 10,
+      since: new Date(recoveryAnchor.getTime() - 5 * 60 * 1000),
     })
   })
 
@@ -506,35 +594,70 @@ describe('question-generation runtime', () => {
       }
     )
 
+    const recoveryAnchor = new Date('2026-08-26T12:00:00.000Z')
+    harness.list.mockResolvedValueOnce({
+      rows: [
+        {
+          taskExternalId: 'task-1',
+          workflowRunExternalId: 'run-1',
+          additionalMetadata: {
+            flashcard_build_id: payload.flashcard_build_id,
+            dispatch_attempt_id: publicationAttemptId,
+            operation_kind: 'flashcard-publish-incomplete',
+          },
+        },
+      ],
+    })
     await expect(
       harness.runtime.findRunByFlashcardBuildId(
         payload.flashcard_build_id,
         publicationAttemptId,
-        'publish-incomplete'
+        'publish-incomplete',
+        recoveryAnchor
       )
     ).resolves.toEqual({ runId: 'run-1', status: 'SUCCEEDED' })
     expect(harness.list).toHaveBeenLastCalledWith({
       additionalMetadata: {
-        flashcard_build_id: payload.flashcard_build_id,
         dispatch_attempt_id: publicationAttemptId,
-        operation_kind: 'flashcard-publish-incomplete',
       },
       onlyTasks: false,
-      limit: 2,
+      includePayloads: false,
+      limit: 10,
+      since: new Date(recoveryAnchor.getTime() - 5 * 60 * 1000),
     })
   })
 
   it('rejects ambiguous recovery for one exact flashcard dispatch attempt', async () => {
     const harness = createRuntimeHarness()
     harness.list.mockResolvedValueOnce({
-      rows: [{ taskExternalId: 'run-1' }, { taskExternalId: 'run-2' }],
+      rows: [
+        {
+          taskExternalId: 'task-1',
+          workflowRunExternalId: 'run-1',
+          additionalMetadata: {
+            flashcard_build_id: '123e4567-e89b-42d3-a456-426614174001',
+            dispatch_attempt_id: '223e4567-e89b-42d3-a456-426614174001',
+            operation_kind: 'flashcard-start',
+          },
+        },
+        {
+          taskExternalId: 'task-2',
+          workflowRunExternalId: 'run-2',
+          additionalMetadata: {
+            flashcard_build_id: '123e4567-e89b-42d3-a456-426614174001',
+            dispatch_attempt_id: '223e4567-e89b-42d3-a456-426614174001',
+            operation_kind: 'flashcard-start',
+          },
+        },
+      ],
     })
 
     await expect(
       harness.runtime.findRunByFlashcardBuildId(
         '123e4567-e89b-42d3-a456-426614174001',
         '223e4567-e89b-42d3-a456-426614174001',
-        'start'
+        'start',
+        new Date('2026-08-26T12:00:00.000Z')
       )
     ).rejects.toMatchObject({ code: 'WORKFLOW_DISPATCH_UNCERTAIN' })
   })
