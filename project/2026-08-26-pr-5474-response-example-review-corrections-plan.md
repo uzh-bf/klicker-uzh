@@ -454,7 +454,7 @@ Neither follow-up is authorized by this plan.
   `3d54fbdbee5378212e65ff97bccf6dbc87f8ceba`
 - Rebased local heads before correction: K1 `ec254bea755bfa3a3d9a93b760aa9ad715643444`;
   K2 `3b54dfb36cf747f4063341ea1bc85e4ade6aa67d`
-- Corrected local K1 head: `31054ed57` (`test(chatbot): protect response-example owner boundaries` atop `fix(chatbot): harden response-example review contract`)
+- Corrected local K1 head: `a86d5ae96` (`docs(project): update k1 gate head`, recording the final Gate 2 evidence atop the corrected implementation)
 - Active slice: K1 Gate 2 evidence and risk review
 - Plan commit: `c525e6c60 docs(project): plan response-example review corrections`
 - K1 evidence: focused Markdown citation tests pass, including 100,000 unmatched
@@ -469,7 +469,9 @@ Neither follow-up is authorized by this plan.
   `unreadable_encrypted_agent_task`; the generic continuity risk review is
   recorded at
   `project/_local/reviews/2026-08-26-k1-risk-review-fallback.md`. All four
-  findings were applied and reverified over immutable K1 head `2a506dcb4`.
+  findings, including the documentation and non-owner edit follow-ups, were
+  applied and reverified over immutable K1 range
+  `332e044f34a1a5a0c8be00075795d8b3a19e7397..a86d5ae96`.
 - Next: obtain the required K1 Gate 2 acceptance before starting K2.
 - Delivery pending: K1 Gate 2 acceptance, K2 correction, corrected branch push, PR updates,
   corrected-head CI, merge, deployment, runtime activation, K3, and Test & Teach
