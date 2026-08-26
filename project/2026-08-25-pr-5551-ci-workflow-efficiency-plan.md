@@ -37,7 +37,7 @@
 - Branch: `rs/ci-workflow-efficiency-cleanup` for the follow-up cutover.
 - Worktree: `trees/ci-workflow-efficiency`.
 - Target: current `origin/v3` at
-  `079dc722b6e2b61d9210aa785978f4e29e5d2bad`, including merged [PR
+  `a36c2162631792eecd23388d13aa6cc83fb3ffea`, including merged [PR
   #5446](https://github.com/uzh-bf/klicker-uzh/pull/5446)'s Playwright timing and
   eight-shard changes, [PR #5567](https://github.com/uzh-bf/klicker-uzh/pull/5567)'s
   generated-client handoff, [PR #5565](https://github.com/uzh-bf/klicker-uzh/pull/5565)'s
@@ -45,8 +45,9 @@
   worker limit, [PR #5570](https://github.com/uzh-bf/klicker-uzh/pull/5570)'s
   redirect fix, the `3.4.0-alpha.73` release commit, and [PR
   #5572](https://github.com/uzh-bf/klicker-uzh/pull/5572)'s staging-promotion
-  annotation write-back and [PR #5575](https://github.com/uzh-bf/klicker-uzh/pull/5575)'s
-  subsequent staging promotion.
+  annotation write-back, [PR #5575](https://github.com/uzh-bf/klicker-uzh/pull/5575)'s
+  subsequent staging promotion, and [PR #5578](https://github.com/uzh-bf/klicker-uzh/pull/5578)'s
+  latest staging promotion.
 - Pull request: [#5551](https://github.com/uzh-bf/klicker-uzh/pull/5551) was
   squash-merged externally before the planned cleanup; follow-up draft
   [#5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) contains the cutover.
@@ -216,7 +217,7 @@ Do not delete a workflow if any readback differs from the expected set.
 ## Progress
 
 - Status: branch is synced with current `origin/v3` through normal merge commit
-  `91590ab92`; the latest published PR head and exact-head checks are recorded
+  `e9db72078`; the latest published PR head and exact-head checks are recorded
   in the PR description as the branch advances.
 - Completed: plan commit and post-commit freshness check; replacement workflow
   implementation; Actions audit, validation, and discovery; exact Node 24
@@ -249,8 +250,8 @@ Do not delete a workflow if any readback differs from the expected set.
   package eight times. The corrective hosted run at the pre-merge head
   `96ec9e41d` passed all eight shards and `test-playwright-status`; it is
   historical evidence and must be repeated for the final merged head.
-- Remaining: finish the exact-head hosted checks for the published head
-  `7e02a43c1`, record the final review, and refresh the PR description. [PR
+- Remaining: publish the post-merge head, finish its exact-head hosted checks,
+  record the final review, and refresh the PR description. [PR
   #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) is already ready for
   review; merge remains withheld.
 - Follow-up verification: the safe Actions audit, syntax validation, and job
@@ -279,8 +280,8 @@ Do not delete a workflow if any readback differs from the expected set.
 
 ## Next Steps
 
-- Finish the exact-head checks for the published head, record the final review,
-  and refresh the PR description against `origin/v3`.
+- Publish the post-merge head, finish its exact-head checks, record the final
+  review, and refresh the PR description against `origin/v3`.
 - Keep [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) ready once the
   final hosted checks and review state remain green.
 - Keep the deferred image-workflow optimizations as separate packages with
