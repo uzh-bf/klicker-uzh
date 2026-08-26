@@ -107,13 +107,25 @@ function stackFixture() {
           filename: 'src/one.ts',
           additions: 4,
           deletions: 1,
-          patch: '@@ -3,1 +4,1 @@\n+changed in layer one',
+          patch: '@@ -3,1 +4,1 @@\n-old in layer one\n+changed in layer one',
         },
         {
           filename: 'src/shift.ts',
           additions: 1,
           deletions: 1,
-          patch: '@@ -2,1 +2,1 @@\n+source change',
+          patch: '@@ -2,1 +2,1 @@\n-old source\n+source change',
+        },
+        {
+          filename: 'src/rename-old.ts',
+          additions: 1,
+          deletions: 0,
+          patch: '@@ -0,0 +1,1 @@\n+old content',
+        },
+        {
+          filename: 'src/context.ts',
+          additions: 1,
+          deletions: 1,
+          patch: '@@ -4,1 +4,1 @@\n-old context\n+source context',
         },
       ],
     ],
@@ -125,13 +137,28 @@ function stackFixture() {
           filename: 'src/one.ts',
           additions: 2,
           deletions: 2,
-          patch: '@@ -8,1 +9,1 @@\n+changed in layer three',
+          patch:
+            '@@ -8,1 +9,1 @@\n-old in layer three\n+changed in layer three',
         },
         {
           filename: 'src/shift.ts',
           additions: 1,
           deletions: 0,
           patch: '@@ -2,0 +2,1 @@\n+later insertion',
+        },
+        {
+          filename: 'src/rename-new.ts',
+          previous_filename: 'src/rename-old.ts',
+          additions: 1,
+          deletions: 1,
+          patch: '@@ -1,1 +1,1 @@\n-old content\n+new content',
+        },
+        {
+          filename: 'src/context.ts',
+          additions: 1,
+          deletions: 1,
+          patch:
+            '@@ -4,3 +4,3 @@\n context line 4\n context line 5\n-old context line 6\n+later context line 6',
         },
       ],
     ],
@@ -594,6 +621,33 @@ test('builds a bounded immutable manifest with exact layer owners', async () => 
       { end_line: 2, layers: [3], start_line: 2 },
     ]
   )
+  assert.equal(
+    bundle.manifest.path_index.some(
+      (entry) => entry.filename === 'src/rename-old.ts'
+    ),
+    false
+  )
+  assert.deepEqual(
+    bundle.manifest.path_index.find(
+      (entry) => entry.filename === 'src/rename-new.ts'
+    ),
+    {
+      additions: 2,
+      deletions: 1,
+      filename: 'src/rename-new.ts',
+      layers: [1, 3],
+      line_layers: [],
+    }
+  )
+  assert.deepEqual(
+    bundle.manifest.path_index.find(
+      (entry) => entry.filename === 'src/context.ts'
+    ).line_layers,
+    [
+      { end_line: 4, layers: [1], start_line: 4 },
+      { end_line: 6, layers: [3], start_line: 6 },
+    ]
+  )
   const plan = await buildStackReviewPlan({
     github,
     context: context(),
@@ -787,11 +841,20 @@ test('checks trusted review code out from the default branch', () => {
       path.join(__dirname, `../workflows/${workflowName}`),
       'utf8'
     )
-    assert.doesNotMatch(workflow, /ref: \$\{\{ github\.sha \}\}/u)
+    assert.match(workflow, /trusted_policy:/u)
+    assert.doesNotMatch(
+      workflow,
+      /ref: \$\{\{ github\.(sha|event\.repository\.default_branch) \}\}/u
+    )
     assert.match(
       workflow,
-      /ref: \$\{\{ github\.event\.repository\.default_branch \}\}/u
+      /ref: \$\{\{ needs\.trusted_policy\.outputs\.trusted_sha \}\}/u
     )
+    assert.match(
+      workflow,
+      /ref: \$\{\{ needs\.authorize\.outputs\.trusted_sha \}\}/u
+    )
+    assert.match(workflow, /git rev-parse HEAD/u)
   }
 })
 

@@ -120,6 +120,7 @@ test('authorizes and starts only the immutable ready PR range', async () => {
     repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
     runId: 123,
     serverUrl: 'https://github.com',
+    sha: 'f'.repeat(40),
   }
 
   assert.equal(await authorizeFinalReview({ github, context, core }), true)
@@ -265,6 +266,7 @@ function reviewContext() {
     repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
     runId: 123,
     serverUrl: 'https://github.com',
+    sha: 'f'.repeat(40),
   }
 }
 

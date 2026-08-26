@@ -694,11 +694,20 @@ function stackReviewPlanMatches(plan, expected) {
   )
 }
 
-async function buildStackReviewPlan({ github, context, membership }) {
+async function buildStackReviewPlan({
+  github,
+  context,
+  membership,
+  trustedSha,
+}) {
   const basePlan = stackPlan(membership, context)
   if (!basePlan.eligible) return basePlan
 
-  const policyDigest = await getReviewPolicyDigest({ github, context })
+  const policyDigest = await getReviewPolicyDigest({
+    github,
+    context,
+    trustedSha,
+  })
   const fullPlan = { ...basePlan, policyDigest }
 
   const topPull = membership.members.at(-1).pull
@@ -1071,7 +1080,7 @@ function setOutput(core, name, value) {
   )
 }
 
-async function authorizeStackReview({ github, context, core }) {
+async function authorizeStackReview({ github, context, core, trustedSha }) {
   const deny = (reason) => {
     core.notice(reason)
     setOutput(core, 'authorized', 'false')
@@ -1097,7 +1106,12 @@ async function authorizeStackReview({ github, context, core }) {
     context,
     pullNumber: context.issue.number,
   })
-  const plan = await buildStackReviewPlan({ github, context, membership })
+  const plan = await buildStackReviewPlan({
+    github,
+    context,
+    membership,
+    trustedSha,
+  })
   if (!plan.eligible || membership.position !== membership.members.length - 1) {
     return deny(
       plan.reason ||
@@ -1118,6 +1132,7 @@ async function authorizeStackReview({ github, context, core }) {
   setOutput(core, 'pr_number', plan.topNumber)
   setOutput(core, 'base_sha', plan.baseSha)
   setOutput(core, 'head_sha', plan.headSha)
+  setOutput(core, 'trusted_sha', trustedSha ?? context.sha)
   setOutput(core, 'stack_id', plan.stackId)
   setOutput(core, 'stack_order_digest', plan.stackOrderDigest)
   setOutput(core, 'stack_identity_digest', plan.stackIdentityDigest)
@@ -1135,36 +1150,59 @@ async function authorizeStackReview({ github, context, core }) {
 function parsePatchHunks(patch) {
   if (typeof patch !== 'string' || patch.length > MAX_PATCH_LENGTH) return null
   const hunks = []
+  let current = null
   for (const line of patch.split('\n')) {
     const match = line.match(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/u)
     if (match) {
-      hunks.push({
+      current = {
         new_count: Number(match[4] ?? 1),
         new_start: Number(match[3]),
         old_count: Number(match[2] ?? 1),
         old_start: Number(match[1]),
-      })
-    }
-  }
-  return hunks.length > 0 ? hunks : null
-}
-
-function changedLineRanges(patch, hunks = parsePatchHunks(patch)) {
-  if (!hunks) return []
-  let newLine = null
-  const ranges = []
-  for (const line of patch.split('\n')) {
-    const hunk = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/u)
-    if (hunk) {
-      newLine = Number(hunk[1])
+        operations: [],
+      }
+      hunks.push(current)
       continue
     }
-    if (!Number.isSafeInteger(newLine)) continue
-    if (line.startsWith('+') && !line.startsWith('+++')) {
-      ranges.push({ end_line: newLine, start_line: newLine })
-      newLine += 1
-    } else if (line.startsWith(' ')) {
-      newLine += 1
+    if (!current || line.startsWith('\\ No newline at end of file')) continue
+    if (![' ', '+', '-'].includes(line[0])) return null
+    current.operations.push(line[0])
+  }
+  if (
+    hunks.length === 0 ||
+    hunks.some(
+      (hunk) =>
+        !Number.isSafeInteger(hunk.old_start) ||
+        !Number.isSafeInteger(hunk.old_count) ||
+        !Number.isSafeInteger(hunk.new_start) ||
+        !Number.isSafeInteger(hunk.new_count) ||
+        hunk.old_start < 0 ||
+        hunk.old_count < 0 ||
+        hunk.new_start < 0 ||
+        hunk.new_count < 0 ||
+        hunk.operations.filter((operation) => operation !== '+').length !==
+          hunk.old_count ||
+        hunk.operations.filter((operation) => operation !== '-').length !==
+          hunk.new_count
+    )
+  ) {
+    return null
+  }
+  return hunks
+}
+
+function changedLineRanges(hunks) {
+  if (!hunks) return []
+  const ranges = []
+  for (const hunk of hunks) {
+    let newLine = hunk.new_start
+    for (const operation of hunk.operations) {
+      if (operation === '+') {
+        ranges.push({ end_line: newLine, start_line: newLine })
+        newLine += 1
+      } else if (operation === ' ') {
+        newLine += 1
+      }
     }
   }
   return ranges
@@ -1173,25 +1211,24 @@ function changedLineRanges(patch, hunks = parsePatchHunks(patch)) {
 function mapLineThroughPatch(line, hunks) {
   let offset = 0
   for (const hunk of hunks) {
-    const oldStart = hunk.old_start
-    const oldEnd = oldStart + hunk.old_count
-    if (hunk.old_count === 0) {
-      if (line < oldStart) return { changed: false, line: line + offset }
-      offset += hunk.new_count
-      continue
+    if (line < hunk.old_start) return { line: line + offset }
+    let oldLine = hunk.old_start
+    let newLine = hunk.new_start
+    for (const operation of hunk.operations) {
+      if (operation === ' ') {
+        if (line === oldLine) return { line: newLine }
+        oldLine += 1
+        newLine += 1
+      } else if (operation === '-') {
+        if (line === oldLine) return { deleted: true }
+        oldLine += 1
+      } else {
+        newLine += 1
+      }
     }
-    if (line < oldStart) return { changed: false, line: line + offset }
-    if (line >= oldEnd) {
-      offset += hunk.new_count - hunk.old_count
-      continue
-    }
-    if (hunk.new_count === 0) return { deleted: true }
-    return {
-      changed: true,
-      line: hunk.new_start + Math.min(line - oldStart, hunk.new_count - 1),
-    }
+    offset += hunk.new_count - hunk.old_count
   }
-  return { changed: false, line: line + offset }
+  return { line: line + offset }
 }
 
 function buildPathLineLayers(layers, filename) {
@@ -1225,7 +1262,6 @@ function buildPathLineLayers(layers, filename) {
           break
         }
         line = mapped.line
-        if (mapped.changed) owners.add(laterIndex + 1)
       }
       if (!mappingComplete) return []
       lineLayers.push({
@@ -1279,7 +1315,7 @@ function validateFile(file) {
     changes,
     deletions,
     filename,
-    changed_line_ranges: changedLineRanges(file.patch, patchHunks),
+    changed_line_ranges: changedLineRanges(patchHunks),
     patch_complete: patchHunks !== null,
     patch_hunks: patchHunks ?? [],
     previous_filename: previous ?? '',
@@ -1349,9 +1385,30 @@ async function buildStackSnapshot({ github, context, membership }) {
     })
   }
   const pathIndex = new Map()
+  const renamedPaths = new Set()
   for (const layer of layers) {
     for (const file of layer.files) {
-      const current = pathIndex.get(file.filename) ?? {
+      let current = pathIndex.get(file.filename)
+      if (file.previous_filename && file.previous_filename !== file.filename) {
+        const previous = pathIndex.get(file.previous_filename)
+        pathIndex.delete(file.previous_filename)
+        renamedPaths.add(file.filename)
+        current ??= {
+          additions: 0,
+          deletions: 0,
+          line_layers: [],
+          layers: [],
+        }
+        if (previous) {
+          current.additions += previous.additions
+          current.deletions += previous.deletions
+          for (const layerNumber of previous.layers) {
+            if (!current.layers.includes(layerNumber))
+              current.layers.push(layerNumber)
+          }
+        }
+      }
+      current ??= {
         additions: 0,
         deletions: 0,
         line_layers: [],
@@ -1365,7 +1422,9 @@ async function buildStackSnapshot({ github, context, membership }) {
     }
   }
   for (const [filename, entry] of pathIndex) {
-    entry.line_layers = buildPathLineLayers(layers, filename)
+    entry.line_layers = renamedPaths.has(filename)
+      ? []
+      : buildPathLineLayers(layers, filename)
   }
   const ultimateBase = layers[0]
   const top = layers.at(-1)
@@ -1497,6 +1556,7 @@ async function startStackReview({
   policyDigest,
   dispositionDigest = '',
   reviewRanges = [],
+  trustedSha,
   manifestPath,
   core,
 }) {
@@ -1517,7 +1577,12 @@ async function startStackReview({
     })
     return
   }
-  const plan = await buildStackReviewPlan({ github, context, membership })
+  const plan = await buildStackReviewPlan({
+    github,
+    context,
+    membership,
+    trustedSha,
+  })
   if (
     !stackReviewPlanMatches(plan, {
       expectedStackId,
@@ -2218,6 +2283,7 @@ async function publishStackReview({
   policyDigest,
   dispositionDigest = '',
   reviewRanges = [],
+  trustedSha,
   expectedManifestDigest,
   manifestPath,
   resultPath,
@@ -2228,7 +2294,12 @@ async function publishStackReview({
     context,
     pullNumber: prNumber,
   })
-  const plan = await buildStackReviewPlan({ github, context, membership })
+  const plan = await buildStackReviewPlan({
+    github,
+    context,
+    membership,
+    trustedSha,
+  })
   if (
     !stackReviewPlanMatches(plan, {
       expectedStackId,
@@ -2272,7 +2343,7 @@ async function publishStackReview({
     policyDigest: plan.policyDigest,
     topologyResult,
     workflowUrl: workflowRunUrl(context),
-    workflowHeadSha: context.sha,
+    workflowHeadSha: trustedSha ?? context.sha,
     workflowRunId: context.runId,
   })
   const review = await github.rest.pulls.createReview({
@@ -2339,6 +2410,7 @@ async function finalizeStackReview({
   policyDigest,
   dispositionDigest = '',
   reviewRanges = [],
+  trustedSha,
   codeOutcome,
   topologyOutcome,
   cleanupOutcome,
@@ -2363,7 +2435,12 @@ async function finalizeStackReview({
   }
   let plan
   try {
-    plan = await buildStackReviewPlan({ github, context, membership })
+    plan = await buildStackReviewPlan({
+      github,
+      context,
+      membership,
+      trustedSha,
+    })
   } catch {
     await setStackStatus({
       github,

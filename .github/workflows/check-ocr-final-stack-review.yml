@@ -16,7 +16,35 @@ on:
     types: [created]
 
 jobs:
+  trusted_policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      trusted_sha: ${{ steps.resolve.outputs.trusted_sha }}
+    steps:
+      - name: Resolve trusted default-branch commit
+        id: resolve
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const branch = context.payload.repository.default_branch
+            const response = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch,
+            })
+            const sha = response.data?.commit?.sha
+            if (!/^[0-9a-f]{40}$/.test(sha ?? '')) {
+              core.setFailed('Trusted default-branch commit is missing')
+              return
+            }
+            core.setOutput('trusted_sha', sha)
+
   initialize:
+    needs: trusted_policy
     if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -31,7 +59,7 @@ jobs:
       - name: Checkout trusted stack-review policy
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ needs.trusted_policy.outputs.trusted_sha }}
           persist-credentials: false
           sparse-checkout: .github/scripts
 
@@ -44,7 +72,9 @@ jobs:
             await helper.initializeStackReview({ github, context })
 
   authorize:
+    needs: trusted_policy
     if: >-
+      needs.trusted_policy.result == 'success' &&
       github.event_name == 'issue_comment' &&
       github.event.issue.pull_request != null &&
       github.event.comment.body == '/final-review-stack'
@@ -61,6 +91,7 @@ jobs:
       pr_number: ${{ steps.authorize.outputs.pr_number }}
       base_sha: ${{ steps.authorize.outputs.base_sha }}
       head_sha: ${{ steps.authorize.outputs.head_sha }}
+      trusted_sha: ${{ steps.authorize.outputs.trusted_sha }}
       stack_id: ${{ steps.authorize.outputs.stack_id }}
       stack_order_digest: ${{ steps.authorize.outputs.stack_order_digest }}
       stack_identity_digest: ${{ steps.authorize.outputs.stack_identity_digest }}
@@ -76,18 +107,25 @@ jobs:
       - name: Checkout trusted stack-review policy
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ needs.trusted_policy.outputs.trusted_sha }}
           persist-credentials: false
           sparse-checkout: .github/scripts
 
       - name: Authorize stack review
         id: authorize
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          TRUSTED_SHA: ${{ needs.trusted_policy.outputs.trusted_sha }}
         with:
           github-token: ${{ github.token }}
           script: |
             const helper = require('./.github/scripts/final-ai-stack-review.js')
-            await helper.authorizeStackReview({ github, context, core })
+            await helper.authorizeStackReview({
+              github,
+              context,
+              core,
+              trustedSha: process.env.TRUSTED_SHA,
+            })
 
   review:
     needs: authorize
@@ -107,12 +145,17 @@ jobs:
       - name: Checkout trusted stack-review implementation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ needs.authorize.outputs.trusted_sha }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Verify trusted stack helper
-        run: node --test .github/scripts/final-ai-review.test.js .github/scripts/final-ai-stack-review.test.js
+        env:
+          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${TRUSTED_SHA}"
+          node --test .github/scripts/final-ai-review.test.js .github/scripts/final-ai-stack-review.test.js
 
       - name: Freeze verified stack snapshot
         id: start
@@ -131,6 +174,7 @@ jobs:
           POLICY_DIGEST: ${{ needs.authorize.outputs.policy_digest }}
           DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
           REVIEW_RANGES: ${{ needs.authorize.outputs.review_ranges }}
+          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
         with:
           github-token: ${{ github.token }}
@@ -153,6 +197,7 @@ jobs:
               policyDigest: process.env.POLICY_DIGEST,
               dispositionDigest: process.env.DISPOSITION_DIGEST,
               reviewRanges: JSON.parse(process.env.REVIEW_RANGES || '[]'),
+              trustedSha: process.env.TRUSTED_SHA,
               manifestPath: process.env.MANIFEST_PATH,
               core,
             })
@@ -296,6 +341,7 @@ jobs:
           POLICY_DIGEST: ${{ needs.authorize.outputs.policy_digest }}
           DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
           REVIEW_RANGES: ${{ needs.authorize.outputs.review_ranges }}
+          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
           MANIFEST_DIGEST: ${{ steps.start.outputs.manifest_digest }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
           RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
@@ -321,6 +367,7 @@ jobs:
               policyDigest: process.env.POLICY_DIGEST,
               dispositionDigest: process.env.DISPOSITION_DIGEST,
               reviewRanges: JSON.parse(process.env.REVIEW_RANGES || '[]'),
+              trustedSha: process.env.TRUSTED_SHA,
               expectedManifestDigest: process.env.MANIFEST_DIGEST,
               manifestPath: process.env.MANIFEST_PATH,
               resultPath: process.env.RESULT_PATH,
@@ -347,6 +394,7 @@ jobs:
           POLICY_DIGEST: ${{ needs.authorize.outputs.policy_digest }}
           DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
           REVIEW_RANGES: ${{ needs.authorize.outputs.review_ranges }}
+          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
           CODE_OUTCOME: ${{ steps.code_review.outcome }}
           TOPOLOGY_OUTCOME: ${{ steps.topology_review.outcome }}
           CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
@@ -372,6 +420,7 @@ jobs:
               policyDigest: process.env.POLICY_DIGEST,
               dispositionDigest: process.env.DISPOSITION_DIGEST,
               reviewRanges: JSON.parse(process.env.REVIEW_RANGES || '[]'),
+              trustedSha: process.env.TRUSTED_SHA,
               codeOutcome: process.env.CODE_OUTCOME,
               topologyOutcome: process.env.TOPOLOGY_OUTCOME,
               cleanupOutcome: process.env.CLEANUP_OUTCOME,

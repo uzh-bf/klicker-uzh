@@ -517,8 +517,11 @@ function reviewPolicySettings() {
   }
 }
 
-async function getReviewPolicyDigest({ github, context }) {
-  const ref = context.sha ?? context.payload.repository.default_branch
+async function getReviewPolicyDigest({ github, context, trustedSha }) {
+  const ref = trustedSha ?? context.sha
+  if (!/^[0-9a-f]{40}$/.test(ref ?? '')) {
+    throw new Error('Trusted review policy commit is missing')
+  }
   const artifacts = await Promise.all(
     FINAL_REVIEW_POLICY_PATHS.map(async (filePath) => ({
       content: await getFileText(github, context, filePath, ref),
@@ -1018,7 +1021,7 @@ function planMatches(plan, expected) {
   )
 }
 
-async function buildReviewPlan({ github, context, pull }) {
+async function buildReviewPlan({ github, context, pull, trustedSha }) {
   const eligibility = await resolvePullEligibility({ github, context, pull })
   if (!eligibility.eligible) {
     return {
@@ -1038,7 +1041,11 @@ async function buildReviewPlan({ github, context, pull }) {
   }
 
   const baseBackground = buildReviewBackground(pull.title)
-  const policyDigest = await getReviewPolicyDigest({ github, context })
+  const policyDigest = await getReviewPolicyDigest({
+    github,
+    context,
+    trustedSha,
+  })
   const baseBackgroundDigest = sha256(baseBackground)
   const fullPlan = {
     eligible: true,
@@ -1230,7 +1237,7 @@ async function initializeFinalReview({ github, context, core, sourceBranch }) {
   })
 }
 
-async function authorizeFinalReview({ github, context, core }) {
+async function authorizeFinalReview({ github, context, core, trustedSha }) {
   const deny = (reason) => {
     core.notice(reason)
     core.setOutput('authorized', 'false')
@@ -1252,7 +1259,7 @@ async function authorizeFinalReview({ github, context, core }) {
   }
 
   const pull = await getPull(github, context, context.issue.number)
-  const plan = await buildReviewPlan({ github, context, pull })
+  const plan = await buildReviewPlan({ github, context, pull, trustedSha })
   if (!plan.eligible) {
     return deny(
       'Final review requires an open, ready PR targeting the default branch or a verified native stack'
@@ -1266,6 +1273,7 @@ async function authorizeFinalReview({ github, context, core }) {
   core.setOutput('pr_number', String(pull.number))
   core.setOutput('base_sha', pull.base.sha)
   core.setOutput('head_sha', pull.head.sha)
+  core.setOutput('trusted_sha', trustedSha ?? context.sha)
   core.setOutput('mode', plan.mode)
   core.setOutput('root_head', plan.rootHead)
   core.setOutput('root_review_id', plan.rootReviewId)
@@ -1296,10 +1304,11 @@ async function startFinalReview({
   stackPosition,
   stackOrderDigest,
   dispositionDigest,
+  trustedSha,
   core,
 }) {
   const pull = await getPull(github, context, prNumber)
-  const plan = await buildReviewPlan({ github, context, pull })
+  const plan = await buildReviewPlan({ github, context, pull, trustedSha })
   if (
     !planMatches(plan, {
       mode,
@@ -1627,10 +1636,11 @@ async function publishFinalReview({
   stackPosition,
   stackOrderDigest,
   dispositionDigest,
+  trustedSha,
   resultPath,
 }) {
   const pull = await getPull(github, context, prNumber)
-  const plan = await buildReviewPlan({ github, context, pull })
+  const plan = await buildReviewPlan({ github, context, pull, trustedSha })
   if (
     !planMatches(plan, {
       mode,
@@ -1667,7 +1677,7 @@ async function publishFinalReview({
     stackId: plan.stackId,
     stackOrderDigest: plan.stackOrderDigest,
     stackPosition: plan.stackPosition,
-    workflowHeadSha: context.sha,
+    workflowHeadSha: trustedSha ?? context.sha,
     workflowRunId: context.runId,
   })
   const review = await github.rest.pulls.createReview({

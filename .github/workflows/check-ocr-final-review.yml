@@ -16,7 +16,35 @@ on:
     types: [created]
 
 jobs:
+  trusted_policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      trusted_sha: ${{ steps.resolve.outputs.trusted_sha }}
+    steps:
+      - name: Resolve trusted default-branch commit
+        id: resolve
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const branch = context.payload.repository.default_branch
+            const response = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch,
+            })
+            const sha = response.data?.commit?.sha
+            if (!/^[0-9a-f]{40}$/.test(sha ?? '')) {
+              core.setFailed('Trusted default-branch commit is missing')
+              return
+            }
+            core.setOutput('trusted_sha', sha)
+
   initialize:
+    needs: trusted_policy
     if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -31,7 +59,7 @@ jobs:
       - name: Checkout trusted final-review policy
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ needs.trusted_policy.outputs.trusted_sha }}
           persist-credentials: false
           sparse-checkout: .github/scripts
 
@@ -51,7 +79,9 @@ jobs:
             })
 
   authorize:
+    needs: trusted_policy
     if: >-
+      needs.trusted_policy.result == 'success' &&
       github.event_name == 'issue_comment' &&
       github.event.issue.pull_request != null &&
       github.event.comment.body == '/final-review'
@@ -68,6 +98,7 @@ jobs:
       pr_number: ${{ steps.authorize.outputs.pr_number }}
       base_sha: ${{ steps.authorize.outputs.base_sha }}
       head_sha: ${{ steps.authorize.outputs.head_sha }}
+      trusted_sha: ${{ steps.authorize.outputs.trusted_sha }}
       mode: ${{ steps.authorize.outputs.mode }}
       root_head: ${{ steps.authorize.outputs.root_head }}
       root_review_id: ${{ steps.authorize.outputs.root_review_id }}
@@ -83,18 +114,25 @@ jobs:
       - name: Checkout trusted final-review policy
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ needs.trusted_policy.outputs.trusted_sha }}
           persist-credentials: false
           sparse-checkout: .github/scripts
 
       - name: Authorize final review
         id: authorize
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          TRUSTED_SHA: ${{ needs.trusted_policy.outputs.trusted_sha }}
         with:
           github-token: ${{ github.token }}
           script: |
             const helper = require('./.github/scripts/final-ai-review.js')
-            await helper.authorizeFinalReview({ github, context, core })
+            await helper.authorizeFinalReview({
+              github,
+              context,
+              core,
+              trustedSha: process.env.TRUSTED_SHA,
+            })
 
   review:
     needs: authorize
@@ -114,12 +152,17 @@ jobs:
       - name: Checkout trusted final-review implementation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ needs.authorize.outputs.trusted_sha }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Verify trusted helper
-        run: node --test .github/scripts/final-ai-review.test.js
+        env:
+          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${TRUSTED_SHA}"
+          node --test .github/scripts/final-ai-review.test.js
 
       - name: Start final review
         id: start
@@ -138,6 +181,7 @@ jobs:
           STACK_POSITION: ${{ needs.authorize.outputs.stack_position }}
           STACK_ORDER_DIGEST: ${{ needs.authorize.outputs.stack_order_digest }}
           DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
+          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -158,6 +202,7 @@ jobs:
               stackPosition: process.env.STACK_POSITION,
               stackOrderDigest: process.env.STACK_ORDER_DIGEST,
               dispositionDigest: process.env.DISPOSITION_DIGEST,
+              trustedSha: process.env.TRUSTED_SHA,
               core,
             })
             core.setOutput('run_review', String(shouldRun))
@@ -251,6 +296,7 @@ jobs:
           STACK_POSITION: ${{ needs.authorize.outputs.stack_position }}
           STACK_ORDER_DIGEST: ${{ needs.authorize.outputs.stack_order_digest }}
           DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
+          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
         with:
           github-token: ${{ github.token }}
@@ -272,6 +318,7 @@ jobs:
               stackPosition: process.env.STACK_POSITION,
               stackOrderDigest: process.env.STACK_ORDER_DIGEST,
               dispositionDigest: process.env.DISPOSITION_DIGEST,
+              trustedSha: process.env.TRUSTED_SHA,
               resultPath: process.env.RESULT_PATH,
             })
             core.info(`Published ${url}`)
