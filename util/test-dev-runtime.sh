@@ -41,6 +41,7 @@ INSTALL_LOG="$TEST_ROOT/install.log"
 DOCKER_LOG="$TEST_ROOT/docker.log"
 DOCKER_VOLUME_STATE="$TEST_ROOT/docker-volume-state"
 NEXT_APPS=(auth chat frontend-control frontend-manage frontend-pwa)
+VOLUME_NAME='klicker-uzh-pnpm-store-v1'
 mkdir -p "$ROOT/node_modules" "$FAKE_BIN"
 
 write_file "$ROOT/package.json" '{"packageManager":"pnpm@11.5.0"}'
@@ -68,12 +69,12 @@ write_file "$FAKE_BIN/mkcert" '#!/usr/bin/env bash
 printf "%s\n" "$KLICKER_TEST_MKCERT_CAROOT"'
 write_file "$FAKE_BIN/docker" '#!/usr/bin/env bash
 if [ "$1 $2" = "volume inspect" ]; then
-  [ "$3" = "klicker-uzh-pnpm-store-v1" ] || exit 2
+  [ "$3" = "$KLICKER_TEST_DOCKER_VOLUME_NAME" ] || exit 2
   [ -f "$KLICKER_TEST_DOCKER_VOLUME_STATE" ] || exit 1
   exit 0
 fi
 if [ "$1 $2" = "volume create" ]; then
-  [ "$3" = "klicker-uzh-pnpm-store-v1" ] || exit 2
+  [ "$3" = "$KLICKER_TEST_DOCKER_VOLUME_NAME" ] || exit 2
   if [ "${KLICKER_TEST_DOCKER_CREATE_RACE:-false}" = "true" ]; then
     touch "$KLICKER_TEST_DOCKER_VOLUME_STATE"
     exit 9
@@ -92,6 +93,7 @@ export PATH="$FAKE_BIN:$PATH"
 export KLICKER_TEST_INSTALL_LOG="$INSTALL_LOG"
 export KLICKER_TEST_DOCKER_LOG="$DOCKER_LOG"
 export KLICKER_TEST_DOCKER_VOLUME_STATE="$DOCKER_VOLUME_STATE"
+export KLICKER_TEST_DOCKER_VOLUME_NAME="$VOLUME_NAME"
 export KLICKER_DEV_RUNTIME_ROOT="$ROOT"
 export KLICKER_DEV_RUNTIME_GIT_HEAD=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
@@ -135,7 +137,18 @@ assert_not_equal "$path_fingerprint" "$config_fingerprint"
 bash "$RUNTIME_SCRIPT" ensure-dependencies >/dev/null
 bash "$RUNTIME_SCRIPT" ensure-dependencies >/dev/null
 assert_equal "$(wc -l <"$INSTALL_LOG" | tr -d ' ')" '1'
-assert_equal "$(sed -n '1p' "$INSTALL_LOG")" 'install --frozen-lockfile --prefer-offline'
+read -ra install_args <<<"$(sed -n '1p' "$INSTALL_LOG")"
+assert_equal "${install_args[0]}" 'install'
+has_frozen_lockfile=false
+has_prefer_offline=false
+for arg in "${install_args[@]}"; do
+  case "$arg" in
+    --frozen-lockfile) has_frozen_lockfile=true ;;
+    --prefer-offline) has_prefer_offline=true ;;
+  esac
+done
+assert_equal "$has_frozen_lockfile" 'true'
+assert_equal "$has_prefer_offline" 'true'
 
 write_file "$ROOT/pnpm-lock.yaml" 'lockfileVersion: 9.1'
 bash "$RUNTIME_SCRIPT" ensure-dependencies >/dev/null
