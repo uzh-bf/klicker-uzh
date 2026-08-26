@@ -1544,3 +1544,11 @@ Settled rulings for this implementation:
   The regression now compares against the reset state in
   `0d68bdd4d`; the correction was propagated through Layers B and C without
   changing the approved stack topology.
+
+- 2026-08-26 (current-trunk publication): The existing A → B → C stack was
+  refreshed onto `origin/v3` at `a36c2162631792eecd23388d13aa6cc83fb3ffea`
+  without changing its topology. The exact task runtime passed the focused
+  personal-elements regression and the GraphQL and Chat type checks. The final
+  integrated review found no change-introduced issues; exact-head CI is now
+  pending on the refreshed published refs. Merge, deployment, and feature
+  enablement remain withheld.
