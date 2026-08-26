@@ -615,8 +615,7 @@ backendGraphql:
       cpu: 50m
       memory: 50Mi
     limits:
-      cpu: 200m
-      memory: 200Mi
+      memory: 1Gi
 
 olatApi:
   priorityClassName: staging-workload
