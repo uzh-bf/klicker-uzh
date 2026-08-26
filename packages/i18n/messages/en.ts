@@ -1897,9 +1897,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Please choose whether demo elements should be generated or not.',
     },
     settings: {
-      advancedBudgetLabel: 'Advanced model budget',
       advancedModelUsage: 'Advanced model usage',
-      baseBudgetLabel: 'Base model budget',
       baseModelUsage: 'Base model usage',
       chatAccountUsageDescription:
         'Review the current monthly usage estimates for each usage class.',
@@ -1908,19 +1906,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatAccountUsageTitle: 'Chatbot usage',
       chatAccountUsageUnauthorized:
         'Chatbot usage is not authorized for this account.',
-      saveUsageBudgets: 'Save budgets',
       usageBudget: 'Budget',
-      usageBudgetEditor: 'Monthly budgets',
       usageBudgetEmpty: 'No budget is set for this usage class.',
       usageBudgetExhausted: 'The monthly budget is exhausted.',
-      usageBudgetInvalid: 'Enter a valid number.',
-      usageBudgetNonNegative: 'The budget cannot be negative.',
-      usageBudgetPrecision: 'Use at most six decimal places.',
-      usageBudgetRequired: 'Enter a budget.',
-      usageBudgetTooLarge:
-        'The budget must be less than 1,000,000,000,000 credits.',
-      usageBudgetsSaved: 'The budgets were saved.',
-      usageBudgetsSaveError: 'The budgets could not be saved. Try again.',
       usageCredits: 'credits',
       usageRemaining: 'Remaining',
       usageResetDate: 'Reset date',
@@ -3739,7 +3727,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbotStatusPaused: 'Paused',
       chatbotStatusRejected: 'Rejected',
       chatbotStatusUnknown: 'Unknown status',
-      chatbotNotLive: 'Participant link available after publication.',
+      chatbotNotLive: 'Participant access is unavailable in this status.',
       credits: 'Credits',
       creditInitialCredits: 'Initial credits',
       creditResetPeriod: 'Reset period',

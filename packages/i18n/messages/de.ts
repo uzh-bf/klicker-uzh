@@ -1909,9 +1909,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte wählen Sie, ob Demo-Elemente generiert werden sollen oder nicht.',
     },
     settings: {
-      advancedBudgetLabel: 'Budget für das fortgeschrittene Modell',
       advancedModelUsage: 'Nutzung des fortgeschrittenen Modells',
-      baseBudgetLabel: 'Budget für das Basismodell',
       baseModelUsage: 'Nutzung des Basismodells',
       chatAccountUsageDescription:
         'Prüfen Sie die geschätzte Nutzung des aktuellen Monats für jede Nutzungsklasse.',
@@ -1920,20 +1918,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatAccountUsageTitle: 'Chatbot-Nutzung',
       chatAccountUsageUnauthorized:
         'Die Chatbot-Nutzung ist für dieses Konto nicht freigeschaltet.',
-      saveUsageBudgets: 'Budgets speichern',
       usageBudget: 'Budget',
-      usageBudgetEditor: 'Monatliche Budgets',
       usageBudgetEmpty: 'Für diese Nutzungsklasse ist kein Budget festgelegt.',
       usageBudgetExhausted: 'Das monatliche Budget ist ausgeschöpft.',
-      usageBudgetInvalid: 'Geben Sie eine gültige Zahl ein.',
-      usageBudgetNonNegative: 'Das Budget darf nicht negativ sein.',
-      usageBudgetPrecision: 'Verwenden Sie höchstens sechs Dezimalstellen.',
-      usageBudgetRequired: 'Geben Sie ein Budget ein.',
-      usageBudgetTooLarge:
-        'Das Budget muss kleiner als 1 Billion Credits sein.',
-      usageBudgetsSaved: 'Die Budgets wurden gespeichert.',
-      usageBudgetsSaveError:
-        'Die Budgets konnten nicht gespeichert werden. Versuchen Sie es erneut.',
       usageCredits: 'Credits',
       usageRemaining: 'Verbleibend',
       usageResetDate: 'Zurücksetzung',
@@ -3802,7 +3789,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotStatusPaused: 'Pausiert',
       chatbotStatusRejected: 'Abgelehnt',
       chatbotStatusUnknown: 'Unbekannter Status',
-      chatbotNotLive: 'Teilnehmenden-Link nach der Veröffentlichung verfügbar.',
+      chatbotNotLive:
+        'Der Teilnehmenden-Zugriff ist in diesem Status nicht verfügbar.',
       credits: 'Credits',
       creditInitialCredits: 'Start-Credits',
       creditResetPeriod: 'Zurücksetzungsintervall',
