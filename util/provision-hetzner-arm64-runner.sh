@@ -395,7 +395,8 @@ validate_ssh_only_firewall() {
     die 'reset state exists but UFW does not deny inbound traffic by default'
   firewall_rules=$(ufw status numbered)
   normalized_rules=$(sed -nE \
-    's/^\[[[:space:]]*[0-9]+\][[:space:]]*//p' <<<"$firewall_rules")
+    's/^\[[[:space:]]*[0-9]+\][[:space:]]*//p' <<<"$firewall_rules" |
+    sed -E 's/[[:space:]]+/ /g; s/[[:space:]]+$//')
   [[ -n "$normalized_rules" ]] || die 'reset state exists but UFW has no SSH rule'
   unexpected_rules=$(grep -Ev \
     '^(OpenSSH|22/tcp)( \(v6\))?[[:space:]]+ALLOW( IN)?[[:space:]]+Anywhere( \(v6\))?$' \
