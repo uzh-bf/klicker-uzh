@@ -270,7 +270,6 @@ function PersonalElements() {
                     description={t('pwa.personalElements.practiceDescription')}
                     numOfStacks={dueCards.length}
                     orderType={ElementOrderType.Sequential}
-                    pointsMultiplier={1}
                     setCurrentIx={startPractice}
                     previewOnly={false}
                   />
