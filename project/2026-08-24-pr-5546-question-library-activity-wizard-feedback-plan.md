@@ -707,6 +707,29 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   finding is fixed in code and tests, but its GitHub thread remains unresolved
   pending the authority decision and is not resolved here. Current PR and check
   state is volatile, and GitHub is authoritative.
+- Trace-backed Playwright repair commit
+  `b4d4a40eee142a576595005727f233c7e9dece76` is normally pushed. It changes
+  only `MA-elements-operations.spec.ts`: deletion and sharing transitions wait
+  for their stable dialog controls to hide, and the affected batch-sharing test
+  keeps its established attempt-zero titles while using deterministic retry
+  suffixes. Prettier, Playwright typecheck, focused two-test discovery,
+  `git diff --check`, full commit hooks, and the 23/23 pre-push build passed.
+  Canonical devrouter reached database reset and seed, but the existing image
+  lacks `chromium_headless_shell-1208`, so neither focused browser test started;
+  no install or workaround was applied. The exact workspace stopped with empty
+  route readback and provider state `Stopped`. Independent test-integrity review
+  found no actionable issue. The separate simplifier's proposal to inline the
+  approved close-and-wait helper was rejected because that helper is the named
+  stable synchronization seam. Both configured Gemini routes failed before
+  work with OpenRouter 402, and the read-only contracts completed through the
+  trusted Luna continuity fallback. GitHub registered only three workflows for
+  this pushed head during the bounded watcher and did not register the matching
+  `pull_request` Playwright workflow; no retry, rerun, state toggle, or workflow
+  workaround was issued. This required Progress update is the next normal
+  synchronize event. GitHub remains authoritative for its exact-head outcome.
+  The PR remains draft; mark-ready, merge, deployment, force-push, deletion, and
+  cleanup remain withheld. The fixed guidance-link thread may be resolved only
+  after exact-head checks pass.
 
 ### Historical execution evidence before final runtime proof
 
