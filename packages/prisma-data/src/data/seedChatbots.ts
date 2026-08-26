@@ -17,12 +17,12 @@ const SEEDED_CHATBOT_MODEL_IDS = [
 ]
 
 const tutorPrompt = readFileSync(
-  './src/data/data/tutorMode.txt',
+  new URL('./data/tutorMode.txt', import.meta.url),
   'utf-8'
 ).trim()
 
 const explainerPrompt = readFileSync(
-  './src/data/data/explainerMode.txt',
+  new URL('./data/explainerMode.txt', import.meta.url),
   'utf-8'
 ).trim()
 
