@@ -31,6 +31,13 @@ describe('citation helpers', () => {
     ])
   })
 
+  it('uses the renderer single-dollar math setting', () => {
+    expect(extractCitationIndexes('$x[15]$')).toEqual([15])
+    expect(
+      extractCitationIndexes('$x[15]$', { singleDollarTextMath: true })
+    ).toEqual([])
+  })
+
   it('requires a non-empty exact citation index set', () => {
     expect(hasExactCitationIndexes('Use [1].', [1])).toBe(true)
     expect(hasExactCitationIndexes('Use [1] and [2].', [1])).toBe(false)

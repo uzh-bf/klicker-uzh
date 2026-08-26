@@ -133,11 +133,20 @@ export function normalizeMarkdownContent(source: string): string {
     .replaceAll('<br>', '&nbsp;')
 }
 
-/** Parse the same Markdown dialect and math settings used by the renderer. */
-export function parseMarkdownForCitations(source: string): MarkdownAstNode {
+export interface CitationParserOptions {
+  singleDollarTextMath?: boolean
+}
+
+/** Parse the Markdown dialect and math setting used by the renderer. */
+export function parseMarkdownForCitations(
+  source: string,
+  options: CitationParserOptions = {}
+): MarkdownAstNode {
   const processor = unified()
     .use(remarkParse)
-    .use(remarkMath, { singleDollarTextMath: false })
+    .use(remarkMath, {
+      singleDollarTextMath: options.singleDollarTextMath ?? false,
+    })
     .use(remarkCitationMarkers)
   return processor.runSync(
     processor.parse(normalizeMarkdownContent(source))
@@ -145,9 +154,12 @@ export function parseMarkdownForCitations(source: string): MarkdownAstNode {
 }
 
 /** Return citation markers that become citation links in the renderer. */
-export function extractCitationIndexes(source: string): number[] {
+export function extractCitationIndexes(
+  source: string,
+  options: CitationParserOptions = {}
+): number[] {
   const indexes: number[] = []
-  const tree = parseMarkdownForCitations(source)
+  const tree = parseMarkdownForCitations(source, options)
   const pending: MarkdownAstNode[] = [tree]
 
   while (pending.length > 0) {
@@ -176,10 +188,11 @@ export function extractCitationIndexes(source: string): number[] {
 /** Require a non-empty exact set of rendered citation indexes. */
 export function hasExactCitationIndexes(
   source: string,
-  citationIndexes: readonly number[]
+  citationIndexes: readonly number[],
+  options: CitationParserOptions = {}
 ): boolean {
   const expected = new Set(citationIndexes)
-  const cited = new Set(extractCitationIndexes(source))
+  const cited = new Set(extractCitationIndexes(source, options))
   return (
     cited.size > 0 &&
     cited.size === expected.size &&

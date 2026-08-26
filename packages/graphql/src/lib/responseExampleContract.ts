@@ -40,9 +40,13 @@ export function extractChatbotModes(systemPrompts: unknown): string[] {
   }
 
   const modes = Object.keys(systemPrompts).filter((mode) => mode.trim())
-  return modes.length > 0
-    ? modes.sort((left, right) => left.localeCompare(right))
-    : ['tutor']
+  if (modes.length === 0) return ['tutor']
+
+  return modes.sort((left, right) => {
+    if (left < right) return -1
+    if (left > right) return 1
+    return 0
+  })
 }
 
 export function responseExampleActions(status: ResponseExampleStatus) {
