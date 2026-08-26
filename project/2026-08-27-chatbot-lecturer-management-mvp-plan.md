@@ -241,7 +241,7 @@ The missing Microsoft Forms URL is tracked as an input for the later `v3-ai` tas
 - [x] Current `origin/v3` at `1e7308d67ced9645ed9f93dc0a0f37bce9fa0463` merged cleanly into Layer 01; its only new diff was the staging image-pin update.
 - [x] Layer 01 repository `check:all` passed in the exact managed devcontainer. The focused GraphQL check and all 59 focused integration tests also passed after the simplifier adjustments.
 - [x] Slice review: done — the configured external reviewer routes failed before work with `unreadable_encrypted_agent_task`, so the approved generic-continuity route used native GPT-5.6 Luna at max effort over plaintext. The independent risk review returned `DONE` with no actionable findings. The simplifier returned `DONE_WITH_CONCERNS`; two behavior-preserving cleanups were accepted, while the proposed accepted-count query rewrite was rejected because the existing composite key keeps the chatbot/disclaimer pair explicit without a large dynamic `OR` filter.
-- [ ] Layer 01 implemented, reviewed, verified, and published as a draft PR.
+- [x] Layer 01 implemented, reviewed, verified, and published as draft PR [#5593](https://github.com/uzh-bf/klicker-uzh/pull/5593).
 - [ ] Stack Gate 2 approved by the user.
 - [ ] Layers 02 and 03 implemented, reviewed, verified, and published as draft PRs.
 - [ ] Integrated final review and Stack Gate 3.
