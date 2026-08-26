@@ -24,7 +24,7 @@
     },
     "comments": [],
     "stack": {
-      "schema_version": "final-ai-stack-manifest/v1",
+      "schema_version": "final-ai-stack-manifest/v2",
       "stack_id": "synthetic-stack-21-22",
       "ultimate_base": {
         "ref": "v3",

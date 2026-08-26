@@ -15,6 +15,7 @@ const {
   parseDispositionRecord,
   validateDispositionRecord,
   validateFinding,
+  requiresColdIncrementalReview,
 } = require('./final-ai-review.js')
 const {
   compareRange: compareNativeRange,
@@ -35,6 +36,7 @@ const OPENROUTER_API_KEY_ENV = 'OPENROUTER_API_KEY'
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 const REPORT_LIMIT = 55_000
 const MAX_MANIFEST_FILES = 2_000
+const MAX_PATCH_LENGTH = 200_000
 const FINDING_CATEGORIES = new Set([
   'bug',
   'security',
@@ -106,6 +108,13 @@ function stackPlan(membership, context) {
     }
   }
   const top = membership.members.at(-1).pull
+  const baseSha = stackReviewBaseSha(membership)
+  if (!validSha(baseSha)) {
+    return {
+      eligible: false,
+      reason: 'the verified stack review base could not be derived',
+    }
+  }
   return {
     eligible: true,
     mode: 'full',
@@ -113,7 +122,7 @@ function stackPlan(membership, context) {
     stackOrderDigest: membership.orderDigest,
     stackIdentityDigest: membership.identityDigest,
     memberNumbers: membership.numbers,
-    baseSha: membership.members[0].pull.base.sha,
+    baseSha,
     headSha: top.head.sha,
     rootHead: top.head.sha,
     rootReviewId: '',
@@ -123,6 +132,15 @@ function stackPlan(membership, context) {
     topNumber: top.number,
     background: buildStackBackground(membership, context),
   }
+}
+
+function stackReviewBaseSha(membership) {
+  const root = membership?.members?.[0]?.pull
+  const range = membership?.ranges?.[0]?.response?.data
+  if (!root || !range) return ''
+  if (range.status === 'ahead') return root.base.sha
+  const mergeBaseSha = range.merge_base_commit?.sha
+  return validSha(mergeBaseSha) ? mergeBaseSha : ''
 }
 
 function canUseStackReviewBaseAdvance(membership, context) {
@@ -143,6 +161,7 @@ function canUseStackReviewBaseAdvance(membership, context) {
   ) {
     return false
   }
+  if (!validSha(rootRange.merge_base_commit?.sha)) return false
   if (
     !membership.members.every(
       ({ pull, record }, index) =>
@@ -473,10 +492,6 @@ async function latestStackReview({ github, context, pull, modes = ['full'] }) {
   return null
 }
 
-async function latestStackRootReview({ github, context, pull }) {
-  return latestStackReview({ github, context, pull, modes: ['full'] })
-}
-
 function stackReviewMatchesCurrentHeadsExceptRootBase(metadata, membership) {
   if (
     metadata.stack_id !== membership.id ||
@@ -579,7 +594,7 @@ async function canPreserveStackReviewAcrossBaseAdvance({
       return (
         safeRepositoryPath(filePath) &&
         (!previousPath || safeRepositoryPath(previousPath)) &&
-        !requiresColdStackIncrementalReview(filePath) &&
+        !requiresColdIncrementalReview(filePath) &&
         !stackPaths.has(filePath) &&
         (!previousPath || !stackPaths.has(previousPath))
       )
@@ -652,21 +667,9 @@ async function compareStackRange({ github, context, baseSha, headSha }) {
   }
 }
 
-function requiresColdStackIncrementalReview(filePath) {
-  return (
-    /^\.github\/(workflows|actions)\//i.test(filePath) ||
-    /(^|\/)(package\.json|pnpm-lock\.yaml|package-lock\.json|yarn\.lock|bun\.lockb)$/i.test(
-      filePath
-    ) ||
-    /(^|\/)(Dockerfile[^/]*|docker-compose[^/]*|deploy|k8s|helm|terraform|migrations?|schema|auth|security|permissions?|secrets?|providers?|retention|public)(\/|\.|$)/i.test(
-      filePath
-    )
-  )
-}
-
 function allowedStackIncrementalFile(file, remediationPaths) {
   return (
-    !requiresColdStackIncrementalReview(file.filename) &&
+    !requiresColdIncrementalReview(file.filename) &&
     !file.previous_filename &&
     remediationPaths.has(file.filename)
   )
@@ -699,10 +702,11 @@ async function buildStackReviewPlan({ github, context, membership }) {
   const fullPlan = { ...basePlan, policyDigest }
 
   const topPull = membership.members.at(-1).pull
-  const rootReview = await latestStackRootReview({
+  const rootReview = await latestStackReview({
     github,
     context,
     pull: topPull,
+    modes: ['full'],
   })
   if (!rootReview) return fullPlan
   const root = rootReview.metadata
@@ -864,12 +868,25 @@ function statusTimestamp(status) {
 }
 
 async function latestStackStatus(github, context, headSha) {
-  const response = await github.rest.repos.getCombinedStatusForRef({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    ref: headSha,
-  })
-  return response.data.statuses
+  if (
+    typeof github.paginate !== 'function' ||
+    typeof github.rest.repos?.getCombinedStatusForRef !== 'function'
+  ) {
+    throw new Error('Commit-status pagination is unavailable')
+  }
+  const statuses = await github.paginate(
+    github.rest.repos.getCombinedStatusForRef,
+    {
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      ref: headSha,
+      per_page: 100,
+    }
+  )
+  if (!Array.isArray(statuses)) {
+    throw new Error('Commit-status pagination returned malformed data')
+  }
+  return statuses
     .map((status, index) => ({ status, index }))
     .filter(({ status }) => status.context === STACK_REVIEW_CONTEXT)
     .sort(
@@ -1115,6 +1132,45 @@ async function authorizeStackReview({ github, context, core }) {
   return true
 }
 
+function changedLineRanges(patch) {
+  if (typeof patch !== 'string' || patch.length > MAX_PATCH_LENGTH) return []
+  let newLine = null
+  const ranges = []
+  for (const line of patch.split('\n')) {
+    const hunk = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/u)
+    if (hunk) {
+      newLine = Number(hunk[1])
+      continue
+    }
+    if (!Number.isSafeInteger(newLine)) continue
+    if (line.startsWith('+') && !line.startsWith('+++')) {
+      ranges.push({ end_line: newLine, start_line: newLine })
+      newLine += 1
+    } else if (line.startsWith(' ')) {
+      newLine += 1
+    }
+  }
+  return ranges
+}
+
+function findingLayerNumbers(entry, startLine, endLine) {
+  const owners = entry?.layers ?? []
+  const layers = new Set(
+    (entry?.line_layers ?? [])
+      .filter(
+        ({ start_line: changedStart, end_line: changedEnd }) =>
+          Number.isSafeInteger(changedStart) &&
+          Number.isSafeInteger(changedEnd) &&
+          changedStart <= endLine &&
+          changedEnd >= startLine
+      )
+      .flatMap(({ layers: changedLayers }) => changedLayers ?? [])
+  )
+  return [...(layers.size > 0 ? layers : owners)].sort(
+    (left, right) => left - right
+  )
+}
+
 function validateFile(file) {
   const filename = String(file.filename ?? '')
   const additions = Number(file.additions ?? 0)
@@ -1137,6 +1193,7 @@ function validateFile(file) {
     changes,
     deletions,
     filename,
+    changed_line_ranges: changedLineRanges(file.patch),
     previous_filename: previous ?? '',
     status: String(file.status ?? 'modified'),
   }
@@ -1163,6 +1220,10 @@ async function buildStackSnapshot({ github, context, membership }) {
     throw new Error('Cannot snapshot an unverified native stack')
   }
   const ranges = membership.ranges
+  const reviewBaseSha = stackReviewBaseSha(membership)
+  if (!validSha(reviewBaseSha)) {
+    throw new Error('Stack review base merge identity is missing')
+  }
   const treeCache = new Map()
   const treeFor = async (commitSha) => {
     if (!treeCache.has(commitSha)) {
@@ -1205,19 +1266,27 @@ async function buildStackSnapshot({ github, context, membership }) {
       const current = pathIndex.get(file.filename) ?? {
         additions: 0,
         deletions: 0,
+        line_layers: [],
         layers: [],
       }
       current.additions += file.additions
       current.deletions += file.deletions
       if (!current.layers.includes(layer.position))
         current.layers.push(layer.position)
+      for (const range of file.changed_line_ranges) {
+        current.line_layers.push({
+          end_line: range.end_line,
+          layers: [layer.position],
+          start_line: range.start_line,
+        })
+      }
       pathIndex.set(file.filename, current)
     }
   }
   const ultimateBase = layers[0]
   const top = layers.at(-1)
   const manifest = {
-    schema_version: 'final-ai-stack-manifest/v1',
+    schema_version: 'final-ai-stack-manifest/v2',
     default_branch: context.payload.repository.default_branch,
     manifest_limits: {
       max_files: MAX_MANIFEST_FILES,
@@ -1227,11 +1296,17 @@ async function buildStackSnapshot({ github, context, membership }) {
     stack_order: membership.numbers,
     stack_order_digest: membership.orderDigest,
     stack_identity_digest: membership.identityDigest,
-    ultimate_base: {
+    root_base: {
       ref: ultimateBase.base_ref,
       repo: ultimateBase.base_repo,
       sha: ultimateBase.base_sha,
       tree_sha: ultimateBase.base_tree_sha,
+    },
+    ultimate_base: {
+      ref: ultimateBase.base_ref,
+      repo: ultimateBase.base_repo,
+      sha: reviewBaseSha,
+      tree_sha: await treeFor(reviewBaseSha),
     },
     top: {
       pull_request: top.pull_request,
@@ -1270,7 +1345,7 @@ function readSnapshotBundle(manifestPath, expectedManifestDigest = null) {
   if (
     !bundle?.manifest ||
     typeof bundle.manifest_digest !== 'string' ||
-    bundle.manifest.schema_version !== 'final-ai-stack-manifest/v1' ||
+    bundle.manifest.schema_version !== 'final-ai-stack-manifest/v2' ||
     sha256(JSON.stringify(bundle.manifest)) !== bundle.manifest_digest
   ) {
     throw new Error('Stack manifest is missing or has an invalid digest')
@@ -1286,6 +1361,8 @@ function readSnapshotBundle(manifestPath, expectedManifestDigest = null) {
 }
 
 function snapshotMatchesMembership(manifest, membership) {
+  const reviewBaseSha = stackReviewBaseSha(membership)
+  const rootBase = membership.members[0]?.pull.base
   if (
     manifest.stack_id !== membership.id ||
     manifest.stack_order_digest !== membership.orderDigest ||
@@ -1293,6 +1370,18 @@ function snapshotMatchesMembership(manifest, membership) {
     JSON.stringify(manifest.stack_order) !==
       JSON.stringify(membership.numbers) ||
     manifest.layers.length !== membership.members.length
+  ) {
+    return false
+  }
+  if (
+    manifest.root_base?.ref !== rootBase?.ref ||
+    manifest.root_base?.repo !== rootBase?.repo?.full_name ||
+    manifest.root_base?.sha !== rootBase?.sha ||
+    !validSha(manifest.root_base?.tree_sha) ||
+    manifest.ultimate_base?.sha !== reviewBaseSha ||
+    manifest.ultimate_base?.repo !== rootBase?.repo?.full_name ||
+    manifest.ultimate_base?.ref !== rootBase?.ref ||
+    !validSha(manifest.ultimate_base?.tree_sha)
   ) {
     return false
   }
@@ -1552,8 +1641,8 @@ function validateTopologyResult(result, manifest) {
   ) {
     throw new Error('Topology result is incomplete or has coverage warnings')
   }
-  const pathOwners = new Map(
-    manifest.path_index.map((entry) => [entry.filename, entry.layers])
+  const pathEntries = new Map(
+    manifest.path_index.map((entry) => [entry.filename, entry])
   )
   const comments = result.comments.map((comment, index) => {
     const filePath = String(comment?.path ?? '')
@@ -1563,7 +1652,9 @@ function validateTopologyResult(result, manifest) {
     const category = String(comment?.category ?? '')
     const severity = String(comment?.severity ?? '')
     const content = String(comment?.content ?? '')
-    const owners = pathOwners.get(filePath) ?? []
+    const entry = pathEntries.get(filePath)
+    const owners = entry?.layers ?? []
+    const expectedLayers = findingLayerNumbers(entry, startLine, endLine)
     if (
       !safeRepositoryPath(filePath) ||
       owners.length === 0 ||
@@ -1577,6 +1668,8 @@ function validateTopologyResult(result, manifest) {
           layer > manifest.layers.length ||
           !owners.includes(layer)
       ) ||
+      JSON.stringify([...layers].sort((left, right) => left - right)) !==
+        JSON.stringify(expectedLayers) ||
       !Number.isSafeInteger(startLine) ||
       !Number.isSafeInteger(endLine) ||
       startLine < 1 ||
@@ -1682,10 +1775,10 @@ function renderStackReview({
   const manifest = manifestBundle.manifest
   const manifestDigest =
     manifestBundle.manifest_digest ?? manifestBundle.manifestDigest
-  const pathOwners = new Map(
-    manifest.path_index.map((entry) => [entry.filename, entry.layers])
+  const pathEntries = new Map(
+    manifest.path_index.map((entry) => [entry.filename, entry])
   )
-  const knownPaths = new Set(pathOwners.keys())
+  const knownPaths = new Set(pathEntries.keys())
   const effectiveReviewRanges =
     mode === 'incremental' && reviewRanges.length === 0
       ? [
@@ -1717,9 +1810,12 @@ function renderStackReview({
   )
   const codeComments = code.comments.map((comment, index) => {
     const validated = validateFindingComment(comment, index, knownPaths)
-    const owners = pathOwners.get(validated.path)
+    const entry = pathEntries.get(validated.path)
+    const owners = entry?.layers ?? []
     const layerNumbers =
-      mode === 'incremental' ? comment.stack_layer_numbers : owners
+      mode === 'incremental'
+        ? comment.stack_layer_numbers
+        : findingLayerNumbers(entry, validated.startLine, validated.endLine)
     if (
       mode === 'incremental' &&
       (!Array.isArray(layerNumbers) ||
@@ -1761,16 +1857,8 @@ function renderStackReview({
     throw new Error('Stack workflow provenance is incomplete')
   }
   const findings = [
-    ...codeComments.map((finding) => ({
-      ...findingMetadata(finding, 'code'),
-      kind: 'code',
-      layer_numbers: finding.layerNumbers,
-    })),
-    ...topology.comments.map((finding) => ({
-      ...findingMetadata(finding, 'topology'),
-      kind: 'topology',
-      layer_numbers: finding.layerNumbers,
-    })),
+    ...codeComments.map((finding) => findingMetadata(finding, 'code')),
+    ...topology.comments.map((finding) => findingMetadata(finding, 'topology')),
   ]
   const reviewId = buildStackReviewId({
     baseSha: manifest.ultimate_base.sha,
@@ -1922,13 +2010,16 @@ function buildTopologyRequest({ manifest, codeSummary, rulesText, schema }) {
 function topologyCodeSummary(codeResult, manifest) {
   const knownPaths = new Set(manifest.path_index.map((entry) => entry.filename))
   const code = validateOCRResult(codeResult, knownPaths)
-  const owners = new Map(
-    manifest.path_index.map((entry) => [entry.filename, entry.layers])
+  const pathEntries = new Map(
+    manifest.path_index.map((entry) => [entry.filename, entry])
   )
   return {
     comments: code.comments.map((comment, index) => {
-      const pathLayers = owners.get(comment.path) ?? []
-      const layers = comment.stack_layer_numbers ?? pathLayers
+      const entry = pathEntries.get(comment.path)
+      const pathLayers = entry?.layers ?? []
+      const layers =
+        comment.stack_layer_numbers ??
+        findingLayerNumbers(entry, comment.start_line, comment.end_line)
       if (
         !Array.isArray(layers) ||
         layers.length === 0 ||

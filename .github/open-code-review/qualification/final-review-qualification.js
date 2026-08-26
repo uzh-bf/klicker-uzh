@@ -4,7 +4,7 @@ const path = require('node:path')
 
 const FIXTURE_SCHEMA = 'qualification-fixture/v1'
 const OCR_SCHEMA = 'ocr.run-manifest/v1'
-const STACK_SCHEMA = 'final-ai-stack-manifest/v1'
+const STACK_SCHEMA = 'final-ai-stack-manifest/v2'
 const QUALIFICATION_MODEL = 'synthetic/model-v1'
 const FINDING_CATEGORIES = new Set([
   'bug',

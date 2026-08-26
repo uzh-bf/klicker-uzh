@@ -63,7 +63,7 @@ function twoLayerStack() {
   const headOne = sha256('head-1').slice(0, 40)
   const headTwo = sha256('head-2').slice(0, 40)
   return {
-    schema_version: 'final-ai-stack-manifest/v1',
+    schema_version: 'final-ai-stack-manifest/v2',
     stack_id: 'self-test-stack-91-92',
     ultimate_base: { ref: 'v3', sha: baseSha },
     stack_order: [91, 92],

@@ -100,9 +100,29 @@ function stackFixture() {
     ),
   }
   const files = new Map([
-    ['b'.repeat(40), [{ filename: 'src/one.ts', additions: 4, deletions: 1 }]],
+    [
+      'b'.repeat(40),
+      [
+        {
+          filename: 'src/one.ts',
+          additions: 4,
+          deletions: 1,
+          patch: '@@ -3,1 +4,1 @@\n+changed in layer one',
+        },
+      ],
+    ],
     ['c'.repeat(40), [{ filename: 'src/two.ts', additions: 3, deletions: 0 }]],
-    ['d'.repeat(40), [{ filename: 'src/one.ts', additions: 2, deletions: 2 }]],
+    [
+      'd'.repeat(40),
+      [
+        {
+          filename: 'src/one.ts',
+          additions: 2,
+          deletions: 2,
+          patch: '@@ -8,1 +9,1 @@\n+changed in layer three',
+        },
+      ],
+    ],
     [
       'e'.repeat(40),
       [{ filename: 'src/three.ts', additions: 5, deletions: 0 }],
@@ -135,6 +155,7 @@ function stackFixture() {
           const [base, head] = basehead.split('...')
           return {
             data: {
+              merge_base_commit: { sha: 'b'.repeat(40) },
               status: responses.get(base) === head ? 'ahead' : 'behind',
               files: files.get(base) ?? [],
             },
@@ -197,7 +218,12 @@ function stackFixture() {
         },
       ],
     }),
-    paginate: async (endpoint) => (endpoint === reviewsEndpoint ? [] : []),
+    paginate: async (endpoint) =>
+      endpoint === github.rest.repos.getCombinedStatusForRef
+        ? state.statuses
+        : endpoint === reviewsEndpoint
+          ? []
+          : [],
   }
   return { files, github, pulls, responses, state }
 }
@@ -539,6 +565,33 @@ test('builds a bounded immutable manifest with exact layer owners', async () => 
       .layers,
     [1, 3]
   )
+  assert.deepEqual(
+    bundle.manifest.path_index.find((entry) => entry.filename === 'src/one.ts')
+      .line_layers,
+    [
+      { end_line: 4, layers: [1], start_line: 4 },
+      { end_line: 9, layers: [3], start_line: 9 },
+    ]
+  )
+  const plan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership,
+  })
+  const report = renderStackReview({
+    codeResult: completeOCRResult([codeFinding()]),
+    headSha: membership.top.head.sha,
+    manifestBundle: bundle,
+    policyDigest: plan.policyDigest,
+    topologyResult: topologyResult(),
+    workflowHeadSha: 'a'.repeat(40),
+    workflowRunId: 700,
+    workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+  })
+  assert.deepEqual(
+    parseStackReviewMetadata(report).findings[0].layer_numbers,
+    [1]
+  )
   assert.equal(snapshotMatchesMembership(bundle.manifest, membership), true)
   assert.match(bundle.manifestDigest, /^[0-9a-f]{64}$/)
 })
@@ -748,6 +801,47 @@ test('does not publish stack status for ordinary PRs without stale stack evidenc
   assert.equal(state.createdStatuses.at(-1).state, 'error')
 })
 
+test('invalidates the former top when stack history contains a removed lower layer', async () => {
+  const { github, pulls, state } = stackFixture()
+  const currentStack = {
+    id: 99,
+    open: true,
+    pull_requests: [12, 13, 14].map((number) => ({
+      number,
+      state: 'open',
+      draft: false,
+      head: { sha: pulls[number].head.sha },
+    })),
+  }
+  const historicalStack = {
+    id: 99,
+    open: false,
+    pull_requests: [11, 12, 13, 14].map((number) => ({
+      number,
+      state: 'open',
+      draft: false,
+      head: { sha: pulls[number].head.sha },
+    })),
+  }
+  github.request = async (_route, params) => ({
+    data:
+      params.pull_request === 11
+        ? []
+        : params.pull_request == null
+          ? [historicalStack]
+          : [currentStack],
+  })
+  const eventContext = context(11)
+  eventContext.eventName = 'pull_request_target'
+  eventContext.payload.pull_request = pulls[11]
+  assert.equal(
+    await initializeStackReview({ github, context: eventContext }),
+    true
+  )
+  assert.equal(state.createdStatuses.at(-1).sha, pulls[14].head.sha)
+  assert.equal(state.createdStatuses.at(-1).state, 'error')
+})
+
 test('preserves current stack evidence across unrelated default-base advancement', async () => {
   const { files, github, pulls, responses, state } = stackFixture()
   const membership = await resolveStackMembership({
@@ -805,7 +899,11 @@ test('preserves current stack evidence across unrelated default-base advancement
     getWorkflowRun: async () => ({ data: state.workflowRun }),
   }
   github.paginate = async (endpoint) =>
-    endpoint === github.rest.pulls.listReviews ? state.reviews : state.comments
+    endpoint === github.rest.repos.getCombinedStatusForRef
+      ? state.statuses
+      : endpoint === github.rest.pulls.listReviews
+        ? state.reviews
+        : state.comments
 
   const advancedBase = '9'.repeat(40)
   pulls[11].base.sha = advancedBase
@@ -1160,7 +1258,11 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
     user: { login: 'github-actions[bot]' },
   })
   github.paginate = async (endpoint) =>
-    endpoint === github.rest.pulls.listReviews ? state.reviews : state.comments
+    endpoint === github.rest.repos.getCombinedStatusForRef
+      ? state.statuses
+      : endpoint === github.rest.pulls.listReviews
+        ? state.reviews
+        : state.comments
   state.comments = [
     {
       body: `<!-- final-ai-disposition/v1 ${JSON.stringify({
@@ -1355,7 +1457,11 @@ test('attests bounded repairs across changed lower stack layers', async () => {
     },
   ]
   github.paginate = async (endpoint) =>
-    endpoint === github.rest.pulls.listReviews ? state.reviews : state.comments
+    endpoint === github.rest.repos.getCombinedStatusForRef
+      ? state.statuses
+      : endpoint === github.rest.pulls.listReviews
+        ? state.reviews
+        : state.comments
   state.workflowRun = {
     id: 700,
     path: '.github/workflows/check-ocr-final-stack-review.yml',

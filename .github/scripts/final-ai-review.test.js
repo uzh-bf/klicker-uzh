@@ -98,7 +98,11 @@ test('authorizes and starts only the immutable ready PR range', async () => {
       },
     },
     paginate: async (endpoint) =>
-      endpoint === reviewsEndpoint || endpoint === commentsEndpoint ? [] : [],
+      endpoint === github.rest.repos.getCombinedStatusForRef
+        ? combinedStatuses
+        : endpoint === reviewsEndpoint || endpoint === commentsEndpoint
+          ? []
+          : [],
   }
   const outputs = new Map()
   const core = {
@@ -326,7 +330,11 @@ function reviewGithub({
       },
     },
     paginate: async (endpoint) =>
-      endpoint === reviewsEndpoint ? state.reviews : state.comments,
+      endpoint === github.rest.repos.getCombinedStatusForRef
+        ? state.statuses
+        : endpoint === reviewsEndpoint
+          ? state.reviews
+          : state.comments,
     request: async () => ({ data: stackResponse ?? [] }),
   }
   return { github, state }

@@ -138,21 +138,76 @@ async function resolveNativeStackMembership({
     }
     stacks.push({
       id: stackId(stack.id),
+      open: stack.open !== false,
       pull_requests: stack.pull_requests,
     })
   }
-  const matches = stacks.filter((stack) =>
+  let matches = stacks.filter((stack) =>
     stack.pull_requests.some((record) => record.number === pullNumber)
   )
+  if (matches.length === 0) {
+    const historyResponse = await github.request(
+      'GET /repos/{owner}/{repo}/stacks',
+      {
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        per_page: 100,
+        headers: { accept: 'application/vnd.github+json' },
+      }
+    )
+    if (!Array.isArray(historyResponse.data)) {
+      return {
+        valid: false,
+        reason: 'native stack history returned a malformed list',
+      }
+    }
+    if (historyResponse.data.length >= 100) {
+      return {
+        valid: false,
+        reason: 'native stack history returned a capped list',
+      }
+    }
+    const historicalStacks = []
+    for (const stack of historyResponse.data) {
+      if (
+        !stackId(stack?.id) ||
+        !Array.isArray(stack.pull_requests) ||
+        stack.pull_requests.length === 0 ||
+        !stack.pull_requests.every(stackRecordShapeIsValid)
+      ) {
+        return {
+          valid: false,
+          reason: 'native stack history returned a malformed stack',
+        }
+      }
+      const numbers = stack.pull_requests.map((record) => record.number)
+      if (new Set(numbers).size !== numbers.length) {
+        return {
+          valid: false,
+          reason: 'native stack history returned duplicate members',
+        }
+      }
+      historicalStacks.push({
+        id: stackId(stack.id),
+        open: stack.open !== false,
+        pull_requests: stack.pull_requests,
+      })
+    }
+    matches = historicalStacks.filter((stack) =>
+      stack.pull_requests.some((record) => record.number === pullNumber)
+    )
+  }
   if (matches.length === 0) return null
   if (matches.length !== 1) {
     return { valid: false, reason: 'pull request belongs to multiple stacks' }
   }
 
   const stack = matches[0]
+  const stackIsClosed = stack.open === false
   const repository = `${context.repo.owner}/${context.repo.repo}`
   const members = []
   const reasons = []
+  if (stackIsClosed) reasons.push('native stack is closed')
   for (const record of stack.pull_requests) {
     let memberPull
     try {

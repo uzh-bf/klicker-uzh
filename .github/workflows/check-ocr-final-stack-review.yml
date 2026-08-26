@@ -177,6 +177,7 @@ jobs:
           [[ "${ROOT_HEAD}" =~ ^[0-9a-f]{40}$ ]]
           [[ "${MANIFEST_DIGEST}" =~ ^[0-9a-f]{64}$ ]]
           node -e 'const b = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); if (b.manifest_digest !== process.env.MANIFEST_DIGEST) process.exit(1)' "${MANIFEST_PATH}"
+          node -e 'const b = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); if (b.manifest.ultimate_base?.sha !== process.env.BASE_SHA) process.exit(1)' "${MANIFEST_PATH}"
           node -e 'const ranges = JSON.parse(process.env.REVIEW_RANGES || "[]"); if (process.env.REVIEW_MODE === "incremental" && (!Array.isArray(ranges) || ranges.length === 0 || ranges.some((r) => !Number.isSafeInteger(r.layer_number) || r.layer_number < 1 || !/^[0-9a-f]{40}$/.test(r.base_sha ?? "") || !/^[0-9a-f]{40}$/.test(r.head_sha ?? "") || r.base_sha === r.head_sha))) process.exit(1)'
           git cat-file -e "${BASE_SHA}^{commit}"
           while read -r NUMBER EXPECTED_SHA; do
@@ -192,7 +193,7 @@ jobs:
               git cat-file -e "${HEAD}^{commit}"
             done < <(node -e 'for (const r of JSON.parse(process.env.REVIEW_RANGES || "[]")) console.log(`${r.layer_number}\t${r.base_sha}\t${r.head_sha}`)')
           else
-            REVIEW_FROM="$(git merge-base "${BASE_SHA}" "${HEAD_SHA}")"
+            REVIEW_FROM="${BASE_SHA}"
             git cat-file -e "${REVIEW_FROM}^{commit}"
           fi
           [[ "${REVIEW_MODE}" == "incremental" && "${REVIEW_FROM}" == "per-layer" || "${REVIEW_MODE}" == "full" && "${REVIEW_FROM}" =~ ^[0-9a-f]{40}$ ]]

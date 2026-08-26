@@ -422,12 +422,25 @@ function statusTimestamp(status) {
 }
 
 async function getLatestFinalReviewStatus(github, context, headSha) {
-  const response = await github.rest.repos.getCombinedStatusForRef({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    ref: headSha,
-  })
-  return response.data.statuses
+  if (
+    typeof github.paginate !== 'function' ||
+    typeof github.rest.repos?.getCombinedStatusForRef !== 'function'
+  ) {
+    throw new Error('Commit-status pagination is unavailable')
+  }
+  const statuses = await github.paginate(
+    github.rest.repos.getCombinedStatusForRef,
+    {
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      ref: headSha,
+      per_page: 100,
+    }
+  )
+  if (!Array.isArray(statuses)) {
+    throw new Error('Commit-status pagination returned malformed data')
+  }
+  return statuses
     .map((status, index) => ({ status, index }))
     .filter(({ status }) => status.context === FINAL_REVIEW_CONTEXT)
     .sort(
@@ -495,7 +508,7 @@ function reviewPolicySettings() {
     review_schemas: {
       individual: FINAL_REVIEW_SCHEMA,
       stack: 'final-ai-stack-review/v2',
-      stack_manifest: 'final-ai-stack-manifest/v1',
+      stack_manifest: 'final-ai-stack-manifest/v2',
     },
     workflow_paths: {
       individual: FINAL_REVIEW_WORKFLOW_PATH,
@@ -1807,6 +1820,7 @@ module.exports = {
   publishFinalReview,
   removeOCRConfig,
   renderFinalReviewChunks,
+  requiresColdIncrementalReview,
   startFinalReview,
   validateDispositionRecord,
   validatePromotionContract,
