@@ -89,9 +89,7 @@ test('authorizes and starts only the immutable ready PR range', async () => {
             content: Buffer.from(rules).toString('base64'),
           },
         }),
-        listCommitStatusesForRef: async () => ({
-          data: { statuses: combinedStatuses },
-        }),
+        listCommitStatusesForRef: async () => ({ data: combinedStatuses }),
         getCollaboratorPermissionLevel: async () => ({
           data: { user: { permission: 'write' } },
         }),
@@ -99,7 +97,7 @@ test('authorizes and starts only the immutable ready PR range', async () => {
     },
     paginate: async (endpoint, params) =>
       endpoint === github.rest.repos.listCommitStatusesForRef
-        ? (await endpoint(params)).data.statuses
+        ? (await endpoint(params)).data
         : endpoint === reviewsEndpoint || endpoint === commentsEndpoint
           ? []
           : [],
@@ -169,13 +167,13 @@ test('authorizes and starts only the immutable ready PR range', async () => {
   combinedStatuses = [
     {
       context: 'final-ai-review',
-      state: 'success',
+      state: 'pending',
       updated_at: '2026-08-25T00:00:00Z',
     },
     {
       context: 'final-ai-review',
-      state: 'pending',
-      updated_at: '2026-08-25T00:01:00Z',
+      state: 'success',
+      updated_at: '2026-08-25T00:00:00Z',
     },
   ]
   assert.equal(await authorizeFinalReview({ github, context, core }), true)
@@ -320,9 +318,7 @@ function reviewGithub({
         getCollaboratorPermissionLevel: async () => ({
           data: { user: { permission: state.permission } },
         }),
-        listCommitStatusesForRef: async () => ({
-          data: { statuses: state.statuses },
-        }),
+        listCommitStatusesForRef: async () => ({ data: state.statuses }),
         getContent: async ({ path: filePath }) => ({
           data: {
             type: 'file',
@@ -339,7 +335,7 @@ function reviewGithub({
     },
     paginate: async (endpoint, params) =>
       endpoint === github.rest.repos.listCommitStatusesForRef
-        ? (await endpoint(params)).data.statuses
+        ? (await endpoint(params)).data
         : endpoint === reviewsEndpoint
           ? state.reviews
           : state.comments,

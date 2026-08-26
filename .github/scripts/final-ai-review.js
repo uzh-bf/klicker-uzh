@@ -417,10 +417,6 @@ async function resolvePullEligibility({
   }
 }
 
-function statusTimestamp(status) {
-  return Date.parse(status.updated_at ?? status.created_at ?? '') || 0
-}
-
 async function getLatestFinalReviewStatus(github, context, headSha) {
   if (
     typeof github.paginate !== 'function' ||
@@ -440,14 +436,9 @@ async function getLatestFinalReviewStatus(github, context, headSha) {
   if (!Array.isArray(statuses)) {
     throw new Error('Commit-status pagination returned malformed data')
   }
-  return statuses
-    .map((status, index) => ({ status, index }))
-    .filter(({ status }) => status.context === FINAL_REVIEW_CONTEXT)
-    .sort(
-      (left, right) =>
-        statusTimestamp(right.status) - statusTimestamp(left.status) ||
-        right.index - left.index
-    )[0]?.status
+  // GitHub returns commit statuses newest first; preserve that order so a
+  // missing or equal timestamp cannot make an older status win.
+  return statuses.find((status) => status.context === FINAL_REVIEW_CONTEXT)
 }
 
 async function hasSuccessfulFinalReview(

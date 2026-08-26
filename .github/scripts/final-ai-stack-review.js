@@ -875,10 +875,6 @@ function buildStackBackground(membership, context) {
   ].join(' ')
 }
 
-function statusTimestamp(status) {
-  return Date.parse(status.updated_at ?? status.created_at ?? '') || 0
-}
-
 async function latestStackStatus(github, context, headSha) {
   if (
     typeof github.paginate !== 'function' ||
@@ -898,14 +894,9 @@ async function latestStackStatus(github, context, headSha) {
   if (!Array.isArray(statuses)) {
     throw new Error('Commit-status pagination returned malformed data')
   }
-  return statuses
-    .map((status, index) => ({ status, index }))
-    .filter(({ status }) => status.context === STACK_REVIEW_CONTEXT)
-    .sort(
-      (left, right) =>
-        statusTimestamp(right.status) - statusTimestamp(left.status) ||
-        right.index - left.index
-    )[0]?.status
+  // GitHub returns commit statuses newest first; preserve that order so a
+  // missing or equal timestamp cannot make an older status win.
+  return statuses.find((status) => status.context === STACK_REVIEW_CONTEXT)
 }
 
 async function setStackStatus({ github, context, sha, state, description }) {
@@ -1245,7 +1236,6 @@ function buildPathLineLayers(layers, filename) {
     if (!sourceFile.patch_complete) return []
     for (const range of sourceFile.changed_line_ranges) {
       let line = range.start_line
-      const owners = new Set([sourceIndex + 1])
       let mappingComplete = true
       for (
         let laterIndex = sourceIndex + 1;
@@ -1270,7 +1260,7 @@ function buildPathLineLayers(layers, filename) {
       if (!mappingComplete) return []
       lineLayers.push({
         end_line: line,
-        layers: [...owners].sort((left, right) => left - right),
+        layers: [sourceIndex + 1],
         start_line: line,
       })
     }

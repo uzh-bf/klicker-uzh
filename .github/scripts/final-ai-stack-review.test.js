@@ -205,9 +205,7 @@ function stackFixture() {
         getCollaboratorPermissionLevel: async () => ({
           data: { user: { permission: 'write' } },
         }),
-        listCommitStatusesForRef: async () => ({
-          data: { statuses: state.statuses },
-        }),
+        listCommitStatusesForRef: async () => ({ data: state.statuses }),
         getContent: async ({ path: filePath }) => ({
           data: {
             type: 'file',
@@ -259,7 +257,7 @@ function stackFixture() {
     }),
     paginate: async (endpoint, params) =>
       endpoint === github.rest.repos.listCommitStatusesForRef
-        ? (await endpoint(params)).data.statuses
+        ? (await endpoint(params)).data
         : endpoint === reviewsEndpoint
           ? []
           : [],
@@ -1003,7 +1001,7 @@ test('preserves current stack evidence across unrelated default-base advancement
   }
   github.paginate = async (endpoint, params) =>
     endpoint === github.rest.repos.listCommitStatusesForRef
-      ? (await endpoint(params)).data.statuses
+      ? (await endpoint(params)).data
       : endpoint === github.rest.pulls.listReviews
         ? state.reviews
         : state.comments
@@ -1362,7 +1360,7 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
   })
   github.paginate = async (endpoint, params) =>
     endpoint === github.rest.repos.listCommitStatusesForRef
-      ? (await endpoint(params)).data.statuses
+      ? (await endpoint(params)).data
       : endpoint === github.rest.pulls.listReviews
         ? state.reviews
         : state.comments
@@ -1561,7 +1559,7 @@ test('attests bounded repairs across changed lower stack layers', async () => {
   ]
   github.paginate = async (endpoint, params) =>
     endpoint === github.rest.repos.listCommitStatusesForRef
-      ? (await endpoint(params)).data.statuses
+      ? (await endpoint(params)).data
       : endpoint === github.rest.pulls.listReviews
         ? state.reviews
         : state.comments
