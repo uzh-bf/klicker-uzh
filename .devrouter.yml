@@ -14,7 +14,7 @@
 # The container runs every routed app plus the two Hatchet workers. Workers have
 # no route; analytics, Office add-in, and docs remain outside this stack.
 #
-# Profiles (devrouter >= 0.0.39) scope `devrouter ensure --profile <name>[,<name>]`
+# Profiles (devrouter >= 0.0.40) scope `devrouter ensure --profile <name>[,<name>]`
 # across three independent dimensions: routed apps, optional Compose services,
 # and managed processes. The default `full` preserves the everything-stack.
 # Merged selections are additive and order-insensitive. `util/profile-resolver.sh`
@@ -57,7 +57,7 @@ profiles:
   # live-quiz work: student PWA, controller, response ingestion, workers
   live-quiz:
     apps: [pwa, control, api, auth, response-api]
-    readiness: [pwa, api]
+    readiness: [pwa, api, response-api]
     devcontainerServices: [redis_exec, redis_assessment, redis_cache]
     processes: [klicker-dev]
   # pure capabilities: no routes, no app process

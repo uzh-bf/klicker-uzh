@@ -61,7 +61,7 @@ profile_turbo_filters() {
     | tr ' ' '\n' | awk 'NF && !seen[$0]++' | paste -sd' ' -
 }
 
-# profile_readiness_apps: Next apps whose semantic readiness must be proven.
+# profile_readiness_apps: runtime apps whose semantic readiness must be proven.
 profile_readiness_apps() {
   local apps="" component status
   profile_wants klicker-dev
@@ -70,11 +70,11 @@ profile_readiness_apps() {
   [ "$status" -ne 0 ] && return 0
   for component in $(printf '%s' "${DEVROUTER_PROFILE}" | tr ',' '\n' | sort -u); do
     case "${component}" in
-      full) printf 'auth chat frontend-control frontend-manage frontend-pwa\n'; return 0 ;;
+      full) printf 'auth chat frontend-control frontend-manage frontend-pwa response-api\n'; return 0 ;;
       manage) apps="${apps} frontend-manage" ;;
       pwa) apps="${apps} frontend-pwa" ;;
       chat) apps="${apps} chat frontend-pwa" ;;
-      live-quiz) apps="${apps} frontend-control frontend-pwa" ;;
+      live-quiz) apps="${apps} frontend-control frontend-pwa response-api" ;;
       mcp|ai|email) ;;
       *) return 2 ;;
     esac

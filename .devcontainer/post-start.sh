@@ -71,7 +71,7 @@ fi
 export CI=true
 export npm_config_verify_deps_before_run=false
 
-# Profile selection (devrouter >= 0.0.39). DEVROUTER_PROFILE is injected by
+# Profile selection (devrouter >= 0.0.40). DEVROUTER_PROFILE is injected by
 # `devrouter ensure --profile <name>`; empty means the config default (`full`).
 # The profile is part of the process fingerprint so switching profiles replaces
 # the owned turbo process group instead of mixing two app sets.
@@ -104,6 +104,12 @@ fi
 DEV_TURBO_FILTERS="$(profile_turbo_filters)"
 READINESS_APPS="$(profile_readiness_apps)"
 export READINESS_APPS
+PROFILE_WANTS_WORKERS=no
+for profile_component in ${DEVROUTER_PROFILE//,/ }; do
+  case "$profile_component" in
+    full | live-quiz) PROFILE_WANTS_WORKERS=yes ;;
+  esac
+done
 
 # Hatchet can mint its token just after post-create's bounded capture window on
 # a cold workspace. Application profiles need it before any backend or worker
@@ -187,12 +193,11 @@ else
   "$DEVROUTER_PROCESS_HELPER" stop --name klicker-dev >/dev/null 2>&1 || true
 fi
 
-# Probe the profile's Next apps' readiness contract. 20 is the confirmed
-# stale-route signature from util/dev-runtime.sh; any other failure fails closed
-# without cache cleanup. Collect every stale app first so one managed restart
+# Probe the profile's application readiness contracts. Status 20 is reserved
+# for a confirmed stale Next.js route; any other failure fails closed without
+# cache cleanup. Collect every stale Next app first so one managed restart
 # repairs them together instead of restarting once per app. The app list comes
-# from READINESS_APPS (profile-scoped) rather than every Next app, because a
-# profile intentionally does not start the rest.
+# from READINESS_APPS because a profile intentionally does not start the rest.
 STALE_NEXT_APPS=()
 run_readiness_pass() {
   local app status=0
@@ -235,6 +240,73 @@ if [ "$READINESS_STATUS" -eq 20 ]; then
   fi
 elif [ "$READINESS_STATUS" -ne 0 ]; then
   exit 1
+fi
+
+# Turbo gives each package task its own process group, so worker liveness cannot
+# be inferred from the managed root process group. Prove instead that each
+# runtime worker is a live descendant of the exact process-helper-owned root.
+is_descendant_of() {
+  local candidate="$1" ancestor="$2" parent
+
+  while [[ "$candidate" =~ ^[0-9]+$ ]] && [ "$candidate" -gt 1 ]; do
+    [ "$candidate" = "$ancestor" ] && return 0
+    parent="$(ps -o ppid= -p "$candidate" 2>/dev/null | tr -d '[:space:]')"
+    [[ "$parent" =~ ^[0-9]+$ ]] || return 1
+    [ "$parent" != "$candidate" ] || return 1
+    candidate="$parent"
+  done
+  return 1
+}
+
+worker_runtime_pid() {
+  local worker="$1" managed_pid="$2" proc pid cwd state cmdline
+
+  for proc in /proc/[0-9]*; do
+    pid="${proc##*/}"
+    cwd="$(readlink "$proc/cwd" 2>/dev/null || true)"
+    [ "$cwd" = "/workspaces/klicker-uzh/apps/$worker" ] || continue
+    state="$(ps -o stat= -p "$pid" 2>/dev/null | tr -d '[:space:]')"
+    [ -n "$state" ] && [[ "$state" != Z* ]] || continue
+    cmdline="$(tr '\0' ' ' <"$proc/cmdline" 2>/dev/null || true)"
+    cmdline="${cmdline% }"
+    [ "$cmdline" = 'node --env-file .env dist/index.js' ] || continue
+    is_descendant_of "$pid" "$managed_pid" || continue
+    printf '%s\n' "$pid"
+    return 0
+  done
+  return 1
+}
+
+wait_for_worker_runtime() {
+  local worker="$1" state_file=/tmp/devrouter-process-klicker-dev.state
+  local managed_pid worker_pid attempt
+
+  [ -s "$state_file" ] || {
+    echo "[post-start] ERROR: managed process state is missing while waiting for $worker." >&2
+    return 1
+  }
+  read -r managed_pid _ <"$state_file"
+  if ! [[ "$managed_pid" =~ ^[0-9]+$ ]] ||
+    ! kill -0 "$managed_pid" 2>/dev/null; then
+    echo "[post-start] ERROR: managed process root is not live while waiting for $worker." >&2
+    return 1
+  fi
+
+  echo "[post-start] Waiting for the $worker runtime process..."
+  for attempt in $(seq 1 90); do
+    if worker_pid="$(worker_runtime_pid "$worker" "$managed_pid")"; then
+      echo "[post-start] $worker runtime is live (PID $worker_pid)."
+      return 0
+    fi
+    [ "$attempt" -eq 90 ] || sleep 1
+  done
+  echo "[post-start] ERROR: $worker did not become live within 90 seconds." >&2
+  return 1
+}
+
+if [ "$PROFILE_WANTS_WORKERS" = yes ]; then
+  wait_for_worker_runtime hatchet-worker-general
+  wait_for_worker_runtime hatchet-worker-response-processor
 fi
 
 # Next's development server compiles fallback dynamic routes on their first

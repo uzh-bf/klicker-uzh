@@ -341,8 +341,8 @@
   contracts changed.
 - Do: Explain app versus capability profiles, base services, native-full versus
   managed-selective behavior, exact combinations, provider-free checks,
-  external Context7 non-ownership, transition rollback, and exact stop. Add the
-  wiki-maintenance log required by the repository workflow.
+  external Context7 non-ownership, transition rollback, and exact stop. Record
+  delivery evidence in this plan; the wiki's reserved log paths stay absent.
 - Do: Run the supported devrouter agent-guidance generator only if the published
   release requires it. Inspect and retain only in-scope generated hunks.
 - Check: Run documentation validation, wiki checks, link checks, formatting, and
@@ -414,8 +414,8 @@
   #5574, and prove the exact runtime stopped.
 - Latest verified base: `origin/v3` at `cd5cfd574`; branch was 0 ahead and 0
   behind before implementation.
-- Runtime: The exact linked-worktree runtime is active on the `mcp` profile for
-  final checks. It will be stopped without deletion after the final
+- Runtime: The exact linked-worktree runtime is active on the `live-quiz`
+  profile for final checks. It will be stopped without deletion after the final
   runtime-dependent check.
 - Active children: none.
 - Unresolved gates: GitHub Actions has not assigned a job to devrouter main run
@@ -440,8 +440,10 @@
   keeps all declared dependencies and removes the undeclared `transactional`
   overbuild; post-create keeps its broader one-time contract.
 - 2026-08-26 K4: Updated `.devcontainer/README.md` (profile table, base
-  contract, transition guarantees), `AGENTS.md`, and the bundled devrouter
-  skill for the three-dimension profile model.
+  contract, transition guarantees), `AGENTS.md`, the affected engineering wiki
+  pages, and the devrouter, environment-doctor, and testing-verification skills
+  for the three-dimension profile model. The OKF validator still reports 19
+  pre-existing bundle-wide frontmatter errors outside the changed pages.
 - 2026-08-26 upstream correction: A failed first cold selective transition
   exposed that devrouter 0.0.39 removed the generated Dev Container config and
   left DevPod metadata temporarily unstoppable. Devrouter PR #38 adds rollback
@@ -472,6 +474,14 @@
   devcontainer by contract. DevPod occasionally omits its remote exit status
   after printing devrouter's exit-zero marker, so those successful workload
   results are read from the marker and task totals rather than the wrapper exit.
+- 2026-08-26 final-review correction: The integrated reviewer required the
+  released minimum to be stated consistently, the planned wiki pages to be
+  updated, and live-quiz startup to prove its response path. All guidance now
+  requires devrouter 0.0.40 and explicitly excludes 0.0.39 for rollback-safe
+  managed transitions. Focused resolver/runtime tests and ShellCheck pass.
+  A real `live-quiz` reconciliation reached Response API `200 application/json`
+  at `/healthz` and proved live general and response-processor worker runtimes
+  as descendants of the exact managed Turbo root before reporting zero drift.
 - Required delivery layer: locally committed, release-compatible consumer
   package with exact runtime stopped.
 - Achieved delivery layer: Integrated local implementation and runtime proof;

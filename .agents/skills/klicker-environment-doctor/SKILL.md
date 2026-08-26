@@ -78,18 +78,32 @@ Depending on your environment path:
 Run the ownership-aware lifecycle check from the host, then inspect the exact container through devrouter:
 
 ```bash
-devrouter ensure .
+devrouter ensure . [--profile <selection>]
 devrouter exec . -- cat /tmp/devrouter-process-klicker-dev.state
 devrouter exec . -- tail -n 50 /tmp/dev.log
 ```
 
-`devrouter ensure` delivers its matching process helper to the exact validated container. Released `0.0.35` fingerprints the workspace, command, adapter bytes, and declared non-secret origin allowlist. The helper replaces a stale owned process group and leaves unknown processes untouched. Host-side ensure checks all routes and can recreate one stale or unhealthy exact-path DevPod once.
+Devrouter 0.0.40 or newer is required for managed profiles. `devrouter ensure`
+delivers its matching process helper to the exact validated container and
+fingerprints the workspace, selection, command, adapter bytes, and declared
+non-secret origin allowlist. The helper replaces a stale owned process group
+and leaves unknown processes untouched. Host-side ensure checks only the
+selected routes and restores the last usable generated config after a failed
+profile transition. Version 0.0.39 does not provide that rollback guarantee.
+
+Use application profiles (`manage`, `pwa`, `chat`, `live-quiz`) for routed app
+work and add independent capabilities (`ai`, `mcp`, `email`) only when needed.
+Omitting the profile selects `full`. The `live-quiz` startup proof includes
+Response API `/healthz` plus live general and response-processor workers.
 
 Ordinary managed restarts preserve the worktree's `.next/dev` caches. Only the
 confirmed stale-route signature requests one full `.next` removal for the exact
 affected app, and symlinked cache targets fail closed.
 
-`devrouter doctor --repo .` provides static diagnostics. `devrouter ensure .` resolves the checkout-specific overlay and is the authoritative runtime proof.
+`devrouter doctor --repo .` provides static diagnostics. `devrouter ensure .`
+resolves the checkout-specific overlay and is the authoritative runtime proof.
+Stop the exact runtime afterward with `devrouter stop .`; do not delete its
+containers, volumes, branch, or worktree as routine cleanup.
 
 ### Path B: Host-based Setup
 

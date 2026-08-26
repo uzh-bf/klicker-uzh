@@ -165,7 +165,7 @@ rs-infisical-operator --profile <profile> permissions
 rs-infisical-operator --profile <profile> run \
   --map OPENROUTER_API_KEY=UPSTREAM_OPENAI_API_KEY -- \
   env UPSTREAM_OPENAI_BASE_URL=https://openrouter.ai/api/v1 \
-  devrouter ensure <checkout-path> --json
+  devrouter ensure <checkout-path> --profile chat,ai,mcp --json
 ```
 
 If the host-side operator profile or login is missing, stop and complete the
@@ -208,7 +208,7 @@ card. Reload the thread and require the tool result, answer, and source to
 remain visible. Use the direct `GPT-5.6 Luna` option only when isolating the
 router from the model/tool integration.
 
-**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.38 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
+**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.40 fronts the stack over the shared `devnet` network. Version 0.0.39 is insufficient for rollback-safe managed profile transitions. One-time host setup must happen **before** the container starts:
 
 ```bash
 devrouter setup --yes # Traefik + devnet + mkcert CA

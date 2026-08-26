@@ -19,10 +19,12 @@ tags:
 
 ## Context
 
-The linked Chat workspace uses LiteLLM as its local model boundary. LiteLLM
+The linked Chat workspace uses the optional `ai` profile to run LiteLLM as its
+local model boundary. The `chat` app profile does not start LiteLLM or the local
+MCP fixture; use `chat,ai,mcp` for the complete synthetic path. LiteLLM
 reads the OpenAI-compatible base URL and API key from its container
 environment, so the key must be present when the workspace is created. A
-plain `devrouter ensure` can leave an already-running LiteLLM container with
+repeat `devrouter ensure` can leave an already-running LiteLLM container with
 its previous environment. The upstream boundary is external; local checks
 must use seeded or synthetic content only.
 
@@ -35,6 +37,7 @@ must use seeded or synthetic content only.
    reading values, then map
    `OPENROUTER_API_KEY` to `UPSTREAM_OPENAI_API_KEY` while setting the fixed
    `UPSTREAM_OPENAI_BASE_URL` value for the child `devrouter ensure` command
+   and selecting `--profile chat,ai,mcp`
    ([AGENTS.md:143](../../../AGENTS.md#L143)).
 2. If the host-side operator profile or login is missing, stop and complete
    the operator setup outside the sandbox. Do not substitute raw
@@ -54,7 +57,10 @@ must use seeded or synthetic content only.
    devrouter exec <checkout-path> -- sh -c 'test -n "$UPSTREAM_OPENAI_API_KEY"'
    ```
 
-5. Keep Auto Mode selected and run the seeded Benibot smoke from
+5. Start the injected workspace with
+   `devrouter ensure <checkout-path> --profile chat,ai,mcp --json`. Use the
+   capability-only `ai` profile only for a LiteLLM health check. Keep Auto Mode
+   selected and run the seeded Benibot smoke from
    [AGENTS.md:191](../../../AGENTS.md#L191). The successful synthetic path
    calls the local `KB_doc_query` tool, returns `KLICKER_LOCAL_MCP_OK`, and
    keeps the synthetic source card visible after reload. The deterministic
@@ -85,10 +91,11 @@ production, real participant data, or a deployment change; this is a local
 verification path only.
 
 If nested Chat API routes serve an HTML 404 while the direct chatbot lookup
-returns JSON, treat that as a stale generated Chat build first. Stop the exact
-workspace, move only the worktree's ignored `apps/chat/.next` directory to a
-recoverable temporary path, restart with the key injection, and verify the
-route again before diagnosing the upstream.
+returns JSON, treat that as stale generated route state first. Rerun the exact
+injected `devrouter ensure ... --profile chat,ai,mcp`; the repository confirms
+that signature and performs one bounded repair for the affected `.next` cache.
+If the route remains unhealthy, inspect `/tmp/dev.log` before diagnosing the
+upstream.
 
 ## Examples
 

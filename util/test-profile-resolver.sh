@@ -22,11 +22,11 @@ W2='--filter=@klicker-uzh/hatchet-worker-response-processor'
 
 # selection|wants klicker-dev|wants klicker-local-mcp|turbo filters|readiness apps
 CASES="
-full|yes|yes||auth chat frontend-control frontend-manage frontend-pwa
+full|yes|yes||auth chat frontend-control frontend-manage frontend-pwa response-api
 manage|yes|no|$B $A $M|auth frontend-manage
 pwa|yes|no|$B $A $P|auth frontend-pwa
 chat|yes|no|$B $A $C $P|auth chat frontend-pwa
-live-quiz|yes|no|$B $A $P $T $R $W1 $W2|auth frontend-control frontend-pwa
+live-quiz|yes|no|$B $A $P $T $R $W1 $W2|auth frontend-control frontend-pwa response-api
 ai|no|no|||
 mcp|no|yes|||
 email|no|no|||

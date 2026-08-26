@@ -203,6 +203,9 @@ assert_exists "$ROOT/.devcontainer/.runtime/next-repair-request"
 if bash "$RUNTIME_SCRIPT" request-repair unsupported >/dev/null 2>&1; then
   fail 'unsupported repair target was accepted'
 fi
+if bash "$RUNTIME_SCRIPT" request-repair response-api >/dev/null 2>&1; then
+  fail 'non-Next.js readiness target was accepted for cache repair'
+fi
 
 # A stale pass can cover several apps at once: every requested app receives a
 # full .next repair in one start, untouched apps keep their production output,
@@ -262,6 +265,16 @@ assert_equal \
 assert_equal \
   "$(bash "$RUNTIME_SCRIPT" classify-response html-shell 307 '')" \
   'ready: HTTP 307 redirect'
+assert_equal \
+  "$(bash "$RUNTIME_SCRIPT" classify-response health-json 200 'application/json; charset=utf-8')" \
+  'ready: HTTP 200 application/json; charset=utf-8'
+
+classification_status=0
+classification_output="$(
+  bash "$RUNTIME_SCRIPT" classify-response health-json 404 'text/html'
+)" || classification_status=$?
+assert_equal "$classification_status" '22'
+assert_equal "$classification_output" 'unexpected: HTTP 404 text/html'
 
 classification_status=0
 classification_output="$(
