@@ -53,4 +53,14 @@ describe('withCitationContract', () => {
     const result = withCitationContract('Base prompt.', ['doc_query'])
     expect(result.toLowerCase()).toContain('reuse the number')
   })
+
+  test('requires retrieval first and a safe response when sources are insufficient', () => {
+    const result = withCitationContract('Base prompt.', ['doc_query'])
+    expect(result.toLowerCase()).toContain(
+      'call the named course retrieval tool'
+    )
+    expect(result.toLowerCase()).toContain(
+      'do not fill the gap with uncited general knowledge'
+    )
+  })
 })

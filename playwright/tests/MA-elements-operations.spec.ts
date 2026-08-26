@@ -39,6 +39,7 @@ import { enMessages as messages } from '../util/messages.js'
 import {
   acceptGamifiedLiveQuizAccountPrompt,
   createQuestionNR,
+  openPracticeQuizByName,
 } from '../util/workflow.js'
 
 type Choice = {
@@ -1053,9 +1054,7 @@ test.describe('Create different types of elements (with and without sample solut
         [data.update.practiceQuiz3, data.update.content2, data.update.choices2],
       ] as const) {
         await returnToStudentHome(page)
-        await page.getByTestId('quizzes').click()
-        await expect(page.getByTestId(`practice-quiz-${quiz}`)).toBeVisible()
-        await page.getByTestId(`practice-quiz-${quiz}`).click()
+        await openPracticeQuizByName(page, quiz)
         await expect(page.getByTestId('start-practice-quiz')).toBeVisible()
         await page.getByTestId('start-practice-quiz').click()
         await verifySingleChoiceQuestionContent(page, {

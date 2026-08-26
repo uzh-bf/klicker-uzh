@@ -16,28 +16,56 @@ the v1 implementation without changing the chat surface.
 
 ## Decision
 
-Generation is a two-tool contract inside the tutoring conversation:
+Generation is a two-tool contract inside a configured course-chatbot mode:
 
 1. `propose_card_plan` is available only after at least one retrieval call in
    the turn and returns a plan (titles, intents, retrieval queries), never
-   cards. The student approves the plan explicitly; approval is a visible
-   user message plus a request field naming the persisted plan, and the route
-   forces the generation tool on the first step of that turn.
+   cards. The route supplies the server-side tool with the participant's
+   complete saved title list; raw participant-controlled titles are not copied
+   into the model prompt. The tool applies a deterministic local similarity check to each
+   proposed title, removes potential duplicates (including duplicates within
+   the new plan), and reports the skipped titles. A plan containing only
+   potential duplicates returns a localized, non-approvable result. The student approves the remaining plan
+   explicitly; approval is a visible user message plus a request field naming
+   the persisted plan, and the route forces the generation tool on the first
+   step of that turn. The route repeats the title check at approval time so a
+   card saved between proposal and approval cannot create a duplicate. The
+   generated card name remains the approved plan title, so the deduplication
+   key cannot drift during generation.
 2. `generate_cards` performs, per planned card, one retrieval call and one
    structured model call whose output schema requires cited chunk ids from
    that retrieval. The retrieval adapter exposes stable chunk IDs and bounded
    source metadata; every cited ID must be a non-empty subset of that card's
    retrieved IDs. Missing, malformed, or evidence-free output fails closed.
-   Grounding is enforced by the pipeline, not by the prompt. Cards stream as
+   Grounding is enforced by the pipeline, not by the prompt. The generated
+   explanation must be a substantive, alphanumeric card back; the known
+   provenance-only boilerplate is rejected at generation, save, and update
+   boundaries. Cards stream as
    preliminary results; the final result carries bounded card-local sources
-   in the retrieval result shape.
+   in the retrieval result shape. The Chat surface exposes the running tool
+   call and `completed/total` progress, and the generation turn ends with the
+   tool result and candidate actions rather than duplicate assistant prose.
 
 The tool input and output shapes are the public generation contract. The
 implementation behind `generate_cards` may be the in-route pipeline (v1) or a
 Catalyst engine; either does no database work and knows nothing about the UI.
-Saving, revising, and deleting are deterministic actions outside the model.
+Saving, discarding, revising, and deleting are deterministic actions outside
+the model. Save creates a participant-owned `PersonalElement`; Discard writes
+an idempotent participant-owned `PersonalElementDiscard` keyed by course and
+candidate ID, so it survives reload without storing retrieved text or
+mutating the immutable chat message. The source message and tool call remain
+request-time linkage for validating the candidate, not durable discard
+identity.
+A retry of a partial generation excludes plan entries already saved or
+discarded, so successful decisions are not regenerated or blocked by their own
+titles.
 Neither tool is offered when the selected mode has no retrieval tool or the
-student has no credits left.
+student has no credits left. When a selected mode has a retrieval tool, every
+substantive request first calls that named tool. The route uses a narrow
+English/German social-message allowlist for greetings, thanks, and short
+acknowledgements; ambiguous messages default to retrieval. If retrieval has no
+usable course material, the assistant reports that limitation rather than
+answering from uncited general knowledge.
 
 ## Consequences
 
@@ -50,3 +78,17 @@ student has no credits left.
   practice candidates.
 - Revision reuses the same per-card pipeline, so a corrected card is
   re-grounded, not patched.
+
+## Amendment — 2026-08-26
+
+The initial release bounds one plan and generation result to five cards. Every
+boundary rejects larger input rather than truncating it. A card that cannot be
+produced returns only its plan-scoped candidate ID and one of
+`retrieval_unavailable`, `insufficient_evidence`, or `generation_failed`; raw
+retrieval and provider diagnostics are not part of the persisted result. The
+source contract remains membership-based: the card exposes only metadata for
+chunks returned by its own retrieval, without claiming that the model's answer
+is correct or reviewed. Creation tools are additionally behind the
+fail-closed, participant-and-chatbot-targeted `personal-card-generation` flag;
+saved-card practice and correction paths remain available while creation is
+disabled.

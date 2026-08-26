@@ -2,7 +2,7 @@
 type: Feature Flags
 title: Feature Flags
 description: Shared GrowthBook contracts, frontend and backend connectivity, targeting attributes, failure behavior, and the adoption checklist.
-timestamp: '2026-08-25'
+timestamp: '2026-08-27'
 tags:
   - architecture
   - frontend
@@ -38,10 +38,11 @@ settlement are unaffected.
 
 ## Active flags
 
-| Key                  | Consumer             | Fallback | Disabled behavior                                                |
-| -------------------- | -------------------- | -------- | ---------------------------------------------------------------- |
-| `ai-beta`            | Lecturer AI          | `false`  | AI surfaces and their endpoints remain unavailable               |
-| `learning-analytics` | Manage + GraphQL API | `false`  | Controls are inert, routes unavailable, analytics data forbidden |
+| Key                        | Consumer             | Fallback | Disabled behavior                                                        |
+| -------------------------- | -------------------- | -------- | ------------------------------------------------------------------------ |
+| `ai-beta`                  | Lecturer AI          | `false`  | AI surfaces and their endpoints remain unavailable                       |
+| `learning-analytics`       | Manage + GraphQL API | `false`  | Controls are inert, routes unavailable, analytics data forbidden         |
+| `personal-card-generation` | Chat                 | `false`  | Plan and generation tools are hidden; saved personal cards remain usable |
 
 Disabled analytics controls explain that the feature is not yet available for
 the current account. This keeps a deliberately staged rollout distinguishable
@@ -97,6 +98,7 @@ supplies the actor contract from
 `packages/feature-flags/src/contracts.ts:FeatureFlagAttributes`:
 
 - `id`: the stable Klicker `User.id` or `Participant.id` when one exists;
+- `chatbotId`: the chatbot being evaluated when availability is chatbot-scoped;
 - `actorType`: `user`, `participant`, or `anonymous`;
 - `role`: the Klicker role when applicable;
 - `environment`: added by each adapter after normalizing its deployment config;
@@ -192,6 +194,13 @@ The adopting service maps server-only variables into one process-level client:
 - `GROWTHBOOK_REFRESH_INTERVAL_MS`: optional polling override (30 seconds by
   default; tests use 250 ms).
 
+Chat evaluates `personal-card-generation` on the server with the participant
+ID and `chatbotId`. It fails closed when the flag client is missing,
+unhealthy, or unable to evaluate the flag. `PERSONAL_CARD_GENERATION_ENABLED`
+is a development-only local override; non-development environments ignore it.
+The flag controls creation-tool exposure, not authorization, and does not hide
+saved-card list, practice, revision, or removal paths.
+
 ```ts
 const flags = new NodeFeatureFlagClient({
   apiHost: process.env.GROWTHBOOK_API_HOST,
@@ -245,9 +254,10 @@ enabling the first backend flag, then restart the affected workloads so
 environment-variable values are re-read. Secrets remain external to this
 public repository; never add their values to Helm files or documentation.
 
-Auth and Chat receive the public browser configuration only. If either hybrid
-Next.js app later evaluates a server-side flag, add the shared GrowthBook Secret
-to that Deployment in the same change that initializes the Node adapter.
+Auth receives the public browser configuration only. Chat also evaluates a
+server-side flag and imports the optional shared GrowthBook Secret in its
+Deployment. If another hybrid Next.js app later evaluates a server-side flag,
+add the same Secret there in the change that initializes its Node adapter.
 
 ## Management API and the beta opt-in
 

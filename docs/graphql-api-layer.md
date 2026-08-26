@@ -50,11 +50,16 @@ authenticate the participant role and reject temporary participants before
 invoking the service. The service receives the participant ID together with
 the Prisma client, then re-checks course participation and row ownership. It
 reports conflicts through `GraphQLError.extensions.code`.
+Personal elements expose origin and source metadata, but no verification state;
+semantic content updates reset scheduling through the content-version baseline,
+and `respondToPersonalElement` requires the expected version so stale responses
+cannot update revised content.
 
-The participant API consists of `getPersonalElements`,
-`createPersonalElements`, `respondToPersonalElement`,
-`updatePersonalElement`, and `deletePersonalElement`. The generated operations
-are the `QPersonalElements` and `M*PersonalElement*` documents in
+The public participant API consists of `personalElements`,
+`respondToPersonalElement`, and `deletePersonalElement`. Chat is the only
+creation transport; its server route calls the same service for Save and
+Discard decisions. The generated public operations are `QPersonalElements`,
+`MRespondToPersonalElement`, and `MDeletePersonalElement` in
 `packages/graphql/src/graphql/ops/`; rerun codegen whenever these fields or
 their selection sets change. `getPracticeQuizList` includes courses that have
 personal cards and exposes `personalElementCount` and `personalDueCount`.

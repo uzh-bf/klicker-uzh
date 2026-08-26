@@ -56,3 +56,18 @@ export function truncateMessagesForReload<T extends { id?: string }>(
 
   return parentIndex >= 0 ? messages.slice(0, parentIndex + 1) : []
 }
+
+export type PersonalElementToolPresentation =
+  | 'plan'
+  | 'generated-candidates'
+  | 'saved-revision'
+  | null
+
+export function getPersonalElementToolPresentation(
+  toolName: string
+): PersonalElementToolPresentation {
+  if (toolName === 'propose_card_plan') return 'plan'
+  if (toolName === 'generate_cards') return 'generated-candidates'
+  if (toolName === 'revise_personal_element') return 'saved-revision'
+  return null
+}

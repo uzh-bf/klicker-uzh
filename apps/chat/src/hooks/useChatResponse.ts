@@ -14,6 +14,8 @@ import {
 } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 
+type ApprovedPlan = { messageId: string; toolCallId: string }
+
 /**
  * Hook for handling streaming chat responses from the backend.
  *
@@ -58,7 +60,11 @@ export function useChatResponse(
    * @param threadId - ID of the current chat thread
    */
   const generateChatResponse = useCallback(
-    async (messagesToSend: ExtendedThreadMessageLike[], threadId: string) => {
+    async (
+      messagesToSend: ExtendedThreadMessageLike[],
+      threadId: string,
+      approvedPlan?: ApprovedPlan
+    ) => {
       const abortController = new AbortController()
       abortControllerRef.current = abortController
 
@@ -117,7 +123,7 @@ export function useChatResponse(
             return String(message.content ?? '')
           }
 
-          return message.content
+          const text = message.content
             .filter(
               (
                 part
@@ -134,6 +140,35 @@ export function useChatResponse(
             )
             .map((part) => part.text)
             .join('')
+
+          const generatedCards = message.content
+            .filter((part) => {
+              if (!part || typeof part !== 'object') return false
+              const candidate = part as {
+                type?: unknown
+                toolName?: unknown
+                result?: unknown
+              }
+              return (
+                candidate.type === 'tool-call' &&
+                candidate.toolName === 'generate_cards' &&
+                candidate.result &&
+                typeof candidate.result === 'object'
+              )
+            })
+            .map((part) => {
+              const result = (part as { result: unknown }).result
+              return JSON.stringify(result).slice(0, 20_000)
+            })
+
+          return [
+            text,
+            generatedCards.length > 0
+              ? `Generated personal card candidates for revision:\n${generatedCards.join('\n')}`
+              : '',
+          ]
+            .filter((value) => value.length > 0)
+            .join('\n\n')
         }
 
         if (
@@ -223,6 +258,7 @@ export function useChatResponse(
                 } => typeof attachment.imageBase64 === 'string'
               )
               .map((attachment) => attachment.imageBase64),
+            ...(approvedPlan ? { approvedPlan } : {}),
           }),
         })
 

@@ -17,6 +17,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useChatUi } from '../components/chat-ui-context'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 import { resolveSelectedMode } from '../lib/config/modes'
+import { generateId } from '../lib/utils/chatUtils'
+import {
+  type ApprovedPlan,
+  getPlanStatusInMessages,
+  PersonalElementsProvider,
+} from '../components/personal-elements/runtime-context'
 
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
 
@@ -49,6 +55,7 @@ export function RuntimeProvider({
     (state) => state.resyncModeFromThread
   )
   const resetSession = useChatStore((state) => state.resetSession)
+  const addMessage = useChatStore((state) => state.addMessage)
   const selectedModel = useSettingsStore((state) => state.selectedModel)
   const selectedMode = useSettingsStore((state) => state.selectedMode)
   const loadedModeOptions = useSettingsStore((state) => state.modeOptions)
@@ -275,6 +282,52 @@ export function RuntimeProvider({
     effectiveSelectedMode
   )
 
+  const approvePlan = useCallback(
+    async (plan: ApprovedPlan, content: string) => {
+      const state = useChatStore.getState()
+      const threadId = state.activeThreadId
+      if (!threadId) return
+      const thread = state.threads.find(
+        (candidate) => candidate.id === threadId
+      )
+      if (!thread) return
+      const message: ExtendedThreadMessageLike = {
+        id: generateId(),
+        role: 'user',
+        content,
+        createdAt: new Date(),
+        parentId: thread.messages.at(-1)?.id ?? null,
+        chatMode: effectiveSelectedMode,
+        modelId: selectedModel,
+        reasoningEffort: selectedReasoningEffort,
+      }
+      await addMessage(chatbotId, message, threadId)
+      const messagesForRequest =
+        useChatStore
+          .getState()
+          .threads.find((candidate) => candidate.id === threadId)?.messages ??
+        []
+      await generateChatResponse(messagesForRequest, threadId, plan)
+    },
+    [
+      addMessage,
+      chatbotId,
+      effectiveSelectedMode,
+      generateChatResponse,
+      selectedModel,
+      selectedReasoningEffort,
+    ]
+  )
+
+  const getPlanStatus = useCallback((plan: ApprovedPlan) => {
+    const state = useChatStore.getState()
+    const thread = state.threads.find(
+      (candidate) => candidate.id === state.activeThreadId
+    )
+    if (!thread) return 'superseded' as const
+    return getPlanStatusInMessages(plan, thread.messages, thread.allMessages)
+  }, [])
+
   const convertMessage = useCallback(
     (message: ExtendedThreadMessageLike): ThreadMessageLike => {
       const {
@@ -336,7 +389,9 @@ export function RuntimeProvider({
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      {children}
+      <PersonalElementsProvider value={{ approvePlan, getPlanStatus }}>
+        {children}
+      </PersonalElementsProvider>
     </AssistantRuntimeProvider>
   )
 }

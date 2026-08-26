@@ -43,6 +43,13 @@ function createMcpServer() {
             source_type: 'pdf',
             file_name: 'synthetic-course-material.pdf',
             page_number: 1,
+            chunks: [
+              {
+                chunk_id: 'local-chunk-1',
+                content: `Synthetic course material for "${query}".`,
+                page_number: 1,
+              },
+            ],
           },
         ],
       }

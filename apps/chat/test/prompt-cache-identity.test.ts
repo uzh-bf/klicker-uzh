@@ -116,6 +116,19 @@ describe('prompt cache identity', () => {
     expect(second.toolOrder).toEqual(first.toolOrder)
   })
 
+  test('keeps an explicit runtime order for generation tools', async () => {
+    const request = await buildPromptCacheRequest({
+      deploymentId: 'auto-router',
+      transport: 'responses',
+      instructions: 'Synthetic generation instructions.',
+      tools: createTools(),
+      toolOrder: ['search', 'read'],
+    })
+
+    expect(request.toolOrder).toEqual(['search', 'read'])
+    expect(Object.keys(request.tools)).toEqual(['search', 'read'])
+  })
+
   test.each<[string, StablePrefixChange]>([
     ['instructions', { instructions: 'Changed instructions.' }],
     ['deployment', { deploymentId: 'auto-router' }],

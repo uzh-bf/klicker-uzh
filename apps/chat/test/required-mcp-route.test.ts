@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   checkDisclaimerStatus: vi.fn(),
   findUnique: vi.fn(),
   findThread: vi.fn(),
+  findMessages: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
   createThread: vi.fn(),
   findFailedTurnThreadId: vi.fn(),
@@ -35,6 +36,9 @@ vi.mock('@klicker-uzh/prisma', () => ({
     },
     chatThread: {
       findFirst: mocks.findThread,
+    },
+    chatMessage: {
+      findMany: mocks.findMessages,
     },
   },
 }))
@@ -112,6 +116,7 @@ describe('required MCP chat preflight', () => {
     mocks.findFailedTurnThreadId.mockResolvedValue(null)
     mocks.deleteThread.mockResolvedValue(true)
     mocks.findThread.mockResolvedValue({ id: 'thread-1' })
+    mocks.findMessages.mockResolvedValue([])
     mocks.claimChatTurn.mockResolvedValue({
       outcome: 'claimed',
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',

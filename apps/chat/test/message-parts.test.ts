@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import {
+  getPersonalElementToolPresentation,
   hasChatError,
   resolveDisclosureOpen,
   truncateMessagesForReload,
@@ -37,5 +38,15 @@ describe('message part disclosure state', () => {
 
     expect(truncateMessagesForReload(messages, 'user-1')).toEqual([messages[0]])
     expect(truncateMessagesForReload(messages, 'missing')).toBeNull()
+  })
+
+  test('routes only generated cards and saved-card revisions to their renderers', () => {
+    expect(getPersonalElementToolPresentation('generate_cards')).toBe(
+      'generated-candidates'
+    )
+    expect(getPersonalElementToolPresentation('revise_cards')).toBeNull()
+    expect(getPersonalElementToolPresentation('revise_personal_element')).toBe(
+      'saved-revision'
+    )
   })
 })
