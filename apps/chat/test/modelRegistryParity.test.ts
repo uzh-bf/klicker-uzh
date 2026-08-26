@@ -26,6 +26,7 @@ type ParityModel = {
   supportsReasoning: boolean
   usesResponsesApi: boolean
   supportedReasoningEfforts: string[]
+  maxOutputTokens: number
   usageClass: 'BASE' | 'ADVANCED'
   cost: { input: number; output: number }
 }
@@ -107,6 +108,12 @@ describe('default chat model registry parity', () => {
     }
   })
 
+  test('every model uses the bounded output-token ceiling', () => {
+    for (const model of [...chatModels, ...backendModels]) {
+      expect(model.maxOutputTokens).toBe(4096)
+    }
+  })
+
   test('both registries designate the same fallback model', () => {
     expect(fallbackIds(chatModels)).toHaveLength(1)
     expect(fallbackIds(backendModels)).toEqual(fallbackIds(chatModels))
@@ -140,6 +147,21 @@ describe('default chat model registry parity', () => {
     expect(() => parseBackendRegistry(duplicateRegistry)).toThrow(
       /Duplicate model id/
     )
+  })
+
+  test('both consumers reject invalid output-token caps', () => {
+    const invalidRegistries = [
+      chatModels.map(
+        ({ maxOutputTokens: _maxOutputTokens, ...model }) => model
+      ),
+      chatModels.map((model) => ({ ...model, maxOutputTokens: 1.5 })),
+      chatModels.map((model) => ({ ...model, maxOutputTokens: 4097 })),
+    ]
+
+    for (const invalidRegistry of invalidRegistries) {
+      expect(() => parseChatRegistry(invalidRegistry)).toThrow()
+      expect(() => parseBackendRegistry(invalidRegistry)).toThrow()
+    }
   })
 
   test('both consumers reject invalid participant-credit base policy', () => {
@@ -213,6 +235,10 @@ describe('deployed chat model registry parity (values.yaml)', () => {
           usageClass,
           `${name} modelRegistry[${index}] must declare an explicit usageClass`
         ).toMatch(/^(BASE|ADVANCED)$/)
+        expect(
+          (entry as { maxOutputTokens?: unknown } | null)?.maxOutputTokens,
+          `${name} modelRegistry[${index}] must declare maxOutputTokens=4096`
+        ).toBe(4096)
       }
     })
 
@@ -227,6 +253,8 @@ describe('deployed chat model registry parity (values.yaml)', () => {
         expect(backendModel?.usageClass).toBe(model.usageClass)
         expect(backendModel?.fallback).toBe(model.fallback)
         expect(backendModel?.cost).toEqual(model.cost)
+        expect(model.maxOutputTokens).toBe(4096)
+        expect(backendModel?.maxOutputTokens).toBe(4096)
       }
       expect(chat.find((m) => m.id === 'auto')?.usageClass).toBe('ADVANCED')
       expect(baseModelIds(chat)).toEqual(['gpt-5.6-luna'])
@@ -241,19 +269,25 @@ describe('deployed chat model registry parity (values.yaml)', () => {
     expect(production).toBeDefined()
 
     expect(
-      staging!.chat.map(({ id, usageClass, fallback, cost }) => ({
-        id,
-        usageClass,
-        fallback,
-        cost,
-      }))
+      staging!.chat.map(
+        ({ id, usageClass, fallback, cost, maxOutputTokens }) => ({
+          id,
+          usageClass,
+          fallback,
+          cost,
+          maxOutputTokens,
+        })
+      )
     ).toEqual(
-      production!.chat.map(({ id, usageClass, fallback, cost }) => ({
-        id,
-        usageClass,
-        fallback,
-        cost,
-      }))
+      production!.chat.map(
+        ({ id, usageClass, fallback, cost, maxOutputTokens }) => ({
+          id,
+          usageClass,
+          fallback,
+          cost,
+          maxOutputTokens,
+        })
+      )
     )
   })
 })

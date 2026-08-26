@@ -16,6 +16,7 @@ describe('chat model registry provider protocol', () => {
           name: 'Auto',
           supportsReasoning: false,
           usesResponsesApi: true,
+          maxOutputTokens: 4096,
           cost: { input: 1, output: 1 },
         },
         {
@@ -24,6 +25,7 @@ describe('chat model registry provider protocol', () => {
           name: 'Reasoning',
           supportsReasoning: true,
           supportedReasoningEfforts: ['medium'],
+          maxOutputTokens: 4096,
           cost: { input: 1, output: 1 },
         },
         {
@@ -32,6 +34,7 @@ describe('chat model registry provider protocol', () => {
           name: 'GPT-5.6 Luna',
           fallback: true,
           usageClass: 'BASE',
+          maxOutputTokens: 4096,
           cost: { input: 1, output: 1 },
         },
       ])
@@ -71,6 +74,7 @@ describe('chat model registry provider protocol', () => {
           deploymentId: 'advanced-primary',
           name: 'Advanced Primary',
           usageClass: 'ADVANCED',
+          maxOutputTokens: 4096,
           cost: { input: 1, output: 1 },
         },
         {
@@ -79,6 +83,7 @@ describe('chat model registry provider protocol', () => {
           name: 'Advanced Fallback',
           fallback: true,
           usageClass: 'ADVANCED',
+          maxOutputTokens: 4096,
           cost: { input: 1, output: 1 },
         },
         {
@@ -87,6 +92,7 @@ describe('chat model registry provider protocol', () => {
           name: 'GPT-5.6 Luna',
           fallback: true,
           usageClass: 'BASE',
+          maxOutputTokens: 4096,
           cost: { input: 1, output: 1 },
         },
       ])
@@ -116,6 +122,7 @@ describe('chat model registry provider protocol', () => {
           deploymentId: 'advanced-primary',
           name: 'Advanced Primary',
           usageClass: 'ADVANCED',
+          maxOutputTokens: 4096,
           cost: { input: 1, output: 1 },
         },
         {
@@ -124,6 +131,7 @@ describe('chat model registry provider protocol', () => {
           name: 'Advanced Fallback',
           fallback: true,
           usageClass: 'ADVANCED',
+          maxOutputTokens: 4096,
           cost: { input: 1, output: 1 },
         },
         {
@@ -132,6 +140,7 @@ describe('chat model registry provider protocol', () => {
           name: 'GPT-5.6 Luna',
           fallback: true,
           usageClass: 'BASE',
+          maxOutputTokens: 4096,
           cost: { input: 1, output: 1 },
         },
       ])
@@ -173,6 +182,7 @@ describe('chat model registry provider protocol', () => {
           name: 'GPT-5.6 Luna',
           fallback: true,
           usageClass: 'ADVANCED',
+          maxOutputTokens: 4096,
           cost: { input: 0.2, output: 1.2 },
         },
         {
@@ -180,6 +190,7 @@ describe('chat model registry provider protocol', () => {
           deploymentId: 'other-base',
           name: 'Other Base',
           usageClass: 'BASE',
+          maxOutputTokens: 4096,
           cost: { input: 1, output: 1 },
         },
       ])
@@ -192,9 +203,20 @@ describe('chat model registry provider protocol', () => {
           deploymentId: 'gpt-5.6-luna',
           name: 'GPT-5.6 Luna',
           usageClass: 'BASE',
+          maxOutputTokens: 4096,
           cost: { input: 0.2, output: 1.2 },
         },
       ])
     ).toThrow(/participant-credit fallback/)
+  })
+
+  test('fails closed when supplied registry JSON is invalid', async () => {
+    vi.stubEnv('CHAT_MODEL_REGISTRY_JSON', '{')
+
+    const { getChatModelRegistry } = await import(
+      '../src/lib/server/chatModelRegistry'
+    )
+
+    expect(() => getChatModelRegistry()).toThrow()
   })
 })

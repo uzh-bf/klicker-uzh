@@ -13,7 +13,7 @@ const chatModelSchema = z
     usesResponsesApi: z.boolean().optional(),
     supportsImageAttachments: z.boolean().default(false),
     supportedReasoningEfforts: z.array(z.string().min(1)).optional(),
-    maxOutputTokens: z.number().positive().optional(),
+    maxOutputTokens: z.number().int().min(1).max(4096),
     apiVersion: z.string().min(1).optional(),
     // Explicit usage class (BASE/ADVANCED). Older external registry JSON that
     // omits the class is conservatively normalized to ADVANCED, never BASE.
@@ -128,7 +128,7 @@ export function parseChatModelRegistry(value: unknown): ChatModelConfig[] {
   return parseRegistryValue(value)
 }
 
-export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
+export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = parseRegistryValue([
   {
     id: 'auto',
     deploymentId: 'auto-router',
@@ -139,6 +139,7 @@ export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     usesResponsesApi: true,
     supportsImageAttachments: true,
     supportedReasoningEfforts: [],
+    maxOutputTokens: 4096,
     usageClass: 'ADVANCED',
     cost: { input: 1.0, output: 5.0 },
   },
@@ -152,6 +153,7 @@ export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     usesResponsesApi: true,
     supportsImageAttachments: true,
     supportedReasoningEfforts: ['low', 'medium', 'high', 'xhigh'],
+    maxOutputTokens: 4096,
     usageClass: 'BASE',
     cost: { input: 0.2, output: 1.2 },
   },
@@ -165,6 +167,7 @@ export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     usesResponsesApi: false,
     supportsImageAttachments: true,
     supportedReasoningEfforts: [],
+    maxOutputTokens: 4096,
     usageClass: 'ADVANCED',
     cost: { input: 2.0, output: 8.0 },
   },
@@ -178,10 +181,11 @@ export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = [
     usesResponsesApi: false,
     supportsImageAttachments: true,
     supportedReasoningEfforts: [],
+    maxOutputTokens: 4096,
     usageClass: 'ADVANCED',
     cost: { input: 0.4, output: 1.6 },
   },
-]
+])
 
 let cachedRegistry: ChatModelConfig[] | null = null
 
@@ -194,17 +198,8 @@ export function getChatModelRegistry(): ChatModelConfig[] {
     return cachedRegistry
   }
 
-  try {
-    cachedRegistry = parseRegistryValue(JSON.parse(raw))
-    return cachedRegistry
-  } catch (error) {
-    console.warn(
-      '[chat] Invalid CHAT_MODEL_REGISTRY_JSON; falling back to built-in defaults.',
-      error
-    )
-    cachedRegistry = DEFAULT_MODEL_REGISTRY
-    return cachedRegistry
-  }
+  cachedRegistry = parseRegistryValue(JSON.parse(raw))
+  return cachedRegistry
 }
 
 export function parseReasoningEffortByModel(

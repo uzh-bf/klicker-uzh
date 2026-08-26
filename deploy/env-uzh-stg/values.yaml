@@ -195,6 +195,7 @@ chat:
       usesResponsesApi: true
       fallback: false
       usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 1.0
         output: 5.0
@@ -211,6 +212,7 @@ chat:
         - xhigh
       fallback: true
       usageClass: BASE
+      maxOutputTokens: 4096
       cost:
         input: 0.2
         output: 1.2
@@ -221,6 +223,7 @@ chat:
       supportsImageAttachments: true
       fallback: false
       usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 2.0
         output: 8.0
@@ -238,6 +241,7 @@ chat:
         - high
       fallback: false
       usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 1.25
         output: 10.0
@@ -255,6 +259,7 @@ chat:
         - xhigh
       fallback: false
       usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 2.5
         output: 15.0
@@ -272,6 +277,7 @@ chat:
         - xhigh
       fallback: false
       usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 5.0
         output: 30.0
@@ -282,6 +288,7 @@ chat:
       supportsImageAttachments: true
       fallback: false
       usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 0.4
         output: 1.6
