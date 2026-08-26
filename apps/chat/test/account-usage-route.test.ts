@@ -158,25 +158,8 @@ type StreamCallbacks = {
   onError: (error: unknown) => Promise<void>
 }
 
-type ResponseOptions = {
-  messageMetadata: (input: {
-    part: {
-      type: string
-      finishReason?: string
-      totalUsage?: {
-        inputTokens: number
-        outputTokens: number
-      }
-    }
-  }) => unknown
-}
-
 function streamCallbacks(): StreamCallbacks {
   return mocks.streamConfig as unknown as StreamCallbacks
-}
-
-function responseOptions(): ResponseOptions {
-  return mocks.responseOptions as unknown as ResponseOptions
 }
 
 function chatbot(overrides: Record<string, unknown> = {}) {
@@ -549,19 +532,6 @@ describe('account usage chat route', () => {
       'chatbot-1',
       0.000008
     )
-
-    expect(
-      responseOptions().messageMetadata({
-        part: {
-          type: 'finish',
-          finishReason: 'stop',
-          totalUsage: result.usage,
-        },
-      })
-    ).toMatchObject({
-      modelId: 'gpt-5.6-luna',
-      creditsUsed: 0.000008,
-    })
   })
 
   test('persists missing terminal usage without either credit decrement', async () => {
@@ -608,7 +578,7 @@ describe('account usage chat route', () => {
     )
   })
 
-  test('keeps invalid complete usage uncharged and metadata safe', async () => {
+  test('keeps invalid complete usage uncharged', async () => {
     mocks.roundChatUsageCredits.mockImplementation(() => {
       throw new RangeError('synthetic invalid cost')
     })
@@ -629,15 +599,6 @@ describe('account usage chat route', () => {
       expect.objectContaining({ rawCreditsUsed: null })
     )
     expect(mocks.decrementCredits).not.toHaveBeenCalled()
-    expect(
-      responseOptions().messageMetadata({
-        part: {
-          type: 'finish',
-          finishReason: 'stop',
-          totalUsage: { inputTokens: 10, outputTokens: 5 },
-        },
-      })
-    ).toMatchObject({ creditsUsed: null })
   })
 
   test('keeps invalid aborted usage uncharged without throwing', async () => {

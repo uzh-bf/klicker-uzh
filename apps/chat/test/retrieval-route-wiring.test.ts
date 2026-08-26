@@ -819,6 +819,7 @@ describe('retrieval route wiring', () => {
     expect(calls.at(-1)?.[0].skipCandidateIds).toEqual(new Set(['plan:card-1']))
     const options = mocks.streamText.mock.calls[0]?.[0] as {
       instructions: string
+      tools: Record<string, unknown>
       prepareStep: (input: { stepNumber: number; steps: unknown[] }) => unknown
     }
     expect(options.instructions).toContain(
@@ -827,6 +828,11 @@ describe('retrieval route wiring', () => {
     expect(options.instructions).toContain(
       'Do not send a text explanation before or after the tool call'
     )
+    expect(options.instructions).not.toContain(
+      'retrieve course material first, then call propose_card_plan'
+    )
+    expect(options.tools).not.toHaveProperty('propose_card_plan')
+    expect(options.tools).not.toHaveProperty('course_retrieval_unavailable')
     expect(options.prepareStep({ stepNumber: 0, steps: [] })).toMatchObject({
       activeTools: ['generate_cards'],
       toolChoice: { type: 'tool', toolName: 'generate_cards' },
@@ -839,6 +845,44 @@ describe('retrieval route wiring', () => {
     )
     expect(mocks.chatMessageCreate).not.toHaveBeenCalled()
     expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
+  test('releases an accepted-plan lease when setup fails before streaming', async () => {
+    const planMessageId = '00000000-0000-0000-0000-000000000010'
+    const planToolCallId = 'plan-tool-setup-failure'
+    mocks.chatMessageFindMany.mockResolvedValue(
+      approvedPlanHistory(planMessageId, planToolCallId, [
+        {
+          candidateId: 'plan:card-1',
+          title: 'CAPM definition',
+          intent: 'Define CAPM',
+          query: 'CAPM',
+        },
+      ])
+    )
+    mocks.buildPromptCacheRequest.mockRejectedValueOnce(
+      new Error('synthetic prompt-cache failure')
+    )
+
+    await expect(
+      POST(
+        createRequest(
+          'Please generate the proposed cards for CAPM.',
+          'assistant-setup-failure',
+          {
+            parentId: planMessageId,
+            approvedPlan: {
+              messageId: planMessageId,
+              toolCallId: planToolCallId,
+            },
+          }
+        ),
+        { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+      )
+    ).rejects.toThrow('synthetic prompt-cache failure')
+
+    expect(mocks.abortCardGenerationLease).toHaveBeenCalledOnce()
+    expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
   test('deletes a lost-lease response after charging nested generation once', async () => {
