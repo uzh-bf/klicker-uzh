@@ -383,44 +383,52 @@ test('invalidates both top identities when native stack data drifts', async () =
   )
 })
 
-test('still invalidates the fetched top when native status writing fails', async () => {
-  const { github, pulls, state } = stackFixture()
-  const nativeTopSha = '0'.repeat(40)
-  github.request = async () => ({
-    data: [
-      {
-        id: 95,
-        pull_requests: [11, 12, 13, 14].map((number) => ({
-          number,
-          state: 'open',
-          draft: false,
-          head: { sha: number === 14 ? nativeTopSha : pulls[number].head.sha },
-        })),
-      },
-    ],
-  })
-  const createCommitStatus = github.rest.repos.createCommitStatus
-  github.rest.repos.createCommitStatus = async (status) => {
-    if (status.sha === nativeTopSha) {
-      throw new Error('native status is unavailable')
+test('attempts both top invalidations when either status write fails', async () => {
+  for (const failedIdentity of ['native', 'fetched']) {
+    const { github, pulls, state } = stackFixture()
+    const nativeTopSha = '0'.repeat(40)
+    const fetchedTopSha = pulls[14].head.sha
+    github.request = async () => ({
+      data: [
+        {
+          id: 95,
+          pull_requests: [11, 12, 13, 14].map((number) => ({
+            number,
+            state: 'open',
+            draft: false,
+            head: {
+              sha: number === 14 ? nativeTopSha : pulls[number].head.sha,
+            },
+          })),
+        },
+      ],
+    })
+    const failedSha = failedIdentity === 'native' ? nativeTopSha : fetchedTopSha
+    const successfulSha =
+      failedIdentity === 'native' ? fetchedTopSha : nativeTopSha
+    const createCommitStatus = github.rest.repos.createCommitStatus
+    github.rest.repos.createCommitStatus = async (status) => {
+      if (status.sha === failedSha) {
+        throw new Error(`${failedIdentity} status is unavailable`)
+      }
+      return createCommitStatus(status)
     }
-    return createCommitStatus(status)
-  }
-  const eventContext = context(12)
-  eventContext.eventName = 'pull_request_target'
-  eventContext.payload.pull_request = pulls[12]
+    const eventContext = context(12)
+    eventContext.eventName = 'pull_request_target'
+    eventContext.payload.pull_request = pulls[12]
 
-  await assert.rejects(
-    initializeStackReview({ github, context: eventContext }),
-    /native status is unavailable/
-  )
-  assert.deepEqual(
-    state.createdStatuses.map(({ sha, state: status }) => ({
-      sha,
-      state: status,
-    })),
-    [{ sha: pulls[14].head.sha, state: 'error' }]
-  )
+    await assert.rejects(
+      initializeStackReview({ github, context: eventContext }),
+      new RegExp(`${failedIdentity} status is unavailable`)
+    )
+    assert.deepEqual(
+      state.createdStatuses.map(({ sha, state: status }) => ({
+        sha,
+        state: status,
+      })),
+      [{ sha: successfulSha, state: 'error' }]
+    )
+  }
 })
 
 test('invalidates the fetched top when native top metadata is malformed', async () => {
