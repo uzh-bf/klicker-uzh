@@ -35,6 +35,12 @@ ssl/
 dist/
 trees/
 
+# GraphQL build outputs (the public SDL snapshot remains tracked for review)
+/packages/graphql/src/ops.ts
+/packages/graphql/src/ops.schema.json
+/packages/graphql/src/public/client.json
+/packages/graphql/src/public/server.json
+
 .idea/
 tsconfig.tsbuildinfo
 

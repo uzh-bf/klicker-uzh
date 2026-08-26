@@ -59,6 +59,8 @@ The chat login-required page validates its own return target against `NEXT_PUBLI
 
 **The PWA-side sanitizer is not the only gate.** The auth app independently validates the `/student` `redirectTo` against `AUTH_STUDENT_ALLOWED_HOSTS` and returns `400 Invalid redirect URL` for anything outside it (`apps/auth/src/middleware.ts`). That second gate is what keeps the request-`Host` fallback above safe, and it is also what a `400` from `/student` means: the target origin is missing from that env var (`assessment.klicker.stg.df-app.ch` on stg, `assessment.klicker.uzh.ch` on prd).
 
+The auth app's NextAuth redirect callbacks accept relative paths and absolute URLs on the auth app's own origin. Cross-origin targets remain restricted to the configured student and lecturer hosts. This preserves internal handoffs such as `/discourse_handoff` when NextAuth supplies the callback as an absolute URL (`apps/auth/src/pages/api/auth/[...nextauth].ts`).
+
 ## Where authorization happens
 
 Authentication (this page) only puts a verified `user` on the GraphQL context. All authorization — role gates, scope ladder, object-level permissions, sharing grants — is enforced per-field in the API layer; see [GraphQL API Layer](./graphql-api-layer.md).

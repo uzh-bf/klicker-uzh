@@ -213,7 +213,7 @@ ensure_dependencies() {
   fi
 
   echo '[dev-runtime] Dependency inputs changed; running frozen pnpm install.'
-  (cd "$ROOT" && pnpm install --frozen-lockfile)
+  (cd "$ROOT" && pnpm install --frozen-lockfile --prefer-offline)
   write_atomic "$DEPENDENCY_STAMP_FILE" "$current"
 }
 
@@ -223,10 +223,9 @@ remove_next_dir() {
 
   for app in "${NEXT_APPS[@]}"; do
     next_dir="$ROOT/apps/$app/.next"
-    if [ "$target" = "$next_dir" ] || [ "$target" = "$next_dir/dev" ]; then
+    if [ "$target" = "$next_dir" ]; then
       allowed=true
       [ ! -L "$next_dir" ] || die "Refusing symlinked Next.js cache: $next_dir"
-      [ ! -L "$target" ] || die "Refusing symlinked Next.js cache: $target"
       break
     fi
   done
@@ -238,11 +237,7 @@ remove_next_dir() {
 }
 
 apply_cache_policy() {
-  local app repair_target
-
-  for app in "${NEXT_APPS[@]}"; do
-    remove_next_dir "$ROOT/apps/$app/.next/dev"
-  done
+  local repair_target
 
   if [ -f "$REPAIR_REQUEST_FILE" ]; then
     while IFS= read -r repair_target; do

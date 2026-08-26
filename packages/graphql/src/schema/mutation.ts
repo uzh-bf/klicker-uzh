@@ -5,6 +5,7 @@ import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
@@ -23,7 +24,7 @@ import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
-import { Course } from './course.js'
+import { Course, CourseDuplicationStatus } from './course.js'
 import {
   Element,
   ElementInstance,
@@ -123,6 +124,23 @@ export const Mutation = builder.mutationType({
     const asUserFullAccess = { ...asUser, scope: DB.UserLoginScope.FULL_ACCESS }
     const asUserFullAccessForStandardActivities = asUserFullAccess
     const asUserOwner = { ...asUser, scope: DB.UserLoginScope.ACCOUNT_OWNER }
+    const courseCreationArgs = {
+      name: t.arg.string({ required: true }),
+      displayName: t.arg.string({ required: true }),
+      description: t.arg.string({ required: false }),
+      color: t.arg.string({ required: false }),
+      startDate: t.arg({ type: 'Date', required: true }),
+      endDate: t.arg({ type: 'Date', required: true }),
+      isGroupCreationEnabled: t.arg.boolean({ required: true }),
+      groupDeadlineDate: t.arg({ type: 'Date', required: true }),
+      maxGroupSize: t.arg.int({ required: true }),
+      preferredGroupSize: t.arg.int({ required: true }),
+      language: t.arg({ type: LocaleType, required: true }),
+      notificationEmail: t.arg.string({
+        required: false,
+        validate: { email: true },
+      }),
+    }
 
     return {
       // ----- ANONYMOUS OPERATIONS -----
@@ -1363,21 +1381,7 @@ export const Mutation = builder.mutationType({
         nullable: true,
         type: Course,
         args: {
-          name: t.arg.string({ required: true }),
-          displayName: t.arg.string({ required: true }),
-          description: t.arg.string({ required: false }),
-          color: t.arg.string({ required: false }),
-          startDate: t.arg({ type: 'Date', required: true }),
-          endDate: t.arg({ type: 'Date', required: true }),
-          isGroupCreationEnabled: t.arg.boolean({ required: true }),
-          groupDeadlineDate: t.arg({ type: 'Date', required: true }),
-          maxGroupSize: t.arg.int({ required: true }),
-          preferredGroupSize: t.arg.int({ required: true }),
-          language: t.arg({ type: LocaleType, required: true }),
-          notificationEmail: t.arg.string({
-            required: false,
-            validate: { email: true },
-          }),
+          ...courseCreationArgs,
           isGamificationEnabled: t.arg.boolean({ required: true }),
           sourceCourseId: t.arg.string({ required: false }),
           duplicateLiveQuizzes: t.arg.boolean({ required: false }),
@@ -1389,9 +1393,33 @@ export const Mutation = builder.mutationType({
           if (!args.sourceCourseId) {
             return await CourseService.createCourse(args, ctx)
           } else {
-            return await CourseService.duplicateCourse(args, ctx)
+            return await CourseDuplicationService.duplicateCourse(args, ctx)
           }
         },
+      }),
+
+      startCourseDuplication: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: CourseDuplicationStatus,
+        args: {
+          ...courseCreationArgs,
+          isGamificationEnabled: t.arg.boolean({ required: false }),
+          sourceCourseId: t.arg.string({ required: true }),
+          duplicateLiveQuizzes: t.arg.boolean({ required: false }),
+          duplicatePracticeQuizzes: t.arg.boolean({ required: false }),
+          duplicateMicrolearnings: t.arg.boolean({ required: false }),
+          duplicateGroupActivities: t.arg.boolean({ required: false }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.sourceCourseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await CourseDuplicationService.startCourseDuplication(
+              args,
+              ctx
+            )
+          }
+        ),
       }),
 
       updateCourseSettings: t.withAuth(asUserFullAccess).field({

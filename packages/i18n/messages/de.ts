@@ -3277,13 +3277,25 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       courseDuplicationEndDateInPast:
         'Das gewählte Enddatum liegt in der Vergangenheit. Der duplizierte Kurs ist bereits beendet, sobald er erstellt wird - verschieben Sie das Startdatum, falls Studierende auf den Kurs zugreifen sollen.',
       courseDuplicationFailed: 'Duplizieren des Kurses fehlgeschlagen.',
+      courseDuplicationAlreadyInProgress:
+        'Dieser Kurs wird bereits dupliziert.',
       courseDuplicationNoAccess:
         'Sie verfügen nicht mehr über ausreichende Berechtigungen, um diesen Kurs zu duplizieren.',
       courseDuplicationPartialFailure:
         'Nicht alle ausgewählten Aktivitäten oder Aktivitätsinstanzen konnten dupliziert werden. Es wurde kein unvollständiger Kurs erstellt.',
       courseDuplicationInProgress:
         'Das Duplizieren grosser Kurse kann einen Moment dauern.',
+      courseDuplicationBackgroundInfo:
+        'Sie können diesen Dialog schliessen. Sobald die Kopie bereit ist, erhalten Sie eine Benachrichtigung mit einem Link zum Öffnen.',
+      courseDuplicationStatusTab: 'Kursduplizierungen',
+      courseDuplicationStatusCount:
+        '{count, plural, one {# laufender Kursduplizierungsauftrag} other {# laufende Kursduplizierungsaufträge}}',
+      courseDuplicationStatusTitle: 'Laufende Kursduplizierungen',
+      courseDuplicationStatusDescription:
+        'Sie können weiterarbeiten, während diese Kurse kopiert werden.',
+      courseDuplicationStatusSource: 'Kopie von "{source}"',
       courseDuplicationSucceeded: 'Kurs "{name}" wurde erfolgreich dupliziert.',
+      courseDuplicationOpenCourse: 'Kurs öffnen',
       noCoursesFound:
         'Es konnten keine Kurse gefunden werden. Bitte erstellen Sie einen neuen Kurs.',
       createCourseNow: 'Jetzt einen Kurs erstellen!',
