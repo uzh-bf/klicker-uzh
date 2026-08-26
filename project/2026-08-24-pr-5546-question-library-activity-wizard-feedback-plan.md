@@ -418,24 +418,21 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 ## Integrated review and delivery
 
-- After all slice commits and fresh verification, dispatch the configured native
-  `final-reviewer` over the complete committed package range when available. If
-  that role is unavailable, use an independent Sol alternate under the user's
-  2026-08-24 ruling.
-- Review lenses: correctness, plan compliance, user workflow, bilingual i18n,
-  accessibility, shared navigation compatibility, test sufficiency,
-  maintainability, bounded frontend security, and diff scope.
-- Verify every finding before applying it. One integrated correction round is
-  available; rerun every materially affected check. An unavailable Sol
-  alternate or an unresolved material finding stops delivery.
-- Finalize plan `Progress` in a local commit and report commits, checks,
-  review disposition, browser/runtime evidence, and remaining withheld actions.
-  Draft PR #5546 exists and GitHub remains authoritative for volatile PR and
-  check state. Local merge commit
-  `cd26abb4cd8678cdea1bd04695bf36083c754501` remains unpublished; its normal
-  push and PR body update are authorized but pending. PR merge, mark-ready,
-  deployment, publication, worktree cleanup, and branch or worktree deletion
-  remain withheld.
+- The required independent integrated final review completed on exact immutable
+  head `259f92a6be3a2a2cb3808f1c1d1305e6a276383d`. It covered integrated base
+  `ac84460d2209c51842f0857da75cf7d7f258ae09` through the code correction,
+  normal upstream merge, and final runtime-lifecycle evidence.
+- Review lenses were correctness, plan compliance, user workflow, bilingual
+  i18n, accessibility, shared navigation compatibility, test sufficiency,
+  maintainability, bounded frontend security, and diff scope. The reviewer
+  found no code, security, regression, maintainability, or test issue.
+- The review's sole finding was the contradictory final-review status in this
+  durable plan. That documentation finding is accepted and resolved by this
+  edit; local final review is complete.
+- Draft PR #5546 exists and GitHub remains authoritative for volatile PR and
+  check state. Normal push, PR body update, exact-head CI, and review-thread
+  resolution remain pending. PR merge, mark-ready, deployment, publication,
+  worktree cleanup, and branch or worktree deletion remain withheld.
 
 ## Risks and stop conditions
 
@@ -460,16 +457,17 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   browser evidence, and the environment-blocked repository Playwright run.
 - Host readback proves branch and PR-body synchronization for each published
   head. GitHub is authoritative for volatile current PR and check state. The
-  latest local merge remains unpublished; its normal push and PR body update
-  are authorized but pending. PR merge, mark-ready, deployment,
+  reviewed local head `259f92a6be3a2a2cb3808f1c1d1305e6a276383d`
+  remains unpublished. Normal push, PR body update, exact-head CI, and
+  review-thread resolution remain pending. PR merge, mark-ready, deployment,
   publication, cleanup, and deletion remain withheld.
 
 ## Progress
 
-- Status: W2 implementation, checks, exact devrouter proof, independent review,
-  evidence, the contract correction, and its upstream merge are complete
-  locally. Runtime lifecycle closure is complete with fresh exact-source
-  provider and zero-route readback.
+- Status: W2 implementation, checks, exact devrouter proof, evidence, the
+  contract correction, its upstream merge, runtime lifecycle closure, and the
+  required independent integrated final review are complete locally. Runtime
+  closure has fresh exact-source provider and zero-route readback.
 - Freshness: the integrated base and merge-base are
   `ac84460d2209c51842f0857da75cf7d7f258ae09`, which is also the current
   `origin/v3`. Exact ahead/behind counts are not durable Progress state.
@@ -817,14 +815,14 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   `devrouter exec . -- pnpm --filter @klicker-uzh/frontend-manage run check`,
   full `devrouter exec . -- pnpm run check:all` with 25/25 check tasks and all
   lint tasks, and full `devrouter exec . -- pnpm run build` with 23/23 tasks and
-  exit 0. At that evidence checkpoint, exact runtime stop and scoped route
-  readback remained pending; the current lifecycle entry below records their
-  later completion. Local review, push, and exact-head CI remain pending.
+  exit 0. At that evidence checkpoint, exact runtime stop, scoped route
+  readback, and local final review remained pending; the current entries below
+  record their later completion. Push and exact-head CI remain pending.
 - Delivery remains pending for the local contract correction. Draft PR #5546
-  still points to `510ab4308e516b69294fcb1dae69adbb6c9feea2`; no new push or
-  exact-head CI is claimed, and the OpenCodeReview thread remains unresolved.
-  Review, PR merge, mark-ready, deployment, publication, cleanup, deletion, and
-  review-thread resolution remain withheld.
+  still points to `510ab4308e516b69294fcb1dae69adbb6c9feea2`.
+  Normal push, PR body update, exact-head CI, and review-thread resolution
+  remain pending. PR merge, mark-ready, deployment, publication, cleanup, and
+  deletion remain withheld.
 - Current local integration is merge commit
   `cd26abb4cd8678cdea1bd04695bf36083c754501` over contract-fix commit
   `c65e52413752a47dd16e29b60e05dbe7fd0d7417` and current `origin/v3`
@@ -843,6 +841,16 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   Turbopack readiness evidence remains unchanged. No new push, exact-head CI,
   or thread resolution is claimed; merge, mark-ready, deployment, publication,
   cleanup, and deletion remain withheld.
+- Required independent integrated final review completed on exact immutable
+  head `259f92a6be3a2a2cb3808f1c1d1305e6a276383d`, covering integrated base
+  `ac84460d2209c51842f0857da75cf7d7f258ae09` through the code correction,
+  normal merge, and final runtime-lifecycle evidence. The reviewer found no
+  code, security, regression, maintainability, or test issue; its sole finding
+  was this plan's contradictory review status. This edit accepts and resolves
+  that documentation finding, so local final review is complete. Normal push,
+  PR body update, exact-head CI, and review-thread resolution remain pending;
+  PR merge, mark-ready, deployment, publication, cleanup, and deletion remain
+  withheld.
 
 ### Historical execution evidence before final runtime proof
 
