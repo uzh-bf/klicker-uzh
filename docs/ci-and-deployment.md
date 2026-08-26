@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-08-25'
+timestamp: '2026-08-26'
 tags:
   - ci
   - deployment
@@ -24,6 +24,7 @@ standalone secret scan that installs the Gitleaks binary directly and needs
 neither Node nor pnpm.
 
 - **Path filtering**: A custom composite action `.github/actions/changed-paths` executes on PR events. Heavy multi-job test suites (e.g. `test-graphql` and `test-playwright`) run path-scoped filters to only build and spawn backing services (Postgres, Redis, Hatchet) when relevant files are changed. The action fetches the base ref shallowly **only when the clone is already shallow**; on a full clone, adding a shallow graft can truncate a stacked PR's history and break later merge-base-dependent commands. The required `check` workflow stays unconditional and does not use this action.
+- **Stacked pull requests**: The consolidated `check` workflow runs for every opened, synchronized, or reopened pull request target, including feature-branch targets used by stacked PRs. Its push trigger remains limited to `v3` and `v3*`.
 - **Required status contexts**: To safely mark path-filtered workflows as required in branch protection, they include dedicated status checkers (e.g. `test-graphql-status`, `test-playwright-status`) that always execute and fail-open. They fail open for two distinct cases: a dependency **skipped** by the path filter, and a dependency **cancelled** by `cancel-in-progress`. The second matters because a push that produces two `pull_request` events seconds apart (an atomic multi-branch push, or a quick re-push) starts two runs of the same workflow; the older is cancelled, and without the explicit `cancelled` guard its gate concluded `failure` and left a red check on the PR that only a manual re-run cleared.
 - **Prisma Schema Drift**: A custom `check:prisma-sync` smoke check compares schema structures in the monorepo against mirrored schemas in `apps/analytics` to enforce database integrity.
 - **Markdown Linter**: `check:agents-md` validates links and command script correctness inside the codebase guide.

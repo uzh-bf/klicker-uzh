@@ -64,7 +64,9 @@
   not a standalone runtime forecast.
 - `check.yml` preserves all old commands and uniquely enforces
   `check:removed-doc-artifacts`; it remains unconditional so required checks do
-  not get stuck pending through workflow-level path filters.
+  not get stuck pending through workflow-level path filters. Its pull-request
+  trigger covers every target branch so stacked PRs retain the quality gate;
+  only its push trigger remains limited to `v3` and `v3*`.
 - `test-chat`, `test-grading`, `test-markdown`, and `test-util` each check out,
   install, and partially rebuild the same workspace. Their contexts are not
   required, so one path-filtered `test-unit` workflow can safely replace them.
@@ -252,6 +254,10 @@ Do not delete a workflow if any readback differs from the expected set.
   integrated final reviewer found no change-introduced issue and confirmed
   that `test-unit` should not trigger on changes to the composite changed-path
   action it no longer consumes.
+- The integrated final review found that a target-branch filter would have
+  dropped the replacement quality gate from stacked PRs. The filter was removed
+  from the pull-request trigger, the push filter was retained, and the CI guide
+  now records the supported stacked-PR behavior.
 - Delivery boundary: ready transition is authorized after the final checks;
   follow-up merge, deployment, and cleanup remain withheld.
 
