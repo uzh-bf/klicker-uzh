@@ -45,7 +45,7 @@ const STACK_REVIEW_SCHEMA = 'final-ai-stack-review/v4'
 const STACK_CLEAN_EVIDENCE_SCHEMA = 'final-ai-stack-clean-evidence/v1'
 const STACK_CLEAN_EVIDENCE_CHECK_NAME = 'Final AI stack clean evidence'
 const STACK_REVIEW_WORKFLOW_PATH =
-  '.github/workflows/check-ocr-final-stack-review.yml'
+  '.github/workflows/check-ocr-final-review.yml'
 const STACK_REVIEW_CLEAN_STATUS_PREFIX = `${FINAL_REVIEW_MODEL} stack review clean; evidence=`
 const STACK_RULES_PATH =
   '.github/open-code-review/final-stack-topology-rules.json'

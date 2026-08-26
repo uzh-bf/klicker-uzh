@@ -604,3 +604,11 @@ real runs before proposing any parameter retune or branch-protection context.
   tasks, alter branch protection, or delete the task worktrees; `origin/v3`
   has advanced and any rebase stays user-gated. Stop and verify the exact
   task runtime after publication.
+- Simplification pass (post-PR): extracted the nine byte-identical helpers
+  shared by both final-review scripts into
+  `.github/scripts/final-ai-review-shared.js`, and merged
+  `check-ocr-final-stack-review.yml` into `check-ocr-final-review.yml`
+  as separately conditioned `*_stack` jobs sharing one trusted-policy and
+  lock head. Stack provenance now points at the merged workflow path. This
+  halves the always-running shared jobs per PR event; all 99 focused tests,
+  Biome, and Prettier pass after the merge.

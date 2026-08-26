@@ -36,7 +36,7 @@ const GENERATED_PROMOTION_STATUS = 'Verified generated staging promotion'
 const FINAL_REVIEW_RULES_PATH =
   '.github/open-code-review/final-review-rules.json'
 const FINAL_STACK_REVIEW_WORKFLOW_PATH =
-  '.github/workflows/check-ocr-final-stack-review.yml'
+  '.github/workflows/check-ocr-final-review.yml'
 const FINAL_STACK_REVIEW_RULES_PATH =
   '.github/open-code-review/final-stack-topology-rules.json'
 const FINAL_STACK_REVIEW_SCHEMA_PATH =

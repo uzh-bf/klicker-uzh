@@ -377,7 +377,7 @@ test('accepts a trusted clean stack status without requiring a review body', asy
   ]
   state.workflowRun = {
     id: 700,
-    path: '.github/workflows/check-ocr-final-stack-review.yml',
+    path: '.github/workflows/check-ocr-final-review.yml',
     event: 'issue_comment',
     head_branch: 'v3',
     head_sha: stackContext.sha,
@@ -438,8 +438,7 @@ test('accepts a trusted clean stack status without requiring a review body', asy
       .update(JSON.stringify(tamperedAliases))
       .digest('hex'),
   }
-  state.checkRuns[0].output.text =
-    `<!-- final-ai-stack-clean-evidence/v1 ${encodeMetadata(tampered)} -->`
+  state.checkRuns[0].output.text = `<!-- final-ai-stack-clean-evidence/v1 ${encodeMetadata(tampered)} -->`
   assert.ok(parseStackCleanEvidence(state.checkRuns[0].output.text))
   assert.equal(
     await getVerifiedStackCleanEvidence({
@@ -1120,10 +1119,15 @@ test('authorizes only the verified top pull request', async () => {
 
 test('keeps actions read permission for stack revalidation', () => {
   const workflow = fs.readFileSync(
-    path.join(__dirname, '../workflows/check-ocr-final-stack-review.yml'),
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
     'utf8'
   )
-  for (const jobName of ['initialize', 'start', 'review', 'finalize']) {
+  for (const jobName of [
+    'initialize_stack',
+    'start_stack',
+    'review_stack',
+    'finalize_stack',
+  ]) {
     const job =
       workflow.match(
         new RegExp(
@@ -1139,7 +1143,7 @@ test('keeps actions read permission for stack revalidation', () => {
 test('checks trusted review code out from the default branch', () => {
   for (const workflowName of [
     'check-ocr-final-review.yml',
-    'check-ocr-final-stack-review.yml',
+    'check-ocr-final-review.yml',
   ]) {
     const workflow = fs.readFileSync(
       path.join(__dirname, `../workflows/${workflowName}`),
@@ -1164,12 +1168,12 @@ test('checks trusted review code out from the default branch', () => {
 
 test('anchors every stack review consumer to the frozen manifest digest', () => {
   const workflow = fs.readFileSync(
-    path.join(__dirname, '../workflows/check-ocr-final-stack-review.yml'),
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
     'utf8'
   )
   assert.equal(
     workflow.match(
-      /MANIFEST_DIGEST: \$\{\{ needs\.start\.outputs\.manifest_digest \}\}/g
+      /MANIFEST_DIGEST: \$\{\{ needs\.start_stack\.outputs\.manifest_digest \}\}/g
     )?.length,
     3
   )
@@ -1351,7 +1355,7 @@ test('preserves comment-free clean evidence across unrelated default-base advanc
   ]
   state.workflowRun = {
     id: 700,
-    path: '.github/workflows/check-ocr-final-stack-review.yml',
+    path: '.github/workflows/check-ocr-final-review.yml',
     event: 'issue_comment',
     head_branch: 'v3',
     head_sha: originalContext.sha,
@@ -1439,7 +1443,7 @@ test('preserves current stack evidence across unrelated default-base advancement
   state.comments = []
   state.workflowRun = {
     id: 700,
-    path: '.github/workflows/check-ocr-final-stack-review.yml',
+    path: '.github/workflows/check-ocr-final-review.yml',
     event: 'issue_comment',
     head_branch: 'v3',
     head_sha: 'a'.repeat(40),
@@ -2096,7 +2100,7 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
   ]
   state.workflowRun = {
     id: 700,
-    path: '.github/workflows/check-ocr-final-stack-review.yml',
+    path: '.github/workflows/check-ocr-final-review.yml',
     event: 'issue_comment',
     head_branch: 'v3',
     head_sha: 'a'.repeat(40),
@@ -2287,7 +2291,7 @@ test('attests bounded repairs across changed lower stack layers', async () => {
         : state.comments
   state.workflowRun = {
     id: 700,
-    path: '.github/workflows/check-ocr-final-stack-review.yml',
+    path: '.github/workflows/check-ocr-final-review.yml',
     event: 'issue_comment',
     head_branch: 'v3',
     head_sha: 'a'.repeat(40),

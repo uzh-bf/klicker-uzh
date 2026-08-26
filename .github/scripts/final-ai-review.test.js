@@ -81,17 +81,14 @@ test('grants clean evidence check access only to the required workflow jobs', ()
     )?.[1] ?? ''
 
   for (const jobName of ['initialize', 'authorize', 'start']) {
-    assert.match(permissionsFor(jobName), /permissions:[^]*checks: read/)
+    assert.match(permissionsFor(jobName), /permissions:[\s\S]*checks: read/)
   }
-  assert.match(permissionsFor('finalize'), /permissions:[^]*checks: write/)
+  assert.match(permissionsFor('finalize'), /permissions:[\s\S]*checks: write/)
   assert.doesNotMatch(permissionsFor('review'), / {6}checks:/)
 })
 
 test('pins trusted review code to the event workflow commit when the default branch moves', () => {
-  for (const workflow of [
-    '../workflows/check-ocr-final-review.yml',
-    '../workflows/check-ocr-final-stack-review.yml',
-  ]) {
+  for (const workflow of ['../workflows/check-ocr-final-review.yml']) {
     const source = fs.readFileSync(path.join(__dirname, workflow), 'utf8')
     assert.match(
       source,
@@ -116,10 +113,7 @@ test('serializes every final-review status writer without canceling it', () => {
       new RegExp(`\\n {2}${name}:\\n([\\s\\S]*?)(?=\\n {2}[a-z][\\w-]*:\\n|$)`)
     )?.[1] ?? ''
 
-  for (const workflowName of [
-    'check-ocr-final-review.yml',
-    'check-ocr-final-stack-review.yml',
-  ]) {
+  for (const workflowName of ['check-ocr-final-review.yml']) {
     const source = fs.readFileSync(
       path.join(__dirname, `../workflows/${workflowName}`),
       'utf8'
@@ -157,10 +151,7 @@ test('serializes every final-review status writer without canceling it', () => {
 })
 
 test('propagates a clean publication result to final status', () => {
-  for (const workflowName of [
-    'check-ocr-final-review.yml',
-    'check-ocr-final-stack-review.yml',
-  ]) {
+  for (const workflowName of ['check-ocr-final-review.yml']) {
     const source = fs.readFileSync(
       path.join(__dirname, `../workflows/${workflowName}`),
       'utf8'
