@@ -10,10 +10,17 @@ export type ElementOptions = {
 
 export async function clearRichTextField(field: Locator) {
   await field.scrollIntoViewIfNeeded()
-  await field.click()
-  await field.press('ControlOrMeta+A')
+  await field.selectText()
   await field.press('Backspace')
-  await expect(field).toHaveText('')
+  await expect
+    .poll(async () => {
+      const textNodes = await field
+        .locator('[data-slate-string="true"]')
+        .allTextContents()
+
+      return textNodes.join('')
+    })
+    .toBe('')
 }
 
 /**
