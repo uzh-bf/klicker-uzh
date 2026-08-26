@@ -2,6 +2,8 @@
 
 Date: 2026-08-26
 
+Verified merge head: `7a1d3a49225f7e8eef82f2b01e7d6d74b1f5cc83`
+
 ## Scope
 
 PR 5315 exposes per-element received and processed response counts in the
@@ -59,6 +61,7 @@ access, or production-state change was performed.
 
 | Check | Result |
 | --- | --- |
+| Base integration | Current `origin/v3` merged without unresolved conflicts; GitHub reports the PR mergeable |
 | Response-processor unit tests | 17 passed across regular, assessment, and payload-shape validation paths, including choice/selection/case-study limits, leaderboard/XP commands, persistent reconciliation retries, replay-lookup failure propagation, and replays |
 | Response-processor typecheck | Passed |
 | Utility unit tests | 53 passed; the opt-in Redis test is skipped in the ordinary unit run |
@@ -68,7 +71,7 @@ access, or production-state change was performed.
 | GraphQL, utility, response API, Playwright checks | Passed |
 | Lecturer frontend check | Passed |
 | Repository `check:all` | Passed: 25 check targets, 7 lint targets, formatting, Syncpack, Prisma sync, documentation-path checks, and AGENTS checks |
-| Production build | Every build target passed. The sandboxed root run completed all non-Turbopack targets; Chat and Auth then passed targeted unsandboxed production builds because their sandboxed Turbopack workers stalled on local process/port operations |
+| Production build | The normal pre-push production build passed all 23 build targets |
 | Diff whitespace check | Passed |
 
 The exact-head GraphQL integration suite was prepared with added coverage for
@@ -95,6 +98,10 @@ live-quiz flow remains the current-head behavioral browser gate.
 
 - Current-head CI, including the GraphQL integration and live-quiz Playwright
   jobs, must pass.
+- The merge synchronization included `v3` deployment-promotion commits whose
+  messages contain `[skip ci]`, so GitHub suppressed the ordinary PR workflows
+  for that event. This evidence-only update creates a clean synchronization
+  event so the complete current-head workflow set can run.
 - Review comments remain review context; this task does not remotely resolve or
   dismiss them without explicit authorization.
 - Normal deployment observation remains required after merge. This task does
