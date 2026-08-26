@@ -1,10 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import {
+  citationHrefFor,
+  citationTargetIdFor,
   extractCitationIndexes,
   hasExactCitationIndexes,
+  parseCitationHref,
 } from '../src/citations.js'
 
 describe('citation helpers', () => {
+  it('can scope citation targets without changing their parsed index', () => {
+    expect(citationTargetIdFor(1)).toBe('response-example-citation-1')
+    expect(citationTargetIdFor(1, 'example/a')).toBe(
+      'response-example-citation-example%2Fa--1'
+    )
+    expect(citationHrefFor(1, 'example/a')).toBe(
+      '#response-example-citation-example%2Fa--1'
+    )
+    expect(parseCitationHref('#response-example-citation-example%2Fa--1')).toBe(
+      1
+    )
+  })
+
   it('matches citation links in rendered Markdown', () => {
     expect(
       extractCitationIndexes('Use **the definition [1]** and [2].')

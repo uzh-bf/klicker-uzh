@@ -13,23 +13,27 @@ export interface MarkdownAstNode {
 const SKIPPED_PARENT_TYPES = new Set(['link', 'linkReference'])
 const RENDERER_UNESCAPED_ENTITIES = /&amp;|&lt;|&gt;|&#39;|&quot;/g
 
-export function citationTargetIdFor(index: number): string {
-  return `response-example-citation-${index}`
+export function citationTargetIdFor(index: number, scope?: string): string {
+  const scopeSegment = scope ? `${encodeURIComponent(scope)}--` : ''
+  return `response-example-citation-${scopeSegment}${index}`
 }
 
-export function citationHrefFor(index: number): string {
-  return `#${citationTargetIdFor(index)}`
+export function citationHrefFor(index: number, scope?: string): string {
+  return `#${citationTargetIdFor(index, scope)}`
 }
 
 export function parseCitationHref(
   href: string | null | undefined
 ): number | null {
   if (!href) return null
-  const match = /^#response-example-citation-(\d+)$/.exec(href)
+  const match = /^#response-example-citation-(?:[^#]*--)?(\d+)$/.exec(href)
   return match ? Number(match[1]) : null
 }
 
-export function splitCitationMarkers(value: string): MarkdownAstNode[] {
+export function splitCitationMarkers(
+  value: string,
+  scope?: string
+): MarkdownAstNode[] {
   const nodes: MarkdownAstNode[] = []
   let lastIndex = 0
   let searchFrom = 0
@@ -57,7 +61,7 @@ export function splitCitationMarkers(value: string): MarkdownAstNode[] {
     const citationIndex = value.slice(start + 1, end)
     nodes.push({
       type: 'link',
-      url: citationHrefFor(Number(citationIndex)),
+      url: citationHrefFor(Number(citationIndex), scope),
       children: [{ type: 'text', value: citationIndex }],
     })
     lastIndex = end + 1
@@ -73,7 +77,8 @@ export function splitCitationMarkers(value: string): MarkdownAstNode[] {
 }
 
 export function transformCitationMarkers<T extends MarkdownAstNode>(
-  tree: T
+  tree: T,
+  scope?: string
 ): T {
   const pending: Array<{
     node: MarkdownAstNode
@@ -95,7 +100,7 @@ export function transformCitationMarkers<T extends MarkdownAstNode>(
         !skipped &&
         child.value.includes('[')
       ) {
-        nextChildren.push(...splitCitationMarkers(child.value))
+        nextChildren.push(...splitCitationMarkers(child.value, scope))
         continue
       }
 
@@ -114,9 +119,9 @@ export function transformCitationMarkers<T extends MarkdownAstNode>(
   return tree
 }
 
-export function remarkCitationMarkers() {
+export function remarkCitationMarkers(scope?: string) {
   return (tree: MarkdownAstNode) => {
-    transformCitationMarkers(tree)
+    transformCitationMarkers(tree, scope)
   }
 }
 

@@ -36,4 +36,16 @@ describe('citation rendering', () => {
     expect(rendered).not.toContain('response-example-citation-4')
     expect(rendered).not.toContain('response-example-citation-5')
   })
+
+  it('scopes citation anchors when a page renders multiple examples', () => {
+    const rendered = renderToStaticMarkup(
+      React.createElement(Markdown, {
+        content: 'Grounded answer [1].',
+        withCitationLinks: true,
+        citationLinkScope: 'example-a',
+      })
+    )
+
+    expect(rendered).toContain('href="#response-example-citation-example-a--1"')
+  })
 })

@@ -46,6 +46,7 @@ export interface MarkdownProps {
   withModal?: boolean
   withLinkButtons?: boolean
   withCitationLinks?: boolean
+  citationLinkScope?: string
   withProse?: boolean
   singleDollarTextMath?: boolean
   data?: {
@@ -61,6 +62,7 @@ function Markdown({
   withModal = true,
   withLinkButtons = true,
   withCitationLinks = false,
+  citationLinkScope,
   withProse = false,
   singleDollarTextMath = false,
   data,
@@ -77,7 +79,7 @@ function Markdown({
         .use(remarkMath, { singleDollarTextMath })
 
       if (withCitationLinks) {
-        processor.use(remarkCitationMarkers)
+        processor.use(remarkCitationMarkers, citationLinkScope)
       }
 
       return (
@@ -207,7 +209,7 @@ function Markdown({
       console.error(e)
       return 'Failed to parse content.'
     }
-  }, [content, singleDollarTextMath, withCitationLinks])
+  }, [citationLinkScope, content, singleDollarTextMath, withCitationLinks])
 
   if (withProse) {
     // sizes available: prose-sm, prose-base, prose-lg, prose-xl, prose-2xl
