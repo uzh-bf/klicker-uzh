@@ -150,8 +150,14 @@ before the current month remains effective until it is changed. A prior-month
 budget therefore carries forward with used credits reset to zero; only a class
 with no history projects budget 0 / used 0. The Zurich month boundary
 (including DST) is derived deterministically in
-`packages/util/src/chatUsage.ts`. The participant chat route enforces these
-counters at runtime.
+`packages/util/src/chatUsage.ts`.
+
+`CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED` controls the participant route's
+pre-provider budget rejection and defaults to `false`. While the switch is
+false, the route skips account authorization and budget-availability rejection,
+but turn lifecycle claims remain active and configured account usage is still
+recorded after a completed provider response. Enabling the switch is a separate
+operational cutover decision for a named environment and cohort.
 
 The lecturer-facing GraphQL API projects the effective account month through
 `getChatAccountUsage` as exactly `baseModelUsage` and `advancedModelUsage`.
@@ -246,21 +252,26 @@ monthly budgets through the `ADMIN`-only mutation, while account owners see
 exactly two read-only lanes — base model usage and advanced model usage — with
 budget, used, remaining, and reset date. The teaching center's limited base
 contribution is internal and hidden; advanced usage receives no contribution.
-Class exhaustion disables only that class and never triggers an automatic
-cross-class switch. Participant-facing APIs must return stable class-specific
-exhaustion codes without cost-center or hidden funding fields.
+When account usage enforcement is enabled, class exhaustion disables only that
+class and never triggers an automatic cross-class switch. Participant-facing
+APIs must then return stable class-specific exhaustion codes without cost-center
+or hidden funding fields.
 
 `apps/chat/src/app/api/chatbots/[chatbotId]/chat/route.ts:POST` resolves the
-effective model and its server-derived usage class, then reads the live account
-authorization and effective owner/class/Zurich-month usage before thread
-creation, image description, message persistence, or provider streaming. The
-latest configured budget at or before the current month applies, with used
-credits reset to zero when it carries forward. A disabled authorization, class
-with no configured history or a zero budget, or exhausted class fails closed
-with HTTP `403` and either `CHAT_MODEL_UNAVAILABLE_BASE` or
-`CHAT_MODEL_UNAVAILABLE_ADVANCED`. The response never exposes budgets, used
-credits, cost centers, contributions, providers, or settlement details.
-Exhausting one class neither disables the other nor invokes fallback.
+effective model and its server-derived usage class. When account usage
+enforcement is enabled, it then reads the live account authorization and
+effective owner/class/Zurich-month usage before thread creation, image
+description, message persistence, or provider streaming. The latest configured
+budget at or before the current month applies, with used credits reset to zero
+when it carries forward. This availability pre-check runs only when
+`CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED=true`. Under that setting, a
+disabled authorization, class with no configured history or a zero budget, or
+exhausted class fails closed with HTTP `403` and either
+`CHAT_MODEL_UNAVAILABLE_BASE` or `CHAT_MODEL_UNAVAILABLE_ADVANCED`. The response
+never exposes budgets, used credits, cost centers, contributions, providers, or
+settlement details. Exhausting one class neither disables the other nor invokes
+fallback. With the default-off setting, the route skips this rejection while
+retaining lifecycle claims and post-completion accounting for configured usage.
 
 The client-supplied assistant message ID is the turn lifecycle key.
 `apps/chat/src/services/accountUsage.ts:claimChatTurn` creates an
