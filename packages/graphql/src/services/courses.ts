@@ -4120,7 +4120,11 @@ export async function getStudentMcpCoursePracticeQuiz(
   const [chatbot, participation] = await Promise.all([
     ctx.prisma.chatbot.findFirst({
       select: { id: true },
-      where: { courseId, id: chatbotId },
+      where: {
+        courseId,
+        id: chatbotId,
+        status: DB.ChatbotStatus.PUBLISHED,
+      },
     }),
     ctx.prisma.participation.findUnique({
       select: { id: true },

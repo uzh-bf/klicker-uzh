@@ -2,8 +2,9 @@ import { useMutation } from '@apollo/client'
 import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ChatModelCapability,
-  Chatbot,
+  type Chatbot,
+  ChatbotStatus,
+  type ChatModelCapability,
   CreditResetPeriod,
   GetChatbotsInfoDocument,
   UpdateChatbotModelSettingsDocument,
@@ -17,11 +18,12 @@ import {
   UserNotification,
 } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
-import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { getChatbotStatusTranslationKey } from './chatbotStatus'
 
 type ReasoningConfigState = Record<string, string[]>
 
@@ -167,6 +169,7 @@ function ChatbotDetails({
   const localePrefix = locale ? `/${locale}` : ''
   const buildChatbotUrl = (courseId: string) =>
     `${pwaBaseUrl}${localePrefix}/course/${encodeURIComponent(courseId)}/chatbot/${encodeURIComponent(chatbot.id)}`
+  const chatbotStatusLabel = t(getChatbotStatusTranslationKey(chatbot.status))
 
   const handleAllowedModelToggle = (modelId: string, checked: boolean) => {
     setAllowedModelIds((currentAllowedModelIds) => {
@@ -258,7 +261,15 @@ function ChatbotDetails({
       <div className="mt-3 space-y-6">
         <div>
           <div className="flex flex-row items-start justify-between gap-4">
-            <div className="text-xl font-bold">{chatbot.name}</div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="text-xl font-bold">{chatbot.name}</div>
+              <Badge
+                className="bg-gray-100 text-gray-800 hover:bg-gray-200"
+                data-cy="chatbot-status"
+              >
+                {chatbotStatusLabel}
+              </Badge>
+            </div>
           </div>
           {chatbot.description && (
             <div className="mt-1 text-sm text-gray-600">
@@ -297,18 +308,28 @@ function ChatbotDetails({
                   >
                     {course.name}
                   </Link>
-                  <a
-                    href={buildChatbotUrl(course.id)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary-500 hover:text-primary-700 flex items-center gap-1.5 whitespace-nowrap text-xs hover:underline"
-                  >
-                    <span>{t('manage.resources.openChatbot')}</span>
-                    <FontAwesomeIcon
-                      icon={faExternalLinkAlt}
-                      className="h-3 w-3"
-                    />
-                  </a>
+                  {chatbot.status === ChatbotStatus.Published ? (
+                    <a
+                      href={buildChatbotUrl(course.id)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary-500 hover:text-primary-700 flex items-center gap-1.5 whitespace-nowrap text-xs hover:underline"
+                      data-cy="chatbot-participant-link"
+                    >
+                      <span>{t('manage.resources.openChatbot')}</span>
+                      <FontAwesomeIcon
+                        icon={faExternalLinkAlt}
+                        className="h-3 w-3"
+                      />
+                    </a>
+                  ) : (
+                    <span
+                      className="whitespace-nowrap text-xs text-gray-500"
+                      data-cy="chatbot-not-live"
+                    >
+                      {t('manage.resources.chatbotNotLive')}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>

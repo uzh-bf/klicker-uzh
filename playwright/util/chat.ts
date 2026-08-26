@@ -90,8 +90,14 @@ export async function ensureChatbotSeeded() {
       creditMaxCredits: 100,
       modelSelection: true,
       disclaimerId: DISCLAIMER_ID,
+      // Participants can only reach a PUBLISHED bot (apiGuards.getChatbotOr404).
+      status: 'PUBLISHED',
     },
-    update: { modelSelection: true, disclaimerId: DISCLAIMER_ID },
+    update: {
+      modelSelection: true,
+      disclaimerId: DISCLAIMER_ID,
+      status: 'PUBLISHED',
+    },
   })
 }
 
@@ -165,7 +171,12 @@ export async function resetChatState(participantId: string) {
   })
   await prisma.chatbot.update({
     where: { id: CHATBOT_ID },
-    data: { disclaimerId: DISCLAIMER_ID, modelSelection: true },
+    data: {
+      disclaimerId: DISCLAIMER_ID,
+      modelSelection: true,
+      // Restore PUBLISHED in case a test flipped it (participant access gate).
+      status: 'PUBLISHED',
+    },
   })
 }
 

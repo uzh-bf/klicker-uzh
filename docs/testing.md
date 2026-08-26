@@ -1,8 +1,8 @@
 ---
 type: Testing Guide
 title: Testing
-description: Which test level to use when, what runs safely without services, the two e2e stacks and their seeds, and the CI test matrix.
-timestamp: '2026-08-24'
+description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
+timestamp: '2026-08-26'
 tags:
   - testing
   - ci
@@ -91,6 +91,16 @@ Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.
 
 The seed paths (dev `seedTEST.ts` and Playwright `global-setup.ts`) are **independent** — a fixture added to one does not exist in the other ([Data & Migrations](./data-and-migrations.md)). `*:raw` script variants skip Infisical. `_run_app_dependencies.sh` applies the schema with `prisma:push` without forcing a reset.
 
+The Playwright stack starts
+`playwright/util/mockGrowthBookServer.mjs` alongside the applications. The
+test-origin wrapper points backend SDK evaluation at this synthetic feature
+endpoint, while each browser test still controls its own public SDK
+response with Playwright routing. This separation lets the learning-analytics
+allow and deny tests exercise the real browser → persisted GraphQL →
+backend-entitlement path without a live GrowthBook deployment or management
+credential. The test wrapper shortens backend polling to 250 ms; production
+keeps the package's 30-second default.
+
 For authoring specifics, helper patterns, and failure triage, use the `klicker-playwright-e2e` skill ([.agents/skills/](../.agents/skills/)).
 
 ## E2E environment dependencies
@@ -125,7 +135,47 @@ In the devcontainer, `APP_ORIGIN_AUTH` is the trap. The scripts default to the p
 
 ## CI matrix
 
-Path-filtered unit workflows: `test-grading`, `test-util`, `test-markdown` (package-only, no services), `test-graphql` (spins Postgres ×2 + hatchet-lite + Redis), `test-olat-api` (docker compose test stack), `test-mcp-lecturer` (Postgres only: unit tests, then migrate + `seed:test`, then boots the built server and runs `smoke:local` + `smoke:negative` against it). `test-chat` runs the `apps/chat` vitest suite (path filter: `apps/chat/` + `packages/{i18n,prisma,graphql}/` + workspace manifests; it builds `packages/prisma` first because the model-registry parity test imports the backend registry, which imports the prisma client at runtime). Playwright tests use a path-scoped filter and compile once in a `build-and-compile` job before running the 8 shards. The workflow tars the five `.next` trees before artifact upload and extracts them in each shard so Turbopack's runtime dependency symlinks survive the cross-job handoff. Dedicated `-status` fail-open gates exist for the multi-job workflows (`test-graphql`, `test-playwright`, `test-mcp-lecturer`); the single-job filtered workflows (`test-grading`, `test-util`, `test-markdown`, `test-chat`) always run their one job and report directly, so they need no companion gate.
+The path-filtered `test-unit` workflow runs the chat, grading, markdown, and util
+suites with one frozen install. It builds Prisma, types, grading, and util once,
+then keeps each suite as a separately visible step. The chat suite runs against
+a PostgreSQL 15 service; the workflow resets that disposable test database
+before the suite and enables the account-usage integration cases. Later suites
+still run after an earlier test failure, but not after setup or
+dependency-build failure. Draft
+PR updates skip this job; use its manual dispatch for exact-head proof without
+marking a draft ready. This single-job workflow is not a required branch
+protection context and needs no companion status gate.
+
+`test-graphql` spins Postgres ×2, hatchet-lite, and Redis and retains a
+path-filter job plus the required always-reporting `test-graphql-status` gate.
+`test-olat-api` uses workflow-level path filters so irrelevant changes create no
+job, while relevant changes still run its Docker Compose test stack. Playwright
+uses a path-scoped filter and compiles once before running the 8 shards.
+Eligible same-repository public PRs (non-draft, non-bot, rollout enabled or
+canary) run the changed-path prepare and build in the Playwright container on
+the `public-pr-arm64` runner group through the reusable
+`public-pr-playwright-shards.yml` workflow, which gives at most three
+concurrent shards; pushes, fork PRs, drafts, bots, private repositories, and
+disabled rollouts keep all eight shards on GitHub-hosted runners. Both paths
+preserve the same artifact names and feed the route-aware
+`test-playwright-status` gate, which requires exactly one of the hosted or
+public-PR routes to be selected. The workflow tars the five `.next` trees before
+artifact upload and extracts them in each shard so Turbopack's runtime
+dependency symlinks survive the cross-job handoff. Each shard also restores the
+generated GraphQL client map from the built package because Turbo cache hits do
+not restore generated source files. Dedicated `-status` fail-open gates remain
+for the required multi-job workflows (`test-graphql`, `test-playwright`).
+Playwright cancellation is job-scoped: hosted stages cancel only their matching
+predecessors, while the public reusable-workflow call cancels the complete older
+public route. The required status gate deliberately has no concurrency group,
+so a stale reporter waiting for GitHub-hosted capacity cannot block current
+filtering, builds, or shards. Public container jobs also trust the exact mounted
+`GITHUB_WORKSPACE` after checkout because its host and container owners differ.
+
+`test-mcp-lecturer` remains a separate path-filtered service workflow. It runs
+unit tests, migrates and seeds Postgres, boots the built server, then executes
+`smoke:local` and `smoke:negative`. Its required always-reporting
+`test-mcp-lecturer-status` gate stays separate from the consolidated unit suites.
 
 **Hatchet tokens differ per workflow, because `test-playwright` is the only one that runs inside a `container:`.** `test-graphql` runs straight on the runner, so it reaches Hatchet at `localhost` and reads its boot-minted token with `docker exec`. Inside a container job neither works: service containers resolve by service **name** (`hatchet:8888` / `hatchet:7077`, exactly like the `postgres:5432` the same job already uses), and the Playwright image ships no Docker CLI. So `test-playwright` shares `/config` with the Hatchet service through the `hatchet_lite_config` volume and reads `/config/authdisabled-token` directly. Do not "simplify" those hostnames to `localhost` — every shard then fails in `Prepare .env files` before a single test runs. The HTTP token API is not a fallback: `hatchet-lite-dev` disables auth and answers `POST /api/v1/tenants/{id}/api-tokens` with 401 for every caller. The token's own claims always say `localhost`, which is harmless — `packages/hatchet/src/client.ts` passes `host_port`/`api_url` explicitly, and process env beats the `.env` templates for both `node --env-file` and `dotenv`.
 

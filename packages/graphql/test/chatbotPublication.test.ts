@@ -1,0 +1,500 @@
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import {
+  ChatbotStatus,
+  PrismaClient,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
+import { EventEmitter } from 'events'
+import type { ContextWithUser } from '../src/lib/context.js'
+import {
+  approveChatbotPublication,
+  rejectChatbotPublication,
+  requestChatbotPublication,
+} from '../src/services/chatbots.js'
+import {
+  initializePrisma,
+  seedCourse,
+  testCleanup,
+  testInitialization,
+} from './helpers.js'
+
+describe('Integration tests for the chatbot publication workflow', () => {
+  let prisma: PrismaClient
+  let hatchet: Hatchet
+  let emitter: EventEmitter
+  let userOneCtx: ContextWithUser
+  let userTwoCtx: ContextWithUser
+  let adminCtx: ContextWithUser
+
+  beforeAll(async () => {
+    const {
+      prisma: newPrisma,
+      hatchet: newHatchet,
+      emitter: newEmitter,
+    } = await initializePrisma()
+    prisma = newPrisma
+    hatchet = newHatchet
+    emitter = newEmitter
+  })
+
+  afterAll(async () => {
+    await testCleanup(prisma)
+    await prisma.$disconnect()
+  })
+
+  beforeEach(async () => {
+    const { userOneCtx: ctx1, userTwoCtx: ctx2 } = await testInitialization(
+      prisma,
+      hatchet,
+      emitter
+    )
+    userOneCtx = ctx1
+    userTwoCtx = ctx2
+    // A distinct ADMIN caller (same identity plumbing, elevated role).
+    adminCtx = {
+      ...userOneCtx,
+      user: { ...userOneCtx.user, role: UserRole.ADMIN },
+    }
+  })
+
+  afterEach(async () => await testCleanup(prisma))
+
+  async function enablePublishing() {
+    await prisma.user.update({
+      where: { id: userOneCtx.user.sub },
+      data: { aiChatbotPublishingEnabled: true },
+    })
+  }
+
+  async function seedChatbot(
+    status: ChatbotStatus,
+    extra: Record<string, unknown> = {}
+  ) {
+    const course = await seedCourse({}, userOneCtx)
+    return prisma.chatbot.create({
+      data: {
+        name: 'Bot',
+        courseId: course.id,
+        ownerId: userOneCtx.user.sub,
+        status,
+        ...extra,
+      },
+    })
+  }
+
+  describe('requestChatbotPublication', () => {
+    it('moves a DRAFT bot to PENDING_APPROVAL and records the request', async () => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.DRAFT)
+
+      const result = await requestChatbotPublication(
+        {
+          id: bot.id,
+          useCase: '  Course Q&A\n',
+          expectedStudentCount: 120,
+          proposedCredits: 50,
+        },
+        userOneCtx
+      )
+
+      expect(result).toMatchObject({
+        status: 'PENDING_APPROVAL',
+        publicationUseCase: 'Course Q&A',
+        expectedStudentCount: 120,
+        creditInitialCredits: 50,
+        creditResetAmount: 50,
+        creditMaxCredits: 50,
+        reviewComment: null,
+      })
+    })
+
+    it('clears the prior review comment when re-requesting from REJECTED', async () => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.REJECTED, {
+        reviewComment: 'needs a clearer scope',
+      })
+
+      const result = await requestChatbotPublication(
+        {
+          id: bot.id,
+          useCase: 'Revised scope',
+          expectedStudentCount: 30,
+          proposedCredits: 10,
+        },
+        userOneCtx
+      )
+
+      expect(result?.status).toBe('PENDING_APPROVAL')
+      expect(result?.reviewComment).toBeNull()
+    })
+
+    it('allows only one concurrent request to move a bot into review', async () => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.DRAFT)
+
+      let initialReads = 0
+      let releaseInitialReads!: () => void
+      const initialReadsReady = new Promise<void>((resolve) => {
+        releaseInitialReads = resolve
+      })
+      const chatbotDelegate = userOneCtx.prisma.chatbot
+      const gatedChatbotDelegate = new Proxy(chatbotDelegate, {
+        get(target, property, receiver) {
+          const value = Reflect.get(target, property, receiver)
+          if (property !== 'findFirst') {
+            return typeof value === 'function' ? value.bind(target) : value
+          }
+
+          const findFirst = target.findFirst.bind(target)
+          return async (
+            ...args: Parameters<typeof chatbotDelegate.findFirst>
+          ) => {
+            const result = await findFirst(...args)
+            initialReads += 1
+            if (initialReads === 2) releaseInitialReads()
+            await initialReadsReady
+            return result
+          }
+        },
+      })
+      const gatedPrisma = new Proxy(userOneCtx.prisma, {
+        get(target, property, receiver) {
+          if (property === 'chatbot') return gatedChatbotDelegate
+          return Reflect.get(target, property, receiver)
+        },
+      })
+      const gatedCtx = { ...userOneCtx, prisma: gatedPrisma }
+
+      const results = await Promise.allSettled([
+        requestChatbotPublication(
+          {
+            id: bot.id,
+            useCase: 'Course Q&A',
+            expectedStudentCount: 10,
+            proposedCredits: 5,
+          },
+          gatedCtx
+        ),
+        requestChatbotPublication(
+          {
+            id: bot.id,
+            useCase: 'Course Q&A',
+            expectedStudentCount: 10,
+            proposedCredits: 5,
+          },
+          gatedCtx
+        ),
+      ])
+
+      expect(
+        results.filter((result) => result.status === 'fulfilled')
+      ).toHaveLength(1)
+      expect(
+        results.find((result) => result.status === 'rejected')?.reason.message
+      ).toContain('status or account capability changed concurrently')
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({
+          where: { id: bot.id },
+          select: { status: true },
+        })
+      ).resolves.toMatchObject({ status: ChatbotStatus.PENDING_APPROVAL })
+    })
+
+    it('rejects a request from a non-requestable status (PUBLISHED)', async () => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.PUBLISHED)
+
+      await expect(
+        requestChatbotPublication(
+          {
+            id: bot.id,
+            useCase: 'x',
+            expectedStudentCount: 1,
+            proposedCredits: 1,
+          },
+          userOneCtx
+        )
+      ).rejects.toThrow('Cannot request publication from status PUBLISHED')
+    })
+
+    it.each([
+      ['empty', ''],
+      ['blank', ' \n\t '],
+      ['overlong', 'x'.repeat(2001)],
+    ])('rejects a %s use case', async (_, useCase) => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.DRAFT)
+
+      await expect(
+        requestChatbotPublication(
+          {
+            id: bot.id,
+            useCase,
+            expectedStudentCount: 1,
+            proposedCredits: 1,
+          },
+          userOneCtx
+        )
+      ).rejects.toThrow('useCase must be between 1 and 2000 characters long')
+    })
+
+    it.each([
+      ['zero', 0],
+      ['negative', -1],
+      ['non-integer', 1.5],
+      ['overflow', 2_147_483_648],
+    ])('rejects %s expected student count', async (_, value) => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.DRAFT)
+
+      await expect(
+        requestChatbotPublication(
+          {
+            id: bot.id,
+            useCase: 'Course Q&A',
+            expectedStudentCount: value,
+            proposedCredits: 1,
+          },
+          userOneCtx
+        )
+      ).rejects.toThrow(
+        'expectedStudentCount must be a positive signed 32-bit integer'
+      )
+    })
+
+    it.each([
+      ['zero', 0],
+      ['negative', -1],
+      ['non-integer', 1.5],
+      ['overflow', 2_147_483_648],
+    ])('rejects %s proposed credit count', async (_, value) => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.DRAFT)
+
+      await expect(
+        requestChatbotPublication(
+          {
+            id: bot.id,
+            useCase: 'Course Q&A',
+            expectedStudentCount: 1,
+            proposedCredits: value,
+          },
+          userOneCtx
+        )
+      ).rejects.toThrow(
+        'proposedCredits must be a positive signed 32-bit integer'
+      )
+    })
+
+    it('rejects when the account is not approved for publishing', async () => {
+      // aiChatbotPublishingEnabled defaults to false — do not enable it.
+      const bot = await seedChatbot(ChatbotStatus.DRAFT)
+
+      await expect(
+        requestChatbotPublication(
+          {
+            id: bot.id,
+            useCase: 'x',
+            expectedStudentCount: 1,
+            proposedCredits: 1,
+          },
+          userOneCtx
+        )
+      ).rejects.toThrow('not approved')
+
+      const row = await prisma.chatbot.findUniqueOrThrow({
+        where: { id: bot.id },
+        select: { status: true },
+      })
+      expect(row.status).toBe('DRAFT')
+    })
+
+    it('returns null and makes no change for a non-owner', async () => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.DRAFT)
+
+      const result = await requestChatbotPublication(
+        {
+          id: bot.id,
+          useCase: 'x',
+          expectedStudentCount: 1,
+          proposedCredits: 1,
+        },
+        userTwoCtx
+      )
+
+      expect(result).toBeNull()
+      const row = await prisma.chatbot.findUniqueOrThrow({
+        where: { id: bot.id },
+        select: { status: true },
+      })
+      expect(row.status).toBe('DRAFT')
+    })
+  })
+
+  describe('approveChatbotPublication', () => {
+    it('publishes a PENDING bot and stamps publishedAt', async () => {
+      // A real PENDING bot got there via a request, which required the owner's
+      // capability; keep it enabled so the approval-time re-check passes.
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.PENDING_APPROVAL, {
+        reviewComment: null,
+      })
+
+      const result = await approveChatbotPublication({ id: bot.id }, adminCtx)
+
+      expect(result?.status).toBe('PUBLISHED')
+      expect(result?.publishedAt).toBeInstanceOf(Date)
+    })
+
+    it('allows only one concurrent approval to publish a PENDING bot', async () => {
+      await enablePublishing()
+      const bot = await seedChatbot(ChatbotStatus.PENDING_APPROVAL, {
+        reviewComment: null,
+      })
+
+      let initialReads = 0
+      let releaseInitialReads!: () => void
+      const initialReadsReady = new Promise<void>((resolve) => {
+        releaseInitialReads = resolve
+      })
+      const chatbotDelegate = adminCtx.prisma.chatbot
+      const gatedChatbotDelegate = new Proxy(chatbotDelegate, {
+        get(target, property, receiver) {
+          const value = Reflect.get(target, property, receiver)
+          if (property !== 'findUnique') {
+            return typeof value === 'function' ? value.bind(target) : value
+          }
+
+          const findUnique = target.findUnique.bind(target)
+          return async (
+            ...args: Parameters<typeof chatbotDelegate.findUnique>
+          ) => {
+            const result = await findUnique(...args)
+            initialReads += 1
+            if (initialReads === 2) releaseInitialReads()
+            await initialReadsReady
+            return result
+          }
+        },
+      })
+      const gatedPrisma = new Proxy(adminCtx.prisma, {
+        get(target, property, receiver) {
+          if (property === 'chatbot') return gatedChatbotDelegate
+          return Reflect.get(target, property, receiver)
+        },
+      })
+      const gatedAdminCtx = { ...adminCtx, prisma: gatedPrisma }
+
+      const results = await Promise.allSettled([
+        approveChatbotPublication({ id: bot.id }, gatedAdminCtx),
+        approveChatbotPublication({ id: bot.id }, gatedAdminCtx),
+      ])
+
+      expect(
+        results.filter((result) => result.status === 'fulfilled')
+      ).toHaveLength(1)
+      expect(
+        results.find((result) => result.status === 'rejected')?.reason.message
+      ).toContain('approval could not be completed')
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({
+          where: { id: bot.id },
+          select: { status: true },
+        })
+      ).resolves.toMatchObject({ status: ChatbotStatus.PUBLISHED })
+    })
+
+    it('refuses to publish when the owner lost publishing capability while pending', async () => {
+      // The bot reached PENDING via a request that required the capability, but
+      // ops revoked aiChatbotPublishingEnabled before the admin acted. The
+      // account-level gate must still hold at the moment the bot goes live, so
+      // enablePublishing() is deliberately NOT called here.
+      const bot = await seedChatbot(ChatbotStatus.PENDING_APPROVAL)
+
+      await expect(
+        approveChatbotPublication({ id: bot.id }, adminCtx)
+      ).rejects.toThrow('no longer approved')
+
+      const row = await prisma.chatbot.findUniqueOrThrow({
+        where: { id: bot.id },
+        select: { status: true },
+      })
+      expect(row.status).toBe('PENDING_APPROVAL')
+    })
+
+    it('rejects approving a bot that is not pending (DRAFT)', async () => {
+      const bot = await seedChatbot(ChatbotStatus.DRAFT)
+
+      await expect(
+        approveChatbotPublication({ id: bot.id }, adminCtx)
+      ).rejects.toThrow('Cannot approve from status DRAFT')
+    })
+
+    it('rejects a non-admin caller and makes no change', async () => {
+      const bot = await seedChatbot(ChatbotStatus.PENDING_APPROVAL)
+
+      await expect(
+        approveChatbotPublication({ id: bot.id }, userOneCtx)
+      ).rejects.toThrow('Not authorized')
+
+      const row = await prisma.chatbot.findUniqueOrThrow({
+        where: { id: bot.id },
+        select: { status: true },
+      })
+      expect(row.status).toBe('PENDING_APPROVAL')
+    })
+  })
+
+  describe('rejectChatbotPublication', () => {
+    it('moves a PENDING bot to REJECTED with a review comment', async () => {
+      const bot = await seedChatbot(ChatbotStatus.PENDING_APPROVAL)
+
+      const result = await rejectChatbotPublication(
+        { id: bot.id, comment: 'scope too broad' },
+        adminCtx
+      )
+
+      expect(result?.status).toBe('REJECTED')
+      expect(result?.reviewComment).toBe('scope too broad')
+    })
+
+    it.each([
+      ['empty', ''],
+      ['whitespace-only', ' \t\n'],
+    ])('rejects a %s review comment without changing the bot', async (_, comment) => {
+      const bot = await seedChatbot(ChatbotStatus.PENDING_APPROVAL)
+
+      await expect(
+        rejectChatbotPublication({ id: bot.id, comment }, adminCtx)
+      ).rejects.toThrow('Review comment must not be empty')
+
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({
+          where: { id: bot.id },
+          select: { status: true, reviewComment: true },
+        })
+      ).resolves.toMatchObject({
+        status: ChatbotStatus.PENDING_APPROVAL,
+        reviewComment: null,
+      })
+    })
+
+    it('rejects a non-admin caller', async () => {
+      const bot = await seedChatbot(ChatbotStatus.PENDING_APPROVAL)
+
+      await expect(
+        rejectChatbotPublication({ id: bot.id, comment: ' ' }, userOneCtx)
+      ).rejects.toThrow('Not authorized')
+    })
+
+    it('returns null for a missing bot before validating the comment', async () => {
+      await expect(
+        rejectChatbotPublication(
+          { id: '00000000-0000-0000-0000-000000000000', comment: ' ' },
+          adminCtx
+        )
+      ).resolves.toBeNull()
+    })
+  })
+})

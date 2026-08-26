@@ -37,7 +37,7 @@ export async function GET(
       chatbotId
     )
 
-    let availableModels = getModelsForChatbot(chatbotResult.chatbot, credits)
+    let availableModels = getModelsForChatbot(chatbotResult.chatbot)
 
     // Phase A: anonymous (LTI guest) restricted to fallback models only.
     // Phase B replaces this with reasoning-effort tier gating so guests can
@@ -49,7 +49,7 @@ export async function GET(
     const automaticModelId =
       authMode === 'anonymous'
         ? (availableModels[0]?.id ?? null)
-        : getAutomaticModelId(credits, chatbotResult.chatbot.allowedModelIds)
+        : getAutomaticModelId(chatbotResult.chatbot.allowedModelIds)
 
     // Resolve the refill moment server-side: the period maths lives here, and
     // sending an absolute timestamp lets the client render it in the reader's

@@ -1,6 +1,7 @@
 # 8. Use GrowthBook for shared feature flags
 
-- **Status:** Accepted — 2026-08-06
+- **Status:** Accepted — 2026-08-06; authorization constraint partially
+  superseded by [ADR 0038](./0038-backend-enforced-feature-entitlements.md)
 - **Deciders:** KlickerUZH maintainers
 
 ## Context
@@ -34,8 +35,10 @@ leak targeting context into one another.
 The shared actor attributes are stable Klicker id, actor type, and role. Each
 adapter owns the normalized deployment environment and adds it to evaluations.
 Email is excluded. Missing configuration, an invalid non-empty environment,
-and unavailable boolean definitions fail closed to false. Flags control rollout
-and presentation, never authentication or authorization.
+and unavailable boolean definitions fail closed to false. At the time of this
+decision, flags controlled rollout and presentation only. ADR 0038 later
+permits a flag to become an additional backend-enforced feature entitlement;
+it still cannot replace authentication or resource authorization.
 
 Existing preview booleans migrate incrementally. A field remains authoritative
 until every consumer for that behavior has moved; deleting the database or
@@ -66,7 +69,7 @@ upgrade path for a sensitive flag.
 The cluster must expose a browser-accessible, CORS-enabled HTTPS SDK endpoint in
 addition to its internal service. GrowthBook feature definitions and ordinary
 client-side targeting rules are observable in browser traffic, so sensitive
-attributes and authorization decisions are prohibited.
+attributes and browser-only authorization decisions are prohibited.
 
 Each adopting app or service owns its connectivity configuration and must be
 tested with missing configuration. Browser definitions load on provider mount;

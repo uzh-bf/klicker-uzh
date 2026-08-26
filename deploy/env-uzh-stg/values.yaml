@@ -33,7 +33,7 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: 'c8e1c9b22c96'
+        rollout.klicker.uzh.ch/release: 'c8d22ce29521'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
@@ -58,7 +58,7 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: 'c8e1c9b22c96'
+        rollout.klicker.uzh.ch/release: 'c8d22ce29521'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
@@ -80,7 +80,7 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: 'c8e1c9b22c96'
+        rollout.klicker.uzh.ch/release: 'c8d22ce29521'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
@@ -114,7 +114,7 @@ hatchet:
 auth:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'c8e1c9b22c96'
+    rollout.klicker.uzh.ch/release: 'c8d22ce29521'
 
   replicaCount: 1
 
@@ -169,7 +169,7 @@ chat:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'c8e1c9b22c96'
+    rollout.klicker.uzh.ch/release: 'c8d22ce29521'
 
   openai:
     baseUrl: 'http://litellm.stg-litellm.svc.cluster.local:4000/v1'
@@ -180,7 +180,7 @@ chat:
 
   automaticModels:
     primaryId: auto
-    fallbackId: gpt-4.1-mini
+    fallbackId: gpt-5.6-luna
 
   modelRegistry:
     # "Auto" routes through the LiteLLM auto-router, which self-selects the
@@ -191,8 +191,9 @@ chat:
     # therefore use Auto by default; explicit model selections remain respected.
     # A chatbot can be pinned to Auto-only via its DB columns
     # (modelSelection=false + allowedModelIds=["auto"]); see the vorkurs chatbot.
-    # cost mirrors the gpt-5.6-luna tier (the typical COMPLEX route); REASONING
-    # (gpt-5.6-sol-medium) is rare. Tune if the routed mix shifts.
+    # The accounting rate is the accepted rounded blend for an observed
+    # generation mix of about 90% Luna and 10% Sol. Classifier and embedding
+    # overhead remain outside the registry's selected-model token fields.
     - id: auto
       deploymentId: klickeruzh/azure/auto-router
       name: Auto
@@ -200,15 +201,36 @@ chat:
       supportsImageAttachments: true
       usesResponsesApi: true
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
-        input: 1.25
-        output: 10.0
+        input: 1.0
+        output: 5.0
+    - id: gpt-5.6-luna
+      deploymentId: klickeruzh/azure/gpt-5.6-luna
+      name: GPT-5.6 Luna
+      description: OpenAI reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
+        - xhigh
+      fallback: true
+      usageClass: BASE
+      maxOutputTokens: 4096
+      cost:
+        input: 0.2
+        output: 1.2
     - id: gpt-4.1
       deploymentId: klickeruzh/azure/gpt-4.1
       name: GPT-4.1
       description: OpenAI model
       supportsImageAttachments: true
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 2.0
         output: 8.0
@@ -225,6 +247,8 @@ chat:
         - medium
         - high
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 1.25
         output: 10.0
@@ -241,9 +265,11 @@ chat:
         - high
         - xhigh
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
-        input: 1.25
-        output: 10.0
+        input: 2.5
+        output: 15.0
     - id: gpt-5.5
       deploymentId: klickeruzh/azure/gpt-5.5
       name: GPT-5.5
@@ -257,6 +283,8 @@ chat:
         - high
         - xhigh
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 5.0
         output: 30.0
@@ -265,7 +293,9 @@ chat:
       name: GPT-4.1 Mini
       description: Small OpenAI model
       supportsImageAttachments: true
-      fallback: true
+      fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 0.4
         output: 1.6
@@ -399,7 +429,7 @@ frontendPWA:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'c8e1c9b22c96'
+    rollout.klicker.uzh.ch/release: 'c8d22ce29521'
 
   replicaCount: 1
 
@@ -452,7 +482,7 @@ frontendPWA:
 frontendManage:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'c8e1c9b22c96'
+    rollout.klicker.uzh.ch/release: 'c8d22ce29521'
 
   replicaCount: 1
 
@@ -506,7 +536,7 @@ frontendControl:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'c8e1c9b22c96'
+    rollout.klicker.uzh.ch/release: 'c8d22ce29521'
 
   replicaCount: 1
 
@@ -560,7 +590,7 @@ backendGraphql:
   betaSavedGroupId: grp_2CeKcuxYw3c567fSV7CPPQ
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'c8e1c9b22c96'
+    rollout.klicker.uzh.ch/release: 'c8d22ce29521'
 
   replicaCount: 1
 
@@ -630,7 +660,7 @@ backendGraphql:
 olatApi:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'c8e1c9b22c96'
+    rollout.klicker.uzh.ch/release: 'c8d22ce29521'
 
   replicaCount: 1
 
@@ -683,7 +713,7 @@ olatApi:
 lti:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'c8e1c9b22c96'
+    rollout.klicker.uzh.ch/release: 'c8d22ce29521'
   replicaCount: 1
 
   affinity:
@@ -732,7 +762,7 @@ responseApi:
   priorityClassName: staging-workload
 
   podAnnotations:
-    rollout.klicker.uzh.ch/release: 'c8e1c9b22c96'
+    rollout.klicker.uzh.ch/release: 'c8d22ce29521'
 
   replicaCount: 1
 
@@ -786,7 +816,7 @@ assessment:
   frontendPWA:
     priorityClassName: staging-workload
     podAnnotations:
-      rollout.klicker.uzh.ch/release: 'c8e1c9b22c96'
+      rollout.klicker.uzh.ch/release: 'c8d22ce29521'
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -850,7 +880,7 @@ assessment:
   backendGraphql:
     priorityClassName: staging-workload
     podAnnotations:
-      rollout.klicker.uzh.ch/release: 'c8e1c9b22c96'
+      rollout.klicker.uzh.ch/release: 'c8d22ce29521'
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -928,7 +958,7 @@ assessment:
     priorityClassName: staging-workload
 
     podAnnotations:
-      rollout.klicker.uzh.ch/release: 'c8e1c9b22c96'
+      rollout.klicker.uzh.ch/release: 'c8d22ce29521'
     replicaCount: 1
 
     autoscaling:
