@@ -64,12 +64,14 @@ describe('KB knowledge graph config', () => {
         reservedMinorUnits: 100,
         settledMinorUnits: 50,
       },
-      costConfiguration
+      costConfiguration,
+      true
     )
 
     expect(result.costConfigurationReady).toBe(false)
     expect(result.costCurrency).toBe('EUR')
     expect(result.quotaCurrency).toBe('USD')
     expect(result.remainingSemesterQuotaMinorUnits).toBe(750)
+    expect(result.elementGenerationReady).toBe(true)
   })
 })

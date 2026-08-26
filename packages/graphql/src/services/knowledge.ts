@@ -33,6 +33,7 @@ import { GraphQLError } from 'graphql'
 import { validate as validateUuid } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
 import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
+import { isElementGenerationGraphBundleReady } from './elementGenerationGraphReadiness.js'
 import { getKBGraphBundleCoordinates } from './kbGraphBundleCoordinates.js'
 import {
   getKBGraphRemainingQuota,
@@ -1792,6 +1793,7 @@ export interface KBKnowledgeGraphConfig {
   sourceContentDigest: string | null
   activeBuildId: string | null
   publishedBuildId: string | null
+  elementGenerationReady: boolean
   isStale: boolean
   startedAt: Date | null
   finishedAt: Date | null
@@ -1893,7 +1895,8 @@ export function getKBGraphBuildConfig(
     reservedMinorUnits: number
     settledMinorUnits: number
   } | null,
-  costConfiguration: ReturnType<typeof getKBGraphCostConfiguration>
+  costConfiguration: ReturnType<typeof getKBGraphCostConfiguration>,
+  elementGenerationReady: boolean
 ): KBKnowledgeGraphConfig {
   const quotaConfigurationMatches =
     quota === null ||
@@ -1920,6 +1923,7 @@ export function getKBGraphBuildConfig(
     sourceContentDigest: build?.sourceContentDigest ?? null,
     activeBuildId: kb.activeGraphBuildId,
     publishedBuildId: kb.publishedGraphBuildId,
+    elementGenerationReady,
     isStale,
     startedAt: build?.startedAt ?? null,
     finishedAt: build?.finishedAt ?? null,
@@ -1971,7 +1975,17 @@ export async function getKbKnowledgeGraphConfig(
             kbId: kb.id,
             status: DB.KBGraphBuildStatus.SUCCEEDED,
           },
-          select: { sourceContentDigest: true },
+          select: {
+            sourceContentDigest: true,
+            status: true,
+            graphBundleContainerName: true,
+            graphBundleBlobPrefix: true,
+            graphBundleStorageName: true,
+            graphBundleSha256: true,
+            graphSha256: true,
+            graphManifestSchemaVersion: true,
+            graphManifestArtifact: true,
+          },
         })
       : Promise.resolve(null),
   ])
@@ -1994,7 +2008,14 @@ export async function getKbKnowledgeGraphConfig(
       ? publishedBuild.sourceContentDigest !==
         (await computeKBContentDigest(ctx.prisma, kb.id))
       : false
-  return getKBGraphBuildConfig(kb, build, isStale, quota, costConfiguration)
+  return getKBGraphBuildConfig(
+    kb,
+    build,
+    isStale,
+    quota,
+    costConfiguration,
+    isElementGenerationGraphBundleReady(publishedBuild)
+  )
 }
 
 async function readOwnedPublishedKBGraph(
@@ -2295,11 +2316,31 @@ export async function rebuildKbKnowledgeGraph(
       settledMinorUnits: true,
     },
   })
+  const publishedBuild = result.kb.publishedGraphBuildId
+    ? await ctx.prisma.kBGraphBuild.findFirst({
+        where: {
+          id: result.kb.publishedGraphBuildId,
+          kbId,
+          status: DB.KBGraphBuildStatus.SUCCEEDED,
+        },
+        select: {
+          status: true,
+          graphBundleContainerName: true,
+          graphBundleBlobPrefix: true,
+          graphBundleStorageName: true,
+          graphBundleSha256: true,
+          graphSha256: true,
+          graphManifestSchemaVersion: true,
+          graphManifestArtifact: true,
+        },
+      })
+    : null
   return getKBGraphBuildConfig(
     result.kb,
     result.build,
     isStale,
     quota,
-    costConfiguration
+    costConfiguration,
+    isElementGenerationGraphBundleReady(publishedBuild)
   )
 }
