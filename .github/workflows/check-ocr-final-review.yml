@@ -31,14 +31,21 @@ jobs:
           github-token: ${{ github.token }}
           script: |
             const branch = context.payload.repository.default_branch
+            const workflowSha = context.workflowSha
             const response = await github.rest.repos.getBranch({
               owner: context.repo.owner,
               repo: context.repo.repo,
               branch,
             })
             const sha = response.data?.commit?.sha
-            if (!/^[0-9a-f]{40}$/.test(sha ?? '')) {
-              core.setFailed('Trusted default-branch commit is missing')
+            if (
+              !/^[0-9a-f]{40}$/.test(sha ?? '') ||
+              !/^[0-9a-f]{40}$/.test(workflowSha ?? '') ||
+              sha !== workflowSha
+            ) {
+              core.setFailed(
+                'Workflow definition is not the current trusted default-branch commit'
+              )
               return
             }
             core.setOutput('trusted_sha', sha)

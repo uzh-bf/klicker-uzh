@@ -270,6 +270,7 @@ function parseStackReviewMetadata(body) {
       'topology_pass',
       'trusted_policy_sha',
       'workflow_head_sha',
+      'workflow_sha',
       'workflow_path',
       'workflow_run_id',
       'workflow_url',
@@ -288,6 +289,8 @@ function parseStackReviewMetadata(body) {
         !/^fsr-[0-9a-f]{24}$/.test(metadata.root_review_id ?? '')) ||
       !validSha(metadata.workflow_head_sha) ||
       !validSha(metadata.trusted_policy_sha) ||
+      !validSha(metadata.workflow_sha) ||
+      metadata.workflow_sha !== metadata.trusted_policy_sha ||
       !validDigest(metadata.manifest_digest) ||
       !validDigest(metadata.policy_digest) ||
       !validDigest(metadata.stack_identity_digest) ||
@@ -339,13 +342,39 @@ function parseStackReviewMetadata(body) {
           !range ||
           typeof range !== 'object' ||
           Object.keys(range).some(
-            (key) => !['base_sha', 'head_sha', 'layer_number'].includes(key)
+            (key) =>
+              !['base_sha', 'head_sha', 'layer_number', 'files'].includes(key)
           ) ||
           !validSha(range.base_sha) ||
           !validSha(range.head_sha) ||
           range.base_sha === range.head_sha ||
           !Number.isSafeInteger(range.layer_number) ||
-          range.layer_number < 1
+          range.layer_number < 1 ||
+          !Array.isArray(range.files) ||
+          new Set(range.files.map((file) => file?.filename)).size !==
+            range.files.length ||
+          range.files.some(
+            (file) =>
+              !file ||
+              typeof file !== 'object' ||
+              Object.keys(file).some(
+                (key) => !['filename', 'changed_line_ranges'].includes(key)
+              ) ||
+              !safeRepositoryPath(file.filename) ||
+              !Array.isArray(file.changed_line_ranges) ||
+              file.changed_line_ranges.some(
+                (lineRange) =>
+                  !lineRange ||
+                  typeof lineRange !== 'object' ||
+                  Object.keys(lineRange).some(
+                    (key) => !['start_line', 'end_line'].includes(key)
+                  ) ||
+                  !Number.isSafeInteger(lineRange.start_line) ||
+                  !Number.isSafeInteger(lineRange.end_line) ||
+                  lineRange.start_line < 1 ||
+                  lineRange.end_line < lineRange.start_line
+              )
+          )
       ) ||
       new Set(metadata.review_ranges.map((range) => range.layer_number))
         .size !== metadata.review_ranges.length ||
@@ -598,6 +627,7 @@ async function canPreserveStackReviewAcrossBaseAdvance({
         safeRepositoryPath(filePath) &&
         (!previousPath || safeRepositoryPath(previousPath)) &&
         !requiresColdIncrementalReview(filePath) &&
+        (!previousPath || !requiresColdIncrementalReview(previousPath)) &&
         !stackPaths.has(filePath) &&
         (!previousPath || !stackPaths.has(previousPath))
       )
@@ -672,6 +702,7 @@ async function compareStackRange({ github, context, baseSha, headSha }) {
 
 function allowedStackIncrementalFile(file, remediationPaths) {
   return (
+    file.patch_complete &&
     !requiresColdIncrementalReview(file.filename) &&
     !file.previous_filename &&
     remediationPaths.has(file.filename)
@@ -853,7 +884,13 @@ async function buildStackReviewPlan({
     dispositionDigest: disposition.disposition_digest,
     dispositionIds: disposition.entries.map((entry) => entry.finding_id),
     mode: 'incremental',
-    reviewRanges: comparisons.map(({ range }) => range),
+    reviewRanges: comparisons.map(({ comparison, range }) => ({
+      ...range,
+      files: comparison.files.map((file) => ({
+        changed_line_ranges: file.changed_line_ranges,
+        filename: file.filename,
+      })),
+    })),
     rootHead: root.head_sha,
     rootReviewId: root.review_id,
   }
@@ -1739,6 +1776,18 @@ function combineOCRResults(results, layerNumbers = null) {
   }
 }
 
+function rangeAttestsFinding(range, filePath, startLine, endLine) {
+  const file = range?.files?.find(
+    (candidate) => candidate.filename === filePath
+  )
+  return Boolean(
+    file?.changed_line_ranges?.some(
+      ({ start_line: changedStart, end_line: changedEnd }) =>
+        changedStart <= endLine && changedEnd >= startLine
+    )
+  )
+}
+
 function validateFindingComment(comment, index, knownPaths) {
   const filePath = String(comment?.path ?? '')
   const startLine = Number(comment?.start_line)
@@ -1771,7 +1820,12 @@ function validateFindingComment(comment, index, knownPaths) {
   }
 }
 
-function validateTopologyResult(result, manifest) {
+function validateTopologyResult(
+  result,
+  manifest,
+  mode = 'full',
+  reviewRanges = []
+) {
   if (
     result?.status !== 'complete' ||
     result.finish_reason !== 'stop' ||
@@ -1813,6 +1867,15 @@ function validateTopologyResult(result, manifest) {
       ) ||
       JSON.stringify([...layers].sort((left, right) => left - right)) !==
         JSON.stringify(expectedLayers) ||
+      (mode === 'incremental' &&
+        !layers.some((layer) =>
+          rangeAttestsFinding(
+            reviewRanges.find((range) => range.layer_number === layer),
+            filePath,
+            startLine,
+            endLine
+          )
+        )) ||
       !Number.isSafeInteger(startLine) ||
       !Number.isSafeInteger(endLine) ||
       startLine < 1 ||
@@ -1913,6 +1976,7 @@ function renderStackReview({
   trustedPolicySha,
   workflowUrl,
   workflowHeadSha,
+  workflowSha = workflowHeadSha,
   workflowRunId,
 }) {
   const code = validateOCRResult(codeResult)
@@ -1923,16 +1987,7 @@ function renderStackReview({
     manifest.path_index.map((entry) => [entry.filename, entry])
   )
   const knownPaths = new Set(pathEntries.keys())
-  const effectiveReviewRanges =
-    mode === 'incremental' && reviewRanges.length === 0
-      ? [
-          {
-            base_sha: rootHead,
-            head_sha: headSha,
-            layer_number: manifest.layers.length,
-          },
-        ]
-      : reviewRanges
+  const effectiveReviewRanges = reviewRanges
   if (
     mode === 'incremental' &&
     (effectiveReviewRanges.length === 0 ||
@@ -1944,6 +1999,7 @@ function renderStackReview({
           !validSha(range.base_sha) ||
           !validSha(range.head_sha) ||
           range.base_sha === range.head_sha ||
+          !Array.isArray(range.files) ||
           range.head_sha !== manifest.layers[range.layer_number - 1].head_sha
       ))
   ) {
@@ -1964,6 +2020,7 @@ function renderStackReview({
       mode === 'incremental' &&
       (!Array.isArray(layerNumbers) ||
         layerNumbers.length === 0 ||
+        layerNumbers.length !== 1 ||
         new Set(layerNumbers).size !== layerNumbers.length ||
         layerNumbers.some(
           (layerNumber) =>
@@ -1976,9 +2033,29 @@ function renderStackReview({
         `Incremental OCR finding ${index + 1} has invalid layer provenance`
       )
     }
+    if (
+      mode === 'incremental' &&
+      !rangeAttestsFinding(
+        effectiveReviewRanges.find(
+          (range) => range.layer_number === layerNumbers[0]
+        ),
+        validated.path,
+        validated.startLine,
+        validated.endLine
+      )
+    ) {
+      throw new Error(
+        `Incremental OCR finding ${index + 1} is outside its repair range`
+      )
+    }
     return { ...validated, layerNumbers }
   })
-  const topology = validateTopologyResult(topologyResult, manifest)
+  const topology = validateTopologyResult(
+    topologyResult,
+    manifest,
+    mode,
+    effectiveReviewRanges
+  )
   if (manifest.top.sha !== headSha) {
     throw new Error('Stack manifest top head does not match publication head')
   }
@@ -1992,6 +2069,8 @@ function renderStackReview({
   if (
     !/^[0-9a-f]{40}$/.test(workflowHeadSha ?? '') ||
     !validSha(trustedPolicySha ?? workflowHeadSha) ||
+    !validSha(workflowSha) ||
+    workflowSha !== (trustedPolicySha ?? workflowHeadSha) ||
     !Number.isSafeInteger(workflowRunId) ||
     workflowRunId <= 0 ||
     typeof workflowUrl !== 'string' ||
@@ -2057,6 +2136,7 @@ function renderStackReview({
     workflow_url: workflowUrl,
     trusted_policy_sha: trustedPolicySha ?? workflowHeadSha,
     workflow_head_sha: workflowHeadSha,
+    workflow_sha: workflowSha,
     workflow_run_id: workflowRunId,
   }
   const sections = [
@@ -2153,7 +2233,12 @@ function buildTopologyRequest({ manifest, codeSummary, rulesText, schema }) {
   }
 }
 
-function topologyCodeSummary(codeResult, manifest) {
+function topologyCodeSummary(
+  codeResult,
+  manifest,
+  mode = 'full',
+  reviewRanges = []
+) {
   const knownPaths = new Set(manifest.path_index.map((entry) => entry.filename))
   const code = validateOCRResult(codeResult, knownPaths)
   const pathEntries = new Map(
@@ -2180,6 +2265,20 @@ function topologyCodeSummary(codeResult, manifest) {
           `Cumulative OCR finding ${index + 1} has invalid layer provenance`
         )
       }
+      if (
+        mode === 'incremental' &&
+        (layers.length !== 1 ||
+          !rangeAttestsFinding(
+            reviewRanges.find((range) => range.layer_number === layers[0]),
+            comment.path,
+            comment.start_line,
+            comment.end_line
+          ))
+      ) {
+        throw new Error(
+          `Incremental OCR finding ${index + 1} is outside its repair range`
+        )
+      }
       return {
         category: comment.category,
         layers,
@@ -2197,6 +2296,8 @@ async function callTopologyModel({
   codeResult,
   fetchImpl = globalThis.fetch,
   manifestBundle,
+  mode = 'full',
+  reviewRanges = [],
   rulesText = loadTopologyRules(),
   schema = loadTopologySchema(),
 }) {
@@ -2204,7 +2305,12 @@ async function callTopologyModel({
     throw new Error('OPENROUTER_API_KEY is required for topology review')
   if (typeof fetchImpl !== 'function') throw new Error('fetch is unavailable')
   const body = buildTopologyRequest({
-    codeSummary: topologyCodeSummary(codeResult, manifestBundle.manifest),
+    codeSummary: topologyCodeSummary(
+      codeResult,
+      manifestBundle.manifest,
+      mode,
+      reviewRanges
+    ),
     manifest: manifestBundle.manifest,
     rulesText,
     schema,
@@ -2253,7 +2359,9 @@ async function callTopologyModel({
       status: 'complete',
       usage: payload.usage,
     },
-    manifestBundle.manifest
+    manifestBundle.manifest,
+    mode,
+    reviewRanges
   )
   return {
     ...parsed,
@@ -2342,6 +2450,7 @@ async function publishStackReview({
     workflowUrl: workflowRunUrl(context),
     trustedPolicySha: trustedSha ?? context.sha,
     workflowHeadSha: context.sha,
+    workflowSha: context.workflowSha ?? context.sha,
     workflowRunId: context.runId,
   })
   const review = await github.rest.pulls.createReview({
@@ -2511,18 +2620,34 @@ function runTopologyCli() {
     console.log('OCR range results combined')
     return
   }
-  const [manifestPath, codeResultPath, outputPath, expectedManifestDigest] =
-    args
+  const [
+    manifestPath,
+    codeResultPath,
+    outputPath,
+    expectedManifestDigest,
+    mode = 'full',
+    reviewRangesJson = '[]',
+  ] = args
   if (
     command !== 'topology' ||
     !manifestPath ||
     !codeResultPath ||
     !outputPath ||
-    !validDigest(expectedManifestDigest)
+    !validDigest(expectedManifestDigest) ||
+    !['full', 'incremental'].includes(mode)
   ) {
     throw new Error(
-      'Usage: final-ai-stack-review.js topology <manifest> <ocr-result> <output> <manifest-digest>'
+      'Usage: final-ai-stack-review.js topology <manifest> <ocr-result> <output> <manifest-digest> [mode] [review-ranges-json]'
     )
+  }
+  let reviewRanges
+  try {
+    reviewRanges = JSON.parse(reviewRangesJson)
+  } catch {
+    throw new Error('Topology review ranges are not valid JSON')
+  }
+  if (!Array.isArray(reviewRanges)) {
+    throw new Error('Topology review ranges are not an array')
   }
   const manifestBundle = readSnapshotBundle(
     manifestPath,
@@ -2533,6 +2658,8 @@ function runTopologyCli() {
     apiKey: process.env[OPENROUTER_API_KEY_ENV],
     codeResult,
     manifestBundle,
+    mode,
+    reviewRanges,
   })
     .then((result) => {
       fs.writeFileSync(outputPath, JSON.stringify(result), {

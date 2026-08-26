@@ -164,7 +164,14 @@ function stackFixture() {
     ],
     [
       'e'.repeat(40),
-      [{ filename: 'src/three.ts', additions: 5, deletions: 0 }],
+      [
+        {
+          filename: 'src/three.ts',
+          additions: 5,
+          deletions: 0,
+          patch: '@@ -3,1 +4,1 @@\n-old line\n+new line',
+        },
+      ],
     ],
   ])
   const responses = new Map([
@@ -1290,6 +1297,19 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
     rootReviewId: rootMetadata.review_id,
     dispositionIds: rootMetadata.finding_ids,
     dispositionDigest: 'a'.repeat(64),
+    reviewRanges: [
+      {
+        base_sha: 'e'.repeat(40),
+        head_sha: 'f'.repeat(40),
+        layer_number: 4,
+        files: [
+          {
+            filename: 'src/three.ts',
+            changed_line_ranges: [{ start_line: 4, end_line: 4 }],
+          },
+        ],
+      },
+    ],
     policyDigest: initialPlan.policyDigest,
     topologyResult: topologyResult(),
     workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
@@ -1306,10 +1326,20 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
   responses.set('e'.repeat(40), nextHead)
   responses.set('f'.repeat(40), nextHead)
   files.set('e'.repeat(40), [
-    { filename: 'src/one.ts', additions: 2, deletions: 1 },
+    {
+      filename: 'src/one.ts',
+      additions: 2,
+      deletions: 1,
+      patch: '@@ -3,1 +4,1 @@\n-old line\n+new line',
+    },
   ])
   files.set('f'.repeat(40), [
-    { filename: 'src/one.ts', additions: 2, deletions: 1 },
+    {
+      filename: 'src/one.ts',
+      additions: 2,
+      deletions: 1,
+      patch: '@@ -3,1 +4,1 @@\n-old line\n+new line',
+    },
   ])
   github.request = async () => ({
     data: [
@@ -1349,6 +1379,19 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
     root_review_id: rootMetadata.review_id,
     disposition_digest: 'a'.repeat(64),
     disposition_ids: rootMetadata.finding_ids,
+    review_ranges: [
+      {
+        base_sha: 'e'.repeat(40),
+        head_sha: nextHead,
+        layer_number: 4,
+        files: [
+          {
+            filename: 'src/one.ts',
+            changed_line_ranges: [{ start_line: 4, end_line: 4 }],
+          },
+        ],
+      },
+    ],
   }
   state.reviews.push({
     id: 702,
@@ -1507,11 +1550,21 @@ test('attests bounded repairs across changed lower stack layers', async () => {
     pulls[11 + index].base.sha = currentBases[index]
     responses.set(currentBases[index], head)
     files.set(currentBases[index], [
-      { filename: 'src/one.ts', additions: 1, deletions: 1 },
+      {
+        filename: 'src/one.ts',
+        additions: 1,
+        deletions: 1,
+        patch: '@@ -3,1 +4,1 @@\n-old line\n+new line',
+      },
     ])
     responses.set(rootMetadata.layer_head_shas[index], head)
     files.set(rootMetadata.layer_head_shas[index], [
-      { filename: 'src/one.ts', additions: 1, deletions: 1 },
+      {
+        filename: 'src/one.ts',
+        additions: 1,
+        deletions: 1,
+        patch: '@@ -3,1 +4,1 @@\n-old line\n+new line',
+      },
     ])
   })
   github.request = async () => ({
@@ -1643,6 +1696,12 @@ test('publishes incremental code findings with their exact owning repair layer',
         base_sha: membership.members[0].pull.base.sha,
         head_sha: membership.members[0].pull.head.sha,
         layer_number: 1,
+        files: [
+          {
+            filename: 'src/one.ts',
+            changed_line_ranges: [{ start_line: 4, end_line: 4 }],
+          },
+        ],
       },
     ],
     topologyResult: topologyResult(),
@@ -1671,6 +1730,12 @@ test('publishes incremental code findings with their exact owning repair layer',
             base_sha: membership.members[0].pull.base.sha,
             head_sha: membership.members[0].pull.head.sha,
             layer_number: 1,
+            files: [
+              {
+                filename: 'src/one.ts',
+                changed_line_ranges: [{ start_line: 4, end_line: 4 }],
+              },
+            ],
           },
         ],
         topologyResult: topologyResult(),
@@ -1783,6 +1848,7 @@ test('renders consolidated code and topology findings with one stack marker', as
     trustedPolicySha: 'c'.repeat(40),
     workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
     workflowHeadSha: 'a'.repeat(40),
+    workflowSha: 'c'.repeat(40),
     workflowRunId: 700,
   })
   assert.match(report, /final-ai-stack-review\/v2/)

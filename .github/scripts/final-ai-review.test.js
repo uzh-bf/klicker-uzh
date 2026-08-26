@@ -185,7 +185,7 @@ test('authorizes and starts only the immutable ready PR range', async () => {
     })),
     { context: 'final-ai-review', state: 'success' },
   ]
-  assert.equal(await authorizeFinalReview({ github, context, core }), false)
+  assert.equal(await authorizeFinalReview({ github, context, core }), true)
   assert.equal(
     await startFinalReview({
       github,
@@ -195,9 +195,9 @@ test('authorizes and starts only the immutable ready PR range', async () => {
       headSha,
       ...planInputs,
     }),
-    false
+    true
   )
-  assert.equal(statuses.length, 1)
+  assert.equal(statuses.length, 2)
 })
 
 test('writes an exact high-reasoning OCR config with mode 0600', () => {
@@ -699,6 +699,31 @@ test('selects incremental attestation only for bounded repaired changes', async 
     pull: state.pull,
   })
   assert.equal(advancedBase.mode, 'incremental')
+  for (const file of [
+    {
+      filename: 'src/unrelated.ts',
+      previous_filename: '.github/workflows/old.yml',
+      additions: 3,
+      deletions: 1,
+    },
+    {
+      filename: 'src/unrelated.ts',
+      previous_filename: 'src/example.ts',
+      additions: 3,
+      deletions: 1,
+    },
+  ]) {
+    state.comparisons[`${baseSha}...${'c'.repeat(40)}`] = {
+      status: 'ahead',
+      files: [file],
+    }
+    const renamedBase = await buildReviewPlan({
+      github,
+      context,
+      pull: state.pull,
+    })
+    assert.equal(renamedBase.mode, 'full')
+  }
   state.comparisons[`${baseSha}...${'c'.repeat(40)}`] = {
     status: 'ahead',
     files: [{ filename: 'src/example.ts', additions: 3, deletions: 1 }],

@@ -605,7 +605,9 @@ function parseReviewMetadata(body) {
       !/^[0-9a-f]{40}$/.test(metadata.head_sha ?? '') ||
       !/^[0-9a-f]{40}$/.test(metadata.root_head ?? '') ||
       !/^[0-9a-f]{40}$/.test(metadata.workflow_head_sha ?? '') ||
+      !/^[0-9a-f]{40}$/.test(metadata.workflow_sha ?? '') ||
       !/^[0-9a-f]{40}$/.test(metadata.trusted_policy_sha ?? '') ||
+      metadata.workflow_sha !== metadata.trusted_policy_sha ||
       !/^[0-9a-f]{64}$/.test(metadata.policy_digest ?? '') ||
       !/^[0-9a-f]{64}$/.test(metadata.background_digest ?? '') ||
       metadata.workflow_path !== FINAL_REVIEW_WORKFLOW_PATH ||
@@ -826,6 +828,86 @@ async function latestFullReview({ github, context, pull }) {
     }
   }
   return null
+}
+
+function finalReviewMetadataMatchesPlan(metadata, plan, pull) {
+  return (
+    metadata?.mode === plan.mode &&
+    metadata.base_sha === pull.base.sha &&
+    metadata.head_sha === pull.head.sha &&
+    metadata.root_head === plan.rootHead &&
+    metadata.root_review_id === plan.rootReviewId &&
+    metadata.policy_digest === plan.policyDigest &&
+    metadata.background_digest === plan.backgroundDigest &&
+    metadata.scope_kind === plan.scopeKind &&
+    metadata.stack_id === plan.stackId &&
+    metadata.stack_position === plan.stackPosition &&
+    metadata.stack_order_digest === plan.stackOrderDigest &&
+    metadata.disposition_digest === plan.dispositionDigest &&
+    JSON.stringify(metadata.disposition_ids ?? []) ===
+      JSON.stringify(plan.dispositionIds ?? [])
+  )
+}
+
+async function hasCurrentSuccessfulFinalReview({
+  github,
+  context,
+  pull,
+  plan,
+}) {
+  const artifacts = await listReviewArtifacts({ github, context, pull })
+  const candidates = artifacts
+    .map((artifact) => ({
+      artifact,
+      metadata: parseReviewMetadata(artifact.body),
+    }))
+    .filter(
+      ({ artifact, metadata }) =>
+        artifact.kind === 'review' &&
+        artifact.user?.login === FINAL_REVIEW_BOT &&
+        artifact.state === 'COMMENTED' &&
+        artifact.commit_id === pull.head.sha &&
+        finalReviewMetadataMatchesPlan(metadata, plan, pull)
+    )
+    .sort(
+      (left, right) =>
+        artifactTimestamp(right.artifact) - artifactTimestamp(left.artifact)
+    )
+
+  for (const candidate of candidates) {
+    const run =
+      typeof github.rest.actions?.getWorkflowRun === 'function'
+        ? await github.rest.actions.getWorkflowRun({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            run_id: candidate.metadata.workflow_run_id,
+          })
+        : null
+    const workflow = run?.data
+    if (
+      !workflow ||
+      workflow.id !== candidate.metadata.workflow_run_id ||
+      workflow.path !== FINAL_REVIEW_WORKFLOW_PATH ||
+      workflow.event !== 'issue_comment' ||
+      workflow.head_branch !== context.payload.repository.default_branch ||
+      workflow.head_sha !== candidate.metadata.workflow_head_sha ||
+      workflow.conclusion !== 'success' ||
+      workflow.repository?.full_name !== repositoryName(context)
+    ) {
+      continue
+    }
+    if (
+      await hasSuccessfulFinalReview(
+        github,
+        context,
+        pull.head.sha,
+        candidate.metadata.workflow_run_id
+      )
+    ) {
+      return true
+    }
+  }
+  return false
 }
 
 function dispositionEntries(metadata) {
@@ -1112,8 +1194,12 @@ async function buildReviewPlan({ github, context, pull, trustedSha }) {
           !isSafeRepositoryPath(filePath) ||
           (previousPath && !isSafeRepositoryPath(previousPath)) ||
           requiresColdIncrementalReview(filePath) ||
+          (previousPath && requiresColdIncrementalReview(previousPath)) ||
           rootFindingPaths.has(filePath) ||
-          remediationPaths.has(filePath)
+          remediationPaths.has(filePath) ||
+          (previousPath &&
+            (rootFindingPaths.has(previousPath) ||
+              remediationPaths.has(previousPath)))
         )
       })
     ) {
@@ -1257,7 +1343,14 @@ async function authorizeFinalReview({ github, context, core, trustedSha }) {
       'Final review requires an open, ready PR targeting the default branch or a verified native stack'
     )
   }
-  if (await hasSuccessfulFinalReview(github, context, pull.head.sha)) {
+  if (
+    await hasCurrentSuccessfulFinalReview({
+      github,
+      context,
+      pull,
+      plan,
+    })
+  ) {
     return deny('Final review already succeeded for the current head')
   }
 
@@ -1319,7 +1412,16 @@ async function startFinalReview({
   ) {
     throw new Error('PR is no longer eligible for this final-review run')
   }
-  if (await hasSuccessfulFinalReview(github, context, headSha)) return false
+  if (
+    await hasCurrentSuccessfulFinalReview({
+      github,
+      context,
+      pull,
+      plan,
+    })
+  ) {
+    return false
+  }
 
   await setCommitStatus({
     github,
@@ -1534,12 +1636,16 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
     throw new Error('Final review root head is not a full commit SHA')
   }
   const workflowHeadSha = reviewMetadata.workflowHeadSha ?? ''
+  const workflowSha = reviewMetadata.workflowSha ?? workflowHeadSha
   const trustedPolicySha = reviewMetadata.trustedPolicySha ?? workflowHeadSha
   if (!/^[0-9a-f]{40}$/.test(workflowHeadSha)) {
     throw new Error('Final review workflow provenance is incomplete')
   }
   if (!/^[0-9a-f]{40}$/.test(trustedPolicySha)) {
     throw new Error('Final review policy provenance commit is incomplete')
+  }
+  if (!/^[0-9a-f]{40}$/.test(workflowSha) || workflowSha !== trustedPolicySha) {
+    throw new Error('Final review workflow definition provenance is incomplete')
   }
   if (!/^[0-9a-f]{64}$/.test(reviewMetadata.policyDigest ?? '')) {
     throw new Error('Final review policy provenance is incomplete')
@@ -1591,6 +1697,7 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
     workflow_path: FINAL_REVIEW_WORKFLOW_PATH,
     trusted_policy_sha: trustedPolicySha,
     workflow_head_sha: workflowHeadSha,
+    workflow_sha: workflowSha,
     workflow_run_id: reviewMetadata.workflowRunId ?? 0,
   })} -->`
 
@@ -1680,6 +1787,7 @@ async function publishFinalReview({
     stackPosition: plan.stackPosition,
     trustedPolicySha: trustedSha ?? context.sha,
     workflowHeadSha: context.sha,
+    workflowSha: context.workflowSha ?? context.sha,
     workflowRunId: context.runId,
   })
   const review = await github.rest.pulls.createReview({
@@ -1823,6 +1931,7 @@ module.exports = {
   isPromotionCandidate,
   isTrustedPermission,
   getReviewPolicyDigest,
+  hasCurrentSuccessfulFinalReview,
   normalizeTitle,
   listReviewArtifacts,
   parseDispositionRecord,
