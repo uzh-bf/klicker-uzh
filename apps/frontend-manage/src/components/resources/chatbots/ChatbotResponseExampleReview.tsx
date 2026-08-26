@@ -593,7 +593,7 @@ function ChatbotResponseExampleReview({ chatbotId }: { chatbotId: string }) {
           secondaryLabel={t('shared.generic.cancel')}
           onSecondaryAction={closeEditor}
           escapeDisabled={editing}
-          data={{ cy: 'response-example-edit-modal' }}
+          dataContent={{ cy: 'response-example-edit-modal' }}
           dataPrimaryAction={{ cy: 'response-example-edit-submit' }}
           dataSecondaryAction={{ cy: 'response-example-edit-cancel' }}
           className={{ content: 'max-w-2xl pb-2' }}
