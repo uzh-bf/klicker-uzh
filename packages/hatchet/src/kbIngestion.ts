@@ -25,6 +25,7 @@ import {
 
 const KB_INGESTION_POLL_CONCURRENCY = 8
 const KB_INGESTION_POLL_LIMIT = 32
+const KB_INGESTION_CALLBACK_GRACE_MS = 5 * 60_000
 
 export type KBIngestionLogger = {
   info?: (
@@ -886,12 +887,16 @@ export async function monitorActiveKBIngestions(
   dependencies: MonitorKBIngestionsDependencies
 ): Promise<void> {
   const env = dependencies.env ?? process.env
+  const now = dependencies.now?.() ?? new Date()
   const activeWhere = {
     status: {
       in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
     },
     ingestionAttemptId: { not: null },
     externalOperationId: { not: null },
+    externalOperationStartedAt: {
+      lte: new Date(now.getTime() - KB_INGESTION_CALLBACK_GRACE_MS),
+    },
     OR: [
       {
         ingestionOperation: KBIngestionOperation.UPSERT,
@@ -911,9 +916,7 @@ export async function monitorActiveKBIngestions(
     return
   }
 
-  const pollWindow = Math.floor(
-    (dependencies.now?.() ?? new Date()).getTime() / 60_000
-  )
+  const pollWindow = Math.floor(now.getTime() / KB_INGESTION_CALLBACK_GRACE_MS)
   const skip =
     ((pollWindow % activeCount) * KB_INGESTION_POLL_LIMIT) % activeCount
   const query = {

@@ -678,7 +678,28 @@ describe('KB ingestion reconciliation', () => {
     resourceVersion: 3,
     contentSha256: CONTENT_SHA256,
     externalOperationId: OPERATION_ID,
+    externalOperationStartedAt: new Date('2026-07-26T11:50:00.000Z'),
   }
+
+  it('leaves fresh operations to the signed callback path', async () => {
+    const prisma = monitorPrisma([])
+    const apiClient = client()
+
+    await monitorActiveKBIngestions({
+      prisma: prisma as never,
+      client: apiClient,
+      now: () => NOW,
+    })
+
+    expect(prisma.kBResource.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        externalOperationStartedAt: {
+          lte: new Date('2026-07-26T11:55:00.000Z'),
+        },
+      }),
+    })
+    expect(apiClient.getOperation).not.toHaveBeenCalled()
+  })
 
   it('reconciles a succeeded delete only after serving is empty', async () => {
     const deletedResource = {
@@ -1042,7 +1063,7 @@ describe('KB ingestion reconciliation', () => {
     expect(peak).toBe(8)
   })
 
-  it('rotates a bounded 32-resource reconciliation window each minute', async () => {
+  it('rotates a bounded 32-resource reconciliation window every five minutes', async () => {
     const resources = Array.from({ length: 49 }, (_, index) => ({
       ...activeResource,
       id: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
@@ -1073,7 +1094,7 @@ describe('KB ingestion reconciliation', () => {
     await monitorActiveKBIngestions({
       prisma: prisma as never,
       client: client({ getOperation }),
-      now: () => new Date(60_000),
+      now: () => new Date(300_000),
     })
 
     expect(prisma.kBResource.findMany).toHaveBeenNthCalledWith(
