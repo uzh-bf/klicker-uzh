@@ -25,6 +25,6 @@ describe('chat model registry defaults', () => {
     expect(gpt51?.supportedReasoningEfforts).not.toContain('xhigh')
     // 'auto' maps to the LiteLLM complexity router deployment, which is the
     // registry's first non-fallback entry and therefore the default primary.
-    expect(getAutomaticModelId({ current: 100 })).toBe('auto')
+    expect(getAutomaticModelId()).toBe('auto')
   })
 })

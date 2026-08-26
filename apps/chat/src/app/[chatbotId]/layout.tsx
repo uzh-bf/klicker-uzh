@@ -1,4 +1,5 @@
 import { prisma } from '@klicker-uzh/prisma'
+import { ChatbotStatus } from '@klicker-uzh/prisma/client'
 import { notFound } from 'next/navigation'
 import { Assistant } from '../../components/assistant'
 import {
@@ -22,10 +23,18 @@ export default async function ChatLayout({
 
   const chatbot = await prisma.chatbot.findUnique({
     where: { id: chatbotId },
-    select: { id: true, name: true, avatar: true, systemPrompts: true },
+    select: {
+      id: true,
+      name: true,
+      avatar: true,
+      systemPrompts: true,
+      status: true,
+    },
   })
 
-  if (!chatbot) notFound()
+  // Only a PUBLISHED chatbot is reachable by participants; anything else 404s
+  // exactly like a missing bot (mirrors the API guard in apiGuards.ts).
+  if (!chatbot || chatbot.status !== ChatbotStatus.PUBLISHED) notFound()
 
   const initialModeOptions = resolveModeDescriptions(chatbot.systemPrompts)
   const initialModeOptionsAreFallback = !hasConfiguredModeDescriptions(

@@ -114,12 +114,13 @@ text. Keep the `/noLogin` assertion focused on the login action and concise
 return copy, not a raw redirect URL.
 
 For chat settings coverage, seed credits through the existing `setCredits`
-helper rather than mocking the credits route. A zero-credit response must leave
-only the fallback model available, reconcile an unavailable persisted model to
-that fallback, and expose the fallback notice in the sidebar-enabled mobile
-layout outside the closed drawer. Set the viewport before `visitChat`; embedded
-chat already owns its compact `EmbeddedCreditsBar` and should not receive the
-sidebar mobile bar.
+helper rather than mocking the credits route. A zero-credit response keeps the
+chatbot's allow-listed models visible and preserves the selected usage class.
+The runtime may choose only an allowed same-class fallback; when none exists,
+it denies the turn instead of switching classes. Assert the neutral model-
+availability notice in the sidebar-enabled mobile layout outside the closed
+drawer. Set the viewport before `visitChat`; embedded chat already owns its
+compact `EmbeddedCreditsBar` and should not receive the sidebar mobile bar.
 
 For chat welcome coverage, assert that the chatbot name and selected mode
 description are visible before clicking a starter. Starter clicks populate the
@@ -208,6 +209,7 @@ Cleanup dialogs:
 
   Leave `PLAYWRIGHT_RELEASE_MATRIX` unset for ordinary local and CI runs.
 
+- The public ARM64 pool is an opt-in path for same-repository, non-draft, non-bot PRs in the public repository with the rollout enabled (global variable or exact canary PR). Keep `filter-hosted`, `build-and-compile-hosted`, and `test-playwright-status` GitHub-hosted; keep pushes, fork PRs, drafts, bots, private repositories, and disabled rollouts on the hosted filter, build, and shard jobs. The caller predicate and the called workflow's `prepare` job both fail closed: the reusable workflow repeats the event, repository-visibility, head-repository, bot, draft, and rollout checks before checkout, then runs the changed-path `prepare` and `build-and-compile` jobs in the Playwright container on the `public-pr-arm64` group and exposes `should_run` as a workflow output. Public jobs must use read-only contents permission, receive no secrets, not publish service ports, and not persist checkout credentials; every shard needs a run-specific Hatchet volume. Preserve all eight shard artifact names when changing either path. Keep cancellation job-scoped: the hosted stages use distinct groups, the public reusable-workflow call owns the complete public-route group, the called workflow defines no concurrency, and `test-playwright-status` stays unconstrained so stale reporters cannot block current jobs. After every public container checkout, trust only the exact `GITHUB_WORKSPACE`; the mounted directory has a different host owner, and wildcard safe-directory rules are forbidden.
 - To avoid browser install hangs, prefer the Playwright Docker image matching the lockfile-resolved Playwright version, such as `mcr.microsoft.com/playwright:v<version>-noble`, and remove the separate browser install step.
 - In GitHub job containers, service dependencies are reached by service hostnames, not localhost: `postgres`, `redis_exec`, `redis_cache`, `redis_assessment_exec`, and `hatchet`.
 - App URLs can still be `127.0.0.1:<port>` when the apps run in the same job container as Playwright.

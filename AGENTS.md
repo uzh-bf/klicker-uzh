@@ -3,7 +3,8 @@
 ## Quick Reference
 
 - **Monorepo**: pnpm 11.x + Turborepo, Node.js 24 (Volta-pinned; see `volta` in root `package.json` for exact versions)
-- **Main branch**: `v3`
+- **Main branch**: `v3` (active development)
+- **Legacy branches**: `dev` and `master` belong to the older Klicker variant and are not actively developed.
 - **Package names**: `@klicker-uzh/<name>` (e.g., `@klicker-uzh/graphql`)
 
 ## Stacked PRs
@@ -195,8 +196,10 @@ OpenRouter supplies the selected models but does not make the routing decision.
 This adds one classifier request and, for semantic matching, one embedding
 request to the same external OpenRouter data boundary. It therefore adds local
 latency and usage cost. LiteLLM falls back from Sol medium to `gpt-5.1` on an
-upstream failure. Separately, when Chat credits reach zero, Chat selects
-`gpt-4.1-mini` before calling LiteLLM and bypasses Auto Mode.
+upstream failure. Separately, zero-credit fallback remains within the selected
+usage class. Chat can select allow-listed Luna for a BASE selection before
+calling LiteLLM; current ADVANCED selections such as Auto are denied while no
+ADVANCED fallback is allow-listed.
 
 The seeded Benibot exposes a deterministic local `doc_query` MCP tool in Tutor
 and Explainer modes. `post-start.sh` runs it at `http://localhost:1417/mcp`;

@@ -30,7 +30,7 @@ export default {
       usingPrimaryModel:
         'The standard model is used while credits are available.',
       usingFallbackModel:
-        'No credits remain, so new messages use the smaller model.',
+        'No credits remain. Some models may no longer be available.',
       reasoningEffortLabel: 'Reasoning Effort',
       selectReasoningEffort: 'Select reasoning effort',
       reasoningEffortHint:
@@ -51,9 +51,9 @@ export default {
       resetAt: 'Refills on {date}.',
       resetNone: 'These credits do not refill automatically.',
       exhausted:
-        'You have used up all your credits. However, you can still use the smaller model.',
+        'Your credits are used up. Some models may no longer be available.',
       fallbackNotice:
-        'Your credits are used up. New messages use the smaller model.',
+        'Your credits are used up. Some models may no longer be available.',
     },
     sidebar: {
       newChat: 'New Chat',
@@ -2161,6 +2161,22 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Please choose whether demo elements should be generated or not.',
     },
     settings: {
+      advancedModelUsage: 'Advanced model usage',
+      baseModelUsage: 'Base model usage',
+      chatAccountUsageDescription:
+        'Review the current monthly usage estimates for each usage class.',
+      chatAccountUsageBoundaryDescription:
+        'Budgets are managed by operations as soft targets for planning. They are not hard stops, and requests already in progress may exceed them.',
+      chatAccountUsageTitle: 'Chatbot usage',
+      chatAccountUsageUnauthorized:
+        'Chatbot usage is not authorized for this account.',
+      usageBudget: 'Budget',
+      usageBudgetEmpty: 'No budget is set for this usage class.',
+      usageBudgetExhausted: 'The monthly budget is exhausted.',
+      usageCredits: 'credits',
+      usageRemaining: 'Remaining',
+      usageResetDate: 'Reset date',
+      usageUsed: 'Used',
       userSettings: 'User Settings',
       languageSettings: 'Language Settings',
       storedEmail: 'E-Mail (Edu-ID)',
@@ -3974,6 +3990,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       linkedCourses: 'Linked Courses',
       linkedCoursesList: 'Linked to: {courses}',
       noLinkedCourses: 'No courses linked yet.',
+      chatbotStatusDraft: 'Draft',
+      chatbotStatusPendingApproval: 'Pending approval',
+      chatbotStatusPublished: 'Published',
+      chatbotStatusPaused: 'Paused',
+      chatbotStatusRejected: 'Rejected',
+      chatbotStatusUnknown: 'Unknown status',
+      chatbotNotLive: 'Participant access is unavailable in this status.',
       credits: 'Credits',
       creditInitialCredits: 'Initial credits',
       creditResetPeriod: 'Reset period',

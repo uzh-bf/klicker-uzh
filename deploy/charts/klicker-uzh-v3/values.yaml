@@ -208,6 +208,7 @@ auth:
 
 chat:
   priorityClassName: production-workload
+  accountUsageEnforcementEnabled: false
 
   replicaCount: 1
 

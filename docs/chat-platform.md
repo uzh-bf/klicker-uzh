@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-22'
+timestamp: '2026-08-26'
 tags:
   - frontend
   - chat
@@ -117,7 +117,7 @@ cache hits, latency, or cost savings.
 
 ## Auth guard pattern (route handlers)
 
-Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`. The composed helper `withChatbotAuth(req, chatbotId)` (`src/lib/server/apiGuards.ts`) covers the standard `{ courseId: true }` case — use it for new routes; fall back to the individual guards only for a custom chatbot `select`. Participant identity comes from the same participant JWT cookies as the PWA ([Auth Model](./auth-model.md)); local chat dev therefore needs the backend's `APP_SECRET` and `DATABASE_URL` visible to the chat app, or cookies won't verify and Prisma can't load chatbots.
+Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`. The composed helper `withChatbotAuth(req, chatbotId)` (`src/lib/server/apiGuards.ts`) covers the standard `{ courseId: true }` case — use it for new routes; fall back to the individual guards only for a custom chatbot `select`. `getChatbotOr404` returns 404 for any non-`PUBLISHED` chatbot (`DRAFT`, `PENDING_APPROVAL`, `PAUSED`, `REJECTED`) and reads `status` as a guard-only field, so a participant can never reach an unpublished bot regardless of the projection a caller passes — the publication gate holds on every route (see [ADR 0020](./adr/0020-two-tier-chatbot-approval.md)). Participant identity comes from the same participant JWT cookies as the PWA ([Auth Model](./auth-model.md)); local chat dev therefore needs the backend's `APP_SECRET` and `DATABASE_URL` visible to the chat app, or cookies won't verify and Prisma can't load chatbots.
 
 The embedded lecturer assistant is a separate route family under `src/app/api/manage/`. It verifies the lecturer's NextAuth cookie, mints a short-lived internal bearer token for `apps/mcp-lecturer`, and confirms signed draft proposals through the authenticated chat route. This is an internal service exchange, not an OAuth client flow; the complete trust boundary is documented in [Auth Model](./auth-model.md#lecturer-mcp-and-manage-assistant).
 
@@ -164,7 +164,73 @@ Three properties matter when debugging it:
 
 ## Model registry and credits
 
-`chatModelRegistry.ts` loads `CHAT_MODEL_REGISTRY_JSON` (deployment override in `deploy/env-uzh-*/values.yaml`). The backend keeps its own copy of the registry in `packages/graphql/src/services/chatbots.ts` for the lecturer-facing allow-list; both pods receive the same `CHAT_MODEL_REGISTRY_JSON` from the one `.Values.chat.modelRegistry` source (`cm-chat.yaml` and `cm-backend-graphql.yaml`), and `apps/chat/test/modelRegistryParity.test.ts` pins the two built-in defaults against each other — the deployed values.yaml registries are NOT covered by that test, so values-only drift still needs a manual check. Registry gotchas that have caused production incidents:
+`chatModelRegistry.ts` loads `CHAT_MODEL_REGISTRY_JSON` (deployment override in `deploy/env-uzh-*/values.yaml`). The backend keeps its own copy of the registry in `packages/graphql/src/services/chatbots.ts` for the lecturer-facing allow-list; both pods receive the same `CHAT_MODEL_REGISTRY_JSON` from the one `.Values.chat.modelRegistry` source (`cm-chat.yaml` and `cm-backend-graphql.yaml`), and `apps/chat/test/modelRegistryParity.test.ts` pins the two built-in defaults against each other AND parses both deployed values.yaml registries through both consumers, so a missing or inconsistent usage classification in either deployment file fails CI. Registry gotchas that have caused production incidents:
+
+Every registry entry carries an explicit `usageClass` (`BASE` or `ADVANCED`),
+the server-derived classification of the model lane ([ADR 0020](./adr/0020-two-tier-chatbot-approval.md)).
+`auto` is invariantly `ADVANCED` (both consumers reject any other class for
+it). GPT-5.6 Luna is the only `BASE` model and the participant-credit fallback;
+every other current model is `ADVANCED`. Both consumers reject external
+registries that violate that invariant.
+External registry JSON that omits `usageClass` normalizes to `ADVANCED` —
+conservative, because a missing class must never imply base usage.
+
+Registry costs use Azure Global Standard short-context USD prices per one
+million input and output tokens, verified on 2026-08-24. The schema does not
+model cached-input, cache-write, or long-context rates. Auto uses the accepted
+rounded accounting rate of 1 input / 5 output from an observed 90% Luna and 10%
+Sol generation mix; the exact weighted rate is 0.68 input / 4.08 output.
+Classifier and embedding overhead remain outside the registry's selected-model
+token fields.
+
+The account usage foundation stores one row per owner + usage class + Zurich
+calendar month in `ChatAccountUsage` (`packages/prisma/src/prisma/schema/chat.prisma`):
+`monthStart` is a DATE (first calendar day, `Europe/Zurich`), `budgetCredits`
+and `usedCredits` are `Decimal(18,6)` defaulting to zero, and the composite
+primary key prevents duplicate account/class/month rows. Counters start at
+zero at migration cutover. For each class, the newest configured budget at or
+before the current month remains effective until it is changed. A prior-month
+budget therefore carries forward with used credits reset to zero; only a class
+with no history projects budget 0 / used 0. The Zurich month boundary
+(including DST) is derived deterministically in
+`packages/util/src/chatUsage.ts`.
+
+`CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED` controls the participant route's
+pre-provider budget rejection and defaults to `false`. While the switch is
+false, the route skips account authorization and budget-availability rejection,
+but turn lifecycle claims remain active and configured account usage is still
+recorded after a completed provider response. Enabling the switch is a separate
+operational cutover decision for a named environment and cohort.
+
+The lecturer-facing GraphQL API projects the effective account month through
+`getChatAccountUsage` as exactly `baseModelUsage` and `advancedModelUsage`.
+Each lane returns its fixed usage class, budget, used credits, non-negative
+remaining credits, and the exact next Zurich reset instant. Missing rows become
+zero-valued lanes only when no budget was ever configured; otherwise, an absent
+current-month row carries the latest budget and resets used credits. The outer
+`authorized` field always reflects the live account capability. An
+`ACCOUNT_OWNER` can access only its own account; an `ADMIN` can supply a target
+owner ID. Other lecturer login scopes are denied by the service. Participant
+roles are denied by the schema, while the service repeats the role and scope
+checks as a direct-call safeguard.
+
+`setChatAccountUsageBudgets` is an `ADMIN`-only operations mutation and requires
+an explicit target owner ID. It validates both values against the shared
+`Decimal(18,6)` credit contract and upserts the current BASE and ADVANCED rows
+in one transaction. It changes only `budgetCredits`, preserving existing or
+concurrent `usedCredits`. A newly created month becomes the latest configured
+limit for subsequent months; a disabled account cannot write. The API
+deliberately has no cost-center, contribution, provider, settlement,
+participant-credit, or per-model fields.
+
+The lecturer settings page requests this overview only after confirming an
+`ACCOUNT_OWNER` login scope. It shows two responsive lanes labelled “Base model
+usage” and “Advanced model usage” in English, with fixed German equivalents.
+Each lane names its configured credit estimate, used and remaining credits,
+reset date, and empty or exhausted status. The configured budget is a soft
+planning target, while the reset date is exact; in-flight requests may exceed
+the target. It is read-only for account owners, and it does not expose
+internal funding or provider details.
 
 The deployed Klicker Auto option is a LiteLLM `auto-router` endpoint. The
 only in-repo record of its tier map is the comment above `modelRegistry` in
@@ -174,8 +240,10 @@ only in-repo record of its tier map is the comment above `modelRegistry` in
 configuration lives in the external AI deployment repository's
 `litellm/config.yaml` and **cannot be verified from this repository** — treat
 the values.yaml comment as the best available record and confirm against the
-deployment before making a routing claim. The deployed registry exposes no
-direct GPT-5.6 picker option; the router's tier targets are internal.
+deployment before making a routing claim. The deployed registry also exposes
+direct `gpt-5.6-luna` through the existing
+`klickeruzh/azure/gpt-5.6-luna` alias; the router's effort targets remain
+internal.
 Both staging and production now use `auto` as the global automatic-model
 primary, so chatbots using automatic model selection use Auto by default.
 Chatbots with an explicit model selection can continue using that selection.
@@ -198,8 +266,7 @@ live production routing. The local chat registry maps the user-facing `auto`
 model id to the `auto-router` LiteLLM deployment and exposes `gpt-5.6-luna` for
 a direct comparison. The seeded Benibot fixture allow-lists all three of
 `auto`, `gpt-5.6-luna` and `gpt-4.1-mini` explicitly, so it satisfies the
-fallback invariant below without relying on the `|| m.fallback` exemption that
-the runtime filters apply anyway.
+strict model allow-list. Runtime fallback never bypasses that allow-list.
 
 The local LiteLLM service pins
 `ghcr.io/berriai/litellm-database:v1.96.2` by immutable multi-platform digest,
@@ -220,8 +287,74 @@ policy. The deployed LiteLLM configuration is external; a local summary proves
 the development path only, and staging still needs a Responses + tool-loop
 smoke test before a production compatibility claim.
 
+One account-level AI usage authorization, backed by an approved cost center,
+covers both model classes: the Phase 0 lifecycle foundations now store an
+account-scoped monthly budget and used-credit counter per `BASE` and
+`ADVANCED` class in `ChatAccountUsage`. Operations manages account-wide
+monthly budgets through the `ADMIN`-only mutation, while account owners see
+exactly two read-only lanes — base model usage and advanced model usage — with
+budget, used, remaining, and reset date. The teaching center's limited base
+contribution is internal and hidden; advanced usage receives no contribution.
+When account usage enforcement is enabled, class exhaustion disables only that
+class and never triggers an automatic cross-class switch. Participant-facing
+APIs must then return stable class-specific exhaustion codes without cost-center
+or hidden funding fields.
+
+`apps/chat/src/app/api/chatbots/[chatbotId]/chat/route.ts:POST` resolves the
+effective model and its server-derived usage class. When account usage
+enforcement is enabled, it then reads the live account authorization and
+effective owner/class/Zurich-month usage before thread creation, image
+description, message persistence, or provider streaming. The latest configured
+budget at or before the current month applies, with used credits reset to zero
+when it carries forward. This availability pre-check runs only when
+`CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED=true`. Under that setting, a
+disabled authorization, class with no configured history or a zero budget, or
+exhausted class fails closed with HTTP `403` and either
+`CHAT_MODEL_UNAVAILABLE_BASE` or `CHAT_MODEL_UNAVAILABLE_ADVANCED`. The response
+never exposes budgets, used credits, cost centers, contributions, providers, or
+settlement details. Exhausting one class neither disables the other nor invokes
+fallback. With the default-off setting, the route skips this rejection while
+retaining lifecycle claims and post-completion accounting for configured usage.
+
+The client-supplied assistant message ID is the turn lifecycle key.
+`apps/chat/src/services/accountUsage.ts:claimChatTurn` creates an
+`IN_PROGRESS` assistant placeholder with a per-attempt UUID before MCP, image,
+or provider work. Concurrent and completed claims return the same generic
+`409`; collision checks verify the assistant role, thread, chatbot, and owner
+without revealing foreign scope. Failed attempts may be reclaimed with a new
+UUID, while callbacks from an older attempt cannot complete or charge the
+turn. Claims have no timeout or automatic lease stealing.
+
+`apps/chat/src/services/accountUsage.ts:finalizeChatTurn` compares and sets the
+matching attempt to `COMPLETED`, stores the terminal assistant result,
+increments the owner/class/month counter by the same rounded six-decimal value,
+and updates the thread timestamp in one `ReadCommitted` transaction. A normal
+finish and an abort use this finalizer once, and a late `onEnd` after an abort
+is ignored. Missing reliable main-stream usage still closes the message key
+with `creditsUsed = null` and no account charge. History reads hide
+`IN_PROGRESS` and `FAILED` placeholders. The availability check is not a
+reservation, so the bounded final-turn and concurrent overrun accepted by
+[ADR 0041](./adr/0041-chatbot-trusted-pilot-boundary.md) remains possible; the next
+request then fails its live check.
+
+The existing `ChatUsageCredits` balance remains a separate participant
+allowance. Its decrement runs after account finalization and is not part of the
+account transaction. At zero participant credits, fallback must intersect the
+selected usage class, `fallback: true`, and the chatbot allow-list. The current
+registry has a `BASE` fallback only, so a zero-credit `ADVANCED` turn is denied
+instead of switching to `BASE`. Automatic model selection retains Auto and is
+therefore attributed to `ADVANCED`; the credits response keeps allow-listed
+model capabilities visible independently of the participant balance. Strict
+reservations, immutable ledgers, automated refunds, invoices, per-chatbot
+allocation, and participant-credit migration remain deferred.
+
 - Omitted `supportsImageAttachments` defaults to **false** — every image-capable model must set it explicitly in deployment values or the attach button disappears.
-- Zero-credit course chatbots need a usable fallback model (`CHAT_FALLBACK_MODEL_ID`, default `gpt-4.1-mini`) AND explicit chatbot `allowedModelIds` must include it. Audit/fix with `packages/prisma-data/src/scripts/2026-06-15_ensure_chatbot_fallback_model.ts`.
+- The zero-credit participant path uses `CHAT_FALLBACK_MODEL_ID` (default
+  `gpt-5.6-luna`) only when that model is marked as fallback, shares the
+  selected usage class, and appears in the chatbot's explicit
+  `allowedModelIds`. It stops when no allowed fallback exists in that class.
+  Audit configured chatbot allow-lists with
+  `packages/prisma-data/src/scripts/2026-06-15_ensure_chatbot_fallback_model.ts`.
 - OpenAI Responses backends: keep `CHAT_OPENAI_STORE_RESPONSES=true` in shared/staged deployments — with `store: false`, LiteLLM/Azure can return "item not found" when a model references prior response items across tool-call steps. Local OpenRouter-style setups can leave it false.
 
 Credit fields are Prisma `Decimal` — never truthy-check them ([Data & Migrations](./data-and-migrations.md)).
@@ -238,9 +371,11 @@ selection state uses the same plain-language contract. Known Tutor and Explainer
 localized purpose descriptions in `src/components/mode-switcher.tsx`; custom modes fall back to
 their configured description.
 
-In the sidebar layout, `src/components/credits-footer.tsx:MobileCreditsBar` keeps the current
-balance visible below the header at mobile widths, even while the design-system sidebar drawer
-is closed. When the balance reaches zero it also states that new messages use the smaller model.
+In the sidebar layout, `src/components/credits-footer.tsx:MobileCreditsBar` keeps the legacy
+participant usage-credit balance visible below the header at mobile widths, even while the
+design-system sidebar drawer is closed. When the balance reaches zero, it states
+that some models may no longer be available; the runtime never silently
+switches between base and advanced classes.
 The bar is rendered only by `SidebarMain`; embedded mode continues to use its existing
 `EmbeddedCreditsBar` so the two compact readouts are never shown together.
 
@@ -335,9 +470,14 @@ and renders an "AI tutor" button (`data-cy="student-course-chatbot-link"`) next
 to the home/back button when the caller is a participant of the course. The
 button is a real anchor (`<Link target="_blank" rel="noopener">` wrapping the
 design-system `Button`, the same pattern as the sibling home button), so
-middle-click and copy-link behave as expected. It links `courseChatbots[0]`:
-courses are deliberately limited to a single chatbot for now, which is also why
-`Chatbot` carries no ordering or visibility field. Lifting that limit means
+middle-click and copy-link behave as expected. The data model and query can
+return multiple published chatbots, ordered by name and then creation time, but
+the current PWA exposes only `courseChatbots[0]` as its single header
+button. `Chatbot` carries no ordering field. It does carry a publication `status`
+(`DRAFT`/`PENDING_APPROVAL`/`PUBLISHED`/`PAUSED`/`REJECTED`, see
+[ADR 0020](./adr/0020-two-tier-chatbot-approval.md)) that gates participant
+visibility — only `PUBLISHED` bots are reachable — but that is a visibility
+gate, not a way to order or select among multiple bots. Lifting that limit means
 deciding the multi-chatbot affordance first — the header row does not wrap and
 the design-system button is `shrink-0`, so several buttons would squeeze the
 course title on a narrow viewport.
@@ -461,7 +601,10 @@ runtime policy `{ "required": true, "toolAlias": "<name>" }`. A strict config mu
 one matching raw tool. Klicker exposes that tool under the configured alias (for example, the
 course-specific video expert can become `IW_doc_query`) before prompt assembly and prompt-cache
 identity are built. Missing, inactive, unavailable, malformed, or colliding strict bindings return
-`503 REQUIRED_MCP_UNAVAILABLE` before a thread, model request, credit read, or message write. MCP
+`503 REQUIRED_MCP_UNAVAILABLE` may occur before or after a read-only effective-credit preview, but
+always before credit initialization, reset, decrement, model or image work, or a retained thread or
+message write. Chat may create a short-lived thread and assistant lifecycle claim to serialize the
+preflight, but it marks the attempt failed and discards that new thread before returning `503`. MCP
 configs without the reserved keys retain the existing optional/fail-open behavior.
 
 - `resolveCitationSource` resolves `[n]` only for `1 <= n <= N`. Anything outside that range stays
@@ -565,7 +708,7 @@ needs a live key the devcontainer does not carry.
 
 Two recurring traps in this app's strings:
 
-- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the own-property known-mode predicate and `formatModeLabel` (used by the mode dropdown and thread-list subtitle; unknown modes fall back to their capitalized raw name), while `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. The mode dropdown shows the same localized label and description in its Radix menu, never an English-only registry description for a known mode. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value. When a model registry or LiteLLM alias introduces a new effort id, add it to `KNOWN_REASONING_EFFORTS` and to both message files in the same change — otherwise the raw-name fallback leaks an English id (`xhigh` shipped that way and read "Xhigh" next to Niedrig/Mittel/Hoch until it was fixed, and `none` — offered by `gpt-5.1` and `gpt-5.5` in prd, by `gpt-5.1` only in stg, and by no model in the local default registry — read "None" for the same reason). The local `DEFAULT_MODEL_REGISTRY` and the deployed registries in `deploy/env-uzh-{stg,prd}/values.yaml` only overlap partly — local has a `gpt-5.6-luna` the deployments do not ship, and the deployments offer effort ids (`none`, `minimal`) that no local model does — so check both before assuming a browser pass covered every effort id.
+- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the own-property known-mode predicate and `formatModeLabel` (used by the mode dropdown and thread-list subtitle; unknown modes fall back to their capitalized raw name), while `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. The mode dropdown shows the same localized label and description in its Radix menu, never an English-only registry description for a known mode. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value. When a model registry or LiteLLM alias introduces a new effort id, add it to `KNOWN_REASONING_EFFORTS` and to both message files in the same change — otherwise the raw-name fallback leaks an English id (`xhigh` shipped that way and read "Xhigh" next to Niedrig/Mittel/Hoch until it was fixed, and `none` — offered by `gpt-5.1` and `gpt-5.5` in prd, by `gpt-5.1` only in stg, and by no model in the local default registry — read "None" for the same reason). The local `DEFAULT_MODEL_REGISTRY` and the deployed registries in `deploy/env-uzh-{stg,prd}/values.yaml` only overlap partly — both expose `gpt-5.6-luna`, while deployments additionally offer GPT-5.1, GPT-5.4, GPT-5.5, and effort ids (`none`, `minimal`) that no local model does — so check both before assuming a browser pass covered every effort id.
 - **ICU plurals must be selected on the displayed number.** `formatCredits(1.2)` renders `1` but `Intl.PluralRules.select(1.2)` is `other`, so passing the raw float prints "1 credits". Feed `count` the rounded value the user actually sees.
 
 ## Message feedback and Langfuse
@@ -655,9 +798,10 @@ action that uses the existing assistant-ui reload path, so retrying truncates
 the failed branch instead of adding a duplicate user turn. Keep the retry and
 duplicate-turn behavior in the mobile smoke matrix.
 
-The suite runs in CI via `.github/workflows/test-chat.yml` (single-job fail-open path
-filter like `test-markdown.yml`, covering `apps/chat/` plus `packages/{i18n,prisma,graphql}/`).
-The workflow builds `packages/prisma` before vitest because
+The suite runs as its own step in `.github/workflows/test-unit.yml`, whose path
+union covers `apps/chat/`, its shared packages, and the grading, markdown, and
+util suites consolidated into the same job. The workflow builds Prisma, types,
+grading, and util once before the four suites because
 `test/modelRegistryParity.test.ts` imports the backend registry from
 `packages/graphql/src/services/chatbots.ts`, whose first line is a runtime prisma-client
 import ([Testing](./testing.md)).
