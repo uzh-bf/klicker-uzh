@@ -401,20 +401,48 @@
 
 ## Progress
 
-- Status: Reviewed, uncommitted downstream plan; implementation has not started.
-- Active slice: Awaiting one-time approval for K0 and upstream D0-D6 execution.
+- Status: K0-K4 implemented on the task branch; upstream 0.0.39 is published
+  and npm-verified; K5 integrated proof remains.
+- Active slice: K5 integrated runtime matrix.
 - Completed: Fresh downstream worktree, dependency and process mapping,
   first-party Dev Container and DevPod research, upstream package decomposition,
   and required planning review.
-- Remaining: K0, upstream release candidate, separately authorized publication,
-  then K1-K5.
+- Remaining: K5 integrated proof (exact runtime matrix, lifecycle cleanup, full
+  checks, final review), then PR readiness.
 - Latest verified base: `origin/v3` at `cd5cfd574`; branch was 0 ahead and 0
   behind before implementation.
 - Runtime: No runtime was started for planning.
 - Active children: none.
-- Unresolved gates: User plan approval and the later upstream publication and
-  installation/update authority boundary.
+- Unresolved gates: K5 execution; PR merge remains separately authorized.
+- 2026-08-26 upstream publication: devrouter PR #37 was squash-merged at
+  `af55b23`, GitHub release `v0.0.39` was published, and the release workflow
+  completed successfully. `npm view @devrouter/cli` reports version 0.0.39;
+  the published tarball validated the new `.devrouter.yml` contract.
+- 2026-08-26 K1: Added the `managedRuntime` registry (base: postgres, hatchet;
+  profile-owned: 3x Redis, litellm, mailhog; processes: klicker-dev,
+  klicker-local-mcp), the eight-profile contract with pure capabilities
+  (`ai`, `mcp`, `email`), the devrouter pin at 0.0.39, the ignored generated
+  config path, and the pure sourceable resolver `util/profile-resolver.sh`
+  with table-driven coverage (`test:profile-resolver`: every profile, merged
+  order, duplicates, full, fail-closed unknown).
+- 2026-08-26 K2: `post-start.sh` now resolves the complete selection first,
+  stops dropped owned markers (klicker-dev, klicker-local-mcp) exactly, ensures
+  desired ones, gates the MCP fixture and Manage warm-up on the selection, and
+  prints a capability-only summary. Readiness apps come from the resolver.
+- 2026-08-26 K3: Replaced the four fixed recurring build lists (`dev`,
+  `dev:lti`, `dev:offline`, `dev:assessment`) with `^build`. Turbo dry JSON
+  keeps all declared dependencies and removes the undeclared `transactional`
+  overbuild; post-create keeps its broader one-time contract.
+- 2026-08-26 K4: Updated `.devcontainer/README.md` (profile table, base
+  contract, transition guarantees), `AGENTS.md`, and the bundled devrouter
+  skill for the three-dimension profile model.
+- Verification so far: resolver and dev-runtime shell suites pass; Turbo dry
+  JSON passes for all four dev tasks; published 0.0.39 CLI accepts the new
+  contract; native `devcontainer.json` is unchanged. The integrated runtime
+  matrix (K5) has not run yet.
 - Required delivery layer: locally committed, release-compatible consumer
   package with exact runtime stopped.
 - Achieved delivery layer: reviewed local plan only.
-- Next action: On approval, commit K0 and upstream D0, then execute devrouter D1.
+- Next action: Run the K5 matrix: cold selective start, capability-only, warm
+  replacement, invalid preservation, full restore, exact stop, then full repo
+  checks and the final review.

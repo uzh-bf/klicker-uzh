@@ -58,6 +58,8 @@ Do not use bare `devpod up`, manual `WORKSPACE`, or per-app `--workspace` route 
 
 ```bash
 devrouter ensure .
+devrouter ensure . --profile chat          # one application profile
+devrouter ensure . --profile chat,ai,mcp   # additive merged selection
 devrouter exec . -- <command...>
 devrouter stop .
 ```
@@ -65,6 +67,28 @@ devrouter stop .
 Open the Manage URL printed by `ensure` and log in as **`lecturer` / `abcd`**
 (accept the terms checkbox). The dev servers run in the background; inspect
 `/tmp/dev.log` through `devrouter exec` or an exact DevPod shell.
+
+## Profiles
+
+Profiles (devrouter >= 0.0.39) select three independent dimensions: routed
+apps, optional Compose services, and managed processes. Merged selections are
+additive and order-insensitive; omitting `--profile` keeps the all-on `full`
+default. The committed native `devcontainer.json` stays all-on for VS Code and
+direct DevPod use - only devrouter generated effective config selects less.
+
+| Profile                                 | What starts                                                                   |
+| --------------------------------------- | ----------------------------------------------------------------------------- |
+| `manage` / `pwa` / `chat` / `live-quiz` | That app set + API/Auth (+ PWA for chat; workers for live-quiz), the 3x Redis |
+| `ai`                                    | LiteLLM only - no routes, no app process                                      |
+| `mcp`                                   | The local MCP fixture (Benibot) only                                          |
+| `email`                                 | MailHog only                                                                  |
+| `full` (default)                        | Everything, including LiteLLM, MailHog, and the MCP fixture                   |
+
+Postgres and Hatchet stay in the managed base for every profile (the backend
+treats both as boot-critical). Capability-only selections keep the idle app
+container plus that base and start no Turbo process; switching profiles never
+recreates the container, reruns post-create, resets the database, or removes
+volumes.
 
 ## How routing works
 
