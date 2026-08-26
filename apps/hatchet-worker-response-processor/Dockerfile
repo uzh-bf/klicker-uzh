@@ -49,6 +49,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
 COPY --from=builder --chown=nodejs:nodejs /app/packages/hatchet/dist/ /app/packages/hatchet/dist/
+COPY --from=builder --chown=nodejs:nodejs /app/packages/knowledge-graph/dist/ /app/packages/knowledge-graph/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/types/dist/ /app/packages/types/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/grading/dist/ /app/packages/grading/dist/
 COPY --from=builder --chown=nodejs:nodejs /app/packages/util/dist/ /app/packages/util/dist/
