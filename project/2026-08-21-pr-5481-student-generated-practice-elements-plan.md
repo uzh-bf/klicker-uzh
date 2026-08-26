@@ -8,9 +8,10 @@ personal-card verification, grounded or validated content, generation limits,
 rollout controls, execution authority, terminal conditions, and remaining
 slices. The earlier plan and Progress entries remain as implementation history.
 
-Plan state: awaiting one-time approval. No release-hardening code has been
-changed. The existing draft stack remains open, and merge, deployment, remote
-feature-flag changes, and production actions remain withheld.
+Plan state: approved for autonomous execution. Release-hardening code is now
+being applied bottom-up; the existing draft stack remains open, and merge,
+deployment, remote feature-flag changes, and production actions remain
+withheld.
 
 ### Goal and release position
 
@@ -1513,3 +1514,12 @@ Settled rulings for this implementation:
   on the remote feature branch for PR #5483. The Infisical-backed local
   workspace remains available for user testing; no ingestion, doc-query,
   merge, or deployment change is included.
+- 2026-08-26 (release-hardening execution): Current v3 trunk was refreshed to
+  `7515632f2`, the existing three-PR stack was rebased without topology
+  changes, and this correction was propagated through all three local layers.
+  Current-v3 generated GraphQL artifacts remain build outputs and are not
+  reintroduced into version control. The exact task runtime was started twice;
+  its first attempt timed out downloading the DevPod agent and its second
+  attempt reached post-create but failed the auth readiness contract. Both
+  runtimes were stopped and verified. The five release slices remain the
+  active execution scope.
