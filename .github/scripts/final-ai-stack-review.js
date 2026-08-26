@@ -29,6 +29,8 @@ const STACK_REVIEW_CONTEXT = 'final-ai-stack-review'
 const STACK_REVIEW_SCHEMA = 'final-ai-stack-review/v3'
 const STACK_REVIEW_WORKFLOW_PATH =
   '.github/workflows/check-ocr-final-stack-review.yml'
+const STACK_REVIEW_CLEAN_STATUS_PREFIX =
+  'z-ai/glm-5.3 stack review clean; policy='
 const STACK_RULES_PATH =
   '.github/open-code-review/final-stack-topology-rules.json'
 const STACK_SCHEMA_PATH =
@@ -84,6 +86,15 @@ function repositoryName(context) {
 
 function workflowRunUrl(context, runId = context.runId) {
   return `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`
+}
+
+function workflowRunIdFromUrl(context, targetUrl) {
+  const prefix = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/`
+  if (typeof targetUrl !== 'string' || !targetUrl.startsWith(prefix)) {
+    return null
+  }
+  const value = targetUrl.slice(prefix.length)
+  return /^[1-9][0-9]*$/.test(value) ? Number(value) : null
 }
 
 function isStackReviewCommand(body) {
@@ -994,6 +1005,46 @@ async function hasSuccessfulStackReview(
   )
 }
 
+async function hasVerifiedCleanStackReviewStatus({
+  github,
+  context,
+  headSha,
+  policyDigest,
+}) {
+  if (!/^[0-9a-f]{64}$/.test(policyDigest)) return false
+  const status = await latestStackStatus(github, context, headSha)
+  if (
+    status?.state !== 'success' ||
+    status.description !== `${STACK_REVIEW_CLEAN_STATUS_PREFIX}${policyDigest}`
+  ) {
+    return false
+  }
+  const workflowRunId = workflowRunIdFromUrl(context, status.target_url)
+  if (
+    workflowRunId == null ||
+    typeof github.rest.actions?.getWorkflowRun !== 'function'
+  ) {
+    return false
+  }
+  const workflow = (
+    await github.rest.actions.getWorkflowRun({
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      run_id: workflowRunId,
+    })
+  )?.data
+  return Boolean(
+    workflow &&
+      workflow.id === workflowRunId &&
+      workflow.path === STACK_REVIEW_WORKFLOW_PATH &&
+      workflow.event === 'issue_comment' &&
+      workflow.head_branch === context.payload.repository.default_branch &&
+      workflow.conclusion === 'success' &&
+      workflow.repository?.full_name === repositoryName(context) &&
+      (await hasSuccessfulStackReview(github, context, headSha, workflowRunId))
+  )
+}
+
 function stackReviewMetadataMatchesPlan(metadata, plan, membership) {
   if (!metadata || !plan?.eligible || metadata.mode !== plan.mode) return false
   const layerHeadShas = membership.members.map(({ pull }) => pull.head.sha)
@@ -1056,10 +1107,18 @@ async function hasCurrentSuccessfulStackReview({
     pull: membership.members.at(-1).pull,
     modes: ['full', 'incremental'],
   })
-  return Boolean(
+  if (
     rootReview &&
-      stackReviewMetadataMatchesPlan(rootReview.metadata, plan, membership)
-  )
+    stackReviewMetadataMatchesPlan(rootReview.metadata, plan, membership)
+  ) {
+    return true
+  }
+  return hasVerifiedCleanStackReviewStatus({
+    github,
+    context,
+    headSha: plan.headSha,
+    policyDigest: plan.policyDigest,
+  })
 }
 
 async function initializeStackReview({ github, context, trustedSha }) {
@@ -1155,7 +1214,8 @@ async function initializeStackReview({ github, context, trustedSha }) {
     context,
     sha: topShas[0],
     state: 'pending',
-    description: 'Manual Gemini stack review required for this verified stack',
+    description:
+      'Manual z-ai/glm-5.3 stack review required for this verified stack',
   })
   return true
 }
@@ -1720,8 +1780,8 @@ async function startStackReview({
     state: 'pending',
     description:
       plan.mode === 'incremental'
-        ? 'Gemini bounded stack attestation is running for this head'
-        : 'Gemini cumulative stack review is running for this head',
+        ? 'z-ai/glm-5.3 bounded stack attestation is running for this head'
+        : 'z-ai/glm-5.3 cumulative stack review is running for this head',
   })
   core?.setOutput('background', plan.background)
   core?.setOutput('manifest_digest', bundle.manifestDigest)
@@ -2213,7 +2273,7 @@ function renderStackReview({
   }
   const sections = [
     `<!-- ${STACK_REVIEW_SCHEMA} ${encodeMetadata(metadata)} -->`,
-    `## Final AI stack review · Gemini 3.7 Flash (high reasoning)`,
+    `## Final AI stack review · z-ai/glm-5.3 (high reasoning)`,
     '',
     effectiveReviewRanges.length <= 1
       ? `Reviewed verified stack ${manifest.stack_id} from \`${reviewStart.slice(0, 12)}\` to \`${headSha.slice(0, 12)}\`.`
@@ -2552,6 +2612,8 @@ function decideStackStatus({
   topologyOutcome,
   cleanupOutcome,
   publishOutcome,
+  cleanReview = 'false',
+  policyDigest = '',
 }) {
   if (!eligible || currentHead !== reviewedHead) {
     return {
@@ -2568,14 +2630,16 @@ function decideStackStatus({
   ) {
     return {
       description:
-        reviewMode === 'incremental'
-          ? 'Gemini bounded stack attestation completed for this head'
-          : 'Gemini cumulative code and topology review completed for this stack',
+        cleanReview === 'true' && /^[0-9a-f]{64}$/.test(policyDigest)
+          ? `${STACK_REVIEW_CLEAN_STATUS_PREFIX}${policyDigest}`
+          : reviewMode === 'incremental'
+            ? 'z-ai/glm-5.3 bounded stack attestation completed for this head'
+            : 'z-ai/glm-5.3 cumulative code and topology review completed for this stack',
       state: 'success',
     }
   }
   return {
-    description: 'Gemini stack review failed; inspect the workflow run',
+    description: 'z-ai/glm-5.3 stack review failed; inspect the workflow run',
     state: 'failure',
   }
 }
@@ -2601,6 +2665,7 @@ async function finalizeStackReview({
   topologyOutcome,
   cleanupOutcome,
   publishOutcome,
+  cleanReview,
 }) {
   const ownsLatestStatus = async () => {
     const latestStatus = await latestStackStatus(github, context, headSha)
@@ -2674,6 +2739,8 @@ async function finalizeStackReview({
       topologyOutcome,
       cleanupOutcome,
       publishOutcome,
+      cleanReview,
+      policyDigest,
     }),
   })
 }
@@ -2779,6 +2846,7 @@ module.exports = {
   OPENROUTER_URL,
   STACK_REVIEW_COMMAND,
   STACK_REVIEW_CONTEXT,
+  STACK_REVIEW_CLEAN_STATUS_PREFIX,
   STACK_REVIEW_SCHEMA,
   STACK_REVIEW_WORKFLOW_PATH,
   authorizeStackReview,

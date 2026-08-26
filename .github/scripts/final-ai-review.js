@@ -10,13 +10,15 @@ const {
 
 const FINAL_REVIEW_COMMAND = '/final-review'
 const FINAL_REVIEW_CONTEXT = 'final-ai-review'
-const FINAL_REVIEW_MODEL = 'google/gemini-3.7-flash'
+const FINAL_REVIEW_MODEL = 'z-ai/glm-5.3'
 const FINAL_REVIEW_BOT = 'github-actions[bot]'
 const FINAL_REVIEW_SCHEMA = 'final-ai-review/v4'
 const FINAL_REVIEW_POLICY_SCHEMA = 'final-ai-policy/v1'
 const DISPOSITION_SCHEMA = 'final-ai-disposition/v1'
 const FINAL_REVIEW_WORKFLOW_PATH =
   '.github/workflows/check-ocr-final-review.yml'
+const FINAL_REVIEW_CLEAN_STATUS_PREFIX =
+  'z-ai/glm-5.3 final review clean; policy='
 const FINAL_REVIEW_RULES_PATH =
   '.github/open-code-review/final-review-rules.json'
 const FINAL_STACK_REVIEW_WORKFLOW_PATH =
@@ -319,6 +321,15 @@ function workflowRunUrl(context, runId = context.runId) {
   return `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`
 }
 
+function workflowRunIdFromUrl(context, targetUrl) {
+  const prefix = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/`
+  if (typeof targetUrl !== 'string' || !targetUrl.startsWith(prefix)) {
+    return null
+  }
+  const value = targetUrl.slice(prefix.length)
+  return /^[1-9][0-9]*$/.test(value) ? Number(value) : null
+}
+
 async function setCommitStatus({ github, context, sha, state, description }) {
   await github.rest.repos.createCommitStatus({
     owner: context.repo.owner,
@@ -478,6 +489,46 @@ async function hasSuccessfulFinalReview(
     status?.state === 'success' &&
     (workflowRunId == null ||
       status.target_url === workflowRunUrl(context, workflowRunId))
+  )
+}
+
+async function hasVerifiedCleanFinalReviewStatus({
+  github,
+  context,
+  headSha,
+  policyDigest,
+}) {
+  if (!/^[0-9a-f]{64}$/.test(policyDigest)) return false
+  const status = await getLatestFinalReviewStatus(github, context, headSha)
+  if (
+    status?.state !== 'success' ||
+    status.description !== `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${policyDigest}`
+  ) {
+    return false
+  }
+  const workflowRunId = workflowRunIdFromUrl(context, status.target_url)
+  if (
+    workflowRunId == null ||
+    typeof github.rest.actions?.getWorkflowRun !== 'function'
+  ) {
+    return false
+  }
+  const workflow = (
+    await github.rest.actions.getWorkflowRun({
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      run_id: workflowRunId,
+    })
+  )?.data
+  return Boolean(
+    workflow &&
+      workflow.id === workflowRunId &&
+      workflow.path === FINAL_REVIEW_WORKFLOW_PATH &&
+      workflow.event === 'issue_comment' &&
+      workflow.head_branch === context.payload.repository.default_branch &&
+      workflow.conclusion === 'success' &&
+      workflow.repository?.full_name === repositoryName(context) &&
+      (await hasSuccessfulFinalReview(github, context, headSha, workflowRunId))
   )
 }
 
@@ -945,7 +996,12 @@ async function hasCurrentSuccessfulFinalReview({
       return true
     }
   }
-  return false
+  return hasVerifiedCleanFinalReviewStatus({
+    github,
+    context,
+    headSha: pull.head.sha,
+    policyDigest: plan.policyDigest,
+  })
 }
 
 function dispositionEntries(metadata) {
@@ -1285,7 +1341,7 @@ async function buildReviewPlan({ github, context, pull, trustedSha }) {
 async function initializeFinalReview({ github, context, core, sourceBranch }) {
   const pull = context.payload.pull_request
   let state = 'pending'
-  let description = 'Manual Gemini final review required for this head'
+  let description = 'Manual z-ai/glm-5.3 final review required for this head'
 
   if (pull.state !== 'open') {
     state = 'error'
@@ -1463,7 +1519,7 @@ async function startFinalReview({
     context,
     sha: headSha,
     state: 'pending',
-    description: 'Gemini final review is running for this head',
+    description: 'z-ai/glm-5.3 final review is running for this head',
   })
   core?.setOutput('background', plan.background)
   return true
@@ -1742,7 +1798,7 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
   const header = [
     marker,
     metadataMarker,
-    '## Final AI review · Gemini 3.7 Flash (high reasoning)',
+    '## Final AI review · z-ai/glm-5.3 (high reasoning)',
     '',
     `Reviewed commit \`${headSha.slice(0, 12)}\`. This is a single diff-led operational review, not a full production-readiness audit.`,
     '',
@@ -1849,6 +1905,8 @@ function decideFinalStatus({
   reviewOutcome,
   cleanupOutcome,
   publishOutcome,
+  cleanReview = 'false',
+  policyDigest = '',
 }) {
   if (
     currentHead !== reviewedHead ||
@@ -1867,12 +1925,15 @@ function decideFinalStatus({
   ) {
     return {
       state: 'success',
-      description: 'Gemini final review completed for this head',
+      description:
+        cleanReview === 'true' && /^[0-9a-f]{64}$/.test(policyDigest)
+          ? `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${policyDigest}`
+          : 'z-ai/glm-5.3 final review completed for this head',
     }
   }
   return {
     state: 'failure',
-    description: 'Gemini final review failed; inspect the workflow run',
+    description: 'z-ai/glm-5.3 final review failed; inspect the workflow run',
   }
 }
 
@@ -1889,6 +1950,8 @@ async function finalizeFinalReview({
   reviewOutcome,
   cleanupOutcome,
   publishOutcome,
+  cleanReview,
+  policyDigest,
 }) {
   const pull = await getPull(github, context, prNumber)
   const eligibility = await resolvePullEligibility({
@@ -1912,6 +1975,8 @@ async function finalizeFinalReview({
     reviewOutcome,
     cleanupOutcome,
     publishOutcome,
+    cleanReview,
+    policyDigest,
   })
   const latestStatus = await getLatestFinalReviewStatus(
     github,
@@ -1960,6 +2025,7 @@ module.exports = {
   FINAL_REVIEW_COMMAND,
   FINAL_REVIEW_BOT,
   FINAL_REVIEW_CONTEXT,
+  FINAL_REVIEW_CLEAN_STATUS_PREFIX,
   FINAL_REVIEW_MODEL,
   FINAL_REVIEW_POLICY_SCHEMA,
   FINAL_REVIEW_SCHEMA,

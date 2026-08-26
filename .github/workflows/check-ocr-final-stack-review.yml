@@ -241,6 +241,7 @@ jobs:
       topology_outcome: ${{ steps.topology_review.outcome }}
       cleanup_outcome: ${{ steps.cleanup.outcome }}
       publish_outcome: ${{ steps.publish.outcome }}
+      clean_review: ${{ steps.publish.outputs.clean_review }}
     steps:
       - name: Checkout trusted stack-review implementation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -437,6 +438,7 @@ jobs:
               resultPath: process.env.RESULT_PATH,
               topologyResultPath: process.env.TOPOLOGY_RESULT_PATH,
             })
+            core.setOutput('clean_review', String(url == null))
             core.info(
               url
                 ? `Published ${url}`
@@ -488,6 +490,7 @@ jobs:
           TOPOLOGY_OUTCOME: ${{ needs.review.outputs.topology_outcome || needs.review.result }}
           CLEANUP_OUTCOME: ${{ needs.review.outputs.cleanup_outcome || needs.review.result }}
           PUBLISH_OUTCOME: ${{ needs.review.outputs.publish_outcome || needs.review.result }}
+          CLEAN_REVIEW: ${{ needs.review.outputs.clean_review || 'false' }}
         with:
           github-token: ${{ github.token }}
           script: |
@@ -514,4 +517,6 @@ jobs:
               topologyOutcome: process.env.TOPOLOGY_OUTCOME,
               cleanupOutcome: process.env.CLEANUP_OUTCOME,
               publishOutcome: process.env.PUBLISH_OUTCOME,
+              cleanReview: process.env.CLEAN_REVIEW,
+              policyDigest: process.env.POLICY_DIGEST,
             })

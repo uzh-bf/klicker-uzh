@@ -7,6 +7,7 @@ const test = require('node:test')
 const {
   FINAL_REVIEW_SCHEMA,
   FINAL_REVIEW_MODEL,
+  FINAL_REVIEW_CLEAN_STATUS_PREFIX,
   PROMOTION_FILE,
   authorizeFinalReview,
   buildExpectedPromotionContent,
@@ -17,6 +18,7 @@ const {
   decideFinalStatus,
   encodeMetadata,
   finalizeFinalReview,
+  hasCurrentSuccessfulFinalReview,
   isFinalReviewCommand,
   isTrustedPermission,
   normalizeTitle,
@@ -99,6 +101,31 @@ test('serializes every final-review status writer without canceling it', () => {
     if (workflowName.includes('stack')) {
       assert.match(source, /statusLockHeld: true,\n/)
     }
+  }
+})
+
+test('propagates a clean publication result to final status', () => {
+  for (const workflowName of [
+    'check-ocr-final-review.yml',
+    'check-ocr-final-stack-review.yml',
+  ]) {
+    const source = fs.readFileSync(
+      path.join(__dirname, `../workflows/${workflowName}`),
+      'utf8'
+    )
+    assert.match(
+      source,
+      /clean_review: \$\{\{ steps\.publish\.outputs\.clean_review \}\}/
+    )
+    assert.match(
+      source,
+      /core\.setOutput\('clean_review', String\(url == null\)\)/
+    )
+    assert.match(
+      source,
+      /CLEAN_REVIEW: \$\{\{ needs\.review\.outputs\.clean_review \|\| 'false' \}\}/
+    )
+    assert.match(source, /cleanReview: process\.env\.CLEAN_REVIEW/)
   }
 })
 
@@ -425,7 +452,7 @@ test('renders findings without making finding count a failure', () => {
     'a'.repeat(40),
     metadataInput
   )
-  assert.match(report, /Gemini 3\.7 Flash \(high reasoning\)/)
+  assert.match(report, /z-ai\/glm-5\.3 \(high reasoning\)/)
   assert.match(report, /src\/example\.ts:10-11/)
   assert.match(report, /Confidence: 75\/100/)
   assert.match(report, /```[\s\S]*\n## Injected heading\n```/)
@@ -509,6 +536,64 @@ test('skips the final pull-request comment when no findings are generated', asyn
 
   assert.equal(result, null)
   assert.equal(createdReviews.length, 0)
+})
+
+test('accepts a trusted clean status without requiring a review body', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Empty final review',
+    base: {
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/empty-final-review',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github, state } = reviewGithub({ pull })
+  const context = reviewContext()
+  const plan = await buildReviewPlan({ github, context, pull })
+  state.statuses = [
+    {
+      context: 'final-ai-review',
+      state: 'success',
+      description: `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${plan.policyDigest}`,
+      target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/123',
+    },
+  ]
+  state.workflowRun = {
+    id: 123,
+    path: '.github/workflows/check-ocr-final-review.yml',
+    event: 'issue_comment',
+    head_branch: 'v3',
+    conclusion: 'success',
+    repository: { full_name: 'uzh-bf/klicker-uzh' },
+  }
+
+  assert.equal(
+    await hasCurrentSuccessfulFinalReview({ github, context, pull, plan }),
+    true
+  )
+  assert.equal(
+    decideFinalStatus({
+      reviewedHead: pull.head.sha,
+      currentHead: pull.head.sha,
+      reviewedBase: pull.base.sha,
+      currentBase: pull.base.sha,
+      eligible: true,
+      reviewOutcome: 'success',
+      cleanupOutcome: 'success',
+      publishOutcome: 'success',
+      cleanReview: 'true',
+      policyDigest: plan.policyDigest,
+    }).description,
+    `${FINAL_REVIEW_CLEAN_STATUS_PREFIX}${plan.policyDigest}`
+  )
 })
 
 test('authorizes a verified native stack member', async () => {

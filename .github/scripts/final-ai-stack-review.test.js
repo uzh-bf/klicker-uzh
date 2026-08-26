@@ -7,6 +7,7 @@ const test = require('node:test')
 
 const {
   FINAL_REVIEW_MODEL,
+  STACK_REVIEW_CLEAN_STATUS_PREFIX,
   STACK_REVIEW_SCHEMA,
   authorizeStackReview,
   buildStackReviewPlan,
@@ -16,6 +17,7 @@ const {
   decideStackStatus,
   encodeMetadata,
   finalizeStackReview,
+  hasCurrentSuccessfulStackReview,
   initializeStackReview,
   isStackReviewCommand,
   parseStackReviewMetadata,
@@ -317,6 +319,64 @@ function topologyResult(comments = []) {
     usage: { total_tokens: 50, prompt_tokens: 35, completion_tokens: 15 },
   }
 }
+
+test('accepts a trusted clean stack status without requiring a review body', async () => {
+  const { github, state } = stackFixture()
+  const stackContext = context(14)
+  const membership = await resolveStackMembership({
+    github,
+    context: stackContext,
+    pullNumber: 14,
+  })
+  const plan = await buildStackReviewPlan({
+    github,
+    context: stackContext,
+    membership,
+  })
+  state.statuses = [
+    {
+      context: 'final-ai-stack-review',
+      state: 'success',
+      description: `${STACK_REVIEW_CLEAN_STATUS_PREFIX}${plan.policyDigest}`,
+      target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+    },
+  ]
+  state.workflowRun = {
+    id: 700,
+    path: '.github/workflows/check-ocr-final-stack-review.yml',
+    event: 'issue_comment',
+    head_branch: 'v3',
+    conclusion: 'success',
+    repository: { full_name: repository },
+  }
+  github.rest.actions = {
+    getWorkflowRun: async () => ({ data: state.workflowRun }),
+  }
+
+  assert.equal(
+    await hasCurrentSuccessfulStackReview({
+      github,
+      context: stackContext,
+      plan,
+      membership,
+    }),
+    true
+  )
+  assert.equal(
+    decideStackStatus({
+      eligible: true,
+      currentHead: plan.headSha,
+      reviewedHead: plan.headSha,
+      codeOutcome: 'success',
+      topologyOutcome: 'success',
+      cleanupOutcome: 'success',
+      publishOutcome: 'success',
+      policyDigest: plan.policyDigest,
+      cleanReview: 'true',
+    }).description,
+    `${STACK_REVIEW_CLEAN_STATUS_PREFIX}${plan.policyDigest}`
+  )
+})
 
 test('resolves a four-layer native stack and exact ancestry', async () => {
   const { github } = stackFixture()
