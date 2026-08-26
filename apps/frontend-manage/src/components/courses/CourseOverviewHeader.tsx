@@ -14,29 +14,21 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   type Course,
-  CreateCourseDocument,
   GetSingleCourseDocument,
-  GetUserCoursesDocument,
   ObjectType,
   UpdateCourseSettingsDocument,
   UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
-  Button,
-  Dropdown,
-  H1,
-  toast,
-  UserNotification,
-} from '@uzh-bf/design-system'
+import { Button, Dropdown, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
+import { useCourseDuplicationStatus } from './CourseDuplicationStatusProvider'
 import getLTIAccessLink from './getLTIAccessLink'
 import CourseDuplicationModal, {
-  type CourseDuplicationErrorType,
   type CourseDuplicationFormData,
 } from './modals/CourseDuplicationModal'
 import CourseManipulationModal, {
@@ -55,80 +47,6 @@ interface CourseOverviewHeaderProps {
   latestEndDate?: string
   containsActivities: boolean
   containsGroups: boolean
-}
-
-function getCourseDuplicationGroupSize(
-  value: number | string | null | undefined,
-  fallback: number
-) {
-  if (value === undefined || value === null || value === '') {
-    return fallback
-  }
-
-  const parsedValue = Number(value)
-
-  return Number.isFinite(parsedValue) ? parsedValue : fallback
-}
-
-const COURSE_DUPLICATION_PARTIAL_FAILURE_CODE =
-  'COURSE_DUPLICATION_PARTIAL_FAILURE'
-
-function getGraphQLErrorCode(error: unknown): string | undefined {
-  if (!error || typeof error !== 'object') return undefined
-
-  const extensions = (error as { extensions?: { code?: unknown } }).extensions
-  if (typeof extensions?.code === 'string') return extensions.code
-
-  const graphQLErrors = (error as { graphQLErrors?: unknown[] }).graphQLErrors
-  for (const graphQLError of graphQLErrors ?? []) {
-    const code = getGraphQLErrorCode(graphQLError)
-    if (code) return code
-  }
-
-  const errors = (error as { errors?: unknown[] }).errors
-  for (const nestedError of errors ?? []) {
-    const code = getGraphQLErrorCode(nestedError)
-    if (code) return code
-  }
-
-  return undefined
-}
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message
-  if (typeof error === 'string') return error
-
-  if (error && typeof error === 'object') {
-    const message = (error as { message?: unknown }).message
-    if (typeof message === 'string') return message
-  }
-
-  return String(error)
-}
-
-function getCourseDuplicationErrorType(
-  error: unknown
-): CourseDuplicationErrorType {
-  const code = getGraphQLErrorCode(error)
-  if (code === COURSE_DUPLICATION_PARTIAL_FAILURE_CODE) {
-    return 'partial'
-  }
-
-  const message = getErrorMessage(error)
-  const normalizedMessage = message.toLowerCase()
-
-  if (normalizedMessage.includes('not all')) {
-    return 'partial'
-  }
-
-  if (
-    normalizedMessage.includes('access') ||
-    normalizedMessage.includes('permission')
-  ) {
-    return 'access'
-  }
-
-  return 'generic'
 }
 
 function courseActionMenuLabel(icon: React.ReactNode, label: string) {
@@ -150,7 +68,8 @@ function CourseOverviewHeader({
 }: CourseOverviewHeaderProps) {
   const t = useTranslations()
   const router = useRouter()
-  const [createCourse] = useMutation(CreateCourseDocument)
+  const { isSourceCourseDuplicating, startCourseDuplication } =
+    useCourseDuplicationStatus()
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
 
   const [courseSettingsModal, setCourseSettingsModal] = useState(false)
@@ -158,6 +77,7 @@ function CourseOverviewHeader({
   const [correctionsModal, setCorrectionsModal] = useState(false)
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
   const [duplicationModal, setDuplicationModal] = useState(false)
+  const courseDuplicationInProgress = isSourceCourseDuplicating(course.id)
 
   const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
   const { data: dataUser } = useQuery(UserProfileDocument, {
@@ -384,96 +304,20 @@ function CourseOverviewHeader({
       {duplicationModal && (
         <CourseDuplicationModal
           initialValues={course}
+          isDuplicating={courseDuplicationInProgress}
           onModalClose={() => setDuplicationModal(false)}
-          onSubmit={async (
-            values: CourseDuplicationFormData,
-            setSubmitting,
-            onError
-          ) => {
-            try {
-              // convert dates to UTC
-              const startDateUTC = dayjs(values.startDate).utc().toISOString()
-              const endDateUTC = dayjs(values.endDate).utc().toISOString()
-              const groupDeadlineDateUTC = dayjs(values.groupCreationDeadline)
-                .utc()
-                .toISOString()
-              const maxGroupSize = getCourseDuplicationGroupSize(
-                values.maxGroupSize,
-                course.maxGroupSize
-              )
-              const preferredGroupSize = getCourseDuplicationGroupSize(
-                values.preferredGroupSize,
-                course.preferredGroupSize
-              )
+          onSubmit={async (values: CourseDuplicationFormData, onError) => {
+            const jobStarted = await startCourseDuplication({
+              course,
+              values,
+              onError,
+            })
 
-              const result = await createCourse({
-                variables: {
-                  name: values.name,
-                  displayName: values.displayName,
-                  description:
-                    !values.description?.match(/^(<br>(\n)*)$/g) &&
-                    values.description !== ''
-                      ? values.description
-                      : null,
-                  language: values.language,
-                  color: values.color,
-                  startDate: startDateUTC,
-                  endDate: endDateUTC,
-                  notificationEmail: values.notificationEmail,
-                  isGamificationEnabled: course.isGamificationEnabled,
-                  isGroupCreationEnabled: values.isGroupCreationEnabled,
-                  groupDeadlineDate: groupDeadlineDateUTC,
-                  maxGroupSize,
-                  preferredGroupSize,
-                  sourceCourseId: course.id,
-                  duplicateLiveQuizzes: values.copyLiveQuizzes,
-                  duplicatePracticeQuizzes: values.copyPracticeQuizzes,
-                  duplicateMicrolearnings: values.copyMicroLearnings,
-                  duplicateGroupActivities: values.copyGroupActivities,
-                },
-                update: (cache, { data }) => {
-                  // verify that the course creation was successful
-                  if (!data?.createCourse) return
-
-                  // add the new course to the course list
-                  cache.updateQuery(
-                    { query: GetUserCoursesDocument },
-                    (qData) => {
-                      if (!qData?.userCourses) return qData
-
-                      return {
-                        userCourses: [...qData.userCourses, data.createCourse!],
-                      }
-                    }
-                  )
-                },
-              })
-
-              const duplicatedCourse = result.data?.createCourse
-              const mutationError = result.errors?.[0]
-
-              if (duplicatedCourse) {
-                toast({
-                  type: 'success',
-                  message: t('manage.courseList.courseDuplicationSucceeded', {
-                    name: duplicatedCourse.name,
-                  }),
-                })
-                setDuplicationModal(false)
-                await router.push(`/courses/${duplicatedCourse.id}`)
-              } else {
-                onError(
-                  mutationError
-                    ? getCourseDuplicationErrorType(mutationError)
-                    : 'access'
-                )
-                setSubmitting(false)
-              }
-            } catch (error) {
-              onError(getCourseDuplicationErrorType(error))
-              setSubmitting(false)
-              console.error(error)
+            if (jobStarted) {
+              setDuplicationModal(false)
             }
+
+            return jobStarted
           }}
         />
       )}

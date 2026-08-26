@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   applyCourseStartDelta,
   getCourseStartDayDelta,
-} from '../src/services/courses.js'
+} from '../src/services/courseDuplication.js'
 
 describe('getCourseStartDayDelta', () => {
   it('returns the exact day difference for aligned timestamps', () => {

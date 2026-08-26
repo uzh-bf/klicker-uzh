@@ -27,14 +27,21 @@ whether the beta is open to an account; the account's `aiFeaturesEnabled`
 column decides whether that account may spend model budget at all, and an
 administrator sets it once a cost center has been supplied to bill the usage
 to. Both must hold, and the flag alone never opens a surface — see
-[Chat platform](./chat-platform.md#auth-guard-pattern-route-handlers).
+[Chat platform](./chat-platform.md#auth-guard-pattern-route-handlers). In
+`frontend-manage`, the same two conditions (via `useAiFeaturesEnabled`)
+control the top-level AI dropdown that carries the Knowledge Bases and
+Chatbots management routes; when the gate is closed the AI routes render a
+localized unavailable state instead of redirecting. GraphQL independently
+applies the same gate to every lecturer KB service entry point and to Manage
+chatbot reads and mutations; participant chatbot discovery and worker-only KB
+settlement are unaffected.
 
 ## Active flags
 
-| Key                  | Consumer           | Fallback | Disabled behavior                                      |
-| -------------------- | ------------------ | -------- | ------------------------------------------------------ |
-| `ai-beta`            | Lecturer AI        | `false`  | AI surfaces and their endpoints remain unavailable     |
-| `learning-analytics` | Lecturer UI/Manage | `false`  | Analytics controls remain visible but are not usable   |
+| Key                  | Consumer           | Fallback | Disabled behavior                                    |
+| -------------------- | ------------------ | -------- | ---------------------------------------------------- |
+| `ai-beta`            | Lecturer AI        | `false`  | AI surfaces and their endpoints remain unavailable   |
+| `learning-analytics` | Lecturer UI/Manage | `false`  | Analytics controls remain visible but are not usable |
 
 Disabled analytics controls explain that the feature is not yet available for
 the current account. This keeps a deliberately staged rollout distinguishable

@@ -11,6 +11,18 @@ import {
 } from '../src/services/knowledge.js'
 import { testCleanup, testInitialization } from './helpers.js'
 
+const previousManageAiEnvironment = vi.hoisted(() => {
+  const previousGrowthbookEnvironment = process.env.GROWTHBOOK_ENV
+  const previousFeatureFlagsForcedOn = process.env.FEATURE_FLAGS_FORCED_ON
+  process.env.GROWTHBOOK_ENV = 'development'
+  process.env.FEATURE_FLAGS_FORCED_ON = 'ai-beta'
+
+  return {
+    previousGrowthbookEnvironment,
+    previousFeatureFlagsForcedOn,
+  }
+})
+
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 
@@ -33,6 +45,22 @@ describe('Integration tests for knowledge base ingestion', () => {
   afterAll(async () => {
     await testCleanup(prisma)
     await prisma.$disconnect()
+    if (
+      previousManageAiEnvironment.previousGrowthbookEnvironment === undefined
+    ) {
+      delete process.env.GROWTHBOOK_ENV
+    } else {
+      process.env.GROWTHBOOK_ENV =
+        previousManageAiEnvironment.previousGrowthbookEnvironment
+    }
+    if (
+      previousManageAiEnvironment.previousFeatureFlagsForcedOn === undefined
+    ) {
+      delete process.env.FEATURE_FLAGS_FORCED_ON
+    } else {
+      process.env.FEATURE_FLAGS_FORCED_ON =
+        previousManageAiEnvironment.previousFeatureFlagsForcedOn
+    }
   })
 
   beforeEach(async () => {
@@ -41,7 +69,7 @@ describe('Integration tests for knowledge base ingestion', () => {
     userTwoCtx = initialized.userTwoCtx
     await prisma.user.updateMany({
       where: { id: { in: [userOneCtx.user.sub, userTwoCtx.user.sub] } },
-      data: { privatePreview: true },
+      data: { aiFeaturesEnabled: true },
     })
   })
 

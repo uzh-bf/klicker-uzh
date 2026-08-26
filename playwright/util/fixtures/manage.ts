@@ -64,6 +64,7 @@ export async function mockGrowthBookLearningAnalytics(
       contentType: 'application/json',
       body: JSON.stringify({
         features: {
+          'ai-beta': { defaultValue: true },
           'learning-analytics': { defaultValue: enabled },
         },
       }),
@@ -143,6 +144,14 @@ export async function prepareSeededAnalyticsActivities() {
   await prisma.practiceQuiz.update({
     where: { id: practiceQuiz.id },
     data: { status: PublicationStatus.PUBLISHED },
+  })
+}
+
+export async function updateLecturerAiAccess(enabled: boolean) {
+  const prisma = await getPrisma()
+  await prisma.user.update({
+    where: { shortname: LECTURER_SHORTNAME },
+    data: { aiFeaturesEnabled: enabled },
   })
 }
 

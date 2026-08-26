@@ -25,12 +25,12 @@ Wrong major (e.g. 9.x from a stale Volta shim; `VOLTA_FEATURE_PNPM` unset) **sil
 
 ## Check 2 — install and build state
 
-| Symptom                                             | Fix                                                                            |
-| --------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `sh: run-p: command not found` (hooks fail)         | `pnpm install`                                                                 |
-| `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`        | `pnpm install --config.confirmModulesPurge=false`                              |
-| `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` under `CI=true` | restore lockfile (check 1), install without `CI=true`                          |
-| ~19 packages fail `pnpm run check`                  | `pnpm run build` once (generates Prisma client, codegen, dists), then re-check |
+| Symptom                                             | Fix                                                                                    |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `sh: run-p: command not found` (hooks fail)         | `pnpm install`                                                                         |
+| `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`        | `pnpm install --config.confirmModulesPurge=false`                                      |
+| `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` under `CI=true` | restore lockfile (check 1), install without `CI=true`                                  |
+| ~19 packages fail `pnpm run check`                  | `pnpm run build` once (generates Prisma client, GraphQL outputs, dists), then re-check |
 
 Healthy sequence from scratch inside the devcontainer: `pnpm install` → `pnpm run build` → `pnpm run check` (verified ~20s / ~1.5min / clean). The root build script forces `NODE_ENV=production`, including when the devcontainer exports `NODE_ENV=development` for its live apps. A production build can replace Next.js dev output; run `devrouter ensure .` afterward so the exact checkout runtime is health-checked and recovered when needed.
 
@@ -40,8 +40,15 @@ Symptoms: typecheck can't find a `*Document`, or a running backend rejects an op
 
 ```bash
 pnpm --filter @klicker-uzh/graphql generate
-git status   # regenerated src/ops.ts + src/public/*.json MUST be committed with the change
+test -f packages/graphql/src/ops.ts
+test -f packages/graphql/src/public/client.json
+test -f packages/graphql/src/public/server.json
+git diff --exit-code -- packages/graphql/src/public/schema.graphql
 ```
+
+The typed documents and persisted-query maps are ignored build outputs. A
+package build regenerates them before Rollup; only the public SDL snapshot is
+tracked for review and GraphQL tooling.
 
 ## Check 4 — stale Prisma schema sync
 

@@ -41,13 +41,13 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
 4. **Arg validation** — Zod plugin `validate:` on args (email/regex/length examples in `mutation.ts`).
 5. **Client op** — new file `packages/graphql/src/graphql/ops/<Prefix><Name>.graphql`; prefix `Q`/`M`/`S`/`F` matches the kind. Reuse `F*` fragments where they exist.
-6. **Codegen — never skip, always commit:**
+6. **Codegen — never skip:**
 
    ```bash
    pnpm --filter @klicker-uzh/graphql generate
    ```
 
-   Commit the regenerated `src/ops.ts`, `src/ops.schema.json`, `src/public/schema.graphql`, `src/public/client.json`, `src/public/server.json` **with** the change. Stale `server.json` = persisted-query rejection in prod modes; stale `ops.ts` = frontend typecheck failure.
+   Commit the handwritten operation/schema sources and the regenerated `src/public/schema.graphql` snapshot. `src/ops.ts` and `src/public/{client,server}.json` are ignored build outputs; package builds regenerate them before Rollup. Stale `server.json` = persisted-query rejection in prod modes; stale `ops.ts` = frontend typecheck failure.
 
    For rolling-deployment compatibility, do not mutate an operation document
    already used by a deployed frontend when adding fields or variables. Add a
@@ -59,7 +59,7 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
 Do not nest full history under a frequently polled parent list. The KB detail query loads only each resource's latest run; the separate owner-checked history query returns at most the five newest runs and is called on expansion.
 
-Every KB service query and mutation must start with `assertKbPreviewAccess(ctx)`, which reads the current `User.privatePreview` value instead of trusting a JWT claim. Apply the separate `assertKbIngestionEnabled()` kill switch only to upload-ticket issue, URL-resource creation, and Ingest/Retry/Re-ingest; reads, confirmation, deletion, and chatbot binding must stay available while ingestion is disabled.
+Every lecturer KB service query and mutation must start with `assertManageAiEnabled(ctx)`, which requires the GrowthBook `ai-beta` flag and reads the current `User.aiFeaturesEnabled` entitlement instead of trusting a JWT claim. Apply the same gate to Manage chatbot reads and mutations, but not participant `courseChatbots` queries or worker-only KB settlement. Apply the separate `assertKbIngestionEnabled()` kill switch only to upload-ticket issue, URL-resource creation, and Ingest/Retry/Re-ingest; reads, confirmation, deletion, and chatbot binding must stay available while ingestion is disabled.
 
 Knowledge-graph mutations add a distinct `KB_GRAPH_DISABLED` generation switch and require the persisted per-KB `knowledgeGraphEnabled` opt-in. Before dispatch, reserve the configured estimate in the owner-semester `KBGraphQuota`; recheck the complete reservation and linked quota identity at the worker effect boundary; claim `dispatchClaimedAt` before the provider call; and hold an accepted-but-uncorrelated run instead of retrying an ambiguous external effect. Keep its reservation and active KB build slot fenced until recovery, cancellation, settlement, or manual resolution, and refuse a rebuild mutation that would start a second external run. Expose cost and quota state without credentials. Provider status is not a GraphQL success proof: wire a versioned terminal result through `settleKbKnowledgeGraphResult`, validate build/KB/owner/run/digest/artifact/currency/bounded-counter/metering identity, settle valid metered non-success results without publication, and let `KBGraphBuild.costStatus` make settlement idempotent. The production backend and general worker explicitly pass `getKBGraphTerminalResult` and `settleKbKnowledgeGraphResult` into `prepareHatchetTasks`; both adapters are required for the supported runtime composition. A timed-out success requires locked no-newer-build and current-digest reconciliation before publication; stale or superseded late results settle without publication. The config query selects the newest graph attempt for lifecycle and cost fields, while it resolves `isStale` only from a verified successful published build, so a held or charged rebuild remains visible without changing the served pointer. Report persisted quota currency/limit drift as unavailable and keep historical build-cost currency separate from quota display.
 
@@ -90,6 +90,6 @@ Publish from the service (`ctx.pubSub.publish('<topic>', payload)`), subscribe i
 | ------------------------------------ | ------------------------------------------------------------------------------ |
 | `Unauthorized` GraphQLError          | layer-1 scope object mismatch (wrong role/scope for the caller)                |
 | Field silently `null` for a lecturer | layer-2 `withPermission` failed (no ownership/grant at that `PermissionLevel`) |
-| Op works in dev, rejected deployed   | stale/uncommitted `server.json` (step 6)                                       |
+| Op works in dev, rejected deployed   | package build did not regenerate `server.json` (step 6)                        |
 | Frontend can't find `*Document`      | codegen not run after adding the op                                            |
 | Mutation fails `workflow not found`  | Hatchet worker missing → `klicker-environment-doctor` check 7                  |

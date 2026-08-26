@@ -1735,6 +1735,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       openInNewTab: 'Open assistant in a new tab',
       elementCreatedToast: 'Draft "{name}" added to your question pool',
     },
+    ai: {
+      unavailableTitle: 'AI features unavailable',
+      unavailableDescription:
+        'The AI features are in beta and not yet available for your account. Please contact your administrator for access.',
+    },
     general: {
       qrCode: 'QR Code',
       presentQrCode: 'Present QR code',
@@ -1745,6 +1750,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       liveQuizzes: 'Live Quizzes',
       courses: 'Courses',
       resources: 'Resources',
+      ai: 'AI',
+      betaFeatures: 'Beta features',
       catalog: 'Catalog',
       mediaLibrary: 'Media Library',
       userGroups: 'User Groups',
@@ -3468,14 +3475,26 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       courseDuplicationEndDateInPast:
         'The selected end date lies in the past. The duplicated course will already have ended when it is created - shift the start date if students should be able to access it.',
       courseDuplicationFailed: 'Failed to duplicate course.',
+      courseDuplicationAlreadyInProgress:
+        'This course is already being duplicated.',
       courseDuplicationNoAccess:
         'You no longer have sufficient permissions to duplicate this course.',
       courseDuplicationPartialFailure:
         'Not all selected activities or activity instances could be duplicated. No partial course was created.',
       courseDuplicationInProgress:
         'Duplicating large courses can take a while.',
+      courseDuplicationBackgroundInfo:
+        'You can close this dialog. When the copy is ready, you will get a notification with a link to open it.',
+      courseDuplicationStatusTab: 'Course duplications',
+      courseDuplicationStatusCount:
+        '{count, plural, one {# active course duplication request} other {# active course duplication requests}}',
+      courseDuplicationStatusTitle: 'Active course duplications',
+      courseDuplicationStatusDescription:
+        'You can continue working while these courses are copied.',
+      courseDuplicationStatusSource: 'Copying from "{source}"',
       courseDuplicationSucceeded:
         'Course "{name}" has been duplicated successfully.',
+      courseDuplicationOpenCourse: 'Open course',
       noCoursesFound: 'No courses found. Please create a new course.',
       createCourseNow: 'Create a course now!',
       courseNameReq: 'Please enter a name for the course.',

@@ -61,11 +61,6 @@ jobs:
           version: 11.5.0
           run_install: true
 
-      # Unit tests are fully mocked (no Prisma client, no DB) so they can run
-      # as a cheap early failure before any build or database work.
-      - name: Run mcp-lecturer unit tests
-        run: pnpm --filter @klicker-uzh/mcp-lecturer run test:run
-
       # seed:test imports @klicker-uzh/types and @klicker-uzh/util, which
       # resolve via their gitignored dist/ only — build the whole chain
       # (util additionally depends on grading), mirroring test-graphql.yml.
@@ -79,6 +74,11 @@ jobs:
           pnpm run build
           cd ../util
           pnpm run build
+
+      # Unit tests are mocked and need no database, but their workspace imports
+      # resolve through dist files, so run them after the dependency build.
+      - name: Run mcp-lecturer unit tests
+        run: pnpm --filter @klicker-uzh/mcp-lecturer run test:run
 
       - name: Setup database
         run: |

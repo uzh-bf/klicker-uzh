@@ -104,10 +104,10 @@ Companion: [WIKI_BOOTSTRAP_BRINGUP.md](WIKI_BOOTSTRAP_BRINGUP.md) (Phase 0 envir
 
 ### Ops + codegen
 - Prefix counts in `src/graphql/ops/`: 155 M*, 116 Q*, 16 F*, 12 S*, 1 legacy unprefixed. Examples: `MJoinParticipantGroup/MUpvoteFeedback/MDeleteUserLogin`, `QGetAssessmentCourseParticipants/QGetSinglePracticeQuiz/QGetRunningLiveQuiz`, `SFeedbackAdded/SFeedbackCreated/SFeedbackPinned`, `FActivityInfoData/FStackFeedbackEvaluations/FPracticeQuizDataWithoutSolutions`.
-- `codegen.ts:1-75`: schema = `printSchema(schema)` from live Pothos; outputs `src/ops.ts` (typed-document-node), `src/ops.schema.json`, `src/public/schema.graphql`, `src/public/client.json` + `server.json` (persisted-query maps).
+- `codegen.ts`: schema = `printSchema(schema)` from live Pothos; outputs `src/ops.ts` (typed-document-node), `src/public/schema.graphql`, and `src/public/client.json` + `server.json` (persisted-query maps). Only `schema.graphql` is tracked; package builds regenerate the other outputs.
 - Frontend usage: `apps/frontend-manage/src/components/sharing/useTransferObjectOwnership.ts:2-11` imports `*Document` from `@klicker-uzh/graphql/dist/ops`.
 - Persisted queries: client.json op→hash (Apollo `createPersistedQueryLink`, manage apollo.ts:11,14); server.json hash→op (`usePersistedOperations`, app.ts:15,149-155); unknown hash rejected outside dev/test (app.ts:150-152).
-- Ritual: `pnpm generate` in packages/graphql (package.json:95); `pnpm build` = generate + rollup (rollup.config.js:9-11,26-27 copies public/* to dist). `src/ops.ts` + `src/public/*` are **git-tracked** — regenerate AND commit after any op/schema change. Stale server.json → server rejects persisted-query hash in prod modes.
+- Ritual: `pnpm generate` in packages/graphql; `pnpm build` = generate + rollup (rollup.config.js copies public/* to dist). Regenerate after any op/schema change and commit the handwritten sources plus `src/public/schema.graphql`; `src/ops.ts` and the persisted-query maps are ignored build outputs. Stale server.json → server rejects persisted-query hash in prod modes.
 
 ### Subscriptions (end-to-end example)
 - Schema: subscription.ts:54-65 `feedbackCreated`, `pipe(ctx.pubSub.subscribe('feedbackCreated'), filter(d => d.liveQuizId === args.quizId))`.
@@ -250,7 +250,7 @@ Read-feature end-to-end, single commit, no migration:
 3. **Service**: `services/courses.ts` — new `getAssessmentResultsCourse({courseId, preferredAffiliation}, ctx)`, reworked `getStudentAssessmentResults`.
 4. **Auth**: `t.withAuth(asUser)` + `withPermission((args)=>({courseId}), PermissionLevel.ADMIN, ...)` for lecturer query; participant-facing sibling only `t.withAuth(asUser)`.
 5. **Ops**: new `QGetAssessmentResultsCourse.graphql`, `QGetStudentCourseResults.graphql`; extended `FActivityStudentPerformanceData.graphql`, `QGetPreviousPointCorrections.graphql`.
-6. **Committed codegen artifacts**: `src/ops.ts` (+78), `ops.schema.json` (+404), `public/{client,server}.json`, `public/schema.graphql` — same commit.
+6. **Historical codegen artifacts**: this commit included `src/ops.ts`, `ops.schema.json`, `public/{client,server}.json`, and `public/schema.graphql`. Current policy commits only the tracked `public/schema.graphql` snapshot; package builds regenerate the other required outputs.
 7. **Frontend**: new page `apps/frontend-manage/src/pages/courses/[id]/assessment/results.tsx` (`useQuery(GetAssessmentResultsCourseDocument, {fetchPolicy:'network-only'})`), new `CourseSingleStudentResults.tsx` (`useSuspenseQuery` + Suspense), nav button in `CourseOverviewHeader.tsx` gated `course.isAssessmentEnabled && course.isManager`. Design system: Button/H2/UserNotification/Tooltip + shared Loader. data-cy: reused existing hooks, none new.
 8. **i18n**: +6/+6 lines de.ts/en.ts, namespaces `manage.assessment.*`, `manage.course.*`.
 9. **Tests**: none in this commit (honest gap — read features shipped without e2e here).
@@ -261,7 +261,7 @@ NOT demonstrated: migration, mutation, subscription, e2e coverage. Companion `38
 
 ## Cross-cutting synthesis (feeds wiki + skills)
 
-- One repeated ritual dominates correctness: **regenerate + commit codegen artifacts** (graphql ops + prisma client + persisted-query maps). Two independent staleness failure modes (typecheck fails / persisted-hash rejected) — both documented with evidence above.
+- One repeated ritual dominates correctness: **regenerate GraphQL outputs and commit the tracked schema snapshot**. Package builds create the ignored typed documents and persisted-query maps. Two independent staleness failure modes remain (typecheck fails / persisted-hash rejected) — both documented with evidence above.
 - **Auth is 3 explicit layers with names**: `t.withAuth(scopeObject)` → `withPermission(...)` → `checkAccess` derived-permission lookup. Skills can prescribe exactly this.
 - **Two-track gamification** (points need active Participation; XP unconditional) is the most guess-wrong domain fact.
 - **Test-level routing** is decidable from change type: pure logic → package vitest; graphql services → `test:local` bootstrap; UI/flows → e2e (route to existing klicker-cypress/playwright skills); component-level does not exist.

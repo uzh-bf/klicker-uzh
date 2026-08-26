@@ -25,7 +25,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/|packages/|playwright/|\.github/workflows/test-playwright\.yml|\.github/actions/changed-paths/|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh)'
+          pattern: '^(apps/|packages/|playwright/|\.github/workflows/test-playwright\.yml|\.github/workflows/update-playwright-timings\.yml|\.github/actions/changed-paths/|\.github/scripts/get-shard-files\.js|\.github/scripts/update-playwright-timings\.py|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh)'
 
   build-and-compile:
     needs: filter
@@ -94,15 +94,9 @@ jobs:
           APP_ORIGIN_CONTROL: http://127.0.0.1:3003
           APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
           APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
-          # The manage assistant widget is inert in frontend-manage without
-          # these two: NEXT_PUBLIC_* values are inlined into the client bundle
-          # at build time (.env.test maps NEXT_PUBLIC_CHAT_URL from
-          # APP_ORIGIN_CHAT), and Y-manage-assistant.spec.ts needs the widget.
-          # No GrowthBook runs in CI, so the flags are forced on instead —
-          # honored only because the flag environment here resolves to
-          # development.
+          # .env.test maps APP_ORIGIN_CHAT into the NEXT_PUBLIC_CHAT_URL that
+          # Y-manage-assistant.spec.ts needs in the browser bundle.
           APP_ORIGIN_CHAT: http://127.0.0.1:3004
-          NEXT_PUBLIC_FEATURE_FLAGS_FORCED_ON: ai-beta
 
       - name: Archive Next build outputs
         run: |
@@ -137,8 +131,10 @@ jobs:
             apps/olat-api/dist
             apps/response-api/dist
             packages/export/dist
+            packages/feature-flags/dist
             packages/grading/dist
             packages/graphql/dist
+            packages/graphql/src/public/client.json
             packages/hatchet/dist
             packages/knowledge-graph/dist
             packages/markdown/dist
@@ -367,11 +363,20 @@ jobs:
           APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
           APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
 
-      - name: Upload Playwright artifacts
+      - name: Upload Playwright JUnit results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-artifacts-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
+          name: playwright-results-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
+          path: playwright/test-results/junit.xml
+          if-no-files-found: ignore
+          retention-days: 1
+
+      - name: Upload Playwright diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-diagnostics-${{ matrix.shardIndex }}-of-${{ matrix.shardTotal }}
           path: |
             playwright/playwright-report
             playwright/test-results
@@ -386,6 +391,18 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     steps:
+      - name: Record filter decision for downstream timing feedback
+        run: |
+          printf 'should_run=%s\n' "${{ needs.filter.outputs.should_run }}" > playwright-run-metadata.txt
+
+      - name: Upload run metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-run-metadata
+          path: playwright-run-metadata.txt
+          retention-days: 1
+
       - name: Check result
         run: |
           # A run cancelled by concurrency (duplicate push, quick re-push) must not
