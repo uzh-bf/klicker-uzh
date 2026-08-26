@@ -10,23 +10,23 @@
   staging-promotion contracts.
 - Correct the documented branch-protection mismatch by requiring both `check`
   and `check-gitleaks` after they pass on the draft pull-request head.
-- Non-goals: merge or mark the pull request ready, deploy, change image build or
-  promotion behavior, enable Docker layer caching, extract reusable image
-  workflows, change Playwright sharding, or delete the worktree or runtime data.
+- Non-goals: merge, deploy, change image build or promotion behavior, enable
+  Docker layer caching, extract reusable image workflows, change Playwright
+  sharding, or delete the worktree or runtime data.
 
 ## Execution contract
 
-- Authority: the user authorized a new branch and pull request against `v3`,
-  implementation, repository-native verification, conventional commits, and a
-  normal push.
+- Authority: the user authorized the branch update, implementation,
+  repository-native verification, conventional commits, normal pushes, PR
+  updates, and marking the PR ready when reviewable.
 - Branch-protection authority was granted explicitly after replacement proof;
-  the incremental migration completed with exact app-bound readback. Merge of
-  the follow-up PR, deployment, force push, and cleanup remain withheld.
+  the incremental migration completed with exact app-bound readback. Merge,
+  deployment, force push, and cleanup remain withheld.
 - Execution owner and boundary owner: main session. The workflow definitions,
   hosted proof, and required-context migration remain coupled in one owner.
-- Terminal: a follow-up draft PR contains the workflow deletion and current
-  documentation; required reviews and verification are resolved; no additional
-  merge or deployment occurs.
+- Terminal: the follow-up PR is pushed against the current `v3` baseline, its
+  exact-head required checks and reviews are resolved, and it is ready for
+  human review; no merge or deployment occurs.
 - Pause: stop on a missing or skipped replacement context, incomplete unit-test
   diagnostics, a protection readback mismatch, a concurrent workflow/protection
   edit that cannot be preserved, a required force push, or a new credential.
@@ -36,13 +36,17 @@
 - Plan: `project/2026-08-25-pr-5551-ci-workflow-efficiency-plan.md`.
 - Branch: `rs/ci-workflow-efficiency-cleanup` for the follow-up cutover.
 - Worktree: `trees/ci-workflow-efficiency`.
-- Target: `origin/v3` at squash merge
-  `e4ef09e5bfc64a4019bace0b472630d5a21408c5`.
-- Pull request: #5551 was squash-merged externally before the planned cleanup;
-  follow-up draft PR #5553 contains the completed cutover.
+- Target: current `origin/v3` at
+  `61a7f8108477a58595505d97618d68f3eeb35aff`, including merged [PR
+  #5446](https://github.com/uzh-bf/klicker-uzh/pull/5446)'s Playwright timing and
+  eight-shard changes.
+- Pull request: [#5551](https://github.com/uzh-bf/klicker-uzh/pull/5551) was
+  squash-merged externally before the planned cleanup; follow-up draft
+  [#5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) contains the cutover.
 - Package: the intended single cutover was split by that external merge. The
   follow-up contains only the now-unblocked workflow deletions, documentation,
-  and final evidence.
+  and final evidence; the branch sync is a normal merge commit, not a history
+  rewrite.
 
 ## Current evidence and decisions
 
@@ -51,9 +55,9 @@
   and `build-arm`, all bound to GitHub Actions app ID 15368. The four former
   split contexts were removed only after both replacements passed and were
   added with successful readback.
-- PR #5304 added `check.yml` beside the five old check workflows so an
-  administrator could migrate required contexts safely. That migration and
-  cleanup never happened.
+- [PR #5304](https://github.com/uzh-bf/klicker-uzh/pull/5304) added `check.yml`
+  beside the five old check workflows so an administrator could migrate
+  required contexts safely. That migration and cleanup never happened.
 - On one same-commit hosted sample, `check` used 245 seconds while the five
   split check jobs used 871 seconds in aggregate. The consolidated job had a
   warm Turbo cache, so this is evidence of duplicated work and queue pressure,
@@ -80,6 +84,9 @@
   Durable updates go to `docs/ci-and-deployment.md`, `docs/testing.md`, the
   directly affected `docs/chat-platform.md`, and
   `.agents/skills/klicker-testing-verification/SKILL.md`.
+- No `docs/log` or `docs/index` update is required: the authoritative `v3`
+  instructions explicitly reserve those paths as absent, and the merged
+  baseline keeps them absent.
 - No ADR is needed: this is a reversible CI-configuration consolidation that
   preserves product, data, deployment, and public contracts. Reusable image
   workflow extraction or promotion-contract changes would reopen the ADR gate.
@@ -177,8 +184,9 @@ Do not delete a workflow if any readback differs from the expected set.
 - Update the CI guide, testing guide, testing-verification skill, and plan
   progress to describe the delivered state and measured follow-ups.
 - Run Actions validation, repository-native checks, the required slice review,
-  and one integrated final reviewer. Open and update a follow-up draft PR, but
-  do not mark it ready, merge, deploy, or clean up the branch/worktree.
+  and one integrated final reviewer. Update the follow-up PR and mark it ready
+  after the final exact-head checks pass; do not merge, deploy, or clean up the
+  branch/worktree.
 - Commit: `ci: complete workflow efficiency consolidation`.
 
 ## Deferred efficiency packages
@@ -196,29 +204,38 @@ Do not delete a workflow if any readback differs from the expected set.
 
 ## Progress
 
-- Status: follow-up draft PR #5553 is open with the cleanup and current
-  guidance; exact-head hosted checks are pending.
+- Status: branch is synced with current `origin/v3` through normal merge commit
+  `5abae129b`; [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) needs
+  fresh exact-head verification before it can be marked ready.
 - Completed: plan commit and post-commit freshness check; replacement workflow
   implementation; Actions audit, validation, and discovery; exact Node 24
   dependency builds; all four unit suites; Prettier and diff checks; and the
-  full monorepo build. The root `check:all` gate reached 6 of 7 tasks but the
-  analytics lint task could not build pandas because the devcontainer has no C
-  compiler; this is unrelated to the workflow-only diff. The specialist review
-  accepted the consolidation and identified one least-privilege gap: GraphQL's
-  filter and status jobs now receive workflow-level `contents: read`. On exact
-  PR head `e15bd081a`, `check`, `check-gitleaks`, and manually dispatched
-  `test-unit` passed; hosted logs confirmed one install, the ordered dependency
-  build, and all four suites. PR #5551 was then squash-merged externally as
-  `e4ef09e5b`. After explicit approval, branch protection was migrated and read
-  back after each step with strict mode and app ID 15368 preserved.
-- Remaining: confirm the required hosted checks on #5553's exact final head and
-  update its evidence. Ready transition and merge remain withheld.
+  full monorepo build. The specialist review accepted the consolidation and
+  identified one least-privilege gap: GraphQL's filter and status jobs now
+  receive workflow-level `contents: read`. On exact PR head `e15bd081a`,
+  `check`, `check-gitleaks`, and manually dispatched `test-unit` passed; hosted
+  logs confirmed one install, the ordered dependency-build chain, and all four
+  suites. [PR #5551](https://github.com/uzh-bf/klicker-uzh/pull/5551) was then
+  squash-merged externally as `e4ef09e5b`. After explicit approval, branch
+  protection was migrated and read back after each step with strict mode and
+  app ID 15368 preserved. The current baseline additionally contains merged
+  [PR #5446](https://github.com/uzh-bf/klicker-uzh/pull/5446) at `cd5cfd574`;
+  its exact-head Playwright run `32919404126` passed the filter, build, all
+  eight shards, and `test-playwright-status`. The branch preserves that
+  baseline and the subsequent `v3` release commits through merge commit
+  `5abae129b`. Current exact synced-head local verification passes the full
+  monorepo build (23/23 tasks) and `check:all` (7/7 orchestration tasks,
+  25/25 checks) under the pinned Node 24 and pnpm 11.5 toolchain.
+- Remaining: update [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553)
+  with the synced-base evidence, run fresh exact-head hosted checks, and mark
+  it ready if all required contexts pass. Merge remains withheld.
 - Follow-up verification: the safe Actions audit, syntax validation, and job
   discovery pass with only `check`, `check-gitleaks`, and `test-unit` present for
   the consolidated scope. Prettier passes under the repository-pinned Node 24
   runtime. The repository-wide wiki validator still reports 19 pre-existing
   frontmatter errors, all outside the edited pages. The former task DevPod was
-  removed externally after #5551 merged, and the installed devrouter rejects
+  removed externally after [PR #5551](https://github.com/uzh-bf/klicker-uzh/pull/5551)
+  merged, and the installed devrouter rejects
   the repository's current `profiles` configuration, so this cleanup uses the
   narrow pinned-toolchain fallback rather than modifying host tooling.
 - The full `pnpm run check:all` hook passes under Node 24 and pnpm 11.5 after
@@ -226,5 +243,14 @@ Do not delete a workflow if any readback differs from the expected set.
   pre-push build passes 23/23 tasks. The integrated final reviewer found no
   change-introduced issue and confirmed that `test-unit` should not trigger on
   changes to the composite changed-path action it no longer consumes.
-- Delivery boundary: ready transition, follow-up merge, deployment, and cleanup
-  remain withheld.
+- Delivery boundary: ready transition is authorized after the final checks;
+  follow-up merge, deployment, and cleanup remain withheld.
+
+## Next Steps
+
+- Push the current synced branch, refresh the PR description against
+  `origin/v3`, and wait for all required exact-head contexts.
+- Mark [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) ready
+  once the final hosted checks and review state remain green.
+- Keep the deferred image-workflow optimizations as separate packages with
+  their own hosted proof and contract review.
