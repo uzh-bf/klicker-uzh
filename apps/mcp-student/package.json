@@ -22,7 +22,7 @@
     "vitest": "~3.2.4"
   },
   "scripts": {
-    "build": "cross-env NODE_ENV=production tsc -p tsconfig.build.json",
+    "build": "cross-env NODE_ENV=production tsc -p tsconfig.build.json && node -e \"import('./dist/graphqlClient.js')\"",
     "build:test": "pnpm run build",
     "check": "tsc --noEmit",
     "dev": "cross-env NODE_ENV=development tsx src/index.ts",

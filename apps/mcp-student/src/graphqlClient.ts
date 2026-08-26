@@ -6,8 +6,8 @@ import {
   type NormalizedCacheObject,
   type OperationVariables,
   type TypedDocumentNode,
-} from '@apollo/client/core'
-import { createPersistedQueryLink } from '@apollo/client/link/persisted-queries'
+} from '@apollo/client/core/index.js'
+import { createPersistedQueryLink } from '@apollo/client/link/persisted-queries/index.js'
 import hashes from '@klicker-uzh/graphql/dist/client.json' with { type: 'json' }
 import {
   GetCoursePracticeQuizWithoutSolutionsDocument,
