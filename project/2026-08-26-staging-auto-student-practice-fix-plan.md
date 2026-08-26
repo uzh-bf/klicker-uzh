@@ -126,4 +126,5 @@ runtime proof remain follow-up gates after merge and an authorized sync.
   errors and no new error in either changed guide.
 - [x] Rechecked target drift. `origin/v3-ai` advanced by one unrelated Manage
   assistant-URL commit; no changed path overlaps this package.
-- [ ] Commit, push, and create the draft PR.
+- [x] Committed and pushed the package, then opened draft PR #5586 against
+  `v3-ai`.
