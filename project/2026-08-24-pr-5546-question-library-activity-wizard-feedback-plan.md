@@ -29,10 +29,11 @@ uncrowned regardless of Catalyst entitlement.
 - Except for the official devrouter 0.0.38 consumer version pin and generated
   guidance prerequisite, do not change devrouter, devcontainer, local-origin,
   environment, application routes, or Turborepo routing configuration.
-- Draft PR #5546 exists. Normal branch pushes and PR body updates are authorized,
-  but the latest reconciled and corrected commits remain local and their normal
-  push is pending. PR merge, mark-ready, deployment, publication, worktree
-  cleanup, and branch, worktree, or runtime-data deletion remain withheld.
+- Draft PR #5546 exists. The branch and PR body were synchronized through the
+  prior published head. Current PR and check state is volatile, and GitHub is
+  authoritative. Normal pushes and PR body updates are authorized and performed
+  as required. PR merge, mark-ready, deployment, publication, worktree cleanup,
+  and branch, worktree, or runtime-data deletion remain withheld.
 
 ## Execution contract
 
@@ -80,9 +81,10 @@ uncrowned regardless of Catalyst entitlement.
   `01a03490-059c-7381-adb8-91b77e89f5f9` accepted rebuilding S1 without
   Catalyst signaling because ADR-0037 makes the three formerly gated formats
   standard full-access capabilities.
-- Draft PR #5546 exists. The latest reconciled and corrected commits remain
-  local; their normal push and the corresponding PR body update are authorized
-  but pending. PR merge, mark-ready, deployment, publication, cleanup, and
+- Draft PR #5546 exists. The branch and PR body were synchronized through the
+  prior published head. Current PR and check state is volatile, and GitHub is
+  authoritative. Normal pushes and PR body updates are authorized and performed
+  as required. PR merge, mark-ready, deployment, publication, cleanup, and
   deletion remain withheld.
 - Authoritative roadmap:
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/question-library-feedback-recovery/project/2026-08-23-question-library-ux-audit-and-roadmap.md`
@@ -404,10 +406,11 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   alternate or an unresolved material finding stops delivery.
 - Finalize plan `Progress` in a local commit and report commits, checks,
   review disposition, browser/runtime evidence, and remaining withheld actions.
-  Draft PR #5546 exists; normal branch pushes and PR body updates are authorized
-  but pending for the latest local corrections. PR merge, mark-ready,
-  deployment, publication, worktree cleanup, and branch or worktree deletion
-  remain withheld.
+  Draft PR #5546 exists; the branch and PR body were synchronized through the
+  prior published head. Current PR and check state is volatile, and GitHub is
+  authoritative. Normal pushes and PR body updates are authorized and performed
+  as required. PR merge, mark-ready, deployment, publication, worktree cleanup,
+  and branch or worktree deletion remain withheld.
 
 ## Risks and stop conditions
 
@@ -430,6 +433,10 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 - Command/result ledger for targeted checks, diff hygiene, reviews, exact-domain
   browser evidence, and the environment-blocked repository Playwright run.
+- Host readback proves branch and PR-body synchronization for each published
+  head. GitHub is authoritative for volatile current PR and check state. Normal
+  pushes and PR body updates are authorized and performed as required; PR merge,
+  mark-ready, deployment, publication, cleanup, and deletion remain withheld.
 
 ## Progress
 
@@ -536,10 +543,11 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   `Stopped`; route state was absent; and the exact W2 route count was 0. No new
   worktree or manual Docker, DevPod, route, TLS, certificate, or lock edit
   occurred.
-- Delivery state: draft PR #5546 exists, while the latest reconciled and
-  corrected commits remain local. Their normal push and the corresponding PR
-  body update are authorized but pending. PR merge, mark-ready, deployment,
-  publication, cleanup, and deletion remain withheld.
+- Historical delivery state before the prior publication: at that time, draft
+  PR #5546 existed while the latest reconciled and corrected commits remained
+  local. Their normal push and corresponding PR body update were authorized but
+  pending. This state is superseded by the later publication; PR merge,
+  mark-ready, deployment, publication, cleanup, and deletion remained withheld.
 - Final-review closure at `fb86b209a`: the prior committed Progress predates
   `b1d7b730a` and `fb86b209a`. `b1d7b730a` stabilized O/P activity-wizard
   selection coverage, and branch-owned CI Playwright shards 1 and 3 passed. The
@@ -686,6 +694,19 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   plan is now named and headed for PR #5546. Exact-head CI and the authorized
   normal push remain pending; PR merge, mark-ready, and deployment remain
   withheld.
+- Final stale-plan disposition for prior exact head
+  `1862b32438bd334674fad8c90db9ef4cd99be694`: the branch and PR body were
+  synchronized. Playwright run `32914879677` attempt 2 completed successfully
+  with all eight shards and the aggregate green; shard 7 reported 183 passed and
+  one known unrelated `P-pagination-show-all.spec.ts` flaky after the single
+  safe retry, with zero further retries. Exact-domain local devrouter proof and
+  runtime stop were already complete, and exact-head independent Sol and Ox
+  reviews both returned `PASS`. The PR body was synchronized. `final-ai-review`
+  remains pending by design while the PR stays draft; mark-ready is withheld,
+  and the AI workflow must not be retriggered. The guidance-link security
+  finding is fixed in code and tests, but its GitHub thread remains unresolved
+  pending the authority decision and is not resolved here. Current PR and check
+  state is volatile, and GitHub is authoritative.
 
 ### Historical execution evidence before final runtime proof
 
