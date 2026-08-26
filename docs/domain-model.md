@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-20'
+timestamp: '2026-08-26'
 tags:
   - backend
   - prisma
@@ -26,6 +26,32 @@ Schema sources live in [packages/prisma/src/prisma/schema/](../packages/prisma/s
 They are unrelated models — never conflate them. A `Participant` joins a `Course` through **`Participation`** (`@@unique([courseId, participantId])`, carries `isActive`) — the domain word is _Participation_, not "Enrollment". Course names like "Testkurs" are seed data only (`packages/prisma-data/src/data/seedTEST.ts`).
 
 `Participation.isActive` is the **course-leaderboard opt-in**, not an enrollment flag. It defaults to `false`; joining the course leaderboard flips it to `true`, and leaving the leaderboard sets it back to `false` while keeping the row and collected points. Assessment course access and assessment report issuance are backed by the **accepted course invitation** plus an active participant account — never by `Participation.isActive` — so leaderboard-inactive students keep their assessment access.
+
+### Participant data-use choices
+
+Research and learning-analytics choices are participant-global current state on
+`Participant`, not course-scoped history. `researchConsent` and
+`learningAnalyticsConsent` both default to `false`; their choice timestamps and
+disclosure-version fields describe the current decision. This foundation has no
+append-only choice ledger.
+
+`researchConsent = true` allows a future research export to include all stored
+canonical data for that participant; `false` excludes all of it. Returning to
+`true` makes all stored canonical data eligible for future exports again.
+`learningAnalyticsIncludedFrom` marks the prospective learning-analytics
+boundary. An initial opt-in or re-enable starts inclusion at a new boundary and
+does not backfill activity from before it. The separate
+`Course.isLearningAnalyticsEnabled` course control also defaults to `false`.
+
+`Participation` remains the course-membership row and keeps its existing
+leaderboard meaning. It carries no research or learning-analytics choice or
+history, and participants have no per-course data-use choice in this schema.
+
+The public Prisma schema is the sole authority for these models. Catalyst must
+pin the exact immutable public commit and digest it consumes; a moving branch,
+dirty tree, or generated Analytics mirror is not provenance. These fields are
+an inert schema foundation: their presence does not enable export, computation,
+or workflow dispatch by itself.
 
 ### Assessment participant invitations
 

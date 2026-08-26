@@ -65,6 +65,15 @@ model Participant {
   isProfilePublic Boolean @default(true)
   isSSOAccount    Boolean @default(false)
 
+  researchConsent                  Boolean   @default(false)
+  researchConsentChoiceAt          DateTime?
+  researchConsentDisclosureVersion String?
+
+  learningAnalyticsConsent           Boolean   @default(false)
+  learningAnalyticsChoiceAt          DateTime?
+  learningAnalyticsDisclosureVersion String?
+  learningAnalyticsIncludedFrom      DateTime?
+
   lastLoginAt DateTime?
 
   locale Locale @default(en)
@@ -91,6 +100,9 @@ model Participant {
   messages                        GroupMessage[]
   chatThreads                     ChatThread[]
   chatUsageCredits                ChatUsageCredits[]
+  participantChatAnalytics        ParticipantChatAnalytics[]
+  participantChatOutcomes         ParticipantChatOutcome[]
+  participantLiveQuizAnalytics    ParticipantLiveQuizAnalytics[]
   invitations                     ParticipantInvitation[]
   pointCorrections                PointCorrection[]
   individualPointCorrections      PointCorrection[]                @relation("PointCorrectionParticipants")
@@ -100,6 +112,8 @@ model Participant {
   updatedAt DateTime @updatedAt
 
   @@unique([email, isSSOAccount])
+  @@index([researchConsent, id])
+  @@index([learningAnalyticsConsent, learningAnalyticsIncludedFrom, id])
 }
 
 model ParticipantGroup {

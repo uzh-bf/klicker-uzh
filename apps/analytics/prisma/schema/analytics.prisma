@@ -58,6 +58,8 @@ model ParticipantAnalytics {
   updatedAt DateTime @updatedAt
 
   @@unique([type, courseId, participantId, timestamp])
+  @@index([courseId, type, timestamp])
+  @@index([courseId, participantId])
 }
 
 // All metrics are based on logged in participant activity only
@@ -84,6 +86,7 @@ model AggregatedAnalytics {
   updatedAt DateTime @updatedAt
 
   @@unique([type, courseId, timestamp])
+  @@index([courseId, type, timestamp])
 }
 
 model CompetencyAnalytics {
@@ -137,6 +140,8 @@ model ParticipantCourseAnalytics {
 
   activityLevel ActivityLevel
 
+  hasChatActivity Boolean @default(false)
+
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid
 
@@ -160,6 +165,14 @@ model AggregatedCourseAnalytics {
   activityFriday         Float @db.Real // ... on Friday
   activitySaturday       Float @db.Real // ... on Saturday
   activitySunday         Float @db.Real // ... on Sunday
+
+  chatbotCount         Int @default(0)
+  practiceQuizCount    Int @default(0)
+  microLearningCount   Int @default(0)
+  liveQuizCount        Int @default(0)
+  chatParticipantCount Int @default(0)
+  quizParticipantCount Int @default(0)
+  bothChatAndQuizCount Int @default(0)
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @unique @db.Uuid
@@ -190,6 +203,7 @@ model ParticipantPerformance {
   updatedAt DateTime @updatedAt
 
   @@unique([participantId, courseId])
+  @@index([courseId, participantId])
 }
 
 model InstancePerformance {
@@ -222,6 +236,8 @@ model InstancePerformance {
 
 model ActivityPerformance {
   id Int @id @default(autoincrement())
+
+  participantCount Int @default(0)
 
   firstErrorRate   Float? @db.Real // fraction of wrong answers to instances in this activity (first attempt, PQ only)
   firstPartialRate Float? @db.Real // fraction of partially correct answers to instances in this activity (first attempt, PQ only)
@@ -265,6 +281,8 @@ model ParticipantActivityPerformance {
 
   @@unique([participantId, practiceQuizId])
   @@unique([participantId, microLearningId])
+  @@index([practiceQuizId, participantId])
+  @@index([microLearningId, participantId])
 }
 
 model ActivityProgress {
@@ -329,4 +347,215 @@ model Competency {
   @@unique([treeId, name])
   @@index([treeId, lft])
   @@index([treeId, rgt])
+}
+
+enum ChatDoseBucket {
+  NONE
+  LOW
+  MED
+  HIGH
+}
+
+model ParticipantChatAnalytics {
+  id   Int           @id @default(autoincrement())
+  type AnalyticsType
+
+  timestamp DateTime @db.Date
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  userMessages      Int       @default(0)
+  assistantMessages Int       @default(0)
+  threads           Int       @default(0)
+  distinctDays      Int       @default(0)
+  firstMessageAt    DateTime?
+  lastMessageAt     DateTime?
+
+  msgLenMedian Float? @db.Real
+  msgLenP90    Float? @db.Real
+  msgLenP99    Float? @db.Real
+
+  messagesPerThreadP50 Float? @db.Real
+  messagesPerThreadP90 Float? @db.Real
+
+  chatModeCounts        Json @default("{}")
+  reasoningEffortCounts Json @default("{}")
+  attachmentCount       Int  @default(0)
+  toolCallCount         Int  @default(0)
+
+  totalCreditsUsed Decimal @default(0) @db.Decimal(18, 6)
+  creditsExhausted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([type, participantId, chatbotId, timestamp])
+  @@index([chatbotId, type, timestamp])
+  @@index([courseId, type, timestamp])
+  @@index([courseId, participantId])
+}
+
+model AggregatedChatbotAnalytics {
+  id   Int           @id @default(autoincrement())
+  type AnalyticsType
+
+  timestamp DateTime @db.Date
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  activeParticipants    Int @default(0)
+  newParticipants       Int @default(0)
+  returningParticipants Int @default(0)
+  threads               Int @default(0)
+  userMessages          Int @default(0)
+  assistantMessages     Int @default(0)
+
+  totalCreditsUsed         Decimal @default(0) @db.Decimal(18, 6)
+  creditExhaustionRate     Float?  @db.Real
+  disclaimerAcceptedCount Int     @default(0)
+  disclaimerDeclinedCount Int     @default(0)
+
+  hourOfDayDistribution       Json @default("{}")
+  modelDistribution           Json @default("{}")
+  modeDistribution            Json @default("{}")
+  reasoningEffortDistribution Json @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([type, chatbotId, timestamp])
+  @@index([courseId, type, timestamp])
+}
+
+model ChatTopicCluster {
+  id   Int           @id @default(autoincrement())
+  type AnalyticsType
+
+  timestamp DateTime @db.Date
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @db.Uuid
+
+  clusterIndex             Int
+  clusterLabel             String
+  messageCount             Int
+  participantCount         Int
+  representativeParaphrase String?
+  embeddingCentroid        Bytes?
+
+  createdAt DateTime @default(now())
+
+  @@unique([type, chatbotId, timestamp, clusterIndex])
+  @@index([chatbotId, timestamp])
+}
+
+model ParticipantChatOutcome {
+  id Int @id @default(autoincrement())
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  chatMessagesInCourse Int            @default(0)
+  chatDoseBucket       ChatDoseBucket
+
+  firstErrorRate Float? @db.Real
+  lastErrorRate  Float? @db.Real
+  errorRateDelta Float? @db.Real
+
+  hasBothModalities Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, courseId])
+  @@index([courseId, chatDoseBucket])
+  @@index([courseId, participantId])
+}
+
+model ParticipantLiveQuizAnalytics {
+  id Int @id @default(autoincrement())
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  liveQuiz   LiveQuiz @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String   @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  totalResponses         Int    @default(0)
+  firstCorrectCount      Int    @default(0)
+  lastCorrectCount       Int    @default(0)
+  averageTimeSpent       Float? @db.Real
+  totalBasePoints        Int    @default(0)
+  totalCorrectnessPoints Int    @default(0)
+  totalBonusPoints       Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, liveQuizId])
+  @@index([courseId])
+  @@index([liveQuizId])
+  @@index([courseId, participantId])
+}
+
+model AggregatedLiveQuizAnalytics {
+  id Int @id @default(autoincrement())
+
+  liveQuiz   LiveQuiz @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  liveQuizId String   @unique @db.Uuid
+
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  courseId String @db.Uuid
+
+  participantCount     Int    @default(0)
+  responseCount        Int    @default(0)
+  meanFirstCorrectness Float? @db.Real
+  meanLastCorrectness  Float? @db.Real
+  lateSubmitterRate    Float? @db.Real
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+}
+
+model PlatformSemesterAnalytics {
+  id Int @id @default(autoincrement())
+
+  semesterLabel String   @unique
+  semesterStart DateTime
+  semesterEnd   DateTime
+
+  quizResponseRows             Int @default(0)
+  quizTrials                   Int @default(0)
+  quizDistinctParticipants     Int @default(0)
+  liveQuizResponses            Int @default(0)
+  liveQuizDistinctParticipants Int @default(0)
+  chatMessages                 Int @default(0)
+  chatDistinctParticipants     Int @default(0)
+
+  activeCourses           Int @default(0)
+  coursesWithChatbot      Int @default(0)
+  coursesWithLiveQuiz     Int @default(0)
+  coursesWithQuizActivity Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
