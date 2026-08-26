@@ -1110,12 +1110,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       error: 'The cards could not be loaded or updated. Please try again.',
       aiGenerated: 'AI-generated',
       authored: 'Authored',
-      verified: 'verified',
-      unverified: 'unverified',
+      sourceLinked: 'source-linked',
+      notReviewed: 'not reviewed by the course team',
+      sources: 'Sources',
       previous: 'Previous',
       next: 'Next',
       delete: 'Delete',
       deleteConfirm: 'Delete this card? This cannot be undone.',
+      lecturerElements: 'Lecturer elements',
+      ownElements:
+        '{count, plural, =0 {Own elements} one {Own elements · # due} other {Own elements · # due}}',
+      practiceDescription:
+        'Practise your own cards with the same navigation and progress as a practice quiz.',
       homeLink: 'My personal cards',
       repetitionLink:
         '{count, plural, =0 {My personal cards} one {My personal cards · # due} other {My personal cards · # due}}',

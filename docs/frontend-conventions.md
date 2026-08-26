@@ -149,8 +149,9 @@ UI changes are verified in a real browser (`npx agent-browser` for agents — se
 The participant-owned flashcard page is the direct course route
 `/course/[courseId]/personal`. It uses generated GraphQL documents and the
 shared `Flashcard` component through a small adapter; it must not add personal
-cards to the pooled practice query. Keep origin and verification badges,
-course-local source chips, due ordering, response state, and delete confirmation
-visible on the page. Home Practice and `/repetition` may link to the page only
-after the chat generation path is available. New cards are participant-owned,
-course-scoped, and available only to authenticated non-temporary participants.
+cards to the pooled practice query. Keep source-linked origin and course-review
+wording, course-local source links, due ordering, response state, and delete
+confirmation visible on the page. Home Practice and `/repetition` expose two
+course actions: lecturer elements and own elements. New cards are
+participant-owned, course-scoped, and available only to authenticated
+non-temporary participants.

@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client'
-import { faBookOpenReader } from '@fortawesome/free-solid-svg-icons'
-import { GetPracticeCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
-import { H1, UserNotification } from '@uzh-bf/design-system'
+import { faBookOpenReader, faRepeat } from '@fortawesome/free-solid-svg-icons'
+import { GetPracticeQuizListWithPersonalElementsDocument } from '@klicker-uzh/graphql/dist/ops'
+import { H1, H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
@@ -10,7 +10,7 @@ import { resetPracticeQuizLocalStorage } from '../components/practiceQuiz/Practi
 
 function Practice() {
   const t = useTranslations()
-  const { data } = useQuery(GetPracticeCoursesDocument)
+  const { data } = useQuery(GetPracticeQuizListWithPersonalElementsDocument)
 
   return (
     <Layout
@@ -21,26 +21,33 @@ function Practice() {
         <H1 className={{ root: 'text-xl' }}>
           {t('shared.generic.practiceTitle')}
         </H1>
-        {data?.getPracticeCourses?.map((course) => {
-          return (
+        {data?.getPracticeQuizList?.map((course) => (
+          <div key={course.id} className="flex flex-col gap-2">
+            <H2 className={{ root: 'text-lg' }}>{course.displayName}</H2>
             <LinkButton
-              key={course.id}
               href={`/course/${course.id}/practice`}
-              data={{ cy: 'practice-quiz' }}
+              data={{ cy: `lecturer-elements-course-${course.id}` }}
               icon={faBookOpenReader}
               onClick={() => {
-                // check the localstorage and delete all elements, which contain practiceQuiz.id
                 resetPracticeQuizLocalStorage(course.id)
               }}
-              legacyBehavior
             >
-              {course.displayName}
+              {t('pwa.personalElements.lecturerElements')}
             </LinkButton>
-          )
-        })}
+            <LinkButton
+              href={`/course/${course.id}/personal`}
+              data={{ cy: `own-elements-course-${course.id}` }}
+              icon={faRepeat}
+            >
+              {t('pwa.personalElements.ownElements', {
+                count: course.personalDueCount ?? 0,
+              })}
+            </LinkButton>
+          </div>
+        ))}
 
-        {(!data?.getPracticeCourses ||
-          data.getPracticeCourses.length === 0) && (
+        {(!data?.getPracticeQuizList ||
+          data.getPracticeQuizList.length === 0) && (
           <UserNotification
             type="info"
             message={t('pwa.practiceQuiz.noRepetition')}
