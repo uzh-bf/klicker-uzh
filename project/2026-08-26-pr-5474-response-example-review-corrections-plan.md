@@ -184,7 +184,7 @@ No new product primitive is created or retired.
 | Item | Current evidence | Consequence |
 | --- | --- | --- |
 | `origin/v3-ai` | `a1c63c644fdcdc52ff3dcddbbd3f58fcf363261d`; sibling `trees/v3-ai-sync` is clean and exactly synchronized | The base-reconciliation dependency is resolved. This task still must not mutate the sibling worktree or branch. |
-| Current task heads | K1 `3d30349441d4f042b65d92d42a950fc1df1df8e2` and K2 `be259ad5a82f56053ceac1248ddb6985f3837c92`, both clean and 0 behind current `origin/v3-ai` (20 and 27 commits ahead) | The corrected layers are locally complete and ready for publication after final evidence. |
+| Reviewed product-code heads | K1 `3d30349441d4f042b65d92d42a950fc1df1df8e2` and K2 `be259ad5a82f56053ceac1248ddb6985f3837c92`, both clean and 0 behind current `origin/v3-ai` at the review gate (20 and 27 commits ahead) | The corrected layers are locally complete. Documentation-only Progress commits follow the reviewed K2 code head; re-read the branch tip immediately before publication. |
 | PR #5474 | remote K1 head `eef688e0fa4b4d34ad00a02f1d8a65509d5c7189`; base has moved and GitHub merge state is recalculating | Treat the old head and CI as historical only. |
 | PR #5498 | remote K2 head `3d54fbdbee5378212e65ff97bccf6dbc87f8ceba`; GitHub currently reports `DIRTY` against its old published parent | Publish the reviewed corrected K1 then K2 heads with stack-aware force-with-lease; do not change remote topology. |
 | GitHub stack #5503 | remote order is K1 then K2 with the expected PRs and published heads | Preserve this topology. |
@@ -458,7 +458,7 @@ Neither follow-up is authorized by this plan.
 - Rebased local heads before correction: K1 `ec254bea755bfa3a3d9a93b760aa9ad715643444`;
   K2 `3b54dfb36cf747f4063341ea1bc85e4ade6aa67d`
 - Corrected local K1 head: `3d30349441d4f042b65d92d42a950fc1df1df8e2` (latest documentation and evidence commit atop the corrected implementation)
-- Corrected local K2 head: `be259ad5a82f56053ceac1248ddb6985f3837c92` (latest fixture-path and browser-journey correction atop K1)
+- Reviewed local K2 product-code head: `be259ad5a82f56053ceac1248ddb6985f3837c92` (latest fixture-path and browser-journey correction atop K1)
 - Active slice: K2 lecturer-review workflow corrections
 - Plan commit: `6531937e3 docs(project): plan response-example review corrections`
 - K2 implementation commit: `3a1cbd45b fix(manage): align response-example review workflow`
@@ -485,7 +485,7 @@ Neither follow-up is authorized by this plan.
   runtime; the repository-native focused Playwright journey passes 1 test in
   40.3 seconds against the disposable local database after global reset and
   self-seeding.
-- Current browser screenshots: [EN desktop](../../../.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-en-desktop-be259ad5a.png), [DE mobile](../../../.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-de-mobile-be259ad5a.png), and [DE desktop](../../../.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-de-desktop-be259ad5a.png). They were captured from the reviewed K2 head; the fixture-only changes do not alter the rendered workflow.
+- Current browser screenshots are local-only artifacts, not repository links. Verified files are `/Users/rschlae/.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-en-desktop-be259ad5a.png`, `/Users/rschlae/.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-de-mobile-be259ad5a.png`, and `/Users/rschlae/.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-de-desktop-be259ad5a.png`. They were captured from the reviewed K2 head; the fixture-only changes do not alter the rendered workflow.
 - Upstream boundary: the KB task's W8 work remains responsible for ingestion
   and producer activation seams. This package has no implementation overlap and
   does not assume graph delivery; response-example runtime activation remains
