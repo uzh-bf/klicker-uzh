@@ -4,7 +4,7 @@
 
 - Date: 2026-08-26
 - Ceremony: full path
-- Status: executing K1 Gate 2 evidence under the approved full-path goal
+- Status: implementing K2 lecturer-review corrections under the approved full-path goal
 - Plan: `project/2026-08-26-pr-5474-response-example-review-corrections-plan.md`
 - Historical design:
   [chatbot response-example design](./2026-08-21-chatbot-response-example-design.md)
@@ -184,7 +184,7 @@ No new product primitive is created or retired.
 | Item | Current evidence | Consequence |
 | --- | --- | --- |
 | `origin/v3-ai` | `332e044f34a1a5a0c8be00075795d8b3a19e7397`; sibling `trees/v3-ai-sync` is clean and exactly synchronized | The base-reconciliation dependency is resolved. This task still must not mutate the sibling worktree or branch. |
-| Current task head | K1 at `31054ed57`, clean; 0 behind and 13 ahead of current `origin/v3-ai` | K1 corrections and the final owner-boundary/documentation dispositions are committed locally; K2 remains on its preserved pre-correction ref until Gate 2 acceptance. |
+| Current task head | K1 at `3659e5b22`, clean; 0 behind and 16 ahead of current `origin/v3-ai` | K1 corrections, review dispositions, and Gate 2 evidence are committed locally; K2 starts from its preserved pre-correction ref and is being restacked onto this K1 head. |
 | PR #5474 | remote K1 head `eef688e0fa4b4d34ad00a02f1d8a65509d5c7189`; base has moved and GitHub merge state is recalculating | Treat the old head and CI as historical only. |
 | PR #5498 | remote K2 head `3d54fbdbee5378212e65ff97bccf6dbc87f8ceba`; currently conflicting | Restack after K1 is rebased and corrected. |
 | GitHub stack #5503 | remote order is K1 then K2 with the expected PRs and published heads | Preserve this topology. |
@@ -441,11 +441,12 @@ Neither follow-up is authorized by this plan.
 
 ## Progress
 
-- Status: K1 correction findings and risk review are complete locally; awaiting explicit Gate 2 user acceptance before K2
+- Status: K1 Gate 2 evidence accepted; K2 lecturer-review corrections are now in progress
 - Completed: external review analysis; focused correction scope; fresh Git,
   GitHub PR, GitHub stack, sibling-worktree, and local-stack evidence; planning
   specialist review; complete correction plan; local stack tracking repair;
-  recovery refs; K1 and K2 rebase onto the selected `v3-ai` base
+  recovery refs; K1 and K2 rebase onto the selected `v3-ai` base; K1 Gate 2
+  evidence and acceptance
 - Current base: `origin/v3-ai` at
   `332e044f34a1a5a0c8be00075795d8b3a19e7397`; sibling `v3-ai` worktree is clean
   and synchronized
@@ -454,8 +455,8 @@ Neither follow-up is authorized by this plan.
   `3d54fbdbee5378212e65ff97bccf6dbc87f8ceba`
 - Rebased local heads before correction: K1 `ec254bea755bfa3a3d9a93b760aa9ad715643444`;
   K2 `3b54dfb36cf747f4063341ea1bc85e4ade6aa67d`
-- Corrected local K1 head: `a86d5ae96` (`docs(project): update k1 gate head`, recording the final Gate 2 evidence atop the corrected implementation)
-- Active slice: K1 Gate 2 evidence and risk review
+- Corrected local K1 head: `3659e5b22` (latest plan/evidence commit atop the corrected implementation)
+- Active slice: K2 lecturer-review workflow corrections
 - Plan commit: `c525e6c60 docs(project): plan response-example review corrections`
 - K1 evidence: focused Markdown citation tests pass, including 100,000 unmatched
   brackets and 5,000 nested blockquotes; focused response-example GraphQL
@@ -472,6 +473,6 @@ Neither follow-up is authorized by this plan.
   findings, including the documentation and non-owner edit follow-ups, were
   applied and reverified over immutable K1 range
   `332e044f34a1a5a0c8be00075795d8b3a19e7397..a86d5ae96`.
-- Next: obtain the required K1 Gate 2 acceptance before starting K2.
-- Delivery pending: K1 Gate 2 acceptance, K2 correction, corrected branch push, PR updates,
+- Next: restack the preserved K2 branch onto the corrected K1 head and implement the lecturer-review corrections.
+- Delivery pending: K2 correction, corrected branch push, PR updates,
   corrected-head CI, merge, deployment, runtime activation, K3, and Test & Teach
