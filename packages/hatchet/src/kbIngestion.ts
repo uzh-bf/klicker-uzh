@@ -543,8 +543,8 @@ export async function dispatchKBDeletion(
     }
 
     const client = dependencies.client ?? createKBIngestionApiClient({ env })
-    const startedAt = (dependencies.now ?? (() => new Date()))()
     const operationId = await client.deleteResource(input)
+    const startedAt = (dependencies.now ?? (() => new Date()))()
     const persisted = await dependencies.prisma.$transaction(async (tx) => {
       const resourceUpdate = await tx.kBResource.updateMany({
         where: {

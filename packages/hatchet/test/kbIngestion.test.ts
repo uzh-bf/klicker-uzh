@@ -529,6 +529,8 @@ describe('KB ingestion dispatch', () => {
 
 describe('KB deletion dispatch', () => {
   it('dispatches a current tombstone and persists its operation correlation', async () => {
+    const acceptedAt = new Date('2026-07-26T12:00:01.000Z')
+    let accepted = false
     const prisma = dispatchPrisma({
       kbId: KB_ID,
       deletedAt: NOW,
@@ -538,12 +540,16 @@ describe('KB deletion dispatch', () => {
       externalOperationId: null,
     })
     const apiClient = client()
+    apiClient.deleteResource.mockImplementation(async () => {
+      accepted = true
+      return OPERATION_ID
+    })
 
     await expect(
       dispatchKBDeletion(deletionInput, {
         prisma: prisma as never,
         client: apiClient,
-        now: () => NOW,
+        now: () => (accepted ? acceptedAt : NOW),
       })
     ).resolves.toBe(OPERATION_ID)
 
@@ -559,7 +565,7 @@ describe('KB deletion dispatch', () => {
       },
       data: {
         externalOperationId: OPERATION_ID,
-        externalOperationStartedAt: NOW,
+        externalOperationStartedAt: acceptedAt,
         statusMessage: null,
         errorCode: null,
       },
@@ -576,7 +582,7 @@ describe('KB deletion dispatch', () => {
       },
       data: {
         externalOperationId: OPERATION_ID,
-        startedAt: NOW,
+        startedAt: acceptedAt,
         statusMessage: null,
         errorCode: null,
       },
