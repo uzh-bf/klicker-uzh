@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-08-12'
+timestamp: '2026-08-25'
 tags:
   - environment
   - onboarding
@@ -48,7 +48,7 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
 2. **Accessing the apps:**
    - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost ports. Lecturer login is `lecturer`/`abcd`.
    - **Mode 2 (linked checkout):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
-     1. Install devrouter ≥ 0.0.35 and run `devrouter setup --yes` once.
+     1. Install devrouter ≥ 0.0.38 and run `devrouter setup --yes` once.
      2. From an existing linked worktree, start and prove the environment with:
         ```bash
         devrouter ensure .
@@ -63,20 +63,28 @@ do not copy credentials into the repository or use raw Infisical injection.
 
 `post-start.sh` keeps Klicker's environment and origin setup local. Host-side `devrouter ensure` delivers its matching process helper to the exact validated container, then invokes the adapter. Released devrouter `0.0.35` records its owned process group and fingerprints the workspace, command, adapter bytes, and declared non-secret origin environment in `/tmp/devrouter-process-klicker-dev.state`; an exact repeat is idempotent, stale owned groups are replaced boundedly, and unknown processes are never killed.
 
-Devrouter owns generic process lifecycle and HTTP readiness. `ensure` verifies all ten routes and can spend one container recreate when an exact workspace is alive but an application remains unhealthy, including after a production build replaces live Next.js output.
+Devrouter owns generic process lifecycle and HTTP readiness. `ensure` verifies all ten routes and can spend one container recreate when an exact workspace is alive but an application remains unhealthy, including after a production build replaces live Next.js output. Each managed dev-process start clears Manage's generated development route manifest and the container startup adapter briefly primes the course list plus a synthetic course-detail URL within one bounded deadline; this closes the cold Turbopack dynamic-route race before a browser can request a real course without replacing devrouter's readiness ownership.
 
 The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.35`. The devcontainer image contains no devrouter package or helper, and `devcontainer.json` does not run the managed adapter independently.
 
 The image does include the repository's development toolchain: pnpm `11.5.0`, uv `0.11.12`, and the Python 3.12 selection used by analytics CI. This keeps `pnpm run check:all` reproducible inside the container.
 
+Before Compose starts, `.devcontainer/initialize.sh` creates the external
+Docker volume `klicker-uzh-pnpm-store-v1`. Every worktree mounts that volume at
+`/pnpm/.pnpm-store`, so package downloads are reused dynamically. The
+worktree's `node_modules`, `.next`, and PostgreSQL volumes remain isolated.
+Removing the shared store is destructive cache cleanup: stop every consuming
+Klicker DevPod first and remove only that exact volume. Never use broad Docker
+pruning for this cache.
+
 `devrouter doctor --repo .` is the static check. `devrouter ensure .` is the runtime authority: it resolves the checkout-specific overlay and fails unless the actual container aliases, Git mount, managed process, and routes agree.
 
 Klicker's runtime guard adds semantic readiness for every Next app. It
 fingerprints the dependency graph, checked-out commit, Next.js route structure,
-and app configuration. A true managed start removes each Next app's `.next/dev`
-output, including the persistent Turbopack development cache, while a changed
-dependency fingerprint refreshes the persistent `node_modules` volume with a
-frozen install. Unauthenticated Chat must answer `401 application/json` on a
+and app configuration. A true managed start preserves each worktree's
+`.next/dev` output, while a changed dependency fingerprint refreshes the
+persistent `node_modules` volume with a frozen, local-first install.
+Unauthenticated Chat must answer `401 application/json` on a
 nested API route; the shell pages of auth, PWA, manage, and control must answer
 `2xx` HTML or a redirect. Repeated `404 text/html` responses on such known-existing
 routes identify stale route-table state and trigger one full `.next` cleanup

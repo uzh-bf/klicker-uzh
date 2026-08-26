@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-08-25'
+timestamp: '2026-08-26'
 tags:
   - ci
   - deployment
@@ -70,6 +70,7 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 - **prd** (`*.klicker.uzh.ch`): pinned version tags, `replicaCount: 2` for web/API services.
 - **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names. GrowthBook-ready Node workloads also reference the optional shared `<rendered-chart-fullname>-secret-growthbook`, which supplies only `GROWTHBOOK_API_HOST` and the server SDK `GROWTHBOOK_CLIENT_KEY`; `GROWTHBOOK_ENV` comes from the global ConfigMap. Separately, only the primary GraphQL backend references optional `<rendered-chart-fullname>-secret-growthbook-management`, containing `GROWTHBOOK_MANAGEMENT_API_URL` and `GROWTHBOOK_MANAGEMENT_API_KEY` for a future authenticated control-plane integration. The optional references preserve startup before provisioning. Do not place the write-capable management key in the shared evaluator Secret.
 - **Hatchet endpoint pair**: `hatchet.client.apiUrl` in the environment values renders `HATCHET_API_URL`, while the external secret supplies `HATCHET_CLIENT_HOST_PORT`. They must resolve to the same Hatchet installation; worker health alone does not validate programmatic schedule creation over the HTTP API. Staging uses `app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080`, and production uses `app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080` (see [Async & Workers](./async-and-workers.md)).
+- **Hatchet general-worker resources**: staging and production set a `2Gi` memory limit on the general worker because it executes course duplication. The response-processor deployments retain their lower, independent limits.
 - **Rollout strategy**: use `RollingUpdate` in prd values; `Recreate` can leave a service with zero endpoints during slow image pulls (PDBs don't protect against Deployment-driven scale-downs). `maxUnavailable: 0` only for singletons.
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
 
