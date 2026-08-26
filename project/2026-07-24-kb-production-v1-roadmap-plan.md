@@ -1,5 +1,9 @@
 # KB Management — Production v1 Roadmap Plan
 
+Status: Klicker source and desktop UX are merged into `v3-ai`. W8 is the
+active data-ingestion-first STG release package. W9 knowledge-graph delivery is
+explicitly parked and does not gate the basic KB release.
+
 ## Plan Identity
 
 - Date: 2026-07-24; grill rulings recorded 2026-07-25; branch topology corrected and W1 integrated 2026-07-26. Implementing branch: `kb-poc`, carried by [PR #5174](https://github.com/uzh-bf/klicker-uzh/pull/5174) into `v3-ai`. The roadmap was reviewed on `claude/admiring-nightingale-c30fa4`, then moved onto the implementing branch before W1 execution.
@@ -13,9 +17,18 @@
 - Canonical status event: `OperationStatusEvent` with `X-Ingestion-*` headers, `operation_id` correlation, `resource_version` int, nested `serving: {active_resource_version, active_sha256}`; receiver schemas are `extra="forbid"`-strict — adopt verbatim, field-for-field.
 - Resource identity is Klicker-owned: `external_resource_id == KBResource.id`; ingestion never assigns or overwrites Klicker-side ids.
 - Per-resource monotonic versions; no whole-KB revision model; two-axis status (operation vs serving: "update failed, still serving v(N)"); candidate content invisible until `resource_active=true`.
-- Feature gating via GrowthBook (external dependency, integration in progress); no ad hoc flag infra.
-- `kb_id` server-side validation is deferred ONLY until lecturer self-service KB creation exists (D-8) — self-service in v1 triggers that gate.
-- Platform-side gates outside this repo: Klicker tenant mount on shared `mcp-doc-query.stg-doc-query` (R4.3, needs blast-radius fixes R1.3/R1.4), producer-enable + 10-scenario synthetic journey (R4.4), `resource_active` retrieval gating (R1.1) and Milvus partition wiring (R1.2) block ANY retrieval canary.
+- Feature gating uses the merged `ai-beta` flag plus the account-level
+  `User.aiFeaturesEnabled` entitlement; no ad hoc flag infrastructure.
+- The former D-8 requirement for a provider-maintained per-KB allowlist is
+  superseded by the 2026-08-26 ruling below. The trusted Klicker backend is
+  authorized at the ingestion project boundary and derives every `kb_id` from
+  owner-checked persisted state; `kb_id` filters one project and is not an
+  end-user authorization boundary.
+- Platform-side gates outside this repo: producer enablement and the bounded W8
+  synthetic journey gate basic ingestion. The Klicker tenant mount on shared
+  `mcp-doc-query.stg-doc-query` (R4.3), `resource_active` retrieval gating
+  (R1.1), and Milvus partition wiring (R1.2) gate later chatbot retrieval, not
+  the basic ingestion canary.
 
 ## [PR #5182](https://github.com/uzh-bf/klicker-uzh/pull/5182) Review — Verdict and Findings
 
@@ -89,11 +102,11 @@ All Q1-Q11 ruled by the user in the 2026-07-25 grill session. Ruling column is b
 | Q1 | Zombie ingest path (finding B1): v1 ingestion primitive | (a) Restore the per-resource Ingest entry point; resource-level ingestion is the primary primitive, KG build is one consumer of it | Matches the canonical platform contract (per-resource operations + versions). W1 restores the button and the `kb.ingestResource*` i18n keys (M3); Progress/screenshots refreshed to HEAD. |
 | Q2 | Bridge replacement timing | Hybrid: merge 5182 into `kb-poc` as-is now (bridge intact); W2 contract alignment is the immediate next package and nothing else lands on the line before W2 completes; no STG lecturer exposure until aligned | Preserves working POC value without stalling the merge on the external API. M1 resource-path monitor fix is deferred into W2 (the sweep is replaced there by operations-API polling); revisit only if W2 slips. |
 | Q3 | KG visualization + model selection | (b) Split into a separate parked PR during W1; core 5182 merges without it; re-lands as W9 after W2 | Reviewer-verified separable (clean migration split; coupling = `kbGraphIngestion` imports from `kbIngestion` + shared cron). Graph-path M1 monitor fix travels with the parked PR (W9). |
-| Q4 | Self-service KB creation in v1 | (a) Keep self-service | Triggers the D-8 gate: server-side `kb_id` validation must ship in v1 (W6). |
+| Q4 | Self-service KB creation in v1 | (a) Keep self-service | Klicker must derive every `kb_id` from owner-checked persisted state. The former external D-8 per-KB allowlist consequence is superseded by the 2026-08-26 project-level-trust ruling. |
 | Q5 | KB↔chatbot↔course binding model | (a) KB-level attach: one enabled KB per chatbot (5078 `KBChatbot`-style one-enabled invariant); `KBCourse` deferred; KG resource-curation stays a KG-feature concern | Matches the scope-token design (one `kb_id` claim per chat request); cheapest correct v1; multi-KB (`kb_ids` array) stays v2 per prior ruling. Resolves M2 direction: one state machine per concern, resource level owns ingestion. |
 | Q6 | Versioning depth in v1 | (a) Schema columns now (`resourceVersion`, `activeResourceVersion`, `activeContentSha256`, `errorCode`), replace-on-re-ingest semantics, minimal two-axis status UI | The canonical event schema requires the fields anyway; columns are cheap now, painful later (W3). |
 | Q7 | Delete semantics for lecturers | (a) Soft-delete fence (`deletedAt`/`deletedById` + delete-guard while QUEUED/PROCESSING), async hard cleanup, tombstone-compatible ingestion delete | Aligns with the platform tombstone contract; port the 5078 column pair + guard (W5). |
-| Q8 | Per-KB quotas for the ingestion registry allowlist | 100 resources / 500 MB per KB (tighter than the proposed 200 / 1 GB) | Conservative pilot posture; raisable later without migration (W6). Per-file 25 MB stands. Contract verification in W6 narrows the production-v1 MIME set to PDF/TXT/MD because the ingestion platform accepts only PDF and plain text; Markdown is sent as `text/plain`. DOCX/PPTX remain a future platform-contract expansion and must not be offered as a broken flow. |
+| Q8 | Per-KB quotas in Klicker | 100 resources / 500 MB per KB (tighter than the proposed 200 / 1 GB) | Conservative pilot posture; raisable later without migration (W6). These quotas are enforced by Klicker, not the producer registry. Per-file 25 MB stands. Contract verification in W6 narrows the production-v1 MIME set to PDF/TXT/MD because the ingestion platform accepts only PDF and plain text; Markdown is sent as `text/plain`. DOCX/PPTX remain a future platform-contract expansion and must not be offered as a broken flow. |
 | Q9 | GrowthBook cohort shape | Broader pilot: courses opt in via an external Microsoft Forms form (faculty, course, use-case description, AI-Buddy-pilot participation — if participating, AI Buddy pays the AI cost, otherwise the course pays itself); the user then enables the course on GrowthBook. The gate covers **tutor chatbots only**; the other AI features are public beta for anyone with Catalyst at UZH. User-only flag administration; soft kill-switch = disable ingestion dispatch + hide attach UI, already-ingested content keeps serving | W8 rewritten to this shape. The Forms front door lives outside Klicker; Klicker-side work is the GrowthBook gate + kill-switch semantics only. |
 | Q10 | Branch topology | Superseded 2026-07-26: `kb-poc` / [PR #5174](https://github.com/uzh-bf/klicker-uzh/pull/5174) is the v1 integration line into `v3-ai`. [PR #5182](https://github.com/uzh-bf/klicker-uzh/pull/5182) merges into `kb-poc`; W2+ continues there. The roadmap branch remains review history and is not rebased or force-pushed. | Keeps the plan and implementation in one PR. The older full-scale [PR #5078](https://github.com/uzh-bf/klicker-uzh/pull/5078) remains a read-only source for selective reimplementation of useful UI and behavior; it is never merged wholesale. |
 | Q11 | Legacy static course chatbots (informational confirm) | Confirmed: untouched throughout v1 until the gated `chatbot_id`→`kb_id` migration (program R10.4); lecturers keep current behavior | Informational; no roadmap change. |
@@ -105,9 +118,40 @@ All Q1-Q11 ruled by the user in the 2026-07-25 grill session. Ruling column is b
 - Evidence: `packages/prisma/src/prisma/schema/user.prisma:111` (`privatePreview`), `apps/frontend-manage/src/components/common/Header.tsx:59-69` (chatbots nav already gated), `packages/graphql/src/schema/mutation.ts:1639-1735` (KB mutations currently `asUserFullAccess` only, no preview check), `packages/graphql/src/lib/context.ts:38-47` (`ctx.user` carries JWT claims only — no `privatePreview`).
 - Decision: the 2026-07-29 senior review findings ([review record](2026-07-29-kb-w1-w7-senior-review.md)) define the pre-pilot remediation set: P1-1 stranded UPSERT dispatch recovery, P1-2 URL-creation quota placeholder, P1-3 refresh-failure/mutation-success isolation. Secondary items (P2-1 poll bound, P2-2/P2-3 test hardening, P2-4 SelectField, P2-5 cascade documentation, P3-1 log fix) batch into the same package; P3-2 rate limiting stays backlog (pre-existing app-wide gap).
 
+### Amendments (2026-08-26)
+
+- **Do not re-litigate:** the next release outcome is basic knowledge-base
+  management plus resource ingestion. Knowledge-graph generation, graph image
+  publication, FalkorDB/GraphML deployment, and graph quality work are parked.
+  Continued graph development stays in the GitLab
+  `kg-content-generation` repository until reprioritized.
+- **Do not re-litigate:** the data-ingestion authorization boundary is the
+  producer's allowed project, not a dynamic per-KB registry. This is the user's
+  approved project-level-trust ruling and matches data-ingestion `main` at
+  `66e22bff67276e46a5d82b3545edfa6df7844500`:
+  `docs/resource-api.md` states that the backend-only producer credential
+  authorizes its project and `kb_id` only filters it. Klicker remains responsible
+  for owner authorization and derives the identifier from persisted relations.
+  Never expose the producer credential to a browser or caller that accepts an
+  untrusted `kb_id` directly.
+- GrowthBook is now available. The merged lecturer gate is `ai-beta` plus the
+  account-level `User.aiFeaturesEnabled` entitlement; `privatePreview` is no
+  longer the KB release gate. `KB_INGESTION_DISABLED` remains the independent
+  operational kill switch and must stay closed until the W8 canary window.
+- The source/UI package landed through PRs
+  [#5424](https://github.com/uzh-bf/klicker-uzh/pull/5424),
+  [#5540](https://github.com/uzh-bf/klicker-uzh/pull/5540), and
+  [#5558](https://github.com/uzh-bf/klicker-uzh/pull/5558). Their merge commits
+  are ancestors of current `v3-ai` at
+  `a1c63c644fdcdc52ff3dcddbbd3f58fcf363261d`. This is merged source evidence,
+  not a deployed or provider-backed ingestion proof.
+
 ## Production v1 Roadmap (Klicker side — finalized 2026-07-25)
 
-Work packages, dependency-ordered. Each lands as its own slice set with per-slice review per `$rs-sliced-development-workflow`; merges user-gated; everything behind the Q9 gating mechanism until platform gates pass.
+Work packages, dependency-ordered. Each lands as its own slice set with
+per-slice review per `$rs-sliced-development-workflow`; merges are user-gated,
+and external ingestion stays behind `KB_INGESTION_DISABLED` until the W8
+readiness and canary gates pass.
 
 | Pkg | What | Depends on | Notes |
 | --- | --- | --- | --- |
@@ -116,10 +160,69 @@ Work packages, dependency-ordered. Each lands as its own slice set with per-slic
 | W3 | **Two-axis status + history**: add `activeResourceVersion`, `activeContentSha256`, and `errorCode`; complete replace-on-re-ingest behavior; add `KBIngestionRun`-style attempt history, minimal status UI (operation vs serving axes), and retry affordance | W2 | `resourceVersion` and `contentSha256` moved to W2 as contract prerequisites; salvage 5078 run-history shape here |
 | W4 | **Chatbot binding + retrieval seam**: KB-level attach with one-enabled-KB-per-chatbot invariant (Q5), ES256 scope-token minting per chat request (`kb_id` claim), `ChatbotMCPServer`/`ChatbotMCPConfig` wiring (no schema change needed), citation-card fix (`KB.doc_query` → `KB_doc_query`), "no enabled KB" warning | W2; platform R4.3 tenant mount (external) | The actual lecturer-value moment: chatbots answer from KBs. `KBCourse` deferred per Q5. |
 | W5 | **Delete/tombstone + retention cleanup** (Q7): soft-delete fence (`deletedAt`/`deletedById` from 5078), ingestion `DELETE /v1/resources/{id}` + tombstone handling, async hard cleanup including expired unconfirmed upload blobs/tickets, delete-guard while active ops | W2 | W1 intentionally creates the DB row only after upload confirmation; W5 owns abandoned-upload retention rather than expanding the bridge schema. |
-| W6 | **Quotas + `kb_id` validation**: per-KB caps 100 resources / 500 MB (Q8) enforced at mutation layer + ingestion registry numbers; server-side `kb_id` validation (D-8, triggered by Q4=self-service) | W2 | Per-file 25MB + MIME allowlist stand as ruled |
+| W6 | **Quotas + persisted-scope validation**: per-KB caps 100 resources / 500 MB (Q8) enforced by Klicker; every outbound `kb_id` is derived from owner-checked persisted state and covered by focused mismatch tests | W2 | The producer credential is authorized at the configured project boundary; `kb_id` filters that project and is not a separate provider-maintained allowlist. Per-file 25 MB and the MIME allowlist stand as ruled. |
 | W7 | **Scale + UX pack**: pagination/cursor on KB + resource lists, aggregate counts, search/filter (server-side filter input), inspector panel, bulk actions with confirm dialog, per-row progress, async-wait messaging, linked-consumers panel | W1 (parallel to W2-W6) | Re-implement 5078 nuggets in 5182's package |
-| W8 | **GrowthBook gating + pilot** (Q9): gate covers tutor chatbots only (other AI features public beta for Catalyst users); opt-in via external Microsoft Forms (faculty, course, use case, AI-Buddy participation → cost ownership), user enables courses on GrowthBook; user-only flag admin; soft kill-switch (stop dispatch + hide attach UI, existing content keeps serving); default-off; STG canary with the platform's 10-scenario synthetic journey evidence before any real lecturer traffic | W2-W6; GrowthBook availability (external); platform R4.4 | Forms front door lives outside Klicker |
-| W9 | **KB-owned knowledge graph** (Q3=split; redesigned 2026-07-31, supersedes the chatbot-owned framing): re-home Patrick's parked KG work from `ChatbotKnowledgeGraph` to the KB, replace the direct Hatchet generation bridge with an external graph-generation service on a pinned manifest, and re-own both viewers. Five-layer stack: L1 platform-initiated refresh event; L2 KB-owned graph model + digest + reader package (carries [ADR 0009](../docs/adr/0009-kb-owns-two-derived-projections.md)); L3 build lifecycle + GraphQL API; L4 manage UI + lecturer viewer; L5 chat student viewer | W2 | Design grill complete 2026-07-31 (13 rulings, see [ADR 0009](../docs/adr/0009-kb-owns-two-derived-projections.md) and `docs/domain-model.md`). Parked [PR #5206](https://github.com/uzh-bf/klicker-uzh/pull/5206) is Patrick's work and the base to evolve, not to rebuild — its 25 commits squash to ~5 layer-aligned commits, rebased onto `kb-poc`. [PR #5116](https://github.com/uzh-bf/klicker-uzh/pull/5116) stays open as a React Flow / package-pattern reference. No scheduled builds: each spends the lecturer's AI budget. Model allow-list becomes a config-mapped quality tier. |
+| W8 | **Enable and prove basic KB ingestion in STG**: activate the existing disabled Klicker producer through reviewed deployment configuration; deliver the required producer, source-gateway, and webhook secret references through their existing owners; deploy a `v3-ai` revision containing the merged KB package; then run the bounded synthetic lecturer journey below with graph generation disabled | W1-W7 source delivery; data-ingestion `main`; deployment and secret readiness; separate approval for merge, secret writes, deploy, cluster access, and the live canary | This is the next package. It proves KB/resource ingestion only. Chatbot retrieval remains a separate follow-up gate, and graph generation is excluded. |
+| W9 | **KB-owned knowledge graph — PARKED**: preserve the merged Klicker graph model and UI behind `KB_GRAPH_DISABLED`, keep the GitLab graph source and authorship intact, and resume its separate production roadmap only after an explicit reprioritization | none for the basic KB release | Catalyst PR #23 remains an unmerged draft and is not required for W8. No graph image, deployment, model run, FalkorDB/GraphML proof, or repository retirement is authorized. |
+
+### W8 launch package amendment (2026-08-26)
+
+**Problem.** Klicker source and local browser proof are complete, and the
+provider contract is merged, but the current STG deployment deliberately keeps
+the Klicker producer disabled. No provider-backed run has proven that a
+lecturer can create a resource, ingest it, observe active serving state, and
+delete it safely in a deployed environment.
+
+**Working context.** Begin with a fresh `$rs-sliced-development-workflow` plan
+for W8. The source identities at reconciliation are:
+
+- KlickerUZH `v3-ai` at
+  `a1c63c644fdcdc52ff3dcddbbd3f58fcf363261d`;
+- data-ingestion `main` at
+  `66e22bff67276e46a5d82b3545edfa6df7844500`, with no open MR and no provider
+  code change expected unless fresh verification proves a contract defect;
+- deployment `main` at
+  `0e7e78488b839e09759fb80cdd56fca7a32bcb30`, where
+  `ingestion/stg-generic/producer-registry/klicker.yaml` contains the complete
+  URL/BLOB, source-gateway, callback, MIME, and project policy but
+  `producer.enabled` is `false`, and `validate_render.py` currently requires it
+  to remain false.
+
+**Do.** Keep one writer per repository and package only independently required
+changes. First prove values-free readiness of every named Secret and the exact
+Klicker STG endpoint identities; do not read or print values. Add the smallest
+reviewed deployment change that can enable only the Klicker producer while
+preserving `allow_public_processing: false`, exact project/source/MIME limits,
+the backend-only source gateway, signed callback, and every other producer.
+Keep `KB_INGESTION_DISABLED=true` until the separately authorized canary
+window. Deploy the exact reviewed Klicker and ingestion revisions only through
+their normal GitOps paths. Run the canary with a synthetic lecturer and content:
+one public URL and one text/PDF upload, explicit ingest, operation-to-serving
+cutover, retry or replacement with the previous active version retained on a
+controlled failure, and resource deletion through the tombstone/cleanup path.
+Capture values-free IDs, versions, digests, status classes, timings, and cleanup
+counts; capture the desktop Manage states in English and German. Close the
+kill-switch window or roll back immediately on an authorization, source,
+callback, serving-state, cleanup, or tenant-isolation failure.
+
+**Check.** Source CI and deployment render/policy checks pass on exact heads;
+the enabled producer remains project-scoped and backend-only; all required
+services report ready; the URL and document resources reach a correlated active
+serving version; failed replacement never removes the previous active version;
+deletion removes lecturer visibility immediately and reaches its expected
+external terminal state; no source URL credential, SAS, token, webhook secret,
+or content body appears in logs or evidence; cleanup leaves no synthetic active
+resource. A single green canary proves only the bounded STG release gate, not
+general availability.
+
+**Non-goals.** W8 does not publish or deploy the graph worker, enable graph
+builds, test FalkorDB/GraphML, migrate legacy chatbots, prove chatbot retrieval,
+open production traffic, or retire any GitLab repository. PR #5559's scoped
+Doc Query transport correction may finish in parallel, but it is not a
+prerequisite for the basic ingestion canary.
+
+**Priority.** P0. Merge, secret writes, deployment, cluster connectivity, live
+mutation, and cleanup remain separately authorized at their exact boundaries.
 
 External (platform-track) dependencies to watch, not owned here: R1.1 `resource_active` gating, R1.2 partition wiring, R1.3/R1.4 blast-radius fixes, R4.3 Klicker tenant mount, R4.4 producer enable + Gap-D proof, D-2 Langfuse per-tenant project for Klicker.
 
@@ -174,6 +277,41 @@ External (platform-track) dependencies to watch, not owned here: R1.1 `resource_
 - [x] 2026-07-30: W8 local finish-gate follow-up completed through `d9e3e1b36`. Focused GraphQL real-PostgreSQL suites pass 93/93, Hatchet passes 61/61, root `check:all` passes 25/25, and the production build passes 22/22. The final maintainability review found a load-more race with in-flight polling; `00ab85bc7` fences stale refresh generations and `d9e3e1b36` queues one full reconciliation so mutation refreshes are not dropped during load-more. The committed-range crosscheck also corrected slice 7's stale foreign-owner wording to the accepted tenant-wide gateway-key contract. A fresh upload attempt did fire the real dropzone handler, but the sanitized GraphQL response stopped at `Blob storage is not configured`; no upload ticket/resource was created, and the disposable KB was deleted. The full upload happy-path proof therefore remains blocked by local environment configuration, W8's completion checkbox stays open, and publication/CI are still pending. The user explicitly skipped the final security check for this run.
 - [x] 2026-07-30: W8 publication read-back completed for pushed head `885622a2b`: [draft PR #5174](https://github.com/uzh-bf/klicker-uzh/pull/5174) remains draft into `v3-ai`, its title/body/screenshots now cover W1–W8-Interim and the explicit upload/security boundaries, and CodeQL passes for Java/Kotlin, JavaScript/TypeScript, and Python. GitGuardian is the only failing check; its live metadata identifies the same pre-existing incident `1509424` in commit `d898fadb0` (`.devcontainer/docker-compose.yml`), outside the W8 range. This publication evidence does not close the upload blocker or authorize un-drafting, merge, or deployment.
 - [x] 2026-07-30: W8's local upload blocker is closed with the managed DevPod's Blob-only Azurite 3.36.0 service. Browser-facing SAS URLs use the routed workspace origin while backend and worker SDK traffic uses the container-internal endpoint; production and staging retain the existing Azure URL fallback when no internal override is set. Post-start configures exact-origin CORS and `devrouter ensure` now proves 11 routes, including Blob Storage. A real delegated-login TXT upload through the hidden file input created a 105-byte BLOB resource with no remaining reservation; the disposable resource and KB were then deleted. Evidence is `project/screenshots/kb-w8-azurite-upload-success-en-desktop.png`. The utility suite passes 90 tests, focused real-PostgreSQL GraphQL suites pass 67 tests, Hatchet passes 61 tests, root `check:all` passes 25/25 typecheck tasks plus all six static gates, and the production build passes 22/22 tasks. The restored route's exact-origin PUT preflight returns HTTP 200 from `Azurite-Blob/3.36.0`; wiki validation passes with only 20 pre-existing hygiene warnings. No external ingestion endpoint, deployment, un-draft, or merge was exercised. The final security check remains explicitly skipped by user instruction. NEXT: commit and push this closure, refresh draft PR #5174, and read back fresh CI.
+- [x] 2026-08-26: Phase-5 delivery reconciliation supersedes the stale
+  publication markers above. The KB source and desktop UX landed through PRs
+  #5424, #5540, and #5558; their merge commits are ancestors of current
+  `v3-ai@a1c63c644fdcdc52ff3dcddbbd3f58fcf363261d`. The achieved layer is
+  `merged`, not released, deployed, provider-backed, or live-proven. The
+  focused UX plan records the desktop browser journey and clean final review.
+- [x] 2026-08-26: The user reprioritized the release around basic KB management
+  and data ingestion. W9 and the separate graph production roadmap are parked;
+  graph generation remains in GitLab. Catalyst PR #23 stays draft and
+  untouched. No graph delivery gate blocks W8.
+- [x] 2026-08-26: Fresh provider evidence establishes the W8 entry state.
+  Data-ingestion `main@66e22bff` documents and implements the project-level
+  producer boundary; the user approved that boundary instead of the obsolete
+  D-8 per-KB allowlist. Deployment `main@f83a2057f` already carries the exact
+  Klicker project, URL/BLOB source policy, source gateway, signed callback, and
+  MIME limits, but deliberately sets `producer.enabled: false` and tests that
+  state. There is no open data-ingestion MR. No deployment, secret, cluster, or
+  live state was inspected or changed.
+- [x] 2026-08-26: W8 source-readiness packaging is complete at the reviewed
+  local layer. Klicker branch `rs/kb-ingestion-stg-readiness` contains the
+  fail-closed ingestion capability gates and exact STG configuration through
+  `bd8e320f9`; its upper `rs/kb-ingestion-stg-activation` layer opens only basic
+  ingestion at `49159597b` while keeping both graph gates closed. df-cloud
+  `rs/kb-ingestion-secret-projection` projects only the consumer-specific
+  aliases at `c93c1fa6`. Deployment `rs/kb-ingestion-producer-activation`
+  enables only the existing Klicker producer at `2e928f6d`; its complete local
+  Kustomize render and policy validator pass. Doc Query PR #5559 is refreshed
+  independently at `e2f3e27e0` and has no W8 path overlap.
+- [ ] **NEXT: finish the integrated source publication gate.** Complete the
+  upper-layer and package final reviews, run each branch's fresh exact-head
+  checks, then push and publish/update only the approved draft PRs/MRs. Keep the
+  activation branches explicitly merge-blocked. After source CI settles, stop
+  for separate authority to merge readiness, prove values-free secret/GitOps
+  prerequisites, merge activation, deploy, access the cluster, run the live
+  canary, and clean it up. Graph generation and Catalyst PR #23 remain parked.
 
 ### W4 Slice Plan
 
@@ -223,9 +361,17 @@ External (platform-track) dependencies to watch, not owned here: R1.1 `resource_
    - Commit boundary: migration, quota accounting and enforcement, ingestion source-size persistence, tests, generated artifacts, and affected wiki/skill contracts.
 2. **`kb_id` validation boundary**
    - Keep every Klicker-produced `kb_id` derived from an owner-checked persisted KB or resource relation; never accept it as free text from a lecturer-facing ingestion mutation. Add focused negative tests for mismatched KB/resource scope at source preparation, dispatch, status reconciliation, deletion, and source-gateway boundaries.
-   - Document the external D-8 requirement precisely: the ingestion service must validate `scope.kb_id` against a per-project registered set before self-service is exposed. Its current producer registry has no such field and cannot enforce the per-KB 100/500 MiB caps. Do not add a duplicate Klicker-side registry, mutate the external repositories, or claim the end-to-end D-8 gate is closed.
+   - Treat the producer's configured project as the external authorization
+     boundary. `kb_id` is a project-scoped filter, while the 100-resource and
+     500 MiB limits remain Klicker-owned enforcement. Do not add a duplicate
+     per-KB registry or expose the backend-only producer credential.
 3. **Finish gate**
-   - Run focused API/Hatchet and real-PostgreSQL GraphQL tests, migration/schema sync, generation, root `check:all`, production build, independent contract/security/maintainability review, and committed-range crosscheck. W6 may be published as Klicker-complete with the external D-8 deployment gate still open; it must not be described as platform-complete.
+   - Run focused API/Hatchet and real-PostgreSQL GraphQL tests, migration/schema
+     sync, generation, root `check:all`, production build, independent
+     contract/security/maintainability review, and committed-range crosscheck.
+     W6 may be published as Klicker-complete once its persisted-scope tests pass;
+     W8 separately verifies the configured project boundary before the STG
+     canary.
 
 ### W7 Slice Plan
 
@@ -287,7 +433,11 @@ Scope: the 2026-07-29 [senior-review](2026-07-29-kb-w1-w7-senior-review.md) reme
 
 ## Active Autonomous Goal
 
-Superseded 2026-07-29: the W6/W7 goal below completed at `925eea6a8` (see Progress). The next goal is the W8-Interim slice plan above; it inherits the same boundaries (no external ingestion/deployment mutation, no platform-registry invention, no D-8 closure claims, no GrowthBook/W9 scope, keep [PR #5174](https://github.com/uzh-bf/klicker-uzh/pull/5174) draft, no merge/deploy) and the same verification bar, and starts only on explicit user approval.
+Superseded 2026-08-26: W8-Interim and the source/UX stack are merged. The active
+next package is the W8 basic-ingestion STG launch amendment above. It starts
+through a fresh `$rs-sliced-development-workflow` plan and retains separate
+authority gates for merge, secret writes, deployment, cluster access, live
+proof, and cleanup. W9 graph delivery remains parked.
 
 - Objective (completed): execute all Klicker-owned W6 quota and scope-validation work followed by the complete W7 scale and lecturer-UX pack on `kb-poc`.
 - Terminal condition: concurrency-safe 100-resource/500 MiB per-KB quotas and persisted-scope validation protect all Klicker mutations and worker seams; both list surfaces are cursor-paginated and server-filtered with exact metrics; bulk actions, inspector, real operation progress, async-wait guidance, and linked-consumer visibility work accessibly in English and German; focused and full local verification, independent final reviews, browser evidence, fresh draft-PR CI, and PR read-back pass.

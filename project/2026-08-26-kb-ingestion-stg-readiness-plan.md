@@ -24,7 +24,7 @@ and production remain withheld.
   - data-ingestion `origin/main` at
     `66e22bff67276e46a5d82b3545edfa6df7844500`;
   - deployment `origin/main` at
-    `f83a2057fd90711d21bb37b0f365802baf01f846`;
+    `0e7e78488b839e09759fb80cdd56fca7a32bcb30`;
   - df-cloud `origin/stg` at
     `9f1586a10827b7909ef828ef3c35a557ec12a05b`.
 - Proposed source branches:
