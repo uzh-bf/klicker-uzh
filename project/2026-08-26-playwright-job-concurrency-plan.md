@@ -104,3 +104,8 @@ long-lived architecture decision.
   was performed.
 - 2026-08-26: Planning review completed. S1 is active; implementation,
   verification, committed review, push, and pull request remain.
+- 2026-08-26: S1 implementation is complete. Parsed workflow assertions cover
+  concurrency placement, status isolation, all three exact-workspace trust
+  steps, runner safety, shard count, and run-specific volumes. Prettier,
+  engineering-wiki checks, removed-doc checks, and diff hygiene pass; committed
+  review, push, and pull request remain.

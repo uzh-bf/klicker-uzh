@@ -127,6 +127,12 @@ dependency symlinks survive the cross-job handoff. Each shard also restores the
 generated GraphQL client map from the built package because Turbo cache hits do
 not restore generated source files. Dedicated `-status` fail-open gates remain
 for the required multi-job workflows (`test-graphql`, `test-playwright`).
+Playwright cancellation is job-scoped: hosted stages cancel only their matching
+predecessors, while the public reusable-workflow call cancels the complete older
+public route. The required status gate deliberately has no concurrency group,
+so a stale reporter waiting for GitHub-hosted capacity cannot block current
+filtering, builds, or shards. Public container jobs also trust the exact mounted
+`GITHUB_WORKSPACE` after checkout because its host and container owners differ.
 
 **Hatchet tokens differ per workflow, because `test-playwright` is the only one that runs inside a `container:`.** `test-graphql` runs straight on the runner, so it reaches Hatchet at `localhost` and reads its boot-minted token with `docker exec`. Inside a container job neither works: service containers resolve by service **name** (`hatchet:8888` / `hatchet:7077`, exactly like the `postgres:5432` the same job already uses), and the Playwright image ships no Docker CLI. So `test-playwright` shares `/config` with the Hatchet service through the `hatchet_lite_config` volume and reads `/config/authdisabled-token` directly. Do not "simplify" those hostnames to `localhost` — every shard then fails in `Prepare .env files` before a single test runs. The HTTP token API is not a fallback: `hatchet-lite-dev` disables auth and answers `POST /api/v1/tenants/{id}/api-tokens` with 401 for every caller. The token's own claims always say `localhost`, which is harmless — `packages/hatchet/src/client.ts` passes `host_port`/`api_url` explicitly, and process env beats the `.env` templates for both `node --env-file` and `dotenv`.
 
