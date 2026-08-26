@@ -26,7 +26,9 @@ import { KnowledgeGraphUnavailableError } from '@klicker-uzh/shared-components/s
 import type { KnowledgeGraphResponse } from '@klicker-uzh/types'
 import { Badge, Button, SelectField, Switch } from '@uzh-bf/design-system'
 import dynamic from 'next/dynamic'
+import { useRouter } from 'next/router'
 import { useFormatter, useTranslations } from 'next-intl'
+// biome-ignore lint/correctness/noUnusedImports: this package uses the classic JSX transform.
 import React, { useEffect, useMemo, useState } from 'react'
 
 const KnowledgeGraphViewer = dynamic(
@@ -209,6 +211,7 @@ function KnowledgeGraphPreview({ kbId }: { kbId: string }) {
 function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
   const t = useTranslations()
   const format = useFormatter()
+  const router = useRouter()
   const [selectedTier, setSelectedTier] = useState<KbGraphQualityTier>(
     KbGraphQualityTier.Standard
   )
@@ -545,9 +548,35 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
 
             {detailsOpen ? (
               <div>
-                <h3 className="mb-2 font-semibold text-slate-900">
-                  {t('kb.graphPreviewTitle')}
-                </h3>
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="font-semibold text-slate-900">
+                    {t('kb.graphPreviewTitle')}
+                  </h3>
+                  {config.elementGenerationReady ? (
+                    <Button
+                      primary
+                      onClick={() =>
+                        void router.push({
+                          pathname: '/elements/generate',
+                          query: { kbId },
+                        })
+                      }
+                      data={{ cy: 'kb-generate-elements' }}
+                    >
+                      <Button.Label>
+                        {t('kb.graphGenerateElements')}
+                      </Button.Label>
+                    </Button>
+                  ) : null}
+                </div>
+                {hasPublishedGraph && !config.elementGenerationReady ? (
+                  <p
+                    className="mb-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
+                    data-cy="kb-element-generation-unavailable"
+                  >
+                    {t('kb.graphElementGenerationUnavailable')}
+                  </p>
+                ) : null}
                 {hasPublishedGraph ? (
                   <KnowledgeGraphPreview kbId={kbId} />
                 ) : (

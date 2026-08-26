@@ -1722,6 +1722,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     graphRetry: 'Retry',
     graphBuildError: 'The graph build could not be started.',
     graphPreviewTitle: 'Published graph',
+    graphGenerateElements: 'Generate Klicker elements',
+    graphElementGenerationUnavailable:
+      'This published graph does not include an element-generation bundle yet. Rebuild it to generate Klicker elements.',
     graphPreviewUnavailable:
       'Build and publish a graph before opening the lecturer viewer.',
     ingestionDisabledError:

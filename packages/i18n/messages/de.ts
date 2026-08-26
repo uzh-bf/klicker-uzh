@@ -1740,6 +1740,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     graphRetry: 'Erneut versuchen',
     graphBuildError: 'Der Graphaufbau konnte nicht gestartet werden.',
     graphPreviewTitle: 'Veröffentlichter Graph',
+    graphGenerateElements: 'Klicker-Elemente generieren',
+    graphElementGenerationUnavailable:
+      'Dieser veröffentlichte Graph enthält noch kein Paket zur Elementgenerierung. Erstellen Sie ihn neu, um Klicker-Elemente zu generieren.',
     graphPreviewUnavailable:
       'Erstellen und veröffentlichen Sie einen Graphen, bevor Sie die Dozierendenansicht öffnen.',
     ingestionDisabledError:
