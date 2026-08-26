@@ -72,9 +72,9 @@ assessment mode:
 
 The cockpit reports received as
 `participants + max(received - processed overlap, 0)` and processed as
-`participants`. This is an exact union after the worker-first rollout gate and
-a safe lower bound before ingress cutover. An unresolved reconciliation hash
-makes only processed unavailable (`null`).
+`participants`. This is an exact union after the readiness-gated worker-first
+rollout; before ingress cutover there are no new received claims to overlap. An
+unresolved reconciliation hash makes only processed unavailable (`null`).
 
 Choice payloads must enumerate every configured choice exactly once using
 unique in-range integer indices. The processing script accepts only the current
@@ -97,10 +97,12 @@ never extend it.
 
 The Helm chart puts both regular and assessment response processors in ArgoCD
 sync wave `0` and both response APIs in wave `1`. ArgoCD therefore completes
-and health-checks the worker rollout before updating ingress, guaranteeing that
-every claim written by new ingress can update the overlap counter. GraphQL and
-Manage may share wave `0`. Old-ingress traffic is a lower bound until processed;
-after ingress cutover the union is exact. The persisted-operation manifest
+and health-checks the worker rollout before updating ingress. A response
+processor becomes ready only after all active Hatchet runtimes register,
+guaranteeing that every claim written by new ingress can update the overlap
+counter. GraphQL and Manage may share wave `0`. Old-ingress traffic is a lower
+bound until processed; after ingress cutover the union is exact. The
+persisted-operation manifest
 retains the previous `GetCockpitQuiz` hash while old Manage bundles drain;
 GraphQL generation rebuilds that compatibility entry with
 `packages/graphql/scripts/merge-persisted-query-compatibility.mjs`. This is

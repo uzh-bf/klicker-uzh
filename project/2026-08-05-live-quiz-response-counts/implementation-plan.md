@@ -86,9 +86,11 @@ participant aggregate is the processed count.
 
 The Helm chart enforces rolling-deployment compatibility: both response
 processors are ArgoCD sync wave `0`, and both response APIs are wave `1`.
-GraphQL and Manage may share wave `0`. Before ingress cutover, old traffic is a
-lower bound until it is processed; afterward the union converges exactly. A
-post-write failure makes only processed nullable; received remains visible.
+Each processor becomes ready only after all active Hatchet runtimes register,
+so ArgoCD cannot advance on process startup alone. GraphQL and Manage may share
+wave `0`. Before ingress cutover, old traffic is a lower bound until it is
+processed; afterward the union converges exactly. A post-write failure makes
+only processed nullable; received remains visible.
 Selection/case-study payloads must match cached instance shapes, authoring caps
 choices and case-study response entries at 1,000, and the Lua script caps
 atomic batches at 2,048 commands while retaining the 600-command compatibility
@@ -119,10 +121,11 @@ an authority boundary.
 
 Progress: Published to PR #5315. The PR status and readiness report maintain
 the current branch head, base, CI, and exact-head review state. The
-counter/replay redesign is formatted, typechecked, covered by five focused
-response-api tests, nine worker tests, and real-Redis util tests. Current-head
-CI and the exact-head final review remain the delivery gates; mixed-version
-count convergence is covered by the GraphQL integration suite.
+counter/replay redesign is formatted, typechecked, covered by six focused
+response-api tests, 20 worker tests (including Hatchet registration readiness),
+and real-Redis util tests. Current-head CI and the exact-head final review remain
+the delivery gates; mixed-version count convergence is covered by the GraphQL
+integration suite.
 
 This addendum supersedes the earlier set-cardinality details in Tasks 1–6;
 those sections remain as implementation history for the original package.

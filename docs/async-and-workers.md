@@ -52,13 +52,21 @@ traffic once, and reports `results.participants` as processed. The difference
 is an operational signal, not strict queue depth: it can include queued,
 invalid, late, rejected, failed, or untracked work.
 
+During the rolling compatibility window, the cockpit combines the numeric
+overlap with the identity intersection between received claims and the legacy
+processed set. It never infers cohort overlap from two independent
+cardinalities.
+
 The Helm chart enforces this migration gate with ArgoCD sync waves: both
 regular and assessment response processors are in wave `0`, while both
 response APIs are in wave `1`. ArgoCD waits for all wave-0 Deployments to be
-healthy before updating ingress. GraphQL and Manage can share wave `0` because
-the fields are additive and nullable. Before ingress cutover, old-ingress
-traffic is a lower bound until processing; after the enforced worker-first gate
-and ingress cutover, the union converges exactly. The persisted-query
+healthy before updating ingress. Each response processor becomes ready only
+after all of its active Hatchet runtimes have registered; a readiness file is
+removed on startup and shutdown so process startup alone cannot satisfy the
+gate. GraphQL and Manage can share wave `0` because the fields are additive and
+nullable. Before ingress cutover, old-ingress traffic is a lower bound until
+processing; after the enforced worker-first gate and ingress cutover, the union
+converges exactly. The persisted-query
 compatibility script keeps the old `GetCockpitQuiz` hash valid while Manage
 bundles drain.
 

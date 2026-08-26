@@ -22,13 +22,18 @@ was recorded by new ingress. The cockpit reports the set union:
 `participants + max(tracked received - tracked processed overlap, 0)`
 
 This distinguishes old processed traffic from new traffic that is still queued
-or rejected. The Helm chart assigns both response-processing workers to ArgoCD
+or rejected. During the compatibility window, GraphQL adds the numeric overlap
+to the actual intersection of the received-claim and legacy-processed sets;
+cardinalities alone are not treated as proof that two cohorts overlap. The Helm
+chart assigns both response-processing workers to ArgoCD
 sync wave `0` and both response APIs to wave `1`. ArgoCD waits for the regular
-and assessment workers to be healthy before updating ingress. GraphQL and
-Manage may deploy in wave `0` because their fields are additive and nullable.
-Before ingress cutover, traffic accepted by an old response API is a lower
-bound until it is processed; after the enforced worker-first gate and ingress
-cutover, the union converges exactly.
+and assessment workers to be healthy before updating ingress. Each response
+processor becomes ready only after all active Hatchet runtimes register, so a
+running process cannot prematurely satisfy the gate. GraphQL and Manage may
+deploy in wave `0` because their fields are additive and nullable. Before
+ingress cutover, traffic accepted by an old response API is a lower bound until
+it is processed; after the enforced worker-first gate and ingress cutover, the
+union converges exactly.
 
 The received Lua script writes the claim set and counter atomically. Repeating
 the same claim does not increment twice. A timeout can therefore complete in

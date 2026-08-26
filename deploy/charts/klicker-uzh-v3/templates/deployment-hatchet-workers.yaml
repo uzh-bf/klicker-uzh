@@ -138,16 +138,15 @@ spec:
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-growthbook
                 optional: true
-          # TODO: add liveness and readiness probes to container
-          # livenessProbe:
-          #   httpGet:
-          #     path: /healthz
-          #     port: http
-          #   initialDelaySeconds: 600
-          # readinessProbe:
-          #   httpGet:
-          #     path: /healthz
-          #     port: http
+          readinessProbe:
+            exec:
+              command:
+                - test
+                - -f
+                - /tmp/klicker-response-processor-ready
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 3
           resources:
             {{- toYaml .Values.hatchet.workers.responseProcessor.resources | nindent 12 }}
       {{- with .Values.hatchet.workers.responseProcessor.nodeSelector }}
@@ -221,16 +220,15 @@ spec:
             - secretRef:
                 name: {{ include "chart.fullname" . }}-secret-growthbook
                 optional: true
-          # TODO: add liveness and readiness probes to container
-          # livenessProbe:
-          #   httpGet:
-          #     path: /healthz
-          #     port: http
-          #   initialDelaySeconds: 600
-          # readinessProbe:
-          #   httpGet:
-          #     path: /healthz
-          #     port: http
+          readinessProbe:
+            exec:
+              command:
+                - test
+                - -f
+                - /tmp/klicker-response-processor-ready
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 3
           resources:
             {{- toYaml .Values.hatchet.workers.responseProcessorAssessment.resources | nindent 12 }}
       {{- with .Values.hatchet.workers.responseProcessorAssessment.nodeSelector }}

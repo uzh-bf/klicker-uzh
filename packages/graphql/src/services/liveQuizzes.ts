@@ -1036,6 +1036,17 @@ export async function getCockpitQuiz(
             instanceId: instance.id,
           })
         )
+        responseCountPipeline.sintercard(
+          2,
+          getLiveQuizLegacyResponseReceivedKey({
+            liveQuizId: id,
+            instanceId: instance.id,
+          }),
+          getLiveQuizLegacyResponseProcessedKey({
+            liveQuizId: id,
+            instanceId: instance.id,
+          })
+        )
         responseCountPipeline.hget(
           `lq:${id}:i:${instance.id}:results`,
           'participants'
@@ -1062,15 +1073,17 @@ export async function getCockpitQuiz(
       }
 
       startedInstances.forEach((instance, index) => {
-        const resultOffset = index * 7
+        const resultOffset = index * 8
         const receivedResult = responseCountResults[resultOffset]
         const legacyReceivedResult = responseCountResults[resultOffset + 1]
         const processedResult = responseCountResults[resultOffset + 2]
         const legacyProcessedResult = responseCountResults[resultOffset + 3]
-        const aggregatedResult = responseCountResults[resultOffset + 4]
+        const legacyProcessedOverlapResult =
+          responseCountResults[resultOffset + 4]
+        const aggregatedResult = responseCountResults[resultOffset + 5]
         const legacyReconciliationResult =
-          responseCountResults[resultOffset + 5]
-        const reconciliationResult = responseCountResults[resultOffset + 6]
+          responseCountResults[resultOffset + 6]
+        const reconciliationResult = responseCountResults[resultOffset + 7]
 
         if (!receivedResult || receivedResult[0]) {
           throw (
@@ -1093,6 +1106,12 @@ export async function getCockpitQuiz(
           throw (
             legacyProcessedResult?.[0] ??
             new Error('Missing legacy processed response count')
+          )
+        }
+        if (!legacyProcessedOverlapResult || legacyProcessedOverlapResult[0]) {
+          throw (
+            legacyProcessedOverlapResult?.[0] ??
+            new Error('Missing legacy processed response overlap')
           )
         }
         if (!aggregatedResult || aggregatedResult[0]) {
@@ -1135,6 +1154,10 @@ export async function getCockpitQuiz(
           legacyProcessedResult[1],
           'legacy processed set'
         )
+        const legacyProcessedOverlapCount = parseCount(
+          legacyProcessedOverlapResult[1],
+          'legacy processed overlap'
+        )
         const aggregatedCount = parseCount(
           aggregatedResult[1],
           'aggregated participant count'
@@ -1152,15 +1175,15 @@ export async function getCockpitQuiz(
           legacyReceivedCount
         )
         const trackedProcessedOverlap = Math.min(
-          processedCount,
+          processedCount + legacyProcessedOverlapCount,
           trackedReceivedCount
         )
 
         responseCounts.set(instance.id, {
           // The participant aggregate contains all successfully processed
           // responses. Add only tracked received responses that have not yet
-          // joined that aggregate, yielding an exact union after the worker-
-          // first rollout gate and a safe lower bound before ingress cutover.
+          // joined that aggregate. The readiness-gated worker-first rollout
+          // ensures every new ingress claim can update this overlap counter.
           received:
             aggregatedCount +
             Math.max(trackedReceivedCount - trackedProcessedOverlap, 0),

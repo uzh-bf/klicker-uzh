@@ -68,7 +68,7 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 - **Hatchet endpoint pair**: `hatchet.client.apiUrl` in the environment values renders `HATCHET_API_URL`, while the external secret supplies `HATCHET_CLIENT_HOST_PORT`. They must resolve to the same Hatchet installation; worker health alone does not validate programmatic schedule creation over the HTTP API. Staging uses `app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080`, and production uses `app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080` (see [Async & Workers](./async-and-workers.md)).
 - **Hatchet general-worker resources**: staging and production set a `2Gi` memory limit on the general worker because it executes course duplication. The response-processor deployments retain their lower, independent limits.
 - **Rollout strategy**: use `RollingUpdate` in prd values; `Recreate` can leave a service with zero endpoints during slow image pulls (PDBs don't protect against Deployment-driven scale-downs). `maxUnavailable: 0` only for singletons.
-- **Response-ingress ordering**: ArgoCD sync wave `0` contains both regular and assessment response processors; wave `1` contains both response APIs. ArgoCD waits for the worker Deployments to become healthy before updating ingress. This is a correctness boundary for live-quiz received/processed overlap tracking and must not be removed or collapsed into one wave.
+- **Response-ingress ordering**: ArgoCD sync wave `0` contains both regular and assessment response processors; wave `1` contains both response APIs. Each processor publishes readiness only after all active Hatchet runtimes register, and ArgoCD waits for both worker Deployments to become healthy before updating ingress. This is a correctness boundary for live-quiz received/processed overlap tracking; do not remove the readiness probe or collapse the two waves.
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
 
 ## Deployment migrations
@@ -90,7 +90,8 @@ The `rollout.klicker.uzh.ch/release` annotation exists to break that tie: it lan
 
 Within that single GitOps sync, ArgoCD applies the response-processor
 Deployments in wave `0` and waits for both regular and assessment workers to be
-healthy before applying the corresponding response APIs in wave `1`. The
+Hatchet-registered and ready before applying the corresponding response APIs in
+wave `1`. The
 promotion workflow may continue updating all release annotations together;
 the rendered Deployment waves enforce the required worker-before-ingress gate.
 

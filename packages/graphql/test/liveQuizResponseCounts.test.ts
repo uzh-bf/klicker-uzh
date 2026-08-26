@@ -150,6 +150,30 @@ describe('live quiz cockpit response counts', () => {
       }),
       '1'
     )
+    await userOneCtx.redisExec.set(
+      getLiveQuizResponseCountKey({
+        liveQuizId: quiz.id,
+        instanceId: secondInstance.id,
+        status: 'received',
+      }),
+      '2'
+    )
+    await userOneCtx.redisExec.sadd(
+      getLiveQuizLegacyResponseReceivedKey({
+        liveQuizId: quiz.id,
+        instanceId: secondInstance.id,
+      }),
+      'legacy-processed-one',
+      'legacy-processed-two'
+    )
+    await userOneCtx.redisExec.sadd(
+      getLiveQuizLegacyResponseProcessedKey({
+        liveQuizId: quiz.id,
+        instanceId: secondInstance.id,
+      }),
+      'legacy-processed-one',
+      'legacy-processed-two'
+    )
     await userOneCtx.redisExec.sadd(
       getLiveQuizLegacyResponseReceivedKey({
         liveQuizId: quiz.id,

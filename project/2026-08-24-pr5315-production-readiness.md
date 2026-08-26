@@ -41,14 +41,18 @@ access, or production-state change was performed.
   while reconciliation remains.
 - New ingress atomically dual-writes a deduplicated received claim and numeric
   cardinality. New workers count the successfully processed overlap with that
-  ingress cohort. The cockpit forms an exact union with
-  `results.participants`. The Helm chart enforces worker-first deployment with
+  ingress cohort. Legacy overlap uses the actual intersection of claim IDs,
+  not an unsafe comparison of cardinalities. The cockpit forms an exact union
+  with `results.participants`. The Helm chart enforces worker-first deployment with
   both response processors in ArgoCD wave `0` and both response APIs in wave
-  `1`; ArgoCD waits for the workers to be healthy before updating ingress.
+  `1`. Both workers publish a readiness file only after every active Hatchet
+  runtime has registered, so ArgoCD cannot update ingress before the processors
+  can update the overlap counter.
 - Replay claims retain the full 24-hour replay horizon. Block and quiz cleanup
   use `EXPIRE ... LT`, so a retry establishes or shortens retention but cannot
   extend participant/correlation metadata indefinitely. `endLiveQuiz` persists
-  `ENDED` before retention and does not repeat end side effects on retry.
+  `ENDED` before retention and does not repeat end-of-quiz side effects on
+  retry.
 - A response-count Redis failure degrades counts to nullable fields without
   failing the authorized cockpit query. Scheduled elements remain count-free.
 - The persisted-operation manifest retains the previous `GetCockpitQuiz` hash
@@ -62,13 +66,14 @@ access, or production-state change was performed.
 | Check | Result |
 | --- | --- |
 | Base integration | Current `origin/v3` merged without unresolved conflicts; GitHub reports the PR mergeable |
-| Response-processor unit tests | 17 passed across regular, assessment, and payload-shape validation paths, including choice/selection/case-study limits, leaderboard/XP commands, persistent reconciliation retries, replay-lookup failure propagation, and replays |
+| Response-processor unit tests | 20 passed across readiness, regular, assessment, and payload-shape validation paths, including Hatchet registration gating, choice/selection/case-study limits, leaderboard/XP commands, persistent reconciliation retries, replay-lookup failure propagation, and replays |
 | Response-processor typecheck | Passed |
 | Utility unit tests | 53 passed; the opt-in Redis test is skipped in the ordinary unit run |
 | Real Redis contract | 1 passed against an isolated Redis process, covering concurrent replay, durable fallback reconciliation, deduplicated ingress, conditional first-response timestamps, allowed/forbidden namespaces, malformed payloads, exact arity, a 600-command valid batch, and oversized-batch rejection |
 | Response API tests | 6 passed |
 | GraphQL authoring-limit tests | 3 passed at and above the choice, selection, and case-study boundaries |
-| GraphQL, utility, response API, Playwright checks | Passed |
+| GraphQL, utility, response API, and Playwright typechecks | Passed |
+| Exact-head GraphQL integration suite | Not run locally because the requested stopped stack leaves Postgres unavailable; current-head CI required |
 | Lecturer frontend check | Passed |
 | Repository `check:all` | Passed: 25 check targets, 7 lint targets, formatting, Syncpack, Prisma sync, documentation-path checks, and AGENTS checks |
 | Production build | The normal pre-push production build passed all 23 build targets |
