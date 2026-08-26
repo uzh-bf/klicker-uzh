@@ -62,3 +62,6 @@ Pause for unexpected scope expansion, a conflict with the refreshed `v3-ai` base
 
 - 2026-08-26: Fresh base recorded as `origin/v3-ai@0fab2e33d7cc7cde35032bd533b6a718b276ba72`.
 - 2026-08-26: Planning review returned `DONE_WITH_CONCERNS`; accepted the private HTTPS mock and no-doc-change recommendations, and promoted the package to the full path because DNS pinning is an SSRF control surface.
+- 2026-08-26: Node 24.16.0 regression reproduced before the fix: the focused Hatchet run failed because the pinned lookup returned a scalar address for `all: true` (104 passed, 1 failed).
+- 2026-08-26: The callback now returns the validated pinned IPv4 in Node's requested shape. The focused/full Hatchet run passed 105 tests; package type-check, build, and affected-file Biome checks passed.
+- 2026-08-26: The retained failed staging RFC fixture was not retried. Staging proof remains separately gated after merge and deployment.

@@ -452,7 +452,11 @@ export async function resolvePublicIPv4(hostname: string): Promise<string> {
 
 function requestPinnedUrl(url: URL, address: string): Promise<IncomingMessage> {
   const request = url.protocol === 'https:' ? httpsRequest : httpRequest
-  const pinnedLookup: LookupFunction = (_hostname, _options, callback) => {
+  const pinnedLookup: LookupFunction = (_hostname, options, callback) => {
+    if (options.all) {
+      callback(null, [{ address, family: 4 }])
+      return
+    }
     callback(null, address, 4)
   }
 

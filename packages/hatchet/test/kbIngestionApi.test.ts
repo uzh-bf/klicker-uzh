@@ -1,6 +1,8 @@
+import type { IncomingMessage } from 'node:http'
+import type { LookupFunction } from 'node:net'
+import { Readable } from 'node:stream'
 import { BlobServiceClient } from '@azure/storage-blob'
 import type { IngestKBResourceInput } from '@klicker-uzh/types'
-import { Readable } from 'node:stream'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   buildKBIngestionSource,
@@ -8,6 +10,13 @@ import {
   prepareKBIngestionSource,
   resolvePublicIPv4,
 } from '../src/kbIngestionApi.js'
+
+const httpsRequest = vi.hoisted(() => vi.fn())
+
+vi.mock('node:https', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('node:https')>()),
+  request: httpsRequest,
+}))
 
 const RESOURCE_ID = '7f3e2a10-9c4b-4d8e-b1a6-5e0f9d2c7b3a'
 const KB_ID = 'c2a91f74-6e0b-4c3d-8f5a-1b9e7d4a2c60'
@@ -56,6 +65,7 @@ const operationResponse = {
 
 afterEach(() => {
   vi.restoreAllMocks()
+  httpsRequest.mockReset()
 })
 
 describe('canonical ingestion API client', () => {
@@ -353,6 +363,74 @@ describe('ingestion source preparation', () => {
       new URL('https://example.com/notes'),
       '93.184.216.34'
     )
+  })
+
+  it('returns the pinned IPv4 in both Node lookup callback forms', async () => {
+    const address = '93.184.216.34'
+    const content = Object.assign(Readable.from([Buffer.from('notes')]), {
+      statusCode: 200,
+      headers: {
+        'content-type': 'text/plain; charset=utf-8',
+        'content-length': '5',
+      },
+    }) as IncomingMessage
+    let pinnedLookup: LookupFunction | undefined
+    httpsRequest.mockImplementation(
+      (
+        _url: URL,
+        options: { lookup?: LookupFunction },
+        callback: (response: IncomingMessage) => void
+      ) => {
+        pinnedLookup = options.lookup
+        callback(content)
+        return {
+          on: vi.fn().mockReturnThis(),
+          end: vi.fn(),
+        }
+      }
+    )
+
+    await prepareKBIngestionSource(
+      {
+        resourceId: RESOURCE_ID,
+        kbId: KB_ID,
+        title: 'Lecture notes',
+        ingestionAttemptId: ATTEMPT_ID,
+        resourceVersion: 3,
+        type: 'URL',
+        sourceUrl: 'https://example.com/notes',
+      },
+      env,
+      { resolvePublicIPv4: vi.fn().mockResolvedValue(address) }
+    )
+
+    expect(pinnedLookup).toBeTypeOf('function')
+    await new Promise<void>((resolve, reject) => {
+      pinnedLookup!(
+        'example.com',
+        { all: true },
+        (error, addresses, family) => {
+          if (error) {
+            reject(error)
+            return
+          }
+          expect(addresses).toEqual([{ address, family: 4 }])
+          expect(family).toBeUndefined()
+          resolve()
+        }
+      )
+    })
+    await new Promise<void>((resolve, reject) => {
+      pinnedLookup!('example.com', { all: false }, (error, result, family) => {
+        if (error) {
+          reject(error)
+          return
+        }
+        expect(result).toBe(address)
+        expect(family).toBe(4)
+        resolve()
+      })
+    })
   })
 
   it('rejects persisted source identity with a non-canonical digest', () => {
