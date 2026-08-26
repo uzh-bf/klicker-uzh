@@ -1,5 +1,10 @@
-import { Hatchet } from '@hatchet-dev/typescript-sdk'
-import {
+import type { EventEmitter } from 'node:events'
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import type {
+  FeatureFlagAttributes,
+  FeatureFlagKey,
+} from '@klicker-uzh/feature-flags'
+import type {
   PrismaClient,
   UserLoginScope,
   UserRole,
@@ -8,11 +13,14 @@ import type { PreparedHatchetTasks } from '@klicker-uzh/types'
 import type { Request, Response } from 'express'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
-import type { EventEmitter } from 'node:events'
 
 interface BaseContext {
   req: Request & { locals: { user?: any } }
   res: Response
+}
+
+export interface FeatureFlagEvaluator {
+  isEnabled(key: FeatureFlagKey, attributes: FeatureFlagAttributes): boolean
 }
 
 export interface Context extends BaseContext {
@@ -33,6 +41,8 @@ export interface Context extends BaseContext {
   hatchet: Hatchet
   // available hatchet tasks
   tasks: PreparedHatchetTasks
+  // request-local evaluations on a process-level, multi-user client
+  featureFlags?: FeatureFlagEvaluator
 }
 
 export interface ContextWithUser extends Context {

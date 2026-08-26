@@ -1,9 +1,11 @@
 # KB knowledge graph production roadmap
 
-Status: M1 execution approved and in progress. W3 is closed at the merged
-delivery layer in both provider repositories. W1 and W2 remain at locally
-reviewed evidence, and cross-package compatibility and external delivery gates
-remain.
+Status: explicitly parked after the public Klicker package and ingestion
+provider boundary merged. W2 and W3 are closed at the merged delivery layer.
+Catalyst W1 reached a reviewed, green draft PR but is not merged, released, or
+live-proven. Graph generation remains in the GitLab source repository until it
+is reprioritized. The parent KB production roadmap now owns the active
+data-ingestion-first release path.
 
 Date: 2026-08-10
 
@@ -1102,3 +1104,81 @@ is independently safe to land.
     criterion is unchanged, and no W4 or M2 staging action is implied.
   - This reconciliation performed no merge, deployment, cluster access, paid run,
     or production mutation.
+- 2026-08-26: **W2 is closed at the merged delivery layer.** This supersedes the
+  2026-08-20 statement that PR #5424 was open and unstable. The delivery landed
+  through three merged PRs: [#5424](https://github.com/uzh-bf/klicker-uzh/pull/5424)
+  as `a0a5434ec44296e35392623c09d87570475d8f01`,
+  [#5540](https://github.com/uzh-bf/klicker-uzh/pull/5540) as
+  `0ae0d19ac1dd20f821f3bcb8653348f1d8c38e7f`, and
+  [#5558](https://github.com/uzh-bf/klicker-uzh/pull/5558) as
+  `f47fee2780489a3f367e9b6d2033fd785095262c`. All three merge commits are
+  ancestors of current `origin/v3-ai` at
+  `332e044f34a1a5a0c8be00075795d8b3a19e7397`; later target commits also add the
+  graph and feature-flag runtime artifacts required by the merged code.
+  - The merged W2 package contains the graph kill switch, per-KB opt-in,
+    versioned result validation, transactional cost reservation and settlement,
+    KB-owned lecturer and student graph surfaces, the streamlined desktop KB
+    management UX, and the two-part `ai-beta` plus account-entitlement gate for
+    lecturer KB and chatbot management. The W2 plan records disposable migration
+    and PostgreSQL-backed accounting proof, focused package suites, exact-head
+    package CI, runtime teardown, and a clean integrated Sol review. The UX plan
+    records the desktop browser journey and a clean Sol final review. A fresh
+    Phase-5 review found no correctness, security, ADR, least-surprise, or
+    maintainability finding at the reporting threshold.
+  - Historical red checks do not establish a W2 regression. PR #5424's failed
+    MCP job ran unit tests before building `@klicker-uzh/util`; the same MCP job
+    passes on the integrated target after dependency-build ordering was fixed.
+    Its failed Playwright shard was the unrelated public-evaluation flow in
+    `O-live-quiz.spec.ts`; the other seven shards passed. PR #5558's failed
+    Playwright shard was likewise outside the KB/AI gate path. GitGuardian's
+    reported KB CIDRs were already classified as intentional SSRF denylist
+    literals. These exceptions remain recorded rather than being restated as a
+    fully green final PR head.
+  - `merged` is the achieved delivery layer. This entry does not claim a release,
+    deployment, provider-backed system run, staging health, or live production
+    proof. W4 and W5 retain those platform and synthetic-system obligations.
+  - M1 now remains open only on **W1**. Catalyst branch
+    `rs/kb-graph-production-adopter` is still local at `b1c7edd4e` with no remote
+    branch or PR, while Catalyst `main` has advanced to
+    `52ba9ea124cc00b17ac857102b25654fd8004c6d`. The next already ordered package
+    is therefore W1: refresh its base, revalidate the reviewed graph-worker
+    package and W2 contract compatibility, then publish it through its normal
+    PR and hosted-CI boundary before considering M1 closed or starting W4.
+  - This reconciliation changed only this roadmap. It performed no commit, push,
+    PR mutation, merge, deployment, cluster access, paid run, runtime mutation,
+    or cleanup of the retained implementation worktrees.
+- 2026-08-26: **The graph release train is explicitly parked.** This supersedes
+  the preceding statement that Catalyst W1 is the next required package. The
+  user ruled that graph generation is not critical for the basic KB release and
+  will continue in GitLab when it is reprioritized.
+  - Catalyst [PR #23](https://github.com/uzh-bf/klicker-uzh-catalyst/pull/23)
+    is an open draft at `94a4c1d2223e6fba86feff564205672435b3163c`.
+    GitHub reports it mergeable, and its `verify`, `graph-worker`, and
+    `verify learning-analytics image` checks pass. Its 78-commit shape includes
+    all 49 commits from the selected GitLab source ancestry plus 29 Catalyst
+    integration commits. It remains reviewed source/CI evidence only: no graph
+    worker image was published or deployed, and no live Hatchet/provider proof
+    exists.
+  - A fresh read-only check on 2026-08-26 confirms that exact head remains an
+    open, draft, mergeable PR and all three checks remain successful. This is a
+    quiet parked-state confirmation, not a request to merge or a substitute for
+    the deliberately absent graph-worker image build/run release gate.
+  - The canonical graph source remains
+    `/Users/rschlae/Git/ai/kg-content-generation` on
+    `feat/kb-graph-manifest-contract` at
+    `c4a4236d5178b49108e2c6369d851847d31e1e7e`. The source repository and its
+    authorship remain authoritative for continued graph development. The
+    Catalyst monitor was stopped; this roadmap grants no PR close, merge,
+    branch rewrite, or repository-retirement authority.
+  - W4-W7 are parked with no achieved staging or production delivery. They do
+    not gate basic KB management, resource ingestion, or the first ingestion
+    canary. The separate graph kill switch remains closed in every basic-KB
+    release environment.
+  - The active next package returns to W8 in
+    `project/2026-07-24-kb-production-v1-roadmap-plan.md`: enable and prove the
+    existing STG data-ingestion contract for basic KB resources. That package
+    excludes graph generation and does not claim chatbot retrieval until its
+    separate transport and shared-reader gates are complete.
+  - This parking reconciliation changes roadmap state only. It does not commit,
+    push, close or mutate PR #23, merge, publish an image, deploy, access
+    secrets, connect to a cluster, run a paid model, or mutate production.

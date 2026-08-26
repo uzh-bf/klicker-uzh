@@ -32,6 +32,11 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
    Participant-facing fields usually need only `t.withAuth(asParticipant)`. Note `withPermission` returns `null` on failure (client sees a null field, not an error) — don't "fix" that. Owner-only aggregates that have no `PermissionCheck` key, including `KB`, keep the role gate on the schema field and must resolve the persisted owner relation inside every service entry point. Do not invent a permission key or make an owner-only aggregate shareable only to reuse this wrapper.
 
+   For participant course membership, check that the composite-key
+   `Participation` row exists. Never use `Participation.isActive` as enrollment
+   or access control: it is only the participant's course-leaderboard opt-in.
+   Student MCP practice additionally requires the exact chatbot/course pair.
+
    Multi-object batch fields are the deliberate exception: `withPermission`
    accepts one object selector and can only return one nullable field. Protect
    the batch with the appropriate `t.withAuth(...)` scope, then have the service

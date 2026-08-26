@@ -4123,7 +4123,7 @@ export async function getStudentMcpCoursePracticeQuiz(
       where: { courseId, id: chatbotId },
     }),
     ctx.prisma.participation.findUnique({
-      select: { id: true, isActive: true },
+      select: { id: true },
       where: {
         courseId_participantId: {
           courseId,
@@ -4133,7 +4133,7 @@ export async function getStudentMcpCoursePracticeQuiz(
     }),
   ])
 
-  if (!chatbot || !participation?.isActive) {
+  if (!chatbot || !participation) {
     return null
   }
 

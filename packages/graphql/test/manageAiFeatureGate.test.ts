@@ -1,13 +1,28 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
+import {
+  assertManageAiEnabled,
+  isManageAiEnabled,
+  manageAiFeatureFlagAttributes,
+} from '../src/lib/manageAiFeatureGate.js'
+import { getManageChatModelRegistry } from '../src/services/chatbots.js'
 
-function createContext(aiFeaturesEnabled: boolean | null) {
+function createContext(
+  aiFeaturesEnabled: boolean | null,
+  featureFlagEnabled: boolean | Error = false
+) {
   const findUnique = vi
     .fn()
     .mockResolvedValue(
       aiFeaturesEnabled === null ? null : { aiFeaturesEnabled }
     )
   const ctx = {
+    featureFlags: {
+      isEnabled: vi.fn(() => {
+        if (featureFlagEnabled instanceof Error) throw featureFlagEnabled
+        return featureFlagEnabled
+      }),
+    },
     prisma: { user: { findUnique } },
     user: {
       catalystIndividual: false,
@@ -21,54 +36,42 @@ function createContext(aiFeaturesEnabled: boolean | null) {
   return { ctx, findUnique }
 }
 
-async function loadGate(forcedOn?: string) {
-  vi.resetModules()
-  vi.stubEnv('GROWTHBOOK_API_HOST', '')
-  vi.stubEnv('GROWTHBOOK_CLIENT_KEY', '')
-  vi.stubEnv('GROWTHBOOK_ENV', 'development')
-  vi.stubEnv('FEATURE_FLAGS_FORCED_ON', forcedOn ?? '')
-  return import('../src/lib/manageAiFeatureGate.js')
-}
-
-async function loadChatbots(forcedOn?: string) {
-  vi.resetModules()
-  vi.stubEnv('GROWTHBOOK_API_HOST', '')
-  vi.stubEnv('GROWTHBOOK_CLIENT_KEY', '')
-  vi.stubEnv('GROWTHBOOK_ENV', 'development')
-  vi.stubEnv('FEATURE_FLAGS_FORCED_ON', forcedOn ?? '')
-  return import('../src/services/chatbots.js')
-}
-
 describe('Manage AI feature gate', () => {
-  beforeEach(() => {
-    vi.unstubAllEnvs()
-  })
-
-  afterEach(() => {
-    vi.unstubAllEnvs()
-  })
-
   test('opens only when the flag and account entitlement both hold', async () => {
-    const { ctx } = createContext(true)
-    const { isManageAiEnabled } = await loadGate('ai-beta')
+    const { ctx } = createContext(true, true)
 
     await expect(isManageAiEnabled(ctx)).resolves.toBe(true)
   })
 
   test('does not read the account when the flag is closed', async () => {
     const { ctx, findUnique } = createContext(true)
-    const { isManageAiEnabled } = await loadGate()
 
     await expect(isManageAiEnabled(ctx)).resolves.toBe(false)
     expect(findUnique).not.toHaveBeenCalled()
   })
 
   test.each([
+    ['a missing evaluator', undefined],
+    ['an evaluation failure', new Error('SDK unavailable')],
+  ])('fails closed for %s', async (_, evaluatorFailure) => {
+    const { ctx, findUnique } = createContext(
+      true,
+      evaluatorFailure instanceof Error ? evaluatorFailure : false
+    )
+    if (evaluatorFailure === undefined) ctx.featureFlags = undefined
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+
+    await expect(isManageAiEnabled(ctx)).resolves.toBe(false)
+    expect(findUnique).not.toHaveBeenCalled()
+
+    warn.mockRestore()
+  })
+
+  test.each([
     false,
     null,
   ])('stays closed without a live account entitlement (%s)', async (aiFeaturesEnabled) => {
-    const { ctx } = createContext(aiFeaturesEnabled)
-    const { assertManageAiEnabled } = await loadGate('ai-beta')
+    const { ctx } = createContext(aiFeaturesEnabled, true)
 
     await expect(assertManageAiEnabled(ctx)).rejects.toMatchObject({
       extensions: { code: 'AI_BETA_ACCESS_REQUIRED' },
@@ -77,7 +80,6 @@ describe('Manage AI feature gate', () => {
 
   test('uses the same catalyst attribute as the browser gate', async () => {
     const { ctx } = createContext(true)
-    const { manageAiFeatureFlagAttributes } = await loadGate('ai-beta')
 
     expect(manageAiFeatureFlagAttributes(ctx.user)).toMatchObject({
       actorType: 'user',
@@ -89,7 +91,6 @@ describe('Manage AI feature gate', () => {
 
   test('keeps the Manage chatbot model registry behind the gate', async () => {
     const { ctx, findUnique } = createContext(true)
-    const { getManageChatModelRegistry } = await loadChatbots()
 
     await expect(getManageChatModelRegistry(ctx)).rejects.toMatchObject({
       extensions: { code: 'AI_BETA_ACCESS_REQUIRED' },

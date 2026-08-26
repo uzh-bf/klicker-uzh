@@ -1,14 +1,6 @@
 import type { FeatureFlagAttributes } from '@klicker-uzh/feature-flags'
-import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from './context.js'
-
-const featureFlagClient = new NodeFeatureFlagClient({
-  apiHost: process.env.GROWTHBOOK_API_HOST,
-  clientKey: process.env.GROWTHBOOK_CLIENT_KEY,
-  environment: process.env.GROWTHBOOK_ENV,
-  forcedOn: process.env.FEATURE_FLAGS_FORCED_ON,
-})
 
 export function manageAiFeatureFlagAttributes(
   user: ContextWithUser['user']
@@ -24,13 +16,19 @@ export function manageAiFeatureFlagAttributes(
 export async function isManageAiEnabled(
   ctx: ContextWithUser
 ): Promise<boolean> {
-  await featureFlagClient.initialize()
-  if (
-    !featureFlagClient.isEnabled(
-      'ai-beta',
-      manageAiFeatureFlagAttributes(ctx.user)
-    )
-  ) {
+  let flagEnabled = false
+
+  try {
+    flagEnabled =
+      ctx.featureFlags?.isEnabled(
+        'ai-beta',
+        manageAiFeatureFlagAttributes(ctx.user)
+      ) ?? false
+  } catch {
+    console.warn('[feature-flags] AI beta evaluation failed; denying access')
+  }
+
+  if (!flagEnabled) {
     return false
   }
 
