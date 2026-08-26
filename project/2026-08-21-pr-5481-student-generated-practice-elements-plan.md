@@ -1538,3 +1538,9 @@ Settled rulings for this implementation:
   the test file completed. The read-only S2 simplifier/data review is recorded
   in `project/_local/reviews/2026-08-26-s2-content-version-review.md`. No Layer
   A push or dependent layer propagation has happened yet.
+
+- 2026-08-26 (Layer A CI correction): The exact-head GraphQL run exposed a
+  stale no-op source assertion that compared against a post-response state.
+  The regression now compares against the reset state in
+  `0d68bdd4d`; the correction was propagated through Layers B and C without
+  changing the approved stack topology.
