@@ -1,5 +1,4 @@
 import { EventEmitter } from 'node:events'
-import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import {
   enhanceContext,
@@ -12,6 +11,7 @@ import { prisma as prismaBase } from '@klicker-uzh/prisma'
 // import '@sentry/tracing'
 import { type Cache, createInMemoryCache } from '@envelop/response-cache'
 import { createRedisCache } from '@envelop/response-cache-redis'
+import { NodeFeatureFlagClient } from '@klicker-uzh/feature-flags/node'
 import {
   getKBGraphTerminalResult,
   hatchetClient,
@@ -29,6 +29,7 @@ const featureFlags = new NodeFeatureFlagClient({
   apiHost: process.env.GROWTHBOOK_API_HOST,
   clientKey: process.env.GROWTHBOOK_CLIENT_KEY,
   environment: process.env.GROWTHBOOK_ENV ?? process.env.NODE_ENV,
+  forcedOn: process.env.FEATURE_FLAGS_FORCED_ON,
   refreshIntervalMs: process.env.GROWTHBOOK_REFRESH_INTERVAL_MS
     ? Number(process.env.GROWTHBOOK_REFRESH_INTERVAL_MS)
     : undefined,

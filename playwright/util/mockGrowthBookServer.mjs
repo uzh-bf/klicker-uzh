@@ -18,6 +18,15 @@ const server = createServer((request, response) => {
     response.end(
       JSON.stringify({
         features: {
+          'ai-beta': {
+            defaultValue: false,
+            rules: [
+              {
+                condition: { id: enabledUserId },
+                force: true,
+              },
+            ],
+          },
           'learning-analytics': {
             defaultValue: false,
             rules: [

@@ -346,6 +346,9 @@ export async function testInitialization(
       catalystIndividual: true,
     },
     prisma,
+    featureFlags: {
+      isEnabled: vi.fn((key) => key === 'ai-beta'),
+    },
     hatchet,
     tasks,
     emitter,

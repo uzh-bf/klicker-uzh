@@ -18,8 +18,8 @@
 - GrowthBook must support per-user targeting using Klicker's internal actor ID.
 - Learning-analytics controls remain visible but cannot be clicked when the
   flag is disabled.
-- The first product flag is also a backend-enforced feature entitlement under
-  ADR 0038; direct analytics URLs and data requests fail closed when disabled.
+- The first product flag is a rollout control, not an authorization boundary;
+  direct analytics URLs remain unchanged.
 - The work ships as two native GitHub stacked draft PRs.
 
 ## Non-goals
@@ -29,8 +29,8 @@
 - Adding GrowthBook initialization to applications that do not yet consume a
   flag.
 - Running an A/B experiment or adding exposure tracking in this stack.
-- Replacing existing authentication, role/scope, or resource permissions with
-  the learning-analytics flag.
+- Protecting routes, GraphQL fields, or service operations with the
+  learning-analytics flag.
 - Removing the Prisma `publicPreview` field in this stack.
 - Changing `privatePreview` behavior.
 
@@ -201,8 +201,8 @@ empty feature payload and deterministic fallbacks.
 | Missing config / no usable payload | Visible | Disabled |
 | Network error with valid cached payload | Visible | Cached value |
 
-Direct `/analytics/...` routes and analytics-data operations require the
-backend-enforced entitlement in addition to their existing permissions.
+Direct `/analytics/...` routes remain accessible to authenticated lecturers;
+GrowthBook is not an authorization mechanism.
 
 ### GrowthBook operator setup
 

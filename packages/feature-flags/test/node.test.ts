@@ -275,7 +275,9 @@ describe('NodeFeatureFlagClient', () => {
       apiHost: 'https://growthbook.example',
       clientKey: 'sdk-key',
       environment: 'development',
+      fetch: mockFetch,
       forcedOn: 'ai-beta',
+      refreshIntervalMs: 0,
     })
 
     await client.initialize()

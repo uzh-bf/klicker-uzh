@@ -87,20 +87,23 @@ direct GraphQL request to read analytics data.
 
 ## Verification evidence
 
-- Shared feature-flag package: build, check, and 36 tests passed, including
+- Shared feature-flag package: build, check, and 53 tests passed, including
   strict boolean-only entitlement evaluation, abortable hung-request recovery,
   scheduled revocation refresh, bounded stale denial, and teardown.
-- GraphQL: check and production build passed; all 8 focused access-control
-  tests passed, including denial before Prisma access for all four analytics
-  service entry points.
+- GraphQL: check and production build passed; all 16 focused access-control
+  and AI-gate tests passed, including denial before Prisma access for all four
+  analytics service entry points.
 - Backend and Manage: checks and production builds passed.
 - Playwright: type-check passed and all 12 feature-access tests were discovered,
   including direct-navigation flag-off, flag-on, backend-denied, and
   profile-failure cases.
 - The deterministic backend GrowthBook fixture returned the expected targeted
   payload and switched its synthetic definition between enabled and disabled.
-- Repository `check:all` passed (25 checks and 7 lints).
-- The repository production build passed (23 build tasks).
+- Repository `check:all` passed (29 checks and 7 lints).
+- The feature-related production builds passed. The root build completed 23
+  tasks before the sandbox blocked Chat's internal Turbopack port and canceled
+  the remaining tasks; the Chat production build passed when rerun with the
+  required process and port permissions.
 - The final independent security/readiness review found no remaining
   actionable issue after strict value checks, deterministic backend-decision
   polling, attribute-failure settling, and documentation corrections.
