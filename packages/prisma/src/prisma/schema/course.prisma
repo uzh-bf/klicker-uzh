@@ -59,11 +59,7 @@ model Course {
   timelineEntries            TimelineEntry[]
   chatbots                   Chatbot[]
   participantInvitations     ParticipantInvitation[]
-  participantChatAnalytics     ParticipantChatAnalytics[]
-  aggregatedChatbotAnalytics   AggregatedChatbotAnalytics[]
   participantChatOutcomes      ParticipantChatOutcome[]
-  participantLiveQuizAnalytics ParticipantLiveQuizAnalytics[]
-  aggregatedLiveQuizAnalytics  AggregatedLiveQuizAnalytics[]
 
   directPermissions  Permission[]
   permissions        DerivedPermission[]

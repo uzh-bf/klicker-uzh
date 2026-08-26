@@ -144,6 +144,8 @@ model LiveQuiz {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([courseId])
 }
 
 // #endregion

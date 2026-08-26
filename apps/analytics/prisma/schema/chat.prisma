@@ -149,6 +149,8 @@ model Chatbot {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([courseId])
 }
 
 model ChatbotMCPServer {

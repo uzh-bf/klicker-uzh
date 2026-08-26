@@ -53,6 +53,12 @@ dirty tree, or generated Analytics mirror is not provenance. These fields are
 an inert schema foundation: their presence does not enable export, computation,
 or workflow dispatch by itself.
 
+Chatbot and live-quiz analytics rows reference their owning `Chatbot` or
+`LiveQuiz` instead of storing a second, independently writable `courseId`.
+Course-scoped analytics joins through that owner, which keeps course ownership
+consistent by construction. Participant live-quiz point totals retain the
+canonical fractional `REAL` values.
+
 ### Assessment participant invitations
 
 `ParticipantInvitation` records the intention to admit one email address to one SSO course before a `Participation` necessarily exists (`packages/prisma/src/prisma/schema/participant.prisma:ParticipantInvitation`). Email and course are unique together; the optional `matriculationNumber` is administrative metadata. Its `InvitationStatus` lifecycle has two states: `PENDING` and `ACCEPTED`. An accepted row links a `Participant` and records `acceptedAt`; it is retained as the admission record.

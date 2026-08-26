@@ -368,9 +368,6 @@ model ParticipantChatAnalytics {
   chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   chatbotId String  @db.Uuid
 
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  courseId String @db.Uuid
-
   userMessages      Int       @default(0)
   assistantMessages Int       @default(0)
   threads           Int       @default(0)
@@ -398,8 +395,6 @@ model ParticipantChatAnalytics {
 
   @@unique([type, participantId, chatbotId, timestamp])
   @@index([chatbotId, type, timestamp])
-  @@index([courseId, type, timestamp])
-  @@index([courseId, participantId])
 }
 
 model AggregatedChatbotAnalytics {
@@ -410,9 +405,6 @@ model AggregatedChatbotAnalytics {
 
   chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   chatbotId String  @db.Uuid
-
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  courseId String @db.Uuid
 
   activeParticipants    Int @default(0)
   newParticipants       Int @default(0)
@@ -435,7 +427,6 @@ model AggregatedChatbotAnalytics {
   updatedAt DateTime @updatedAt
 
   @@unique([type, chatbotId, timestamp])
-  @@index([courseId, type, timestamp])
 }
 
 model ChatTopicCluster {
@@ -495,24 +486,19 @@ model ParticipantLiveQuizAnalytics {
   liveQuiz   LiveQuiz @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   liveQuizId String   @db.Uuid
 
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  courseId String @db.Uuid
-
   totalResponses         Int    @default(0)
   firstCorrectCount      Int    @default(0)
   lastCorrectCount       Int    @default(0)
   averageTimeSpent       Float? @db.Real
-  totalBasePoints        Int    @default(0)
-  totalCorrectnessPoints Int    @default(0)
-  totalBonusPoints       Int    @default(0)
+  totalBasePoints        Float  @default(0) @db.Real
+  totalCorrectnessPoints Float  @default(0) @db.Real
+  totalBonusPoints       Float  @default(0) @db.Real
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([participantId, liveQuizId])
-  @@index([courseId])
   @@index([liveQuizId])
-  @@index([courseId, participantId])
 }
 
 model AggregatedLiveQuizAnalytics {
@@ -520,9 +506,6 @@ model AggregatedLiveQuizAnalytics {
 
   liveQuiz   LiveQuiz @relation(fields: [liveQuizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   liveQuizId String   @unique @db.Uuid
-
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  courseId String @db.Uuid
 
   participantCount     Int    @default(0)
   responseCount        Int    @default(0)
@@ -533,7 +516,6 @@ model AggregatedLiveQuizAnalytics {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([courseId])
 }
 
 model PlatformSemesterAnalytics {

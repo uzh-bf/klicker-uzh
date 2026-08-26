@@ -43,9 +43,17 @@ it is `false`. Learning-analytics re-enable uses
 per-course data-use choice or history. The schema foundation is inert until
 the owning export and analytics paths explicitly consume these fields.
 
+Analytics tables keyed by a chatbot or live quiz do not duplicate `courseId`;
+course scope resolves through the owning `Chatbot` or `LiveQuiz`. This prevents
+cross-course combinations that separate foreign keys cannot reject. Existing-
+table support indexes use one-statement `CREATE INDEX CONCURRENTLY` migrations;
+only indexes on newly created empty analytics tables stay in the schema-creation
+migration.
+
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
+- A concurrent index build on a populated table gets its own one-statement migration. Multiple statements in one PostgreSQL query can share an implicit transaction, where `CREATE INDEX CONCURRENTLY` is invalid. New empty tables can receive ordinary indexes in their creation migration.
 - Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`.
 
 ### Deployment migrations

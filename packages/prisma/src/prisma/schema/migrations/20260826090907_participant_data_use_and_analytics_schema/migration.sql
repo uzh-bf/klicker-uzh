@@ -38,7 +38,6 @@ CREATE TABLE "ParticipantChatAnalytics" (
     "timestamp" DATE NOT NULL,
     "participantId" UUID NOT NULL,
     "chatbotId" UUID NOT NULL,
-    "courseId" UUID NOT NULL,
     "userMessages" INTEGER NOT NULL DEFAULT 0,
     "assistantMessages" INTEGER NOT NULL DEFAULT 0,
     "threads" INTEGER NOT NULL DEFAULT 0,
@@ -68,7 +67,6 @@ CREATE TABLE "AggregatedChatbotAnalytics" (
     "type" "AnalyticsType" NOT NULL,
     "timestamp" DATE NOT NULL,
     "chatbotId" UUID NOT NULL,
-    "courseId" UUID NOT NULL,
     "activeParticipants" INTEGER NOT NULL DEFAULT 0,
     "newParticipants" INTEGER NOT NULL DEFAULT 0,
     "returningParticipants" INTEGER NOT NULL DEFAULT 0,
@@ -128,14 +126,13 @@ CREATE TABLE "ParticipantLiveQuizAnalytics" (
     "id" SERIAL NOT NULL,
     "participantId" UUID NOT NULL,
     "liveQuizId" UUID NOT NULL,
-    "courseId" UUID NOT NULL,
     "totalResponses" INTEGER NOT NULL DEFAULT 0,
     "firstCorrectCount" INTEGER NOT NULL DEFAULT 0,
     "lastCorrectCount" INTEGER NOT NULL DEFAULT 0,
     "averageTimeSpent" REAL,
-    "totalBasePoints" INTEGER NOT NULL DEFAULT 0,
-    "totalCorrectnessPoints" INTEGER NOT NULL DEFAULT 0,
-    "totalBonusPoints" INTEGER NOT NULL DEFAULT 0,
+    "totalBasePoints" REAL NOT NULL DEFAULT 0,
+    "totalCorrectnessPoints" REAL NOT NULL DEFAULT 0,
+    "totalBonusPoints" REAL NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -146,7 +143,6 @@ CREATE TABLE "ParticipantLiveQuizAnalytics" (
 CREATE TABLE "AggregatedLiveQuizAnalytics" (
     "id" SERIAL NOT NULL,
     "liveQuizId" UUID NOT NULL,
-    "courseId" UUID NOT NULL,
     "participantCount" INTEGER NOT NULL DEFAULT 0,
     "responseCount" INTEGER NOT NULL DEFAULT 0,
     "meanFirstCorrectness" REAL,
@@ -185,16 +181,7 @@ CREATE TABLE "PlatformSemesterAnalytics" (
 CREATE INDEX "ParticipantChatAnalytics_chatbotId_type_timestamp_idx" ON "ParticipantChatAnalytics"("chatbotId", "type", "timestamp");
 
 -- CreateIndex
-CREATE INDEX "ParticipantChatAnalytics_courseId_type_timestamp_idx" ON "ParticipantChatAnalytics"("courseId", "type", "timestamp");
-
--- CreateIndex
-CREATE INDEX "ParticipantChatAnalytics_courseId_participantId_idx" ON "ParticipantChatAnalytics"("courseId", "participantId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "ParticipantChatAnalytics_type_participantId_chatbotId_times_key" ON "ParticipantChatAnalytics"("type", "participantId", "chatbotId", "timestamp");
-
--- CreateIndex
-CREATE INDEX "AggregatedChatbotAnalytics_courseId_type_timestamp_idx" ON "AggregatedChatbotAnalytics"("courseId", "type", "timestamp");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "AggregatedChatbotAnalytics_type_chatbotId_timestamp_key" ON "AggregatedChatbotAnalytics"("type", "chatbotId", "timestamp");
@@ -215,70 +202,15 @@ CREATE INDEX "ParticipantChatOutcome_courseId_participantId_idx" ON "Participant
 CREATE UNIQUE INDEX "ParticipantChatOutcome_participantId_courseId_key" ON "ParticipantChatOutcome"("participantId", "courseId");
 
 -- CreateIndex
-CREATE INDEX "ParticipantLiveQuizAnalytics_courseId_idx" ON "ParticipantLiveQuizAnalytics"("courseId");
-
--- CreateIndex
 CREATE INDEX "ParticipantLiveQuizAnalytics_liveQuizId_idx" ON "ParticipantLiveQuizAnalytics"("liveQuizId");
 
--- CreateIndex
-CREATE INDEX "ParticipantLiveQuizAnalytics_courseId_participantId_idx" ON "ParticipantLiveQuizAnalytics"("courseId", "participantId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "ParticipantLiveQuizAnalytics_participantId_liveQuizId_key" ON "ParticipantLiveQuizAnalytics"("participantId", "liveQuizId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "AggregatedLiveQuizAnalytics_liveQuizId_key" ON "AggregatedLiveQuizAnalytics"("liveQuizId");
 
 -- CreateIndex
-CREATE INDEX "AggregatedLiveQuizAnalytics_courseId_idx" ON "AggregatedLiveQuizAnalytics"("courseId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "PlatformSemesterAnalytics_semesterLabel_key" ON "PlatformSemesterAnalytics"("semesterLabel");
-
--- CreateIndex
-CREATE INDEX "AggregatedAnalytics_courseId_type_timestamp_idx" ON "AggregatedAnalytics"("courseId", "type", "timestamp");
-
--- CreateIndex
-CREATE INDEX "ChatMessage_createdAt_idx" ON "ChatMessage"("createdAt");
-
--- CreateIndex
-CREATE INDEX "ChatMessage_threadId_createdAt_idx" ON "ChatMessage"("threadId", "createdAt");
-
--- CreateIndex
-CREATE INDEX "Course_isLearningAnalyticsEnabled_id_idx" ON "Course"("isLearningAnalyticsEnabled", "id");
-
--- CreateIndex
-CREATE INDEX "LiveQuizResponse_instanceId_participantId_submittedAt_idx" ON "LiveQuizResponse"("instanceId", "participantId", "submittedAt");
-
--- CreateIndex
-CREATE INDEX "Participant_researchConsent_id_idx" ON "Participant"("researchConsent", "id");
-
--- CreateIndex
-CREATE INDEX "Participant_learningAnalyticsConsent_learningAnalyticsInclu_idx" ON "Participant"("learningAnalyticsConsent", "learningAnalyticsIncludedFrom", "id");
-
--- CreateIndex
-CREATE INDEX "ParticipantActivityPerformance_practiceQuizId_participantId_idx" ON "ParticipantActivityPerformance"("practiceQuizId", "participantId");
-
--- CreateIndex
-CREATE INDEX "ParticipantActivityPerformance_microLearningId_participantI_idx" ON "ParticipantActivityPerformance"("microLearningId", "participantId");
-
--- CreateIndex
-CREATE INDEX "ParticipantAnalytics_courseId_type_timestamp_idx" ON "ParticipantAnalytics"("courseId", "type", "timestamp");
-
--- CreateIndex
-CREATE INDEX "ParticipantAnalytics_courseId_participantId_idx" ON "ParticipantAnalytics"("courseId", "participantId");
-
--- CreateIndex
-CREATE INDEX "ParticipantPerformance_courseId_participantId_idx" ON "ParticipantPerformance"("courseId", "participantId");
-
--- CreateIndex
-CREATE INDEX "QuestionResponse_courseId_createdAt_idx" ON "QuestionResponse"("courseId", "createdAt");
-
--- CreateIndex
-CREATE INDEX "QuestionResponseDetail_createdAt_brin_idx" ON "QuestionResponseDetail" USING BRIN ("createdAt");
-
--- CreateIndex
-CREATE INDEX "LiveQuizResponse_createdAt_brin_idx" ON "LiveQuizResponse" USING BRIN ("createdAt");
 
 -- AddForeignKey
 ALTER TABLE "ParticipantChatAnalytics" ADD CONSTRAINT "ParticipantChatAnalytics_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "Participant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -287,13 +219,7 @@ ALTER TABLE "ParticipantChatAnalytics" ADD CONSTRAINT "ParticipantChatAnalytics_
 ALTER TABLE "ParticipantChatAnalytics" ADD CONSTRAINT "ParticipantChatAnalytics_chatbotId_fkey" FOREIGN KEY ("chatbotId") REFERENCES "Chatbot"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ParticipantChatAnalytics" ADD CONSTRAINT "ParticipantChatAnalytics_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "AggregatedChatbotAnalytics" ADD CONSTRAINT "AggregatedChatbotAnalytics_chatbotId_fkey" FOREIGN KEY ("chatbotId") REFERENCES "Chatbot"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "AggregatedChatbotAnalytics" ADD CONSTRAINT "AggregatedChatbotAnalytics_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ChatTopicCluster" ADD CONSTRAINT "ChatTopicCluster_chatbotId_fkey" FOREIGN KEY ("chatbotId") REFERENCES "Chatbot"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -311,10 +237,4 @@ ALTER TABLE "ParticipantLiveQuizAnalytics" ADD CONSTRAINT "ParticipantLiveQuizAn
 ALTER TABLE "ParticipantLiveQuizAnalytics" ADD CONSTRAINT "ParticipantLiveQuizAnalytics_liveQuizId_fkey" FOREIGN KEY ("liveQuizId") REFERENCES "LiveQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ParticipantLiveQuizAnalytics" ADD CONSTRAINT "ParticipantLiveQuizAnalytics_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "AggregatedLiveQuizAnalytics" ADD CONSTRAINT "AggregatedLiveQuizAnalytics_liveQuizId_fkey" FOREIGN KEY ("liveQuizId") REFERENCES "LiveQuiz"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "AggregatedLiveQuizAnalytics" ADD CONSTRAINT "AggregatedLiveQuizAnalytics_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
