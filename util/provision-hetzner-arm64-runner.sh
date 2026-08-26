@@ -325,6 +325,11 @@ validate_existing_state() {
   [[ -f "$STATE_FILE" && ! -L "$STATE_FILE" ]] || die 'managed state file is invalid'
   reset_ready=$(state_value RESET_READY)
   if [[ "$reset_ready" == 'true' ]]; then
+    [[ -d "$STATE_DIR" && ! -L "$STATE_DIR" &&
+      "$(stat -c '%U:%G:%a' "$STATE_DIR")" == 'root:root:700' ]] ||
+      die 'reset state directory has unsafe ownership or mode'
+    [[ "$(stat -c '%U:%G:%a' "$STATE_FILE")" == 'root:root:600' ]] ||
+      die 'reset state file has unsafe ownership or mode'
     [[ "$(state_value TARGET_PROFILE)" == "$PROFILE" ]] ||
       die 'this reset host was prepared for a different runner profile'
     [[ "$(state_value ADMIN_USER)" == "$ADMIN_USER" ]] ||
@@ -352,6 +357,7 @@ validate_existing_state() {
       ! -e /etc/systemd/system/actions-runner-disk-cleanup.service &&
       ! -e /etc/systemd/system/actions-runner-disk-cleanup.timer ]] ||
       die 'reset state exists but legacy runner maintenance assets remain'
+    validate_ssh_only_firewall
     return
   fi
 
@@ -378,6 +384,23 @@ validate_existing_state() {
   [[ "$stored_mount" == "$VOLUME_MOUNT" ]] || die 'volume mount is immutable'
   [[ -z "$stored_service" || "$stored_service" == 'true' || "$stored_service" == 'false' ]] ||
     die 'managed service phase is invalid'
+}
+
+validate_ssh_only_firewall() {
+  local firewall_rules normalized_rules unexpected_rules
+
+  command -v ufw >/dev/null 2>&1 || die 'reset state exists but UFW is missing'
+  ufw status | grep -Fxq 'Status: active' || die 'reset state exists but UFW is inactive'
+  ufw status verbose | grep -Fq 'Default: deny (incoming), allow (outgoing)' ||
+    die 'reset state exists but UFW does not deny inbound traffic by default'
+  firewall_rules=$(ufw status numbered)
+  normalized_rules=$(sed -nE \
+    's/^\[[[:space:]]*[0-9]+\][[:space:]]*//p' <<<"$firewall_rules")
+  [[ -n "$normalized_rules" ]] || die 'reset state exists but UFW has no SSH rule'
+  unexpected_rules=$(grep -Ev \
+    '^(OpenSSH|22/tcp)( \(v6\))?[[:space:]]+ALLOW( IN)?[[:space:]]+Anywhere( \(v6\))?$' \
+    <<<"$normalized_rules" || true)
+  [[ -z "$unexpected_rules" ]] || die 'reset state exists but UFW permits non-SSH ingress'
 }
 
 local_check() {

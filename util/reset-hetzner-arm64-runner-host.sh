@@ -50,8 +50,9 @@ unattended upgrades. It supports only the local 80 GB disk configuration.
 
 This is not compromise recovery and does not securely erase deleted disk
 blocks. Do not use it if untrusted code may have run or compromise is suspected.
-For a public-pr target, do not use it if the VM has ever run private-repository,
-deployment, publishing, or external-secret work. Rebuild that VM instead.
+For a public-pr target, do not use it if the VM has ever received repository,
+organization, environment, or external secrets, private data, or private source.
+Rebuild that VM instead.
 EOF
 }
 
@@ -193,12 +194,14 @@ validate_state_file() {
     return
   fi
 
+  [[ "$file" == "$LEGACY_STATE_FILE" ]] ||
+    die 'only a reset marker is accepted in the generic state path'
   runner_name=$(state_value "$file" RUNNER_NAME)
-  [[ "$runner_name" =~ ^(klicker-arm64-runner-0[1-5]|public-pr-arm64-0[1-3]|trusted-arm64-0[1-2])$ ]] ||
+  [[ "$runner_name" =~ ^klicker-arm64-runner-0[1-5]$ ]] ||
     die 'managed state contains an unexpected runner name'
   repository=$(state_value "$file" REPOSITORY)
   organization=$(state_value "$file" ORGANIZATION)
-  [[ -z "$repository" || "$repository" == "$REPOSITORY" ]] ||
+  [[ "$repository" == "$REPOSITORY" ]] ||
     die 'managed state belongs to another repository'
   [[ -z "$organization" || "$organization" == "$ORGANIZATION" ]] ||
     die 'managed state belongs to another organization'
@@ -213,8 +216,7 @@ validate_state_file() {
   [[ -z "$scope" || "$scope" == 'repository' || "$scope" == 'organization' ]] ||
     die 'managed state contains an unexpected registration scope'
   group=$(state_value "$file" RUNNER_GROUP)
-  [[ -z "$group" || "$group" == 'klicker-trusted-arm64' ||
-    "$group" == 'public-pr-arm64' || "$group" == 'trusted-arm64' ]] ||
+  [[ -z "$group" || "$group" == 'klicker-trusted-arm64' ]] ||
     die 'managed state contains an unexpected runner group'
   MANAGED_RUNNER_NAME=$runner_name
 }
@@ -306,17 +308,22 @@ expected_runner_units() {
     "actions.runner.uzh-bf.${MANAGED_RUNNER_NAME}.service"
 }
 
+is_expected_runner_unit() {
+  local actual=$1 candidate
+
+  while IFS= read -r candidate; do
+    [[ "$actual" == "$candidate" ]] && return 0
+  done < <(expected_runner_units)
+  return 1
+}
+
 validate_runner_units() {
-  local path unit expected='false'
+  local path unit
 
   while IFS= read -r path; do
     [[ -n "$path" ]] || continue
     unit=$(basename -- "$path")
-    expected='false'
-    while IFS= read -r candidate; do
-      [[ "$unit" == "$candidate" ]] && expected='true'
-    done < <(expected_runner_units)
-    [[ "$expected" == 'true' ]] || die "unrecognized runner unit exists: ${path}"
+    is_expected_runner_unit "$unit" || die "unrecognized runner unit exists: ${path}"
     assert_regular_or_absent "$path"
   done < <(find /etc/systemd/system -maxdepth 1 \
     \( -name 'actions.runner.uzh-bf-klicker-uzh.*.service' -o \
@@ -325,11 +332,7 @@ validate_runner_units() {
   if [[ -e "${RUNNER_DIR}/.service" || -L "${RUNNER_DIR}/.service" ]]; then
     assert_regular_or_absent "${RUNNER_DIR}/.service"
     unit=$(<"${RUNNER_DIR}/.service")
-    expected='false'
-    while IFS= read -r candidate; do
-      [[ "$unit" == "$candidate" ]] && expected='true'
-    done < <(expected_runner_units)
-    [[ "$expected" == 'true' ]] || die 'runner service marker contains an unexpected unit'
+    is_expected_runner_unit "$unit" || die 'runner service marker contains an unexpected unit'
   fi
 }
 
@@ -339,7 +342,7 @@ validate_managed_paths() {
   assert_directory_or_absent "$RUNNER_DIR"
   assert_directory_or_absent /var/lib/docker
   assert_directory_or_absent /var/lib/containerd
-  for path in "$RUNNER_DIR" /var/lib/docker /var/lib/containerd; do
+  for path in "$RUNNER_DIR" /var/lib/docker /var/lib/containerd /etc/docker; do
     [[ -d "$path" ]] || continue
     [[ "$(findmnt -rn --mountpoint "$path" -o TARGET || true)" != "$path" ]] ||
       die "managed local path is a mount point: ${path}"
@@ -388,10 +391,21 @@ validate_docker_packages() {
 }
 
 validate_firewall() {
+  local firewall_rules normalized_rules unexpected_rules
+
   command -v ufw >/dev/null 2>&1 || die 'UFW is missing'
   ufw status | grep -Fxq 'Status: active' || die 'UFW is not active'
-  ufw status | grep -Eq '^(OpenSSH|22/tcp)[[:space:]]+ALLOW' ||
-    die 'UFW does not allow SSH'
+  ufw status verbose | grep -Fq 'Default: deny (incoming), allow (outgoing)' ||
+    die 'UFW does not deny inbound traffic by default'
+  firewall_rules=$(ufw status numbered)
+  normalized_rules=$(sed -nE \
+    's/^\[[[:space:]]*[0-9]+\][[:space:]]*//p' <<<"$firewall_rules")
+  [[ -n "$normalized_rules" ]] || die 'UFW has no inbound SSH rule'
+  unexpected_rules=$(grep -Ev \
+    '^(OpenSSH|22/tcp)( \(v6\))?[[:space:]]+ALLOW( IN)?[[:space:]]+Anywhere( \(v6\))?$' \
+    <<<"$normalized_rules" || true)
+  [[ -z "$unexpected_rules" ]] ||
+    die "UFW contains a non-SSH rule: ${unexpected_rules//$'\n'/, }"
 }
 
 is_reset_ready() {
@@ -472,7 +486,7 @@ confirm_cleanup_boundary() {
   [[ "$response" == 'yes' ]] ||
     die 'cleanup cannot restore trust; rebuild the VM before reusing it'
   if [[ "$TARGET_PROFILE" == 'public-pr' ]]; then
-    response=$(prompt_line 'This VM has never run private-repository, deployment, publishing, or external-secret jobs (yes/no)')
+    response=$(prompt_line 'This VM has never received repository, organization, environment, or external secrets, private data, or private source (yes/no)')
     [[ "$response" == 'yes' ]] ||
       die 'deleted secrets may be recoverable; rebuild the VM before public PR use'
   fi

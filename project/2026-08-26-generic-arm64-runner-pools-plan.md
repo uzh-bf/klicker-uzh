@@ -47,7 +47,7 @@
 - GitHub recommends against persistent self-hosted runners for public repositories because PR code can compromise the host.
 - The public pool is therefore treated as disposable and isolated from private repositories, deployment workflows, secrets, and private networks.
 - Rebuild public hosts on a schedule and immediately after suspicious behavior. Disk cleanup is capacity management, not compromise recovery.
-- The reset script is not secure disk erasure. A public target must never have run private-repository, deployment, publishing, or external-secret work, and no reset target may have run untrusted code or show compromise indicators.
+- The reset script is not secure disk erasure. A public target must never have received repository, organization, environment, or external secrets, private data, or private source, and no reset target may have run untrusted code or show compromise indicators.
 - The initial migration excludes fork PRs. Supporting them requires ephemeral, fresh-host-per-job runners.
 - This changes a trust boundary but does not change product architecture, so no product ADR is created. An ephemeral autoscaling design would re-arm the ADR gate.
 
