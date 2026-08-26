@@ -71,7 +71,7 @@ jobs:
       mode: ${{ steps.authorize.outputs.mode }}
       root_head: ${{ steps.authorize.outputs.root_head }}
       root_review_id: ${{ steps.authorize.outputs.root_review_id }}
-      rules_digest: ${{ steps.authorize.outputs.rules_digest }}
+      policy_digest: ${{ steps.authorize.outputs.policy_digest }}
       background_digest: ${{ steps.authorize.outputs.background_digest }}
       scope_kind: ${{ steps.authorize.outputs.scope_kind }}
       stack_id: ${{ steps.authorize.outputs.stack_id }}
@@ -131,7 +131,7 @@ jobs:
           REVIEW_MODE: ${{ needs.authorize.outputs.mode }}
           ROOT_HEAD: ${{ needs.authorize.outputs.root_head }}
           ROOT_REVIEW_ID: ${{ needs.authorize.outputs.root_review_id }}
-          RULES_DIGEST: ${{ needs.authorize.outputs.rules_digest }}
+          POLICY_DIGEST: ${{ needs.authorize.outputs.policy_digest }}
           BACKGROUND_DIGEST: ${{ needs.authorize.outputs.background_digest }}
           SCOPE_KIND: ${{ needs.authorize.outputs.scope_kind }}
           STACK_ID: ${{ needs.authorize.outputs.stack_id }}
@@ -151,7 +151,7 @@ jobs:
               mode: process.env.REVIEW_MODE,
               rootHead: process.env.ROOT_HEAD,
               rootReviewId: process.env.ROOT_REVIEW_ID,
-              rulesDigest: process.env.RULES_DIGEST,
+              policyDigest: process.env.POLICY_DIGEST,
               backgroundDigest: process.env.BACKGROUND_DIGEST,
               scopeKind: process.env.SCOPE_KIND,
               stackId: process.env.STACK_ID,
@@ -244,7 +244,7 @@ jobs:
           REVIEW_MODE: ${{ needs.authorize.outputs.mode }}
           ROOT_HEAD: ${{ needs.authorize.outputs.root_head }}
           ROOT_REVIEW_ID: ${{ needs.authorize.outputs.root_review_id }}
-          RULES_DIGEST: ${{ needs.authorize.outputs.rules_digest }}
+          POLICY_DIGEST: ${{ needs.authorize.outputs.policy_digest }}
           BACKGROUND_DIGEST: ${{ needs.authorize.outputs.background_digest }}
           SCOPE_KIND: ${{ needs.authorize.outputs.scope_kind }}
           STACK_ID: ${{ needs.authorize.outputs.stack_id }}
@@ -265,7 +265,7 @@ jobs:
               mode: process.env.REVIEW_MODE,
               rootHead: process.env.ROOT_HEAD,
               rootReviewId: process.env.ROOT_REVIEW_ID,
-              rulesDigest: process.env.RULES_DIGEST,
+              policyDigest: process.env.POLICY_DIGEST,
               backgroundDigest: process.env.BACKGROUND_DIGEST,
               scopeKind: process.env.SCOPE_KIND,
               stackId: process.env.STACK_ID,

@@ -68,6 +68,7 @@ jobs:
       mode: ${{ steps.authorize.outputs.mode }}
       root_head: ${{ steps.authorize.outputs.root_head }}
       root_review_id: ${{ steps.authorize.outputs.root_review_id }}
+      policy_digest: ${{ steps.authorize.outputs.policy_digest }}
       disposition_digest: ${{ steps.authorize.outputs.disposition_digest }}
       background: ${{ steps.authorize.outputs.background }}
     steps:
@@ -126,6 +127,7 @@ jobs:
           REVIEW_MODE: ${{ needs.authorize.outputs.mode }}
           ROOT_HEAD: ${{ needs.authorize.outputs.root_head }}
           ROOT_REVIEW_ID: ${{ needs.authorize.outputs.root_review_id }}
+          POLICY_DIGEST: ${{ needs.authorize.outputs.policy_digest }}
           DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
         with:
@@ -146,6 +148,7 @@ jobs:
               mode: process.env.REVIEW_MODE,
               rootHead: process.env.ROOT_HEAD,
               rootReviewId: process.env.ROOT_REVIEW_ID,
+              policyDigest: process.env.POLICY_DIGEST,
               dispositionDigest: process.env.DISPOSITION_DIGEST,
               manifestPath: process.env.MANIFEST_PATH,
               core,
@@ -256,6 +259,7 @@ jobs:
           REVIEW_MODE: ${{ needs.authorize.outputs.mode }}
           ROOT_HEAD: ${{ needs.authorize.outputs.root_head }}
           ROOT_REVIEW_ID: ${{ needs.authorize.outputs.root_review_id }}
+          POLICY_DIGEST: ${{ needs.authorize.outputs.policy_digest }}
           DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
           RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
@@ -278,6 +282,7 @@ jobs:
               mode: process.env.REVIEW_MODE,
               rootHead: process.env.ROOT_HEAD,
               rootReviewId: process.env.ROOT_REVIEW_ID,
+              policyDigest: process.env.POLICY_DIGEST,
               dispositionDigest: process.env.DISPOSITION_DIGEST,
               manifestPath: process.env.MANIFEST_PATH,
               resultPath: process.env.RESULT_PATH,
@@ -301,6 +306,7 @@ jobs:
           REVIEW_MODE: ${{ needs.authorize.outputs.mode }}
           ROOT_HEAD: ${{ needs.authorize.outputs.root_head }}
           ROOT_REVIEW_ID: ${{ needs.authorize.outputs.root_review_id }}
+          POLICY_DIGEST: ${{ needs.authorize.outputs.policy_digest }}
           DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
           CODE_OUTCOME: ${{ steps.code_review.outcome }}
           TOPOLOGY_OUTCOME: ${{ steps.topology_review.outcome }}
@@ -324,6 +330,7 @@ jobs:
               mode: process.env.REVIEW_MODE,
               rootHead: process.env.ROOT_HEAD,
               rootReviewId: process.env.ROOT_REVIEW_ID,
+              policyDigest: process.env.POLICY_DIGEST,
               dispositionDigest: process.env.DISPOSITION_DIGEST,
               codeOutcome: process.env.CODE_OUTCOME,
               topologyOutcome: process.env.TOPOLOGY_OUTCOME,

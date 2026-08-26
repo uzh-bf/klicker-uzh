@@ -115,6 +115,7 @@ function stackFixture() {
   const state = {
     statuses: [],
     createdStatuses: [],
+    policyFiles: {},
     pulls,
   }
   const github = {
@@ -142,6 +143,15 @@ function stackFixture() {
         }),
         getCombinedStatusForRef: async () => ({
           data: { statuses: state.statuses },
+        }),
+        getContent: async ({ path: filePath }) => ({
+          data: {
+            type: 'file',
+            encoding: 'base64',
+            content: Buffer.from(
+              state.policyFiles[filePath] ?? '{"rules":[]}'
+            ).toString('base64'),
+          },
         }),
       },
       git: {
@@ -429,6 +439,7 @@ test('authorizes only the verified top pull request', async () => {
   )
   assert.equal(outputs.get('stack_id'), '99')
   assert.match(outputs.get('stack_identity_digest'), /^[0-9a-f]{64}$/)
+  assert.match(outputs.get('policy_digest'), /^[0-9a-f]{64}$/)
   assert.equal(outputs.get('member_numbers'), '11,12,13,14')
   assert.equal(
     await authorizeStackReview({ github, context: context(12), core }),
@@ -616,6 +627,11 @@ test('starts a review only when the stack snapshot remains identical', async () 
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stack-review-'))
   const manifestPath = path.join(directory, 'manifest.json')
   const outputs = new Map()
+  const initialPlan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership,
+  })
   const started = await startStackReview({
     github,
     context: context(),
@@ -626,6 +642,7 @@ test('starts a review only when the stack snapshot remains identical', async () 
     stackOrderDigest: membership.orderDigest,
     stackIdentityDigest: membership.identityDigest,
     memberNumbers: membership.numbers,
+    policyDigest: initialPlan.policyDigest,
     manifestPath,
     core: { setOutput: (name, value) => outputs.set(name, value) },
   })
@@ -647,11 +664,17 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
     context: context(),
     membership,
   })
+  const initialPlan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership,
+  })
   const rootReport = renderStackReview({
     codeResult: completeOCRResult([codeFinding()]),
     headSha: 'f'.repeat(40),
     manifestBundle,
     topologyResult: topologyResult(),
+    policyDigest: initialPlan.policyDigest,
     workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
     workflowHeadSha: 'a'.repeat(40),
     workflowRunId: 700,
@@ -659,7 +682,7 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
   const rootMetadata = parseStackReviewMetadata(rootReport)
   assert.ok(
     rootMetadata,
-    rootReport.match(/<!-- final-ai-stack-review\/v1 ([^\n]+) -->/)?.[1]
+    rootReport.match(/<!-- final-ai-stack-review\/v2 ([^\n]+) -->/)?.[1]
   )
   const incrementalReport = renderStackReview({
     codeResult: completeOCRResult([codeFinding()]),
@@ -670,6 +693,7 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
     rootReviewId: rootMetadata.review_id,
     dispositionIds: rootMetadata.finding_ids,
     dispositionDigest: 'a'.repeat(64),
+    policyDigest: initialPlan.policyDigest,
     topologyResult: topologyResult(),
     workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
     workflowHeadSha: 'a'.repeat(40),
@@ -731,7 +755,7 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
   }
   state.reviews.push({
     id: 702,
-    body: `<!-- final-ai-stack-review/v1 ${JSON.stringify(secondReviewMetadata)} -->`,
+    body: `<!-- final-ai-stack-review/v2 ${JSON.stringify(secondReviewMetadata)} -->`,
     commit_id: nextHead,
     state: 'COMMENTED',
     submitted_at: '2026-08-25T02:00:00Z',
@@ -792,7 +816,25 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
   assert.equal(plan.rootHead, 'f'.repeat(40))
   assert.equal(plan.rootReviewId, rootMetadata.review_id)
   assert.match(plan.dispositionDigest, /^[0-9a-f]{64}$/)
+  assert.match(plan.policyDigest, /^[0-9a-f]{64}$/)
   assert.match(plan.background, /incremental attestation/)
+
+  state.policyFiles[
+    '.github/open-code-review/final-stack-topology-rules.json'
+  ] = 'changed trusted topology policy'
+  const changedPolicyPlan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership: await resolveStackMembership({
+      github,
+      context: context(),
+      pullNumber: 14,
+    }),
+  })
+  assert.equal(changedPolicyPlan.mode, 'full')
+  delete state.policyFiles[
+    '.github/open-code-review/final-stack-topology-rules.json'
+  ]
 
   pulls[14].head.ref = 'rs/layer-4-renamed'
   const driftPlan = await buildStackReviewPlan({
@@ -848,6 +890,11 @@ test('renders consolidated code and topology findings with one stack marker', as
     context: context(),
     membership,
   })
+  const plan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership,
+  })
   const report = renderStackReview({
     codeResult: completeOCRResult([codeFinding()]),
     headSha: 'f'.repeat(40),
@@ -866,11 +913,12 @@ test('renders consolidated code and topology findings with one stack marker', as
         },
       ].map((finding) => ({ ...finding, category: 'maintainability' }))
     ),
+    policyDigest: plan.policyDigest,
     workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
     workflowHeadSha: 'a'.repeat(40),
     workflowRunId: 700,
   })
-  assert.match(report, /final-ai-stack-review\/v1/)
+  assert.match(report, /final-ai-stack-review\/v2/)
   assert.match(
     report,
     /Reviewed verified stack 99 from `bbbbbbbbbbbb` to `ffffffffffff`\./
@@ -879,7 +927,7 @@ test('renders consolidated code and topology findings with one stack marker', as
   assert.match(report, /Cross-layer topology review/)
   assert.match(report, /src\/one\.ts/)
   assert.equal(
-    (report.match(/<!-- final-ai-stack-review\/v1/g) ?? []).length,
+    (report.match(/<!-- final-ai-stack-review\/v2/g) ?? []).length,
     1
   )
 })

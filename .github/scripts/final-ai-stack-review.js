@@ -5,6 +5,7 @@ const path = require('node:path')
 const {
   FINAL_REVIEW_BOT,
   FINAL_REVIEW_MODEL,
+  getReviewPolicyDigest,
   FINAL_REVIEW_WORKFLOW_PATH,
   MAX_INCREMENTAL_LINES,
   MAX_INCREMENTAL_PATHS,
@@ -22,7 +23,7 @@ const {
 
 const STACK_REVIEW_COMMAND = '/final-review-stack'
 const STACK_REVIEW_CONTEXT = 'final-ai-stack-review'
-const STACK_REVIEW_SCHEMA = 'final-ai-stack-review/v1'
+const STACK_REVIEW_SCHEMA = 'final-ai-stack-review/v2'
 const STACK_REVIEW_WORKFLOW_PATH =
   '.github/workflows/check-ocr-final-stack-review.yml'
 const STACK_RULES_PATH =
@@ -142,7 +143,7 @@ function stackPlanMatches(
 
 function parseStackReviewMetadata(body) {
   const match = String(body ?? '').match(
-    /<!-- final-ai-stack-review\/v1 (\{[^\r\n]*\}) -->/
+    /<!-- final-ai-stack-review\/v2 (\{[^\r\n]*\}) -->/
   )
   if (!match) return null
   try {
@@ -161,6 +162,7 @@ function parseStackReviewMetadata(body) {
       'manifest_digest',
       'mode',
       'model',
+      'policy_digest',
       'review_id',
       'root_head',
       'root_review_id',
@@ -188,6 +190,7 @@ function parseStackReviewMetadata(body) {
         !/^fsr-[0-9a-f]{24}$/.test(metadata.root_review_id ?? '')) ||
       !validSha(metadata.workflow_head_sha) ||
       !validDigest(metadata.manifest_digest) ||
+      !validDigest(metadata.policy_digest) ||
       !validDigest(metadata.stack_identity_digest) ||
       !validDigest(metadata.stack_order_digest) ||
       (metadata.disposition_digest !== '' &&
@@ -485,13 +488,17 @@ function stackReviewPlanMatches(plan, expected) {
     plan.mode === expected.mode &&
     plan.rootHead === expected.rootHead &&
     plan.rootReviewId === expected.rootReviewId &&
+    plan.policyDigest === expected.policyDigest &&
     plan.dispositionDigest === expected.dispositionDigest
   )
 }
 
 async function buildStackReviewPlan({ github, context, membership }) {
-  const fullPlan = stackPlan(membership, context)
-  if (!fullPlan.eligible) return fullPlan
+  const basePlan = stackPlan(membership, context)
+  if (!basePlan.eligible) return basePlan
+
+  const policyDigest = await getReviewPolicyDigest({ github, context })
+  const fullPlan = { ...basePlan, policyDigest }
 
   const topPull = membership.members.at(-1).pull
   const rootReview = await latestStackRootReview({
@@ -514,6 +521,7 @@ async function buildStackReviewPlan({ github, context, membership }) {
     root.base_sha !== fullPlan.baseSha ||
     root.stack_id !== fullPlan.stackId ||
     root.stack_order_digest !== fullPlan.stackOrderDigest ||
+    root.policy_digest !== policyDigest ||
     root.layer_head_shas.length !== currentLayerHeads.length ||
     root.layer_identities.length !== currentLayerIdentities.length ||
     root.layer_head_shas.at(-1) !== root.head_sha ||
@@ -761,6 +769,7 @@ async function authorizeStackReview({ github, context, core }) {
   setOutput(core, 'mode', plan.mode)
   setOutput(core, 'root_head', plan.rootHead)
   setOutput(core, 'root_review_id', plan.rootReviewId)
+  setOutput(core, 'policy_digest', plan.policyDigest)
   setOutput(core, 'disposition_digest', plan.dispositionDigest)
   core.setOutput('background', plan.background)
   return true
@@ -965,6 +974,7 @@ async function startStackReview({
   mode = 'full',
   rootHead = headSha,
   rootReviewId = '',
+  policyDigest,
   dispositionDigest = '',
   manifestPath,
   core,
@@ -998,6 +1008,7 @@ async function startStackReview({
       mode,
       rootHead,
       rootReviewId,
+      policyDigest,
       dispositionDigest,
     }) ||
     plan.baseSha !== baseSha ||
@@ -1220,6 +1231,7 @@ function buildStackReviewId({
   rootHead = headSha,
   stackId,
   stackOrderDigest: orderDigest,
+  policyDigest,
   workflowRunId,
 }) {
   return `fsr-${sha256(
@@ -1231,6 +1243,7 @@ function buildStackReviewId({
       rootHead,
       stackId,
       orderDigest,
+      policyDigest,
       workflowRunId,
     ].join('|')
   ).slice(0, 24)}`
@@ -1246,6 +1259,7 @@ function renderStackReview({
   rootReviewId = '',
   dispositionIds = [],
   dispositionDigest = '',
+  policyDigest,
   workflowUrl,
   workflowHeadSha,
   workflowRunId,
@@ -1278,7 +1292,8 @@ function renderStackReview({
     workflowRunId <= 0 ||
     typeof workflowUrl !== 'string' ||
     !workflowUrl ||
-    !validDigest(manifestDigest)
+    !validDigest(manifestDigest) ||
+    !validDigest(policyDigest)
   ) {
     throw new Error('Stack workflow provenance is incomplete')
   }
@@ -1302,6 +1317,7 @@ function renderStackReview({
     rootHead,
     stackId: manifest.stack_id,
     stackOrderDigest: manifest.stack_order_digest,
+    policyDigest,
     workflowRunId,
   })
   const metadata = {
@@ -1327,6 +1343,7 @@ function renderStackReview({
     manifest_digest: manifestDigest,
     mode,
     model: FINAL_REVIEW_MODEL,
+    policy_digest: policyDigest,
     review_id: reviewId,
     root_head: rootHead,
     root_review_id: rootReviewId,
@@ -1533,6 +1550,7 @@ async function publishStackReview({
   mode = 'full',
   rootHead = headSha,
   rootReviewId = '',
+  policyDigest,
   dispositionDigest = '',
   manifestPath,
   resultPath,
@@ -1555,6 +1573,7 @@ async function publishStackReview({
       mode,
       rootHead,
       rootReviewId,
+      policyDigest,
       dispositionDigest,
     }) ||
     plan.baseSha !== baseSha ||
@@ -1577,6 +1596,7 @@ async function publishStackReview({
     rootReviewId: plan.rootReviewId,
     dispositionIds: plan.dispositionIds,
     dispositionDigest: plan.dispositionDigest,
+    policyDigest: plan.policyDigest,
     topologyResult,
     workflowUrl: workflowRunUrl(context),
     workflowHeadSha: context.sha,
@@ -1643,6 +1663,7 @@ async function finalizeStackReview({
   mode = 'full',
   rootHead = headSha,
   rootReviewId = '',
+  policyDigest,
   dispositionDigest = '',
   codeOutcome,
   topologyOutcome,
@@ -1691,6 +1712,7 @@ async function finalizeStackReview({
       mode,
       rootHead,
       rootReviewId,
+      policyDigest,
       dispositionDigest,
     }) && plan.baseSha === baseSha
   await setStackStatus({

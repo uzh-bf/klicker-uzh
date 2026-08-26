@@ -125,7 +125,7 @@ test('authorizes and starts only the immutable ready PR range', async () => {
     mode: outputs.get('mode'),
     rootHead: outputs.get('root_head'),
     rootReviewId: outputs.get('root_review_id'),
-    rulesDigest: outputs.get('rules_digest'),
+    policyDigest: outputs.get('policy_digest'),
     backgroundDigest: outputs.get('background_digest'),
     scopeKind: outputs.get('scope_kind'),
     stackId: outputs.get('stack_id'),
@@ -203,6 +203,7 @@ test('writes an exact high-reasoning OCR config with mode 0600', () => {
   assert.deepEqual(config, buildOCRConfig({ token }))
   assert.equal(config.llm.model, FINAL_REVIEW_MODEL)
   assert.deepEqual(config.llm.extra_body, {
+    provider: { require_parameters: true },
     reasoning: { effort: 'high' },
   })
   assert.equal(fs.statSync(configPath).mode & 0o777, 0o600)
@@ -240,7 +241,7 @@ function completeReviewMetadata(headSha = 'a'.repeat(40), overrides = {}) {
     headRef: 'rs/test-review',
     headRepo: 'uzh-bf/klicker-uzh',
     mode: 'full',
-    rulesDigest: '2'.repeat(64),
+    policyDigest: '2'.repeat(64),
     workflowHeadSha: 'd'.repeat(40),
     workflowRunId: 123,
     ...overrides,
@@ -272,6 +273,7 @@ function reviewGithub({
   statuses = [],
   permission = 'write',
   rules = '{"rules":[]}',
+  policyFiles = {},
   stackResponse,
   workflowRun = null,
   pullsByNumber = {},
@@ -286,6 +288,7 @@ function reviewGithub({
     reviews,
     statuses,
     permission,
+    policyFiles,
     rules,
     workflowRun,
   }
@@ -308,11 +311,13 @@ function reviewGithub({
         getCombinedStatusForRef: async () => ({
           data: { statuses: state.statuses },
         }),
-        getContent: async () => ({
+        getContent: async ({ path: filePath }) => ({
           data: {
             type: 'file',
             encoding: 'base64',
-            content: Buffer.from(state.rules).toString('base64'),
+            content: Buffer.from(
+              state.policyFiles[filePath] ?? state.rules
+            ).toString('base64'),
           },
         }),
       },
@@ -502,7 +507,7 @@ test('selects incremental attestation only for bounded repaired changes', async 
     headRef: rootPull.head.ref,
     headRepo: rootPull.head.repo.full_name,
     mode: 'full',
-    rulesDigest: rootPlan.rulesDigest,
+    policyDigest: rootPlan.policyDigest,
     backgroundDigest: rootPlan.backgroundDigest,
     scopeKind: rootPlan.scopeKind,
     stackId: rootPlan.stackId,
@@ -642,6 +647,16 @@ test('selects incremental attestation only for bounded repaired changes', async 
   })
   assert.equal(changedDigest.mode, 'full')
   state.rules = '{"rules":[]}'
+
+  state.policyFiles['.github/workflows/check-ocr-final-review.yml'] =
+    'changed trusted workflow'
+  const changedPolicy = await buildReviewPlan({
+    github,
+    context,
+    pull: state.pull,
+  })
+  assert.equal(changedPolicy.mode, 'full')
+  delete state.policyFiles['.github/workflows/check-ocr-final-review.yml']
 
   state.pull = {
     ...state.pull,
@@ -789,7 +804,8 @@ test('rejects incomplete or wrong-model OCR results', () => {
             },
           ],
         },
-        'a'.repeat(40)
+        'a'.repeat(40),
+        { policyDigest: '2'.repeat(64) }
       ),
     /confidence score/
   )
@@ -880,7 +896,8 @@ test('rejects a report that would require partial publication', () => {
             },
           ],
         },
-        'a'.repeat(40)
+        'a'.repeat(40),
+        { policyDigest: '2'.repeat(64) }
       ),
     /report limit/
   )

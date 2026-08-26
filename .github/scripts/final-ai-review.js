@@ -12,12 +12,31 @@ const FINAL_REVIEW_COMMAND = '/final-review'
 const FINAL_REVIEW_CONTEXT = 'final-ai-review'
 const FINAL_REVIEW_MODEL = 'google/gemini-3.7-flash'
 const FINAL_REVIEW_BOT = 'github-actions[bot]'
-const FINAL_REVIEW_SCHEMA = 'final-ai-review/v2'
+const FINAL_REVIEW_SCHEMA = 'final-ai-review/v3'
+const FINAL_REVIEW_POLICY_SCHEMA = 'final-ai-policy/v1'
 const DISPOSITION_SCHEMA = 'final-ai-disposition/v1'
 const FINAL_REVIEW_WORKFLOW_PATH =
   '.github/workflows/check-ocr-final-review.yml'
 const FINAL_REVIEW_RULES_PATH =
   '.github/open-code-review/final-review-rules.json'
+const FINAL_STACK_REVIEW_WORKFLOW_PATH =
+  '.github/workflows/check-ocr-final-stack-review.yml'
+const FINAL_STACK_REVIEW_RULES_PATH =
+  '.github/open-code-review/final-stack-topology-rules.json'
+const FINAL_STACK_REVIEW_SCHEMA_PATH =
+  '.github/open-code-review/final-stack-topology-schema.json'
+const FINAL_REVIEW_POLICY_PATHS = Object.freeze(
+  [
+    FINAL_REVIEW_RULES_PATH,
+    FINAL_REVIEW_WORKFLOW_PATH,
+    FINAL_STACK_REVIEW_RULES_PATH,
+    FINAL_STACK_REVIEW_SCHEMA_PATH,
+    FINAL_STACK_REVIEW_WORKFLOW_PATH,
+    '.github/scripts/final-ai-review.js',
+    '.github/scripts/final-ai-stack-review.js',
+    '.github/scripts/native-stack.js',
+  ].sort()
+)
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 const PROMOTION_FILE = 'deploy/env-uzh-stg/values.yaml'
 const REPORT_LIMIT = 55_000
@@ -77,23 +96,36 @@ function isTrustedPermission(permission) {
   return permission === 'write' || permission === 'admin'
 }
 
+function buildOCRPolicy() {
+  return {
+    language: 'English',
+    llm: {
+      url: OPENROUTER_URL,
+      model: FINAL_REVIEW_MODEL,
+      protocol: 'openai',
+      extra_body: {
+        provider: {
+          require_parameters: true,
+        },
+        reasoning: {
+          effort: 'high',
+        },
+      },
+    },
+  }
+}
+
 function buildOCRConfig({ token }) {
   if (!token) {
     throw new Error('OPENROUTER_API_KEY is required')
   }
 
+  const policy = buildOCRPolicy()
   return {
-    language: 'English',
+    ...policy,
     llm: {
-      url: OPENROUTER_URL,
+      ...policy.llm,
       auth_token: token,
-      model: FINAL_REVIEW_MODEL,
-      protocol: 'openai',
-      extra_body: {
-        reasoning: {
-          effort: 'high',
-        },
-      },
     },
   }
 }
@@ -437,18 +469,54 @@ async function getFileText(github, context, filePath, ref) {
   return Buffer.from(data.content, 'base64').toString('utf8')
 }
 
-async function getReviewRulesDigest({ github, context }) {
-  const rules = await getFileText(
-    github,
-    context,
-    FINAL_REVIEW_RULES_PATH,
-    context.sha ?? context.payload.repository.default_branch
+function reviewPolicySettings() {
+  return {
+    commands: {
+      individual: FINAL_REVIEW_COMMAND,
+      stack: '/final-review-stack',
+    },
+    contexts: {
+      individual: FINAL_REVIEW_CONTEXT,
+      stack: 'final-ai-stack-review',
+    },
+    disposition_schema: DISPOSITION_SCHEMA,
+    disposition_states: [...DISPOSITION_STATES].sort(),
+    finding_categories: [...FINDING_CATEGORIES].sort(),
+    finding_severities: [...FINDING_SEVERITIES].sort(),
+    incremental: {
+      max_lines: MAX_INCREMENTAL_LINES,
+      max_paths: MAX_INCREMENTAL_PATHS,
+    },
+    model: FINAL_REVIEW_MODEL,
+    ocr: buildOCRPolicy(),
+    openrouter_url: OPENROUTER_URL,
+    promotion_file: PROMOTION_FILE,
+    report_limit: REPORT_LIMIT,
+    review_schemas: {
+      individual: FINAL_REVIEW_SCHEMA,
+      stack: 'final-ai-stack-review/v2',
+      stack_manifest: 'final-ai-stack-manifest/v1',
+    },
+    workflow_paths: {
+      individual: FINAL_REVIEW_WORKFLOW_PATH,
+      stack: FINAL_STACK_REVIEW_WORKFLOW_PATH,
+    },
+  }
+}
+
+async function getReviewPolicyDigest({ github, context }) {
+  const ref = context.sha ?? context.payload.repository.default_branch
+  const artifacts = await Promise.all(
+    FINAL_REVIEW_POLICY_PATHS.map(async (filePath) => ({
+      content: await getFileText(github, context, filePath, ref),
+      path: filePath,
+    }))
   )
   return sha256(
     JSON.stringify({
-      model: FINAL_REVIEW_MODEL,
-      rules,
-      schema: FINAL_REVIEW_SCHEMA,
+      artifacts,
+      policy_schema: FINAL_REVIEW_POLICY_SCHEMA,
+      settings: reviewPolicySettings(),
     })
   )
 }
@@ -517,7 +585,7 @@ async function inspectPromotion({ github, context, pull, sourceBranch }) {
 
 function parseReviewMetadata(body) {
   const match = String(body ?? '').match(
-    /<!-- final-ai-review\/v2 (\{[^\r\n]*\}) -->/
+    /<!-- final-ai-review\/v3 (\{[^\r\n]*\}) -->/
   )
   if (!match) return null
   try {
@@ -530,7 +598,7 @@ function parseReviewMetadata(body) {
       !/^[0-9a-f]{40}$/.test(metadata.head_sha ?? '') ||
       !/^[0-9a-f]{40}$/.test(metadata.root_head ?? '') ||
       !/^[0-9a-f]{40}$/.test(metadata.workflow_head_sha ?? '') ||
-      !/^[0-9a-f]{64}$/.test(metadata.rules_digest ?? '') ||
+      !/^[0-9a-f]{64}$/.test(metadata.policy_digest ?? '') ||
       !/^[0-9a-f]{64}$/.test(metadata.background_digest ?? '') ||
       metadata.workflow_path !== FINAL_REVIEW_WORKFLOW_PATH ||
       !Number.isSafeInteger(metadata.workflow_run_id) ||
@@ -932,7 +1000,7 @@ function planMatches(plan, expected) {
     plan.mode === expected.mode &&
     plan.rootHead === expected.rootHead &&
     plan.rootReviewId === expected.rootReviewId &&
-    plan.rulesDigest === expected.rulesDigest &&
+    plan.policyDigest === expected.policyDigest &&
     plan.backgroundDigest === expected.backgroundDigest &&
     plan.scopeKind === expected.scopeKind &&
     plan.stackId === expected.stackId &&
@@ -950,7 +1018,7 @@ async function buildReviewPlan({ github, context, pull }) {
       mode: 'full',
       rootHead: pull.head.sha,
       rootReviewId: '',
-      rulesDigest: '',
+      policyDigest: '',
       backgroundDigest: '',
       background: '',
       scopeKind: '',
@@ -962,14 +1030,14 @@ async function buildReviewPlan({ github, context, pull }) {
   }
 
   const baseBackground = buildReviewBackground(pull.title)
-  const rulesDigest = await getReviewRulesDigest({ github, context })
+  const policyDigest = await getReviewPolicyDigest({ github, context })
   const baseBackgroundDigest = sha256(baseBackground)
   const fullPlan = {
     eligible: true,
     mode: 'full',
     rootHead: pull.head.sha,
     rootReviewId: '',
-    rulesDigest,
+    policyDigest,
     backgroundDigest: baseBackgroundDigest,
     background: baseBackground,
     scopeKind: eligibility.scopeKind,
@@ -988,7 +1056,7 @@ async function buildReviewPlan({ github, context, pull }) {
     root.base_repo !== pull.base.repo.full_name ||
     root.head_ref !== pull.head.ref ||
     root.head_repo !== pull.head.repo?.full_name ||
-    root.rules_digest !== rulesDigest ||
+    root.policy_digest !== policyDigest ||
     root.background_digest !== baseBackgroundDigest ||
     root.model !== FINAL_REVIEW_MODEL ||
     root.scope_kind !== eligibility.scopeKind ||
@@ -1190,7 +1258,7 @@ async function authorizeFinalReview({ github, context, core }) {
   core.setOutput('mode', plan.mode)
   core.setOutput('root_head', plan.rootHead)
   core.setOutput('root_review_id', plan.rootReviewId)
-  core.setOutput('rules_digest', plan.rulesDigest)
+  core.setOutput('policy_digest', plan.policyDigest)
   core.setOutput('background_digest', plan.backgroundDigest)
   core.setOutput('scope_kind', plan.scopeKind)
   core.setOutput('stack_id', plan.stackId)
@@ -1210,7 +1278,7 @@ async function startFinalReview({
   mode,
   rootHead,
   rootReviewId,
-  rulesDigest,
+  policyDigest,
   backgroundDigest,
   scopeKind,
   stackId,
@@ -1226,7 +1294,7 @@ async function startFinalReview({
       mode,
       rootHead,
       rootReviewId,
-      rulesDigest,
+      policyDigest,
       backgroundDigest,
       scopeKind,
       stackId,
@@ -1345,11 +1413,11 @@ function buildReviewId({
   headSha,
   mode,
   rootHead,
-  rulesDigest,
+  policyDigest,
   workflowRunId = 0,
 }) {
   return `frv-${sha256(
-    [baseSha, headSha, mode, rootHead, rulesDigest, workflowRunId].join('|')
+    [baseSha, headSha, mode, rootHead, policyDigest, workflowRunId].join('|')
   ).slice(0, 24)}`
 }
 
@@ -1453,6 +1521,9 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
   if (!/^[0-9a-f]{40}$/.test(rootHead)) {
     throw new Error('Final review root head is not a full commit SHA')
   }
+  if (!/^[0-9a-f]{64}$/.test(reviewMetadata.policyDigest ?? '')) {
+    throw new Error('Final review policy provenance is incomplete')
+  }
   const findings = result.comments.map(buildFindingMetadata)
   const findingIds = new Set()
   for (const finding of findings) {
@@ -1470,7 +1541,7 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
       headSha,
       mode,
       rootHead,
-      rulesDigest: reviewMetadata.rulesDigest ?? '',
+      policyDigest: reviewMetadata.policyDigest ?? '',
       workflowRunId: reviewMetadata.workflowRunId ?? 0,
     })
   const metadataMarker = `<!-- ${FINAL_REVIEW_SCHEMA} ${JSON.stringify({
@@ -1490,7 +1561,7 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
     review_id: reviewId,
     root_head: rootHead,
     root_review_id: reviewMetadata.rootReviewId ?? '',
-    rules_digest: reviewMetadata.rulesDigest ?? '',
+    policy_digest: reviewMetadata.policyDigest ?? '',
     schema_version: FINAL_REVIEW_SCHEMA,
     scope_kind: reviewMetadata.scopeKind ?? 'default',
     stack_id: reviewMetadata.stackId ?? '',
@@ -1538,7 +1609,7 @@ async function publishFinalReview({
   mode,
   rootHead,
   rootReviewId,
-  rulesDigest,
+  policyDigest,
   backgroundDigest,
   scopeKind,
   stackId,
@@ -1554,7 +1625,7 @@ async function publishFinalReview({
       mode,
       rootHead,
       rootReviewId,
-      rulesDigest,
+      policyDigest,
       backgroundDigest,
       scopeKind,
       stackId,
@@ -1580,7 +1651,7 @@ async function publishFinalReview({
     mode: plan.mode,
     rootHead: plan.rootHead,
     rootReviewId: plan.rootReviewId,
-    rulesDigest: plan.rulesDigest,
+    policyDigest: plan.policyDigest,
     scopeKind: plan.scopeKind,
     stackId: plan.stackId,
     stackOrderDigest: plan.stackOrderDigest,
@@ -1709,6 +1780,7 @@ module.exports = {
   FINAL_REVIEW_BOT,
   FINAL_REVIEW_CONTEXT,
   FINAL_REVIEW_MODEL,
+  FINAL_REVIEW_POLICY_SCHEMA,
   FINAL_REVIEW_SCHEMA,
   FINAL_REVIEW_WORKFLOW_PATH,
   DISPOSITION_SCHEMA,
@@ -1717,6 +1789,7 @@ module.exports = {
   PROMOTION_FILE,
   authorizeFinalReview,
   buildExpectedPromotionContent,
+  buildOCRPolicy,
   buildOCRConfig,
   buildReviewPlan,
   buildReviewBackground,
@@ -1726,6 +1799,7 @@ module.exports = {
   isFinalReviewCommand,
   isPromotionCandidate,
   isTrustedPermission,
+  getReviewPolicyDigest,
   normalizeTitle,
   listReviewArtifacts,
   parseDispositionRecord,
