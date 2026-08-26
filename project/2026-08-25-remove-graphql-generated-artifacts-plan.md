@@ -17,7 +17,7 @@
 
 ## Delegation Map
 
-- `S1 — build ownership and tracked outputs:` `main`; no dependency. Acceptance: a clean package check and build regenerate the four ignored outputs, omit `ops.schema.json`, and leave the tracked schema unchanged.
+- `S1 — build ownership and tracked outputs:` `main`; no dependency. Acceptance: a clean package check and build regenerate the three ignored outputs (`src/ops.ts`, `src/public/client.json`, and `src/public/server.json`), keep the obsolete `src/ops.schema.json` path absent, and leave the tracked schema unchanged.
 - `S2 — repository guidance:` `main`; depends on S1. Acceptance: authoritative docs, AGENTS.md, and relevant skills no longer instruct contributors to commit ignored outputs and describe the persisted-map contract accurately.
 - `S3 — integrated verification:` `main`; depends on S1 and S2. Acceptance: focused GraphQL checks, formatting, wiki validation, and diff hygiene pass; CI/image build paths remain source-complete.
 - `Execution-tier skip reason:` The slices are tightly coupled through codegen, package scripts, tracked schema behavior, and documentation policy; delegation would cost more than direct integration.
