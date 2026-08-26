@@ -40,11 +40,13 @@ function participantContext({
   databaseTime = nextTime,
   role = UserRole.PARTICIPANT,
   lockError = false,
+  transactionError,
 }: {
   state?: ParticipantDataUseFields
   databaseTime?: Date
   role?: UserRole
   lockError?: boolean
+  transactionError?: unknown
 } = {}) {
   const current = { ...state }
   const queryStatements: string[] = []
@@ -87,8 +89,11 @@ function participantContext({
     participant,
     $queryRaw: queryRaw,
     $executeRaw: executeRaw,
-    $transaction: vi.fn(async (callback: (tx: typeof transaction) => unknown) =>
-      callback(transaction)
+    $transaction: vi.fn(
+      async (callback: (tx: typeof transaction) => unknown) => {
+        if (transactionError) throw transactionError
+        return callback(transaction)
+      }
     ),
   }
   const ctx = {
@@ -114,7 +119,6 @@ function participantContext({
 
 type ParticipantAnalyticsFilter = {
   participantId: { in: string[] }
-  participant: Record<string, unknown>
 }
 
 type CourseFindUniqueArgs = {
@@ -455,12 +459,7 @@ describe('participant data-use API', () => {
     }
     const activityWhere = activityCall.include.participantCourseAnalytics.where
     expect(activityWhere.participantId.in).toEqual([participantId])
-    expect(activityWhere.participant).toMatchObject({
-      learningAnalyticsConsent: true,
-      learningAnalyticsChoiceAt: { not: null },
-      learningAnalyticsDisclosureVersion: { not: '' },
-      learningAnalyticsIncludedFrom: { not: null },
-    })
+    expect(activityWhere).not.toHaveProperty('participant')
     expect(activityResult?.dailyActivity).toHaveLength(1)
     expect(activityResult?.participantCourseAnalytics).toHaveLength(1)
     expect(queryStatements[0]).toContain('analyticsLastComputedAt')
@@ -480,14 +479,25 @@ describe('participant data-use API', () => {
     const performanceWhere =
       performanceCall.include.participantPerformances.where
     expect(performanceWhere.participantId.in).toEqual([participantId])
-    expect(performanceWhere.participant).toMatchObject({
-      learningAnalyticsConsent: true,
-      learningAnalyticsIncludedFrom: { not: null },
-    })
+    expect(performanceWhere).not.toHaveProperty('participant')
     expect(queryStatements[1]).toContain('ParticipantPerformance')
     expect(queryStatements[1]).toContain('ParticipantActivityPerformance')
     expect(queryStatements[1]).toContain(
       'learningAnalyticsIncludedFrom" <= p."learningAnalyticsChoiceAt'
     )
+  })
+
+  it('propagates generic transaction timeouts instead of relabeling them as lock timeouts', async () => {
+    const transactionError = {
+      code: 'P2028',
+      message: 'Transaction already closed: expired transaction timeout',
+    }
+    const fixture = participantContext({ transactionError })
+
+    await expect(
+      setLearningAnalyticsConsent({ consent: true }, fixture.ctx)
+    ).rejects.toBe(transactionError)
+    expect(fixture.executeStatements).toHaveLength(0)
+    expect(fixture.participant.findUnique).not.toHaveBeenCalled()
   })
 })

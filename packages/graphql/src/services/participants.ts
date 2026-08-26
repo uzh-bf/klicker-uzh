@@ -306,7 +306,6 @@ function isLockTimeoutError(error: unknown): boolean {
 
   const candidate = error as {
     code?: unknown
-    message?: unknown
     meta?: unknown
     cause?: unknown
   }
@@ -315,18 +314,17 @@ function isLockTimeoutError(error: unknown): boolean {
     candidate.meta && typeof candidate.meta === 'object'
       ? (candidate.meta as { code?: unknown }).code
       : undefined
+  const driverCause =
+    candidate.meta && typeof candidate.meta === 'object'
+      ? (
+          candidate.meta as {
+            driverAdapterError?: { cause?: { code?: unknown } }
+          }
+        ).driverAdapterError?.cause
+      : undefined
   if (
     candidate.code === 'P2010' &&
-    (metaCode === '55P03' ||
-      (typeof candidate.message === 'string' &&
-        /55P03|lock timeout/i.test(candidate.message)))
-  ) {
-    return true
-  }
-  if (
-    candidate.code === 'P2028' &&
-    typeof candidate.message === 'string' &&
-    /timeout|expired/i.test(candidate.message)
+    (metaCode === '55P03' || driverCause?.code === '55P03')
   ) {
     return true
   }

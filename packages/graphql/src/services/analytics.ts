@@ -11,7 +11,6 @@ import { ActivityType } from '@klicker-uzh/types'
 import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import type { ContextWithUser } from '@/lib/context.js'
-import { learningAnalyticsParticipantWhere } from '../lib/learningAnalytics.js'
 
 async function getEligibleParticipantIdsForCourseAnalytics(
   prisma: PrismaTransactionClient,
@@ -59,7 +58,7 @@ async function getEligibleParticipantIdsForPerformanceAnalytics(
       JOIN "MicroLearning" AS ml ON ml."id" = pap."microLearningId"
       WHERE ml."courseId" = CAST(${courseId} AS uuid)
     )
-    SELECT DISTINCT individual_rows."participantId" AS "participantId"
+    SELECT individual_rows."participantId" AS "participantId"
     FROM individual_rows
     JOIN "Participant" AS p ON p."id" = individual_rows."participantId"
     JOIN "Course" AS c ON c."id" = CAST(${courseId} AS uuid)
@@ -92,10 +91,7 @@ export async function getCourseActivityAnalytics(
           },
           aggregatedCourseAnalytics: true,
           participantCourseAnalytics: {
-            where: {
-              participantId: { in: eligibleParticipantIds },
-              participant: learningAnalyticsParticipantWhere,
-            },
+            where: { participantId: { in: eligibleParticipantIds } },
           },
         },
       })
@@ -145,7 +141,11 @@ export async function getCourseActivityAnalytics(
         participantCourseAnalytics: course.participantCourseAnalytics,
       }
     },
-    { isolationLevel: DB.Prisma.TransactionIsolationLevel.RepeatableRead }
+    {
+      maxWait: 10_000,
+      timeout: 60_000,
+      isolationLevel: DB.Prisma.TransactionIsolationLevel.RepeatableRead,
+    }
   )
 }
 
@@ -556,7 +556,6 @@ export async function getCoursePerformanceAnalytics(
         await getEligibleParticipantIdsForPerformanceAnalytics(prisma, courseId)
       const participantFilter = {
         participantId: { in: eligibleParticipantIds },
-        participant: learningAnalyticsParticipantWhere,
       }
       const course = await prisma.course.findUnique({
         where: { id: courseId },
@@ -648,7 +647,11 @@ export async function getCoursePerformanceAnalytics(
         activityFeedbacks,
       }
     },
-    { isolationLevel: DB.Prisma.TransactionIsolationLevel.RepeatableRead }
+    {
+      maxWait: 10_000,
+      timeout: 60_000,
+      isolationLevel: DB.Prisma.TransactionIsolationLevel.RepeatableRead,
+    }
   )
 }
 
