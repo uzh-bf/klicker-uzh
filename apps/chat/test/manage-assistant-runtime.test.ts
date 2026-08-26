@@ -225,6 +225,8 @@ describe('Manage assistant runtime helpers', () => {
           usesResponsesApi: false,
           supportsImageAttachments: false,
           supportedReasoningEfforts: [],
+          maxOutputTokens: 2048,
+          usageClass: 'BASE',
           cost: { input: 0, output: 0 },
         },
         {
@@ -237,6 +239,8 @@ describe('Manage assistant runtime helpers', () => {
           usesResponsesApi: false,
           supportsImageAttachments: false,
           supportedReasoningEfforts: [],
+          maxOutputTokens: 2048,
+          usageClass: 'ADVANCED',
           cost: { input: 0, output: 0 },
         },
       ]).deploymentId
@@ -254,6 +258,8 @@ describe('Manage assistant runtime helpers', () => {
           usesResponsesApi: false,
           supportsImageAttachments: false,
           supportedReasoningEfforts: [],
+          maxOutputTokens: 2048,
+          usageClass: 'BASE',
           cost: { input: 0, output: 0 },
         },
       ]).deploymentId

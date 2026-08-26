@@ -1,5 +1,10 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma } from '@klicker-uzh/prisma/client'
+import {
+  CHAT_BASE_MODEL_ID,
+  getChatModelBasePolicyIssues,
+} from '@klicker-uzh/util'
+import { GraphQLError } from 'graphql'
 import { z } from 'zod'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
@@ -14,8 +19,11 @@ const chatModelSchema = z
     supportsReasoning: z.boolean().default(false),
     usesResponsesApi: z.boolean().optional(),
     supportedReasoningEfforts: z.array(z.string().min(1)).optional(),
-    maxOutputTokens: z.number().positive().optional(),
+    maxOutputTokens: z.number().int().min(1).max(4096),
     apiVersion: z.string().min(1).optional(),
+    // Explicit usage class (BASE/ADVANCED). Older external registry JSON that
+    // omits the class is conservatively normalized to ADVANCED, never BASE.
+    usageClass: z.enum(['BASE', 'ADVANCED']).default('ADVANCED'),
     cost: z.object({
       input: z.number().nonnegative(),
       output: z.number().nonnegative(),
@@ -34,7 +42,38 @@ const chatModelSchema = z
       })
     }
   })
-const chatModelRegistrySchema = z.array(chatModelSchema).min(1)
+const chatModelRegistrySchema = z
+  .array(chatModelSchema)
+  .min(1)
+  .superRefine((models, ctx) => {
+    const seenIds = new Set<string>()
+
+    for (const [index, model] of models.entries()) {
+      if (seenIds.has(model.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [index, 'id'],
+          message: `Duplicate model id "${model.id}"`,
+        })
+      }
+      seenIds.add(model.id)
+
+      if (model.id === 'auto' && model.usageClass !== 'ADVANCED') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [index, 'usageClass'],
+          message: 'Model "auto" must be classified as ADVANCED.',
+        })
+      }
+    }
+
+    for (const issue of getChatModelBasePolicyIssues(models)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        ...issue,
+      })
+    }
+  })
 
 type RawChatModelConfig = z.infer<typeof chatModelSchema>
 type ChatModelCapability = Omit<
@@ -49,7 +88,14 @@ type ChatbotReasoningConfigEntry = {
   efforts: string[]
 }
 
-export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
+/** Parses and normalizes a raw registry value through the backend consumer. */
+export function parseChatModelRegistry(value: unknown): ChatModelCapability[] {
+  return chatModelRegistrySchema
+    .parse(value)
+    .map((model) => normalizeChatModel(model))
+}
+
+const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
   {
     id: 'auto',
     deploymentId: 'auto-router',
@@ -59,20 +105,24 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     supportsReasoning: false,
     usesResponsesApi: true,
     supportedReasoningEfforts: [],
+    maxOutputTokens: 4096,
+    usageClass: 'ADVANCED',
     apiVersion: 'preview',
-    cost: { input: 1.25, output: 10.0 },
+    cost: { input: 1.0, output: 5.0 },
   },
   {
     id: 'gpt-5.6-luna',
     deploymentId: 'gpt-5.6-luna',
     name: 'GPT-5.6 Luna',
     description: 'OpenAI reasoning model',
-    fallback: false,
+    fallback: true,
     supportsReasoning: true,
     usesResponsesApi: true,
     supportedReasoningEfforts: ['low', 'medium', 'high', 'xhigh'],
+    maxOutputTokens: 4096,
+    usageClass: 'BASE',
     apiVersion: 'preview',
-    cost: { input: 1.25, output: 10.0 },
+    cost: { input: 0.2, output: 1.2 },
   },
   {
     id: 'gpt-5.5',
@@ -122,6 +172,8 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     supportsReasoning: false,
     usesResponsesApi: false,
     supportedReasoningEfforts: [],
+    maxOutputTokens: 4096,
+    usageClass: 'ADVANCED',
     apiVersion: 'preview',
     cost: { input: 2.0, output: 8.0 },
   },
@@ -130,18 +182,25 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     deploymentId: 'gpt-4.1-mini',
     name: 'GPT-4.1 Mini',
     description: 'Small OpenAI model',
-    fallback: true,
+    fallback: false,
     supportsReasoning: false,
     usesResponsesApi: false,
     supportedReasoningEfforts: [],
+    maxOutputTokens: 4096,
+    usageClass: 'ADVANCED',
     apiVersion: 'preview',
     cost: { input: 0.4, output: 1.6 },
   },
 ]
 
+export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] =
+  parseChatModelRegistry(DEFAULT_CHAT_MODEL_REGISTRY_INPUT)
+
 let cachedChatModelRegistry: ChatModelCapability[] | null = null
 
-const dedupeStrings = (values: readonly string[]) => Array.from(new Set(values))
+function dedupeStrings(values: readonly string[]) {
+  return Array.from(new Set(values))
+}
 
 function normalizeChatModel(model: RawChatModelConfig): ChatModelCapability {
   const usesResponsesApi = model.usesResponsesApi ?? model.supportsReasoning
@@ -167,19 +226,8 @@ export function getChatModelRegistry(): ChatModelCapability[] {
     return cachedChatModelRegistry
   }
 
-  try {
-    cachedChatModelRegistry = chatModelRegistrySchema
-      .parse(JSON.parse(rawRegistry))
-      .map((model) => normalizeChatModel(model))
-    return cachedChatModelRegistry
-  } catch (error) {
-    console.warn(
-      '[graphql] Invalid CHAT_MODEL_REGISTRY_JSON; falling back to built-in defaults.',
-      error
-    )
-    cachedChatModelRegistry = DEFAULT_CHAT_MODEL_REGISTRY
-    return cachedChatModelRegistry
-  }
+  cachedChatModelRegistry = parseChatModelRegistry(JSON.parse(rawRegistry))
+  return cachedChatModelRegistry
 }
 
 function parseAllowedReasoningEffortsByModel(
@@ -265,7 +313,9 @@ export async function getParticipantCourseChatbots(
       description: true,
       avatar: true,
     },
-    where: { courseId },
+    // Participants only see PUBLISHED bots; drafts and in-review bots stay hidden
+    // in the course overview (F2, mirrors the chat-app access gate).
+    where: { courseId, status: DB.ChatbotStatus.PUBLISHED },
   })
 
   return chatbots.map(({ id, name, description, avatar }) => ({
@@ -276,24 +326,52 @@ export async function getParticipantCourseChatbots(
   }))
 }
 
+// Owner-facing column projection shared by every service that returns the
+// full (lecturer) Chatbot shape. Keeping it in one place ensures newly added
+// owner fields (e.g. lifecycle status) are selected everywhere IChatbot is
+// returned, so the GraphQL type never sees a missing non-nullable field.
+const chatbotOwnerSelect = {
+  id: true,
+  name: true,
+  description: true,
+  avatar: true,
+  modelSelection: true,
+  allowedModelIds: true,
+  allowedReasoningEffortsByModel: true,
+  creditInitialCredits: true,
+  creditResetPeriod: true,
+  creditResetAmount: true,
+  creditMaxCredits: true,
+  status: true,
+  publicationUseCase: true,
+  expectedStudentCount: true,
+  reviewComment: true,
+  publishedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.ChatbotSelect
+
+type ChatbotWithOwnerCourse = {
+  allowedReasoningEffortsByModel: unknown
+  course: { id: string; name: string } | null
+}
+
+function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(chatbot: T) {
+  return {
+    ...chatbot,
+    allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
+      chatbot.allowedReasoningEffortsByModel
+    ),
+    courses: chatbot.course ? [chatbot.course] : [],
+  }
+}
+
 export async function getChatbotsInfo(ctx: ContextWithUser) {
   await assertManageAiEnabled(ctx)
   const chatbots = await ctx.prisma.chatbot.findMany({
     where: { ownerId: ctx.user.sub },
     select: {
-      id: true,
-      name: true,
-      description: true,
-      avatar: true,
-      modelSelection: true,
-      allowedModelIds: true,
-      allowedReasoningEffortsByModel: true,
-      creditInitialCredits: true,
-      creditResetPeriod: true,
-      creditResetAmount: true,
-      creditMaxCredits: true,
-      createdAt: true,
-      updatedAt: true,
+      ...chatbotOwnerSelect,
       course: { select: { id: true, name: true } },
       disclaimer: { select: { id: true, name: true, title: true } },
       mcpConfigurations: {
@@ -440,11 +518,7 @@ export async function getChatbotsInfo(ctx: ContextWithUser) {
     }))
 
     return {
-      ...chatbot,
-      allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
-        chatbot.allowedReasoningEffortsByModel
-      ),
-      courses: chatbot.course ? [chatbot.course] : [],
+      ...shapeChatbotResponse(chatbot),
       usageSummary,
       disclaimerSummary,
       mcpConfigurations,
@@ -474,19 +548,7 @@ export async function updateChatbotModelSettings(
       ownerId: ctx.user.sub,
     },
     select: {
-      id: true,
-      name: true,
-      description: true,
-      avatar: true,
-      modelSelection: true,
-      allowedModelIds: true,
-      allowedReasoningEffortsByModel: true,
-      creditInitialCredits: true,
-      creditResetPeriod: true,
-      creditResetAmount: true,
-      creditMaxCredits: true,
-      createdAt: true,
-      updatedAt: true,
+      ...chatbotOwnerSelect,
       course: { select: { id: true, name: true } },
     },
   })
@@ -569,28 +631,343 @@ export async function updateChatbotModelSettings(
           : Prisma.DbNull,
     },
     select: {
-      id: true,
-      name: true,
-      description: true,
-      avatar: true,
-      modelSelection: true,
-      allowedModelIds: true,
-      allowedReasoningEffortsByModel: true,
-      creditInitialCredits: true,
-      creditResetPeriod: true,
-      creditResetAmount: true,
-      creditMaxCredits: true,
-      createdAt: true,
-      updatedAt: true,
+      ...chatbotOwnerSelect,
       course: { select: { id: true, name: true } },
     },
   })
 
-  return {
-    ...updated,
-    allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
-      updated.allowedReasoningEffortsByModel
-    ),
-    courses: updated.course ? [updated.course] : [],
+  return shapeChatbotResponse(updated)
+}
+
+type CreateChatbotArgs = {
+  name: string
+  description?: string | null
+  avatar?: string | null
+  courseId: string
+}
+
+export async function createChatbot(
+  args: CreateChatbotArgs,
+  ctx: ContextWithUser
+) {
+  // Resource-level authorization: the target course must belong to the
+  // requesting lecturer. Pothos already checked authenticate + catalyst; this
+  // is the third (execute-time ownership) layer of the auth model.
+  const course = await ctx.prisma.course.findFirst({
+    where: { id: args.courseId, ownerId: ctx.user.sub },
+    select: { id: true },
+  })
+  if (!course) {
+    throw new GraphQLError('Course not found')
   }
+  if (args.name === '') {
+    throw new GraphQLError('Chatbot name must not be empty')
+  }
+
+  const luna = getChatModelRegistry().find(
+    (model) => model.id === CHAT_BASE_MODEL_ID && model.usageClass === 'BASE'
+  )
+  if (
+    !luna ||
+    !luna.supportsReasoning ||
+    !luna.supportedReasoningEfforts.includes('low') ||
+    !luna.supportedReasoningEfforts.includes('medium')
+  ) {
+    throw new GraphQLError(
+      `Chatbot defaults require the ${CHAT_BASE_MODEL_ID} BASE model with low and medium reasoning support`
+    )
+  }
+
+  const created = await ctx.prisma.chatbot.create({
+    data: {
+      name: args.name,
+      description: args.description ?? null,
+      avatar: args.avatar ?? null,
+      status: DB.ChatbotStatus.DRAFT,
+      modelSelection: false,
+      allowedModelIds: [CHAT_BASE_MODEL_ID],
+      allowedReasoningEffortsByModel: {
+        [CHAT_BASE_MODEL_ID]: ['low', 'medium'],
+      },
+      owner: { connect: { id: ctx.user.sub } },
+      course: { connect: { id: args.courseId } },
+      // systemPrompts intentionally left unset (null): when no modes are
+      // configured, the chat runtime derives a tutor-only default from
+      // DEFAULT_PROMPT (getSupportedChatModes). Custom modes are added and
+      // reviewed post-approval — see docs/adr/0021.
+    },
+    select: {
+      ...chatbotOwnerSelect,
+      course: { select: { id: true, name: true } },
+    },
+  })
+
+  return shapeChatbotResponse(created)
+}
+
+type UpdateChatbotArgs = {
+  id: string
+  name?: string | null
+  description?: string | null
+  avatar?: string | null
+}
+
+export async function updateChatbot(
+  args: UpdateChatbotArgs,
+  ctx: ContextWithUser
+) {
+  // Ownership guard: a failed ownerId-scoped lookup returns null rather than a
+  // throw, so a non-owner cannot distinguish "not yours" from "does not exist".
+  const existing = await ctx.prisma.chatbot.findFirst({
+    where: { id: args.id, ownerId: ctx.user.sub },
+    select: { id: true },
+  })
+  if (!existing) {
+    return null
+  }
+  if (args.name === '') {
+    throw new GraphQLError('Chatbot name must not be empty')
+  }
+
+  const updated = await ctx.prisma.chatbot.update({
+    where: { id: existing.id },
+    data: {
+      // name is a required column, so only overwrite it when a value is given.
+      ...(args.name != null ? { name: args.name } : {}),
+      // description/avatar are nullable: an explicit null clears them, an
+      // omitted (undefined) arg leaves them untouched.
+      ...(args.description !== undefined
+        ? { description: args.description }
+        : {}),
+      ...(args.avatar !== undefined ? { avatar: args.avatar } : {}),
+    },
+    select: {
+      ...chatbotOwnerSelect,
+      course: { select: { id: true, name: true } },
+    },
+  })
+
+  return shapeChatbotResponse(updated)
+}
+
+type RequestChatbotPublicationArgs = {
+  id: string
+  useCase: string
+  expectedStudentCount: number
+  proposedCredits: number
+}
+
+export async function requestChatbotPublication(
+  args: RequestChatbotPublicationArgs,
+  ctx: ContextWithUser
+) {
+  // Ownership/existence first: a non-owner gets null (not found) and never
+  // learns anything about the account capability below.
+  const chatbot = await ctx.prisma.chatbot.findFirst({
+    where: { id: args.id, ownerId: ctx.user.sub },
+    select: { id: true, status: true },
+  })
+  if (!chatbot) {
+    return null
+  }
+
+  if (typeof args.useCase !== 'string') {
+    throw new GraphQLError('useCase must be between 1 and 2000 characters long')
+  }
+  const normalizedUseCase = args.useCase.trim()
+  if (normalizedUseCase.length < 1 || normalizedUseCase.length > 2000) {
+    throw new GraphQLError('useCase must be between 1 and 2000 characters long')
+  }
+
+  const isPositiveSignedInt32 = (value: unknown): value is number =>
+    typeof value === 'number' &&
+    Number.isInteger(value) &&
+    value >= 1 &&
+    value <= 2_147_483_647
+
+  if (!isPositiveSignedInt32(args.expectedStudentCount)) {
+    throw new GraphQLError(
+      'expectedStudentCount must be a positive signed 32-bit integer'
+    )
+  }
+  if (!isPositiveSignedInt32(args.proposedCredits)) {
+    throw new GraphQLError(
+      'proposedCredits must be a positive signed 32-bit integer'
+    )
+  }
+
+  // Account-level capability gate (D1, ADR 0020): read the live User row, never
+  // a JWT claim — ops flips this flag out of band after the token was issued.
+  const owner = await ctx.prisma.user.findUniqueOrThrow({
+    where: { id: ctx.user.sub },
+    select: { aiChatbotPublishingEnabled: true },
+  })
+  if (!owner.aiChatbotPublishingEnabled) {
+    throw new GraphQLError('Account is not approved for chatbot publishing')
+  }
+
+  // Only a DRAFT or a previously REJECTED bot may (re-)enter review.
+  if (
+    chatbot.status !== DB.ChatbotStatus.DRAFT &&
+    chatbot.status !== DB.ChatbotStatus.REJECTED
+  ) {
+    throw new GraphQLError(
+      `Cannot request publication from status ${chatbot.status}`
+    )
+  }
+
+  const transition = await ctx.prisma.chatbot.updateMany({
+    where: {
+      id: chatbot.id,
+      ownerId: ctx.user.sub,
+      status: {
+        in: [DB.ChatbotStatus.DRAFT, DB.ChatbotStatus.REJECTED],
+      },
+      owner: { aiChatbotPublishingEnabled: true },
+    },
+    data: {
+      status: DB.ChatbotStatus.PENDING_APPROVAL,
+      publicationUseCase: normalizedUseCase,
+      expectedStudentCount: args.expectedStudentCount,
+      reviewComment: null, // clear any prior rejection note on re-request
+      // Proposed credit budget (gated cost class, D2): flat model — initial =
+      // reset amount = max = proposedCredits; the reset period keeps its
+      // configured value. Student-inert until PUBLISHED (S4 gates access).
+      creditInitialCredits: args.proposedCredits,
+      creditResetAmount: args.proposedCredits,
+      creditMaxCredits: args.proposedCredits,
+    },
+  })
+
+  if (transition.count === 0) {
+    throw new GraphQLError(
+      'Chatbot publication request could not be completed because its status or account capability changed concurrently'
+    )
+  }
+
+  const updated = await ctx.prisma.chatbot.findUniqueOrThrow({
+    where: { id: chatbot.id },
+    select: {
+      ...chatbotOwnerSelect,
+      course: { select: { id: true, name: true } },
+    },
+  })
+
+  return shapeChatbotResponse(updated)
+}
+
+export async function approveChatbotPublication(
+  args: { id: string },
+  ctx: ContextWithUser
+) {
+  // Service-level admin check (D3): the schema layer already gates on asAdmin,
+  // but service tests bypass Pothos, so this is the check the admin-authz test
+  // exercises.
+  if (ctx.user.role !== DB.UserRole.ADMIN) {
+    throw new GraphQLError('Not authorized')
+  }
+
+  const chatbot = await ctx.prisma.chatbot.findUnique({
+    where: { id: args.id },
+    select: {
+      id: true,
+      status: true,
+      publishedAt: true,
+      // Re-check the owner's account-level publishing capability at approval
+      // time (S3 review): the manual queue can sit for days, and ops may revoke
+      // aiChatbotPublishingEnabled while a request is pending. Checking only at
+      // request time would let an unaware admin publish a bot under an account
+      // that no longer holds the capability. See ADR 0020 (two-tier approval).
+      owner: { select: { aiChatbotPublishingEnabled: true } },
+    },
+  })
+  if (!chatbot) {
+    return null
+  }
+  if (chatbot.status !== DB.ChatbotStatus.PENDING_APPROVAL) {
+    throw new GraphQLError(`Cannot approve from status ${chatbot.status}`)
+  }
+  if (!chatbot.owner.aiChatbotPublishingEnabled) {
+    throw new GraphQLError(
+      'Account is no longer approved for chatbot publishing'
+    )
+  }
+
+  const transition = await ctx.prisma.chatbot.updateMany({
+    where: {
+      id: chatbot.id,
+      status: DB.ChatbotStatus.PENDING_APPROVAL,
+      owner: { aiChatbotPublishingEnabled: true },
+    },
+    data: {
+      status: DB.ChatbotStatus.PUBLISHED,
+      // Stamp the first go-live only; a later re-approval keeps the original.
+      publishedAt: chatbot.publishedAt ?? new Date(),
+      reviewComment: null,
+    },
+  })
+  if (transition.count === 0) {
+    throw new GraphQLError(
+      'Chatbot approval could not be completed because its status or account capability changed'
+    )
+  }
+
+  const updated = await ctx.prisma.chatbot.findUniqueOrThrow({
+    where: { id: chatbot.id },
+    select: {
+      ...chatbotOwnerSelect,
+      course: { select: { id: true, name: true } },
+    },
+  })
+
+  return shapeChatbotResponse(updated)
+}
+
+export async function rejectChatbotPublication(
+  args: { id: string; comment: string },
+  ctx: ContextWithUser
+) {
+  if (ctx.user.role !== DB.UserRole.ADMIN) {
+    throw new GraphQLError('Not authorized')
+  }
+
+  const chatbot = await ctx.prisma.chatbot.findUnique({
+    where: { id: args.id },
+    select: { id: true, status: true },
+  })
+  if (!chatbot) {
+    return null
+  }
+  if (args.comment.trim().length === 0) {
+    throw new GraphQLError('Review comment must not be empty')
+  }
+  if (chatbot.status !== DB.ChatbotStatus.PENDING_APPROVAL) {
+    throw new GraphQLError(`Cannot reject from status ${chatbot.status}`)
+  }
+
+  const transition = await ctx.prisma.chatbot.updateMany({
+    where: {
+      id: chatbot.id,
+      status: DB.ChatbotStatus.PENDING_APPROVAL,
+    },
+    data: {
+      status: DB.ChatbotStatus.REJECTED,
+      reviewComment: args.comment,
+    },
+  })
+  if (transition.count === 0) {
+    throw new GraphQLError(
+      'Chatbot rejection could not be completed because its status changed'
+    )
+  }
+
+  const updated = await ctx.prisma.chatbot.findUniqueOrThrow({
+    where: { id: chatbot.id },
+    select: {
+      ...chatbotOwnerSelect,
+      course: { select: { id: true, name: true } },
+    },
+  })
+
+  return shapeChatbotResponse(updated)
 }

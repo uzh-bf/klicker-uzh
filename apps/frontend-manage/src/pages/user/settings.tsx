@@ -2,11 +2,12 @@ import { useQuery } from '@apollo/client'
 import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2 } from '@uzh-bf/design-system'
-import { GetStaticPropsContext } from 'next'
+import type { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { Suspense } from 'react'
 import Layout from '../../components/Layout'
 import BetaFeaturesSetting from '../../components/user/BetaFeaturesSetting'
+import ChatAccountUsageSettings from '../../components/user/ChatAccountUsageSettings'
 import DelegatedAccessSettings from '../../components/user/DelegatedAccessSettings'
 import EmailSetting from '../../components/user/EmailSetting'
 import LanguageSetting from '../../components/user/LanguageSetting'
@@ -31,6 +32,10 @@ function Settings() {
         <LanguageSetting user={user.userProfile} />
         <EmailSetting user={user.userProfile} />
         {user.userProfile.catalyst && <BetaFeaturesSetting />}
+
+        <Suspense fallback={<Loader />}>
+          <ChatAccountUsageSettings />
+        </Suspense>
 
         <Suspense fallback={<Loader />}>
           <DelegatedAccessSettings shortname={user?.userProfile?.shortname} />

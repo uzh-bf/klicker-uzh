@@ -61,6 +61,8 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
     update: {
       allowedModelIds: SEEDED_CHATBOT_MODEL_IDS,
       modelSelection: true,
+      // Repair status on reseed of an existing DB so the bot stays reachable.
+      status: 'PUBLISHED',
     },
     create: {
       id: CHATBOT_ID_TEST,
@@ -87,6 +89,7 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
       modelSelection: true, // Allow model selection for testing
       allowedModelIds: SEEDED_CHATBOT_MODEL_IDS,
       disclaimerId: testDisclaimer.id,
+      status: 'PUBLISHED', // seeded bot is live for participants
     },
   })
 

@@ -52,6 +52,20 @@ jobs:
   test-unit:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: klicker
+          POSTGRES_PASSWORD: klicker
+          POSTGRES_DB: klicker-prod
+        options: >-
+          --health-cmd "pg_isready -U klicker -d klicker-prod"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -76,9 +90,19 @@ jobs:
         shell: bash
         run: pnpm --filter "@klicker-uzh/chat^..." run build
 
+      - name: Setup chat test database
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force
+        env:
+          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+
       - name: Test chat app
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: pnpm --filter @klicker-uzh/chat test:run
+        env:
+          CHAT_ACCOUNT_USAGE_INTEGRATION: '1'
+          CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED: 'false'
+          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
 
       - name: Test grading package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}

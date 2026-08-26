@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events'
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
 import {
   enhanceContext,
+  getChatModelRegistry,
   handlers,
   schema,
   settleKbKnowledgeGraphResult,
@@ -121,6 +122,8 @@ const pubSub = createPubSub({ eventTarget })
 
 // ! Server and context setup
 // #region
+getChatModelRegistry()
+
 migrate(prisma).then(async () => {
   await featureFlags.initialize()
   console.log(

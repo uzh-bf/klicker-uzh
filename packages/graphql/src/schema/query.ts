@@ -6,6 +6,7 @@ import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
 import * as BetaFeaturesService from '../services/betaFeatures.js'
+import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
@@ -115,6 +116,7 @@ import {
 import {
   AnswerCollection,
   AnswerCollectionPreviewEntry,
+  ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotPublic,
   ChatModelCapability,
@@ -1616,6 +1618,17 @@ export const Query = builder.queryType({
         type: [Chatbot],
         resolve: async (_, __, ctx) => {
           return await ChatbotsService.getChatbotsInfo(ctx)
+        },
+      }),
+
+      getChatAccountUsage: t.withAuth(asUser).field({
+        nullable: true,
+        type: ChatAccountUsageOverviewRef,
+        args: {
+          ownerId: t.arg.string({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatAccountUsageService.getChatAccountUsage(args, ctx)
         },
       }),
 

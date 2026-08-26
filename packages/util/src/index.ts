@@ -36,3 +36,9 @@ export * from './blobStorage.js'
 
 // export everything from the identity module
 export * from './identity.js'
+
+// export everything from the chat usage module
+export * from './chatUsage.js'
+
+// export everything from the chat model registry module
+export * from './chatModelRegistry.js'
