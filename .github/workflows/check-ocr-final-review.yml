@@ -55,8 +55,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     concurrency:
-      group: final-ai-review-${{ github.event.pull_request.number }}
-      cancel-in-progress: true
+      group: final-ai-status-lock
+      cancel-in-progress: false
     permissions:
       contents: read
       pull-requests: read
@@ -140,35 +140,29 @@ jobs:
               trustedSha: process.env.TRUSTED_SHA,
             })
 
-  review:
+  start:
     needs: authorize
     if: needs.authorize.outputs.authorized == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 10
     concurrency:
-      group: final-ai-review-${{ needs.authorize.outputs.pr_number }}
-      cancel-in-progress: true
+      group: final-ai-status-lock
+      cancel-in-progress: false
     permissions:
       contents: read
-      issues: read
-      pull-requests: write
+      pull-requests: read
       statuses: write
       actions: read
+    outputs:
+      run_review: ${{ steps.start.outputs.run_review }}
+      background: ${{ steps.start.outputs.background }}
     steps:
       - name: Checkout trusted final-review implementation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.authorize.outputs.trusted_sha }}
-          fetch-depth: 0
           persist-credentials: false
-
-      - name: Verify trusted helper
-        env:
-          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = "${TRUSTED_SHA}"
-          node --test .github/scripts/final-ai-review.test.js
+          sparse-checkout: .github/scripts
 
       - name: Start final review
         id: start
@@ -213,9 +207,44 @@ jobs:
             })
             core.setOutput('run_review', String(shouldRun))
 
+  review:
+    needs: [authorize, start]
+    if: >-
+      needs.authorize.outputs.authorized == 'true' &&
+      needs.start.outputs.run_review == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: final-ai-review-${{ needs.authorize.outputs.pr_number }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: write
+      actions: read
+    outputs:
+      review_outcome: ${{ steps.run_review.outcome }}
+      cleanup_outcome: ${{ steps.cleanup.outcome }}
+      publish_outcome: ${{ steps.publish.outcome }}
+    steps:
+      - name: Checkout trusted final-review implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.authorize.outputs.trusted_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify trusted helper
+        env:
+          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${TRUSTED_SHA}"
+          node --test .github/scripts/final-ai-review.test.js
+
       - name: Resolve immutable review range
         id: range
-        if: steps.start.outputs.run_review == 'true'
+        if: needs.start.outputs.run_review == 'true'
         env:
           PR_NUMBER: ${{ needs.authorize.outputs.pr_number }}
           BASE_SHA: ${{ needs.authorize.outputs.base_sha }}
@@ -242,14 +271,14 @@ jobs:
           echo "review_from=${REVIEW_FROM}" >>"${GITHUB_OUTPUT}"
 
       - name: Install pinned OpenCodeReview CLI
-        if: steps.start.outputs.run_review == 'true'
+        if: needs.start.outputs.run_review == 'true'
         run: |
           npm install -g @alibaba-group/open-code-review@1.9.10
           ocr version
 
       - name: Configure ephemeral OpenRouter access
         id: configure
-        if: steps.start.outputs.run_review == 'true'
+        if: needs.start.outputs.run_review == 'true'
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
@@ -259,9 +288,9 @@ jobs:
 
       - name: Run final review
         id: run_review
-        if: steps.start.outputs.run_review == 'true'
+        if: needs.start.outputs.run_review == 'true'
         env:
-          BACKGROUND: ${{ steps.start.outputs.background }}
+          BACKGROUND: ${{ needs.start.outputs.background }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
           REVIEW_FROM: ${{ steps.range.outputs.review_from }}
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
@@ -279,7 +308,7 @@ jobs:
 
       - name: Remove ephemeral OpenRouter access
         id: cleanup
-        if: always() && steps.start.outputs.run_review == 'true'
+        if: always() && needs.start.outputs.run_review == 'true'
         run: node .github/scripts/final-ai-review.js cleanup-ocr
 
       - name: Publish consolidated final review
@@ -329,10 +358,37 @@ jobs:
               workflowSha: process.env.GITHUB_WORKFLOW_SHA,
               resultPath: process.env.RESULT_PATH,
             })
-            core.info(`Published ${url}`)
+            core.info(
+              url
+                ? `Published ${url}`
+                : 'No actionable findings; skipped the pull-request comment'
+            )
+
+  finalize:
+    needs: [authorize, start, review]
+    if: >-
+      always() &&
+      needs.authorize.outputs.authorized == 'true' &&
+      needs.start.outputs.run_review == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: final-ai-status-lock
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
+      actions: read
+    steps:
+      - name: Checkout trusted final-review implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.authorize.outputs.trusted_sha }}
+          persist-credentials: false
+          sparse-checkout: .github/scripts
 
       - name: Finalize exact-head status
-        if: always() && steps.start.outputs.run_review == 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           PR_NUMBER: ${{ needs.authorize.outputs.pr_number }}
@@ -342,9 +398,9 @@ jobs:
           STACK_ID: ${{ needs.authorize.outputs.stack_id }}
           STACK_POSITION: ${{ needs.authorize.outputs.stack_position }}
           STACK_ORDER_DIGEST: ${{ needs.authorize.outputs.stack_order_digest }}
-          REVIEW_OUTCOME: ${{ steps.run_review.outcome }}
-          CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
-          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
+          REVIEW_OUTCOME: ${{ needs.review.outputs.review_outcome || needs.review.result }}
+          CLEANUP_OUTCOME: ${{ needs.review.outputs.cleanup_outcome || needs.review.result }}
+          PUBLISH_OUTCOME: ${{ needs.review.outputs.publish_outcome || needs.review.result }}
         with:
           github-token: ${{ github.token }}
           script: |

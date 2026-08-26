@@ -19,6 +19,7 @@ const {
   initializeStackReview,
   isStackReviewCommand,
   parseStackReviewMetadata,
+  publishStackReview,
   readSnapshotBundle,
   renderStackReview,
   resolveStackMembership,
@@ -830,7 +831,7 @@ test('keeps actions read permission for stack revalidation', () => {
     path.join(__dirname, '../workflows/check-ocr-final-stack-review.yml'),
     'utf8'
   )
-  for (const jobName of ['initialize', 'review']) {
+  for (const jobName of ['initialize', 'start', 'review', 'finalize']) {
     const job =
       workflow.match(
         new RegExp(
@@ -876,7 +877,7 @@ test('anchors every stack review consumer to the frozen manifest digest', () => 
   )
   assert.equal(
     workflow.match(
-      /MANIFEST_DIGEST: \$\{\{ steps\.start\.outputs\.manifest_digest \}\}/g
+      /MANIFEST_DIGEST: \$\{\{ needs\.start\.outputs\.manifest_digest \}\}/g
     )?.length,
     3
   )
@@ -1110,19 +1111,78 @@ test('preserves current stack evidence across unrelated default-base advancement
   )
   assert.equal(state.createdStatuses.length, 0)
 
-  const outputs = new Map()
   const reviewContext = context(14)
   reviewContext.payload.comment.user = { login: 'reviewer' }
-  const authorized = await authorizeStackReview({
-    github,
-    context: reviewContext,
-    core: {
-      notice: () => {},
-      setOutput: (name, value) => outputs.set(name, value),
+  assert.equal(
+    await authorizeStackReview({
+      github,
+      context: reviewContext,
+      core: {
+        notice: () => {},
+        setOutput: () => {},
+      },
+    }),
+    false
+  )
+
+  state.comments = [
+    {
+      body: `<!-- final-ai-disposition/v1 ${JSON.stringify({
+        schema_version: 'final-ai-disposition/v1',
+        review_id: parseStackReviewMetadata(rootReport).review_id,
+        root_head: pulls[14].head.sha,
+        workflow_run_id: 700,
+        entries: [
+          {
+            finding_id: parseStackReviewMetadata(rootReport).finding_ids[0],
+            state: 'fixed',
+            reference: 'commit:8'.padEnd(46, '0'),
+            paths: ['src/one.ts'],
+          },
+        ],
+      })} -->`,
+      user: { login: 'reviewer' },
     },
+  ]
+  const repairedHead = '8'.repeat(40)
+  pulls[14].head.sha = repairedHead
+  github.request = async () => ({
+    data: [
+      {
+        id: 99,
+        pull_requests: [11, 12, 13, 14].map((number) => ({
+          number,
+          state: pulls[number].state,
+          draft: pulls[number].draft,
+          head: { sha: pulls[number].head.sha },
+        })),
+      },
+    ],
   })
-  assert.equal(authorized, true)
-  assert.equal(outputs.get('mode'), 'full')
+  responses.set('e'.repeat(40), repairedHead)
+  responses.set('f'.repeat(40), repairedHead)
+  files.set('f'.repeat(40), [
+    {
+      filename: 'src/one.ts',
+      additions: 1,
+      deletions: 1,
+      patch: '@@ -4,1 +4,1 @@\n-old line\n+new line',
+    },
+  ])
+
+  const repairOutputs = new Map()
+  assert.equal(
+    await authorizeStackReview({
+      github,
+      context: reviewContext,
+      core: {
+        notice: () => {},
+        setOutput: (name, value) => repairOutputs.set(name, value),
+      },
+    }),
+    true
+  )
+  assert.equal(repairOutputs.get('mode'), 'incremental')
 })
 
 test('invalidates the top status when a lower layer changes', async () => {
@@ -1331,6 +1391,37 @@ test('starts a review only when the stack snapshot remains identical', async () 
   assert.equal(fs.existsSync(manifestPath), true)
   assert.match(outputs.get('manifest_digest'), /^[0-9a-f]{64}$/)
   assert.equal(state.createdStatuses.at(-1).state, 'pending')
+})
+
+test('does not overwrite a newer status when stack start revalidation fails', async () => {
+  const { github, state } = stackFixture()
+  github.request = async () => {
+    throw new Error('native stack unavailable')
+  }
+  state.statuses = [
+    {
+      context: 'final-ai-stack-review',
+      state: 'pending',
+      target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/701',
+    },
+  ]
+
+  await startStackReview({
+    github,
+    context: context(),
+    prNumber: 14,
+    headSha: 'f'.repeat(40),
+  })
+  assert.equal(state.createdStatuses.length, 0)
+
+  await startStackReview({
+    github,
+    context: context(),
+    prNumber: 14,
+    headSha: 'f'.repeat(40),
+    statusLockHeld: true,
+  })
+  assert.equal(state.createdStatuses.at(-1).state, 'error')
 })
 
 test('attests a bounded repaired top layer from a trusted stack disposition', async () => {
@@ -1969,6 +2060,64 @@ test('does not overwrite a newer status after stack revalidation failure', async
   assert.equal(state.createdStatuses.length, 0)
 })
 
+test('rejects duplicate code and topology finding IDs before publication', async () => {
+  const { github } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const plan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership,
+  })
+  const common = {
+    headSha: membership.top.head.sha,
+    manifestBundle,
+    policyDigest: plan.policyDigest,
+    topologyResult: topologyResult(),
+    workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+    workflowHeadSha: 'a'.repeat(40),
+    trustedPolicySha: 'a'.repeat(40),
+    workflowSha: 'a'.repeat(40),
+    workflowRunId: 700,
+  }
+
+  assert.throws(
+    () =>
+      renderStackReview({
+        ...common,
+        codeResult: completeOCRResult([codeFinding(), codeFinding()]),
+      }),
+    /duplicate finding IDs/
+  )
+
+  const topologyFinding = {
+    category: 'bug',
+    content: 'The stack topology can fail after merge.',
+    end_line: 4,
+    layer_numbers: [1],
+    path: 'src/one.ts',
+    severity: 'high',
+    start_line: 4,
+  }
+  assert.throws(
+    () =>
+      renderStackReview({
+        ...common,
+        codeResult: completeOCRResult(),
+        topologyResult: topologyResult([topologyFinding, topologyFinding]),
+      }),
+    /duplicate finding IDs/
+  )
+})
+
 test('renders consolidated code and topology findings with one stack marker', async () => {
   const { github } = stackFixture()
   const membership = await resolveStackMembership({
@@ -2026,6 +2175,71 @@ test('renders consolidated code and topology findings with one stack marker', as
     (report.match(new RegExp(`<!-- ${STACK_REVIEW_SCHEMA}`, 'g')) ?? []).length,
     1
   )
+})
+
+test('skips the stack pull-request comment when code and topology have no findings', async () => {
+  const { github } = stackFixture()
+  const reviewContext = context()
+  const membership = await resolveStackMembership({
+    github,
+    context: reviewContext,
+    pullNumber: 14,
+  })
+  const plan = await buildStackReviewPlan({
+    github,
+    context: reviewContext,
+    membership,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: reviewContext,
+    membership,
+  })
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stack-review-'))
+  const manifestPath = path.join(directory, 'manifest.json')
+  const resultPath = path.join(directory, 'code-result.json')
+  const topologyResultPath = path.join(directory, 'topology-result.json')
+  fs.writeFileSync(
+    manifestPath,
+    JSON.stringify({
+      manifest: manifestBundle.manifest,
+      manifest_digest: manifestBundle.manifestDigest,
+    })
+  )
+  fs.writeFileSync(resultPath, JSON.stringify(completeOCRResult()))
+  fs.writeFileSync(topologyResultPath, JSON.stringify(topologyResult()))
+  const createdReviews = []
+  github.rest.pulls.createReview = async (review) => {
+    createdReviews.push(review)
+    return { data: { html_url: 'https://github.com/stack-review' } }
+  }
+
+  const result = await publishStackReview({
+    github,
+    context: reviewContext,
+    prNumber: 14,
+    baseSha: plan.baseSha,
+    headSha: plan.headSha,
+    stackId: plan.stackId,
+    stackOrderDigest: plan.stackOrderDigest,
+    stackIdentityDigest: plan.stackIdentityDigest,
+    memberNumbers: plan.memberNumbers,
+    mode: plan.mode,
+    rootHead: plan.rootHead,
+    rootReviewId: plan.rootReviewId,
+    policyDigest: plan.policyDigest,
+    dispositionDigest: plan.dispositionDigest,
+    reviewRanges: plan.reviewRanges,
+    trustedSha: 'a'.repeat(40),
+    workflowSha: 'a'.repeat(40),
+    expectedManifestDigest: manifestBundle.manifestDigest,
+    manifestPath,
+    resultPath,
+    topologyResultPath,
+  })
+
+  assert.equal(result, null)
+  assert.equal(createdReviews.length, 0)
 })
 
 test('sends strict high-reasoning topology requests and rejects invalid owners', async () => {

@@ -55,8 +55,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     concurrency:
-      group: final-ai-stack-review-${{ github.event.pull_request.number }}
-      cancel-in-progress: true
+      group: final-ai-status-lock
+      cancel-in-progress: false
     permissions:
       actions: read
       contents: read
@@ -140,35 +140,30 @@ jobs:
               trustedSha: process.env.TRUSTED_SHA,
             })
 
-  review:
+  start:
     needs: authorize
     if: needs.authorize.outputs.authorized == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 10
     concurrency:
-      group: final-ai-stack-review-${{ needs.authorize.outputs.pr_number }}
-      cancel-in-progress: true
+      group: final-ai-status-lock
+      cancel-in-progress: false
     permissions:
       actions: read
       contents: read
-      issues: read
-      pull-requests: write
+      pull-requests: read
       statuses: write
+    outputs:
+      run_review: ${{ steps.start.outputs.run_review }}
+      background: ${{ steps.start.outputs.background }}
+      manifest_digest: ${{ steps.start.outputs.manifest_digest }}
     steps:
       - name: Checkout trusted stack-review implementation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.authorize.outputs.trusted_sha }}
-          fetch-depth: 0
           persist-credentials: false
-
-      - name: Verify trusted stack helper
-        env:
-          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = "${TRUSTED_SHA}"
-          node --test .github/scripts/final-ai-review.test.js .github/scripts/final-ai-stack-review.test.js
+          sparse-checkout: .github/scripts
 
       - name: Freeze verified stack snapshot
         id: start
@@ -212,20 +207,72 @@ jobs:
               reviewRanges: JSON.parse(process.env.REVIEW_RANGES || '[]'),
               trustedSha: process.env.TRUSTED_SHA,
               manifestPath: process.env.MANIFEST_PATH,
+              statusLockHeld: true,
               core,
             })
             core.setOutput('run_review', String(shouldRun))
 
+      - name: Upload frozen stack snapshot
+        if: steps.start.outputs.run_review == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-ai-stack-manifest-${{ github.run_id }}
+          path: ${{ runner.temp }}/final-ai-stack-manifest.json
+          if-no-files-found: error
+          retention-days: 1
+
+  review:
+    needs: [authorize, start]
+    if: >-
+      needs.authorize.outputs.authorized == 'true' &&
+      needs.start.outputs.run_review == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    concurrency:
+      group: final-ai-stack-review-${{ needs.authorize.outputs.pr_number }}
+      cancel-in-progress: true
+    permissions:
+      actions: read
+      contents: read
+      issues: read
+      pull-requests: write
+    outputs:
+      code_outcome: ${{ steps.code_review.outcome }}
+      topology_outcome: ${{ steps.topology_review.outcome }}
+      cleanup_outcome: ${{ steps.cleanup.outcome }}
+      publish_outcome: ${{ steps.publish.outcome }}
+    steps:
+      - name: Checkout trusted stack-review implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.authorize.outputs.trusted_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify trusted stack helper
+        env:
+          TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${TRUSTED_SHA}"
+          node --test .github/scripts/final-ai-review.test.js .github/scripts/final-ai-stack-review.test.js
+
+      - name: Download frozen stack snapshot
+        uses: actions/download-artifact@v4
+        with:
+          name: final-ai-stack-manifest-${{ github.run_id }}
+          path: ${{ runner.temp }}
+
       - name: Resolve immutable stack range
         id: range
-        if: steps.start.outputs.run_review == 'true'
+        if: needs.start.outputs.run_review == 'true'
         env:
           BASE_SHA: ${{ needs.authorize.outputs.base_sha }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
           REVIEW_MODE: ${{ needs.authorize.outputs.mode }}
           ROOT_HEAD: ${{ needs.authorize.outputs.root_head }}
           REVIEW_RANGES: ${{ needs.authorize.outputs.review_ranges }}
-          MANIFEST_DIGEST: ${{ steps.start.outputs.manifest_digest }}
+          MANIFEST_DIGEST: ${{ needs.start.outputs.manifest_digest }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
         run: |
           set -euo pipefail
@@ -258,14 +305,14 @@ jobs:
           echo "review_from=${REVIEW_FROM}" >>"${GITHUB_OUTPUT}"
 
       - name: Install pinned OpenCodeReview CLI
-        if: steps.start.outputs.run_review == 'true'
+        if: needs.start.outputs.run_review == 'true'
         run: |
           npm install -g @alibaba-group/open-code-review@1.9.10
           ocr version
 
       - name: Configure ephemeral OpenRouter access
         id: configure
-        if: steps.start.outputs.run_review == 'true'
+        if: needs.start.outputs.run_review == 'true'
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
@@ -275,9 +322,9 @@ jobs:
 
       - name: Run cumulative code review
         id: code_review
-        if: steps.start.outputs.run_review == 'true'
+        if: needs.start.outputs.run_review == 'true'
         env:
-          BACKGROUND: ${{ steps.start.outputs.background }}
+          BACKGROUND: ${{ needs.start.outputs.background }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
           REVIEW_FROM: ${{ steps.range.outputs.review_from }}
           REVIEW_MODE: ${{ needs.authorize.outputs.mode }}
@@ -315,7 +362,7 @@ jobs:
 
       - name: Remove ephemeral OpenRouter access after code review
         id: cleanup
-        if: always() && steps.start.outputs.run_review == 'true'
+        if: always() && needs.start.outputs.run_review == 'true'
         run: node .github/scripts/final-ai-review.js cleanup-ocr
 
       - name: Run strict topology review
@@ -323,7 +370,7 @@ jobs:
         if: steps.code_review.outcome == 'success' && steps.cleanup.outcome == 'success'
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          MANIFEST_DIGEST: ${{ steps.start.outputs.manifest_digest }}
+          MANIFEST_DIGEST: ${{ needs.start.outputs.manifest_digest }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
           CODE_RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
           TOPOLOGY_RESULT_PATH: ${{ runner.temp }}/final-ai-stack-topology-result.json
@@ -358,7 +405,7 @@ jobs:
           REVIEW_RANGES: ${{ needs.authorize.outputs.review_ranges }}
           TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
           GITHUB_WORKFLOW_SHA: ${{ github.workflow_sha }}
-          MANIFEST_DIGEST: ${{ steps.start.outputs.manifest_digest }}
+          MANIFEST_DIGEST: ${{ needs.start.outputs.manifest_digest }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
           RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
           TOPOLOGY_RESULT_PATH: ${{ runner.temp }}/final-ai-stack-topology-result.json
@@ -390,12 +437,37 @@ jobs:
               resultPath: process.env.RESULT_PATH,
               topologyResultPath: process.env.TOPOLOGY_RESULT_PATH,
             })
-            core.info(`Published ${url}`)
+            core.info(
+              url
+                ? `Published ${url}`
+                : 'No actionable findings; skipped the pull-request comment'
+            )
+
+  finalize:
+    needs: [authorize, start, review]
+    if: >-
+      always() &&
+      needs.authorize.outputs.authorized == 'true' &&
+      (needs.start.outputs.run_review == 'true' || needs.start.result == 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: final-ai-status-lock
+      cancel-in-progress: false
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+      statuses: write
+    steps:
+      - name: Checkout trusted stack-review implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.authorize.outputs.trusted_sha }}
+          persist-credentials: false
+          sparse-checkout: .github/scripts
 
       - name: Finalize exact stack status
-        if: >-
-          always() &&
-          (steps.start.outputs.run_review == 'true' || steps.start.outcome == 'failure')
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           PR_NUMBER: ${{ needs.authorize.outputs.pr_number }}
@@ -412,10 +484,10 @@ jobs:
           DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
           REVIEW_RANGES: ${{ needs.authorize.outputs.review_ranges }}
           TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
-          CODE_OUTCOME: ${{ steps.code_review.outcome }}
-          TOPOLOGY_OUTCOME: ${{ steps.topology_review.outcome }}
-          CLEANUP_OUTCOME: ${{ steps.cleanup.outcome }}
-          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
+          CODE_OUTCOME: ${{ needs.review.outputs.code_outcome || needs.review.result }}
+          TOPOLOGY_OUTCOME: ${{ needs.review.outputs.topology_outcome || needs.review.result }}
+          CLEANUP_OUTCOME: ${{ needs.review.outputs.cleanup_outcome || needs.review.result }}
+          PUBLISH_OUTCOME: ${{ needs.review.outputs.publish_outcome || needs.review.result }}
         with:
           github-token: ${{ github.token }}
           script: |

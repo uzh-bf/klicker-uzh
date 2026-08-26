@@ -22,6 +22,7 @@ const {
   normalizeTitle,
   parseDispositionRecord,
   parseReviewMetadata,
+  publishFinalReview,
   promotionBody,
   removeOCRConfig,
   renderFinalReviewChunks,
@@ -72,6 +73,32 @@ test('pins trusted review code to the event workflow commit when the default bra
       source,
       /const branch = context\.payload\.repository\.default_branch/
     )
+  }
+})
+
+test('serializes every final-review status writer without canceling it', () => {
+  const job = (source, name) =>
+    source.match(
+      new RegExp(`\\n {2}${name}:\\n([\\s\\S]*?)(?=\\n {2}[a-z][\\w-]*:\\n|$)`)
+    )?.[1] ?? ''
+
+  for (const workflowName of [
+    'check-ocr-final-review.yml',
+    'check-ocr-final-stack-review.yml',
+  ]) {
+    const source = fs.readFileSync(
+      path.join(__dirname, `../workflows/${workflowName}`),
+      'utf8'
+    )
+    for (const jobName of ['initialize', 'start', 'finalize']) {
+      const block = job(source, jobName)
+      assert.match(block, /group: final-ai-status-lock\n/)
+      assert.match(block, /cancel-in-progress: false\n/)
+    }
+    assert.doesNotMatch(job(source, 'review'), /statuses: write\n/)
+    if (workflowName.includes('stack')) {
+      assert.match(source, /statusLockHeld: true,\n/)
+    }
   }
 })
 
@@ -425,6 +452,63 @@ test('renders findings without making finding count a failure', () => {
     report,
     renderFinalReviewChunks(result, 'a'.repeat(40), metadataInput)[0]
   )
+})
+
+test('skips the final pull-request comment when no findings are generated', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Empty final review',
+    base: {
+      ref: 'v3',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/empty-final-review',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github } = reviewGithub({ pull })
+  const plan = await buildReviewPlan({
+    github,
+    context: reviewContext(),
+    pull,
+  })
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'final-review-'))
+  const resultPath = path.join(directory, 'result.json')
+  fs.writeFileSync(resultPath, JSON.stringify(completeReviewResult()))
+  const createdReviews = []
+  github.rest.pulls.createReview = async (review) => {
+    createdReviews.push(review)
+    return { data: { html_url: 'https://github.com/review' } }
+  }
+
+  const result = await publishFinalReview({
+    github,
+    context: reviewContext(),
+    prNumber: pull.number,
+    baseSha: pull.base.sha,
+    headSha: pull.head.sha,
+    mode: plan.mode,
+    rootHead: plan.rootHead,
+    rootReviewId: plan.rootReviewId,
+    policyDigest: plan.policyDigest,
+    backgroundDigest: plan.backgroundDigest,
+    scopeKind: plan.scopeKind,
+    stackId: plan.stackId,
+    stackPosition: plan.stackPosition,
+    stackOrderDigest: plan.stackOrderDigest,
+    dispositionDigest: plan.dispositionDigest,
+    trustedSha: 'd'.repeat(40),
+    workflowSha: 'd'.repeat(40),
+    resultPath,
+  })
+
+  assert.equal(result, null)
+  assert.equal(createdReviews.length, 0)
 })
 
 test('authorizes a verified native stack member', async () => {

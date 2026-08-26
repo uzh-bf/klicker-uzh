@@ -8,7 +8,6 @@ const {
   decodeMetadata,
   encodeMetadata,
   getReviewPolicyDigest,
-  FINAL_REVIEW_WORKFLOW_PATH,
   MAX_INCREMENTAL_LINES,
   MAX_INCREMENTAL_PATHS,
   isTrustedPermission,
@@ -61,6 +60,22 @@ function validDigest(value) {
 
 function sha256(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex')
+}
+
+function stackIdentityDigestFromLayerIdentities(identities) {
+  return sha256(
+    JSON.stringify(
+      identities.map(
+        ({ base_ref, base_sha, head_ref, head_sha, pull_request }) => ({
+          base_ref,
+          base_sha,
+          head_ref,
+          head_sha,
+          number: pull_request,
+        })
+      )
+    )
+  )
 }
 
 function repositoryName(context) {
@@ -131,6 +146,7 @@ function stackPlan(membership, context) {
     dispositionIds: [],
     dispositionDigest: '',
     reviewRanges: [],
+    baseAdvancePreserved: Boolean(membership.baseAdvancePreserved),
     topNumber: top.number,
     background: buildStackBackground(membership, context),
   }
@@ -217,7 +233,12 @@ async function resolveReviewStackMembership({
     pull,
   })
   return canUseStackReviewBaseAdvance(membership, context)
-    ? { ...membership, reason: '', valid: true }
+    ? {
+        ...membership,
+        baseAdvancePreserved: true,
+        reason: '',
+        valid: true,
+      }
     : membership
 }
 
@@ -694,11 +715,7 @@ async function compareStackRange({ github, context, baseSha, headSha }) {
     headSha,
   })
   const comparison = response?.data
-  if (
-    !comparison ||
-    comparison.status !== 'ahead' ||
-    !Array.isArray(comparison.files)
-  ) {
+  if (comparison?.status !== 'ahead' || !Array.isArray(comparison?.files)) {
     return null
   }
   try {
@@ -804,8 +821,13 @@ async function buildStackReviewPlan({
         identity.base_ref !== current.base_ref ||
         identity.head_ref !== current.head_ref ||
         identity.pull_request !== current.pull_request ||
-        current.base_sha !== currentParentHead ||
-        (index === 0 && current.base_sha !== identity.base_sha) ||
+        (index === 0 &&
+          !membership.baseAdvancePreserved &&
+          current.base_sha !== currentParentHead) ||
+        (index !== 0 && current.base_sha !== currentParentHead) ||
+        (index === 0 &&
+          !membership.baseAdvancePreserved &&
+          current.base_sha !== identity.base_sha) ||
         (index > 0 && !parentChanged && current.base_sha !== identity.base_sha)
       )
     })
@@ -982,17 +1004,36 @@ function stackReviewMetadataMatchesPlan(metadata, plan, membership) {
     head_sha: pull.head.sha,
     pull_request: number,
   }))
+  const identitiesMatch =
+    metadata.layer_identities.length === layerIdentities.length &&
+    metadata.layer_identities.every((identity, index) => {
+      const expected = layerIdentities[index]
+      return (
+        identity.base_ref === expected.base_ref &&
+        identity.head_ref === expected.head_ref &&
+        identity.head_sha === expected.head_sha &&
+        identity.pull_request === expected.pull_request &&
+        ((plan.baseAdvancePreserved && index === 0) ||
+          identity.base_sha === expected.base_sha)
+      )
+    })
+  const identityDigestMatches =
+    metadata.stack_identity_digest === plan.stackIdentityDigest ||
+    (plan.baseAdvancePreserved &&
+      identitiesMatch &&
+      metadata.layer_identities[0]?.base_sha === plan.baseSha &&
+      metadata.stack_identity_digest ===
+        stackIdentityDigestFromLayerIdentities(metadata.layer_identities))
   return (
     metadata.base_sha === plan.baseSha &&
     metadata.head_sha === plan.headSha &&
     metadata.stack_id === plan.stackId &&
     metadata.stack_order_digest === plan.stackOrderDigest &&
-    metadata.stack_identity_digest === plan.stackIdentityDigest &&
+    identityDigestMatches &&
     metadata.policy_digest === plan.policyDigest &&
     JSON.stringify(metadata.layer_head_shas) ===
       JSON.stringify(layerHeadShas) &&
-    JSON.stringify(metadata.layer_identities) ===
-      JSON.stringify(layerIdentities) &&
+    identitiesMatch &&
     metadata.root_head === plan.rootHead &&
     metadata.root_review_id === plan.rootReviewId &&
     metadata.disposition_digest === plan.dispositionDigest &&
@@ -1604,6 +1645,7 @@ async function startStackReview({
   trustedSha,
   manifestPath,
   core,
+  statusLockHeld = false,
 }) {
   let membership
   try {
@@ -1613,13 +1655,26 @@ async function startStackReview({
       pullNumber: prNumber,
     })
   } catch {
-    await setStackStatus({
-      github,
-      context,
-      sha: headSha,
-      state: 'error',
-      description: 'Stack membership could not be re-verified after review',
-    })
+    let ownsStatus = statusLockHeld
+    if (!ownsStatus) {
+      try {
+        const latestStatus = await latestStackStatus(github, context, headSha)
+        ownsStatus =
+          !latestStatus?.target_url ||
+          latestStatus.target_url === workflowRunUrl(context)
+      } catch {
+        return
+      }
+    }
+    if (ownsStatus) {
+      await setStackStatus({
+        github,
+        context,
+        sha: headSha,
+        state: 'error',
+        description: 'Stack membership could not be re-verified before review',
+      })
+    }
     return
   }
   const plan = await buildStackReviewPlan({
@@ -2098,6 +2153,9 @@ function renderStackReview({
     ...codeComments.map((finding) => findingMetadata(finding, 'code')),
     ...topology.comments.map((finding) => findingMetadata(finding, 'topology')),
   ]
+  if (new Set(findings.map((finding) => finding.id)).size !== findings.length) {
+    throw new Error('Stack review contains duplicate finding IDs')
+  }
   const reviewId = buildStackReviewId({
     baseSha: manifest.ultimate_base.sha,
     headSha,
@@ -2468,6 +2526,12 @@ async function publishStackReview({
     workflowSha: workflowSha ?? '',
     workflowRunId: context.runId,
   })
+  if (
+    codeResult.comments.length === 0 &&
+    topologyResult.comments.length === 0
+  ) {
+    return null
+  }
   const review = await github.rest.pulls.createReview({
     owner: context.repo.owner,
     repo: context.repo.repo,

@@ -1828,6 +1828,7 @@ async function publishFinalReview({
     workflowSha: workflowSha ?? '',
     workflowRunId: context.runId,
   })
+  if (result.comments.length === 0) return null
   const review = await github.rest.pulls.createReview({
     owner: context.repo.owner,
     repo: context.repo.repo,
