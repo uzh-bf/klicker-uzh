@@ -143,6 +143,9 @@ services:
       # ROOT node_modules/.pnpm, so the single root volume covers the monorepo.
       # (GOTCHAS #6)
       - node_modules_root:/workspaces/klicker-uzh/node_modules
+      # Machine-local, content-addressed package cache shared by every worktree.
+      # node_modules remains isolated in the project-scoped volume above.
+      - pnpm_store:/pnpm/.pnpm-store
       # Hatchet client token automatically minted by hatchet-lite-dev to /config/authdisabled-token
       - hatchet_lite_config:/config:ro
       # Local mkcert root CA (prepared by initializeCommand on host) for server-side TLS trust.
@@ -190,6 +193,9 @@ volumes:
   pgdata:
   azurite_data:
   node_modules_root:
+  pnpm_store:
+    external: true
+    name: klicker-uzh-pnpm-store-v1
   hatchet_lite_config:
 
 networks:

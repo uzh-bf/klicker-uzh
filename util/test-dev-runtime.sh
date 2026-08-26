@@ -38,7 +38,10 @@ write_file() {
 ROOT="$TEST_ROOT/repo"
 FAKE_BIN="$TEST_ROOT/bin"
 INSTALL_LOG="$TEST_ROOT/install.log"
+DOCKER_LOG="$TEST_ROOT/docker.log"
+DOCKER_VOLUME_STATE="$TEST_ROOT/docker-volume-state"
 NEXT_APPS=(auth chat frontend-control frontend-manage frontend-pwa)
+VOLUME_NAME='klicker-uzh-pnpm-store-v1'
 mkdir -p "$ROOT/node_modules" "$FAKE_BIN"
 
 write_file "$ROOT/package.json" '{"packageManager":"pnpm@11.5.0"}'
@@ -58,13 +61,81 @@ if [ "${1:-}" = "--version" ]; then
   echo "11.5.0"
   exit 0
 fi
-printf "install\n" >>"$KLICKER_TEST_INSTALL_LOG"'
-chmod +x "$FAKE_BIN/pnpm"
+printf "%s\n" "$*" >>"$KLICKER_TEST_INSTALL_LOG"'
+write_file "$FAKE_BIN/flock" '#!/usr/bin/env bash
+exit 0'
+write_file "$FAKE_BIN/mkcert" '#!/usr/bin/env bash
+[ "${1:-}" = "-CAROOT" ] || exit 1
+printf "%s\n" "$KLICKER_TEST_MKCERT_CAROOT"'
+write_file "$FAKE_BIN/docker" '#!/usr/bin/env bash
+volume_action=""
+volume_name_present=false
+previous=""
+for arg in "$@"; do
+  if [ "$previous" = "volume" ]; then
+    volume_action="$arg"
+  fi
+  case "$arg" in
+    "$KLICKER_TEST_DOCKER_VOLUME_NAME"|"--name=$KLICKER_TEST_DOCKER_VOLUME_NAME")
+      volume_name_present=true
+      ;;
+  esac
+  previous="$arg"
+done
+
+[ "$volume_name_present" = "true" ] || exit 2
+if [ "$volume_action" = "inspect" ]; then
+  [ -f "$KLICKER_TEST_DOCKER_VOLUME_STATE" ] || exit 1
+  exit 0
+fi
+if [ "$volume_action" = "create" ]; then
+  # A concurrent create and a genuine create failure both return non-zero;
+  # initialize.sh distinguishes them by the follow-up inspect.
+  if [ "${KLICKER_TEST_DOCKER_CREATE_RACE:-false}" = "true" ]; then
+    touch "$KLICKER_TEST_DOCKER_VOLUME_STATE"
+    exit 9
+  fi
+  [ "${KLICKER_TEST_DOCKER_CREATE_FAIL:-false}" != "true" ] || exit 9
+  if [ ! -f "$KLICKER_TEST_DOCKER_VOLUME_STATE" ]; then
+    touch "$KLICKER_TEST_DOCKER_VOLUME_STATE"
+    printf "%s\n" "$KLICKER_TEST_DOCKER_VOLUME_NAME" >>"$KLICKER_TEST_DOCKER_LOG"
+  fi
+  exit 0
+fi
+exit 2'
+chmod +x "$FAKE_BIN/pnpm" "$FAKE_BIN/flock" "$FAKE_BIN/mkcert" "$FAKE_BIN/docker"
 
 export PATH="$FAKE_BIN:$PATH"
 export KLICKER_TEST_INSTALL_LOG="$INSTALL_LOG"
+export KLICKER_TEST_DOCKER_LOG="$DOCKER_LOG"
+export KLICKER_TEST_DOCKER_VOLUME_STATE="$DOCKER_VOLUME_STATE"
+export KLICKER_TEST_DOCKER_VOLUME_NAME="$VOLUME_NAME"
 export KLICKER_DEV_RUNTIME_ROOT="$ROOT"
 export KLICKER_DEV_RUNTIME_GIT_HEAD=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+INIT_ROOT="$TEST_ROOT/init-repo/.devcontainer"
+MKCERT_CAROOT="$TEST_ROOT/mkcert"
+mkdir -p "$INIT_ROOT" "$MKCERT_CAROOT"
+cp "$REPO_ROOT/.devcontainer/initialize.sh" "$INIT_ROOT/initialize.sh"
+write_file "$MKCERT_CAROOT/rootCA.pem" 'test CA'
+export KLICKER_TEST_MKCERT_CAROOT="$MKCERT_CAROOT"
+
+bash "$INIT_ROOT/initialize.sh"
+bash "$INIT_ROOT/initialize.sh"
+assert_equal "$(wc -l <"$DOCKER_LOG" | tr -d ' ')" '1'
+assert_equal "$(cat "$INIT_ROOT/certs/rootCA.pem")" 'test CA'
+assert_exists "$DOCKER_VOLUME_STATE"
+rm -f "$DOCKER_VOLUME_STATE"
+if KLICKER_TEST_DOCKER_CREATE_FAIL=true bash "$INIT_ROOT/initialize.sh" \
+  >/dev/null 2>&1; then
+  fail 'initializer ignored a Docker volume creation failure'
+fi
+rm -f "$DOCKER_VOLUME_STATE"
+if ! KLICKER_TEST_DOCKER_CREATE_RACE=true bash "$INIT_ROOT/initialize.sh" \
+  >/dev/null 2>&1; then
+  fail 'initializer did not tolerate a concurrent Docker volume creation'
+fi
+assert_exists "$DOCKER_VOLUME_STATE"
 
 base_fingerprint="$(bash "$RUNTIME_SCRIPT" fingerprint)"
 write_file "$ROOT/apps/chat/src/app/api/example/route.ts" 'export const GET = false'
@@ -82,6 +153,18 @@ assert_not_equal "$path_fingerprint" "$config_fingerprint"
 bash "$RUNTIME_SCRIPT" ensure-dependencies >/dev/null
 bash "$RUNTIME_SCRIPT" ensure-dependencies >/dev/null
 assert_equal "$(wc -l <"$INSTALL_LOG" | tr -d ' ')" '1'
+read -ra install_args <<<"$(sed -n '1p' "$INSTALL_LOG")"
+assert_equal "${install_args[0]}" 'install'
+has_frozen_lockfile=false
+has_prefer_offline=false
+for arg in "${install_args[@]}"; do
+  case "$arg" in
+    --frozen-lockfile) has_frozen_lockfile=true ;;
+    --prefer-offline) has_prefer_offline=true ;;
+  esac
+done
+assert_equal "$has_frozen_lockfile" 'true'
+assert_equal "$has_prefer_offline" 'true'
 
 write_file "$ROOT/pnpm-lock.yaml" 'lockfileVersion: 9.1'
 bash "$RUNTIME_SCRIPT" ensure-dependencies >/dev/null
@@ -95,7 +178,7 @@ done
 runtime_fingerprint="$(bash "$RUNTIME_SCRIPT" fingerprint)"
 bash "$RUNTIME_SCRIPT" start "$runtime_fingerprint" 0 -- true
 for app in "${NEXT_APPS[@]}"; do
-  assert_absent "$ROOT/apps/$app/.next/dev"
+  assert_exists "$ROOT/apps/$app/.next/dev/cache.bin"
   assert_exists "$ROOT/apps/$app/.next/production.bin"
 done
 
@@ -109,10 +192,13 @@ assert_absent "$ROOT/.devcontainer/.runtime/next-repair-request"
 
 write_file "$TEST_ROOT/outside-cache/marker" 'must survive'
 ln -s "$TEST_ROOT/outside-cache" "$ROOT/apps/chat/.next"
-if bash "$RUNTIME_SCRIPT" start "$runtime_fingerprint" 1 -- true >/dev/null 2>&1; then
+bash "$RUNTIME_SCRIPT" request-repair chat >/dev/null
+assert_equal "$(bash "$RUNTIME_SCRIPT" generation)" '2'
+if bash "$RUNTIME_SCRIPT" start "$runtime_fingerprint" 2 -- true >/dev/null 2>&1; then
   fail 'symlinked cache was accepted'
 fi
 assert_exists "$TEST_ROOT/outside-cache/marker"
+assert_exists "$ROOT/.devcontainer/.runtime/next-repair-request"
 
 if bash "$RUNTIME_SCRIPT" request-repair unsupported >/dev/null 2>&1; then
   fail 'unsupported repair target was accepted'
@@ -122,6 +208,7 @@ fi
 # full .next repair in one start, untouched apps keep their production output,
 # and repeated requests for the same app stay deduplicated.
 rm -f "$ROOT/apps/chat/.next"
+rm -f "$ROOT/.devcontainer/.runtime/next-repair-request"
 for app in "${NEXT_APPS[@]}"; do
   write_file "$ROOT/apps/$app/.next/dev/cache.bin" 'development cache'
   write_file "$ROOT/apps/$app/.next/production.bin" 'production cache'
@@ -130,11 +217,11 @@ done
 bash "$RUNTIME_SCRIPT" request-repair frontend-manage >/dev/null
 bash "$RUNTIME_SCRIPT" request-repair chat >/dev/null
 bash "$RUNTIME_SCRIPT" request-repair chat >/dev/null
-assert_equal "$(bash "$RUNTIME_SCRIPT" generation)" '4'
+assert_equal "$(bash "$RUNTIME_SCRIPT" generation)" '5'
 assert_equal \
   "$(LC_ALL=C sort "$ROOT/.devcontainer/.runtime/next-repair-request" | tr '\n' ' ')" \
   'chat frontend-manage '
-bash "$RUNTIME_SCRIPT" start "$runtime_fingerprint" 4 -- true
+bash "$RUNTIME_SCRIPT" start "$runtime_fingerprint" 5 -- true
 assert_absent "$ROOT/apps/chat/.next"
 assert_absent "$ROOT/apps/frontend-manage/.next"
 assert_exists "$ROOT/apps/auth/.next/production.bin"
