@@ -919,13 +919,13 @@ export async function POST(
     )
   }
 
-  const discardCreatedThread = async (phase: string) => {
-    if (!createdThreadId) return
+  const discardCreatedThread = async (phase: string): Promise<boolean> => {
+    if (!createdThreadId) return false
 
     const threadIdToDelete = createdThreadId
     createdThreadId = null
     try {
-      await ThreadService.deleteThread(
+      return await ThreadService.deleteThread(
         threadIdToDelete,
         participantId,
         chatbotId
@@ -936,6 +936,7 @@ export async function POST(
         phase,
         error,
       })
+      return false
     }
   }
 
@@ -1002,6 +1003,14 @@ export async function POST(
     }
   }
 
+  const failOrDiscardUnstartedClaim = async (phase: string) => {
+    // Keep a transient claim IN_PROGRESS until its request-owned thread is
+    // deleted. Marking it failed first would let a concurrent retry reclaim the
+    // attempt while cleanup is still able to delete the shared thread.
+    if (await discardCreatedThread(phase)) return
+    await failAssistantClaim(phase)
+  }
+
   let providerStreamStarted = false
   try {
     // Discover MCP tools only after read-only participant authorization.
@@ -1010,8 +1019,7 @@ export async function POST(
       mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
     } catch (error) {
       if (error instanceof RequiredMCPUnavailableError) {
-        await failAssistantClaim('mcp.discovery')
-        await discardCreatedThread('mcp.discovery')
+        await failOrDiscardUnstartedClaim('mcp.discovery')
         return NextResponse.json(
           {
             error: 'Required MCP tool unavailable',
@@ -1808,10 +1816,8 @@ export async function POST(
       },
     })
   } catch (error) {
-    await failAssistantClaim('request')
-    if (!providerStreamStarted) {
-      await discardCreatedThread('request')
-    }
+    if (providerStreamStarted) await failAssistantClaim('request')
+    else await failOrDiscardUnstartedClaim('request')
     throw error
   }
 }

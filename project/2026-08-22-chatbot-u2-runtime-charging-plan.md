@@ -506,7 +506,17 @@ contract retains its focused regression test.
   the Chat package type-check passes. The complete Chat suite passes 405 tests
   with 11 expected integration skips, all 11 enabled PostgreSQL lifecycle
   integration tests pass, all 25 repository checks pass, and the Chat
-  production build succeeds. The correction reviews remain in progress.
+  production build succeeds. The correction simplifier passed. The
+  lifecycle-integrity review found one remaining race: marking a transient
+  claim failed before deleting its thread let a concurrent retry reclaim the
+  attempt while cleanup could still remove the shared thread. The cleanup now
+  keeps the transient claim in progress until deletion succeeds and marks it
+  failed only when the request retains the thread or cleanup fails. Focused
+  route verification passes 22 tests, the complete Chat suite passes 406 tests
+  with 11 expected integration skips, all 11 enabled PostgreSQL lifecycle
+  integration tests pass, all 25 repository checks pass, and the Chat
+  production build succeeds. The refreshed correction reviews remain in
+  progress.
 - Current state: U2 is under final-review correction before stack-aware
   publication.
   Merge, deployment, live traffic or proof, closure, cleanup, and deletion

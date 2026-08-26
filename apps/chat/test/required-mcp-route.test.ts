@@ -139,7 +139,7 @@ describe('required MCP chat preflight', () => {
     )
   })
 
-  test('fails the claimed turn and forwards inactive required configs', async () => {
+  test('discards the transient claim and forwards inactive required configs', async () => {
     const response = await POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
@@ -181,15 +181,30 @@ describe('required MCP chat preflight', () => {
       assistantMessageId: 'assistant-1',
       parentId: 'message-1',
     })
+    expect(mocks.failChatTurn).not.toHaveBeenCalled()
+    expect(mocks.deleteThread).toHaveBeenCalledWith(
+      'thread-1',
+      'participant-1',
+      'chatbot-1'
+    )
+  })
+
+  test('fails the claim after transient thread cleanup fails', async () => {
+    mocks.deleteThread.mockResolvedValueOnce(false)
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(503)
+    expect(mocks.deleteThread).toHaveBeenCalledOnce()
     expect(mocks.failChatTurn).toHaveBeenCalledWith({
       assistantMessageId: 'assistant-1',
       threadId: 'thread-1',
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
     })
-    expect(mocks.deleteThread).toHaveBeenCalledWith(
-      'thread-1',
-      'participant-1',
-      'chatbot-1'
+    expect(mocks.deleteThread.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.failChatTurn.mock.invocationCallOrder[0]!
     )
   })
 
