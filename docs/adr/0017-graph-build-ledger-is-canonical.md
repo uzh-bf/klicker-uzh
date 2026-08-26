@@ -28,11 +28,12 @@ archive still retains (ADRs 0010 and 0015), while cost, quality tier, and
 provenance stay on the same row the quota settles against (ADR 0013).
 Superseding a build marks its status; it never rewrites the row.
 
-Derived pipelines follow the same key. The question-generation stack drops its
-`KBGraphVersion` entities and its own `KBGraphBuild` shape, keys
-`QuestionGenerationBuild` on the ledger's build id so it inherits the source
-content digest and provenance, points its cost block at the same
-`KBGraphQuota` row with a spend-class discriminator, and models review and
-generated drafts as children of the generation build. A generated set that must
-outlive its graph build is settled through artifact retention, not through a
-second version identity.
+Derived pipelines follow the same key. Unified SC, MC, KPRIM, and flashcard
+generation drops its own graph-version entity and keys `ElementGenerationBuild`
+on the ledger's build id so it inherits the source digest and provenance. Each
+external generation or retry attempt is an append-only `ElementGenerationSpend`
+against the same `KBGraphQuota`, keyed by the durable provider dispatch attempt;
+reviews and incomplete-publication events do not invent graph versions or new
+spend. Generated elements, review state, and artifacts remain children of the
+element-generation build. A generated set that must outlive its graph build is
+settled through artifact retention, not through a second version identity.

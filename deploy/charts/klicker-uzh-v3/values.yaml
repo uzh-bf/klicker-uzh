@@ -498,6 +498,18 @@ backendGraphql:
     port: '6379'
     tls: 'false'
     queryTimeoutMs: '5000'
+    # One shared semester ledger covers graph builds and element-generation
+    # dispatches. These values are non-secret and must be explicit before either
+    # producer is enabled.
+    cost:
+      currency: 'CHF'
+      standardEstimateMinorUnits: ''
+      highEstimateMinorUnits: ''
+      maxCostMinorUnits: ''
+      semesterQuotaMinorUnits: ''
+      pricingVersion: ''
+      billingMode: 'SEMESTER_QUOTA'
+      semesterKey: ''
 
   # Non-secret coordinates for the unified Klicker-element generation adapter.
   # The dedicated Hatchet token and Azure connection string must be supplied by
@@ -512,6 +524,11 @@ backendGraphql:
     inputContainer: 'question-inputs'
     outputContainer: 'question-results'
     outputPrefix: 'question-builds'
+    cost:
+      questionMinorUnits: ''
+      flashcardMinorUnits: ''
+      flashcardRetryMinorUnits: ''
+      pricingVersion: ''
 
   # Id of the GrowthBook saved group backing the lecturer beta opt-in. Leave
   # empty to disable the opt-in switch entirely: the setting hides itself when

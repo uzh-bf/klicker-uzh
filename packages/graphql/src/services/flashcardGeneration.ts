@@ -1,9 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
-  ElementManipulationInput,
   FlashcardGenerationConfiguration,
-  GeneratedFlashcardEditable,
   QuestionGenerationArtifactRef,
 } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
@@ -15,9 +13,13 @@ import {
   normalizeElementGenerationIdempotencyKey,
 } from './elementGenerationProvider.js'
 import {
-  generatedFlashcardElementInput,
-  manipulateElement,
-} from './elements.js'
+  assertElementGenerationCostAccounted,
+  createElementGenerationBuildWithSpend,
+  isFlashcardRetrySpend,
+  releaseUnclaimedElementGenerationSpend,
+  reserveFlashcardRetrySpend,
+} from './elementGenerationAccounting.js'
+import { dispatchCostAccountedElementGeneration } from './elementGenerationDispatch.js'
 import {
   parseFlashcardGenerationResult,
   parseTerminalFlashcardGenerationBank,
@@ -33,6 +35,11 @@ import {
   setGeneratedFlashcardDecision,
   updateGeneratedFlashcardDraft,
 } from './flashcardGenerationDrafts.js'
+import { claimIncompleteFlashcardPublication } from './flashcardGenerationPersistence.js'
+import {
+  isFlashcardGenerationRuntime,
+  requireFlashcardGenerationRuntime,
+} from './flashcardGenerationRuntime.js'
 import {
   QuestionGenerationServiceError,
   questionGenerationServiceError,
@@ -42,7 +49,6 @@ import type {
   FlashcardGenerationRuntime,
   FlashcardWorkflowIncompletePublicationEvent,
   FlashcardWorkflowStartPayload,
-  QuestionGenerationRuntime,
 } from './questionGenerationRuntime.js'
 
 const SYNC_LEASE_MILLISECONDS = 15_000
@@ -52,11 +58,6 @@ const NON_SYNCHRONIZING_STATUSES = new Set<DB.ElementGenerationBuildStatus>([
   DB.ElementGenerationBuildStatus.INCOMPLETE,
   DB.ElementGenerationBuildStatus.FAILED,
 ])
-const REVIEWABLE_STATUSES = [
-  DB.ElementGenerationBuildStatus.COMPLETED,
-  DB.ElementGenerationBuildStatus.INCOMPLETE,
-]
-
 const buildInclude = {
   drafts: {
     orderBy: [{ order: 'asc' as const }, { createdAt: 'asc' as const }],
@@ -101,27 +102,6 @@ function serviceError(
   throw questionGenerationServiceError(code, message, retryable)
 }
 
-function isFlashcardRuntime(
-  runtime: QuestionGenerationRuntime
-): runtime is FlashcardGenerationRuntime {
-  return (
-    'startFlashcards' in runtime &&
-    'publishIncompleteFlashcards' in runtime &&
-    'findRunByFlashcardBuildId' in runtime
-  )
-}
-
-function requireRuntime(ctx: ContextWithUser): FlashcardGenerationRuntime {
-  const runtime = ctx.elementGenerationRuntime
-  if (!runtime || !isFlashcardRuntime(runtime)) {
-    return serviceError(
-      'QUESTION_GENERATION_UNAVAILABLE',
-      'Flashcard generation is not configured'
-    )
-  }
-  return runtime as FlashcardGenerationRuntime
-}
-
 function startManifestSha256(payload: FlashcardWorkflowStartPayload): string {
   return createHash('sha256')
     .update(JSON.stringify(canonicalElementGenerationJson(payload)))
@@ -149,7 +129,10 @@ async function findOwnedBuild(buildId: string, ctx: ContextWithUser) {
 function assertMatchingIdempotentBuild(
   build: Pick<
     DB.ElementGenerationBuild,
-    'configurationHash' | 'sourceGraphBuildId' | 'elementType'
+    | 'configurationHash'
+    | 'sourceGraphBuildId'
+    | 'elementType'
+    | 'costAccountingVersion'
   >,
   expected: { configurationHash: string; graphBuildId: string }
 ) {
@@ -163,6 +146,7 @@ function assertMatchingIdempotentBuild(
       'Idempotency key is already used for a different flashcard build'
     )
   }
+  assertElementGenerationCostAccounted(build)
 }
 
 function workflowPayload(
@@ -201,6 +185,7 @@ function workflowPayload(
 
 async function recordStartFailure(
   buildId: string,
+  dispatchAttemptId: string,
   error: unknown,
   ctx: ContextWithUser,
   leaseOwner?: string
@@ -213,32 +198,49 @@ async function recordStartFailure(
           'Flashcard generation could not be started',
           true
         )
-  await ctx.prisma.elementGenerationBuild.updateMany({
-    where: {
-      id: buildId,
-      ownerId: ctx.user.sub,
-      ...(leaseOwner ? { syncLeaseOwner: leaseOwner } : {}),
-    },
-    data: normalized.retryable
-      ? {
-          status: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
-          stage: 'preparing_input',
-          errorCode: normalized.code,
-          errorMessage: normalized.message,
-          errorRetryable: true,
-          syncLeaseOwner: null,
-          syncLeaseUntil: null,
-        }
-      : {
-          status: DB.ElementGenerationBuildStatus.FAILED,
-          stage: 'failed',
-          errorCode: normalized.code,
-          errorMessage: normalized.message,
-          errorRetryable: false,
-          completedAt: new Date(),
-          syncLeaseOwner: null,
-          syncLeaseUntil: null,
-        },
+  const retrySpend = await isFlashcardRetrySpend(ctx.prisma, dispatchAttemptId)
+  await ctx.prisma.$transaction(async (transaction) => {
+    const updated = await transaction.elementGenerationBuild.updateMany({
+      where: {
+        id: buildId,
+        ownerId: ctx.user.sub,
+        ...(leaseOwner ? { syncLeaseOwner: leaseOwner } : {}),
+      },
+      data: normalized.retryable
+        ? {
+            status: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
+            stage: 'preparing_input',
+            errorCode: normalized.code,
+            errorMessage: normalized.message,
+            errorRetryable: true,
+            syncLeaseOwner: null,
+            syncLeaseUntil: null,
+          }
+        : retrySpend
+          ? {
+              status:
+                DB.ElementGenerationBuildStatus.AWAITING_INCOMPLETE_PUBLICATION,
+              stage: 'awaiting_incomplete_publication',
+              syncLeaseOwner: null,
+              syncLeaseUntil: null,
+            }
+          : {
+              status: DB.ElementGenerationBuildStatus.FAILED,
+              stage: 'failed',
+              errorCode: normalized.code,
+              errorMessage: normalized.message,
+              errorRetryable: false,
+              completedAt: new Date(),
+              syncLeaseOwner: null,
+              syncLeaseUntil: null,
+            },
+    })
+    if (!normalized.retryable && updated.count === 1) {
+      await releaseUnclaimedElementGenerationSpend(
+        transaction,
+        dispatchAttemptId
+      )
+    }
   })
   throw normalized
 }
@@ -279,40 +281,29 @@ async function dispatchPreparingBuild(
     ),
     sha256: startManifestSha256(payload),
   }
-  let eventId: string | null = null
-  let recoveredRunId: string | null = null
-  const alreadyDispatched = await runtime.findRunByFlashcardBuildId(
-    build.id,
-    build.providerDispatchAttemptId,
-    'start'
-  )
-  if (alreadyDispatched) {
-    recoveredRunId = alreadyDispatched.runId
-  } else {
-    try {
-      eventId = (
-        await runtime.startFlashcards(
+  const { eventId, recoveredRunId } =
+    await dispatchCostAccountedElementGeneration({
+      prisma: ctx.prisma,
+      dispatchAttemptId: build.providerDispatchAttemptId,
+      recover: () =>
+        runtime.findRunByFlashcardBuildId(
+          build.id,
+          build.providerDispatchAttemptId,
+          'start',
+          build.createdAt
+        ),
+      dispatch: (beforeProviderDispatch) =>
+        runtime.startFlashcards(
           payload,
           `flashcard-build:${build.id}`,
-          build.providerDispatchAttemptId
-        )
-      ).eventId
-    } catch (error) {
-      if (
-        !(error instanceof QuestionGenerationServiceError) ||
-        error.code !== 'WORKFLOW_DISPATCH_UNCERTAIN'
-      ) {
-        throw error
-      }
-      const recovered = await runtime.findRunByFlashcardBuildId(
-        build.id,
-        build.providerDispatchAttemptId,
-        'start'
-      )
-      if (!recovered) throw error
-      recoveredRunId = recovered.runId
-    }
-  }
+          build.providerDispatchAttemptId,
+          beforeProviderDispatch
+        ),
+    })
+  const recoveredRetry = await isFlashcardRetrySpend(
+    ctx.prisma,
+    build.providerDispatchAttemptId
+  )
 
   const updated = await ctx.prisma.elementGenerationBuild.updateMany({
     where: {
@@ -329,6 +320,7 @@ async function dispatchPreparingBuild(
       status: DB.ElementGenerationBuildStatus.QUEUED,
       stage: 'queued',
       startedAt: new Date(),
+      ...(recoveredRetry ? { retryCount: { increment: 1 } } : {}),
     },
   })
   if (updated.count !== 1) {
@@ -363,7 +355,13 @@ async function resumePreparingBuild(
   try {
     await dispatchPreparingBuild(build, runtime, leaseOwner, ctx)
   } catch (error) {
-    return recordStartFailure(build.id, error, ctx, leaseOwner)
+    return recordStartFailure(
+      build.id,
+      build.providerDispatchAttemptId,
+      error,
+      ctx,
+      leaseOwner
+    )
   } finally {
     await ctx.prisma.elementGenerationBuild.updateMany({
       where: { id: build.id, syncLeaseOwner: leaseOwner },
@@ -378,7 +376,7 @@ export async function startFlashcardGeneration(
   ctx: ContextWithUser
 ) {
   await assertQuestionGenerationPreviewAccess(ctx)
-  const runtime = requireRuntime(ctx)
+  const runtime = requireFlashcardGenerationRuntime(ctx)
   const idempotencyKey = normalizeElementGenerationIdempotencyKey(
     input.idempotencyKey
   )
@@ -413,49 +411,41 @@ export async function startFlashcardGeneration(
   }
 
   const buildId = randomUUID()
-  try {
-    await ctx.prisma.elementGenerationBuild.create({
-      data: {
-        id: buildId,
-        ownerId: ctx.user.sub,
-        sourceGraphBuildId: graph.id,
-        elementType: DB.ElementType.FLASHCARD,
-        idempotencyKey,
-        configurationHash: normalized.configurationHash,
-        configuration: normalized.configuration,
-        requestedElementCount: normalized.configuration.flashcardCount,
-        inputArtifactContainer: runtime.questionInputContainer,
-        inputArtifactPrefix: `flashcard-builds/${buildId}`,
-        outputArtifactContainer: runtime.questionOutputContainer,
-        outputArtifactPrefix: `${runtime.questionOutputPrefix}/${buildId}`,
-      },
+  const creation = await createElementGenerationBuildWithSpend(ctx.prisma, {
+    ownerId: ctx.user.sub,
+    idempotencyKey,
+    spendClass: DB.KBGraphQuotaSpendClass.FLASHCARD_GENERATION,
+    data: {
+      id: buildId,
+      ownerId: ctx.user.sub,
+      sourceGraphBuildId: graph.id,
+      elementType: DB.ElementType.FLASHCARD,
+      idempotencyKey,
+      configurationHash: normalized.configurationHash,
+      configuration: normalized.configuration,
+      requestedElementCount: normalized.configuration.flashcardCount,
+      inputArtifactContainer: runtime.questionInputContainer,
+      inputArtifactPrefix: `flashcard-builds/${buildId}`,
+      outputArtifactContainer: runtime.questionOutputContainer,
+      outputArtifactPrefix: `${runtime.questionOutputPrefix}/${buildId}`,
+    },
+  })
+  if (!creation.created) {
+    const raced = await findOwnedBuild(creation.buildId, ctx)
+    assertMatchingIdempotentBuild(raced, {
+      configurationHash: normalized.configurationHash,
+      graphBuildId: graph.id,
     })
-  } catch (error) {
-    if (
-      error instanceof DB.Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2002'
-    ) {
-      const raced = await ctx.prisma.elementGenerationBuild.findUniqueOrThrow({
-        where: {
-          ownerId_idempotencyKey: {
-            ownerId: ctx.user.sub,
-            idempotencyKey,
-          },
-        },
-        include: buildInclude,
-      })
-      assertMatchingIdempotentBuild(raced, {
-        configurationHash: normalized.configurationHash,
-        graphBuildId: graph.id,
-      })
-      return raced.status === DB.ElementGenerationBuildStatus.PREPARING_INPUT
-        ? resumePreparingBuild(raced, runtime, ctx)
-        : raced
-    }
-    throw error
+    return raced.status === DB.ElementGenerationBuildStatus.PREPARING_INPUT
+      ? resumePreparingBuild(raced, runtime, ctx)
+      : raced
   }
 
-  return resumePreparingBuild(await findOwnedBuild(buildId, ctx), runtime, ctx)
+  return resumePreparingBuild(
+    await findOwnedBuild(creation.buildId, ctx),
+    runtime,
+    ctx
+  )
 }
 
 async function recoverOrLoadRun(
@@ -479,7 +469,10 @@ async function recoverOrLoadRun(
   return runtime.findRunByFlashcardBuildId(
     build.id,
     dispatchAttemptId,
-    publication ? 'publish-incomplete' : 'start'
+    publication ? 'publish-incomplete' : 'start',
+    publication
+      ? (build.incompletePublishedAt ?? build.createdAt)
+      : build.createdAt
   )
 }
 
@@ -526,7 +519,8 @@ async function dispatchIncompletePublication(
   const alreadyDispatched = await runtime.findRunByFlashcardBuildId(
     build.id,
     dispatchAttemptId,
-    'publish-incomplete'
+    'publish-incomplete',
+    build.incompletePublishedAt ?? build.createdAt
   )
   if (alreadyDispatched) {
     recoveredRunId = alreadyDispatched.runId
@@ -547,7 +541,8 @@ async function dispatchIncompletePublication(
         const recovered = await runtime.findRunByFlashcardBuildId(
           build.id,
           dispatchAttemptId,
-          'publish-incomplete'
+          'publish-incomplete',
+          build.incompletePublishedAt ?? build.createdAt
         )
         if (!recovered) throw error
         recoveredRunId = recovered.runId
@@ -658,6 +653,7 @@ async function synchronizeLeasedBuild(
   leaseOwner: string,
   ctx: ContextWithUser
 ) {
+  let workflowSucceeded = false
   try {
     if (build.status === DB.ElementGenerationBuildStatus.PREPARING_INPUT) {
       await dispatchPreparingBuild(build, runtime, leaseOwner, ctx)
@@ -700,6 +696,7 @@ async function synchronizeLeasedBuild(
       await markResumableOrFailed(build, runtime, leaseOwner, ctx)
       return
     }
+    workflowSucceeded = true
 
     const resultArtifact = await runtime.downloadImmutable(
       runtime.questionOutputContainer,
@@ -761,17 +758,25 @@ async function synchronizeLeasedBuild(
   } catch (error) {
     if (
       error instanceof QuestionGenerationServiceError &&
-      (error.code === 'ARTIFACT_NOT_FOUND' || error.retryable)
+      ((error.code === 'ARTIFACT_NOT_FOUND' && !workflowSucceeded) ||
+        (error.code !== 'ARTIFACT_NOT_FOUND' && error.retryable))
     ) {
       return
     }
     const normalized =
-      error instanceof QuestionGenerationServiceError
-        ? error
-        : questionGenerationServiceError(
+      error instanceof QuestionGenerationServiceError &&
+      error.code === 'ARTIFACT_NOT_FOUND' &&
+      workflowSucceeded
+        ? questionGenerationServiceError(
             'ARTIFACT_INVALID',
-            'Flashcard-generation output could not be validated'
+            'Flashcard-generation workflow succeeded without its required artifact'
           )
+        : error instanceof QuestionGenerationServiceError
+          ? error
+          : questionGenerationServiceError(
+              'ARTIFACT_INVALID',
+              'Flashcard-generation output could not be validated'
+            )
     await ctx.prisma.elementGenerationBuild.updateMany({
       where: { id: build.id, syncLeaseOwner: leaseOwner },
       data: {
@@ -795,11 +800,12 @@ export async function getFlashcardGenerationBuild(
   const runtime = ctx.elementGenerationRuntime
   if (
     !runtime ||
-    !isFlashcardRuntime(runtime) ||
+    !isFlashcardGenerationRuntime(runtime) ||
     NON_SYNCHRONIZING_STATUSES.has(build.status)
   ) {
     return build
   }
+  assertElementGenerationCostAccounted(build)
 
   const leaseOwner = randomUUID()
   const now = new Date()
@@ -832,8 +838,9 @@ export async function retryFlashcardGeneration(
   ctx: ContextWithUser
 ) {
   await assertQuestionGenerationPreviewAccess(ctx)
-  const runtime = requireRuntime(ctx)
+  const runtime = requireFlashcardGenerationRuntime(ctx)
   const build = await findOwnedBuild(buildId, ctx)
+  assertElementGenerationCostAccounted(build)
   if (
     build.status !==
     DB.ElementGenerationBuildStatus.AWAITING_INCOMPLETE_PUBLICATION
@@ -844,83 +851,18 @@ export async function retryFlashcardGeneration(
     )
   }
   const dispatchAttemptId = randomUUID()
-  const claimed = await ctx.prisma.elementGenerationBuild.updateMany({
-    where: {
-      id: build.id,
-      ownerId: ctx.user.sub,
-      status: DB.ElementGenerationBuildStatus.AWAITING_INCOMPLETE_PUBLICATION,
-    },
-    data: {
-      status: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
-      stage: 'retry_dispatching',
-      providerDispatchAttemptId: dispatchAttemptId,
-      providerEventId: null,
-      providerWorkflowRunId: null,
-    },
+  const claimed = await reserveFlashcardRetrySpend(ctx.prisma, {
+    buildId: build.id,
+    ownerId: ctx.user.sub,
+    dispatchAttemptId,
   })
-  if (claimed.count !== 1) {
+  if (!claimed) {
     return serviceError(
       'CONCURRENT_MODIFICATION',
       'Flashcard build was changed by another request'
     )
   }
-  try {
-    const payload = workflowPayload(build, runtime)
-    let eventId: string | null = null
-    let recoveredRunId: string | null = null
-    try {
-      eventId = (
-        await runtime.startFlashcards(
-          payload,
-          `flashcard-build:${build.id}`,
-          dispatchAttemptId
-        )
-      ).eventId
-    } catch (error) {
-      if (
-        !(error instanceof QuestionGenerationServiceError) ||
-        error.code !== 'WORKFLOW_DISPATCH_UNCERTAIN'
-      ) {
-        throw error
-      }
-      const recovered = await runtime.findRunByFlashcardBuildId(
-        build.id,
-        dispatchAttemptId,
-        'start'
-      )
-      if (!recovered) throw error
-      recoveredRunId = recovered.runId
-    }
-    await ctx.prisma.elementGenerationBuild.update({
-      where: { id: build.id },
-      data: {
-        providerEventId: eventId,
-        providerWorkflowRunId: recoveredRunId,
-        status: DB.ElementGenerationBuildStatus.QUEUED,
-        stage: 'queued',
-        retryCount: { increment: 1 },
-        errorCode: null,
-        errorMessage: null,
-        errorRetryable: null,
-      },
-    })
-    return findOwnedBuild(build.id, ctx)
-  } catch (error) {
-    if (error instanceof QuestionGenerationServiceError && error.retryable) {
-      throw error
-    }
-    await ctx.prisma.elementGenerationBuild.updateMany({
-      where: {
-        id: build.id,
-        status: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
-      },
-      data: {
-        status: DB.ElementGenerationBuildStatus.AWAITING_INCOMPLETE_PUBLICATION,
-        stage: 'awaiting_incomplete_publication',
-      },
-    })
-    throw error
-  }
+  return resumePreparingBuild(await findOwnedBuild(build.id, ctx), runtime, ctx)
 }
 
 export async function publishIncompleteFlashcardGeneration(
@@ -928,7 +870,7 @@ export async function publishIncompleteFlashcardGeneration(
   ctx: ContextWithUser
 ) {
   await assertQuestionGenerationPreviewAccess(ctx)
-  requireRuntime(ctx)
+  requireFlashcardGenerationRuntime(ctx)
   if (input.acknowledgeIncomplete !== true) {
     return serviceError(
       'CONFIGURATION_INVALID',
@@ -936,6 +878,7 @@ export async function publishIncompleteFlashcardGeneration(
     )
   }
   const build = await findOwnedBuild(input.buildId, ctx)
+  assertElementGenerationCostAccounted(build)
   if (
     build.status !==
       DB.ElementGenerationBuildStatus.AWAITING_INCOMPLETE_PUBLICATION ||
@@ -946,119 +889,8 @@ export async function publishIncompleteFlashcardGeneration(
       'Flashcard build is not awaiting incomplete publication'
     )
   }
-  const publicationDispatchAttemptId = randomUUID()
-  const claimed = await ctx.prisma.elementGenerationBuild.updateMany({
-    where: {
-      id: build.id,
-      ownerId: ctx.user.sub,
-      status: DB.ElementGenerationBuildStatus.AWAITING_INCOMPLETE_PUBLICATION,
-    },
-    data: {
-      status: DB.ElementGenerationBuildStatus.PUBLISHING_INCOMPLETE,
-      stage: 'publishing_incomplete',
-      incompletePublishedById: ctx.user.sub,
-      incompletePublishedAt: new Date(),
-      providerPublicationDispatchAttemptId: publicationDispatchAttemptId,
-      providerPublicationEventId: null,
-      providerPublicationWorkflowRunId: null,
-    },
-  })
-  if (claimed.count !== 1) {
-    return serviceError(
-      'CONCURRENT_MODIFICATION',
-      'Flashcard build was changed by another request'
-    )
-  }
+  await claimIncompleteFlashcardPublication(build.id, ctx)
   return getFlashcardGenerationBuild(build.id, ctx)
-}
-
-export async function saveGeneratedFlashcards(
-  buildId: string,
-  ctx: ContextWithUser
-): Promise<{
-  createdElementIds: number[]
-  alreadySavedElementIds: number[]
-}> {
-  await assertQuestionGenerationPreviewAccess(ctx)
-
-  return ctx.prisma.$transaction(async (transaction) => {
-    await transaction.$queryRaw`
-      SELECT "id"
-      FROM "ElementGenerationBuild"
-      WHERE "id" = ${buildId}::uuid
-      FOR UPDATE
-    `
-    const build = await transaction.elementGenerationBuild.findFirst({
-      where: {
-        id: buildId,
-        ownerId: ctx.user.sub,
-        elementType: DB.ElementType.FLASHCARD,
-        status: { in: REVIEWABLE_STATUSES },
-      },
-      select: {
-        drafts: {
-          where: {
-            decision: DB.GeneratedElementDecision.ACCEPTED,
-            elementType: DB.ElementType.FLASHCARD,
-          },
-          orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
-        },
-      },
-    })
-    if (!build) {
-      return serviceError(
-        'FLASHCARD_GENERATION_BUILD_NOT_FOUND',
-        'Terminal flashcard-generation build not found'
-      )
-    }
-
-    const alreadySavedElementIds = build.drafts.flatMap((draft) =>
-      draft.savedElementId === null ? [] : [draft.savedElementId]
-    )
-    const createdElementIds: number[] = []
-    for (const draft of build.drafts) {
-      if (draft.savedElementId !== null) continue
-      let elementInput: ElementManipulationInput
-      try {
-        elementInput = generatedFlashcardElementInput({
-          sourceFlashcardId: draft.sourceElementId,
-          ...(draft.current as GeneratedFlashcardEditable),
-        })
-      } catch {
-        return serviceError(
-          'SAVE_VALIDATION_FAILED',
-          'A generated flashcard draft is not a valid Flashcard element'
-        )
-      }
-      const element = await manipulateElement(elementInput, {
-        ...ctx,
-        prisma: transaction,
-      })
-      if (!element) {
-        return serviceError(
-          'SAVE_VALIDATION_FAILED',
-          'A generated flashcard draft is not a valid Flashcard element'
-        )
-      }
-      const linked = await transaction.generatedElementDraft.updateMany({
-        where: {
-          id: draft.id,
-          elementType: DB.ElementType.FLASHCARD,
-          decision: DB.GeneratedElementDecision.ACCEPTED,
-          savedElementId: null,
-        },
-        data: { savedElementId: element.id, savedAt: new Date() },
-      })
-      if (linked.count !== 1) {
-        return serviceError(
-          'CONCURRENT_MODIFICATION',
-          'Generated flashcard was saved by another request'
-        )
-      }
-      createdElementIds.push(element.id)
-    }
-    return { createdElementIds, alreadySavedElementIds }
-  })
 }
 
 export async function getFlashcardGenerationCapabilities(ctx: ContextWithUser) {
@@ -1073,3 +905,4 @@ export async function getFlashcardGenerationCapabilities(ctx: ContextWithUser) {
 }
 
 export { setGeneratedFlashcardDecision, updateGeneratedFlashcardDraft }
+export { saveGeneratedFlashcards } from './flashcardGenerationPersistence.js'

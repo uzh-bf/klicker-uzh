@@ -5,6 +5,7 @@ import type {
 } from '@klicker-uzh/types'
 import { ELEMENT_GENERATION_CAPABILITIES } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
+import { isElementGenerationCostConfigured } from './elementGenerationAccounting.js'
 import {
   getFlashcardGenerationBuild,
   publishIncompleteFlashcardGeneration,
@@ -392,8 +393,8 @@ export async function getElementGenerationCapabilities(ctx: ContextWithUser) {
     ),
     supportsIndividualRegeneration:
       ELEMENT_GENERATION_CAPABILITIES.supportsIndividualRegeneration,
-    configured: isElementGenerationRuntimeConfigured(
-      ctx.elementGenerationRuntime
-    ),
+    configured:
+      isElementGenerationRuntimeConfigured(ctx.elementGenerationRuntime) &&
+      isElementGenerationCostConfigured(),
   }
 }

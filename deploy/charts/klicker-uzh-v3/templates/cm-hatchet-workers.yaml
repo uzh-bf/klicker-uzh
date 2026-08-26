@@ -2,6 +2,9 @@
 {{- if and .Values.hatchet.kbGraph.workflowName (empty .Values.backendGraphql.knowledgeGraph.host) }}
 {{- fail "backendGraphql.knowledgeGraph.host must be configured when hatchet.kbGraph.workflowName is enabled" }}
 {{- end }}
+{{- if and .Values.backendGraphql.elementGeneration.enabled (empty .Values.hatchet.kbGraph.workflowName) }}
+{{- fail "hatchet.kbGraph.workflowName must be configured when element generation is enabled" }}
+{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -30,6 +33,7 @@ data:
   KB_GRAPH_STANDARD_CLEANING_MODEL: {{ .Values.hatchet.kbGraph.standardCleaningModel | quote }}
   KB_GRAPH_HIGH_GENERATION_MODEL: {{ .Values.hatchet.kbGraph.highGenerationModel | quote }}
   KB_GRAPH_HIGH_CLEANING_MODEL: {{ .Values.hatchet.kbGraph.highCleaningModel | quote }}
+  KB_GRAPH_UPLOAD_GENERATION_ARTIFACTS: {{ .Values.backendGraphql.elementGeneration.enabled | quote }}
   {{- end }}
   {{- if .Values.backendGraphql.knowledgeGraph.host }}
   KB_FALKORDB_HOST: {{ .Values.backendGraphql.knowledgeGraph.host | quote }}

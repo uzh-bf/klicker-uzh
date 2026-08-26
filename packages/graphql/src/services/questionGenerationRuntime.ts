@@ -10,6 +10,8 @@ import {
 const SHA256_PATTERN = /^[0-9a-f]{64}$/
 const CONTAINER_PATTERN = /^(?!.*--)[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$/
 const MAX_QUESTION_OUTPUT_PREFIX_LENGTH = 901
+const MAX_BUFFERED_ARTIFACT_BYTES = 10 * 1024 * 1024
+const HATCHET_RECOVERY_CLOCK_SKEW_MILLISECONDS = 5 * 60 * 1000
 
 export type QuestionWorkflowStartPayload = {
   schema_version: 3
@@ -92,7 +94,8 @@ export interface QuestionGenerationRuntime {
   start(
     payload: QuestionWorkflowStartPayload,
     scope: string,
-    dispatchAttemptId: string
+    dispatchAttemptId: string,
+    beforeProviderDispatch: () => Promise<void>
   ): Promise<{ eventId: string }>
   review(
     event: QuestionWorkflowReviewEvent,
@@ -109,14 +112,16 @@ export interface QuestionGenerationRuntime {
   }>
   findRunByBuildId(
     buildId: string,
-    dispatchAttemptId: string
+    dispatchAttemptId: string,
+    recoveryAnchor: Date
   ): Promise<{
     runId: string
     status: QuestionGenerationRunStatus
   } | null>
   findRunByQuestionReview(
     buildId: string,
-    dispatchAttemptId: string
+    dispatchAttemptId: string,
+    recoveryAnchor: Date
   ): Promise<{
     runId: string
     status: QuestionGenerationRunStatus
@@ -127,7 +132,8 @@ export interface FlashcardGenerationRuntime extends QuestionGenerationRuntime {
   startFlashcards(
     payload: FlashcardWorkflowStartPayload,
     scope: string,
-    dispatchAttemptId: string
+    dispatchAttemptId: string,
+    beforeProviderDispatch: () => Promise<void>
   ): Promise<{ eventId: string }>
   publishIncompleteFlashcards(
     event: FlashcardWorkflowIncompletePublicationEvent,
@@ -137,7 +143,8 @@ export interface FlashcardGenerationRuntime extends QuestionGenerationRuntime {
   findRunByFlashcardBuildId(
     buildId: string,
     dispatchAttemptId: string,
-    operation: 'start' | 'publish-incomplete'
+    operation: 'start' | 'publish-incomplete',
+    recoveryAnchor: Date
   ): Promise<{
     runId: string
     status: QuestionGenerationRunStatus
@@ -166,9 +173,17 @@ type RuntimeHatchetClient = {
     list(options: {
       triggeringEventExternalId?: string
       additionalMetadata?: Record<string, string>
+      since?: Date
+      includePayloads?: boolean
       onlyTasks: boolean
       limit: number
-    }): Promise<{ rows: Array<{ taskExternalId: string }> }>
+    }): Promise<{
+      rows: Array<{
+        taskExternalId: string
+        workflowRunExternalId: string
+        additionalMetadata?: Record<string, unknown>
+      }>
+    }>
     get_status(runId: string): Promise<string>
   }
 }
@@ -179,7 +194,12 @@ type RuntimeBlobServiceClient = {
         bytes: Buffer,
         options: { conditions: { ifNoneMatch: string } }
       ): Promise<unknown>
-      downloadToBuffer(): Promise<Buffer>
+      getProperties(): Promise<{ contentLength?: number; etag?: string }>
+      downloadToBuffer(
+        offset?: number,
+        count?: number,
+        options?: { conditions?: { ifMatch?: string } }
+      ): Promise<Buffer>
       download(): Promise<{
         readableStreamBody?: AsyncIterable<Uint8Array>
       }>
@@ -518,11 +538,34 @@ class ProductionQuestionGenerationRuntime
   ): Promise<Buffer> {
     let bytes: Buffer
     try {
-      bytes = await this.blobService
+      const blob = this.blobService
         .getContainerClient(containerName)
         .getBlockBlobClient(blobName)
-        .downloadToBuffer()
+      const { contentLength, etag } = await blob.getProperties()
+      if (
+        contentLength === undefined ||
+        !Number.isSafeInteger(contentLength) ||
+        contentLength < 0 ||
+        typeof etag !== 'string' ||
+        etag.length === 0
+      ) {
+        throw questionGenerationServiceError(
+          'QUESTION_GENERATION_UNAVAILABLE',
+          'Question-generation artifact storage metadata is unavailable',
+          true
+        )
+      }
+      if (contentLength > MAX_BUFFERED_ARTIFACT_BYTES) {
+        throw questionGenerationServiceError(
+          'ARTIFACT_INVALID',
+          'Question-generation artifact exceeds the size limit'
+        )
+      }
+      bytes = await blob.downloadToBuffer(0, contentLength, {
+        conditions: { ifMatch: etag },
+      })
     } catch (error) {
+      if (error instanceof QuestionGenerationServiceError) throw error
       if (
         typeof error === 'object' &&
         error !== null &&
@@ -541,13 +584,20 @@ class ProductionQuestionGenerationRuntime
         true
       )
     }
+    if (bytes.byteLength > MAX_BUFFERED_ARTIFACT_BYTES) {
+      throw questionGenerationServiceError(
+        'ARTIFACT_INVALID',
+        'Question-generation artifact exceeds the size limit'
+      )
+    }
     return bytes
   }
 
   async start(
     payload: QuestionWorkflowStartPayload,
     scope: string,
-    dispatchAttemptId: string
+    dispatchAttemptId: string,
+    beforeProviderDispatch: () => Promise<void>
   ): Promise<{ eventId: string }> {
     assertArtifactReference(
       {
@@ -587,6 +637,7 @@ class ProductionQuestionGenerationRuntime
       )
     }
 
+    await beforeProviderDispatch()
     try {
       const event = await this.hatchet.events.push(
         'course-question-blueprint-generation:requested',
@@ -647,7 +698,8 @@ class ProductionQuestionGenerationRuntime
   async startFlashcards(
     payload: FlashcardWorkflowStartPayload,
     scope: string,
-    dispatchAttemptId: string
+    dispatchAttemptId: string,
+    beforeProviderDispatch: () => Promise<void>
   ): Promise<{ eventId: string }> {
     assertArtifactReference(
       {
@@ -687,6 +739,7 @@ class ProductionQuestionGenerationRuntime
       )
     }
 
+    await beforeProviderDispatch()
     try {
       const event = await this.hatchet.events.push(
         'course-flashcard-generation:requested',
@@ -773,7 +826,7 @@ class ProductionQuestionGenerationRuntime
       })
       const run = runs.rows[0]
       if (!run) return { runId: null, status: 'PENDING' }
-      return this.getRunById(run.taskExternalId)
+      return this.getRunById(run.workflowRunExternalId)
     } catch (error) {
       if (error instanceof QuestionGenerationServiceError) {
         throw error
@@ -807,117 +860,127 @@ class ProductionQuestionGenerationRuntime
 
   async findRunByBuildId(
     buildId: string,
-    dispatchAttemptId: string
+    dispatchAttemptId: string,
+    recoveryAnchor: Date
   ): Promise<{
     runId: string
     status: QuestionGenerationRunStatus
   } | null> {
-    try {
-      const runs = await this.hatchet.runs.list({
-        additionalMetadata: {
-          question_build_id: buildId,
-          dispatch_attempt_id: dispatchAttemptId,
-          operation_kind: 'question-start',
-        },
-        onlyTasks: false,
-        limit: 2,
-      })
-      if (runs.rows.length > 1) {
-        throw questionGenerationServiceError(
-          'WORKFLOW_DISPATCH_UNCERTAIN',
-          'Multiple workflow runs exist for the question build',
-          true
-        )
-      }
-      const run = runs.rows[0]
-      return run ? this.getRunById(run.taskExternalId) : null
-    } catch (error) {
-      if (error instanceof QuestionGenerationServiceError) {
-        throw error
-      }
-      throw questionGenerationServiceError(
-        'WORKFLOW_STATUS_UNAVAILABLE',
+    return this.findRunByDispatchMetadata({
+      buildMetadataKey: 'question_build_id',
+      buildId,
+      dispatchAttemptId,
+      operationKind: 'question-start',
+      recoveryAnchor,
+      duplicateMessage: 'Multiple workflow runs exist for the question build',
+      unavailableMessage:
         'Question-generation workflow recovery is unavailable',
-        true
-      )
-    }
+    })
   }
 
   async findRunByQuestionReview(
     buildId: string,
-    dispatchAttemptId: string
+    dispatchAttemptId: string,
+    recoveryAnchor: Date
   ): Promise<{
     runId: string
     status: QuestionGenerationRunStatus
   } | null> {
-    try {
-      const runs = await this.hatchet.runs.list({
-        additionalMetadata: {
-          question_build_id: buildId,
-          dispatch_attempt_id: dispatchAttemptId,
-          operation_kind: 'question-review',
-        },
-        onlyTasks: false,
-        limit: 2,
-      })
-      if (runs.rows.length > 1) {
-        throw questionGenerationServiceError(
-          'WORKFLOW_DISPATCH_UNCERTAIN',
-          'Multiple workflow runs exist for the question review attempt',
-          true
-        )
-      }
-      const run = runs.rows[0]
-      return run ? this.getRunById(run.taskExternalId) : null
-    } catch (error) {
-      if (error instanceof QuestionGenerationServiceError) {
-        throw error
-      }
-      throw questionGenerationServiceError(
-        'WORKFLOW_STATUS_UNAVAILABLE',
-        'Question-generation review recovery is unavailable',
-        true
-      )
-    }
+    return this.findRunByDispatchMetadata({
+      buildMetadataKey: 'question_build_id',
+      buildId,
+      dispatchAttemptId,
+      operationKind: 'question-review',
+      recoveryAnchor,
+      duplicateMessage:
+        'Multiple workflow runs exist for the question review attempt',
+      unavailableMessage: 'Question-generation review recovery is unavailable',
+    })
   }
 
   async findRunByFlashcardBuildId(
     buildId: string,
     dispatchAttemptId: string,
-    operation: 'start' | 'publish-incomplete'
+    operation: 'start' | 'publish-incomplete',
+    recoveryAnchor: Date
   ): Promise<{
     runId: string
     status: QuestionGenerationRunStatus
   } | null> {
+    return this.findRunByDispatchMetadata({
+      buildMetadataKey: 'flashcard_build_id',
+      buildId,
+      dispatchAttemptId,
+      operationKind:
+        operation === 'start'
+          ? 'flashcard-start'
+          : 'flashcard-publish-incomplete',
+      recoveryAnchor,
+      duplicateMessage:
+        'Multiple workflow runs exist for the flashcard dispatch attempt',
+      unavailableMessage:
+        'Flashcard-generation workflow recovery is unavailable',
+    })
+  }
+
+  private async findRunByDispatchMetadata({
+    buildMetadataKey,
+    buildId,
+    dispatchAttemptId,
+    operationKind,
+    recoveryAnchor,
+    duplicateMessage,
+    unavailableMessage,
+  }: {
+    buildMetadataKey: 'question_build_id' | 'flashcard_build_id'
+    buildId: string
+    dispatchAttemptId: string
+    operationKind: string
+    recoveryAnchor: Date
+    duplicateMessage: string
+    unavailableMessage: string
+  }): Promise<{
+    runId: string
+    status: QuestionGenerationRunStatus
+  } | null> {
     try {
+      const expectedMetadata = {
+        [buildMetadataKey]: buildId,
+        dispatch_attempt_id: dispatchAttemptId,
+        operation_kind: operationKind,
+      }
       const runs = await this.hatchet.runs.list({
-        additionalMetadata: {
-          flashcard_build_id: buildId,
-          dispatch_attempt_id: dispatchAttemptId,
-          operation_kind:
-            operation === 'start'
-              ? 'flashcard-start'
-              : 'flashcard-publish-incomplete',
-        },
+        // Hatchet combines metadata filters with OR. Query one unique dispatch
+        // id, then verify the complete tuple locally before recovering a run.
+        additionalMetadata: { dispatch_attempt_id: dispatchAttemptId },
         onlyTasks: false,
-        limit: 2,
+        includePayloads: false,
+        limit: 10,
+        since: new Date(
+          recoveryAnchor.getTime() - HATCHET_RECOVERY_CLOCK_SKEW_MILLISECONDS
+        ),
       })
-      if (runs.rows.length > 1) {
+      const matchingRuns = runs.rows.filter((run) =>
+        Object.entries(expectedMetadata).every(
+          ([key, value]) => run.additionalMetadata?.[key] === value
+        )
+      )
+      if (matchingRuns.length > 1 || matchingRuns.length !== runs.rows.length) {
         throw questionGenerationServiceError(
           'WORKFLOW_DISPATCH_UNCERTAIN',
-          'Multiple workflow runs exist for the flashcard dispatch attempt',
+          duplicateMessage,
           true
         )
       }
-      const run = runs.rows[0]
-      return run ? this.getRunById(run.taskExternalId) : null
+      const run = matchingRuns[0]
+      return run ? this.getRunById(run.workflowRunExternalId) : null
     } catch (error) {
       if (error instanceof QuestionGenerationServiceError) {
         throw error
       }
       throw questionGenerationServiceError(
         'WORKFLOW_STATUS_UNAVAILABLE',
-        'Flashcard-generation workflow recovery is unavailable',
+        unavailableMessage,
         true
       )
     }

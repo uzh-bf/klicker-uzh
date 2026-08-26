@@ -47,6 +47,30 @@ vi.mock('../src/services/elementGenerationProvider.js', () => ({
   normalizeElementGenerationIdempotencyKey: (value: string) => value.trim(),
 }))
 
+vi.mock(
+  '../src/services/elementGenerationAccounting.js',
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import('../src/services/elementGenerationAccounting.js')
+      >()
+    return {
+      ...actual,
+      claimElementGenerationSpend: vi.fn(async () => true),
+      createElementGenerationBuildWithSpend: vi.fn(),
+      getElementGenerationSpendDispatchState: vi.fn(async () => ({
+        costStatus: DB.KBGraphCostStatus.RESERVED,
+        dispatchClaimedAt: null,
+      })),
+      isFlashcardRetrySpend: vi.fn(async () => false),
+      releaseStaleClaimedElementGenerationSpend: vi.fn(async () => true),
+      releaseUnclaimedElementGenerationSpend: vi.fn(async () => false),
+      reserveFlashcardRetrySpend: vi.fn(),
+      settleElementGenerationSpend: vi.fn(async () => true),
+    }
+  }
+)
+
 vi.mock('../src/services/questionGenerationConfiguration.js', () => ({
   QuestionGenerationConfigurationError: class extends Error {},
   normalizeQuestionGenerationConfiguration: () => ({
@@ -66,8 +90,16 @@ vi.mock('../src/services/questionGenerationGraph.js', () => ({
   questionGenerationSourceSnapshot: () => [],
 }))
 
-import { getFlashcardGenerationBuild } from '../src/services/flashcardGeneration.js'
 import {
+  getFlashcardGenerationBuild,
+  retryFlashcardGeneration,
+} from '../src/services/flashcardGeneration.js'
+import {
+  isFlashcardRetrySpend,
+  reserveFlashcardRetrySpend,
+} from '../src/services/elementGenerationAccounting.js'
+import {
+  getQuestionGenerationBuild,
   reviewQuestionGenerationDesign,
   startQuestionGeneration,
 } from '../src/services/questionGeneration.js'
@@ -82,9 +114,11 @@ function preparingBuild() {
     configurationHash: 'configuration-hash',
     configuration: fixtures.configuration,
     requestedElementCount: 1,
+    costAccountingVersion: 1,
     status: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
     providerDispatchAttemptId: fixtures.dispatchAttemptId,
     blueprintArtifact: null,
+    createdAt: new Date('2026-08-26T12:00:00.000Z'),
     reviews: [],
     drafts: [],
     sourceGraphBuild: {
@@ -103,6 +137,38 @@ function preparingBuild() {
       sources: [],
     },
   }
+}
+
+function resolvedDesignArtifact() {
+  return Buffer.from(
+    JSON.stringify({
+      schema_version: 1,
+      state: 'resolved',
+      assessment: {
+        id: fixtures.buildId,
+        title: 'Generated questions',
+        language: 'de',
+        target_questions: 1,
+      },
+      modules: [{ module_id: 'M1', module_name: 'All material' }],
+      objectives: [],
+      sources: [],
+      resolved_slots: [
+        {
+          design_slot_id: 'slot-1',
+          module_id: 'M1',
+          objective_id: '',
+          origin_mode: 'new',
+          item_format: 'single_choice',
+          difficulty_scale: 1,
+          bloom_level: 'remember',
+        },
+      ],
+      topic_overview: { coverage_warnings: [] },
+      generation_policy: 'new_only',
+      origin_counts: { new: 1, reuse: 0, update: 0 },
+    })
+  )
 }
 
 describe('question-generation preparation lifecycle', () => {
@@ -167,7 +233,8 @@ describe('question-generation preparation lifecycle', () => {
     expect(runtime.downloadVerified).toHaveBeenCalledOnce()
     expect(findRunByBuildId).toHaveBeenCalledWith(
       fixtures.buildId,
-      fixtures.dispatchAttemptId
+      fixtures.dispatchAttemptId,
+      build.createdAt
     )
     expect(start).not.toHaveBeenCalled()
     expect(updateMany).toHaveBeenNthCalledWith(
@@ -176,6 +243,443 @@ describe('question-generation preparation lifecycle', () => {
         data: expect.objectContaining({
           providerWorkflowRunId: 'recovered-run',
           status: DB.ElementGenerationBuildStatus.DESIGNING,
+        }),
+      })
+    )
+  })
+})
+
+describe('question-generation synchronization lifecycle', () => {
+  it('exposes a resolved Design while its Hatchet workflow waits for review', async () => {
+    const build = {
+      ...preparingBuild(),
+      status: DB.ElementGenerationBuildStatus.DESIGNING,
+      providerEventId: 'question-event',
+      providerWorkflowRunId: null,
+      lastSynchronizedAt: null,
+    }
+    const designArtifact = {
+      containerName: 'question-results',
+      blobName: `question-builds/${fixtures.buildId}/design/resolved.json`,
+      sha256: 'd'.repeat(64),
+    }
+    const designSummary = {
+      title: 'Generated questions',
+      questionCount: 1,
+      objectives: [],
+      modules: [
+        { moduleId: 'M1', moduleName: 'All material', questionCount: 1 },
+      ],
+      sources: [],
+      slots: [
+        {
+          sourceQuestionId: 'slot-1',
+          moduleId: 'M1',
+          objectiveId: null,
+          bloomLevel: 'remember',
+          targetDifficulty: 1,
+        },
+      ],
+      warnings: [],
+    }
+    const waiting = {
+      ...build,
+      providerWorkflowRunId: 'question-run',
+      designArtifact,
+      designSummary,
+      status: DB.ElementGenerationBuildStatus.WAITING_FOR_DESIGN_REVIEW,
+      stage: 'design_review',
+    }
+    const updateMany = vi.fn(async () => ({ count: 1 }))
+    const runtime = {
+      questionInputContainer: 'question-inputs',
+      questionOutputContainer: 'question-results',
+      questionOutputPrefix: 'question-builds',
+      uploadCreateOnly: vi.fn(),
+      downloadImmutable: vi.fn(async () => ({
+        ref: designArtifact,
+        bytes: resolvedDesignArtifact(),
+      })),
+      downloadVerified: vi.fn(),
+      downloadVerifiedStream: vi.fn(),
+      start: vi.fn(),
+      review: vi.fn(),
+      getRun: vi.fn(async () => ({
+        runId: 'question-run',
+        status: 'RUNNING' as const,
+      })),
+      getRunById: vi.fn(),
+      findRunByBuildId: vi.fn(),
+      findRunByQuestionReview: vi.fn(),
+    } satisfies QuestionGenerationRuntime
+    const ctx = {
+      user: { sub: fixtures.ownerId },
+      elementGenerationRuntime: runtime,
+      prisma: {
+        elementGenerationBuild: {
+          findFirst: vi
+            .fn()
+            .mockResolvedValueOnce(build)
+            .mockResolvedValueOnce(waiting),
+          updateMany,
+        },
+      },
+    }
+
+    await expect(
+      getQuestionGenerationBuild(fixtures.buildId, ctx as never)
+    ).resolves.toEqual(waiting)
+
+    expect(runtime.downloadImmutable).toHaveBeenCalledWith(
+      'question-results',
+      `question-builds/${fixtures.buildId}/design/resolved.json`
+    )
+    expect(runtime.getRun).toHaveBeenCalledWith('question-event')
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          designSummary,
+          status: DB.ElementGenerationBuildStatus.WAITING_FOR_DESIGN_REVIEW,
+          stage: 'design_review',
+        }),
+      })
+    )
+  })
+})
+
+describe('flashcard retry preparation lifecycle', () => {
+  it('increments a recovered retry exactly when its build advances', async () => {
+    vi.mocked(isFlashcardRetrySpend).mockResolvedValueOnce(true)
+    const build = {
+      ...preparingBuild(),
+      elementType: DB.ElementType.FLASHCARD,
+      configuration: {
+        language: 'de',
+        flashcardCount: 1,
+        objectives: [],
+      },
+    }
+    const queued = {
+      ...build,
+      status: DB.ElementGenerationBuildStatus.QUEUED,
+      retryCount: 1,
+    }
+    const updateMany = vi
+      .fn()
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 1 })
+    const runtime = {
+      questionInputContainer: 'question-inputs',
+      questionOutputContainer: 'question-results',
+      questionOutputPrefix: 'question-builds',
+      uploadCreateOnly: vi.fn(),
+      downloadImmutable: vi.fn(),
+      downloadVerified: vi.fn(),
+      downloadVerifiedStream: vi.fn(),
+      start: vi.fn(),
+      review: vi.fn(),
+      getRun: vi.fn(),
+      getRunById: vi.fn(),
+      findRunByBuildId: vi.fn(),
+      findRunByQuestionReview: vi.fn(),
+      startFlashcards: vi.fn(),
+      publishIncompleteFlashcards: vi.fn(),
+      findRunByFlashcardBuildId: vi.fn(async () => ({
+        runId: 'recovered-retry-run',
+        status: 'RUNNING' as const,
+      })),
+    } satisfies FlashcardGenerationRuntime
+    const ctx = {
+      user: { sub: fixtures.ownerId },
+      elementGenerationRuntime: runtime,
+      prisma: {
+        elementGenerationBuild: {
+          findFirst: vi
+            .fn()
+            .mockResolvedValueOnce(build)
+            .mockResolvedValueOnce(queued),
+          updateMany,
+        },
+      },
+    }
+
+    await expect(
+      getFlashcardGenerationBuild(fixtures.buildId, ctx as never)
+    ).resolves.toEqual(queued)
+    expect(runtime.startFlashcards).not.toHaveBeenCalled()
+    expect(updateMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        data: expect.objectContaining({ retryCount: { increment: 1 } }),
+      })
+    )
+  })
+
+  it('serializes a retry and poll through one lease-owned provider dispatch', async () => {
+    vi.mocked(isFlashcardRetrySpend).mockResolvedValue(true)
+    let releaseReservation!: () => void
+    const reservationMayReturn = new Promise<void>((resolve) => {
+      releaseReservation = resolve
+    })
+    let reservationRecorded!: () => void
+    const reservationWasRecorded = new Promise<void>((resolve) => {
+      reservationRecorded = resolve
+    })
+    let leaseAcquired!: () => void
+    const leaseWasAcquired = new Promise<void>((resolve) => {
+      leaseAcquired = resolve
+    })
+    let current = {
+      ...preparingBuild(),
+      elementType: DB.ElementType.FLASHCARD,
+      configuration: {
+        language: 'de',
+        flashcardCount: 1,
+        objectives: [],
+      },
+      status: DB.ElementGenerationBuildStatus
+        .AWAITING_INCOMPLETE_PUBLICATION as DB.ElementGenerationBuildStatus,
+      stage: 'awaiting_incomplete_publication',
+      retryCount: 0,
+      syncLeaseOwner: null as string | null,
+      syncLeaseUntil: null as Date | null,
+    }
+    vi.mocked(reserveFlashcardRetrySpend).mockImplementationOnce(
+      async (_prisma, input) => {
+        current = {
+          ...current,
+          status: DB.ElementGenerationBuildStatus.PREPARING_INPUT,
+          stage: 'retry_dispatching',
+          providerDispatchAttemptId: input.dispatchAttemptId,
+        }
+        reservationRecorded()
+        await reservationMayReturn
+        return true
+      }
+    )
+    const updateMany = vi.fn(async ({ where, data }) => {
+      if (data.syncLeaseOwner && data.syncLeaseUntil) {
+        if (
+          current.syncLeaseOwner !== null ||
+          (where.status && where.status !== current.status)
+        ) {
+          return { count: 0 }
+        }
+        current = {
+          ...current,
+          syncLeaseOwner: data.syncLeaseOwner,
+          syncLeaseUntil: data.syncLeaseUntil,
+        }
+        leaseAcquired()
+        return { count: 1 }
+      }
+      if (data.status === DB.ElementGenerationBuildStatus.QUEUED) {
+        if (
+          current.status !== DB.ElementGenerationBuildStatus.PREPARING_INPUT ||
+          current.syncLeaseOwner !== where.syncLeaseOwner
+        ) {
+          return { count: 0 }
+        }
+        current = {
+          ...current,
+          ...data,
+          retryCount: current.retryCount + 1,
+          syncLeaseOwner: current.syncLeaseOwner,
+          syncLeaseUntil: current.syncLeaseUntil,
+        }
+        return { count: 1 }
+      }
+      if (data.syncLeaseOwner === null && where.syncLeaseOwner) {
+        if (current.syncLeaseOwner !== where.syncLeaseOwner) {
+          return { count: 0 }
+        }
+        current = {
+          ...current,
+          syncLeaseOwner: null,
+          syncLeaseUntil: null,
+        }
+        return { count: 1 }
+      }
+      return { count: 0 }
+    })
+    const startFlashcards = vi.fn(
+      async (_payload, _scope, _dispatchAttemptId, beforeProviderDispatch) => {
+        await beforeProviderDispatch()
+        return { eventId: 'retry-event' }
+      }
+    )
+    const runtime = {
+      questionInputContainer: 'question-inputs',
+      questionOutputContainer: 'question-results',
+      questionOutputPrefix: 'question-builds',
+      uploadCreateOnly: vi.fn(),
+      downloadImmutable: vi.fn(),
+      downloadVerified: vi.fn(),
+      downloadVerifiedStream: vi.fn(),
+      start: vi.fn(),
+      review: vi.fn(),
+      getRun: vi.fn(),
+      getRunById: vi.fn(),
+      findRunByBuildId: vi.fn(),
+      findRunByQuestionReview: vi.fn(),
+      startFlashcards,
+      publishIncompleteFlashcards: vi.fn(),
+      findRunByFlashcardBuildId: vi.fn(async () => null),
+    } satisfies FlashcardGenerationRuntime
+    const ctx = {
+      user: { sub: fixtures.ownerId },
+      elementGenerationRuntime: runtime,
+      prisma: {
+        elementGenerationBuild: {
+          findFirst: vi.fn(async () => current),
+          updateMany,
+        },
+      },
+    }
+
+    const retry = retryFlashcardGeneration(fixtures.buildId, ctx as never)
+    await reservationWasRecorded
+    const poll = getFlashcardGenerationBuild(fixtures.buildId, ctx as never)
+    await leaseWasAcquired
+    releaseReservation()
+    await Promise.all([retry, poll])
+
+    expect(startFlashcards).toHaveBeenCalledOnce()
+    expect(current.retryCount).toBe(1)
+    expect(current.status).toBe(DB.ElementGenerationBuildStatus.QUEUED)
+    expect(current.status).not.toBe(DB.ElementGenerationBuildStatus.FAILED)
+  })
+})
+
+describe('terminal workflow artifact lifecycle', () => {
+  it('fails a successful question workflow whose required artifact is missing', async () => {
+    const build = {
+      ...preparingBuild(),
+      status: DB.ElementGenerationBuildStatus.FINALIZING,
+      providerEventId: 'question-event',
+    }
+    const failed = {
+      ...build,
+      status: DB.ElementGenerationBuildStatus.FAILED,
+      errorCode: 'ARTIFACT_INVALID',
+    }
+    const updateMany = vi.fn(async () => ({ count: 1 }))
+    const runtime = {
+      questionInputContainer: 'question-inputs',
+      questionOutputContainer: 'question-results',
+      questionOutputPrefix: 'question-builds',
+      uploadCreateOnly: vi.fn(),
+      downloadImmutable: vi.fn(async () => {
+        throw questionGenerationServiceError(
+          'ARTIFACT_NOT_FOUND',
+          'not available',
+          true
+        )
+      }),
+      downloadVerified: vi.fn(),
+      downloadVerifiedStream: vi.fn(),
+      start: vi.fn(),
+      review: vi.fn(),
+      getRun: vi.fn(async () => ({
+        runId: 'question-run',
+        status: 'SUCCEEDED' as const,
+      })),
+      getRunById: vi.fn(),
+      findRunByBuildId: vi.fn(),
+      findRunByQuestionReview: vi.fn(),
+    } satisfies QuestionGenerationRuntime
+    const ctx = {
+      user: { sub: fixtures.ownerId },
+      elementGenerationRuntime: runtime,
+      prisma: {
+        elementGenerationBuild: {
+          findFirst: vi
+            .fn()
+            .mockResolvedValueOnce(build)
+            .mockResolvedValueOnce(failed),
+          updateMany,
+        },
+      },
+    }
+
+    await expect(
+      getQuestionGenerationBuild(fixtures.buildId, ctx as never)
+    ).resolves.toEqual(failed)
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: DB.ElementGenerationBuildStatus.FAILED,
+          errorCode: 'ARTIFACT_INVALID',
+          errorRetryable: false,
+        }),
+      })
+    )
+  })
+
+  it('fails a successful flashcard workflow whose required artifact is missing', async () => {
+    const build = {
+      ...preparingBuild(),
+      elementType: DB.ElementType.FLASHCARD,
+      status: DB.ElementGenerationBuildStatus.RUNNING,
+      providerEventId: 'flashcard-event',
+    }
+    const failed = {
+      ...build,
+      status: DB.ElementGenerationBuildStatus.FAILED,
+      errorCode: 'ARTIFACT_INVALID',
+    }
+    const updateMany = vi.fn(async () => ({ count: 1 }))
+    const runtime = {
+      questionInputContainer: 'question-inputs',
+      questionOutputContainer: 'question-results',
+      questionOutputPrefix: 'question-builds',
+      uploadCreateOnly: vi.fn(),
+      downloadImmutable: vi.fn(async () => {
+        throw questionGenerationServiceError(
+          'ARTIFACT_NOT_FOUND',
+          'not available',
+          true
+        )
+      }),
+      downloadVerified: vi.fn(),
+      downloadVerifiedStream: vi.fn(),
+      start: vi.fn(),
+      review: vi.fn(),
+      getRun: vi.fn(async () => ({
+        runId: 'flashcard-run',
+        status: 'SUCCEEDED' as const,
+      })),
+      getRunById: vi.fn(),
+      findRunByBuildId: vi.fn(),
+      findRunByQuestionReview: vi.fn(),
+      startFlashcards: vi.fn(),
+      publishIncompleteFlashcards: vi.fn(),
+      findRunByFlashcardBuildId: vi.fn(),
+    } satisfies FlashcardGenerationRuntime
+    const ctx = {
+      user: { sub: fixtures.ownerId },
+      elementGenerationRuntime: runtime,
+      prisma: {
+        elementGenerationBuild: {
+          findFirst: vi
+            .fn()
+            .mockResolvedValueOnce(build)
+            .mockResolvedValueOnce(failed),
+          updateMany,
+        },
+      },
+    }
+
+    await expect(
+      getFlashcardGenerationBuild(fixtures.buildId, ctx as never)
+    ).resolves.toEqual(failed)
+    expect(updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: DB.ElementGenerationBuildStatus.FAILED,
+          errorCode: 'ARTIFACT_INVALID',
+          errorRetryable: false,
         }),
       })
     )
@@ -267,7 +771,8 @@ describe('question-generation review dispatch lifecycle', () => {
     expect(persistedReviewId).not.toBe('')
     expect(runtime.findRunByQuestionReview).toHaveBeenCalledWith(
       fixtures.buildId,
-      persistedReviewId
+      persistedReviewId,
+      review.createdAt
     )
     expect(dispatchReview).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -356,7 +861,8 @@ describe('question-generation review dispatch lifecycle', () => {
 
     expect(runtime.findRunByQuestionReview).toHaveBeenCalledWith(
       fixtures.buildId,
-      review.id
+      review.id,
+      review.createdAt
     )
     expect(dispatchReview).not.toHaveBeenCalled()
   })
@@ -502,7 +1008,8 @@ describe('flashcard incomplete-publication lifecycle', () => {
       1,
       fixtures.buildId,
       publicationAttemptId,
-      'publish-incomplete'
+      'publish-incomplete',
+      publishing.createdAt
     )
     expect(publishIncompleteFlashcards).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -606,7 +1113,8 @@ describe('flashcard incomplete-publication lifecycle', () => {
       3,
       fixtures.buildId,
       publicationAttemptId,
-      'publish-incomplete'
+      'publish-incomplete',
+      publishing.createdAt
     )
     expect(updateMany).toHaveBeenNthCalledWith(
       2,

@@ -34,7 +34,13 @@ function requiredText(value: string, field: string, maxLength: number): string {
   if (
     !normalized ||
     normalized.length > maxLength ||
-    /\p{C}/u.test(normalized)
+    Array.from(normalized).some(
+      (character) =>
+        character !== '\n' &&
+        character !== '\r' &&
+        character !== '\t' &&
+        /\p{C}/u.test(character)
+    )
   ) {
     return draftError(`${field} is invalid`)
   }

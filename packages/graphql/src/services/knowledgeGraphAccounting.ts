@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { computeKBContentDigest } from '@klicker-uzh/knowledge-graph'
 import * as DB from '@klicker-uzh/prisma/client'
 import { GraphQLError } from 'graphql'
@@ -8,6 +7,11 @@ import {
   type KbGraphTerminalResult,
   validateKbGraphTerminalResult,
 } from './kbGraphContract.js'
+import {
+  ensureLockedKBGraphQuota,
+  lockKBGraphQuota,
+  reserveKBGraphQuotaAmount,
+} from './kbGraphQuota.js'
 import {
   type getKBGraphCostConfiguration,
   getKBGraphEstimate,
@@ -31,18 +35,6 @@ const SETTLEMENT_HOLD_STATUSES = [
   DB.KBGraphCostStatus.NEEDS_HUMAN_REVIEW,
 ] as const
 
-async function lockQuota(
-  prisma: KBGraphCostTransaction,
-  quotaId: string
-): Promise<void> {
-  await prisma.$queryRaw<Array<{ id: string }>>`
-    SELECT "id"
-    FROM "public"."KBGraphQuota"
-    WHERE "id" = CAST(${quotaId} AS UUID)
-    FOR UPDATE
-  `
-}
-
 export async function reserveKBGraphCost(
   prisma: KBGraphCostTransaction,
   {
@@ -65,66 +57,8 @@ export async function reserveKBGraphCost(
     })
   }
 
-  const candidateQuotaId = randomUUID()
-  await prisma.$executeRaw`
-    INSERT INTO "public"."KBGraphQuota"
-      ("id", "ownerId", "semesterKey", "currency", "limitMinorUnits", "updatedAt")
-    VALUES
-      (CAST(${candidateQuotaId} AS UUID), CAST(${ownerId} AS UUID),
-       ${config.semesterKey}, ${config.currency},
-       ${config.semesterQuotaMinorUnits}, ${now})
-    ON CONFLICT ("ownerId", "semesterKey") DO NOTHING
-  `
-  const quota = await prisma.kBGraphQuota.findUniqueOrThrow({
-    where: {
-      ownerId_semesterKey: {
-        ownerId,
-        semesterKey: config.semesterKey,
-      },
-    },
-    select: { id: true },
-  })
-  await lockQuota(prisma, quota.id)
-
-  const lockedQuota = await prisma.kBGraphQuota.findUniqueOrThrow({
-    where: { id: quota.id },
-    select: {
-      currency: true,
-      limitMinorUnits: true,
-      reservedMinorUnits: true,
-      settledMinorUnits: true,
-    },
-  })
-  if (
-    lockedQuota.currency !== config.currency ||
-    lockedQuota.limitMinorUnits !== config.semesterQuotaMinorUnits
-  ) {
-    throw new GraphQLError(
-      'KB graph quota configuration changed mid-semester',
-      {
-        extensions: { code: 'KB_GRAPH_QUOTA_CONFIGURATION_CHANGED' },
-      }
-    )
-  }
-
-  const usedMinorUnits =
-    lockedQuota.reservedMinorUnits + lockedQuota.settledMinorUnits
-  if (usedMinorUnits + estimatedCostMinorUnits > lockedQuota.limitMinorUnits) {
-    throw new GraphQLError('KB graph semester quota is insufficient', {
-      extensions: {
-        code: 'KB_GRAPH_QUOTA_EXCEEDED',
-        remainingMinorUnits: Math.max(
-          0,
-          lockedQuota.limitMinorUnits - usedMinorUnits
-        ),
-      },
-    })
-  }
-
-  await prisma.kBGraphQuota.update({
-    where: { id: quota.id },
-    data: { reservedMinorUnits: { increment: estimatedCostMinorUnits } },
-  })
+  const quota = await ensureLockedKBGraphQuota(prisma, ownerId, config, now)
+  await reserveKBGraphQuotaAmount(prisma, quota, estimatedCostMinorUnits)
 
   return {
     quotaId: quota.id,
@@ -159,7 +93,7 @@ export async function releaseKBGraphCostReservation(
   }
 
   if (build.quotaId) {
-    await lockQuota(prisma, build.quotaId)
+    await lockKBGraphQuota(prisma, build.quotaId)
   }
   const updated = await prisma.kBGraphBuild.updateMany({
     where: {
@@ -231,7 +165,7 @@ async function markCostNeedsHumanReview(
     WHERE "id" = CAST(${build.kbId} AS UUID)
     FOR UPDATE
   `
-  if (build.quotaId) await lockQuota(prisma, build.quotaId)
+  if (build.quotaId) await lockKBGraphQuota(prisma, build.quotaId)
   const updated = await prisma.kBGraphBuild.updateMany({
     where: {
       id: build.id,
@@ -545,7 +479,7 @@ export async function settleKBGraphBuildCost(
       ? null
       : (lateRejection?.errorCode ??
         (succeeded ? null : (result.error_code ?? `KB_GRAPH_${result.status}`)))
-    await lockQuota(prisma, build.quotaId!)
+    await lockKBGraphQuota(prisma, build.quotaId!)
     const updated = await prisma.kBGraphBuild.updateMany({
       where: {
         id: build.id,

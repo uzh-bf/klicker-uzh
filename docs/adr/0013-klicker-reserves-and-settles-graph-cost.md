@@ -27,3 +27,14 @@ model pricing can change. Billing-account details are not part of this ledger;
 the beta maintains that sensitive association externally for UZH-issued keys,
 while BYOK lecturers are billed by their own provider. Quota controls apply to
 both paths.
+
+Graph-derived Klicker-element generation uses the same owner-semester quota.
+Each initial question or flashcard provider dispatch and every flashcard retry
+has an append-only spend row keyed by its durable dispatch UUID. The beta uses a
+versioned fixed price for each dispatch class: reserve before dispatch, validate
+deterministic coordinates, claim immediately before the external call, settle
+after accepted or exactly recovered provider work, and never redispatch a claimed
+attempt. A claim is released only before provider contact or after its recovery
+grace expires and an exact provider lookup proves that no matching run exists.
+Review and publication events are state transitions on the same generation build
+and do not create additional spend.
