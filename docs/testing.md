@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-25'
+timestamp: '2026-08-26'
 tags:
   - testing
   - ci
@@ -112,13 +112,18 @@ protection context and needs no companion status gate.
 path-filter job plus the required always-reporting `test-graphql-status` gate.
 `test-olat-api` uses workflow-level path filters so irrelevant changes create no
 job, while relevant changes still run its Docker Compose test stack. Playwright
-uses a path-scoped filter and compiles once in a `build-and-compile` job before
-running the 8 shards. The workflow tars the five `.next` trees before artifact
-upload and extracts them in each shard so Turbopack's runtime dependency
-symlinks survive the cross-job handoff. Each shard also restores the generated
-GraphQL client map from the built package because Turbo cache hits do not
-restore generated source files. Dedicated `-status` fail-open gates remain for
-the required multi-job workflows (`test-graphql`, `test-playwright`).
+uses a path-scoped filter and compiles once in a GitHub-hosted
+`build-and-compile` job before running the 8 shards. Eligible same-repository
+PRs can route those shards through `public-pr-playwright-shards.yml` to three
+ARM64 runners, which gives at most three concurrent shards; fork PRs, drafts,
+bots, pushes, and disabled rollouts keep all eight shards on GitHub-hosted
+runners. Both paths preserve the same artifact names and feed the unchanged
+`test-playwright-status` gate. The workflow tars the five `.next` trees before
+artifact upload and extracts them in each shard so Turbopack's runtime
+dependency symlinks survive the cross-job handoff. Each shard also restores the
+generated GraphQL client map from the built package because Turbo cache hits do
+not restore generated source files. Dedicated `-status` fail-open gates remain
+for the required multi-job workflows (`test-graphql`, `test-playwright`).
 
 **Hatchet tokens differ per workflow, because `test-playwright` is the only one that runs inside a `container:`.** `test-graphql` runs straight on the runner, so it reaches Hatchet at `localhost` and reads its boot-minted token with `docker exec`. Inside a container job neither works: service containers resolve by service **name** (`hatchet:8888` / `hatchet:7077`, exactly like the `postgres:5432` the same job already uses), and the Playwright image ships no Docker CLI. So `test-playwright` shares `/config` with the Hatchet service through the `hatchet_lite_config` volume and reads `/config/authdisabled-token` directly. Do not "simplify" those hostnames to `localhost` — every shard then fails in `Prepare .env files` before a single test runs. The HTTP token API is not a fallback: `hatchet-lite-dev` disables auth and answers `POST /api/v1/tenants/{id}/api-tokens` with 401 for every caller. The token's own claims always say `localhost`, which is harmless — `packages/hatchet/src/client.ts` passes `host_port`/`api_url` explicitly, and process env beats the `.env` templates for both `node --env-file` and `dotenv`.
 
