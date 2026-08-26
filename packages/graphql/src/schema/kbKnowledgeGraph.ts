@@ -38,6 +38,7 @@ export const KBKnowledgeGraphConfigType = KBKnowledgeGraphConfigRef.implement({
     }),
     activeBuildId: t.exposeID('activeBuildId', { nullable: true }),
     publishedBuildId: t.exposeID('publishedBuildId', { nullable: true }),
+    elementGenerationReady: t.exposeBoolean('elementGenerationReady'),
     isStale: t.exposeBoolean('isStale'),
     startedAt: t.expose('startedAt', { type: 'Date', nullable: true }),
     finishedAt: t.expose('finishedAt', { type: 'Date', nullable: true }),

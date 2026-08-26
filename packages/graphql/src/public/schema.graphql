@@ -2215,6 +2215,7 @@ type KBKnowledgeGraphConfig {
   costCurrency: String
   costStatus: KBGraphCostStatus
   createdAt: Date
+  elementGenerationReady: Boolean!
   estimatedCostMinorUnits: Int
   finishedAt: Date
   highEstimateMinorUnits: Int

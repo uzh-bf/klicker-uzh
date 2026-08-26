@@ -2,7 +2,7 @@ import {
   getPublishedKnowledgeGraph,
   KnowledgeGraphNotPublishedError,
 } from '@klicker-uzh/knowledge-graph'
-import * as DB from '@klicker-uzh/prisma/client'
+import type * as DB from '@klicker-uzh/prisma/client'
 import type {
   KBGraphSourceSnapshot,
   QuestionGenerationArtifactRef,
@@ -10,6 +10,7 @@ import type {
 import { QUESTION_GENERATION_CAPABILITIES } from '@klicker-uzh/types'
 import type { ContextWithUser } from '../lib/context.js'
 import { assertManageAiEnabled } from '../lib/manageAiFeatureGate.js'
+import { isElementGenerationGraphBundleReady } from './elementGenerationGraphReadiness.js'
 
 export type QuestionGenerationGraphErrorCode =
   | 'KB_GRAPH_VERSION_NOT_ELIGIBLE'
@@ -116,6 +117,8 @@ const nativeBuildSelect = {
   kbId: true,
   status: true,
   graphName: true,
+  graphBundleContainerName: true,
+  graphBundleBlobPrefix: true,
   graphBundleStorageName: true,
   graphBundleSha256: true,
   graphSha256: true,
@@ -143,14 +146,7 @@ function asGenerationGraph(
   build: NativeBuild,
   isStale: boolean
 ): QuestionGenerationGraph {
-  if (
-    build.status !== DB.KBGraphBuildStatus.SUCCEEDED ||
-    build.graphBundleStorageName === null ||
-    build.graphBundleSha256 === null ||
-    build.graphSha256 === null ||
-    build.graphManifestSchemaVersion !== 2 ||
-    build.graphManifestArtifact === null
-  ) {
+  if (!isElementGenerationGraphBundleReady(build)) {
     throw graphError(
       'KB_GRAPH_VERSION_NOT_ELIGIBLE',
       'Published knowledge graph does not have a generation bundle'
