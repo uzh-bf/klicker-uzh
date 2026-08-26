@@ -153,12 +153,12 @@ describe('doc-query MCP scope authentication', () => {
     const headers = await createAuthHeaders(
       {
         ...SCOPE_SERVER,
-        parameters: { scope_token: { header: 'X-Custom-Scope' } },
+        parameters: { scope_token: { header: 'X-Doc-Query-Custom-Scope' } },
       },
       TEST_CONTEXT
     )
 
-    expect(headers['X-Custom-Scope']).toMatch(/^Bearer /)
+    expect(headers['X-Doc-Query-Custom-Scope']).toMatch(/^Bearer /)
     expect(headers.Authorization).toBe('Bearer transport-token')
   })
 
@@ -169,7 +169,12 @@ describe('doc-query MCP scope authentication', () => {
     'Content-Type',
     'Chatbot-ID',
     'Mcp-Session-Id',
-  ])('rejects reserved scope header %s', async (header) => {
+    'Host',
+    'Content-Length',
+    'Connection',
+    'X-Forwarded-Host',
+    'X-Custom-Scope',
+  ])('rejects unsafe scope header %s', async (header) => {
     await expect(
       createAuthHeaders(
         { ...SCOPE_SERVER, parameters: { scope_token: { header } } },

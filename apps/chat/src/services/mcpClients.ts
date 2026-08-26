@@ -57,6 +57,7 @@ export interface MCPRequestOptions {
 }
 
 const HTTP_HEADER_NAME_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/
+const DOC_QUERY_SCOPE_HEADER_PREFIX = 'x-doc-query-'
 const RESERVED_DOC_QUERY_SCOPE_HEADERS = new Set([
   'authorization',
   'chatbot-id',
@@ -97,6 +98,7 @@ function resolveDocQueryScopeHeader(server: MCPServerConfig): string {
   if (
     typeof header !== 'string' ||
     HTTP_HEADER_NAME_PATTERN.test(header) === false ||
+    header.toLowerCase().startsWith(DOC_QUERY_SCOPE_HEADER_PREFIX) === false ||
     RESERVED_DOC_QUERY_SCOPE_HEADERS.has(header.toLowerCase())
   ) {
     throw new Error('Invalid Doc Query scope-token header')
