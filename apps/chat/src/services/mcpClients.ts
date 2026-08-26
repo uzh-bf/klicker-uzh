@@ -61,6 +61,7 @@ const RESERVED_DOC_QUERY_SCOPE_HEADERS = new Set([
   'authorization',
   'chatbot-id',
   'content-type',
+  'mcp-session-id',
   '__proto__',
   'constructor',
   'prototype',

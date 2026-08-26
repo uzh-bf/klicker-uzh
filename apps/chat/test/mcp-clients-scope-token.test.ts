@@ -83,17 +83,17 @@ describe('doc-query MCP scope authentication', () => {
     expect(headers[DOC_QUERY_SCOPE_TOKEN_HEADER]).toMatch(/^Bearer /)
   })
 
-  test.each([
-    'none',
-    'bearer',
-  ])('rejects %s KB auth without a transport secret', async (authType) => {
-    await expect(
-      createAuthHeaders(
-        { ...SCOPE_SERVER, authType, authSecret: undefined },
-        TEST_CONTEXT
-      )
-    ).rejects.toThrow('Doc Query transport authentication is invalid')
-  })
+  test.each(['none', 'bearer'])(
+    'rejects %s KB auth without a transport secret',
+    async (authType) => {
+      await expect(
+        createAuthHeaders(
+          { ...SCOPE_SERVER, authType, authSecret: undefined },
+          TEST_CONTEXT
+        )
+      ).rejects.toThrow('Doc Query transport authentication is invalid')
+    }
+  )
 
   test('skips scoped servers when no enabled KB was resolved', () => {
     expect(
@@ -168,6 +168,7 @@ describe('doc-query MCP scope authentication', () => {
     'prototype',
     'Content-Type',
     'Chatbot-ID',
+    'Mcp-Session-Id',
   ])('rejects reserved scope header %s', async (header) => {
     await expect(
       createAuthHeaders(
