@@ -33,9 +33,10 @@ uncrowned regardless of Catalyst entitlement.
   check state. Current origin/v3 and merge-base is
   `a36c2162631792eecd23388d13aa6cc83fb3ffea`; the normal local merge
   `689a89d9f4e6c051258f5d4eadee0ac832a3b554` imports only
-  `deploy/env-uzh-stg/values.yaml`. The reviewed pre-correction local head is
-  `3e72795c13f5e1102e55e7e7dc2a464a0ea8e763`. Normal push, PR-body update,
-  exact-head CI, and the three review-thread resolutions remain pending. PR
+  `deploy/env-uzh-stg/values.yaml`. The pre-plan-update exact head
+  `6ad04f4a18f69d62b231d78d60567897aff7f71d` was pushed to draft PR #5546,
+  its PR body was updated, and all seven review threads are resolved; this
+  plan-only commit supersedes that head and requires its own exact-head CI. PR
   merge, mark-ready, deployment, publication, worktree cleanup, and branch,
   worktree, or runtime-data deletion remain withheld.
 
@@ -109,11 +110,12 @@ uncrowned regardless of Catalyst entitlement.
   check state. The current normal local merge
   `689a89d9f4e6c051258f5d4eadee0ac832a3b554` integrates current origin/v3
   `a36c2162631792eecd23388d13aa6cc83fb3ffea`, importing only
-  `deploy/env-uzh-stg/values.yaml`. Final local review and delta verification
-  are complete through the reviewed pre-correction head
-  `3e72795c13f5e1102e55e7e7dc2a464a0ea8e763`; normal push, PR body update,
-  exact-head CI, and thread resolution remain pending. PR merge, mark-ready,
-  deployment, publication, cleanup, and deletion remain withheld.
+  `deploy/env-uzh-stg/values.yaml`. The pre-plan-update exact head
+  `6ad04f4a18f69d62b231d78d60567897aff7f71d` was pushed normally, the PR
+  body was synchronized, and all seven review threads were resolved; this
+  plan-only commit supersedes that head and requires its own exact-head CI. PR
+  merge, mark-ready, deployment, publication, cleanup, and deletion remain
+  withheld.
 - Authoritative roadmap:
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/question-library-feedback-recovery/project/2026-08-23-question-library-ux-audit-and-roadmap.md`
   on `rs/question-library-feedback-recovery` at `5d7c0284890db55a93da1cb66a1ca87ab03f2e0d`.
@@ -456,9 +458,11 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 - Draft PR #5546 remains draft and GitHub remains authoritative for volatile PR
   and check state. Final local review and delta verification are complete
   through reviewed pre-correction head
-  `3e72795c13f5e1102e55e7e7dc2a464a0ea8e763`. Normal push, PR body update,
-  exact-head CI, and the three review-thread resolutions remain pending. PR
-  merge, mark-ready, deployment, publication, worktree cleanup, and branch or
+  `3e72795c13f5e1102e55e7e7dc2a464a0ea8e763`; the pushed pre-plan-update
+  exact head `6ad04f4a18f69d62b231d78d60567897aff7f71d` carries the
+  completed exact-head CI and resolved review threads, while this plan-only
+  commit supersedes it and requires its own exact-head CI. PR merge,
+  mark-ready, deployment, publication, worktree cleanup, and branch or
   worktree deletion remain withheld.
 
 ## Risks and stop conditions
@@ -484,13 +488,29 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   browser evidence, and the environment-blocked repository Playwright run.
 - Host readback proves branch and PR-body synchronization for each published
   head. GitHub is authoritative for volatile current PR and check state. The
-  reviewed pre-correction head `3e72795c13f5e1102e55e7e7dc2a464a0ea8e763`
-  remains unpublished. Final local review and delta verification are complete;
-  normal push, PR body update, exact-head CI, and the three review-thread
-  resolutions remain pending. PR merge, mark-ready, deployment, publication,
-  cleanup, and deletion remain withheld.
+  pre-plan-update exact head `6ad04f4a18f69d62b231d78d60567897aff7f71d` was
+  pushed to draft PR #5546 with its PR body synchronized and all seven review
+  threads resolved; this plan-only commit supersedes that head and requires its
+  own exact-head CI. PR merge, mark-ready, deployment, publication, cleanup,
+  and deletion remain withheld.
 
 ## Progress
+
+- 2026-08-26 W2 draft delivery: the pre-plan-update exact head
+  `6ad04f4a18f69d62b231d78d60567897aff7f71d` was pushed normally to draft PR
+  #5546 and its PR body was updated. Exact-head CI on that head reported all
+  executable code-quality, GraphQL, and build checks green, and all eight
+  Playwright shards green in run 32992893012, while its mechanical aggregate
+  remained queued and was superseded by this final docs-only update; GitHub is
+  authoritative for volatile check state. OpenCodeReview run 32992892615
+  failed before inference because OpenRouter returned HTTP 402 for all 11 file
+  requests, with zero tokens or comments, so no code-review success is claimed
+  and it is not retried. The independent Sol final review of all 18 changed
+  paths passed after its sole stale-plan correction. All seven PR review
+  threads now read resolved. The runtime remains canonically stopped with zero
+  exact routes. PR #5546 stays draft; mark-ready, merge, deploy, publication,
+  cleanup, and deletion remain withheld, and no push is made from this
+  plan-only commit.
 
 - 2026-08-26 integrated final review disposition: the independent integrated
   final reviewer found no executable-code, security, accessibility, or
@@ -502,8 +522,9 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   3e72795c13f5e1102e55e7e7dc2a464a0ea8e763, the approved exact Manage
   Turbopack cache clear as current evidence, and the current canonical stop
   (provider state Stopped, exact route count 0). Normal push, PR-body update,
-  exact-head CI, and the three review-thread resolutions remain pending; the
-  draft, mark-ready, merge, deploy, and delete boundaries are unchanged. The
+  exact-head CI, and the three review-thread resolutions were completed by the
+  later W2 draft delivery recorded above; the draft, mark-ready, merge, deploy,
+  and delete boundaries are unchanged. The
   reviewer's proposed removal of O-live-quiz.spec.ts lines 2414-2435 is
   rejected: the retained cycles cover distinct filling versus deletion
   recovery, including an empty block among valid blocks, so the removal would
