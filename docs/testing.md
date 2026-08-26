@@ -112,13 +112,16 @@ protection context and needs no companion status gate.
 path-filter job plus the required always-reporting `test-graphql-status` gate.
 `test-olat-api` uses workflow-level path filters so irrelevant changes create no
 job, while relevant changes still run its Docker Compose test stack. Playwright
-uses a path-scoped filter and compiles once in a GitHub-hosted
-`build-and-compile` job before running the 8 shards. Eligible same-repository
-PRs can route those shards through `public-pr-playwright-shards.yml` to three
-ARM64 runners, which gives at most three concurrent shards; fork PRs, drafts,
-bots, pushes, and disabled rollouts keep all eight shards on GitHub-hosted
-runners. Both paths preserve the same artifact names and feed the unchanged
-`test-playwright-status` gate. The workflow tars the five `.next` trees before
+uses a path-scoped filter and compiles once before running the 8 shards.
+Eligible same-repository public PRs (non-draft, non-bot, rollout enabled or
+canary) run the changed-path prepare and build in the Playwright container on
+the `public-pr-arm64` runner group through the reusable
+`public-pr-playwright-shards.yml` workflow, which gives at most three
+concurrent shards; pushes, fork PRs, drafts, bots, private repositories, and
+disabled rollouts keep all eight shards on GitHub-hosted runners. Both paths
+preserve the same artifact names and feed the route-aware
+`test-playwright-status` gate, which requires exactly one of the hosted or
+public-PR routes to be selected. The workflow tars the five `.next` trees before
 artifact upload and extracts them in each shard so Turbopack's runtime
 dependency symlinks survive the cross-job handoff. Each shard also restores the
 generated GraphQL client map from the built package because Turbo cache hits do
