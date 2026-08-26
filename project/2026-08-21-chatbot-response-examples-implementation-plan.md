@@ -2,6 +2,11 @@
 
 ## Identity
 
+> Superseded on 2026-08-26 by the [response-example review corrections
+> plan](./2026-08-26-pr-5474-response-example-review-corrections-plan.md).
+> This document records the earlier implementation shape; the current contract
+> removes locale and behavior dimensions and is maintained in the linked plan.
+
 - Date: 2026-08-21
 - Revised: 2026-08-22
 - Ceremony: full path

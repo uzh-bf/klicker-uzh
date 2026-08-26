@@ -1,7 +1,12 @@
 # Chatbot response-example design
 
-This document records the active product-design interview for automatically
-generated, lecturer-reviewed chatbot response examples. It carries settled
+> Superseded on 2026-08-26 by the [response-example review corrections
+> plan](./2026-08-26-pr-5474-response-example-review-corrections-plan.md).
+> This historical interview predates the current contract; locale and behavior
+> dimensions described below are not part of the active implementation.
+
+This historical document records the earlier product-design interview for
+automatically generated, lecturer-reviewed chatbot response examples. It carries
 language and the remaining decision frontier; it does not authorize
 implementation, publication, deployment, or live-data access.
 

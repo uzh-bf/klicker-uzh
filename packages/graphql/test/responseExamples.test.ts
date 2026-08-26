@@ -204,6 +204,35 @@ describe('response-example foundation', () => {
     expect(
       await approveResponseExample({ id: candidate.id }, userTwoCtx)
     ).toBeNull()
+    const nonOwnerDigest = (
+      await getChatbotResponseExamples({ chatbotId: chatbot.id }, userOneCtx)
+    )?.digest
+    expect(
+      await editAndApproveResponseExample(
+        {
+          id: candidate.id,
+          chatMode: candidate.chatMode,
+          studentMessage: 'A non-owner edit must remain blocked.',
+          referenceAnswer: 'This answer must not be saved [1].',
+          responseStyle: candidate.responseStyle,
+          expectedUpdatedAt: candidate.updatedAt,
+        },
+        userTwoCtx
+      )
+    ).toBeNull()
+    await expect(
+      prisma.responseExample.findUniqueOrThrow({ where: { id: candidate.id } })
+    ).resolves.toMatchObject({
+      studentMessage: candidate.studentMessage,
+      referenceAnswer: candidate.referenceAnswer,
+      status: ResponseExampleStatus.CANDIDATE,
+      reviewedById: candidate.reviewedById,
+      reviewedAt: candidate.reviewedAt,
+    })
+    expect(
+      (await getChatbotResponseExamples({ chatbotId: chatbot.id }, userOneCtx))
+        ?.digest
+    ).toBe(nonOwnerDigest)
 
     const approvedSet = await approveResponseExample(
       { id: candidate.id },
