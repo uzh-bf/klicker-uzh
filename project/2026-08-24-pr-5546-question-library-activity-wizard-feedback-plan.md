@@ -29,17 +29,15 @@ uncrowned regardless of Catalyst entitlement.
 - Except for the official devrouter 0.0.38 consumer version pin and generated
   guidance prerequisite, do not change devrouter, devcontainer, local-origin,
   environment, application routes, or Turborepo routing configuration.
-- Draft PR #5546 points to published head
-  `510ab4308e516b69294fcb1dae69adbb6c9feea2`. The contract correction is
-  committed locally at `c65e52413752a47dd16e29b60e05dbe7fd0d7417` and
-  integrated through the reviewed branch history. Current base-only merge
-  `79e356831c8354dade4c24ce83a52a08bff0cfda` remains local. GitHub is
-  authoritative for volatile PR and check state. Final local review and delta
-  verification are complete through exact head
-  `6284f3d5a45d706f3f5fd02821bff5f90b40e5dd`; normal push, PR body update,
-  exact-head CI, and thread resolution remain pending. PR merge, mark-ready,
-  deployment, publication, worktree cleanup, and branch, worktree, or
-  runtime-data deletion remain withheld.
+- Draft PR #5546 remains draft and GitHub is authoritative for volatile PR and
+  check state. Current origin/v3 and merge-base is
+  `a36c2162631792eecd23388d13aa6cc83fb3ffea`; the normal local merge
+  `689a89d9f4e6c051258f5d4eadee0ac832a3b554` imports only
+  `deploy/env-uzh-stg/values.yaml`. The reviewed pre-correction local head is
+  `3e72795c13f5e1102e55e7e7dc2a464a0ea8e763`. Normal push, PR-body update,
+  exact-head CI, and the three review-thread resolutions remain pending. PR
+  merge, mark-ready, deployment, publication, worktree cleanup, and branch,
+  worktree, or runtime-data deletion remain withheld.
 
 ## Execution contract
 
@@ -82,11 +80,11 @@ uncrowned regardless of Catalyst entitlement.
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/ux-review-question-library`.
 - Branch: `rs/question-library-activity-wizard-feedback`.
 - Current integrated base and merge-base:
-  `de103a52d982a29af72022069ad668bc68f84094`, which is also the current
-  `origin/v3`. Its CI-only change touches only `playwright/timings.json` and was
-  merged normally in `79e356831c8354dade4c24ce83a52a08bff0cfda` over reviewed
-  head `67f5a43363557a3e464831bb35d2dba6ea6805a9`; volatile ahead/behind counts
-  are intentionally omitted.
+  `a36c2162631792eecd23388d13aa6cc83fb3ffea`, which is also the current
+  `origin/v3`. The normal no-rebase, no-force local merge
+  `689a89d9f4e6c051258f5d4eadee0ac832a3b554` imports only
+  `deploy/env-uzh-stg/values.yaml`; volatile ahead/behind counts are
+  intentionally omitted.
 - The merge integrated `7515632f229c9421a7ac7d62668e1743147ba158` and its
   generated GraphQL policy: typed and persisted artifacts are generated and
   ignored, while the public SDL remains tracked.
@@ -107,13 +105,13 @@ uncrowned regardless of Catalyst entitlement.
   `01a03490-059c-7381-adb8-91b77e89f5f9` accepted rebuilding S1 without
   Catalyst signaling because ADR-0037 makes the three formerly gated formats
   standard full-access capabilities.
-- Draft PR #5546 points to published head
-  `510ab4308e516b69294fcb1dae69adbb6c9feea2`; current local merge commit
-  `79e356831c8354dade4c24ce83a52a08bff0cfda` integrates the CI-only current
-  base over reviewed head `67f5a43363557a3e464831bb35d2dba6ea6805a9`.
-  GitHub is authoritative for volatile PR and check state. Final local review
-  and delta verification are complete through exact head
-  `6284f3d5a45d706f3f5fd02821bff5f90b40e5dd`; normal push, PR body update,
+- Draft PR #5546 remains draft and GitHub is authoritative for volatile PR and
+  check state. The current normal local merge
+  `689a89d9f4e6c051258f5d4eadee0ac832a3b554` integrates current origin/v3
+  `a36c2162631792eecd23388d13aa6cc83fb3ffea`, importing only
+  `deploy/env-uzh-stg/values.yaml`. Final local review and delta verification
+  are complete through the reviewed pre-correction head
+  `3e72795c13f5e1102e55e7e7dc2a464a0ea8e763`; normal push, PR body update,
   exact-head CI, and thread resolution remain pending. PR merge, mark-ready,
   deployment, publication, cleanup, and deletion remain withheld.
 - Authoritative roadmap:
@@ -174,10 +172,11 @@ lifecycle.
   `klicker-playwright-e2e`, `klicker-testing-verification`,
   `klicker-wiki-maintenance`, and `devrouter`.
 - `$rs-local-runtime-lifecycle` governs runtime lifecycle boundaries. This
-  exact runtime is stopped with fresh source-path provider and route readback.
-  No workaround, cache clearing, route, TLS, or configuration change, raw
-  DevPod/Docker mutation, or deletion was used. Manual route, TLS, and
-  certificate repair remain withheld.
+  exact runtime is stopped with fresh source-path provider and route readback
+  (provider state `Stopped`, exact route count 0). The user-approved Manage
+  Turbopack cache clear is current evidence; the earlier no-cache-clear
+  statements refer only to prior passes. Manual route, TLS, and certificate
+  repair remain withheld.
 - The established repository plan format and the fully read sliced-workflow
   contract provide this plan's durable format.
 
@@ -400,9 +399,12 @@ Runtime contract:
   `devpod status` reported provider `docker` in state `Stopped`, and
   `devrouter ls --json` reported zero routes for the exact source path.
 - Verification used canonical devrouter lifecycle commands and read-only
-  source-path provider/route readback. It did not use a workaround, cache
-  clearing, route, TLS, or configuration change, raw DevPod/Docker mutation,
-  deletion, localhost fixed ports, or another checkout's runtime.
+  source-path provider/route readback, plus the user-approved deletion of only
+  the generated ignored directory
+  `apps/frontend-manage/.next/dev/cache/turbopack` (current evidence). It did
+  not use a workaround, any other cache clearing, route, TLS, or configuration
+  change, raw DevPod/Docker mutation, deletion, localhost fixed ports, or
+  another checkout's runtime.
 - Browser validation uses only the fancy namespaced origins:
   `https://manage.klicker.rs-ux-review-question-library.localhost` and
   `https://api.klicker.rs-ux-review-question-library.localhost`.
@@ -432,17 +434,18 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 
 ## Integrated review and delivery
 
-- The required independent integrated final review completed on exact immutable
-  head `259f92a6be3a2a2cb3808f1c1d1305e6a276383d`. It covered integrated base
-  `ac84460d2209c51842f0857da75cf7d7f258ae09` through the code correction,
-  normal upstream merge, and final runtime-lifecycle evidence.
-- Current merge `79e356831c8354dade4c24ce83a52a08bff0cfda` adds only the
-  `playwright/timings.json` change from current base
-  `de103a52d982a29af72022069ad668bc68f84094` over reviewed head
-  `67f5a43363557a3e464831bb35d2dba6ea6805a9`. The same independent reviewer
-  passed exact range `67f5a43363557a3e464831bb35d2dba6ea6805a9..6284f3d5a45d706f3f5fd02821bff5f90b40e5dd`
-  with zero findings: branch-owned code and prior fixes are unchanged, and the
-  plan, completed prior review, and proven runtime shutdown remain consistent.
+- The required independent integrated final review completed on the reviewed
+  pre-correction head `3e72795c13f5e1102e55e7e7dc2a464a0ea8e763`. It found no
+  executable-code, security, accessibility, or architecture defect; its sole
+  finding was that canonical current-state sections of this durable plan were
+  stale, and this documentation correction resolves that finding.
+- Current merge `689a89d9f4e6c051258f5d4eadee0ac832a3b554` adds only the
+  `deploy/env-uzh-stg/values.yaml` change from current base
+  `a36c2162631792eecd23388d13aa6cc83fb3ffea`. The independent reviewer also
+  proposed removing O-live-quiz lines 2414-2435; that removal was rejected
+  because the retained cycles cover distinct filling versus deletion recovery,
+  including an empty block among valid blocks, so removing them would weaken
+  coverage.
 - Review lenses were correctness, plan compliance, user workflow, bilingual
   i18n, accessibility, shared navigation compatibility, test sufficiency,
   maintainability, bounded frontend security, and diff scope. The reviewer
@@ -450,12 +453,13 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 - The review's sole finding was the contradictory final-review status in this
   durable plan. That documentation finding is accepted and resolved by this
   edit; the completed code review remains valid for its reviewed range.
-- Draft PR #5546 exists and GitHub remains authoritative for volatile PR and
-  check state. Final local review and delta verification are complete through
-  exact head `6284f3d5a45d706f3f5fd02821bff5f90b40e5dd`. Normal push, PR body
-  update, exact-head CI, and review-thread resolution remain pending. PR merge,
-  mark-ready, deployment, publication, worktree cleanup, and branch or worktree
-  deletion remain withheld.
+- Draft PR #5546 remains draft and GitHub remains authoritative for volatile PR
+  and check state. Final local review and delta verification are complete
+  through reviewed pre-correction head
+  `3e72795c13f5e1102e55e7e7dc2a464a0ea8e763`. Normal push, PR body update,
+  exact-head CI, and the three review-thread resolutions remain pending. PR
+  merge, mark-ready, deployment, publication, worktree cleanup, and branch or
+  worktree deletion remain withheld.
 
 ## Risks and stop conditions
 
@@ -480,13 +484,30 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   browser evidence, and the environment-blocked repository Playwright run.
 - Host readback proves branch and PR-body synchronization for each published
   head. GitHub is authoritative for volatile current PR and check state. The
-  reviewed exact head `6284f3d5a45d706f3f5fd02821bff5f90b40e5dd`
+  reviewed pre-correction head `3e72795c13f5e1102e55e7e7dc2a464a0ea8e763`
   remains unpublished. Final local review and delta verification are complete;
-  normal push, PR body update, exact-head CI, and review-thread resolution remain
-  pending. PR merge, mark-ready, deployment, publication, cleanup, and deletion
-  remain withheld.
+  normal push, PR body update, exact-head CI, and the three review-thread
+  resolutions remain pending. PR merge, mark-ready, deployment, publication,
+  cleanup, and deletion remain withheld.
 
 ## Progress
+
+- 2026-08-26 integrated final review disposition: the independent integrated
+  final reviewer found no executable-code, security, accessibility, or
+  architecture defect. Its accepted finding was that the canonical
+  current-state sections of this durable plan were stale; this edit records the
+  current origin/v3 and merge-base a36c2162631792eecd23388d13aa6cc83fb3ffea,
+  the normal local merge 689a89d9f4e6c051258f5d4eadee0ac832a3b554 importing
+  only deploy/env-uzh-stg/values.yaml, the reviewed pre-correction head
+  3e72795c13f5e1102e55e7e7dc2a464a0ea8e763, the approved exact Manage
+  Turbopack cache clear as current evidence, and the current canonical stop
+  (provider state Stopped, exact route count 0). Normal push, PR-body update,
+  exact-head CI, and the three review-thread resolutions remain pending; the
+  draft, mark-ready, merge, deploy, and delete boundaries are unchanged. The
+  reviewer's proposed removal of O-live-quiz.spec.ts lines 2414-2435 is
+  rejected: the retained cycles cover distinct filling versus deletion
+  recovery, including an empty block among valid blocks, so the removal would
+  weaken coverage rather than reduce duplication.
 
 - 2026-08-26 W2 runtime verification and Progress pass: the configured DeepSeek
   executor merged the fresh upstream normally and repaired the approved Manage
@@ -576,14 +597,16 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   deletion remain withheld.
 - Status: W2 implementation, checks, exact devrouter proof, evidence, the code
   correction, completed independent integrated final review, and runtime
-  lifecycle closure remain complete. The same independent reviewer passed the
-  current base-only merge and plan delta with zero findings, so final local
-  review is complete through exact head
-  `6284f3d5a45d706f3f5fd02821bff5f90b40e5dd`. Runtime closure retains fresh
-  exact-source provider and zero-route readback.
+  lifecycle closure remain complete. Final local review is complete through
+  the reviewed pre-correction head
+  `3e72795c13f5e1102e55e7e7dc2a464a0ea8e763`. Runtime closure retains fresh
+  exact-source provider state `Stopped` and zero exact routes.
 - Freshness: the integrated base and merge-base are
-  `de103a52d982a29af72022069ad668bc68f84094`, which is also the current
-  `origin/v3`. Exact ahead/behind counts are not durable Progress state.
+  `a36c2162631792eecd23388d13aa6cc83fb3ffea`, which is also the current
+  `origin/v3`, integrated by the normal local merge
+  `689a89d9f4e6c051258f5d4eadee0ac832a3b554` importing only
+  `deploy/env-uzh-stg/values.yaml`. Exact ahead/behind counts are not durable
+  Progress state.
 - Sol final-review disposition for reviewed pre-correction local head
   `5ca2804370bc4cd6fa165d6158d611adb258c627`: both non-behavioral findings are
   accepted. The plan records the integrated base and merge-base, and the
