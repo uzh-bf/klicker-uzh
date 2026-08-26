@@ -15,16 +15,6 @@ export const LEARNING_ANALYTICS_ADVISORY_LOCK = {
   objectId: 0,
 } as const
 
-export const learningAnalyticsParticipantWhere = {
-  learningAnalyticsConsent: true,
-  learningAnalyticsChoiceAt: { not: null },
-  // Raw read predicates additionally trim this value. Prisma relation filters
-  // cannot compare the trimmed value, but excluding the empty string here
-  // keeps the ORM guard aligned for ordinary recorded states.
-  learningAnalyticsDisclosureVersion: { not: '' },
-  learningAnalyticsIncludedFrom: { not: null },
-} satisfies DB.Prisma.ParticipantWhereInput
-
 export type ParticipantDataUseFields = Pick<
   DB.Participant,
   | 'researchConsent'
