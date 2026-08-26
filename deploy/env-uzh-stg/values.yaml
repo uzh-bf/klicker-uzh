@@ -32,6 +32,9 @@ hatchet:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
         tag: v3-ai
+      resources:
+        limits:
+          memory: 512Mi
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -331,7 +334,7 @@ mcpStudent:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-student-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   strategy:
     type: RollingUpdate
@@ -368,7 +371,7 @@ mcpLecturer:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/mcp-lecturer-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   strategy:
     type: RollingUpdate
