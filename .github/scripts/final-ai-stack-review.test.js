@@ -1299,6 +1299,35 @@ test('preserves current stack evidence across unrelated default-base advancement
   assert.match(baseAdvanceNotices.at(-1), /strict descendant range/)
 
   files.set('b'.repeat(40), [
+    {
+      filename: 'src/base-rename.ts',
+      previous_filename: 'src/old-repair.ts',
+      additions: 1,
+      deletions: 1,
+    },
+  ])
+  files.set('e'.repeat(40), [
+    {
+      filename: 'src/new-repair.ts',
+      previous_filename: 'src/old-repair.ts',
+      additions: 1,
+      deletions: 1,
+    },
+  ])
+  assert.equal(
+    await authorizeStackReview({
+      github,
+      context: reviewContext,
+      core: {
+        notice: (message) => baseAdvanceNotices.push(message),
+        setOutput: () => {},
+      },
+    }),
+    false
+  )
+  assert.match(baseAdvanceNotices.at(-1), /strict descendant range/)
+
+  files.set('b'.repeat(40), [
     { filename: 'docs/base.md', additions: 1, deletions: 0 },
   ])
 
