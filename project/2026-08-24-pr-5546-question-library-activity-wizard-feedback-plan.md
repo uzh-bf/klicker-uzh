@@ -737,6 +737,18 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   The PR remains draft; mark-ready, merge, deployment, force-push, deletion, and
   cleanup remain withheld. The fixed guidance-link thread may be resolved only
   after exact-head checks pass.
+- Exact-head OpenCodeReview disposition for reviewed local head
+  `024c8813c4b51bdf4bf9562041c7594d30725e3e`: both findings are verified and
+  accepted. The four rich-text use-case link renderers differed only by URL, so
+  one local renderer factory now owns their unchanged new-tab, opener-safety,
+  and underline contract while preserving all four hrefs and translated rich
+  text. `WizardNavigation` now stores the latest disabled-reason callback in a
+  ref, synchronizes only when the final-step reason changes, and clears through
+  the latest callback on unmount without callback-identity cleanup churn.
+  Biome passed for both changed TSX files; frontend-manage and Playwright checks
+  passed; focused B/O Chromium discovery collected 89 tests; plan Prettier and
+  `git diff --check` passed. No runtime or browser was started. Push, thread
+  resolution, PR-state changes, merge, and deployment remain withheld.
 
 ### Historical execution evidence before final runtime proof
 

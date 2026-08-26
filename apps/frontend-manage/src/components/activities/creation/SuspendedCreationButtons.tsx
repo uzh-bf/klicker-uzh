@@ -6,10 +6,26 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { ActivityType } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
+import type { ReactNode } from 'react'
 import CreationButton from './CreationButton'
 
 interface CreationButtonsProps {
   setCreationMode: (mode: ActivityType) => void
+}
+
+function createUseCaseLinkRenderer(href: string) {
+  return function UseCaseLinkRenderer(chunks: ReactNode) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline"
+      >
+        {chunks}
+      </a>
+    )
+  }
 }
 
 function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
@@ -27,15 +43,8 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
           setCreationMode(ActivityType.LiveQuiz)
         }}
         description={t.rich('manage.activityWizard.liveQuizUseCase', {
-          link: (chunks) => (
-            <a
-              href="https://www.klicker.uzh.ch/use_cases/live_quiz/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline"
-            >
-              {chunks}
-            </a>
+          link: createUseCaseLinkRenderer(
+            'https://www.klicker.uzh.ch/use_cases/live_quiz/'
           ),
         })}
         data={{ cy: 'create-live-quiz' }}
@@ -47,15 +56,8 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
           setCreationMode(ActivityType.MicroLearning)
         }}
         description={t.rich('manage.activityWizard.microlearningUseCase', {
-          link: (chunks) => (
-            <a
-              href="https://www.klicker.uzh.ch/use_cases/microlearning/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline"
-            >
-              {chunks}
-            </a>
+          link: createUseCaseLinkRenderer(
+            'https://www.klicker.uzh.ch/use_cases/microlearning/'
           ),
         })}
         data={{ cy: 'create-microlearning' }}
@@ -67,15 +69,8 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
           setCreationMode(ActivityType.PracticeQuiz)
         }}
         description={t.rich('manage.activityWizard.practiceQuizUseCase', {
-          link: (chunks) => (
-            <a
-              href="https://www.klicker.uzh.ch/use_cases/practice_quiz/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline"
-            >
-              {chunks}
-            </a>
+          link: createUseCaseLinkRenderer(
+            'https://www.klicker.uzh.ch/use_cases/practice_quiz/'
           ),
         })}
         data={{ cy: 'create-practice-quiz' }}
@@ -87,15 +82,8 @@ function SuspendedCreationButtons({ setCreationMode }: CreationButtonsProps) {
           setCreationMode(ActivityType.GroupActivity)
         }}
         description={t.rich('manage.activityWizard.groupActivityUseCase', {
-          link: (chunks) => (
-            <a
-              href="https://www.klicker.uzh.ch/use_cases/group_activity/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline"
-            >
-              {chunks}
-            </a>
+          link: createUseCaseLinkRenderer(
+            'https://www.klicker.uzh.ch/use_cases/group_activity/'
           ),
         })}
         data={{ cy: 'create-group-activity' }}

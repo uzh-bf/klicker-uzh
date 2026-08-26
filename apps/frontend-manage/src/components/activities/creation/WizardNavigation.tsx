@@ -6,7 +6,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 interface WizardNavigationProps {
   editMode: boolean
@@ -36,16 +36,21 @@ function WizardNavigation({
   onCloseWizard,
 }: WizardNavigationProps) {
   const t = useTranslations()
+  const onDisabledReasonChangeRef = useRef(onDisabledReasonChange)
 
   useEffect(() => {
-    onDisabledReasonChange?.(lastStep ? disabledReason : undefined)
-  }, [disabledReason, lastStep, onDisabledReasonChange])
+    onDisabledReasonChangeRef.current = onDisabledReasonChange
+  }, [onDisabledReasonChange])
+
+  useEffect(() => {
+    onDisabledReasonChangeRef.current?.(lastStep ? disabledReason : undefined)
+  }, [disabledReason, lastStep])
 
   useEffect(
     () => () => {
-      onDisabledReasonChange?.(undefined)
+      onDisabledReasonChangeRef.current?.(undefined)
     },
-    [onDisabledReasonChange]
+    []
   )
 
   return (
