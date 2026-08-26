@@ -35,7 +35,7 @@ RUNNER_GROUP_ID=''
 
 usage() {
   cat <<'EOF'
-Provision one organization-scoped GitHub Actions runner on a fresh Hetzner VM.
+Provision one organization-scoped GitHub Actions runner on a fresh or reset Hetzner VM.
 
 Usage:
   provision-hetzner-arm64-runner.sh --profile PROFILE [--runner-name NAME]
@@ -45,7 +45,7 @@ Usage:
 Modes:
   no mode             Print the selected profile plan. Makes no changes or network access.
   --check             Validate this host. Makes no changes and performs no network access.
-  --apply             Interactively provision a fresh organization-scoped runner.
+  --apply             Interactively provision an organization-scoped runner.
 
 Options:
   --profile PROFILE   public-pr or trusted. Pool assignment is immutable.
@@ -294,7 +294,7 @@ state_value() {
 }
 
 validate_existing_state() {
-  local stored_name stored_organization stored_profile stored_scope stored_group stored_storage stored_mount stored_service
+  local reset_ready stored_name stored_organization stored_profile stored_scope stored_group stored_storage stored_mount stored_service
   local expected_storage
 
   if [[ ! -e "$STATE_FILE" ]]; then
@@ -323,6 +323,38 @@ validate_existing_state() {
   fi
 
   [[ -f "$STATE_FILE" && ! -L "$STATE_FILE" ]] || die 'managed state file is invalid'
+  reset_ready=$(state_value RESET_READY)
+  if [[ "$reset_ready" == 'true' ]]; then
+    [[ "$(state_value TARGET_PROFILE)" == "$PROFILE" ]] ||
+      die 'this reset host was prepared for a different runner profile'
+    [[ "$(state_value ADMIN_USER)" == "$ADMIN_USER" ]] ||
+      die 'reset state contains an unexpected admin user'
+    [[ "$(state_value STORAGE_MODE)" == 'local' && -z "$(state_value VOLUME_MOUNT)" ]] ||
+      die 'reset state does not describe the local-disk configuration'
+    [[ -z "$VOLUME_MOUNT" ]] || die 'a reset local-disk host cannot adopt an attached volume'
+    id "$ADMIN_USER" >/dev/null 2>&1 || die 'reset state exists but the admin user is missing'
+    ! id "$RUNNER_USER" >/dev/null 2>&1 || die 'reset state exists but the runner user remains'
+    [[ ! -e "$RUNNER_DIR" && ! -L "$RUNNER_DIR" ]] ||
+      die 'reset state exists but the runner directory remains'
+    [[ -f "$SSH_HARDENING_FILE" && ! -L "$SSH_HARDENING_FILE" ]] ||
+      die 'reset state exists but generic SSH hardening is missing'
+    ! command -v docker >/dev/null 2>&1 || die 'reset state exists but Docker remains installed'
+    [[ ! -e /etc/docker && ! -e /var/lib/docker && ! -e /var/lib/containerd ]] ||
+      die 'reset state exists but Docker configuration or data remains'
+    ! compgen -G '/etc/systemd/system/actions.runner.uzh-bf*.service' >/dev/null ||
+      die 'reset state exists but a runner service remains'
+    [[ ! -e /etc/klicker-runner &&
+      ! -e /etc/ssh/sshd_config.d/00-klicker-runner-hardening.conf &&
+      ! -e /usr/local/sbin/klicker-runner-disk-cleanup &&
+      ! -e /usr/local/sbin/actions-runner-disk-cleanup &&
+      ! -e /etc/systemd/system/klicker-runner-disk-cleanup.service &&
+      ! -e /etc/systemd/system/klicker-runner-disk-cleanup.timer &&
+      ! -e /etc/systemd/system/actions-runner-disk-cleanup.service &&
+      ! -e /etc/systemd/system/actions-runner-disk-cleanup.timer ]] ||
+      die 'reset state exists but legacy runner maintenance assets remain'
+    return
+  fi
+
   stored_name=$(state_value RUNNER_NAME)
   stored_organization=$(state_value ORGANIZATION)
   stored_profile=$(state_value PROFILE)
