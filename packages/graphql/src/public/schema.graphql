@@ -2118,7 +2118,7 @@ type Mutation {
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
-  setChatAccountUsageBudgets(advancedBudgetCredits: Float!, baseBudgetCredits: Float!, ownerId: String): ChatAccountUsageOverview
+  setChatAccountUsageBudgets(advancedBudgetCredits: Float!, baseBudgetCredits: Float!, ownerId: String!): ChatAccountUsageOverview
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo

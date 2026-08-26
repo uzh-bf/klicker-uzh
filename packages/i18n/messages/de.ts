@@ -1914,10 +1914,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       baseBudgetLabel: 'Budget für das Basismodell',
       baseModelUsage: 'Nutzung des Basismodells',
       chatAccountUsageDescription:
-        'Prüfen Sie die Nutzung des aktuellen Monats und legen Sie für jede Nutzungsklasse ein Credit-Budget fest.',
+        'Prüfen Sie die geschätzte Nutzung des aktuellen Monats für jede Nutzungsklasse.',
+      chatAccountUsageBoundaryDescription:
+        'Budgets werden für die Betriebsplanung durch den Betrieb festgelegt. Sie sind Richtwerte und keine harte Sperre; laufende Anfragen können sie überschreiten.',
       chatAccountUsageTitle: 'Chatbot-Nutzung',
       chatAccountUsageUnauthorized:
-        'Die Chatbot-Nutzung ist für dieses Konto nicht freigeschaltet. Budgets können nicht geändert werden.',
+        'Die Chatbot-Nutzung ist für dieses Konto nicht freigeschaltet.',
       saveUsageBudgets: 'Budgets speichern',
       usageBudget: 'Budget',
       usageBudgetEditor: 'Monatliche Budgets',
@@ -3794,6 +3796,13 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       linkedCourses: 'Verknüpfte Kurse',
       linkedCoursesList: 'Verknüpft mit: {courses}',
       noLinkedCourses: 'Noch keine Kurse verknüpft.',
+      chatbotStatusDraft: 'Entwurf',
+      chatbotStatusPendingApproval: 'Ausstehende Freigabe',
+      chatbotStatusPublished: 'Veröffentlicht',
+      chatbotStatusPaused: 'Pausiert',
+      chatbotStatusRejected: 'Abgelehnt',
+      chatbotStatusUnknown: 'Unbekannter Status',
+      chatbotNotLive: 'Teilnehmenden-Link nach der Veröffentlichung verfügbar.',
       credits: 'Credits',
       creditInitialCredits: 'Start-Credits',
       creditResetPeriod: 'Zurücksetzungsintervall',

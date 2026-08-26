@@ -1902,10 +1902,12 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       baseBudgetLabel: 'Base model budget',
       baseModelUsage: 'Base model usage',
       chatAccountUsageDescription:
-        'Review the current monthly usage and set one credit budget for each usage class.',
+        'Review the current monthly usage estimates for each usage class.',
+      chatAccountUsageBoundaryDescription:
+        'Budgets are managed by operations as soft targets for planning. They are not hard stops, and requests already in progress may exceed them.',
       chatAccountUsageTitle: 'Chatbot usage',
       chatAccountUsageUnauthorized:
-        'Chatbot usage is not authorized for this account. Budgets cannot be changed.',
+        'Chatbot usage is not authorized for this account.',
       saveUsageBudgets: 'Save budgets',
       usageBudget: 'Budget',
       usageBudgetEditor: 'Monthly budgets',
@@ -3731,6 +3733,13 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       linkedCourses: 'Linked Courses',
       linkedCoursesList: 'Linked to: {courses}',
       noLinkedCourses: 'No courses linked yet.',
+      chatbotStatusDraft: 'Draft',
+      chatbotStatusPendingApproval: 'Pending approval',
+      chatbotStatusPublished: 'Published',
+      chatbotStatusPaused: 'Paused',
+      chatbotStatusRejected: 'Rejected',
+      chatbotStatusUnknown: 'Unknown status',
+      chatbotNotLive: 'Participant link available after publication.',
       credits: 'Credits',
       creditInitialCredits: 'Initial credits',
       creditResetPeriod: 'Reset period',
