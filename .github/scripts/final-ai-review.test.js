@@ -618,7 +618,7 @@ test('renders findings without making finding count a failure', () => {
     'a'.repeat(40),
     metadataInput
   )
-  assert.match(report, /z-ai\/glm-5\.3 \(high reasoning\)/)
+  assert.match(report, /z-ai\/glm-5\.3-flash \(high reasoning\)/)
   assert.match(report, /src\/example\.ts:10-11/)
   assert.match(report, /Confidence: 75\/100/)
   assert.match(report, /```[\s\S]*\n## Injected heading\n```/)

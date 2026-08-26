@@ -22,7 +22,7 @@ const {
 
 const FINAL_REVIEW_COMMAND = '/final-review'
 const FINAL_REVIEW_CONTEXT = 'final-ai-review'
-const FINAL_REVIEW_MODEL = 'z-ai/glm-5.3'
+const FINAL_REVIEW_MODEL = 'z-ai/glm-5.3-flash'
 const FINAL_REVIEW_BOT = 'github-actions[bot]'
 const FINAL_REVIEW_SCHEMA = 'final-ai-review/v4'
 const FINAL_REVIEW_POLICY_SCHEMA = 'final-ai-policy/v1'

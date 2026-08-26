@@ -100,7 +100,7 @@
 | --- | --- | --- | --- |
 | Draft discovery | PR is draft | DeepSeek reviews each draft head against its immediate base. A ready transition cancels any in-flight cheap run. | PR becomes ready and the last cheap run is terminal or cancelled. |
 | Ready freeze | PR is ready | Snapshot all existing feedback, classify it, and batch accepted fixes into at most one push for that head. Cheap review no longer starts. | CI and existing feedback are settled, or a real blocker needs a decision. |
-| Full final snapshot | Authorized collaborator posts `/final-review` or `/final-review-stack` | `z-ai/glm-5.3` performs one complete blocker-only review of an immutable single-PR or stack snapshot. A clean run records an evidence-bound success status without a PR comment. | A complete report or trusted clean marker and status exist, or the run fails closed. |
+| Full final snapshot | Authorized collaborator posts `/final-review` or `/final-review-stack` | `z-ai/glm-5.3-flash` performs one complete blocker-only review of an immutable single-PR or stack snapshot. A clean run records an evidence-bound success status without a PR comment. | A complete report or trusted clean marker and status exist, or the run fails closed. |
 | Remediation attestation | A verified final blocker is fixed on a descendant head | The same manual command verifies the cumulative remediation delta against the complete root review instead of starting another cold review when the bounded contract holds. | Current-head attestation succeeds, a cold review is required, or the round cap stops automation. |
 | Ready | CI is green and all findings are terminal | No more review-triggered pushes occur. | Human chooses whether to merge. |
 
@@ -112,9 +112,9 @@ stops its automatic mutation loop.
 `final-ai-review` and `final-ai-stack-review` mean that the configured review
 completed for the recorded snapshot. Finding count does not control those
 statuses. A genuinely clean run intentionally emits no PR review body: the
-individual status description is `z-ai/glm-5.3 final review clean; evidence=<64-
+individual status description is `z-ai/glm-5.3-flash final review clean; evidence=<64-
 hex evidence digest>`, and the stack status description is
-`z-ai/glm-5.3 stack review clean; evidence=<64-hex evidence digest>`. The
+`z-ai/glm-5.3-flash stack review clean; evidence=<64-hex evidence digest>`. The
 individual evidence digest covers the PR range, review mode, root review,
 stack identity, dispositions, and policy. The stack evidence digest covers
 the ordered layer identities, topology identity, exact range, dispositions,
@@ -257,7 +257,7 @@ The strong stack run contains two independent passes:
 - one direct OpenRouter topology review over the bounded manifest, deterministic
   path-overlap data, layer intent, and normalized cumulative-review coverage.
 
-The topology call uses `z-ai/glm-5.3` with high reasoning, strict JSON Schema,
+The topology call uses `z-ai/glm-5.3-flash` with high reasoning, strict JSON Schema,
 `provider.require_parameters: true`, and fail-closed parsing. It reviews layer
 boundaries, dependency order, cross-layer integration, and coverage; the helper
 validates graph correctness deterministically. Findings are assigned from exact
@@ -295,7 +295,7 @@ evidence until a controlled landing proves the exact survival rules.
 - Keep DeepSeek on drafts because observed value and cost justify it. Use one
   cumulative strong code pass and one topology pass per stack, not one strong
   pass per layer by default.
-- Use `z-ai/glm-5.3` for the manually triggered final code and topology passes.
+- Use `z-ai/glm-5.3-flash` for the manually triggered final code and topology passes.
   This replaces the previously planned Gemini final route at the user's
   explicit request; the new OpenRouter route remains unqualified live until a
   separately authorized, costed continuation.

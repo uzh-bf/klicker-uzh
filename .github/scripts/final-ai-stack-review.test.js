@@ -521,7 +521,9 @@ test('publishes clean stack evidence as a check without a pull-request comment',
   assert.equal(
     state.createdStatuses
       .at(-1)
-      .description.startsWith('z-ai/glm-5.3 stack review clean; evidence='),
+      .description.startsWith(
+        'z-ai/glm-5.3-flash stack review clean; evidence='
+      ),
     true
   )
 })
