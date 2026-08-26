@@ -167,7 +167,6 @@ jobs:
           REVIEW_MODE: ${{ needs.authorize.outputs.mode }}
           ROOT_HEAD: ${{ needs.authorize.outputs.root_head }}
           REVIEW_RANGES: ${{ needs.authorize.outputs.review_ranges }}
-          MEMBER_NUMBERS: ${{ needs.authorize.outputs.member_numbers }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
         run: |
           set -euo pipefail

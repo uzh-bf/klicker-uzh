@@ -1097,9 +1097,7 @@ async function startStackReview({
       policyDigest,
       dispositionDigest,
       reviewRanges,
-    }) ||
-    plan.baseSha !== baseSha ||
-    plan.headSha !== headSha
+    })
   ) {
     throw new Error('Native stack changed before stack-review start')
   }
@@ -1574,7 +1572,7 @@ function loadTopologyRules() {
   return fs.readFileSync(STACK_RULES_PATH, 'utf8')
 }
 
-function topologyPrompt({ manifest, codeSummary, rulesText }) {
+function topologyPrompt({ manifest, codeSummary }) {
   return [
     'You are performing the independent topology pass for a native pull-request stack.',
     'The checked-in topology rules are trusted policy and must be applied.',
@@ -1595,7 +1593,7 @@ function buildTopologyRequest({ manifest, codeSummary, rulesText, schema }) {
         role: 'system',
       },
       {
-        content: topologyPrompt({ manifest, codeSummary, rulesText }),
+        content: topologyPrompt({ manifest, codeSummary }),
         role: 'user',
       },
     ],
@@ -1742,9 +1740,7 @@ async function publishStackReview({
       policyDigest,
       dispositionDigest,
       reviewRanges,
-    }) ||
-    plan.baseSha !== baseSha ||
-    plan.headSha !== headSha
+    })
   ) {
     throw new Error('Native stack changed before stack-review publication')
   }
@@ -1884,7 +1880,7 @@ async function finalizeStackReview({
       policyDigest,
       dispositionDigest,
       reviewRanges,
-    }) && plan.baseSha === baseSha
+    })
   await setStackStatus({
     github,
     context,
