@@ -146,7 +146,7 @@ jobs:
     timeout-minutes: 60
     concurrency:
       group: final-ai-stack-review-${{ needs.authorize.outputs.pr_number }}
-      cancel-in-progress: false
+      cancel-in-progress: true
     permissions:
       actions: read
       contents: read

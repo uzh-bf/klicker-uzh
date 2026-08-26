@@ -13,7 +13,9 @@ const {
   buildOCRConfig,
   buildReviewPlan,
   buildReviewBackground,
+  decodeMetadata,
   decideFinalStatus,
+  encodeMetadata,
   isFinalReviewCommand,
   isTrustedPermission,
   normalizeTitle,
@@ -274,6 +276,7 @@ function completeReviewMetadata(headSha = 'a'.repeat(40), overrides = {}) {
     headRepo: 'uzh-bf/klicker-uzh',
     mode: 'full',
     policyDigest: '2'.repeat(64),
+    dispositionDigest: '',
     trustedPolicySha: 'd'.repeat(40),
     workflowHeadSha: 'd'.repeat(40),
     workflowSha: 'd'.repeat(40),
@@ -411,10 +414,10 @@ test('renders findings without making finding count a failure', () => {
     )[0]
   )
   assert.notEqual(rerunMetadata.review_id, metadata.review_id)
-  const tampered = report.replace(
-    /"finding_ids":\["fr-[0-9a-f]{16}"\]/u,
-    '"finding_ids":["fr-0000000000000000"]'
-  )
+  const marker = report.match(/<!-- final-ai-review\/v4 ([A-Za-z0-9_-]+) -->/)
+  const tamperedMetadata = decodeMetadata(marker[1])
+  tamperedMetadata.finding_ids = ['fr-0000000000000000']
+  const tampered = report.replace(marker[1], encodeMetadata(tamperedMetadata))
   assert.equal(parseReviewMetadata(tampered), null)
   assert.equal(
     report,
@@ -690,7 +693,7 @@ test('selects incremental attestation only for bounded repaired changes', async 
     context,
     pull: state.pull,
   })
-  assert.equal(deferredDisposition.mode, 'full')
+  assert.equal(deferredDisposition.mode, 'incremental')
   state.comments = [{ body: disposition, user: { login: 'reviewer' } }]
 
   state.rules = '{"rules":["changed"]}'

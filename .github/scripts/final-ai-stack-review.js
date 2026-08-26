@@ -5,6 +5,8 @@ const path = require('node:path')
 const {
   FINAL_REVIEW_BOT,
   FINAL_REVIEW_MODEL,
+  decodeMetadata,
+  encodeMetadata,
   getReviewPolicyDigest,
   FINAL_REVIEW_WORKFLOW_PATH,
   MAX_INCREMENTAL_LINES,
@@ -25,7 +27,7 @@ const {
 
 const STACK_REVIEW_COMMAND = '/final-review-stack'
 const STACK_REVIEW_CONTEXT = 'final-ai-stack-review'
-const STACK_REVIEW_SCHEMA = 'final-ai-stack-review/v2'
+const STACK_REVIEW_SCHEMA = 'final-ai-stack-review/v3'
 const STACK_REVIEW_WORKFLOW_PATH =
   '.github/workflows/check-ocr-final-stack-review.yml'
 const STACK_RULES_PATH =
@@ -239,11 +241,14 @@ function stackPlanMatches(
 
 function parseStackReviewMetadata(body) {
   const match = String(body ?? '').match(
-    /<!-- final-ai-stack-review\/v2 (\{[^\r\n]*\}) -->/
+    new RegExp(
+      `<!-- ${STACK_REVIEW_SCHEMA.replace('/', '\\/')} ([A-Za-z0-9_-]+) -->`
+    )
   )
   if (!match) return null
   try {
-    const metadata = JSON.parse(match[1])
+    const metadata = decodeMetadata(match[1])
+    if (!metadata) return null
     const expectedKeys = new Set([
       'base_sha',
       'code_pass',
@@ -460,7 +465,13 @@ function parseStackReviewMetadata(body) {
   }
 }
 
-async function latestStackReview({ github, context, pull, modes = ['full'] }) {
+async function latestStackReview({
+  github,
+  context,
+  pull,
+  modes = ['full'],
+  requireCurrentStatus = true,
+}) {
   const artifacts = await listReviewArtifacts({ github, context, pull })
   const candidates = artifacts
     .map((artifact) => ({
@@ -510,12 +521,13 @@ async function latestStackReview({ github, context, pull, modes = ['full'] }) {
       continue
     }
     if (
-      await hasSuccessfulStackReview(
+      !requireCurrentStatus ||
+      (await hasSuccessfulStackReview(
         github,
         context,
         candidate.metadata.head_sha,
         candidate.metadata.workflow_run_id
-      )
+      ))
     ) {
       return candidate
     }
@@ -586,6 +598,7 @@ async function canPreserveStackReviewAcrossBaseAdvance({
       context,
       pull: topPull,
       modes: ['full', 'incremental'],
+      requireCurrentStatus: false,
     })
     const metadata = previousReview?.metadata
     if (
@@ -750,6 +763,7 @@ async function buildStackReviewPlan({
     context,
     pull: topPull,
     modes: ['full'],
+    requireCurrentStatus: false,
   })
   if (!rootReview) return fullPlan
   const root = rootReview.metadata
@@ -808,9 +822,6 @@ async function buildStackReviewPlan({
     rootReview,
   })
   if (root.finding_ids.length === 0 || !disposition) return fullPlan
-  if (disposition.entries.some((entry) => entry.state !== 'fixed')) {
-    return fullPlan
-  }
   const remediationPaths = new Set(
     disposition.entries.flatMap((entry) => entry.paths)
   )
@@ -2143,7 +2154,7 @@ function renderStackReview({
     workflow_run_id: workflowRunId,
   }
   const sections = [
-    `<!-- ${STACK_REVIEW_SCHEMA} ${JSON.stringify(metadata)} -->`,
+    `<!-- ${STACK_REVIEW_SCHEMA} ${encodeMetadata(metadata)} -->`,
     `## Final AI stack review · Gemini 3.7 Flash (high reasoning)`,
     '',
     effectiveReviewRanges.length <= 1
@@ -2576,6 +2587,13 @@ async function finalizeStackReview({
     dispositionDigest,
     reviewRanges,
   })
+  const latestStatus = await latestStackStatus(github, context, headSha)
+  if (
+    latestStatus?.target_url &&
+    latestStatus.target_url !== workflowRunUrl(context)
+  ) {
+    return
+  }
   await setStackStatus({
     github,
     context,
@@ -2687,6 +2705,8 @@ if (require.main === module) {
 }
 
 module.exports = {
+  decodeMetadata,
+  encodeMetadata,
   FINAL_REVIEW_MODEL,
   MAX_MANIFEST_FILES,
   OPENROUTER_URL,

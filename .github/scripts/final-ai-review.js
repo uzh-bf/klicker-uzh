@@ -12,7 +12,7 @@ const FINAL_REVIEW_COMMAND = '/final-review'
 const FINAL_REVIEW_CONTEXT = 'final-ai-review'
 const FINAL_REVIEW_MODEL = 'google/gemini-3.7-flash'
 const FINAL_REVIEW_BOT = 'github-actions[bot]'
-const FINAL_REVIEW_SCHEMA = 'final-ai-review/v3'
+const FINAL_REVIEW_SCHEMA = 'final-ai-review/v4'
 const FINAL_REVIEW_POLICY_SCHEMA = 'final-ai-policy/v1'
 const DISPOSITION_SCHEMA = 'final-ai-disposition/v1'
 const FINAL_REVIEW_WORKFLOW_PATH =
@@ -57,6 +57,32 @@ const DISPOSITION_STATES = new Set(['fixed', 'follow-up', 'rejected'])
 
 function sha256(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex')
+}
+
+function encodeMetadata(value) {
+  return Buffer.from(JSON.stringify(value), 'utf8').toString('base64url')
+}
+
+function decodeMetadata(value) {
+  if (
+    typeof value !== 'string' ||
+    !/^[A-Za-z0-9_-]+$/.test(value) ||
+    value.length > REPORT_LIMIT
+  ) {
+    return null
+  }
+  const decoded = Buffer.from(value, 'base64url').toString('utf8')
+  if (Buffer.from(decoded, 'utf8').toString('base64url') !== value) {
+    return null
+  }
+  try {
+    const parsed = JSON.parse(decoded)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed
+      : null
+  } catch {
+    return null
+  }
 }
 
 function normalizeTitle(value, limit = 200) {
@@ -498,7 +524,7 @@ function reviewPolicySettings() {
     report_limit: REPORT_LIMIT,
     review_schemas: {
       individual: FINAL_REVIEW_SCHEMA,
-      stack: 'final-ai-stack-review/v2',
+      stack: 'final-ai-stack-review/v3',
       stack_manifest: 'final-ai-stack-manifest/v2',
     },
     workflow_paths: {
@@ -592,11 +618,14 @@ async function inspectPromotion({ github, context, pull, sourceBranch }) {
 
 function parseReviewMetadata(body) {
   const match = String(body ?? '').match(
-    /<!-- final-ai-review\/v3 (\{[^\r\n]*\}) -->/
+    new RegExp(
+      `<!-- ${FINAL_REVIEW_SCHEMA.replace('/', '\\/')} ([A-Za-z0-9_-]+) -->`
+    )
   )
   if (!match) return null
   try {
-    const metadata = JSON.parse(match[1])
+    const metadata = decodeMetadata(match[1])
+    if (!metadata) return null
     if (
       metadata.schema_version !== FINAL_REVIEW_SCHEMA ||
       !/^frv-[0-9a-f]{24}$/.test(metadata.review_id ?? '') ||
@@ -610,6 +639,8 @@ function parseReviewMetadata(body) {
       metadata.workflow_sha !== metadata.trusted_policy_sha ||
       !/^[0-9a-f]{64}$/.test(metadata.policy_digest ?? '') ||
       !/^[0-9a-f]{64}$/.test(metadata.background_digest ?? '') ||
+      (metadata.disposition_digest !== '' &&
+        !/^[0-9a-f]{64}$/.test(metadata.disposition_digest ?? '')) ||
       metadata.workflow_path !== FINAL_REVIEW_WORKFLOW_PATH ||
       !Number.isSafeInteger(metadata.workflow_run_id) ||
       metadata.workflow_run_id <= 0 ||
@@ -1172,9 +1203,6 @@ async function buildReviewPlan({ github, context, pull, trustedSha }) {
     rootReview,
   })
   if (rootFindingIds.length > 0 && !disposition) return fullPlan
-  if (disposition?.entries.some((entry) => entry.state !== 'fixed')) {
-    return fullPlan
-  }
   const remediationPaths = new Set(
     (disposition?.entries ?? []).flatMap((entry) => entry.paths)
   )
@@ -1675,12 +1703,13 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
       policyDigest: reviewMetadata.policyDigest ?? '',
       workflowRunId: reviewMetadata.workflowRunId ?? 0,
     })
-  const metadataMarker = `<!-- ${FINAL_REVIEW_SCHEMA} ${JSON.stringify({
+  const metadata = {
     background_digest: reviewMetadata.backgroundDigest ?? '',
     base_ref: reviewMetadata.baseRef ?? '',
     base_repo: reviewMetadata.baseRepo ?? '',
     base_sha: reviewMetadata.baseSha ?? '',
     coverage_state: 'complete',
+    disposition_digest: reviewMetadata.dispositionDigest ?? '',
     disposition_ids: reviewMetadata.dispositionIds ?? [],
     finding_ids: findings.map((finding) => finding.id),
     findings,
@@ -1704,7 +1733,8 @@ function renderFinalReviewChunks(result, headSha, reviewMetadata = {}) {
     workflow_head_sha: workflowHeadSha,
     workflow_sha: workflowSha,
     workflow_run_id: reviewMetadata.workflowRunId ?? 0,
-  })} -->`
+  }
+  const metadataMarker = `<!-- ${FINAL_REVIEW_SCHEMA} ${encodeMetadata(metadata)} -->`
 
   const marker = `<!-- final-ai-review head=${headSha} model=${FINAL_REVIEW_MODEL} -->`
   const header = [
@@ -1930,7 +1960,9 @@ module.exports = {
   buildOCRConfig,
   buildReviewPlan,
   buildReviewBackground,
+  decodeMetadata,
   decideFinalStatus,
+  encodeMetadata,
   finalizeFinalReview,
   initializeFinalReview,
   isFinalReviewCommand,

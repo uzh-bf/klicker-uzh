@@ -7,12 +7,14 @@ const test = require('node:test')
 
 const {
   FINAL_REVIEW_MODEL,
+  STACK_REVIEW_SCHEMA,
   authorizeStackReview,
   buildStackReviewPlan,
   buildStackSnapshot,
   callTopologyModel,
   combineOCRResults,
   decideStackStatus,
+  encodeMetadata,
   finalizeStackReview,
   initializeStackReview,
   isStackReviewCommand,
@@ -1475,7 +1477,7 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
   }
   state.reviews.push({
     id: 702,
-    body: `<!-- final-ai-stack-review/v2 ${JSON.stringify(secondReviewMetadata)} -->`,
+    body: `<!-- ${STACK_REVIEW_SCHEMA} ${encodeMetadata(secondReviewMetadata)} -->`,
     commit_id: nextHead,
     state: 'COMMENTED',
     submitted_at: '2026-08-25T02:00:00Z',
@@ -1556,7 +1558,7 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
       pullNumber: 14,
     }),
   })
-  assert.equal(deferredPlan.mode, 'full')
+  assert.equal(deferredPlan.mode, 'incremental')
 
   state.policyFiles[
     '.github/open-code-review/final-stack-topology-rules.json'
@@ -1897,6 +1899,50 @@ test('rejects a successful finish after lower-layer identity drift', async () =>
   assert.equal(state.createdStatuses.at(-1).state, 'error')
 })
 
+test('does not overwrite a newer invalidation status during finalization', async () => {
+  const { github, state } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const plan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership,
+  })
+  state.statuses = [
+    {
+      context: 'final-ai-stack-review',
+      state: 'pending',
+      target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/701',
+    },
+  ]
+
+  await finalizeStackReview({
+    github,
+    context: context(),
+    prNumber: 14,
+    baseSha: membership.members[0].pull.base.sha,
+    headSha: membership.top.head.sha,
+    stackId: membership.id,
+    stackOrderDigest: membership.orderDigest,
+    stackIdentityDigest: membership.identityDigest,
+    memberNumbers: membership.numbers,
+    mode: plan.mode,
+    rootHead: plan.rootHead,
+    rootReviewId: plan.rootReviewId,
+    policyDigest: plan.policyDigest,
+    dispositionDigest: plan.dispositionDigest,
+    codeOutcome: 'success',
+    topologyOutcome: 'success',
+    cleanupOutcome: 'success',
+    publishOutcome: 'success',
+  })
+
+  assert.equal(state.createdStatuses.length, 0)
+})
+
 test('renders consolidated code and topology findings with one stack marker', async () => {
   const { github } = stackFixture()
   const membership = await resolveStackMembership({
@@ -1939,7 +1985,7 @@ test('renders consolidated code and topology findings with one stack marker', as
     workflowSha: 'c'.repeat(40),
     workflowRunId: 700,
   })
-  assert.match(report, /final-ai-stack-review\/v2/)
+  assert.match(report, new RegExp(STACK_REVIEW_SCHEMA.replace('/', '\\/')))
   assert.match(
     report,
     /Reviewed verified stack 99 from `bbbbbbbbbbbb` to `ffffffffffff`\./
@@ -1951,7 +1997,7 @@ test('renders consolidated code and topology findings with one stack marker', as
   assert.equal(metadata.trusted_policy_sha, 'c'.repeat(40))
   assert.equal(metadata.workflow_head_sha, 'a'.repeat(40))
   assert.equal(
-    (report.match(/<!-- final-ai-stack-review\/v2/g) ?? []).length,
+    (report.match(new RegExp(`<!-- ${STACK_REVIEW_SCHEMA}`, 'g')) ?? []).length,
     1
   )
 })
