@@ -211,9 +211,9 @@ Do not delete a workflow if any readback differs from the expected set.
 ## Progress
 
 - Status: branch is synced with current `origin/v3` through normal merge commit
-  `e90a39619`; [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) needs
-  this current head pushed and its exact-head checks before it can be marked
-  ready.
+  `e90a39619`; [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) is
+  pushed at `1a71e2e00` and its exact-head required checks are in flight before
+  the final review and ready transition.
 - Completed: plan commit and post-commit freshness check; replacement workflow
   implementation; Actions audit, validation, and discovery; exact Node 24
   dependency builds; all four unit suites; Prettier and diff checks; and the
@@ -245,9 +245,9 @@ Do not delete a workflow if any readback differs from the expected set.
   package eight times. The corrective hosted run at the pre-merge head
   `96ec9e41d` passed all eight shards and `test-playwright-status`; it is
   historical evidence and must be repeated for the final merged head.
-- Remaining: commit this baseline refresh, push the merged branch, update the
-  synced-base evidence, run fresh exact-head hosted checks, and mark the PR
-  ready if all required contexts pass. Merge remains withheld.
+- Remaining: finish the exact-head hosted checks for the pushed branch, record
+  the final review, refresh the PR description against the current base, and
+  mark the PR ready if all required contexts pass. Merge remains withheld.
 - Follow-up verification: the safe Actions audit, syntax validation, and job
   discovery pass with only `check`, `check-gitleaks`, and `test-unit` present for
   the consolidated scope. Prettier passes under the repository-pinned Node 24
@@ -274,9 +274,9 @@ Do not delete a workflow if any readback differs from the expected set.
 
 ## Next Steps
 
-- Push the current merged branch, refresh the PR description against
-  `origin/v3`, and wait for all required exact-head contexts.
-- Mark [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) ready
-  once the final hosted checks and review state remain green.
+- Finish the exact-head checks for the pushed branch and record the final
+  reviewer result.
+- Refresh the PR description against `origin/v3` and mark [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553)
+  ready once the final hosted checks and review state remain green.
 - Keep the deferred image-workflow optimizations as separate packages with
   their own hosted proof and contract review.
