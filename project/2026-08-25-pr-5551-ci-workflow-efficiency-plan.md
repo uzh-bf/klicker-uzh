@@ -37,7 +37,8 @@
 - Branch: `rs/ci-workflow-efficiency-cleanup` for the follow-up cutover.
 - Worktree: `trees/ci-workflow-efficiency`.
 - Target: current `origin/v3` at
-  `a36c2162631792eecd23388d13aa6cc83fb3ffea`, including merged [PR
+  `46f75e2f8a3d084036ee42361e38b210eb26f41b` (the immutable base of merge
+  resolution commit `fe156580e1955ccd48d58b825925e7a6c6fa90a5`), including merged [PR
   #5446](https://github.com/uzh-bf/klicker-uzh/pull/5446)'s Playwright timing and
   eight-shard changes, [PR #5567](https://github.com/uzh-bf/klicker-uzh/pull/5567)'s
   generated-client handoff, [PR #5565](https://github.com/uzh-bf/klicker-uzh/pull/5565)'s
@@ -46,8 +47,10 @@
   redirect fix, the `3.4.0-alpha.73` release commit, and [PR
   #5572](https://github.com/uzh-bf/klicker-uzh/pull/5572)'s staging-promotion
   annotation write-back, [PR #5575](https://github.com/uzh-bf/klicker-uzh/pull/5575)'s
-  subsequent staging promotion, and [PR #5578](https://github.com/uzh-bf/klicker-uzh/pull/5578)'s
-  latest staging promotion.
+  subsequent staging promotion, [PR #5578](https://github.com/uzh-bf/klicker-uzh/pull/5578)'s
+  latest staging promotion, and [PR
+  #5576](https://github.com/uzh-bf/klicker-uzh/pull/5576)'s generic ARM64
+  runner pools with the opt-in public-PR Playwright shard path.
 - Pull request: [#5551](https://github.com/uzh-bf/klicker-uzh/pull/5551) was
   squash-merged externally before the planned cleanup; follow-up draft
   [#5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) contains the cutover.
@@ -216,9 +219,14 @@ Do not delete a workflow if any readback differs from the expected set.
 
 ## Progress
 
-- Status: branch is synced with current `origin/v3` through normal merge commit
-  `e9db72078`; PR #5553 is published at the current branch head, and its
-  exact-head hosted checks are currently queued in the Actions scheduler.
+- Status: branch is synced with current `origin/v3` at
+  `46f75e2f8a3d084036ee42361e38b210eb26f41b` through normal merge-resolution
+  commit `fe156580e1955ccd48d58b825925e7a6c6fa90a5`. The only content conflict
+  (`docs/testing.md`) was resolved to keep the consolidated `test-unit`
+  description while incorporating #5576's GitHub-hosted build wording and the
+  opt-in `public-pr-playwright-shards.yml` ARM64 routing. The final review
+  passed the integrated package; exact-head hosted checks for the pushed head
+  are pending and must be read back before merge.
 - Completed: plan commit and post-commit freshness check; replacement workflow
   implementation; Actions audit, validation, and discovery; exact Node 24
   dependency builds; all four unit suites; Prettier and diff checks; and the
