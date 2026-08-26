@@ -305,6 +305,15 @@ describe('ChatAccountUsage service and GraphQL API', () => {
       baseModelUsage: { budgetCredits: 3 },
       advancedModelUsage: { budgetCredits: 4 },
     })
+    await expect(
+      setChatAccountUsageBudgets(
+        { baseBudgetCredits: 1, advancedBudgetCredits: 1, now: NOW },
+        adminCtx
+      )
+    ).rejects.toMatchObject({
+      message: 'FORBIDDEN',
+      extensions: { code: 'FORBIDDEN' },
+    })
 
     for (const targetOwnerId of [otherOwnerId, randomUUID()]) {
       await expect(
@@ -368,8 +377,13 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     ).resolves.toMatchObject({ authorized: false })
     await expect(
       setChatAccountUsageBudgets(
-        { baseBudgetCredits: 10, advancedBudgetCredits: 20, now: NOW },
-        ownerCtx
+        {
+          ownerId,
+          baseBudgetCredits: 10,
+          advancedBudgetCredits: 20,
+          now: NOW,
+        },
+        adminCtx
       )
     ).rejects.toMatchObject({
       extensions: { code: 'CHAT_ACCOUNT_USAGE_DISABLED' },
@@ -381,8 +395,13 @@ describe('ChatAccountUsage service and GraphQL API', () => {
 
   it('creates both budgets atomically and preserves used credits on update', async () => {
     const created = await setChatAccountUsageBudgets(
-      { baseBudgetCredits: 10.5, advancedBudgetCredits: 20.25, now: NOW },
-      ownerCtx
+      {
+        ownerId,
+        baseBudgetCredits: 10.5,
+        advancedBudgetCredits: 20.25,
+        now: NOW,
+      },
+      adminCtx
     )
     expect(created).toMatchObject({
       baseModelUsage: { budgetCredits: 10.5, usedCredits: 0 },
@@ -394,8 +413,8 @@ describe('ChatAccountUsage service and GraphQL API', () => {
       data: { usedCredits: 7 },
     })
     const updated = await setChatAccountUsageBudgets(
-      { baseBudgetCredits: 5, advancedBudgetCredits: 6, now: NOW },
-      ownerCtx
+      { ownerId, baseBudgetCredits: 5, advancedBudgetCredits: 6, now: NOW },
+      adminCtx
     )
 
     expect(updated).toMatchObject({
@@ -420,11 +439,12 @@ describe('ChatAccountUsage service and GraphQL API', () => {
 
     const updated = await setChatAccountUsageBudgets(
       {
+        ownerId,
         baseBudgetCredits: 11,
         advancedBudgetCredits: 13,
         now: NEXT_MONTH,
       },
-      ownerCtx
+      adminCtx
     )
 
     expect(updated).toMatchObject({
@@ -477,11 +497,12 @@ describe('ChatAccountUsage service and GraphQL API', () => {
       await expect(
         setChatAccountUsageBudgets(
           {
+            ownerId,
             baseBudgetCredits: 2,
             advancedBudgetCredits: invalid,
             now: NOW,
           },
-          ownerCtx
+          adminCtx
         )
       ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
       await expect(
@@ -500,8 +521,8 @@ describe('ChatAccountUsage service and GraphQL API', () => {
 
     await expect(
       setChatAccountUsageBudgets(
-        { baseBudgetCredits: 2, advancedBudgetCredits: 3, now: NOW },
-        { ...ownerCtx, prisma: failingPrisma }
+        { ownerId, baseBudgetCredits: 2, advancedBudgetCredits: 3, now: NOW },
+        { ...adminCtx, prisma: failingPrisma }
       )
     ).rejects.toThrow('synthetic second upsert failure')
     await expect(
@@ -535,8 +556,8 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     )
 
     const budgetUpdate = setChatAccountUsageBudgets(
-      { baseBudgetCredits: 9, advancedBudgetCredits: 8, now: NOW },
-      { ...ownerCtx, prisma: gatedPrisma }
+      { ownerId, baseBudgetCredits: 9, advancedBudgetCredits: 8, now: NOW },
+      { ...adminCtx, prisma: gatedPrisma }
     )
     await baseUpserted
     const charges = Array.from({ length: 8 }, () =>
@@ -572,11 +593,12 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     ).toBe('8')
   })
 
-  it('executes owner query and mutation through the schema', async () => {
+  it('executes owner query and admin mutation through the schema', async () => {
     const mutation = await executeGraphql({
       source: `
-        mutation SetBudgets($base: Float!, $advanced: Float!) {
+        mutation SetBudgets($ownerId: String!, $base: Float!, $advanced: Float!) {
           setChatAccountUsageBudgets(
+            ownerId: $ownerId
             baseBudgetCredits: $base
             advancedBudgetCredits: $advanced
           ) {
@@ -586,7 +608,8 @@ describe('ChatAccountUsage service and GraphQL API', () => {
           }
         }
       `,
-      variables: { base: 4.5, advanced: 6.25 },
+      context: adminCtx,
+      variables: { ownerId, base: 4.5, advanced: 6.25 },
     })
     expect(mutation.errors).toBeUndefined()
     expect(mutation.data).toMatchObject({
@@ -612,6 +635,25 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     expect(query.data?.getChatAccountUsage).toEqual(
       mutation.data?.setChatAccountUsageBudgets
     )
+
+    const ownerMutation = await executeGraphql({
+      source: `
+        mutation SetBudgets($ownerId: String!, $base: Float!, $advanced: Float!) {
+          setChatAccountUsageBudgets(
+            ownerId: $ownerId
+            baseBudgetCredits: $base
+            advancedBudgetCredits: $advanced
+          ) {
+            authorized
+          }
+        }
+      `,
+      variables: { ownerId, base: 1, advanced: 1 },
+    })
+    expect(ownerMutation.data).toEqual({
+      setChatAccountUsageBudgets: null,
+    })
+    expect(ownerMutation.errors?.[0]?.message).toBe('Unauthorized')
   })
 
   it('rejects participant callers at the GraphQL schema boundary', async () => {

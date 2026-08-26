@@ -194,8 +194,10 @@ OpenRouter supplies the selected models but does not make the routing decision.
 This adds one classifier request and, for semantic matching, one embedding
 request to the same external OpenRouter data boundary. It therefore adds local
 latency and usage cost. LiteLLM falls back from Sol medium to `gpt-5.1` on an
-upstream failure. Separately, when Chat credits reach zero, Chat selects
-`gpt-4.1-mini` before calling LiteLLM and bypasses Auto Mode.
+upstream failure. Separately, zero-credit fallback remains within the selected
+usage class. Chat can select allow-listed Luna for a BASE selection before
+calling LiteLLM; current ADVANCED selections such as Auto are denied while no
+ADVANCED fallback is allow-listed.
 
 The seeded Benibot exposes a deterministic local `doc_query` MCP tool in Tutor
 and Explainer modes. `post-start.sh` runs it at `http://localhost:1417/mcp`;

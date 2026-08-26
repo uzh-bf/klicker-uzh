@@ -1,5 +1,9 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma } from '@klicker-uzh/prisma/client'
+import {
+  CHAT_BASE_MODEL_ID,
+  getChatModelBasePolicyIssues,
+} from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import { z } from 'zod'
 import type { Context, ContextWithUser } from '../lib/context.js'
@@ -14,7 +18,7 @@ const chatModelSchema = z
     supportsReasoning: z.boolean().default(false),
     usesResponsesApi: z.boolean().optional(),
     supportedReasoningEfforts: z.array(z.string().min(1)).optional(),
-    maxOutputTokens: z.number().positive().optional(),
+    maxOutputTokens: z.number().int().min(1).max(4096),
     apiVersion: z.string().min(1).optional(),
     // Explicit usage class (BASE/ADVANCED). Older external registry JSON that
     // omits the class is conservatively normalized to ADVANCED, never BASE.
@@ -41,7 +45,18 @@ const chatModelRegistrySchema = z
   .array(chatModelSchema)
   .min(1)
   .superRefine((models, ctx) => {
+    const seenIds = new Set<string>()
+
     for (const [index, model] of models.entries()) {
+      if (seenIds.has(model.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [index, 'id'],
+          message: `Duplicate model id "${model.id}"`,
+        })
+      }
+      seenIds.add(model.id)
+
       if (model.id === 'auto' && model.usageClass !== 'ADVANCED') {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -49,6 +64,13 @@ const chatModelRegistrySchema = z
           message: 'Model "auto" must be classified as ADVANCED.',
         })
       }
+    }
+
+    for (const issue of getChatModelBasePolicyIssues(models)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        ...issue,
+      })
     }
   })
 
@@ -72,7 +94,7 @@ export function parseChatModelRegistry(value: unknown): ChatModelCapability[] {
     .map((model) => normalizeChatModel(model))
 }
 
-export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
+const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
   {
     id: 'auto',
     deploymentId: 'auto-router',
@@ -82,22 +104,24 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     supportsReasoning: false,
     usesResponsesApi: true,
     supportedReasoningEfforts: [],
+    maxOutputTokens: 4096,
     usageClass: 'ADVANCED',
     apiVersion: 'preview',
-    cost: { input: 1.25, output: 10.0 },
+    cost: { input: 1.0, output: 5.0 },
   },
   {
     id: 'gpt-5.6-luna',
     deploymentId: 'gpt-5.6-luna',
     name: 'GPT-5.6 Luna',
     description: 'OpenAI reasoning model',
-    fallback: false,
+    fallback: true,
     supportsReasoning: true,
     usesResponsesApi: true,
     supportedReasoningEfforts: ['low', 'medium', 'high', 'xhigh'],
-    usageClass: 'ADVANCED',
+    maxOutputTokens: 4096,
+    usageClass: 'BASE',
     apiVersion: 'preview',
-    cost: { input: 1.25, output: 10.0 },
+    cost: { input: 0.2, output: 1.2 },
   },
   {
     id: 'gpt-4.1',
@@ -108,7 +132,8 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     supportsReasoning: false,
     usesResponsesApi: false,
     supportedReasoningEfforts: [],
-    usageClass: 'BASE',
+    maxOutputTokens: 4096,
+    usageClass: 'ADVANCED',
     apiVersion: 'preview',
     cost: { input: 2.0, output: 8.0 },
   },
@@ -117,19 +142,25 @@ export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] = [
     deploymentId: 'gpt-4.1-mini',
     name: 'GPT-4.1 Mini',
     description: 'Small OpenAI model',
-    fallback: true,
+    fallback: false,
     supportsReasoning: false,
     usesResponsesApi: false,
     supportedReasoningEfforts: [],
-    usageClass: 'BASE',
+    maxOutputTokens: 4096,
+    usageClass: 'ADVANCED',
     apiVersion: 'preview',
     cost: { input: 0.4, output: 1.6 },
   },
 ]
 
+export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] =
+  parseChatModelRegistry(DEFAULT_CHAT_MODEL_REGISTRY_INPUT)
+
 let cachedChatModelRegistry: ChatModelCapability[] | null = null
 
-const dedupeStrings = (values: readonly string[]) => Array.from(new Set(values))
+function dedupeStrings(values: readonly string[]) {
+  return Array.from(new Set(values))
+}
 
 function normalizeChatModel(model: RawChatModelConfig): ChatModelCapability {
   const usesResponsesApi = model.usesResponsesApi ?? model.supportsReasoning
@@ -155,19 +186,8 @@ export function getChatModelRegistry(): ChatModelCapability[] {
     return cachedChatModelRegistry
   }
 
-  try {
-    cachedChatModelRegistry = chatModelRegistrySchema
-      .parse(JSON.parse(rawRegistry))
-      .map((model) => normalizeChatModel(model))
-    return cachedChatModelRegistry
-  } catch (error) {
-    console.warn(
-      '[graphql] Invalid CHAT_MODEL_REGISTRY_JSON; falling back to built-in defaults.',
-      error
-    )
-    cachedChatModelRegistry = DEFAULT_CHAT_MODEL_REGISTRY
-    return cachedChatModelRegistry
-  }
+  cachedChatModelRegistry = parseChatModelRegistry(JSON.parse(rawRegistry))
+  return cachedChatModelRegistry
 }
 
 function parseAllowedReasoningEffortsByModel(
@@ -589,12 +609,31 @@ export async function createChatbot(
     throw new GraphQLError('Chatbot name must not be empty')
   }
 
+  const luna = getChatModelRegistry().find(
+    (model) => model.id === CHAT_BASE_MODEL_ID && model.usageClass === 'BASE'
+  )
+  if (
+    !luna ||
+    !luna.supportsReasoning ||
+    !luna.supportedReasoningEfforts.includes('low') ||
+    !luna.supportedReasoningEfforts.includes('medium')
+  ) {
+    throw new GraphQLError(
+      `Chatbot defaults require the ${CHAT_BASE_MODEL_ID} BASE model with low and medium reasoning support`
+    )
+  }
+
   const created = await ctx.prisma.chatbot.create({
     data: {
       name: args.name,
       description: args.description ?? null,
       avatar: args.avatar ?? null,
       status: DB.ChatbotStatus.DRAFT,
+      modelSelection: false,
+      allowedModelIds: [CHAT_BASE_MODEL_ID],
+      allowedReasoningEffortsByModel: {
+        [CHAT_BASE_MODEL_ID]: ['low', 'medium'],
+      },
       owner: { connect: { id: ctx.user.sub } },
       course: { connect: { id: args.courseId } },
       // systemPrompts intentionally left unset (null): when no modes are

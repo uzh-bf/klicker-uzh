@@ -58,6 +58,17 @@ function resolveTargetOwnerId(
   return ctx.user.sub
 }
 
+function resolveBudgetOwnerId(
+  ownerId: string | null | undefined,
+  ctx: ContextWithUser
+): string {
+  if (ctx.user.role !== DB.UserRole.ADMIN || !ownerId) {
+    throw forbiddenError()
+  }
+
+  return ownerId
+}
+
 function projectLane(
   usageClass: DB.ChatUsageClass,
   usage: Pick<DB.ChatAccountUsage, 'budgetCredits' | 'usedCredits'> | null,
@@ -153,7 +164,7 @@ export async function setChatAccountUsageBudgets(
   args: SetBudgetsArgs,
   ctx: ContextWithUser
 ): Promise<ChatAccountUsageOverview | null> {
-  const ownerId = resolveTargetOwnerId(args.ownerId, ctx)
+  const ownerId = resolveBudgetOwnerId(args.ownerId, ctx)
   const baseBudgetCredits = parseChatUsageCredits(args.baseBudgetCredits)
   const advancedBudgetCredits = parseChatUsageCredits(
     args.advancedBudgetCredits

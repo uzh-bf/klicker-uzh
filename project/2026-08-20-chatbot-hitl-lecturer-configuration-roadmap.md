@@ -1,8 +1,10 @@
 # HITL lecturer chatbot configuration roadmap
 
-Revision: 2026-08-21. This is the approved execution roadmap for the active
+Revision: 2026-08-26. This is the approved execution roadmap for the active
 `rs-roadmap-orchestrator` run. It sequences the work one horizon above
-implementation. The active transaction is milestone M1 only.
+implementation. The active transaction is M1 trusted-pilot finalization; the
+original U1–U3 implementation plan is historical context for the completed
+stack.
 
 The goal is a small, reviewable lecturer configuration beta: an approved
 account can use two explicit model-usage classes, configure a chatbot with
@@ -21,36 +23,41 @@ Governing ADRs:
   student-authored text out of the lecturer-facing manage surface.
 - [CONTEXT.md](../CONTEXT.md) is the vocabulary contract for the two usage
   lanes and hidden base contribution.
+- [0041](../docs/adr/0041-chatbot-trusted-pilot-boundary.md) defines the
+  staged trusted-pilot boundary, operations-owned budgets, and strict registry
+  contract for the finalization stack.
 
 ## Goal, terminal condition, and authority
 
-The next execution session should produce draft stacked PRs based on PR #5460,
-with each layer independently reviewable and green under the repository's
-native checks. The execution terminal condition is the published draft stack
-set and its evidence, not merge, deployment, live traffic, or closing a
-superseded PR.
+The current execution session finalizes the existing five-PR stack based on
+PR #5460 after the approved U4 hardening and trusted-pilot corrections. Its
+terminal condition is the published, reviewed stack and its evidence, with
+exact-head CI observed and the validation runtime stopped. It does not include
+merge, deployment, live traffic, or closing a superseded PR.
 
 The active orchestrator owns task IDs, stack order, child assignment, question
-custody, roadmap `Progress`, and boundary verification. The M1 goal authorizes
-repo-local worktrees and branches, local commits, pushes, and draft PR
-publication for U1 through U3. A child owns exactly one W-item and must return
-the acceptance evidence for that item. Merge, deployment, live traffic, PR
-closure, cleanup, and deletion remain withheld. The orchestrator must not
-silently widen the scope to billing, student-content analytics, a new
-knowledge-base service, or live operations.
+custody, roadmap `Progress`, and boundary verification. The approved
+finalization plan authorizes the existing worktree, local U4 corrections,
+repository checks, synthetic browser proof, read-only reviews, plan and
+roadmap reconciliation, and publication of the same five PR branches. A child
+owns exactly one bounded review or verification task and must return its
+evidence. Merge, deployment, live traffic, PR closure, cleanup, and deletion
+remain withheld. The orchestrator must not silently widen the scope to
+billing, student-content analytics, a new knowledge-base service, or live
+operations.
 
 ## Current state and verified working context
 
 | Item | State and next-session action |
 | --- | --- |
-| Phase 0 base | PR [#5460](https://github.com/uzh-bf/klicker-uzh/pull/5460) is open at `d84140434dbfa25ca5e92333a139f7d61063d02c`, based on current `v3`; it is reviewed and CI-complete except for a known historical GitGuardian fixture finding. Do not rewrite it. |
-| Phase 0 scope | Lifecycle, account capability, publication mutations, prompt compile seam, and approval foundations are present. Account usage counters and usage-lane UI are not implemented. |
+| Phase 0 base | PR [#5460](https://github.com/uzh-bf/klicker-uzh/pull/5460) remains the immutable bottom of the existing five-PR stack. Its historical GitGuardian fixture finding remains a base-PR disposition; do not rewrite it. |
+| Phase 0 scope | Lifecycle, account capability, publication mutations, prompt compile seam, approval foundations, and the accepted M1 usage corrections are present in the current candidate. |
 | Superseded plan PR | PR [#5453](https://github.com/uzh-bf/klicker-uzh/pull/5453) is fully incorporated into #5460 and is now closed. The closure happened outside this orchestration run. |
-| Stack capability | GitHub stack support is enabled, but #5460 is not currently in a stack. The next session must create or adopt stack metadata only when it begins the named PR work. |
-| Worktree | Reuse repo-local `trees/feat-chatbot-lecturer-config-phase0`, now on `rs/chatbot-u1-usage-foundation`. The primary checkout contains unrelated user changes and is read-only control state. |
-| Freshness | At the last gate, the task branch was clean, fetched, and 29 commits ahead of `origin/v3` with no commits behind. The next session must fetch again after the session boundary. |
-| Runtime | No devcontainer, dev server, database reset, tunnel, watcher, or browser session is being left running by this planning pass. Start only the runtime needed for a future W-item and stop it after the final runtime-dependent check. |
-| Existing plan | `project/2026-08-20-chatbot-hitl-phase0-pr-5460-plan.md` records the delivered Phase 0 plan. This roadmap owns the follow-up topology; do not create a second plan root. |
+| Stack capability | The existing five-PR stack is the active topology: #5460 → #5475 → #5480 → #5490 → #5524. Preserve PR identity, order, and ready state; do not create a second stack or layer. |
+| Worktree | `trees/feat-chatbot-lecturer-config-phase0` is the implementation worktree on `rs/chatbot-u4-model-registry-policy`; the primary checkout contains unrelated user changes and is read-only control state. |
+| Freshness | The approved recascade used fresh `origin/v3` at `7515632f229c9421a7ac7d62668e1743147ba158`. Before publication, rerun the exact remote lease, base, head, and ready-state gate. |
+| Runtime | Synthetic DevPod/browser validation is part of the active finalization and must be stopped after the last runtime-dependent check. No production, staging, provider, secret, cluster, or live-data action is authorized. |
+| Existing plan | `project/2026-08-26-pr-5524-trusted-pilot-hardening-plan.md` is the active execution contract. The Phase 0 plan remains historical evidence; do not create a second plan root. |
 
 The last CI run was green for builds, tests, CodeQL, SonarCloud, checks, and
 all Playwright shards. GitGuardian still reports the known historical
@@ -68,11 +75,12 @@ execution:
   approval; it is not split into per-model approval.
 - Registry entries carry the explicit usage class `BASE` or `ADVANCED`.
   `Auto` is `ADVANCED` for the MVP. Fallback stays within the selected class.
-- The lecturer defines one account-wide monthly budget for each class. Both
-  configured limits belong to the chatbot owner's account and persist until
-  an authorized owner changes them. Only used credits reset to zero at the
-  start of each calendar month in `Europe/Zurich`. Store usage as
-  `Decimal(18,6)` credits; the atomic charge persistence is the single
+- Operations manages one account-wide monthly budget for each class through an
+  `ADMIN`-only mutation with an explicit owner. Both configured limits belong
+  to the chatbot owner's account and persist until an authorized `ADMIN`
+  changes them; account owners retain read-only visibility. Only used credits
+  reset to zero at the start of each calendar month in `Europe/Zurich`. Store
+  usage as `Decimal(18,6)` credits; the atomic charge persistence is the single
   six-decimal rounding boundary.
 - The manage surface has exactly two lanes named **base model usage** and
   **advanced model usage**. Each lane shows configured budget, used credits,
@@ -114,7 +122,7 @@ execution:
 | Usage class registry | `apps/chat/src/lib/server/chatModelRegistry.ts:4-65,107-180` | Add explicit `BASE`/`ADVANCED` metadata and parity checks for every registry copy and repository-declared deployment configuration value | `Auto` remains `ADVANCED`; class is server-derived, not client-selected text |
 | Runtime charge | Participant `ChatUsageCredits` and decrement service in `apps/chat/src/services/credits.ts:18-132` | Add account-class pre-check and atomic post-generation charge while preserving legacy participant credits | Charge only reliable provider usage; idempotent per turn lifecycle |
 | Chatbot lifecycle | `ChatbotStatus` and publication mutations in `packages/graphql/src/services/chatbots.ts:633-825` | Reuse for creation, private testing, publication, and later custom review | Publication never doubles as AI usage authorization |
-| Lecturer usage lanes | `ChatbotDetails` usage summary in `apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx:362-434` | Add exactly two account-level lanes and budget controls | Never display the hidden base contribution |
+| Lecturer usage lanes | `ChatbotDetails` usage summary in `apps/frontend-manage/src/components/resources/chatbots/ChatbotDetails.tsx:362-434` | Add exactly two account-level read-only lanes; operations uses the explicit-admin budget mutation | Never display the hidden base contribution |
 | Test thread | `ChatThread` and current participant-scoped access | Add explicit lecturer-owned test identity/flag | Never synthesize a student participant; exclude from student analytics |
 | Feedback | Nullable `ChatMessage.rating` and feedback route | Preserve current semantics first; add a table in M3 | No student text enters manage |
 | Knowledge | External KB MCP/resource lifecycle | Adapt the existing KB resource/binding API when verified | No parallel source model or retrieval-control UI in Klicker |
@@ -184,12 +192,16 @@ identifier, for example `rs/chatbot-u1-usage-foundation`, and records the actual
 GitHub stack IDs in its control ledger. It must not use one long chain for all
 phases or attach unrelated open PRs to this stack.
 
-### M1 Gate 1 stack plan
+### M1 Gate 1 stack plan (historical)
 
 Feature: chatbot usage-funding MVP. Provider: GitHub. Base: PR #5460 on
 `feat/chatbot-lecturer-config-phase0`. Mode: guided because U1 introduces a
 database migration, public registry metadata, and the account-budget contract.
 The user validates the U1 foundation at Gate 2 before U2 starts.
+
+This section records the original U1–U3 topology and acceptance contracts. The
+stack has since completed that implementation sequence and is now governed by
+the trusted-pilot finalization plan named in the current-state table above.
 
 One stack lives in the existing repo-local worktree
 `trees/feat-chatbot-lecturer-config-phase0`. The orchestrator is the sole
@@ -292,9 +304,9 @@ test-thread path would require different account/class charging semantics.
 
 ### U3 — lecturer usage API and two-lane manage UI
 
-**Outcome.** Let an authorized lecturer view and set the two account-wide
-monthly budgets and see the two usage lanes without exposing the hidden base
-contribution.
+**Outcome.** Let an authorized lecturer view the two account-wide monthly
+budgets and usage lanes without exposing the hidden base contribution;
+operations sets the budgets through the administrative mutation.
 
 **Owned paths.** GraphQL account query/mutations and generated operations,
 `apps/frontend-manage` usage components, translations, focused GraphQL tests,
@@ -309,8 +321,8 @@ approval appear to authorize usage.
 
 **Acceptance.** The UI uses the exact labels **base model usage** and
 **advanced model usage**. Each lane shows budget, used, remaining, and reset
-date. Owner/admin authorization checks hold for reads and writes; unrelated
-accounts and participants are denied. Empty and exhausted states render
+date. Owner reads and explicit-admin writes are authorized; unrelated accounts
+and participants are denied. Empty and exhausted states render
 deterministically. In a new month, each lane carries the latest configured
 limit, shows zero used credits and full remaining credits, and advances the
 reset date. The authorization status is clear; cost-center editing remains the
@@ -659,25 +671,31 @@ Every W-item follows `$rs-sliced-development-workflow`:
 - A `BOUNDARY_CANDIDATE` packet must name the W-item, current evidence, the
   proposed boundary, and the smallest ruling needed. A `NEEDS_CONTEXT` packet
   must identify the missing external contract and the safe parked state.
-- No merge, rebase/force-push, PR closure, deploy, Argo sync, live smoke, or
-  worktree deletion is implied by this roadmap. Ask at the exact boundary.
+- No merge, PR closure, deploy, Argo sync, live smoke, or worktree deletion is
+  implied by this roadmap. The active finalization plan separately authorizes
+  only its guarded recascade and atomic force-with-lease publication of the
+  five existing branches; ask at every other boundary.
 
 ## Orchestrator takeover checklist
 
-The next session should perform these actions in order:
+If this work is resumed after a pause, the execution session should perform
+these actions in order:
 
-1. Run the freshness gate and re-read this roadmap, the Phase 0 plan, ADRs
-   0019–0022, `CONTEXT.md`, and the current #5460 checks.
-2. Reuse the task worktree, carry the reconciled base-PR GitGuardian
-   disposition under A5, and maintain the orchestrator control ledger without
-   changing #5460.
-3. Apply the recorded A1 and A2 rulings during U1/C3 implementation. Resolve
-   A3–A4 only when their dependent milestone becomes current; park work with
-   the exact `NEEDS_CONTEXT` packet if a contract is missing.
-4. Create the M1 stack only: U1 → U2 → U3, with one child per W-item and
-   draft PRs based on #5460. Do not start M2–M5 implementation in parallel.
-5. Stop this orchestration run after M1 is accepted or explicitly parked. A
-   later, separately authorized run may begin M2 from the accepted top layer.
+1. Run the freshness gate and re-read this roadmap, the active trusted-pilot
+   finalization plan, ADRs 0019–0022 and 0041, `CONTEXT.md`, and current PR
+   checks.
+2. Reuse `trees/feat-chatbot-lecturer-config-phase0`, verify the recovery refs
+   and five-PR order, and carry the A5 GitGuardian disposition without
+   changing the Phase 0 contract.
+3. Complete only the remaining finalization gates: integrated checks,
+   synthetic browser proof, configured read-only reviews, and Progress
+   reconciliation. Do not reopen the historical U1–U3 implementation plan.
+4. Re-read exact remote leases, bases, heads, and ready states before the
+   authorized atomic publication of the same five branches; then observe
+   exact-head CI and update the existing PR evidence.
+5. Stop the exact validation runtime after the last runtime-dependent check.
+   Leave merge, deployment, live traffic, enforcement activation, PR closure,
+   cleanup, and deletion withheld unless separately authorized.
 
 ## Progress
 
@@ -699,6 +717,9 @@ The next session should perform these actions in order:
 | 2026-08-24 | M1-R1 / U2 — rollover-safe runtime charging | Serialized Phase 5 accepted required `reviewed` delivery at local head `ef7704660`, directly on accepted U1 `e82c84011`. Runtime precheck now consumes the shared effective month, finalization atomically materializes and charges the carried budget, and only a newly created finalization may deduct participant credits. Review response `resp_747176da75f6405f8991551cb21b395f` routed to `stealth/ox-alpha` at maximum effort and returned `REVIEWED` / `ACCEPT`; focused route, 9/9 PostgreSQL integration, simplifier, risk, and integrated reviews pass. The published U2 head remains `930f92746`, so no remote delivery is claimed. | Reconcile U3 against accepted U2, then close the prepublication serialized Phase 5 sequence. Atomic publication, ready evidence, merge, deployment, live traffic, PR closure, cleanup, and deletion remain withheld |
 | 2026-08-24 | M1-R1 / U3 — persistent lecturer usage lanes | Serialized Phase 5 accepted required `reviewed` delivery at local head `6453a94ce`, directly on accepted U2 `ef7704660`. Both fixed GraphQL lanes now project the shared effective month, later configured values supersede carry-forward, and the lecturer wiki matches the runtime contract. Review response `resp_89beb21605714ab7b73fe13b4ccac8a7` routed to `stealth/ox-alpha` at maximum effort and returned `REVIEWED` / `ACCEPT`; corrected risk rereview, 15/15 focused tests, patch-equivalent bilingual desktop/mobile browser proof, integrated Ox Alpha `PASS`, and stopped-runtime proof all stand. The published U3 head remains `d386d1644`, so no remote delivery is claimed. | Commit the four serialized Phase 5 results on U3, re-read current `v3`, frozen leases, pull-request bases, and ready states, then perform the authorized atomic force-with-lease publication only if every identity remains exact. Merge, deployment, live traffic, PR closure, cleanup, and deletion remain withheld |
 | 2026-08-24 | M1-R1 — ready-for-review publication | Corrected-candidate serialized Phase 5 response `resp_11ea371920ab4d91a757a82b4c95eb48` routed to `stealth/ox-alpha` at maximum effort and returned `PR_READY` / `ACCEPT`, superseding the invalid empty response `resp_cde7d3b38a884f32a747422e3c4db98e`. The corrected implementation heads before this roadmap-only evidence commit are Phase 0 `d64425db2`, U1 `a92006db8`, U2 `09ec9948d`, and U3 `9ce1a684d`, atomically force-with-lease published on `v3` `b02c0c436`. PRs #5460, #5475, #5480, and #5490 are open, ready, and mergeable. Exact-head CI is terminal with Phase 0 at 44 passed plus the A5-preserved historical GitGuardian finding, U1 at 45 passed after one exact unchanged-head retry of unrelated duplicate Case Study fixtures, U2 at 39 passed, U3 at 43 passed, and zero pending. The redundant forbidden `docs/log/` evidence file was removed before publication; the removed-artifact check, 23/23 build, review chain, and stopped-runtime proof pass. | M1-R1 has achieved `pr_ready`. Await separate merge authorization; deployment, live traffic, PR closure, cleanup, and deletion remain withheld |
+| 2026-08-24 | M1/U4 — final model registry policy | The fifth layer verifies every stored input/output rate, makes Luna the sole base model and current same-class fallback, and records the user-approved Auto estimate of 1/5 from the approximate 90% Luna / 10% Sol generation mix. Integrated Ox Alpha review returned `ACCEPT`; draft PR #5524 is published at implementation and review head `9c238e530` above #5490, with exact-head CI at 10 passed, 9 intentionally skipped, 0 failed, and 0 pending. Browser proof covers direct Luna selection, the synthetic `U4_LUNA_OK` turn, and enabled Base and Advanced monthly-budget controls for the seeded local synthetic account. The exact validation DevPod is stopped with zero routes. | U4 has reached its approved draft-delivery and validation terminal condition. Obtain explicit authorization before marking PR #5524 ready; merge, deployment, live traffic, PR closure, worktree cleanup, and deletion remain separate and withheld |
+| 2026-08-26 | M1 trusted-pilot finalization — S0 through S4 | Gate 1 was approved for the existing five-PR stack. The local U4 layer was recascaded onto fresh `origin/v3` at `7515632f229`, with recovery refs and unchanged lower-layer patches. S1 staged default-off enforcement; S2 added bounded registry validation and Luna-only new-bot defaults, including the Edge-safe dynamic-import correction; S3 moved budget writes behind explicit `ADMIN` targeting, removed Manage budget editing, and exposed localized lifecycle boundaries with PUBLISHED-only participant links; S4 records the operating boundary in ADR 0041, CONTEXT, the Chat and testing guides, and both execution artifacts. The implementation commits are local at `08a18497b`, `fb395db9c`, `4ef7ee43a`, `2d6a985eb`, and `886c5b6c2`; no remote ref moved. Generic-continuity reviews replaced unavailable encrypted native routes and found no blocking issue across S1 through S3, including successful rereview of the two S3 copy/translation corrections. | Run the integrated checks, host Playwright and mandatory agent-browser proof, final review, exact-head publication, CI observation, and runtime stop. Merge, deployment, live traffic, enforcement activation, PR closure, cleanup, and deletion remain withheld |
+| 2026-08-26 | M1 trusted-pilot finalization — final trunk recascade | The final pre-publication freshness read found `origin/v3` at `079dc722b6e2b61d9210aa785978f4e29e5d2bad`, beyond the earlier `1a55ce239` baseline through one staging deployment promotion. Phase 0 through U4 were recascaded in lower-boundary order from the recorded recovery refs without conflicts. Pre-evidence implementation heads are Phase 0 `ed0bad640b05a979957766d7e365ea5f3d04cefb`, U1 `18b3813df1e0e173ff091171723547d5d4daecc5`, U2 `2a6ac883c6ec6835b9da11076e41e33d7ad736ab`, U3 `d48d03673d2983b77e1ff4b1f9a5bee8228b7d3f`, and U4 `2b1bb3aeff6506e408f6254461d3ea2575a0989d`. Ancestry from the fresh trunk is proven and the complete 106-commit range-diff reports every patch unchanged; no remote ref moved. | Commit the S5 evidence, run the immutable integrated final review over the committed candidate, then perform the authorized exact-lease publication and CI gates. Merge, deployment, live traffic, enforcement activation, PR closure, cleanup, and deletion remain withheld |
 
 ## Glossary
 
@@ -710,8 +731,9 @@ The next session should perform these actions in order:
   who covers usage.
 - **Base model usage** and **advanced model usage**: the two visible UI lanes;
   the base contribution remains hidden and advanced receives no contribution.
-- **Monthly usage budget**: lecturer-defined account-wide limit for one class
-  that persists until changed; its used-credit counter resets monthly.
+- **Monthly usage budget**: operations-managed account-wide limit for one class
+  that persists until an authorized `ADMIN` changes it; account owners can read
+  it and its used-credit counter resets monthly.
 - **Participant usage credits**: existing per-participant/per-chatbot legacy
   allowance, separate from account budgets.
 - **Test thread**: lecturer-owned private conversation, excluded from student

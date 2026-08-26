@@ -58,6 +58,11 @@ describe('Integration tests for lecturer chatbot create/update', () => {
         name: 'My Tutor',
         description: null,
         status: 'DRAFT',
+        modelSelection: false,
+        allowedModelIds: ['gpt-5.6-luna'],
+        allowedReasoningEffortsByModel: [
+          { modelId: 'gpt-5.6-luna', efforts: ['low', 'medium'] },
+        ],
         courses: [{ id: course.id }],
       })
 
@@ -70,6 +75,9 @@ describe('Integration tests for lecturer chatbot create/update', () => {
           courseId: true,
           status: true,
           systemPrompts: true,
+          modelSelection: true,
+          allowedModelIds: true,
+          allowedReasoningEffortsByModel: true,
         },
       })
       expect(row).toEqual({
@@ -77,6 +85,11 @@ describe('Integration tests for lecturer chatbot create/update', () => {
         courseId: course.id,
         status: 'DRAFT',
         systemPrompts: null,
+        modelSelection: false,
+        allowedModelIds: ['gpt-5.6-luna'],
+        allowedReasoningEffortsByModel: {
+          'gpt-5.6-luna': ['low', 'medium'],
+        },
       })
     })
 

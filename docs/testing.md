@@ -102,8 +102,11 @@ For authoring specifics, helper patterns, and failure triage, use the `klicker-p
 
 The path-filtered `test-unit` workflow runs the chat, grading, markdown, and util
 suites with one frozen install. It builds Prisma, types, grading, and util once,
-then keeps each suite as a separately visible step. Later suites still run after
-an earlier test failure, but not after setup or dependency-build failure. Draft
+then keeps each suite as a separately visible step. The chat suite runs against
+a PostgreSQL 15 service; the workflow resets that disposable test database
+before the suite and enables the account-usage integration cases. Later suites
+still run after an earlier test failure, but not after setup or
+dependency-build failure. Draft
 PR updates skip this job; use its manual dispatch for exact-head proof without
 marking a draft ready. This single-job workflow is not a required branch
 protection context and needs no companion status gate.

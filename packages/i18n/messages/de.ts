@@ -1909,29 +1909,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte wählen Sie, ob Demo-Elemente generiert werden sollen oder nicht.',
     },
     settings: {
-      advancedBudgetLabel: 'Budget für das fortgeschrittene Modell',
       advancedModelUsage: 'Nutzung des fortgeschrittenen Modells',
-      baseBudgetLabel: 'Budget für das Basismodell',
       baseModelUsage: 'Nutzung des Basismodells',
       chatAccountUsageDescription:
-        'Prüfen Sie die Nutzung des aktuellen Monats und legen Sie für jede Nutzungsklasse ein Credit-Budget fest.',
+        'Prüfen Sie die geschätzte Nutzung des aktuellen Monats für jede Nutzungsklasse.',
+      chatAccountUsageBoundaryDescription:
+        'Budgets werden für die Betriebsplanung durch den Betrieb festgelegt. Sie sind Richtwerte und keine harte Sperre; laufende Anfragen können sie überschreiten.',
       chatAccountUsageTitle: 'Chatbot-Nutzung',
       chatAccountUsageUnauthorized:
-        'Die Chatbot-Nutzung ist für dieses Konto nicht freigeschaltet. Budgets können nicht geändert werden.',
-      saveUsageBudgets: 'Budgets speichern',
+        'Die Chatbot-Nutzung ist für dieses Konto nicht freigeschaltet.',
       usageBudget: 'Budget',
-      usageBudgetEditor: 'Monatliche Budgets',
       usageBudgetEmpty: 'Für diese Nutzungsklasse ist kein Budget festgelegt.',
       usageBudgetExhausted: 'Das monatliche Budget ist ausgeschöpft.',
-      usageBudgetInvalid: 'Geben Sie eine gültige Zahl ein.',
-      usageBudgetNonNegative: 'Das Budget darf nicht negativ sein.',
-      usageBudgetPrecision: 'Verwenden Sie höchstens sechs Dezimalstellen.',
-      usageBudgetRequired: 'Geben Sie ein Budget ein.',
-      usageBudgetTooLarge:
-        'Das Budget muss kleiner als 1 Billion Credits sein.',
-      usageBudgetsSaved: 'Die Budgets wurden gespeichert.',
-      usageBudgetsSaveError:
-        'Die Budgets konnten nicht gespeichert werden. Versuchen Sie es erneut.',
       usageCredits: 'Credits',
       usageRemaining: 'Verbleibend',
       usageResetDate: 'Zurücksetzung',
@@ -3794,6 +3783,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       linkedCourses: 'Verknüpfte Kurse',
       linkedCoursesList: 'Verknüpft mit: {courses}',
       noLinkedCourses: 'Noch keine Kurse verknüpft.',
+      chatbotStatusDraft: 'Entwurf',
+      chatbotStatusPendingApproval: 'Ausstehende Freigabe',
+      chatbotStatusPublished: 'Veröffentlicht',
+      chatbotStatusPaused: 'Pausiert',
+      chatbotStatusRejected: 'Abgelehnt',
+      chatbotStatusUnknown: 'Unbekannter Status',
+      chatbotNotLive:
+        'Der Teilnehmenden-Zugriff ist in diesem Status nicht verfügbar.',
       credits: 'Credits',
       creditInitialCredits: 'Start-Credits',
       creditResetPeriod: 'Zurücksetzungsintervall',

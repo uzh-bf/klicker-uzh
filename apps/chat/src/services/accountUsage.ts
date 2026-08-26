@@ -9,6 +9,10 @@ const CREDIT_LIMIT = new Prisma.Decimal('1000000000000')
 export const CHAT_TURN_ALREADY_COMPLETED_CODE = 'CHAT_TURN_ALREADY_COMPLETED'
 export const CHAT_TURN_IN_PROGRESS_CODE = 'CHAT_TURN_IN_PROGRESS'
 
+export function isChatAccountUsageEnforcementEnabled(): boolean {
+  return process.env.CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED === 'true'
+}
+
 export class ChatTurnConflictError extends Error {
   readonly code = CHAT_TURN_ALREADY_COMPLETED_CODE
 
@@ -291,29 +295,31 @@ export async function finalizeChatTurn(
         usageClass: input.usageClass,
         monthStart,
       })
-      if (!effectiveUsage) {
+      if (!effectiveUsage && isChatAccountUsageEnforcementEnabled()) {
         throw new Error('Chat account usage is not configured')
       }
 
-      await tx.chatAccountUsage.upsert({
-        where: {
-          ownerId_usageClass_monthStart: {
+      if (effectiveUsage) {
+        await tx.chatAccountUsage.upsert({
+          where: {
+            ownerId_usageClass_monthStart: {
+              ownerId: input.ownerId,
+              usageClass: input.usageClass,
+              monthStart,
+            },
+          },
+          create: {
             ownerId: input.ownerId,
             usageClass: input.usageClass,
             monthStart,
+            budgetCredits: effectiveUsage.budgetCredits,
+            usedCredits: credits,
           },
-        },
-        create: {
-          ownerId: input.ownerId,
-          usageClass: input.usageClass,
-          monthStart,
-          budgetCredits: effectiveUsage.budgetCredits,
-          usedCredits: credits,
-        },
-        update: {
-          usedCredits: { increment: credits },
-        },
-      })
+          update: {
+            usedCredits: { increment: credits },
+          },
+        })
+      }
     }
 
     await tx.chatThread.update({

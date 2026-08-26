@@ -18,6 +18,7 @@ const PARTICIPANT_ID = randomUUID()
 const THREAD_ONE_ID = randomUUID()
 const THREAD_TWO_ID = randomUUID()
 const TEST_KEY = `u2-account-${OWNER_ID.slice(0, 8)}`
+const initialEnforcement = process.env.CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED
 
 let prisma: PrismaClient
 let accountUsage: typeof import('../src/services/accountUsage')
@@ -172,6 +173,7 @@ describePostgres('account usage PostgreSQL integration', () => {
   }, 60_000)
 
   beforeEach(async () => {
+    process.env.CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED = 'false'
     await resetUsage()
   })
 
@@ -179,6 +181,11 @@ describePostgres('account usage PostgreSQL integration', () => {
     if (!prisma) return
     await cleanup()
     await prisma.$disconnect()
+    if (initialEnforcement === undefined) {
+      delete process.env.CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED
+    } else {
+      process.env.CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED = initialEnforcement
+    }
   }, 60_000)
 
   test('fails closed for disabled, missing, zero, and exhausted usage', async () => {
@@ -281,6 +288,29 @@ describePostgres('account usage PostgreSQL integration', () => {
     ])
     expect(message.creditsUsed).toBeNull()
     expect(usage.usedCredits.toString()).toBe('0')
+  })
+
+  test('persists reliable usage without an account row when enforcement is disabled', async () => {
+    const messageId = randomUUID()
+    await prisma.chatAccountUsage.deleteMany({
+      where: { ownerId: OWNER_ID, usageClass: 'BASE' },
+    })
+
+    const result = await accountUsage.finalizeChatTurn(
+      await claimedTurnInput(messageId, { rawCreditsUsed: 0.25 })
+    )
+
+    expect(result).toEqual({ outcome: 'completed', creditsUsed: 0.25 })
+    const message = await prisma.chatMessage.findUniqueOrThrow({
+      where: { id: messageId },
+    })
+    expect(message.lifecycleStatus).toBe('COMPLETED')
+    expect(message.creditsUsed?.toString()).toBe('0.25')
+    expect(
+      await prisma.chatAccountUsage.count({
+        where: { ownerId: OWNER_ID, usageClass: 'BASE' },
+      })
+    ).toBe(0)
   })
 
   test('claims one message key and charges a retry only once', async () => {
@@ -464,6 +494,7 @@ describePostgres('account usage PostgreSQL integration', () => {
   })
 
   test('rolls back the assistant message when no budget was configured', async () => {
+    process.env.CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED = 'true'
     const messageId = randomUUID()
     await prisma.chatAccountUsage.deleteMany({
       where: { ownerId: OWNER_ID, usageClass: 'BASE' },

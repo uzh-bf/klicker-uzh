@@ -1459,11 +1459,11 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      setChatAccountUsageBudgets: t.withAuth(asUser).field({
+      setChatAccountUsageBudgets: t.withAuth(asAdmin).field({
         nullable: true,
         type: ChatAccountUsageOverviewRef,
         args: {
-          ownerId: t.arg.string({ required: false }),
+          ownerId: t.arg.string({ required: true }),
           baseBudgetCredits: t.arg.float({ required: true }),
           advancedBudgetCredits: t.arg.float({ required: true }),
         },
