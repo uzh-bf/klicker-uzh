@@ -1,154 +1,57 @@
-name: Klicker automated testing with playwright
+name: Public PR ARM64 Playwright shards
+
 on:
-  push:
-    branches: ['v3', 'v3-*']
-  pull_request:
-    branches: ['v3', 'v3-*']
-    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_call:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
-  cancel-in-progress: true
-
-env:
-  REGISTRY: ghcr.io
+permissions:
+  contents: read
 
 jobs:
-  filter:
+  authorize:
     runs-on: ubuntu-latest
-    outputs:
-      should_run: ${{ steps.check.outputs.should_run }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Check for changes
-        id: check
-        uses: ./.github/actions/changed-paths
-        with:
-          pattern: '^(apps/|packages/|playwright/|\.github/workflows/test-playwright\.yml|\.github/workflows/public-pr-playwright-shards\.yml|\.github/workflows/update-playwright-timings\.yml|\.github/actions/changed-paths/|\.github/scripts/get-shard-files\.js|\.github/scripts/update-playwright-timings\.py|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh)'
-
-  build-and-compile:
-    needs: filter
-    if: needs.filter.outputs.should_run == 'true'
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
-
-      - name: Define node version
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: package.json
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.5.0
-          run_install: false
-
-      - name: Get pnpm store directory
+      - name: Verify public PR runner eligibility
         shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Cache turbo build artifacts
-        uses: actions/cache@v4
-        with:
-          path: |
-            .turbo
-          key: ${{ runner.os }}-turbo-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}-${{ github.ref_name }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}-
-            ${{ runner.os }}-turbo-
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build all packages and apps
-        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test
         env:
-          APP_SECRET: abcd
-          DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
-          NODE_ENV: test
-          REDIS_HOST: localhost
-          REDIS_PASS: ''
-          REDIS_PORT: 6379
-          REDIS_CACHE_HOST: localhost
-          REDIS_CACHE_PORT: 6379
-          REDIS_ASSESSMENT_PORT: 6379
-          REDIS_ASSESSMENT_PASS: ''
-          REDIS_ASSESSMENT_HOST: localhost
-          APP_ORIGIN_API: http://127.0.0.1:3000
-          APP_ORIGIN_AUTH: http://127.0.0.1:3010
-          APP_ORIGIN_LTI: http://127.0.0.1:4000
-          APP_ORIGIN_PWA: http://127.0.0.1:3001
-          APP_ORIGIN_MANAGE: http://127.0.0.1:3002
-          APP_ORIGIN_CONTROL: http://127.0.0.1:3003
-          APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
-          APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
-
-      - name: Archive Next build outputs
+          EVENT_NAME: ${{ github.event_name }}
+          REPOSITORY: ${{ github.repository }}
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          ROLLOUT_ENABLED: ${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED }}
+          CANARY_PR: ${{ vars.PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR }}
         run: |
-          tar -cf playwright-next-builds.tar \
-            --exclude='apps/auth/.next/cache' \
-            --exclude='apps/auth/.next/standalone' \
-            --exclude='apps/chat/.next/cache' \
-            --exclude='apps/chat/.next/standalone' \
-            --exclude='apps/frontend-control/.next/cache' \
-            --exclude='apps/frontend-control/.next/standalone' \
-            --exclude='apps/frontend-manage/.next/cache' \
-            --exclude='apps/frontend-manage/.next/standalone' \
-            --exclude='apps/frontend-pwa/.next/cache' \
-            --exclude='apps/frontend-pwa/.next/standalone' \
-            apps/auth/.next \
-            apps/chat/.next \
-            apps/frontend-control/.next \
-            apps/frontend-manage/.next \
-            apps/frontend-pwa/.next
+          if [[ "$EVENT_NAME" != 'pull_request' ]]; then
+            echo 'Only pull_request events may use the public PR runner pool.' >&2
+            exit 1
+          fi
+          if [[ "$REPOSITORY_PRIVATE" != 'false' ]]; then
+            echo 'Only public repositories may use the public PR runner pool.' >&2
+            exit 1
+          fi
+          if [[ "$HEAD_REPOSITORY" != "$REPOSITORY" ]]; then
+            echo 'Fork pull requests must remain on GitHub-hosted runners.' >&2
+            exit 1
+          fi
+          if [[ "${{ github.event.pull_request.draft }}" != 'false' ]]; then
+            echo 'Draft pull requests must remain on GitHub-hosted runners.' >&2
+            exit 1
+          fi
+          if [[ "$PR_AUTHOR" == *'[bot]' ]]; then
+            echo 'Bot pull requests must remain on GitHub-hosted runners.' >&2
+            exit 1
+          fi
+          if [[ "$ROLLOUT_ENABLED" != 'true' && "$CANARY_PR" != "$PR_NUMBER" ]]; then
+            echo 'Public PR ARM64 rollout is not enabled for this pull request.' >&2
+            exit 1
+          fi
 
-      - name: Upload Playwright build outputs
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-build-artifact
-          path: |
-            playwright-next-builds.tar
-            apps/backend-docker/dist
-            apps/hatchet-worker-general/dist
-            apps/hatchet-worker-response-processor/dist
-            apps/lti/dist
-            apps/mcp-lecturer/dist
-            apps/olat-api/dist
-            apps/response-api/dist
-            packages/export/dist
-            packages/grading/dist
-            packages/graphql/dist
-            packages/graphql/src/public/client.json
-            packages/hatchet/dist
-            packages/markdown/dist
-            packages/prisma/dist
-            packages/types/dist
-            packages/util/dist
-          retention-days: 1
-
-  test-playwright-hosted:
-    needs: [filter, build-and-compile]
-    if: >-
-      needs.filter.outputs.should_run == 'true' &&
-      (github.event_name != 'pull_request' ||
-        github.event.pull_request.draft == true ||
-        github.event.pull_request.head.repo.full_name != github.repository ||
-        endsWith(github.event.pull_request.user.login, '[bot]') ||
-        (vars.PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED != 'true' &&
-          vars.PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR != format('{0}', github.event.pull_request.number)))
-    runs-on: ubuntu-24.04
+  test-playwright:
+    needs: authorize
+    runs-on:
+      group: public-pr-arm64
+      labels: [linux, arm64, docker, public-pr-arm64, playwright]
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble
       # Shares /config with the hatchet service so this job can read the worker
@@ -268,9 +171,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+            ${{ runner.os }}-${{ runner.arch }}-pnpm-store-
 
       - name: Install dependencies
         run: pnpm install
@@ -387,65 +290,3 @@ jobs:
             service.log
           if-no-files-found: ignore
           retention-days: 1
-
-  test-playwright-public-pr:
-    needs: [filter, build-and-compile]
-    if: >-
-      needs.filter.outputs.should_run == 'true' &&
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      !endsWith(github.event.pull_request.user.login, '[bot]') &&
-      (vars.PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED == 'true' ||
-        vars.PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR == format('{0}', github.event.pull_request.number))
-    uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3
-
-  # Always reports a status even when the tests are skipped by the path filter,
-  # so this job can be used as a required check in branch protection.
-  test-playwright-status:
-    needs: [filter, test-playwright-hosted, test-playwright-public-pr]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Record filter decision for downstream timing feedback
-        run: |
-          printf 'should_run=%s\n' "${{ needs.filter.outputs.should_run }}" > playwright-run-metadata.txt
-
-      - name: Upload run metadata
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-run-metadata
-          path: playwright-run-metadata.txt
-          retention-days: 1
-
-      - name: Check result
-        run: |
-          # A run cancelled by concurrency (duplicate push, quick re-push) must not
-          # leave a red required check behind: the surviving run is the real signal.
-          if [ "${{ needs.filter.result }}" = "cancelled" ] || \
-             [ "${{ needs.test-playwright-hosted.result }}" = "cancelled" ] || \
-             [ "${{ needs.test-playwright-public-pr.result }}" = "cancelled" ]; then
-            echo "Superseded by a newer run; jobs were cancelled by concurrency."
-            exit 0
-          fi
-          if [ "${{ needs.filter.result }}" != "success" ]; then
-            echo "Filter job failed: ${{ needs.filter.result }}"
-            exit 1
-          fi
-          if [ "${{ needs.filter.outputs.should_run }}" != "true" ]; then
-            echo "Tests skipped by path filter."
-            exit 0
-          fi
-          hosted_result="${{ needs.test-playwright-hosted.result }}"
-          public_pr_result="${{ needs.test-playwright-public-pr.result }}"
-          if [ "$hosted_result" = "success" ] && [ "$public_pr_result" = "skipped" ]; then
-            exit 0
-          fi
-          if [ "$hosted_result" = "skipped" ] && [ "$public_pr_result" = "success" ]; then
-            exit 0
-          fi
-          echo "Expected exactly one successful Playwright path."
-          echo "Hosted result: $hosted_result"
-          echo "Public PR result: $public_pr_result"
-          exit 1
