@@ -950,6 +950,52 @@ test('invalidates the former top when stack history contains a removed lower lay
   assert.equal(state.createdStatuses.at(-1).state, 'error')
 })
 
+test('retains the former top when bounded stack history is capped', async () => {
+  const { github, pulls, state } = stackFixture()
+  const historicalStack = {
+    id: 99,
+    open: false,
+    pull_requests: [11, 12, 13, 14].map((number) => ({
+      number,
+      state: 'open',
+      draft: false,
+      head: { sha: pulls[number].head.sha },
+    })),
+  }
+  const history = [
+    historicalStack,
+    ...Array.from({ length: 999 }, (_, index) => ({
+      id: `history-${index}`,
+      open: false,
+      pull_requests: [
+        {
+          number: 1_000 + index,
+          state: 'closed',
+          draft: false,
+          head: { sha: '0'.repeat(40) },
+        },
+      ],
+    })),
+  ]
+  github.request = async (_route, params) => {
+    if (params.pull_request != null) return { data: [] }
+    const page = params.page ?? 1
+    return {
+      data: history.slice((page - 1) * 100, page * 100),
+    }
+  }
+  const eventContext = context(11)
+  eventContext.eventName = 'pull_request_target'
+  eventContext.payload.pull_request = pulls[11]
+
+  assert.equal(
+    await initializeStackReview({ github, context: eventContext }),
+    true
+  )
+  assert.equal(state.createdStatuses.at(-1).sha, pulls[14].head.sha)
+  assert.equal(state.createdStatuses.at(-1).state, 'error')
+})
+
 test('preserves current stack evidence across unrelated default-base advancement', async () => {
   const { files, github, pulls, responses, state } = stackFixture()
   const membership = await resolveStackMembership({

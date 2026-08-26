@@ -48,6 +48,22 @@ test('accepts only the exact command and calculated write permissions', () => {
   assert.equal(isTrustedPermission('maintain'), false)
 })
 
+test('pins trusted review code to the event workflow commit when the default branch moves', () => {
+  for (const workflow of [
+    '../workflows/check-ocr-final-review.yml',
+    '../workflows/check-ocr-final-stack-review.yml',
+  ]) {
+    const source = fs.readFileSync(path.join(__dirname, workflow), 'utf8')
+    assert.match(source, /const workflowSha = context\.workflowSha/)
+    assert.match(source, /github\.rest\.repos\.getCommit/)
+    assert.match(source, /core\.setOutput\('trusted_sha', workflowSha\)/)
+    assert.doesNotMatch(
+      source,
+      /const branch = context\.payload\.repository\.default_branch/
+    )
+  }
+})
+
 test('authorizes and starts only the immutable ready PR range', async () => {
   const baseSha = 'b'.repeat(40)
   const headSha = 'a'.repeat(40)

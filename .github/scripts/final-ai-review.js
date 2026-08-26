@@ -832,8 +832,13 @@ async function latestFullReview({ github, context, pull }) {
 
 function finalReviewMetadataMatchesPlan(metadata, plan, pull) {
   return (
+    metadata?.model === FINAL_REVIEW_MODEL &&
     metadata?.mode === plan.mode &&
+    metadata.base_ref === pull.base.ref &&
+    metadata.base_repo === pull.base.repo?.full_name &&
     metadata.base_sha === pull.base.sha &&
+    metadata.head_ref === pull.head.ref &&
+    metadata.head_repo === pull.head.repo?.full_name &&
     metadata.head_sha === pull.head.sha &&
     metadata.root_head === plan.rootHead &&
     metadata.root_review_id === plan.rootReviewId &&

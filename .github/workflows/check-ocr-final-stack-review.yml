@@ -30,25 +30,22 @@ jobs:
         with:
           github-token: ${{ github.token }}
           script: |
-            const branch = context.payload.repository.default_branch
             const workflowSha = context.workflowSha
-            const response = await github.rest.repos.getBranch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              branch,
-            })
-            const sha = response.data?.commit?.sha
-            if (
-              !/^[0-9a-f]{40}$/.test(sha ?? '') ||
-              !/^[0-9a-f]{40}$/.test(workflowSha ?? '') ||
-              sha !== workflowSha
-            ) {
-              core.setFailed(
-                'Workflow definition is not the current trusted default-branch commit'
-              )
+            if (!/^[0-9a-f]{40}$/.test(workflowSha ?? '')) {
+              core.setFailed('Workflow definition commit is missing')
               return
             }
-            core.setOutput('trusted_sha', sha)
+            const response = await github.rest.repos.getCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: workflowSha,
+            })
+            const sha = response.data?.sha
+            if (sha !== workflowSha) {
+              core.setFailed('Workflow definition commit could not be verified')
+              return
+            }
+            core.setOutput('trusted_sha', workflowSha)
 
   initialize:
     needs: trusted_policy
@@ -331,9 +328,9 @@ jobs:
           REVIEW_RANGES: ${{ needs.authorize.outputs.review_ranges }}
         run: |
           set -euo pipefail
-            node .github/scripts/final-ai-stack-review.js topology \
-              "${MANIFEST_PATH}" "${CODE_RESULT_PATH}" "${TOPOLOGY_RESULT_PATH}" \
-              "${MANIFEST_DIGEST}" "${REVIEW_MODE}" "${REVIEW_RANGES}"
+          node .github/scripts/final-ai-stack-review.js topology \
+            "${MANIFEST_PATH}" "${CODE_RESULT_PATH}" "${TOPOLOGY_RESULT_PATH}" \
+            "${MANIFEST_DIGEST}" "${REVIEW_MODE}" "${REVIEW_RANGES}"
 
       - name: Publish consolidated stack review
         id: publish

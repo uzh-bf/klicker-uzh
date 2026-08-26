@@ -1,5 +1,7 @@
 const crypto = require('node:crypto')
 const MAX_COMPARE_FILES = 300
+const MAX_STACK_HISTORY = 1_000
+const STACK_PAGE_SIZE = 100
 
 function sha256(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex')
@@ -87,6 +89,57 @@ async function compareRange({ github, context, baseSha, headSha }) {
   return null
 }
 
+async function listStacks({ github, context, pullNumber = null }) {
+  const stacks = []
+  const maxPages = Math.ceil(MAX_STACK_HISTORY / STACK_PAGE_SIZE)
+  for (let page = 1; page <= maxPages; page += 1) {
+    const response = await github.request('GET /repos/{owner}/{repo}/stacks', {
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      ...(pullNumber == null ? {} : { pull_request: pullNumber }),
+      page,
+      per_page: STACK_PAGE_SIZE,
+      headers: { accept: 'application/vnd.github+json' },
+    })
+    if (!Array.isArray(response.data)) return { complete: true, stacks: null }
+    stacks.push(...response.data)
+    if (response.data.length < STACK_PAGE_SIZE) {
+      return { complete: true, stacks }
+    }
+  }
+  return { complete: false, stacks }
+}
+
+function parseStacks(records, label) {
+  const stacks = []
+  for (const stack of records) {
+    if (
+      !stackId(stack?.id) ||
+      !Array.isArray(stack.pull_requests) ||
+      stack.pull_requests.length === 0 ||
+      !stack.pull_requests.every(stackRecordShapeIsValid)
+    ) {
+      return {
+        reason: `native stack ${label} returned a malformed stack`,
+        stacks: null,
+      }
+    }
+    const numbers = stack.pull_requests.map((record) => record.number)
+    if (new Set(numbers).size !== numbers.length) {
+      return {
+        reason: `native stack ${label} returned duplicate members`,
+        stacks: null,
+      }
+    }
+    stacks.push({
+      id: stackId(stack.id),
+      open: stack.open !== false,
+      pull_requests: stack.pull_requests,
+    })
+  }
+  return { reason: '', stacks }
+}
+
 async function resolveNativeStackMembership({
   github,
   context,
@@ -97,105 +150,59 @@ async function resolveNativeStackMembership({
   if (typeof github.request !== 'function') {
     return { valid: false, reason: 'native stack API is unavailable' }
   }
-  const response = await github.request('GET /repos/{owner}/{repo}/stacks', {
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    pull_request: pullNumber,
-    per_page: 100,
-    headers: { accept: 'application/vnd.github+json' },
+  const currentResponse = await listStacks({
+    github,
+    context,
+    pullNumber,
   })
-  if (!Array.isArray(response.data)) {
+  if (!Array.isArray(currentResponse.stacks)) {
     return {
       valid: false,
       reason: 'native stack API returned a malformed list',
     }
   }
-  if (response.data.length >= 100) {
+  const currentParsed = parseStacks(currentResponse.stacks, 'API')
+  if (!currentParsed.stacks) {
+    return {
+      valid: false,
+      reason: currentParsed.reason,
+    }
+  }
+  let matches = currentParsed.stacks.filter((stack) =>
+    stack.pull_requests.some((record) => record.number === pullNumber)
+  )
+  let truncated = currentResponse.complete === false
+  if (truncated && matches.length !== 1) {
     return {
       valid: false,
       reason: 'native stack API returned a capped list',
     }
   }
-  const stacks = []
-  for (const stack of response.data) {
-    if (
-      !stackId(stack?.id) ||
-      !Array.isArray(stack.pull_requests) ||
-      stack.pull_requests.length === 0 ||
-      !stack.pull_requests.every(stackRecordShapeIsValid)
-    ) {
-      return {
-        valid: false,
-        reason: 'native stack API returned a malformed stack',
-      }
-    }
-    const numbers = stack.pull_requests.map((record) => record.number)
-    if (new Set(numbers).size !== numbers.length) {
-      return {
-        valid: false,
-        reason: 'native stack API returned duplicate members',
-      }
-    }
-    stacks.push({
-      id: stackId(stack.id),
-      open: stack.open !== false,
-      pull_requests: stack.pull_requests,
-    })
-  }
-  let matches = stacks.filter((stack) =>
-    stack.pull_requests.some((record) => record.number === pullNumber)
-  )
   if (matches.length === 0) {
-    const historyResponse = await github.request(
-      'GET /repos/{owner}/{repo}/stacks',
-      {
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        per_page: 100,
-        headers: { accept: 'application/vnd.github+json' },
-      }
-    )
-    if (!Array.isArray(historyResponse.data)) {
+    const historyResponse = await listStacks({ github, context })
+    if (!Array.isArray(historyResponse.stacks)) {
       return {
         valid: false,
         reason: 'native stack history returned a malformed list',
       }
     }
-    if (historyResponse.data.length >= 100) {
+    truncated = historyResponse.complete === false
+    const historyParsed = parseStacks(historyResponse.stacks, 'history')
+    if (!historyParsed.stacks) {
+      return {
+        valid: false,
+        reason: historyParsed.reason,
+      }
+    }
+    matches = historyParsed.stacks.filter((stack) =>
+      stack.pull_requests.some((record) => record.number === pullNumber)
+    )
+    if (truncated && matches.length !== 1) {
       return {
         valid: false,
         reason: 'native stack history returned a capped list',
       }
     }
-    const historicalStacks = []
-    for (const stack of historyResponse.data) {
-      if (
-        !stackId(stack?.id) ||
-        !Array.isArray(stack.pull_requests) ||
-        stack.pull_requests.length === 0 ||
-        !stack.pull_requests.every(stackRecordShapeIsValid)
-      ) {
-        return {
-          valid: false,
-          reason: 'native stack history returned a malformed stack',
-        }
-      }
-      const numbers = stack.pull_requests.map((record) => record.number)
-      if (new Set(numbers).size !== numbers.length) {
-        return {
-          valid: false,
-          reason: 'native stack history returned duplicate members',
-        }
-      }
-      historicalStacks.push({
-        id: stackId(stack.id),
-        open: stack.open !== false,
-        pull_requests: stack.pull_requests,
-      })
-    }
-    matches = historicalStacks.filter((stack) =>
-      stack.pull_requests.some((record) => record.number === pullNumber)
-    )
   }
   if (matches.length === 0) return null
   if (matches.length !== 1) {
@@ -207,6 +214,7 @@ async function resolveNativeStackMembership({
   const repository = `${context.repo.owner}/${context.repo.repo}`
   const members = []
   const reasons = []
+  if (truncated) reasons.push('native stack history returned a capped list')
   if (stackIsClosed) reasons.push('native stack is closed')
   for (const record of stack.pull_requests) {
     let memberPull
@@ -338,5 +346,6 @@ async function resolveNativeStackMembership({
 module.exports = {
   compareRange,
   MAX_COMPARE_FILES,
+  MAX_STACK_HISTORY,
   resolveNativeStackMembership,
 }
