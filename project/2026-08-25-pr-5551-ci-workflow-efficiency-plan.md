@@ -233,10 +233,15 @@ Do not delete a workflow if any readback differs from the expected set.
   (7/7 orchestration tasks, 25/25 checks) under the pinned Node 24 and pnpm
   11.5 toolchain. The latest normal push hook also passed the full build with
   23/23 tasks. An earlier standalone full-build repeat was stopped after
-  GraphQL Rollup remained idle for over 13 minutes.
-- Remaining: push the latest synced [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553)
-  head, update its synced-base evidence, run fresh exact-head hosted checks, and
-  mark it ready if all required contexts pass. Merge remains withheld.
+  GraphQL Rollup remained idle for over 13 minutes. The first fresh post-sync
+  Playwright run passed seven shards, while shard 8 exposed that a Turbo cache
+  hit restored `packages/graphql/dist/client.json` but not the ignored source
+  copy consumed by three course-sharing specs. The workflow now asserts the
+  built map exists and restores it in each shard without regenerating the
+  package eight times.
+- Remaining: push the latest Playwright handoff fix, update the synced-base
+  evidence, run fresh exact-head hosted checks, and mark the PR ready if all
+  required contexts pass. Merge remains withheld.
 - Follow-up verification: the safe Actions audit, syntax validation, and job
   discovery pass with only `check`, `check-gitleaks`, and `test-unit` present for
   the consolidated scope. Prettier passes under the repository-pinned Node 24
