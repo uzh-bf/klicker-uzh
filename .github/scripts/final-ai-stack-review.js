@@ -1132,8 +1132,25 @@ async function authorizeStackReview({ github, context, core }) {
   return true
 }
 
-function changedLineRanges(patch) {
-  if (typeof patch !== 'string' || patch.length > MAX_PATCH_LENGTH) return []
+function parsePatchHunks(patch) {
+  if (typeof patch !== 'string' || patch.length > MAX_PATCH_LENGTH) return null
+  const hunks = []
+  for (const line of patch.split('\n')) {
+    const match = line.match(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/u)
+    if (match) {
+      hunks.push({
+        new_count: Number(match[4] ?? 1),
+        new_start: Number(match[3]),
+        old_count: Number(match[2] ?? 1),
+        old_start: Number(match[1]),
+      })
+    }
+  }
+  return hunks.length > 0 ? hunks : null
+}
+
+function changedLineRanges(patch, hunks = parsePatchHunks(patch)) {
+  if (!hunks) return []
   let newLine = null
   const ranges = []
   for (const line of patch.split('\n')) {
@@ -1151,6 +1168,74 @@ function changedLineRanges(patch) {
     }
   }
   return ranges
+}
+
+function mapLineThroughPatch(line, hunks) {
+  let offset = 0
+  for (const hunk of hunks) {
+    const oldStart = hunk.old_start
+    const oldEnd = oldStart + hunk.old_count
+    if (hunk.old_count === 0) {
+      if (line < oldStart) return { changed: false, line: line + offset }
+      offset += hunk.new_count
+      continue
+    }
+    if (line < oldStart) return { changed: false, line: line + offset }
+    if (line >= oldEnd) {
+      offset += hunk.new_count - hunk.old_count
+      continue
+    }
+    if (hunk.new_count === 0) return { deleted: true }
+    return {
+      changed: true,
+      line: hunk.new_start + Math.min(line - oldStart, hunk.new_count - 1),
+    }
+  }
+  return { changed: false, line: line + offset }
+}
+
+function buildPathLineLayers(layers, filename) {
+  const lineLayers = []
+  for (let sourceIndex = 0; sourceIndex < layers.length; sourceIndex += 1) {
+    const sourceFile = layers[sourceIndex].files.find(
+      (file) => file.filename === filename
+    )
+    if (!sourceFile) continue
+    if (!sourceFile.patch_complete) return []
+    for (const range of sourceFile.changed_line_ranges) {
+      let line = range.start_line
+      const owners = new Set([sourceIndex + 1])
+      let mappingComplete = true
+      for (
+        let laterIndex = sourceIndex + 1;
+        laterIndex < layers.length;
+        laterIndex += 1
+      ) {
+        const laterFile = layers[laterIndex].files.find(
+          (file) => file.filename === filename
+        )
+        if (!laterFile) continue
+        if (!laterFile.patch_complete) {
+          mappingComplete = false
+          break
+        }
+        const mapped = mapLineThroughPatch(line, laterFile.patch_hunks)
+        if (mapped.deleted) {
+          mappingComplete = false
+          break
+        }
+        line = mapped.line
+        if (mapped.changed) owners.add(laterIndex + 1)
+      }
+      if (!mappingComplete) return []
+      lineLayers.push({
+        end_line: line,
+        layers: [...owners].sort((left, right) => left - right),
+        start_line: line,
+      })
+    }
+  }
+  return lineLayers
 }
 
 function findingLayerNumbers(entry, startLine, endLine) {
@@ -1188,12 +1273,15 @@ function validateFile(file) {
   if (previous != null && !safeRepositoryPath(previous)) {
     throw new Error('Stack comparison returned an invalid rename record')
   }
+  const patchHunks = parsePatchHunks(file.patch)
   return {
     additions,
     changes,
     deletions,
     filename,
-    changed_line_ranges: changedLineRanges(file.patch),
+    changed_line_ranges: changedLineRanges(file.patch, patchHunks),
+    patch_complete: patchHunks !== null,
+    patch_hunks: patchHunks ?? [],
     previous_filename: previous ?? '',
     status: String(file.status ?? 'modified'),
   }
@@ -1273,15 +1361,11 @@ async function buildStackSnapshot({ github, context, membership }) {
       current.deletions += file.deletions
       if (!current.layers.includes(layer.position))
         current.layers.push(layer.position)
-      for (const range of file.changed_line_ranges) {
-        current.line_layers.push({
-          end_line: range.end_line,
-          layers: [layer.position],
-          start_line: range.start_line,
-        })
-      }
       pathIndex.set(file.filename, current)
     }
+  }
+  for (const [filename, entry] of pathIndex) {
+    entry.line_layers = buildPathLineLayers(layers, filename)
   }
   const ultimateBase = layers[0]
   const top = layers.at(-1)

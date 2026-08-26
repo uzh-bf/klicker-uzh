@@ -109,6 +109,12 @@ function stackFixture() {
           deletions: 1,
           patch: '@@ -3,1 +4,1 @@\n+changed in layer one',
         },
+        {
+          filename: 'src/shift.ts',
+          additions: 1,
+          deletions: 1,
+          patch: '@@ -2,1 +2,1 @@\n+source change',
+        },
       ],
     ],
     ['c'.repeat(40), [{ filename: 'src/two.ts', additions: 3, deletions: 0 }]],
@@ -120,6 +126,12 @@ function stackFixture() {
           additions: 2,
           deletions: 2,
           patch: '@@ -8,1 +9,1 @@\n+changed in layer three',
+        },
+        {
+          filename: 'src/shift.ts',
+          additions: 1,
+          deletions: 0,
+          patch: '@@ -2,0 +2,1 @@\n+later insertion',
         },
       ],
     ],
@@ -573,6 +585,15 @@ test('builds a bounded immutable manifest with exact layer owners', async () => 
       { end_line: 9, layers: [3], start_line: 9 },
     ]
   )
+  assert.deepEqual(
+    bundle.manifest.path_index.find(
+      (entry) => entry.filename === 'src/shift.ts'
+    ).line_layers,
+    [
+      { end_line: 3, layers: [1], start_line: 3 },
+      { end_line: 2, layers: [3], start_line: 2 },
+    ]
+  )
   const plan = await buildStackReviewPlan({
     github,
     context: context(),
@@ -747,12 +768,31 @@ test('keeps actions read permission for stack revalidation', () => {
     'utf8'
   )
   const reviewJob =
-    workflow.match(/\n  review:\n([\s\S]*?)(?=\n  [a-z][\w-]*:\n|$)/)?.[1] ?? ''
+    workflow.match(
+      /\n {2}review:\n([\s\S]*?)(?=\n {2}[a-z][\w-]*:\n|$)/
+    )?.[1] ?? ''
   const permissions =
     reviewJob.match(
-      /\n    permissions:\n([\s\S]*?)(?=\n    steps:\n|$)/
+      /\n {4}permissions:\n([\s\S]*?)(?=\n {4}steps:\n|$)/
     )?.[1] ?? ''
-  assert.match(permissions, /      actions: read\n/)
+  assert.match(permissions, / {6}actions: read\n/)
+})
+
+test('checks trusted review code out from the default branch', () => {
+  for (const workflowName of [
+    'check-ocr-final-review.yml',
+    'check-ocr-final-stack-review.yml',
+  ]) {
+    const workflow = fs.readFileSync(
+      path.join(__dirname, `../workflows/${workflowName}`),
+      'utf8'
+    )
+    assert.doesNotMatch(workflow, /ref: \$\{\{ github\.sha \}\}/u)
+    assert.match(
+      workflow,
+      /ref: \$\{\{ github\.event\.repository\.default_branch \}\}/u
+    )
+  }
 })
 
 test('anchors every stack review consumer to the frozen manifest digest', () => {
