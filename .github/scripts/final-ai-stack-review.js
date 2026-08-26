@@ -719,6 +719,48 @@ async function hasSuccessfulStackReview(
   )
 }
 
+function stackReviewMetadataMatchesPlan(metadata, plan, membership) {
+  if (!metadata || !plan?.eligible || plan.mode !== 'full') return false
+  const layerHeadShas = membership.members.map(({ pull }) => pull.head.sha)
+  const layerIdentities = membership.members.map(({ number, pull }) => ({
+    base_ref: pull.base.ref,
+    base_sha: pull.base.sha,
+    head_ref: pull.head.ref,
+    head_sha: pull.head.sha,
+    pull_request: number,
+  }))
+  return (
+    metadata.mode === 'full' &&
+    metadata.base_sha === plan.baseSha &&
+    metadata.head_sha === plan.headSha &&
+    metadata.stack_id === plan.stackId &&
+    metadata.stack_order_digest === plan.stackOrderDigest &&
+    metadata.stack_identity_digest === plan.stackIdentityDigest &&
+    metadata.policy_digest === plan.policyDigest &&
+    JSON.stringify(metadata.layer_head_shas) ===
+      JSON.stringify(layerHeadShas) &&
+    JSON.stringify(metadata.layer_identities) ===
+      JSON.stringify(layerIdentities)
+  )
+}
+
+async function hasCurrentSuccessfulStackReview({
+  github,
+  context,
+  plan,
+  membership,
+}) {
+  const rootReview = await latestStackRootReview({
+    github,
+    context,
+    pull: membership.members.at(-1).pull,
+  })
+  return Boolean(
+    rootReview &&
+      stackReviewMetadataMatchesPlan(rootReview.metadata, plan, membership)
+  )
+}
+
 async function initializeStackReview({ github, context }) {
   if (context.eventName !== 'pull_request_target') return false
   const pull = context.payload.pull_request
@@ -839,7 +881,14 @@ async function authorizeStackReview({ github, context, core }) {
         'Stack review must be requested on the verified top pull request'
     )
   }
-  if (await hasSuccessfulStackReview(github, context, plan.headSha)) {
+  if (
+    await hasCurrentSuccessfulStackReview({
+      github,
+      context,
+      plan,
+      membership,
+    })
+  ) {
     return deny('Stack review already succeeded for the current top head')
   }
   setOutput(core, 'authorized', 'true')
@@ -1010,7 +1059,7 @@ function writeSnapshotBundle(bundle, manifestPath) {
   )
 }
 
-function readSnapshotBundle(manifestPath) {
+function readSnapshotBundle(manifestPath, expectedManifestDigest = null) {
   const bundle = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
   if (
     !bundle?.manifest ||
@@ -1019,6 +1068,13 @@ function readSnapshotBundle(manifestPath) {
     sha256(JSON.stringify(bundle.manifest)) !== bundle.manifest_digest
   ) {
     throw new Error('Stack manifest is missing or has an invalid digest')
+  }
+  if (
+    expectedManifestDigest !== null &&
+    (!validDigest(expectedManifestDigest) ||
+      bundle.manifest_digest !== expectedManifestDigest)
+  ) {
+    throw new Error('Stack manifest digest changed after snapshot freeze')
   }
   return bundle
 }
@@ -1101,7 +1157,16 @@ async function startStackReview({
   ) {
     throw new Error('Native stack changed before stack-review start')
   }
-  if (await hasSuccessfulStackReview(github, context, headSha)) return false
+  if (
+    await hasCurrentSuccessfulStackReview({
+      github,
+      context,
+      plan,
+      membership,
+    })
+  ) {
+    return false
+  }
   const bundle = await buildStackSnapshot({ github, context, membership })
   writeSnapshotBundle(bundle, manifestPath)
   await setStackStatus({
@@ -1716,6 +1781,7 @@ async function publishStackReview({
   policyDigest,
   dispositionDigest = '',
   reviewRanges = [],
+  expectedManifestDigest,
   manifestPath,
   resultPath,
   topologyResultPath,
@@ -1744,7 +1810,13 @@ async function publishStackReview({
   ) {
     throw new Error('Native stack changed before stack-review publication')
   }
-  const manifestBundle = readSnapshotBundle(manifestPath)
+  if (!validDigest(expectedManifestDigest)) {
+    throw new Error('Stack manifest digest is missing before publication')
+  }
+  const manifestBundle = readSnapshotBundle(
+    manifestPath,
+    expectedManifestDigest
+  )
   if (!snapshotMatchesMembership(manifestBundle.manifest, membership)) {
     throw new Error('Native stack identities changed before publication')
   }
@@ -1866,21 +1938,20 @@ async function finalizeStackReview({
     return
   }
   const currentHead = plan.headSha ?? headSha
-  const eligible =
-    stackReviewPlanMatches(plan, {
-      expectedStackId,
-      expectedOrderDigest,
-      expectedIdentityDigest,
-      expectedMemberNumbers,
-      baseSha,
-      headSha,
-      mode,
-      rootHead,
-      rootReviewId,
-      policyDigest,
-      dispositionDigest,
-      reviewRanges,
-    })
+  const eligible = stackReviewPlanMatches(plan, {
+    expectedStackId,
+    expectedOrderDigest,
+    expectedIdentityDigest,
+    expectedMemberNumbers,
+    baseSha,
+    headSha,
+    mode,
+    rootHead,
+    rootReviewId,
+    policyDigest,
+    dispositionDigest,
+    reviewRanges,
+  })
   await setStackStatus({
     github,
     context,
@@ -1917,18 +1988,23 @@ function runTopologyCli() {
     console.log('OCR range results combined')
     return
   }
-  const [manifestPath, codeResultPath, outputPath] = args
+  const [manifestPath, codeResultPath, outputPath, expectedManifestDigest] =
+    args
   if (
     command !== 'topology' ||
     !manifestPath ||
     !codeResultPath ||
-    !outputPath
+    !outputPath ||
+    !validDigest(expectedManifestDigest)
   ) {
     throw new Error(
-      'Usage: final-ai-stack-review.js topology <manifest> <ocr-result> <output>'
+      'Usage: final-ai-stack-review.js topology <manifest> <ocr-result> <output> <manifest-digest>'
     )
   }
-  const manifestBundle = readSnapshotBundle(manifestPath)
+  const manifestBundle = readSnapshotBundle(
+    manifestPath,
+    expectedManifestDigest
+  )
   const codeResult = JSON.parse(fs.readFileSync(codeResultPath, 'utf8'))
   callTopologyModel({
     apiKey: process.env[OPENROUTER_API_KEY_ENV],
@@ -1974,6 +2050,7 @@ module.exports = {
   combineOCRResults,
   decideStackStatus,
   finalizeStackReview,
+  hasCurrentSuccessfulStackReview,
   hasSuccessfulStackReview,
   initializeStackReview,
   isStackReviewCommand,
@@ -1983,6 +2060,7 @@ module.exports = {
   renderStackReview,
   resolveStackMembership,
   snapshotMatchesMembership,
+  stackReviewMetadataMatchesPlan,
   startStackReview,
   validateTopologyResult,
   writeSnapshotBundle,

@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict')
+const crypto = require('node:crypto')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
@@ -16,9 +17,11 @@ const {
   initializeStackReview,
   isStackReviewCommand,
   parseStackReviewMetadata,
+  readSnapshotBundle,
   renderStackReview,
   resolveStackMembership,
   snapshotMatchesMembership,
+  stackReviewMetadataMatchesPlan,
   startStackReview,
   validateTopologyResult,
 } = require('./final-ai-stack-review.js')
@@ -540,6 +543,94 @@ test('builds a bounded immutable manifest with exact layer owners', async () => 
   assert.match(bundle.manifestDigest, /^[0-9a-f]{64}$/)
 })
 
+test('rejects a self-consistent replacement for the frozen stack manifest', async () => {
+  const { github } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const bundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const replacement = {
+    ...bundle.manifest,
+    path_index: [
+      ...bundle.manifest.path_index,
+      { filename: 'src/replaced.ts', layers: [1] },
+    ],
+  }
+  const replacementDigest = crypto
+    .createHash('sha256')
+    .update(JSON.stringify(replacement))
+    .digest('hex')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stack-review-'))
+  const manifestPath = path.join(directory, 'manifest.json')
+  fs.writeFileSync(
+    manifestPath,
+    JSON.stringify({
+      manifest: replacement,
+      manifest_digest: replacementDigest,
+    })
+  )
+  assert.throws(
+    () => readSnapshotBundle(manifestPath, bundle.manifestDigest),
+    /changed after snapshot freeze/
+  )
+})
+
+test('does not reuse a successful stack report after lower-layer drift', async () => {
+  const { github } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const plan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership,
+  })
+  const metadata = {
+    mode: 'full',
+    base_sha: plan.baseSha,
+    head_sha: plan.headSha,
+    stack_id: plan.stackId,
+    stack_order_digest: plan.stackOrderDigest,
+    stack_identity_digest: plan.stackIdentityDigest,
+    policy_digest: plan.policyDigest,
+    layer_head_shas: membership.members.map(({ pull }) => pull.head.sha),
+    layer_identities: membership.members.map(({ number, pull }) => ({
+      base_ref: pull.base.ref,
+      base_sha: pull.base.sha,
+      head_ref: pull.head.ref,
+      head_sha: pull.head.sha,
+      pull_request: number,
+    })),
+  }
+  assert.equal(stackReviewMetadataMatchesPlan(metadata, plan, membership), true)
+  const driftedMembership = {
+    ...membership,
+    members: membership.members.map((member, index) =>
+      index === 0
+        ? {
+            ...member,
+            pull: {
+              ...member.pull,
+              head: { ...member.pull.head, sha: '9'.repeat(40) },
+            },
+          }
+        : member
+    ),
+  }
+  assert.equal(
+    stackReviewMetadataMatchesPlan(metadata, plan, driftedMembership),
+    false
+  )
+})
+
 test('authorizes only the verified top pull request', async () => {
   const { github } = stackFixture()
   const outputs = new Map()
@@ -573,6 +664,27 @@ test('keeps actions read permission for stack revalidation', () => {
       /\n    permissions:\n([\s\S]*?)(?=\n    steps:\n|$)/
     )?.[1] ?? ''
   assert.match(permissions, /      actions: read\n/)
+})
+
+test('anchors every stack review consumer to the frozen manifest digest', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-stack-review.yml'),
+    'utf8'
+  )
+  assert.equal(
+    workflow.match(
+      /MANIFEST_DIGEST: \$\{\{ steps\.start\.outputs\.manifest_digest \}\}/g
+    )?.length,
+    3
+  )
+  assert.match(
+    workflow,
+    /expectedManifestDigest: process\.env\.MANIFEST_DIGEST/
+  )
+  assert.match(
+    workflow,
+    /"\$\{MANIFEST_PATH\}" "\$\{CODE_RESULT_PATH\}" "\$\{TOPOLOGY_RESULT_PATH\}" \\\n\s+"\$\{MANIFEST_DIGEST\}"/
+  )
 })
 
 test('invalidates the top status when a lower layer changes', async () => {

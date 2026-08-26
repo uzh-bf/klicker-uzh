@@ -167,6 +167,7 @@ jobs:
           REVIEW_MODE: ${{ needs.authorize.outputs.mode }}
           ROOT_HEAD: ${{ needs.authorize.outputs.root_head }}
           REVIEW_RANGES: ${{ needs.authorize.outputs.review_ranges }}
+          MANIFEST_DIGEST: ${{ steps.start.outputs.manifest_digest }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
         run: |
           set -euo pipefail
@@ -174,6 +175,8 @@ jobs:
           [[ "${HEAD_SHA}" =~ ^[0-9a-f]{40}$ ]]
           [[ "${REVIEW_MODE}" == "full" || "${REVIEW_MODE}" == "incremental" ]]
           [[ "${ROOT_HEAD}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${MANIFEST_DIGEST}" =~ ^[0-9a-f]{64}$ ]]
+          node -e 'const b = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); if (b.manifest_digest !== process.env.MANIFEST_DIGEST) process.exit(1)' "${MANIFEST_PATH}"
           node -e 'const ranges = JSON.parse(process.env.REVIEW_RANGES || "[]"); if (process.env.REVIEW_MODE === "incremental" && (!Array.isArray(ranges) || ranges.length === 0 || ranges.some((r) => !Number.isSafeInteger(r.layer_number) || r.layer_number < 1 || !/^[0-9a-f]{40}$/.test(r.base_sha ?? "") || !/^[0-9a-f]{40}$/.test(r.head_sha ?? "") || r.base_sha === r.head_sha))) process.exit(1)'
           git cat-file -e "${BASE_SHA}^{commit}"
           while read -r NUMBER EXPECTED_SHA; do
@@ -261,13 +264,15 @@ jobs:
         if: steps.code_review.outcome == 'success' && steps.cleanup.outcome == 'success'
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          MANIFEST_DIGEST: ${{ steps.start.outputs.manifest_digest }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
           CODE_RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
           TOPOLOGY_RESULT_PATH: ${{ runner.temp }}/final-ai-stack-topology-result.json
         run: |
           set -euo pipefail
           node .github/scripts/final-ai-stack-review.js topology \
-            "${MANIFEST_PATH}" "${CODE_RESULT_PATH}" "${TOPOLOGY_RESULT_PATH}"
+            "${MANIFEST_PATH}" "${CODE_RESULT_PATH}" "${TOPOLOGY_RESULT_PATH}" \
+            "${MANIFEST_DIGEST}"
 
       - name: Publish consolidated stack review
         id: publish
@@ -290,6 +295,7 @@ jobs:
           POLICY_DIGEST: ${{ needs.authorize.outputs.policy_digest }}
           DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
           REVIEW_RANGES: ${{ needs.authorize.outputs.review_ranges }}
+          MANIFEST_DIGEST: ${{ steps.start.outputs.manifest_digest }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
           RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
           TOPOLOGY_RESULT_PATH: ${{ runner.temp }}/final-ai-stack-topology-result.json
@@ -314,6 +320,7 @@ jobs:
               policyDigest: process.env.POLICY_DIGEST,
               dispositionDigest: process.env.DISPOSITION_DIGEST,
               reviewRanges: JSON.parse(process.env.REVIEW_RANGES || '[]'),
+              expectedManifestDigest: process.env.MANIFEST_DIGEST,
               manifestPath: process.env.MANIFEST_PATH,
               resultPath: process.env.RESULT_PATH,
               topologyResultPath: process.env.TOPOLOGY_RESULT_PATH,
