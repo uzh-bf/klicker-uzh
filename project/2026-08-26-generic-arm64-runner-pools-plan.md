@@ -111,9 +111,10 @@
 
 ## Progress
 
-- Status: plan approved through the user's explicit 3-public/2-private ruling.
-- Active slice: final review corrections.
-- Completed: fresh worktree, current `v3` baseline, documentation research, planner review, generic provisioning commit `c454a8195`, public PR Playwright routing commit `8dec6a4cf`, documentation commit `2a2af63ec`, and integrated local verification.
-- Remaining: commit and verify final review corrections, then repeat the integrated final review.
+- Status: local source package complete and reviewed.
+- Active slice: none.
+- Completed: fresh worktree, current `v3` baseline, documentation research, planner review, generic provisioning commit `3ad4b98d2`, public PR Playwright routing commit `046b56e6b`, documentation commit `bd70de85e`, isolation corrections commit `c7d8ac3df`, integrated local verification, and the final review correction pass.
+- Final review: `DONE_WITH_CONCERNS`; all source-level security and operational findings are resolved. Live GitHub scheduling and container behavior remain unproved until the merged workflow is canaried.
+- Remaining: the explicitly withheld push or PR, runner-group and repository-variable changes, fresh VM rebuilds and provisioning, live canary, and token revocation.
 - Delivery layer: local committed branch; publication remains withheld.
 - Runtime: none started.
