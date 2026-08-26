@@ -24,7 +24,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.11.12 /uv /uvx /bin/
 # pinned Node). Mirror the repo's packageManager pin. (GOTCHAS #8)
 RUN npm install -g pnpm@11.5.0
 
-# Keep the pnpm store inside the image, off the bind-mounted workspace. (GOTCHAS #9)
+# Use a stable path for the machine-local store mounted by Compose. (GOTCHAS #9)
 RUN pnpm config set store-dir "$PNPM_HOME/.pnpm-store"
 
 WORKDIR /workspaces/klicker-uzh
