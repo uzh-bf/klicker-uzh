@@ -403,7 +403,13 @@ jobs:
   # Always reports a status even when the tests are skipped by the path filter,
   # so this job can be used as a required check in branch protection.
   test-playwright-status:
-    needs: [filter, test-playwright-hosted, test-playwright-public-pr]
+    needs:
+      [
+        filter,
+        build-and-compile,
+        test-playwright-hosted,
+        test-playwright-public-pr,
+      ]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -424,6 +430,7 @@ jobs:
           # A run cancelled by concurrency (duplicate push, quick re-push) must not
           # leave a red required check behind: the surviving run is the real signal.
           if [ "${{ needs.filter.result }}" = "cancelled" ] || \
+             [ "${{ needs.build-and-compile.result }}" = "cancelled" ] || \
              [ "${{ needs.test-playwright-hosted.result }}" = "cancelled" ] || \
              [ "${{ needs.test-playwright-public-pr.result }}" = "cancelled" ]; then
             echo "Superseded by a newer run; jobs were cancelled by concurrency."

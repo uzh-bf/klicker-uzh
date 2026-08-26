@@ -57,9 +57,10 @@ jobs:
       # Shares /config with the hatchet service so this job can read the worker
       # API token that hatchet-lite-dev mints on boot. Reading it via `docker
       # exec` (as the non-containerized workflows do) is impossible here: the
-      # Playwright image has no Docker CLI.
+      # Playwright image has no Docker CLI. The run-specific name prevents one
+      # persistent runner job from reusing another job's Hatchet state.
       volumes:
-        - hatchet_lite_config:/config
+        - hatchet_lite_config_${{ github.run_id }}_${{ github.run_attempt }}_${{ matrix.shardIndex }}:/config
     timeout-minutes: 120
     strategy:
       fail-fast: false
@@ -78,8 +79,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        ports:
-          - 5432:5432
       postgres_hatchet:
         image: postgres:15
         env:
@@ -92,8 +91,6 @@ jobs:
           --health-timeout 10s
           --health-retries 10
           --health-start-period 30s
-        ports:
-          - 5433:5432
       redis_cache:
         image: redis:7
         options: >-
@@ -101,8 +98,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        ports:
-          - 6380:6379
       redis_exec:
         image: redis:7
         options: >-
@@ -110,8 +105,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        ports:
-          - 6379:6379
       redis_assessment_exec:
         image: redis:7
         options: >-
@@ -119,13 +112,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        ports:
-          - 6381:6379
       hatchet:
         image: ghcr.io/hatchet-dev/hatchet/hatchet-lite-dev:v0.101.0
-        ports:
-          - '8888:8888'
-          - '7077:7077'
         env:
           DATABASE_URL: 'postgresql://hatchet:hatchet@postgres_hatchet:5432/hatchet?sslmode=disable'
           SERVER_AUTH_COOKIE_DOMAIN: hatchet
@@ -146,13 +134,15 @@ jobs:
           --health-timeout 10s
           --health-retries 10
         volumes:
-          - hatchet_lite_config:/config
+          - hatchet_lite_config_${{ github.run_id }}_${{ github.run_attempt }}_${{ matrix.shardIndex }}:/config
 
     steps:
       - run: echo "Running Playwright tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})"
 
       - name: Check out repository code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Define node version
         uses: actions/setup-node@v4

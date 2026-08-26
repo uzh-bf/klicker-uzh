@@ -112,8 +112,8 @@
 ## Progress
 
 - Status: plan approved through the user's explicit 3-public/2-private ruling.
-- Active slice: operations documentation.
-- Completed: fresh worktree, current `v3` baseline, documentation research, planner review, generic provisioning commit `c454a8195`, and public PR Playwright routing commit `8dec6a4cf`.
-- Remaining: documentation commit, integrated verification, and final review.
+- Active slice: final review corrections.
+- Completed: fresh worktree, current `v3` baseline, documentation research, planner review, generic provisioning commit `c454a8195`, public PR Playwright routing commit `8dec6a4cf`, documentation commit `2a2af63ec`, and integrated local verification.
+- Remaining: commit and verify final review corrections, then repeat the integrated final review.
 - Delivery layer: local committed branch; publication remains withheld.
 - Runtime: none started.
