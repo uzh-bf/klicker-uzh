@@ -477,3 +477,15 @@ roadmaps are task-owned in this worktree and ship with the readiness PR.
   which isolates the earlier root-check failure to the base container's Python
   3.14/pandas 2.2.2 toolchain mismatch. S1 remains active pending a correction
   commit and exact-range re-review.
+- 2026-08-26: Implemented S2's closed STG readiness values with the exact
+  ingestion API and source-gateway service identities, explicit backend and
+  worker ingestion gates, and explicit backend and worker graph gates. The
+  focused render assertion verifies every expected ConfigMap value, rejects
+  worker-only keys on both response processors, and rejects ingestion secret
+  keys from all rendered ConfigMaps. The main check workflow installs pinned
+  Helm 3.21.4 before running it. Host Helm rendering and chart lint pass; scoped
+  container Biome and Prettier checks pass. The incoming STG GraphQL resource
+  contract remains 50m/50Mi requests, a 1Gi memory limit, and no CPU limit.
+  The managed devcontainer does not include Helm, so the Helm-only assertions
+  ran with the configured host binary while Node/package checks stayed in the
+  container. S2 remains active pending its commit and exact-range reviews.

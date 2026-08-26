@@ -22,6 +22,12 @@ hatchet:
   client:
     tlsStrategy: 'none'
     apiUrl: 'http://app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080'
+  kbIngestion:
+    apiUrl: 'http://ingestion-resource-api.stg-ingestion.svc.cluster.local:8000'
+    sourceGatewayUrl: 'http://klicker-backend.stg-klicker.svc.cluster.local:3000'
+    workerDisabled: true
+  kbGraph:
+    disabled: true
   workers:
     general:
       replicaCount: 1
@@ -586,7 +592,8 @@ backendGraphql:
   appStudentDomain: pwa.klicker.stg.df-app.ch
   appControlDomain: control.klicker.stg.df-app.ch
   cookieDomain: .klicker.stg.df-app.ch
-  # kbIngestionDisabled: true # interim kill switch — set to true to refuse new KB ingestion during an incident
+  kbIngestionDisabled: true
+  kbGraphDisabled: true
 
   ingress:
     className: haproxy

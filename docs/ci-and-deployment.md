@@ -76,6 +76,7 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
 - **KB graph builds couple two values**: `hatchet.kbGraph.workflowName` and `backendGraphql.knowledgeGraph.host` must be set together, or the chart stops at render time with an explicit `fail`.
 - **KB graph token ordering**: the general worker's external secret must already carry `KB_GRAPH_HATCHET_CLIENT_TOKEN` before `hatchet.kbGraph.workflowName` is set. The token alone does not arm the worker's startup gate (so a secret rollout cannot stop unrelated jobs), but once any chart-owned `KB_GRAPH_*` value is present the token is required and startup fails without it.
+- **KB ingestion readiness stays closed by construction**: `pnpm run check:kb-ingestion-stg` renders the STG backend and worker ConfigMaps and requires the exact cluster-local ingestion and source-gateway endpoints, both ingestion kill switches, and the graph kill switch. It also rejects KB settings on response processors.
 
 ## Deployment migrations
 

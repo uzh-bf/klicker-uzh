@@ -90,7 +90,9 @@ hatchet:
     apiUrl: ""
     projectId: "klicker-course-materials"
     sourceGatewayUrl: ""
+    workerDisabled: false
   kbGraph:
+    disabled: false
     hostPort: ""
     apiUrl: ""
     tlsStrategy: ""
@@ -486,6 +488,9 @@ frontendControl:
 
 backendGraphql:
   priorityClassName: production-workload
+
+  kbIngestionDisabled: false
+  kbGraphDisabled: false
 
   knowledgeGraph:
     host: ''
