@@ -135,10 +135,41 @@ calendar month in `ChatAccountUsage` (`packages/prisma/src/prisma/schema/chat.pr
 `monthStart` is a DATE (first calendar day, `Europe/Zurich`), `budgetCredits`
 and `usedCredits` are `Decimal(18,6)` defaulting to zero, and the composite
 primary key prevents duplicate account/class/month rows. Counters start at
-zero at migration cutover; a missing row projects to budget 0 / used 0. The
-Zurich month boundary (including DST) is derived deterministically in
+zero at migration cutover. For each class, the newest configured budget at or
+before the current month remains effective until it is changed. A prior-month
+budget therefore carries forward with used credits reset to zero; only a class
+with no history projects budget 0 / used 0. The Zurich month boundary
+(including DST) is derived deterministically in
 `packages/util/src/chatUsage.ts`. The participant chat route enforces these
-counters at runtime; the lecturer-facing lanes remain a separate follow-up.
+counters at runtime.
+
+The lecturer-facing GraphQL API projects the effective account month through
+`getChatAccountUsage` as exactly `baseModelUsage` and `advancedModelUsage`.
+Each lane returns its fixed usage class, budget, used credits, non-negative
+remaining credits, and the exact next Zurich reset instant. Missing rows become
+zero-valued lanes only when no budget was ever configured; otherwise, an absent
+current-month row carries the latest budget and resets used credits. The outer
+`authorized` field always reflects the live account capability. An
+`ACCOUNT_OWNER` can access only its own account; an `ADMIN` can supply a target
+owner ID. Other lecturer login scopes are denied by the service. Participant
+roles are denied by the schema, while the service repeats the role and scope
+checks as a direct-call safeguard.
+
+`setChatAccountUsageBudgets` validates both values against the shared
+`Decimal(18,6)` credit contract and upserts the current BASE and ADVANCED rows
+in one transaction. It changes only `budgetCredits`, preserving existing or
+concurrent `usedCredits`. A newly created month becomes the latest configured
+limit for subsequent months; a disabled account cannot write. The API
+deliberately has no cost-center, contribution, provider, settlement,
+participant-credit, or per-model fields.
+
+The lecturer settings page requests this overview only after confirming an
+`ACCOUNT_OWNER` login scope. It shows two responsive lanes labelled “Base model
+usage” and “Advanced model usage” in English, with fixed German equivalents.
+Each lane names its budget, used and remaining credits, reset date, and empty or
+exhausted status. Authorized owners can update both monthly budgets together;
+disabled accounts see the live authorization state without an editor. The
+surface does not expose internal funding or provider details.
 
 The deployed Klicker Auto option is a LiteLLM `auto-router` endpoint. The
 only in-repo record of its tier map is the comment above `modelRegistry` in
@@ -207,10 +238,12 @@ exhaustion codes without cost-center or hidden funding fields.
 
 `apps/chat/src/app/api/chatbots/[chatbotId]/chat/route.ts:POST` resolves the
 effective model and its server-derived usage class, then reads the live account
-authorization and current owner/class/Zurich-month row before thread creation,
-image description, message persistence, or provider streaming. A disabled
-authorization, missing or zero row, or exhausted class fails closed with HTTP
-`403` and either `CHAT_MODEL_UNAVAILABLE_BASE` or
+authorization and effective owner/class/Zurich-month usage before thread
+creation, image description, message persistence, or provider streaming. The
+latest configured budget at or before the current month applies, with used
+credits reset to zero when it carries forward. A disabled authorization, class
+with no configured history or a zero budget, or exhausted class fails closed
+with HTTP `403` and either `CHAT_MODEL_UNAVAILABLE_BASE` or
 `CHAT_MODEL_UNAVAILABLE_ADVANCED`. The response never exposes budgets, used
 credits, cost centers, contributions, providers, or settlement details.
 Exhausting one class neither disables the other nor invokes fallback.

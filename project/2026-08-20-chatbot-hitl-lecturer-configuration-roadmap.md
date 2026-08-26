@@ -69,9 +69,11 @@ execution:
 - Registry entries carry the explicit usage class `BASE` or `ADVANCED`.
   `Auto` is `ADVANCED` for the MVP. Fallback stays within the selected class.
 - The lecturer defines one account-wide monthly budget for each class. Both
-  budgets belong to the chatbot owner's account and reset at the start of the
-  calendar month in `Europe/Zurich`. Store usage as `Decimal(18,6)` credits;
-  the atomic charge persistence is the single six-decimal rounding boundary.
+  configured limits belong to the chatbot owner's account and persist until
+  an authorized owner changes them. Only used credits reset to zero at the
+  start of each calendar month in `Europe/Zurich`. Store usage as
+  `Decimal(18,6)` credits; the atomic charge persistence is the single
+  six-decimal rounding boundary.
 - The manage surface has exactly two lanes named **base model usage** and
   **advanced model usage**. Each lane shows configured budget, used credits,
   remaining credits, and reset date.
@@ -234,10 +236,11 @@ provider-specific model name to the user-facing contract.
 
 **Acceptance.** The migration is additive and rollback-aware; the unique key
 prevents two rows for one account/class/month; budget validation rejects
-negative or malformed values; both classes reset at the chosen boundary; all
+negative or malformed values; both classes reset used credits at the chosen
+boundary while the latest configured limits persist until changed; all
 registry copies and repository-declared deployment configuration pass a parity
-test; a missing class row has a deterministic zero/default behavior; no
-participant query returns the counter.
+test; a class with no configuration history has deterministic fail-closed zero
+behavior; no participant query returns the counter.
 
 **Checks.** Focused Prisma and registry tests, GraphQL generation if types are
 touched, `pnpm run check:all` in the devcontainer, and staged diff/data
@@ -270,11 +273,14 @@ participant-credit migration boundary.
 **Acceptance.** Tests prove duplicate callbacks charge once, concurrent
 distinct turns update atomically, missing provider usage charges nothing,
 bounded final/concurrent overruns are accepted, a class exhaustion denial is
-stable, and exhaustion never selects the other class. Tool/abort paths use one
-turn-lifecycle identity. `Auto` remains advanced. The runtime resolves the
-owning account and class without branching on participant versus future
-lecturer-test identity. Participant errors contain availability state only,
-never cost-center or contribution details.
+stable, and exhaustion never selects the other class. The first turn in a new
+Zurich month materializes the latest configured limit with a zero-based usage
+counter. Participant credits are deducted only when finalization creates the
+assistant message; duplicate, conflict, and failed finalization never deduct.
+Tool/abort paths use one turn-lifecycle identity. `Auto` remains advanced. The
+runtime resolves the owning account and class without branching on participant
+versus future lecturer-test identity. Participant errors contain availability
+state only, never cost-center or contribution details.
 
 **Checks.** Focused route and service tests covering normal, abort, tool, retry,
 duplicate, and concurrent paths; registry parity; `pnpm run check:all`; full
@@ -304,10 +310,11 @@ approval appear to authorize usage.
 **Acceptance.** The UI uses the exact labels **base model usage** and
 **advanced model usage**. Each lane shows budget, used, remaining, and reset
 date. Owner/admin authorization checks hold for reads and writes; unrelated
-accounts and participants are denied. Empty, exhausted, and next-month states
-render deterministically. The authorization status is clear; cost-center
-editing remains the approved account workflow rather than a new per-model
-control.
+accounts and participants are denied. Empty and exhausted states render
+deterministically. In a new month, each lane carries the latest configured
+limit, shows zero used credits and full remaining credits, and advances the
+reset date. The authorization status is clear; cost-center editing remains the
+approved account workflow rather than a new per-model control.
 
 **Checks.** GraphQL generation, focused resolver tests (including forged
 service-context cases), `pnpm run check:all`, and mandatory `agent-browser`
@@ -317,6 +324,32 @@ empty, and class-exhausted lanes.
 **Boundary candidate.** Return `BOUNDARY_CANDIDATE` if product owners require a
 new cost-center intake/edit flow, a different lane vocabulary, or exact
 coverage disclosure.
+
+### M1-R1 — reopened full-stack review correction transaction
+
+**Outcome.** Correct the three verified M1 full-stack review findings without
+adding a fifth pull-request layer: clarify the Phase 0 contract and ADR index,
+add the shared U1 effective-month rule, correct U2 rollover/finalization
+charging, and project the same rule through U3.
+
+**Ownership.** This is an orchestration transaction over the existing Phase 0,
+U1, U2, and U3 work packages, not a new product capability or PR layer. The
+roadmap orchestrator is the only writer. Each correction and its tests remain
+on the layer that owns the affected contract.
+
+**Dependencies.** The verified Claude Opus report, resolved A6 and A7 rulings,
+the exact published heads recorded in Progress, and the approved execution plan
+`project/2026-08-23-chatbot-m1-review-corrections-plan.md`.
+
+**Acceptance.** Phase 0, U1, U2, and U3 are recascaded and independently green;
+the corrected full range passes Ox Alpha simplification, risk, integrated final,
+and serialized Phase 5 reviews; all four exact leases publish atomically; each
+pull request remains open and ready with current evidence and exact-head CI
+accounted for.
+
+**Must not.** Add a layer, migration, backfill, background reset job, new usage
+class, funding/provider surface, merge, deployment, live traffic, closure,
+cleanup, or deletion.
 
 ### C1 — standard-mode configuration and layered compiler
 
@@ -585,6 +618,8 @@ decision.
 | A3 — knowledge dependency | Exact merged KB base, authenticated API, resource/binding ownership, status mapping, and deletion semantics | Reuse `KBResource` and its binding lifecycle; park K1 with `NEEDS_CONTEXT` if the external contract is not verified |
 | A4 — custom/admin scope | Whether account approval has persistent intake and how live custom edits remain reviewed without full snapshots | Keep account authorization out-of-band until an intake model is approved; keep the last approved custom revision active while a new revision is pending |
 | A5 — base disposition | How the historical GitGuardian fixture finding on #5460 is represented in the base stack | Preserve the existing history and record the CI disposition in the base PR; do not broaden U1 to rewrite fixtures |
+| A6 — monthly limit persistence | Whether BASE and ADVANCED configured limits expire with each monthly usage counter or remain lecturer settings | **Resolved 2026-08-23:** configured limits persist until changed; only `usedCredits` resets at each Europe/Zurich month boundary |
+| A7 — correction publication | Whether the verified M1 review defects may reopen the ready stack and how corrected history is published | **Resolved 2026-08-23:** one sequential writer, layer-owned commits, four-branch recascade, atomic force-with-lease publication, preserved ready state, exact-head CI, refreshed PR evidence, Ox Alpha reviews, and serialized Phase 5; every withheld action remains withheld |
 
 ## Traps and implementation notes
 
@@ -654,6 +689,16 @@ The next session should perform these actions in order:
 | 2026-08-21 | M1 orchestration | Active; A1, A2, and Gate 1 resolved by the user; A5 reconciled against #5460 at `d84140434dbfa25ca5e92333a139f7d61063d02c`; worktree switched to `rs/chatbot-u1-usage-foundation`; no item task or reservation exists yet | Commit the roadmap on U1, then reserve and launch U1 exactly once |
 | 2026-08-22 | M1/U1 — account usage foundation | Phase 5 accepted required `reviewed` delivery at `a2d01fad67fba5b780a343e61284a5df28ecb15d`: inert additive schema, registry, tests, and docs published as draft PR #5475 in stack #5476; simplifier and slice gates passed, Ox Alpha final and exact-head re-read passed, and current-head CI finished with 27 passed, 15 intentionally skipped, 0 failed, and 0 pending after unchanged-head retries for two transient failures. U1 remains unmerged with no deployment or live proof | Obtain the Gate 2 user ruling before U2; PR readiness, merge, deployment, live traffic or proof, PR closure, cleanup, and deletion remain withheld |
 | 2026-08-22 | M1/U2 — runtime class enforcement and charging | Phase 5 accepted required `reviewed` delivery at `367784db6dd6696256a756b3d4c7f8f50edf2d10`: atomic availability and finalization, same-class allow-listed fallback, stable class-specific errors, one charge per normal, tool, or abort lifecycle, neutral zero-credit copy in English and German, wiki guidance, and corrected browser expectations published as draft PR #5480 in stack #5476. Simplifier, slice, correction, integrated Ox Alpha, and refreshed Phase 5 reviews passed with no reportable findings. The focused matrix passed 37 cases including 6 PostgreSQL cases; the Chat suite passed 369 with 6 expected skips; Node 24 `check:all` passed 25/25; the production build passed; browser checks covered English and German desktop, settings, and mobile surfaces without errors; exact-head CI passed 27 with 9 intentional skips, 0 failures, and 0 pending, including all 8 Playwright shards. U2 remains unmerged with no deployment or live proof | Proceed to U3 under the roadmap; PR readiness, merge, deployment, live traffic or proof, PR closure, cleanup, and deletion remain withheld |
+| 2026-08-23 | M1/U3 — lecturer usage API and two-lane manage UI | Phase 5 accepted required `reviewed` delivery at `47359d48a8cc0fc6befb22222dda7f419f8de5b7`, published as draft PR #5490 at the top of stack #5476. The authorized account usage query, atomic two-budget mutation, exactly two localized owner settings lanes, additive persisted operations, hidden-funding boundary, and complete U1 through U3 M1 integration are verified. Plan-planner, slice and correction reviews, integrated Ox Alpha final review, and publication-aware Ox Alpha Phase 5 re-read passed with no blocking finding. The focused PostgreSQL/GraphQL file passes 11/11 including concurrent charging; generation drift is clean; Node 24 `check:all`, package and repository builds, Playwright typecheck and discovery pass; browser evidence covers normal, empty, exhausted, and unauthorized states in English and German at desktop and mobile widths. Exact-head CI registered four completed passing checks: three dynamic CodeQL language jobs and GitGuardian. Ordinary pull-request workflows did not register for this stack-linked draft and are not represented as passing. The exact DevPod is stopped | M1 terminal reached: U1, U2, and U3 are published as three open draft layers with current-head CI accounted for. Request the separate Gate 3 ruling. Ready marking, merge, deployment, live traffic, PR closure, cleanup, and deletion remain withheld |
+| 2026-08-23 | M1 Gate 3 base refresh | The user approved Gate 3 and the exact current-`v3` recovery. Stack #5476 was rebased locally onto `2dc517aed`, preserving the shared and chatbot context, the combined chat-platform documentation, and both util exports. The corrected local layer heads are Phase 0 `7eb4c50ef`, U1 `02061e204`, U2 `3252d0a6f`, and U3 `0953f96a6`. Node 24 verification passes: the repository build completes 23/23 tasks; all 29 non-analytics packages pass 31 typecheck/lint tasks; formatting and GraphQL generation have no drift; util passes 58 tests; Chat passes 369 with 6 expected skips; the focused PostgreSQL/GraphQL file passes 11/11; and Playwright discovery lists 872 tests. The root `check:all` analytics lint remains environment-blocked because uv selected Python 3.14 and the image lacks a C compiler for pandas. Host route readiness also hit a local curl certificate error after the applications reached their ports. The exact DevPod is stopped with zero routes. | Complete the Ox Alpha rebase review, then atomically force-with-lease publish all four corrected heads and mark U1, U2, and U3 ready bottom-up after exact-head CI. Merge, deployment, live traffic, PR closure, cleanup, and deletion remain withheld |
+| 2026-08-23 | M1 Gate 3 promotion refresh | The final pre-publication fetch found `v3` had advanced to `1ad0124a9` through deploy-only staging promotion commit #5494. Recovery refs preserve the first corrected stack. Phase 0 through U3 recascaded without conflicts, and per-layer range-diff shows every commit unchanged. The refreshed local heads before this evidence commit are Phase 0 `d55996d82`, U1 `b29c628ed`, U2 `930f92746`, and U3 `69d63dd01`; linear ancestry from current `v3` is proven and the worktree remains clean. The earlier Node 24 checks still apply to the unchanged stack patches; the new base delta touches only `deploy/env-uzh-stg/values.yaml`. | Complete a focused formatting check and fresh Ox Alpha review, then re-run the exact remote lease gate before the authorized atomic publication. Merge, deployment, live traffic, PR closure, cleanup, and deletion remain withheld |
+| 2026-08-23 | M1 Gate 3 ready-for-review promotion | Ox Alpha accepted the recascaded stack with no blocking finding. The exact Phase 0 `d55996d82`, U1 `b29c628ed`, U2 `930f92746`, and U3 `147967f6f` heads were atomically force-with-lease published, and PRs #5475, #5480, and #5490 were marked ready bottom-up with unchanged bases. Phase 0 has 44 passing checks and one intentional skip; its only failure is the documented historical GitGuardian fixture finding. U1 has 61 passing rollup entries, U2 has 58 after one successful unchanged-head retry of an unrelated elements-sharing Playwright flake, and U3 has 62; all current Playwright matrices pass with no unresolved failure or pending job. All four PRs are open and mergeable. | Publish this evidence-only top-layer commit and account for its exact-head CI. M1 then remains at the ready-for-review handoff; merge, deployment, live traffic, PR closure, cleanup, and deletion require separate authorization |
+| 2026-08-23 | M1-R1 — full-stack review corrections | Claude Opus found three change-introduced defects after the ready handoff. Main-session verification accepted all three. The user resolved A6 in favor of persistent configured limits and authorized A7's single-writer correction/publication path. The current published heads remain Phase 0 `d55996d82`, U1 `b29c628ed`, U2 `930f92746`, and U3 `d386d1644`; no correction commit or remote mutation exists. The execution plan is `project/2026-08-23-chatbot-m1-review-corrections-plan.md`. Its Ox Alpha construction pass returned `DONE_WITH_CONCERNS`; both concerns were dispositioned by existing authority and mandatory browser rules. The exact-file Ox Alpha review then returned `PASS_WITH_CORRECTIONS` / `DONE_WITH_CONCERNS`; its A7 traceability, literal `git push --atomic`, and two-commit `v3` drift dispositions are incorporated, and it found no remaining user decision. The user approved the exact plan at Gate 1 on 2026-08-23; a fresh fetch preserved the recorded leases and pull-request topology. | Commit S0, freeze the four recovery refs, and recascade the unchanged stack onto current `v3` before the sequential corrections. Merge, deployment, live traffic, PR closure, cleanup, deletion, and unrelated roadmap work remain withheld |
+| 2026-08-24 | M1-R1 / Phase 0 — monthly-budget contract correction | Serialized Phase 5 accepted required `reviewed` delivery at local head `69455376c`. `CONTEXT.md`, ADR 0020, and the ADR index now state the A6 carry-forward contract without changing runtime or schema behavior. Review response `resp_060d827c10fe4c05a63071821dbfb66a` routed through an Ox Alpha host at maximum effort and returned `REVIEWED` / `ACCEPT`; the complete corrected stack's integrated Ox Alpha `PASS` remains standing. The published Phase 0 head is still `d55996d82`, so publication, ready-state evidence, and exact-head CI are not claimed. | Reconcile U1 against corrected Phase 0, then continue the serialized Phase 5 sequence. Atomic publication, merge, deployment, live traffic, PR closure, cleanup, and deletion remain withheld until their named gates |
+| 2026-08-24 | M1-R1 / U1 — effective usage-month foundation | Serialized Phase 5 accepted required `reviewed` delivery at local head `e82c84011`, directly on accepted Phase 0 `69455376c`. The shared resolver carries the latest configured class budget into a later injected Zurich month with zero used credits, preserves an exact current row, rejects future or cross-owner/class data, and keeps source and analytics Prisma comments identical. Review response `resp_61d2d0332cac45979c192632f5777db8` routed to `stealth/ox-alpha` at maximum effort and returned `REVIEWED` / `ACCEPT`; U1 simplification, data-integrity, focused database, and integrated reviews all pass. The published U1 head remains `b29c628ed`, so no remote delivery is claimed. | Reconcile U2 against accepted U1, then continue the serialized Phase 5 sequence. Atomic publication, ready evidence, merge, deployment, live traffic, PR closure, cleanup, and deletion remain withheld |
+| 2026-08-24 | M1-R1 / U2 — rollover-safe runtime charging | Serialized Phase 5 accepted required `reviewed` delivery at local head `ef7704660`, directly on accepted U1 `e82c84011`. Runtime precheck now consumes the shared effective month, finalization atomically materializes and charges the carried budget, and only a newly created finalization may deduct participant credits. Review response `resp_747176da75f6405f8991551cb21b395f` routed to `stealth/ox-alpha` at maximum effort and returned `REVIEWED` / `ACCEPT`; focused route, 9/9 PostgreSQL integration, simplifier, risk, and integrated reviews pass. The published U2 head remains `930f92746`, so no remote delivery is claimed. | Reconcile U3 against accepted U2, then close the prepublication serialized Phase 5 sequence. Atomic publication, ready evidence, merge, deployment, live traffic, PR closure, cleanup, and deletion remain withheld |
+| 2026-08-24 | M1-R1 / U3 — persistent lecturer usage lanes | Serialized Phase 5 accepted required `reviewed` delivery at local head `6453a94ce`, directly on accepted U2 `ef7704660`. Both fixed GraphQL lanes now project the shared effective month, later configured values supersede carry-forward, and the lecturer wiki matches the runtime contract. Review response `resp_89beb21605714ab7b73fe13b4ccac8a7` routed to `stealth/ox-alpha` at maximum effort and returned `REVIEWED` / `ACCEPT`; corrected risk rereview, 15/15 focused tests, patch-equivalent bilingual desktop/mobile browser proof, integrated Ox Alpha `PASS`, and stopped-runtime proof all stand. The published U3 head remains `d386d1644`, so no remote delivery is claimed. | Commit the four serialized Phase 5 results on U3, re-read current `v3`, frozen leases, pull-request bases, and ready states, then perform the authorized atomic force-with-lease publication only if every identity remains exact. Merge, deployment, live traffic, PR closure, cleanup, and deletion remain withheld |
+| 2026-08-24 | M1-R1 — ready-for-review publication | Corrected-candidate serialized Phase 5 response `resp_11ea371920ab4d91a757a82b4c95eb48` routed to `stealth/ox-alpha` at maximum effort and returned `PR_READY` / `ACCEPT`, superseding the invalid empty response `resp_cde7d3b38a884f32a747422e3c4db98e`. The corrected implementation heads before this roadmap-only evidence commit are Phase 0 `d64425db2`, U1 `a92006db8`, U2 `09ec9948d`, and U3 `9ce1a684d`, atomically force-with-lease published on `v3` `b02c0c436`. PRs #5460, #5475, #5480, and #5490 are open, ready, and mergeable. Exact-head CI is terminal with Phase 0 at 44 passed plus the A5-preserved historical GitGuardian finding, U1 at 45 passed after one exact unchanged-head retry of unrelated duplicate Case Study fixtures, U2 at 39 passed, U3 at 43 passed, and zero pending. The redundant forbidden `docs/log/` evidence file was removed before publication; the removed-artifact check, 23/23 build, review chain, and stopped-runtime proof pass. | M1-R1 has achieved `pr_ready`. Await separate merge authorization; deployment, live traffic, PR closure, cleanup, and deletion remain withheld |
 
 ## Glossary
 
@@ -665,8 +710,8 @@ The next session should perform these actions in order:
   who covers usage.
 - **Base model usage** and **advanced model usage**: the two visible UI lanes;
   the base contribution remains hidden and advanced receives no contribution.
-- **Monthly usage budget**: lecturer-defined account-wide budget for one class,
-  reset monthly.
+- **Monthly usage budget**: lecturer-defined account-wide limit for one class
+  that persists until changed; its used-credit counter resets monthly.
 - **Participant usage credits**: existing per-participant/per-chatbot legacy
   allowance, separate from account budgets.
 - **Test thread**: lecturer-owned private conversation, excluded from student

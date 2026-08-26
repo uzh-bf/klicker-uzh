@@ -1,0 +1,27 @@
+mutation SetChatAccountUsageBudgets(
+  $ownerId: String
+  $baseBudgetCredits: Float!
+  $advancedBudgetCredits: Float!
+) {
+  setChatAccountUsageBudgets(
+    ownerId: $ownerId
+    baseBudgetCredits: $baseBudgetCredits
+    advancedBudgetCredits: $advancedBudgetCredits
+  ) {
+    authorized
+    baseModelUsage {
+      usageClass
+      budgetCredits
+      usedCredits
+      remainingCredits
+      resetAt
+    }
+    advancedModelUsage {
+      usageClass
+      budgetCredits
+      usedCredits
+      remainingCredits
+      resetAt
+    }
+  }
+}

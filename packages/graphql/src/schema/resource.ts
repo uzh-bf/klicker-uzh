@@ -1,7 +1,11 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { SharingType as SharingTypeEnum } from '@klicker-uzh/types'
+import type { SharingType as SharingTypeEnum } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import { type ICourseListEntry, CourseListEntryRef } from './course.js'
+import type {
+  ChatAccountUsageLane,
+  ChatAccountUsageOverview,
+} from '../services/chatAccountUsage.js'
+import { CourseListEntryRef, type ICourseListEntry } from './course.js'
 import { PermissionLevel, SharingType } from './sharing.js'
 
 // ----- ANSWER COLLECTIONS -----
@@ -97,6 +101,38 @@ export const CreditResetPeriod = builder.enumType('CreditResetPeriod', {
 export const ChatbotStatus = builder.enumType('ChatbotStatus', {
   values: Object.values(DB.ChatbotStatus),
 })
+
+export const ChatUsageClass = builder.enumType('ChatUsageClass', {
+  values: Object.values(DB.ChatUsageClass),
+})
+
+export const ChatAccountUsageLaneRef = builder.objectRef<ChatAccountUsageLane>(
+  'ChatAccountUsageLane'
+)
+export const ChatAccountUsageLaneType = ChatAccountUsageLaneRef.implement({
+  fields: (t) => ({
+    usageClass: t.expose('usageClass', { type: ChatUsageClass }),
+    budgetCredits: t.exposeFloat('budgetCredits'),
+    usedCredits: t.exposeFloat('usedCredits'),
+    remainingCredits: t.exposeFloat('remainingCredits'),
+    resetAt: t.expose('resetAt', { type: 'Date' }),
+  }),
+})
+
+export const ChatAccountUsageOverviewRef =
+  builder.objectRef<ChatAccountUsageOverview>('ChatAccountUsageOverview')
+export const ChatAccountUsageOverviewType =
+  ChatAccountUsageOverviewRef.implement({
+    fields: (t) => ({
+      authorized: t.exposeBoolean('authorized'),
+      baseModelUsage: t.expose('baseModelUsage', {
+        type: ChatAccountUsageLaneRef,
+      }),
+      advancedModelUsage: t.expose('advancedModelUsage', {
+        type: ChatAccountUsageLaneRef,
+      }),
+    }),
+  })
 
 export interface IChatbotReasoningConfig {
   modelId: string

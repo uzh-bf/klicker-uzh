@@ -4,6 +4,7 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
@@ -80,6 +81,7 @@ import {
 import {
   AnswerCollection,
   AnswerCollectionEntry,
+  ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotReasoningConfigInput,
 } from './resource.js'
@@ -1454,6 +1456,22 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotsService.updateChatbotModelSettings(args, ctx)
+        },
+      }),
+
+      setChatAccountUsageBudgets: t.withAuth(asUser).field({
+        nullable: true,
+        type: ChatAccountUsageOverviewRef,
+        args: {
+          ownerId: t.arg.string({ required: false }),
+          baseBudgetCredits: t.arg.float({ required: true }),
+          advancedBudgetCredits: t.arg.float({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatAccountUsageService.setChatAccountUsageBudgets(
+            args,
+            ctx
+          )
         },
       }),
 
