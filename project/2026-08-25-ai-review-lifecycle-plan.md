@@ -481,11 +481,13 @@ real runs before proposing any parameter retune or branch-protection context.
   now paginates review threads and each thread's comments independently. Native
   stack attestation now accepts bounded descendant repairs in any changed layer
   and combines one complete OCR result per changed-layer range.
+- Correction commit: KlickerUZH `405922d11` and dotfiles `5823179` contain this
+  slice. Both worktrees are clean before the correction review gates.
 - Completed: S1 draft-only discovery, S2 individual descendant attestation, S3
   native-stack attestation, S4 offline qualification assets and documentation,
   and S5 bounded shared babysit state-machine guidance. The implementation
-  ranges are KlickerUZH `2b83fbb49^..working-tree` and dotfiles
-  `2ec825bc^..working-tree` pending the correction commits.
+  ranges are KlickerUZH `2b83fbb49^..405922d11` and dotfiles
+  `f09cf138^..5823179`.
 - G1 is satisfied locally: the native stacks endpoint was probed, its missing
   base-ref limitation was recorded, and every member is cross-checked through
   PR data and Git ancestry. Valid two- and four-layer plus malformed and drift
@@ -526,8 +528,8 @@ real runs before proposing any parameter retune or branch-protection context.
   the expected `.env`; no runtime or browser proof is required for this
   CI/skill-only package. The exact runtime will be stopped and verified after
   the final review.
-- Next: commit this correction slice, run one trusted simplifier/risk pair over
-  the exact correction ranges, then run one integrated trusted final-reviewer
+- Next: run one trusted simplifier/risk pair over the exact correction ranges,
+  then run one integrated trusted final-reviewer
   pass over both complete committed ranges. Record the final disposition and
   stop the exact task runtime. Do not push, create PRs, write ClickUp tasks,
   alter branch protection, merge, deploy, or delete the task worktrees.
