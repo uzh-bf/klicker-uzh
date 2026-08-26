@@ -66,21 +66,6 @@ async function claimedTurnInput(
 }
 
 async function resetUsage(usedCredits = 0, budgetCredits = 10) {
-  await prisma.chatThread.createMany({
-    data: [
-      {
-        id: THREAD_ONE_ID,
-        participantId: PARTICIPANT_ID,
-        chatbotId: CHATBOT_ID,
-      },
-      {
-        id: THREAD_TWO_ID,
-        participantId: PARTICIPANT_ID,
-        chatbotId: CHATBOT_ID,
-      },
-    ],
-    skipDuplicates: true,
-  })
   await prisma.chatMessage.deleteMany({
     where: { threadId: { in: [THREAD_ONE_ID, THREAD_TWO_ID] } },
   })

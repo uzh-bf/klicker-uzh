@@ -525,7 +525,9 @@ contract retains its focused regression test.
   tests, the complete Chat suite passes 406 tests with 12 expected integration
   skips, all 12 enabled PostgreSQL lifecycle integration tests pass, all 25
   repository checks pass, and the Chat production build succeeds. Refreshed
-  correction reviews remain in progress.
+  lifecycle-integrity review passed. The simplifier removed duplicated shared
+  fixture creation from the PostgreSQL reset helper; the affected 12-test
+  integration suite still passes.
 - Current state: U2 is under final-review correction before stack-aware
   publication.
   Merge, deployment, live traffic or proof, closure, cleanup, and deletion
