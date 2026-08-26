@@ -1,4 +1,4 @@
-import { hasExactCitationIndexes } from '@klicker-uzh/markdown/citations'
+import { hasExactCitationIndexes } from '@klicker-uzh/util/citations'
 import { ResponseExampleStyle as DBResponseExampleStyle } from '@klicker-uzh/prisma/client'
 import { z } from 'zod'
 
@@ -40,7 +40,9 @@ export function extractChatbotModes(systemPrompts: unknown): string[] {
   }
 
   const modes = Object.keys(systemPrompts).filter((mode) => mode.trim())
-  return modes.length > 0 ? modes.sort() : ['tutor']
+  return modes.length > 0
+    ? modes.sort((left, right) => left.localeCompare(right))
+    : ['tutor']
 }
 
 export function responseExampleActions(status: ResponseExampleStatus) {

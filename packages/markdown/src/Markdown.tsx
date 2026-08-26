@@ -17,7 +17,7 @@ import { unified } from 'unified'
 import ImgWithModal from './ImgWithModal.js'
 import { VideoEmbed } from './VideoEmbed.js'
 import { parseVideoEmbedUrl } from './VideoEmbedUrl.js'
-import { normalizeMarkdownContent } from './citations.js'
+import { normalizeMarkdownContent, remarkCitationMarkers } from './citations.js'
 
 export interface MarkdownProps {
   className?: {
@@ -70,6 +70,7 @@ function Markdown({
         unified()
           .use(remarkParse)
           .use(remarkMath, { singleDollarTextMath })
+          .use(remarkCitationMarkers)
           // .use(remarkGfm)
           // .use(remarkDirective)
           .use(remarkRehype, { allowDangerousHtml: false })

@@ -1,7 +1,7 @@
-import { createHash } from 'node:crypto'
 import type { Prisma, PrismaClient } from '@klicker-uzh/prisma/client'
 import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma as PrismaRuntime } from '@klicker-uzh/prisma/client'
+import { computeResponseExampleSetDigest } from '@klicker-uzh/util/response-example-digest'
 import { GraphQLError } from 'graphql'
 import { z } from 'zod'
 import type { ContextWithUser } from '../lib/context.js'
@@ -58,77 +58,7 @@ function withChatbotModes(
   }
 }
 
-function compareStrings(left: string, right: string) {
-  if (left < right) return -1
-  if (left > right) return 1
-  return 0
-}
-
-function compareFields<T extends object>(
-  left: T,
-  right: T,
-  fields: readonly (keyof T)[]
-) {
-  for (const field of fields) {
-    const comparison = compareStrings(String(left[field]), String(right[field]))
-    if (comparison !== 0) return comparison
-  }
-  return 0
-}
-
-export function computeResponseExampleSetDigest(
-  set: ResponseExampleSetWithRelations
-) {
-  const canonical = {
-    setId: set.id,
-    chatbotId: set.chatbotId,
-    examples: [...set.examples]
-      .sort((left, right) =>
-        compareFields(left, right, [
-          'chatMode',
-          'studentMessage',
-          'referenceAnswer',
-          'responseStyle',
-          'status',
-          'id',
-          'setId',
-        ])
-      )
-      .map((example) => ({
-        id: example.id,
-        setId: example.setId,
-        chatMode: example.chatMode,
-        studentMessage: example.studentMessage,
-        referenceAnswer: example.referenceAnswer,
-        responseStyle: example.responseStyle,
-        status: example.status,
-        evidenceReferences: [...example.evidenceReferences]
-          .sort((left, right) =>
-            compareFields(left, right, [
-              'citationIndex',
-              'sourceId',
-              'chunkId',
-              'contentHash',
-              'citationAnchor',
-              'id',
-              'responseExampleId',
-            ])
-          )
-          .map((reference) => ({
-            id: reference.id,
-            responseExampleId: reference.responseExampleId,
-            citationIndex: reference.citationIndex,
-            sourceId: reference.sourceId,
-            chunkId: reference.chunkId,
-            contentHash: reference.contentHash,
-            citationAnchor: reference.citationAnchor,
-            evidenceEligible: reference.evidenceEligible,
-          })),
-      })),
-  }
-
-  return createHash('sha256').update(JSON.stringify(canonical)).digest('hex')
-}
+export { computeResponseExampleSetDigest }
 
 async function findResponseExampleSet(
   prisma: ResponseExamplePrisma,
@@ -256,12 +186,9 @@ async function reviewResponseExample(
 
     if (!example) return null
 
-    const action =
-      status === DB.ResponseExampleStatus.APPROVED
-        ? 'APPROVE'
-        : status === DB.ResponseExampleStatus.REJECTED
-          ? 'REJECT'
-          : null
+    let action: 'APPROVE' | 'REJECT' | null = null
+    if (status === DB.ResponseExampleStatus.APPROVED) action = 'APPROVE'
+    if (status === DB.ResponseExampleStatus.REJECTED) action = 'REJECT'
     if (!action || !canApplyResponseExampleAction(example.status, action)) {
       throw new GraphQLError(
         'This response example cannot be reviewed in its current state.',

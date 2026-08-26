@@ -1,59 +1,26 @@
+import React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import {
-  extractCitationIndexes,
-  hasExactCitationIndexes,
-} from '../src/citations.js'
+import Markdown from '../src/Markdown.js'
 
-describe('citation helpers', () => {
-  it('matches the citation links produced by the Markdown renderer', () => {
-    expect(
-      extractCitationIndexes('Use **the definition [1]** and [2].')
-    ).toEqual([1, 2])
-    expect(
-      extractCitationIndexes(
-        'Code `[3]`, a [link [4]](https://example.test/[5]), and $$x[6]$$ [7].'
-      )
-    ).toEqual([7])
-    expect(
-      extractCitationIndexes('[source]: https://example.test/[8]')
-    ).toEqual([])
-    expect(
-      extractCitationIndexes('<!-- hidden [9] -->\nVisible [10].')
-    ).toEqual([10])
-    expect(
-      extractCitationIndexes('<!-- hidden [11] --!>\nVisible [12].')
-    ).toEqual([])
-  })
+describe('citation rendering', () => {
+  it('renders numbered markers as citation anchors', () => {
+    const rendered = renderToStaticMarkup(
+      React.createElement(Markdown, {
+        content:
+          'Grounded answer [1]. Code `[2]`, math $$x[3]$$, and [link [4]](https://example.test/[5]).',
+        withLinkButtons: false,
+      })
+    )
 
-  it('uses the renderer normalization path', () => {
-    expect(extractCitationIndexes('&amp;#91;13] and &lt;br&gt; [14]')).toEqual([
-      13, 14,
-    ])
-  })
-
-  it('requires a non-empty exact citation index set', () => {
-    expect(hasExactCitationIndexes('Use [1].', [1])).toBe(true)
-    expect(hasExactCitationIndexes('Use [1] and [2].', [1])).toBe(false)
-    expect(hasExactCitationIndexes('Use [1].', [1, 2])).toBe(false)
-    expect(hasExactCitationIndexes('No citation.', [1])).toBe(false)
-  })
-
-  it('handles malformed and bracket-heavy input within the normal test timeout', () => {
-    const bracketHeavy = '[label [1]]'.repeat(2_000)
-    expect(extractCitationIndexes(bracketHeavy)).toHaveLength(2_000)
-
-    const maximumUnmatchedInput = '['.repeat(100_000)
-    expect(extractCitationIndexes(maximumUnmatchedInput)).toEqual([])
-
-    const deep = Array.from(
-      { length: 5_000 },
-      (_, index) => `    [${index + 1}]`
-    ).join('\n')
-    expect(extractCitationIndexes(deep)).toEqual([])
-
-    const nested = `${'> '.repeat(5_000)}[16]`
-    expect(extractCitationIndexes(nested)).toEqual([16])
-
-    expect(extractCitationIndexes('Text [unclosed [15]')).toEqual([15])
+    expect(rendered).toContain('<a href="#response-example-citation-1">1</a>')
+    expect(rendered).toContain('<code>[2]</code>')
+    expect(rendered).toContain('<annotation encoding="application/x-tex">x[3]')
+    expect(rendered).toContain('https://example.test/%5B5%5D')
+    expect(rendered).toContain('link [4]')
+    expect(rendered).not.toContain('response-example-citation-2')
+    expect(rendered).not.toContain('response-example-citation-3')
+    expect(rendered).not.toContain('response-example-citation-4')
+    expect(rendered).not.toContain('response-example-citation-5')
   })
 })

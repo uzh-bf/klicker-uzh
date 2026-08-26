@@ -8,6 +8,7 @@
     "dist"
   ],
   "dependencies": {
+    "@klicker-uzh/util": "workspace:*",
     "rehype-external-links": "3.0.0",
     "rehype-katex": "7.0.1",
     "rehype-prism-plus": "2.0.2",

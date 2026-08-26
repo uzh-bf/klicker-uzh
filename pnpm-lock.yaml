@@ -1828,9 +1828,6 @@ importers:
       '@klicker-uzh/knowledge-graph':
         specifier: workspace:*
         version: link:../knowledge-graph
-      '@klicker-uzh/markdown':
-        specifier: workspace:*
-        version: link:../markdown
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma
@@ -2205,6 +2202,9 @@ importers:
       '@fortawesome/react-fontawesome':
         specifier: ^0.2.2
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.7)
+      '@klicker-uzh/util':
+        specifier: workspace:*
+        version: link:../util
       '@uzh-bf/design-system':
         specifier: 4.1.8
         version: 4.1.8(@fortawesome/fontawesome-svg-core@6.7.2)(@fortawesome/free-regular-svg-icons@6.7.2)(@fortawesome/free-solid-svg-icons@6.7.2)(@fortawesome/react-fontawesome@0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.7))(@tailwindcss/postcss@4.1.12)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(class-variance-authority@0.7.1)(clsx@2.1.1)(dayjs@1.11.20)(formik@2.4.9(@types/react@19.2.17)(react@19.2.7))(lucide-react@0.522.0(react@19.2.7))(postcss@8.5.14)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwind-merge@3.3.1)(tailwindcss-animate@1.0.7(tailwindcss@4.1.12))(tailwindcss-radix@4.0.2(tailwindcss@4.1.12))(tailwindcss@4.1.12)(tw-animate-css@1.3.7)(yup@1.6.1)
@@ -2668,9 +2668,18 @@ importers:
       jose:
         specifier: 5.9.4
         version: 5.9.4
+      remark-math:
+        specifier: 6.0.0
+        version: 6.0.0
+      remark-parse:
+        specifier: 11.0.0
+        version: 11.0.0
       remeda:
         specifier: 2.15.0
         version: 2.15.0
+      unified:
+        specifier: 11.0.5
+        version: 11.0.5
       uuid:
         specifier: 10.0.0
         version: 10.0.0

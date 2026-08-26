@@ -15,7 +15,6 @@
     "@klicker-uzh/feature-flags": "workspace:*",
     "@klicker-uzh/grading": "workspace:*",
     "@klicker-uzh/knowledge-graph": "workspace:*",
-    "@klicker-uzh/markdown": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",
