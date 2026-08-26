@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   threadFindFirst: vi.fn(),
   messageUpdateMany: vi.fn(),
   messageFindUnique: vi.fn(),
+  messageFindMany: vi.fn(),
   messageCreate: vi.fn(),
   attachmentFindMany: vi.fn(),
   attachmentDeleteMany: vi.fn(),
@@ -53,6 +54,7 @@ vi.mock('@klicker-uzh/prisma', () => ({
       update: mocks.threadUpdate,
     },
     chatMessage: {
+      findMany: mocks.messageFindMany,
       updateMany: mocks.messageUpdateMany,
       findUnique: mocks.messageFindUnique,
       create: mocks.messageCreate,
@@ -253,6 +255,7 @@ describe('account usage chat route', () => {
     mocks.attachmentFindMany.mockResolvedValue([])
     mocks.messageUpdateMany.mockResolvedValue({ count: 0 })
     mocks.messageFindUnique.mockResolvedValue(null)
+    mocks.messageFindMany.mockResolvedValue([])
     mocks.messageCreate.mockResolvedValue({ id: 'message-1' })
     mocks.threadUpdate.mockResolvedValue({ id: 'thread-1' })
     mocks.transaction.mockResolvedValue([])
@@ -266,11 +269,12 @@ describe('account usage chat route', () => {
     mocks.streamText.mockImplementation((config) => {
       mocks.streamConfig = config as Record<string, unknown>
       return {
-        toUIMessageStreamResponse: (options: Record<string, unknown>) => {
+        toUIMessageStream: (options: Record<string, unknown>) => {
           mocks.responseOptions = options
-          return new Response('{}', {
-            status: 200,
-            headers: { 'content-type': 'application/json' },
+          return new ReadableStream({
+            start(controller) {
+              controller.close()
+            },
           })
         },
       }

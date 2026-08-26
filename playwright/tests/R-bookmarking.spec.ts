@@ -15,6 +15,11 @@ import {
 } from '../util/fixtures/elements.js'
 import { getDatetimeValidationString } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
+import {
+  openLecturerPracticeElements,
+  openPracticeQuizByName,
+  runTask,
+} from '../util/workflow.js'
 
 const data = bookmarkingData
 
@@ -112,8 +117,9 @@ test.describe('Test bookmarking and flagging workflows for practice quizzes and 
     loginStudent,
   }) => {
     await loginStudent()
-    await page.getByTestId('quizzes').click()
-    await page.getByTestId(`practice-quiz-${data.PQ.displayName}`).click()
+    await openLecturerPracticeElements(page, data.course)
+    await expect(page.getByTestId('start-practice-quiz')).toBeVisible()
+    await openPracticeQuizByName(page, data.PQ.name)
     await page.getByTestId('start-practice-quiz').click()
     await page.getByTestId('flag-element-0-button').click()
     await expect(page.getByTestId('submit-flag-element')).toBeDisabled()
@@ -141,8 +147,7 @@ test.describe('Test bookmarking and flagging workflows for practice quizzes and 
     loginStudent,
   }) => {
     await loginStudent()
-    await page.getByTestId('quizzes').click()
-    await page.getByTestId(`practice-quiz-${data.PQ.displayName}`).click()
+    await openPracticeQuizByName(page, data.PQ.name)
     await page.getByTestId('start-practice-quiz').click()
     await page.getByTestId('sc-0-answer-option-0').click()
     await page.getByTestId('student-stack-submit').click()
@@ -216,15 +221,11 @@ test.describe('Test bookmarking and flagging workflows for practice quizzes and 
     await page.goto(process.env.URL_MANAGE ?? URL_MANAGE)
   })
 
-  test("Verify that the practice quiz is no longer visible on the student's view", async ({
-    page,
-    loginStudent,
-  }) => {
-    await loginStudent()
-    await page.getByTestId('quizzes').click()
-    await expect(
-      page.getByTestId(`practice-quiz-${data.PQ.displayName}`)
-    ).not.toBeAttached()
+  test('Verify that the deleted practice quiz was removed', async () => {
+    const quiz = await runTask('getPracticeQuizInfo', {
+      quizName: data.PQ.name,
+    })
+    expect(quiz).toBeNull()
   })
 
   test('Publish the microlearning', async ({ page, loginLecturer }) => {

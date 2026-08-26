@@ -23,7 +23,13 @@ import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
  * default entirely and may never mention LaTeX at all.
  */
 const CITATION_CONTRACT =
-  'Citation format: when a statement is grounded in retrieved course material, ' +
+  'Course-grounding policy: for every substantive student request, call the ' +
+  'named course retrieval tool before answering, even if you know a plausible ' +
+  'answer from general knowledge. Base factual claims on the returned course ' +
+  'material. If retrieval returns no usable course material, say that the ' +
+  'course sources do not provide enough information and do not fill the gap ' +
+  'with uncited general knowledge. Citation format: when a statement is ' +
+  'grounded in retrieved course material, ' +
   'mark it with a bracketed source number such as [1] or [2], following the ' +
   'order the search results were returned in. Keep numbering continuous ' +
   'across multiple searches within the same answer instead of restarting at ' +

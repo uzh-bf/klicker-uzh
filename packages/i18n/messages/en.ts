@@ -241,6 +241,8 @@ export default {
       searchedCourseMaterial: 'Searched course materials',
       searchedCourseMaterialEmpty: 'Searched course materials · no results',
       searchCourseMaterialFailed: 'Course material search failed',
+      courseMaterialUnavailable:
+        'I could not find usable evidence in the course materials for this request. Please try a more specific question.',
       imageAnalyzed: 'Image analyzed',
     },
     personalElements: {
@@ -248,12 +250,37 @@ export default {
       cardNumber: 'Card {number}',
       approve: 'Generate these cards',
       generating: 'Generating cards...',
+      generationProgress: '{completed} of {total} cards ready',
+      generationComplete: 'Cards generated',
+      generationPartial:
+        'Some cards could not be generated. You can retry the plan.',
+      generationFailed: 'Card generation failed',
       approvalMessage: 'Please generate the proposed cards for {topic}.',
+      accepted: 'The plan was accepted.',
       superseded: 'This card plan was replaced by a newer plan.',
+      duplicatesSkipped: 'Potential duplicate cards were skipped:',
+      allDuplicates:
+        'All proposed cards look like duplicates of cards you already have. Please ask for different cards.',
+      candidateSuperseded: 'Replaced by the revised card',
+      references: 'References',
+      candidateUnavailable:
+        'This card cannot be saved because generation did not complete. Retry the card plan.',
       saved: 'Saved',
+      save: 'Save',
+      saving: 'Saving...',
+      discard: 'Discard',
+      discarding: 'Discarding...',
+      discarded: 'Discarded',
       saveSelected: 'Save selected',
       saveAll: 'Save all',
+      saveError: 'The cards could not be saved. Please try again.',
+      discardError: 'The card could not be discarded. Please try again.',
+      savedStateError:
+        'We could not check whether these cards were already saved.',
+      savedStateRetry: 'Check again',
       practiceNow: 'Practice now',
+      revisionUpdated: 'Updated · version {version}',
+      revisionConflict: 'This card changed before the revision completed.',
     },
     sources: {
       title: 'Sources',
@@ -1113,6 +1140,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       sourceLinked: 'source-linked',
       notReviewed: 'not reviewed by the course team',
       sources: 'Sources',
+      page: 'p. {page}',
       previous: 'Previous',
       next: 'Next',
       delete: 'Delete',
@@ -1121,7 +1149,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       ownElements:
         '{count, plural, =0 {Own elements} one {Own elements · # due} other {Own elements · # due}}',
       practiceDescription:
-        'Practise your own cards with the same navigation and progress as a practice quiz.',
+        'Practice your own cards with the same navigation and progress controls as a practice quiz.',
       homeLink: 'My personal cards',
       repetitionLink:
         '{count, plural, =0 {My personal cards} one {My personal cards · # due} other {My personal cards · # due}}',

@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-26'
+timestamp: '2026-08-27'
 tags:
   - backend
   - prisma
@@ -55,12 +55,26 @@ per course, validates source metadata (up to 32 chunk references, bounded IDs,
 titles, URLs, and 64 KiB serialized metadata), and persists no retrieved text.
 The `origin` field records whether content was AI-generated or authored. Content
 revisions increment `version`; the revision and learning-state reset contract is
-defined by the service and does not create a lecturer trust state.
+defined by the service and does not create a lecturer trust state. Chat proposes
+and generates at most five cards per request, and generation failures use
+bounded codes rather than provider or retrieval diagnostics.
 
-`ChatGenerationApproval` is the durable claim for an approved Chat generation.
-Its participant, chatbot, thread, plan message, and optional generated message
-relations are separate from the card content, with a unique
-participant/plan-message/tool-call key and a lease expiry for retry recovery.
+Chat candidates are not bulk-selected. Each card is saved or discarded on its
+own. A discard is stored in `PersonalElementDiscard`, scoped to the participant,
+course, and candidate ID; the save service rejects that candidate inside its
+serializable transaction. This keeps the decision durable without copying
+generated content into lecturer-owned tables.
+
+Before a plan is approved, Chat compares every proposed title with the
+participant's complete saved-title list using a local, conservative similarity
+check. Potential duplicates are removed from the plan and the approval route
+rechecks the current list. This title guard does not change the card schema or
+the course-material ingestion boundary.
+
+`CardGenerationLease` is the durable claim for an approved Chat generation.
+It links the participant and plan message, uses a unique
+participant/plan-message/tool-call key, and expires for retry recovery. It is
+operational coordination, not a second user-facing approval object.
 
 ## Activities
 

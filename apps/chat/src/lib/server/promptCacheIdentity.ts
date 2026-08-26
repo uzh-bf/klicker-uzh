@@ -41,6 +41,7 @@ export type PromptCacheIdentityInput = {
   transport: PromptCacheTransport
   instructions: string
   tools: ToolSet
+  toolOrder?: readonly string[]
 }
 
 export type PromptCacheRequest = {
@@ -192,9 +193,19 @@ async function canonicalizeTool(
 export async function buildPromptCacheRequest(
   input: PromptCacheIdentityInput
 ): Promise<PromptCacheRequest> {
-  const entries = Object.entries(input.tools).sort(([left], [right]) =>
-    compareStrings(left, right)
+  const configuredOrder = new Map(
+    (input.toolOrder ?? []).map((name, index) => [name, index])
   )
+  const entries = Object.entries(input.tools).sort(([left], [right]) => {
+    const leftIndex = configuredOrder.get(left)
+    const rightIndex = configuredOrder.get(right)
+    if (leftIndex !== undefined || rightIndex !== undefined) {
+      if (leftIndex === undefined) return 1
+      if (rightIndex === undefined) return -1
+      return leftIndex - rightIndex
+    }
+    return compareStrings(left, right)
+  })
   const canonicalEntries = await Promise.all(
     entries.map(async ([name, tool]) => {
       const canonicalTool = await canonicalizeTool(name, tool, input.transport)

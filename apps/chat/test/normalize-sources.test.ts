@@ -41,6 +41,65 @@ describe('normalizeSourcesFromParts', () => {
     expect(normalizeSourcesFromParts([])).toEqual([])
   })
 
+  test('normalizes generated-card sources into the shared citation set', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('generate_cards', {
+        status: 'partial',
+        completed: 1,
+        total: 2,
+        candidates: [
+          {
+            candidateId: 'candidate-1',
+            sources: [
+              {
+                sourceId: 'source-1',
+                chunkId: 'chunk-1',
+                title: 'Lecture 1',
+                url: 'https://example.com/lecture-1.pdf',
+                page: 4,
+              },
+            ],
+          },
+        ],
+      }),
+    ])
+
+    expect(result).toEqual([
+      {
+        id: 'candidate:source-1:chunk-1',
+        index: 1,
+        type: 'document',
+        title: 'Lecture 1',
+        page: 4,
+        url: 'https://example.com/lecture-1.pdf',
+      },
+    ])
+  })
+
+  test('does not qualify sources from a failed generated-card result', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('generate_cards', {
+        status: 'error',
+        completed: 0,
+        total: 1,
+        candidates: [
+          {
+            candidateId: 'candidate-1',
+            sources: [
+              {
+                sourceId: 'source-1',
+                chunkId: 'chunk-1',
+                title: 'Lecture 1',
+              },
+            ],
+          },
+        ],
+      }),
+    ])
+
+    expect(result).toEqual([])
+  })
+
   test('answer mode happy path', () => {
     const result = normalizeSourcesFromParts([
       toolCallPart('KB_doc_query', {
@@ -409,6 +468,26 @@ describe('normalizeSourcesFromParts', () => {
 
     expect(result).toHaveLength(12)
     expect(result[11]?.index).toBe(12)
+  })
+
+  test('keeps candidate citations beyond the compact doc-query cap', () => {
+    const sources = Array.from({ length: 20 }, (_, i) => ({
+      sourceId: `source-${i}`,
+      chunkId: `chunk-${i}`,
+      title: `Card source ${i}`,
+    }))
+
+    const result = normalizeSourcesFromParts([
+      toolCallPart('generate_cards', {
+        candidates: [{ candidateId: 'candidate-1', sources }],
+      }),
+    ])
+
+    expect(result).toHaveLength(20)
+    expect(result[19]).toMatchObject({
+      id: 'candidate:source-19:chunk-19',
+      index: 20,
+    })
   })
 
   test('accepts page_number as a numeric string', () => {

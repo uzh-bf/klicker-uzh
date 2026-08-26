@@ -90,6 +90,11 @@ before any element is generated. _Avoid_: outline, proposal.
 a person. Who owns it is a separate fact. _Avoid_: source (that word names
 citations).
 
+**Source-linked personal card**: A participant-owned card that keeps bounded
+citation metadata for the course chunks used during generation. Source links
+let the participant inspect the material; they do not claim correctness,
+entailment, or course-team review. _Avoid_: verified card, validated card.
+
 **Activity**: The umbrella for the four things a course can run — **live
 quiz**, **practice quiz**, **microlearning**, and **group activity**. Use the
 specific name whenever the statement is only true of one of them.

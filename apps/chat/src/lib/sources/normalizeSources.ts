@@ -1,7 +1,12 @@
 import { TOOL_NAME_SUFFIX_LENGTH } from '../config/toolNames'
+import { isFailedPersonalElementPart } from '../personalElements/failure'
 import type { ChatSource, ChatSourceType } from './types'
 
-const MAX_SOURCES = 12
+const MAX_DOC_QUERY_SOURCES = 12
+// Candidate generation is bounded by the tool schema (five candidates with up
+// to 32 sources each). Keep that citation registry separate from the compact
+// doc-query source list so later generated cards do not lose their chips.
+const MAX_CANDIDATE_SOURCES = 1_024
 const EXCERPT_MAX_LENGTH = 240
 
 // MCP tools are namespaced by server, e.g. `KB_doc_query` (see
@@ -42,6 +47,13 @@ interface SourceCandidate {
   dedupeKey: string
 }
 
+export function getCandidateSourceKey(source: {
+  sourceId: string
+  chunkId: string
+}): string {
+  return 'candidate:' + source.sourceId + ':' + source.chunkId
+}
+
 export function isDocQueryToolName(toolName: string): boolean {
   return DOC_QUERY_TOOL_NAME_RE.test(toolName)
 }
@@ -79,21 +91,32 @@ export function normalizeSourcesFromParts(
 
   const seenDedupeKeys = new Set<string>()
   const sources: ChatSource[] = []
+  let docQuerySourceCount = 0
+  let candidateSourceCount = 0
 
   for (const part of parts) {
-    if (sources.length >= MAX_SOURCES) break
-    if (!isQualifyingPart(part)) continue
-
-    const payload = parseDocQueryPayload(part.result)
-    if (!payload || 'error' in payload) continue
-
-    const candidates =
-      payload.mode === 'documents'
-        ? normalizeDocumentsModeSources(payload)
-        : normalizeAnswerModeSources(payload)
+    const candidatePart = isCandidatePart(part)
+    const docQueryPart = !candidatePart && isQualifyingPart(part)
+    if (
+      (candidatePart && candidateSourceCount >= MAX_CANDIDATE_SOURCES) ||
+      (docQueryPart && docQuerySourceCount >= MAX_DOC_QUERY_SOURCES)
+    ) {
+      continue
+    }
+    const candidates = candidatePart
+      ? normalizeCandidateSources(part.result)
+      : docQueryPart
+        ? normalizeDocQuerySources(part.result)
+        : []
 
     for (const candidate of candidates) {
-      if (sources.length >= MAX_SOURCES) break
+      const sourceLimit = candidatePart
+        ? MAX_CANDIDATE_SOURCES
+        : MAX_DOC_QUERY_SOURCES
+      const sourceCount = candidatePart
+        ? candidateSourceCount
+        : docQuerySourceCount
+      if (sourceCount >= sourceLimit) break
       if (seenDedupeKeys.has(candidate.dedupeKey)) continue
 
       seenDedupeKeys.add(candidate.dedupeKey)
@@ -109,10 +132,37 @@ export function normalizeSourcesFromParts(
         url: candidate.url,
         excerpt: candidate.excerpt,
       })
+      if (candidatePart) {
+        candidateSourceCount += 1
+      } else {
+        docQuerySourceCount += 1
+      }
     }
   }
 
   return sources
+}
+
+function normalizeDocQuerySources(raw: unknown): SourceCandidate[] {
+  const payload = parseDocQueryPayload(raw)
+  if (!payload || 'error' in payload) return []
+  return payload.mode === 'documents'
+    ? normalizeDocumentsModeSources(payload)
+    : normalizeAnswerModeSources(payload)
+}
+
+function isCandidatePart(
+  part: ChatSourcePart
+): part is ChatSourcePart & { toolName: string; result: unknown } {
+  const toolName = part.toolName === 'generate_cards' ? 'generate_cards' : null
+  return (
+    part.type === 'tool-call' &&
+    toolName !== null &&
+    !part.isError &&
+    !isFailedPersonalElementPart(part, toolName) &&
+    part.result !== undefined &&
+    part.result !== null
+  )
 }
 
 function isQualifyingPart(
@@ -126,6 +176,41 @@ function isQualifyingPart(
     part.result !== undefined &&
     part.result !== null
   )
+}
+
+function normalizeCandidateSources(raw: unknown): SourceCandidate[] {
+  if (!raw || typeof raw !== 'object') return []
+  const values = (raw as { candidates?: unknown }).candidates
+  if (!Array.isArray(values)) return []
+
+  return values.flatMap((candidate) => {
+    if (!candidate || typeof candidate !== 'object') return []
+    const sources = (candidate as { sources?: unknown }).sources
+    if (!Array.isArray(sources)) return []
+
+    return sources.flatMap((rawSource) => {
+      if (!rawSource || typeof rawSource !== 'object') return []
+      const source = rawSource as Record<string, unknown>
+      const sourceId = cleanString(source.sourceId)
+      const chunkId = cleanString(source.chunkId)
+      if (!sourceId || !chunkId) return []
+
+      const rawUrl = cleanString(source.url)
+      const url = rawUrl && isUrlLike(rawUrl) ? rawUrl : undefined
+      const title = cleanString(source.title) ?? sourceId
+      const page = cleanPage(source.page)
+
+      return [
+        {
+          type: inferSourceType(undefined, url),
+          title,
+          page,
+          url,
+          dedupeKey: getCandidateSourceKey({ sourceId, chunkId }),
+        },
+      ]
+    })
+  })
 }
 
 /**

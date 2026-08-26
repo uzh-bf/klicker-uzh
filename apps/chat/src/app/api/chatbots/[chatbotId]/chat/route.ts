@@ -27,6 +27,7 @@ import {
   buildAbortedAssistantContent,
   mapAssistantStepContent,
 } from '@/src/lib/server/persistedAssistantContent'
+import { createCardGeneration } from '@/src/lib/server/personalElements/cardGeneration'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
@@ -63,13 +64,15 @@ import { safeDecrypt } from '@klicker-uzh/util'
 import { startActiveObservation } from '@langfuse/tracing'
 import {
   consumeStream,
+  createUIMessageStreamResponse,
+  type FinishReason,
   generateText,
-  isStepCount,
   streamText,
   tool,
   type ModelMessage,
   type StepResult,
   type ToolSet,
+  type UIMessageChunk,
 } from 'ai'
 import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
@@ -90,6 +93,15 @@ type ChatRouteModelMessage = {
     | string
     | Array<{ type: 'text'; text: string } | { type: 'image'; image: string }>
 }
+
+type StreamTerminalOutcome =
+  | {
+      status: 'success'
+      finishReason: FinishReason
+      messageMetadata: Record<string, unknown>
+    }
+  | { status: 'error'; errorText: string }
+  | { status: 'aborted' }
 
 export const CHAT_MODEL_UNAVAILABLE_BASE = 'CHAT_MODEL_UNAVAILABLE_BASE'
 export const CHAT_MODEL_UNAVAILABLE_ADVANCED = 'CHAT_MODEL_UNAVAILABLE_ADVANCED'
@@ -133,6 +145,7 @@ const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
+const STREAM_TERMINAL_OUTCOME_TIMEOUT_MS = 1000
 
 type ModelRouting = {
   source: 'custom' | 'default'
@@ -688,6 +701,12 @@ export async function POST(
       .max(3)
       .optional()
       .default([]),
+    approvedPlan: z
+      .object({
+        messageId: z.string().uuid(),
+        toolCallId: z.string().min(1).max(128),
+      })
+      .optional(),
   })
   let parsed: z.infer<typeof bodySchema>
   try {
@@ -705,6 +724,7 @@ export async function POST(
     assistantMessageId,
     images,
     chatContext: rawChatContext,
+    approvedPlan,
   } = parsed
 
   const sanitizedChatContext = sanitizeKlickerChatContext(rawChatContext)
@@ -1026,6 +1046,21 @@ export async function POST(
     userMessageId = lastMessage.id
   }
 
+  const threadHistory = await prisma.chatMessage.findMany({
+    where: {
+      threadId: currentThreadId,
+      thread: { participantId, chatbotId },
+    },
+    select: {
+      id: true,
+      parentId: true,
+      role: true,
+      content: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'asc' },
+  })
+
   let turnClaim
   try {
     turnClaim = await claimChatTurn({
@@ -1200,7 +1235,7 @@ export async function POST(
       ...(mcpTools || {}),
       ...studentPracticeTools,
     }
-    const toolNames = Object.keys(chatTools)
+    const baseToolNames = Object.keys(chatTools)
 
     // Compile the full system prompt now that `toolNames` is known: the resolved
     // base prompt plus the layered runtime contracts (conditional citation, then
@@ -1208,10 +1243,10 @@ export async function POST(
     // Assigning the finished value here (rather than a separate `instructions`
     // variable) keeps the `systemPromptLength` / `systemPromptHash` telemetry
     // below truthful to what is actually sent to the model.
-    const systemPrompt = compileSystemPrompt(
+    let systemPrompt = compileSystemPrompt(
       chatbot.systemPrompts,
       selectedMode,
-      toolNames
+      baseToolNames
     )
     const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
     const contextAwareSystemPrompt = chatContextPrompt
@@ -1253,6 +1288,57 @@ export async function POST(
         : undefined
 
     const { model, routing } = getModel(chatbot, selectedModelConfig)
+    const userCredits = await CreditsService.getUserCredits(
+      participantId,
+      chatbotId
+    )
+    const latestUserContent =
+      lastMessage?.role === 'user' ? lastMessage.content : ''
+    const cardGeneration = await createCardGeneration({
+      prisma,
+      participantId,
+      chatbotId,
+      courseId: chatbot.courseId,
+      threadId: currentThreadId,
+      activeBranchLeafId: parentId ?? lastMessage?.id ?? null,
+      attemptParentMessageId: userMessageId,
+      assistantMessageId,
+      assistantMessageAlreadyCreated: true,
+      threadHistory,
+      acceptedPlanReference: approvedPlan,
+      baseTools: chatTools,
+      model,
+      systemPrompt: effectiveSystemPrompt,
+      latestUserContent,
+      hasImage: lastMessage?.role === 'user' && normalizedImages.length > 0,
+      hasGenerationCredits: userCredits.current > 0,
+      calculateNestedCost: (usage) =>
+        calcCost(
+          selectedModelConfig.cost,
+          usage.inputTokens ?? 0,
+          usage.outputTokens ?? 0
+        ),
+    })
+    if (!cardGeneration.ok) {
+      await failOrDiscardUnstartedClaim('card-generation.setup')
+      return NextResponse.json(
+        { error: cardGeneration.error },
+        { status: cardGeneration.status }
+      )
+    }
+    systemPrompt = cardGeneration.instructions
+    const generationTools = cardGeneration.tools
+    const explicitToolOrder = cardGeneration.toolOrder
+    const {
+      docQueryToolName,
+      retrievalRequired,
+      cardGenerationRequest,
+      personalToolsEligible,
+      cardGenerationEnabled,
+      generationEligible,
+    } = cardGeneration.telemetry
+    const toolNames = Object.keys(generationTools)
+
     const promptCacheRequest =
       routing.source === 'default'
         ? await buildPromptCacheRequest({
@@ -1260,8 +1346,9 @@ export async function POST(
             transport: selectedModelConfig.usesResponsesApi
               ? 'responses'
               : 'chat',
-            instructions: effectiveSystemPrompt,
-            tools: chatTools,
+            instructions: systemPrompt,
+            tools: generationTools,
+            toolOrder: explicitToolOrder,
           })
         : null
 
@@ -1375,10 +1462,14 @@ export async function POST(
       toolNames,
       practiceCandidateCount,
       hasChatContext: Boolean(chatContextPrompt),
-      systemPromptLength: effectiveSystemPrompt.length,
-      systemPromptHash: effectiveSystemPrompt
-        ? hashSnippet(effectiveSystemPrompt)
-        : null,
+      docQueryToolName: docQueryToolName ?? null,
+      retrievalRequired,
+      cardGenerationRequest,
+      personalToolsEligible,
+      cardGenerationEnabled,
+      generationEligible,
+      systemPromptLength: systemPrompt.length,
+      systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
       userPromptLengthTotal: userPrompt.length,
       userPromptHash: userPrompt ? hashSnippet(userPrompt) : null,
       imageAttachmentCount: images.length,
@@ -1568,6 +1659,18 @@ export async function POST(
     let sawAbort = false
     let sawFinish = false
     let finalEmitted = false
+    let resolveStreamTerminalOutcome: (outcome: StreamTerminalOutcome) => void =
+      () => {}
+    let streamTerminalOutcomeResolved = false
+    const streamTerminalOutcome = new Promise<StreamTerminalOutcome>(
+      (resolve) => {
+        resolveStreamTerminalOutcome = (outcome) => {
+          if (streamTerminalOutcomeResolved) return
+          streamTerminalOutcomeResolved = true
+          resolve(outcome)
+        }
+      }
+    )
 
     const finalizeAssistantLifecycle = async ({
       content,
@@ -1634,6 +1737,8 @@ export async function POST(
           })
         }
       }
+
+      return { finalizationOutcome }
     }
 
     const emitFinalOnce = (
@@ -1682,11 +1787,12 @@ export async function POST(
           },
         },
         messages: modelMessages as ModelMessage[],
-        tools: promptCacheRequest?.tools ?? chatTools,
+        tools: promptCacheRequest?.tools ?? generationTools,
         toolOrder: promptCacheRequest?.toolOrder,
         toolChoice: 'auto',
-        stopWhen: isStepCount(5),
-        instructions: effectiveSystemPrompt,
+        prepareStep: cardGeneration.prepareStep,
+        stopWhen: cardGeneration.stopWhen,
+        instructions: systemPrompt,
 
         abortSignal: req.signal,
 
@@ -1739,6 +1845,7 @@ export async function POST(
               // field; null means not-applicable on a cancelled turn.
               reasoningTokensIncludedInOutput: null,
             })
+            resolveStreamTerminalOutcome({ status: 'aborted' })
             return
           }
           const computedRawCreditsUsed = result.usage
@@ -1746,7 +1853,9 @@ export async function POST(
                 selectedModelConfig.cost,
                 result.usage.inputTokens || 0,
                 result.usage.outputTokens || 0
-              ) + imageDescriptionCost
+              ) +
+              imageDescriptionCost +
+              cardGeneration.getNestedGenerationCost()
             : null
           const { rawCreditsUsed, creditsUsed } = normalizeCredits(
             computedRawCreditsUsed,
@@ -1790,12 +1899,60 @@ export async function POST(
             hadAbort: sawAbort,
           })
 
-          await finalizeAssistantLifecycle({
-            content: mapAssistantStepContent(result.steps),
+          const assistantMessageContent = mapAssistantStepContent(result.steps)
+          const { finalizationOutcome } = await finalizeAssistantLifecycle({
+            content: assistantMessageContent,
             reasoningContent: finishedReasoningContent,
             rawCreditsUsed,
             phase: 'complete',
           })
+
+          const leaseSettlement = await cardGeneration.settleLease({
+            assistantMessagePersisted: finalizationOutcome !== 'failed',
+            assistantMessageContent,
+          })
+          const leaseSettlementFailed =
+            leaseSettlement.status === 'lost' ||
+            leaseSettlement.status === 'failed' ||
+            leaseSettlement.status === 'aborted'
+          if (leaseSettlementFailed) {
+            await prisma.chatMessage.deleteMany({
+              where: {
+                id: assistantMessageId,
+                threadId: currentThreadId,
+                role: 'assistant',
+              },
+            })
+            const reason =
+              leaseSettlement.status === 'lost'
+                ? 'Card generation lost its lease before completion'
+                : leaseSettlement.status === 'aborted' &&
+                    leaseSettlement.reason === 'assistant-message-not-persisted'
+                  ? 'Card generation result was not persisted'
+                  : leaseSettlement.status === 'aborted'
+                    ? 'Card generation failed'
+                    : 'Card generation could not settle its lease'
+            firstError = firstError ?? serializeStreamError(new Error(reason))
+            emitFinalOnce('error', {
+              elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+              classification: 'unknown',
+              reason,
+            })
+            resolveStreamTerminalOutcome({
+              status: 'error',
+              errorText: 'An error occurred while processing the request.',
+            })
+            return
+          }
+
+          const finishMetadata = {
+            finishReason: result.finishReason,
+            chatMode: selectedMode,
+            modelId: selectedModelConfig.id,
+            reasoningEffort: appliedReasoningEffort,
+            reasoningContent: assistantReasoningContent,
+            creditsUsed,
+          }
 
           if (!firstError) {
             emitFinalOnce('success', {
@@ -1808,6 +1965,16 @@ export async function POST(
                   }
                 : null,
               stepsCount: result.steps?.length ?? 0,
+            })
+            resolveStreamTerminalOutcome({
+              status: 'success',
+              finishReason: result.finishReason,
+              messageMetadata: finishMetadata,
+            })
+          } else {
+            resolveStreamTerminalOutcome({
+              status: 'error',
+              errorText: 'An error occurred while processing the request.',
             })
           }
         },
@@ -1832,7 +1999,10 @@ export async function POST(
             }
 
             if (hasUsage) {
-              rawCreditsUsed = totalCost + imageDescriptionCost
+              rawCreditsUsed =
+                totalCost +
+                imageDescriptionCost +
+                cardGeneration.getNestedGenerationCost()
             }
           }
           const { rawCreditsUsed: normalizedRawCreditsUsed, creditsUsed } =
@@ -1848,6 +2018,8 @@ export async function POST(
               .join('\n\n')
           )
           assistantReasoningContent = abortedReasoningContent
+
+          await cardGeneration.abortLease()
 
           logEvent('stream.abort', {
             elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
@@ -1870,6 +2042,7 @@ export async function POST(
             elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
             stepsCount: Array.isArray(steps?.steps) ? steps.steps.length : 0,
           })
+          resolveStreamTerminalOutcome({ status: 'aborted' })
         },
 
         onStepEnd: async (step) => {
@@ -1906,6 +2079,7 @@ export async function POST(
         },
 
         onError: async (error) => {
+          await cardGeneration.abortLease()
           const serializedError = serializeStreamError(error)
           firstError = firstError ?? serializedError
           const classification = classifyStreamError(serializedError)
@@ -1931,6 +2105,10 @@ export async function POST(
             elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
             classification: classification.classification,
           })
+          resolveStreamTerminalOutcome({
+            status: 'error',
+            errorText: 'An error occurred while processing the request.',
+          })
           await failAssistantClaim('stream.error')
         },
       })
@@ -1939,20 +2117,26 @@ export async function POST(
     // The wrapper span only exists to put the derived trace id on the context the
     // AI SDK reads when it opens its own spans; it is created and closed around
     // the synchronous streamText call, while the spans it parents keep streaming.
-    const result = traceId
-      ? startActiveObservation('chat.stream', startStream, {
-          parentSpanContext: getParentSpanContext(traceId),
-        })
-      : startStream()
+    let result: ReturnType<typeof streamText>
+    try {
+      result = traceId
+        ? startActiveObservation('chat.stream', startStream, {
+            parentSpanContext: getParentSpanContext(traceId),
+          })
+        : startStream()
+    } catch (error) {
+      await cardGeneration.abortLease()
+      throw error
+    }
 
     logEvent('response.stream.created', {
       stage: 'response-object-created',
       elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
     })
 
-    return result.toUIMessageStreamResponse({
+    const uiMessageStream = result.toUIMessageStream({
       sendReasoning: true,
-      consumeSseStream: consumeStream,
+      sendFinish: false,
       onError: (error) => {
         const serializedError = serializeStreamError(error)
         const classification = classifyStreamError(serializedError)
@@ -1978,7 +2162,9 @@ export async function POST(
               selectedModelConfig.cost,
               part.totalUsage.inputTokens || 0,
               part.totalUsage.outputTokens || 0
-            ) + imageDescriptionCost
+            ) +
+            imageDescriptionCost +
+            cardGeneration.getNestedGenerationCost()
           : null
         const { creditsUsed } = normalizeCredits(
           computedRawCreditsUsed,
@@ -1994,6 +2180,59 @@ export async function POST(
           creditsUsed,
         }
       },
+    })
+
+    let sawClientError = false
+    const gatedUiMessageStream = uiMessageStream.pipeThrough(
+      new TransformStream<UIMessageChunk, UIMessageChunk>({
+        transform(chunk, controller) {
+          if (chunk.type === 'error') {
+            sawClientError = true
+          }
+          controller.enqueue(chunk)
+        },
+        async flush(controller) {
+          const terminalOutcome = streamTerminalOutcomeResolved
+            ? await streamTerminalOutcome
+            : await Promise.race([
+                streamTerminalOutcome,
+                new Promise<null>((resolve) => {
+                  setTimeout(
+                    () => resolve(null),
+                    STREAM_TERMINAL_OUTCOME_TIMEOUT_MS
+                  )
+                }),
+              ])
+
+          if (!terminalOutcome) {
+            if (!sawClientError) {
+              controller.enqueue({
+                type: 'error',
+                errorText: 'An error occurred while processing the request.',
+              })
+            }
+            return
+          }
+
+          if (terminalOutcome.status === 'success') {
+            controller.enqueue({
+              type: 'finish',
+              finishReason: terminalOutcome.finishReason,
+              messageMetadata: terminalOutcome.messageMetadata,
+            })
+          } else if (terminalOutcome.status === 'error' && !sawClientError) {
+            controller.enqueue({
+              type: 'error',
+              errorText: terminalOutcome.errorText,
+            })
+          }
+        },
+      })
+    )
+
+    return createUIMessageStreamResponse({
+      stream: gatedUiMessageStream,
+      consumeSseStream: consumeStream,
     })
   } catch (error) {
     if (providerStreamStarted) await failAssistantClaim('request')

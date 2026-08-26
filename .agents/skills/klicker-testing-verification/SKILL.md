@@ -149,6 +149,16 @@ content plus their existing navigation hint. Keep touch verification scoped to
 the compact card and existing URL/in-page citation actions because Radix
 tooltips do not provide a separate tap disclosure contract.
 
+Personal-element changes add focused Vitest coverage for the retrieval-before-
+plan contract, the five-card cap, bounded cited-chunk normalization, typed
+generation failures, approval/replay claims, idempotent saves, and
+expected-version revision conflicts. Browser verification must use the seeded
+local MCP fixture and cover the plan, candidate save join, reload, unsaved
+revision, saved revision, and direct PWA practice route. The Chat capability
+flag must be tested both disabled (creation tools hidden) and enabled; saved
+card paths remain available in either state. A green GraphQL or chat check does
+not prove the browser state or the external model path.
+
 ## Pre-PR verification checklist
 
 Every item, in order; paste evidence (command + tail of output, screenshots) into the PR or task report:

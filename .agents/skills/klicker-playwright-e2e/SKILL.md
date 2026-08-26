@@ -230,3 +230,13 @@ volta run pnpm --filter @klicker-uzh/playwright exec playwright test --list --pr
 ```
 
 Only run browser specs when the local stack is up. If endpoints are down, report that runtime validation was not possible instead of producing noisy connection-refused failures.
+
+For participant-owned practice cards, keep the direct `/course/[courseId]/personal`
+route in the browser matrix. Authenticate with delegated seeded credentials,
+seed only synthetic cards, and assert empty, due, rated, source-badge, delete-
+confirm, English/German, and mobile states. Verify that pooled `/practice`
+does not include personal cards. Chat generation evidence separately covers
+retrieval, the five-card plan cap, plan approval, candidate save/reload, and
+expected-version revision; when the capability flag is disabled, creation
+tools must be absent while saved-card practice remains reachable. Do not
+replace that browser proof with a route unit test.

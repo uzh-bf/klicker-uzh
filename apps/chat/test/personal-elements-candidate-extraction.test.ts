@@ -1,0 +1,232 @@
+import { describe, expect, test } from 'vitest'
+import {
+  extractUnsavedCandidates,
+  isFailedGenerationContent,
+} from '../src/lib/server/personalElements/history'
+
+const candidate = {
+  type: 'FLASHCARD',
+  name: 'Card',
+  content: 'Front',
+  explanation: 'Back',
+  sources: [{ sourceId: 'source-1', chunkId: 'chunk-1' }],
+  sourceMessageId: 'message-source',
+  sourceToolCallId: 'tool-source',
+  origin: 'AI_GENERATED',
+}
+
+function message(
+  id: string,
+  result: Record<string, unknown>,
+  ...extraParts: unknown[]
+) {
+  return {
+    id,
+    parentId: null,
+    role: 'assistant',
+    createdAt: new Date('2026-08-21T00:00:00Z'),
+    content: [
+      {
+        type: 'tool-call',
+        toolCallId: `${id}-tool`,
+        toolName: 'generate_cards',
+        result,
+      },
+      ...extraParts,
+    ],
+  }
+}
+
+describe('unsaved candidate extraction', () => {
+  test('excludes candidates that already have saved linkage', () => {
+    const messages = [
+      message('saved-generation', {
+        candidates: [
+          { ...candidate, candidateId: 'saved-candidate' },
+          { ...candidate, candidateId: 'unsaved-candidate' },
+        ],
+      }),
+    ]
+
+    const result = extractUnsavedCandidates(
+      messages,
+      new Set(['saved-generation']),
+      new Set(['saved-generation']),
+      new Set(['saved-candidate'])
+    )
+
+    expect([...result.keys()]).toEqual(['unsaved-candidate'])
+  })
+
+  test('rejects a persisted candidate with a non-flashcard discriminator', () => {
+    const messages = [
+      message('wrong-type-generation', {
+        candidates: [
+          {
+            ...candidate,
+            type: 'MULTIPLE_CHOICE',
+            candidateId: 'wrong-type-candidate',
+          },
+        ],
+      }),
+    ]
+
+    expect(
+      extractUnsavedCandidates(
+        messages,
+        new Set(['wrong-type-generation']),
+        new Set(['wrong-type-generation'])
+      )
+    ).toEqual(new Map())
+  })
+
+  test('keeps completed attempts and excludes every failed candidate state', () => {
+    const messages = [
+      message('completed-generation', {
+        candidates: [
+          { ...candidate, candidateId: 'completed-generation-candidate' },
+        ],
+      }),
+      message(
+        'stopped-generation',
+        {
+          candidates: [
+            { ...candidate, candidateId: 'stopped-generation-candidate' },
+          ],
+        },
+        { type: 'data', name: 'chat-stopped', data: {} }
+      ),
+      message('unapproved-generation', {
+        candidates: [
+          { ...candidate, candidateId: 'unapproved-generation-candidate' },
+        ],
+      }),
+      {
+        ...message('failed-generation', {
+          candidates: [
+            { ...candidate, candidateId: 'failed-generation-candidate' },
+          ],
+        }),
+        content: [
+          {
+            type: 'tool-call',
+            toolCallId: 'failed-generation-tool',
+            toolName: 'generate_cards',
+            isError: true,
+            result: {
+              candidates: [
+                { ...candidate, candidateId: 'failed-generation-candidate' },
+              ],
+            },
+          },
+        ],
+      },
+    ]
+
+    const result = extractUnsavedCandidates(
+      messages,
+      new Set(messages.map(({ id }) => id)),
+      new Set(['completed-generation'])
+    )
+
+    expect([...result.keys()]).toEqual(['completed-generation-candidate'])
+  })
+
+  test('recognizes status:error generation results as failed and retryable', () => {
+    const content = [
+      {
+        type: 'tool-call',
+        toolName: 'generate_cards',
+        result: { status: 'error', candidates: [] },
+      },
+    ]
+
+    expect(isFailedGenerationContent(content)).toBe(true)
+    expect(
+      extractUnsavedCandidates(
+        [
+          message(
+            'failed-generation',
+            content[0]!.result as Record<string, unknown>
+          ),
+        ],
+        new Set(['failed-generation']),
+        new Set(['failed-generation'])
+      )
+    ).toEqual(new Map())
+  })
+
+  test('recognizes all-card partial failures as failed and retryable', () => {
+    const content = [
+      {
+        type: 'tool-call',
+        toolName: 'generate_cards',
+        result: {
+          status: 'partial',
+          total: 2,
+          completed: 2,
+          candidates: [],
+          failedCards: [
+            { candidateId: 'card-1', code: 'retrieval_unavailable' },
+            { candidateId: 'card-2', code: 'insufficient_evidence' },
+          ],
+        },
+      },
+    ]
+
+    expect(isFailedGenerationContent(content)).toBe(true)
+  })
+
+  test('marks a terminal partial run retryable while retaining successful candidates', () => {
+    const content = [
+      {
+        type: 'tool-call',
+        toolCallId: 'partial-generation-tool',
+        toolName: 'generate_cards',
+        result: {
+          status: 'partial',
+          total: 2,
+          completed: 2,
+          candidates: [{ ...candidate, candidateId: 'successful-card' }],
+          failedCards: [
+            { candidateId: 'failed-card', code: 'generation_failed' },
+          ],
+        },
+      },
+    ]
+
+    expect(isFailedGenerationContent(content)).toBe(true)
+    expect(
+      extractUnsavedCandidates(
+        [
+          message(
+            'partial-generation',
+            content[0]!.result as Record<string, unknown>
+          ),
+        ],
+        new Set(['partial-generation']),
+        new Set()
+      )
+    ).toHaveProperty('size', 1)
+  })
+
+  test('ignores persisted generation results above the shared card limit', () => {
+    const messages = [
+      message('oversized-generation', {
+        total: 6,
+        candidates: Array.from({ length: 6 }, (_, index) => ({
+          ...candidate,
+          candidateId: `oversized-${index + 1}`,
+        })),
+      }),
+    ]
+
+    expect(
+      extractUnsavedCandidates(
+        messages,
+        new Set(['oversized-generation']),
+        new Set(['oversized-generation'])
+      )
+    ).toEqual(new Map())
+  })
+})

@@ -1,0 +1,771 @@
+import {
+  listPersonalElements,
+  type PersonalElementServiceContext,
+} from '@klicker-uzh/graphql/dist/server'
+import type { Prisma, PrismaClient } from '@klicker-uzh/prisma/client'
+import { hasToolCall, isStepCount, type ToolSet } from 'ai'
+import { z } from 'zod'
+import {
+  isSettledTerminalPartialPersonalElementPart,
+  isTerminalPartialPersonalElementPart,
+} from '@/src/lib/personalElements/failure'
+import { shouldRequireCourseRetrieval } from '@/src/lib/server/retrievalPolicy'
+import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
+import {
+  isPersonalCardGenerationEnabled,
+  type PersonalCardGenerationEvaluator,
+} from './featureFlag'
+import {
+  extractUnsavedCandidates,
+  getActiveBranchMessageIds,
+  hasChunkedDocQueryResult,
+  hasNewerCardPlan,
+  hasToolPart,
+  isFailedGenerationContent,
+  parseAcceptedCardPlan,
+  type ThreadHistoryMessage,
+} from './history'
+import {
+  abortGenerationLease,
+  type CardGenerationLease,
+  claimGenerationLease,
+  completeGenerationLease,
+  createGenerationAttemptMessage,
+} from './lease'
+import { discardPotentialDuplicateCards } from './titleSimilarity'
+import {
+  createGenerateCardsTool,
+  createListPersonalElementsTool,
+  createProposeCardPlanTool,
+  createRevisePersonalElementTool,
+} from './tools'
+
+const MAX_RETRIEVAL_ATTEMPTS = 2
+const RETRIEVAL_UNAVAILABLE_TOOL_NAME = 'course_retrieval_unavailable'
+
+const CARD_NOUN =
+  /(?:flash\s*cards?|practice\s+cards?|lernkarte(?:n)?|karteikarte(?:n)?)/iu
+const CARD_GENERATION_PHRASE =
+  /(?:\b(?:generate|create|make|build|prepare|write|draft|produce)\b|\b(?:give|show)\s+me\s+(?:some|new|a\s+few)\b|\b(?:i\s+)?(?:want|would\s+like|need)\s+(?:some|new|a\s+few)\b|\b(?:generier|erstell|mach|gib|stell|schreib|verfass)\w*\b)/iu
+const CARD_TOPIC_PHRASE =
+  /(?:flash\s*cards?|practice\s+cards?|lernkarte(?:n)?|karteikarte(?:n)?)\s+(?:about|on|for|zu|zur|zum|über)\b/iu
+const CARD_NON_GENERATION_PHRASE =
+  /(?:what\s+(?:are|is)|how\s+.*\b(?:work|function)|explain|tell\s+me\s+about\b|show\s+me\s+(?:my|the|these|those)?\s*(?:flash\s*cards?|practice\s+cards?|lernkarte|karteikarte)|(?:ich\s+)?möchte\s+(?:verstehen|wissen|erfahren)|(?:ich\s+)?will\s+(?:verstehen|wissen|erfahren)|my\s+saved|saved\s+.*\b(?:flash\s*cards?|practice\s+cards?|lernkarte|karteikarte)|^(?:are|is)\b.*\b(?:effective|useful|helpful|necessary|worth)\b|^(?:was\s+sind|wie\s+funktion\w*|sind)\b.*\b(?:lernkarte|karteikarte|flash\s*cards?|practice\s+cards?))/iu
+
+type AcceptedPlanReference = {
+  messageId: string
+  toolCallId: string
+}
+
+type ExecutableTool = {
+  execute?: (input: unknown, options: Record<string, unknown>) => unknown
+}
+
+type CardGenerationError = {
+  ok: false
+  status: 400 | 409
+  error: string
+}
+
+type LeaseSettlement =
+  | { status: 'none' | 'partial' | 'completed' }
+  | {
+      status: 'aborted'
+      reason: 'assistant-message-not-persisted' | 'generation-failed'
+    }
+  | { status: 'lost' | 'failed' }
+
+function markTerminalPartialSettlement(content: unknown) {
+  if (!Array.isArray(content)) return null
+
+  let found = false
+  let changed = false
+  const marked = content.map((part) => {
+    if (!isTerminalPartialPersonalElementPart(part, 'generate_cards')) {
+      return part
+    }
+    found = true
+    if (isSettledTerminalPartialPersonalElementPart(part, 'generate_cards')) {
+      return part
+    }
+    if (!part || typeof part !== 'object') return part
+    const result = (part as { result?: unknown }).result
+    if (!result || typeof result !== 'object') return part
+    changed = true
+    return {
+      ...part,
+      result: { ...result, settlement: 'partial' },
+    }
+  })
+
+  return found ? { content: marked, changed } : null
+}
+
+export type CardGenerationSetup = {
+  ok: true
+  tools: ToolSet
+  toolOrder: string[]
+  instructions: string
+  prepareStep: (input: {
+    stepNumber: number
+    steps: Array<{ toolResults?: unknown[] }>
+  }) => Record<string, unknown>
+  stopWhen: ReturnType<typeof isStepCount> | ReturnType<typeof hasToolCall>[]
+  telemetry: {
+    docQueryToolName: string | null
+    retrievalRequired: boolean
+    cardGenerationRequest: boolean
+    personalToolsEligible: boolean
+    cardGenerationEnabled: boolean
+    generationEligible: boolean
+  }
+  getNestedGenerationCost: () => number
+  settleLease: (input: {
+    assistantMessagePersisted: boolean
+    assistantMessageContent: unknown
+  }) => Promise<LeaseSettlement>
+  abortLease: () => Promise<void>
+}
+
+function normalizeMessage(content: string): string {
+  return content
+    .trim()
+    .toLocaleLowerCase('de-CH')
+    .replace(/\s+/gu, ' ')
+    .replace(/[.!?,;:]+$/gu, '')
+    .trim()
+}
+
+export function isCardGenerationRequest(content: string): boolean {
+  const normalized = normalizeMessage(content)
+  const hasExplicitGenerationPhrase = CARD_GENERATION_PHRASE.test(normalized)
+  return (
+    CARD_NOUN.test(normalized) &&
+    (hasExplicitGenerationPhrase ||
+      (CARD_TOPIC_PHRASE.test(normalized) &&
+        !CARD_NON_GENERATION_PHRASE.test(normalized)))
+  )
+}
+
+function createRetrievalUnavailableTool() {
+  return {
+    description:
+      'Use this terminal tool when the course-material search returned no usable evidence after the allowed attempts. Do not answer the student from general knowledge.',
+    inputSchema: z.object({}),
+    execute: async () => ({ status: 'course_material_unavailable' as const }),
+  }
+}
+
+function getForcedToolName({
+  docQueryToolName,
+  retrievalRequired,
+  cardGenerationRequest,
+  generationEligible,
+  hasRetrieved,
+}: {
+  docQueryToolName: string | undefined
+  retrievalRequired: boolean
+  cardGenerationRequest: boolean
+  generationEligible: boolean
+  hasRetrieved: boolean
+}): string | null {
+  if (docQueryToolName && retrievalRequired && !hasRetrieved) {
+    return docQueryToolName
+  }
+  if (
+    docQueryToolName &&
+    cardGenerationRequest &&
+    generationEligible &&
+    hasRetrieved
+  ) {
+    return 'propose_card_plan'
+  }
+  return null
+}
+
+function serviceContext(
+  prisma: PrismaClient,
+  participantId: string
+): PersonalElementServiceContext {
+  return { prisma, participantId }
+}
+
+export async function createCardGeneration({
+  prisma,
+  participantId,
+  chatbotId,
+  courseId,
+  threadId,
+  activeBranchLeafId,
+  attemptParentMessageId,
+  assistantMessageId,
+  assistantMessageAlreadyCreated = false,
+  threadHistory,
+  acceptedPlanReference,
+  baseTools,
+  model,
+  systemPrompt,
+  latestUserContent,
+  hasImage,
+  hasGenerationCredits,
+  calculateNestedCost,
+  evaluateCardGeneration,
+}: {
+  prisma: PrismaClient
+  participantId: string
+  chatbotId: string
+  courseId: string
+  threadId: string | null
+  activeBranchLeafId: string | null
+  attemptParentMessageId: string | null
+  assistantMessageId: string
+  assistantMessageAlreadyCreated?: boolean
+  threadHistory: readonly ThreadHistoryMessage[]
+  acceptedPlanReference?: AcceptedPlanReference
+  baseTools: ToolSet
+  model: Parameters<typeof createGenerateCardsTool>[0]['model']
+  systemPrompt: string
+  latestUserContent: string
+  hasImage: boolean
+  hasGenerationCredits: boolean
+  calculateNestedCost: (usage: {
+    inputTokens?: number
+    outputTokens?: number
+  }) => number
+  evaluateCardGeneration?: PersonalCardGenerationEvaluator
+}): Promise<CardGenerationSetup | CardGenerationError> {
+  const baseToolNames = Object.keys(baseTools)
+  const docQueryToolName = baseToolNames.find(isDocQueryToolName)
+  const retrievalRequired = shouldRequireCourseRetrieval(
+    latestUserContent,
+    hasImage
+  )
+  const cardGenerationRequest = isCardGenerationRequest(latestUserContent)
+  const personalToolsEligible = Boolean(docQueryToolName)
+  let cardGenerationEnabled = false
+  if (personalToolsEligible) {
+    try {
+      cardGenerationEnabled = Boolean(
+        await (evaluateCardGeneration ?? isPersonalCardGenerationEnabled)({
+          participantId,
+          chatbotId,
+        })
+      )
+    } catch {
+      cardGenerationEnabled = false
+    }
+  }
+  const generationEligible =
+    personalToolsEligible && cardGenerationEnabled && hasGenerationCredits
+  const duplicateCheckRequired =
+    generationEligible &&
+    (cardGenerationRequest || Boolean(acceptedPlanReference))
+  const branchIds = getActiveBranchMessageIds(threadHistory, activeBranchLeafId)
+  const context = serviceContext(prisma, participantId)
+  let tools: ToolSet = baseTools
+  let toolOrder = [...baseToolNames]
+  let nestedGenerationCost = 0
+  let lease: CardGenerationLease | null = null
+  let leaseSettlementPromise: Promise<LeaseSettlement> | null = null
+  let leaseSettlementDone = false
+  let acceptedPlan = null
+  const personalToolNames: string[] = []
+  let existingCards: Awaited<ReturnType<typeof listPersonalElements>> | null =
+    null
+  const loadExistingCards = async () => {
+    existingCards ??= await listPersonalElements({ courseId }, context)
+    return existingCards
+  }
+
+  const existingCardTitles = duplicateCheckRequired
+    ? (await loadExistingCards()).map((card) => card.name)
+    : []
+
+  let courseLanguage = 'en'
+  if (personalToolsEligible && docQueryToolName) {
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { language: true },
+    })
+    courseLanguage = String(course?.language ?? 'en')
+    const personalToolOptions = {
+      prisma,
+      participantId,
+      courseId,
+      model,
+      courseLanguage,
+      docQueryTool: baseTools[docQueryToolName] as ExecutableTool,
+      onNestedUsage: (usage: {
+        inputTokens?: number
+        outputTokens?: number
+      }) => {
+        nestedGenerationCost += calculateNestedCost(usage)
+      },
+    }
+    tools = {
+      ...tools,
+      list_personal_elements: createListPersonalElementsTool({
+        prisma,
+        participantId,
+        courseId,
+      }),
+    }
+    personalToolNames.push('list_personal_elements')
+    if (hasGenerationCredits) {
+      tools = {
+        ...tools,
+        revise_personal_element:
+          createRevisePersonalElementTool(personalToolOptions),
+      }
+      personalToolNames.push('revise_personal_element')
+    }
+    toolOrder = [...baseToolNames, ...personalToolNames]
+  }
+
+  if (personalToolsEligible && retrievalRequired) {
+    tools = {
+      ...tools,
+      [RETRIEVAL_UNAVAILABLE_TOOL_NAME]: createRetrievalUnavailableTool(),
+    }
+    toolOrder = [...toolOrder, RETRIEVAL_UNAVAILABLE_TOOL_NAME]
+  }
+
+  if (generationEligible) {
+    tools = {
+      ...tools,
+      propose_card_plan: createProposeCardPlanTool({
+        existingCardTitles,
+        getExistingCardTitles: async () =>
+          (await loadExistingCards()).map((card) => card.name),
+      }),
+    }
+    toolOrder = [
+      ...baseToolNames,
+      ...personalToolNames,
+      'propose_card_plan',
+      ...(retrievalRequired ? [RETRIEVAL_UNAVAILABLE_TOOL_NAME] : []),
+    ]
+  }
+
+  if (acceptedPlanReference) {
+    if (!generationEligible || !docQueryToolName || !threadId) {
+      return {
+        ok: false,
+        status: 400,
+        error: 'Card generation is unavailable for this request',
+      }
+    }
+
+    const planMessage = threadHistory.find(
+      (message) =>
+        message.id === acceptedPlanReference.messageId &&
+        message.role === 'assistant'
+    )
+    acceptedPlan = planMessage
+      ? parseAcceptedCardPlan(
+          planMessage.content,
+          acceptedPlanReference.toolCallId
+        )
+      : null
+    if (!acceptedPlan || !planMessage) {
+      return {
+        ok: false,
+        status: 409,
+        error: 'The accepted card plan could not be found',
+      }
+    }
+    if (!branchIds.has(planMessage.id)) {
+      return {
+        ok: false,
+        status: 409,
+        error: 'The accepted card plan is not on the active branch',
+      }
+    }
+    if (
+      !Array.isArray(planMessage.content) ||
+      !planMessage.content.some(hasChunkedDocQueryResult)
+    ) {
+      return {
+        ok: false,
+        status: 409,
+        error: 'The accepted card plan has no chunked retrieval evidence',
+      }
+    }
+    if (hasNewerCardPlan(threadHistory, branchIds, planMessage)) {
+      return {
+        ok: false,
+        status: 409,
+        error: 'This card plan was replaced by a newer plan',
+      }
+    }
+
+    const planCandidateIds = new Set(
+      acceptedPlan.cards.map((card) => card.candidateId)
+    )
+    const savedPlanCandidateIds = new Set(
+      (await loadExistingCards()).flatMap((card) =>
+        card.candidateId && planCandidateIds.has(card.candidateId)
+          ? [card.candidateId]
+          : []
+      )
+    )
+    const discardedPlanCandidates =
+      await prisma.personalElementDiscard.findMany({
+        where: {
+          participantId,
+          courseId,
+          candidateId: { in: [...planCandidateIds] },
+        },
+        select: { candidateId: true },
+      })
+    const generationMessageIds = threadHistory.flatMap((message) =>
+      message.role === 'assistant' &&
+      branchIds.has(message.id) &&
+      hasToolPart(message.content, 'generate_cards')
+        ? [message.id]
+        : []
+    )
+    const completedLeases = generationMessageIds.length
+      ? await prisma.cardGenerationLease.findMany({
+          where: {
+            participantId,
+            attemptToken: { in: generationMessageIds },
+            completedAt: { not: null },
+          },
+          select: { attemptToken: true },
+        })
+      : []
+    const priorCandidates = extractUnsavedCandidates(
+      threadHistory,
+      branchIds,
+      new Set(completedLeases.map(({ attemptToken }) => attemptToken)),
+      savedPlanCandidateIds
+    )
+    const skippedCandidateIds = new Set([
+      ...savedPlanCandidateIds,
+      ...discardedPlanCandidates.map(({ candidateId }) => candidateId),
+      ...[...priorCandidates.keys()].filter((candidateId) =>
+        planCandidateIds.has(candidateId)
+      ),
+    ])
+    const duplicateCheck = discardPotentialDuplicateCards(
+      acceptedPlan.cards.filter(
+        (card) => !skippedCandidateIds.has(card.candidateId)
+      ),
+      (await loadExistingCards())
+        .filter(
+          (card) =>
+            !card.candidateId || !skippedCandidateIds.has(card.candidateId)
+        )
+        .map((card) => card.name)
+    )
+    if (duplicateCheck.discardedDuplicates.length > 0) {
+      return {
+        ok: false,
+        status: 409,
+        error: `The accepted card plan contains a potential duplicate: ${duplicateCheck.discardedDuplicates[0]!.title}`,
+      }
+    }
+    if (
+      acceptedPlan.cards.every((card) =>
+        skippedCandidateIds.has(card.candidateId)
+      )
+    ) {
+      return {
+        ok: false,
+        status: 409,
+        error: 'All cards in this plan have already been generated or decided',
+      }
+    }
+
+    let attemptMessageCreated = false
+    try {
+      if (!assistantMessageAlreadyCreated) {
+        await createGenerationAttemptMessage({
+          prisma,
+          assistantMessageId,
+          threadId,
+          parentId: attemptParentMessageId,
+        })
+        attemptMessageCreated = true
+      }
+      lease = await claimGenerationLease({
+        prisma,
+        participantId,
+        planMessageId: acceptedPlanReference.messageId,
+        planToolCallId: acceptedPlanReference.toolCallId,
+        attemptToken: assistantMessageId,
+      })
+    } catch (error) {
+      if (attemptMessageCreated) {
+        await prisma.chatMessage.deleteMany({
+          where: {
+            id: assistantMessageId,
+            threadId,
+            role: 'assistant',
+          },
+        })
+      }
+      return {
+        ok: false,
+        status: 409,
+        error:
+          error instanceof Error ? error.message : 'Card plan replay rejected',
+      }
+    }
+
+    tools = {
+      ...tools,
+      generate_cards: createGenerateCardsTool({
+        model,
+        courseLanguage,
+        approvedPlan: acceptedPlan,
+        skipCandidateIds: skippedCandidateIds,
+        sourceMessageId: assistantMessageId,
+        onNestedUsage: (usage) => {
+          nestedGenerationCost += calculateNestedCost(usage)
+        },
+        docQueryTool: baseTools[docQueryToolName] as ExecutableTool,
+      }),
+    }
+    toolOrder = [
+      ...baseToolNames,
+      ...personalToolNames,
+      'propose_card_plan',
+      'generate_cards',
+    ]
+  }
+
+  if (generationEligible) {
+    systemPrompt = `${systemPrompt}\n\nWhen the student asks for flashcards in any configured mode, retrieve course material first, then call propose_card_plan. Never generate or save cards before the student accepts the plan.`
+  }
+  if (duplicateCheckRequired) {
+    systemPrompt = `${systemPrompt}\n\nBefore proposing cards, avoid repeating existing personal cards. The server compares every proposed title against the complete saved-title list with a conservative local similarity check and removes potential duplicates.`
+  }
+  if (personalToolsEligible) {
+    systemPrompt = `${systemPrompt}\n\nFor saved personal cards, call list_personal_elements before revise_personal_element and pass the exact current id and version.`
+  }
+  if (acceptedPlan) {
+    systemPrompt = `${systemPrompt}\n\nThe student accepted this exact final card plan. Call generate_cards once with this JSON and do not change any plan entry: ${JSON.stringify(acceptedPlan)}. Do not send a text explanation before or after the tool call; the card interface displays the generated cards and their progress.`
+  }
+
+  const prepareStep = ({
+    stepNumber,
+    steps,
+  }: {
+    stepNumber: number
+    steps: Array<{ toolResults?: unknown[] }>
+  }) => {
+    if (acceptedPlan) {
+      return stepNumber === 0
+        ? {
+            activeTools: ['generate_cards'],
+            toolChoice: { type: 'tool', toolName: 'generate_cards' },
+          }
+        : {
+            activeTools: [...baseToolNames, ...personalToolNames],
+            toolChoice: 'none',
+          }
+    }
+
+    if (!personalToolsEligible) return { activeTools: baseToolNames }
+    const hasRetrieved = steps.some((step) =>
+      (step.toolResults ?? []).some(hasChunkedDocQueryResult)
+    )
+    const forcedToolName = getForcedToolName({
+      docQueryToolName,
+      retrievalRequired,
+      cardGenerationRequest,
+      generationEligible,
+      hasRetrieved,
+    })
+    if (forcedToolName) {
+      if (
+        forcedToolName === docQueryToolName &&
+        stepNumber >= MAX_RETRIEVAL_ATTEMPTS
+      ) {
+        return {
+          activeTools: [RETRIEVAL_UNAVAILABLE_TOOL_NAME],
+          toolChoice: {
+            type: 'tool',
+            toolName: RETRIEVAL_UNAVAILABLE_TOOL_NAME,
+          },
+          toolOrder,
+        }
+      }
+      return {
+        activeTools: [forcedToolName],
+        toolChoice: { type: 'tool', toolName: forcedToolName },
+        toolOrder,
+      }
+    }
+    return {
+      activeTools: hasRetrieved
+        ? [
+            ...baseToolNames,
+            ...personalToolNames,
+            ...(generationEligible ? ['propose_card_plan'] : []),
+          ]
+        : [...baseToolNames, ...personalToolNames],
+      toolOrder,
+    }
+  }
+
+  const stopWhen = acceptedPlan
+    ? hasToolCall('generate_cards')
+    : cardGenerationRequest && generationEligible
+      ? [
+          hasToolCall('propose_card_plan'),
+          hasToolCall(RETRIEVAL_UNAVAILABLE_TOOL_NAME),
+          isStepCount(5),
+        ]
+      : retrievalRequired && personalToolsEligible
+        ? [hasToolCall(RETRIEVAL_UNAVAILABLE_TOOL_NAME), isStepCount(5)]
+        : isStepCount(5)
+
+  const abortLease = async () => {
+    if (leaseSettlementPromise) {
+      await leaseSettlementPromise
+      return
+    }
+    if (!lease) return
+    const currentLease = lease
+    await abortGenerationLease({ prisma, participantId, lease: currentLease })
+    lease = null
+  }
+
+  const persistTerminalPartialSettlement = async (content: unknown) => {
+    const marked = markTerminalPartialSettlement(content)
+    if (!marked) return false
+    if (!marked.changed) return true
+
+    const updated = await prisma.chatMessage.updateMany({
+      where: {
+        id: assistantMessageId,
+        ...(threadId ? { threadId } : {}),
+      },
+      data: { content: marked.content as Prisma.InputJsonValue },
+    })
+    return updated.count === 1
+  }
+
+  const settleLease = async ({
+    assistantMessagePersisted,
+    assistantMessageContent,
+  }: {
+    assistantMessagePersisted: boolean
+    assistantMessageContent: unknown
+  }): Promise<LeaseSettlement> => {
+    if (leaseSettlementPromise) return leaseSettlementPromise
+    if (leaseSettlementDone || !lease) return { status: 'none' }
+    const currentLease = lease
+    const settlementPromise: Promise<LeaseSettlement> = (async () => {
+      if (!assistantMessagePersisted) {
+        try {
+          const aborted = await abortGenerationLease({
+            prisma,
+            participantId,
+            lease: currentLease,
+          })
+          lease = null
+          if (!aborted) return { status: 'lost' }
+          return {
+            status: 'aborted',
+            reason: 'assistant-message-not-persisted',
+          }
+        } catch {
+          return { status: 'failed' }
+        }
+      }
+
+      const isTerminalPartial =
+        Array.isArray(assistantMessageContent) &&
+        assistantMessageContent.some((part) =>
+          isTerminalPartialPersonalElementPart(part, 'generate_cards')
+        )
+      if (
+        isTerminalPartial ||
+        isFailedGenerationContent(assistantMessageContent)
+      ) {
+        try {
+          const aborted = await abortGenerationLease({
+            prisma,
+            participantId,
+            lease: currentLease,
+          })
+          lease = null
+          if (!aborted) return { status: 'lost' }
+          if (isTerminalPartial) {
+            const persisted = await persistTerminalPartialSettlement(
+              assistantMessageContent
+            )
+            return persisted ? { status: 'partial' } : { status: 'failed' }
+          }
+          return { status: 'aborted', reason: 'generation-failed' }
+        } catch {
+          return { status: 'failed' }
+        }
+      }
+
+      try {
+        const completed = await completeGenerationLease({
+          prisma,
+          participantId,
+          lease: currentLease,
+        })
+        lease = null
+        return { status: completed ? 'completed' : 'lost' }
+      } catch {
+        // A failed completion must not look successful. Release the lease when
+        // possible, but retain it until that durable cleanup attempt settles.
+        try {
+          await abortGenerationLease({
+            prisma,
+            participantId,
+            lease: currentLease,
+          })
+          lease = null
+        } catch {
+          // Leave the lease for its expiry when neither settlement nor cleanup
+          // reached the database. The route still fails closed below.
+        }
+        return { status: 'failed' }
+      }
+    })()
+    leaseSettlementPromise = settlementPromise
+    void settlementPromise.then(
+      () => {
+        if (leaseSettlementPromise === settlementPromise) {
+          leaseSettlementPromise = null
+        }
+        leaseSettlementDone = true
+      },
+      () => {
+        if (leaseSettlementPromise === settlementPromise) {
+          leaseSettlementPromise = null
+        }
+      }
+    )
+    return settlementPromise
+  }
+
+  return {
+    ok: true,
+    tools,
+    toolOrder,
+    instructions: systemPrompt,
+    prepareStep,
+    stopWhen,
+    telemetry: {
+      docQueryToolName: docQueryToolName ?? null,
+      retrievalRequired,
+      cardGenerationRequest,
+      personalToolsEligible,
+      cardGenerationEnabled,
+      generationEligible,
+    },
+    getNestedGenerationCost: () => nestedGenerationCost,
+    settleLease,
+    abortLease,
+  }
+}

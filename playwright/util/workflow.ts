@@ -356,6 +356,31 @@ export async function loginStudent(page: Page) {
   await loginStudentPassword(page, { username: env('STUDENT_USERNAME') })
 }
 
+export async function openLecturerPracticeElements(
+  page: Page,
+  courseName: string
+) {
+  await page.getByTestId('quizzes').click()
+  const course = page
+    .getByRole('heading', { name: courseName, exact: true })
+    .locator('..')
+  const lecturerElements = course.getByTestId(/^lecturer-elements-course-/)
+  await expect(lecturerElements).toBeVisible()
+  await lecturerElements.click()
+}
+
+export async function openPracticeQuizByName(page: Page, quizName: string) {
+  const quiz = await runTask('getPracticeQuizInfo', { quizName })
+  if (quiz === null) {
+    throw new Error(`Practice quiz not found: ${quizName}`)
+  }
+
+  await page.goto(
+    `${env('URL_STUDENT')}/course/${quiz.courseId}/practiceQuizzes/${quiz.id}`,
+    { waitUntil: 'commit' }
+  )
+}
+
 export async function loginStudentPassword(
   page: Page,
   { username }: { username: string }

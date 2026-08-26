@@ -24,6 +24,44 @@ tags:
 
 The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and production builds (`apps/chat/package.json:scripts`). Control, manage, and PWA production builds retain Webpack for service-worker compatibility. The chat production image copies the Next standalone server from `.next/standalone` and starts `apps/chat/server.js` (`apps/chat/Dockerfile`). Verify that path with a production build and container smoke test; a successful source build alone does not prove the runtime copy layout.
 
+## Participant-owned practice cards
+
+Each configured chatbot mode exposes the personal-card tools only when the
+chatbot has a `doc_query`-style MCP tool and the server-side
+`personal-card-generation` capability is enabled for the participant and
+chatbot. The flag defaults to false and a missing or unhealthy evaluator fails
+closed; saved-card listing, practice, revision, and removal remain available.
+Substantive requests force the retrieval tool before an answer; a narrow
+English/German social-message allowlist remains conversational. The plan tool
+is additionally gated by positive participant credits and can run only after
+retrieval in the current turn. The approval button sends a visible user
+message and a persisted plan/tool-call identifier; the route rechecks
+participant, thread, chatbot course, latest plan, credit, capability, and
+one-shot approval claim before forcing `generate_cards`.
+
+Each generation accepts at most five cards. Every generated card performs its
+own bounded retrieval and structured model call. Its cited chunk IDs must be a
+non-empty subset of that retrieval, and only bounded source metadata is
+persisted. A card that cannot be produced returns one of the bounded failure
+codes `retrieval_unavailable`, `insufficient_evidence`, or `generation_failed`;
+raw provider and retrieval diagnostics never cross the Chat API. The chat API
+joins saved state by
+assistant message, tool call, and candidate ID, so a frozen tool result never
+claims a card was saved. Cards are acted on individually: Save creates the
+participant-owned row, while Discard writes a
+`PersonalElementDiscard` keyed by participant, course, and candidate. That
+discard record is returned with the saved-state
+lookup and is checked again inside the serializable GraphQL save transaction,
+so a discarded card stays discarded across reloads and save/discard races.
+The discard route uses the same serializable service boundary and returns a
+conflict if the card was saved first.
+`list_personal_elements` returns the participant's course-scoped compact rows;
+`revise_personal_element` updates a saved row with an expected-version check
+and keeps the card's source-linked origin wording. Candidate cards do not have a
+separate unsaved-revision path; each generated card is either saved or
+discarded. The server-only GraphQL service is the single owner of
+authorization, caps, and revision semantics.
+
 Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/layout.tsx` validates the route parameter as a UUID before querying Prisma, then calls `notFound()` for malformed or absent chatbot IDs; the root `src/app/not-found.tsx` preserves the 404 status while showing branded recovery and a safe return link. The root `src/app/error.tsx` sits above the dynamic layout, uses Next's `unstable_retry` callback to refresh a failed server payload, and exposes only retry/return actions; it never renders the underlying error text. The loading state in `src/components/assistant.tsx` uses the same branded card/skeleton language, and `/noLogin` keeps only a concise return notice instead of printing the UUID-bearing redirect URL.
 
 ## Structure
@@ -575,12 +613,42 @@ switcher is hidden entirely when a chatbot exposes a single mode — `mode-switc
 
 ## Sources and citations
 
+### Student-generated card plans
+
+When a student asks for new cards, the Chat route loads every saved card title
+for that participant and course and passes that full title list to the server-side
+plan tool. The raw participant-controlled titles are not interpolated into the
+model prompt. `propose_card_plan` then applies a deterministic local title check
+before approval: normalized exact matches, abbreviation/expanded-title matches,
+multi-word subsets, and close character-gram matches at or above the 0.8
+threshold are potential duplicates. Such entries are removed from the proposed
+plan and shown as skipped; a plan containing only potential duplicates returns
+as a localized, non-approvable result so the model must propose new titles. The
+same check runs again when the student approves the plan, protecting against a
+card saved between proposal and approval. Approved plan titles are also used
+as the generated card names so the deduplication key cannot drift. This is
+intentionally title-only and local; it adds no embedding provider, ingestion
+change, or retrieved-text persistence.
+
+Generated card explanations are the card backs, so the generation schema and
+the personal-element save service require a substantive, alphanumeric answer
+and reject known provenance-only grounding boilerplate on both create and
+update. The model is instructed to write the substantive answer instead;
+preview and later practice therefore share the same persisted content. If a
+generation attempt is partial, saved or discarded plan entries remain decided
+and a retry runs only the unresolved entries.
+
 An answer's sources are **derived from the message's own tool-call parts**, not carried in a
 dedicated API field or database column ([ADR 0004](./adr/0004-chat-citations-from-tool-call-parts.md)).
 `src/lib/sources/normalizeSources.ts` is the single seam: everything downstream — the source
 cards, the inline `[n]` chips, the friendly activity chip, and the server-side prompt contract —
-keys off the same `isDocQueryToolName` predicate, so a tool the predicate misses silently loses
-all four at once.
+keys off the same tool-name predicates. Retrieval tools use `isDocQueryToolName`; the
+`generate_cards` tool contributes its bounded source metadata through the same normalizer, with a
+stable `candidate:<sourceId>:<chunkId>` key so card-local citations and
+the message source area resolve the same source. A tool the relevant predicate misses silently
+loses all four at once. The compact twelve-source display bound applies only
+to doc-query results; candidate citations retain the bounded generation
+registry so later cards do not lose their source chips.
 
 That predicate must tolerate MCP namespacing. `toSafeToolName` (`src/services/mcpClients.ts`)
 prefixes the server name and appends **8 hex characters of a sha256** when the namespaced name
@@ -599,10 +667,13 @@ long-name regression case lives in `test/mcp-clients.test.ts`.
 `CallToolResult` envelope (`{ content: [{ type: 'text', text: '<json>' }] }`), a JSON string, or
 an already-parsed object. FastMCP may put the JSON payload in a `structuredContent.result` string;
 the normalizer unwraps that compatibility layer before applying the same rules. It treats the
-pipeline's literal `"N/A"` as absent; it dedupes by file/page/url and normalized video range
-(`startSec`/`endSec`), so citations for different video ranges remain separate, then numbers what
-survives **1..N in first-appearance order across every doc_query call in one message**, capped at
-`MAX_SOURCES`. Two rules follow from that numbering and are easy to break independently:
+pipeline's literal `"N/A"` as absent; it dedupes retrieval results by file/page/url and normalized
+video range (`startSec`/`endSec`) and generated-card results by their source/chunk key, then
+numbers what survives **1..N in first-appearance order across every retrieval or card tool call in
+one message**. The compact doc-query registry is capped at `MAX_DOC_QUERY_SOURCES`, while the
+candidate-card registry has its own `MAX_CANDIDATE_SOURCES` bound. Both registries still share one
+contiguous message-level index. Two rules follow from that numbering and are easy to break
+independently:
 
 Chatbot MCP configs are optional unless their existing `parameters` JSON contains the reserved
 runtime policy `{ "required": true, "toolAlias": "<name>" }`. A strict config must allow exactly
