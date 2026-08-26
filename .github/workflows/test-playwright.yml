@@ -1,9 +1,9 @@
 name: Klicker automated testing with playwright
 on:
   push:
-    branches: ['v3', 'v3-*']
+    branches: ['v3', 'v3*']
   pull_request:
-    branches: ['v3', 'v3-*']
+    branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
