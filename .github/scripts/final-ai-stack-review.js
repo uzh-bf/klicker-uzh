@@ -688,8 +688,10 @@ async function initializeStackReview({ github, context }) {
     }
     return false
   }
-  const topSha = membership.topHeadSha
-  if (!topSha) {
+  const topShas = [membership.topHeadSha, membership.top?.head?.sha].filter(
+    (sha, index, shas) => validSha(sha) && shas.indexOf(sha) === index
+  )
+  if (topShas.length === 0) {
     if (/^[0-9a-f]{40}$/.test(pull.head?.sha ?? '')) {
       await setStackStatus({
         github,
@@ -703,14 +705,24 @@ async function initializeStackReview({ github, context }) {
     return false
   }
   const plan = stackPlan(membership, context)
+  if (!plan.eligible) {
+    for (const topSha of topShas) {
+      await setStackStatus({
+        github,
+        context,
+        sha: topSha,
+        state: 'error',
+        description: `Stack review unavailable: ${plan.reason}`.slice(0, 140),
+      })
+    }
+    return true
+  }
   await setStackStatus({
     github,
     context,
-    sha: topSha,
-    state: plan.eligible ? 'pending' : 'error',
-    description: plan.eligible
-      ? 'Manual Gemini stack review required for this verified stack'
-      : `Stack review unavailable: ${plan.reason}`.slice(0, 140),
+    sha: topShas[0],
+    state: 'pending',
+    description: 'Manual Gemini stack review required for this verified stack',
   })
   return true
 }

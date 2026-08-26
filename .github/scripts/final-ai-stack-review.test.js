@@ -349,6 +349,40 @@ test('rejects a native top record whose head differs from the fetched PR', async
   assert.equal(membership.topHeadSha, '0'.repeat(40))
 })
 
+test('invalidates both top identities when native stack data drifts', async () => {
+  const { github, pulls, state } = stackFixture()
+  const nativeTopSha = '0'.repeat(40)
+  github.request = async () => ({
+    data: [
+      {
+        id: 95,
+        pull_requests: [11, 12, 13, 14].map((number) => ({
+          number,
+          state: 'open',
+          draft: false,
+          head: { sha: number === 14 ? nativeTopSha : pulls[number].head.sha },
+        })),
+      },
+    ],
+  })
+  const eventContext = context(12)
+  eventContext.eventName = 'pull_request_target'
+  eventContext.payload.pull_request = pulls[12]
+
+  await initializeStackReview({ github, context: eventContext })
+
+  assert.deepEqual(
+    state.createdStatuses.map(({ sha, state: status }) => ({
+      sha,
+      state: status,
+    })),
+    [
+      { sha: nativeTopSha, state: 'error' },
+      { sha: pulls[14].head.sha, state: 'error' },
+    ]
+  )
+})
+
 test('rejects a native lower-layer record whose head differs from the fetched PR', async () => {
   const { github } = stackFixture()
   const heads = {
