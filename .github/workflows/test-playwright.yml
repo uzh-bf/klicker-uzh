@@ -134,6 +134,7 @@ jobs:
             packages/feature-flags/dist
             packages/grading/dist
             packages/graphql/dist
+            packages/graphql/src/public/client.json
             packages/hatchet/dist
             packages/knowledge-graph/dist
             packages/markdown/dist
@@ -276,6 +277,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: playwright-build-artifact
+
+      - name: Restore generated GraphQL client
+        run: |
+          mkdir -p packages/graphql/src/public
+          cp packages/graphql/dist/client.json packages/graphql/src/public/client.json
 
       - name: Restore Next build outputs
         run: tar -xf playwright-next-builds.tar

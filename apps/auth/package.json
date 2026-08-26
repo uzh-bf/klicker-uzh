@@ -1,6 +1,6 @@
 {
   "name": "@klicker-uzh/auth",
-  "version": "3.4.0-alpha.72",
+  "version": "3.4.0-alpha.73",
   "license": "AGPL-3.0",
   "dependencies": {
     "@auth/prisma-adapter": "2.11.2",
@@ -60,7 +60,8 @@
     "lint": "eslint .",
     "start": "next start --port 3010",
     "start:test": "cross-env NODE_ENV=test pnpm start",
-    "test:prisma-adapter": "pnpm --filter @klicker-uzh/util build && node scripts/testPrismaAdapter.mjs && node --experimental-strip-types scripts/testAssessmentIdentity.mts"
+    "test:prisma-adapter": "pnpm --filter @klicker-uzh/util build && node scripts/testPrismaAdapter.mjs && node --experimental-strip-types scripts/testAssessmentIdentity.mts",
+    "test:run": "node --experimental-strip-types scripts/testRedirect.mts"
   },
   "engines": {
     "node": "=24"

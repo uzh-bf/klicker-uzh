@@ -149,11 +149,15 @@ Every item, in order; paste evidence (command + tail of output, screenshots) int
 1. `pnpm run check:all` — typecheck + format + lint + syncpack + AGENTS.md validation + Prisma-sync validation (same as pre-commit hook). The Prisma package check regenerates its client before typechecking, so it is safe from a clean checkout.
 2. `pnpm run build` — same as pre-push hook; also refreshes generated artifacts.
 3. Targeted tests per the routing table above — quote failures exactly; never delete/weaken a test to pass.
-4. **Codegen artifacts committed** if any `.graphql` op or schema changed (`git status` must be clean after `pnpm --filter @klicker-uzh/graphql generate`).
+4. **Codegen verified** if any `.graphql` op or schema changed: run `pnpm --filter @klicker-uzh/graphql generate`, confirm the ignored typed documents and persisted-query maps exist, and confirm the tracked `packages/graphql/src/public/schema.graphql` has no unstaged generated diff.
 5. **i18n pair check** if UI text changed: the key exists in BOTH `packages/i18n/messages/de.ts` and `en.ts`.
 6. **Browser evidence for UI changes** — open the changed pages with `npx agent-browser@0.32.2` (never bare `agent-browser`), log in with delegated/test credentials (AGENTS.md), capture before/after screenshots. "The logic looks correct" does not count.
 
 For Hatchet deployment endpoint changes, render the target environment's Helm chart and inspect every generated `HATCHET_API_URL`. Separately confirm that the configured HTTP API service and the secret-backed gRPC host belong to the same active Hatchet installation. A connected worker validates only gRPC; it does not prove that programmatic scheduled runs can reach the HTTP API.
+
+For a staging source-branch or image-tag change, render the target environment's Helm chart from the exact branch ArgoCD will track and inspect every workload image tag. After an authorized sync, verify `Synced` and `Healthy` independently, then inspect non-ready pods for image-pull failures, restarts, and memory termination. A green image build or successful ArgoCD sync does not prove runtime readiness. See [CI & Deployment](../../../docs/ci-and-deployment.md#staging-promotion).
+
+For a Node ESM service that TypeScript emits without bundling, import the emitted module with Node after compilation. Source checks and Vitest can resolve package directories that the production Node ESM loader rejects. The student MCP package build includes this check for its Apollo-backed GraphQL client.
 
 For TypeScript or other compiler/toolchain upgrades, root `check:all` includes the Playwright compiler through its package `check` script. Also run `pnpm run build:test` and the Docs production build; those surfaces remain outside the root check. Use direct package `tsc --noEmit -p tsconfig.json` commands only to isolate a Playwright failure. When a check config extends a declaration-emitting config, verify the resolved compiler options: `noEmit` does not disable declaration portability analysis, so the check may also need explicit `declaration: false` and `declarationMap: false`. Incremental checks must use a different `tsBuildInfoFile` from the emitting build.
 

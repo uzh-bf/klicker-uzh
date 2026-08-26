@@ -28,9 +28,10 @@ const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
 const COURSE_DUPLICATION_PARTIAL_FAILURE_CODE =
   'COURSE_DUPLICATION_PARTIAL_FAILURE'
 const COURSE_DUPLICATION_STATUS_TTL_SECONDS = 24 * 60 * 60
-// Must exceed the worst legitimate retry chain: a 15-minute execution
-// timeout plus three retries with backoff leaves roughly an hour of
-// legitimate runtime before a job may be declared stale.
+// Pending Hatchet runs may wait up to 60 minutes for the task-local concurrency
+// slot. The extra 15 minutes allow cancellation and the five-minute sweep to
+// settle. A running attempt refreshes updatedAt when it starts and maintains a
+// heartbeat, so queue time cannot make live work stale.
 const COURSE_DUPLICATION_STALE_AFTER_MS = 75 * 60 * 1000
 const COURSE_DUPLICATION_PROCESS_LOCK_TTL_SECONDS = 60
 const COURSE_DUPLICATION_PROCESS_LOCK_RENEWAL_MS = 15 * 1000

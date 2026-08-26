@@ -484,7 +484,13 @@ export function prepareHatchetTasks({
     retries: 3,
     backoff: { factor: 60, maxSeconds: 120 },
     executionTimeout: '30m',
+    scheduleTimeout: '60m',
     defaultPriority: Priority.LOW,
+    concurrency: {
+      expression: "'course-duplication'",
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    },
     onEvents: ['process-course-duplication'],
     fn: async ({ jobId }: { jobId: string }, executionContext) => {
       const success = await handlers.handleProcessCourseDuplication(

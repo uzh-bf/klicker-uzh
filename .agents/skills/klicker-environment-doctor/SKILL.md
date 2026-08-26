@@ -25,14 +25,21 @@ Wrong major (e.g. 9.x from a stale Volta shim; `VOLTA_FEATURE_PNPM` unset) **sil
 
 ## Check 2 — install and build state
 
-| Symptom                                             | Fix                                                                            |
-| --------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `sh: run-p: command not found` (hooks fail)         | `pnpm install`                                                                 |
-| `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`        | `pnpm install --config.confirmModulesPurge=false`                              |
-| `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` under `CI=true` | restore lockfile (check 1), install without `CI=true`                          |
-| ~19 packages fail `pnpm run check`                  | `pnpm run build` once (generates Prisma client, codegen, dists), then re-check |
+| Symptom                                             | Fix                                                                                    |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `sh: run-p: command not found` (hooks fail)         | `pnpm install`                                                                         |
+| `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`        | `pnpm install --config.confirmModulesPurge=false`                                      |
+| `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` under `CI=true` | restore lockfile (check 1), install without `CI=true`                                  |
+| ~19 packages fail `pnpm run check`                  | `pnpm run build` once (generates Prisma client, GraphQL outputs, dists), then re-check |
 
 Healthy sequence from scratch inside the devcontainer: `pnpm install` → `pnpm run build` → `pnpm run check` (verified ~20s / ~1.5min / clean). The root build script forces `NODE_ENV=production`, including when the devcontainer exports `NODE_ENV=development` for its live apps. A production build can replace Next.js dev output; run `devrouter ensure .` afterward so the exact checkout runtime is health-checked and recovered when needed.
+
+Managed DevPods share only the pnpm content store through the external Docker
+volume `klicker-uzh-pnpm-store-v1`, mounted at `/pnpm/.pnpm-store`.
+`.devcontainer/initialize.sh` creates it before Compose. Each worktree retains
+its own `node_modules`, `.next`, and PostgreSQL volumes. Inspect the cache with
+`docker volume inspect klicker-uzh-pnpm-store-v1`; do not remove it while any
+Klicker DevPod is running, and never substitute broad Docker pruning.
 
 ## Check 3 — stale GraphQL codegen
 
@@ -40,8 +47,15 @@ Symptoms: typecheck can't find a `*Document`, or a running backend rejects an op
 
 ```bash
 pnpm --filter @klicker-uzh/graphql generate
-git status   # regenerated src/ops.ts + src/public/*.json MUST be committed with the change
+test -f packages/graphql/src/ops.ts
+test -f packages/graphql/src/public/client.json
+test -f packages/graphql/src/public/server.json
+git diff --exit-code -- packages/graphql/src/public/schema.graphql
 ```
+
+The typed documents and persisted-query maps are ignored build outputs. A
+package build regenerates them before Rollup; only the public SDL snapshot is
+tracked for review and GraphQL tooling.
 
 ## Check 4 — stale Prisma schema sync
 
@@ -72,6 +86,10 @@ devrouter exec . -- tail -n 50 /tmp/dev.log
 ```
 
 `devrouter ensure` delivers its matching process helper to the exact validated container. Released `0.0.35` fingerprints the workspace, command, adapter bytes, and declared non-secret origin allowlist. The helper replaces a stale owned process group and leaves unknown processes untouched. Host-side ensure checks all eleven routes, including Blob Storage, and can recreate one stale or unhealthy exact-path DevPod once.
+
+Ordinary managed restarts preserve the worktree's `.next/dev` caches. Only the
+confirmed stale-route signature requests one full `.next` removal for the exact
+affected app, and symlinked cache targets fail closed.
 
 `devrouter doctor --repo .` provides static diagnostics. `devrouter ensure .` resolves the checkout-specific overlay and is the authoritative runtime proof.
 

@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-08-25'
+timestamp: '2026-08-26'
 tags:
   - ci
   - deployment
@@ -71,6 +71,7 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 - **prd** (`*.klicker.uzh.ch`): pinned version tags, `replicaCount: 2` for web/API services.
 - **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names. GrowthBook-ready Node workloads also reference the optional shared `<rendered-chart-fullname>-secret-growthbook`, which supplies only `GROWTHBOOK_API_HOST` and the server SDK `GROWTHBOOK_CLIENT_KEY`; `GROWTHBOOK_ENV` comes from the global ConfigMap. Separately, only the primary GraphQL backend references optional `<rendered-chart-fullname>-secret-growthbook-management`, containing `GROWTHBOOK_MANAGEMENT_API_URL` and `GROWTHBOOK_MANAGEMENT_API_KEY`, which back the lecturer beta opt-in; its non-secret `GROWTHBOOK_BETA_SAVED_GROUP_ID` comes from the backend ConfigMap instead. The optional references preserve startup before provisioning. Do not place the write-capable management key in the shared evaluator Secret.
 - **Hatchet endpoint pair**: `hatchet.client.apiUrl` in the environment values renders `HATCHET_API_URL`, while the external secret supplies `HATCHET_CLIENT_HOST_PORT`. They must resolve to the same Hatchet installation; worker health alone does not validate programmatic schedule creation over the HTTP API. Staging uses `app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080`, and production uses `app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080` (see [Async & Workers](./async-and-workers.md)).
+- **Hatchet general-worker resources**: staging and production set a `2Gi` memory limit on the general worker because it executes course duplication. The response-processor deployments retain their lower, independent limits.
 - **Rollout strategy**: use `RollingUpdate` in prd values; `Recreate` can leave a service with zero endpoints during slow image pulls (PDBs don't protect against Deployment-driven scale-downs). `maxUnavailable: 0` only for singletons.
 - `deploy/compose*` are v2-era self-hoster examples; `deploy/scripts/rollout.sh` is a legacy manual `kubectl rollout restart`.
 - **KB graph builds couple two values**: `hatchet.kbGraph.workflowName` and `backendGraphql.knowledgeGraph.host` must be set together, or the chart stops at render time with an explicit `fail`.
@@ -96,6 +97,7 @@ The `rollout.klicker.uzh.ch/release` annotation exists to break that tie: it lan
 Operational notes.
 
 - Set the repository variable `STG_SOURCE_BRANCH` to select the active supported `v3*` branch; it falls back to `v3` when unset. Set it explicitly to `v3-ai` for the current staging source. A new successful image build on that branch triggers reconciliation. If the selected commit is already built and no new push will occur, also dispatch this promoter with that commit SHA and `dry_run=false`. The branch name must be a Docker-safe image tag because the build workflows publish branch-name tags.
+- **Direct-source caveat:** the promoter always checks out and writes `v3`. If the external ArgoCD `Application` temporarily targets `v3-ai` directly, promotion commits on `v3` do not change the live manifests. Before changing `targetRevision`, render the staging chart from the branch ArgoCD will track and verify all workload image tags use that branch. After the sync, require both `Synced` and `Healthy`; a successful sync alone can still leave workloads in `ImagePullBackOff` or `OOMKilled`.
 - It needs `secrets.STG_PROMOTE_TOKEN`, an **admin-owned PAT** with `contents: write` + `pull-requests: write`. Two independent reasons it cannot be the default `GITHUB_TOKEN` or a plain App token: a PR opened with `GITHUB_TOKEN` does not trigger workflows, so its required checks never report and auto-merge never fires; and `v3`'s push restrictions carry an _empty_ user/team/app allowlist, which only repository admins bypass.
 - Two settings outside this repo are load-bearing. `squash_merge_commit_title` must stay `PR_TITLE`, or the `[skip ci]` marker never reaches the squash commit and every promotion rebuilds all 13 images. The workflow does not rely on it alone — the guard also refuses to promote any commit whose subject starts with `chore(deploy): promote ` — but the belt is worth keeping. Auto-merge must be enabled on the repository.
 - The annotation records which commit _triggered_ the rollout, not which bits are in the image: two merges minutes apart cancel the first build (`cancel-in-progress: true`) and the selected source tag then holds the later images. Immutable per-commit tags are the fix if that ever matters.
