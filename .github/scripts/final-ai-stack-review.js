@@ -688,7 +688,7 @@ async function initializeStackReview({ github, context }) {
     }
     return false
   }
-  const topShas = [membership.topHeadSha, membership.top?.head?.sha].filter(
+  const topShas = [membership.top?.head?.sha, membership.topHeadSha].filter(
     (sha, index, shas) => validSha(sha) && shas.indexOf(sha) === index
   )
   if (topShas.length === 0) {
@@ -706,15 +706,21 @@ async function initializeStackReview({ github, context }) {
   }
   const plan = stackPlan(membership, context)
   if (!plan.eligible) {
+    let firstError
     for (const topSha of topShas) {
-      await setStackStatus({
-        github,
-        context,
-        sha: topSha,
-        state: 'error',
-        description: `Stack review unavailable: ${plan.reason}`.slice(0, 140),
-      })
+      try {
+        await setStackStatus({
+          github,
+          context,
+          sha: topSha,
+          state: 'error',
+          description: `Stack review unavailable: ${plan.reason}`.slice(0, 140),
+        })
+      } catch (error) {
+        firstError ??= error
+      }
     }
+    if (firstError) throw firstError
     return true
   }
   await setStackStatus({

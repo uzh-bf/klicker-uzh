@@ -19,13 +19,16 @@ function stackId(value) {
 }
 
 function stackRecordIsValid(record) {
+  return stackRecordShapeIsValid(record) && stackRecordHeadSha(record) !== ''
+}
+
+function stackRecordShapeIsValid(record) {
   return (
     record &&
     Number.isSafeInteger(record.number) &&
     record.number > 0 &&
     typeof record.state === 'string' &&
-    typeof record.draft === 'boolean' &&
-    stackRecordHeadSha(record) !== ''
+    typeof record.draft === 'boolean'
   )
 }
 
@@ -113,7 +116,7 @@ async function resolveNativeStackMembership({
       !stackId(stack?.id) ||
       !Array.isArray(stack.pull_requests) ||
       stack.pull_requests.length === 0 ||
-      !stack.pull_requests.every(stackRecordIsValid)
+      !stack.pull_requests.every(stackRecordShapeIsValid)
     ) {
       return {
         valid: false,
@@ -171,6 +174,9 @@ async function resolveNativeStackMembership({
       reasons.push(
         `stack member ${record.number} is not open and ready in the repository`
       )
+    }
+    if (!stackRecordIsValid(record)) {
+      reasons.push(`stack member ${record.number} has a malformed head SHA`)
     }
   }
 
