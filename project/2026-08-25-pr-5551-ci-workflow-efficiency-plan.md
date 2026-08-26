@@ -37,9 +37,10 @@
 - Branch: `rs/ci-workflow-efficiency-cleanup` for the follow-up cutover.
 - Worktree: `trees/ci-workflow-efficiency`.
 - Target: current `origin/v3` at
-  `7f628ab56a71f22fa93fb6dd340dd9b3dcee65e3`, including merged [PR
+  `861afd19383412a7338f491de46ad4ce3b761750`, including merged [PR
   #5446](https://github.com/uzh-bf/klicker-uzh/pull/5446)'s Playwright timing and
-  eight-shard changes plus the latest staging promotion commit.
+  eight-shard changes plus the latest staging promotion and devcontainer-cache
+  commits.
 - Pull request: [#5551](https://github.com/uzh-bf/klicker-uzh/pull/5551) was
   squash-merged externally before the planned cleanup; follow-up draft
   [#5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) contains the cutover.
@@ -209,8 +210,8 @@ Do not delete a workflow if any readback differs from the expected set.
 ## Progress
 
 - Status: branch is synced with current `origin/v3` through normal merge commit
-  `b74b0b2ea`; [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) needs
-  this refreshed head pushed and its exact-head checks before it can be marked
+  `905dbadc1a`; [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) needs
+  this latest head pushed and its exact-head checks before it can be marked
   ready.
 - Completed: plan commit and post-commit freshness check; replacement workflow
   implementation; Actions audit, validation, and discovery; exact Node 24
@@ -227,14 +228,13 @@ Do not delete a workflow if any readback differs from the expected set.
   [PR #5446](https://github.com/uzh-bf/klicker-uzh/pull/5446) at `cd5cfd574`;
   its exact-head Playwright run `32919404126` passed the filter, build, all
   eight shards, and `test-playwright-status`. The branch preserves that
-  baseline and the subsequent `v3` release, generated-artifact, and staging
-  promotion commits through merge commit `b74b0b2ea`. Current exact synced-head local
-  verification passes `check:all` (7/7 orchestration tasks, 25/25 checks)
-  under the pinned Node 24 and pnpm 11.5 toolchain. An explicit full-build
-  repeat on `f9bbc745b` was stopped after GraphQL Rollup remained idle for over
-  13 minutes; the preceding branch head `74cf2bd21` had passed the full build
-  with 23/23 tasks.
-- Remaining: push the refreshed [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553)
+  baseline and all subsequent `v3` commits through normal merge commit
+  `905dbadc1a`. Current exact synced-head local verification passes `check:all`
+  (7/7 orchestration tasks, 25/25 checks) under the pinned Node 24 and pnpm
+  11.5 toolchain. The latest normal push hook also passed the full build with
+  23/23 tasks. An earlier standalone full-build repeat was stopped after
+  GraphQL Rollup remained idle for over 13 minutes.
+- Remaining: push the latest synced [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553)
   head, update its synced-base evidence, run fresh exact-head hosted checks, and
   mark it ready if all required contexts pass. Merge remains withheld.
 - Follow-up verification: the safe Actions audit, syntax validation, and job
@@ -247,10 +247,10 @@ Do not delete a workflow if any readback differs from the expected set.
   the repository's current `profiles` configuration, so this cleanup uses the
   narrow pinned-toolchain fallback rather than modifying host tooling.
 - The full `pnpm run check:all` hook passes under Node 24 and pnpm 11.5 after
-  restoring dependencies from the unchanged frozen lockfile. Earlier branch
-  verification passed the normal pre-push build with 23/23 tasks. The current
+  restoring dependencies from the unchanged frozen lockfile. The latest normal
+  push hook passed the pre-push build with 23/23 tasks. An earlier standalone
   repeat was stopped after GraphQL Rollup remained idle for over 13 minutes;
-  this is recorded as a local verification gap for the hosted build gate. The
+  this is retained as diagnostic history, not as the current build result. The
   integrated final reviewer found no change-introduced issue and confirmed
   that `test-unit` should not trigger on changes to the composite changed-path
   action it no longer consumes.
@@ -263,7 +263,7 @@ Do not delete a workflow if any readback differs from the expected set.
 
 ## Next Steps
 
-- Push the current synced branch, refresh the PR description against
+- Push the latest synced branch, refresh the PR description against
   `origin/v3`, and wait for all required exact-head contexts.
 - Mark [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) ready
   once the final hosted checks and review state remain green.
