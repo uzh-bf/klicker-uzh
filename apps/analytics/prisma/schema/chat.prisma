@@ -50,6 +50,15 @@ enum ResponseExampleStatus {
   REJECTED
 }
 
+enum ResponseExampleStyle {
+  GUIDED_QUESTIONS
+  STEP_BY_STEP_EXPLANATION
+  CONCISE_ANSWER
+  CLARIFYING_QUESTION
+  WORKED_EXAMPLE
+  COMPARE_OPTIONS
+}
+
 model ChatUsageCredits {
   total   Decimal @default(0) @db.Decimal(18, 6)
   current Decimal @default(0) @db.Decimal(18, 6)
@@ -235,22 +244,21 @@ model ResponseExample {
   set   ResponseExampleSet @relation(fields: [setId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   setId String             @db.Uuid
 
-  chatMode       String
-  locale         String
-  studentTurn    String @db.Text
-  idealResponse  String @db.Text
-  behaviorTag    String
-  status         ResponseExampleStatus @default(CANDIDATE)
-  reviewedById   String? @db.Uuid
-  reviewedAt     DateTime?
+  chatMode        String
+  studentMessage  String                @db.Text
+  referenceAnswer String                @db.Text
+  responseStyle   ResponseExampleStyle
+  status          ResponseExampleStatus @default(CANDIDATE)
+  reviewedById    String?               @db.Uuid
+  reviewedAt      DateTime?
 
   evidenceReferences ResponseExampleEvidenceReference[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([setId, chatMode, locale, studentTurn])
-  @@index([setId, chatMode, locale, status])
+  @@unique([setId, chatMode, studentMessage], map: "ResponseExample_set_mode_question_key")
+  @@index([setId, chatMode, status], map: "ResponseExample_set_mode_status_idx")
 }
 
 model ResponseExampleEvidenceReference {
@@ -262,13 +270,15 @@ model ResponseExampleEvidenceReference {
   sourceId         String
   chunkId          String
   contentHash      String
-  citationAnchor   String @db.Text
+  citationIndex    Int
+  citationAnchor   String  @db.Text
   evidenceEligible Boolean @default(false)
 
   createdAt DateTime @default(now())
 
-  @@unique([responseExampleId, sourceId, chunkId, contentHash, citationAnchor])
-  @@index([responseExampleId])
+  @@unique([responseExampleId, citationIndex], map: "ResponseExampleEvidence_citationIndex_key")
+  @@unique([responseExampleId, sourceId, chunkId, contentHash, citationAnchor], map: "ResponseExampleEvidence_source_key")
+  @@index([responseExampleId], map: "ResponseExampleEvidence_responseExampleId_idx")
 }
 
 model ChatbotMCPServer {

@@ -17,6 +17,7 @@ import { unified } from 'unified'
 import ImgWithModal from './ImgWithModal.js'
 import { VideoEmbed } from './VideoEmbed.js'
 import { parseVideoEmbedUrl } from './VideoEmbedUrl.js'
+import { normalizeMarkdownContent } from './citations.js'
 
 export interface MarkdownProps {
   className?: {
@@ -63,19 +64,7 @@ function Markdown({
       return content
     }
     try {
-      const contentUnescaped = content
-        .replace(
-          /&amp;|&lt;|&gt;|&#39;|&quot;/g,
-          (tag) =>
-            ({
-              '&amp;': '&',
-              '&lt;': '<',
-              '&gt;': '>',
-              '&#39;': "'",
-              '&quot;': '"',
-            })[tag] || tag
-        )
-        .replace(/<br>/g, '&nbsp;')
+      const contentUnescaped = normalizeMarkdownContent(content)
 
       return (
         unified()

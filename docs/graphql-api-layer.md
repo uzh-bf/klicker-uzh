@@ -159,6 +159,16 @@ or reject the current row, then recompute the set digest. Client operations are
 `QGetChatbotResponseExamples`, `MApproveResponseExample`,
 `MEditAndApproveResponseExample`, and `MRejectResponseExample`.
 
+The response payload exposes the chatbot's available `chatModes`, the
+`studentMessage`, Markdown `referenceAnswer`, and `responseStyle` for each
+example. It also exposes server-computed action flags and
+`hasCompleteEligibleCitationParity`; approval requires every cited index to
+have an eligible lineage row. Edit-and-approve requires the row's
+`expectedUpdatedAt` value, so stale lecturer forms fail with a coded conflict
+instead of overwriting a newer edit. The shared citation parser lives in
+`@klicker-uzh/markdown/citations` and follows the renderer's Markdown AST
+semantics, including exclusions for code, links, math, and HTML.
+
 ## Subscriptions
 
 Field filters over the shared pubSub: `schema/subscription.ts:feedbackCreated` pipes `ctx.pubSub.subscribe('feedbackCreated')` through a `liveQuizId` filter; the publishing side is a service (`services/feedbacks.ts`). Frontends consume via `subscribeToMore` with the generated `S*Document`.

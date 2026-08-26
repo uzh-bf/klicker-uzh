@@ -6,7 +6,7 @@ import copy from 'rollup-plugin-copy'
 const config = defineConfig([
   {
     // Main build configuration
-    input: ['src/index.ts'],
+    input: ['src/index.ts', 'src/citations.ts'],
     output: {
       dir: 'dist',
       format: 'esm',

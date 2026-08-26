@@ -1828,6 +1828,9 @@ importers:
       '@klicker-uzh/knowledge-graph':
         specifier: workspace:*
         version: link:../knowledge-graph
+      '@klicker-uzh/markdown':
+        specifier: workspace:*
+        version: link:../markdown
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma

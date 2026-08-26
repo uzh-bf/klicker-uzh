@@ -1,18 +1,18 @@
 mutation EditAndApproveResponseExample(
   $id: String!
   $chatMode: String!
-  $locale: String!
-  $studentTurn: String!
-  $idealResponse: String!
-  $behaviorTag: String!
+  $studentMessage: String!
+  $referenceAnswer: String!
+  $responseStyle: ResponseExampleStyle!
+  $expectedUpdatedAt: Date!
 ) {
   editAndApproveResponseExample(
     id: $id
     chatMode: $chatMode
-    locale: $locale
-    studentTurn: $studentTurn
-    idealResponse: $idealResponse
-    behaviorTag: $behaviorTag
+    studentMessage: $studentMessage
+    referenceAnswer: $referenceAnswer
+    responseStyle: $responseStyle
+    expectedUpdatedAt: $expectedUpdatedAt
   ) {
     ...ResponseExampleSetData
   }

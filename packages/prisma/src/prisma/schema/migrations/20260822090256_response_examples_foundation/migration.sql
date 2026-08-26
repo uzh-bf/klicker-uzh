@@ -1,6 +1,9 @@
 -- CreateEnum
 CREATE TYPE "ResponseExampleStatus" AS ENUM ('CANDIDATE', 'APPROVED', 'NEEDS_REVIEW', 'REJECTED');
 
+-- CreateEnum
+CREATE TYPE "ResponseExampleStyle" AS ENUM ('GUIDED_QUESTIONS', 'STEP_BY_STEP_EXPLANATION', 'CONCISE_ANSWER', 'CLARIFYING_QUESTION', 'WORKED_EXAMPLE', 'COMPARE_OPTIONS');
+
 -- CreateTable
 CREATE TABLE "ResponseExampleSet" (
     "id" UUID NOT NULL,
@@ -17,10 +20,9 @@ CREATE TABLE "ResponseExample" (
     "id" UUID NOT NULL,
     "setId" UUID NOT NULL,
     "chatMode" TEXT NOT NULL,
-    "locale" TEXT NOT NULL,
-    "studentTurn" TEXT NOT NULL,
-    "idealResponse" TEXT NOT NULL,
-    "behaviorTag" TEXT NOT NULL,
+    "studentMessage" TEXT NOT NULL,
+    "referenceAnswer" TEXT NOT NULL,
+    "responseStyle" "ResponseExampleStyle" NOT NULL,
     "status" "ResponseExampleStatus" NOT NULL DEFAULT 'CANDIDATE',
     "reviewedById" UUID,
     "reviewedAt" TIMESTAMP(3),
@@ -37,6 +39,7 @@ CREATE TABLE "ResponseExampleEvidenceReference" (
     "sourceId" TEXT NOT NULL,
     "chunkId" TEXT NOT NULL,
     "contentHash" TEXT NOT NULL,
+    "citationIndex" INTEGER NOT NULL,
     "citationAnchor" TEXT NOT NULL,
     "evidenceEligible" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -48,16 +51,19 @@ CREATE TABLE "ResponseExampleEvidenceReference" (
 CREATE UNIQUE INDEX "ResponseExampleSet_chatbotId_key" ON "ResponseExampleSet"("chatbotId");
 
 -- CreateIndex
-CREATE INDEX "ResponseExample_setId_chatMode_locale_status_idx" ON "ResponseExample"("setId", "chatMode", "locale", "status");
+CREATE INDEX "ResponseExample_set_mode_status_idx" ON "ResponseExample"("setId", "chatMode", "status");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ResponseExample_setId_chatMode_locale_studentTurn_key" ON "ResponseExample"("setId", "chatMode", "locale", "studentTurn");
+CREATE UNIQUE INDEX "ResponseExample_set_mode_question_key" ON "ResponseExample"("setId", "chatMode", "studentMessage");
 
 -- CreateIndex
-CREATE INDEX "ResponseExampleEvidenceReference_responseExampleId_idx" ON "ResponseExampleEvidenceReference"("responseExampleId");
+CREATE INDEX "ResponseExampleEvidence_responseExampleId_idx" ON "ResponseExampleEvidenceReference"("responseExampleId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ResponseExampleEvidenceReference_responseExampleId_sourceId_key" ON "ResponseExampleEvidenceReference"("responseExampleId", "sourceId", "chunkId", "contentHash", "citationAnchor");
+CREATE UNIQUE INDEX "ResponseExampleEvidence_citationIndex_key" ON "ResponseExampleEvidenceReference"("responseExampleId", "citationIndex");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ResponseExampleEvidence_source_key" ON "ResponseExampleEvidenceReference"("responseExampleId", "sourceId", "chunkId", "contentHash", "citationAnchor");
 
 -- AddForeignKey
 ALTER TABLE "ResponseExampleSet" ADD CONSTRAINT "ResponseExampleSet_chatbotId_fkey" FOREIGN KEY ("chatbotId") REFERENCES "Chatbot"("id") ON DELETE CASCADE ON UPDATE CASCADE;

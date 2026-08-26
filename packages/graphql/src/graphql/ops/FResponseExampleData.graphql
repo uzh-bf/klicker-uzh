@@ -4,6 +4,7 @@ fragment ResponseExampleEvidenceReferenceData on ResponseExampleEvidenceReferenc
   sourceId
   chunkId
   contentHash
+  citationIndex
   citationAnchor
   evidenceEligible
   createdAt
@@ -13,11 +14,14 @@ fragment ResponseExampleData on ResponseExample {
   id
   setId
   chatMode
-  locale
-  studentTurn
-  idealResponse
-  behaviorTag
+  studentMessage
+  referenceAnswer
+  responseStyle
   status
+  canApprove
+  canEditAndApprove
+  canReject
+  hasCompleteEligibleCitationParity
   reviewedById
   reviewedAt
   evidenceReferences {
@@ -31,6 +35,7 @@ fragment ResponseExampleSetData on ResponseExampleSet {
   id
   chatbotId
   digest
+  chatModes
   examples {
     ...ResponseExampleData
   }

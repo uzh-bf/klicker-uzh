@@ -441,7 +441,7 @@ Neither follow-up is authorized by this plan.
 
 ## Progress
 
-- Status: executing K1 after completed S0 stack recovery under approved Gate 1
+- Status: K1 foundation correction committed locally; awaiting required risk review and Gate 2 user acceptance before K2
 - Completed: external review analysis; focused correction scope; fresh Git,
   GitHub PR, GitHub stack, sibling-worktree, and local-stack evidence; planning
   specialist review; complete correction plan; local stack tracking repair;
@@ -452,10 +452,22 @@ Neither follow-up is authorized by this plan.
 - Pre-correction published heads: K1
   `eef688e0fa4b4d34ad00a02f1d8a65509d5c7189`; K2
   `3d54fbdbee5378212e65ff97bccf6dbc87f8ceba`
-- Rebased local heads: K1 `ec254bea755bfa3a3d9a93b760aa9ad715643444`;
+- Rebased local heads before correction: K1 `ec254bea755bfa3a3d9a93b760aa9ad715643444`;
   K2 `3b54dfb36cf747f4063341ea1bc85e4ade6aa67d`
-- Active slice: K1 foundation contract correction
-- Next: commit this plan as K1's first new content commit, then implement the
-  one-migration schema/API/parser correction and run the K1 evidence gate
-- Delivery pending: K2 Gate 2 acceptance, corrected branch push, PR updates,
+- Corrected local K1 head: `a10c6f50c` (`fix(chatbot): harden response-example review contract`)
+- Active slice: K1 Gate 2 evidence and risk review
+- Plan commit: `c525e6c60 docs(project): plan response-example review corrections`
+- K1 evidence: focused Markdown citation tests pass, including 100,000 unmatched
+  brackets; focused response-example GraphQL service tests pass; Markdown and
+  GraphQL package checks pass; Prisma schema validation passes; generated GraphQL
+  artifacts are current; the database migration status is up to date in the
+  task runtime. The root pre-commit hook passes after rebuilding workspace
+  declarations; Node 26 emits the repository's existing Node 24 engine warning.
+- Review continuity: configured K1 specialist routes failed before launch with
+  `unreadable_encrypted_agent_task`; a documented native fallback review is
+  running over the immutable K1 range at
+  `project/_local/reviews/2026-08-26-k1-simplifier-fallback.md`.
+- Next: complete the K1 risk review, update the immutable Gate 2 evidence, and
+  ask the user to accept or reject the K1 evidence before starting K2.
+- Delivery pending: K1 Gate 2 acceptance, K2 correction, corrected branch push, PR updates,
   corrected-head CI, merge, deployment, runtime activation, K3, and Test & Teach

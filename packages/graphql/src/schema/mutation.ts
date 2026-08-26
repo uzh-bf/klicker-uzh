@@ -107,7 +107,7 @@ import {
   Chatbot,
   ChatbotReasoningConfigInput,
 } from './resource.js'
-import { ResponseExampleSet } from './responseExample.js'
+import { ResponseExampleSet, ResponseExampleStyle } from './responseExample.js'
 import {
   ActivityLogEntry,
   CatalogCollection,
@@ -1603,10 +1603,10 @@ export const Mutation = builder.mutationType({
         args: {
           id: t.arg.string({ required: true }),
           chatMode: t.arg.string({ required: true }),
-          locale: t.arg.string({ required: true }),
-          studentTurn: t.arg.string({ required: true }),
-          idealResponse: t.arg.string({ required: true }),
-          behaviorTag: t.arg.string({ required: true }),
+          studentMessage: t.arg.string({ required: true }),
+          referenceAnswer: t.arg.string({ required: true }),
+          responseStyle: t.arg({ type: ResponseExampleStyle, required: true }),
+          expectedUpdatedAt: t.arg({ type: 'Date', required: true }),
         },
         resolve: async (_, args, ctx) => {
           return await ResponseExamplesService.editAndApproveResponseExample(

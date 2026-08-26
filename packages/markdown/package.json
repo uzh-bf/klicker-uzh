@@ -65,6 +65,16 @@
   "volta": {
     "extends": "../../package.json"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./citations": {
+      "types": "./dist/citations.d.ts",
+      "default": "./dist/citations.js"
+    }
+  },
   "size-limit": [
     {
       "path": "dist/index.js",

@@ -2497,6 +2497,7 @@ type Mutation {
   applyElementBatchOperations(archive: Boolean!, basePoints: Boolean, elementIds: [Int!]!, multiplier: Int, status: ElementStatus, unarchive: Boolean!, updateInstances: Boolean!, updateTemplateInstances: Boolean!): Int!
   approveChatbotPublication(id: String!): Chatbot
   approveObjectSharingRequest(permissionLevel: PermissionLevel!, propagation: Boolean!, requestId: Int!, userId: String!): Boolean!
+  approveResponseExample(id: String!): ResponseExampleSet
   attachKbToChatbot(chatbotId: ID!, kbId: ID!): KBChatbotBinding!
   bookmarkElementStack(bookmarked: Boolean!, courseId: String!, stackId: Int!): [Int!]
   cancelLiveQuiz(id: String!): LiveQuiz
@@ -2564,6 +2565,7 @@ type Mutation {
   duplicateAnswerCollection(id: Int!): AnswerCollection
   duplicateGeneratedElementDraft(input: GeneratedElementDraftInput!): GeneratedElementDraft!
   editActivityTemplate(activityId: String!, activityType: ActivityType!, description: String!, instructions: String!, name: String!, templateId: String!): Boolean!
+  editAndApproveResponseExample(chatMode: String!, expectedUpdatedAt: Date!, id: String!, referenceAnswer: String!, responseStyle: ResponseExampleStyle!, studentMessage: String!): ResponseExampleSet
   editAnswerCollectionEntry(collectionId: Int!, id: Int!, value: String!): AnswerCollectionEntry
   editGroupActivity(clues: [GroupActivityClueInput!]!, courseId: String!, description: String, displayName: String!, endDate: Date!, id: String!, multiplier: Int!, name: String!, stack: ElementStackInput!, startDate: Date!): ActivityInfo
   editLiveQuiz(blocks: [ElementBlockInput!]!, courseId: String, defaultCorrectPoints: Int, defaultPoints: Int, description: String, displayName: String!, id: String!, isConfusionFeedbackEnabled: Boolean!, isGamificationEnabled: Boolean!, isLiveQAEnabled: Boolean!, isModerationEnabled: Boolean!, isPinProtected: Boolean!, maxBonusPoints: Int, multiplier: Int!, name: String!, timeToZeroBonus: Int): ActivityInfo
@@ -2622,6 +2624,7 @@ type Mutation {
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
   rebuildKbKnowledgeGraph(kbId: ID!, qualityTier: KBGraphQualityTier): KBKnowledgeGraphConfig!
   rejectChatbotPublication(comment: String!, id: String!): Chatbot
+  rejectResponseExample(id: String!): ResponseExampleSet
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
   removeObject(objectId: String!, objectType: ObjectType!): String
   removeUserFromGroup(groupId: Int!, userId: String!): Boolean!
@@ -3162,6 +3165,7 @@ type Query {
   getCatalogSharingRequests: [ObjectSharingRequest!]
   getChatAccountUsage(ownerId: String): ChatAccountUsageOverview
   getChatModelRegistry: [ChatModelCapability!]!
+  getChatbotResponseExamples(chatbotId: String!): ResponseExampleSet
   getChatbotsInfo: [Chatbot!]
   getCourseActivities(courseId: String!): Course
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
@@ -3289,6 +3293,63 @@ enum ResponseCorrectnessType {
   CORRECT
   INCORRECT
   PARTIAL
+}
+
+type ResponseExample {
+  canApprove: Boolean!
+  canEditAndApprove: Boolean!
+  canReject: Boolean!
+  chatMode: String!
+  createdAt: Date!
+  evidenceReferences: [ResponseExampleEvidenceReference!]!
+  hasCompleteEligibleCitationParity: Boolean!
+  id: ID!
+  referenceAnswer: String!
+  responseStyle: ResponseExampleStyle!
+  reviewedAt: Date
+  reviewedById: ID
+  setId: ID!
+  status: ResponseExampleStatus!
+  studentMessage: String!
+  updatedAt: Date!
+}
+
+type ResponseExampleEvidenceReference {
+  chunkId: String!
+  citationAnchor: String!
+  citationIndex: Int!
+  contentHash: String!
+  createdAt: Date!
+  evidenceEligible: Boolean!
+  id: ID!
+  responseExampleId: ID!
+  sourceId: String!
+}
+
+type ResponseExampleSet {
+  chatModes: [String!]!
+  chatbotId: ID!
+  createdAt: Date!
+  digest: String!
+  examples: [ResponseExample!]!
+  id: ID!
+  updatedAt: Date!
+}
+
+enum ResponseExampleStatus {
+  APPROVED
+  CANDIDATE
+  NEEDS_REVIEW
+  REJECTED
+}
+
+enum ResponseExampleStyle {
+  CLARIFYING_QUESTION
+  COMPARE_OPTIONS
+  CONCISE_ANSWER
+  GUIDED_QUESTIONS
+  STEP_BY_STEP_EXPLANATION
+  WORKED_EXAMPLE
 }
 
 input ResponseInput {

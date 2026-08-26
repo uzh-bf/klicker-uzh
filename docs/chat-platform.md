@@ -38,7 +38,9 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 - `src/lib/sources/` — the doc_query source normalizer (`normalizeSources.ts`) and the display helpers shared by cards and citation previews (`sourceDisplay.ts`).
 - `src/components/source-preview-content.tsx` — the shared title, locator, excerpt, and optional navigation hint rendered inside source and citation tooltips.
 - `src/lib/config/` — shared vocabulary and prompt configuration: chat modes, reasoning efforts, MCP tool-name matching, starter suggestions, models, prompts, allowed tools.
-- `src/lib/markdown/remarkCitationMarkers.ts` — the remark plugin that rewrites `[n]` markers into citation links.
+- `packages/markdown/src/remarkCitationMarkers.ts` — the shared, opt-in remark
+  plugin that rewrites `[n]` markers into citation links for response-example
+  rendering and checks. The student chat renderer keeps its app-local plugin.
 - `src/lib/toolOutput.ts` — live-SSE tool-result normalization (the streaming half of the provider-error redaction boundary).
 - `src/lib/attachments/` — image attachment adapter plus attachment state and UI helpers.
 - Local model proxy: the `litellm` compose service (port 4000).
@@ -48,11 +50,12 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 ## Owner-governed response examples
 
 Klicker stores one canonical `ResponseExampleSet` per chatbot. Each current
-example carries the exact server-resolved `chatMode` and `locale`, a behavior
-tag, an approval status, and optional source/chunk/content-hash/citation-anchor
-lineage. Approved edits replace the current row immediately; there is no
-revision-history model. The set digest changes with canonical example or
-lineage content, not reviewer timestamps.
+example carries the exact `chatMode`, the student's message, a Markdown
+reference answer, an intuitive response-style choice, an approval status, and
+source/chunk/content-hash/citation-index/citation-anchor lineage. Approved
+edits replace the current row immediately; there is no revision-history model.
+The set digest changes with canonical example or lineage content, not reviewer
+timestamps.
 
 The owner-only GraphQL surface is the source of truth for lecturer review:
 the owner can inspect the set, approve, edit and approve, or reject an entry.

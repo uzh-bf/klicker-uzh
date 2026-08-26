@@ -14,14 +14,13 @@ add retrieval cost and could inject irrelevant behavior guidance.
 
 The bounded mode prompt contains a response-example summary that tells the
 model when and how to search. The model invokes an authenticated semantic search
-using the current turn, chatbot, mode, and locale. Search returns a capped set
-of applicable approved examples, and the selection remains visible in tool
-traces. The prompt summary describes categories, topics, and search cues rather
-than enumerating the full set. Selection requires an exact mode-and-locale
-match. No match returns no full example. A loader failure also continues the
-turn with the summary, mode scaffolding, knowledge retrieval, and ordinary
-tools while recording degraded selection; it never substitutes another scope
-or chatbot.
+using the current turn, chatbot, and mode. Search returns a capped set of
+applicable approved examples, and the selection remains visible in tool traces.
+The prompt summary describes categories, topics, and search cues rather than
+enumerating the full set. Selection requires an exact chatbot-and-mode match.
+No match returns no full example. A loader failure also continues the turn with
+the summary, mode scaffolding, knowledge retrieval, and ordinary tools while
+recording degraded selection; it never substitutes another scope or chatbot.
 
 ## Consequences
 

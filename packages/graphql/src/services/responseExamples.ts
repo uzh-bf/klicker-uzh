@@ -1,25 +1,32 @@
 import { createHash } from 'node:crypto'
-import type { Prisma } from '@klicker-uzh/prisma/client'
+import type { Prisma, PrismaClient } from '@klicker-uzh/prisma/client'
 import * as DB from '@klicker-uzh/prisma/client'
+import { Prisma as PrismaRuntime } from '@klicker-uzh/prisma/client'
+import { GraphQLError } from 'graphql'
 import { z } from 'zod'
 import type { ContextWithUser } from '../lib/context.js'
+import {
+  canApplyResponseExampleAction,
+  extractChatbotModes,
+  hasCompleteEligibleCitationParity,
+  RESPONSE_EXAMPLE_CHAT_MODE_MAX_LENGTH,
+  RESPONSE_EXAMPLE_REFERENCE_ANSWER_MAX_LENGTH,
+  RESPONSE_EXAMPLE_STUDENT_MESSAGE_MAX_LENGTH,
+  responseExampleStyleSchema,
+} from '../lib/responseExampleContract.js'
 
 type ResponseExamplePrisma = Pick<
   Prisma.TransactionClient,
-  'responseExample' | 'responseExampleSet'
+  '$queryRaw' | 'responseExample' | 'responseExampleSet'
 >
 
 const responseExampleSetInclude = {
   examples: {
-    orderBy: [
-      { chatMode: 'asc' },
-      { locale: 'asc' },
-      { studentTurn: 'asc' },
-      { id: 'asc' },
-    ],
+    orderBy: [{ chatMode: 'asc' }, { studentMessage: 'asc' }, { id: 'asc' }],
     include: {
       evidenceReferences: {
         orderBy: [
+          { citationIndex: 'asc' },
           { sourceId: 'asc' },
           { chunkId: 'asc' },
           { contentHash: 'asc' },
@@ -29,11 +36,27 @@ const responseExampleSetInclude = {
       },
     },
   },
+  chatbot: {
+    select: { systemPrompts: true },
+  },
 } satisfies Prisma.ResponseExampleSetInclude
 
 type ResponseExampleSetWithRelations = Prisma.ResponseExampleSetGetPayload<{
   include: typeof responseExampleSetInclude
 }>
+
+type ResponseExampleSetWithModes = ResponseExampleSetWithRelations & {
+  chatModes: string[]
+}
+
+function withChatbotModes(
+  set: ResponseExampleSetWithRelations
+): ResponseExampleSetWithModes {
+  return {
+    ...set,
+    chatModes: extractChatbotModes(set.chatbot.systemPrompts),
+  }
+}
 
 function compareStrings(left: string, right: string) {
   if (left < right) return -1
@@ -63,10 +86,9 @@ export function computeResponseExampleSetDigest(
       .sort((left, right) =>
         compareFields(left, right, [
           'chatMode',
-          'locale',
-          'studentTurn',
-          'idealResponse',
-          'behaviorTag',
+          'studentMessage',
+          'referenceAnswer',
+          'responseStyle',
           'status',
           'id',
           'setId',
@@ -76,14 +98,14 @@ export function computeResponseExampleSetDigest(
         id: example.id,
         setId: example.setId,
         chatMode: example.chatMode,
-        locale: example.locale,
-        studentTurn: example.studentTurn,
-        idealResponse: example.idealResponse,
-        behaviorTag: example.behaviorTag,
+        studentMessage: example.studentMessage,
+        referenceAnswer: example.referenceAnswer,
+        responseStyle: example.responseStyle,
         status: example.status,
         evidenceReferences: [...example.evidenceReferences]
           .sort((left, right) =>
             compareFields(left, right, [
+              'citationIndex',
               'sourceId',
               'chunkId',
               'contentHash',
@@ -95,6 +117,7 @@ export function computeResponseExampleSetDigest(
           .map((reference) => ({
             id: reference.id,
             responseExampleId: reference.responseExampleId,
+            citationIndex: reference.citationIndex,
             sourceId: reference.sourceId,
             chunkId: reference.chunkId,
             contentHash: reference.contentHash,
@@ -119,18 +142,38 @@ async function findResponseExampleSet(
 
 const responseExampleIdSchema = z.string().uuid()
 
-export async function refreshResponseExampleSetDigest(
+async function refreshResponseExampleSetDigestInTransaction(
   prisma: ResponseExamplePrisma,
   setId: string
 ) {
+  await prisma.$queryRaw<{ id: string }[]>(
+    PrismaRuntime.sql`
+      SELECT "id"
+      FROM "public"."ResponseExampleSet"
+      WHERE "id" = ${setId}::uuid
+      FOR UPDATE
+    `
+  )
+
   const set = await findResponseExampleSet(prisma, setId)
   if (!set) return null
 
-  return await prisma.responseExampleSet.update({
-    where: { id: set.id },
-    data: { digest: computeResponseExampleSetDigest(set) },
-    include: responseExampleSetInclude,
-  })
+  return await prisma.responseExampleSet
+    .update({
+      where: { id: set.id },
+      data: { digest: computeResponseExampleSetDigest(set) },
+      include: responseExampleSetInclude,
+    })
+    .then(withChatbotModes)
+}
+
+export async function refreshResponseExampleSetDigest(
+  prisma: PrismaClient,
+  setId: string
+) {
+  return await prisma.$transaction((tx) =>
+    refreshResponseExampleSetDigestInTransaction(tx, setId)
+  )
 }
 
 export async function getChatbotResponseExamples(
@@ -140,14 +183,25 @@ export async function getChatbotResponseExamples(
   const parsedChatbotId = responseExampleIdSchema.safeParse(chatbotId)
   if (!parsedChatbotId.success) return null
 
-  return await ctx.prisma.responseExampleSet.findFirst({
+  const set = await ctx.prisma.responseExampleSet.findFirst({
     where: {
       chatbotId,
       chatbot: { ownerId: ctx.user.sub },
     },
     include: responseExampleSetInclude,
   })
+
+  if (!set) return null
+  return withChatbotModes(set)
 }
+
+export const RESPONSE_EXAMPLE_SOURCES_REQUIRED =
+  'RESPONSE_EXAMPLE_SOURCES_REQUIRED'
+export const RESPONSE_EXAMPLE_MODE_UNAVAILABLE =
+  'RESPONSE_EXAMPLE_MODE_UNAVAILABLE'
+export const RESPONSE_EXAMPLE_STATUS_INVALID = 'RESPONSE_EXAMPLE_STATUS_INVALID'
+export const RESPONSE_EXAMPLE_DUPLICATE = 'RESPONSE_EXAMPLE_DUPLICATE'
+export const RESPONSE_EXAMPLE_STALE_UPDATE = 'RESPONSE_EXAMPLE_STALE_UPDATE'
 
 async function reviewResponseExample(
   { id, status }: { id: string; status: DB.ResponseExampleStatus },
@@ -157,18 +211,99 @@ async function reviewResponseExample(
   if (!parsedId.success) return null
 
   return await ctx.prisma.$transaction(async (tx) => {
+    const ownership = await tx.responseExample.findFirst({
+      where: {
+        id: parsedId.data,
+        set: { chatbot: { ownerId: ctx.user.sub } },
+      },
+      select: {
+        set: { select: { chatbot: { select: { id: true } } } },
+      },
+    })
+
+    if (!ownership) return null
+
+    await tx.$queryRaw<{ id: string }[]>(
+      PrismaRuntime.sql`
+        SELECT "id"
+        FROM "public"."Chatbot"
+        WHERE "id" = ${ownership.set.chatbot.id}::uuid
+        FOR UPDATE
+      `
+    )
+
     const example = await tx.responseExample.findFirst({
       where: {
         id: parsedId.data,
         set: { chatbot: { ownerId: ctx.user.sub } },
       },
-      select: { id: true, setId: true },
+      select: {
+        id: true,
+        setId: true,
+        status: true,
+        chatMode: true,
+        referenceAnswer: true,
+        evidenceReferences: {
+          select: { citationIndex: true, evidenceEligible: true },
+        },
+        set: {
+          select: {
+            chatbot: { select: { systemPrompts: true } },
+          },
+        },
+      },
     })
 
     if (!example) return null
 
-    await tx.responseExample.update({
-      where: { id: example.id },
+    const action =
+      status === DB.ResponseExampleStatus.APPROVED
+        ? 'APPROVE'
+        : status === DB.ResponseExampleStatus.REJECTED
+          ? 'REJECT'
+          : null
+    if (!action || !canApplyResponseExampleAction(example.status, action)) {
+      throw new GraphQLError(
+        'This response example cannot be reviewed in its current state.',
+        { extensions: { code: RESPONSE_EXAMPLE_STATUS_INVALID } }
+      )
+    }
+
+    if (
+      status === DB.ResponseExampleStatus.APPROVED &&
+      !extractChatbotModes(example.set.chatbot.systemPrompts).includes(
+        example.chatMode
+      )
+    ) {
+      throw new GraphQLError(
+        'The response example uses a chat mode that is not available for this chatbot.',
+        { extensions: { code: RESPONSE_EXAMPLE_MODE_UNAVAILABLE } }
+      )
+    }
+
+    if (
+      status === DB.ResponseExampleStatus.APPROVED &&
+      !hasCompleteEligibleCitationParity(
+        example.referenceAnswer,
+        example.evidenceReferences
+      )
+    ) {
+      throw new GraphQLError(
+        'An approved response example needs eligible sources and matching citation markers.',
+        { extensions: { code: RESPONSE_EXAMPLE_SOURCES_REQUIRED } }
+      )
+    }
+
+    const updated = await tx.responseExample.updateMany({
+      where: {
+        id: example.id,
+        status: {
+          in: [
+            DB.ResponseExampleStatus.CANDIDATE,
+            DB.ResponseExampleStatus.NEEDS_REVIEW,
+          ],
+        },
+      },
       data: {
         status,
         reviewedById: ctx.user.sub,
@@ -176,7 +311,14 @@ async function reviewResponseExample(
       },
     })
 
-    return await refreshResponseExampleSetDigest(tx, example.setId)
+    if (updated.count === 0) {
+      throw new GraphQLError(
+        'This response example cannot be reviewed in its current state.',
+        { extensions: { code: RESPONSE_EXAMPLE_STATUS_INVALID } }
+      )
+    }
+
+    return await refreshResponseExampleSetDigestInTransaction(tx, example.setId)
   })
 }
 
@@ -192,11 +334,19 @@ export async function approveResponseExample(
 
 const editAndApproveResponseExampleSchema = z.object({
   id: responseExampleIdSchema,
-  chatMode: z.string().trim().min(1),
-  locale: z.string().trim().min(1),
-  studentTurn: z.string().trim().min(1),
-  idealResponse: z.string().trim().min(1),
-  behaviorTag: z.string().trim().min(1),
+  chatMode: z.string().trim().min(1).max(RESPONSE_EXAMPLE_CHAT_MODE_MAX_LENGTH),
+  studentMessage: z
+    .string()
+    .trim()
+    .min(1)
+    .max(RESPONSE_EXAMPLE_STUDENT_MESSAGE_MAX_LENGTH),
+  referenceAnswer: z
+    .string()
+    .trim()
+    .min(1)
+    .max(RESPONSE_EXAMPLE_REFERENCE_ANSWER_MAX_LENGTH),
+  responseStyle: responseExampleStyleSchema,
+  expectedUpdatedAt: z.date(),
 })
 
 export async function editAndApproveResponseExample(
@@ -206,31 +356,141 @@ export async function editAndApproveResponseExample(
   const input = editAndApproveResponseExampleSchema.parse(args)
 
   return await ctx.prisma.$transaction(async (tx) => {
+    const ownership = await tx.responseExample.findFirst({
+      where: {
+        id: input.id,
+        set: { chatbot: { ownerId: ctx.user.sub } },
+      },
+      select: {
+        set: { select: { chatbot: { select: { id: true } } } },
+      },
+    })
+
+    if (!ownership) return null
+
+    await tx.$queryRaw<{ id: string }[]>(
+      PrismaRuntime.sql`
+        SELECT "id"
+        FROM "public"."Chatbot"
+        WHERE "id" = ${ownership.set.chatbot.id}::uuid
+        FOR UPDATE
+      `
+    )
+
     const example = await tx.responseExample.findFirst({
       where: {
         id: input.id,
         set: { chatbot: { ownerId: ctx.user.sub } },
       },
-      select: { id: true, setId: true },
+      select: {
+        id: true,
+        setId: true,
+        status: true,
+        updatedAt: true,
+        evidenceReferences: {
+          select: { citationIndex: true, evidenceEligible: true },
+        },
+        set: {
+          select: {
+            chatbot: { select: { systemPrompts: true } },
+          },
+        },
+      },
     })
 
     if (!example) return null
 
-    await tx.responseExample.update({
-      where: { id: example.id },
-      data: {
-        chatMode: input.chatMode,
-        locale: input.locale,
-        studentTurn: input.studentTurn,
-        idealResponse: input.idealResponse,
-        behaviorTag: input.behaviorTag,
-        status: DB.ResponseExampleStatus.APPROVED,
-        reviewedById: ctx.user.sub,
-        reviewedAt: new Date(),
-      },
-    })
+    if (example.updatedAt.getTime() !== input.expectedUpdatedAt.getTime()) {
+      throw new GraphQLError(
+        'The response example changed while it was open. Reload it before saving again.',
+        { extensions: { code: RESPONSE_EXAMPLE_STALE_UPDATE } }
+      )
+    }
 
-    return await refreshResponseExampleSetDigest(tx, example.setId)
+    if (!canApplyResponseExampleAction(example.status, 'EDIT_AND_APPROVE')) {
+      throw new GraphQLError(
+        'Rejected response examples cannot be edited and approved again.',
+        { extensions: { code: RESPONSE_EXAMPLE_STATUS_INVALID } }
+      )
+    }
+
+    if (
+      !extractChatbotModes(example.set.chatbot.systemPrompts).includes(
+        input.chatMode
+      )
+    ) {
+      throw new GraphQLError(
+        'The selected chat mode is not available for this chatbot.',
+        { extensions: { code: RESPONSE_EXAMPLE_MODE_UNAVAILABLE } }
+      )
+    }
+
+    if (
+      !hasCompleteEligibleCitationParity(
+        input.referenceAnswer,
+        example.evidenceReferences
+      )
+    ) {
+      throw new GraphQLError(
+        'An approved response example needs eligible sources and matching citation markers.',
+        { extensions: { code: RESPONSE_EXAMPLE_SOURCES_REQUIRED } }
+      )
+    }
+
+    let updated: { count: number }
+    try {
+      updated = await tx.responseExample.updateMany({
+        where: {
+          id: example.id,
+          status: { not: DB.ResponseExampleStatus.REJECTED },
+          updatedAt: input.expectedUpdatedAt,
+        },
+        data: {
+          chatMode: input.chatMode,
+          studentMessage: input.studentMessage,
+          referenceAnswer: input.referenceAnswer,
+          responseStyle: input.responseStyle,
+          status: DB.ResponseExampleStatus.APPROVED,
+          reviewedById: ctx.user.sub,
+          reviewedAt: new Date(),
+        },
+      })
+    } catch (error) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'P2002'
+      ) {
+        throw new GraphQLError(
+          'A response example with this question already exists for this chat mode.',
+          { extensions: { code: RESPONSE_EXAMPLE_DUPLICATE } }
+        )
+      }
+      throw error
+    }
+
+    if (updated.count === 0) {
+      const current = await tx.responseExample.findUnique({
+        where: { id: example.id },
+        select: { status: true, updatedAt: true },
+      })
+      if (
+        current &&
+        current.updatedAt.getTime() !== input.expectedUpdatedAt.getTime()
+      ) {
+        throw new GraphQLError(
+          'The response example changed while it was open. Reload it before saving again.',
+          { extensions: { code: RESPONSE_EXAMPLE_STALE_UPDATE } }
+        )
+      }
+      throw new GraphQLError(
+        'Rejected response examples cannot be edited and approved again.',
+        { extensions: { code: RESPONSE_EXAMPLE_STATUS_INVALID } }
+      )
+    }
+
+    return await refreshResponseExampleSetDigestInTransaction(tx, example.setId)
   })
 }
 

@@ -1,8 +1,16 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
+import {
+  hasCompleteEligibleCitationParity,
+  responseExampleActions,
+} from '../lib/responseExampleContract.js'
 
 export const ResponseExampleStatus = builder.enumType('ResponseExampleStatus', {
   values: Object.values(DB.ResponseExampleStatus),
+})
+
+export const ResponseExampleStyle = builder.enumType('ResponseExampleStyle', {
+  values: Object.values(DB.ResponseExampleStyle),
 })
 
 type ResponseExampleEvidenceReferenceData = DB.ResponseExampleEvidenceReference
@@ -13,6 +21,7 @@ type ResponseExampleData = DB.ResponseExample & {
 
 type ResponseExampleSetData = DB.ResponseExampleSet & {
   examples: ResponseExampleData[]
+  chatModes: string[]
 }
 
 export const ResponseExampleEvidenceReferenceRef =
@@ -27,6 +36,7 @@ export const ResponseExampleEvidenceReference =
       sourceId: t.exposeString('sourceId'),
       chunkId: t.exposeString('chunkId'),
       contentHash: t.exposeString('contentHash'),
+      citationIndex: t.exposeInt('citationIndex'),
       citationAnchor: t.exposeString('citationAnchor'),
       evidenceEligible: t.exposeBoolean('evidenceEligible'),
       createdAt: t.expose('createdAt', { type: 'Date' }),
@@ -40,11 +50,27 @@ export const ResponseExample = ResponseExampleRef.implement({
     id: t.exposeID('id'),
     setId: t.exposeID('setId'),
     chatMode: t.exposeString('chatMode'),
-    locale: t.exposeString('locale'),
-    studentTurn: t.exposeString('studentTurn'),
-    idealResponse: t.exposeString('idealResponse'),
-    behaviorTag: t.exposeString('behaviorTag'),
+    studentMessage: t.exposeString('studentMessage'),
+    referenceAnswer: t.exposeString('referenceAnswer'),
+    responseStyle: t.expose('responseStyle', { type: ResponseExampleStyle }),
     status: t.expose('status', { type: ResponseExampleStatus }),
+    canApprove: t.boolean({
+      resolve: (example) => responseExampleActions(example.status).canApprove,
+    }),
+    canEditAndApprove: t.boolean({
+      resolve: (example) =>
+        responseExampleActions(example.status).canEditAndApprove,
+    }),
+    canReject: t.boolean({
+      resolve: (example) => responseExampleActions(example.status).canReject,
+    }),
+    hasCompleteEligibleCitationParity: t.boolean({
+      resolve: (example) =>
+        hasCompleteEligibleCitationParity(
+          example.referenceAnswer,
+          example.evidenceReferences
+        ),
+    }),
     reviewedById: t.exposeID('reviewedById', { nullable: true }),
     reviewedAt: t.expose('reviewedAt', {
       type: 'Date',
@@ -66,6 +92,7 @@ export const ResponseExampleSet = ResponseExampleSetRef.implement({
     id: t.exposeID('id'),
     chatbotId: t.exposeID('chatbotId'),
     digest: t.exposeString('digest'),
+    chatModes: t.exposeStringList('chatModes'),
     examples: t.field({
       type: [ResponseExample],
       resolve: (set) => set.examples,
