@@ -1,4 +1,4 @@
-# Question library activity choices and wizard feedback plan
+# PR #5546 question library activity choices and wizard feedback plan
 
 ## Goal
 
@@ -682,6 +682,10 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   reconciles its sole changed path, `deploy/env-uzh-stg/values.yaml`, without
   conflicts or devrouter configuration changes. No new runtime, CI, review,
   push, or PR-state completion is claimed.
+- The exact-head Sol finish-gate finding is accepted and resolved: this active
+  plan is now named and headed for PR #5546. Exact-head CI and the authorized
+  normal push remain pending; PR merge, mark-ready, and deployment remain
+  withheld.
 
 ### Historical execution evidence before final runtime proof
 
