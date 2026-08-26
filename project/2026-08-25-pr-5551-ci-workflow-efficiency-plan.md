@@ -217,8 +217,8 @@ Do not delete a workflow if any readback differs from the expected set.
 ## Progress
 
 - Status: branch is synced with current `origin/v3` through normal merge commit
-  `e9db72078`; PR #5553 is published at head `708c8bfdf`, and its exact-head
-  hosted checks are currently queued in the Actions scheduler.
+  `e9db72078`; PR #5553 is published at the current branch head, and its
+  exact-head hosted checks are currently queued in the Actions scheduler.
 - Completed: plan commit and post-commit freshness check; replacement workflow
   implementation; Actions audit, validation, and discovery; exact Node 24
   dependency builds; all four unit suites; Prettier and diff checks; and the
@@ -250,8 +250,8 @@ Do not delete a workflow if any readback differs from the expected set.
   package eight times. The corrective hosted run at the pre-merge head
   `96ec9e41d` passed all eight shards and `test-playwright-status`; it is
   historical evidence and must be repeated for the final merged head.
-- Remaining: finish the exact-head hosted checks for published head
-  `708c8bfdf`, record their final readback, and keep the PR description aligned.
+- Remaining: finish the exact-head hosted checks for the published head, record
+  their final readback, and keep the PR description aligned.
   [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) is already ready
   for review; merge remains withheld.
 - Follow-up verification: the safe Actions audit, syntax validation, and job
@@ -280,7 +280,7 @@ Do not delete a workflow if any readback differs from the expected set.
 
 ## Next Steps
 
-- Finish the exact-head checks for published head `708c8bfdf`, record the final
+- Finish the exact-head checks for the published head, record the final
   readback, and keep the PR description aligned with `origin/v3`.
 - Keep [PR #5553](https://github.com/uzh-bf/klicker-uzh/pull/5553) ready once the
   final hosted checks and review state remain green.
