@@ -10,7 +10,7 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  # Canary-only touch: selecting this workflow path exercises the full route.
+  # Canary-only touch: exercise the complete public PR ARM64 route.
   # The hosted and public-PR predicates are intentional complements. Only the
   # exact lowercase value "true" or an exact canary PR number enables the
   # self-hosted path; every other value fails closed to GitHub-hosted runners.
