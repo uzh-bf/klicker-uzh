@@ -54,7 +54,14 @@ test('pins trusted review code to the event workflow commit when the default bra
     '../workflows/check-ocr-final-stack-review.yml',
   ]) {
     const source = fs.readFileSync(path.join(__dirname, workflow), 'utf8')
-    assert.match(source, /const workflowSha = context\.workflowSha/)
+    assert.match(
+      source,
+      /GITHUB_WORKFLOW_SHA: \$\{\{ github\.workflow_sha \}\}/
+    )
+    assert.match(
+      source,
+      /const workflowSha = process\.env\.GITHUB_WORKFLOW_SHA/
+    )
     assert.match(source, /github\.rest\.repos\.getCommit/)
     assert.match(source, /core\.setOutput\('trusted_sha', workflowSha\)/)
     assert.doesNotMatch(

@@ -2389,6 +2389,7 @@ async function publishStackReview({
   dispositionDigest = '',
   reviewRanges = [],
   trustedSha,
+  workflowSha,
   expectedManifestDigest,
   manifestPath,
   resultPath,
@@ -2450,7 +2451,7 @@ async function publishStackReview({
     workflowUrl: workflowRunUrl(context),
     trustedPolicySha: trustedSha ?? context.sha,
     workflowHeadSha: context.sha,
-    workflowSha: context.workflowSha ?? context.sha,
+    workflowSha: workflowSha ?? '',
     workflowRunId: context.runId,
   })
   const review = await github.rest.pulls.createReview({

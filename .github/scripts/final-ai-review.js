@@ -1750,6 +1750,7 @@ async function publishFinalReview({
   stackOrderDigest,
   dispositionDigest,
   trustedSha,
+  workflowSha,
   resultPath,
 }) {
   const pull = await getPull(github, context, prNumber)
@@ -1792,7 +1793,7 @@ async function publishFinalReview({
     stackPosition: plan.stackPosition,
     trustedPolicySha: trustedSha ?? context.sha,
     workflowHeadSha: context.sha,
-    workflowSha: context.workflowSha ?? context.sha,
+    workflowSha: workflowSha ?? '',
     workflowRunId: context.runId,
   })
   const review = await github.rest.pulls.createReview({

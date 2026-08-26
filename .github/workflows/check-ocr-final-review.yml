@@ -27,10 +27,12 @@ jobs:
       - name: Resolve trusted default-branch commit
         id: resolve
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          GITHUB_WORKFLOW_SHA: ${{ github.workflow_sha }}
         with:
           github-token: ${{ github.token }}
           script: |
-            const workflowSha = context.workflowSha
+            const workflowSha = process.env.GITHUB_WORKFLOW_SHA
             if (!/^[0-9a-f]{40}$/.test(workflowSha ?? '')) {
               core.setFailed('Workflow definition commit is missing')
               return
@@ -301,6 +303,7 @@ jobs:
           STACK_ORDER_DIGEST: ${{ needs.authorize.outputs.stack_order_digest }}
           DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
           TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
+          GITHUB_WORKFLOW_SHA: ${{ github.workflow_sha }}
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
         with:
           github-token: ${{ github.token }}
@@ -323,6 +326,7 @@ jobs:
               stackOrderDigest: process.env.STACK_ORDER_DIGEST,
               dispositionDigest: process.env.DISPOSITION_DIGEST,
               trustedSha: process.env.TRUSTED_SHA,
+              workflowSha: process.env.GITHUB_WORKFLOW_SHA,
               resultPath: process.env.RESULT_PATH,
             })
             core.info(`Published ${url}`)

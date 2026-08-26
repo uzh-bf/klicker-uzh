@@ -27,10 +27,12 @@ jobs:
       - name: Resolve trusted default-branch commit
         id: resolve
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          GITHUB_WORKFLOW_SHA: ${{ github.workflow_sha }}
         with:
           github-token: ${{ github.token }}
           script: |
-            const workflowSha = context.workflowSha
+            const workflowSha = process.env.GITHUB_WORKFLOW_SHA
             if (!/^[0-9a-f]{40}$/.test(workflowSha ?? '')) {
               core.setFailed('Workflow definition commit is missing')
               return
@@ -354,6 +356,7 @@ jobs:
           DISPOSITION_DIGEST: ${{ needs.authorize.outputs.disposition_digest }}
           REVIEW_RANGES: ${{ needs.authorize.outputs.review_ranges }}
           TRUSTED_SHA: ${{ needs.authorize.outputs.trusted_sha }}
+          GITHUB_WORKFLOW_SHA: ${{ github.workflow_sha }}
           MANIFEST_DIGEST: ${{ steps.start.outputs.manifest_digest }}
           MANIFEST_PATH: ${{ runner.temp }}/final-ai-stack-manifest.json
           RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
@@ -380,6 +383,7 @@ jobs:
               dispositionDigest: process.env.DISPOSITION_DIGEST,
               reviewRanges: JSON.parse(process.env.REVIEW_RANGES || '[]'),
               trustedSha: process.env.TRUSTED_SHA,
+              workflowSha: process.env.GITHUB_WORKFLOW_SHA,
               expectedManifestDigest: process.env.MANIFEST_DIGEST,
               manifestPath: process.env.MANIFEST_PATH,
               resultPath: process.env.RESULT_PATH,
