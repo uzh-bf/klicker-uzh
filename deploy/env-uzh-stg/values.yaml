@@ -312,6 +312,8 @@ chat:
 
 mcpStudent:
   priorityClassName: staging-workload
+  podAnnotations:
+    rollout.klicker.uzh.ch/release: 'b11e14489da2'
 
   replicaCount: 1
 
