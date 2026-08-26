@@ -78,11 +78,9 @@ user explicitly authorizes a normal single PR instead, execute every task on
   batch mutation without a single-object `withPermission` wrapper.
 - Create `packages/graphql/src/graphql/ops/MShareElementsBatch.graphql`: typed
   client operation.
-- Regenerate `packages/graphql/src/ops.ts`,
-  `packages/graphql/src/ops.schema.json`,
-  `packages/graphql/src/public/schema.graphql`,
-  `packages/graphql/src/public/client.json`, and
-  `packages/graphql/src/public/server.json`.
+- Regenerate and commit `packages/graphql/src/public/schema.graphql`; verify that
+  codegen also produces the ignored `src/ops.ts` and
+  `src/public/{client,server}.json` build outputs.
 - Modify `docs/graphql-api-layer.md`: document target-level versus per-item
   errors and the one-transaction-per-Element boundary.
 
@@ -392,11 +390,10 @@ object selector.
 - Modify: `packages/graphql/src/schema/sharing.ts:11-167`
 - Modify: `packages/graphql/src/schema/mutation.ts:78-88,1258-1272`
 - Create: `packages/graphql/src/graphql/ops/MShareElementsBatch.graphql`
-- Regenerate: `packages/graphql/src/ops.ts`
-- Regenerate: `packages/graphql/src/ops.schema.json`
-- Regenerate: `packages/graphql/src/public/schema.graphql`
-- Regenerate: `packages/graphql/src/public/client.json`
-- Regenerate: `packages/graphql/src/public/server.json`
+- Regenerate and commit: `packages/graphql/src/public/schema.graphql`
+- Generate and verify: `packages/graphql/src/ops.ts`
+- Generate and verify: `packages/graphql/src/public/client.json`
+- Generate and verify: `packages/graphql/src/public/server.json`
 - Modify: `docs/graphql-api-layer.md:31-46`
 
 **Interfaces:**
@@ -498,17 +495,19 @@ ACCOUNT_OWNER context and valid arguments, then assert it reaches the service
 and returns a typed result. This proves the Pothos scope wrapper without adding
 a second API harness.
 
-- [ ] **Step 6: Generate and inspect all tracked artifacts**
+- [ ] **Step 6: Generate and inspect the tracked schema and build outputs**
 
 Run:
 
 ```bash
 devrouter exec . -- pnpm --filter @klicker-uzh/graphql generate
-git diff -- packages/graphql/src/ops.ts packages/graphql/src/ops.schema.json packages/graphql/src/public/schema.graphql packages/graphql/src/public/client.json packages/graphql/src/public/server.json
+git diff -- packages/graphql/src/public/schema.graphql
 ```
 
-Expected: the new enums, result types, mutation, typed document, and persisted
-query appear; no unrelated schema drift is present.
+Expected: the tracked schema contains the new enums, result types, and mutation;
+the ignored `src/ops.ts` and `src/public/{client,server}.json` outputs exist and
+contain the typed document and persisted query; no unrelated schema drift is
+present.
 
 - [ ] **Step 7: Document the API boundary**
 

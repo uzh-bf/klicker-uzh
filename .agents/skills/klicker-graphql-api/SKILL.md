@@ -41,13 +41,13 @@ Facts (auth ladder, layering, error conventions): [docs/graphql-api-layer.md](..
 
 4. **Arg validation** — Zod plugin `validate:` on args (email/regex/length examples in `mutation.ts`).
 5. **Client op** — new file `packages/graphql/src/graphql/ops/<Prefix><Name>.graphql`; prefix `Q`/`M`/`S`/`F` matches the kind. Reuse `F*` fragments where they exist.
-6. **Codegen — never skip, always commit:**
+6. **Codegen — never skip:**
 
    ```bash
    pnpm --filter @klicker-uzh/graphql generate
    ```
 
-   Commit the regenerated `src/ops.ts`, `src/ops.schema.json`, `src/public/schema.graphql`, `src/public/client.json`, `src/public/server.json` **with** the change. Stale `server.json` = persisted-query rejection in prod modes; stale `ops.ts` = frontend typecheck failure.
+   Commit the handwritten operation/schema sources and the regenerated `src/public/schema.graphql` snapshot. `src/ops.ts` and `src/public/{client,server}.json` are ignored build outputs; package builds regenerate them before Rollup. Stale `server.json` = persisted-query rejection in prod modes; stale `ops.ts` = frontend typecheck failure.
 
    For rolling-deployment compatibility, do not mutate an operation document
    already used by a deployed frontend when adding fields or variables. Add a
@@ -90,6 +90,6 @@ Publish from the service (`ctx.pubSub.publish('<topic>', payload)`), subscribe i
 | ------------------------------------ | ------------------------------------------------------------------------------ |
 | `Unauthorized` GraphQLError          | layer-1 scope object mismatch (wrong role/scope for the caller)                |
 | Field silently `null` for a lecturer | layer-2 `withPermission` failed (no ownership/grant at that `PermissionLevel`) |
-| Op works in dev, rejected deployed   | stale/uncommitted `server.json` (step 6)                                       |
+| Op works in dev, rejected deployed   | package build did not regenerate `server.json` (step 6)                        |
 | Frontend can't find `*Document`      | codegen not run after adding the op                                            |
 | Mutation fails `workflow not found`  | Hatchet worker missing → `klicker-environment-doctor` check 7                  |
