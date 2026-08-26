@@ -10,6 +10,7 @@ const {
   buildStackReviewPlan,
   buildStackSnapshot,
   callTopologyModel,
+  combineOCRResults,
   decideStackStatus,
   finalizeStackReview,
   initializeStackReview,
@@ -960,6 +961,148 @@ test('attests a bounded repaired top layer from a trusted stack disposition', as
     }),
   })
   assert.equal(driftPlan.mode, 'full')
+})
+
+test('attests bounded repairs across changed lower stack layers', async () => {
+  const { files, github, pulls, responses, state } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const initialPlan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership,
+  })
+  const rootReport = renderStackReview({
+    codeResult: completeOCRResult([codeFinding()]),
+    headSha: 'f'.repeat(40),
+    manifestBundle,
+    topologyResult: topologyResult(),
+    policyDigest: initialPlan.policyDigest,
+    workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+    workflowHeadSha: 'a'.repeat(40),
+    workflowRunId: 700,
+  })
+  const rootMetadata = parseStackReviewMetadata(rootReport)
+  assert.ok(rootMetadata)
+
+  const currentHeads = [
+    'a'.repeat(40),
+    '1'.repeat(40),
+    '2'.repeat(40),
+    '3'.repeat(40),
+  ]
+  const currentBases = ['b'.repeat(40), ...currentHeads.slice(0, -1)]
+  currentHeads.forEach((head, index) => {
+    pulls[11 + index].head.sha = head
+    pulls[11 + index].base.sha = currentBases[index]
+    responses.set(currentBases[index], head)
+    files.set(currentBases[index], [
+      { filename: 'src/one.ts', additions: 1, deletions: 1 },
+    ])
+    responses.set(rootMetadata.layer_head_shas[index], head)
+    files.set(rootMetadata.layer_head_shas[index], [
+      { filename: 'src/one.ts', additions: 1, deletions: 1 },
+    ])
+  })
+  github.request = async () => ({
+    data: [
+      {
+        id: 99,
+        pull_requests: [11, 12, 13, 14].map((number) => ({
+          number,
+          state: 'open',
+          draft: false,
+          head: { sha: pulls[number].head.sha },
+        })),
+      },
+    ],
+  })
+  state.reviews = [
+    {
+      id: 701,
+      body: rootReport,
+      commit_id: 'f'.repeat(40),
+      state: 'COMMENTED',
+      submitted_at: '2026-08-25T00:00:00Z',
+      user: { login: 'github-actions[bot]' },
+    },
+  ]
+  state.comments = [
+    {
+      body: `<!-- final-ai-disposition/v1 ${JSON.stringify({
+        schema_version: 'final-ai-disposition/v1',
+        review_id: rootMetadata.review_id,
+        root_head: 'f'.repeat(40),
+        workflow_run_id: 700,
+        entries: [
+          {
+            finding_id: rootMetadata.finding_ids[0],
+            state: 'fixed',
+            reference: 'commit:9'.padEnd(46, '0'),
+            paths: ['src/one.ts'],
+          },
+        ],
+      })} -->`,
+      created_at: '2026-08-25T01:00:00Z',
+      user: { login: 'reviewer' },
+    },
+  ]
+  github.paginate = async (endpoint) =>
+    endpoint === github.rest.pulls.listReviews ? state.reviews : state.comments
+  state.workflowRun = {
+    id: 700,
+    path: '.github/workflows/check-ocr-final-stack-review.yml',
+    event: 'issue_comment',
+    head_branch: 'v3',
+    head_sha: 'a'.repeat(40),
+    conclusion: 'success',
+    repository: { full_name: repository },
+  }
+  state.statuses = [
+    {
+      context: 'final-ai-stack-review',
+      state: 'success',
+      target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+    },
+  ]
+  github.rest.actions = {
+    getWorkflowRun: async () => ({ data: state.workflowRun }),
+  }
+
+  const plan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership: await resolveStackMembership({
+      github,
+      context: context(),
+      pullNumber: 14,
+    }),
+  })
+  assert.equal(plan.mode, 'incremental')
+  assert.deepEqual(
+    plan.reviewRanges.map(({ layer_number }) => layer_number),
+    [1, 2, 3, 4]
+  )
+  assert.match(plan.background, /layer 1 .*layer 4/)
+})
+
+test('combines complete OCR results for per-layer attestation ranges', () => {
+  const first = completeOCRResult([codeFinding()])
+  const second = completeOCRResult([])
+  const combined = combineOCRResults([first, second])
+  assert.equal(combined.status, 'complete')
+  assert.equal(combined.summary.comments, 1)
+  assert.equal(combined.summary.files_reviewed, 6)
+  assert.equal(combined.summary.total_tokens, 200)
+  assert.deepEqual(combined.warnings, [])
 })
 
 test('rejects a successful finish after lower-layer identity drift', async () => {

@@ -398,15 +398,17 @@ ranges and their cross-repository contract after fresh verification.
   helper into the sole home for stack-specific logic.
 - Behavior: implement the exact stack contract, `/final-review-stack`,
   cumulative OCR pass, strict topology call, compact manifest marker, prompt
-  manifest digest, top-PR report, and `final-ai-stack-review` status.
+  manifest digest, top-PR report, and `final-ai-stack-review` status. Bounded
+  remediation attestation carries one validated OCR range per changed layer,
+  then combines those results before the topology pass.
 - Behavior: re-resolve before publication and reset the top status on any
   member drift. One-layer, fork, draft, malformed, cyclic, unsynchronized, or
   stale stacks fail closed with actionable guidance.
 - Check: G1 and G3 probes; valid one-, two-, and four-layer fixtures; wrong
   ultimate base, duplicate/cycle, malformed API, lower drift, unrelated and
   material base movement, non-descendant remediation, HTTP/finish reason,
-  strict schema, owner validation, warnings, usage, cleanup, and overflow
-  failures; static no-PR-head-execution review; simplifier and
+  strict schema, owner validation, warnings, usage, cleanup, per-layer OCR
+  aggregation, and overflow failures; static no-PR-head-execution review; simplifier and
   architecture/security slice review.
 - Commit: `ci(ocr): add native stack final attestation`.
 
@@ -472,14 +474,18 @@ real runs before proposing any parameter retune or branch-protection context.
 
 ## Progress
 
-- Status: implementation is complete locally; the final integrated review and
-  runtime shutdown are the remaining local steps. Publication and live
+- Status: the final correction slice is implemented locally; correction reviews,
+  one integrated final review, and runtime shutdown remain. Publication and live
   qualification remain withheld.
+- Active slice: close the two integrated-review findings. The shared babysitter
+  now paginates review threads and each thread's comments independently. Native
+  stack attestation now accepts bounded descendant repairs in any changed layer
+  and combines one complete OCR result per changed-layer range.
 - Completed: S1 draft-only discovery, S2 individual descendant attestation, S3
   native-stack attestation, S4 offline qualification assets and documentation,
   and S5 bounded shared babysit state-machine guidance. The implementation
-  ranges are KlickerUZH `2b83fbb49^..1fbd5bdec` and dotfiles
-  `2ec825bc^..3c52228`.
+  ranges are KlickerUZH `2b83fbb49^..working-tree` and dotfiles
+  `2ec825bc^..working-tree` pending the correction commits.
 - G1 is satisfied locally: the native stacks endpoint was probed, its missing
   base-ref limitation was recorded, and every member is cross-checked through
   PR data and Git ancestry. Valid two- and four-layer plus malformed and drift
@@ -492,8 +498,9 @@ real runs before proposing any parameter retune or branch-protection context.
   satisfied: commands, statuses, metadata, finding IDs, dispositions, round
   semantics, and cold-review triggers are fixed and covered. G5 remains
   withheld for a separately authorized post-publication qualification.
-- Verification: the focused review, stack, and qualification suite passes 55
-  tests; the offline evaluator passes all 8 fixtures with digest
+- Verification: the focused review and stack suite passes 40 tests, the
+  qualification suite passes 20 tests, and the offline evaluator passes all 8
+  fixtures with digest
   `0cd238be8315a055cb4f99120bfd45b9ca820b48865fe04a7c10d37de826e442`; and
   `pnpm run check` passes 25 of 25 packages. JSON/YAML/Markdown formatting,
   `git diff --check`, staged secret scanning, and the shared-skill validator
@@ -506,9 +513,10 @@ real runs before proposing any parameter retune or branch-protection context.
   slices. They found and led to fixes for provenance binding, stack-root and
   lower-layer invalidation, top-layer identity drift, consolidated report
   ranges, missing Actions read permission, incremental-root replacement, and
-  shared-skill capability/platform contradictions. The latest dotfiles
-  correction range `d0c45ee..3c52228` received two clean fallback reviews with
-  no actionable findings. The integrated final reviewer is still required.
+  shared-skill capability/platform contradictions. The latest integrated final
+  reviewer found two actionable contract gaps: nested GitHub comment pagination
+  and the missing lower-layer attestation path. Both are now corrected; the
+  correction review pair and integrated rerun are still required.
 - Slice reviews: S1, S2, S3, S4, and S5 are complete; the final S5 correction
   review was accepted unchanged. No safe simplifier reduction remains. The
   reviewer suggestion to extract duplicated trusted lifecycle logic is a
@@ -518,8 +526,8 @@ real runs before proposing any parameter retune or branch-protection context.
   the expected `.env`; no runtime or browser proof is required for this
   CI/skill-only package. The exact runtime will be stopped and verified after
   the final review.
-- Next: run one integrated trusted final-reviewer pass over both complete
-  committed ranges, record its disposition here, make no further behavior
-  changes unless it finds an actionable issue, then commit this Progress
-  update. Do not push, create PRs, write ClickUp tasks, alter branch protection,
-  merge, deploy, or delete the task worktrees.
+- Next: commit this correction slice, run one trusted simplifier/risk pair over
+  the exact correction ranges, then run one integrated trusted final-reviewer
+  pass over both complete committed ranges. Record the final disposition and
+  stop the exact task runtime. Do not push, create PRs, write ClickUp tasks,
+  alter branch protection, merge, deploy, or delete the task worktrees.

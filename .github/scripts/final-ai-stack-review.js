@@ -118,6 +118,7 @@ function stackPlan(membership, context) {
     rootReviewId: '',
     dispositionIds: [],
     dispositionDigest: '',
+    reviewRanges: [],
     topNumber: top.number,
     background: buildStackBackground(membership, context),
   }
@@ -166,6 +167,7 @@ function parseStackReviewMetadata(body) {
       'review_id',
       'root_head',
       'root_review_id',
+      'review_ranges',
       'schema_version',
       'stack_id',
       'stack_identity_digest',
@@ -234,6 +236,22 @@ function parseStackReviewMetadata(body) {
           !Number.isSafeInteger(identity.pull_request) ||
           identity.pull_request <= 0
       ) ||
+      !Array.isArray(metadata.review_ranges) ||
+      metadata.review_ranges.some(
+        (range) =>
+          !range ||
+          typeof range !== 'object' ||
+          Object.keys(range).some(
+            (key) => !['base_sha', 'head_sha', 'layer_number'].includes(key)
+          ) ||
+          !validSha(range.base_sha) ||
+          !validSha(range.head_sha) ||
+          range.base_sha === range.head_sha ||
+          !Number.isSafeInteger(range.layer_number) ||
+          range.layer_number < 1
+      ) ||
+      new Set(metadata.review_ranges.map((range) => range.layer_number))
+        .size !== metadata.review_ranges.length ||
       !Array.isArray(metadata.finding_ids) ||
       !Array.isArray(metadata.findings) ||
       !Array.isArray(metadata.disposition_ids) ||
@@ -296,7 +314,8 @@ function parseStackReviewMetadata(body) {
       (metadata.root_head !== metadata.head_sha ||
         metadata.root_review_id !== '' ||
         metadata.disposition_digest !== '' ||
-        metadata.disposition_ids.length > 0)
+        metadata.disposition_ids.length > 0 ||
+        metadata.review_ranges.length > 0)
     ) {
       return null
     }
@@ -304,7 +323,8 @@ function parseStackReviewMetadata(body) {
       metadata.mode === 'incremental' &&
       (metadata.root_review_id === '' ||
         !validDigest(metadata.disposition_digest) ||
-        metadata.disposition_ids.length === 0)
+        metadata.disposition_ids.length === 0 ||
+        metadata.review_ranges.length === 0)
     ) {
       return null
     }
@@ -470,14 +490,8 @@ function allowedStackIncrementalFile(file, remediationPaths) {
   )
 }
 
-function stackLayerIdentityMatches(previous, current, allowHeadChange = false) {
-  return (
-    previous.base_ref === current.base_ref &&
-    previous.base_sha === current.base_sha &&
-    previous.head_ref === current.head_ref &&
-    previous.pull_request === current.pull_request &&
-    (allowHeadChange || previous.head_sha === current.head_sha)
-  )
+function stackReviewRangesMatch(left, right) {
+  return JSON.stringify(left ?? []) === JSON.stringify(right ?? [])
 }
 
 function stackReviewPlanMatches(plan, expected) {
@@ -489,7 +503,9 @@ function stackReviewPlanMatches(plan, expected) {
     plan.rootHead === expected.rootHead &&
     plan.rootReviewId === expected.rootReviewId &&
     plan.policyDigest === expected.policyDigest &&
-    plan.dispositionDigest === expected.dispositionDigest
+    plan.dispositionDigest === expected.dispositionDigest &&
+    (expected.reviewRanges == null ||
+      stackReviewRangesMatch(plan.reviewRanges, expected.reviewRanges))
   )
 }
 
@@ -516,8 +532,14 @@ async function buildStackReviewPlan({ github, context, membership }) {
     head_sha: pull.head.sha,
     pull_request: number,
   }))
+  const changedLayerIndexes = currentLayerHeads.reduce(
+    (indexes, headSha, index) => {
+      if (headSha !== root.layer_head_shas[index]) indexes.push(index)
+      return indexes
+    },
+    []
+  )
   if (
-    root.head_sha === fullPlan.headSha ||
     root.base_sha !== fullPlan.baseSha ||
     root.stack_id !== fullPlan.stackId ||
     root.stack_order_digest !== fullPlan.stackOrderDigest ||
@@ -525,20 +547,30 @@ async function buildStackReviewPlan({ github, context, membership }) {
     root.layer_head_shas.length !== currentLayerHeads.length ||
     root.layer_identities.length !== currentLayerIdentities.length ||
     root.layer_head_shas.at(-1) !== root.head_sha ||
-    root.layer_head_shas
-      .slice(0, -1)
-      .some((sha, index) => sha !== currentLayerHeads[index]) ||
     root.layer_identities.some(
-      (identity, index) =>
-        !stackLayerIdentityMatches(
-          identity,
-          currentLayerIdentities[index],
-          index === currentLayerIdentities.length - 1
-        )
-    )
+      (identity, index) => identity.head_sha !== root.layer_head_shas[index]
+    ) ||
+    root.layer_identities.some((identity, index) => {
+      const current = currentLayerIdentities[index]
+      const parentChanged =
+        index > 0 &&
+        currentLayerHeads[index - 1] !== root.layer_head_shas[index - 1]
+      const currentParentHead =
+        index > 0 ? currentLayerHeads[index - 1] : root.base_sha
+      return (
+        identity.base_ref !== current.base_ref ||
+        identity.head_ref !== current.head_ref ||
+        identity.pull_request !== current.pull_request ||
+        current.base_sha !== currentParentHead ||
+        (index === 0 && current.base_sha !== identity.base_sha) ||
+        (index > 0 && !parentChanged && current.base_sha !== identity.base_sha)
+      )
+    })
   ) {
     return fullPlan
   }
+
+  if (changedLayerIndexes.length === 0) return fullPlan
 
   const disposition = await latestTrustedStackDisposition({
     github,
@@ -550,18 +582,44 @@ async function buildStackReviewPlan({ github, context, membership }) {
   const remediationPaths = new Set(
     disposition.entries.flatMap((entry) => entry.paths)
   )
-  const comparison = await compareStackRange({
-    github,
-    context,
-    baseSha: root.head_sha,
-    headSha: fullPlan.headSha,
-  })
+  const comparisons = []
+  for (const index of changedLayerIndexes) {
+    const comparison = await compareStackRange({
+      github,
+      context,
+      baseSha: root.layer_head_shas[index],
+      headSha: currentLayerHeads[index],
+    })
+    if (!comparison) return fullPlan
+    comparisons.push({
+      comparison,
+      range: {
+        base_sha: root.layer_head_shas[index],
+        head_sha: currentLayerHeads[index],
+        layer_number: index + 1,
+      },
+    })
+  }
+  const comparisonFiles = comparisons.flatMap(
+    ({ comparison }) => comparison.files
+  )
+  const changedLines = comparisons.reduce(
+    (total, { comparison }) => total + comparison.changedLines,
+    0
+  )
+  const uniqueFiles = [
+    ...new Map(
+      comparisonFiles.map((file) => [
+        `${file.filename}\u0000${file.previous_filename}`,
+        file,
+      ])
+    ).values(),
+  ]
   if (
-    !comparison ||
-    comparison.files.length === 0 ||
-    comparison.files.length > MAX_INCREMENTAL_PATHS ||
-    comparison.changedLines > MAX_INCREMENTAL_LINES ||
-    comparison.files.some(
+    uniqueFiles.length === 0 ||
+    uniqueFiles.length > MAX_INCREMENTAL_PATHS ||
+    changedLines > MAX_INCREMENTAL_LINES ||
+    comparisonFiles.some(
       (file) => !allowedStackIncrementalFile(file, remediationPaths)
     )
   ) {
@@ -579,7 +637,14 @@ async function buildStackReviewPlan({ github, context, membership }) {
           `${entry.finding_id}=${entry.state}(${entry.reference}; paths=${entry.paths.join(',')})`
       )
       .join(', ')}.`,
-    'Inspect the complete bounded top-layer repair range and current stack topology. Report only actionable new or unresolved merge-blocking findings.',
+    `Inspect these complete bounded repair ranges: ${comparisons
+      .map(
+        ({ range }) =>
+          `layer ${range.layer_number} ${range.base_sha}..${range.head_sha}`
+      )
+      .join(
+        ', '
+      )}. Verify the current stack topology and report only actionable new or unresolved merge-blocking findings.`,
   ].join(' ')
   return {
     ...fullPlan,
@@ -587,6 +652,7 @@ async function buildStackReviewPlan({ github, context, membership }) {
     dispositionDigest: disposition.disposition_digest,
     dispositionIds: disposition.entries.map((entry) => entry.finding_id),
     mode: 'incremental',
+    reviewRanges: comparisons.map(({ range }) => range),
     rootHead: root.head_sha,
     rootReviewId: root.review_id,
   }
@@ -789,6 +855,7 @@ async function authorizeStackReview({ github, context, core }) {
   setOutput(core, 'root_review_id', plan.rootReviewId)
   setOutput(core, 'policy_digest', plan.policyDigest)
   setOutput(core, 'disposition_digest', plan.dispositionDigest)
+  core.setOutput('review_ranges', JSON.stringify(plan.reviewRanges ?? []))
   core.setOutput('background', plan.background)
   return true
 }
@@ -994,6 +1061,7 @@ async function startStackReview({
   rootReviewId = '',
   policyDigest,
   dispositionDigest = '',
+  reviewRanges = [],
   manifestPath,
   core,
 }) {
@@ -1028,6 +1096,7 @@ async function startStackReview({
       rootReviewId,
       policyDigest,
       dispositionDigest,
+      reviewRanges,
     }) ||
     plan.baseSha !== baseSha ||
     plan.headSha !== headSha
@@ -1112,6 +1181,44 @@ function validateOCRResult(result, knownPaths = null) {
     })
   }
   return { comments: result.comments, summary, usage }
+}
+
+function combineOCRResults(results) {
+  if (!Array.isArray(results) || results.length === 0) {
+    throw new Error('At least one OCR result is required')
+  }
+  const validated = results.map((result) => validateOCRResult(result))
+  const comments = validated.flatMap(({ comments: items }) => items)
+  const summary = validated.reduce(
+    (combined, { summary: current, usage }) => ({
+      comments: combined.comments + current.comments,
+      files_reviewed: combined.files_reviewed + current.files_reviewed,
+      input_tokens: combined.input_tokens + usage.prompt_tokens,
+      output_tokens: combined.output_tokens + usage.completion_tokens,
+      total_tokens: combined.total_tokens + usage.total_tokens,
+    }),
+    {
+      comments: 0,
+      files_reviewed: 0,
+      input_tokens: 0,
+      output_tokens: 0,
+      total_tokens: 0,
+    }
+  )
+  return {
+    comments,
+    llm: { model: FINAL_REVIEW_MODEL },
+    manifest: {
+      schema_version: 'ocr.run-manifest/v1',
+      terminal_state: 'complete',
+    },
+    status: 'complete',
+    summary: {
+      ...summary,
+      elapsed: `${results.length} bounded OCR range(s)`,
+    },
+    warnings: [],
+  }
 }
 
 function validateFindingComment(comment, index, knownPaths) {
@@ -1251,6 +1358,7 @@ function buildStackReviewId({
   stackOrderDigest: orderDigest,
   policyDigest,
   workflowRunId,
+  reviewRanges = [],
 }) {
   return `fsr-${sha256(
     [
@@ -1262,6 +1370,7 @@ function buildStackReviewId({
       stackId,
       orderDigest,
       policyDigest,
+      JSON.stringify(reviewRanges),
       workflowRunId,
     ].join('|')
   ).slice(0, 24)}`
@@ -1277,6 +1386,7 @@ function renderStackReview({
   rootReviewId = '',
   dispositionIds = [],
   dispositionDigest = '',
+  reviewRanges = [],
   policyDigest,
   workflowUrl,
   workflowHeadSha,
@@ -1299,8 +1409,36 @@ function renderStackReview({
   if (manifest.top.sha !== headSha) {
     throw new Error('Stack manifest top head does not match publication head')
   }
+  const effectiveReviewRanges =
+    mode === 'incremental' && reviewRanges.length === 0
+      ? [
+          {
+            base_sha: rootHead,
+            head_sha: headSha,
+            layer_number: manifest.layers.length,
+          },
+        ]
+      : reviewRanges
+  if (
+    mode === 'incremental' &&
+    (effectiveReviewRanges.length === 0 ||
+      effectiveReviewRanges.some(
+        (range) =>
+          !Number.isSafeInteger(range.layer_number) ||
+          range.layer_number < 1 ||
+          range.layer_number > manifest.layers.length ||
+          !validSha(range.base_sha) ||
+          !validSha(range.head_sha) ||
+          range.base_sha === range.head_sha ||
+          range.head_sha !== manifest.layers[range.layer_number - 1].head_sha
+      ))
+  ) {
+    throw new Error('Incremental stack review ranges are incomplete')
+  }
   const reviewStart =
-    mode === 'incremental' ? rootHead : manifest.ultimate_base?.sha
+    mode === 'incremental' && effectiveReviewRanges.length === 1
+      ? effectiveReviewRanges[0].base_sha
+      : manifest.ultimate_base?.sha
   if (!validSha(reviewStart)) {
     throw new Error('Stack manifest ultimate base identity is missing')
   }
@@ -1337,6 +1475,7 @@ function renderStackReview({
     stackOrderDigest: manifest.stack_order_digest,
     policyDigest,
     workflowRunId,
+    reviewRanges: effectiveReviewRanges,
   })
   const metadata = {
     base_sha: manifest.ultimate_base.sha,
@@ -1363,6 +1502,7 @@ function renderStackReview({
     model: FINAL_REVIEW_MODEL,
     policy_digest: policyDigest,
     review_id: reviewId,
+    review_ranges: effectiveReviewRanges,
     root_head: rootHead,
     root_review_id: rootReviewId,
     schema_version: STACK_REVIEW_SCHEMA,
@@ -1382,7 +1522,14 @@ function renderStackReview({
     `<!-- ${STACK_REVIEW_SCHEMA} ${JSON.stringify(metadata)} -->`,
     `## Final AI stack review · Gemini 3.7 Flash (high reasoning)`,
     '',
-    `Reviewed verified stack ${manifest.stack_id} from \`${reviewStart.slice(0, 12)}\` to \`${headSha.slice(0, 12)}\`.`,
+    effectiveReviewRanges.length <= 1
+      ? `Reviewed verified stack ${manifest.stack_id} from \`${reviewStart.slice(0, 12)}\` to \`${headSha.slice(0, 12)}\`.`
+      : `Reviewed verified stack ${manifest.stack_id} across bounded repair ranges: ${effectiveReviewRanges
+          .map(
+            (range) =>
+              `layer ${range.layer_number} \`${range.base_sha.slice(0, 12)}\` to \`${range.head_sha.slice(0, 12)}\``
+          )
+          .join(', ')}.`,
     `Layers: ${manifest.stack_order.join(' → ')}. This is a ${mode === 'incremental' ? 'bounded stack attestation' : 'cumulative code and topology review'}, not a full production-readiness audit.`,
     '',
     `### ${mode === 'incremental' ? 'Bounded cumulative code attestation' : 'Cumulative code review'}`,
@@ -1570,6 +1717,7 @@ async function publishStackReview({
   rootReviewId = '',
   policyDigest,
   dispositionDigest = '',
+  reviewRanges = [],
   manifestPath,
   resultPath,
   topologyResultPath,
@@ -1593,6 +1741,7 @@ async function publishStackReview({
       rootReviewId,
       policyDigest,
       dispositionDigest,
+      reviewRanges,
     }) ||
     plan.baseSha !== baseSha ||
     plan.headSha !== headSha
@@ -1614,6 +1763,7 @@ async function publishStackReview({
     rootReviewId: plan.rootReviewId,
     dispositionIds: plan.dispositionIds,
     dispositionDigest: plan.dispositionDigest,
+    reviewRanges: plan.reviewRanges,
     policyDigest: plan.policyDigest,
     topologyResult,
     workflowUrl: workflowRunUrl(context),
@@ -1683,6 +1833,7 @@ async function finalizeStackReview({
   rootReviewId = '',
   policyDigest,
   dispositionDigest = '',
+  reviewRanges = [],
   codeOutcome,
   topologyOutcome,
   cleanupOutcome,
@@ -1732,6 +1883,7 @@ async function finalizeStackReview({
       rootReviewId,
       policyDigest,
       dispositionDigest,
+      reviewRanges,
     }) && plan.baseSha === baseSha
   await setStackStatus({
     github,
@@ -1751,7 +1903,25 @@ async function finalizeStackReview({
 }
 
 function runTopologyCli() {
-  const [, , command, manifestPath, codeResultPath, outputPath] = process.argv
+  const [, , command, ...args] = process.argv
+  if (command === 'combine-ocr') {
+    const [outputPath, ...resultPaths] = args
+    if (!outputPath || resultPaths.length === 0) {
+      throw new Error(
+        'Usage: final-ai-stack-review.js combine-ocr <output> <ocr-result>...'
+      )
+    }
+    const results = resultPaths.map((resultPath) =>
+      JSON.parse(fs.readFileSync(resultPath, 'utf8'))
+    )
+    fs.writeFileSync(outputPath, JSON.stringify(combineOCRResults(results)), {
+      encoding: 'utf8',
+      mode: 0o600,
+    })
+    console.log('OCR range results combined')
+    return
+  }
+  const [manifestPath, codeResultPath, outputPath] = args
   if (
     command !== 'topology' ||
     !manifestPath ||
@@ -1805,6 +1975,7 @@ module.exports = {
   buildStackSnapshot,
   buildTopologyRequest,
   callTopologyModel,
+  combineOCRResults,
   decideStackStatus,
   finalizeStackReview,
   hasSuccessfulStackReview,
