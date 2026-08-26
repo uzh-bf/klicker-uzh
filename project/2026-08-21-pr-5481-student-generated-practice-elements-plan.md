@@ -1523,3 +1523,18 @@ Settled rulings for this implementation:
   attempt reached post-create but failed the auth readiness contract. Both
   runtimes were stopped and verified. The five release slices remain the
   active execution scope.
+- 2026-08-26 (release-hardening execution, S1/S2): The Layer A verification
+  cleanup was committed as `f61f87024`; content-version-safe semantic edits
+  and atomic expected-version responses were then committed as `fad3cc057`.
+  The terminology cleanup removes the unused element-proposal glossary entry.
+  The S2 review correction is committed as `583359f24`: the new-card interval
+  baseline is zero across the service and schemas, source equality is
+  order-insensitive for JSON object keys, and the regression covers explanation
+  edits, identical sources, and a response racing a revision. Repository
+  commit checks pass, including generated GraphQL schema consistency,
+  TypeScript checks, Prisma sync, formatting, lint, and syncpack. The focused
+  personal-elements Vitest run remains blocked by the task database/test
+  harness: setup timed out and reported terminated Prisma connections before
+  the test file completed. The read-only S2 simplifier/data review is recorded
+  in `project/_local/reviews/2026-08-26-s2-content-version-review.md`. No Layer
+  A push or dependent layer propagation has happened yet.
