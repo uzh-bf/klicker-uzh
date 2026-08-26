@@ -2,9 +2,6 @@
 CREATE TYPE "PersonalElementOrigin" AS ENUM ('AI_GENERATED', 'AUTHORED');
 
 -- CreateEnum
-CREATE TYPE "PersonalElementVerification" AS ENUM ('UNVERIFIED', 'VERIFIED');
-
--- CreateEnum
 CREATE TYPE "ChatGenerationApprovalStatus" AS ENUM ('CLAIMED', 'COMPLETED', 'ABORTED');
 
 -- CreateTable
@@ -20,7 +17,6 @@ CREATE TABLE "PersonalElement" (
     "options" JSONB NOT NULL,
     "sources" JSONB,
     "origin" "PersonalElementOrigin" NOT NULL DEFAULT 'AI_GENERATED',
-    "verification" "PersonalElementVerification" NOT NULL DEFAULT 'UNVERIFIED',
     "sourceMessageId" UUID,
     "sourceToolCallId" TEXT,
     "candidateId" TEXT,

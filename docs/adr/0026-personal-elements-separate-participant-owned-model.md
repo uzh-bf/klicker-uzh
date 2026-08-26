@@ -26,10 +26,10 @@ written to `Element`, `ElementInstance`, `ElementStack`, `PracticeQuiz`, or
 `QuestionResponse`. It reuses the element content shape, the shared
 `Flashcard` component, and the `updateSpacedRepetition` function, but runs in
 its own practice surface ("My cards") with its own respond mutation.
-Unverified content therefore cannot reach another student's practice path or
-any lecturer analytics by construction ("gate before pool"). A later lecturer
-verification copies content into a real `Element`; it does not re-parent the
-row.
+Personal content therefore cannot reach another student's practice path or any
+lecturer analytics by construction ("gate before pool"). A later
+course-adoption flow copies content into a real `Element`; it does not re-parent
+the participant row or infer trust from a field on it.
 
 ## Consequences
 

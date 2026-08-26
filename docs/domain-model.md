@@ -67,8 +67,9 @@ The row keeps its own SM-2 state (`eFactor`, `interval`, streak and response
 counters, and `nextDueAt`). The GraphQL service caps a participant at 500 cards
 per course, validates source metadata (up to 32 chunk references, bounded IDs,
 titles, URLs, and 64 KiB serialized metadata), and persists no retrieved text.
-AI-generated cards remain `UNVERIFIED`; revisions increment `version` and
-return the card to `UNVERIFIED` without changing its SM-2 state.
+The `origin` field records whether content was AI-generated or authored. Content
+revisions increment `version`; the revision and learning-state reset contract is
+defined by the service and does not create a lecturer trust state.
 
 `ChatGenerationApproval` is the durable claim for an approved Chat generation.
 Its participant, chatbot, thread, plan message, and optional generated message

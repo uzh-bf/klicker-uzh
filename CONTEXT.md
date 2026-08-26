@@ -91,13 +91,10 @@ proposal).
 a person. Who owns it is a separate fact. _Avoid_: source (that word names
 citations).
 
-**Verification**: The lecturer review state of a personal element: unverified
-until a lecturer has verified it. Unrelated to account verification. _Avoid_:
-approval (chatbot publication), review (activity review status).
-
-**Element proposal**: A student's explicit request that a lecturer verify a
-personal element and add it to the course. _Avoid_: submission (answering),
-proposal alone (credit configuration).
+**Element proposal**: A student's explicit request that a lecturer review a
+personal element for possible course adoption. Adoption creates a new lecturer
+element; it never re-parents the personal element. _Avoid_: submission
+(answering), proposal alone (credit configuration).
 
 **Activity**: The umbrella for the four things a course can run — **live
 quiz**, **practice quiz**, **microlearning**, and **group activity**. Use the

@@ -3060,7 +3060,6 @@ type PersonalElement {
   sources: [PersonalElementSource!]
   type: ElementType!
   updatedAt: Date!
-  verification: PersonalElementVerification!
   version: Int!
   wrongCount: Int!
 }
@@ -3094,11 +3093,6 @@ input PersonalElementSourceInput {
   sourceId: String!
   title: String
   url: String
-}
-
-enum PersonalElementVerification {
-  UNVERIFIED
-  VERIFIED
 }
 
 type PointCorrection {

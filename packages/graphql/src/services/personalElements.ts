@@ -253,7 +253,6 @@ function toCreateData(
       candidate.origin === 'AUTHORED'
         ? DB.PersonalElementOrigin.AUTHORED
         : DB.PersonalElementOrigin.AI_GENERATED,
-    verification: DB.PersonalElementVerification.UNVERIFIED,
     sourceMessageId: candidate.sourceMessageId,
     sourceToolCallId: candidate.sourceToolCallId,
     candidateId: candidate.candidateId,
@@ -492,7 +491,6 @@ export async function updatePersonalElement(
       data: {
         ...parsedUpdate,
         version: { increment: 1 },
-        verification: DB.PersonalElementVerification.UNVERIFIED,
       },
     })
   })
