@@ -27,11 +27,11 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: '1d19ad9efc6e'
+        rollout.klicker.uzh.ch/release: '777a1d960414'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: Always
-        tag: v3
+        tag: v3-ai
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -49,11 +49,11 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: '1d19ad9efc6e'
+        rollout.klicker.uzh.ch/release: '777a1d960414'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3
+        tag: v3-ai
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -71,11 +71,11 @@ hatchet:
       replicaCount: 1
       priorityClassName: staging-workload
       podAnnotations:
-        rollout.klicker.uzh.ch/release: '1d19ad9efc6e'
+        rollout.klicker.uzh.ch/release: '777a1d960414'
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: Always
-        tag: v3
+        tag: v3-ai
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -105,7 +105,7 @@ hatchet:
 auth:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '1d19ad9efc6e'
+    rollout.klicker.uzh.ch/release: '777a1d960414'
 
   replicaCount: 1
 
@@ -128,7 +128,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   ingress:
     annotations:
@@ -159,7 +159,7 @@ chat:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '1d19ad9efc6e'
+    rollout.klicker.uzh.ch/release: '777a1d960414'
 
   openai:
     baseUrl: 'http://litellm.stg-litellm.svc.cluster.local:4000/v1'
@@ -281,7 +281,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   ingress:
     annotations:
@@ -313,7 +313,7 @@ frontendPWA:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '1d19ad9efc6e'
+    rollout.klicker.uzh.ch/release: '777a1d960414'
 
   replicaCount: 1
 
@@ -336,7 +336,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   ingress:
     className: haproxy
@@ -365,7 +365,7 @@ frontendPWA:
 frontendManage:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '1d19ad9efc6e'
+    rollout.klicker.uzh.ch/release: '777a1d960414'
 
   replicaCount: 1
 
@@ -388,7 +388,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   ingress:
     className: haproxy
@@ -418,14 +418,14 @@ frontendControl:
   allowedFrameAncestors: 'https://*.df-app.ch https://*.olat.uzh.ch https://lms.uzh.ch'
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '1d19ad9efc6e'
+    rollout.klicker.uzh.ch/release: '777a1d960414'
 
   replicaCount: 1
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   autoscaling:
     enabled: false
@@ -470,7 +470,7 @@ frontendControl:
 backendGraphql:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '1d19ad9efc6e'
+    rollout.klicker.uzh.ch/release: '777a1d960414'
 
   replicaCount: 1
 
@@ -493,7 +493,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -538,14 +538,14 @@ backendGraphql:
 olatApi:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '1d19ad9efc6e'
+    rollout.klicker.uzh.ch/release: '777a1d960414'
 
   replicaCount: 1
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   autoscaling:
     enabled: false
@@ -590,7 +590,7 @@ olatApi:
 lti:
   priorityClassName: staging-workload
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '1d19ad9efc6e'
+    rollout.klicker.uzh.ch/release: '777a1d960414'
   replicaCount: 1
 
   affinity:
@@ -617,7 +617,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: Always
-    tag: v3
+    tag: v3-ai
 
   ingress:
     className: haproxy
@@ -639,13 +639,13 @@ responseApi:
   priorityClassName: staging-workload
 
   podAnnotations:
-    rollout.klicker.uzh.ch/release: '1d19ad9efc6e'
+    rollout.klicker.uzh.ch/release: '777a1d960414'
 
   replicaCount: 1
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3
+    tag: v3-ai
     pullPolicy: Always
 
   autoscaling:
@@ -692,7 +692,7 @@ assessment:
   frontendPWA:
     priorityClassName: staging-workload
     podAnnotations:
-      rollout.klicker.uzh.ch/release: '1d19ad9efc6e'
+      rollout.klicker.uzh.ch/release: '777a1d960414'
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -726,7 +726,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: Always
-      tag: v3
+      tag: v3-ai
 
     ingress:
       className: haproxy
@@ -755,7 +755,7 @@ assessment:
   backendGraphql:
     priorityClassName: staging-workload
     podAnnotations:
-      rollout.klicker.uzh.ch/release: '1d19ad9efc6e'
+      rollout.klicker.uzh.ch/release: '777a1d960414'
     replicaCount: 1
     autoscaling:
       enabled: false
@@ -789,7 +789,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: Always
-      tag: v3
+      tag: v3-ai
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -832,7 +832,7 @@ assessment:
     priorityClassName: staging-workload
 
     podAnnotations:
-      rollout.klicker.uzh.ch/release: '1d19ad9efc6e'
+      rollout.klicker.uzh.ch/release: '777a1d960414'
     replicaCount: 1
 
     autoscaling:
@@ -867,7 +867,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: Always
-      tag: v3
+      tag: v3-ai
 
     ingress:
       className: haproxy

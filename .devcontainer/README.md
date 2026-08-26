@@ -173,9 +173,10 @@ analytics image and lint CI so the root quality gate runs inside the container.
   Klicker DevPod that uses it first, then remove that exact volume manually with
   `docker volume rm klicker-uzh-pnpm-store-v1`; never use broad Docker pruning.
 - Reset the DB without seeding: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`.
-- `response-api` + both workers run `tsx --watch --env-file=.env`; node 24 errors
-  if `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir
-  (the container env from `devcontainer.env` is what actually applies).
+- `response-api` runs `tsx --watch --env-file=.env`; both Hatchet workers compile
+  with Rollup and run the emitted JavaScript under nodemon. Node 24 errors if
+  `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir (the
+  container env from `devcontainer.env` is what actually applies).
 - Tier 3 (`chat`) needs an upstream LLM key: set `UPSTREAM_OPENAI_API_KEY`.
 - Auto V2 sends its Luna-low classification and semantic embedding requests to
   the same upstream as the selected answer model. With OpenRouter, use only
