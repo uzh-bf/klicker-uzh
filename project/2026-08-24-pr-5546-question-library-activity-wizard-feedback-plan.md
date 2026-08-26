@@ -34,11 +34,12 @@ uncrowned regardless of Catalyst entitlement.
   committed locally at `c65e52413752a47dd16e29b60e05dbe7fd0d7417` and
   integrated through the reviewed branch history. Current base-only merge
   `79e356831c8354dade4c24ce83a52a08bff0cfda` remains local. GitHub is
-  authoritative for volatile PR and check state; read-only final-review delta
-  verification, normal push, PR body update, exact-head CI, and thread
-  resolution remain pending. PR merge, mark-ready, deployment, publication,
-  worktree cleanup, and branch, worktree, or runtime-data deletion remain
-  withheld.
+  authoritative for volatile PR and check state. Final local review and delta
+  verification are complete through exact head
+  `6284f3d5a45d706f3f5fd02821bff5f90b40e5dd`; normal push, PR body update,
+  exact-head CI, and thread resolution remain pending. PR merge, mark-ready,
+  deployment, publication, worktree cleanup, and branch, worktree, or
+  runtime-data deletion remain withheld.
 
 ## Execution contract
 
@@ -103,10 +104,11 @@ uncrowned regardless of Catalyst entitlement.
   `510ab4308e516b69294fcb1dae69adbb6c9feea2`; current local merge commit
   `79e356831c8354dade4c24ce83a52a08bff0cfda` integrates the CI-only current
   base over reviewed head `67f5a43363557a3e464831bb35d2dba6ea6805a9`.
-  GitHub is authoritative for volatile PR and check state. Read-only
-  final-review delta verification, normal push, PR body update, exact-head CI,
-  and thread resolution remain pending; PR merge, mark-ready, deployment,
-  publication, cleanup, and deletion remain withheld.
+  GitHub is authoritative for volatile PR and check state. Final local review
+  and delta verification are complete through exact head
+  `6284f3d5a45d706f3f5fd02821bff5f90b40e5dd`; normal push, PR body update,
+  exact-head CI, and thread resolution remain pending. PR merge, mark-ready,
+  deployment, publication, cleanup, and deletion remain withheld.
 - Authoritative roadmap:
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/question-library-feedback-recovery/project/2026-08-23-question-library-ux-audit-and-roadmap.md`
   on `rs/question-library-feedback-recovery` at `5d7c0284890db55a93da1cb66a1ca87ab03f2e0d`.
@@ -428,9 +430,10 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
 - Current merge `79e356831c8354dade4c24ce83a52a08bff0cfda` adds only the
   `playwright/timings.json` change from current base
   `de103a52d982a29af72022069ad668bc68f84094` over reviewed head
-  `67f5a43363557a3e464831bb35d2dba6ea6805a9`. Read-only final-review delta
-  verification of that base-only merge and the resulting plan update is pending
-  before push.
+  `67f5a43363557a3e464831bb35d2dba6ea6805a9`. The same independent reviewer
+  passed exact range `67f5a43363557a3e464831bb35d2dba6ea6805a9..6284f3d5a45d706f3f5fd02821bff5f90b40e5dd`
+  with zero findings: branch-owned code and prior fixes are unchanged, and the
+  plan, completed prior review, and proven runtime shutdown remain consistent.
 - Review lenses were correctness, plan compliance, user workflow, bilingual
   i18n, accessibility, shared navigation compatibility, test sufficiency,
   maintainability, bounded frontend security, and diff scope. The reviewer
@@ -439,10 +442,11 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   durable plan. That documentation finding is accepted and resolved by this
   edit; the completed code review remains valid for its reviewed range.
 - Draft PR #5546 exists and GitHub remains authoritative for volatile PR and
-  check state. The read-only final-review delta verification, normal push, PR
-  body update, exact-head CI, and review-thread resolution remain pending. PR
-  merge, mark-ready, deployment, publication, worktree cleanup, and branch or
-  worktree deletion remain withheld.
+  check state. Final local review and delta verification are complete through
+  exact head `6284f3d5a45d706f3f5fd02821bff5f90b40e5dd`. Normal push, PR body
+  update, exact-head CI, and review-thread resolution remain pending. PR merge,
+  mark-ready, deployment, publication, worktree cleanup, and branch or worktree
+  deletion remain withheld.
 
 ## Risks and stop conditions
 
@@ -467,21 +471,21 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   browser evidence, and the environment-blocked repository Playwright run.
 - Host readback proves branch and PR-body synchronization for each published
   head. GitHub is authoritative for volatile current PR and check state. The
-  current local merge `79e356831c8354dade4c24ce83a52a08bff0cfda`
-  remains unpublished. Read-only final-review delta verification of its
-  base-only change and this plan update, normal push, PR body update, exact-head
-  CI, and review-thread resolution remain pending. PR merge, mark-ready,
-  deployment, publication, cleanup, and deletion remain withheld.
+  reviewed exact head `6284f3d5a45d706f3f5fd02821bff5f90b40e5dd`
+  remains unpublished. Final local review and delta verification are complete;
+  normal push, PR body update, exact-head CI, and review-thread resolution remain
+  pending. PR merge, mark-ready, deployment, publication, cleanup, and deletion
+  remain withheld.
 
 ## Progress
 
 - Status: W2 implementation, checks, exact devrouter proof, evidence, the code
   correction, completed independent integrated final review, and runtime
-  lifecycle closure remain complete through reviewed head
-  `67f5a43363557a3e464831bb35d2dba6ea6805a9`. Read-only final-review delta
-  verification of the new base-only merge and this plan update is pending before
-  push. Runtime closure retains fresh exact-source provider and zero-route
-  readback.
+  lifecycle closure remain complete. The same independent reviewer passed the
+  current base-only merge and plan delta with zero findings, so final local
+  review is complete through exact head
+  `6284f3d5a45d706f3f5fd02821bff5f90b40e5dd`. Runtime closure retains fresh
+  exact-source provider and zero-route readback.
 - Freshness: the integrated base and merge-base are
   `de103a52d982a29af72022069ad668bc68f84094`, which is also the current
   `origin/v3`. Exact ahead/behind counts are not durable Progress state.
@@ -851,11 +855,9 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   `devrouter ls --json` reported an exact source-path route count of 0. No
   workaround, cache clearing, route, TLS, or configuration change, raw
   DevPod/Docker mutation, or deletion occurred. The earlier failed-closed Chat
-  Turbopack readiness evidence remains unchanged. Read-only final-review delta
-  verification of the base-only merge and this resulting plan update is pending
-  before push. No new push, PR body update, exact-head CI, or thread resolution
-  is claimed; merge, mark-ready, deployment, publication, cleanup, and deletion
-  remain withheld.
+  Turbopack readiness evidence remains unchanged. No new push, PR body update,
+  exact-head CI, or thread resolution is claimed; merge, mark-ready, deployment,
+  publication, cleanup, and deletion remain withheld.
 - Required independent integrated final review completed on exact immutable
   head `259f92a6be3a2a2cb3808f1c1d1305e6a276383d`, covering integrated base
   `ac84460d2209c51842f0857da75cf7d7f258ae09` through the code correction,
@@ -863,10 +865,19 @@ Fresh final checks, all produced by the exact runtime unless stated otherwise:
   code, security, regression, maintainability, or test issue; its sole finding
   was this plan's contradictory review status. This edit accepts and resolves
   that documentation finding, so final review of that immutable range is
-  complete. Read-only delta verification of the current base-only merge and
-  resulting plan update, normal push, PR body update, exact-head CI, and
-  review-thread resolution remain pending; PR merge, mark-ready, deployment,
-  publication, cleanup, and deletion remain withheld.
+  complete. Normal push, PR body update, exact-head CI, and review-thread
+  resolution remain pending; PR merge, mark-ready, deployment, publication,
+  cleanup, and deletion remain withheld.
+- The same independent reviewer passed exact range
+  `67f5a43363557a3e464831bb35d2dba6ea6805a9..6284f3d5a45d706f3f5fd02821bff5f90b40e5dd`
+  with zero findings. Merge `79e356831c8354dade4c24ce83a52a08bff0cfda`
+  imports only current `v3`'s `playwright/timings.json`; branch-owned code and
+  prior fixes are unchanged, and the plan, completed prior review, and proven
+  runtime shutdown are consistent. Final local review and delta verification
+  are complete through exact head
+  `6284f3d5a45d706f3f5fd02821bff5f90b40e5dd`. Normal push, PR body update,
+  exact-head CI, and review-thread resolution remain pending; PR merge,
+  mark-ready, deployment, publication, cleanup, and deletion remain withheld.
 
 ### Historical execution evidence before final runtime proof
 
