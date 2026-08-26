@@ -2446,6 +2446,7 @@ function createGhGithub({ repository, defaultBranch }) {
   const commitsEndpoint = namedGhEndpoint('commits')
   const filesEndpoint = namedGhEndpoint('files')
   const workflowRunsEndpoint = namedGhEndpoint('workflow-runs')
+  const checksEndpoint = namedGhEndpoint('checks')
 
   const github = {
     rest: {
@@ -2459,6 +2460,9 @@ function createGhGithub({ repository, defaultBranch }) {
           data: runGhApi(endpoint(`actions/runs/${run_id}`)),
         }),
         listWorkflowRunsForRepo: workflowRunsEndpoint,
+      },
+      checks: {
+        listForRef: checksEndpoint,
       },
       issues: { listComments: commentsEndpoint },
       pulls: {
@@ -2548,6 +2552,14 @@ function createGhGithub({ repository, defaultBranch }) {
             }
           ),
           (page) => page?.workflow_runs
+        )
+      }
+      if (method.ghName === 'checks') {
+        return runGhPaginated(
+          ghQuery(endpoint(`commits/${params.ref}/check-runs`), {
+            per_page: 100,
+          }),
+          (page) => page?.check_runs
         )
       }
       throw new Error('GitHub CLI pagination endpoint is unsupported')

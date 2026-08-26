@@ -32,6 +32,8 @@ const {
 const STACK_REVIEW_COMMAND = '/final-review-stack'
 const STACK_REVIEW_CONTEXT = 'final-ai-stack-review'
 const STACK_REVIEW_SCHEMA = 'final-ai-stack-review/v4'
+const STACK_CLEAN_EVIDENCE_SCHEMA = 'final-ai-stack-clean-evidence/v1'
+const STACK_CLEAN_EVIDENCE_CHECK_NAME = 'Final AI stack clean evidence'
 const STACK_REVIEW_WORKFLOW_PATH =
   '.github/workflows/check-ocr-final-stack-review.yml'
 const STACK_REVIEW_CLEAN_STATUS_PREFIX = `${FINAL_REVIEW_MODEL} stack review clean; evidence=`
@@ -42,6 +44,7 @@ const STACK_SCHEMA_PATH =
 const OPENROUTER_API_KEY_ENV = 'OPENROUTER_API_KEY'
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 const REPORT_LIMIT = 55_000
+const CLEAN_EVIDENCE_LIMIT = REPORT_LIMIT
 const MAX_MANIFEST_FILES = 2_000
 const MAX_REVIEWED_PATH_ALIASES = MAX_MANIFEST_FILES * 2
 const MAX_PATCH_LENGTH = 200_000
@@ -78,6 +81,35 @@ function pathAliasesFromFiles(files) {
     if (file?.previous_filename) aliases.add(file.previous_filename)
   }
   return [...aliases].sort(compareRepositoryPaths)
+}
+
+function stackReviewPathsFromMembership(membership) {
+  const reviewedPaths = new Set()
+  const reviewedPathAliases = new Set()
+  for (const range of membership?.ranges ?? []) {
+    const files = range?.response?.data?.files
+    if (!Array.isArray(files)) return null
+    for (const file of files) {
+      if (!safeRepositoryPath(file?.filename)) return null
+      reviewedPaths.add(file.filename)
+      reviewedPathAliases.add(file.filename)
+      if (file.previous_filename) {
+        if (!safeRepositoryPath(file.previous_filename)) return null
+        reviewedPathAliases.add(file.previous_filename)
+      }
+    }
+  }
+  const paths = [...reviewedPaths].sort(compareRepositoryPaths)
+  const aliases = [...reviewedPathAliases].sort(compareRepositoryPaths)
+  if (
+    paths.length === 0 ||
+    paths.length > MAX_MANIFEST_FILES ||
+    aliases.length === 0 ||
+    aliases.length > MAX_REVIEWED_PATH_ALIASES
+  ) {
+    return null
+  }
+  return { reviewedPaths: paths, reviewedPathAliases: aliases }
 }
 
 function sha256(value) {
@@ -130,6 +162,269 @@ function stackIdentityDigestFromLayerIdentities(identities) {
       )
     )
   )
+}
+
+function canonicalStackLayerIdentities(plan, membership) {
+  return membership.members.map(({ number, pull }, index) => ({
+    base_ref: pull.base.ref,
+    base_sha:
+      plan.baseAdvancePreserved && index === 0 ? plan.baseSha : pull.base.sha,
+    head_ref: pull.head.ref,
+    head_sha: pull.head.sha,
+    pull_request: number,
+  }))
+}
+
+function buildStackCleanEvidenceMetadata({
+  context,
+  membership,
+  plan,
+  trustedSha,
+}) {
+  const paths = stackReviewPathsFromMembership(membership)
+  if (!paths) {
+    throw new Error('Stack clean evidence paths are incomplete')
+  }
+  if (
+    !validSha(context.sha) ||
+    !validSha(trustedSha) ||
+    !Number.isSafeInteger(context.runId) ||
+    context.runId <= 0
+  ) {
+    throw new Error('Stack clean evidence workflow provenance is incomplete')
+  }
+  const layerIdentities = canonicalStackLayerIdentities(plan, membership)
+  const evidenceDigest = buildStackCleanReviewEvidenceDigest({
+    plan,
+    membership,
+  })
+  return {
+    base_sha: plan.baseSha,
+    disposition_digest: plan.dispositionDigest,
+    disposition_ids: plan.dispositionIds ?? [],
+    evidence_digest: evidenceDigest,
+    finding_count: 0,
+    head_sha: plan.headSha,
+    kind: 'clean',
+    layer_head_shas: membership.members.map(({ pull }) => pull.head.sha),
+    layer_identities: layerIdentities,
+    member_numbers: plan.memberNumbers,
+    mode: plan.mode,
+    model: FINAL_REVIEW_MODEL,
+    policy_digest: plan.policyDigest,
+    reviewed_path_aliases: paths.reviewedPathAliases,
+    reviewed_paths: paths.reviewedPaths,
+    review_ranges: plan.reviewRanges ?? [],
+    root_head: plan.rootHead,
+    root_review_id: plan.rootReviewId,
+    schema_version: STACK_CLEAN_EVIDENCE_SCHEMA,
+    stack_id: plan.stackId,
+    stack_identity_digest:
+      stackIdentityDigestFromLayerIdentities(layerIdentities),
+    stack_order_digest: plan.stackOrderDigest,
+    topology_finding_count: 0,
+    trusted_policy_sha: trustedSha,
+    workflow_head_sha: context.sha,
+    workflow_path: STACK_REVIEW_WORKFLOW_PATH,
+    workflow_run_id: context.runId,
+    workflow_sha: trustedSha,
+    workflow_url: workflowRunUrl(context),
+  }
+}
+
+function validCleanEvidenceReviewRanges(ranges, mode) {
+  if (!Array.isArray(ranges) || (mode === 'full' && ranges.length !== 0)) {
+    return false
+  }
+  if (mode === 'incremental' && ranges.length === 0) return false
+  return ranges.every((range, index) => {
+    if (
+      !range ||
+      typeof range !== 'object' ||
+      Object.keys(range).some(
+        (key) =>
+          !['base_sha', 'head_sha', 'layer_number', 'files'].includes(key)
+      ) ||
+      !validSha(range.base_sha) ||
+      !validSha(range.head_sha) ||
+      range.base_sha === range.head_sha ||
+      !Number.isSafeInteger(range.layer_number) ||
+      range.layer_number < 1 ||
+      (index > 0 && ranges[index - 1].layer_number >= range.layer_number) ||
+      !Array.isArray(range.files)
+    ) {
+      return false
+    }
+    return range.files.every(
+      (file) =>
+        file &&
+        typeof file === 'object' &&
+        Object.keys(file).every((key) =>
+          ['filename', 'changed_line_ranges'].includes(key)
+        ) &&
+        safeRepositoryPath(file.filename) &&
+        Array.isArray(file.changed_line_ranges) &&
+        file.changed_line_ranges.every(
+          (lineRange) =>
+            lineRange &&
+            typeof lineRange === 'object' &&
+            Object.keys(lineRange).every((key) =>
+              ['start_line', 'end_line'].includes(key)
+            ) &&
+            Number.isSafeInteger(lineRange.start_line) &&
+            Number.isSafeInteger(lineRange.end_line) &&
+            lineRange.start_line >= 1 &&
+            lineRange.end_line >= lineRange.start_line
+        )
+    )
+  })
+}
+
+function parseStackCleanEvidence(body) {
+  const match = String(body ?? '').match(
+    new RegExp(
+      `<!-- ${STACK_CLEAN_EVIDENCE_SCHEMA.replace('/', '\\/')} ([A-Za-z0-9_-]+) -->`
+    )
+  )
+  if (!match) return null
+  try {
+    const metadata = decodeMetadata(match[1])
+    const expectedKeys = new Set([
+      'base_sha',
+      'disposition_digest',
+      'disposition_ids',
+      'evidence_digest',
+      'finding_count',
+      'head_sha',
+      'kind',
+      'layer_head_shas',
+      'layer_identities',
+      'member_numbers',
+      'mode',
+      'model',
+      'policy_digest',
+      'review_ranges',
+      'reviewed_path_aliases',
+      'reviewed_paths',
+      'root_head',
+      'root_review_id',
+      'schema_version',
+      'stack_id',
+      'stack_identity_digest',
+      'stack_order_digest',
+      'topology_finding_count',
+      'trusted_policy_sha',
+      'workflow_head_sha',
+      'workflow_path',
+      'workflow_run_id',
+      'workflow_sha',
+      'workflow_url',
+    ])
+    if (
+      !metadata ||
+      typeof metadata !== 'object' ||
+      Object.keys(metadata).some((key) => !expectedKeys.has(key)) ||
+      metadata.schema_version !== STACK_CLEAN_EVIDENCE_SCHEMA ||
+      metadata.kind !== 'clean' ||
+      metadata.model !== FINAL_REVIEW_MODEL ||
+      !['full', 'incremental'].includes(metadata.mode) ||
+      !validSha(metadata.base_sha) ||
+      !validSha(metadata.head_sha) ||
+      !validSha(metadata.root_head) ||
+      (metadata.root_review_id !== '' &&
+        !/^fsr-[0-9a-f]{24}$/.test(metadata.root_review_id ?? '')) ||
+      !validDigest(metadata.evidence_digest) ||
+      !validDigest(metadata.policy_digest) ||
+      (metadata.disposition_digest !== '' &&
+        !validDigest(metadata.disposition_digest)) ||
+      !validSha(metadata.trusted_policy_sha) ||
+      !validSha(metadata.workflow_head_sha) ||
+      !validSha(metadata.workflow_sha) ||
+      metadata.workflow_sha !== metadata.trusted_policy_sha ||
+      metadata.workflow_path !== STACK_REVIEW_WORKFLOW_PATH ||
+      typeof metadata.workflow_url !== 'string' ||
+      !metadata.workflow_url ||
+      !Number.isSafeInteger(metadata.workflow_run_id) ||
+      metadata.workflow_run_id <= 0 ||
+      typeof metadata.stack_id !== 'string' ||
+      !metadata.stack_id ||
+      metadata.stack_id.length > 200 ||
+      /[\p{Cc}\p{Cf}]/u.test(metadata.stack_id) ||
+      !validDigest(metadata.stack_identity_digest) ||
+      !validDigest(metadata.stack_order_digest) ||
+      !Number.isInteger(metadata.finding_count) ||
+      metadata.finding_count !== 0 ||
+      !Number.isInteger(metadata.topology_finding_count) ||
+      metadata.topology_finding_count !== 0 ||
+      !Array.isArray(metadata.member_numbers) ||
+      metadata.member_numbers.length < 2 ||
+      metadata.member_numbers.some(
+        (number) => !Number.isSafeInteger(number) || number <= 0
+      ) ||
+      !Array.isArray(metadata.layer_head_shas) ||
+      metadata.layer_head_shas.length !== metadata.member_numbers.length ||
+      metadata.layer_head_shas.some((sha) => !validSha(sha)) ||
+      !Array.isArray(metadata.layer_identities) ||
+      metadata.layer_identities.length !== metadata.member_numbers.length ||
+      metadata.layer_identities.some(
+        (identity, index) =>
+          !identity ||
+          typeof identity !== 'object' ||
+          Object.keys(identity).some(
+            (key) =>
+              ![
+                'base_ref',
+                'base_sha',
+                'head_ref',
+                'head_sha',
+                'pull_request',
+              ].includes(key)
+          ) ||
+          typeof identity.base_ref !== 'string' ||
+          typeof identity.head_ref !== 'string' ||
+          !identity.base_ref ||
+          !identity.head_ref ||
+          !validSha(identity.base_sha) ||
+          !validSha(identity.head_sha) ||
+          !Number.isSafeInteger(identity.pull_request) ||
+          identity.pull_request !== metadata.member_numbers[index] ||
+          identity.head_sha !== metadata.layer_head_shas[index]
+      ) ||
+      JSON.stringify(metadata.member_numbers) !==
+        JSON.stringify(
+          metadata.layer_identities.map((identity) => identity.pull_request)
+        ) ||
+      metadata.stack_identity_digest !==
+        stackIdentityDigestFromLayerIdentities(metadata.layer_identities) ||
+      !Array.isArray(metadata.reviewed_paths) ||
+      metadata.reviewed_paths.length === 0 ||
+      metadata.reviewed_paths.length > MAX_MANIFEST_FILES ||
+      metadata.reviewed_paths.some(
+        (filePath, index, paths) =>
+          !safeRepositoryPath(filePath) ||
+          (index > 0 && paths[index - 1] >= filePath)
+      ) ||
+      !Array.isArray(metadata.reviewed_path_aliases) ||
+      metadata.reviewed_path_aliases.length === 0 ||
+      metadata.reviewed_path_aliases.length > MAX_REVIEWED_PATH_ALIASES ||
+      metadata.reviewed_path_aliases.some(
+        (filePath, index, paths) =>
+          !safeRepositoryPath(filePath) ||
+          (index > 0 && paths[index - 1] >= filePath)
+      ) ||
+      metadata.reviewed_paths.some(
+        (filePath) => !metadata.reviewed_path_aliases.includes(filePath)
+      ) ||
+      !validCleanEvidenceReviewRanges(metadata.review_ranges, metadata.mode) ||
+      !Array.isArray(metadata.disposition_ids) ||
+      metadata.disposition_ids.some((id) => typeof id !== 'string')
+    ) {
+      return null
+    }
+    return metadata
+  } catch {
+    return null
+  }
 }
 
 function repositoryName(context) {
@@ -740,7 +1035,13 @@ async function canPreserveStackReviewAcrossBaseAdvance({
       modes: ['full', 'incremental'],
       requireCurrentStatus: false,
     })
-    const metadata = previousReview?.metadata
+    const metadata =
+      previousReview?.metadata ??
+      (await latestVerifiedStackCleanEvidence({
+        github,
+        context,
+        headSha: topPull.head.sha,
+      }))
     if (
       !metadata ||
       (!allowHeadChanges && metadata.head_sha !== topPull.head.sha) ||
@@ -1132,27 +1433,43 @@ async function hasSuccessfulStackReview(
   )
 }
 
-async function hasVerifiedCleanStackReviewStatus({
+async function listCheckRunsForRef({ github, context, ref }) {
+  if (
+    typeof github.paginate !== 'function' ||
+    typeof github.rest.checks?.listForRef !== 'function'
+  ) {
+    return []
+  }
+  const checkRuns = await github.paginate(github.rest.checks.listForRef, {
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    ref,
+    per_page: 100,
+  })
+  return Array.isArray(checkRuns) ? checkRuns : []
+}
+
+async function getVerifiedStackCleanEvidence({
   github,
   context,
   headSha,
   evidenceDigest,
 }) {
-  if (!/^[0-9a-f]{64}$/.test(evidenceDigest)) return false
+  if (!validSha(headSha) || !validDigest(evidenceDigest)) return null
   const status = await latestStackStatus(github, context, headSha)
   if (
     status?.state !== 'success' ||
     status.description !==
       `${STACK_REVIEW_CLEAN_STATUS_PREFIX}${evidenceDigest}`
   ) {
-    return false
+    return null
   }
   const workflowRunId = workflowRunIdFromUrl(context, status.target_url)
   if (
     workflowRunId == null ||
     typeof github.rest.actions?.getWorkflowRun !== 'function'
   ) {
-    return false
+    return null
   }
   const workflow = (
     await github.rest.actions.getWorkflowRun({
@@ -1161,15 +1478,79 @@ async function hasVerifiedCleanStackReviewStatus({
       run_id: workflowRunId,
     })
   )?.data
+  if (
+    !workflow ||
+    workflow.id !== workflowRunId ||
+    workflow.path !== STACK_REVIEW_WORKFLOW_PATH ||
+    workflow.event !== 'issue_comment' ||
+    workflow.head_branch !== context.payload.repository.default_branch ||
+    workflow.conclusion !== 'success' ||
+    workflow.repository?.full_name !== repositoryName(context) ||
+    !(await hasSuccessfulStackReview(github, context, headSha, workflowRunId))
+  ) {
+    return null
+  }
+  const check = (await listCheckRunsForRef({ github, context, ref: headSha }))
+    .filter(
+      (candidate) =>
+        candidate?.name === STACK_CLEAN_EVIDENCE_CHECK_NAME &&
+        candidate.head_sha === headSha &&
+        candidate.status === 'completed' &&
+        candidate.conclusion === 'success' &&
+        candidate.details_url === workflowRunUrl(context, workflowRunId) &&
+        String(candidate.external_id ?? '') === String(workflowRunId)
+    )
+    .sort(
+      (left, right) =>
+        (Date.parse(right.completed_at ?? right.updated_at ?? '') || 0) -
+        (Date.parse(left.completed_at ?? left.updated_at ?? '') || 0)
+    )[0]
+  if (!check) return null
+  const metadata = parseStackCleanEvidence(check.output?.text ?? '')
+  if (
+    !metadata ||
+    metadata.evidence_digest !== evidenceDigest ||
+    metadata.head_sha !== headSha ||
+    metadata.workflow_run_id !== workflowRunId ||
+    metadata.workflow_url !== workflowRunUrl(context, workflowRunId) ||
+    metadata.workflow_head_sha !== workflow.head_sha
+  ) {
+    return null
+  }
+  return metadata
+}
+
+async function latestVerifiedStackCleanEvidence({ github, context, headSha }) {
+  const status = await latestStackStatus(github, context, headSha)
+  const prefix = STACK_REVIEW_CLEAN_STATUS_PREFIX
+  if (
+    status?.state !== 'success' ||
+    typeof status.description !== 'string' ||
+    !status.description.startsWith(prefix)
+  ) {
+    return null
+  }
+  return getVerifiedStackCleanEvidence({
+    github,
+    context,
+    headSha,
+    evidenceDigest: status.description.slice(prefix.length),
+  })
+}
+
+async function hasVerifiedCleanStackReviewStatus({
+  github,
+  context,
+  headSha,
+  evidenceDigest,
+}) {
   return Boolean(
-    workflow &&
-      workflow.id === workflowRunId &&
-      workflow.path === STACK_REVIEW_WORKFLOW_PATH &&
-      workflow.event === 'issue_comment' &&
-      workflow.head_branch === context.payload.repository.default_branch &&
-      workflow.conclusion === 'success' &&
-      workflow.repository?.full_name === repositoryName(context) &&
-      (await hasSuccessfulStackReview(github, context, headSha, workflowRunId))
+    await getVerifiedStackCleanEvidence({
+      github,
+      context,
+      headSha,
+      evidenceDigest,
+    })
   )
 }
 
@@ -2815,6 +3196,45 @@ function decideStackStatus({
   }
 }
 
+async function publishStackCleanEvidence({
+  github,
+  context,
+  membership,
+  plan,
+  trustedSha,
+}) {
+  if (typeof github.rest.checks?.create !== 'function') {
+    throw new Error('Clean stack evidence check creation is unavailable')
+  }
+  const metadata = buildStackCleanEvidenceMetadata({
+    context,
+    membership,
+    plan,
+    trustedSha,
+  })
+  const text = `<!-- ${STACK_CLEAN_EVIDENCE_SCHEMA} ${encodeMetadata(metadata)} -->`
+  if (text.length > CLEAN_EVIDENCE_LIMIT) {
+    throw new Error('Stack clean evidence exceeds the check output limit')
+  }
+  await github.rest.checks.create({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    name: STACK_CLEAN_EVIDENCE_CHECK_NAME,
+    head_sha: plan.headSha,
+    status: 'completed',
+    conclusion: 'success',
+    completed_at: new Date().toISOString(),
+    details_url: workflowRunUrl(context),
+    external_id: String(context.runId),
+    output: {
+      title: `${FINAL_REVIEW_MODEL} stack review clean`,
+      summary: 'No actionable code or topology findings were generated.',
+      text,
+    },
+  })
+  return metadata
+}
+
 async function finalizeStackReview({
   github,
   context,
@@ -2898,26 +3318,44 @@ async function finalizeStackReview({
     reviewRanges,
   })
   if (!(await ownsLatestStatus())) return
-  await setStackStatus({
-    github,
-    context,
-    sha: headSha,
-    ...decideStackStatus({
-      eligible,
-      currentHead: plan.headSha ?? headSha,
-      reviewedHead: headSha,
-      reviewMode: plan.mode,
-      codeOutcome,
-      topologyOutcome,
-      cleanupOutcome,
-      publishOutcome,
-      cleanReview,
-      cleanEvidenceDigest: buildStackCleanReviewEvidenceDigest({
-        plan,
-        membership,
-      }),
+  const status = decideStackStatus({
+    eligible,
+    currentHead: plan.headSha ?? headSha,
+    reviewedHead: headSha,
+    reviewMode: plan.mode,
+    codeOutcome,
+    topologyOutcome,
+    cleanupOutcome,
+    publishOutcome,
+    cleanReview,
+    cleanEvidenceDigest: buildStackCleanReviewEvidenceDigest({
+      plan,
+      membership,
     }),
   })
+  if (status.state === 'success' && cleanReview === 'true') {
+    try {
+      await publishStackCleanEvidence({
+        github,
+        context,
+        membership,
+        plan,
+        trustedSha,
+      })
+    } catch (error) {
+      if (!(await ownsLatestStatus())) return
+      await setStackStatus({
+        github,
+        context,
+        sha: headSha,
+        state: 'failure',
+        description: `${FINAL_REVIEW_MODEL} clean evidence publication failed; inspect the workflow run`,
+      })
+      throw error
+    }
+  }
+  if (!(await ownsLatestStatus())) return
+  await setStackStatus({ github, context, sha: headSha, ...status })
 }
 
 async function verifyCurrentStackReview({ repository, prNumber }) {
@@ -3091,6 +3529,8 @@ module.exports = {
   FINAL_REVIEW_MODEL,
   MAX_MANIFEST_FILES,
   OPENROUTER_URL,
+  STACK_CLEAN_EVIDENCE_CHECK_NAME,
+  STACK_CLEAN_EVIDENCE_SCHEMA,
   STACK_REVIEW_COMMAND,
   STACK_REVIEW_CONTEXT,
   STACK_REVIEW_CLEAN_STATUS_PREFIX,
@@ -3098,6 +3538,7 @@ module.exports = {
   STACK_REVIEW_WORKFLOW_PATH,
   authorizeStackReview,
   buildStackCleanReviewEvidenceDigest,
+  buildStackCleanEvidenceMetadata,
   buildStackReviewId,
   buildStackReviewPlan,
   buildStackSnapshot,
@@ -3107,11 +3548,14 @@ module.exports = {
   combineOCRResults,
   decideStackStatus,
   finalizeStackReview,
+  getVerifiedStackCleanEvidence,
   hasCurrentSuccessfulStackReview,
   hasSuccessfulStackReview,
   initializeStackReview,
   isStackReviewCommand,
   parseStackReviewMetadata,
+  parseStackCleanEvidence,
+  publishStackCleanEvidence,
   publishStackReview,
   readSnapshotBundle,
   renderStackReview,

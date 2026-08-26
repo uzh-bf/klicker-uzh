@@ -7,10 +7,12 @@ const test = require('node:test')
 
 const {
   FINAL_REVIEW_MODEL,
+  STACK_CLEAN_EVIDENCE_CHECK_NAME,
   STACK_REVIEW_CLEAN_STATUS_PREFIX,
   STACK_REVIEW_SCHEMA,
   authorizeStackReview,
   buildStackCleanReviewEvidenceDigest,
+  buildStackCleanEvidenceMetadata,
   buildStackReviewPlan,
   buildStackSnapshot,
   callTopologyModel,
@@ -19,9 +21,11 @@ const {
   decideStackStatus,
   encodeMetadata,
   finalizeStackReview,
+  getVerifiedStackCleanEvidence,
   hasCurrentSuccessfulStackReview,
   initializeStackReview,
   isStackReviewCommand,
+  parseStackCleanEvidence,
   parseStackReviewMetadata,
   publishStackReview,
   readSnapshotBundle,
@@ -189,14 +193,30 @@ function stackFixture() {
   ])
   const reviewsEndpoint = {}
   const commentsEndpoint = {}
+  const checksEndpoint = async () => undefined
   const state = {
     statuses: [],
     createdStatuses: [],
+    checkRuns: [],
+    createdCheckRuns: [],
     policyFiles: {},
     pulls,
   }
   const github = {
     rest: {
+      checks: {
+        listForRef: checksEndpoint,
+        create: async (check) => {
+          state.createdCheckRuns.push(check)
+          const created = {
+            ...check,
+            id: state.checkRuns.length + 1,
+            output: check.output,
+          }
+          state.checkRuns.push(created)
+          return { data: created }
+        },
+      },
       pulls: {
         get: async ({ pull_number }) => ({ data: pulls[pull_number] }),
         createReview: async () => ({ data: { html_url: 'https://review' } }),
@@ -272,9 +292,11 @@ function stackFixture() {
     paginate: async (endpoint, params) =>
       endpoint === github.rest.repos.listCommitStatusesForRef
         ? (await endpoint(params)).data
-        : endpoint === reviewsEndpoint
-          ? []
-          : [],
+        : endpoint === checksEndpoint
+          ? state.checkRuns
+          : endpoint === reviewsEndpoint
+            ? []
+            : [],
   }
   return { files, github, pulls, responses, state }
 }
@@ -339,6 +361,12 @@ test('accepts a trusted clean stack status without requiring a review body', asy
     plan,
     membership,
   })
+  const cleanEvidence = buildStackCleanEvidenceMetadata({
+    context: stackContext,
+    membership,
+    plan,
+    trustedSha: 'a'.repeat(40),
+  })
   state.statuses = [
     {
       context: 'final-ai-stack-review',
@@ -352,12 +380,41 @@ test('accepts a trusted clean stack status without requiring a review body', asy
     path: '.github/workflows/check-ocr-final-stack-review.yml',
     event: 'issue_comment',
     head_branch: 'v3',
+    head_sha: stackContext.sha,
     conclusion: 'success',
     repository: { full_name: repository },
   }
+  state.checkRuns = [
+    {
+      name: STACK_CLEAN_EVIDENCE_CHECK_NAME,
+      head_sha: plan.headSha,
+      status: 'completed',
+      conclusion: 'success',
+      details_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+      external_id: '700',
+      completed_at: '2026-08-25T00:00:00Z',
+      output: {
+        text: `<!-- final-ai-stack-clean-evidence/v1 ${encodeMetadata(cleanEvidence)} -->`,
+      },
+    },
+  ]
+  assert.deepEqual(
+    parseStackCleanEvidence(state.checkRuns[0].output.text),
+    cleanEvidence
+  )
   github.rest.actions = {
     getWorkflowRun: async () => ({ data: state.workflowRun }),
   }
+
+  assert.deepEqual(
+    await getVerifiedStackCleanEvidence({
+      github,
+      context: stackContext,
+      headSha: plan.headSha,
+      evidenceDigest,
+    }),
+    cleanEvidence
+  )
 
   assert.equal(
     await hasCurrentSuccessfulStackReview({
@@ -382,6 +439,63 @@ test('accepts a trusted clean stack status without requiring a review body', asy
     }).description,
     `${STACK_REVIEW_CLEAN_STATUS_PREFIX}${evidenceDigest}`
   )
+})
+
+test('publishes clean stack evidence as a check without a pull-request comment', async () => {
+  const { github, state } = stackFixture()
+  const stackContext = context(14)
+  const membership = await resolveStackMembership({
+    github,
+    context: stackContext,
+    pullNumber: 14,
+  })
+  const plan = await buildStackReviewPlan({
+    github,
+    context: stackContext,
+    membership,
+  })
+
+  await finalizeStackReview({
+    github,
+    context: stackContext,
+    prNumber: 14,
+    baseSha: plan.baseSha,
+    headSha: plan.headSha,
+    stackId: plan.stackId,
+    stackOrderDigest: plan.stackOrderDigest,
+    stackIdentityDigest: plan.stackIdentityDigest,
+    memberNumbers: plan.memberNumbers,
+    mode: plan.mode,
+    rootHead: plan.rootHead,
+    rootReviewId: plan.rootReviewId,
+    policyDigest: plan.policyDigest,
+    dispositionDigest: plan.dispositionDigest,
+    reviewRanges: plan.reviewRanges,
+    trustedSha: 'a'.repeat(40),
+    codeOutcome: 'success',
+    topologyOutcome: 'success',
+    cleanupOutcome: 'success',
+    publishOutcome: 'success',
+    cleanReview: 'true',
+  })
+
+  assert.equal(state.createdCheckRuns.length, 1)
+  assert.equal(state.createdCheckRuns[0].name, STACK_CLEAN_EVIDENCE_CHECK_NAME)
+  assert.equal(state.createdCheckRuns[0].head_sha, plan.headSha)
+  assert.equal(state.createdStatuses.at(-1).state, 'success')
+  assert.equal(
+    state.createdStatuses
+      .at(-1)
+      .description.startsWith('z-ai/glm-5.3 stack review clean; evidence='),
+    true
+  )
+})
+
+test('rejects legacy stack metadata without immutable path aliases', () => {
+  const legacy = `<!-- final-ai-stack-review/v3 ${encodeMetadata({
+    schema_version: 'final-ai-stack-review/v3',
+  })} -->`
+  assert.equal(parseStackReviewMetadata(legacy), null)
 })
 
 test('canonicalizes clean stack evidence across unrelated default-base advancement', async () => {
@@ -1166,6 +1280,82 @@ test('does not invalidate an unrelated head when bounded stack history has no ma
 
   assert.equal(
     await initializeStackReview({ github, context: eventContext }),
+    false
+  )
+  assert.equal(state.createdStatuses.length, 0)
+})
+
+test('preserves comment-free clean evidence across unrelated default-base advancement', async () => {
+  const { files, github, pulls, responses, state } = stackFixture()
+  const originalContext = context(14)
+  const originalMembership = await resolveStackMembership({
+    github,
+    context: originalContext,
+    pullNumber: 14,
+  })
+  const originalPlan = await buildStackReviewPlan({
+    github,
+    context: originalContext,
+    membership: originalMembership,
+  })
+  const cleanEvidence = buildStackCleanEvidenceMetadata({
+    context: originalContext,
+    membership: originalMembership,
+    plan: originalPlan,
+    trustedSha: 'a'.repeat(40),
+  })
+  const evidenceDigest = cleanEvidence.evidence_digest
+  state.statuses = [
+    {
+      context: 'final-ai-stack-review',
+      state: 'success',
+      description: `${STACK_REVIEW_CLEAN_STATUS_PREFIX}${evidenceDigest}`,
+      target_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+    },
+  ]
+  state.workflowRun = {
+    id: 700,
+    path: '.github/workflows/check-ocr-final-stack-review.yml',
+    event: 'issue_comment',
+    head_branch: 'v3',
+    head_sha: originalContext.sha,
+    conclusion: 'success',
+    repository: { full_name: repository },
+  }
+  state.checkRuns = [
+    {
+      name: STACK_CLEAN_EVIDENCE_CHECK_NAME,
+      head_sha: originalPlan.headSha,
+      status: 'completed',
+      conclusion: 'success',
+      details_url: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+      external_id: '700',
+      completed_at: '2026-08-25T00:00:00Z',
+      output: {
+        text: `<!-- final-ai-stack-clean-evidence/v1 ${encodeMetadata(cleanEvidence)} -->`,
+      },
+    },
+  ]
+  github.rest.actions = {
+    getWorkflowRun: async () => ({ data: state.workflowRun }),
+  }
+
+  const advancedBase = '9'.repeat(40)
+  pulls[11].base.sha = advancedBase
+  responses.set('b'.repeat(40), advancedBase)
+  files.set('b'.repeat(40), [
+    { filename: 'docs/base.md', additions: 1, deletions: 0 },
+  ])
+  files.set(advancedBase, [])
+  const eventContext = context(11)
+  eventContext.eventName = 'pull_request_target'
+  eventContext.payload.pull_request = pulls[11]
+
+  assert.equal(
+    await initializeStackReview({
+      github,
+      context: eventContext,
+    }),
     false
   )
   assert.equal(state.createdStatuses.length, 0)
