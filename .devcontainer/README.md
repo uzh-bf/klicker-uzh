@@ -137,7 +137,14 @@ the hardcoded defaults only know `klicker.com`.
 
 ## Hatchet token
 
-`backend` needs a `HATCHET_CLIENT_TOKEN`. In `hatchet-lite-dev`, the engine automatically mints its worker API token on boot to `/config/authdisabled-token` (shared volume); `post-create` writes it to `.devcontainer/.hatchet.env` (gitignored) and `post-start` sources it. The backend **requires** it to boot — its `HatchetClient.init` runs at module load (not lazy).
+`backend` needs a `HATCHET_CLIENT_TOKEN`. In `hatchet-lite-dev`, the engine
+automatically mints its worker API token on boot to
+`/config/authdisabled-token` (shared volume). `post-create` writes it to
+`.devcontainer/.hatchet.env` (gitignored), and `post-start` sources it. On a
+cold application profile, `post-start` also closes the boot race by waiting for
+and persisting a token that appeared just after `post-create` timed out.
+Capability-only profiles skip that wait. The backend **requires** the token to
+boot because its `HatchetClient.init` runs at module load (not lazy).
 
 ## What's inside
 

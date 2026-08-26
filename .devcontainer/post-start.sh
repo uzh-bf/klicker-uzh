@@ -71,7 +71,7 @@ fi
 export CI=true
 export npm_config_verify_deps_before_run=false
 
-# Profile selection (devrouter >= 0.0.36). DEVROUTER_PROFILE is injected by
+# Profile selection (devrouter >= 0.0.39). DEVROUTER_PROFILE is injected by
 # `devrouter ensure --profile <name>`; empty means the config default (`full`).
 # The profile is part of the process fingerprint so switching profiles replaces
 # the owned turbo process group instead of mixing two app sets.
@@ -104,6 +104,28 @@ fi
 DEV_TURBO_FILTERS="$(profile_turbo_filters)"
 READINESS_APPS="$(profile_readiness_apps)"
 export READINESS_APPS
+
+# Hatchet can mint its token just after post-create's bounded capture window on
+# a cold workspace. Application profiles need it before any backend or worker
+# process starts, so close that race here after the managed Hatchet service is
+# running. Capability-only profiles do not wait for a token they never consume.
+if [ "$PROFILE_WANTS_DEV" = yes ] && [ -z "${HATCHET_CLIENT_TOKEN:-}" ]; then
+  HATCHET_ENV=/workspaces/klicker-uzh/.devcontainer/.hatchet.env
+  for attempt in $(seq 1 60); do
+    if [ -s /config/authdisabled-token ]; then
+      HATCHET_CLIENT_TOKEN=$(tr -d '[:space:]' < /config/authdisabled-token)
+      export HATCHET_CLIENT_TOKEN
+      printf 'HATCHET_CLIENT_TOKEN=%s\n' "$HATCHET_CLIENT_TOKEN" > "$HATCHET_ENV"
+      echo '[post-start] Captured the late Hatchet token before application startup.'
+      break
+    fi
+    if [ "$attempt" -eq 60 ]; then
+      echo '[post-start] ERROR: Hatchet token was not available before application startup.' >&2
+      exit 1
+    fi
+    sleep 1
+  done
+fi
 
 # The test seed connects Benibot's Tutor and Explainer modes to this local,
 # read-only MCP fixture; it is opt-in via the mcp capability (or full). When the
