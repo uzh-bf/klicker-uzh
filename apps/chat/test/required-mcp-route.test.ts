@@ -5,12 +5,14 @@ const mocks = vi.hoisted(() => ({
   withChatbotAuth: vi.fn(),
   checkDisclaimerStatus: vi.fn(),
   findUnique: vi.fn(),
+  findThread: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
   createThread: vi.fn(),
   previewUserCredits: vi.fn(),
   getUserCredits: vi.fn(),
   isChatAccountUsageAvailable: vi.fn(),
-  isChatTurnKeyClaimed: vi.fn(),
+  claimChatTurn: vi.fn(),
+  failChatTurn: vi.fn(),
 }))
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
@@ -27,6 +29,9 @@ vi.mock('@klicker-uzh/prisma', () => ({
   prisma: {
     chatbot: {
       findUnique: mocks.findUnique,
+    },
+    chatThread: {
+      findFirst: mocks.findThread,
     },
   },
 }))
@@ -50,10 +55,12 @@ vi.mock('@/src/services/credits', () => ({
 
 vi.mock('@/src/services/accountUsage', () => ({
   CHAT_TURN_ALREADY_COMPLETED_CODE: 'CHAT_TURN_ALREADY_COMPLETED',
+  CHAT_TURN_IN_PROGRESS_CODE: 'CHAT_TURN_IN_PROGRESS',
   ChatTurnConflictError: class ChatTurnConflictError extends Error {},
+  claimChatTurn: mocks.claimChatTurn,
+  failChatTurn: mocks.failChatTurn,
   finalizeChatTurn: vi.fn(),
   isChatAccountUsageAvailable: mocks.isChatAccountUsageAvailable,
-  isChatTurnKeyClaimed: mocks.isChatTurnKeyClaimed,
   roundChatUsageCredits: (value: number) => ({ toNumber: () => value }),
 }))
 
@@ -89,7 +96,13 @@ describe('required MCP chat preflight', () => {
     mocks.isChatAccountUsageAvailable.mockResolvedValue(true)
     mocks.previewUserCredits.mockResolvedValue({ current: 5, total: 5 })
     mocks.getUserCredits.mockResolvedValue({ current: 5, total: 5 })
-    mocks.isChatTurnKeyClaimed.mockResolvedValue(false)
+    mocks.createThread.mockResolvedValue({ id: 'thread-1' })
+    mocks.findThread.mockResolvedValue({ id: 'thread-1' })
+    mocks.claimChatTurn.mockResolvedValue({
+      outcome: 'claimed',
+      lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
+    })
+    mocks.failChatTurn.mockResolvedValue(undefined)
     mocks.findUnique.mockResolvedValue({
       id: 'chatbot-1',
       ownerId: 'owner-1',
@@ -121,7 +134,7 @@ describe('required MCP chat preflight', () => {
     )
   })
 
-  test('returns before thread creation and forwards inactive required configs', async () => {
+  test('fails the claimed turn and forwards inactive required configs', async () => {
     const response = await POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
@@ -147,8 +160,27 @@ describe('required MCP chat preflight', () => {
       ],
       'chatbot-1'
     )
-    expect(mocks.getUserCredits).not.toHaveBeenCalled()
-    expect(mocks.createThread).not.toHaveBeenCalled()
+    expect(mocks.getUserCredits).toHaveBeenCalledWith(
+      'participant-1',
+      'chatbot-1'
+    )
+    expect(mocks.createThread).toHaveBeenCalledWith(
+      'participant-1',
+      'chatbot-1',
+      null
+    )
+    expect(mocks.claimChatTurn).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      chatbotId: 'chatbot-1',
+      threadId: 'thread-1',
+      assistantMessageId: 'assistant-1',
+      parentId: 'message-1',
+    })
+    expect(mocks.failChatTurn).toHaveBeenCalledWith({
+      assistantMessageId: 'assistant-1',
+      threadId: 'thread-1',
+      lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
+    })
   })
 
   test('rejects an unsupported mode before MCP and thread work', async () => {

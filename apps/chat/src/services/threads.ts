@@ -71,6 +71,7 @@ export class ThreadService {
       // thread with the mode it was last used in (D6).
       include: {
         messages: {
+          where: { lifecycleStatus: 'COMPLETED' },
           orderBy: { createdAt: 'desc' },
           take: 1,
           select: { chatMode: true },

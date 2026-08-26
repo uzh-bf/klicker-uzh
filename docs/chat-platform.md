@@ -215,18 +215,24 @@ authorization, missing or zero row, or exhausted class fails closed with HTTP
 credits, cost centers, contributions, providers, or settlement details.
 Exhausting one class neither disables the other nor invokes fallback.
 
-The client-supplied assistant message ID is the terminal lifecycle key.
-`apps/chat/src/services/accountUsage.ts:isChatTurnKeyClaimed` rejects a
-completed key before MCP or provider work. After generation,
-`apps/chat/src/services/accountUsage.ts:finalizeChatTurn` creates the first
-assistant result, increments the owner/class/month counter by the same rounded
-six-decimal value, and updates the thread timestamp in one `ReadCommitted`
-transaction. Duplicate acceptance verifies assistant role, thread, chatbot,
-and owner; any foreign collision becomes the same generic `409` conflict. A
-normal finish and an abort use this finalizer once, and a late `onEnd` after an
-abort is ignored. Missing reliable main-stream usage still closes the message
-key with `creditsUsed = null` and no account charge. The availability check is
-not a reservation, so the bounded final-turn and concurrent overrun accepted by
+The client-supplied assistant message ID is the turn lifecycle key.
+`apps/chat/src/services/accountUsage.ts:claimChatTurn` creates an
+`IN_PROGRESS` assistant placeholder with a per-attempt UUID before MCP, image,
+or provider work. Concurrent and completed claims return the same generic
+`409`; collision checks verify the assistant role, thread, chatbot, and owner
+without revealing foreign scope. Failed attempts may be reclaimed with a new
+UUID, while callbacks from an older attempt cannot complete or charge the
+turn. Claims have no timeout or automatic lease stealing.
+
+`apps/chat/src/services/accountUsage.ts:finalizeChatTurn` compares and sets the
+matching attempt to `COMPLETED`, stores the terminal assistant result,
+increments the owner/class/month counter by the same rounded six-decimal value,
+and updates the thread timestamp in one `ReadCommitted` transaction. A normal
+finish and an abort use this finalizer once, and a late `onEnd` after an abort
+is ignored. Missing reliable main-stream usage still closes the message key
+with `creditsUsed = null` and no account charge. History reads hide
+`IN_PROGRESS` and `FAILED` placeholders. The availability check is not a
+reservation, so the bounded final-turn and concurrent overrun accepted by
 [ADR 0020](./adr/0020-two-tier-chatbot-approval.md) remains possible; the next
 request then fails its live check.
 

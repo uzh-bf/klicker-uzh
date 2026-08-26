@@ -4,11 +4,11 @@ import { describe, expect, test, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   getEffectiveChatAccountUsage: vi.fn(),
   prisma: {
-    chatMessage: { findUnique: vi.fn() },
+    chatMessage: { updateMany: vi.fn() },
   },
   transaction: {
     chatAccountUsage: { upsert: vi.fn() },
-    chatMessage: { create: vi.fn() },
+    chatMessage: { updateMany: vi.fn(), findUnique: vi.fn() },
     chatThread: {
       findFirst: vi.fn(),
       update: vi.fn(),
@@ -59,7 +59,7 @@ describe('account usage finalization errors', () => {
       operation(mocks.transaction)
     )
     mocks.transaction.chatThread.findFirst.mockResolvedValue({ id: 'thread-1' })
-    mocks.transaction.chatMessage.create.mockResolvedValue({ id: 'message-1' })
+    mocks.transaction.chatMessage.updateMany.mockResolvedValue({ count: 1 })
     mocks.getEffectiveChatAccountUsage.mockResolvedValue({
       budgetCredits: new Prisma.Decimal('10'),
     })
@@ -72,6 +72,7 @@ describe('account usage finalization errors', () => {
         usageClass: 'BASE',
         threadId: 'thread-1',
         assistantMessageId: 'message-1',
+        lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
         parentId: null,
         content: [],
         chatMode: 'tutor',
@@ -83,6 +84,6 @@ describe('account usage finalization errors', () => {
       })
     ).rejects.toBe(error)
 
-    expect(mocks.prisma.chatMessage.findUnique).not.toHaveBeenCalled()
+    expect(mocks.transaction.chatMessage.findUnique).not.toHaveBeenCalled()
   })
 })

@@ -19,7 +19,8 @@ const mocks = vi.hoisted(() => ({
   previewUserCredits: vi.fn(),
   getUserCredits: vi.fn(),
   decrementCredits: vi.fn(),
-  isChatTurnKeyClaimed: vi.fn(),
+  claimChatTurn: vi.fn(),
+  failChatTurn: vi.fn(),
   isChatAccountUsageAvailable: vi.fn(),
   finalizeChatTurn: vi.fn(),
   ensureImagePreviewBase64: vi.fn(),
@@ -81,10 +82,12 @@ vi.mock('@/src/services/credits', () => ({
 vi.mock('@/src/services/accountUsage', () => {
   return {
     CHAT_TURN_ALREADY_COMPLETED_CODE: 'CHAT_TURN_ALREADY_COMPLETED',
+    CHAT_TURN_IN_PROGRESS_CODE: 'CHAT_TURN_IN_PROGRESS',
     ChatTurnConflictError: mocks.ChatTurnConflictError,
+    claimChatTurn: mocks.claimChatTurn,
+    failChatTurn: mocks.failChatTurn,
     finalizeChatTurn: mocks.finalizeChatTurn,
     isChatAccountUsageAvailable: mocks.isChatAccountUsageAvailable,
-    isChatTurnKeyClaimed: mocks.isChatTurnKeyClaimed,
     roundChatUsageCredits: mocks.roundChatUsageCredits,
   }
 })
@@ -142,6 +145,7 @@ type StreamCallbacks = {
       usage?: { inputTokens: number; outputTokens: number }
     }>
   }) => Promise<void>
+  onError: (error: unknown) => Promise<void>
 }
 
 type ResponseOptions = {
@@ -221,7 +225,11 @@ describe('account usage chat route', () => {
     })
     mocks.chatbotFindUnique.mockResolvedValue(chatbot())
     mocks.getAggregatedMCPTools.mockResolvedValue({})
-    mocks.isChatTurnKeyClaimed.mockResolvedValue(false)
+    mocks.claimChatTurn.mockResolvedValue({
+      outcome: 'claimed',
+      lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
+    })
+    mocks.failChatTurn.mockResolvedValue(undefined)
     mocks.isChatAccountUsageAvailable.mockResolvedValue(true)
     mocks.roundChatUsageCredits.mockImplementation((value: number) => ({
       toNumber: () => Number(value.toFixed(6)),
@@ -236,7 +244,7 @@ describe('account usage chat route', () => {
     mocks.threadUpdate.mockResolvedValue({ id: 'thread-1' })
     mocks.transaction.mockResolvedValue([])
     mocks.finalizeChatTurn.mockImplementation(async (input) => ({
-      outcome: 'created',
+      outcome: 'completed',
       creditsUsed:
         input.rawCreditsUsed === null
           ? null
@@ -257,7 +265,10 @@ describe('account usage chat route', () => {
   })
 
   test('rejects a completed assistant key before MCP or provider work', async () => {
-    mocks.isChatTurnKeyClaimed.mockResolvedValueOnce(true)
+    mocks.claimChatTurn.mockResolvedValueOnce({
+      outcome: 'completed',
+      lifecycleAttemptId: null,
+    })
 
     const response = await POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
@@ -269,7 +280,27 @@ describe('account usage chat route', () => {
       code: 'CHAT_TURN_ALREADY_COMPLETED',
     })
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
-    expect(mocks.isChatAccountUsageAvailable).not.toHaveBeenCalled()
+    expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledOnce()
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  test('rejects an in-progress assistant key before MCP or provider work', async () => {
+    mocks.claimChatTurn.mockResolvedValueOnce({
+      outcome: 'in_progress',
+      lifecycleAttemptId: null,
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(409)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Chat turn already in progress',
+      code: 'CHAT_TURN_IN_PROGRESS',
+    })
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.ensureImagePreviewBase64).not.toHaveBeenCalled()
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
@@ -410,6 +441,7 @@ describe('account usage chat route', () => {
         usageClass: 'BASE',
         threadId: 'thread-1',
         assistantMessageId: 'assistant-1',
+        lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
         modelId: 'gpt-4.1-mini',
         rawCreditsUsed: 0.000012,
       })
@@ -628,5 +660,22 @@ describe('account usage chat route', () => {
       })
     )
     expect(mocks.decrementCredits).toHaveBeenCalledOnce()
+  })
+
+  test('marks a provider error as failed so the same key can be retried', async () => {
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(200)
+
+    await streamCallbacks().onError(new Error('synthetic provider failure'))
+
+    expect(mocks.failChatTurn).toHaveBeenCalledWith({
+      assistantMessageId: 'assistant-1',
+      threadId: 'thread-1',
+      lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
+    })
+    expect(mocks.finalizeChatTurn).not.toHaveBeenCalled()
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
   })
 })

@@ -135,30 +135,35 @@ zero. POST remains authoritative for same-class fallback or denial. The GET
 response continues to expose participant credits and model capabilities only;
 it gains no account budget or funding fields.
 
-### D3 — assistant-message idempotency without a new ledger
+### D3 — assistant-message lifecycle claim without a new ledger
 
-No Prisma schema change is required. Final assistant-message persistence is
-moved behind one small account usage finalizer. In one `ReadCommitted`
-transaction it:
+The existing `ChatMessage` record is also the turn claim. One generated,
+additive Prisma migration adds `lifecycleStatus` (`IN_PROGRESS`, `COMPLETED`,
+or `FAILED`) and a nullable UUID `lifecycleAttemptId`. The status defaults to
+`COMPLETED`, so existing messages retain their prior meaning.
 
-1. creates the assistant message for the supplied `assistantMessageId` and
-   thread;
-2. when reliable usage exists, atomically increments the existing
-   owner/class/month `usedCredits` by the same rounded decimal; and
-3. updates the thread timestamp.
+Before MCP discovery, image description, or provider work, the route creates
+an `IN_PROGRESS` assistant placeholder for the client-supplied
+`assistantMessageId`. Only the request holding that attempt token may continue.
+A concurrent request sees `IN_PROGRESS` and receives the same generic HTTP
+`409` conflict without invoking provider work. A completed key also returns
+`409`. A collision outside the verified owner, chatbot, and thread scope uses
+the same response and reveals no ownership details.
 
-The transaction rolls back all three writes together. Successful creation is
-the idempotency claim. A duplicate unique-key result charges nothing and is a
-valid no-op only after a read proves the existing message belongs to the same
-owner, chatbot, and thread. A matching completed key cannot start another
-generation. A key collision outside that scope returns the same generic HTTP
-`409` completed-turn response, without confirming where the key exists.
+A failed attempt changes the placeholder to `FAILED`. A retry may reclaim it
+with a fresh token; the old token can no longer complete the turn. Claims have
+no timeout or automatic lease stealing, so an uncertain in-progress request
+fails closed rather than starting duplicate external work.
 
-The first terminal result wins. A missing-usage result still persists the
-assistant message with `creditsUsed = null`, so a later duplicate cannot turn
-the uncharged lifecycle into a second charge; it remains a manual-correction
-case. This uses an existing business record as the claim, not a reservation or
-ledger.
+At terminal completion, one `ReadCommitted` transaction compares and sets the
+matching attempt to `COMPLETED`, stores the assistant result, increments the
+owner/class/month `usedCredits` by the same rounded decimal when reliable usage
+exists, and updates the thread timestamp. The transaction rolls back all
+writes together. Duplicate terminal callbacks charge nothing. Missing reliable
+usage still completes the key with `creditsUsed = null`, preventing a later
+retry from turning the uncharged lifecycle into a second charge. Thread and
+message reads expose only `COMPLETED` rows, so internal placeholders do not
+appear in chat history.
 
 ### D4 — reliable usage and decimal boundary
 
@@ -193,8 +198,8 @@ succeeded.
 | ------------------------- | ---------------------------------------------------------------------------- |
 | Account AI authorization  | Reuse live DB-row capability in pre-check                                    |
 | Monthly usage budget      | Read owner/class/current Zurich month                                        |
-| Runtime charge            | Add atomic, idempotent post-generation finalizer                             |
-| Turn lifecycle identity   | Reuse assistant-message ID, scoped and verified through thread/chatbot/owner |
+| Runtime charge            | Claim before provider work; finalize and charge atomically                    |
+| Turn lifecycle identity   | Assistant-message ID plus per-attempt token, scoped through thread ownership  |
 | Participant usage credits | Preserve decrement; restrict fallback to same class and allow-list           |
 | Usage class registry      | Reuse explicit class and Auto=ADVANCED invariant; no new model               |
 | Lecturer usage UI         | Deferred to U3                                                               |
@@ -206,7 +211,9 @@ succeeded.
 | Live authorization, missing row, zero budget, and exhausted row deny before provider work                      | Focused pre-check service tests plus route test proving no image generation, user-message persistence, or stream start           |
 | Stable participant errors reveal class availability only                                                       | Route response assertions for BASE and ADVANCED, including identical external response for authorization and budget causes       |
 | Reliable normal turn charges exact rounded amount                                                              | Finalizer integration test against PostgreSQL plus route callback assertion                                                      |
-| Missing terminal usage charges nothing and closes the key                                                      | Finalizer/route test with `creditsUsed = null`, unchanged counter, persisted message, and duplicate no-op                        |
+| Missing terminal usage charges nothing and closes the key                                                      | Finalizer/route test with `creditsUsed = null`, unchanged counter, completed message, and duplicate no-op                        |
+| Concurrent requests with one assistant ID invoke provider work only once                                      | PostgreSQL claim race plus route test proving the losing request stops before MCP, image, or stream work                         |
+| A failed attempt can retry without an old callback completing or charging it                                  | PostgreSQL failed/reclaim test proves a fresh attempt token, stale-token rejection, and one terminal charge                      |
 | Duplicate terminal callbacks charge once                                                                       | PostgreSQL integration test calls the finalizer twice for the same scoped assistant ID and proves one message plus one increment |
 | Collision outside the scope never becomes a no-op or leaks scope                                               | Finalizer and route `409` tests with a foreign thread/key                                                                        |
 | Concurrent distinct turns do not lose increments                                                               | PostgreSQL integration test runs two finalizers concurrently against one account row and proves the exact sum                    |
@@ -237,10 +244,12 @@ They do not bulk-delete shared development data.
 - Add the smallest runtime service under `apps/chat/src/services/` for live
   owner/class/month availability and atomic assistant-message finalization.
 - Reuse `getZurichMonthStart`, Prisma Decimal, the existing account row, and
-  `withTransaction`; do not add a model, migration, table, reservation, or
-  ledger.
+  `withTransaction`. Add only the lifecycle status and attempt-token fields to
+  the existing message model through one schema-tool-generated migration; do
+  not add a table, reservation ledger, or timeout-based lease.
 - Add focused pure tests and a real-PostgreSQL integration seam for scoped
-  idempotency, collision, concurrency, missing usage, and bounded overrun.
+  claim ownership, failed-attempt retry, collision, concurrency, missing usage,
+  and bounded overrun.
 - Commit: `feat(chat): add account usage finalization`.
 - Review immutable range with one Ox Alpha simplifier and one Ox Alpha slice
   reviewer covering data integrity, authorization, idempotency, concurrency,
@@ -252,8 +261,8 @@ They do not bulk-delete shared development data.
   and POST route so participant credits never cause cross-class or allow-list-
   bypass fallback.
 - Resolve owner/class, check availability before provider/message work, reject
-  a completed turn key before generation, and route both normal and abort
-  terminal results through the finalizer.
+  claim the assistant turn before MCP/image/provider work, and route both normal
+  and abort terminal results through the attempt-aware finalizer.
 - Preserve tool aggregation, `sawAbort`, message metadata, and the independent
   participant decrement.
 - Add focused route/registry/store tests for the full matrix in the test
@@ -339,9 +348,10 @@ pnpm --filter @klicker-uzh/chat build
 ```
 
 The test file filters may be adjusted to their final repository names without
-changing the evidence obligations. A Prisma schema or migration command is not
-planned. If implementation evidence proves a schema change is necessary, stop
-with `BOUNDARY_CANDIDATE` before editing Prisma.
+changing the evidence obligations. The final-review concurrency finding proved
+that terminal-only creation could not prevent duplicate provider work, so the
+approved correction includes one generated additive Prisma migration for the
+message lifecycle claim described in D3.
 
 Browser verification was not part of the initial scope because the runtime
 implementation changed no visible surface. S3 then found inaccurate existing
@@ -475,6 +485,17 @@ contract retains its focused regression test.
   persistence and reliable charging. The rebased focused route suite passes
   15/15 in the exact Node 24 DevPod. Both corrections passed their simplifier
   and lifecycle-integrity reviews.
-- Current state: U2 is ready for stack-aware publication at its rebased head.
+- 2026-08-26: exact-stack final review found that the terminal-only message
+  creation prevented duplicate charging but allowed two concurrent requests to
+  invoke provider work for the same assistant ID. The correction now claims an
+  `IN_PROGRESS` message before MCP, image, or model work, uses a per-attempt UUID
+  to prevent stale completion after retry, and hides non-completed placeholders
+  from history. The additive migration was generated by Prisma. The complete
+  Chat suite passes 404 tests with 11 expected skips, all 11 enabled PostgreSQL
+  lifecycle integration tests pass, all 25 repository checks pass, and the Chat
+  production build succeeds. The required correction reviews remain in
+  progress.
+- Current state: U2 is under final-review correction before stack-aware
+  publication.
   Merge, deployment, live traffic or proof, closure, cleanup, and deletion
   remain withheld.
