@@ -6,10 +6,6 @@ on:
     branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened, ready_for_review]
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
-  cancel-in-progress: true
-
 env:
   REGISTRY: ghcr.io
 
@@ -26,6 +22,9 @@ jobs:
       endsWith(github.event.pull_request.user.login, '[bot]') ||
       (vars.PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED != 'true' &&
         vars.PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR != format('{0}', github.event.pull_request.number))
+    concurrency:
+      group: ${{ github.workflow }}-hosted-filter-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     outputs:
       should_run: ${{ steps.check.outputs.should_run }}
@@ -41,6 +40,9 @@ jobs:
   build-and-compile-hosted:
     needs: filter-hosted
     if: needs.filter-hosted.outputs.should_run == 'true'
+    concurrency:
+      group: ${{ github.workflow }}-hosted-build-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-24.04
     steps:
       - name: Check out repository code
@@ -152,6 +154,9 @@ jobs:
     needs: [filter-hosted, build-and-compile-hosted]
     if: >-
       needs.filter-hosted.outputs.should_run == 'true'
+    concurrency:
+      group: ${{ github.workflow }}-hosted-shard-${{ matrix.shardIndex }}-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble
@@ -402,6 +407,9 @@ jobs:
       !endsWith(github.event.pull_request.user.login, '[bot]') &&
       (vars.PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED == 'true' ||
         vars.PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR == format('{0}', github.event.pull_request.number))
+    concurrency:
+      group: ${{ github.workflow }}-public-pr-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
     uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3
 
   # Always reports a status even when the tests are skipped by the path filter,
