@@ -69,6 +69,10 @@ workflows. The explicit worker override replaces the chart's lower default for
 the workload that exceeded it. Separate sync and health checks expose failures
 that manifest application alone cannot catch.
 
+Once the student MCP image could start, it exposed a separate Node ESM package
+import failure. That fix and its build-time regression check are recorded in
+[Make built Node ESM package imports explicit](./node-esm-apollo-directory-import.md).
+
 ## Prevention
 
 The staging promoter currently checks out and writes `v3`. While ArgoCD tracks
