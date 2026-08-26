@@ -21,7 +21,7 @@ CREATE TABLE "PersonalElement" (
     "sourceToolCallId" TEXT,
     "candidateId" TEXT,
     "eFactor" DOUBLE PRECISION NOT NULL DEFAULT 2.5,
-    "interval" INTEGER NOT NULL DEFAULT 1,
+    "interval" INTEGER NOT NULL DEFAULT 0,
     "correctCountStreak" INTEGER NOT NULL DEFAULT 0,
     "correctCount" INTEGER NOT NULL DEFAULT 0,
     "partialCorrectCount" INTEGER NOT NULL DEFAULT 0,

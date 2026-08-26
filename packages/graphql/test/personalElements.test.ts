@@ -1,4 +1,9 @@
-import { ElementType, UserRole } from '@klicker-uzh/prisma/client'
+import {
+  ElementType,
+  type PersonalElement,
+  type PrismaClient,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
 import { prisma } from '@klicker-uzh/prisma'
 import { FlashcardCorrectness } from '@klicker-uzh/types'
 import { randomUUID } from 'node:crypto'
@@ -77,6 +82,37 @@ async function createFixture() {
 
 function context(participantId: string, role: UserRole = UserRole.PARTICIPANT) {
   return { prisma, actor: actor(participantId, role) }
+}
+
+function expectNewLearningState(
+  element: Pick<
+    PersonalElement,
+    | 'eFactor'
+    | 'interval'
+    | 'correctCountStreak'
+    | 'correctCount'
+    | 'partialCorrectCount'
+    | 'wrongCount'
+    | 'nextDueAt'
+    | 'lastAnsweredAt'
+    | 'lastCorrectAt'
+    | 'lastPartialCorrectAt'
+    | 'lastWrongAt'
+    | 'lastResponseCorrectness'
+  >
+) {
+  expect(element.eFactor).toBe(2.5)
+  expect(element.interval).toBe(0)
+  expect(element.correctCountStreak).toBe(0)
+  expect(element.correctCount).toBe(0)
+  expect(element.partialCorrectCount).toBe(0)
+  expect(element.wrongCount).toBe(0)
+  expect(element.nextDueAt).toBeNull()
+  expect(element.lastAnsweredAt).toBeNull()
+  expect(element.lastCorrectAt).toBeNull()
+  expect(element.lastPartialCorrectAt).toBeNull()
+  expect(element.lastWrongAt).toBeNull()
+  expect(element.lastResponseCorrectness).toBeNull()
 }
 
 describe('personal elements service', () => {
@@ -241,18 +277,7 @@ describe('personal elements service', () => {
       context(participant.id)
     )
     expect(revised.version).toBe(2)
-    expect(revised.eFactor).toBe(2.5)
-    expect(revised.interval).toBe(1)
-    expect(revised.correctCountStreak).toBe(0)
-    expect(revised.correctCount).toBe(0)
-    expect(revised.partialCorrectCount).toBe(0)
-    expect(revised.wrongCount).toBe(0)
-    expect(revised.nextDueAt).toBeNull()
-    expect(revised.lastAnsweredAt).toBeNull()
-    expect(revised.lastCorrectAt).toBeNull()
-    expect(revised.lastPartialCorrectAt).toBeNull()
-    expect(revised.lastWrongAt).toBeNull()
-    expect(revised.lastResponseCorrectness).toBeNull()
+    expectNewLearningState(revised)
 
     const answered = await respondToPersonalElement(
       {
@@ -274,7 +299,7 @@ describe('personal elements service', () => {
     expect(renamed.nextDueAt).toEqual(answered.nextDueAt)
   })
 
-  it('resets learning state when sources change', async () => {
+  it('resets learning state when explanation or sources change', async () => {
     const { course, participant } = await createFixture()
     const input = candidate()
     const [element] = await createPersonalElements(
@@ -290,14 +315,34 @@ describe('personal elements service', () => {
       context(participant.id)
     )
 
-    const revised = await updatePersonalElement(
+    const explanationRevision = await updatePersonalElement(
       {
         id: element!.id,
         expectedVersion: 1,
+        explanation: 'The best alternative that was not chosen.',
+      },
+      context(participant.id)
+    )
+    expect(explanationRevision.version).toBe(2)
+    expectNewLearningState(explanationRevision)
+
+    const answered = await respondToPersonalElement(
+      {
+        id: element!.id,
+        response: FlashcardCorrectness.PARTIAL,
+        expectedVersion: 2,
+      },
+      context(participant.id)
+    )
+    const updatedChunkId = randomUUID()
+    const revised = await updatePersonalElement(
+      {
+        id: element!.id,
+        expectedVersion: 2,
         sources: [
           {
             sourceId: 'course-material',
-            chunkId: randomUUID(),
+            chunkId: updatedChunkId,
             title: 'Updated economics notes',
           },
         ],
@@ -305,39 +350,83 @@ describe('personal elements service', () => {
       context(participant.id)
     )
 
-    expect(revised.version).toBe(2)
+    expect(revised.version).toBe(3)
     expect(revised.sources).toHaveLength(1)
     expect(revised.sources?.[0]).toMatchObject({
       sourceId: 'course-material',
       title: 'Updated economics notes',
     })
     expect(revised.sources?.[0]?.chunkId).not.toBe(input.sources[0]?.chunkId)
-    expect(revised.interval).toBe(1)
-    expect(revised.partialCorrectCount).toBe(0)
-    expect(revised.lastResponseCorrectness).toBeNull()
+    expectNewLearningState(revised)
+
+    const sameSources = [
+      {
+        title: 'Updated economics notes',
+        chunkId: updatedChunkId,
+        sourceId: 'course-material',
+      },
+    ]
+    const unchanged = await updatePersonalElement(
+      { id: element!.id, expectedVersion: 3, sources: sameSources },
+      context(participant.id)
+    )
+    expect(unchanged.version).toBe(3)
+    expect(unchanged.interval).toBe(answered.interval)
+    expect(unchanged.partialCorrectCount).toBe(answered.partialCorrectCount)
+    expect(unchanged.lastResponseCorrectness).toBe(
+      answered.lastResponseCorrectness
+    )
   })
 
-  it('rejects a stale response without changing scheduling state', async () => {
+  it('rejects a response that races with a revision without changing state', async () => {
     const { course, participant } = await createFixture()
     const [element] = await createPersonalElements(
       { courseId: course.id, candidates: [candidate()] },
       context(participant.id)
     )
+
+    let releaseUpdate!: () => void
+    let signalUpdateStarted!: () => void
+    let updateStarted = false
+    const updateBarrier = new Promise<void>((resolve) => {
+      releaseUpdate = resolve
+    })
+    const updateCallStarted = new Promise<void>((resolve) => {
+      signalUpdateStarted = resolve
+    })
+    const concurrentPrisma = prisma.$extends({
+      query: {
+        personalElement: {
+          async updateMany({ args, query }) {
+            if (!updateStarted) {
+              updateStarted = true
+              signalUpdateStarted()
+              await updateBarrier
+            }
+            return query(args)
+          },
+        },
+      },
+    }) as unknown as PrismaClient
+
+    const response = respondToPersonalElement(
+      {
+        id: element!.id,
+        response: FlashcardCorrectness.CORRECT,
+        expectedVersion: 1,
+      },
+      { prisma: concurrentPrisma, actor: actor(participant.id) }
+    )
+    // The response transaction has read version 1 and is paused immediately
+    // before its conditional scheduling write.
+    await updateCallStarted
     const revised = await updatePersonalElement(
       { id: element!.id, expectedVersion: 1, content: 'Revised prompt' },
       context(participant.id)
     )
+    releaseUpdate()
 
-    await expect(
-      respondToPersonalElement(
-        {
-          id: element!.id,
-          response: FlashcardCorrectness.CORRECT,
-          expectedVersion: 1,
-        },
-        context(participant.id)
-      )
-    ).rejects.toMatchObject({
+    await expect(response).rejects.toMatchObject({
       extensions: { code: 'PERSONAL_ELEMENT_VERSION_CONFLICT' },
     })
 

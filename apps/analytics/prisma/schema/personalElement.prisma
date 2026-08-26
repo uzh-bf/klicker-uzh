@@ -37,7 +37,7 @@ model PersonalElement {
   candidateId      String?
 
   eFactor              Float              @default(2.5)
-  interval             Int                @default(1)
+  interval             Int                @default(0)
   correctCountStreak   Int                @default(0)
   correctCount         Int                @default(0)
   partialCorrectCount  Int                @default(0)
