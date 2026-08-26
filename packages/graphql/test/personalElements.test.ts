@@ -326,7 +326,7 @@ describe('personal elements service', () => {
     expect(explanationRevision.version).toBe(2)
     expectNewLearningState(explanationRevision)
 
-    const answered = await respondToPersonalElement(
+    await respondToPersonalElement(
       {
         id: element!.id,
         response: FlashcardCorrectness.PARTIAL,
@@ -371,10 +371,10 @@ describe('personal elements service', () => {
       context(participant.id)
     )
     expect(unchanged.version).toBe(3)
-    expect(unchanged.interval).toBe(answered.interval)
-    expect(unchanged.partialCorrectCount).toBe(answered.partialCorrectCount)
+    expect(unchanged.interval).toBe(revised.interval)
+    expect(unchanged.partialCorrectCount).toBe(revised.partialCorrectCount)
     expect(unchanged.lastResponseCorrectness).toBe(
-      answered.lastResponseCorrectness
+      revised.lastResponseCorrectness
     )
   })
 
