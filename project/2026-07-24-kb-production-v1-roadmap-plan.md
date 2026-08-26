@@ -287,10 +287,11 @@ External (platform-track) dependencies to watch, not owned here: R1.1 `resource_
   and data ingestion. W9 and the separate graph production roadmap are parked;
   graph generation remains in GitLab. Catalyst PR #23 stays draft and
   untouched. No graph delivery gate blocks W8.
-- [x] 2026-08-26: Fresh provider evidence establishes the W8 entry state.
+- [x] 2026-08-26: Fresh provider evidence established the historical W8 entry
+  state before source preparation.
   Data-ingestion `main@66e22bff` documents and implements the project-level
   producer boundary; the user approved that boundary instead of the obsolete
-  D-8 per-KB allowlist. Deployment `main@f83a2057f` already carries the exact
+  D-8 per-KB allowlist. Deployment `main@f83a2057f` already carried the exact
   Klicker project, URL/BLOB source policy, source gateway, signed callback, and
   MIME limits, but deliberately sets `producer.enabled: false` and tests that
   state. There is no open data-ingestion MR. No deployment, secret, cluster, or
@@ -298,13 +299,17 @@ External (platform-track) dependencies to watch, not owned here: R1.1 `resource_
 - [x] 2026-08-26: W8 source-readiness packaging is complete at the reviewed
   local layer. Klicker branch `rs/kb-ingestion-stg-readiness` contains the
   fail-closed ingestion capability gates and exact STG configuration through
-  `bd8e320f9`; its upper `rs/kb-ingestion-stg-activation` layer opens only basic
-  ingestion at `49159597b` while keeping both graph gates closed. df-cloud
-  `rs/kb-ingestion-secret-projection` projects only the consumer-specific
-  aliases at `c93c1fa6`. Deployment `rs/kb-ingestion-producer-activation`
-  enables only the existing Klicker producer at `2e928f6d`; its complete local
-  Kustomize render and policy validator pass. Doc Query PR #5559 is refreshed
-  independently at `e2f3e27e0` and has no W8 path overlap.
+  implementation head `bd8e320f9`; its upper
+  `rs/kb-ingestion-stg-activation` layer opens only basic ingestion while
+  keeping both graph gates closed. Exact publication heads belong in the draft
+  PR readback so this lower-layer roadmap does not pin a commit that changes
+  when the stack is restacked. df-cloud `rs/kb-ingestion-secret-projection`
+  projects only the consumer-specific aliases through `c93c1fa6`. Deployment
+  `rs/kb-ingestion-producer-activation` is based on current
+  `main@0e7e7848`, enables only the existing Klicker producer in behavior commit
+  `2e928f6d`, and records its current review receipt at `fb020930`; its complete
+  local Kustomize render and policy validator pass. Doc Query PR #5559 is
+  refreshed independently at `e2f3e27e0` and has no W8 path overlap.
 - [ ] **NEXT: finish the integrated source publication gate.** Complete the
   upper-layer and package final reviews, run each branch's fresh exact-head
   checks, then push and publish/update only the approved draft PRs/MRs. Keep the
