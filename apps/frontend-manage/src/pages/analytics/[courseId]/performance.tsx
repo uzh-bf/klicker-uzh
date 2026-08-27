@@ -73,9 +73,7 @@ function PerformanceDashboard() {
               <H1 className={{ root: 'mb-0' }}>
                 {t('manage.analytics.performanceDashboard')}
               </H1>
-              {analytics.isSuppressed ||
-              analytics.effectiveN === null ||
-              analytics.effectiveN === undefined ? (
+              {analytics.isSuppressed || analytics.effectiveN == null ? (
                 <div data-cy="analytics-suppressed">
                   <UserNotification
                     type="info"
@@ -179,8 +177,7 @@ function PerformanceDashboard() {
                       {t('manage.analytics.studentReportV2')}
                     </H2>
                     {analytics.studentReport.isSuppressed ||
-                    analytics.studentReport.effectiveN === null ||
-                    analytics.studentReport.effectiveN === undefined ? (
+                    analytics.studentReport.effectiveN == null ? (
                       <div data-cy="analytics-suppressed">
                         <UserNotification
                           type="info"

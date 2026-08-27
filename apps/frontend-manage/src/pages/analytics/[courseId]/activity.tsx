@@ -56,9 +56,7 @@ function ActivityDashboard() {
             <H1 className={{ root: 'mb-0' }}>
               {t('manage.analytics.activityDashboard')}
             </H1>
-            {analytics.isSuppressed ||
-            analytics.effectiveN === null ||
-            analytics.effectiveN === undefined ? (
+            {analytics.isSuppressed || analytics.effectiveN == null ? (
               <div data-cy="analytics-suppressed">
                 <UserNotification
                   type="info"

@@ -4,15 +4,20 @@ function RetiredQuizAnalyticsIndex() {
   return null
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ params }) => {
+export const getServerSideProps: GetServerSideProps = async ({
+  params,
+  locale,
+  defaultLocale,
+}) => {
   const courseId =
     typeof params?.courseId === 'string' ? params.courseId : undefined
+  const localePrefix = locale && locale !== defaultLocale ? `/${locale}` : ''
 
   return {
     redirect: {
       destination: courseId
-        ? `/analytics/${encodeURIComponent(courseId)}/activity`
-        : '/analytics',
+        ? `${localePrefix}/analytics/${encodeURIComponent(courseId)}/activity`
+        : `${localePrefix}/analytics`,
       permanent: false,
     },
   }
