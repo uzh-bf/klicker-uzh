@@ -1,6 +1,7 @@
 import {
   GrowthBookProvider,
   useFeatureIsOn,
+  useGrowthBook,
 } from '@growthbook/growthbook-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import {
@@ -12,6 +13,7 @@ import type {
   FeatureFlagKey,
   KlickerFeatureFlags,
 } from './contracts.js'
+import { evaluateFeatureFlags } from './contracts.js'
 
 export type { BrowserFeatureFlagConfig } from './browserClient.js'
 
@@ -62,4 +64,22 @@ export function FeatureFlagProvider({
 
 export function useFeatureFlag(key: FeatureFlagKey): boolean {
   return useFeatureIsOn<KlickerFeatureFlags>(key)
+}
+
+/**
+ * Evaluates a whole set of flags with a single hook call, for callers whose key
+ * list is data-driven — one `useFeatureFlag` per list entry would break the
+ * rules-of-hooks lint rule.
+ *
+ * Reactivity is identical to `useFeatureFlag`: `useFeatureIsOn` is itself only
+ * `useGrowthBook().isOn(key)`, and `GrowthBookProvider` re-renders its subtree
+ * when the feature payload arrives. The returned object is a fresh value on
+ * every render, so callers must not use it directly as an effect dependency.
+ */
+export function useFeatureFlags(
+  keys: readonly FeatureFlagKey[]
+): Partial<Record<FeatureFlagKey, boolean>> {
+  const growthbook = useGrowthBook<KlickerFeatureFlags>()
+
+  return evaluateFeatureFlags(growthbook, keys)
 }

@@ -1,4 +1,5 @@
 import {
+  evaluateFeatureFlags,
   FEATURE_FLAG_DEFAULTS,
   normalizeFeatureFlagEnvironment,
 } from '../src/index.js'
@@ -35,5 +36,23 @@ describe('feature flag contracts', () => {
     expect(reportedErrors).toHaveBeenCalledOnce()
 
     reportedErrors.mockRestore()
+  })
+})
+
+describe('evaluateFeatureFlags', () => {
+  it('asks the client once per key and keeps the answers keyed', () => {
+    const isOn = vi.fn((key: string) => key === 'learning-analytics')
+
+    expect(evaluateFeatureFlags({ isOn }, ['learning-analytics'])).toEqual({
+      'learning-analytics': true,
+    })
+    expect(isOn).toHaveBeenCalledExactlyOnceWith('learning-analytics')
+  })
+
+  it('returns an empty evaluation without touching the client for no keys', () => {
+    const isOn = vi.fn(() => true)
+
+    expect(evaluateFeatureFlags({ isOn }, [])).toEqual({})
+    expect(isOn).not.toHaveBeenCalled()
   })
 })

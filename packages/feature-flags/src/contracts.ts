@@ -12,6 +12,34 @@ export type KlickerFeatureFlags = {
 
 export type FeatureFlagKey = Extract<keyof KlickerFeatureFlags, string>
 
+// The smallest part of a GrowthBook client the evaluation below needs. Keeping
+// it structural lets the pure evaluation be tested without a React tree.
+export type FeatureFlagEvaluator = {
+  isOn: (key: FeatureFlagKey) => boolean
+}
+
+/**
+ * Evaluates several flags at once against an already-created client.
+ *
+ * React callers must not evaluate one flag per catalog entry inside a loop:
+ * one hook call per entry breaks the rules-of-hooks lint rule as soon as the
+ * list length can change. This helper is the imperative core the
+ * `useFeatureFlags` hook wraps, so a caller makes a single hook call and reads
+ * as many keys as it likes.
+ */
+export function evaluateFeatureFlags(
+  evaluator: FeatureFlagEvaluator,
+  keys: readonly FeatureFlagKey[]
+): Partial<Record<FeatureFlagKey, boolean>> {
+  const evaluated: Partial<Record<FeatureFlagKey, boolean>> = {}
+
+  for (const key of keys) {
+    evaluated[key] = evaluator.isOn(key)
+  }
+
+  return evaluated
+}
+
 export type BooleanFeatureFlagKey<Features extends Record<string, unknown>> =
   Extract<
     {
