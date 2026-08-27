@@ -55,7 +55,10 @@ function PersonalCardSources({ card }: { card: PersonalCard }) {
               </a>
             ) : (
               (source.title ?? source.sourceId)
-            )}
+            )}{' '}
+            {typeof source.page === 'number'
+              ? ` · ${t('chat.sources.page', { page: source.page })}`
+              : ''}
           </li>
         ))}
       </ul>
