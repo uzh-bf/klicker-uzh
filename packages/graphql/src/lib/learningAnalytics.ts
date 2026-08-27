@@ -23,7 +23,6 @@ export type ParticipantDataUseFields = Pick<
   | 'learningAnalyticsConsent'
   | 'learningAnalyticsChoiceAt'
   | 'learningAnalyticsDisclosureVersion'
-  | 'learningAnalyticsIncludedFrom'
 >
 
 export const participantDataUseSelect = {
@@ -33,5 +32,4 @@ export const participantDataUseSelect = {
   learningAnalyticsConsent: true,
   learningAnalyticsChoiceAt: true,
   learningAnalyticsDisclosureVersion: true,
-  learningAnalyticsIncludedFrom: true,
 } satisfies DB.Prisma.ParticipantSelect

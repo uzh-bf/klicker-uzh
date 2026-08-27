@@ -2366,7 +2366,6 @@ type ParticipantDataUse {
   learningAnalyticsChoiceAt: Date
   learningAnalyticsConsent: Boolean!
   learningAnalyticsDisclosureVersion: String
-  learningAnalyticsIncludedFrom: Date
   researchConsent: Boolean!
   researchConsentChoiceAt: Date
   researchConsentDisclosureVersion: String
