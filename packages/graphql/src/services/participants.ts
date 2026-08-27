@@ -854,7 +854,7 @@ export async function getPracticeQuizList(ctx: ContextWithUser) {
       ...p.course,
       personalElementCount: p.course.personalElements.length,
       personalDueCount: p.course.personalElements.filter(
-        (element) => element.nextDueAt && element.nextDueAt <= new Date()
+        (element) => !element.nextDueAt || element.nextDueAt <= new Date()
       ).length,
     }))
     .sort((a, b) => (a.endDate > b.endDate ? -1 : 1))

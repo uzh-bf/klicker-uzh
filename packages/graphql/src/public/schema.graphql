@@ -2535,7 +2535,6 @@ type Mutation {
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
   createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
-  createPersonalElements(candidates: [PersonalElementCandidateInput!]!, courseId: String!): [PersonalElement!]
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
   createUserGroup(members: [UserGroupMembersInput!]!, name: String!): UserGroup
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
@@ -2640,9 +2639,9 @@ type Mutation {
   resolveFeedback(id: Int!, isResolved: Boolean!, liveQuizId: String!): Feedback
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, liveQuizId: String!, responseContent: String!): Feedback
+  respondToPersonalElement(expectedVersion: Int!, id: String!, response: FlashcardCorrectnessType!): PersonalElement
   retryElementGeneration(input: ElementGenerationBuildInput!): ElementGenerationBuild!
   reviewElementGeneration(input: ReviewElementGenerationInput!): ElementGenerationBuild!
-  respondToPersonalElement(expectedVersion: Int!, id: String!, response: FlashcardCorrectnessType!): PersonalElement
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
   saveGeneratedElements(input: ElementGenerationBuildInput!): ElementGenerationSaveResult!
@@ -2678,7 +2677,6 @@ type Mutation {
   updateGeneratedElementDraft(input: UpdateGeneratedElementDraftInput!): GeneratedElementDraft!
   updateParticipantAvatar(avatar: String!, avatarSettings: AvatarSettingsInput!): Participant
   updateParticipantProfile(email: String!, isProfilePublic: Boolean, password: String, username: String!): Participant
-  updatePersonalElement(content: String, expectedVersion: Int!, explanation: String, id: String!, name: String, sources: [PersonalElementSourceInput!]): PersonalElement
   updateTagOrdering(originIx: Int!, targetIx: Int!): [Tag!]
   updateUserLogin(id: String!, password: String!): UserLogin
   updateWeeklyTimelineEntriesCourse(courseId: String!): Boolean
@@ -3033,7 +3031,7 @@ type PermissionsList {
 }
 
 type PersonalElement {
-  candidateId: String
+  candidateId: String!
   content: String!
   correctCount: Int!
   correctCountStreak: Int!
@@ -3061,16 +3059,6 @@ type PersonalElement {
   wrongCount: Int!
 }
 
-input PersonalElementCandidateInput {
-  candidateId: String!
-  content: String!
-  explanation: String!
-  name: String!
-  sourceMessageId: String!
-  sourceToolCallId: String!
-  sources: [PersonalElementSourceInput!]!
-}
-
 enum PersonalElementOrigin {
   AI_GENERATED
   AUTHORED
@@ -3079,14 +3067,7 @@ enum PersonalElementOrigin {
 type PersonalElementSource {
   chunkId: String!
   metadata: Json
-  sourceId: String!
-  title: String
-  url: String
-}
-
-input PersonalElementSourceInput {
-  chunkId: String!
-  metadata: Json
+  page: Float
   sourceId: String!
   title: String
   url: String

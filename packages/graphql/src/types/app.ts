@@ -92,6 +92,7 @@ declare global {
       chunkId: string
       title?: string
       url?: string
+      page?: number
       metadata?: Record<string, string | number | boolean | null>
     }>
   }

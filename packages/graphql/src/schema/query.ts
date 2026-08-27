@@ -1198,7 +1198,7 @@ export const Query = builder.queryType({
         resolve: async (_, args, ctx) => {
           return await PersonalElementService.listPersonalElements(args, {
             prisma: ctx.prisma,
-            actor: { participantId: ctx.user.sub, role: ctx.user.role },
+            participantId: ctx.user.sub,
           })
         },
       }),

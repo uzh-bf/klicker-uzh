@@ -1,8 +1,0 @@
-mutation MCreatePersonalElements(
-  $courseId: String!
-  $candidates: [PersonalElementCandidateInput!]!
-) {
-  createPersonalElements(courseId: $courseId, candidates: $candidates) {
-    ...FPersonalElement
-  }
-}

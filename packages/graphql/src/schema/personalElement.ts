@@ -1,11 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
-import {
-  type PersonalElementCandidate,
-  type PersonalElementSource as PersonalElementSourceValue,
-} from '../services/personalElements.js'
+import { type PersonalElementSource as PersonalElementSourceValue } from '../services/personalElements.js'
 import { ElementType } from './elementData.js'
-import { FlashcardCorrectnessType } from './practiceQuiz.js'
 import { ResponseCorrectness } from './evaluation.js'
 
 export const PersonalElementOrigin = builder.enumType('PersonalElementOrigin', {
@@ -21,37 +17,10 @@ export const PersonalElementSource = PersonalElementSourceRef.implement({
     chunkId: t.exposeString('chunkId'),
     title: t.exposeString('title', { nullable: true }),
     url: t.exposeString('url', { nullable: true }),
+    page: t.exposeFloat('page', { nullable: true }),
     metadata: t.expose('metadata', { type: 'Json', nullable: true }),
   }),
 })
-
-export const PersonalElementSourceInput = builder.inputType(
-  'PersonalElementSourceInput',
-  {
-    fields: (t) => ({
-      sourceId: t.string({ required: true }),
-      chunkId: t.string({ required: true }),
-      title: t.string({ required: false }),
-      url: t.string({ required: false }),
-      metadata: t.field({ type: 'Json', required: false }),
-    }),
-  }
-)
-
-export const PersonalElementCandidateInput = builder.inputType(
-  'PersonalElementCandidateInput',
-  {
-    fields: (t) => ({
-      candidateId: t.string({ required: true }),
-      name: t.string({ required: true }),
-      content: t.string({ required: true }),
-      explanation: t.string({ required: true }),
-      sources: t.field({ type: [PersonalElementSourceInput], required: true }),
-      sourceMessageId: t.string({ required: true }),
-      sourceToolCallId: t.string({ required: true }),
-    }),
-  }
-)
 
 export const PersonalElementRef =
   builder.objectRef<DB.PersonalElement>('PersonalElement')
@@ -75,7 +44,7 @@ export const PersonalElement = builder.objectType(PersonalElementRef, {
     origin: t.expose('origin', { type: PersonalElementOrigin }),
     sourceMessageId: t.exposeString('sourceMessageId', { nullable: true }),
     sourceToolCallId: t.exposeString('sourceToolCallId', { nullable: true }),
-    candidateId: t.exposeString('candidateId', { nullable: true }),
+    candidateId: t.exposeString('candidateId'),
     eFactor: t.exposeFloat('eFactor'),
     interval: t.exposeInt('interval'),
     correctCountStreak: t.exposeInt('correctCountStreak'),
@@ -104,7 +73,3 @@ export const PersonalElement = builder.objectType(PersonalElementRef, {
     updatedAt: t.expose('updatedAt', { type: 'Date' }),
   }),
 })
-
-export type PersonalElementCandidateInputValue = PersonalElementCandidate
-
-export const PersonalElementFlashcardResponse = FlashcardCorrectnessType

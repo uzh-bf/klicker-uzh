@@ -11,6 +11,7 @@ export const FEATURE_FLAG_DEFAULTS = {
   // stay live is a gap, not a finer control.
   'ai-beta': false,
   'learning-analytics': false,
+  'personal-card-generation': false,
 } as const satisfies Record<string, false>
 
 export type KlickerFeatureFlags = {
@@ -48,6 +49,7 @@ export type FeatureFlagAttributes = Record<
   FeatureFlagAttributeValue
 > & {
   id?: string
+  chatbotId?: string
   actorType: 'user' | 'participant' | 'anonymous'
   role?: string
   // Whether the lecturer holds Catalyst, institutionally or individually.
@@ -80,6 +82,8 @@ export function sanitizeFeatureFlagAttributes(
   }
 
   if (typeof source.id === 'string') sanitized.id = source.id
+  if (typeof source.chatbotId === 'string')
+    sanitized.chatbotId = source.chatbotId
   if (typeof source.role === 'string') sanitized.role = source.role
   if (typeof source.catalyst === 'boolean') sanitized.catalyst = source.catalyst
   return sanitized
