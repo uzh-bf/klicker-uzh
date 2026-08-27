@@ -133,6 +133,39 @@ describe('personal-element GraphQL client', () => {
     })
   })
 
+  test('sends the persisted-query hash with CSRF and origin headers', async () => {
+    process.env.APP_SECRET = 'test-secret'
+    process.env.APP_ORIGIN_API = 'https://api.example.test'
+    process.env.APP_ORIGIN_CHAT = 'https://chat.example.test'
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: { personalElements: [] } }),
+    })
+
+    await executePersonalElementOperation({
+      operationName: 'QPersonalElements',
+      variables: { courseId: 'course-1' },
+      participantId: 'participant-1',
+      fetchImpl,
+    })
+
+    const request = fetchImpl.mock.calls[0]?.[1] as {
+      body: string
+      headers: Record<string, string>
+      method: string
+    }
+    expect(request.method).toBe('POST')
+    expect(request.headers.origin).toBe('https://chat.example.test')
+    expect(request.headers['x-graphql-yoga-csrf']).toBe('true')
+    expect(request.headers['content-type']).toBe('application/json')
+    const body = JSON.parse(request.body)
+    expect(body.extensions.persistedQuery).toEqual({
+      sha256Hash: 'test-hash-list',
+      version: 1,
+    })
+    expect(body).not.toHaveProperty('query')
+  })
+
   test('scopes lease and discard reads to the participant', async () => {
     mocks.leaseFindFirst.mockResolvedValue({ completedAt: null })
     mocks.discardFindMany.mockResolvedValue([{ candidateId: 'candidate-1' }])

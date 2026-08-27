@@ -52,7 +52,7 @@ function getApiOrigin() {
   return origin ?? 'http://localhost:3000'
 }
 
-export function getGraphqlEndpoint() {
+function getGraphqlEndpoint() {
   return `${getApiOrigin()}/api/graphql`
 }
 
@@ -68,7 +68,7 @@ function getPersistedHash(operationName: string): string {
   return hash
 }
 
-export class PersonalElementGraphQLError extends Error {
+class PersonalElementGraphQLError extends Error {
   readonly extensions: Record<string, unknown> | undefined
 
   constructor(message: string, extensions?: Record<string, unknown>) {

@@ -170,7 +170,7 @@ function compactElement(element: {
   content: string
   explanation: string
   origin: string
-  nextDueAt?: Date | null
+  nextDueAt?: string | null
 }) {
   return {
     id: element.id,
@@ -179,7 +179,7 @@ function compactElement(element: {
     content: element.content,
     explanation: element.explanation,
     origin: element.origin,
-    nextDueAt: element.nextDueAt ? element.nextDueAt.toISOString() : null,
+    nextDueAt: element.nextDueAt ?? null,
   }
 }
 

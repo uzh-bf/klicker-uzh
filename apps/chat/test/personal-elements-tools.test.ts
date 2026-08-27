@@ -400,6 +400,32 @@ describe('personal-element chat tools', () => {
     )
   })
 
+  test('passes through a non-null nextDueAt string from the GraphQL wire', async () => {
+    mocks.listPersonalElements.mockResolvedValue([
+      {
+        id: 'element-1',
+        version: 1,
+        name: 'Card',
+        content: 'Front',
+        explanation: 'Back',
+        origin: 'AI_GENERATED',
+        nextDueAt: '2026-09-01T10:00:00.000Z',
+      },
+    ])
+
+    const result = await execute(
+      createListPersonalElementsTool({
+        participantId: options.participantId,
+        courseId: options.courseId,
+      }),
+      { limit: 10 }
+    )
+
+    expect(result).toMatchObject({
+      elements: [{ id: 'element-1', nextDueAt: '2026-09-01T10:00:00.000Z' }],
+    })
+  })
+
   test('returns a stale-version conflict without changing saved content', async () => {
     mocks.listPersonalElements.mockResolvedValue([
       {
