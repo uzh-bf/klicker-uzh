@@ -1063,3 +1063,18 @@ Settled rulings for this implementation:
   The dedicated executor route is intentionally skipped; the required
   read-only simplifier, risk reviewer, and final reviewer gates remain in force.
   The user's durable Discard ruling is now the implementation contract.
+- 2026-08-27 (`v3-ai` integration): With explicit user approval, the existing
+  three-layer draft stack was rebased onto `origin/v3-ai` at
+  `e49804e3327609436e211cbe5d3765d7d408ed55`. The A, B, and C ancestry remains
+  linear. Conflict resolution composes the `v3-ai` student-practice tools and
+  chat context with retrieval-backed personal-card generation instead of
+  replacing either behavior. Chat and GraphQL type generation completed in the
+  exact managed worktree runtime, as did the PWA typecheck. The five focused
+  Chat suites pass all 36 tests, and the focused GraphQL service suite passes
+  all 18 tests. The full Chat suite passes 841 tests and fails only the same
+  two model registry parity assertions already failing on the exact `v3-ai`
+  head and in pull request #5092; this stack does not modify that registry or
+  its parity test. Publication will update pull request #5481 to target `v3-ai`
+  while retaining #5482 on #5481 and #5483 on #5482. Merge, deployment,
+  feature-flag enablement, and runtime or worktree deletion remain outside this
+  goal.
