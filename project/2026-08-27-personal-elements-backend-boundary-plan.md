@@ -541,9 +541,13 @@ no migration.
   and minimal server-to-server authentication.
 - [x] Recorded the language-specific policy as a stack-wide removal, not an
   isolated file edit.
-- [ ] Obtain approval for this execution plan.
-- [ ] Obtain separate authority for the one-time stack integration onto current
+- [x] Obtain approval for this execution plan.
+- [x] Obtain separate authority for the one-time stack integration onto current
   `origin/v3-ai`.
+- [x] S0 — reconciled the stack onto `origin/v3-ai`: A `56cda8379`, B
+  `866e4e2de`, C `0d8f2c56d`; all zero behind `origin/v3-ai`; ancestry
+  verified; conflicts were additive (response-example and personal-element
+  schema/doc sections) and resolved with both sides retained.
 - [ ] Execute S1 through S6 with their review gates and local commits.
 - [ ] Complete exact-head verification and the integrated native
   `final-reviewer` gate.
