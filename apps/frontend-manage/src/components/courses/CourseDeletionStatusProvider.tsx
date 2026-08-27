@@ -11,6 +11,7 @@ import {
   StartCourseDeletionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { getGraphQLErrorCode } from '@lib/utils/graphqlErrors'
 import {
   Popover,
   PopoverContent,
@@ -60,27 +61,6 @@ const COURSE_DELETION_STORAGE_KEY = 'course-deletion-job-ids'
 const COURSE_DELETION_POLL_INTERVAL = 5000
 const COURSE_DELETION_STATUS_BATCH_SIZE = 50
 const COURSE_DELETION_HANDLED_TERMINAL_JOB_LIMIT = 100
-
-function getGraphQLErrorCode(error: unknown): string | undefined {
-  if (!error || typeof error !== 'object') return undefined
-
-  const extensions = (error as { extensions?: { code?: unknown } }).extensions
-  if (typeof extensions?.code === 'string') return extensions.code
-
-  const graphQLErrors = (error as { graphQLErrors?: unknown[] }).graphQLErrors
-  for (const graphQLError of graphQLErrors ?? []) {
-    const code = getGraphQLErrorCode(graphQLError)
-    if (code) return code
-  }
-
-  const errors = (error as { errors?: unknown[] }).errors
-  for (const nestedError of errors ?? []) {
-    const code = getGraphQLErrorCode(nestedError)
-    if (code) return code
-  }
-
-  return undefined
-}
 
 function isActiveCourseDeletionStatus(status: CourseDeletionJob['status']) {
   return (
@@ -300,9 +280,13 @@ export function CourseDeletionProvider({
         if (job.status === CourseDeletionJobStatus.Completed) {
           toast({
             type: 'success',
-            message: t('manage.courseList.courseDeletionSucceeded', {
-              name: job.courseName,
-            }),
+            message: (
+              <span data-cy="course-deletion-succeeded">
+                {t('manage.courseList.courseDeletionSucceeded', {
+                  name: job.courseName,
+                })}
+              </span>
+            ),
             options: { duration: 6000 },
           })
         } else {
@@ -425,9 +409,13 @@ export function CourseDeletionProvider({
           addJobId(job.id)
           toast({
             type: 'success',
-            message: t('manage.courseList.courseDeletionStarted', {
-              name: job.courseName,
-            }),
+            message: (
+              <span data-cy="course-deletion-started">
+                {t('manage.courseList.courseDeletionStarted', {
+                  name: job.courseName,
+                })}
+              </span>
+            ),
             options: { duration: 6000 },
           })
           return true

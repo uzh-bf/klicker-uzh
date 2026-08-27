@@ -962,17 +962,15 @@ async function expectCourseDeletionCompleted(page: Page, courseName: string) {
   await expect(
     page.getByTestId('course-deletion-modal-confirm')
   ).not.toBeVisible()
-  await expect(
-    page.getByText(
-      `Deletion of “${courseName}” started. You can continue working.`
-    )
-  ).toBeVisible()
+  await expect(page.getByTestId('course-deletion-started')).toHaveText(
+    `Deletion of “${courseName}” started. You can continue working.`
+  )
   await expect(
     page.getByTestId(`course-list-button-${courseName}`)
   ).not.toBeVisible({ timeout: 30_000 })
-  await expect(
-    page.getByText(`Course “${courseName}” was deleted.`)
-  ).toBeVisible()
+  await expect(page.getByTestId('course-deletion-succeeded')).toHaveText(
+    `Course “${courseName}” was deleted.`
+  )
 }
 
 async function openCourseInManage(page: Page, courseName: string) {

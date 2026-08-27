@@ -136,3 +136,14 @@ that would expand the regression surface without improving deletion semantics.
   transitions; focused tests cover active-worker and outage-deadline races.
 - 2026-08-27: Independent final confirmation reported no remaining issue in the
   database fence, stale normalization, or publication-recovery race paths.
+- 2026-08-27: Post-PR review extracted the duplicated GraphQL error-code parser
+  and replaced text-based deletion-toast assertions with stable `data-cy`
+  selectors. Focused frontend and Playwright typechecks plus changed-file
+  formatting pass.
+- 2026-08-27: Browser verification passed against an isolated synthetic stack.
+  Deleting the seeded `Testkurs` (50 participations, 6 live quizzes, 3 practice
+  quizzes, 5 microlearnings, 6 group activities, 19 participant groups, and 15
+  leaderboard entries) closed the modal after queue acknowledgement, showed
+  persisted background progress, completed successfully in the Hatchet worker,
+  and removed the course after polling. Real screenshots are stored under
+  `docs/screenshots/background-course-deletion/` for the draft PR.
