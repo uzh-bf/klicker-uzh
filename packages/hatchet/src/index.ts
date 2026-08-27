@@ -425,7 +425,7 @@ export function prepareHatchetTasks({
 
   const monitorKBIngestions = hatchet.task({
     name: 'monitor-kb-ingestions',
-    onCrons: ['* * * * *'],
+    onCrons: ['*/5 * * * *'],
     concurrency: {
       expression: '"monitor-kb-ingestions"',
       maxRuns: 1,

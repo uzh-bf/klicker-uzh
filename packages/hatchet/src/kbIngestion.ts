@@ -25,6 +25,7 @@ import {
 
 const KB_INGESTION_POLL_CONCURRENCY = 8
 const KB_INGESTION_POLL_LIMIT = 32
+const KB_INGESTION_CALLBACK_GRACE_MS = 5 * 60_000
 
 export type KBIngestionLogger = {
   info?: (
@@ -366,7 +367,6 @@ export async function dispatchKBIngestion(
     }
 
     const client = dependencies.client ?? createKBIngestionApiClient({ env })
-    const startedAt = now()
     const operationId = await client.acceptResource({
       resourceId: input.resourceId,
       kbId: input.kbId,
@@ -374,6 +374,7 @@ export async function dispatchKBIngestion(
       ingestionAttemptId: input.ingestionAttemptId,
       source,
     })
+    const startedAt = now()
     const persisted = await dependencies.prisma.$transaction(async (tx) => {
       const resourceUpdate = await tx.kBResource.updateMany({
         where: {
@@ -542,8 +543,8 @@ export async function dispatchKBDeletion(
     }
 
     const client = dependencies.client ?? createKBIngestionApiClient({ env })
-    const startedAt = (dependencies.now ?? (() => new Date()))()
     const operationId = await client.deleteResource(input)
+    const startedAt = (dependencies.now ?? (() => new Date()))()
     const persisted = await dependencies.prisma.$transaction(async (tx) => {
       const resourceUpdate = await tx.kBResource.updateMany({
         where: {
@@ -886,12 +887,27 @@ export async function monitorActiveKBIngestions(
   dependencies: MonitorKBIngestionsDependencies
 ): Promise<void> {
   const env = dependencies.env ?? process.env
+  const now = dependencies.now?.() ?? new Date()
   const activeWhere = {
     status: {
       in: [KBResourceStatus.QUEUED, KBResourceStatus.PROCESSING],
     },
     ingestionAttemptId: { not: null },
     externalOperationId: { not: null },
+    // An accepted legacy operation can lack a start timestamp. Reconcile it
+    // immediately instead of leaving the resource permanently unmonitored.
+    AND: [
+      {
+        OR: [
+          { externalOperationStartedAt: null },
+          {
+            externalOperationStartedAt: {
+              lte: new Date(now.getTime() - KB_INGESTION_CALLBACK_GRACE_MS),
+            },
+          },
+        ],
+      },
+    ],
     OR: [
       {
         ingestionOperation: KBIngestionOperation.UPSERT,
@@ -911,9 +927,7 @@ export async function monitorActiveKBIngestions(
     return
   }
 
-  const pollWindow = Math.floor(
-    (dependencies.now?.() ?? new Date()).getTime() / 60_000
-  )
+  const pollWindow = Math.floor(now.getTime() / KB_INGESTION_CALLBACK_GRACE_MS)
   const skip =
     ((pollWindow % activeCount) * KB_INGESTION_POLL_LIMIT) % activeCount
   const query = {

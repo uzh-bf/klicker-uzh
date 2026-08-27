@@ -529,6 +529,8 @@ describe('KB ingestion dispatch', () => {
 
 describe('KB deletion dispatch', () => {
   it('dispatches a current tombstone and persists its operation correlation', async () => {
+    const acceptedAt = new Date('2026-07-26T12:00:01.000Z')
+    let accepted = false
     const prisma = dispatchPrisma({
       kbId: KB_ID,
       deletedAt: NOW,
@@ -538,12 +540,16 @@ describe('KB deletion dispatch', () => {
       externalOperationId: null,
     })
     const apiClient = client()
+    apiClient.deleteResource.mockImplementation(async () => {
+      accepted = true
+      return OPERATION_ID
+    })
 
     await expect(
       dispatchKBDeletion(deletionInput, {
         prisma: prisma as never,
         client: apiClient,
-        now: () => NOW,
+        now: () => (accepted ? acceptedAt : NOW),
       })
     ).resolves.toBe(OPERATION_ID)
 
@@ -559,7 +565,7 @@ describe('KB deletion dispatch', () => {
       },
       data: {
         externalOperationId: OPERATION_ID,
-        externalOperationStartedAt: NOW,
+        externalOperationStartedAt: acceptedAt,
         statusMessage: null,
         errorCode: null,
       },
@@ -576,7 +582,7 @@ describe('KB deletion dispatch', () => {
       },
       data: {
         externalOperationId: OPERATION_ID,
-        startedAt: NOW,
+        startedAt: acceptedAt,
         statusMessage: null,
         errorCode: null,
       },
@@ -652,13 +658,41 @@ describe('KB deletion dispatch', () => {
 
 describe('KB ingestion reconciliation', () => {
   function monitorPrisma(resources: Record<string, unknown>[]) {
+    function matchingResources(where: {
+      AND: {
+        OR: {
+          externalOperationStartedAt: null | { lte: Date }
+        }[]
+      }[]
+    }) {
+      const cutoff = where.AND[0]!.OR.find(
+        (condition) => condition.externalOperationStartedAt !== null
+      )!.externalOperationStartedAt
+      if (cutoff === null) {
+        throw new Error('Expected an operation timestamp cutoff')
+      }
+
+      return resources.filter((resource) => {
+        const startedAt = resource.externalOperationStartedAt
+        return (
+          startedAt === null ||
+          (startedAt instanceof Date && startedAt <= cutoff.lte)
+        )
+      })
+    }
+
     const prisma = {
       kBResource: {
-        count: vi.fn().mockResolvedValue(resources.length),
+        count: vi
+          .fn()
+          .mockImplementation(
+            async ({ where }) => matchingResources(where).length
+          ),
         findMany: vi
           .fn()
-          .mockImplementation(async ({ skip = 0, take = resources.length }) =>
-            resources.slice(skip, skip + take)
+          .mockImplementation(
+            async ({ where, skip = 0, take = resources.length }) =>
+              matchingResources(where).slice(skip, skip + take)
           ),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
@@ -678,7 +712,58 @@ describe('KB ingestion reconciliation', () => {
     resourceVersion: 3,
     contentSha256: CONTENT_SHA256,
     externalOperationId: OPERATION_ID,
+    externalOperationStartedAt: new Date('2026-07-26T11:50:00.000Z'),
   }
+
+  it('leaves fresh operations to the signed callback path', async () => {
+    const prisma = monitorPrisma([
+      {
+        ...activeResource,
+        externalOperationStartedAt: new Date('2026-07-26T11:59:00.000Z'),
+      },
+    ])
+    const apiClient = client()
+
+    await monitorActiveKBIngestions({
+      prisma: prisma as never,
+      client: apiClient,
+      now: () => NOW,
+    })
+
+    expect(prisma.kBResource.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        AND: [
+          {
+            OR: [
+              { externalOperationStartedAt: null },
+              {
+                externalOperationStartedAt: {
+                  lte: new Date('2026-07-26T11:55:00.000Z'),
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    })
+    expect(prisma.kBResource.findMany).not.toHaveBeenCalled()
+    expect(apiClient.getOperation).not.toHaveBeenCalled()
+  })
+
+  it('reconciles operations without a recorded start timestamp', async () => {
+    const prisma = monitorPrisma([
+      { ...activeResource, externalOperationStartedAt: null },
+    ])
+    const getOperation = vi.fn().mockResolvedValue(operation())
+
+    await monitorActiveKBIngestions({
+      prisma: prisma as never,
+      client: client({ getOperation }),
+      now: () => NOW,
+    })
+
+    expect(getOperation).toHaveBeenCalledWith(OPERATION_ID)
+  })
 
   it('reconciles a succeeded delete only after serving is empty', async () => {
     const deletedResource = {
@@ -1042,7 +1127,7 @@ describe('KB ingestion reconciliation', () => {
     expect(peak).toBe(8)
   })
 
-  it('rotates a bounded 32-resource reconciliation window each minute', async () => {
+  it('rotates a bounded 32-resource reconciliation window every five minutes', async () => {
     const resources = Array.from({ length: 49 }, (_, index) => ({
       ...activeResource,
       id: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
@@ -1073,7 +1158,7 @@ describe('KB ingestion reconciliation', () => {
     await monitorActiveKBIngestions({
       prisma: prisma as never,
       client: client({ getOperation }),
-      now: () => new Date(60_000),
+      now: () => new Date(300_000),
     })
 
     expect(prisma.kBResource.findMany).toHaveBeenNthCalledWith(
