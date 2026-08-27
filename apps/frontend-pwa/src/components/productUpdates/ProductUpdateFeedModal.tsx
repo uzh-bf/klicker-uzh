@@ -38,7 +38,6 @@ function ProductUpdateFeedModal({ onClose }: { onClose: () => void }) {
             <ProductUpdateCard
               key={entry.update.id}
               update={entry.update}
-              dismissed={entry.dismissed}
               statesLoaded={!loading}
               onPresent={recordPresentation}
               onRead={markRead}

@@ -8,7 +8,6 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { trackProductUpdate } from './tracking'
 
 function useLocalized() {
@@ -20,14 +19,12 @@ function useLocalized() {
 
 function ProductUpdateCard({
   update,
-  dismissed,
   statesLoaded,
   onPresent,
   onRead,
   onDismiss,
 }: {
   update: ProductUpdate
-  dismissed?: boolean
   // False while the stored read states are still being fetched. Reporting has
   // to wait for that query: its response replaces the whole cached state array,
   // so a mutation answered earlier would lose its cache write and the card
@@ -35,7 +32,7 @@ function ProductUpdateCard({
   statesLoaded: boolean
   onPresent: (updateId: string) => Promise<unknown>
   onRead: (updateId: string) => Promise<unknown>
-  onDismiss?: (updateId: string) => void
+  onDismiss: (updateId: string) => void
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -94,10 +91,7 @@ function ProductUpdateCard({
   return (
     <div
       ref={cardRef}
-      className={twMerge(
-        'flex flex-col gap-2 rounded-lg border border-solid border-slate-300 p-4',
-        dismissed && 'bg-slate-50 text-slate-500'
-      )}
+      className="flex flex-col gap-2 rounded-lg border border-solid border-slate-300 p-4"
       data-cy={`product-update-${update.id}`}
     >
       <div className="flex flex-row flex-wrap items-center gap-2">
@@ -154,19 +148,17 @@ function ProductUpdateCard({
             />
           </a>
         )}
-        {onDismiss && (
-          <Button
-            basic
-            onClick={() => {
-              trackProductUpdate('Dismissed', update.id)
-              onDismiss(update.id)
-            }}
-            className={{ root: 'ml-auto text-sm text-slate-500' }}
-            data={{ cy: `product-update-dismiss-${update.id}` }}
-          >
-            {t('pwa.productUpdates.dismiss')}
-          </Button>
-        )}
+        <Button
+          basic
+          onClick={() => {
+            trackProductUpdate('Dismissed', update.id)
+            onDismiss(update.id)
+          }}
+          className={{ root: 'ml-auto text-sm text-slate-500' }}
+          data={{ cy: `product-update-dismiss-${update.id}` }}
+        >
+          {t('pwa.productUpdates.dismiss')}
+        </Button>
       </div>
     </div>
   )
