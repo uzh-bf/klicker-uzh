@@ -231,7 +231,7 @@ desktop keeps the usual modal width.
 | `NEXT_PUBLIC_IS_ASSESSMENT` is `true`                      | The assessment build shows no product news at all                                            |
 | The page is embedded, or runs inside a frame               | Announcements must not appear inside a learning management system                            |
 | A live quiz is being answered (`liveQuizId`, `/session/…`) | Nothing may compete with an open question                                                    |
-| The page sets `activelyAnswering`                          | Practice quizzes and microlearnings are answered at their own pace and carry no other marker |
+| The page sets `activelyAnswering`                          | Practice quizzes, microlearnings, and group activities carry no other marker for answering   |
 | `self.role` is not `PARTICIPANT`                           | Temporary and anonymous participants are outside the subsystem, and the API rejects them too |
 
 Suppression is complete, not cosmetic: an excluded surface issues no
