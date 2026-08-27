@@ -1054,7 +1054,7 @@ importers:
         version: 9.30.1(jiti@2.7.0)
       eslint-config-next:
         specifier: ~16.2.10
-        version: 16.2.10(@typescript-eslint/parser@8.62.0(eslint@9.30.1(jiti@2.7.0))(typescript@6.0.3))(eslint@9.30.1(jiti@2.7.0))(typescript@6.0.3)
+        version: 16.2.10(eslint@9.30.1(jiti@2.7.0))(typescript@6.0.3)
       postcss:
         specifier: ~8.4.47
         version: 8.4.49
@@ -1109,6 +1109,9 @@ importers:
       '@fortawesome/react-fontawesome':
         specifier: 0.2.2
         version: 0.2.2(@fortawesome/fontawesome-svg-core@6.7.2)(react@19.2.7)
+      '@klicker-uzh/feature-flags':
+        specifier: workspace:*
+        version: link:../../packages/feature-flags
       '@klicker-uzh/graphql':
         specifier: workspace:*
         version: link:../../packages/graphql
@@ -1124,6 +1127,9 @@ importers:
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
+      '@klicker-uzh/product-updates':
+        specifier: workspace:*
+        version: link:../../packages/product-updates
       '@klicker-uzh/shared-components':
         specifier: workspace:*
         version: link:../../packages/shared-components
@@ -1262,7 +1268,7 @@ importers:
         version: 9.30.1(jiti@2.7.0)
       eslint-config-next:
         specifier: ~16.2.10
-        version: 16.2.10(eslint@9.30.1(jiti@2.7.0))(typescript@6.0.3)
+        version: 16.2.10(@typescript-eslint/parser@8.62.0(eslint@9.30.1(jiti@2.7.0))(typescript@6.0.3))(eslint@9.30.1(jiti@2.7.0))(typescript@6.0.3)
       postcss:
         specifier: ~8.4.47
         version: 8.4.49
