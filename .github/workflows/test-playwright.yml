@@ -422,9 +422,9 @@ jobs:
         build-and-compile-hosted,
         test-playwright-hosted,
         test-playwright-public-pr,
-      ]
+    ]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ${{ needs.test-playwright-public-pr.result != 'skipped' && 'public-pr-arm64' || 'ubuntu-latest' }}
     steps:
       - name: Check result
         run: |
