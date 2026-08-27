@@ -28,6 +28,14 @@ hatchet:
     workerDisabled: false
   kbGraph:
     disabled: true
+    hostPort: 'hatchet-grpc.stg-hatchet-svc.svc.cluster.local:7070'
+    apiUrl: 'http://app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080'
+    tlsStrategy: 'none'
+    workflowName: 'course-kg-ingestion'
+    standardGenerationModel: 'klickeruzh/azure/gpt-5.4'
+    standardCleaningModel: 'klickeruzh/azure/gpt-5.4'
+    highGenerationModel: 'klickeruzh/azure/gpt-5.4'
+    highCleaningModel: 'klickeruzh/azure/gpt-5.4'
   workers:
     general:
       replicaCount: 1
@@ -628,6 +636,36 @@ backendGraphql:
   kbIngestionDisabled: false
   kbGraphDisabled: true
 
+  knowledgeGraph:
+    host: 'stg-falkordb-aigeneric-falkordb-falkordb.stg-kb-falkordb-aigeneric.svc.cluster.local'
+    port: '6379'
+    tls: 'false'
+    queryTimeoutMs: '5000'
+    cost:
+      currency: 'CHF'
+      standardEstimateMinorUnits: '100'
+      highEstimateMinorUnits: '200'
+      maxCostMinorUnits: '250'
+      semesterQuotaMinorUnits: '1000'
+      pricingVersion: 'stg-canary-v1'
+      billingMode: 'SEMESTER_QUOTA'
+      semesterKey: '2026-H2'
+
+  elementGeneration:
+    enabled: false
+    hatchetHostPort: 'hatchet-grpc.stg-hatchet-svc.svc.cluster.local:7070'
+    hatchetServerUrl: 'http://app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080'
+    graphArtifactContainer: 'kg-graph-artifacts'
+    graphArtifactPrefix: 'graph-artifacts'
+    inputContainer: 'question-inputs'
+    outputContainer: 'question-results'
+    outputPrefix: 'question-builds'
+    cost:
+      questionMinorUnits: '1'
+      flashcardMinorUnits: '1'
+      flashcardRetryMinorUnits: '1'
+      pricingVersion: 'stg-canary-v1'
+
   ingress:
     className: haproxy
     annotations:
@@ -1023,6 +1061,7 @@ assessment:
 # Migration hook image: only the repo is pinned; the tag auto-tracks the
 # backendGraphql image tag above (floating selected source tag on stg).
 migrator:
+  databaseUrlOnly: true
   priorityClassName: staging-workload
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator-arm
