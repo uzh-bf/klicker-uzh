@@ -36,8 +36,8 @@ const CATALOG_FLAG_KEYS: FeatureFlagKey[] = Array.from(
   )
 )
 
-// Excluded actors evaluate no flags at all, which also keeps the hook working
-// in the assessment build, where no flag provider is mounted above it.
+// Excluded actors evaluate no flags at all, so an excluded surface asks the
+// flag client nothing, whatever payload that client happens to hold.
 const NO_FLAG_KEYS: FeatureFlagKey[] = []
 
 const IS_ASSESSMENT = process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
@@ -90,11 +90,15 @@ export function useProductUpdates({
       })
     : []
 
-  // The eligible ids are the query variables, so they must be referentially
-  // stable across renders that did not change the eligible set.
+  // The eligible ids are the query variables and the dependency of the card
+  // observers below, so they must be referentially stable across renders that
+  // did not change the eligible set. The React compiler's memoization rule
+  // cannot follow the joined key back to an unchanging value, and this app —
+  // unlike frontend-manage — does not switch that rule off globally.
   const eligibleIdsKey = eligibleUpdates.map((update) => update.id).join(',')
   const updateIds = useMemo(
     () => (eligibleIdsKey === '' ? [] : eligibleIdsKey.split(',')),
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization
     [eligibleIdsKey]
   )
 
