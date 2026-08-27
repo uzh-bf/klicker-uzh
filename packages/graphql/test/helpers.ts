@@ -36,6 +36,10 @@ import { Redis } from 'ioredis'
 import { v4 as uuidv4 } from 'uuid'
 import { vi } from 'vitest'
 import {
+  handleProcessCourseDeletion,
+  handleSweepStaleCourseDeletions,
+} from '@/services/courseDeletion.js'
+import {
   handleProcessCourseDuplication,
   handleSweepStaleCourseDuplications,
 } from '@/services/courseDuplication.js'
@@ -283,11 +287,33 @@ export async function testInitialization(
         return { success }
       },
     }),
+    processCourseDeletion: hatchet.task({
+      name: 'process-course-deletion',
+      fn: vi.fn(async ({ jobId }: { jobId: string }, executionCtx) => {
+        const success = await handleProcessCourseDeletion(
+          { jobId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      }),
+    }),
     processCourseDuplication: hatchet.task({
       name: 'process-course-duplication',
       fn: vi.fn(async ({ jobId }: { jobId: string }, executionCtx) => {
         const success = await handleProcessCourseDuplication(
           { jobId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      }),
+    }),
+    sweepStaleCourseDeletions: hatchet.task({
+      name: 'sweep-stale-course-deletions',
+      fn: vi.fn(async (_input: Record<string, never>, executionCtx) => {
+        const success = await handleSweepStaleCourseDeletions(
+          {},
           hatchetCtx,
           executionCtx
         )

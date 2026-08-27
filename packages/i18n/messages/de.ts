@@ -3392,6 +3392,20 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       showArchive: 'Archiv anzeigen',
       hideArchive: 'Archiv verbergen',
       deleteCourse: 'Kurs löschen',
+      courseDeletionStatusTab: 'Kurse werden gelöscht',
+      courseDeletionStatusCount:
+        '{count, plural, one {# Kurslöschung läuft} other {# Kurslöschungen laufen}}',
+      courseDeletionStatusTitle: 'Kurslöschung läuft',
+      courseDeletionStatusDescription:
+        'Sie können weiterarbeiten, während die ausgewählten Kurse gelöscht werden.',
+      courseDeletionStarted:
+        'Die Löschung von «{name}» wurde gestartet. Sie können weiterarbeiten.',
+      courseDeletionSucceeded: 'Der Kurs «{name}» wurde gelöscht.',
+      courseDeletionFailed:
+        'Der Kurs konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.',
+      courseDeletionAccessFailed:
+        'Der Kurs konnte nicht gelöscht werden, weil die erforderliche Berechtigung fehlt.',
+      courseDeletionInProgress: 'Die Löschung dieses Kurses läuft bereits.',
       courseDeletionMessage:
         'Bitte bestätigen Sie die Löschung aller mit diesem Kurs verbundenen Elemente und bestätigen Sie die unwiderrufliche Löschung des Kurses. Beachten Sie, dass alle Studierenden den Zugriff auf den Kurs sowie alle zugehörigen Kursmaterialien und Aktivitäten verlieren.',
       noParticipationsToDelete: 'Dieser Kurs enthält keine Teilnehmenden.',

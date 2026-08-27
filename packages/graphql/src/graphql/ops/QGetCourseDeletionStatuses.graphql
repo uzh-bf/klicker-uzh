@@ -1,0 +1,12 @@
+query GetCourseDeletionStatuses($ids: [String!]!) {
+  courseDeletionStatuses(ids: $ids) {
+    id
+    status
+    courseId
+    courseName
+    errorType
+    errorMessage
+    createdAt
+    updatedAt
+  }
+}

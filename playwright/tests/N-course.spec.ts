@@ -958,6 +958,23 @@ async function confirmCourseDeletion(page: Page) {
   await finalConfirm.click()
 }
 
+async function expectCourseDeletionCompleted(page: Page, courseName: string) {
+  await expect(
+    page.getByTestId('course-deletion-modal-confirm')
+  ).not.toBeVisible()
+  await expect(
+    page.getByText(
+      `Deletion of “${courseName}” started. You can continue working.`
+    )
+  ).toBeVisible()
+  await expect(
+    page.getByTestId(`course-list-button-${courseName}`)
+  ).not.toBeVisible({ timeout: 30_000 })
+  await expect(
+    page.getByText(`Course “${courseName}” was deleted.`)
+  ).toBeVisible()
+}
+
 async function openCourseInManage(page: Page, courseName: string) {
   const coursesNavigation = page.getByTestId('courses')
   if (await coursesNavigation.isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -2403,9 +2420,7 @@ test.describe('Part 4: Course deletion', () => {
     ).not.toBeVisible()
 
     await page.getByTestId('course-deletion-modal-confirm').click()
-    await expect(
-      page.getByTestId(`course-list-button-${DELETION.courseName}`)
-    ).not.toBeVisible()
+    await expectCourseDeletionCompleted(page, DELETION.courseName)
     await page.reload()
     await expect(
       page.getByTestId(`course-list-button-${DELETION.courseName}`)
@@ -2435,7 +2450,7 @@ test.describe('Part 4: Course deletion', () => {
     // Delete non-gamified course (renamed in Part 3)
     await page.getByTestId(`delete-course-${COURSE1.nameNew}`).click()
     await page.getByTestId('course-deletion-modal-confirm').click()
-    await expect(page.getByText(COURSE1.nameNew)).not.toBeVisible()
+    await expectCourseDeletionCompleted(page, COURSE1.nameNew)
 
     // Delete gamified course (has participations and groups)
     await page.getByTestId(`delete-course-${COURSE2.name}`).click()
@@ -2456,7 +2471,7 @@ test.describe('Part 4: Course deletion', () => {
       await groupConfirm.click()
     }
     await confirmCourseDeletion(page)
-    await expect(page.getByText(COURSE2.name)).not.toBeVisible()
+    await expectCourseDeletionCompleted(page, COURSE2.name)
 
     // Delete question
     await page.getByTestId('library').click()

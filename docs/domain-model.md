@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-20'
+timestamp: '2026-08-27'
 tags:
   - backend
   - prisma
@@ -71,6 +71,19 @@ off by default and describes it in activity-level terms: the asynchronous
 activities already cascade with the course, while opting in additionally
 removes linked draft live quizzes
 (`apps/frontend-manage/src/components/courses/modals/CourseDeletionModal.tsx:CourseDeletionModal`).
+
+The manage frontend starts deletion through `startCourseDeletion`, persists the
+Redis-backed job id in `localStorage`, and polls `courseDeletionStatuses` until
+the worker reports a terminal state. The modal closes after Hatchet accepts the
+job rather than waiting for the cascade; the course list is refetched only
+after completion or failure. The worker rechecks course-level `ADMIN` access
+and calls `packages/graphql/src/services/courses.ts:deleteCourse`, which keeps
+the deletion and derived-permission recomputation in one interactive
+transaction with a ten-minute timeout. A transaction-level advisory lock on the
+course id prevents background retries and legacy callers from executing the
+destructive transaction concurrently. A missing course row is the durable
+success marker for retries and stale-job reconciliation. The legacy
+`deleteCourse` mutation remains available for rolling-client compatibility.
 
 ## Course duplication
 

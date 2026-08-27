@@ -364,6 +364,45 @@ export function prepareHatchetTasks({
     },
   })
 
+  const processCourseDeletion = hatchet.task({
+    name: 'process-course-deletion',
+    retries: 3,
+    backoff: { factor: 60, maxSeconds: 120 },
+    executionTimeout: '30m',
+    scheduleTimeout: '60m',
+    defaultPriority: Priority.LOW,
+    concurrency: {
+      expression: "'course-deletion'",
+      maxRuns: 1,
+      limitStrategy: ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
+    },
+    onEvents: ['process-course-deletion'],
+    fn: async ({ jobId }: { jobId: string }, executionContext) => {
+      const success = await handlers.handleProcessCourseDeletion(
+        { jobId },
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
+  const sweepStaleCourseDeletions = hatchet.task({
+    name: 'sweep-stale-course-deletions',
+    retries: 0,
+    onCrons: [
+      '*/5 * * * *', // every 5 minutes (UTC)
+    ],
+    fn: async (_, executionContext) => {
+      const success = await handlers.handleSweepStaleCourseDeletions(
+        {},
+        globalContext,
+        executionContext
+      )
+      return { success }
+    },
+  })
+
   const tasks = {
     updateGroupAverageScores,
     runningRandomGroupAssignments,
@@ -379,7 +418,9 @@ export function prepareHatchetTasks({
     aggregateLiveQuizBlockResultsStandard,
     aggregateLiveQuizBlockResultsAssessment,
     createAuditLogEntry,
+    processCourseDeletion,
     processCourseDuplication,
+    sweepStaleCourseDeletions,
     sweepStaleCourseDuplications,
   }
 

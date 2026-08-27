@@ -1,0 +1,12 @@
+mutation StartCourseDeletion($id: String!, $deleteDraftActivities: Boolean!) {
+  startCourseDeletion(id: $id, deleteDraftActivities: $deleteDraftActivities) {
+    id
+    status
+    courseId
+    courseName
+    errorType
+    errorMessage
+    createdAt
+    updatedAt
+  }
+}

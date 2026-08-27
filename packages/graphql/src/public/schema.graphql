@@ -1101,6 +1101,24 @@ type CourseAssessmentReportRecordPage {
   totalCount: Int!
 }
 
+enum CourseDeletionJobStatus {
+  COMPLETED
+  FAILED
+  PENDING
+  RUNNING
+}
+
+type CourseDeletionStatus {
+  courseId: String!
+  courseName: String!
+  createdAt: Date!
+  errorMessage: String
+  errorType: String
+  id: ID!
+  status: CourseDeletionJobStatus!
+  updatedAt: Date!
+}
+
 enum CourseDuplicationJobStatus {
   COMPLETED
   FAILED
@@ -2122,6 +2140,7 @@ type Mutation {
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   shareElementsBatch(elementIds: [Int!]!, permissionLevel: PermissionLevel!, shortnameOrEmail: String, userGroupId: Int): ElementBatchSharingResult!
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
+  startCourseDeletion(deleteDraftActivities: Boolean, id: String!): CourseDeletionStatus
   startCourseDuplication(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String!, startDate: Date!): CourseDuplicationStatus
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
@@ -2598,6 +2617,7 @@ type Query {
   courseAssessmentReportRecordCount(courseId: String!): Int!
   courseAssessmentReportRecords(courseId: String!, numEntries: Int, offset: Int, searchString: String, statusFilter: [AssessmentReportCredentialStatus!]): CourseAssessmentReportRecordPage!
   courseChatbots(courseId: String!): [ChatbotPublic!]!
+  courseDeletionStatuses(ids: [String!]!): [CourseDeletionStatus!]!
   courseDuplicationStatuses(ids: [String!]!): [CourseDuplicationStatus!]!
   coursePracticeQuiz(courseId: String!): PracticeQuiz
   element(id: Int!): Element

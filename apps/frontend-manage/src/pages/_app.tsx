@@ -14,6 +14,7 @@ import { type Locale, NextIntlClientProvider } from 'next-intl'
 import { useEffect } from 'react'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
+import { CourseDeletionProvider } from '../components/courses/CourseDeletionStatusProvider'
 import { CourseDuplicationProvider } from '../components/courses/CourseDuplicationStatusProvider'
 import ManageFeatureFlagProvider from '../components/featureFlags/ManageFeatureFlagProvider'
 import '../globals.css'
@@ -58,10 +59,12 @@ function App({ Component, pageProps }: AppProps) {
         >
           <DndProvider backend={HTML5Backend}>
             <ManageFeatureFlagProvider>
-              <CourseDuplicationProvider>
-                <Toaster closeButton position="top-right" />
-                <Component {...pageProps} />
-              </CourseDuplicationProvider>
+              <CourseDeletionProvider>
+                <CourseDuplicationProvider>
+                  <Toaster closeButton position="top-right" />
+                  <Component {...pageProps} />
+                </CourseDuplicationProvider>
+              </CourseDeletionProvider>
             </ManageFeatureFlagProvider>
           </DndProvider>
         </NextIntlClientProvider>

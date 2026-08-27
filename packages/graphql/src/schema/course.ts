@@ -2,6 +2,10 @@ import type * as DB from '@klicker-uzh/prisma/client'
 import dayjs from 'dayjs'
 import builder from '../builder.js'
 import {
+  COURSE_DELETION_JOB_STATUS_VALUES,
+  type CourseDeletionJobStatus as CourseDeletionJobStatusValue,
+} from '../services/courseDeletion.js'
+import {
   COURSE_DUPLICATION_JOB_STATUS_VALUES,
   type CourseDuplicationJobStatus as CourseDuplicationJobStatusValue,
 } from '../services/courseDuplication.js'
@@ -27,6 +31,43 @@ import {
 import { type IPracticeQuiz, PracticeQuiz } from './practiceQuiz.js'
 import { PermissionLevel } from './sharing.js'
 import { type IUser, LocaleType, UserRef } from './user.js'
+
+export const CourseDeletionJobStatus = builder.enumType(
+  'CourseDeletionJobStatus',
+  {
+    values: COURSE_DELETION_JOB_STATUS_VALUES,
+  }
+)
+
+export interface ICourseDeletionStatus {
+  id: string
+  status: CourseDeletionJobStatusValue
+  courseId: string
+  courseName: string
+  errorType?: string | null
+  errorMessage?: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export const CourseDeletionStatusRef = builder.objectRef<ICourseDeletionStatus>(
+  'CourseDeletionStatus'
+)
+export const CourseDeletionStatus = builder.objectType(
+  CourseDeletionStatusRef,
+  {
+    fields: (t) => ({
+      id: t.exposeID('id'),
+      status: t.expose('status', { type: CourseDeletionJobStatus }),
+      courseId: t.exposeString('courseId'),
+      courseName: t.exposeString('courseName'),
+      errorType: t.exposeString('errorType', { nullable: true }),
+      errorMessage: t.exposeString('errorMessage', { nullable: true }),
+      createdAt: t.expose('createdAt', { type: 'Date' }),
+      updatedAt: t.expose('updatedAt', { type: 'Date' }),
+    }),
+  }
+)
 
 export const CourseDuplicationJobStatus = builder.enumType(
   'CourseDuplicationJobStatus',

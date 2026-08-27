@@ -3334,6 +3334,21 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       showArchive: 'Show archive',
       hideArchive: 'Hide archive',
       deleteCourse: 'Delete course',
+      courseDeletionStatusTab: 'Deleting courses',
+      courseDeletionStatusCount:
+        '{count, plural, one {# course deletion in progress} other {# course deletions in progress}}',
+      courseDeletionStatusTitle: 'Course deletion in progress',
+      courseDeletionStatusDescription:
+        'You can continue working while the selected courses are deleted.',
+      courseDeletionStarted:
+        'Deletion of “{name}” started. You can continue working.',
+      courseDeletionSucceeded: 'Course “{name}” was deleted.',
+      courseDeletionFailed:
+        'The course could not be deleted. Please try again.',
+      courseDeletionAccessFailed:
+        'The course could not be deleted because the required access is missing.',
+      courseDeletionInProgress:
+        'Deletion of this course is already in progress.',
       courseDeletionMessage:
         'Please confirm the deletion of all elements associated with this course and the irreversible deletion of the course. Note that all students will lose access to the course alongside all associated course materials and activities.',
       noParticipationsToDelete: 'This course contains no participations.',

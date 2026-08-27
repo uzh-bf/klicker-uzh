@@ -3128,6 +3128,8 @@ export async function getCourseSummary(
   }
 }
 
+const DELETE_COURSE_TRANSACTION_TIMEOUT = 10 * 60 * 1000
+
 export async function deleteCourse(
   {
     id,
@@ -3167,6 +3169,12 @@ export async function deleteCourse(
 
   const deletedCourse = await ctx.prisma.$transaction(
     async (prisma) => {
+      // Fence all synchronous and background deletion attempts for this course
+      // inside PostgreSQL. The transaction-scoped lock is released
+      // automatically on commit or rollback.
+      const advisoryLockKey = `course-deletion:${id}`
+      await prisma.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${advisoryLockKey}, 0))`
+
       // optionally hard-delete linked draft live quizzes instead of
       // disconnecting them from the course
       for (const liveQuiz of draftLiveQuizzes) {
@@ -3218,7 +3226,7 @@ export async function deleteCourse(
 
       return deleted
     },
-    { timeout: 60000 }
+    { timeout: DELETE_COURSE_TRANSACTION_TIMEOUT }
   )
 
   // cancel any remaining scheduled publication or ending hatchet jobs for the asynchronous activities of the course

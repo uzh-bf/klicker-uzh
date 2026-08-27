@@ -7,6 +7,7 @@ import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import * as CourseDeletionService from '../services/courseDeletion.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
@@ -45,6 +46,7 @@ import {
 import {
   AssessmentParticipant,
   Course,
+  CourseDeletionStatus,
   CourseDuplicationStatus,
   CourseLeaderboard,
   CourseListEntry,
@@ -338,6 +340,19 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await CourseDuplicationService.getCourseDuplicationStatuses(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      courseDeletionStatuses: t.withAuth(asUser).field({
+        type: [CourseDeletionStatus],
+        args: {
+          ids: t.arg.stringList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CourseDeletionService.getCourseDeletionStatuses(
             args,
             ctx
           )

@@ -6,6 +6,7 @@ import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
+import * as CourseDeletionService from '../services/courseDeletion.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
@@ -25,7 +26,11 @@ import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
-import { Course, CourseDuplicationStatus } from './course.js'
+import {
+  Course,
+  CourseDeletionStatus,
+  CourseDuplicationStatus,
+} from './course.js'
 import {
   Element,
   ElementInstance,
@@ -682,6 +687,22 @@ export const Mutation = builder.mutationType({
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
             return await CourseService.deleteCourse(args, ctx)
+          }
+        ),
+      }),
+
+      startCourseDeletion: t.withAuth(asUser).field({
+        nullable: true,
+        type: CourseDeletionStatus,
+        args: {
+          id: t.arg.string({ required: true }),
+          deleteDraftActivities: t.arg.boolean(),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.id }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await CourseDeletionService.startCourseDeletion(args, ctx)
           }
         ),
       }),

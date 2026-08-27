@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-08-26'
+timestamp: '2026-08-27'
 tags:
   - backend
   - hatchet
@@ -42,6 +42,34 @@ Bare `http.createServer`, two routes: `GET /healthz` and `POST /AddResponse`. No
 `apps/hatchet-worker-general` (`src/index.ts`) — selects workflows via the `HATCHET_WORKFLOWS` env var (default all; unknown keys are rejected at startup):
 
 - `create-audit-log-entry` (event-driven)
+- `process-course-deletion` — async course deletion worker implemented by
+  `packages/graphql/src/services/courseDeletion.ts`. One deletion runs globally
+  while additional jobs queue for up to 60 minutes. The start mutation stores
+  owner-scoped state in Redis, takes a per-course lock, and retries ambiguous
+  event publication with the same job id. Lost publication acknowledgements
+  keep the job pending and locked; the stale sweep uses an atomic
+  pending/no-lease transition for bounded five-minute recovery publications
+  until Hatchet acknowledges one or the job reaches its stale deadline. The
+  worker renews a token-checked process lease and heartbeat, fences status
+  writes with the lease token, reconstructs the initiating user context,
+  rechecks course-level `ADMIN`, and invokes the existing atomic deletion
+  service with a ten-minute transaction timeout. The service takes a
+  transaction-scoped PostgreSQL advisory lock derived from the course id before
+  destructive work, fencing background retries and legacy synchronous callers.
+  Before deletion the worker stores scheduled-task and draft-live-quiz cleanup
+  metadata so a retry can finish best-effort post-commit cleanup after a worker
+  loss. Generic failures remain retryable; revoked access and assessment
+  conversion are terminal.
+  Stale normalization uses an absolute 75-minute deadline, then atomically
+  requires the expected Redis record and no process lease or heartbeat before
+  reconciling against Postgres: an absent course means `COMPLETED`, while a
+  remaining course means `FAILED`. Terminal records strip execution identity,
+  cleanup metadata, and deletion options while retaining the owner id for
+  status-read authorization. The manage frontend persists job ids, polls
+  `courseDeletionStatuses`, and refetches the course list on terminal status.
+- `sweep-stale-course-deletions` — cron task (every 5 minutes) scanning
+  non-terminal deletion records and applying heartbeat + Postgres
+  reconciliation.
 - `process-course-duplication` — async course duplication worker implemented by `packages/graphql/src/services/courseDuplication.ts`. A task-local constant concurrency bucket allows one running duplication globally and queues additional duplication jobs for up to 60 minutes with group round-robin scheduling; unrelated Hatchet tasks retain their own concurrency. The GraphQL mutation stores job state in Redis and returns a job id; it retries an ambiguous Hatchet event publication with the same job id, and republishes an existing pending job on a later mutation retry, so a lost acknowledgement cannot open a second copy or strand the job. Each attempt allows 30 minutes, above the ten-minute database transaction limit, and waits 60 seconds before the first retry so a crashed worker's lease can expire. The worker uses a renewable, token-checked process lease plus a separate 120-second heartbeat key refreshed on the same cadence; rethrows generic failures for Hatchet retries; and records only access or partial-copy failures as terminal. Stale-job normalization (`COURSE_DUPLICATION_STALE_AFTER_MS`, currently 75 minutes — 15 minutes beyond the queue timeout) only fires when the record is old **and** no fresh heartbeat exists, then reconciles against Postgres before declaring failure: because a running attempt refreshes the record before starting and the copied course carries the job id as its primary key, live or committed work is not misclassified as a stale failure. Terminal records strip the stored mutation payload (including any notification email) and identity fields for the remainder of their TTL. A scheduled sweep (`sweep-stale-course-duplications`, every 5 minutes) normalizes abandoned jobs server-side, so recovery no longer depends on a user polling. The manage frontend polls `courseDuplicationStatuses` until the job completes or fails, then shows a localized action to open the copied course without navigating automatically.
 - `sweep-stale-course-duplications` — cron task (every 5 minutes) scanning non-terminal duplication records and applying stale normalization with heartbeat + Postgres reconciliation.
 - `publish-scheduled-*` / `end-expired-*` — activity lifecycle
@@ -55,6 +83,23 @@ Job state lives in Redis under three key families (all self-expiring): status re
 To correlate a user report ("my duplication vanished") with only a course name or approximate time: list their keys with `SCAN 0 MATCH "course-duplication:source:<userId>:*"` (keys carry the source course id), read the referenced job record with `GET course-duplication:job:<jobId>` while it exists, and check `prisma.course.findUnique({ where: { id: <jobId> } })` for the outcome. Permission `AuditLogEntry` rows written inside a successful copy transaction outlive the Redis record. Worker logs carry the job id.
 
 **Rolling back this feature:** old code never registers the `process-course-duplication` workflow, so already-enqueued events stay QUEUED in Hatchet and mid-flight job records simply age out at their TTLs; users lose completion signals until the rollback completes, but no partial copies exist at any point (the copy is one database transaction). Recovery-by-resubmit works immediately after rollback because the legacy synchronous path ignores duplication locks. To release held source locks without waiting for TTL expiry: `SCAN 0 MATCH "course-duplication:source:*"` then `DEL` the listed keys.
+
+## Course deletion operations
+
+Deletion status records live at `course-deletion:job:<jobId>` and per-course
+locks at `course-deletion:course:<courseId>` for 24 hours. Process leases and
+heartbeats use the corresponding `:processing` and `:heartbeat` suffixes with
+60/120-second expiry. Postgres remains the source of truth: when the course row
+is absent, the requested deletion is complete even if the final Redis write was
+lost.
+
+To inspect a reported job, read the job id from the per-course lock while it
+exists, then inspect its status record and worker logs using that id. Status
+records are intentionally short-lived and are not an audit history. Rolling
+back removes the worker registration, so queued events wait and active Redis
+records eventually expire; the retained synchronous `deleteCourse` mutation
+remains available to old clients. Release an abandoned course lock only after
+confirming that no worker attempt is active.
 
 ## Running locally (config-derived — verify on your machine)
 

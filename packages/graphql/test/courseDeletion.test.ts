@@ -44,6 +44,7 @@ function createContext() {
     groupActivities: [],
   }
   const transactionClient = {
+    $executeRaw: vi.fn().mockResolvedValue(1),
     course: {
       delete: vi.fn().mockResolvedValue({ id: course.id }),
     },
@@ -71,18 +72,24 @@ function createContext() {
     hatchet: { scheduled: { delete: vi.fn() } },
   } as unknown as ContextWithUser
 
-  return { ctx, emitter, transactionClient }
+  return { ctx, emitter, prisma, transactionClient }
 }
 
 describe('deleteCourse', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('disconnects all linked live quizzes by default', async () => {
-    const { ctx, emitter, transactionClient } = createContext()
+    const { ctx, emitter, prisma, transactionClient } = createContext()
 
     await deleteCourse({ id: 'course-id' }, ctx)
 
     expect(transactionClient.liveQuiz.delete).not.toHaveBeenCalled()
+    expect(transactionClient.$executeRaw).toHaveBeenCalledOnce()
+    expect(
+      transactionClient.$executeRaw.mock.invocationCallOrder[0] ?? 0
+    ).toBeLessThan(
+      transactionClient.course.delete.mock.invocationCallOrder[0] ?? 0
+    )
     expect(permissionMocks.propagateActivityToElements).not.toHaveBeenCalled()
     expect(permissionMocks.recomputeDerivedPermissions).toHaveBeenCalledTimes(3)
     expect(permissionMocks.recomputeDerivedPermissions).toHaveBeenCalledWith(
@@ -103,6 +110,9 @@ describe('deleteCourse', () => {
     expect(emitter.emit).toHaveBeenCalledWith('invalidate', {
       typename: 'Course',
       id: 'course-id',
+    })
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      timeout: 10 * 60 * 1000,
     })
   })
 
