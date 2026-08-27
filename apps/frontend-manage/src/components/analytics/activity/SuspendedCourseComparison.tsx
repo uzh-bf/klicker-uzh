@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from '@apollo/client'
-import { GetUserCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetLearningAnalyticsCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Checkbox, H3, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -21,10 +21,15 @@ function SuspendedCourseComparison({
   const router = useRouter()
   const [showCourseDropdown, setShowCourseDropdown] = useState(false)
 
-  const { data } = useSuspenseQuery(GetUserCoursesDocument)
+  const { data } = useSuspenseQuery(GetLearningAnalyticsCoursesDocument)
   const courses =
     data.userCourses
-      ?.filter((course) => course.id !== router.query.courseId)
+      ?.filter(
+        (course) =>
+          course.id !== router.query.courseId &&
+          course.isLearningAnalyticsEnabled &&
+          course.analyticsStatus.areAnalyticsValid
+      )
       .map((course) => ({
         label: course.name,
         value: course.id,

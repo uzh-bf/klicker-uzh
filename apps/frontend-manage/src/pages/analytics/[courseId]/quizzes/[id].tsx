@@ -10,6 +10,8 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import AnalyticsErrorView from '../../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../../components/analytics/AnalyticsLoadingView'
+import AnalyticsUnavailableView from '../../../../components/analytics/AnalyticsUnavailableView'
+import useCourseLearningAnalyticsControl from '../../../../components/analytics/useCourseLearningAnalyticsControl'
 import ActivityAnalyticsCharts from '../../../../components/analytics/quiz/ActivityAnalyticsCharts'
 import InstanceQuizAnalytics from '../../../../components/analytics/quiz/InstanceQuizAnalytics'
 import QuizAnalyticsNavigation from '../../../../components/analytics/quiz/QuizAnalyticsNavigation'
@@ -21,10 +23,11 @@ function QuizAnalytics() {
   const t = useTranslations()
   const activityId = router.query.id as string
   const courseId = router.query.courseId as string
+  const control = useCourseLearningAnalyticsControl(courseId)
 
   const { data, loading, error } = useQuery(GetActivityAnalyticsDocument, {
     variables: { activityId },
-    skip: !activityId,
+    skip: !activityId || !control.courseEnabled || !control.analyticsValid,
   })
 
   const navigation = (
@@ -38,8 +41,16 @@ function QuizAnalytics() {
     incorrect: '#cc0000',
   }
 
-  // loading state
-  if (loading || !activityId) {
+  if (!control.globallyEnabled) {
+    return (
+      <AnalyticsUnavailableView
+        title={t('manage.analytics.quizDashboard')}
+        message={t('manage.analytics.featureUnavailable')}
+      />
+    )
+  }
+
+  if (control.loading || !activityId || !courseId) {
     return (
       <AnalyticsLoadingView
         title={t('manage.analytics.quizDashboard')}
@@ -48,7 +59,46 @@ function QuizAnalytics() {
     )
   }
 
-  // error state
+  if (control.error || !control.exists) {
+    return (
+      <AnalyticsUnavailableView
+        title={t('manage.analytics.quizDashboard')}
+        navigation={navigation}
+        message={t('manage.analytics.statusUnavailable')}
+        type="error"
+      />
+    )
+  }
+
+  if (!control.courseEnabled) {
+    return (
+      <AnalyticsUnavailableView
+        title={t('manage.analytics.quizDashboard')}
+        navigation={navigation}
+        message={t('manage.analytics.courseDisabled')}
+      />
+    )
+  }
+
+  if (!control.analyticsValid) {
+    return (
+      <AnalyticsUnavailableView
+        title={t('manage.analytics.quizDashboard')}
+        navigation={navigation}
+        message={t('manage.analytics.recomputationPending')}
+      />
+    )
+  }
+
+  if (loading) {
+    return (
+      <AnalyticsLoadingView
+        title={t('manage.analytics.quizDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
+
   if (analytics === null || typeof analytics === 'undefined' || error) {
     return (
       <AnalyticsErrorView

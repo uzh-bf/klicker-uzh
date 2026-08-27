@@ -1012,6 +1012,7 @@ type Course {
   isGamificationEnabled: Boolean!
   isGroupCreationEnabled: Boolean!
   isGroupDeadlinePassed: Boolean
+  isLearningAnalyticsEnabled: Boolean
   isManager: Boolean
   isOwner: Boolean
   isRemovable: Boolean
@@ -2098,6 +2099,7 @@ type Mutation {
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
+  setCourseLearningAnalyticsEnabled(courseId: String!, isEnabled: Boolean!): Course
   setLearningAnalyticsConsent(consent: Boolean!): ParticipantDataUse
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   setResearchConsent(consent: Boolean!): ParticipantDataUse

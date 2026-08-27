@@ -7,7 +7,7 @@ import { faBolt, faUser } from '@fortawesome/free-solid-svg-icons'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   CountCatalogSharingRequestsDocument,
-  GetUserCoursesDocument,
+  GetLearningAnalyticsCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
   type UserProfileQuery,
   UserRole,
@@ -41,12 +41,17 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
   const { data: liveQuizData } = useQuery(GetUserRunningLiveQuizzesDocument, {
     fetchPolicy: 'cache-first',
   })
-  const { data: courseData } = useQuery(GetUserCoursesDocument, {
+  const { data: courseData } = useQuery(GetLearningAnalyticsCoursesDocument, {
     fetchPolicy: 'cache-first',
+    skip: !learningAnalyticsEnabled,
   })
 
   const quizzes = liveQuizData?.userRunningLiveQuizzes
-  const courses = courseData?.userCourses
+  const courses = courseData?.userCourses?.filter(
+    (course) =>
+      course.isLearningAnalyticsEnabled &&
+      course.analyticsStatus.areAnalyticsValid
+  )
 
   const resourceElements: NavigationMenuItemProps[] = [
     {

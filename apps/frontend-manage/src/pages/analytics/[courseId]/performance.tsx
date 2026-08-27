@@ -7,6 +7,8 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import AnalyticsErrorView from '../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../components/analytics/AnalyticsLoadingView'
+import AnalyticsUnavailableView from '../../../components/analytics/AnalyticsUnavailableView'
+import useCourseLearningAnalyticsControl from '../../../components/analytics/useCourseLearningAnalyticsControl'
 import ActivityInstanceFeedbacksPlot from '../../../components/analytics/performance/ActivityInstanceFeedbacksPlot'
 import ActivityProgressPlot from '../../../components/analytics/performance/ActivityProgressPlot'
 import PerformanceAnalyticsNavigation from '../../../components/analytics/performance/PerformanceAnalyticsNavigation'
@@ -20,6 +22,7 @@ function PerformanceDashboard() {
   const t = useTranslations()
   const router = useRouter()
   const courseId = router.query.courseId as string
+  const control = useCourseLearningAnalyticsControl(courseId)
 
   const [tabValue, setTabValue] = useState<
     | 'performanceRates'
@@ -30,14 +33,25 @@ function PerformanceDashboard() {
 
   const { data, loading, error } = useQuery(
     GetCoursePerformanceAnalyticsDocument,
-    { variables: { courseId }, skip: !courseId }
+    {
+      variables: { courseId },
+      skip: !courseId || !control.courseEnabled || !control.analyticsValid,
+    }
   )
 
   const navigation = <PerformanceAnalyticsNavigation courseId={courseId} />
   const course = data?.getCoursePerformanceAnalytics
 
-  // loading state
-  if (loading || !courseId) {
+  if (!control.globallyEnabled) {
+    return (
+      <AnalyticsUnavailableView
+        title={t('manage.analytics.performanceDashboard')}
+        message={t('manage.analytics.featureUnavailable')}
+      />
+    )
+  }
+
+  if (control.loading || !courseId) {
     return (
       <AnalyticsLoadingView
         title={t('manage.analytics.performanceDashboard')}
@@ -46,7 +60,46 @@ function PerformanceDashboard() {
     )
   }
 
-  // error state
+  if (control.error || !control.exists) {
+    return (
+      <AnalyticsUnavailableView
+        title={t('manage.analytics.performanceDashboard')}
+        navigation={navigation}
+        message={t('manage.analytics.statusUnavailable')}
+        type="error"
+      />
+    )
+  }
+
+  if (!control.courseEnabled) {
+    return (
+      <AnalyticsUnavailableView
+        title={t('manage.analytics.performanceDashboard')}
+        navigation={navigation}
+        message={t('manage.analytics.courseDisabled')}
+      />
+    )
+  }
+
+  if (!control.analyticsValid) {
+    return (
+      <AnalyticsUnavailableView
+        title={t('manage.analytics.performanceDashboard')}
+        navigation={navigation}
+        message={t('manage.analytics.recomputationPending')}
+      />
+    )
+  }
+
+  if (loading) {
+    return (
+      <AnalyticsLoadingView
+        title={t('manage.analytics.performanceDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
+
   if (course === null || typeof course === 'undefined' || error) {
     return (
       <AnalyticsErrorView

@@ -41,9 +41,11 @@ The former `User.publicPreview` field is no longer selected by that operation
 and is not authoritative for learning analytics. The Prisma and public GraphQL
 fields remain available for other consumers and a later cleanup.
 
-Direct analytics routes remain reachable to authenticated lecturers. The flag
-controls product affordances, not authorization; routes and APIs continue to
-enforce their own access rules.
+Direct analytics routes remain reachable to authenticated lecturers, but they
+render an unavailable state while the flag is off. When the flag is on, course
+dashboards remain unavailable until the course control is enabled and a fresh
+recomputation is valid. The flag controls product affordances, not
+authorization; routes and APIs continue to enforce their own access rules.
 
 ## Package contract
 

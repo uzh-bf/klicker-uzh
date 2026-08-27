@@ -3253,6 +3253,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       showDetails: 'Kursinformationen anzeigen',
       selectCourse: 'Bitte wählen Sie einen Kurs aus',
       createNewCourse: 'Neuen Kurs erstellen',
+      learningAnalyticsEnabled: 'Learning Analytics aktivieren',
+      learningAnalyticsExplanation:
+        'Learning Analytics verwendet Kursaktivität, Fortschritt, Antwortleistung, Bewertungen und Feedback-Ratings. Die Ausgaben für Dozierende sind aggregiert oder de-identifiziert. Sie enthalten keine Namen, E-Mail-Adressen, Teilnehmer-IDs, Freitextantworten oder Einwilligungsentscheide von Teilnehmenden.',
+      learningAnalyticsEnableNotice:
+        'Die Dashboards bleiben bis zur nächsten erfolgreichen nächtlichen Neuberechnung nicht verfügbar.',
+      learningAnalyticsDisableNotice:
+        'Die Dashboards sind sofort nicht mehr verfügbar. Individuelle abgeleitete Analysedaten werden im nächsten erfolgreichen nächtlichen Lauf entfernt. Aggregierte Analysedaten bleiben bis zur regulären Neuberechnung gespeichert. Kursaktivitäten, Antworten, Feedback, Noten, Punkte und XP bleiben unverändert.',
+      learningAnalyticsUpdateFailed:
+        'Learning Analytics konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       changeAvailabilityDateMicrolearnings:
         'Die Verfügbarkeit der Microlearnings wird basierend auf dem ursprünglichen Kursstartdatum an die neuen Kursdaten angepasst.',
       changeAvailabilityDateGroupActivities:
@@ -3434,6 +3443,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       shareCourse: 'Kurs teilen',
       duplicateCourse: 'Kurs duplizieren',
       learningAnalytics: 'Learning Analytics',
+      learningAnalyticsSettings: 'Learning-Analytics-Einstellungen',
       moreCourseActions: 'Weitere Kursaktionen',
       pointCorrections: 'Punktekorrekturen',
       assessmentResults: 'Assessment Resultate',
@@ -4389,6 +4399,12 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       quizAnalytics: 'Quiz Analytics',
       featureUnavailable:
         'Learning Analytics sind für Ihr Benutzerkonto noch nicht verfügbar.',
+      statusUnavailable:
+        'Der Status von Learning Analytics konnte nicht geladen werden. Bitte laden Sie die Seite neu oder kontaktieren Sie den Support.',
+      courseDisabled:
+        'Learning Analytics ist für diesen Kurs deaktiviert. Eine Kursmanagerin oder ein Kursmanager kann die Funktion in den Kursaktionen aktivieren.',
+      recomputationPending:
+        'Learning Analytics wird für diesen Kurs vorbereitet. Die Dashboards werden nach der nächsten erfolgreichen Neuberechnung verfügbar.',
       analyticsLoadingWait: 'Lade Analyse-Daten. Bitte warten...',
       analyticsLoadingFailed:
         'Beim Laden der Analyse-Daten ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.',

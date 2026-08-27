@@ -2683,6 +2683,51 @@ export async function createCourse(
   return course
 }
 
+export async function setCourseLearningAnalyticsEnabled(
+  { courseId, isEnabled }: { courseId: string; isEnabled: boolean },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.$transaction(async (transaction) => {
+    await lockLearningAnalyticsCourseMutation(transaction, courseId)
+
+    const current = await transaction.course.findUnique({
+      where: { id: courseId },
+      select: { isLearningAnalyticsEnabled: true },
+    })
+    if (!current) return null
+
+    if (current.isLearningAnalyticsEnabled === isEnabled) {
+      return transaction.course.findUnique({ where: { id: courseId } })
+    }
+
+    const invalidationRows = await transaction.$queryRaw<
+      Array<{ invalidatedAt: Date }>
+    >(DB.Prisma.sql`
+      SELECT clock_timestamp() AS "invalidatedAt"
+    `)
+    const invalidatedAt = invalidationRows[0]?.invalidatedAt
+    if (
+      !(invalidatedAt instanceof Date) ||
+      Number.isNaN(invalidatedAt.valueOf())
+    ) {
+      throw new Error(
+        'PostgreSQL did not return an analytics invalidation time'
+      )
+    }
+
+    return transaction.course.update({
+      where: { id: courseId },
+      data: {
+        isLearningAnalyticsEnabled: isEnabled,
+        areAnalyticsValid: false,
+        analyticsLastComputedAt: invalidatedAt,
+        analyticsFinalizedAt: null,
+        chatAnalyticsValidAt: null,
+      },
+    })
+  })
+}
+
 export async function toggleArchiveCourse(
   { id, isArchived }: { id: string; isArchived: boolean },
   ctx: ContextWithUser

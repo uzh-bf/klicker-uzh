@@ -1,0 +1,10 @@
+query GetCourseLearningAnalyticsControl($courseId: String!) {
+  course(id: $courseId) {
+    id
+    isLearningAnalyticsEnabled
+    analyticsStatus {
+      areAnalyticsValid
+      analyticsLastComputedAt
+    }
+  }
+}

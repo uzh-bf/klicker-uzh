@@ -11,6 +11,8 @@ import TotalStudentActivityPlot from '../../../components/analytics/activity/Tot
 import WeeklyActivityTimeSeries from '../../../components/analytics/activity/WeeklyActivityTimeSeries'
 import AnalyticsErrorView from '../../../components/analytics/AnalyticsErrorView'
 import AnalyticsLoadingView from '../../../components/analytics/AnalyticsLoadingView'
+import AnalyticsUnavailableView from '../../../components/analytics/AnalyticsUnavailableView'
+import useCourseLearningAnalyticsControl from '../../../components/analytics/useCourseLearningAnalyticsControl'
 import PreviewTag from '../../../components/common/PreviewTag'
 import Layout from '../../../components/Layout'
 
@@ -18,12 +20,13 @@ function ActivityDashboard() {
   const t = useTranslations()
   const router = useRouter()
   const courseId = router.query.courseId
+  const control = useCourseLearningAnalyticsControl(courseId as string)
 
   const { data, loading, error } = useQuery(
     GetCourseActivityAnalyticsDocument,
     {
       variables: { courseId: courseId as string },
-      skip: !courseId,
+      skip: !courseId || !control.courseEnabled || !control.analyticsValid,
     }
   )
   const course = data?.getCourseActivityAnalytics
@@ -31,8 +34,16 @@ function ActivityDashboard() {
     <ActivityAnalyticsNavigation courseId={courseId as string} />
   )
 
-  // loading state
-  if (loading || !courseId) {
+  if (!control.globallyEnabled) {
+    return (
+      <AnalyticsUnavailableView
+        title={t('manage.analytics.activityDashboard')}
+        message={t('manage.analytics.featureUnavailable')}
+      />
+    )
+  }
+
+  if (control.loading || !courseId) {
     return (
       <AnalyticsLoadingView
         title={t('manage.analytics.activityDashboard')}
@@ -41,7 +52,46 @@ function ActivityDashboard() {
     )
   }
 
-  // error state
+  if (control.error || !control.exists) {
+    return (
+      <AnalyticsUnavailableView
+        title={t('manage.analytics.activityDashboard')}
+        navigation={navigation}
+        message={t('manage.analytics.statusUnavailable')}
+        type="error"
+      />
+    )
+  }
+
+  if (!control.courseEnabled) {
+    return (
+      <AnalyticsUnavailableView
+        title={t('manage.analytics.activityDashboard')}
+        navigation={navigation}
+        message={t('manage.analytics.courseDisabled')}
+      />
+    )
+  }
+
+  if (!control.analyticsValid) {
+    return (
+      <AnalyticsUnavailableView
+        title={t('manage.analytics.activityDashboard')}
+        navigation={navigation}
+        message={t('manage.analytics.recomputationPending')}
+      />
+    )
+  }
+
+  if (loading) {
+    return (
+      <AnalyticsLoadingView
+        title={t('manage.analytics.activityDashboard')}
+        navigation={navigation}
+      />
+    )
+  }
+
   if (course === null || typeof course === 'undefined' || error) {
     return (
       <AnalyticsErrorView

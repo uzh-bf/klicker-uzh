@@ -14,7 +14,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  GetSingleCourseDocument,
+  GetSingleCourseV2Document,
   ReviewStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Ellipsis } from '@klicker-uzh/markdown'
@@ -45,7 +45,7 @@ function CourseOverviewPage() {
     null
   )
 
-  const { loading, error, data } = useQuery(GetSingleCourseDocument, {
+  const { loading, error, data } = useQuery(GetSingleCourseV2Document, {
     variables: { courseId: router.query.id as string },
     skip: !router.query.id,
     ssr: false,

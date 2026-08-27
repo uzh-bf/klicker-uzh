@@ -48,6 +48,14 @@ successful overnight cleanup removes existing individual rows. Aggregate
 outputs remain on their ordinary recomputation schedule and are not recomputed
 immediately when the choice changes. The separate
 `Course.isLearningAnalyticsEnabled` course control also defaults to `false`.
+The Manage product offers it to course managers only while the global product
+flag is on; the API keeps its independent authorization gate. Either transition
+invalidates every published analytics marker under
+the coordinator's advisory locks. Enabling therefore exposes no dashboard
+until a later successful full recomputation. Disabling hides all dashboards
+immediately; the nightly cleanup removes individual derived rows, while
+aggregate rows remain stored until ordinary recomputation. Canonical course
+activity, responses, feedback, grades, points, and XP are unaffected.
 
 `Participation` remains the course-membership row and keeps its existing
 leaderboard meaning. It carries no research or learning-analytics choice or

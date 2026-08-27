@@ -13,6 +13,7 @@ import { expect, type Locator, type Page } from '@playwright/test'
 import { getPrisma } from '../../global-setup.js'
 import { openActivityActionMenu, openCourseActionMenu } from '../actions.js'
 import {
+  COURSE_ID_TEST,
   LECTURER_ID,
   LECTURER_SHORTNAME,
   SEED,
@@ -146,10 +147,26 @@ export async function prepareSeededAnalyticsActivities() {
   })
 }
 
+export async function prepareSeededCourseLearningAnalytics() {
+  const prisma = await getPrisma()
+  const computedAt = new Date()
+  await prisma.course.update({
+    where: { id: COURSE_ID_TEST },
+    data: {
+      isLearningAnalyticsEnabled: true,
+      areAnalyticsValid: true,
+      analyticsLastComputedAt: computedAt,
+      chatAnalyticsValidAt: computedAt,
+    },
+  })
+}
+
 export async function validateFeatureAvailabilityFixture(
   page: Page,
   options: ValidateFeatureAvailabilityOptions
 ) {
+  await prepareSeededCourseLearningAnalytics()
+
   // analytics nav item
   await expectFlaggedControl(
     page,
@@ -168,6 +185,12 @@ export async function validateFeatureAvailabilityFixture(
   await expectFlaggedControl(
     page,
     courseLearningAnalytics,
+    options.learningAnalytics,
+    LEARNING_ANALYTICS_UNAVAILABLE
+  )
+  await expectFlaggedControl(
+    page,
+    page.getByTestId('course-learning-analytics-settings'),
     options.learningAnalytics,
     LEARNING_ANALYTICS_UNAVAILABLE
   )

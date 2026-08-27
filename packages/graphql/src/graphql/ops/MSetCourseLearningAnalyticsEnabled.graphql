@@ -1,0 +1,16 @@
+mutation SetCourseLearningAnalyticsEnabled(
+  $courseId: String!
+  $isEnabled: Boolean!
+) {
+  setCourseLearningAnalyticsEnabled(
+    courseId: $courseId
+    isEnabled: $isEnabled
+  ) {
+    id
+    isLearningAnalyticsEnabled
+    analyticsStatus {
+      areAnalyticsValid
+      analyticsLastComputedAt
+    }
+  }
+}

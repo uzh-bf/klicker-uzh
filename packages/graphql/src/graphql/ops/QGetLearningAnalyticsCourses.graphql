@@ -1,0 +1,12 @@
+query GetLearningAnalyticsCourses {
+  userCourses {
+    id
+    name
+    startDate
+    endDate
+    isLearningAnalyticsEnabled
+    analyticsStatus {
+      areAnalyticsValid
+    }
+  }
+}

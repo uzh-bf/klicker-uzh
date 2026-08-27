@@ -1434,6 +1434,25 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
+      setCourseLearningAnalyticsEnabled: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: Course,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          isEnabled: t.arg.boolean({ required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            return await CourseService.setCourseLearningAnalyticsEnabled(
+              args,
+              ctx
+            )
+          }
+        ),
+      }),
+
       updateCourseSettings: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,

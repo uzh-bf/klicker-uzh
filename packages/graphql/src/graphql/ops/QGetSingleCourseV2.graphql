@@ -1,0 +1,54 @@
+query GetSingleCourseV2($courseId: String!) {
+  course(id: $courseId) {
+    id
+    isArchived
+    isGamificationEnabled
+    isAssessmentEnabled
+    isLearningAnalyticsEnabled
+    pinCode
+    name
+    displayName
+    description
+    language
+    notificationEmail
+    color
+    numOfParticipants
+    numOfParticipantGroups
+    averageScore
+    startDate
+    endDate
+
+    isGroupCreationEnabled
+    groupDeadlineDate
+    maxGroupSize
+    preferredGroupSize
+    randomAssignmentFinalized
+    analyticsStatus {
+      areAnalyticsValid
+      analyticsLastComputedAt
+      analyticsFinalizedAt
+      chatAnalyticsValidAt
+    }
+    derivedAccess
+    numSharedUsers
+    permissionLevel
+    isOwner
+    isManager
+    isEditor
+    isShared
+    isRemovable
+
+    liveQuizzesInfo {
+      ...ActivityInfoData
+    }
+    practiceQuizzesInfo {
+      ...ActivityInfoData
+    }
+    microLearningsInfo {
+      ...ActivityInfoData
+    }
+    groupActivitiesInfo {
+      ...ActivityInfoData
+    }
+  }
+}

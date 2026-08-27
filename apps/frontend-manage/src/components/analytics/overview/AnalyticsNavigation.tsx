@@ -4,7 +4,7 @@ import {
   faChevronRight,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { GetUserCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetLearningAnalyticsCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
@@ -26,7 +26,7 @@ function AnalyticsNavigation({
   labelRight,
   slug,
 }: AnalyticsNavigationProps) {
-  const { data, loading } = useQuery(GetUserCoursesDocument)
+  const { data, loading } = useQuery(GetLearningAnalyticsCoursesDocument)
   const router = useRouter()
   const t = useTranslations()
 
@@ -49,10 +49,16 @@ function AnalyticsNavigation({
           labelType="large"
           value={router.query.courseId as string}
           items={
-            data?.userCourses?.map((course) => ({
-              label: course.name,
-              value: course.id,
-            })) ?? []
+            data?.userCourses
+              ?.filter(
+                (course) =>
+                  course.isLearningAnalyticsEnabled &&
+                  course.analyticsStatus.areAnalyticsValid
+              )
+              .map((course) => ({
+                label: course.name,
+                value: course.id,
+              })) ?? []
           }
           onChange={(value) => {
             router.push({ pathname: `/analytics/${value}/${slug}` })

@@ -1,9 +1,12 @@
-import { seedActivities } from '../global-setup.js'
+import { getPrisma, seedActivities } from '../global-setup.js'
+import { openCourseActionMenu } from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
+import { COURSE_ID_TEST, SEEDED_COURSE, URL_MANAGE } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   mockGrowthBookLearningAnalytics,
   prepareSeededAnalyticsActivities,
+  prepareSeededCourseLearningAnalytics,
   updateLecturerPrivatePreview,
 } from '../util/fixtures/manage.js'
 
@@ -127,5 +130,61 @@ test.describe('Tests the availability of standard activity creation formats', ()
       learningAnalytics: false,
       privatePreview: false,
     })
+  })
+
+  test('Disable course learning analytics and hide dashboards immediately', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await prepareSeededCourseLearningAnalytics()
+    await loginLecturer()
+    await page.getByTestId('courses').click()
+    await page.getByTestId(`course-list-button-${SEEDED_COURSE}`).click()
+
+    await openCourseActionMenu(page, 'course-learning-analytics-settings')
+    await page.getByTestId('course-learning-analytics-settings').click()
+    await expect(
+      page.getByRole('heading', { name: 'Learning analytics settings' })
+    ).toBeVisible()
+    await page.getByTestId('course-learning-analytics-switch').click()
+    await expect(
+      page.getByText('Dashboards become unavailable immediately.')
+    ).toBeVisible()
+    await page.getByTestId('course-learning-analytics-save').click()
+    await expect(
+      page.getByRole('heading', { name: 'Learning analytics settings' })
+    ).not.toBeVisible()
+
+    await openCourseActionMenu(page, 'course-learning-analytics-link')
+    const analyticsLink = page.getByTestId('course-learning-analytics-link')
+    await expect(analyticsLink).toBeDisabled()
+    await analyticsLink.hover()
+    await expect(page.getByRole('tooltip')).toContainText(
+      'Learning analytics is disabled for this course.'
+    )
+
+    const prisma = await getPrisma()
+    await expect(
+      prisma.course.findUniqueOrThrow({
+        where: { id: COURSE_ID_TEST },
+        select: {
+          isLearningAnalyticsEnabled: true,
+          areAnalyticsValid: true,
+          analyticsFinalizedAt: true,
+          chatAnalyticsValidAt: true,
+        },
+      })
+    ).resolves.toEqual({
+      isLearningAnalyticsEnabled: false,
+      areAnalyticsValid: false,
+      analyticsFinalizedAt: null,
+      chatAnalyticsValidAt: null,
+    })
+
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await page.goto(`${manageUrl}/analytics/${COURSE_ID_TEST}/activity`)
+    await expect(
+      page.getByText('Learning analytics is disabled for this course.')
+    ).toBeVisible()
   })
 })
