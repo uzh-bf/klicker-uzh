@@ -252,6 +252,7 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
       headers: {
         'content-type': 'application/json',
         origin: env('URL_STUDENT'),
+        'x-graphql-yoga-csrf': 'true',
       },
     })
     expect(replay.ok()).toBe(true)

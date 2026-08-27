@@ -1148,19 +1148,29 @@ export async function runTask(name: string, args: any = {}) {
     const participant = await prisma.participant.findUniqueOrThrow({
       where: { username: args.username },
     })
-    const cycle = await prisma.freeTextPracticeCycle.findFirstOrThrow({
-      where: {
-        participantId: participant.id,
-        elementInstanceId: args.instanceId,
-      },
-      orderBy: { ordinal: 'desc' },
-      include: {
-        attempts: {
-          orderBy: { ordinal: 'asc' },
-          include: { questionResponseDetail: true },
+    let cycle = null
+    for (let attempt = 0; attempt < 50 && cycle === null; attempt++) {
+      cycle = await prisma.freeTextPracticeCycle.findFirst({
+        where: {
+          participantId: participant.id,
+          elementInstanceId: args.instanceId,
         },
-      },
-    })
+        orderBy: { ordinal: 'desc' },
+        include: {
+          attempts: {
+            orderBy: { ordinal: 'asc' },
+            include: { questionResponseDetail: true },
+          },
+        },
+      })
+      if (cycle === null) {
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      }
+    }
+
+    if (cycle === null) {
+      throw new Error('Semantic practice cycle did not become available')
+    }
 
     return {
       attemptCount: cycle.attempts.length,

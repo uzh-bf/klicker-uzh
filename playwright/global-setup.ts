@@ -147,6 +147,8 @@ export async function ensureDatabaseViews() {
 export async function cleanupDatabase() {
   const prisma = await getPrisma()
   try {
+    await prisma.freeTextConsentEvent.deleteMany()
+
     await prisma.liveQuiz.deleteMany()
     await prisma.microLearning.deleteMany()
     await prisma.practiceQuiz.deleteMany()
@@ -660,7 +662,7 @@ export async function seedSemanticPracticeQuiz({
 }) {
   const prisma = await getPrisma()
   await Promise.all(
-    PARTICIPANT_IDS.slice(0, 5).map((participantId) =>
+    PARTICIPANT_IDS.slice(0, 7).map((participantId) =>
       prisma.participation.upsert({
         where: {
           courseId_participantId: {

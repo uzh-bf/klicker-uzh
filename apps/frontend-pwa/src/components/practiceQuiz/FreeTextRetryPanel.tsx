@@ -41,6 +41,7 @@ function FreeTextRetryPanel({
     attempt?.evaluationStatus === FreeTextEvaluationStatus.Unavailable
   const evaluated =
     attempt?.evaluationStatus === FreeTextEvaluationStatus.Evaluated
+  const explanationId = `semantic-solution-feedback-${state.cycleId}`
 
   let defaultOutcome = t('pwa.practiceQuiz.semanticIncorrect')
   if (attempt?.correctness === FreeTextCorrectnessCategory.Correct) {
@@ -74,7 +75,12 @@ function FreeTextRetryPanel({
       className="mt-3 rounded-md border border-gray-300 bg-gray-50 p-3"
       data-cy="semantic-free-text-retry-panel"
     >
-      <UserNotification type={notificationType} message={notificationMessage} />
+      <div aria-live="polite" aria-atomic="true">
+        <UserNotification
+          type={notificationType}
+          message={notificationMessage}
+        />
+      </div>
 
       <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
         <span data-cy="semantic-attempts-used">
@@ -153,6 +159,8 @@ function FreeTextRetryPanel({
           <Button
             disabled={loading}
             onClick={onToggleDetails}
+            aria-controls={explanationId}
+            aria-expanded={detailsOpen}
             data={{ cy: 'semantic-toggle-explanation' }}
           >
             {detailsOpen
@@ -172,7 +180,7 @@ function FreeTextRetryPanel({
       </div>
 
       {state.solutionAuthorized && detailsOpen && (
-        <div className="mt-4">
+        <div id={explanationId} className="mt-4">
           <FreeTextRubricBreakdown result={attempt?.structuredResult} />
         </div>
       )}
