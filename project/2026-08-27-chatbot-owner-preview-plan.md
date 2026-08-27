@@ -95,9 +95,9 @@ Execution-tier note: P1–P3 are bounded, settled-behavior slices suited to the 
 
 ## Progress
 
-- Status: P1–P3 are implemented locally; reviewer corrections are being verified before browser evidence and integrated final review. External delivery remains withheld.
-- Completed: research, planner review, P0 blocker ruling, P1 owner authorization and stateless preview route, P2 owner-preview page, P3 Manage entry point, and the initial simplifier and slice-review passes for both committed implementation ranges.
-- Latest evidence: focused owner-preview tests pass (32 tests), and the Chat and Manage type checks pass in the exact devrouter runtime. Review corrections constrain preview tools to `doc_query`, add executable route coverage, disable attachment drops, preserve run-status announcements, and keep the signed-out preview tab recoverable.
-- Slice review: corrections applied from the P1 and P2/P3 reports; one same-child correction pass remains after the correction commit.
-- Remaining: commit reviewer corrections, correction review, integrated checks, EN/DE browser evidence, negative participant probe, runtime release, final review, and target-drift reconciliation.
-- Delivery: required layer is a green reviewed local branch ready for PR publication; achieved layer remains local commits only. Push, PR publication, merge, deployment, and live activation are withheld.
+- Status: delivery pending at P4. P1–P3 and their correction reviews are complete, but the exact local runtime is unavailable for the required browser gate. External delivery remains withheld.
+- Completed: research, planner review, P0 blocker ruling, P1 owner authorization and stateless preview route, P2 owner-preview page, P3 Manage entry point, both simplifier passes, both slice reviews, their corrections, and the same-reviewer correction passes.
+- Latest evidence: focused owner-preview tests pass (32 tests); Chat and Manage type checks pass; scoped lint passes with no errors; formatting and `git diff --check` pass. Review corrections constrain preview tools to `doc_query`, add executable route coverage, disable attachment drops, preserve run-status announcements, and keep the signed-out preview tab recoverable.
+- Runtime blocker: the default Auth dev server returns 404 for `/api/auth/providers` despite serving other Pages and API routes. A bounded managed restart using the repository's Webpack fallback then failed because local port `10003` is held by the separate `rs-student-generated-practice-el` runtime. The temporary package change was restored; this exact DevPod is stopped with no routes left.
+- Remaining: release the conflicting managed-runtime port, complete EN/DE authenticated browser evidence and the negative participant probe, dispatch integrated final review, then reconcile the two-commit `origin/v3-ai` drift. Upstream integration remains separately withheld.
+- Delivery: required layer is a green reviewed local branch ready for PR publication; achieved layer remains green reviewed slices on local commits. Push, PR publication, merge, deployment, and live activation are withheld.
