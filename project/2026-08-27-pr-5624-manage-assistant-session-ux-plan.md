@@ -1,5 +1,5 @@
 ---
-title: Manage assistant session UX
+title: Manage assistant session UX (PR #5624)
 date: 2026-08-27
 status: complete
 path: full
@@ -7,9 +7,10 @@ target_branch: v3-ai
 branch: rs/manage-assistant-session-ux
 worktree: trees/manage-assistant-session-ux
 base_commit: d96cf502a04bff1e16e6ffba4c43af3ea5ec9163
+pull_request: https://github.com/uzh-bf/klicker-uzh/pull/5624
 ---
 
-# Manage assistant session UX
+# Manage assistant session UX (PR #5624)
 
 ## Goal
 
@@ -26,8 +27,8 @@ KlickerUZH documentation.
 - Database, Prisma, or migration changes.
 - A new dependency, external provider, or longer proposal-token lifetime.
 - Publishing, editing, deleting, duplicating, or sharing existing elements.
-- Push, PR creation, merge, release, deployment, secrets, production access,
-  or upstream integration.
+- Merge, release, deployment, secrets, production access, or upstream
+  integration.
 
 ## Settled product contract
 
@@ -67,13 +68,14 @@ ephemeral assistant dock, signed proposal, and author-review projection.
 
 ## Execution contract
 
-The user approved local implementation of every listed feedback item except
-durable history. The main session is the sole writer because the trust boundary,
+The user approved implementation of every listed feedback item except durable
+history, followed by pushing the branch, opening PR #5624 ready for review, and
+babysitting it. The main session is the sole writer because the trust boundary,
 iframe protocol, reset lifecycle, proposal rendering, and accessibility
 behavior are critically coupled. Read-only specialist roles may review
 immutable commits. Local edits, repository-native checks, screenshots, review
-reports, and conventional commits are authorized. All external delivery and
-upstream-integration actions remain withheld.
+reports, conventional commits, branch pushes, PR feedback fixes, and monitoring
+are authorized. Merge, deployment, and upstream integration remain withheld.
 
 ## Work packages
 
@@ -190,6 +192,7 @@ upstream integration, or an external delivery action.
 - [x] S3 non-modal adaptive dock.
 - [x] S4 conversation lifecycle and discovery.
 - [x] Integrated verification, reviews, screenshots, and runtime shutdown.
+- [x] PR #5624 published for review and continuous monitoring started.
 
 ## Completion evidence
 
@@ -207,8 +210,9 @@ upstream integration, or an external delivery action.
   browser installation stalled during extraction. The specification typechecks.
   Repository-wide `check:all` remains blocked only by the unrelated Analytics
   Python toolchain, where Python 3.14 cannot build pandas without a C compiler.
-- `origin/v3-ai` advanced by three commits during execution. No upstream merge
-  or rebase was authorized, so the branch remains on its original base.
+- `origin/v3-ai` advanced by nine commits after the branch baseline was created.
+  No upstream merge or rebase was authorized, so the branch remains on its
+  original base while PR #5624 checks mergeability against the current target.
 - The exact `rs-manage-assistant-session-ux` DevPod is stopped and all 11
   namespaced routes were freed. Provider state is `Stopped`, and the exact
   remaining route count is zero. The worktree and runtime data are preserved.
