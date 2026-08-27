@@ -111,6 +111,13 @@ function describeFields(fields: ContractFields): readonly DescribedField[] {
   )
 }
 
+function deepFreeze<Value>(value: Value): Value {
+  if (value === null || typeof value !== 'object') return value
+
+  for (const nested of Object.values(value)) deepFreeze(nested)
+  return Object.freeze(value)
+}
+
 function buildStrictContractObject<const Fields extends ContractFields>(
   fields: Fields
 ) {
@@ -191,7 +198,7 @@ export const courseWorkflowSuccessSchema = courseSuccessContract.schema
 export const platformWorkflowInputSchema = platformInputContract.schema
 export const platformWorkflowSuccessSchema = platformSuccessContract.schema
 
-export const canonicalContract = [
+export const canonicalContract = deepFreeze([
   ['generation', ANALYTICS_ENGINE_CONTRACT_VERSION],
   [
     'workflow',
@@ -209,7 +216,7 @@ export const canonicalContract = [
       ['success', platformSuccessContract.descriptor],
     ],
   ],
-] as const
+] as const)
 
 export type CourseWorkflowInput = z.infer<typeof courseWorkflowInputSchema>
 export type CourseWorkflowSuccess = z.infer<typeof courseWorkflowSuccessSchema>

@@ -28,7 +28,7 @@ workflow.
   excluding this plan, wiki documentation, generated lockfile changes, and CI.
 - Complexity stop: pause above roughly 600 substantive lines or ten substantive files
   and recheck the package boundary.
-- Actual repository-defined substantive size: `+796/-3` across 16 files, excluding
+- Actual repository-defined substantive size: `+850/-3` across 16 files, excluding
   only this project plan and the generated lockfile. The package exceeds the planning
   estimate because the repository size rule counts CI, wiki, skill, package
   configuration, and the complete test portfolio. It remains one work package: those
@@ -258,14 +258,14 @@ Merge, readiness, deployment, activation, and source retirement are separate gat
 - [x] The first final maintainability review found that schema descriptions did not
   make the digest authoritative over validator construction. The descriptor now builds
   both the strict schemas and digest tree; focused tests, typecheck, and build pass.
-- [x] Substantive size measured at `+796/-3` across 16 files and accepted as one
+- [x] Substantive size measured at `+850/-3` across 16 files and accepted as one
   coherent contract package rather than separating its verification or documentation.
 - [x] Restacked without force-push by merging exact participant-settings head
   `a31d5cd6a760e5c6e34bc5c3fd170a4efffc16d5`; the pinned schemas and digest
   `b9a3f0e14c766c234aead4165e5250f75bf13d02f84f905baedbf6fb4c0d733c` remain
-  unchanged from the original LA-P1 head. The conformance runner now probes failure
-  and cancellation on both workflow names. The retired `docs/log/` path remains
-  absent.
+  unchanged from the original LA-P1 head. Final restack review closed mutable-input,
+  mutable-canonical-tree, and incomplete rejection-matrix gaps; 18 focused tests now
+  pass. The retired `docs/log/` path remains absent.
 - [ ] Final gates complete.
 - [x] Original branch published as draft PR #5413.
 - [ ] Restacked exact head pushed and PR #5413 based on the participant-settings layer.

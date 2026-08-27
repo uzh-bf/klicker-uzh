@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { ZodError } from 'zod'
 
 import {
+  COURSE_WORKFLOW_MODES,
   COURSE_WORKFLOW_NAME,
   PLATFORM_WORKFLOW_NAME,
   canonicalContract,
@@ -115,6 +116,36 @@ describe('@klicker-uzh/analytics-engine-contract', () => {
     ).rejects.toThrow('changed runId')
   })
 
+  it('checks identity against a pre-invocation snapshot', async () => {
+    const mutateRunIdStub = createAnalyticsEngineStubs(async (_, input) => {
+      const mutableInput = input as Record<string, unknown>
+      mutableInput.runId = courseInputWithoutWindowFixture.runId
+      return {
+        ...mutableInput,
+        completedAt: '2026-08-15T12:00:00Z',
+      }
+    })
+
+    await expect(
+      mutateRunIdStub.course(courseInputWithWindowFixture)
+    ).rejects.toThrow('changed runId')
+    await expect(
+      mutateRunIdStub.platform(platformInputFixture)
+    ).rejects.toThrow('changed runId')
+
+    const deleteWindowStub = createAnalyticsEngineStubs(async (_, input) => {
+      const mutableInput = input as Record<string, unknown>
+      delete mutableInput.windowSince
+      return {
+        ...mutableInput,
+        completedAt: '2026-08-15T12:00:00Z',
+      }
+    })
+    await expect(
+      deleteWindowStub.course(courseInputWithWindowFixture)
+    ).rejects.toThrow('changed windowSince presence')
+  })
+
   it.each([
     ['failure', new Error('synthetic failure')],
     ['cancellation', new Error('synthetic cancellation')],
@@ -180,5 +211,19 @@ describe('@klicker-uzh/analytics-engine-contract', () => {
     expect(canonicalContractDigest).toBe(
       'b9a3f0e14c766c234aead4165e5250f75bf13d02f84f905baedbf6fb4c0d733c'
     )
+  })
+
+  it('freezes the canonical contract and its shared mode values', () => {
+    expect(Object.isFrozen(canonicalContract)).toBe(true)
+    expect(Object.isFrozen(canonicalContract[1][2])).toBe(true)
+    expect(Object.isFrozen(COURSE_WORKFLOW_MODES)).toBe(true)
+    expect(() =>
+      (COURSE_WORKFLOW_MODES as unknown as string[]).push('replay')
+    ).toThrow(TypeError)
+
+    const digest = createHash('sha256')
+      .update(JSON.stringify(canonicalContract))
+      .digest('hex')
+    expect(digest).toBe(canonicalContractDigest)
   })
 })

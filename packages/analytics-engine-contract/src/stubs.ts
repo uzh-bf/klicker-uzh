@@ -55,11 +55,12 @@ export function createAnalyticsEngineStubs(
   return {
     async course(input) {
       const parsedInput = courseWorkflowInputSchema.parse(input)
+      const identity = { ...parsedInput }
       const output = courseWorkflowSuccessSchema.parse(
         await invoker(COURSE_WORKFLOW_NAME, parsedInput)
       )
       requireIdentityEcho(
-        parsedInput,
+        identity,
         output,
         ['contractVersion', 'runId', 'courseId', 'mode', 'windowSince'],
         'Course'
@@ -68,11 +69,12 @@ export function createAnalyticsEngineStubs(
     },
     async platform(input) {
       const parsedInput = platformWorkflowInputSchema.parse(input)
+      const identity = { ...parsedInput }
       const output = platformWorkflowSuccessSchema.parse(
         await invoker(PLATFORM_WORKFLOW_NAME, parsedInput)
       )
       requireIdentityEcho(
-        parsedInput,
+        identity,
         output,
         ['contractVersion', 'runId'],
         'Platform'
