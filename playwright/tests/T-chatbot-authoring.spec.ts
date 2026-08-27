@@ -1,13 +1,14 @@
-import { expect } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
 import { getPrisma } from '../global-setup.js'
 import { test } from '../util/fixtures.js'
 import { selectOption } from '../util/fixtures/activities.js'
 import { fillEditorField } from '../util/fixtures/elements.js'
-import { URL_MANAGE } from '../util/constants.js'
+import { COURSE_ID_TEST, URL_MANAGE, USER_ID_TEST } from '../util/constants.js'
 
 const CHATBOT_PREFIX = 'E2E Authoring'
 const FIRST_CHATBOT = `${CHATBOT_PREFIX} One`
 const SECOND_CHATBOT = `${CHATBOT_PREFIX} Two`
+type PublicationChatbotStatus = 'DRAFT' | 'REJECTED'
 
 async function cleanupAuthoringChatbots() {
   const prisma = await getPrisma()
@@ -24,6 +25,11 @@ async function cleanupAuthoringChatbots() {
 
   await prisma.chatbotDisclaimer.deleteMany({
     where: { name: { startsWith: CHATBOT_PREFIX } },
+  })
+
+  await prisma.user.update({
+    where: { id: USER_ID_TEST },
+    data: { aiChatbotPublishingEnabled: false },
   })
 }
 
@@ -43,6 +49,62 @@ async function createChatbot(
   await expect(page.getByTestId('chatbot-course-readonly')).toHaveText(
     'Testkurs'
   )
+}
+
+async function setPublishingAuthorization(enabled: boolean) {
+  const prisma = await getPrisma()
+  await prisma.user.update({
+    where: { id: USER_ID_TEST },
+    data: { aiChatbotPublishingEnabled: enabled },
+  })
+}
+
+async function seedPublicationChatbot({
+  name,
+  status,
+  withDisclaimer,
+  reviewComment,
+}: {
+  name: string
+  status: PublicationChatbotStatus
+  withDisclaimer: boolean
+  reviewComment?: string
+}) {
+  const prisma = await getPrisma()
+  const disclaimer = withDisclaimer
+    ? await prisma.chatbotDisclaimer.create({
+        data: {
+          name: `${name} disclaimer`,
+          title: 'Synthetic chatbot disclaimer',
+          introText: 'Synthetic disclaimer text for this test chatbot.',
+          ownerId: USER_ID_TEST,
+        },
+      })
+    : undefined
+
+  return prisma.chatbot.create({
+    data: {
+      name,
+      description: `${name} description`,
+      ownerId: USER_ID_TEST,
+      courseId: COURSE_ID_TEST,
+      status,
+      disclaimerId: disclaimer?.id,
+      publicationUseCase:
+        status === 'REJECTED' ? 'Initial synthetic use case' : undefined,
+      expectedStudentCount: status === 'REJECTED' ? 20 : undefined,
+      creditInitialCredits: 10,
+      reviewComment,
+    },
+  })
+}
+
+async function fillPublicationRequest(page: Page, useCase: string) {
+  await page.getByTestId('chatbot-publication-use-case').fill(useCase)
+  await page
+    .getByTestId('chatbot-publication-expected-student-count')
+    .fill('40')
+  await page.getByTestId('chatbot-publication-proposed-credits').fill('25')
 }
 
 test.describe.serial('Lecturer chatbot draft authoring', () => {
@@ -149,5 +211,120 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByTestId('chatbot-disclaimer-intro').locator('strong')
     ).toContainText('Verify important information.')
+  })
+
+  test('submits a complete draft and locks publication details while pending', async ({
+    page,
+  }) => {
+    await setPublishingAuthorization(true)
+    await page.reload()
+    await createChatbot(page, `${CHATBOT_PREFIX} Publication`)
+
+    await page
+      .getByTestId('chatbot-disclaimer-title')
+      .fill('Synthetic publication disclaimer')
+    await fillEditorField(
+      page,
+      'chatbot-disclaimer-intro',
+      'Synthetic disclaimer content for publication.'
+    )
+    await page.getByTestId('save-chatbot-disclaimer').click()
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Chatbot disclaimer saved.' })
+    ).toBeVisible()
+
+    await fillPublicationRequest(
+      page,
+      'Support students with a synthetic study aid.'
+    )
+    const submitButton = page.getByTestId('request-chatbot-publication')
+    await expect(submitButton).toBeEnabled()
+    await submitButton.click()
+
+    await expect(
+      page.getByTestId('chatbot-details').getByTestId('chatbot-status')
+    ).toHaveText('Pending approval')
+    await expect(
+      page.getByTestId('chatbot-publication-readonly')
+    ).toContainText('awaiting publication review')
+    await expect(page.getByTestId('chatbot-publication-use-case')).toHaveCount(
+      0
+    )
+    await expect(
+      page.getByTestId('chatbot-publication-expected-student-count')
+    ).toHaveCount(0)
+    await expect(
+      page.getByTestId('chatbot-publication-proposed-credits')
+    ).toHaveCount(0)
+
+    const prisma = await getPrisma()
+    const chatbot = await prisma.chatbot.findFirst({
+      where: { name: `${CHATBOT_PREFIX} Publication` },
+      select: {
+        status: true,
+        publicationUseCase: true,
+        expectedStudentCount: true,
+        creditInitialCredits: true,
+      },
+    })
+    expect(chatbot).toMatchObject({
+      status: 'PENDING_APPROVAL',
+      publicationUseCase: 'Support students with a synthetic study aid.',
+      expectedStudentCount: 40,
+      creditInitialCredits: 25,
+    })
+  })
+
+  test('shows a rejection comment and allows correction and resubmission', async ({
+    page,
+  }) => {
+    await setPublishingAuthorization(true)
+    await seedPublicationChatbot({
+      name: `${CHATBOT_PREFIX} Rejected`,
+      status: 'REJECTED',
+      withDisclaimer: true,
+      reviewComment: 'Clarify the intended student audience.',
+    })
+    await page.reload()
+
+    await expect(
+      page.getByText('Clarify the intended student audience.')
+    ).toBeVisible()
+    await expect(page.getByTestId('request-chatbot-publication')).toHaveText(
+      'Resubmit for approval'
+    )
+
+    await fillPublicationRequest(page, 'Corrected synthetic study support.')
+    await page.getByTestId('request-chatbot-publication').click()
+
+    await expect(
+      page.getByTestId('chatbot-details').getByTestId('chatbot-status')
+    ).toHaveText('Pending approval')
+    await expect(page.getByTestId('chatbot-publication-readonly')).toBeVisible()
+  })
+
+  test('keeps an incomplete unauthorized draft available for preparation', async ({
+    page,
+  }) => {
+    await setPublishingAuthorization(false)
+    await seedPublicationChatbot({
+      name: `${CHATBOT_PREFIX} Incomplete`,
+      status: 'DRAFT',
+      withDisclaimer: false,
+    })
+    await page.reload()
+
+    await expect(page.getByTestId('chatbot-publication-use-case')).toBeVisible()
+    await expect(page.getByTestId('request-chatbot-publication')).toBeDisabled()
+    await expect(
+      page.getByText(
+        'This account is not approved to request chatbot publication.'
+      )
+    ).toBeVisible()
+    await expect(
+      page.getByText(
+        'Save a complete disclaimer before requesting publication.'
+      )
+    ).toBeVisible()
   })
 })

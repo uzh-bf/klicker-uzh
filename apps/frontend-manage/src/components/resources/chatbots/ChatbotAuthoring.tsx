@@ -20,6 +20,7 @@ import { useState } from 'react'
 import * as Yup from 'yup'
 import ContentInput from '../../common/ContentInput'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
+import ChatbotPublicationRequest from './ChatbotPublicationRequest'
 import { getChatbotMutationErrorKey } from './chatbotErrorMessages'
 
 const metadataEditableStatuses = [
@@ -82,7 +83,17 @@ function DisclaimerIntroField({
   )
 }
 
-function ChatbotAuthoring({ chatbot }: { chatbot: Chatbot }) {
+function ChatbotAuthoring({
+  chatbot,
+  publishingAuthorized,
+  publishingAuthorizationLoading,
+  publishingAuthorizationError,
+}: {
+  chatbot: Chatbot
+  publishingAuthorized: boolean
+  publishingAuthorizationLoading: boolean
+  publishingAuthorizationError: boolean
+}) {
   const t = useTranslations()
   const [updateChatbot] = useMutation(UpdateChatbotDocument)
   const [saveDisclaimer] = useMutation(SaveChatbotDisclaimerDocument)
@@ -323,6 +334,15 @@ function ChatbotAuthoring({ chatbot }: { chatbot: Chatbot }) {
             />
           </>
         )}
+      </section>
+
+      <section className="space-y-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+        <ChatbotPublicationRequest
+          chatbot={chatbot}
+          publishingAuthorized={publishingAuthorized}
+          publishingAuthorizationLoading={publishingAuthorizationLoading}
+          publishingAuthorizationError={publishingAuthorizationError}
+        />
       </section>
     </div>
   )

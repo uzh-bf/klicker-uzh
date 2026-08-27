@@ -3799,6 +3799,50 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte prüfen Sie die Chatbot-Angaben und versuchen Sie es erneut.',
       chatbotErrorForbidden:
         'Sie haben keine Berechtigung, diesen Chatbot zu ändern.',
+      chatbotPublication: 'Veröffentlichungsantrag',
+      chatbotPublicationDescription:
+        'Geben Sie die Informationen an, die das Team für die Prüfung dieses Chatbots vor der Veröffentlichung benötigt.',
+      chatbotPublicationUseCase: 'Einsatzbereich',
+      chatbotPublicationUseCaseRequired:
+        'Bitte beschreiben Sie den vorgesehenen Einsatzbereich.',
+      chatbotPublicationUseCaseTooLong:
+        'Der Einsatzbereich darf höchstens 2 000 Zeichen enthalten.',
+      chatbotPublicationUseCaseInvalid:
+        'Der Einsatzbereich muss zwischen 1 und 2 000 Zeichen lang sein.',
+      chatbotPublicationExpectedStudentCount: 'Erwartete Anzahl Studierender',
+      chatbotPublicationExpectedStudentCountRequired:
+        'Bitte geben Sie die erwartete Anzahl Studierender ein.',
+      chatbotPublicationExpectedStudentCountInvalid:
+        'Bitte geben Sie eine positive ganze Zahl für die erwartete Anzahl Studierender ein.',
+      chatbotPublicationProposedCredits: 'Vorgeschlagene Credits',
+      chatbotPublicationProposedCreditsRequired:
+        'Bitte geben Sie die vorgeschlagenen Credits ein.',
+      chatbotPublicationProposedCreditsInvalid:
+        'Bitte geben Sie eine positive ganze Zahl für die vorgeschlagenen Credits ein.',
+      requestChatbotPublication: 'Veröffentlichung beantragen',
+      resubmitChatbotPublication: 'Erneut zur Prüfung einreichen',
+      chatbotPublicationSubmitted:
+        'Der Veröffentlichungsantrag wurde zur Prüfung eingereicht.',
+      chatbotPublicationRequestError:
+        'Der Veröffentlichungsantrag konnte nicht eingereicht werden. Bitte versuchen Sie es erneut.',
+      chatbotPublicationDisclaimerRequired:
+        'Speichern Sie vor dem Veröffentlichungsantrag einen vollständigen Disclaimer.',
+      chatbotPublicationAuthorizationChecking:
+        'Es wird geprüft, ob dieses Konto eine Veröffentlichung beantragen kann ...',
+      chatbotPublicationAuthorizationUnavailable:
+        'Die Freigabe des Kontos für Veröffentlichungen konnte nicht geprüft werden. Bitte versuchen Sie es später erneut.',
+      chatbotPublicationUnauthorized:
+        'Dieses Konto ist nicht für die Veröffentlichung von Chatbots freigeschaltet.',
+      chatbotPublicationPending:
+        'Dieser Chatbot wartet auf die Prüfung des Veröffentlichungsantrags. Die Veröffentlichungsangaben sind bis zum Abschluss der Prüfung gesperrt.',
+      chatbotPublicationPaused:
+        'Die Veröffentlichung dieses Chatbots ist pausiert. Die Veröffentlichungsangaben sind während der Pause gesperrt.',
+      chatbotPublicationReadonly:
+        'Die Veröffentlichungsangaben können in diesem Status nicht bearbeitet werden.',
+      chatbotPublicationPublished:
+        'Dieser Chatbot ist veröffentlicht. Die Veröffentlichungsangaben können nur gelesen werden.',
+      chatbotPublicationPublishedAt: 'Veröffentlicht am {date}.',
+      chatbotPublicationReviewComment: 'Rückmeldung zur Prüfung:',
       chatbotDetails: 'Chatbot-Details',
       chatbotMetadata: 'Chatbot-Metadaten',
       chatbotCourseReadonly:
