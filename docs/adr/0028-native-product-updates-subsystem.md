@@ -39,7 +39,8 @@ describes, and a validation suite is its CI contract.
 required flags; the entry is presentable only when all of them evaluate true for
 that actor. Flags decide whether an actor could use the feature, so an
 announcement with a "Try it" call to action never reaches someone outside the
-rollout. Flags remain outside authorization entirely, per ADR 0008. Because an
+rollout. Flags remain outside authorization entirely, per
+[ADR 0008](./0008-use-growthbook-for-feature-flags.md). Because an
 entry outlives its flag, the flag reference is removed from the entry before the
 flag is deleted in GrowthBook, and entries without flags are always eligible.
 
