@@ -118,8 +118,9 @@ export async function ensureSecondChatbotSeeded() {
           description: 'Tutor mode.',
         },
       },
+      status: 'PUBLISHED',
     },
-    update: {},
+    update: { status: 'PUBLISHED' },
   })
 }
 
