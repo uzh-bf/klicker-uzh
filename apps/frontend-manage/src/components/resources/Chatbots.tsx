@@ -4,16 +4,20 @@ import {
   ChatModelCapability,
   GetChatbotsInfoDocument,
   GetChatModelRegistryDocument,
+  GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { H2 } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useState } from 'react'
+import ChatbotCreateModal from './chatbots/ChatbotCreateModal'
 import ChatbotDetails from './chatbots/ChatbotDetails'
 import ChatbotList from './chatbots/ChatbotList'
 
 function Chatbots() {
   const t = useTranslations()
   const router = useRouter()
+  const [createModalOpen, setCreateModalOpen] = useState(false)
   const { data, loading } = useQuery(GetChatbotsInfoDocument, {
     fetchPolicy: 'network-only',
   })
@@ -23,6 +27,9 @@ function Chatbots() {
       fetchPolicy: 'cache-first',
     }
   )
+  const { data: courseData } = useQuery(GetUserCoursesDocument, {
+    fetchPolicy: 'cache-first',
+  })
 
   const chatbots = data?.getChatbotsInfo ?? []
   const modelRegistry: ChatModelCapability[] =
@@ -33,17 +40,22 @@ function Chatbots() {
       : undefined
   const selectedChatbot =
     chatbots.find((chatbot) => chatbot.id === selectedId) ?? chatbots[0]
+  const ownedCourses = (courseData?.userCourses ?? []).filter(
+    (course) => course.isOwner && !course.isArchived
+  )
 
-  const handleSelect = (chatbot: Chatbot) => {
+  const selectChatbot = (chatbotId: string) => {
     void router.push(
       {
         pathname: router.pathname,
-        query: { ...router.query, chatbotId: chatbot.id },
+        query: { ...router.query, chatbotId },
       },
       undefined,
       { shallow: true }
     )
   }
+
+  const handleSelect = (chatbot: Chatbot) => selectChatbot(chatbot.id)
 
   return (
     <div className="h-full w-full">
@@ -62,9 +74,20 @@ function Chatbots() {
             loading={loading}
             selectedId={selectedChatbot?.id}
             onSelect={handleSelect}
+            onCreate={() => setCreateModalOpen(true)}
           />
         </div>
       </div>
+      {createModalOpen ? (
+        <ChatbotCreateModal
+          courses={ownedCourses}
+          onClose={() => setCreateModalOpen(false)}
+          onCreated={(chatbotId) => {
+            setCreateModalOpen(false)
+            selectChatbot(chatbotId)
+          }}
+        />
+      ) : null}
     </div>
   )
 }

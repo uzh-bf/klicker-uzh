@@ -728,6 +728,8 @@ export default {
         'Select this setting to include an inline LaTeX formula. Use the same syntax to include formulas in answer options.',
       latexCentered:
         'Select this setting to include a LaTeX formula centered on a separate line.',
+      undo: 'Undo the last formatting change.',
+      redo: 'Redo the last formatting change.',
     },
     leaderboard: {
       lqLeaderboard: 'Quiz Leaderboard',
@@ -3713,7 +3715,51 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       chatbots: 'Chatbots',
       availableChatbots: 'Available Chatbots',
       noChatbots: 'No chatbots have been created yet.',
+      createChatbot: 'Create chatbot',
+      createChatbotDescription:
+        'Create a course-bound draft chatbot and configure it before requesting publication.',
+      chatbotName: 'Name',
+      chatbotDescription: 'Description',
+      chatbotCourse: 'Course',
+      chatbotCourseRequired: 'Select a course.',
+      chatbotNoOwnedCourses:
+        'You need to own at least one course before creating a chatbot.',
+      chatbotNameRequired: 'Enter a chatbot name.',
+      chatbotCreateError: 'Could not create the chatbot. Please try again.',
       chatbotDetails: 'Chatbot Details',
+      chatbotMetadata: 'Chatbot Metadata',
+      chatbotCourseReadonly: 'The course cannot be changed after creation.',
+      saveChatbotMetadata: 'Save metadata',
+      chatbotMetadataSaveSuccess: 'Chatbot metadata saved.',
+      chatbotMetadataSaveError:
+        'Could not save chatbot metadata. Please try again.',
+      chatbotMetadataReadonly:
+        'Metadata cannot be edited while the chatbot is awaiting review or paused.',
+      chatbotDisclaimerAuthoring: 'Disclaimer Authoring',
+      chatbotDisclaimerReadonly:
+        'The disclaimer cannot be edited after publication or while the chatbot is awaiting review or paused.',
+      chatbotDisclaimerTitle: 'Disclaimer title',
+      chatbotDisclaimerTitleRequired: 'Enter a disclaimer title.',
+      chatbotDisclaimerTitleTooLong:
+        'The disclaimer title must be 160 characters or fewer.',
+      chatbotDisclaimerIntro: 'Disclaimer introduction',
+      chatbotDisclaimerIntroRequired: 'Enter a disclaimer introduction.',
+      chatbotDisclaimerIntroTooLong:
+        'The disclaimer introduction must be 10,000 characters or fewer.',
+      chatbotDisclaimerIntroEditorPlaceholder:
+        'Explain what participants should know before using this chatbot.',
+      saveChatbotDisclaimer: 'Save disclaimer',
+      chatbotDisclaimerSaveSuccess: 'Chatbot disclaimer saved.',
+      chatbotDisclaimerSaveError:
+        'Could not save the chatbot disclaimer. Please try again.',
+      chatbotDisclaimerPreview: 'Participant disclaimer preview',
+      chatbotDisclaimerPreviewDescription:
+        'This preview includes the platform text that participants will see.',
+      chatbotDisclaimerTitlePlaceholder: 'Your disclaimer title',
+      chatbotDisclaimerIntroPlaceholder:
+        'Add an introduction to show participants here.',
+      chatbotModelSettingsReadonly:
+        'Model settings cannot be edited while the chatbot is awaiting review or paused.',
       overview: 'Overview',
       chatbotId: 'Chatbot ID',
       avatarUrl: 'Avatar URL',
