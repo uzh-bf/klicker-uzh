@@ -89,23 +89,14 @@ empty state, button labels) does belong in the i18n message files.
 
 ## Per-actor read state
 
-Read state lives in the database rather than in local storage, because a
-lecturer or student uses KlickerUZH from several devices and the unread
-indicator has to agree across all of them. `UserProductUpdateState` and
-`ParticipantProductUpdateState` (`packages/prisma/src/prisma/schema/productUpdate.prisma`)
-hold one row per actor and entry.
+`UserProductUpdateState` and `ParticipantProductUpdateState`
+(`packages/prisma/src/prisma/schema/productUpdate.prisma`) hold one row per actor
+and entry. Why the state is in the database, split across two tables, and keyed
+per entry is recorded in
+[ADR 0028](./adr/0028-native-product-updates-subsystem.md).
 
-There are two tables rather than one because lecturers and participants are
-separate models with separate primary keys; a shared table would need a
-polymorphic actor column that no foreign key can protect. There is a row per
-entry rather than one "last seen" timestamp per actor because feature-flag
-targeting can make an actor eligible for an older entry long after newer ones
-were already read.
-
-`updateId` is a plain string with no foreign key, since the catalog is code. The
-service therefore validates every id against `PRODUCT_UPDATES` before writing,
-so an unknown id cannot leave behind a row that no surface can display or clean
-up.
+`updateId` is a plain string with no foreign key, since the catalog is code, so
+the service validates every id against `PRODUCT_UPDATES` before writing.
 
 | Column                                 | Meaning                                                    |
 | -------------------------------------- | ---------------------------------------------------------- |
@@ -140,9 +131,14 @@ every other role — `TEMPORARY_PARTICIPANT` above all — is rejected with an e
 rather than served an empty result. The actor id always comes from `ctx.user.sub`;
 no operation accepts an actor id from the caller.
 
-The presentation counter is what the spotlight caps will read, so it is
-incremented inside a single upsert rather than a read-modify-write, which keeps
-it correct when the same entry is presented in two tabs at once.
+The three mutations additionally apply the repository's scope floor for writes:
+a delegated lecturer login with `READ_ONLY` or `SESSION_EXEC` scope is rejected,
+while the query stays open to it so the feed still renders. Participant tokens
+carry no scope claim, so the floor applies to lecturer sessions only.
+
+All three mutations reach the row through a single upsert rather than a
+read-modify-write, so two browser tabs interacting with the same entry at once
+cannot collide on the unique constraint or lose an increment.
 
 ## Current consumers
 
