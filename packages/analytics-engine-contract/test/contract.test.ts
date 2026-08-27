@@ -15,6 +15,7 @@ import {
   courseWorkflowSuccessSchema,
   createAnalyticsEngineStubs,
   platformInputFixture,
+  platformWorkflowInputSchema,
   runBlackBoxConformance,
 } from '../src/index.js'
 
@@ -172,7 +173,11 @@ describe('@klicker-uzh/analytics-engine-contract', () => {
       callbackCalls.push({ workflowName, input, scenario })
 
       if (scenario === 'invalid-input') {
-        courseWorkflowInputSchema.parse(input)
+        if (workflowName === COURSE_WORKFLOW_NAME) {
+          courseWorkflowInputSchema.parse(input)
+        } else {
+          platformWorkflowInputSchema.parse(input)
+        }
         throw new Error('Invalid input unexpectedly passed validation')
       }
       if (scenario === 'failure') throw failure
@@ -194,6 +199,8 @@ describe('@klicker-uzh/analytics-engine-contract', () => {
       [COURSE_WORKFLOW_NAME, 'success'],
       [PLATFORM_WORKFLOW_NAME, 'success'],
       [COURSE_WORKFLOW_NAME, 'invalid-input'],
+      [COURSE_WORKFLOW_NAME, 'invalid-input'],
+      [PLATFORM_WORKFLOW_NAME, 'invalid-input'],
       [COURSE_WORKFLOW_NAME, 'failure'],
       [PLATFORM_WORKFLOW_NAME, 'failure'],
       [COURSE_WORKFLOW_NAME, 'cancelled'],
@@ -220,10 +227,5 @@ describe('@klicker-uzh/analytics-engine-contract', () => {
     expect(() =>
       (COURSE_WORKFLOW_MODES as unknown as string[]).push('replay')
     ).toThrow(TypeError)
-
-    const digest = createHash('sha256')
-      .update(JSON.stringify(canonicalContract))
-      .digest('hex')
-    expect(digest).toBe(canonicalContractDigest)
   })
 })

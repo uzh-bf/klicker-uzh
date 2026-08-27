@@ -47,6 +47,18 @@ export async function runBlackBoxConformance(
     callback('invalid-input', COURSE_WORKFLOW_NAME, invalidInput)
   )
   await requireRejection(
+    callback('invalid-input', COURSE_WORKFLOW_NAME, {
+      ...courseInputWithWindowFixture,
+      contractVersion: 'v2',
+    })
+  )
+  await requireRejection(
+    callback('invalid-input', PLATFORM_WORKFLOW_NAME, {
+      ...platformInputFixture,
+      contractVersion: 'v2',
+    })
+  )
+  await requireRejection(
     callback('failure', COURSE_WORKFLOW_NAME, courseInputWithWindowFixture)
   )
   await requireRejection(

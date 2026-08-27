@@ -91,12 +91,11 @@ async function expectLearningAnalyticsWriterGateReleased() {
   expect(result[0]?.acquired).toBe(true)
 }
 
-async function createParticipant(label: string, consent = false) {
+async function createParticipant(label: string) {
   const participant = await prisma.participant.create({
     data: {
       username: `${TEST_PREFIX}-${label}`,
       password: 'integration-test-password',
-      learningAnalyticsConsent: consent,
     },
   })
   fixtureIds.participants.push(participant.id)
@@ -200,10 +199,11 @@ async function createCourse(ownerId: string, participantId: string) {
       endDate,
       groupDeadlineDate: endDate,
       authType: CourseAuthType.SSO,
-      ownerId,
+      isLearningAnalyticsEnabled: true,
       participations: {
         create: { participantId },
       },
+      ownerId,
     },
   })
   fixtureIds.courses.push(course.id)
@@ -272,7 +272,7 @@ describe('participant data-use PostgreSQL integration', () => {
     await prisma.$disconnect()
   })
 
-  it('waits for the global LA lock and records choiceAt from the database clock', async () => {
+  it('waits for the global LA lock and records only the current choice', async () => {
     const participant = await createParticipant('exclusive-lock')
     const ctx = participantContext(participant.id)
     const before = await prisma.$queryRaw<Array<{ now: Date }>>`
@@ -288,23 +288,22 @@ describe('participant data-use PostgreSQL integration', () => {
         }
       )
 
-      await wait(150)
+      await new Promise((resolve) => setTimeout(resolve, 25))
       expect(settled).toBe(false)
-      expect((await getParticipantDataUse(ctx))?.learningAnalyticsConsent).toBe(
-        false
-      )
+      await expect(getParticipantDataUse(ctx)).resolves.toMatchObject({
+        learningAnalyticsConsent: false,
+        learningAnalyticsChoiceAt: null,
+      })
 
       holder.release()
       const result = await mutation
-      await holder.done
       const after = await prisma.$queryRaw<Array<{ now: Date }>>`
         SELECT clock_timestamp() AS "now"
       `
-
       expect(result?.learningAnalyticsConsent).toBe(true)
       expect(result?.learningAnalyticsChoiceAt).toBeInstanceOf(Date)
-      expect(result?.learningAnalyticsIncludedFrom).toEqual(
-        result?.learningAnalyticsChoiceAt
+      expect(result?.learningAnalyticsDisclosureVersion).toBe(
+        PARTICIPANT_DATA_USE_DISCLOSURE_VERSION
       )
       expect(
         result!.learningAnalyticsChoiceAt!.getTime()
@@ -312,11 +311,13 @@ describe('participant data-use PostgreSQL integration', () => {
       expect(result!.learningAnalyticsChoiceAt!.getTime()).toBeLessThanOrEqual(
         after[0]!.now.getTime()
       )
+      await holder.done
+      await expectLearningAnalyticsWriterGateReleased()
     } finally {
       holder.release()
       await holder.done.catch(() => undefined)
     }
-  }, 10_000)
+  })
 
   it('maps a real lock timeout, rolls back, and releases the lock for the next mutation', async () => {
     const participant = await createParticipant('timeout')
@@ -331,24 +332,22 @@ describe('participant data-use PostgreSQL integration', () => {
       })
       expect(Date.now() - startedAt).toBeGreaterThanOrEqual(4_500)
 
-      const rolledBack = await getParticipantDataUse(ctx)
-      expect(rolledBack).toMatchObject({
+      await expect(getParticipantDataUse(ctx)).resolves.toMatchObject({
         learningAnalyticsConsent: false,
         learningAnalyticsChoiceAt: null,
         learningAnalyticsDisclosureVersion: null,
-        learningAnalyticsIncludedFrom: null,
       })
 
       holder.release()
       await holder.done
-      const nextMutation = await setLearningAnalyticsConsent(
-        { consent: true },
-        ctx
-      )
-      expect(nextMutation?.learningAnalyticsConsent).toBe(true)
-      expect(nextMutation?.learningAnalyticsIncludedFrom).toEqual(
-        nextMutation?.learningAnalyticsChoiceAt
-      )
+      await expect(
+        setLearningAnalyticsConsent({ consent: true }, ctx)
+      ).resolves.toMatchObject({
+        learningAnalyticsConsent: true,
+        learningAnalyticsChoiceAt: expect.any(Date),
+        learningAnalyticsDisclosureVersion:
+          PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+      })
     } finally {
       holder.release()
       await holder.done.catch(() => undefined)
@@ -371,10 +370,12 @@ describe('participant data-use PostgreSQL integration', () => {
       expect(result).toMatchObject({
         researchConsent: true,
         researchConsentChoiceAt: expect.any(Date),
+        researchConsentDisclosureVersion:
+          PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
       })
-      expect((await getParticipantDataUse(ctx))?.learningAnalyticsConsent).toBe(
-        false
-      )
+      await expect(getParticipantDataUse(ctx)).resolves.toMatchObject({
+        learningAnalyticsConsent: false,
+      })
 
       holder.release()
       await holder.done
@@ -386,8 +387,8 @@ describe('participant data-use PostgreSQL integration', () => {
     }
   }, 10_000)
 
-  it('releases the lock after malformed enablement so withdrawal can repair it', async () => {
-    const participant = await createParticipant('malformed')
+  it('rejects malformed enablement and repairs withdrawal while releasing the writer lock', async () => {
+    const participant = await createParticipant('incomplete-metadata')
     const ctx = participantContext(participant.id)
     await prisma.participant.update({
       where: { id: participant.id },
@@ -396,7 +397,6 @@ describe('participant data-use PostgreSQL integration', () => {
         learningAnalyticsChoiceAt: null,
         learningAnalyticsDisclosureVersion:
           PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-        learningAnalyticsIncludedFrom: null,
       },
     })
 
@@ -406,7 +406,6 @@ describe('participant data-use PostgreSQL integration', () => {
       extensions: { code: 'PARTICIPANT_DATA_USE_MALFORMED_STATE' },
     })
     await expectLearningAnalyticsWriterGateReleased()
-
     await expect(
       setLearningAnalyticsConsent({ consent: false }, ctx)
     ).resolves.toMatchObject({
@@ -414,80 +413,153 @@ describe('participant data-use PostgreSQL integration', () => {
       learningAnalyticsChoiceAt: expect.any(Date),
       learningAnalyticsDisclosureVersion:
         PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-      learningAnalyticsIncludedFrom: null,
     })
   })
 
-  it('fails closed on impossible enabled ordering in raw analytics reads and repairs on withdrawal', async () => {
-    const owner = await createOwner('impossible-ordering')
-    const participant = await createParticipant('impossible-ordering')
+  it('keeps analytics hidden until computation is strictly newer than the current choice', async () => {
+    const owner = await createOwner('strict-freshness')
+    const participant = await createParticipant('strict-freshness')
     const ctx = participantContext(participant.id)
     const { course, practiceQuiz } = await createCourse(
       owner.id,
       participant.id
     )
+    const enabled = await setLearningAnalyticsConsent({ consent: true }, ctx)
+    const choiceAt = enabled!.learningAnalyticsChoiceAt!
     await createIndividualAnalyticsRows({
       courseId: course.id,
       participantId: participant.id,
       practiceQuizId: practiceQuiz.id,
     })
 
-    const choiceAt = new Date('2026-08-20T12:00:00.000Z')
-    const impossibleBoundary = new Date('2026-08-20T12:00:01.000Z')
+    await prisma.course.update({
+      where: { id: course.id },
+      data: { analyticsLastComputedAt: choiceAt },
+    })
+    const equalActivity = await getCourseActivityAnalytics(
+      { courseId: course.id },
+      ctx
+    )
+    const equalPerformance = await getCoursePerformanceAnalytics(
+      { courseId: course.id },
+      ctx
+    )
+    expect(equalActivity?.participantCourseAnalytics).toHaveLength(0)
+    expect(equalActivity?.dailyActivity).toHaveLength(1)
+    expect(equalPerformance?.participantPerformances).toHaveLength(0)
+    expect(equalPerformance?.participantActivityPerformances).toHaveLength(0)
+
+    await prisma.course.update({
+      where: { id: course.id },
+      data: { analyticsLastComputedAt: new Date(choiceAt.getTime() + 1) },
+    })
+    const freshActivity = await getCourseActivityAnalytics(
+      { courseId: course.id },
+      ctx
+    )
+    const freshPerformance = await getCoursePerformanceAnalytics(
+      { courseId: course.id },
+      ctx
+    )
+    expect(freshActivity?.participantCourseAnalytics).toHaveLength(1)
+    expect(freshPerformance?.participantPerformances).toHaveLength(1)
+    expect(freshPerformance?.participantActivityPerformances).toHaveLength(1)
+
+    await setLearningAnalyticsConsent({ consent: false }, ctx)
+    const withdrawnActivity = await getCourseActivityAnalytics(
+      { courseId: course.id },
+      ctx
+    )
+    expect(withdrawnActivity?.participantCourseAnalytics).toHaveLength(0)
+    expect(withdrawnActivity?.dailyActivity).toHaveLength(1)
+
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    const reenabled = await setLearningAnalyticsConsent({ consent: true }, ctx)
+    const reenabledChoiceAt = reenabled!.learningAnalyticsChoiceAt!
+    const staleActivity = await getCourseActivityAnalytics(
+      { courseId: course.id },
+      ctx
+    )
+    expect(staleActivity?.participantCourseAnalytics).toHaveLength(0)
+
+    await prisma.course.update({
+      where: { id: course.id },
+      data: {
+        analyticsLastComputedAt: new Date(reenabledChoiceAt.getTime() + 1),
+      },
+    })
+    const recomputedActivity = await getCourseActivityAnalytics(
+      { courseId: course.id },
+      ctx
+    )
+    expect(recomputedActivity?.participantCourseAnalytics).toHaveLength(1)
+  })
+
+  it('requires complete current choice metadata and preserves aggregate output', async () => {
+    const owner = await createOwner('metadata')
+    const participant = await createParticipant('metadata')
+    const ctx = participantContext(participant.id)
+    const { course, practiceQuiz } = await createCourse(
+      owner.id,
+      participant.id
+    )
+    const enabled = await setLearningAnalyticsConsent({ consent: true }, ctx)
+    const choiceAt = enabled!.learningAnalyticsChoiceAt!
+    await createIndividualAnalyticsRows({
+      courseId: course.id,
+      participantId: participant.id,
+      practiceQuizId: practiceQuiz.id,
+    })
+    await prisma.course.update({
+      where: { id: course.id },
+      data: { analyticsLastComputedAt: new Date(choiceAt.getTime() + 1) },
+    })
+
     await prisma.participant.update({
       where: { id: participant.id },
-      data: {
-        learningAnalyticsConsent: true,
-        learningAnalyticsChoiceAt: choiceAt,
-        learningAnalyticsDisclosureVersion:
-          PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-        learningAnalyticsIncludedFrom: impossibleBoundary,
-      },
+      data: { learningAnalyticsDisclosureVersion: '   ' },
     })
-    await prisma.course.update({
-      where: { id: course.id },
-      data: { analyticsLastComputedAt: impossibleBoundary },
-    })
-
-    const activity = await readActivityAnalytics(course.id, ctx)
-    const performance = await readPerformanceAnalytics(course.id, ctx)
-    expect(activity?.participantCourseAnalytics).toHaveLength(0)
-    expect(performance?.participantPerformances).toHaveLength(0)
-    expect(performance?.participantActivityPerformances).toHaveLength(0)
+    const result = await getCourseActivityAnalytics(
+      { courseId: course.id },
+      ctx
+    )
+    expect(result?.participantCourseAnalytics).toHaveLength(0)
+    expect(result?.dailyActivity).toHaveLength(1)
 
     await expect(
-      setLearningAnalyticsConsent({ consent: false }, ctx)
+      setResearchConsent({ consent: true }, ctx)
     ).resolves.toMatchObject({
-      learningAnalyticsConsent: false,
-      learningAnalyticsIncludedFrom: null,
-      learningAnalyticsChoiceAt: expect.any(Date),
+      researchConsent: true,
+      researchConsentChoiceAt: expect.any(Date),
+      researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
     })
-    await expectLearningAnalyticsWriterGateReleased()
+    await expect(getParticipantDataUse(ctx)).resolves.toMatchObject({
+      researchConsent: true,
+      learningAnalyticsConsent: true,
+    })
   })
 
-  it('filters current and prospective individual analytics while preserving aggregates', async () => {
-    const owner = await createOwner('analytics')
-    const participant = await createParticipant('analytics')
+  it('preserves aggregate output across withdrawal and re-enable', async () => {
+    const owner = await createOwner('aggregate-reenable')
+    const participant = await createParticipant('aggregate-reenable')
     const ctx = participantContext(participant.id)
     const { course, practiceQuiz } = await createCourse(
       owner.id,
       participant.id
     )
-
     const initial = await setLearningAnalyticsConsent({ consent: true }, ctx)
-    const initialBoundary = initial!.learningAnalyticsIncludedFrom!
-    await prisma.course.update({
-      where: { id: course.id },
-      data: {
-        analyticsLastComputedAt: initialBoundary,
-      },
-    })
+    const initialChoiceAt = initial!.learningAnalyticsChoiceAt!
     await createIndividualAnalyticsRows({
       courseId: course.id,
       participantId: participant.id,
       practiceQuizId: practiceQuiz.id,
     })
-
+    await prisma.course.update({
+      where: { id: course.id },
+      data: {
+        analyticsLastComputedAt: new Date(initialChoiceAt.getTime() + 1),
+      },
+    })
     const initiallyVisibleActivity = await readActivityAnalytics(course.id, ctx)
     const initiallyVisiblePerformance = await readPerformanceAnalytics(
       course.id,
@@ -565,9 +637,9 @@ describe('participant data-use PostgreSQL integration', () => {
 
     await wait(10)
     const reenabled = await setLearningAnalyticsConsent({ consent: true }, ctx)
-    const reenabledBoundary = reenabled!.learningAnalyticsIncludedFrom!
-    expect(reenabledBoundary.getTime()).toBeGreaterThan(
-      initialBoundary.getTime()
+    const reenabledChoiceAt = reenabled!.learningAnalyticsChoiceAt!
+    expect(reenabledChoiceAt.getTime()).toBeGreaterThan(
+      initialChoiceAt.getTime()
     )
 
     const beforeRecomputeActivity = await readActivityAnalytics(course.id, ctx)
@@ -615,7 +687,7 @@ describe('participant data-use PostgreSQL integration', () => {
     await prisma.course.update({
       where: { id: course.id },
       data: {
-        analyticsLastComputedAt: new Date(reenabledBoundary.getTime() + 1_000),
+        analyticsLastComputedAt: new Date(reenabledChoiceAt.getTime() + 1_000),
       },
     })
     const recomputedActivity = await readActivityAnalytics(course.id, ctx)

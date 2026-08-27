@@ -1230,7 +1230,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Deine Forschungseinstellung konnte nicht gespeichert werden. Bitte lade die Seite neu, bevor Du es erneut versuchst.',
       learningAnalyticsConsentTitle: 'Learning Analytics',
       learningAnalyticsConsentDescription:
-        'Ja erlaubt KlickerUZH, Deine späteren Aktivitäten für individuelle Learning Analytics zu nutzen. Nein schliesst Dich sofort aus. Bereits erstellte individuelle Learning-Analytics-Daten werden beim nächsten erfolgreichen nächtlichen Verarbeitungslauf gelöscht. Aggregierte Ergebnisse werden bei ihrer nächsten regulären Neuberechnung aktualisiert. Wenn Du diese Einstellung wieder aktivierst, werden nur spätere Aktivitäten verwendet; frühere Aktivitäten werden nicht nachträglich einbezogen.',
+        'Ja erlaubt KlickerUZH, alle berechtigten in Deinem Konto gespeicherten Aktivitätsdaten für individuelle Learning Analytics zu verwenden, sobald der Kurs erfolgreich neu berechnet wurde und der Berechnungszeitpunkt nach Deiner aktuellen Entscheidung liegt. Nein bedeutet, dass keine individuellen Learning-Analytics-Daten verwendet werden; bereits erstellte individuelle Learning-Analytics-Daten werden beim nächsten erfolgreichen nächtlichen Verarbeitungslauf gelöscht. Aggregierte Ergebnisse werden bei ihrer nächsten regulären Neuberechnung aktualisiert. Wenn Du diese Einstellung wieder aktivierst, können alle berechtigten gespeicherten Aktivitätsdaten wieder einbezogen werden.',
       learningAnalyticsConsentSaved:
         'Deine Learning-Analytics-Einstellung wurde gespeichert.',
       learningAnalyticsConsentFailed:

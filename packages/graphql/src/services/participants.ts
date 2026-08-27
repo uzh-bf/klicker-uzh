@@ -266,35 +266,24 @@ function isMalformedLearningAnalyticsState({
   learningAnalyticsConsent,
   learningAnalyticsChoiceAt,
   learningAnalyticsDisclosureVersion,
-  learningAnalyticsIncludedFrom,
 }: ParticipantDataUseFields) {
-  const hasImpossibleEnabledOrdering =
-    learningAnalyticsConsent &&
-    learningAnalyticsChoiceAt !== null &&
-    learningAnalyticsIncludedFrom !== null &&
-    learningAnalyticsIncludedFrom.getTime() >
-      learningAnalyticsChoiceAt.getTime()
-
-  if (hasImpossibleEnabledOrdering) return true
-
   const hasChoiceMetadata =
     learningAnalyticsChoiceAt !== null &&
     learningAnalyticsDisclosureVersion !== null &&
     learningAnalyticsDisclosureVersion.trim().length > 0
 
   // The migrated/default false + null state is the only valid unrecorded
-  // state. Once a choice is recorded, the inclusion boundary must agree with
-  // the current Boolean so an invalid row can never be returned as eligible.
+  // state. Once a choice is recorded, both server-owned metadata fields must
+  // be present so an invalid row can never be returned as eligible.
   if (!hasChoiceMetadata) {
     return (
       learningAnalyticsConsent ||
       learningAnalyticsChoiceAt !== null ||
-      learningAnalyticsDisclosureVersion !== null ||
-      learningAnalyticsIncludedFrom !== null
+      learningAnalyticsDisclosureVersion !== null
     )
   }
 
-  return learningAnalyticsConsent !== (learningAnalyticsIncludedFrom !== null)
+  return false
 }
 
 function dataUseError(code: string) {
@@ -440,15 +429,6 @@ export async function setLearningAnalyticsConsent(
           learningAnalyticsChoiceAt: choiceAt,
           learningAnalyticsDisclosureVersion:
             PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-        }
-
-        // A genuine transition changes the prospective boundary. A metadata
-        // acknowledgement under the same Boolean never moves that boundary.
-        if (
-          malformedState ||
-          participant.learningAnalyticsConsent !== consent
-        ) {
-          data.learningAnalyticsIncludedFrom = consent ? choiceAt : null
         }
 
         return prisma.participant.update({

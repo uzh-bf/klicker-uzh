@@ -28,7 +28,7 @@ workflow.
   excluding this plan, wiki documentation, generated lockfile changes, and CI.
 - Complexity stop: pause above roughly 600 substantive lines or ten substantive files
   and recheck the package boundary.
-- Actual repository-defined substantive size: `+850/-3` across 16 files, excluding
+- Actual repository-defined substantive size: `+864/-3` across 16 files, excluding
   only this project plan and the generated lockfile. The package exceeds the planning
   estimate because the repository size rule counts CI, wiki, skill, package
   configuration, and the complete test portfolio. It remains one work package: those
@@ -258,7 +258,7 @@ Merge, readiness, deployment, activation, and source retirement are separate gat
 - [x] The first final maintainability review found that schema descriptions did not
   make the digest authoritative over validator construction. The descriptor now builds
   both the strict schemas and digest tree; focused tests, typecheck, and build pass.
-- [x] Substantive size measured at `+850/-3` across 16 files and accepted as one
+- [x] Substantive size measured at `+864/-3` across 16 files and accepted as one
   coherent contract package rather than separating its verification or documentation.
 - [x] Restacked without force-push by merging exact participant-settings head
   `a31d5cd6a760e5c6e34bc5c3fd170a4efffc16d5`; the pinned schemas and digest
