@@ -1012,7 +1012,7 @@ type Course {
   isGamificationEnabled: Boolean!
   isGroupCreationEnabled: Boolean!
   isGroupDeadlinePassed: Boolean
-  isLearningAnalyticsEnabled: Boolean
+  isLearningAnalyticsEnabled: Boolean!
   isManager: Boolean
   isOwner: Boolean
   isRemovable: Boolean
