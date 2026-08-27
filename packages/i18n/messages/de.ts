@@ -1842,6 +1842,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Berichtsstatus hat sich geändert, aber die sichtbare Liste konnte nicht aktualisiert werden. Schliessen und öffnen Sie den Dialog erneut, um den aktuellen Status zu laden.',
       reportTimeZone: 'Europe/Zurich',
     },
+    productUpdates: {
+      feedTitle: 'Neu in KlickerUZH',
+      pageTitle: 'Produkt-Updates',
+      empty: 'Zurzeit gibt es keine neuen Produkt-Updates.',
+      showAll: 'Alle Produkt-Updates ansehen',
+      readMore: 'Mehr erfahren',
+      dismiss: 'Ausblenden',
+      maturity: {
+        preview: 'Vorschau',
+        pilot: 'Pilot',
+      },
+    },
     support: {
       modalTitle: 'Support KlickerUZH',
       yourFeedback: 'Ihr Feedback',

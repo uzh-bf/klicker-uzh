@@ -3,7 +3,7 @@ import {
   faPlayCircle,
   faQuestionCircle,
 } from '@fortawesome/free-regular-svg-icons'
-import { faBolt, faUser } from '@fortawesome/free-solid-svg-icons'
+import { faBolt, faBullhorn, faUser } from '@fortawesome/free-solid-svg-icons'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   CountCatalogSharingRequestsDocument,
@@ -18,6 +18,7 @@ import {
   type NavigationItemProps,
   type NavigationMenuItemProps,
   type NavigationSubmenuProps,
+  NotificationBadgeWrapper,
   Tooltip,
 } from '@uzh-bf/design-system'
 import Image from 'next/image'
@@ -25,6 +26,8 @@ import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import ProductUpdateFeedModal from '../productUpdates/ProductUpdateFeedModal'
+import { useProductUpdates } from '../productUpdates/useProductUpdates'
 import SupportModal from './SupportModal'
 
 type UserProfile = NonNullable<UserProfileQuery['userProfile']>
@@ -33,7 +36,9 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
   const router = useRouter()
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
+  const [showProductUpdates, setShowProductUpdates] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
+  const { unreadCount } = useProductUpdates()
 
   const { data: pendingRequestData } = useQuery(
     CountCatalogSharingRequestsDocument
@@ -219,6 +224,20 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
     />
   )
 
+  // Kept out of the navigation array below and rendered on its own: an
+  // icon-only navigation button cannot carry the notification prop, so the
+  // unread dot has to come from the badge wrapper around it.
+  const productUpdatesNavigation: NavigationItemProps[] = [
+    {
+      type: 'button',
+      key: 'product-updates-menubar-item',
+      icon: faBullhorn,
+      onClick: () => setShowProductUpdates(true),
+      data: { cy: 'product-updates-menubar-item' },
+      className: { icon: '-mx-1', root: 'px-3' },
+    },
+  ]
+
   const rightNavigation: NavigationItemProps[] = [
     {
       type: 'button',
@@ -328,13 +347,29 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
             </Tooltip>
           )}
         </div>
-        <Navigation
-          items={rightNavigation}
-          className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
-        />
+        <div className="flex flex-row items-center">
+          <NotificationBadgeWrapper
+            showBadge={unreadCount > 0}
+            size="sm"
+            className={{ root: 'flex items-center', badge: 'mr-2.5 mt-1' }}
+            data={{ cy: 'product-updates-badge' }}
+          >
+            <Navigation
+              items={productUpdatesNavigation}
+              className={{ root: 'shadow-none' }}
+            />
+          </NotificationBadgeWrapper>
+          <Navigation
+            items={rightNavigation}
+            className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
+          />
+        </div>
       </div>
       {showSupportModal && (
         <SupportModal onClose={() => setShowSupportModal(false)} user={user} />
+      )}
+      {showProductUpdates && (
+        <ProductUpdateFeedModal onClose={() => setShowProductUpdates(false)} />
       )}
     </>
   )

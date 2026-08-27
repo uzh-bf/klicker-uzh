@@ -1830,6 +1830,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The report status changed, but the visible list could not be refreshed. Close and reopen the dialog to load the current status.',
       reportTimeZone: 'Europe/Zurich',
     },
+    productUpdates: {
+      feedTitle: 'New in KlickerUZH',
+      pageTitle: 'Product Updates',
+      empty: 'There are no new product updates at the moment.',
+      showAll: 'See all product updates',
+      readMore: 'Read more',
+      dismiss: 'Dismiss',
+      maturity: {
+        preview: 'Preview',
+        pilot: 'Pilot',
+      },
+    },
     support: {
       modalTitle: 'Support KlickerUZH',
       yourFeedback: 'Your Feedback',
