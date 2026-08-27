@@ -1,0 +1,3 @@
+mutation MCompleteCardGenerationLease($id: String!, $attemptToken: String!) {
+  completeCardGenerationLease(id: $id, attemptToken: $attemptToken)
+}

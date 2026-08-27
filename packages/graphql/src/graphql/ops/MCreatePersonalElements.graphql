@@ -1,0 +1,5 @@
+mutation MCreatePersonalElements($input: CreatePersonalElementsInput!) {
+  createPersonalElements(input: $input) {
+    ...FPersonalElement
+  }
+}
