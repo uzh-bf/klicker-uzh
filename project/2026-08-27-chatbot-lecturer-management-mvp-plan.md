@@ -7,7 +7,7 @@
 - **Authoritative base:** `origin/v3` at `34e21ff0fa820b0f9187926e5809384b80eed14e`
 - **Planning worktree:** `/Users/rschlae/Git/klicker/klicker-uzh/trees/chatbot-lecturer-management-mvp`
 - **Plan path:** `project/2026-08-27-chatbot-lecturer-management-mvp-plan.md`
-- **Current branch:** `rs/chatbot-authoring-contract`
+- **Current branch:** `rs/chatbot-draft-authoring-ui`
 - **Target:** A three-layer GitHub stack into `v3`
 - **Execution owner:** This roadmap orchestration session owns decomposition, integration, verification, reviews, progress updates, commits, and draft PR delivery through the gates below.
 - **Boundary owner:** The user owns decisions to merge, deploy, change production data, integrate `v3` into `v3-ai`, or activate accounts.
@@ -244,6 +244,10 @@ The missing Microsoft Forms URL is tracked as an input for the later `v3-ai` tas
 - [x] Layer 01 implemented, reviewed, verified, and published as draft PR [#5593](https://github.com/uzh-bf/klicker-uzh/pull/5593).
 - [x] Stack Gate 2 approved by the user on 2026-08-27.
 - [x] Layer 02 executor pass completed with GPT-5.6 Luna at max effort after both the configured native executor and its same-provider plaintext continuity route failed before work with `unreadable_encrypted_agent_task`. The user selected Luna for execution; it delivered the draft authoring UI and focused generation, type, lint, Playwright compile/list, formatting, and diff checks. The execution orchestrator owns integration, browser proof, review gates, and delivery.
+- [x] Current `origin/v3` was merged once into Layer 02 as approved. Later `v3` movement remains unintegrated until the layer is otherwise ready, following the stack integration cadence.
+- [x] Layer 02 review findings were dispositioned: native accessible toolbar buttons, localized live error messages, stable draft creation, and simpler Slate remounting are committed. The configured specialist routes again failed before work with `unreadable_encrypted_agent_task`; independent GPT-5.6 Luna continuity reviewers covered the same risk and simplification lenses.
+- [x] Layer 02 verification passed on exact head: repository `check:all` under the pinned Node 24 devcontainer; Playwright TypeScript and formatting checks; and the focused host Chromium authoring flow, including keyboard toolbar activation, persisted formatted disclaimer content, chatbot switching, and reload.
+- [x] Layer 02 browser proof passed with delegated synthetic lecturer access on the exact devrouter URL. English and German desktop and 390x844 mobile states show draft creation, editable metadata, the constrained Slate toolbar, the fixed participant disclaimer template, and persisted content after reload. Screenshots remain local under the ignored `project/_local/screenshots/` evidence directory.
 - [ ] Layers 02 and 03 implemented, reviewed, verified, and published as draft PRs.
 - [ ] Integrated final review and Stack Gate 3.
 - [ ] Separate `v3-ai` integration package planned and executed after its start condition is met.
