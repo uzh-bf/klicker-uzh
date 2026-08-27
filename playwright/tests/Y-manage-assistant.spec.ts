@@ -213,11 +213,6 @@ test.describe('Manage Assistant — Messaging', () => {
     await expect(
       welcome.getByText(/Read-only for everything else/)
     ).toHaveClass(/(^|\s)text-muted-foreground(\s|$)/)
-
-    const reset = assistant.getByTestId('manage-assistant-new-conversation')
-    await reset.click()
-    await expect(reset).not.toContainText('Start over?')
-    await expect(welcome).toBeVisible()
   })
 
   test('Manage composer accepts at most two images without changing the participant limit', async ({
@@ -269,9 +264,27 @@ test.describe('Manage Assistant — Messaging', () => {
       text: 'This answer belongs to the current conversation.',
     })
     const assistant = await openManageAssistantWidget(page)
+    const reset = assistant.getByTestId('manage-assistant-new-conversation')
+
+    await reset.click()
+    await expect(reset).not.toContainText('Start over?')
+    await expect(assistant.getByTestId('chat-welcome-message')).toBeVisible()
 
     await sendManageAssistantMessage(assistant, 'Start this conversation')
     await expect(assistant.getByTestId('chat-assistant-message')).toBeVisible()
+    const toolbarBox = await reset.boundingBox()
+    const firstMessageBox = await assistant
+      .getByTestId('chat-user-message')
+      .first()
+      .boundingBox()
+    expect(toolbarBox).not.toBeNull()
+    expect(firstMessageBox).not.toBeNull()
+    if (!toolbarBox || !firstMessageBox) {
+      throw new Error('Expected toolbar and first message bounding boxes')
+    }
+    expect(firstMessageBox.y).toBeGreaterThanOrEqual(
+      toolbarBox.y + toolbarBox.height
+    )
     const input = assistant.getByTestId('chat-composer-input')
     await expect(async () => {
       await input.evaluate((element, value) => {
@@ -297,7 +310,6 @@ test.describe('Manage Assistant — Messaging', () => {
       body.dataset.resetMarker = 'same-document'
     })
 
-    const reset = assistant.getByTestId('manage-assistant-new-conversation')
     await reset.click()
     await expect(reset).toContainText('Start over?')
     await expect(reset).toHaveAccessibleName(

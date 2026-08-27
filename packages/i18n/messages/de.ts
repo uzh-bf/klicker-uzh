@@ -85,6 +85,35 @@ export default {
       newConversationArmed:
         'Bestätigung erforderlich: Aktiviere die Schaltfläche erneut, um eine neue Konversation zu starten.',
     },
+    manageAssistant: {
+      welcome: 'Hallo! Wie kann ich helfen?',
+      manageContext: 'Verwalten',
+      capabilitySearch: 'Kurse und Fragensammlung durchsuchen',
+      capabilityDraft:
+        'Single-Choice-, Multiple-Choice- und Freitextfragen entwerfen — sie werden erst nach Deiner Bestätigung in der Fragensammlung gespeichert',
+      capabilityFeedback: 'Verbesserungen für Fragefeedback vorschlagen',
+      capabilityDocumentation:
+        'Funktionen von KlickerUZH anhand der Dokumentation und Anleitungen erklären',
+      limitsNote:
+        'Alles andere ist schreibgeschützt — der Assistent veröffentlicht nichts und bearbeitet keine bestehenden Inhalte.',
+      proposalReview: {
+        reviewLabel: 'Fragenentwurf prüfen',
+        draftQuestion: 'Fragenentwurf',
+        question: 'Frage',
+        correctAnswer: 'Richtige Antwort',
+        correctAnswers: 'Richtige Antworten',
+        correct: 'Richtig',
+        incorrect: 'Falsch',
+        answerFeedback: 'Antwortfeedback',
+        notProvided: 'Nicht angegeben',
+        sampleSolution: 'Beispiellösung',
+        maximumResponseLength: 'Maximale Antwortlänge: {maxLength} Zeichen',
+        generalExplanation: 'Allgemeine Erklärung',
+        singleChoice: 'Single Choice',
+        multipleChoice: 'Multiple Choice',
+        freeText: 'Freitext',
+      },
+    },
     recovery: {
       notFoundTitle: 'Chatbot nicht gefunden',
       notFoundMessage:

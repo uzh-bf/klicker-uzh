@@ -82,6 +82,36 @@ export default {
       newConversationArmed:
         'Confirmation required: activate again to start a new conversation.',
     },
+    manageAssistant: {
+      welcome: 'Hello! How can I help you?',
+      manageContext: 'Manage',
+      capabilitySearch: 'Search your courses and question pool',
+      capabilityDraft:
+        'Draft single-choice, multiple-choice, and free-text questions — saved to your pool only after you confirm',
+      capabilityFeedback: 'Suggest improvements to question feedback',
+      capabilityDocumentation:
+        'Explain KlickerUZH features using its documentation and tutorials',
+      limitsNote:
+        'Read-only for everything else — it never publishes or edits existing content.',
+      proposalReview: {
+        reviewLabel: 'Question draft review',
+        draftQuestion: 'Draft question',
+        question: 'Question',
+        correctAnswer: 'Correct answer',
+        correctAnswers: 'Correct answers',
+        correct: 'Correct',
+        incorrect: 'Incorrect',
+        answerFeedback: 'Answer feedback',
+        notProvided: 'Not provided',
+        sampleSolution: 'Sample solution',
+        maximumResponseLength:
+          'Maximum response length: {maxLength} characters',
+        generalExplanation: 'General explanation',
+        singleChoice: 'Single choice',
+        multipleChoice: 'Multiple choice',
+        freeText: 'Free text',
+      },
+    },
     recovery: {
       notFoundTitle: 'Chatbot not found',
       notFoundMessage:

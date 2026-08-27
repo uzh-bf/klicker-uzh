@@ -7,19 +7,18 @@ type ChoicesProposalReview = {
     value: string
   }>
   content: string
-  correctAnswerLabel: 'Correct answer' | 'Correct answers'
+  elementType: 'MC' | 'SC'
   explanation?: string
   kind: 'choices'
-  typeLabel: 'Multiple choice' | 'Single choice'
 }
 
 type FreeTextProposalReview = {
   content: string
+  elementType: 'FREE_TEXT'
   explanation?: string
   kind: 'freeText'
   maxLength?: number
   solutions: string[]
-  typeLabel: 'Free text'
 }
 
 export type ManageProposalReview =
@@ -32,11 +31,11 @@ export function buildManageProposalReview(
   if (payload.type === 'FREE_TEXT') {
     return {
       content: payload.content,
+      elementType: 'FREE_TEXT',
       explanation: payload.explanation,
       kind: 'freeText',
       maxLength: payload.options.restrictions.maxLength,
       solutions: payload.options.solutions ?? [],
-      typeLabel: 'Free text',
     }
   }
 
@@ -47,10 +46,8 @@ export function buildManageProposalReview(
       value: choice.value,
     })),
     content: payload.content,
-    correctAnswerLabel:
-      payload.type === 'SC' ? 'Correct answer' : 'Correct answers',
+    elementType: payload.type,
     explanation: payload.explanation,
     kind: 'choices',
-    typeLabel: payload.type === 'SC' ? 'Single choice' : 'Multiple choice',
   }
 }

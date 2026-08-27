@@ -2,6 +2,7 @@
 
 import { Markdown } from '@klicker-uzh/markdown'
 import { CheckCircle2Icon, XCircleIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import type { FC } from 'react'
 import { buildManageProposalReview } from '../services/manageProposalReview'
 import type { ManageProposalPayload } from '../services/proposalToElementInstance'
@@ -13,24 +14,31 @@ type ManageProposalPreviewProps = {
 export const ManageProposalPreview: FC<ManageProposalPreviewProps> = ({
   payload,
 }) => {
+  const t = useTranslations('chat.manageAssistant.proposalReview')
   const review = buildManageProposalReview(payload)
+  const typeLabel =
+    review.elementType === 'SC'
+      ? t('singleChoice')
+      : review.elementType === 'MC'
+        ? t('multipleChoice')
+        : t('freeText')
 
   return (
     <section
-      aria-label="Question draft review"
+      aria-label={t('reviewLabel')}
       data-cy="chat-manage-proposal-review"
       className="space-y-4 rounded-md border border-slate-200 bg-white p-3 text-sm text-slate-900"
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
-          {review.typeLabel}
+          {typeLabel}
         </span>
-        <span className="text-xs text-slate-500">Draft question</span>
+        <span className="text-xs text-slate-500">{t('draftQuestion')}</span>
       </div>
 
       <div>
         <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Question
+          {t('question')}
         </h3>
         <div
           className="mt-1 text-base font-medium"
@@ -43,7 +51,9 @@ export const ManageProposalPreview: FC<ManageProposalPreviewProps> = ({
       {review.kind === 'choices' ? (
         <div>
           <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {review.correctAnswerLabel}
+            {review.elementType === 'SC'
+              ? t('correctAnswer')
+              : t('correctAnswers')}
           </h3>
           <ol className="mt-2 space-y-2">
             {review.choices.map((choice) => (
@@ -74,15 +84,19 @@ export const ManageProposalPreview: FC<ManageProposalPreviewProps> = ({
                         <Markdown content={choice.value} withModal={false} />
                       </div>
                       <span className="text-xs font-semibold">
-                        {choice.correct ? 'Correct' : 'Incorrect'}
+                        {choice.correct ? t('correct') : t('incorrect')}
                       </span>
                     </div>
                     <div className="mt-2 border-t border-current/10 pt-2 text-xs text-slate-700">
-                      <span className="font-semibold">Answer feedback: </span>
+                      <span className="font-semibold">
+                        {t('answerFeedback')}:{' '}
+                      </span>
                       {choice.feedback ? (
                         <Markdown content={choice.feedback} withModal={false} />
                       ) : (
-                        <span className="text-slate-500">Not provided</span>
+                        <span className="text-slate-500">
+                          {t('notProvided')}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -94,7 +108,7 @@ export const ManageProposalPreview: FC<ManageProposalPreviewProps> = ({
       ) : (
         <div>
           <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Sample solution
+            {t('sampleSolution')}
           </h3>
           {review.solutions.length > 0 ? (
             <ol className="mt-2 list-decimal space-y-2 pl-5">
@@ -105,11 +119,11 @@ export const ManageProposalPreview: FC<ManageProposalPreviewProps> = ({
               ))}
             </ol>
           ) : (
-            <p className="mt-1 text-slate-500">Not provided</p>
+            <p className="mt-1 text-slate-500">{t('notProvided')}</p>
           )}
           {review.maxLength ? (
             <p className="mt-2 text-xs text-slate-600">
-              Maximum response length: {review.maxLength} characters
+              {t('maximumResponseLength', { maxLength: review.maxLength })}
             </p>
           ) : null}
         </div>
@@ -117,14 +131,14 @@ export const ManageProposalPreview: FC<ManageProposalPreviewProps> = ({
 
       <div>
         <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          General explanation
+          {t('generalExplanation')}
         </h3>
         {review.explanation ? (
           <div className="mt-1 text-slate-700">
             <Markdown content={review.explanation} withModal={false} />
           </div>
         ) : (
-          <p className="mt-1 text-slate-500">Not provided</p>
+          <p className="mt-1 text-slate-500">{t('notProvided')}</p>
         )}
       </div>
     </section>

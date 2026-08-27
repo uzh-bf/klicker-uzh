@@ -50,10 +50,9 @@ describe('Manage proposal review', () => {
         },
       ],
       content: 'Which process converts sugar into ethanol?',
-      correctAnswerLabel: 'Correct answer',
+      elementType: 'SC',
       explanation: 'Yeast performs alcoholic fermentation.',
       kind: 'choices',
-      typeLabel: 'Single choice',
     })
   })
 
@@ -73,11 +72,11 @@ describe('Manage proposal review', () => {
 
     expect(buildManageProposalReview(payload)).toEqual({
       content: 'Explain the central limit theorem.',
+      elementType: 'FREE_TEXT',
       explanation: 'A short conceptual explanation is sufficient.',
       kind: 'freeText',
       maxLength: 500,
       solutions: ['The sampling distribution approaches a normal shape.'],
-      typeLabel: 'Free text',
     })
   })
 })
