@@ -587,10 +587,18 @@ describe('retrieval route wiring', () => {
     expect(response.status).toBe(200)
     expect(mocks.createProposeCardPlanTool).toHaveBeenCalledWith(
       expect.objectContaining({
-        existingCardTitles: ['Existing CAPM card', 'Existing inflation card'],
         getExistingCardTitles: expect.any(Function),
       })
     )
+    const planToolOptions = (
+      mocks.createProposeCardPlanTool.mock.calls as unknown as Array<
+        [{ getExistingCardTitles: () => Promise<readonly string[]> }]
+      >
+    )[0]![0]
+    await expect(planToolOptions.getExistingCardTitles()).resolves.toEqual([
+      'Existing CAPM card',
+      'Existing inflation card',
+    ])
     const options = mocks.streamText.mock.calls[0]?.[0] as {
       instructions?: string
     }
@@ -598,7 +606,7 @@ describe('retrieval route wiring', () => {
     expect(options.instructions).toContain('complete saved-title list')
   })
 
-  test('keeps saved titles out of the model instructions for ordinary chat', async () => {
+  test('loads saved titles lazily and keeps them out of the model instructions for ordinary chat', async () => {
     mocks.listPersonalElements.mockResolvedValue([{ name: 'Private title' }])
 
     const response = await POST(
@@ -609,10 +617,10 @@ describe('retrieval route wiring', () => {
     expect(response.status).toBe(200)
     expect(mocks.createProposeCardPlanTool).toHaveBeenCalledWith(
       expect.objectContaining({
-        existingCardTitles: ['Private title'],
         getExistingCardTitles: expect.any(Function),
       })
     )
+    expect(mocks.listPersonalElements).not.toHaveBeenCalled()
     const planToolOptions = (
       mocks.createProposeCardPlanTool.mock.calls as unknown as Array<
         [{ getExistingCardTitles: () => Promise<readonly string[]> }]
@@ -621,7 +629,6 @@ describe('retrieval route wiring', () => {
     await expect(planToolOptions.getExistingCardTitles()).resolves.toEqual([
       'Private title',
     ])
-    expect(mocks.listPersonalElements).toHaveBeenCalledOnce()
     const options = mocks.streamText.mock.calls[0]?.[0] as {
       instructions?: string
     }

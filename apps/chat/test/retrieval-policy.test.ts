@@ -274,4 +274,52 @@ describe('retrieval protocol state machine', () => {
       )
     ).toBe(true)
   })
+
+  test('does not stop on propose_card_plan without generation eligibility', async () => {
+    const setup = await createSetup({ hasGenerationCredits: false })
+    const stopWhen = Array.isArray(setup.stopWhen)
+      ? setup.stopWhen
+      : [setup.stopWhen]
+
+    expect(
+      stopWhen.some((condition) =>
+        condition({
+          steps: [
+            {
+              toolCalls: [{ toolName: 'propose_card_plan' }],
+            },
+          ],
+        } as never)
+      )
+    ).toBe(false)
+  })
+
+  test('keeps planning and generation unavailable without a doc_query tool', async () => {
+    const result = await createCardGeneration({
+      prisma: createPrisma(),
+      participantId: 'participant-1',
+      chatbotId: 'chatbot-1',
+      courseId: 'course-1',
+      threadId: 'thread-1',
+      activeBranchLeafId: null,
+      attemptParentMessageId: 'user-1',
+      assistantMessageId: 'assistant-1',
+      threadHistory: [],
+      baseTools: {},
+      model: {} as never,
+      systemPrompt: 'Use course material.',
+      latestUserContent: 'Explain CAPM',
+      hasImage: false,
+      hasGenerationCredits: true,
+      calculateNestedCost: () => 0,
+    })
+    if (!result.ok) throw new Error(result.error)
+
+    expect(result.telemetry.personalToolsEligible).toBe(false)
+    expect(result.telemetry.generationEligible).toBe(false)
+    expect(result.tools).not.toHaveProperty('propose_card_plan')
+    expect(result.tools).not.toHaveProperty('generate_cards')
+    const step = result.prepareStep({ stepNumber: 0, steps: [] })
+    expect(step.activeTools).not.toContain('propose_card_plan')
+  })
 })

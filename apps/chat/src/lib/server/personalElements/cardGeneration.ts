@@ -204,7 +204,6 @@ export async function createCardGeneration({
   }
   const generationEligible =
     personalToolsEligible && cardGenerationEnabled && hasGenerationCredits
-  const duplicateCheckRequired = generationEligible
   const branchIds = getActiveBranchMessageIds(threadHistory, activeBranchLeafId)
   let tools: ToolSet = baseTools
   let toolOrder = [...baseToolNames]
@@ -220,10 +219,6 @@ export async function createCardGeneration({
     existingCards ??= await listPersonalElements(courseId, participantId)
     return existingCards
   }
-
-  const existingCardTitles = duplicateCheckRequired
-    ? (await loadExistingCards()).map((card) => card.name)
-    : []
 
   let courseLanguage = 'en'
   if (personalToolsEligible && docQueryToolName) {
@@ -276,7 +271,6 @@ export async function createCardGeneration({
     tools = {
       ...tools,
       propose_card_plan: createProposeCardPlanTool({
-        existingCardTitles,
         getExistingCardTitles: async () =>
           (await loadExistingCards()).map((card) => card.name),
       }),
@@ -466,7 +460,7 @@ export async function createCardGeneration({
   if (generationEligible && !acceptedPlan) {
     systemPrompt = `${systemPrompt}\n\nWhen the student asks for flashcards in any configured mode, retrieve course material first, then call propose_card_plan. Never generate or save cards before the student accepts the plan.`
   }
-  if (duplicateCheckRequired && !acceptedPlan) {
+  if (generationEligible && !acceptedPlan) {
     systemPrompt = `${systemPrompt}\n\nBefore proposing cards, avoid repeating existing personal cards. The server compares every proposed title against the complete saved-title list with a conservative local similarity check and removes potential duplicates.`
   }
   if (personalToolsEligible) {
