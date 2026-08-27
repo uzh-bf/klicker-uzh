@@ -2,6 +2,7 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import type { PrismaTransactionContextWithUser } from '@/lib/context.js'
 import builder from '../builder.js'
+import { requireCatalystLearningAnalyticsAvailable } from '../lib/learningAnalyticsAvailability.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
@@ -137,6 +138,7 @@ export const Query = builder.queryType({
   fields(t) {
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
+    const asUserWithCatalyst = { ...asUser, catalyst: true }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
 
     return {
@@ -1315,7 +1317,7 @@ export const Query = builder.queryType({
         ),
       }),
 
-      getCourseActivityAnalyticsV2: t.withAuth(asUser).field({
+      getCourseActivityAnalyticsV2: t.withAuth(asUserWithCatalyst).field({
         nullable: true,
         type: CourseActivityAnalyticsV2,
         args: {
@@ -1324,8 +1326,10 @@ export const Query = builder.queryType({
         resolve: withPermission(
           (args) => ({ courseId: args.courseId }),
           DB.PermissionLevel.READ,
-          async (_, args, ctx) =>
-            AnalyticsService.getCourseActivityAnalyticsV2(args, ctx)
+          async (_, args, ctx) => {
+            requireCatalystLearningAnalyticsAvailable()
+            return AnalyticsService.getCourseActivityAnalyticsV2(args, ctx)
+          }
         ),
       }),
 
@@ -1380,7 +1384,7 @@ export const Query = builder.queryType({
         ),
       }),
 
-      getCoursePerformanceAnalyticsV2: t.withAuth(asUser).field({
+      getCoursePerformanceAnalyticsV2: t.withAuth(asUserWithCatalyst).field({
         nullable: true,
         type: CoursePerformanceAnalyticsV2,
         args: {
@@ -1389,12 +1393,14 @@ export const Query = builder.queryType({
         resolve: withPermission(
           (args) => ({ courseId: args.courseId }),
           DB.PermissionLevel.READ,
-          async (_, args, ctx) =>
-            AnalyticsService.getCoursePerformanceAnalyticsV2(args, ctx)
+          async (_, args, ctx) => {
+            requireCatalystLearningAnalyticsAvailable()
+            return AnalyticsService.getCoursePerformanceAnalyticsV2(args, ctx)
+          }
         ),
       }),
 
-      getCourseLearningAnalyticsExportV2: t.withAuth(asUser).field({
+      getCourseLearningAnalyticsExportV2: t.withAuth(asUserWithCatalyst).field({
         nullable: true,
         type: LearningAnalyticsExportV2,
         args: {
@@ -1407,8 +1413,13 @@ export const Query = builder.queryType({
         resolve: withPermission(
           (args) => ({ courseId: args.courseId }),
           DB.PermissionLevel.READ,
-          async (_, args, ctx) =>
-            AnalyticsService.getCourseLearningAnalyticsExportV2(args, ctx)
+          async (_, args, ctx) => {
+            requireCatalystLearningAnalyticsAvailable()
+            return AnalyticsService.getCourseLearningAnalyticsExportV2(
+              args,
+              ctx
+            )
+          }
         ),
       }),
 

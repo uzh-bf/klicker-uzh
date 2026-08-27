@@ -174,11 +174,24 @@ function coursePrisma(
 afterEach(() => {
   delete process.env.LEARNING_ANALYTICS_COORDINATOR_ENABLED
   delete process.env.LEARNING_ANALYTICS_BATCH_IN_FLIGHT_LIMIT
+  delete process.env.CATALYST_LEARNING_ANALYTICS_AVAILABLE
 })
 
 describe('learning analytics coordinator', () => {
+  it('keeps scheduled dispatch unavailable until Catalyst learning analytics is explicitly available', async () => {
+    process.env.LEARNING_ANALYTICS_COORDINATOR_ENABLED = 'true'
+    process.env.LEARNING_ANALYTICS_BATCH_IN_FLIGHT_LIMIT = '10'
+    const queryRaw = vi.fn()
+
+    await expect(
+      prepareScheduledLearningAnalyticsBatch({ $queryRaw: queryRaw })
+    ).resolves.toBeNull()
+    expect(queryRaw).not.toHaveBeenCalled()
+  })
+
   it('accepts delayed nightly dispatch before 01:30 with stable daily run IDs', async () => {
     process.env.LEARNING_ANALYTICS_COORDINATOR_ENABLED = 'true'
+    process.env.CATALYST_LEARNING_ANALYTICS_AVAILABLE = 'true'
     process.env.LEARNING_ANALYTICS_BATCH_IN_FLIGHT_LIMIT = '10'
     const queryRaw = vi
       .fn()
@@ -428,6 +441,7 @@ describe('learning analytics coordinator', () => {
     }
   })
 
+  // biome-ignore format: preserve the existing parameterized test layout
   it.each([
     ['incremental', { windowSince: '2026-08-26' }],
     ['finalize', {}],
@@ -549,6 +563,7 @@ describe('learning analytics coordinator', () => {
     expect(fixture.queryRaw).toHaveBeenCalledOnce()
   })
 
+  // biome-ignore format: preserve the existing parameterized test layout
   it.each([
     ['equal to', new Date('2026-08-27T02:00:00.000Z')],
     ['later than', new Date('2026-08-27T02:00:00.001Z')],

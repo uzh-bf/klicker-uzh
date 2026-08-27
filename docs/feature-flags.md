@@ -47,6 +47,25 @@ dashboards remain unavailable until the course control is enabled and a fresh
 recomputation is valid. The flag controls product affordances, not
 authorization; routes and APIs continue to enforce their own access rules.
 
+## Catalyst learning-analytics availability
+
+Learning analytics has two independent backend gates. The `catalyst` GraphQL
+scope checks that the caller has institutional or individual Catalyst
+entitlement. The deployment-global `CATALYST_LEARNING_ANALYTICS_AVAILABLE`
+variable checks that the private learning-analytics service is deployed for this
+Klicker environment. It is true only when its value is exactly `true`; unset,
+empty, or any other value is unavailable. This is an explicit deployment
+configuration, not a GrowthBook flag, provider probe, health check, or URL
+reachability test.
+
+The public coordinator and V2 course reads require both gates. Course controls
+also require their existing full-access role and course permission. A missing
+availability setting fails closed with the stable
+`CATALYST_LEARNING_ANALYTICS_UNAVAILABLE` GraphQL error code before any
+analytics service call. The platform-admin batch keeps its existing admin-role
+entitlement, but its coordinator dispatch still requires the same runtime
+availability gate. The default remains unavailable.
+
 ## Package contract
 
 | Import                             | Purpose                                                                |

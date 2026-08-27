@@ -21,6 +21,10 @@ import type {
 import { GraphQLError } from 'graphql'
 import { v5 as uuidV5, validate as uuidValidate } from 'uuid'
 import type { ContextWithUser } from '../lib/context.js'
+import {
+  isCatalystLearningAnalyticsAvailable,
+  requireCatalystLearningAnalyticsAvailable,
+} from '../lib/learningAnalyticsAvailability.js'
 import { lockLearningAnalyticsCourseMutation } from '../lib/learningAnalyticsLocks.js'
 
 const ANALYTICS_TIME_ZONE = 'Europe/Zurich'
@@ -65,6 +69,13 @@ function coordinatorDisabledError(): GraphQLError {
 
 export function isLearningAnalyticsCoordinatorEnabled(): boolean {
   return process.env.LEARNING_ANALYTICS_COORDINATOR_ENABLED === 'true'
+}
+
+function requireLearningAnalyticsCoordinatorAvailable(): void {
+  if (!isLearningAnalyticsCoordinatorEnabled()) {
+    throw coordinatorDisabledError()
+  }
+  requireCatalystLearningAnalyticsAvailable()
 }
 
 function requireInFlightLimit(): number {
@@ -191,7 +202,11 @@ function buildBatchInput({
 export async function prepareScheduledLearningAnalyticsBatch(
   prisma: Pick<DB.PrismaClient, '$queryRaw'>
 ): Promise<LearningAnalyticsBatchControlInput | null> {
-  if (!isLearningAnalyticsCoordinatorEnabled()) return null
+  if (
+    !isLearningAnalyticsCoordinatorEnabled() ||
+    !isCatalystLearningAnalyticsAvailable()
+  )
+    return null
 
   const clock = await readBatchClock(prisma, 'nightly')
   const localMinuteOfDay = clock.localHour * 60 + clock.localMinute
@@ -637,9 +652,7 @@ export async function dispatchCourseLearningAnalytics(
   }: { courseId: string; mode: LearningAnalyticsCourseControlInput['mode'] },
   ctx: ContextWithUser
 ): Promise<boolean> {
-  if (!isLearningAnalyticsCoordinatorEnabled()) {
-    throw coordinatorDisabledError()
-  }
+  requireLearningAnalyticsCoordinatorAvailable()
   const course = await ctx.prisma.course.findUnique({
     where: { id: courseId },
     select: { analyticsLastComputedAt: true },
@@ -676,9 +689,7 @@ export async function dispatchFullLearningAnalyticsBatch(
   { courseIds }: { courseIds: string[] },
   ctx: ContextWithUser
 ): Promise<boolean> {
-  if (!isLearningAnalyticsCoordinatorEnabled()) {
-    throw coordinatorDisabledError()
-  }
+  requireLearningAnalyticsCoordinatorAvailable()
   const explicitCourseIds = [...new Set(courseIds)].sort()
   if (explicitCourseIds.length === 0) return false
   if (!explicitCourseIds.every((id) => uuidValidate(id))) {
