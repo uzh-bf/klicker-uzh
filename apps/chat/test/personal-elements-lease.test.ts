@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   abort: vi.fn(),
 }))
 
-vi.mock('@klicker-uzh/graphql/dist/server', () => ({
+vi.mock('../src/lib/server/personalElements/graphqlClient', () => ({
   claimCardGenerationLease: mocks.claim,
   completeCardGenerationLease: mocks.complete,
   abortCardGenerationLease: mocks.abort,
@@ -18,8 +18,6 @@ import {
   completeGenerationLease,
 } from '../src/lib/server/personalElements/lease'
 
-const prisma = {} as never
-
 describe('personal-element generation lease adapter', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -30,7 +28,6 @@ describe('personal-element generation lease adapter', () => {
 
   test('binds the accepted plan to the assistant attempt token', async () => {
     const lease = await claimGenerationLease({
-      prisma,
       participantId: 'participant-1',
       planMessageId: '00000000-0000-0000-0000-000000000001',
       planToolCallId: 'plan-tool-1',
@@ -47,23 +44,21 @@ describe('personal-element generation lease adapter', () => {
         planToolCallId: 'plan-tool-1',
         attemptToken: 'assistant-attempt-1',
       },
-      { prisma, participantId: 'participant-1' }
+      'participant-1'
     )
   })
 
-  test('uses the same participant context and attempt token for settlement', async () => {
+  test('uses the same participant and attempt token for settlement', async () => {
     const lease = { id: 'lease-1', attemptToken: 'assistant-attempt-1' }
 
     await expect(
       completeGenerationLease({
-        prisma,
         participantId: 'participant-1',
         lease,
       })
     ).resolves.toBe(true)
     await expect(
       abortGenerationLease({
-        prisma,
         participantId: 'participant-1',
         lease,
       })
@@ -72,11 +67,12 @@ describe('personal-element generation lease adapter', () => {
     expect(mocks.complete).toHaveBeenCalledWith(
       'lease-1',
       'assistant-attempt-1',
-      { prisma, participantId: 'participant-1' }
+      'participant-1'
     )
-    expect(mocks.abort).toHaveBeenCalledWith('lease-1', 'assistant-attempt-1', {
-      prisma,
-      participantId: 'participant-1',
-    })
+    expect(mocks.abort).toHaveBeenCalledWith(
+      'lease-1',
+      'assistant-attempt-1',
+      'participant-1'
+    )
   })
 })

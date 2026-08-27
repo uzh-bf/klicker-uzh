@@ -1,6 +1,5 @@
-import { parseDocQueryPayload } from '@/src/lib/sources/normalizeSources'
-import type { PersonalElementCandidate } from '@klicker-uzh/graphql/dist/server'
 import { z } from 'zod'
+import { parseDocQueryPayload } from '@/src/lib/sources/normalizeSources'
 
 export const MAX_CARDS = 5
 const MAX_CHUNKS = 32
@@ -159,6 +158,23 @@ export type RetrievedChunk = {
   title?: string
   url?: string
   page?: number
+}
+
+export type PersonalElementCandidate = {
+  candidateId: string
+  name: string
+  content: string
+  explanation: string
+  sources: Array<{
+    sourceId: string
+    chunkId: string
+    title?: string
+    url?: string
+    page?: number
+  }>
+  sourceMessageId: string
+  sourceToolCallId: string
+  origin?: 'AI_GENERATED' | 'AUTHORED' | null
 }
 
 function stringValue(value: unknown): string | undefined {

@@ -1,9 +1,4 @@
-import {
-  createPersonalElements,
-  discardPersonalElementCandidate,
-  listPersonalElements,
-  type PersonalElementCandidate,
-} from '@klicker-uzh/graphql/dist/server'
+import { PersonalElementOrigin } from '@klicker-uzh/graphql/dist/ops'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { z } from 'zod'
 import {
@@ -13,6 +8,13 @@ import {
   isTerminalPartialPersonalElementPart,
 } from '@/src/lib/personalElements/failure'
 import { generatedCardCandidateSchema, MAX_CARDS } from './contracts'
+import {
+  createPersonalElements,
+  discardPersonalElementCandidate,
+  getGenerationLeaseState,
+  listDiscardedCandidateIds,
+  listPersonalElements,
+} from './graphqlClient'
 
 type PersistedPart = {
   type?: unknown
@@ -137,12 +139,9 @@ async function getCandidateAttempt(
     status === 'partial' &&
     isSettledTerminalPartialPersonalElementPart(part, 'generate_cards')
   if (!settledPartial) {
-    const generationLease = await context.prisma.cardGenerationLease.findFirst({
-      where: {
-        participantId: context.participantId,
-        attemptToken: linkage.messageId,
-      },
-      select: { completedAt: true },
+    const generationLease = await getGenerationLeaseState({
+      participantId: context.participantId,
+      attemptToken: linkage.messageId,
     })
     if (
       !generationLease ||
@@ -229,17 +228,11 @@ export async function loadCardDecisionState(
   }
 
   const [elements, discarded] = await Promise.all([
-    listPersonalElements(
-      { courseId: context.courseId },
-      { prisma: context.prisma, participantId: context.participantId }
-    ),
-    context.prisma.personalElementDiscard.findMany({
-      where: {
-        participantId: context.participantId,
-        courseId: context.courseId,
-        candidateId: { in: [...candidateIds] },
-      },
-      select: { candidateId: true },
+    listPersonalElements(context.courseId, context.participantId),
+    listDiscardedCandidateIds({
+      participantId: context.participantId,
+      courseId: context.courseId,
+      candidateIds: [...candidateIds],
     }),
   ])
 
@@ -250,7 +243,7 @@ export async function loadCardDecisionState(
       elements: elements.filter((element) =>
         candidateIds.has(element.candidateId ?? '')
       ),
-      discardedCandidateIds: discarded.map(({ candidateId }) => candidateId),
+      discardedCandidateIds: discarded,
     },
   }
 }
@@ -280,7 +273,7 @@ export async function saveCardCandidateDecision(
     return failure(400, 'Candidate is not part of a completed generated result')
   }
 
-  const candidate: PersonalElementCandidate = {
+  const candidate = {
     candidateId: generated.candidateId,
     name: generated.name,
     content: generated.content,
@@ -288,13 +281,14 @@ export async function saveCardCandidateDecision(
     sources: generated.sources,
     sourceMessageId: generated.sourceMessageId,
     sourceToolCallId: generated.sourceToolCallId,
-    origin: generated.origin,
+    // The generated-candidate schema pins origin to AI_GENERATED.
+    origin: PersonalElementOrigin.AiGenerated,
   }
 
   try {
     const elements = await createPersonalElements(
       { courseId: context.courseId, candidates: [candidate] },
-      { prisma: context.prisma, participantId: context.participantId }
+      context.participantId
     )
     return {
       ok: true,
@@ -337,7 +331,7 @@ export async function discardCardCandidateDecision(
   try {
     await discardPersonalElementCandidate(
       { courseId: context.courseId, candidateId: input.candidateId },
-      { prisma: context.prisma, participantId: context.participantId }
+      context.participantId
     )
   } catch (error) {
     if (errorCode(error) === 'PERSONAL_ELEMENTS_CANDIDATE_SAVED') {

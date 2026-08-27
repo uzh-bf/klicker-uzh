@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   generateObject: vi.fn(),
 }))
 
-vi.mock('@klicker-uzh/graphql/dist/server', () => ({
+vi.mock('../src/lib/server/personalElements/graphqlClient', () => ({
   listPersonalElements: mocks.listPersonalElements,
   updatePersonalElement: mocks.updatePersonalElement,
 }))
@@ -43,7 +43,6 @@ const retrieval = {
 }
 
 const options = {
-  prisma: {} as never,
   participantId: 'participant-1',
   courseId: 'course-1',
   model: {} as never,
@@ -386,7 +385,6 @@ describe('personal-element chat tools', () => {
 
     const result = await execute(
       createListPersonalElementsTool({
-        prisma: options.prisma,
         participantId: options.participantId,
         courseId: options.courseId,
       }),
@@ -397,10 +395,8 @@ describe('personal-element chat tools', () => {
       elements: [{ id: 'element-1', version: 1 }],
     })
     expect(mocks.listPersonalElements).toHaveBeenCalledWith(
-      { courseId: 'course-1' },
-      expect.objectContaining({
-        participantId: 'participant-1',
-      })
+      'course-1',
+      'participant-1'
     )
   })
 

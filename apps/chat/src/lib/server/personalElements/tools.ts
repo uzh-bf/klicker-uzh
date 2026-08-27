@@ -1,15 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import {
-  listPersonalElements,
-  type PersonalElementServiceContext,
-  updatePersonalElement,
-} from '@klicker-uzh/graphql/dist/server'
-import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { generateObject, tool } from 'ai'
 import { z } from 'zod'
 import {
   assertCitedChunks,
-  MAX_CARDS,
   type CardPlan,
   cardExplanationSchema,
   cardPlanInputSchema,
@@ -18,8 +11,10 @@ import {
   type GeneratedCardCandidate,
   generatedCardCandidateSchema,
   generationCandidateSchema,
+  MAX_CARDS,
   normalizeRetrievedChunks,
 } from './contracts'
+import { listPersonalElements, updatePersonalElement } from './graphqlClient'
 import { discardPotentialDuplicateCards } from './titleSimilarity'
 
 export const generationFailureCodeSchema = z.enum([
@@ -157,7 +152,6 @@ async function executeDocQuery(
 }
 
 type PersonalElementToolOptions = {
-  prisma: PrismaClient
   participantId: string
   courseId: string
   model: Parameters<typeof generateObject>[0]['model']
@@ -169,15 +163,6 @@ type PersonalElementToolOptions = {
   }) => void
 }
 
-function personalElementContext(
-  options: PersonalElementToolOptions
-): PersonalElementServiceContext {
-  return {
-    prisma: options.prisma,
-    participantId: options.participantId,
-  }
-}
-
 function compactElement(element: {
   id: string
   version: number
@@ -185,7 +170,7 @@ function compactElement(element: {
   content: string
   explanation: string
   origin: string
-  nextDueAt: Date | null
+  nextDueAt?: Date | null
 }) {
   return {
     id: element.id,
@@ -194,7 +179,7 @@ function compactElement(element: {
     content: element.content,
     explanation: element.explanation,
     origin: element.origin,
-    nextDueAt: element.nextDueAt?.toISOString() ?? null,
+    nextDueAt: element.nextDueAt ? element.nextDueAt.toISOString() : null,
   }
 }
 
@@ -255,7 +240,6 @@ async function generateRevision(
 }
 
 export function createListPersonalElementsTool(options: {
-  prisma: PrismaClient
   participantId: string
   courseId: string
 }) {
@@ -267,11 +251,8 @@ export function createListPersonalElementsTool(options: {
     }),
     execute: async ({ limit = 20 }) => {
       const elements = await listPersonalElements(
-        { courseId: options.courseId },
-        {
-          prisma: options.prisma,
-          participantId: options.participantId,
-        }
+        options.courseId,
+        options.participantId
       )
       return {
         elements: elements.slice(0, limit).map(compactElement),
@@ -290,10 +271,9 @@ export function createRevisePersonalElementTool(
     outputSchema: revisionOutputSchema,
     execute: async (input, executionOptions) => {
       const parsed = revisionInputSchema.parse(input)
-      const context = personalElementContext(options)
       const elements = await listPersonalElements(
-        { courseId: options.courseId },
-        context
+        options.courseId,
+        options.participantId
       )
       const current = elements.find((element) => element.id === parsed.id)
       if (!current) {
@@ -336,7 +316,7 @@ export function createRevisePersonalElementTool(
             expectedVersion: parsed.expectedVersion,
             ...revised,
           },
-          context
+          options.participantId
         )
         return {
           status: 'updated' as const,

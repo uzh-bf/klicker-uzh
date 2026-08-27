@@ -3,6 +3,8 @@ import { z } from 'zod'
 
 const mocks = vi.hoisted(() => ({
   listPersonalElements: vi.fn(),
+  listDiscardedCandidateIds: vi.fn(),
+  listCompletedGenerationLeaseAttemptTokens: vi.fn(),
   claimLease: vi.fn(),
   completeLease: vi.fn(),
   abortLease: vi.fn(),
@@ -23,8 +25,11 @@ const mocks = vi.hoisted(() => ({
   updateAssistantMessage: vi.fn(),
 }))
 
-vi.mock('@klicker-uzh/graphql/dist/server', () => ({
+vi.mock('../src/lib/server/personalElements/graphqlClient', () => ({
   listPersonalElements: mocks.listPersonalElements,
+  listDiscardedCandidateIds: mocks.listDiscardedCandidateIds,
+  listCompletedGenerationLeaseAttemptTokens:
+    mocks.listCompletedGenerationLeaseAttemptTokens,
 }))
 
 vi.mock('../src/lib/server/personalElements/lease', () => ({
@@ -108,8 +113,6 @@ const threadHistory = [
 function createPrisma() {
   return {
     course: { findUnique: vi.fn().mockResolvedValue({ language: 'en' }) },
-    personalElementDiscard: { findMany: vi.fn().mockResolvedValue([]) },
-    cardGenerationLease: { findMany: vi.fn().mockResolvedValue([]) },
     chatMessage: {
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
       updateMany: mocks.updateAssistantMessage,
@@ -198,6 +201,8 @@ describe('personal card generation orchestration', () => {
     mocks.reviseToolOptions.length = 0
     mocks.updateAssistantMessage.mockResolvedValue({ count: 1 })
     mocks.listPersonalElements.mockResolvedValue([])
+    mocks.listDiscardedCandidateIds.mockResolvedValue([])
+    mocks.listCompletedGenerationLeaseAttemptTokens.mockResolvedValue([])
     mocks.claimLease.mockResolvedValue({
       id: 'lease-1',
       attemptToken: 'assistant-attempt-1',

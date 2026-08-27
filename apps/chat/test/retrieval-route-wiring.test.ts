@@ -20,9 +20,6 @@ const mocks = vi.hoisted(() => ({
   chatMessageUpdateMany: vi.fn(),
   chatMessageDeleteMany: vi.fn(),
   chatAttachmentFindMany: vi.fn(),
-  personalElementFindMany: vi.fn(),
-  cardGenerationLeaseFindMany: vi.fn(),
-  personalElementDiscardFindMany: vi.fn(),
   chatThreadFindFirst: vi.fn(),
   chatThreadUpdate: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
@@ -39,6 +36,8 @@ const mocks = vi.hoisted(() => ({
   streamText: vi.fn(),
   toUIMessageStream: vi.fn(),
   listPersonalElements: vi.fn(),
+  listDiscardedCandidateIds: vi.fn(),
+  listCompletedGenerationLeaseAttemptTokens: vi.fn(),
   claimCardGenerationLease: vi.fn(),
   completeCardGenerationLease: vi.fn(),
   abortCardGenerationLease: vi.fn(),
@@ -50,8 +49,11 @@ const mocks = vi.hoisted(() => ({
   generateToolOptions: [] as GenerateToolOptions[],
 }))
 
-vi.mock('@klicker-uzh/graphql/dist/server', () => ({
+vi.mock('../src/lib/server/personalElements/graphqlClient', () => ({
   listPersonalElements: mocks.listPersonalElements,
+  listDiscardedCandidateIds: mocks.listDiscardedCandidateIds,
+  listCompletedGenerationLeaseAttemptTokens:
+    mocks.listCompletedGenerationLeaseAttemptTokens,
   claimCardGenerationLease: mocks.claimCardGenerationLease,
   completeCardGenerationLease: mocks.completeCardGenerationLease,
   abortCardGenerationLease: mocks.abortCardGenerationLease,
@@ -79,13 +81,6 @@ vi.mock('@klicker-uzh/prisma', () => ({
       deleteMany: mocks.chatMessageDeleteMany,
     },
     chatAttachment: { findMany: mocks.chatAttachmentFindMany },
-    personalElement: { findMany: mocks.personalElementFindMany },
-    cardGenerationLease: {
-      findMany: mocks.cardGenerationLeaseFindMany,
-    },
-    personalElementDiscard: {
-      findMany: mocks.personalElementDiscardFindMany,
-    },
     chatThread: {
       findFirst: mocks.chatThreadFindFirst,
       update: mocks.chatThreadUpdate,
@@ -329,12 +324,11 @@ describe('retrieval route wiring', () => {
     mocks.chatMessageCreate.mockResolvedValue({ id: 'assistant-created' })
     mocks.chatMessageUpdateMany.mockResolvedValue({ count: 1 })
     mocks.chatAttachmentFindMany.mockResolvedValue([])
-    mocks.cardGenerationLeaseFindMany.mockResolvedValue([])
-    mocks.personalElementDiscardFindMany.mockResolvedValue([])
     mocks.claimCardGenerationLease.mockResolvedValue({ id: 'lease-1' })
     mocks.completeCardGenerationLease.mockResolvedValue(true)
     mocks.abortCardGenerationLease.mockResolvedValue(true)
-    mocks.personalElementFindMany.mockResolvedValue([])
+    mocks.listDiscardedCandidateIds.mockResolvedValue([])
+    mocks.listCompletedGenerationLeaseAttemptTokens.mockResolvedValue([])
     mocks.chatThreadFindFirst.mockResolvedValue({ id: 'thread-1' })
     mocks.chatThreadUpdate.mockResolvedValue({})
     mocks.getAggregatedMCPTools.mockResolvedValue({
@@ -1195,9 +1189,7 @@ describe('retrieval route wiring', () => {
   test('skips discarded cards from an earlier generation attempt', async () => {
     const planMessageId = '00000000-0000-0000-0000-000000000006'
     const planToolCallId = 'plan-tool-discard-retry'
-    mocks.personalElementDiscardFindMany.mockResolvedValue([
-      { candidateId: 'plan:card-1' },
-    ])
+    mocks.listDiscardedCandidateIds.mockResolvedValue(['plan:card-1'])
     mocks.chatMessageFindMany.mockResolvedValue(
       approvedPlanHistory(planMessageId, planToolCallId, [
         {
@@ -1235,12 +1227,10 @@ describe('retrieval route wiring', () => {
       [{ skipCandidateIds?: ReadonlySet<string> }]
     >
     expect(calls.at(-1)?.[0].skipCandidateIds).toEqual(new Set(['plan:card-1']))
-    expect(mocks.personalElementDiscardFindMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          candidateId: { in: ['plan:card-1', 'plan:card-2'] },
-        }),
-      })
-    )
+    expect(mocks.listDiscardedCandidateIds).toHaveBeenCalledWith({
+      participantId: 'participant-1',
+      courseId: 'course-1',
+      candidateIds: ['plan:card-1', 'plan:card-2'],
+    })
   })
 })

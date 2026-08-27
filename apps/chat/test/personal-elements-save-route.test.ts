@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   withChatbotAuth: vi.fn(),
   findMessage: vi.fn(),
-  findGenerationLease: vi.fn(),
-  findDiscards: vi.fn(),
+  getGenerationLeaseState: vi.fn(),
+  listDiscardedCandidateIds: vi.fn(),
   createPersonalElements: vi.fn(),
   discardPersonalElementCandidate: vi.fn(),
   listPersonalElements: vi.fn(),
@@ -18,15 +18,15 @@ vi.mock('@/src/lib/server/apiGuards', () => ({
 vi.mock('@klicker-uzh/prisma', () => ({
   prisma: {
     chatMessage: { findFirst: mocks.findMessage },
-    cardGenerationLease: { findFirst: mocks.findGenerationLease },
-    personalElementDiscard: { findMany: mocks.findDiscards },
   },
 }))
 
-vi.mock('@klicker-uzh/graphql/dist/server', () => ({
+vi.mock('../src/lib/server/personalElements/graphqlClient', () => ({
   createPersonalElements: mocks.createPersonalElements,
   discardPersonalElementCandidate: mocks.discardPersonalElementCandidate,
   listPersonalElements: mocks.listPersonalElements,
+  getGenerationLeaseState: mocks.getGenerationLeaseState,
+  listDiscardedCandidateIds: mocks.listDiscardedCandidateIds,
 }))
 
 import {
@@ -112,7 +112,7 @@ describe('personal-element candidate decisions', () => {
       chatbot: { courseId: 'course-1' },
     })
     mocks.findMessage.mockResolvedValue(candidateMessage())
-    mocks.findGenerationLease.mockResolvedValue({
+    mocks.getGenerationLeaseState.mockResolvedValue({
       completedAt: new Date('2026-08-24T10:02:00.000Z'),
     })
     mocks.createPersonalElements.mockResolvedValue([
@@ -120,7 +120,7 @@ describe('personal-element candidate decisions', () => {
     ])
     mocks.discardPersonalElementCandidate.mockResolvedValue({})
     mocks.listPersonalElements.mockResolvedValue([])
-    mocks.findDiscards.mockResolvedValue([])
+    mocks.listDiscardedCandidateIds.mockResolvedValue([])
   })
 
   test.each([
@@ -160,13 +160,13 @@ describe('personal-element candidate decisions', () => {
           }),
         ],
       },
-      expect.objectContaining({ participantId: 'participant-1' })
+      'participant-1'
     )
     expect(
       mocks.createPersonalElements.mock.calls[0]?.[0].candidates[0]
     ).not.toHaveProperty('type')
-    expect(mocks.createPersonalElements.mock.calls[0]?.[1]).not.toHaveProperty(
-      'actor'
+    expect(mocks.createPersonalElements.mock.calls[0]?.[1]).toBe(
+      'participant-1'
     )
   })
 
@@ -196,7 +196,7 @@ describe('personal-element candidate decisions', () => {
     })
     expect(mocks.discardPersonalElementCandidate).toHaveBeenCalledWith(
       { courseId: 'course-1', candidateId: candidate.candidateId },
-      expect.objectContaining({ participantId: 'participant-1' })
+      'participant-1'
     )
   })
 
@@ -205,7 +205,7 @@ describe('personal-element candidate decisions', () => {
     ['discard', DELETE, 'DELETE' as const],
   ])('allows %s for a successful card from a terminal partial run', async (_, handler, method) => {
     mocks.findMessage.mockResolvedValue(terminalPartialCandidateMessage())
-    mocks.findGenerationLease.mockResolvedValue({ completedAt: null })
+    mocks.getGenerationLeaseState.mockResolvedValue({ completedAt: null })
 
     const response = await handler(request(method), {
       params: Promise.resolve({ chatbotId }),
@@ -229,14 +229,14 @@ describe('personal-element candidate decisions', () => {
         settlement: 'partial',
       })
     )
-    mocks.findGenerationLease.mockResolvedValue(null)
+    mocks.getGenerationLeaseState.mockResolvedValue(null)
 
     const response = await handler(request(method), {
       params: Promise.resolve({ chatbotId }),
     })
 
     expect(response.status).toBe(200)
-    expect(mocks.findGenerationLease).not.toHaveBeenCalled()
+    expect(mocks.getGenerationLeaseState).not.toHaveBeenCalled()
   })
 
   test('rejects a pending generation and an unsupported future type', async () => {
@@ -283,7 +283,7 @@ describe('personal-element candidate decisions', () => {
   })
 
   test('rejects a retained candidate when its generation lease is incomplete', async () => {
-    mocks.findGenerationLease.mockResolvedValue(null)
+    mocks.getGenerationLeaseState.mockResolvedValue(null)
 
     const response = await POST(request('POST'), {
       params: Promise.resolve({ chatbotId }),
@@ -294,12 +294,9 @@ describe('personal-element candidate decisions', () => {
       error: 'Candidate is not part of a completed generated result',
     })
     expect(mocks.createPersonalElements).not.toHaveBeenCalled()
-    expect(mocks.findGenerationLease).toHaveBeenCalledWith({
-      where: {
-        participantId: 'participant-1',
-        attemptToken: messageId,
-      },
-      select: { completedAt: true },
+    expect(mocks.getGenerationLeaseState).toHaveBeenCalledWith({
+      participantId: 'participant-1',
+      attemptToken: messageId,
     })
   })
 
@@ -349,9 +346,7 @@ describe('personal-element candidate decisions', () => {
       },
       { id: 'unrelated-element', candidateId: 'other-candidate' },
     ])
-    mocks.findDiscards.mockResolvedValue([
-      { candidateId: candidate.candidateId },
-    ])
+    mocks.listDiscardedCandidateIds.mockResolvedValue([candidate.candidateId])
 
     const response = await GET(
       new NextRequest(
@@ -373,13 +368,10 @@ describe('personal-element candidate decisions', () => {
       ],
       discardedCandidateIds: [candidate.candidateId],
     })
-    expect(mocks.findDiscards).toHaveBeenCalledWith({
-      where: {
-        participantId: 'participant-1',
-        courseId: 'course-1',
-        candidateId: { in: [candidate.candidateId] },
-      },
-      select: { candidateId: true },
+    expect(mocks.listDiscardedCandidateIds).toHaveBeenCalledWith({
+      participantId: 'participant-1',
+      courseId: 'course-1',
+      candidateIds: [candidate.candidateId],
     })
     expect(mocks.findMessage).toHaveBeenCalledWith({
       where: {
@@ -408,7 +400,7 @@ describe('personal-element candidate decisions', () => {
       error: 'Candidate decision state is not ready',
     })
     expect(mocks.listPersonalElements).not.toHaveBeenCalled()
-    expect(mocks.findDiscards).not.toHaveBeenCalled()
+    expect(mocks.listDiscardedCandidateIds).not.toHaveBeenCalled()
   })
 
   test('maps the shared Save and Discard race conflicts', async () => {

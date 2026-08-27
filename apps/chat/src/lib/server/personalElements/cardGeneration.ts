@@ -1,7 +1,3 @@
-import {
-  listPersonalElements,
-  type PersonalElementServiceContext,
-} from '@klicker-uzh/graphql/dist/server'
 import type { Prisma, PrismaClient } from '@klicker-uzh/prisma/client'
 import { hasToolCall, isStepCount, type ToolSet } from 'ai'
 import { z } from 'zod'
@@ -15,6 +11,11 @@ import {
   isPersonalCardGenerationEnabled,
   type PersonalCardGenerationEvaluator,
 } from './featureFlag'
+import {
+  listCompletedGenerationLeaseAttemptTokens,
+  listDiscardedCandidateIds,
+  listPersonalElements,
+} from './graphqlClient'
 import {
   extractUnsavedCandidates,
   getActiveBranchMessageIds,
@@ -183,13 +184,6 @@ function getForcedToolName({
   return null
 }
 
-function serviceContext(
-  prisma: PrismaClient,
-  participantId: string
-): PersonalElementServiceContext {
-  return { prisma, participantId }
-}
-
 export async function createCardGeneration({
   prisma,
   participantId,
@@ -261,7 +255,6 @@ export async function createCardGeneration({
     generationEligible &&
     (cardGenerationRequest || Boolean(acceptedPlanReference))
   const branchIds = getActiveBranchMessageIds(threadHistory, activeBranchLeafId)
-  const context = serviceContext(prisma, participantId)
   let tools: ToolSet = baseTools
   let toolOrder = [...baseToolNames]
   let nestedGenerationCost = 0
@@ -273,7 +266,7 @@ export async function createCardGeneration({
   let existingCards: Awaited<ReturnType<typeof listPersonalElements>> | null =
     null
   const loadExistingCards = async () => {
-    existingCards ??= await listPersonalElements({ courseId }, context)
+    existingCards ??= await listPersonalElements(courseId, participantId)
     return existingCards
   }
 
@@ -289,7 +282,6 @@ export async function createCardGeneration({
     })
     courseLanguage = String(course?.language ?? 'en')
     const personalToolOptions = {
-      prisma,
       participantId,
       courseId,
       model,
@@ -305,7 +297,6 @@ export async function createCardGeneration({
     tools = {
       ...tools,
       list_personal_elements: createListPersonalElementsTool({
-        prisma,
         participantId,
         courseId,
       }),
@@ -409,15 +400,11 @@ export async function createCardGeneration({
           : []
       )
     )
-    const discardedPlanCandidates =
-      await prisma.personalElementDiscard.findMany({
-        where: {
-          participantId,
-          courseId,
-          candidateId: { in: [...planCandidateIds] },
-        },
-        select: { candidateId: true },
-      })
+    const discardedPlanCandidates = await listDiscardedCandidateIds({
+      participantId,
+      courseId,
+      candidateIds: [...planCandidateIds],
+    })
     const generationMessageIds = threadHistory.flatMap((message) =>
       message.role === 'assistant' &&
       branchIds.has(message.id) &&
@@ -425,25 +412,20 @@ export async function createCardGeneration({
         ? [message.id]
         : []
     )
-    const completedLeases = generationMessageIds.length
-      ? await prisma.cardGenerationLease.findMany({
-          where: {
-            participantId,
-            attemptToken: { in: generationMessageIds },
-            completedAt: { not: null },
-          },
-          select: { attemptToken: true },
-        })
-      : []
+    const completedLeaseAttemptTokens =
+      await listCompletedGenerationLeaseAttemptTokens({
+        participantId,
+        attemptTokens: generationMessageIds,
+      })
     const priorCandidates = extractUnsavedCandidates(
       threadHistory,
       branchIds,
-      new Set(completedLeases.map(({ attemptToken }) => attemptToken)),
+      new Set(completedLeaseAttemptTokens),
       savedPlanCandidateIds
     )
     const skippedCandidateIds = new Set([
       ...savedPlanCandidateIds,
-      ...discardedPlanCandidates.map(({ candidateId }) => candidateId),
+      ...discardedPlanCandidates,
       ...[...priorCandidates.keys()].filter((candidateId) =>
         planCandidateIds.has(candidateId)
       ),
@@ -490,7 +472,6 @@ export async function createCardGeneration({
         attemptMessageCreated = true
       }
       lease = await claimGenerationLease({
-        prisma,
         participantId,
         planMessageId: acceptedPlanReference.messageId,
         planToolCallId: acceptedPlanReference.toolCallId,
@@ -625,7 +606,7 @@ export async function createCardGeneration({
     }
     if (!lease) return
     const currentLease = lease
-    await abortGenerationLease({ prisma, participantId, lease: currentLease })
+    await abortGenerationLease({ participantId, lease: currentLease })
     lease = null
   }
 
@@ -658,7 +639,6 @@ export async function createCardGeneration({
       if (!assistantMessagePersisted) {
         try {
           const aborted = await abortGenerationLease({
-            prisma,
             participantId,
             lease: currentLease,
           })
@@ -684,7 +664,6 @@ export async function createCardGeneration({
       ) {
         try {
           const aborted = await abortGenerationLease({
-            prisma,
             participantId,
             lease: currentLease,
           })
@@ -704,7 +683,6 @@ export async function createCardGeneration({
 
       try {
         const completed = await completeGenerationLease({
-          prisma,
           participantId,
           lease: currentLease,
         })
@@ -715,7 +693,6 @@ export async function createCardGeneration({
         // possible, but retain it until that durable cleanup attempt settles.
         try {
           await abortGenerationLease({
-            prisma,
             participantId,
             lease: currentLease,
           })
