@@ -133,13 +133,17 @@ fields. The V1 schema definitions and operations remain byte-identical and
 dormant so existing consumers keep their contract.
 
 The V2 disclosure builder applies a minimum cell size of five after participant
-eligibility filtering. It never returns counts from one through four. Weekly
-periods and activities receive ordinal indices only after suppressed cells have
-been removed. Percentages are rounded to ten-point steps. Each student report
-freshly randomizes report-local `Student N` labels, so a label is not stable
-between views or exports. The backend builds the JSON and CSV exports from the
-same fixed whitelist: schema version, effective participant count, student
-label, completed activity count, and mean completion percentage. V2 never
+eligibility filtering. It never returns counts from one through four, including
+as the complement between a released cell and its parent cohort. Weekly periods
+and activities receive ordinal indices only after suppressed cells have been
+removed. Percentages are rounded to ten-point steps. Student rows are released
+only when at least five candidates share the same normalized completed-activity
+count and mean-completion step; smaller tuple groups and their candidate counts
+are not returned. Each student report freshly randomizes report-local `Student
+N` labels, so a label is not stable between views or exports. The backend builds
+the JSON and CSV exports from the same released cohort and fixed whitelist:
+schema version, effective participant count, student label, completed activity
+count, and mean completion percentage. V2 never
 returns identifiers, email addresses, free text, exact timestamps, stable
 activity IDs, item sequences, or rare attributes. It has no quiz-level,
 item-level, daily, weekday, activity-detail, or course-comparison disclosure.
