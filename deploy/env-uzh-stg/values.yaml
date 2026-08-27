@@ -32,10 +32,10 @@ hatchet:
     apiUrl: 'http://app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080'
     tlsStrategy: 'none'
     workflowName: 'course-kg-ingestion'
-    standardGenerationModel: 'klickeruzh/azure/gpt-5.4'
-    standardCleaningModel: 'klickeruzh/azure/gpt-5.4'
-    highGenerationModel: 'klickeruzh/azure/gpt-5.4'
-    highCleaningModel: 'klickeruzh/azure/gpt-5.4'
+    standardGenerationModel: 'klickeruzh/azure/gpt-5.6-luna'
+    standardCleaningModel: 'klickeruzh/azure/gpt-5.6-luna'
+    highGenerationModel: 'klickeruzh/azure/gpt-5.6-luna'
+    highCleaningModel: 'klickeruzh/azure/gpt-5.6-luna'
   workers:
     general:
       replicaCount: 1
@@ -652,7 +652,7 @@ backendGraphql:
       semesterKey: '2026-H2'
 
   elementGeneration:
-    enabled: false
+    enabled: true
     hatchetHostPort: 'hatchet-grpc.stg-hatchet-svc.svc.cluster.local:7070'
     hatchetServerUrl: 'http://app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080'
     graphArtifactContainer: 'kg-graph-artifacts'
