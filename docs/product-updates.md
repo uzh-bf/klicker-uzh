@@ -241,7 +241,10 @@ layout matching a list of paths, so a new answering route states its own
 requirement rather than inheriting one it does not know about. Every branch of
 such a page sets the flag, including the loading and error branches: the layout
 decides on its first render, and the read-state query it sends there cannot be
-recalled once the answering branch takes over.
+recalled once the answering branch takes over. The reliable trigger is the
+`PracticeQuiz` component: every page that mounts it is an answering surface, as
+are the microlearning and group activity routes, and any future page that lets a
+student work through questions has to set the flag on all of its branches.
 
 `PwaFeatureFlagProvider` (`apps/frontend-pwa/src/components/featureFlags/`) is
 mounted in `_app.tsx` inside the Apollo provider and sets
