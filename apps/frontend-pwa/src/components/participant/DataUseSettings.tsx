@@ -34,8 +34,28 @@ function DataUseSettings() {
     try {
       const result = await setResearchConsent({
         variables: { consent },
-        refetchQueries: [GetParticipantDataUseDocument],
-        awaitRefetchQueries: true,
+        update(cache, { data: mutationData }) {
+          const savedDataUse = mutationData?.setResearchConsent
+          if (!savedDataUse) return
+
+          cache.updateQuery(
+            { query: GetParticipantDataUseDocument },
+            (currentData) => {
+              if (!currentData?.selfDataUse) return currentData
+
+              return {
+                ...currentData,
+                selfDataUse: {
+                  ...currentData.selfDataUse,
+                  researchConsent: savedDataUse.researchConsent,
+                  researchConsentChoiceAt: savedDataUse.researchConsentChoiceAt,
+                  researchConsentDisclosureVersion:
+                    savedDataUse.researchConsentDisclosureVersion,
+                },
+              }
+            }
+          )
+        },
       })
 
       if (!result.data?.setResearchConsent) throw new Error('Save failed')
@@ -58,8 +78,32 @@ function DataUseSettings() {
     try {
       const result = await setLearningAnalyticsConsent({
         variables: { consent },
-        refetchQueries: [GetParticipantDataUseDocument],
-        awaitRefetchQueries: true,
+        update(cache, { data: mutationData }) {
+          const savedDataUse = mutationData?.setLearningAnalyticsConsent
+          if (!savedDataUse) return
+
+          cache.updateQuery(
+            { query: GetParticipantDataUseDocument },
+            (currentData) => {
+              if (!currentData?.selfDataUse) return currentData
+
+              return {
+                ...currentData,
+                selfDataUse: {
+                  ...currentData.selfDataUse,
+                  learningAnalyticsConsent:
+                    savedDataUse.learningAnalyticsConsent,
+                  learningAnalyticsChoiceAt:
+                    savedDataUse.learningAnalyticsChoiceAt,
+                  learningAnalyticsDisclosureVersion:
+                    savedDataUse.learningAnalyticsDisclosureVersion,
+                  learningAnalyticsIncludedFrom:
+                    savedDataUse.learningAnalyticsIncludedFrom,
+                },
+              }
+            }
+          )
+        },
       })
 
       if (!result.data?.setLearningAnalyticsConsent)

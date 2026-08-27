@@ -18,6 +18,12 @@ function getStudentLoginUrl() {
   return process.env.URL_STUDENT_LOGIN ?? URL_STUDENT_LOGIN
 }
 
+function getGraphQLOperationName(postData: string | null) {
+  return postData
+    ? (JSON.parse(postData) as { operationName?: string }).operationName
+    : undefined
+}
+
 async function signInStudentFromReturnTarget(page: Page, target: string) {
   await page.context().clearCookies()
   await page.goto(
@@ -136,10 +142,7 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
 
       await page.route('**/api/graphql', async (route) => {
         const request = route.request()
-        const postData = request.postData()
-        const operationName = postData
-          ? (JSON.parse(postData) as { operationName?: string }).operationName
-          : undefined
+        const operationName = getGraphQLOperationName(request.postData())
 
         if (
           request.method() === 'POST' &&
@@ -170,12 +173,28 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
       )
       await page.unroute('**/api/graphql')
 
+      let dataUseQueryCount = 0
+      await page.route('**/api/graphql', async (route) => {
+        if (
+          getGraphQLOperationName(route.request().postData()) ===
+          'GetParticipantDataUse'
+        ) {
+          dataUseQueryCount += 1
+        }
+        await route.continue()
+      })
+
       await researchConsent.click()
+      await expect(
+        page.getByText(/Your research choice has been saved/)
+      ).toBeVisible()
       await expect(researchConsent).toHaveAttribute('aria-checked', 'true')
       await expect(learningAnalyticsConsent).toHaveAttribute(
         'aria-checked',
         'false'
       )
+      expect(dataUseQueryCount).toBe(0)
+      await page.unroute('**/api/graphql')
 
       await page.reload()
       await expect(researchConsent).toHaveAttribute('aria-checked', 'true')
@@ -184,15 +203,47 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
         'false'
       )
 
-      await learningAnalyticsConsent.click()
-      await expect(researchConsent).toHaveAttribute('aria-checked', 'true')
+      let completeLearningAnalyticsResponse!: () => void
+      const learningAnalyticsResponseCompleted = new Promise<void>(
+        (resolve) => {
+          completeLearningAnalyticsResponse = resolve
+        }
+      )
+      await page.route('**/api/graphql', async (route) => {
+        const operationName = getGraphQLOperationName(
+          route.request().postData()
+        )
+
+        if (operationName === 'SetResearchConsent') {
+          const response = await route.fetch()
+          await learningAnalyticsResponseCompleted
+          await route.fulfill({ response })
+          return
+        }
+
+        if (operationName === 'SetLearningAnalyticsConsent') {
+          const response = await route.fetch()
+          await route.fulfill({ response })
+          completeLearningAnalyticsResponse()
+          return
+        }
+
+        await route.continue()
+      })
+
+      await Promise.all([
+        researchConsent.click(),
+        learningAnalyticsConsent.click(),
+      ])
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
       await expect(learningAnalyticsConsent).toHaveAttribute(
         'aria-checked',
         'true'
       )
+      await page.unroute('**/api/graphql')
 
       await page.reload()
-      await expect(researchConsent).toHaveAttribute('aria-checked', 'true')
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
       await expect(learningAnalyticsConsent).toHaveAttribute(
         'aria-checked',
         'true'

@@ -80,8 +80,9 @@ The participant account settings page keeps research and learning-analytics
 choices in a dedicated section outside the profile form
 (`apps/frontend-pwa/src/components/participant/DataUseSettings.tsx`). Each
 account-wide choice has its own mutation and pending state. The controls wait
-for `GetParticipantDataUse` and refetch that query after a successful mutation;
-they never infer a choice from missing or nullable query data.
+for `GetParticipantDataUse`; after a successful mutation, each control updates
+only its own fields in that query cache so concurrent choices cannot overwrite
+one another. They never infer a choice from missing or nullable query data.
 
 The manage Elements and Activities lists use the shared `Pagination` control
 with finite `10`, `20`, and `50` page sizes plus an opt-in `All` value. `All`
