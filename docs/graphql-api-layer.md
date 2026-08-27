@@ -79,9 +79,9 @@ unaffected. Aggregate outputs follow their normal recomputation schedule and
 are not recomputed immediately when the choice changes. The read paths use a
 repeatable database snapshot while resolving eligible participant IDs, so
 withdrawn or not-yet-recomputed individual rows never reach the response for
-that snapshot. They also require a current `Participation` row for the same
-course and participant; archived courses expose no individual rows while their
-aggregate outputs remain available.
+that snapshot. They also require a current active `Participation` row for the
+same course and participant; archived courses expose no individual rows while
+their aggregate outputs remain available.
 
 ### Learning analytics coordinator API
 

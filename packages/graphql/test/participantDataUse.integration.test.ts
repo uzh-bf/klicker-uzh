@@ -202,7 +202,7 @@ async function createCourse(ownerId: string, participantId: string) {
       isLearningAnalyticsEnabled: true,
       areAnalyticsValid: true,
       participations: {
-        create: { participantId },
+        create: { participantId, isActive: true },
       },
       ownerId,
     },

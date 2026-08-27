@@ -113,7 +113,8 @@ for every active child reference and awaits each child output before the batch
 fails. Dispatch promises are tracked as well, so a child reference that resolves
 after the deadline is still cancelled and awaited. Lane and course coordinators
 apply the same late-reference check to nested course, private, and completion
-children. A
+children. They also re-check parent cancellation after the ordinary start and
+spawn-gate children return, before dispatching any further work. A
 cancelled or failed course does not receive a successful completion timestamp;
 an active course that was invalidated at start therefore remains unreadable
 until a later successful run.

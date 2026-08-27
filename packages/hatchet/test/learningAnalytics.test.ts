@@ -415,6 +415,35 @@ describe('@klicker-uzh/hatchet learning-analytics coordinator', () => {
     ])
   })
 
+  it('stops a course when cancellation arrives while its start task runs', async () => {
+    const runNoWaitChild = vi.fn(async () => resolvedRef(undefined))
+    const { definitions } = prepare()
+    const context: FakeExecutionContext = {
+      cancelled: false,
+      runChild: async (workflow) => {
+        expect(workflow.name).toBe('learning-analytics-course-start')
+        context.cancelled = true
+        return {
+          courseId: COURSE_IDS[0],
+          request: courseInput(COURSE_IDS[0]),
+          cleanupOnly: false,
+          fenceAt: '2026-08-27T02:00:00.000Z',
+        }
+      },
+      runNoWaitChild,
+      bulkRunNoWaitChildren: async () => [],
+      sleepFor: async () => {},
+    }
+
+    await expect(
+      task(definitions, 'learning-analytics-public-course-v1').fn(
+        courseInput(COURSE_IDS[0]),
+        context
+      )
+    ).rejects.toThrow('cancelled after start')
+    expect(runNoWaitChild).not.toHaveBeenCalled()
+  })
+
   it('cancels and waits for a private course child when the durable course is cancelled', async () => {
     const cancel = vi.fn(async () => {})
     const privateError = new Error('private course failed')
@@ -427,17 +456,20 @@ describe('@klicker-uzh/hatchet learning-analytics coordinator', () => {
       }),
     })
     const context: FakeExecutionContext = {
-      cancelled: true,
+      cancelled: false,
       runChild: async () => ({
         courseId: COURSE_IDS[0],
         request: courseInput(COURSE_IDS[0]),
         cleanupOnly: false,
         fenceAt: '2026-08-27T02:00:00.000Z',
       }),
-      runNoWaitChild: async () => ({
-        cancel,
-        output: Promise.reject(privateError),
-      }),
+      runNoWaitChild: async () => {
+        context.cancelled = true
+        return {
+          cancel,
+          output: Promise.reject(privateError),
+        }
+      },
       bulkRunNoWaitChildren: async () => [],
       sleepFor: async () => {},
     }
@@ -453,18 +485,22 @@ describe('@klicker-uzh/hatchet learning-analytics coordinator', () => {
 
   it('cancels a private child whose reference resolves after course cancellation', async () => {
     const dispatch = deferred<ChildRef<unknown>>()
+    const dispatchStarted = deferred<void>()
     const output = deferred<unknown>()
     const cancel = vi.fn(async () => output.resolve(undefined))
     const { definitions } = prepare()
     const context: FakeExecutionContext = {
-      cancelled: true,
+      cancelled: false,
       runChild: async () => ({
         courseId: COURSE_IDS[0],
         request: courseInput(COURSE_IDS[0]),
         cleanupOnly: false,
         fenceAt: '2026-08-27T02:00:00.000Z',
       }),
-      runNoWaitChild: async () => dispatch.promise,
+      runNoWaitChild: async () => {
+        dispatchStarted.resolve()
+        return dispatch.promise
+      },
       bulkRunNoWaitChildren: async () => [],
       sleepFor: async () => {},
     }
@@ -473,6 +509,8 @@ describe('@klicker-uzh/hatchet learning-analytics coordinator', () => {
       courseInput(COURSE_IDS[0]),
       context
     )
+    await dispatchStarted.promise
+    context.cancelled = true
     dispatch.resolve({ cancel, output: output.promise })
 
     await expect(pending).rejects.toThrow('cancelled during private dispatch')
@@ -634,6 +672,34 @@ describe('@klicker-uzh/hatchet learning-analytics coordinator', () => {
     })
   })
 
+  it('stops a lane when cancellation arrives while its spawn gate runs', async () => {
+    const runNoWaitChild = vi.fn(async () => resolvedRef(undefined))
+    const { definitions } = prepare()
+    const context: FakeExecutionContext = {
+      cancelled: false,
+      runChild: async (workflow) => {
+        expect(workflow.name).toBe('learning-analytics-spawn-gate')
+        context.cancelled = true
+        return { canStart: true }
+      },
+      runNoWaitChild,
+      bulkRunNoWaitChildren: async () => [],
+      sleepFor: async () => {},
+    }
+
+    await expect(
+      task(definitions, 'learning-analytics-public-batch-lane-v1').fn(
+        {
+          runId: RUN_ID,
+          courses: [courseInput(COURSE_IDS[0])],
+          stopSpawningAt: '2026-08-27T05:45:00+02:00',
+        },
+        context
+      )
+    ).rejects.toThrow('cancelled after spawn gate')
+    expect(runNoWaitChild).not.toHaveBeenCalled()
+  })
+
   it('cancels a finished course reference before recording success or starting the next course', async () => {
     const courses = [courseInput(COURSE_IDS[0]), courseInput(COURSE_IDS[1])]
     const spawned: string[] = []
@@ -754,6 +820,37 @@ describe('@klicker-uzh/hatchet learning-analytics coordinator', () => {
       platformCompletedAt: '2026-08-27T04:00:00Z',
     })
     expect(sleepFor).toHaveBeenCalledWith('3600s', `hard-deadline:${RUN_ID}`)
+  })
+
+  it('does not dispatch an empty course-lane bulk request', async () => {
+    const bulkRunNoWaitChildren = vi.fn(async () => [])
+    const { definitions } = prepare()
+    const context: FakeExecutionContext = {
+      runChild: async (workflow) => {
+        expect(workflow.name).toBe('learning-analytics-batch-deadline')
+        return { remainingSeconds: 3600 }
+      },
+      runNoWaitChild: async (workflow) => {
+        expect(typeof workflow === 'string' ? workflow : workflow.name).toBe(
+          'learning-analytics-batch-selector'
+        )
+        return resolvedRef({ courses: [] })
+      },
+      bulkRunNoWaitChildren,
+      sleepFor: () => new Promise<void>(() => {}),
+    }
+
+    await expect(
+      task(definitions, 'learning-analytics-public-batch-v1').fn(
+        batchInput(),
+        context
+      )
+    ).resolves.toEqual({
+      runId: RUN_ID,
+      selectedCourses: 0,
+      completedCourses: 0,
+    })
+    expect(bulkRunNoWaitChildren).not.toHaveBeenCalled()
   })
 
   it('cancels and waits for active course lanes at the hard deadline', async () => {

@@ -1521,14 +1521,14 @@ export const Mutation = builder.mutationType({
           (args) => ({ courseId: args.courseId }),
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
-            const mode = {
+            const modeByApiValue = {
               INCREMENTAL: 'incremental',
               FINALIZE: 'finalize',
               FULL: 'full',
-            }[args.mode] as 'incremental' | 'finalize' | 'full'
+            } as const
 
             return await LearningAnalyticsCoordinatorService.dispatchCourseLearningAnalytics(
-              { courseId: args.courseId, mode },
+              { courseId: args.courseId, mode: modeByApiValue[args.mode] },
               ctx
             )
           }

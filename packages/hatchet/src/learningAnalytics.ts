@@ -147,6 +147,11 @@ export function prepareLearningAnalyticsTasks({
           },
         }
       )) as LearningAnalyticsCourseStartOutput
+      if (executionContext.cancelled) {
+        throw new NonRetryableError(
+          `Learning-analytics course ${input.courseId} was cancelled after start`
+        )
+      }
       const effectiveRequest = start.request ?? fullCourseRequest(input)
 
       let privateRef: ChildRunRef<CourseWorkflowSuccess> | undefined
@@ -309,6 +314,11 @@ export function prepareLearningAnalyticsTasks({
             },
           }
         )
+        if (executionContext.cancelled) {
+          throw new NonRetryableError(
+            `Learning-analytics lane ${input.runId} was cancelled after spawn gate`
+          )
+        }
         if (!gate.canStart) {
           return {
             completedCourseIds,
@@ -518,25 +528,28 @@ export function prepareLearningAnalyticsTasks({
                   stopSpawningAt: input.stopSpawningAt,
                 })
               )
-        const laneRefs = await trackChildren(() =>
-          executionContext.bulkRunNoWaitChildren<
-            LearningAnalyticsBatchLaneInput,
-            LearningAnalyticsBatchLaneOutput
-          >(
-            laneInputs.map((lane, index) => ({
-              workflow: LEARNING_ANALYTICS_TASK_NAMES.batchLane,
-              input: lane,
-              options: {
-                key: `lane:${input.runId}:${index}`,
-                additionalMetadata: {
-                  ...CHILD_METADATA,
-                  runId: input.runId,
-                  lane: String(index),
-                },
-              },
-            }))
-          )
-        )
+        const laneRefs =
+          laneInputs.length === 0
+            ? []
+            : await trackChildren(() =>
+                executionContext.bulkRunNoWaitChildren<
+                  LearningAnalyticsBatchLaneInput,
+                  LearningAnalyticsBatchLaneOutput
+                >(
+                  laneInputs.map((lane, index) => ({
+                    workflow: LEARNING_ANALYTICS_TASK_NAMES.batchLane,
+                    input: lane,
+                    options: {
+                      key: `lane:${input.runId}:${index}`,
+                      additionalMetadata: {
+                        ...CHILD_METADATA,
+                        runId: input.runId,
+                        lane: String(index),
+                      },
+                    },
+                  }))
+                )
+              )
         const lanes = await Promise.all(
           laneRefs.map(async (ref) => {
             try {

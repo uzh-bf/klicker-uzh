@@ -414,7 +414,9 @@ describe('learning-analytics coordinator PostgreSQL integration', () => {
         isLearningAnalyticsEnabled: true,
         areAnalyticsValid: true,
         ownerId: user.id,
-        participations: { create: { participantId: participant.id } },
+        participations: {
+          create: { participantId: participant.id, isActive: true },
+        },
       },
     })
     fixtureIds.courses.push(course.id)
@@ -560,6 +562,35 @@ describe('learning-analytics coordinator PostgreSQL integration', () => {
       visiblePerformanceAfterFreshCompletion?.participantPerformances
     ).toHaveLength(1)
 
+    await prisma.participation.update({
+      where: {
+        courseId_participantId: {
+          courseId: course.id,
+          participantId: participant.id,
+        },
+      },
+      data: { isActive: false },
+    })
+    const hiddenAfterParticipationDeactivation =
+      await getCourseActivityAnalytics({ courseId: course.id }, ctx)
+    expect(
+      hiddenAfterParticipationDeactivation?.participantCourseAnalytics
+    ).toHaveLength(0)
+    const hiddenPerformanceAfterParticipationDeactivation =
+      await getCoursePerformanceAnalytics({ courseId: course.id }, ctx)
+    expect(
+      hiddenPerformanceAfterParticipationDeactivation?.participantPerformances
+    ).toHaveLength(0)
+    await prisma.participation.update({
+      where: {
+        courseId_participantId: {
+          courseId: course.id,
+          participantId: participant.id,
+        },
+      },
+      data: { isActive: true },
+    })
+
     const withdrawn = await setLearningAnalyticsConsent({ consent: false }, ctx)
     expect(withdrawn?.learningAnalyticsConsent).toBe(false)
     const hiddenAfterWithdrawal = await getCourseActivityAnalytics(
@@ -641,7 +672,11 @@ describe('learning-analytics coordinator PostgreSQL integration', () => {
     ).toHaveLength(0)
 
     await prisma.participation.create({
-      data: { courseId: course.id, participantId: participant.id },
+      data: {
+        courseId: course.id,
+        participantId: participant.id,
+        isActive: true,
+      },
     })
     await prisma.course.update({
       where: { id: course.id },

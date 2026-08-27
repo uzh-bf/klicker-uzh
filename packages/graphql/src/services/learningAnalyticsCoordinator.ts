@@ -29,6 +29,12 @@ const FIRST_UUID = '00000000-0000-0000-0000-000000000000'
 const SELECTOR_PAGE_SIZE = 250
 const FINALIZATION_GRACE_DAYS = 7
 const MAX_IN_FLIGHT_COURSES = 500
+const NIGHTLY_STOP_MINUTES = 5 * 60 + 45
+const NIGHTLY_DEADLINE_MINUTES = 6 * 60
+const MANUAL_STOP_MINUTES = 5 * 60 + 15
+const MANUAL_DEADLINE_MINUTES = 5 * 60 + 30
+const NIGHTLY_LOCAL_HOUR = 0
+const NIGHTLY_LOCAL_MINUTE = 30
 
 interface BatchClock {
   localDate: string
@@ -127,13 +133,15 @@ async function readBatchClock(
         local_now,
         CASE
           WHEN ${schedule} = 'nightly'
-            THEN date_trunc('day', local_now) + interval '5 hours 45 minutes'
-          ELSE local_now + interval '5 hours 15 minutes'
+            THEN date_trunc('day', local_now)
+              + make_interval(mins => ${NIGHTLY_STOP_MINUTES})
+          ELSE local_now + make_interval(mins => ${MANUAL_STOP_MINUTES})
         END AS local_stop,
         CASE
           WHEN ${schedule} = 'nightly'
-            THEN date_trunc('day', local_now) + interval '6 hours'
-          ELSE local_now + interval '5 hours 30 minutes'
+            THEN date_trunc('day', local_now)
+              + make_interval(mins => ${NIGHTLY_DEADLINE_MINUTES})
+          ELSE local_now + make_interval(mins => ${MANUAL_DEADLINE_MINUTES})
         END AS local_hard
       FROM clock
     )
@@ -184,7 +192,11 @@ export async function prepareScheduledLearningAnalyticsBatch(
   if (!isLearningAnalyticsCoordinatorEnabled()) return null
 
   const clock = await readBatchClock(prisma, 'nightly')
-  if (clock.localHour !== 0 || clock.localMinute !== 30) return null
+  if (
+    clock.localHour !== NIGHTLY_LOCAL_HOUR ||
+    clock.localMinute !== NIGHTLY_LOCAL_MINUTE
+  )
+    return null
   return buildBatchInput({ clock, selection: 'nightly' })
 }
 
@@ -236,6 +248,9 @@ function courseMode(
   input: LearningAnalyticsBatchControlInput
 ): CourseWorkflowMode {
   if (input.selection === 'explicit-full') return 'full'
+  // Invalid or consent-stale analytics require a complete rebuild. A valid,
+  // unfinished course past the grace period finalizes; every other valid
+  // course continues incrementally.
   if (
     !row.areAnalyticsValid ||
     !row.analyticsLastComputedAt ||

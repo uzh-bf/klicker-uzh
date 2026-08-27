@@ -67,13 +67,14 @@ PostgreSQL publication-time markers with private `completedAt` retained as
 workflow output, stale-completion rejection, disabled/archived cleanup-only
 behavior, and the course-level invalid-result read gate. The Hatchet suite
 additionally covers stable task names, same-course serialization, round-robin
-lanes, the spawn gate, platform-after-course ordering, and cancellation followed
-by termination wait at the hard deadline, including child references that resolve
-after cancellation begins. They also verify that the deadline child derives a
-replay-stable duration from the PostgreSQL clock and that an expired deadline
-does not schedule a sleep. These tests prove the public control-plane behavior
-only; they do not execute private analytics stages or prove deployment and live
-qualification.
+lanes, empty selection without a zero-request bulk dispatch, the spawn gate,
+platform-after-course ordering, cancellation checks after start and spawn-gate
+tasks, and cancellation followed by termination wait at the hard deadline,
+including child references that resolve after cancellation begins. They also
+verify that the deadline child derives a replay-stable duration from the
+PostgreSQL clock and that an expired deadline does not schedule a sleep. These
+tests prove the public control-plane behavior only; they do not execute private
+analytics stages or prove deployment and live qualification.
 
 The coordinator's database integration checks belong in the normal GraphQL local
 stack because they exercise PostgreSQL advisory locks, transaction timestamps,
@@ -88,9 +89,10 @@ that an unchanged course remains incremental with its existing `windowSince`.
 The participant data-use suite checks current consent metadata plus the strict
 course-marker-versus-choice-time freshness comparison. The read-gate suite keeps
 focused disabled, invalid, and activity-owner coverage, while the PostgreSQL
-coordinator integration covers current membership, archive behavior, and real
-individual-row filtering. That integration also interleaves consent and archive
-changes with in-flight recomputations, proves that stale runs publish no marker,
+coordinator integration covers current active membership, participation
+deactivation, archive behavior, and real individual-row filtering. That
+integration also interleaves consent and archive changes with in-flight
+recomputations, proves that stale runs publish no marker,
 proves that a future private completion time cannot advance the public marker,
 and proves that individual rows stay hidden until a successful fresh
 recomputation.
