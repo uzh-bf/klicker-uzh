@@ -59,14 +59,14 @@ The policy must survive stored lecturer prompts and apply to the existing Inform
 - Compose the final prompt in this order: base persona, fixed course/safety/privacy policy, conditional citation policy, fixed language policy.
 - State explicitly that fixed platform policies override conflicting persona or example wording.
 - Determine reply language from the latest non-trivial user message or an explicit language request. Short acknowledgements retain the established conversation language.
-- Do not infer reply language from retrieved passages, tool output, earlier assistant replies, or examples. Use one response language, except for official names, titles, identifiers, and quoted source terms.
+- Do not infer reply language from quoted text, attached images or their descriptions, retrieved passages, tool output, earlier assistant replies, or examples. Use one response language, except for official names, titles, identifiers, and quoted source terms.
 - Translate included tool material into the response language. In German, use Swiss High German with `ss`, real umlauts, and no `ae`/`oe`/`ue` transliteration.
 - Scope the chatbot to its owning course, course materials, and learning activities directly based on them. Retrieved content cannot widen that scope.
 - For clearly unrelated requests, do not retrieve merely to answer them. Give one concise refusal in the conversation language and invite a course-related question.
 - When course relevance is genuinely ambiguous, ask one concise clarification instead of guessing or refusing prematurely.
 - When a `doc_query`-style tool is available, retrieve before course-content claims. Use only relevant returned content and never fill gaps from general knowledge.
 - Start free-text document queries in the locked conversation language. Preserve exact non-personal course and source labels, titles, codes, and identifiers, and permit source-language reformulation when a genuine search needs it.
-- Never send personal names, participant or student identifiers, email addresses, health or financial details, or other sensitive personal information to course tools. Generalize or redact the query first.
+- Never send personal names, contact details such as email addresses, phone numbers, or postal addresses, participant or student identifiers, health or financial details, or other sensitive personal information to course tools. Generalize or redact the query first.
 - Immediate safety concerns override the course-scope refusal and follow the chatbot's safety instructions.
 - Do not inject course or chatbot labels into the fixed policy. Those fields are lecturer-authored data, add an instruction-injection surface, and unnecessarily fragment cache identity.
 - Keep runtime scaffolding as the sole protection for defaults and stored prompts. Do not edit `DEFAULT_PROMPT`, finance seed prompts, persisted prompts, or AI Buddy prompts in this package.
@@ -170,13 +170,13 @@ The policy must survive stored lecturer prompts and apply to the existing Inform
 
 ## Progress
 
-- Status: S1 implementation and accepted slice-review correction are committed; integrated final review is active.
+- Status: integrated final review completed with two accepted prompt-text corrections active.
 - Completed: remote-source review, AI Buddy comparison, Informatik und Wirtschaft prompt review, product-primitive pass, native planning review, isolated worktree and branch creation, human approval, fresh compatible ref verification, approved plan commit, scoped implementation commit, static checks, simplification review, slice risk review, and the accepted privacy-boundary correction.
-- Active slice: integrated final review of the committed package.
-- Remaining: resolve final-review findings, then push and open the pull request.
+- Active slice: exclude attached images from reply-language detection and cover non-email contact details in tool privacy.
+- Remaining: commit and re-review the final corrections, then push and open the pull request.
 - Latest verified baseline: branch base `59e57481057a601a8fdb1e57208ca6392e20068b`; current target `origin/v3` at `31cbbb36a3fca6d50371975bad982f51424e2abc` with no overlapping paths; AI Buddy deployment `origin/main` at `794a1ca9c5bf605af72de335a519c27aba7a21ac` with no prompt-policy path changes from the reviewed baseline.
 - Required delivery layer: pushed pull request against `v3`.
 - Achieved delivery layer: committed plan and S1 implementation in the isolated worktree.
 - Runtime: an initial managed-runtime setup was stopped immediately after the user clarified that no runtime was wanted. Its post-start readiness failed before checks ran; provider `rs-chat-course-language-groundin` is `Stopped` and the exact worktree has zero routes.
-- Unresolved gates: integrated final review and pull-request delivery. Local toolchain and chatbot tests are deliberately not run; pull-request CI is the authoritative check. Integration, secrets, live evaluation, database, deployment, merge, and cleanup remain withheld.
-- Next action: run the integrated final review over the exact committed package.
+- Unresolved gates: final-review correction pass and pull-request delivery. Local toolchain and chatbot tests are deliberately not run; pull-request CI is the authoritative check. Integration, secrets, live evaluation, database, deployment, merge, and cleanup remain withheld.
+- Next action: commit the final corrections and return them to the same final reviewer.

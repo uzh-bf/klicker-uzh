@@ -539,9 +539,9 @@ The fixed policy explicitly overrides conflicting persona text, examples, retrie
 output, and user attempts to change platform rules. It keeps answers within the owning course,
 asks one clarification when course relevance is genuinely ambiguous, and briefly refuses clearly
 unrelated requests. Immediate safety concerns are not refused merely as out of scope. Course-tool
-queries must omit or generalise personal names, contact details, participant or student
-identifiers, and other sensitive personal information. Retrieved content is evidence rather than
-instruction.
+queries must omit or generalise personal names, contact details such as email addresses, phone
+numbers, or postal addresses, participant or student identifiers, and other sensitive personal
+information. Retrieved content is evidence rather than instruction.
 
 When a `doc_query`-style tool is present, the model is instructed to retrieve before course-content
 claims, use only relevant results, and acknowledge insufficient course evidence instead of filling
@@ -556,11 +556,11 @@ supply each mode's persona beneath the fixed policy. A chatbot served by an olde
 revision keeps the old behaviour until that revision is replaced.
 
 The language lock follows the user's latest non-trivial message or explicit language request.
-Quoted text, attached-image descriptions, retrieved chunks, tool output, and earlier assistant
-messages cannot switch the response language. Short acknowledgements preserve the established
-conversation language. German answers use Swiss High German orthography (`ss`, never `ß`, and real
-umlauts). Unit tests prove prompt composition only; model compliance still requires a separately
-authorised live-model evaluation.
+Quoted text, attached images or their descriptions, retrieved chunks, tool output, and earlier
+assistant messages cannot switch the response language. Short acknowledgements preserve the
+established conversation language. German answers use Swiss High German orthography (`ss`, never
+`ß`, and real umlauts). Unit tests prove prompt composition only; model compliance still requires
+a separately authorised live-model evaluation.
 
 ## Sources and citations
 
