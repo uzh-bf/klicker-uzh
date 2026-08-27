@@ -10,6 +10,7 @@ import {
   type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
+import { getChatModel } from '@/src/lib/server/chatModelProvider'
 import {
   getParentSpanContext,
   getTraceIdForMessage,
@@ -20,7 +21,6 @@ import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
-import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
 import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import {
@@ -56,10 +56,8 @@ import {
   toPracticeCandidateId,
 } from '@/src/services/studentPracticeMcp'
 import { ThreadService } from '@/src/services/threads'
-import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
-import { Chatbot, type Prisma } from '@klicker-uzh/prisma/client'
-import { safeDecrypt } from '@klicker-uzh/util'
+import { type Prisma } from '@klicker-uzh/prisma/client'
 import { startActiveObservation } from '@langfuse/tracing'
 import {
   consumeStream,
@@ -133,88 +131,6 @@ const CHAT_LOG_PREFIX = '[chat:dev]'
 const isDevLogging = process.env.NODE_ENV === 'development'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
-
-type ModelRouting = {
-  source: 'custom' | 'default'
-  hasCustomKey: boolean
-  baseUrl: string | undefined
-}
-
-function getOpenAIModel(
-  provider: ReturnType<typeof createOpenAI>,
-  modelConfig: ChatModelConfig
-) {
-  return modelConfig.usesResponsesApi
-    ? provider.responses(modelConfig.deploymentId)
-    : provider.chat(modelConfig.deploymentId)
-}
-
-function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
-  // Use per-chatbot configuration if available
-  const hasCustomKey =
-    typeof chatbot.openaiApiKey === 'string' && chatbot.openaiApiKey.length > 0
-  const hasCustomBaseUrl =
-    typeof chatbot.openaiBaseUrl === 'string' &&
-    chatbot.openaiBaseUrl.length > 0
-  const hasCustomConfig = hasCustomKey || hasCustomBaseUrl
-
-  if (hasCustomConfig) {
-    let apiKey: string | undefined
-    if (hasCustomKey) {
-      try {
-        apiKey = safeDecrypt(chatbot.openaiApiKey!)
-      } catch (error) {
-        console.error('Failed to decrypt API key for chatbot:', {
-          chatbotId: chatbot.id,
-          error,
-        })
-        throw new Error(`Failed to decrypt API key for chatbot ${chatbot.id}`)
-      }
-    } else {
-      apiKey = process.env.OPENAI_API_KEY
-    }
-    const baseUrl = hasCustomBaseUrl
-      ? chatbot.openaiBaseUrl!
-      : process.env.OPENAI_BASE_URL
-
-    const routing: ModelRouting = {
-      source: 'custom',
-      hasCustomKey,
-      baseUrl,
-    }
-
-    return {
-      model: getOpenAIModel(
-        createOpenAI({
-          baseURL: baseUrl,
-          apiKey: apiKey || 'no-key',
-          fetch: createOpenAIFetch('custom'),
-        }),
-        modelConfig
-      ),
-      routing,
-    }
-  }
-
-  // Default: route through OpenAI-compatible endpoint
-  const routing: ModelRouting = {
-    source: 'default',
-    hasCustomKey: false,
-    baseUrl: process.env.OPENAI_BASE_URL,
-  }
-
-  return {
-    model: getOpenAIModel(
-      createOpenAI({
-        baseURL: process.env.OPENAI_BASE_URL,
-        apiKey: process.env.OPENAI_API_KEY || 'no-key',
-        fetch: createOpenAIFetch('default'),
-      }),
-      modelConfig
-    ),
-    routing,
-  }
-}
 
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object') return null
@@ -1252,7 +1168,7 @@ export async function POST(
         ? appliedReasoningEffort
         : undefined
 
-    const { model, routing } = getModel(chatbot, selectedModelConfig)
+    const { model, routing } = getChatModel(chatbot, selectedModelConfig)
     const promptCacheRequest =
       routing.source === 'default'
         ? await buildPromptCacheRequest({

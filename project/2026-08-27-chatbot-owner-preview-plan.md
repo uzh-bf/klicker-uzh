@@ -93,7 +93,8 @@ Execution-tier note: P1–P3 are bounded, settled-behavior slices suited to the 
 
 ## Progress
 
-- Status: plan drafted, awaiting user approval (plan uncommitted by design until approval).
-- Completed: research, planner review (needs-changes on original draft; scope reduced to owner-preview package), P0 blocker ruling captured in roadmap reconciliation.
-- Remaining: P1–P4 after approval.
+- Status: executing the approved package locally; external delivery remains withheld.
+- Completed: research, planner review, P0 blocker ruling, isolated DevPod startup, P1 owner authorization and stateless preview route implementation with focused checks.
+- In progress: P2 owner-preview page and P3 Manage entry point.
+- Remaining: slice reviews, integrated checks, browser evidence, final review, target-drift reconciliation.
 - Required delivery layer: green reviewed package branch ready for PR publication (publication itself withheld).
