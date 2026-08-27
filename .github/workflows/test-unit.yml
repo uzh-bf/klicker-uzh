@@ -6,12 +6,14 @@ on:
     branches: ['v3', 'v3*']
     paths:
       - 'apps/chat/**'
+      - 'packages/feature-flags/**'
       - 'packages/grading/**'
       - 'packages/graphql/**'
       - 'packages/i18n/**'
       - 'packages/markdown/**'
       - 'packages/next-config/**'
       - 'packages/prisma/**'
+      - 'packages/product-updates/**'
       - 'packages/shared-components/**'
       - 'packages/types/**'
       - 'packages/util/**'
@@ -24,12 +26,14 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'apps/chat/**'
+      - 'packages/feature-flags/**'
       - 'packages/grading/**'
       - 'packages/graphql/**'
       - 'packages/i18n/**'
       - 'packages/markdown/**'
       - 'packages/next-config/**'
       - 'packages/prisma/**'
+      - 'packages/product-updates/**'
       - 'packages/shared-components/**'
       - 'packages/types/**'
       - 'packages/util/**'
@@ -91,6 +95,10 @@ jobs:
           pnpm --filter @klicker-uzh/types build
           pnpm --filter @klicker-uzh/grading build
           pnpm --filter @klicker-uzh/util build
+          # The catalog validation suite reads the flag registry at runtime, so
+          # feature-flags must be built before product-updates is tested.
+          pnpm --filter @klicker-uzh/feature-flags build
+          pnpm --filter @klicker-uzh/product-updates build
 
       - name: Setup chat test database
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
@@ -113,6 +121,10 @@ jobs:
       - name: Test markdown package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: pnpm --filter @klicker-uzh/markdown test
+
+      - name: Test product-updates package
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/product-updates test
 
       - name: Test util package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}

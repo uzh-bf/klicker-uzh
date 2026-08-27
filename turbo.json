@@ -144,6 +144,7 @@
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
+        "@klicker-uzh/product-updates#build",
         "@klicker-uzh/transactional#build"
       ],
       "persistent": true
@@ -156,6 +157,7 @@
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
+        "@klicker-uzh/product-updates#build",
         "@klicker-uzh/transactional#build"
       ],
       "persistent": true
@@ -168,6 +170,7 @@
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
+        "@klicker-uzh/product-updates#build",
         "@klicker-uzh/transactional#build"
       ],
       "persistent": true
@@ -180,12 +183,14 @@
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
+        "@klicker-uzh/product-updates#build",
         "@klicker-uzh/transactional#build"
       ],
       "persistent": true
     },
     "dev:docs": {
       "cache": false,
+      "dependsOn": ["@klicker-uzh/product-updates#build"],
       "persistent": true
     },
     "dev:test": {
