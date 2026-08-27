@@ -248,6 +248,27 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
         'aria-checked',
         'true'
       )
+
+      let remountDataUseQueryCount = 0
+      await page.route('**/api/graphql', async (route) => {
+        if (
+          getGraphQLOperationName(route.request().postData()) ===
+          'GetParticipantDataUse'
+        ) {
+          remountDataUseQueryCount += 1
+        }
+        await route.continue()
+      })
+      await page.getByTestId('header-avatar').click()
+      await page.getByTestId('participant-profile-login').click()
+      await page.getByTestId('edit-profile').click()
+      await expect.poll(() => remountDataUseQueryCount).toBeGreaterThan(0)
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'true'
+      )
+      await page.unroute('**/api/graphql')
     } finally {
       await page.unroute('**/api/graphql')
       await page.reload()

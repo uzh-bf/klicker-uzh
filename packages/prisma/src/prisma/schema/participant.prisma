@@ -72,7 +72,6 @@ model Participant {
   learningAnalyticsConsent           Boolean   @default(false)
   learningAnalyticsChoiceAt          DateTime?
   learningAnalyticsDisclosureVersion String?
-  learningAnalyticsIncludedFrom      DateTime?
 
   lastLoginAt DateTime?
 
@@ -113,7 +112,7 @@ model Participant {
 
   @@unique([email, isSSOAccount])
   @@index([researchConsent, id])
-  @@index([learningAnalyticsConsent, learningAnalyticsIncludedFrom, id])
+  @@index([learningAnalyticsConsent, id])
 }
 
 model ParticipantGroup {

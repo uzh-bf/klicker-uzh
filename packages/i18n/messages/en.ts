@@ -1223,7 +1223,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Your research choice could not be saved. Please reload the page before trying again.',
       learningAnalyticsConsentTitle: 'Learning analytics',
       learningAnalyticsConsentDescription:
-        'Yes allows KlickerUZH to use your later activity for individual learning analytics. No excludes you immediately. Individual learning-analytics data already created for you is deleted during the next successful overnight processing cycle. Aggregate results are updated when they are next recomputed. If you turn this back on, only later activity is used; earlier activity is not added retroactively.',
+        'Yes allows KlickerUZH to use all eligible stored activity data for your account for individual learning analytics after the course is recomputed following your current choice. No means that no individual learning-analytics data is used; existing individual learning-analytics data is deleted during the next successful overnight processing cycle. Aggregate results are updated when they are next recomputed. If you turn this back on, all eligible stored activity data can be included again.',
       learningAnalyticsConsentSaved:
         'Your learning-analytics choice has been saved.',
       learningAnalyticsConsentFailed:

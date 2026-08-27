@@ -36,7 +36,7 @@ it consumes, never a moving branch, dirty tree, or generated mirror.
 - **Typed Json fields are two edits**: `/// [TypeName]` doc comment on the field AND the declaration in `packages/graphql/src/types/app.ts` (`PrismaJson` namespace, shape from `@klicker-uzh/types`).
 - **Decimal fields**: Python client needs `enable_experimental_decimal = true` in `apps/analytics/prisma/schema/py.prisma` (already set — don't remove); TS side never truthy-checks Decimals.
 - **Don't touch synced Analytics model files by hand** — `prisma:sync` overwrites them while preserving Analytics-owned `py.prisma` and `datasource.prisma`.
-- **Keep participant data-use controls global** — research and learning-analytics choices belong on `Participant` as current state; `Participation` remains course membership with no per-course choice or history. Research consent allows future exports to include all stored canonical data or none, while learning-analytics re-enable starts at a prospective boundary without backfill.
+- **Keep participant data-use controls global** — research and learning-analytics choices belong on `Participant` as current state; `Participation` remains course membership with no per-course choice or history. Each current `true` choice includes all stored canonical data for its purpose, while `false` includes none.
 - **Participant email uniqueness is per auth mode** (`@@unique([email, isSSOAccount])`) — cross-mode duplicate prevention lives in service logic, not the schema.
 
 ## Seeds — two independent paths
