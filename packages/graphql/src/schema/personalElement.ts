@@ -102,15 +102,14 @@ export const UpdatePersonalElementInput = builder.inputType(
   }
 )
 
-export const CardGenerationLeaseRef =
-  builder.objectRef<DB.CardGenerationLease>('CardGenerationLease')
-
-export const CardGenerationLease = CardGenerationLeaseRef.implement({
+export const CardGenerationLease = builder
+  .objectRef<DB.CardGenerationLease>('CardGenerationLease')
+  .implement({
   fields: (t) => ({
     id: t.exposeID('id'),
     attemptToken: t.exposeString('attemptToken'),
   }),
-})
+  })
 
 export const CardPlanEntryInput = builder.inputType('CardPlanEntryInput', {
   fields: (t) => ({

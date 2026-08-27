@@ -13,6 +13,7 @@ const TRANSACTION_MAX_WAIT_MS = 5_000
 const TRANSACTION_TIMEOUT_MS = 15_000
 const CARD_GENERATION_LEASE_MS = 5 * 60 * 1000
 const MAX_SOURCE_COUNT = 32
+const MAX_CANDIDATE_COUNT = 32
 const MAX_ID_LENGTH = 128
 const MAX_TITLE_LENGTH = 256
 const MAX_URL_LENGTH = 2_048
@@ -174,7 +175,7 @@ const sourceSchema = z
   .object({
     sourceId: z.string().trim().min(1).max(MAX_ID_LENGTH),
     chunkId: z.string().trim().min(1).max(MAX_ID_LENGTH),
-    title: z.string().trim().min(1).max(MAX_TITLE_LENGTH).optional(),
+    title: z.string().trim().min(1).max(MAX_TITLE_LENGTH).nullish(),
     url: z
       .string()
       .trim()
@@ -183,11 +184,11 @@ const sourceSchema = z
       .refine((value) => /^https?:\/\//i.test(value), {
         message: 'Source URLs must use http or https',
       })
-      .optional(),
-    page: z.number().finite().optional(),
+      .nullish(),
+    page: z.number().finite().nullish(),
     metadata: z
       .record(z.string().max(MAX_ID_LENGTH), sourceMetadataValueSchema)
-      .optional(),
+      .nullish(),
   })
   .strict()
   .superRefine((source, refinementContext) => {
@@ -236,7 +237,7 @@ const candidateSchema = z
     sources: sourcesSchema,
     sourceMessageId: z.string().trim().min(1).max(MAX_ID_LENGTH),
     sourceToolCallId: z.string().trim().min(1).max(MAX_ID_LENGTH),
-    origin: z.enum(['AI_GENERATED', 'AUTHORED']).optional(),
+    origin: z.enum(['AI_GENERATED', 'AUTHORED']).nullish(),
   })
   .strict()
 
@@ -277,6 +278,11 @@ const cardGenerationLeaseInputSchema = z
     attemptToken: z.string().trim().min(1).max(MAX_ID_LENGTH),
   })
   .strict()
+
+const leaseSettlementSchema = z.object({
+  id: z.string().uuid(),
+  attemptToken: z.string().min(1),
+})
 
 export type PersonalElementSource = z.infer<typeof sourceSchema>
 
@@ -364,6 +370,8 @@ function isPrismaError(error: unknown, code: 'P2002' | 'P2034') {
   )
 }
 
+// Prisma 7 wraps adapter serialization conflicts as P2034; this catches
+// unwrapped raw adapter errors defensively.
 function isSerializationConflict(error: unknown) {
   return (
     typeof error === 'object' &&
@@ -422,6 +430,25 @@ async function assertCourseParticipation(
   }
 }
 
+async function fetchSavedTitles(
+  prisma: PrismaTransactionClient,
+  participantId: string,
+  courseId: string,
+  excludeCandidateIds?: readonly string[]
+) {
+  const savedElements = await prisma.personalElement.findMany({
+    where: {
+      participantId,
+      courseId,
+      ...(excludeCandidateIds && excludeCandidateIds.length > 0
+        ? { candidateId: { notIn: [...excludeCandidateIds] } }
+        : {}),
+    },
+    select: { name: true },
+  })
+  return savedElements.map((element) => element.name)
+}
+
 export type PreparedCardPlanEntry = {
   type: 'FLASHCARD'
   candidateId: string
@@ -468,14 +495,11 @@ export async function prepareCardPlan(
     )
   }
 
-  const savedElements = await context.prisma.personalElement.findMany({
-    where: {
-      participantId: context.participantId,
-      courseId: parsed.courseId,
-    },
-    select: { name: true },
-  })
-  const existingTitles = savedElements.map((element) => element.name)
+  const existingTitles = await fetchSavedTitles(
+    context.prisma,
+    context.participantId,
+    parsed.courseId
+  )
 
   const planId = randomUUID()
   const retained: PreparedCardPlanEntry[] = []
@@ -541,17 +565,12 @@ export async function validateCardCandidate(
     )
   }
 
-  const savedElements = await context.prisma.personalElement.findMany({
-    where: {
-      participantId: context.participantId,
-      courseId: parsed.courseId,
-    },
-    select: { name: true },
-  })
-  const duplicate = findPotentialDuplicateTitle(
-    parsed.title,
-    savedElements.map((element) => element.name)
+  const savedTitles = await fetchSavedTitles(
+    context.prisma,
+    context.participantId,
+    parsed.courseId
   )
+  const duplicate = findPotentialDuplicateTitle(parsed.title, savedTitles)
   if (duplicate) {
     throw personalElementError(
       'PERSONAL_ELEMENTS_DUPLICATE_TITLE',
@@ -565,10 +584,10 @@ export async function validateCardCandidate(
 function normalizeCandidates(
   candidates: readonly PersonalElementCandidateInput[]
 ) {
-  if (candidates.length === 0 || candidates.length > MAX_SOURCE_COUNT) {
+  if (candidates.length === 0 || candidates.length > MAX_CANDIDATE_COUNT) {
     throw personalElementError(
       'PERSONAL_ELEMENTS_INVALID_INPUT',
-      'At least one and at most 32 candidates are allowed'
+      `At least one and at most ${MAX_CANDIDATE_COUNT} candidates are allowed`
     )
   }
 
@@ -716,10 +735,10 @@ export async function completeCardGenerationLease(
 ) {
   assertParticipantContext(context)
   const now = new Date()
-  const parsed = parsePersonalElementInput(
-    z.object({ id: z.string().uuid(), attemptToken: z.string().min(1) }),
-    { id, attemptToken }
-  )
+  const parsed = parsePersonalElementInput(leaseSettlementSchema, {
+    id,
+    attemptToken,
+  })
   const completed = await context.prisma.cardGenerationLease.updateMany({
     where: {
       id: parsed.id,
@@ -739,16 +758,18 @@ export async function abortCardGenerationLease(
   context: PersonalElementServiceContext
 ) {
   assertParticipantContext(context)
-  const parsed = parsePersonalElementInput(
-    z.object({ id: z.string().uuid(), attemptToken: z.string().min(1) }),
-    { id, attemptToken }
-  )
+  const now = new Date()
+  const parsed = parsePersonalElementInput(leaseSettlementSchema, {
+    id,
+    attemptToken,
+  })
   const aborted = await context.prisma.cardGenerationLease.updateMany({
     where: {
       id: parsed.id,
       participantId: context.participantId,
       attemptToken: parsed.attemptToken,
       completedAt: null,
+      leaseExpiresAt: { gt: now },
     },
     data: { leaseExpiresAt: new Date() },
   })
@@ -828,17 +849,12 @@ export async function createPersonalElements(
     )
 
     if (missing.length > 0) {
-      const savedTitles = await transaction.personalElement.findMany({
-        where: {
-          participantId: context.participantId,
-          courseId: input.courseId,
-          candidateId: {
-            notIn: candidates.map((candidate) => candidate.candidateId),
-          },
-        },
-        select: { name: true },
-      })
-      const titlesToScreen = savedTitles.map((element) => element.name)
+      const titlesToScreen = await fetchSavedTitles(
+        transaction,
+        context.participantId,
+        input.courseId,
+        missing.map((candidate) => candidate.candidateId)
+      )
       for (const candidate of missing) {
         const duplicate = findPotentialDuplicateTitle(
           candidate.name,
@@ -1089,15 +1105,15 @@ export async function updatePersonalElement(
     name: input.name?.trim(),
     content: input.content?.trim(),
     explanation: input.explanation?.trim(),
-    sources: input.sources,
+    sources: input.sources ?? undefined,
   }
   const parsedUpdate = parsePersonalElementInput(
     z
       .object({
-        name: z.string().min(1).max(MAX_TITLE_LENGTH).optional(),
-        content: z.string().min(1).max(8_192).optional(),
-        explanation: cardExplanationSchema.optional(),
-        sources: sourcesSchema.optional(),
+        name: z.string().min(1).max(MAX_TITLE_LENGTH).nullish(),
+        content: z.string().min(1).max(8_192).nullish(),
+        explanation: cardExplanationSchema.nullish(),
+        sources: sourcesSchema.nullish(),
       })
       .strict(),
     updateData

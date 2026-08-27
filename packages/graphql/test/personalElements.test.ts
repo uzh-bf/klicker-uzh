@@ -564,6 +564,30 @@ describe('personal elements service', () => {
     ).toBe(false)
   })
 
+  it('does not abort an expired lease', async () => {
+    const { participant, planMessage } = await createFixture()
+    const lease = await claimCardGenerationLease(
+      {
+        planMessageId: planMessage.id,
+        planToolCallId: `plan-${randomUUID()}`,
+        attemptToken: `attempt-${randomUUID()}`,
+      },
+      context(participant.id)
+    )
+    await prisma.cardGenerationLease.update({
+      where: { id: lease.id },
+      data: { leaseExpiresAt: new Date(Date.now() - 1_000) },
+    })
+
+    expect(
+      await abortCardGenerationLease(
+        lease.id,
+        lease.attemptToken,
+        context(participant.id)
+      )
+    ).toBe(false)
+  })
+
   it('progresses SM-2 and guards revisions by version', async () => {
     const { course, participant } = await createFixture()
     const [element] = await createPersonalElements(
@@ -694,6 +718,29 @@ describe('personal elements service', () => {
     expect(renamed.correctCountStreak).toBe(answered.correctCountStreak)
     expect(renamed.correctCount).toBe(answered.correctCount)
     expect(renamed.nextDueAt).toEqual(answered.nextDueAt)
+  })
+
+  it('treats explicit null fields as not provided on update', async () => {
+    const { course, participant } = await createFixture()
+    const [element] = await createPersonalElements(
+      { courseId: course.id, candidates: [candidate()] },
+      context(participant.id)
+    )
+
+    const renamed = await updatePersonalElement(
+      {
+        id: element!.id,
+        expectedVersion: 1,
+        content: null,
+        explanation: null,
+        sources: null,
+        name: 'Renamed card',
+      },
+      context(participant.id)
+    )
+    expect(renamed.version).toBe(1)
+    expect(renamed.name).toBe('Renamed card')
+    expect(renamed.sources).toEqual(element!.sources)
   })
 
   it('resets learning state when explanation or sources change', async () => {
@@ -954,6 +1001,40 @@ describe('personal elements service', () => {
       context(participant.id)
     )
     expect(elements).toHaveLength(2)
+  })
+
+  it('screens a new candidate against an existing card re-saved in the same batch', async () => {
+    const { course, participant } = await createFixture()
+    const [saved] = await createPersonalElements(
+      {
+        courseId: course.id,
+        candidates: [candidate({ name: 'Opportunity cost' })],
+      },
+      context(participant.id)
+    )
+
+    await expect(
+      createPersonalElements(
+        {
+          courseId: course.id,
+          candidates: [
+            candidate({
+              candidateId: saved!.candidateId!,
+              name: 'Opportunity cost',
+            }),
+            candidate({ name: 'Opportunity cost' }),
+          ],
+        },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_DUPLICATE_TITLE' },
+    })
+    expect(
+      await prisma.personalElement.count({
+        where: { participantId: participant.id, courseId: course.id },
+      })
+    ).toBe(1)
   })
 
   it('rejects exactly one of two concurrent saves with the same title', async () => {
