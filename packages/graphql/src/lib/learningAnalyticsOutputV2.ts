@@ -183,7 +183,7 @@ function buildSafeStudentReportCohortV2(
   const safeRows = Array.from(tupleGroups.values()).flatMap((group) =>
     hasMinimumCellSize(group.length) ? group : []
   )
-  if (!hasMinimumCellSize(safeRows.length)) {
+  if (!hasSafeCellSize(safeRows.length, candidateRows.length)) {
     return {
       participantKeys: new Set(),
       report: { isSuppressed: true, effectiveN: null, students: [] },

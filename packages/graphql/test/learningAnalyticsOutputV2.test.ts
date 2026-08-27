@@ -158,9 +158,16 @@ describe('learning analytics V2 disclosure output', () => {
         },
         {
           activityType: ActivityType.MICRO_LEARNING,
-          participantCompletions: eligibleParticipantKeys.map(
-            (participantKey) => ({ participantKey, completion: 1 })
-          ),
+          participantCompletions: [
+            ...eligibleParticipantKeys.slice(0, 5).map((participantKey) => ({
+              participantKey,
+              completion: 1,
+            })),
+            ...eligibleParticipantKeys.slice(5).map((participantKey) => ({
+              participantKey,
+              completion: 0.5,
+            })),
+          ],
         },
       ],
       nextRandomInt: (max) => max - 1,
@@ -295,8 +302,36 @@ describe('learning analytics V2 disclosure output', () => {
     )
   })
 
+  it.each([
+    { candidateSize: 6, isSuppressed: true },
+    { candidateSize: 8, isSuppressed: true },
+    { candidateSize: 10, isSuppressed: false },
+  ])(
+    'protects the student-report complement for a released five-member tuple group with $candidateSize candidates',
+    ({ candidateSize, isSuppressed }) => {
+      const report = buildLearningAnalyticsStudentReportV2(
+        [
+          ...participantKeys(5).map((participantKey) => ({
+            participantKey,
+            completions: [1],
+          })),
+          ...Array.from({ length: candidateSize - 5 }, (_, index) => ({
+            participantKey: `candidate-${index + 1}`,
+            completions: [
+              candidateSize === 10 && index === candidateSize - 6 ? 0.1 : 0,
+            ],
+          })),
+        ],
+        (max) => max - 1
+      )
+
+      expect(report.isSuppressed).toBe(isSuppressed)
+      expect(report.effectiveN).toBe(isSuppressed ? null : 5)
+    }
+  )
+
   it('derives performance summaries only from the released student cohort', () => {
-    const eligibleParticipantKeys = participantKeys(6)
+    const eligibleParticipantKeys = participantKeys(10)
     const performance = buildCoursePerformanceAnalyticsV2({
       eligibleParticipantKeys,
       activities: [
@@ -305,7 +340,7 @@ describe('learning analytics V2 disclosure output', () => {
           participantCompletions: eligibleParticipantKeys.map(
             (participantKey, index) => ({
               participantKey,
-              completion: index < 5 ? 1 : 0,
+              completion: index < 5 ? 1 : index < 9 ? 0.5 : 0,
             })
           ),
         },
