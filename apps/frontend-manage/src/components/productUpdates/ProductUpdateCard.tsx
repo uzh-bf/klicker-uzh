@@ -10,7 +10,6 @@ import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { trackProductUpdate } from './tracking'
-import type { ProductUpdateState } from './useProductUpdates'
 
 function useLocalized() {
   const locale = useLocale()
@@ -21,13 +20,19 @@ function useLocalized() {
 
 function ProductUpdateCard({
   update,
-  state,
+  dismissed,
+  statesLoaded,
   onPresent,
   onRead,
   onDismiss,
 }: {
   update: ProductUpdate
-  state?: ProductUpdateState
+  dismissed?: boolean
+  // False while the stored read states are still being fetched. Reporting has
+  // to wait for that query: its response replaces the whole cached state array,
+  // so a mutation answered earlier would lose its cache write and the card
+  // would look unread again until the next reload.
+  statesLoaded: boolean
   onPresent: (updateId: string) => void
   onRead: (updateId: string) => void
   // Omitted where dismissal makes no sense, such as an already dismissed entry
@@ -44,7 +49,7 @@ function ProductUpdateCard({
 
   useEffect(() => {
     const card = cardRef.current
-    if (!card) return
+    if (!card || !statesLoaded) return
 
     // The whole card content is visible at once, so a card that reaches the
     // viewport has been presented and read. Cards below the fold stay unread
@@ -69,7 +74,7 @@ function ProductUpdateCard({
     observer.observe(card)
 
     return () => observer.disconnect()
-  }, [onPresent, onRead, update.id])
+  }, [onPresent, onRead, statesLoaded, update.id])
 
   const onCtaClick = useCallback(() => {
     if (!update.cta) return
@@ -90,7 +95,7 @@ function ProductUpdateCard({
       ref={cardRef}
       className={twMerge(
         'flex flex-col gap-2 rounded-lg border border-solid border-slate-300 p-4',
-        state?.dismissedAt && 'bg-slate-50 text-slate-500'
+        dismissed && 'bg-slate-50 text-slate-500'
       )}
       data-cy={`product-update-${update.id}`}
     >

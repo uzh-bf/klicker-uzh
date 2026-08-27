@@ -7,7 +7,8 @@ import { useProductUpdates } from './useProductUpdates'
 function ProductUpdateFeedModal({ onClose }: { onClose: () => void }) {
   const t = useTranslations()
   const router = useRouter()
-  const { entries, recordPresentation, markRead, dismiss } = useProductUpdates()
+  const { entries, loading, recordPresentation, markRead, dismiss } =
+    useProductUpdates()
 
   // The feed is the "what is new" surface, so a dismissed entry leaves it. The
   // /updates page keeps the full history.
@@ -35,7 +36,8 @@ function ProductUpdateFeedModal({ onClose }: { onClose: () => void }) {
             <ProductUpdateCard
               key={entry.update.id}
               update={entry.update}
-              state={entry.state}
+              dismissed={entry.dismissed}
+              statesLoaded={!loading}
               onPresent={recordPresentation}
               onRead={markRead}
               onDismiss={dismiss}

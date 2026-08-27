@@ -32,7 +32,8 @@ function Updates() {
               <ProductUpdateCard
                 key={entry.update.id}
                 update={entry.update}
-                state={entry.state}
+                dismissed={entry.dismissed}
+                statesLoaded={!loading}
                 onPresent={recordPresentation}
                 onRead={markRead}
                 onDismiss={entry.dismissed ? undefined : dismiss}

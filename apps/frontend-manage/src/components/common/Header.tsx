@@ -317,7 +317,9 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
   return (
     <>
       <div
-        className="print:hidden! flex h-full w-full flex-row items-center justify-between border-b border-slate-300 bg-slate-100 font-bold text-slate-700"
+        // The gap keeps the left and right navigation groups apart on narrow
+        // desktop widths, where they would otherwise touch label to icon.
+        className="print:hidden! flex h-full w-full flex-row items-center justify-between gap-x-2 border-b border-slate-300 bg-slate-100 font-bold text-slate-700"
         data-cy="navigation"
       >
         <div className="ml-4 flex flex-row items-center gap-1.5">
