@@ -70,6 +70,10 @@ export interface SelectLatestReleasedUpdateArgs {
  * surface that has no actor, such as the public documentation homepage. Entries
  * that require a feature flag are skipped, because an anonymous surface cannot
  * evaluate flags for anyone.
+ *
+ * The first match wins, so `updates` must already be ordered newest first.
+ * `PRODUCT_UPDATES` satisfies that precondition and the catalog validation
+ * suite enforces it.
  */
 export function selectLatestReleasedUpdate({
   updates,

@@ -124,7 +124,10 @@ describe('PRODUCT_UPDATES catalog', () => {
     it('links its CTA to an internal path or an https URL', () => {
       if (!update.cta) return
       const { href } = update.cta
-      expect(href.startsWith('/') || href.startsWith('https://')).toBe(true)
+      // A protocol-relative href such as `//evil.example` also starts with a
+      // slash, so it is excluded from the internal-path branch.
+      const isInternalPath = href.startsWith('/') && !href.startsWith('//')
+      expect(isInternalPath || href.startsWith('https://')).toBe(true)
     })
 
     it('links its details to an https URL', () => {
