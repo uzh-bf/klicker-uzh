@@ -193,16 +193,20 @@ function PracticeQuizPage({
     totalSteps,
   ])
 
+  // Every branch of this route marks itself as an answering surface, including
+  // the ones rendered before the quiz has loaded: the layout decides on its
+  // first render whether a product update may appear, and a later branch cannot
+  // recall a request that the earlier one already sent.
   if (loading)
     return (
-      <Layout embedded={embedded}>
+      <Layout embedded={embedded} activelyAnswering>
         <Loader />
       </Layout>
     )
 
   if (!data?.practiceQuiz) {
     return (
-      <Layout embedded={embedded}>
+      <Layout embedded={embedded} activelyAnswering>
         <UserNotification
           type="error"
           message={t('pwa.practiceQuiz.notFound')}
@@ -213,7 +217,9 @@ function PracticeQuizPage({
 
   if (error) {
     return (
-      <Layout embedded={embedded}>{t('shared.generic.systemError')}</Layout>
+      <Layout embedded={embedded} activelyAnswering>
+        {t('shared.generic.systemError')}
+      </Layout>
     )
   }
 
@@ -225,6 +231,7 @@ function PracticeQuizPage({
     return (
       <Layout
         embedded={embedded}
+        activelyAnswering
         displayName={data.practiceQuiz.displayName}
         course={data.practiceQuiz.course ?? undefined}
       >
@@ -249,6 +256,7 @@ function PracticeQuizPage({
   return (
     <Layout
       embedded={embedded}
+      activelyAnswering
       displayName={data.practiceQuiz.displayName}
       course={data.practiceQuiz.course ?? undefined}
     >

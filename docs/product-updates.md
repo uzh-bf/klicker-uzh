@@ -231,10 +231,17 @@ desktop keeps the usual modal width.
 | `NEXT_PUBLIC_IS_ASSESSMENT` is `true`                      | The assessment build shows no product news at all                                            |
 | The page is embedded, or runs inside a frame               | Announcements must not appear inside a learning management system                            |
 | A live quiz is being answered (`liveQuizId`, `/session/…`) | Nothing may compete with an open question                                                    |
+| The page sets `activelyAnswering`                          | Practice quizzes and microlearnings are answered at their own pace and carry no other marker |
 | `self.role` is not `PARTICIPANT`                           | Temporary and anonymous participants are outside the subsystem, and the API rejects them too |
 
 Suppression is complete, not cosmetic: an excluded surface issues no
 product-update query, no mutation, and no identity query for flag targeting.
+An answering page opts out explicitly through `activelyAnswering` instead of the
+layout matching a list of paths, so a new answering route states its own
+requirement rather than inheriting one it does not know about. Every branch of
+such a page sets the flag, including the loading and error branches: the layout
+decides on its first render, and the read-state query it sends there cannot be
+recalled once the answering branch takes over.
 
 `PwaFeatureFlagProvider` (`apps/frontend-pwa/src/components/featureFlags/`) is
 mounted in `_app.tsx` inside the Apollo provider and sets

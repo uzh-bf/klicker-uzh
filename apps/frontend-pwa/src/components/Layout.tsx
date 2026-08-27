@@ -38,6 +38,11 @@ interface LayoutProps {
     SetStateAction<'questions' | 'feedbacks' | 'leaderboard'>
   >
   liveQuizId?: string
+  // Set by the pages on which a student works through questions at their own
+  // pace. A live quiz announces itself through `liveQuizId`, but self-paced
+  // answering has no such marker, and interrupting an answer with a product
+  // announcement is exactly what the subsystem must not do.
+  activelyAnswering?: boolean
   className?: { header?: string; body?: string }
 }
 
@@ -49,6 +54,7 @@ function Layout({
   mobileMenuItems,
   setActiveMobilePage,
   liveQuizId,
+  activelyAnswering = false,
   className,
 }: LayoutProps) {
   const t = useTranslations()
@@ -67,13 +73,15 @@ function Layout({
 
   // Product updates reach registered participants who are reading the app, and
   // nobody else: not the assessment build, not a page embedded in a learning
-  // management system, not somebody answering a live quiz, and not a temporary
-  // or anonymous participant. A suppressed surface asks the backend nothing.
+  // management system, not somebody answering questions in a live quiz or at
+  // their own pace, and not a temporary or anonymous participant. A suppressed
+  // surface asks the backend nothing.
   const productUpdatesEnabled =
     process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
     !embedded &&
     !pageInFrame &&
     !liveQuizId &&
+    !activelyAnswering &&
     !router.pathname.startsWith('/session') &&
     dataParticipant?.self?.role === UserRole.Participant
 
