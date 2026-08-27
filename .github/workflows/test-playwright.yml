@@ -10,7 +10,6 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  # Canary-only touch: exercise the complete public PR ARM64 route.
   # The hosted and public-PR predicates are intentional complements. Only the
   # exact lowercase value "true" or an exact canary PR number enables the
   # self-hosted path; every other value fails closed to GitHub-hosted runners.
@@ -411,7 +410,7 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-public-pr-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
-    uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@rs/arm64-runner-canary
+    uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3
 
   # Always reports a status even when the tests are skipped by the path filter,
   # so this job can be used as a required check in branch protection.
@@ -422,7 +421,7 @@ jobs:
         build-and-compile-hosted,
         test-playwright-hosted,
         test-playwright-public-pr,
-    ]
+      ]
     if: always()
     runs-on: ${{ needs.test-playwright-public-pr.result != 'skipped' && 'public-pr-arm64' || 'ubuntu-latest' }}
     steps:
