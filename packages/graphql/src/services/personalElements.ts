@@ -608,18 +608,27 @@ function normalizeCandidates(
 }
 
 // The GraphQL wire contract allows null for optional source fields; Prisma
-// rejects null in Json values, so absent fields are normalized to undefined
-// before validation and persistence.
+// rejects null in Json values, so absent fields are dropped before
+// validation and persistence. Keys are omitted rather than set to undefined
+// so persisted Json matches the parsed shape for deep-equality checks.
 function toPersistedSources(
   sources: readonly PersonalElementSourceInput[]
 ) {
   return sources.map((source) => ({
     sourceId: source.sourceId,
     chunkId: source.chunkId,
-    title: source.title ?? undefined,
-    url: source.url ?? undefined,
-    page: source.page ?? undefined,
-    metadata: source.metadata ?? undefined,
+    ...(source.title !== undefined && source.title !== null
+      ? { title: source.title }
+      : {}),
+    ...(source.url !== undefined && source.url !== null
+      ? { url: source.url }
+      : {}),
+    ...(source.page !== undefined && source.page !== null
+      ? { page: source.page }
+      : {}),
+    ...(source.metadata !== undefined && source.metadata !== null
+      ? { metadata: source.metadata }
+      : {}),
   }))
 }
 
