@@ -26,6 +26,7 @@ export type LearningAnalyticsCourseControlOutput = {
 
 export type LearningAnalyticsCourseStartOutput = {
   courseId: string
+  request: LearningAnalyticsCourseControlInput
   cleanupOnly: boolean
   fenceAt: string
 }

@@ -269,6 +269,17 @@ function courseRequest(
   }
 }
 
+function fullCourseRequest(
+  request: LearningAnalyticsCourseControlInput
+): LearningAnalyticsCourseControlInput {
+  return {
+    contractVersion: request.contractVersion,
+    runId: request.runId,
+    courseId: request.courseId,
+    mode: 'full',
+  }
+}
+
 function cleanupPriority(row: SelectedCourseRow): number {
   if (
     !row.isLearningAnalyticsEnabled ||
@@ -438,9 +449,43 @@ export async function startLearningAnalyticsCourse(
 
     const course = await transaction.course.findUnique({
       where: { id: request.courseId },
-      select: { isLearningAnalyticsEnabled: true, isArchived: true },
+      select: {
+        isLearningAnalyticsEnabled: true,
+        isArchived: true,
+        analyticsLastComputedAt: true,
+      },
     })
     if (!course) throw new Error('Learning-analytics course does not exist')
+
+    let effectiveRequest = request
+    if (request.mode !== 'full') {
+      let hasRecentChoice = course.analyticsLastComputedAt === null
+      if (!hasRecentChoice) {
+        const revisionRows = await transaction.$queryRaw<
+          Array<{ hasRecentChoice: boolean }>
+        >(
+          DB.Prisma.sql`
+            SELECT EXISTS (
+              SELECT 1
+              FROM "Participation" AS membership
+              JOIN "Participant" AS participant
+                ON participant."id" = membership."participantId"
+              WHERE membership."courseId" = CAST(${request.courseId} AS uuid)
+                AND participant."learningAnalyticsChoiceAt"
+                  >= ${course.analyticsLastComputedAt}
+            ) AS "hasRecentChoice"
+          `
+        )
+        const recentChoice = revisionRows[0]?.hasRecentChoice
+        if (typeof recentChoice !== 'boolean') {
+          throw new Error(
+            'PostgreSQL did not return an analytics revision check'
+          )
+        }
+        hasRecentChoice = recentChoice
+      }
+      if (hasRecentChoice) effectiveRequest = fullCourseRequest(request)
+    }
 
     const cleanupOnly = !course.isLearningAnalyticsEnabled || course.isArchived
     if (!cleanupOnly) {
@@ -451,6 +496,7 @@ export async function startLearningAnalyticsCourse(
     }
     return {
       courseId: request.courseId,
+      request: effectiveRequest,
       cleanupOnly,
       fenceAt: fenceAt.toISOString(),
     }
@@ -463,7 +509,6 @@ export async function completeLearningAnalyticsCourse(
 ): Promise<LearningAnalyticsCourseControlOutput> {
   const request = courseWorkflowInputSchema.parse(input.request)
   const completedAtValue = rfc3339DateTimeSchema.parse(input.completedAt)
-  const completedAt = new Date(completedAtValue)
   const fenceAtValue = rfc3339DateTimeSchema.parse(input.fenceAt)
   const fenceAt = new Date(fenceAtValue)
 
@@ -486,7 +531,7 @@ export async function completeLearningAnalyticsCourse(
     if (
       isCleanupOnly ||
       (course.analyticsLastComputedAt &&
-        course.analyticsLastComputedAt > completedAt)
+        course.analyticsLastComputedAt > fenceAt)
     ) {
       return isCleanupOnly
     }
@@ -511,14 +556,29 @@ export async function completeLearningAnalyticsCourse(
     }
     if (hasRecentChoice) return isCleanupOnly
 
+    const publicationRows = await transaction.$queryRaw<
+      Array<{ publicationAt: Date }>
+    >(
+      DB.Prisma.sql`
+        SELECT clock_timestamp() AS "publicationAt"
+      `
+    )
+    const publicationAt = publicationRows[0]?.publicationAt
+    if (
+      !(publicationAt instanceof Date) ||
+      Number.isNaN(publicationAt.valueOf())
+    ) {
+      throw new Error('PostgreSQL did not return an analytics publication time')
+    }
+
     await transaction.course.update({
       where: { id: request.courseId },
       data: {
         areAnalyticsValid: true,
-        analyticsLastComputedAt: completedAt,
-        chatAnalyticsValidAt: completedAt,
+        analyticsLastComputedAt: publicationAt,
+        chatAnalyticsValidAt: publicationAt,
         ...(request.mode === 'finalize'
-          ? { analyticsFinalizedAt: completedAt }
+          ? { analyticsFinalizedAt: publicationAt }
           : {}),
       },
     })

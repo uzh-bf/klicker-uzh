@@ -51,6 +51,17 @@ function courseChildKey(input: LearningAnalyticsCourseControlInput): string {
   return `course:${input.runId}:${input.courseId}:${input.mode}`
 }
 
+function fullCourseRequest(
+  input: LearningAnalyticsCourseControlInput
+): LearningAnalyticsCourseControlInput {
+  return {
+    contractVersion: input.contractVersion,
+    runId: input.runId,
+    courseId: input.courseId,
+    mode: 'full',
+  }
+}
+
 function partitionIntoLanes(
   courses: LearningAnalyticsCourseControlInput[],
   laneCount: number
@@ -136,6 +147,7 @@ export function prepareLearningAnalyticsTasks({
           },
         }
       )) as LearningAnalyticsCourseStartOutput
+      const effectiveRequest = start.request ?? fullCourseRequest(input)
 
       let privateRef: ChildRunRef<CourseWorkflowSuccess> | undefined
       const stubs = createAnalyticsEngineStubs(
@@ -147,12 +159,12 @@ export function prepareLearningAnalyticsTasks({
             CourseWorkflowInput,
             CourseWorkflowSuccess
           >(workflowName, payload as CourseWorkflowInput, {
-            key: `private:${courseChildKey(input)}`,
+            key: `private:${courseChildKey(effectiveRequest)}`,
             additionalMetadata: {
               ...CHILD_METADATA,
-              runId: input.runId,
-              courseId: input.courseId,
-              mode: input.mode,
+              runId: effectiveRequest.runId,
+              courseId: effectiveRequest.courseId,
+              mode: effectiveRequest.mode,
             },
           })
           if (executionContext.cancelled) {
@@ -169,7 +181,7 @@ export function prepareLearningAnalyticsTasks({
 
       let result: CourseWorkflowSuccess
       try {
-        result = await stubs.course(input)
+        result = await stubs.course(effectiveRequest)
       } catch (error) {
         if (executionContext.cancelled && privateRef) {
           await cancelAndAwait([privateRef])
@@ -187,25 +199,52 @@ export function prepareLearningAnalyticsTasks({
       }
 
       const completionInput: LearningAnalyticsCourseCompletionInput = {
-        request: input,
+        request: effectiveRequest,
         completedAt: result.completedAt,
         cleanupOnly: start.cleanupOnly,
         fenceAt: start.fenceAt,
       }
 
-      return executionContext.runChild(
-        learningAnalyticsCourseCompletion,
-        completionInput,
-        {
-          key: `complete:${courseChildKey(input)}`,
+      let completionRef:
+        | ChildRunRef<LearningAnalyticsCourseControlOutput>
+        | undefined
+      try {
+        completionRef = await executionContext.runNoWaitChild<
+          LearningAnalyticsCourseCompletionInput,
+          LearningAnalyticsCourseControlOutput
+        >(learningAnalyticsCourseCompletion, completionInput, {
+          key: `complete:${courseChildKey(effectiveRequest)}`,
           additionalMetadata: {
             ...CHILD_METADATA,
-            runId: input.runId,
-            courseId: input.courseId,
-            mode: input.mode,
+            runId: effectiveRequest.runId,
+            courseId: effectiveRequest.courseId,
+            mode: effectiveRequest.mode,
           },
+        })
+        if (executionContext.cancelled) {
+          const cancelledRef = completionRef
+          completionRef = undefined
+          await cancelAndAwait([cancelledRef])
+          throw new NonRetryableError(
+            `Learning-analytics course ${input.courseId} was cancelled during completion dispatch`
+          )
         }
-      )
+        const output = await completionRef.output
+        if (executionContext.cancelled) {
+          const cancelledRef = completionRef
+          completionRef = undefined
+          await cancelAndAwait([cancelledRef])
+          throw new NonRetryableError(
+            `Learning-analytics course ${input.courseId} was cancelled during completion`
+          )
+        }
+        return output
+      } catch (error) {
+        if (executionContext.cancelled && completionRef) {
+          await cancelAndAwait([completionRef])
+        }
+        throw error
+      }
     },
   })
 

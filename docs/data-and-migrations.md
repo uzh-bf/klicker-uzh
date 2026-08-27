@@ -82,23 +82,28 @@ owns scheduling, selection, locking, and product-state transitions; the
 private analytics engine owns the business computation. The public course
 handlers keep product status separate from private row cleanup.
 `packages/graphql/src/services/learningAnalyticsCoordinator.ts:startLearningAnalyticsCourse`
-acquires the shared global and course advisory locks. For an enabled,
-non-archived course it sets `areAnalyticsValid` to `false` and clears
-`chatAnalyticsValidAt`, while preserving prior computation markers, and captures
-a transient database-time fence after both locks are held. A disabled or archived
-course is cleanup-only and does not advance or invalidate public status. On
-ordinary success,
+acquires the shared global and course advisory locks. It re-evaluates the current
+member choices while holding those locks and returns the effective request to the
+workflow. A queued `incremental` or `finalize` request becomes `full` when a
+member choice is at or after the course marker; the private workflow receives that
+effective request, not the stale queued mode. For an enabled, non-archived course
+it sets `areAnalyticsValid` to `false` and clears `chatAnalyticsValidAt`, while
+preserving prior computation markers, and captures a transient database-time
+fence after both locks are held. A disabled or archived course is cleanup-only
+and does not advance or invalidate public status. On ordinary success,
 `packages/graphql/src/services/learningAnalyticsCoordinator.ts:completeLearningAnalyticsCourse`
 reacquires the locks and first checks whether any current course member has a
 `learningAnalyticsChoiceAt` at or after that fence. If so, it publishes no marker
-and leaves the course invalid for a fresh run. Otherwise it stores the private
-result's exact `completedAt` in `analyticsLastComputedAt` and
-`chatAnalyticsValidAt`, sets `areAnalyticsValid` to `true`, and sets
-`analyticsFinalizedAt` as well for a `finalize` request. The fence stays in the
-public Hatchet control layer and never enters the private `v1` engine contract.
-Cleanup-only completions, disabled or archived courses, and a completion older
-than the stored marker leave public state unchanged. The handler never
-substitutes the time at which the public handler runs.
+and leaves the course invalid for a fresh run. Otherwise it validates the private
+result's RFC3339 `completedAt` as workflow provenance/output, captures PostgreSQL
+publication time for `analyticsLastComputedAt` and `chatAnalyticsValidAt`, sets
+`areAnalyticsValid` to `true`, and sets `analyticsFinalizedAt` from the same
+PostgreSQL publication time for a `finalize` request. The public markers never use
+the private engine clock; they use PostgreSQL time at publication.
+The fence stays in the public Hatchet control layer and never enters the private
+`v1` engine contract. Cleanup-only completions, disabled or archived courses,
+and completions whose start fence predates the stored public marker leave public
+state unchanged.
 
 Analytics tables keyed by a chatbot or live quiz do not duplicate `courseId`;
 course scope resolves through the owning `Chatbot` or `LiveQuiz`. This prevents

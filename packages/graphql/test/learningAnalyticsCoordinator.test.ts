@@ -100,19 +100,31 @@ function coursePrisma(
   initial: CourseState,
   {
     fenceAt = new Date('2026-08-27T02:00:00.000Z'),
+    publicationAt = new Date('2026-08-27T03:00:00.000Z'),
     memberChoiceAt = null,
-  }: { fenceAt?: Date; memberChoiceAt?: Date | null } = {}
+  }: {
+    fenceAt?: Date
+    publicationAt?: Date
+    memberChoiceAt?: Date | null
+  } = {}
 ) {
   let current = { ...initial }
   const queryRaw = vi.fn(
     async (query: { strings?: string[]; values?: unknown[] }) => {
       const sql = query.strings?.join(' ') ?? ''
-      if (sql.includes('clock_timestamp')) return [{ fenceAt }]
+      if (sql.includes('"fenceAt"')) return [{ fenceAt }]
+      if (sql.includes('"publicationAt"')) return [{ publicationAt }]
       if (sql.includes('learningAnalyticsChoiceAt')) {
+        const comparisonAt = query.values
+          ?.slice()
+          .reverse()
+          .find((value): value is Date => value instanceof Date)
         return [
           {
             hasRecentChoice:
-              memberChoiceAt !== null && memberChoiceAt >= fenceAt,
+              memberChoiceAt !== null &&
+              comparisonAt !== undefined &&
+              memberChoiceAt >= comparisonAt,
           },
         ]
       }
@@ -365,7 +377,7 @@ describe('learning analytics coordinator', () => {
       {
         isLearningAnalyticsEnabled: true,
         isArchived: false,
-        analyticsLastComputedAt: null,
+        analyticsLastComputedAt: new Date('2026-08-26T00:00:00.000Z'),
       },
       { fenceAt }
     )
@@ -374,6 +386,7 @@ describe('learning analytics coordinator', () => {
       startLearningAnalyticsCourse(courseRequest(), active.prisma)
     ).resolves.toEqual({
       courseId,
+      request: courseRequest(),
       cleanupOnly: false,
       fenceAt: fenceAt.toISOString(),
     })
@@ -382,7 +395,7 @@ describe('learning analytics coordinator', () => {
       data: { areAnalyticsValid: false, chatAnalyticsValidAt: null },
     })
     expect(active.transaction.$executeRaw).toHaveBeenCalledTimes(2)
-    expect(active.queryRaw).toHaveBeenCalledOnce()
+    expect(active.queryRaw).toHaveBeenCalledTimes(2)
     const fenceQuery = active.queryRaw.mock.calls[0]?.[0]
     expect(fenceQuery?.strings?.join(' ')).toContain('clock_timestamp()')
 
@@ -406,49 +419,124 @@ describe('learning analytics coordinator', () => {
   })
 
   it.each([
-    ['equal to', new Date('2026-08-27T02:00:00.000Z')],
-    ['later than', new Date('2026-08-27T02:00:00.001Z')],
-  ])('does not publish when a member choice is %s the captured fence', async (_relation, memberChoiceAt) => {
-    const fenceAt = new Date('2026-08-27T02:00:00.000Z')
+    ['incremental', { windowSince: '2026-08-26' }],
+    ['finalize', {}],
+  ] as const)(
+    'upgrades a queued %s request when its current member choice is at the preserved marker',
+    async (mode, extra) => {
+      const marker = new Date('2026-08-27T01:00:00.000Z')
+      const request = { ...courseRequest(mode), ...extra }
+      const fixture = coursePrisma(
+        {
+          isLearningAnalyticsEnabled: true,
+          isArchived: false,
+          analyticsLastComputedAt: marker,
+        },
+        { memberChoiceAt: marker }
+      )
+
+      await expect(
+        startLearningAnalyticsCourse(request, fixture.prisma)
+      ).resolves.toMatchObject({
+        courseId,
+        request: courseRequest('full'),
+      })
+      expect(fixture.queryRaw).toHaveBeenCalledTimes(2)
+      const revisionQuery = fixture.queryRaw.mock.calls[1]?.[0]
+      expect(revisionQuery?.strings?.join(' ')).toContain(
+        'learningAnalyticsChoiceAt'
+      )
+      expect(revisionQuery?.values).toContainEqual(marker)
+    }
+  )
+
+  it('keeps a queued incremental request incremental when current member choices predate the marker', async () => {
+    const marker = new Date('2026-08-27T01:00:00.000Z')
+    const request = {
+      ...courseRequest(),
+      windowSince: '2026-08-26',
+    }
     const fixture = coursePrisma(
       {
         isLearningAnalyticsEnabled: true,
         isArchived: false,
-        analyticsLastComputedAt: new Date('2026-08-26T00:00:00.000Z'),
-        areAnalyticsValid: false,
+        analyticsLastComputedAt: marker,
       },
-      { fenceAt, memberChoiceAt }
+      { memberChoiceAt: new Date(marker.getTime() - 1) }
     )
 
     await expect(
-      completeLearningAnalyticsCourse(
-        {
-          request: courseRequest(),
-          completedAt: '2026-08-27T03:00:00Z',
-          cleanupOnly: false,
-          fenceAt: fenceAt.toISOString(),
-        },
-        fixture.prisma
-      )
-    ).resolves.toEqual({
-      courseId,
-      completedAt: '2026-08-27T03:00:00Z',
-      cleanupOnly: false,
-    })
-    expect(fixture.transaction.course.update).not.toHaveBeenCalled()
-    expect(fixture.current.areAnalyticsValid).toBe(false)
-    expect(fixture.queryRaw).toHaveBeenCalledOnce()
-    const revisionQuery = fixture.queryRaw.mock.calls[0]?.[0]
-    expect(revisionQuery?.strings?.join(' ')).toContain(
-      'learningAnalyticsChoiceAt'
-    )
-    expect(revisionQuery?.strings?.join(' ')).toContain('>=')
-    expect(revisionQuery?.values).toContainEqual(fenceAt)
+      startLearningAnalyticsCourse(request, fixture.prisma)
+    ).resolves.toMatchObject({ courseId, request })
   })
 
-  it('publishes when member revisions predate the fence, persists the private completion timestamp exactly, finalizes once, and ignores stale results', async () => {
+  it('upgrades a queued request to full when the preserved marker is missing', async () => {
+    const fixture = coursePrisma({
+      isLearningAnalyticsEnabled: true,
+      isArchived: false,
+      analyticsLastComputedAt: null,
+    })
+    const request = {
+      ...courseRequest(),
+      windowSince: '2026-08-26',
+    }
+
+    await expect(
+      startLearningAnalyticsCourse(request, fixture.prisma)
+    ).resolves.toMatchObject({
+      courseId,
+      request: courseRequest('full'),
+    })
+    expect(fixture.queryRaw).toHaveBeenCalledOnce()
+  })
+
+  it.each([
+    ['equal to', new Date('2026-08-27T02:00:00.000Z')],
+    ['later than', new Date('2026-08-27T02:00:00.001Z')],
+  ])(
+    'does not publish when a member choice is %s the captured fence',
+    async (_relation, memberChoiceAt) => {
+      const fenceAt = new Date('2026-08-27T02:00:00.000Z')
+      const fixture = coursePrisma(
+        {
+          isLearningAnalyticsEnabled: true,
+          isArchived: false,
+          analyticsLastComputedAt: new Date('2026-08-26T00:00:00.000Z'),
+          areAnalyticsValid: false,
+        },
+        { fenceAt, memberChoiceAt }
+      )
+
+      await expect(
+        completeLearningAnalyticsCourse(
+          {
+            request: courseRequest(),
+            completedAt: '2026-08-27T03:00:00Z',
+            cleanupOnly: false,
+            fenceAt: fenceAt.toISOString(),
+          },
+          fixture.prisma
+        )
+      ).resolves.toEqual({
+        courseId,
+        completedAt: '2026-08-27T03:00:00Z',
+        cleanupOnly: false,
+      })
+      expect(fixture.transaction.course.update).not.toHaveBeenCalled()
+      expect(fixture.current.areAnalyticsValid).toBe(false)
+      expect(fixture.queryRaw).toHaveBeenCalledOnce()
+      const revisionQuery = fixture.queryRaw.mock.calls[0]?.[0]
+      expect(revisionQuery?.strings?.join(' ')).toContain(
+        'learningAnalyticsChoiceAt'
+      )
+      expect(revisionQuery?.strings?.join(' ')).toContain('>=')
+      expect(revisionQuery?.values).toContainEqual(fenceAt)
+    }
+  )
+
+  it('publishes with the database publication timestamp, retains the private completion timestamp, finalizes once, and ignores stale results', async () => {
     const completedAt = '2026-08-27T03:00:00+02:00'
-    const completedAtInstant = new Date(completedAt)
+    const publicationAt = new Date('2026-08-27T03:30:00.000Z')
     const fenceAt = new Date('2026-08-27T02:00:00.000Z')
     const fixture = coursePrisma(
       {
@@ -457,7 +545,11 @@ describe('learning analytics coordinator', () => {
         analyticsLastComputedAt: new Date('2026-08-26T00:00:00.000Z'),
         areAnalyticsValid: false,
       },
-      { fenceAt, memberChoiceAt: new Date('2026-08-27T01:59:59.999Z') }
+      {
+        fenceAt,
+        publicationAt,
+        memberChoiceAt: new Date('2026-08-27T01:59:59.999Z'),
+      }
     )
 
     await expect(
@@ -475,9 +567,9 @@ describe('learning analytics coordinator', () => {
       where: { id: courseId },
       data: {
         areAnalyticsValid: true,
-        analyticsLastComputedAt: completedAtInstant,
-        chatAnalyticsValidAt: completedAtInstant,
-        analyticsFinalizedAt: completedAtInstant,
+        analyticsLastComputedAt: publicationAt,
+        chatAnalyticsValidAt: publicationAt,
+        analyticsFinalizedAt: publicationAt,
       },
     })
 
@@ -497,7 +589,38 @@ describe('learning analytics coordinator', () => {
       cleanupOnly: false,
     })
     expect(fixture.transaction.course.update).toHaveBeenCalledOnce()
-    expect(fixture.queryRaw).toHaveBeenCalledOnce()
+    expect(fixture.queryRaw).toHaveBeenCalledTimes(2)
+  })
+
+  it('rejects a stale result from the public marker even when its private completion timestamp is later', async () => {
+    const fenceAt = new Date('2026-08-27T02:00:00.000Z')
+    const fixture = coursePrisma(
+      {
+        isLearningAnalyticsEnabled: true,
+        isArchived: false,
+        analyticsLastComputedAt: new Date('2026-08-27T03:00:00.000Z'),
+        areAnalyticsValid: false,
+      },
+      { fenceAt }
+    )
+
+    await expect(
+      completeLearningAnalyticsCourse(
+        {
+          request: courseRequest(),
+          completedAt: '2026-08-27T05:00:00Z',
+          cleanupOnly: false,
+          fenceAt: fenceAt.toISOString(),
+        },
+        fixture.prisma
+      )
+    ).resolves.toEqual({
+      courseId,
+      completedAt: '2026-08-27T05:00:00Z',
+      cleanupOnly: false,
+    })
+    expect(fixture.transaction.course.update).not.toHaveBeenCalled()
+    expect(fixture.queryRaw).not.toHaveBeenCalled()
   })
 
   it('does not persist completion for disabled or archived courses', async () => {

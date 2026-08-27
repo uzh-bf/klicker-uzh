@@ -70,17 +70,24 @@ deadline, spawn-gate, start, and completion tasks. Their database handlers live 
 or revision model is added.
 
 The public course coordinator performs the public start transition, invokes the
-private course workflow, and performs the public completion transition. The
-private implementation is deliberately opaque to this repository. The only
+private course workflow with the effective request returned by that start, and
+performs the public completion transition. Start re-evaluates current member
+choices under the course lock, so a queued `incremental` or `finalize` request is
+upgraded to `full` when the choice watermark is no longer fresh. The private
+dispatch also falls back to `full` if an older start-task worker omits the new
+effective-request field during a rolling upgrade. The private
+implementation is deliberately opaque to this repository. The only
 cross-repository boundary is the exact `v1` contract exposed by
 `packages/analytics-engine-contract/src/constants.ts:COURSE_WORKFLOW_NAME` and
 `PLATFORM_WORKFLOW_NAME`: `learning-analytics-course-v1` and
 `learning-analytics-platform-v1`. The SDK-free
 `packages/analytics-engine-contract/src/stubs.ts:createAnalyticsEngineStubs`
 validates the request, requires the successful result to echo its identities and
-return an RFC3339 `completedAt`, and leaves failures or cancellations as failed
-or cancelled child runs. The batch invokes the platform workflow only after all
-selected course lanes succeed. This page does not describe the private DAG.
+return an RFC3339 `completedAt`. That value remains private workflow
+provenance/output; public freshness and finalization markers are published using
+PostgreSQL publication time after the coordinator's completion checks. The batch
+invokes the platform workflow only after all selected course lanes succeed. This
+page does not describe the private DAG.
 
 ### Nightly schedule and lifecycle
 
@@ -105,7 +112,8 @@ minutes. When the durable deadline fires,
 for every active child reference and awaits each child output before the batch
 fails. Dispatch promises are tracked as well, so a child reference that resolves
 after the deadline is still cancelled and awaited. Lane and course coordinators
-apply the same late-reference check to nested course and private children. A
+apply the same late-reference check to nested course, private, and completion
+children. A
 cancelled or failed course does not receive a successful completion timestamp;
 an active course that was invalidated at start therefore remains unreadable
 until a later successful run.

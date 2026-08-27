@@ -62,32 +62,37 @@ also affects UI, auth, redirect, cookie, or user-visible chat behavior.
 
 For the public learning-analytics coordinator, the focused suites cover the
 PostgreSQL-clock 00:30 gate, deterministic daily IDs, keyset paging and cleanup
-priority, active-course invalidation, exact private `completedAt` persistence,
-stale-completion rejection, disabled/archived cleanup-only behavior, and the
-course-level invalid-result read gate. The Hatchet suite additionally covers
-stable task names, same-course serialization, round-robin lanes, the spawn gate,
-platform-after-course ordering, and cancellation followed by termination wait
-at the hard deadline, including child references that resolve after cancellation
-begins. They also verify that the deadline child derives a
+priority, active-course invalidation, effective-request upgrades at start,
+PostgreSQL publication-time markers with private `completedAt` retained as
+workflow output, stale-completion rejection, disabled/archived cleanup-only
+behavior, and the course-level invalid-result read gate. The Hatchet suite
+additionally covers stable task names, same-course serialization, round-robin
+lanes, the spawn gate, platform-after-course ordering, and cancellation followed
+by termination wait at the hard deadline, including child references that resolve
+after cancellation begins. They also verify that the deadline child derives a
 replay-stable duration from the PostgreSQL clock and that an expired deadline
-does not schedule a sleep. These tests prove the public control-plane behavior only;
-they do not execute private analytics stages or prove deployment and live
+does not schedule a sleep. These tests prove the public control-plane behavior
+only; they do not execute private analytics stages or prove deployment and live
 qualification.
 
 The coordinator's database integration checks belong in the normal GraphQL local
 stack because they exercise PostgreSQL advisory locks, transaction timestamps,
-the participant-derived selection query, and the two concurrent selector-index
-plans. Use `pnpm --filter @klicker-uzh/graphql test:local` for that service-backed
-pass, and keep the analytics contract suite separate because it is intentionally
-SDK- and database-free. The focused coordinator suite also asserts that no
-historical inclusion predicate remains, that a membership choice at or after
-the course marker selects a full course run, that a missing marker selects full
-mode, and that an unchanged course remains incremental with its existing
-`windowSince`. The read gate suite checks current consent metadata plus the
-strict course-marker-versus-choice-time freshness comparison. The PostgreSQL
-coordinator integration also interleaves a consent change between course start
-and completion, proves that the stale run publishes no marker, and proves that a
-fresh run can make the individual rows visible.
+the participant-derived selection query, representative direct, practice-quiz,
+and chatbot ownership paths, and the two concurrent selector-index plans. Use
+`pnpm --filter @klicker-uzh/graphql test:local` for that service-backed pass, and
+keep the analytics contract suite separate because it is intentionally SDK- and
+database-free. The focused coordinator suite also asserts that no historical
+inclusion predicate remains, that a membership choice at or after the course
+marker selects a full course run, that a missing marker selects full mode, and
+that an unchanged course remains incremental with its existing `windowSince`.
+The participant data-use suite checks current consent metadata plus the strict
+course-marker-versus-choice-time freshness comparison. The read-gate suite keeps
+focused disabled, invalid, and activity-owner coverage, while the PostgreSQL
+coordinator integration covers current membership, archive behavior, and real
+individual-row filtering. That integration also interleaves a consent change between course start and completion,
+proves that the stale run publishes no marker, proves that a future private
+completion time cannot advance the public marker, and proves that a later
+no-to-yes choice remains hidden until another successful fresh recomputation.
 
 For chat conversation-rendering changes, `playwright/util/chat.ts` also supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser

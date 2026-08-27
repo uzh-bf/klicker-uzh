@@ -203,6 +203,7 @@ export async function testInitialization(
       name: 'learning-analytics-course-start-test',
       fn: vi.fn(async (input: LearningAnalyticsCourseControlInput) => ({
         courseId: input.courseId,
+        request: input,
         cleanupOnly: false,
         fenceAt: '2026-01-01T00:00:00Z',
       })),

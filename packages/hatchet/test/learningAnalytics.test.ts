@@ -185,7 +185,12 @@ describe('@klicker-uzh/hatchet learning-analytics coordinator', () => {
     const { definitions } = prepare({
       handleStartLearningAnalyticsCourse: async () => {
         events.push('start')
-        return { courseId: COURSE_IDS[0], cleanupOnly: false, fenceAt }
+        return {
+          courseId: COURSE_IDS[0],
+          request: courseInput(COURSE_IDS[0]),
+          cleanupOnly: false,
+          fenceAt,
+        }
       },
       handleCompleteLearningAnalyticsCourse: completion,
     })
@@ -198,21 +203,23 @@ describe('@klicker-uzh/hatchet learning-analytics coordinator', () => {
           events.push('start')
           return {
             courseId: (input as { courseId: string }).courseId,
+            request: input as ReturnType<typeof courseInput>,
             cleanupOnly: false,
             fenceAt,
           }
         }
-        if (workflow.name === 'learning-analytics-course-completion') {
-          events.push('completion')
-          return completion(input)
-        }
         throw new Error(`Unexpected child ${workflow.name}`)
       },
       runNoWaitChild: async (workflow, input, options) => {
+        const name = typeof workflow === 'string' ? workflow : workflow.name
         childCalls.push({
-          name: typeof workflow === 'string' ? workflow : workflow.name,
+          name,
           key: options?.key,
         })
+        if (name === 'learning-analytics-course-completion') {
+          events.push('completion')
+          return resolvedRef(await completion(input))
+        }
         events.push('private')
         privateInputs.push(input)
         return resolvedRef({
@@ -260,12 +267,161 @@ describe('@klicker-uzh/hatchet learning-analytics coordinator', () => {
     expect(privateInputs[0]).not.toHaveProperty('fenceAt')
   })
 
+  it('uses the effective request from start for private and completion dispatch', async () => {
+    const initialRequest = courseInput(COURSE_IDS[0], 'incremental')
+    const effectiveRequest = courseInput(COURSE_IDS[0], 'full')
+    const fenceAt = '2026-08-27T02:00:00.000Z'
+    const calls: Array<{
+      name: string
+      key?: string
+      metadata?: Record<string, string>
+    }> = []
+    const completion = vi.fn(async (_input: unknown) => ({
+      courseId: COURSE_IDS[0],
+      completedAt: '2026-08-27T03:00:00Z',
+      cleanupOnly: false,
+    }))
+    const { definitions } = prepare()
+    const context: FakeExecutionContext = {
+      runChild: async (workflow, input, options) => {
+        calls.push({
+          name: workflow.name,
+          key: options?.key,
+          metadata: options?.additionalMetadata,
+        })
+        if (workflow.name === 'learning-analytics-course-start') {
+          return {
+            courseId: COURSE_IDS[0],
+            request: effectiveRequest,
+            cleanupOnly: false,
+            fenceAt,
+          }
+        }
+        throw new Error(`Unexpected child ${workflow.name}`)
+      },
+      runNoWaitChild: async (workflow, input, options) => {
+        const name = typeof workflow === 'string' ? workflow : workflow.name
+        calls.push({
+          name,
+          key: options?.key,
+          metadata: options?.additionalMetadata,
+        })
+        if (name === 'learning-analytics-course-completion') {
+          return resolvedRef(await completion(input))
+        }
+        expect(input).toEqual(effectiveRequest)
+        return resolvedRef({
+          ...effectiveRequest,
+          completedAt: '2026-08-27T03:00:00Z',
+        })
+      },
+      bulkRunNoWaitChildren: async () => [],
+      sleepFor: async () => {},
+    }
+
+    await task(definitions, 'learning-analytics-public-course-v1').fn(
+      initialRequest,
+      context
+    )
+
+    expect(calls).toEqual([
+      {
+        name: 'learning-analytics-course-start',
+        key: `start:course:${RUN_ID}:${COURSE_IDS[0]}:incremental`,
+        metadata: {
+          component: 'public-learning-analytics-coordinator',
+          contractVersion: 'v1',
+          runId: RUN_ID,
+          courseId: COURSE_IDS[0],
+          mode: 'incremental',
+        },
+      },
+      {
+        name: 'learning-analytics-course-v1',
+        key: `private:course:${RUN_ID}:${COURSE_IDS[0]}:full`,
+        metadata: {
+          component: 'public-learning-analytics-coordinator',
+          contractVersion: 'v1',
+          runId: RUN_ID,
+          courseId: COURSE_IDS[0],
+          mode: 'full',
+        },
+      },
+      {
+        name: 'learning-analytics-course-completion',
+        key: `complete:course:${RUN_ID}:${COURSE_IDS[0]}:full`,
+        metadata: {
+          component: 'public-learning-analytics-coordinator',
+          contractVersion: 'v1',
+          runId: RUN_ID,
+          courseId: COURSE_IDS[0],
+          mode: 'full',
+        },
+      },
+    ])
+    expect(completion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        request: effectiveRequest,
+        completedAt: '2026-08-27T03:00:00Z',
+        cleanupOnly: false,
+        fenceAt,
+      })
+    )
+  })
+
+  it('forces a full request when a rolling-upgrade start task returns the legacy output', async () => {
+    const initialRequest = courseInput(COURSE_IDS[0], 'incremental')
+    const fullRequest = courseInput(COURSE_IDS[0], 'full')
+    const privateInputs: unknown[] = []
+    const completionInputs: unknown[] = []
+    const { definitions } = prepare()
+    const context: FakeExecutionContext = {
+      runChild: async (workflow) => {
+        expect(workflow.name).toBe('learning-analytics-course-start')
+        return {
+          courseId: COURSE_IDS[0],
+          cleanupOnly: false,
+          fenceAt: '2026-08-27T02:00:00.000Z',
+        }
+      },
+      runNoWaitChild: async (workflow, input) => {
+        const name = typeof workflow === 'string' ? workflow : workflow.name
+        if (name === 'learning-analytics-course-completion') {
+          completionInputs.push(input)
+          return resolvedRef({
+            courseId: COURSE_IDS[0],
+            completedAt: '2026-08-27T03:00:00Z',
+            cleanupOnly: false,
+          })
+        }
+        privateInputs.push(input)
+        return resolvedRef({
+          ...fullRequest,
+          completedAt: '2026-08-27T03:00:00Z',
+        })
+      },
+      bulkRunNoWaitChildren: async () => [],
+      sleepFor: async () => {},
+    }
+
+    await task(definitions, 'learning-analytics-public-course-v1').fn(
+      initialRequest,
+      context
+    )
+
+    expect(privateInputs).toEqual([fullRequest])
+    expect(completionInputs).toEqual([
+      expect.objectContaining({ request: fullRequest }),
+    ])
+  })
+
   it('cancels and waits for a private course child when the durable course is cancelled', async () => {
     const cancel = vi.fn(async () => {})
     const privateError = new Error('private course failed')
     const { definitions } = prepare({
       handleStartLearningAnalyticsCourse: async () => ({
         courseId: COURSE_IDS[0],
+        request: courseInput(COURSE_IDS[0]),
         cleanupOnly: false,
         fenceAt: '2026-08-27T02:00:00.000Z',
       }),
@@ -274,6 +430,7 @@ describe('@klicker-uzh/hatchet learning-analytics coordinator', () => {
       cancelled: true,
       runChild: async () => ({
         courseId: COURSE_IDS[0],
+        request: courseInput(COURSE_IDS[0]),
         cleanupOnly: false,
         fenceAt: '2026-08-27T02:00:00.000Z',
       }),
@@ -303,6 +460,7 @@ describe('@klicker-uzh/hatchet learning-analytics coordinator', () => {
       cancelled: true,
       runChild: async () => ({
         courseId: COURSE_IDS[0],
+        request: courseInput(COURSE_IDS[0]),
         cleanupOnly: false,
         fenceAt: '2026-08-27T02:00:00.000Z',
       }),
@@ -340,6 +498,7 @@ describe('@klicker-uzh/hatchet learning-analytics coordinator', () => {
         if (workflow.name === 'learning-analytics-course-start') {
           return {
             courseId: COURSE_IDS[0],
+            request: courseInput(COURSE_IDS[0]),
             cleanupOnly: false,
             fenceAt: '2026-08-27T02:00:00.000Z',
           }
@@ -373,6 +532,57 @@ describe('@klicker-uzh/hatchet learning-analytics coordinator', () => {
     )
     expect(cancel).toHaveBeenCalledOnce()
     expect(events).toEqual(['learning-analytics-course-start'])
+  })
+
+  it('cancels and awaits completion when the course is cancelled after dispatch', async () => {
+    const completionOutput = deferred<{
+      courseId: string
+      completedAt: string
+      cleanupOnly: boolean
+    }>()
+    const completionDispatched = deferred<void>()
+    const cancelCompletion = vi.fn(async () => {})
+    const { definitions } = prepare()
+    const context: FakeExecutionContext = {
+      cancelled: false,
+      runChild: async (workflow) => {
+        expect(workflow.name).toBe('learning-analytics-course-start')
+        return {
+          courseId: COURSE_IDS[0],
+          request: courseInput(COURSE_IDS[0]),
+          cleanupOnly: false,
+          fenceAt: '2026-08-27T02:00:00.000Z',
+        }
+      },
+      runNoWaitChild: async (workflow, input) => {
+        const name = typeof workflow === 'string' ? workflow : workflow.name
+        if (name === 'learning-analytics-course-completion') {
+          completionDispatched.resolve()
+          return { cancel: cancelCompletion, output: completionOutput.promise }
+        }
+        return resolvedRef({
+          ...(input as Record<string, unknown>),
+          completedAt: '2026-08-27T03:00:00Z',
+        })
+      },
+      bulkRunNoWaitChildren: async () => [],
+      sleepFor: async () => {},
+    }
+
+    const pending = task(definitions, 'learning-analytics-public-course-v1').fn(
+      courseInput(COURSE_IDS[0]),
+      context
+    )
+    await completionDispatched.promise
+    context.cancelled = true
+    completionOutput.resolve({
+      courseId: COURSE_IDS[0],
+      completedAt: '2026-08-27T03:00:00Z',
+      cleanupOnly: false,
+    })
+
+    await expect(pending).rejects.toThrow('cancelled during completion')
+    expect(cancelCompletion).toHaveBeenCalledOnce()
   })
 
   it('replenishes a lane sequentially and stops spawning at the gate', async () => {
