@@ -14,6 +14,7 @@ readonly LEGACY_STATE_DIR='/etc/klicker-runner'
 readonly LEGACY_STATE_FILE="${LEGACY_STATE_DIR}/bootstrap.env"
 readonly CURRENT_SSH_HARDENING='/etc/ssh/sshd_config.d/00-actions-runner-hardening.conf'
 readonly LEGACY_SSH_HARDENING='/etc/ssh/sshd_config.d/00-klicker-runner-hardening.conf'
+readonly REGISTRY_FILE='/etc/actions-runner-bootstrap/host-registry.env'
 readonly LOCK_FILE='/run/lock/actions-runner-bootstrap.lock'
 
 MODE='plan'
@@ -21,6 +22,7 @@ TARGET_PROFILE=''
 CURRENT_STAGE='initial validation'
 SOURCE_STATE_FILE=''
 MANAGED_RUNNER_NAME=''
+MANAGED_RUNNER_NAMES=''
 LEGACY_STATE_PRESENT='false'
 FIREWALL_STATUS='unknown'
 
@@ -175,6 +177,7 @@ state_value() {
 
 validate_state_file() {
   local file=$1 reset_ready runner_name repository organization storage mount scope group
+  local runner_file_name stored_name
 
   assert_regular_or_absent "$file"
   [[ -f "$file" ]] || die "managed state is missing: ${file}"
@@ -193,14 +196,36 @@ validate_state_file() {
     [[ -z "$(state_value "$file" VOLUME_MOUNT)" ]] ||
       die 'the reset marker unexpectedly names an attached volume'
     MANAGED_RUNNER_NAME=''
+    MANAGED_RUNNER_NAMES=''
     return 0
   fi
 
-  [[ "$file" == "$LEGACY_STATE_FILE" ]] ||
-    die 'only a reset marker is accepted in the generic state path'
-  runner_name=$(state_value "$file" RUNNER_NAME)
-  [[ "$runner_name" =~ ^klicker-arm64-runner-0[1-5]$ ]] ||
-    die 'managed state contains an unexpected runner name'
+  # A host state file is one of: the legacy klicker single-runner layout, one
+  # per-runner state file, or the generic bootstrap.env single-runner state.
+  if [[ "$file" == "$LEGACY_STATE_FILE" ]]; then
+    runner_name=$(state_value "$file" RUNNER_NAME)
+    [[ "$runner_name" =~ ^klicker-arm64-runner-0[1-5]$ ]] ||
+      die 'managed state contains an unexpected runner name'
+    MANAGED_RUNNER_NAME=$runner_name
+    MANAGED_RUNNER_NAMES=$runner_name
+  elif [[ "$(basename "$file")" == 'bootstrap.env' ]]; then
+    runner_name=$(state_value "$file" RUNNER_NAME)
+    [[ "$runner_name" =~ ^public-pr-arm64-0[1-3]$ ||
+      "$runner_name" =~ ^trusted-arm64-0[1-2]$ ]] ||
+      die 'managed state contains an unexpected runner name'
+    MANAGED_RUNNER_NAME=$runner_name
+    MANAGED_RUNNER_NAMES=$runner_name
+  else
+    runner_file_name=$(basename "$file" .env)
+    [[ "$runner_file_name" =~ ^public-pr-arm64-0[1-8]$ ||
+      "$runner_file_name" =~ ^trusted-arm64-0[1-4]$ ]] ||
+      die 'managed state contains an unexpected runner name'
+    stored_name=$(state_value "$file" RUNNER_NAME)
+    [[ "$stored_name" == "$runner_file_name" ]] ||
+      die 'per-runner state name does not match its file'
+    MANAGED_RUNNER_NAME=$runner_file_name
+    MANAGED_RUNNER_NAMES=$runner_file_name
+  fi
   repository=$(state_value "$file" REPOSITORY)
   organization=$(state_value "$file" ORGANIZATION)
   [[ "$repository" == "$REPOSITORY" ]] ||
@@ -218,9 +243,9 @@ validate_state_file() {
   [[ -z "$scope" || "$scope" == 'repository' || "$scope" == 'organization' ]] ||
     die 'managed state contains an unexpected registration scope'
   group=$(state_value "$file" RUNNER_GROUP)
-  [[ -z "$group" || "$group" == 'klicker-trusted-arm64' ]] ||
+  [[ -z "$group" || "$group" == 'klicker-trusted-arm64' ||
+    "$group" == 'public-pr-arm64' || "$group" == 'trusted-arm64' ]] ||
     die 'managed state contains an unexpected runner group'
-  MANAGED_RUNNER_NAME=$runner_name
 }
 
 validate_state_directory() {
@@ -230,18 +255,33 @@ validate_state_directory() {
   [[ -d "$directory" ]] || return 0
   [[ "$(stat -c '%U:%G:%a' "$directory")" == 'root:root:700' ]] ||
     die "managed state directory has unexpected ownership or mode: ${directory}"
-  unexpected=$(find "$directory" -mindepth 1 -maxdepth 1 ! -name bootstrap.env -print -quit)
+  unexpected=$(find "$directory" -mindepth 1 -maxdepth 1 \
+    ! -name 'bootstrap.env' \
+    ! -name 'host-registry.env' \
+    ! -name 'public-pr-arm64-*.env' \
+    ! -name 'trusted-arm64-*.env' \
+    ! -name 'bootstrap.env.*' \
+    ! -name 'host-registry.env.*' \
+    ! -name 'public-pr-arm64-*.env.*' \
+    ! -name 'trusted-arm64-*.env.*' \
+    -print -quit)
   [[ -z "$unexpected" ]] || die "managed state directory contains an unexpected file: ${unexpected}"
 }
 
 discover_state() {
-  local current_exists='false' legacy_exists='false'
+  local current_exists='false' legacy_exists='false' runner_file
 
   validate_state_directory "$CURRENT_STATE_DIR"
   validate_state_directory "$LEGACY_STATE_DIR"
   [[ -e "$CURRENT_STATE_FILE" || -L "$CURRENT_STATE_FILE" ]] && current_exists='true'
   [[ -e "$LEGACY_STATE_FILE" || -L "$LEGACY_STATE_FILE" ]] && legacy_exists='true'
-  if [[ "$current_exists" == 'true' && "$legacy_exists" == 'true' ]]; then
+  if [[ "$current_exists" != 'true' && "$legacy_exists" != 'true' ]]; then
+    runner_file=$(find "$CURRENT_STATE_DIR" -maxdepth 1 -name '*.env' \
+      ! -name 'host-registry.env' ! -name 'bootstrap.env' -print -quit 2>/dev/null || true)
+    [[ -n "$runner_file" ]] ||
+      die 'no recognized managed runner state exists; refusing to clean an unmanaged host'
+    SOURCE_STATE_FILE=$runner_file
+  elif [[ "$current_exists" == 'true' && "$legacy_exists" == 'true' ]]; then
     validate_state_file "$LEGACY_STATE_FILE"
     LEGACY_STATE_PRESENT='true'
     SOURCE_STATE_FILE=$CURRENT_STATE_FILE
@@ -254,6 +294,16 @@ discover_state() {
     die 'no recognized managed runner state exists; refusing to clean an unmanaged host'
   fi
   validate_state_file "$SOURCE_STATE_FILE"
+  if [[ -f "$REGISTRY_FILE" ]]; then
+    local registry_names registry_name
+    registry_names=$(sed -n 's/^RUNNERS=//p' "$REGISTRY_FILE")
+    for registry_name in $(tr ',' ' ' <<<"$registry_names"); do
+      [[ "$registry_name" =~ ^[a-z0-9-]+$ ]] ||
+        die 'host registry contains an unexpected runner name'
+      MANAGED_RUNNER_NAMES="${MANAGED_RUNNER_NAMES:+${MANAGED_RUNNER_NAMES} }${registry_name}"
+    done
+  fi
+  MANAGED_RUNNER_NAMES=$(printf '%s\n' $MANAGED_RUNNER_NAMES | sort -u)  # intentional word split over runner names
   if [[ "$SOURCE_STATE_FILE" == "$CURRENT_STATE_FILE" ]] &&
     [[ "$(state_value "$SOURCE_STATE_FILE" RESET_READY)" != 'true' ]]; then
     die 'a generic runner cannot be reassigned with this one-time legacy reset; rebuild it'
@@ -304,10 +354,12 @@ validate_ssh_hardening() {
 }
 
 expected_runner_units() {
-  [[ -n "$MANAGED_RUNNER_NAME" ]] || return 0
-  printf '%s\n' \
-    "actions.runner.uzh-bf-klicker-uzh.${MANAGED_RUNNER_NAME}.service" \
-    "actions.runner.uzh-bf.${MANAGED_RUNNER_NAME}.service"
+  local name
+  for name in $MANAGED_RUNNER_NAMES; do
+    printf '%s\n' \
+      "actions.runner.uzh-bf-klicker-uzh.${name}.service" \
+      "actions.runner.uzh-bf.${name}.service"
+  done
 }
 
 is_expected_runner_unit() {

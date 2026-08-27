@@ -12,16 +12,18 @@ readonly RUNNER_ARCHIVE_URL="https://github.com/actions/runner/releases/download
 readonly RUNNER_ARCHIVE_SHA256='58b758e420b87093fbd4bfddd368074960053e2f1388f01848c82624b90f27d1'
 readonly ADMIN_USER='runner-admin'
 readonly RUNNER_USER='github-runner'
-readonly RUNNER_DIR='/opt/actions-runner'
+readonly RUNNER_BASE_DIR='/opt/actions-runner'
 readonly STATE_DIR='/etc/actions-runner-bootstrap'
-readonly STATE_FILE="${STATE_DIR}/bootstrap.env"
 readonly SSH_HARDENING_FILE='/etc/ssh/sshd_config.d/00-actions-runner-hardening.conf'
 readonly CLEANUP_SCRIPT='/usr/local/sbin/actions-runner-disk-cleanup'
+readonly REGISTRY_FILE='/etc/actions-runner-bootstrap/host-registry.env'
 readonly LOCK_FILE='/run/lock/actions-runner-bootstrap.lock'
 
 MODE='plan'
 PROFILE=''
 RUNNER_NAME=''
+RUNNER_DIR=''
+STATE_FILE=''
 RUNNER_GROUP=''
 RUNNER_LABELS=''
 VOLUME_MOUNT=''
@@ -34,7 +36,7 @@ RUNNER_GROUP_ID=''
 
 usage() {
   cat <<'EOF'
-Provision one organization-scoped GitHub Actions runner on a fresh or reset Hetzner VM.
+Provision organization-scoped GitHub Actions runners on a fresh or reset Hetzner VM.
 
 Usage:
   provision-hetzner-arm64-runner.sh --profile PROFILE [--runner-name NAME]
@@ -48,8 +50,8 @@ Modes:
 
 Options:
   --profile PROFILE   public-pr or trusted. Pool assignment is immutable.
-  --runner-name NAME  public-pr-arm64-01 through -03, or
-                      trusted-arm64-01 through -02 for the matching profile.
+  --runner-name NAME  public-pr-arm64-01 through -08, or
+                      trusted-arm64-01 through -04 for the matching profile.
   --volume-mount PATH Use an already attached and mounted /mnt/HC_Volume_<id>.
                       Omit this option to use the VM's 80 GB local NVMe disk.
   -h, --help          Show this help.
@@ -58,6 +60,11 @@ Apply prompts for one short-lived GitHub token with organization Self-hosted
 runners read/write permission on uzh-bf. The token is kept in memory only.
 Apply also pauses so runner-admin SSH and sudo can be tested before root SSH
 is disabled.
+
+A VM may host several runners: run --apply once per runner name. The first
+runner configures host-level assets (admin user, Docker, firewall, cleanup
+timer); additional runners reuse them and add only their own runner
+directory, state file, and service unit.
 EOF
 }
 
@@ -231,17 +238,19 @@ configure_profile() {
       die 'profile must be public-pr or trusted'
       ;;
   esac
+  RUNNER_DIR="${RUNNER_BASE_DIR}/${RUNNER_NAME}"
+  STATE_FILE="${STATE_DIR}/${RUNNER_NAME}.env"
 }
 
 validate_runner_name() {
   case "$PROFILE" in
     public-pr)
-      [[ "$RUNNER_NAME" =~ ^public-pr-arm64-0[1-3]$ ]] ||
-        die 'public-pr runner name must be public-pr-arm64-01 through -03'
+      [[ "$RUNNER_NAME" =~ ^public-pr-arm64-0[1-8]$ ]] ||
+        die 'public-pr runner name must be public-pr-arm64-01 through -08'
       ;;
     trusted)
-      [[ "$RUNNER_NAME" =~ ^trusted-arm64-0[1-2]$ ]] ||
-        die 'trusted runner name must be trusted-arm64-01 through -02'
+      [[ "$RUNNER_NAME" =~ ^trusted-arm64-0[1-4]$ ]] ||
+        die 'trusted runner name must be trusted-arm64-01 through -04'
       ;;
   esac
 }
@@ -295,24 +304,46 @@ state_value() {
 validate_existing_state() {
   local reset_ready stored_name stored_organization stored_profile stored_scope stored_group stored_storage stored_mount stored_service
   local expected_storage
+  local legacy_dir legacy_state legacy_name host_managed='false'
 
   if [[ ! -e "$STATE_FILE" ]]; then
-    if id "$ADMIN_USER" >/dev/null 2>&1 ||
-      id "$RUNNER_USER" >/dev/null 2>&1 ||
-      [[ -e "/etc/sudoers.d/${ADMIN_USER}" || -e "$SSH_HARDENING_FILE" ]] ||
-      compgen -G '/etc/systemd/system/actions.runner.uzh-bf.*.service' >/dev/null; then
-      die 'an unmanaged user, runner directory, or hardening file already exists; refusing adoption'
+    # Host-level assets are shared by every runner on this VM. They may already
+    # exist when an additional runner is provisioned onto a managed host; each
+    # runner owns only its own directory, state file, and service unit.
+    legacy_dir="${RUNNER_BASE_DIR}"
+    legacy_state="${STATE_DIR}/bootstrap.env"
+    if [[ -d "$legacy_dir" && -f "${legacy_dir}/.runner" ]] &&
+      [[ -f "$legacy_state" ]] &&
+      legacy_name=$(state_file_value "$legacy_state" RUNNER_NAME) &&
+      [[ "$legacy_name" == "$RUNNER_NAME" ]]; then
+      die 'this runner still uses the legacy single-runner layout; rebuild the host to migrate it'
     fi
-    if [[ -d "$RUNNER_DIR" ]] &&
-      [[ -n "$(find "$RUNNER_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
-      die 'an unmanaged runner directory already exists; refusing adoption'
+    if id "$ADMIN_USER" >/dev/null 2>&1 &&
+      id "$RUNNER_USER" >/dev/null 2>&1 &&
+      [[ -e "/etc/sudoers.d/${ADMIN_USER}" ]] &&
+      [[ -d "$legacy_dir" ]]; then
+      host_managed='true'
+      [[ ! -e "$RUNNER_DIR" && ! -L "$RUNNER_DIR" ]] ||
+        die 'this runner directory already exists without managed state'
     fi
-    if command -v docker >/dev/null 2>&1 || [[ -e /etc/docker/daemon.json ]]; then
-      die 'an unmanaged Docker installation or data directory already exists; use a fresh VM'
-    fi
-    if [[ -d /var/lib/docker ]] &&
-      [[ -n "$(find /var/lib/docker -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
-      die 'an unmanaged Docker data directory already exists; use a fresh VM'
+    if [[ "$host_managed" != 'true' ]]; then
+      if id "$ADMIN_USER" >/dev/null 2>&1 ||
+        id "$RUNNER_USER" >/dev/null 2>&1 ||
+        [[ -e "/etc/sudoers.d/${ADMIN_USER}" || -e "$SSH_HARDENING_FILE" ]] ||
+        compgen -G '/etc/systemd/system/actions.runner.uzh-bf.*.service' >/dev/null; then
+        die 'an unmanaged user, runner directory, or hardening file already exists; refusing adoption'
+      fi
+      if [[ -d "$legacy_dir" ]] &&
+        [[ -n "$(find "$legacy_dir" -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
+        die 'an unmanaged runner directory already exists; refusing adoption'
+      fi
+      if command -v docker >/dev/null 2>&1 || [[ -e /etc/docker/daemon.json ]]; then
+        die 'an unmanaged Docker installation or data directory already exists; use a fresh VM'
+      fi
+      if [[ -d /var/lib/docker ]] &&
+        [[ -n "$(find /var/lib/docker -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
+        die 'an unmanaged Docker data directory already exists; use a fresh VM'
+      fi
     fi
     if [[ -n "$VOLUME_MOUNT" ]] &&
       [[ -e "${VOLUME_MOUNT}/docker" || -e "${VOLUME_MOUNT}/runner-work" ]]; then
@@ -337,9 +368,10 @@ validate_existing_state() {
       die 'reset state does not describe the local-disk configuration'
     [[ -z "$VOLUME_MOUNT" ]] || die 'a reset local-disk host cannot adopt an attached volume'
     id "$ADMIN_USER" >/dev/null 2>&1 || die 'reset state exists but the admin user is missing'
-    ! id "$RUNNER_USER" >/dev/null 2>&1 || die 'reset state exists but the runner user remains'
+    id "$RUNNER_USER" >/dev/null 2>&1 ||
+      die 'reset state exists but the shared runner service user is missing'
     [[ ! -e "$RUNNER_DIR" && ! -L "$RUNNER_DIR" ]] ||
-      die 'reset state exists but the runner directory remains'
+      die 'reset state exists but this runner directory remains'
     [[ -f "$SSH_HARDENING_FILE" && ! -L "$SSH_HARDENING_FILE" ]] ||
       die 'reset state exists but generic SSH hardening is missing'
     ! command -v docker >/dev/null 2>&1 || die 'reset state exists but Docker remains installed'
@@ -383,6 +415,11 @@ validate_existing_state() {
   [[ "$stored_mount" == "$VOLUME_MOUNT" ]] || die 'volume mount is immutable'
   [[ -z "$stored_service" || "$stored_service" == 'true' || "$stored_service" == 'false' ]] ||
     die 'managed service phase is invalid'
+}
+
+state_file_value() {
+  local file=$1 key=$2
+  awk -F= -v key="$key" '$1 == key {sub(/^[^=]*=/, ""); print; exit}' "$file"
 }
 
 validate_ssh_only_firewall() {
@@ -661,10 +698,11 @@ EOF
   visudo -cf "/etc/sudoers.d/${ADMIN_USER}" >/dev/null
 
   if ! id "$RUNNER_USER" >/dev/null 2>&1; then
-    useradd --system --create-home --home-dir "$RUNNER_DIR" --shell /bin/bash "$RUNNER_USER"
+    useradd --system --shell /bin/bash "$RUNNER_USER"
   fi
   passwd --lock "$RUNNER_USER" >/dev/null
   usermod --append --groups docker "$RUNNER_USER"
+  install -d -m 0755 -o root -g root "$RUNNER_BASE_DIR"
   install -d -m 0700 -o "$RUNNER_USER" -g "$RUNNER_USER" "$RUNNER_DIR"
 }
 
@@ -851,7 +889,7 @@ write_managed_state() {
 
   CURRENT_STAGE='managed state recording'
   install -d -m 0700 -o root -g root "$STATE_DIR"
-  state_temp=$(mktemp "${STATE_DIR}/bootstrap.env.XXXXXX")
+  state_temp=$(mktemp "${STATE_DIR}/${RUNNER_NAME}.env.XXXXXX")
   chmod 0600 "$state_temp"
   if ! {
     printf 'RUNNER_NAME=%s\n' "$RUNNER_NAME"
@@ -868,6 +906,19 @@ write_managed_state() {
     die 'managed state could not be written'
   fi
   mv -Tf -- "$state_temp" "$STATE_FILE"
+
+  CURRENT_STAGE='host runner registry recording'
+  local registry_temp runner_list
+  registry_temp=$(mktemp "${STATE_DIR}/host-registry.env.XXXXXX")
+  chmod 0600 "$registry_temp"
+  if [[ -f "$REGISTRY_FILE" ]]; then
+    grep -v '^RUNNERS=' "$REGISTRY_FILE" >"$registry_temp" || true
+  fi
+  runner_list=$(sed -n 's/^RUNNERS=//p' "$REGISTRY_FILE" 2>/dev/null || true)
+  runner_list="${runner_list:+${runner_list},}${RUNNER_NAME}"
+  printf 'RUNNERS=%s\n' "$runner_list" | tr ',' '\n' | sort -u |
+    paste -sd, - | sed 's/^/RUNNERS=/' >>"$registry_temp"
+  mv -Tf -- "$registry_temp" "$REGISTRY_FILE"
 }
 
 install_runner_archive() {
@@ -1110,6 +1161,7 @@ apply_bootstrap() {
     RUNNER_NAME=$(prompt_line 'Unique runner name' "$default_name")
   fi
   validate_runner_name
+  configure_profile
 
   if [[ -z "$VOLUME_MOUNT" ]]; then
     info 'Storage default: local 80 GB NVMe. Pass --volume-mount only for an attached Volume.'
@@ -1171,7 +1223,9 @@ apply_bootstrap() {
 
 main() {
   parse_args "$@"
-  configure_profile
+  if [[ -n "$RUNNER_NAME" ]]; then
+    configure_profile
+  fi
 
   case "$MODE" in
     plan)
@@ -1184,6 +1238,7 @@ main() {
       if [[ -z "$RUNNER_NAME" ]]; then
         RUNNER_NAME=$(hostname -s)
       fi
+      configure_profile
       local_check
       log 'Offline checks passed; no changes were made'
       print_plan
