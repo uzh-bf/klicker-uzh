@@ -97,8 +97,6 @@ function DataUseSettings() {
                     savedDataUse.learningAnalyticsChoiceAt,
                   learningAnalyticsDisclosureVersion:
                     savedDataUse.learningAnalyticsDisclosureVersion,
-                  learningAnalyticsIncludedFrom:
-                    savedDataUse.learningAnalyticsIncludedFrom,
                 },
               }
             }

@@ -38,11 +38,11 @@ append-only choice ledger.
 `researchConsent = true` allows a future research export to include all stored
 canonical data for that participant; `false` excludes all of it. Returning to
 `true` makes all stored canonical data eligible for future exports again.
-`learningAnalyticsConsent` follows the same current-state rule: `true` makes
-all stored canonical data eligible for learning analytics and `false` excludes
-all of it. Individual results become readable only after a course computation
-newer than the current choice. The separate `Course.isLearningAnalyticsEnabled`
-course control also defaults to `false`.
+`learningAnalyticsConsent = true` allows eligible individual learning analytics
+to include all stored activity history after a course has been recomputed
+strictly after the current choice; `false` excludes individual learning
+analytics. The separate `Course.isLearningAnalyticsEnabled` course control also
+defaults to `false`.
 
 `Participation` remains the course-membership row and keeps its existing
 leaderboard meaning. It carries no research or learning-analytics choice or
