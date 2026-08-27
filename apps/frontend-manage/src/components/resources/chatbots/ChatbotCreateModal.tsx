@@ -15,6 +15,7 @@ import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import * as Yup from 'yup'
+import { getChatbotMutationErrorKey } from './chatbotErrorMessages'
 
 interface OwnedCourse {
   id: string
@@ -69,7 +70,6 @@ function ChatbotCreateModal({
                 courseId: values.courseId,
               },
               refetchQueries: [{ query: GetChatbotsInfoDocument }],
-              awaitRefetchQueries: true,
             })
             const chatbotId = result.data?.createChatbot.id
             if (!chatbotId) {
@@ -77,11 +77,7 @@ function ChatbotCreateModal({
             }
             onCreated(chatbotId)
           } catch (error) {
-            setSubmitError(
-              error instanceof Error
-                ? error.message
-                : t('manage.resources.chatbotCreateError')
-            )
+            setSubmitError(t(getChatbotMutationErrorKey(error, 'create')))
           }
         }}
       >
@@ -119,7 +115,9 @@ function ChatbotCreateModal({
               </UserNotification>
             )}
             {submitError ? (
-              <UserNotification type="error">{submitError}</UserNotification>
+              <div role="alert">
+                <UserNotification type="error">{submitError}</UserNotification>
+              </div>
             ) : null}
             <div className="flex justify-end gap-2">
               <Button

@@ -10,8 +10,8 @@ import {
   Button,
   FormikTextareaField,
   FormikTextField,
-  FormLabel,
   H4,
+  Label,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik, useField } from 'formik'
@@ -20,6 +20,7 @@ import { useState } from 'react'
 import * as Yup from 'yup'
 import ContentInput from '../../common/ContentInput'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
+import { getChatbotMutationErrorKey } from './chatbotErrorMessages'
 
 const metadataEditableStatuses = [
   ChatbotStatus.Draft,
@@ -29,19 +30,35 @@ const metadataEditableStatuses = [
 
 const disclaimerEditableStatuses = [ChatbotStatus.Draft, ChatbotStatus.Rejected]
 
-function DisclaimerIntroField({ editorKey }: { editorKey: string }) {
+function DisclaimerIntroField({
+  editorId,
+  errorId,
+  labelId,
+}: {
+  editorId: string
+  errorId: string
+  labelId: string
+}) {
   const t = useTranslations()
   const [field, meta, helpers] = useField<string>('introText')
 
   return (
     <div>
-      <FormLabel
+      <Label
+        id={labelId}
+        forId={editorId}
         required
         label={t('manage.resources.chatbotDisclaimerIntro')}
-        labelType="small"
+        className={{
+          root: 'my-auto mr-2 min-w-max font-bold mt-1 -mb-0.5 leading-6 text-gray-600',
+        }}
       />
       <ContentInput
-        key={editorKey}
+        id={editorId}
+        aria-labelledby={labelId}
+        aria-describedby={meta.error && meta.touched ? errorId : undefined}
+        aria-required
+        aria-invalid={Boolean(meta.error && meta.touched)}
         toolbarPreset="basic"
         content={field.value}
         onChange={(value: string) => {
@@ -57,7 +74,9 @@ function DisclaimerIntroField({ editorKey }: { editorKey: string }) {
         data={{ cy: 'chatbot-disclaimer-intro' }}
       />
       {meta.error && meta.touched ? (
-        <p className="mt-1 text-sm text-red-700">{meta.error}</p>
+        <p id={errorId} className="mt-1 text-sm text-red-700" role="alert">
+          {meta.error}
+        </p>
       ) : null}
     </div>
   )
@@ -124,9 +143,7 @@ function ChatbotAuthoring({ chatbot }: { chatbot: Chatbot }) {
                 setMetadataSuccess(true)
               } catch (error) {
                 setMetadataError(
-                  error instanceof Error
-                    ? error.message
-                    : t('manage.resources.chatbotMetadataSaveError')
+                  t(getChatbotMutationErrorKey(error, 'metadata'))
                 )
               }
             }}
@@ -145,9 +162,11 @@ function ChatbotAuthoring({ chatbot }: { chatbot: Chatbot }) {
                   data={{ cy: 'chatbot-description' }}
                 />
                 {metadataError ? (
-                  <UserNotification type="error">
-                    {metadataError}
-                  </UserNotification>
+                  <div role="alert">
+                    <UserNotification type="error">
+                      {metadataError}
+                    </UserNotification>
+                  </div>
                 ) : null}
                 <div className="flex items-center gap-3">
                   <Button
@@ -230,9 +249,7 @@ function ChatbotAuthoring({ chatbot }: { chatbot: Chatbot }) {
                 setDisclaimerSuccess(true)
               } catch (error) {
                 setDisclaimerError(
-                  error instanceof Error
-                    ? error.message
-                    : t('manage.resources.chatbotDisclaimerSaveError')
+                  t(getChatbotMutationErrorKey(error, 'disclaimer'))
                 )
               }
             }}
@@ -245,11 +262,20 @@ function ChatbotAuthoring({ chatbot }: { chatbot: Chatbot }) {
                   label={t('manage.resources.chatbotDisclaimerTitle')}
                   data={{ cy: 'chatbot-disclaimer-title' }}
                 />
-                <DisclaimerIntroField editorKey={editorKey} />
+                <DisclaimerIntroField
+                  editorId={`chatbot-disclaimer-intro-${chatbot.id}`}
+                  errorId={`chatbot-disclaimer-intro-error-${chatbot.id}`}
+                  labelId={`chatbot-disclaimer-intro-label-${chatbot.id}`}
+                />
                 {disclaimerError ? (
-                  <UserNotification type="error">
-                    {disclaimerError}
-                  </UserNotification>
+                  <div role="alert">
+                    <UserNotification
+                      id="chatbot-disclaimer-save-error"
+                      type="error"
+                    >
+                      {disclaimerError}
+                    </UserNotification>
+                  </div>
                 ) : null}
                 <div className="flex items-center gap-3">
                   <Button

@@ -3726,6 +3726,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'You need to own at least one course before creating a chatbot.',
       chatbotNameRequired: 'Enter a chatbot name.',
       chatbotCreateError: 'Could not create the chatbot. Please try again.',
+      chatbotErrorNotEditable: 'This chatbot can no longer be edited.',
+      chatbotErrorEditConflict:
+        'This chatbot changed elsewhere. Reload and try again.',
+      chatbotErrorDisclaimerConflict:
+        'The disclaimer changed elsewhere. Reload and try again.',
+      chatbotErrorBadUserInput: 'Check the chatbot details and try again.',
+      chatbotErrorForbidden:
+        'You do not have permission to change this chatbot.',
       chatbotDetails: 'Chatbot Details',
       chatbotMetadata: 'Chatbot Metadata',
       chatbotCourseReadonly: 'The course cannot be changed after creation.',

@@ -3789,6 +3789,16 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       chatbotNameRequired: 'Bitte geben Sie einen Chatbot-Namen ein.',
       chatbotCreateError:
         'Der Chatbot konnte nicht erstellt werden. Bitte versuchen Sie es erneut.',
+      chatbotErrorNotEditable:
+        'Dieser Chatbot kann nicht mehr bearbeitet werden.',
+      chatbotErrorEditConflict:
+        'Dieser Chatbot wurde inzwischen geändert. Bitte laden Sie ihn neu und versuchen Sie es erneut.',
+      chatbotErrorDisclaimerConflict:
+        'Der Disclaimer wurde inzwischen geändert. Bitte laden Sie ihn neu und versuchen Sie es erneut.',
+      chatbotErrorBadUserInput:
+        'Bitte prüfen Sie die Chatbot-Angaben und versuchen Sie es erneut.',
+      chatbotErrorForbidden:
+        'Sie haben keine Berechtigung, diesen Chatbot zu ändern.',
       chatbotDetails: 'Chatbot-Details',
       chatbotMetadata: 'Chatbot-Metadaten',
       chatbotCourseReadonly:
