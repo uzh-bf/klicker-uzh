@@ -70,9 +70,11 @@ Existing individual analytics reads apply the learning-analytics predicate in
 their source queries. A participant result is returned only when the current
 choice is true, all choice metadata is present, and the course's
 `analyticsLastComputedAt` is strictly newer than the current choice timestamp.
-Aggregate and canonical outputs are unaffected. The read paths use a repeatable
-database snapshot while resolving eligible participant IDs, so withdrawn or
-not-yet-recomputed individual rows never reach the response for that snapshot.
+The choice timestamp is a revision/freshness watermark, not a cutoff on
+activity history. Aggregate and canonical outputs are unaffected. The read
+paths use a repeatable database snapshot while resolving eligible participant
+IDs, so withdrawn or not-yet-recomputed individual rows never reach the
+response for that snapshot.
 
 ### Assessment invitation API
 

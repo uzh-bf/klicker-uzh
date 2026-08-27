@@ -128,7 +128,7 @@ type CourseFindUniqueArgs = {
 }
 
 describe('participant data-use API', () => {
-  it('exposes six current-state fields and keeps them out of Participant', () => {
+  it('returns only the six current-state fields and keeps them out of Participant', () => {
     const dataUseType = schema.getType('ParticipantDataUse')
     expect(dataUseType).toBeDefined()
     if (!dataUseType) return
@@ -189,6 +189,7 @@ describe('participant data-use API', () => {
       researchConsentChoiceAt: nextTime,
       researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
     })
+    expect(researchFixture.current.researchConsentChoiceAt).toEqual(nextTime)
     expect(researchFixture.queryStatements).toEqual([
       expect.stringContaining('clock_timestamp'),
     ])
@@ -246,9 +247,12 @@ describe('participant data-use API', () => {
       expect.stringContaining('lock_timeout'),
       expect.stringContaining('pg_advisory_xact_lock'),
     ])
+    expect(fixture.queryStatements).not.toContain(
+      expect.stringContaining('clock_timestamp')
+    )
   })
 
-  it('refreshes disclosure metadata and the current choice timestamp', async () => {
+  it('refreshes disclosure metadata and current choice time', async () => {
     const fixture = participantContext({
       state: participantState({
         learningAnalyticsConsent: true,
@@ -257,71 +261,97 @@ describe('participant data-use API', () => {
       }),
     })
 
-    await expect(
-      setLearningAnalyticsConsent({ consent: true }, fixture.ctx)
-    ).resolves.toMatchObject({
+    const result = await setLearningAnalyticsConsent(
+      { consent: true },
+      fixture.ctx
+    )
+
+    expect(result).toMatchObject({
       learningAnalyticsConsent: true,
       learningAnalyticsChoiceAt: nextTime,
       learningAnalyticsDisclosureVersion:
         PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
     })
-    expect(fixture.participant.update).toHaveBeenCalledOnce()
   })
 
-  it('repairs incomplete current metadata instead of using a second boundary', async () => {
-    const fixture = participantContext({
-      state: participantState({ learningAnalyticsConsent: true }),
-    })
-
-    await expect(
-      setLearningAnalyticsConsent({ consent: true }, fixture.ctx)
-    ).resolves.toMatchObject({
-      learningAnalyticsConsent: true,
-      learningAnalyticsChoiceAt: nextTime,
-      learningAnalyticsDisclosureVersion:
-        PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-    })
-    expect(fixture.participant.update).toHaveBeenCalledOnce()
-  })
-
-  it('normalizes a recorded false choice when its metadata is incomplete', async () => {
-    const fixture = participantContext({
+  it('fails closed on an enabled choice with incomplete metadata and repairs on withdrawal', async () => {
+    const incomplete = participantContext({
       state: participantState({
-        learningAnalyticsChoiceAt: initialTime,
+        learningAnalyticsConsent: true,
+        learningAnalyticsChoiceAt: null,
+        learningAnalyticsDisclosureVersion:
+          PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
       }),
     })
+    await expect(
+      setLearningAnalyticsConsent({ consent: true }, incomplete.ctx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'PARTICIPANT_DATA_USE_MALFORMED_STATE' },
+    })
+    expect(incomplete.participant.update).not.toHaveBeenCalled()
 
     await expect(
-      setLearningAnalyticsConsent({ consent: false }, fixture.ctx)
+      setLearningAnalyticsConsent({ consent: false }, incomplete.ctx)
     ).resolves.toMatchObject({
       learningAnalyticsConsent: false,
       learningAnalyticsChoiceAt: nextTime,
       learningAnalyticsDisclosureVersion:
         PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
     })
-    expect(fixture.participant.update).toHaveBeenCalledOnce()
+    expect(incomplete.participant.update).toHaveBeenCalledOnce()
   })
 
-  it('uses database time for each changed current choice', async () => {
+  it('uses one database timestamp for each changed current choice', async () => {
     const fixture = participantContext()
-
-    await expect(
-      setLearningAnalyticsConsent({ consent: true }, fixture.ctx)
-    ).resolves.toMatchObject({
+    const enabled = await setLearningAnalyticsConsent(
+      { consent: true },
+      fixture.ctx
+    )
+    expect(enabled).toMatchObject({
       learningAnalyticsConsent: true,
       learningAnalyticsChoiceAt: nextTime,
-    })
-    await expect(
-      setLearningAnalyticsConsent({ consent: false }, fixture.ctx)
-    ).resolves.toMatchObject({
-      learningAnalyticsConsent: false,
-      learningAnalyticsChoiceAt: nextTime,
+      learningAnalyticsDisclosureVersion:
+        PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
     })
 
+    const withdrawn = await setLearningAnalyticsConsent(
+      { consent: false },
+      fixture.ctx
+    )
+    expect(withdrawn).toMatchObject({
+      learningAnalyticsConsent: false,
+      learningAnalyticsChoiceAt: nextTime,
+      learningAnalyticsDisclosureVersion:
+        PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+    })
     expect(fixture.executeStatements).toHaveLength(4)
+    expect(fixture.executeStatements[0]).toContain('lock_timeout')
     expect(
       fixture.queryStatements.filter((sql) => sql.includes('clock_timestamp'))
     ).toHaveLength(2)
+  })
+
+  it('normalizes a malformed withdrawn choice', async () => {
+    const fixture = participantContext({
+      state: participantState({
+        learningAnalyticsConsent: false,
+        learningAnalyticsChoiceAt: initialTime,
+        learningAnalyticsDisclosureVersion: null,
+      }),
+    })
+    await expect(
+      setLearningAnalyticsConsent({ consent: false }, fixture.ctx)
+    ).resolves.toMatchObject({
+      learningAnalyticsConsent: false,
+      learningAnalyticsChoiceAt: nextTime,
+      learningAnalyticsDisclosureVersion:
+        PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+    })
+    expect(fixture.executeStatements).toHaveLength(2)
+    expect(
+      fixture.queryStatements.filter((sql) => sql.includes('clock_timestamp'))
+    ).toHaveLength(1)
+    expect(fixture.participant.update).toHaveBeenCalledOnce()
   })
 
   it('uses a bounded global lock and maps lock timeout without changing state', async () => {
@@ -401,8 +431,9 @@ describe('participant data-use API', () => {
     ).toEqual([participantId])
     expect(activityResult?.dailyActivity).toHaveLength(1)
     expect(activityResult?.participantCourseAnalytics).toHaveLength(1)
+    expect(queryStatements[0]).toContain('analyticsLastComputedAt')
     expect(queryStatements[0]).toContain(
-      'c."analyticsLastComputedAt" > p."learningAnalyticsChoiceAt"'
+      'analyticsLastComputedAt" > p."learningAnalyticsChoiceAt'
     )
 
     await getCoursePerformanceAnalytics(
@@ -410,7 +441,7 @@ describe('participant data-use API', () => {
       ctx
     )
     expect(queryStatements[1]).toContain(
-      'c."analyticsLastComputedAt" > p."learningAnalyticsChoiceAt"'
+      'analyticsLastComputedAt" > p."learningAnalyticsChoiceAt'
     )
   })
 

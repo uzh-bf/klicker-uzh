@@ -45,12 +45,14 @@ a bounded lock timeout; research changes do not take that gate.
 A future research export may include all stored canonical data when research
 consent is `true` and none when it is `false`. Learning-analytics consent
 follows the same current-state rule: `true` permits all eligible stored activity
-history after recomputation following the current choice, and `false` permits no
-individual learning-analytics data. Individual reads require complete current
-metadata and a successful recomputation marker strictly newer than the
-learning-analytics choice time; aggregate and canonical outputs are unchanged.
-`Participation` remains course membership and carries no per-course data-use
-choice or history.
+history, but individual reads become eligible only after a successful course
+recomputation whose marker is strictly newer than the current choice; `false`
+permits no individual learning-analytics data. The choice time is a
+revision/freshness watermark for this read gate, not a cutoff on activity
+history. Existing individual rows are cleaned up during the next successful
+overnight cleanup after withdrawal, while aggregate outputs remain on their
+ordinary recomputation path; canonical outputs are unchanged. `Participation`
+remains course membership and carries no per-course data-use choice or history.
 
 Analytics tables keyed by a chatbot or live quiz do not duplicate `courseId`;
 course scope resolves through the owning `Chatbot` or `LiveQuiz`. This prevents

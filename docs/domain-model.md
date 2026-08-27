@@ -39,10 +39,14 @@ append-only choice ledger.
 canonical data for that participant; `false` excludes all of it. Returning to
 `true` makes all stored canonical data eligible for future exports again.
 `learningAnalyticsConsent = true` allows eligible individual learning analytics
-to include all stored activity history after a course has been recomputed
-strictly after the current choice; `false` excludes individual learning
-analytics. The separate `Course.isLearningAnalyticsEnabled` course control also
-defaults to `false`.
+to include all eligible stored activity history after a successful course
+recomputation whose marker is strictly newer than the current choice; `false`
+excludes individual learning analytics. The choice time is a
+revision/freshness watermark for the read gate, not a cutoff on activity
+history. Withdrawal filters individual reads immediately, while the next
+successful overnight cleanup removes existing individual rows and aggregate
+outputs remain on their ordinary recomputation path. The separate
+`Course.isLearningAnalyticsEnabled` course control also defaults to `false`.
 
 `Participation` remains the course-membership row and keeps its existing
 leaderboard meaning. It carries no research or learning-analytics choice or

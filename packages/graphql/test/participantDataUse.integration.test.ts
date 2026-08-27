@@ -233,6 +233,17 @@ async function createCourse(ownerId: string, participantId: string) {
   return { course, practiceQuiz }
 }
 
+async function readActivityAnalytics(courseId: string, ctx: ContextWithUser) {
+  return getCourseActivityAnalytics({ courseId }, ctx)
+}
+
+async function readPerformanceAnalytics(
+  courseId: string,
+  ctx: ContextWithUser
+) {
+  return getCoursePerformanceAnalytics({ courseId }, ctx)
+}
+
 describe('participant data-use PostgreSQL integration', () => {
   beforeAll(async () => {
     await prisma.$connect()
@@ -376,7 +387,7 @@ describe('participant data-use PostgreSQL integration', () => {
     }
   }, 10_000)
 
-  it('repairs incomplete current metadata and releases the writer lock', async () => {
+  it('rejects malformed enablement and repairs withdrawal while releasing the writer lock', async () => {
     const participant = await createParticipant('incomplete-metadata')
     const ctx = participantContext(participant.id)
     await prisma.participant.update({
@@ -391,13 +402,66 @@ describe('participant data-use PostgreSQL integration', () => {
 
     await expect(
       setLearningAnalyticsConsent({ consent: true }, ctx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'PARTICIPANT_DATA_USE_MALFORMED_STATE' },
+    })
+    await expectLearningAnalyticsWriterGateReleased()
+    await expect(
+      setLearningAnalyticsConsent({ consent: false }, ctx)
     ).resolves.toMatchObject({
-      learningAnalyticsConsent: true,
+      learningAnalyticsConsent: false,
       learningAnalyticsChoiceAt: expect.any(Date),
       learningAnalyticsDisclosureVersion:
         PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
     })
-    await expectLearningAnalyticsWriterGateReleased()
+  })
+
+  it('requires a computation strictly after the current choice for individual reads', async () => {
+    const owner = await createOwner('choice-gate')
+    const participant = await createParticipant('choice-gate')
+    const ctx = participantContext(participant.id)
+    const { course, practiceQuiz } = await createCourse(
+      owner.id,
+      participant.id
+    )
+    await createIndividualAnalyticsRows({
+      courseId: course.id,
+      participantId: participant.id,
+      practiceQuizId: practiceQuiz.id,
+    })
+
+    const choiceAt = new Date('2026-08-20T12:00:00.000Z')
+    await prisma.participant.update({
+      where: { id: participant.id },
+      data: {
+        learningAnalyticsConsent: true,
+        learningAnalyticsChoiceAt: choiceAt,
+        learningAnalyticsDisclosureVersion:
+          PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+      },
+    })
+    await prisma.course.update({
+      where: { id: course.id },
+      data: { analyticsLastComputedAt: choiceAt },
+    })
+
+    const equalActivity = await readActivityAnalytics(course.id, ctx)
+    const equalPerformance = await readPerformanceAnalytics(course.id, ctx)
+    expect(equalActivity?.participantCourseAnalytics).toHaveLength(0)
+    expect(equalPerformance?.participantPerformances).toHaveLength(0)
+    expect(equalPerformance?.participantActivityPerformances).toHaveLength(0)
+
+    await prisma.course.update({
+      where: { id: course.id },
+      data: {
+        analyticsLastComputedAt: new Date(choiceAt.getTime() + 1),
+      },
+    })
+    const newerActivity = await readActivityAnalytics(course.id, ctx)
+    const newerPerformance = await readPerformanceAnalytics(course.id, ctx)
+    expect(newerActivity?.participantCourseAnalytics).toHaveLength(1)
+    expect(newerPerformance?.participantPerformances).toHaveLength(1)
+    expect(newerPerformance?.participantActivityPerformances).toHaveLength(1)
   })
 
   it('keeps analytics hidden until computation is strictly newer than the current choice', async () => {
@@ -522,4 +586,346 @@ describe('participant data-use PostgreSQL integration', () => {
       learningAnalyticsConsent: true,
     })
   })
+
+  it('preserves aggregate output across withdrawal and re-enable', async () => {
+    const owner = await createOwner('aggregate-reenable')
+    const participant = await createParticipant('aggregate-reenable')
+    const ctx = participantContext(participant.id)
+    const { course, practiceQuiz } = await createCourse(
+      owner.id,
+      participant.id
+    )
+    const initial = await setLearningAnalyticsConsent({ consent: true }, ctx)
+    const initialChoiceAt = initial!.learningAnalyticsChoiceAt!
+    await createIndividualAnalyticsRows({
+      courseId: course.id,
+      participantId: participant.id,
+      practiceQuizId: practiceQuiz.id,
+    })
+    await prisma.course.update({
+      where: { id: course.id },
+      data: {
+        analyticsLastComputedAt: new Date(initialChoiceAt.getTime() + 1),
+      },
+    })
+    const initiallyVisibleActivity = await readActivityAnalytics(course.id, ctx)
+    const initiallyVisiblePerformance = await readPerformanceAnalytics(
+      course.id,
+      ctx
+    )
+    expect(initiallyVisibleActivity?.participantCourseAnalytics).toHaveLength(1)
+    expect(initiallyVisibleActivity?.dailyActivity).toHaveLength(1)
+    expect(initiallyVisiblePerformance?.participantPerformances).toHaveLength(1)
+    expect(
+      initiallyVisiblePerformance?.participantActivityPerformances
+    ).toHaveLength(1)
+
+    const initialActivityAggregates = {
+      totalParticipants: initiallyVisibleActivity!.totalParticipants,
+      dailyActivity: initiallyVisibleActivity!.dailyActivity,
+      weeklyActivity: initiallyVisibleActivity!.weeklyActivity,
+      activeDays: initiallyVisibleActivity!.activeDays,
+    }
+    const initialPerformanceAggregates = {
+      totalParticipants: initiallyVisiblePerformance!.totalParticipants,
+      activityProgresses: initiallyVisiblePerformance!.activityProgresses,
+      activityPerformances: initiallyVisiblePerformance!.activityPerformances,
+      instancePerformances: initiallyVisiblePerformance!.instancePerformances,
+      instanceFeedbacks: initiallyVisiblePerformance!.instanceFeedbacks,
+      activityFeedbacks: initiallyVisiblePerformance!.activityFeedbacks,
+    }
+
+    await prisma.participant.update({
+      where: { id: participant.id },
+      data: { learningAnalyticsDisclosureVersion: 'legacy-v0' },
+    })
+    const legacyDisclosureActivity = await readActivityAnalytics(course.id, ctx)
+    const legacyDisclosurePerformance = await readPerformanceAnalytics(
+      course.id,
+      ctx
+    )
+    expect(legacyDisclosureActivity?.participantCourseAnalytics).toHaveLength(1)
+    expect(legacyDisclosurePerformance?.participantPerformances).toHaveLength(1)
+    expect(
+      legacyDisclosurePerformance?.participantActivityPerformances
+    ).toHaveLength(1)
+
+    await prisma.participant.update({
+      where: { id: participant.id },
+      data: { learningAnalyticsDisclosureVersion: '   ' },
+    })
+    const blankDisclosureActivity = await readActivityAnalytics(course.id, ctx)
+    const blankDisclosurePerformance = await readPerformanceAnalytics(
+      course.id,
+      ctx
+    )
+    expect(blankDisclosureActivity?.participantCourseAnalytics).toHaveLength(0)
+    expect(blankDisclosureActivity?.dailyActivity).toHaveLength(1)
+    expect(blankDisclosurePerformance?.participantPerformances).toHaveLength(0)
+    expect(
+      blankDisclosurePerformance?.participantActivityPerformances
+    ).toHaveLength(0)
+    await prisma.participant.update({
+      where: { id: participant.id },
+      data: {
+        learningAnalyticsDisclosureVersion:
+          PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+      },
+    })
+
+    await setLearningAnalyticsConsent({ consent: false }, ctx)
+    const withdrawnActivity = await readActivityAnalytics(course.id, ctx)
+    const withdrawnPerformance = await readPerformanceAnalytics(course.id, ctx)
+    expect(withdrawnActivity?.participantCourseAnalytics).toHaveLength(0)
+    expect(withdrawnActivity?.dailyActivity).toHaveLength(1)
+    expect(withdrawnPerformance?.participantPerformances).toHaveLength(0)
+    expect(withdrawnPerformance?.participantActivityPerformances).toHaveLength(
+      0
+    )
+
+    await wait(10)
+    const reenabled = await setLearningAnalyticsConsent({ consent: true }, ctx)
+    const reenabledChoiceAt = reenabled!.learningAnalyticsChoiceAt!
+    expect(reenabledChoiceAt.getTime()).toBeGreaterThan(
+      initialChoiceAt.getTime()
+    )
+
+    const beforeRecomputeActivity = await readActivityAnalytics(course.id, ctx)
+    const beforeRecomputePerformance = await readPerformanceAnalytics(
+      course.id,
+      ctx
+    )
+    expect(beforeRecomputeActivity?.participantCourseAnalytics).toHaveLength(0)
+    expect(beforeRecomputeActivity?.dailyActivity).toHaveLength(1)
+    expect(beforeRecomputePerformance?.participantPerformances).toHaveLength(0)
+    expect(
+      beforeRecomputePerformance?.participantActivityPerformances
+    ).toHaveLength(0)
+
+    // The writer must clean up rows from the previous consent window before
+    // publishing replacement rows and advancing the recomputation marker.
+    await prisma.participantCourseAnalytics.deleteMany({
+      where: { courseId: course.id, participantId: participant.id },
+    })
+    await prisma.participantPerformance.deleteMany({
+      where: { courseId: course.id, participantId: participant.id },
+    })
+    await prisma.participantActivityPerformance.deleteMany({
+      where: { participantId: participant.id, practiceQuizId: practiceQuiz.id },
+    })
+    await createIndividualAnalyticsRows({
+      courseId: course.id,
+      participantId: participant.id,
+      practiceQuizId: practiceQuiz.id,
+      overrides: {
+        activeWeeks: 9,
+        activeDaysPerWeek: 8,
+        meanElementsPerDay: 7,
+        activityLevel: ActivityLevel.LOW,
+        firstErrorRate: 0.9,
+        firstPerformance: PerformanceLevel.HIGH,
+        lastErrorRate: 0.8,
+        lastPerformance: PerformanceLevel.HIGH,
+        totalErrorRate: 0.85,
+        totalPerformance: PerformanceLevel.MEDIUM,
+        totalScore: 99,
+        completion: 0.5,
+      },
+    })
+    await prisma.course.update({
+      where: { id: course.id },
+      data: {
+        analyticsLastComputedAt: new Date(reenabledChoiceAt.getTime() + 1_000),
+      },
+    })
+    const recomputedActivity = await readActivityAnalytics(course.id, ctx)
+    const recomputedPerformance = await readPerformanceAnalytics(course.id, ctx)
+    expect(recomputedActivity?.participantCourseAnalytics).toHaveLength(1)
+    expect(recomputedActivity?.dailyActivity).toHaveLength(1)
+    expect(recomputedActivity?.participantCourseAnalytics[0]).toMatchObject({
+      activeWeeks: 9,
+      activeDaysPerWeek: 8,
+      meanElementsPerDay: 7,
+      activityLevel: ActivityLevel.LOW,
+    })
+    expect(recomputedPerformance?.participantPerformances).toHaveLength(1)
+    expect(recomputedPerformance?.participantActivityPerformances).toHaveLength(
+      1
+    )
+    expect(recomputedPerformance?.participantPerformances[0]).toMatchObject({
+      firstErrorRate: 0.9,
+      firstPerformance: PerformanceLevel.HIGH,
+      lastErrorRate: 0.8,
+      lastPerformance: PerformanceLevel.HIGH,
+      totalErrorRate: 0.85,
+      totalPerformance: PerformanceLevel.MEDIUM,
+    })
+    expect(
+      recomputedPerformance?.participantActivityPerformances[0]
+        ?.activityPerformances[0]
+    ).toMatchObject({ totalScore: 99, completion: 0.5 })
+    expect({
+      totalParticipants: recomputedActivity!.totalParticipants,
+      dailyActivity: recomputedActivity!.dailyActivity,
+      weeklyActivity: recomputedActivity!.weeklyActivity,
+      activeDays: recomputedActivity!.activeDays,
+    }).toEqual(initialActivityAggregates)
+    expect({
+      totalParticipants: recomputedPerformance!.totalParticipants,
+      activityProgresses: recomputedPerformance!.activityProgresses,
+      activityPerformances: recomputedPerformance!.activityPerformances,
+      instancePerformances: recomputedPerformance!.instancePerformances,
+      instanceFeedbacks: recomputedPerformance!.instanceFeedbacks,
+      activityFeedbacks: recomputedPerformance!.activityFeedbacks,
+    }).toEqual(initialPerformanceAggregates)
+
+    await setLearningAnalyticsConsent({ consent: false }, ctx)
+    const withdrawnAgainActivity = await readActivityAnalytics(course.id, ctx)
+    const withdrawnAgainPerformance = await readPerformanceAnalytics(
+      course.id,
+      ctx
+    )
+    expect(withdrawnAgainActivity?.participantCourseAnalytics).toHaveLength(0)
+    expect(withdrawnAgainActivity?.dailyActivity).toHaveLength(1)
+    expect(withdrawnAgainPerformance?.participantPerformances).toHaveLength(0)
+    expect(
+      withdrawnAgainPerformance?.participantActivityPerformances
+    ).toHaveLength(0)
+  }, 15_000)
+
+  it('keeps existing rows hidden until recomputation after re-enable', async () => {
+    const owner = await createOwner('recompute-reenable')
+    const participant = await createParticipant('recompute-reenable')
+    const ctx = participantContext(participant.id)
+    const { course, practiceQuiz } = await createCourse(
+      owner.id,
+      participant.id
+    )
+    const initial = await setLearningAnalyticsConsent({ consent: true }, ctx)
+    const initialChoiceAt = initial!.learningAnalyticsChoiceAt!
+    await createIndividualAnalyticsRows({
+      courseId: course.id,
+      participantId: participant.id,
+      practiceQuizId: practiceQuiz.id,
+    })
+    await prisma.course.update({
+      where: { id: course.id },
+      data: { analyticsLastComputedAt: initialChoiceAt },
+    })
+    const beforeRecomputeActivity = await readActivityAnalytics(course.id, ctx)
+    const beforeRecomputePerformance = await readPerformanceAnalytics(
+      course.id,
+      ctx
+    )
+    expect(beforeRecomputeActivity?.participantCourseAnalytics).toHaveLength(0)
+    expect(beforeRecomputeActivity?.dailyActivity).toHaveLength(1)
+    expect(beforeRecomputePerformance?.participantPerformances).toHaveLength(0)
+    expect(
+      beforeRecomputePerformance?.participantActivityPerformances
+    ).toHaveLength(0)
+
+    const aggregateActivity = {
+      totalParticipants: beforeRecomputeActivity!.totalParticipants,
+      dailyActivity: beforeRecomputeActivity!.dailyActivity,
+      weeklyActivity: beforeRecomputeActivity!.weeklyActivity,
+      activeDays: beforeRecomputeActivity!.activeDays,
+    }
+    const aggregatePerformance = {
+      totalParticipants: beforeRecomputePerformance!.totalParticipants,
+      activityProgresses: beforeRecomputePerformance!.activityProgresses,
+      activityPerformances: beforeRecomputePerformance!.activityPerformances,
+      instancePerformances: beforeRecomputePerformance!.instancePerformances,
+      instanceFeedbacks: beforeRecomputePerformance!.instanceFeedbacks,
+      activityFeedbacks: beforeRecomputePerformance!.activityFeedbacks,
+    }
+
+    await prisma.course.update({
+      where: { id: course.id },
+      data: {
+        analyticsLastComputedAt: new Date(initialChoiceAt.getTime() + 1),
+      },
+    })
+    const initiallyVisibleActivity = await readActivityAnalytics(course.id, ctx)
+    const initiallyVisiblePerformance = await readPerformanceAnalytics(
+      course.id,
+      ctx
+    )
+    expect(initiallyVisibleActivity?.participantCourseAnalytics).toHaveLength(1)
+    expect(initiallyVisiblePerformance?.participantPerformances).toHaveLength(1)
+    expect(
+      initiallyVisiblePerformance?.participantActivityPerformances
+    ).toHaveLength(1)
+
+    await setLearningAnalyticsConsent({ consent: false }, ctx)
+    const withdrawnActivity = await readActivityAnalytics(course.id, ctx)
+    const withdrawnPerformance = await readPerformanceAnalytics(course.id, ctx)
+    expect(withdrawnActivity?.participantCourseAnalytics).toHaveLength(0)
+    expect(withdrawnActivity?.dailyActivity).toHaveLength(1)
+    expect(withdrawnPerformance?.participantPerformances).toHaveLength(0)
+    expect(withdrawnPerformance?.participantActivityPerformances).toHaveLength(
+      0
+    )
+    const reenabled = await setLearningAnalyticsConsent({ consent: true }, ctx)
+    const reenabledChoiceAt = reenabled!.learningAnalyticsChoiceAt!
+
+    const beforeRecomputeAgainActivity = await readActivityAnalytics(
+      course.id,
+      ctx
+    )
+    const beforeRecomputeAgainPerformance = await readPerformanceAnalytics(
+      course.id,
+      ctx
+    )
+    expect(
+      beforeRecomputeAgainActivity?.participantCourseAnalytics
+    ).toHaveLength(0)
+    expect(
+      beforeRecomputeAgainPerformance?.participantPerformances
+    ).toHaveLength(0)
+    expect(
+      beforeRecomputeAgainPerformance?.participantActivityPerformances
+    ).toHaveLength(0)
+
+    await prisma.course.update({
+      where: { id: course.id },
+      data: {
+        analyticsLastComputedAt: new Date(reenabledChoiceAt.getTime() + 1),
+      },
+    })
+    const recomputedActivity = await readActivityAnalytics(course.id, ctx)
+    const recomputedPerformance = await readPerformanceAnalytics(course.id, ctx)
+    expect(recomputedActivity?.participantCourseAnalytics).toHaveLength(1)
+    expect(recomputedActivity?.dailyActivity).toHaveLength(1)
+    expect(recomputedPerformance?.participantPerformances).toHaveLength(1)
+    expect(recomputedPerformance?.participantActivityPerformances).toHaveLength(
+      1
+    )
+    expect({
+      totalParticipants: recomputedActivity!.totalParticipants,
+      dailyActivity: recomputedActivity!.dailyActivity,
+      weeklyActivity: recomputedActivity!.weeklyActivity,
+      activeDays: recomputedActivity!.activeDays,
+    }).toEqual(aggregateActivity)
+    expect({
+      totalParticipants: recomputedPerformance!.totalParticipants,
+      activityProgresses: recomputedPerformance!.activityProgresses,
+      activityPerformances: recomputedPerformance!.activityPerformances,
+      instancePerformances: recomputedPerformance!.instancePerformances,
+      instanceFeedbacks: recomputedPerformance!.instanceFeedbacks,
+      activityFeedbacks: recomputedPerformance!.activityFeedbacks,
+    }).toEqual(aggregatePerformance)
+
+    await setLearningAnalyticsConsent({ consent: false }, ctx)
+    const withdrawnAgainActivity = await readActivityAnalytics(course.id, ctx)
+    const withdrawnAgainPerformance = await readPerformanceAnalytics(
+      course.id,
+      ctx
+    )
+    expect(withdrawnAgainActivity?.participantCourseAnalytics).toHaveLength(0)
+    expect(withdrawnAgainActivity?.dailyActivity).toHaveLength(1)
+    expect(withdrawnAgainPerformance?.participantPerformances).toHaveLength(0)
+    expect(
+      withdrawnAgainPerformance?.participantActivityPerformances
+    ).toHaveLength(0)
+  }, 15_000)
 })

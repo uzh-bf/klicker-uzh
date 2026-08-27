@@ -262,6 +262,30 @@ function isRecordedChoice(
   )
 }
 
+function isMalformedLearningAnalyticsState({
+  learningAnalyticsConsent,
+  learningAnalyticsChoiceAt,
+  learningAnalyticsDisclosureVersion,
+}: ParticipantDataUseFields) {
+  const hasChoiceMetadata =
+    learningAnalyticsChoiceAt !== null &&
+    learningAnalyticsDisclosureVersion !== null &&
+    learningAnalyticsDisclosureVersion.trim().length > 0
+
+  // The migrated/default false + null state is the only valid unrecorded
+  // state. Once a choice is recorded, both server-owned metadata fields must
+  // be present so an invalid row can never be returned as eligible.
+  if (!hasChoiceMetadata) {
+    return (
+      learningAnalyticsConsent ||
+      learningAnalyticsChoiceAt !== null ||
+      learningAnalyticsDisclosureVersion !== null
+    )
+  }
+
+  return false
+}
+
 function dataUseError(code: string) {
   return new GraphQLError(code, { extensions: { code } })
 }
@@ -385,7 +409,13 @@ export async function setLearningAnalyticsConsent(
         })
         if (!participant) return null
 
+        const malformedState = isMalformedLearningAnalyticsState(participant)
+        if (malformedState && consent) {
+          throw dataUseError('PARTICIPANT_DATA_USE_MALFORMED_STATE')
+        }
+
         const sameRecordedChoice =
+          !malformedState &&
           participant.learningAnalyticsConsent === consent &&
           isRecordedChoice(
             participant.learningAnalyticsChoiceAt,
