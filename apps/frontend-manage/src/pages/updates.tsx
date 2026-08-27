@@ -1,4 +1,5 @@
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { H1 } from '@uzh-bf/design-system'
 import type { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
@@ -19,6 +20,7 @@ function Updates() {
           className="mx-auto flex max-w-3xl flex-col gap-4"
           data-cy="product-updates-page"
         >
+          <H1>{t('manage.productUpdates.pageTitle')}</H1>
           {entries.length === 0 ? (
             <div className="text-slate-600" data-cy="product-updates-empty">
               {t('manage.productUpdates.empty')}

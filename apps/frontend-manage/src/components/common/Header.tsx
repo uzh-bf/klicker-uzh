@@ -351,7 +351,7 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
           <NotificationBadgeWrapper
             showBadge={unreadCount > 0}
             size="sm"
-            className={{ root: 'flex items-center', badge: 'mr-2.5 mt-1' }}
+            className={{ root: 'flex items-center', badge: 'top-0.5 right-0' }}
             data={{ cy: 'product-updates-badge' }}
           >
             <Navigation
