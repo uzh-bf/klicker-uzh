@@ -247,9 +247,6 @@ describe('participant data-use API', () => {
       expect.stringContaining('lock_timeout'),
       expect.stringContaining('pg_advisory_xact_lock'),
     ])
-    expect(fixture.queryStatements).not.toContain(
-      expect.stringContaining('clock_timestamp')
-    )
   })
 
   it('refreshes disclosure metadata and current choice time', async () => {

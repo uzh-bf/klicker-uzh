@@ -416,54 +416,6 @@ describe('participant data-use PostgreSQL integration', () => {
     })
   })
 
-  it('requires a computation strictly after the current choice for individual reads', async () => {
-    const owner = await createOwner('choice-gate')
-    const participant = await createParticipant('choice-gate')
-    const ctx = participantContext(participant.id)
-    const { course, practiceQuiz } = await createCourse(
-      owner.id,
-      participant.id
-    )
-    await createIndividualAnalyticsRows({
-      courseId: course.id,
-      participantId: participant.id,
-      practiceQuizId: practiceQuiz.id,
-    })
-
-    const choiceAt = new Date('2026-08-20T12:00:00.000Z')
-    await prisma.participant.update({
-      where: { id: participant.id },
-      data: {
-        learningAnalyticsConsent: true,
-        learningAnalyticsChoiceAt: choiceAt,
-        learningAnalyticsDisclosureVersion:
-          PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-      },
-    })
-    await prisma.course.update({
-      where: { id: course.id },
-      data: { analyticsLastComputedAt: choiceAt },
-    })
-
-    const equalActivity = await readActivityAnalytics(course.id, ctx)
-    const equalPerformance = await readPerformanceAnalytics(course.id, ctx)
-    expect(equalActivity?.participantCourseAnalytics).toHaveLength(0)
-    expect(equalPerformance?.participantPerformances).toHaveLength(0)
-    expect(equalPerformance?.participantActivityPerformances).toHaveLength(0)
-
-    await prisma.course.update({
-      where: { id: course.id },
-      data: {
-        analyticsLastComputedAt: new Date(choiceAt.getTime() + 1),
-      },
-    })
-    const newerActivity = await readActivityAnalytics(course.id, ctx)
-    const newerPerformance = await readPerformanceAnalytics(course.id, ctx)
-    expect(newerActivity?.participantCourseAnalytics).toHaveLength(1)
-    expect(newerPerformance?.participantPerformances).toHaveLength(1)
-    expect(newerPerformance?.participantActivityPerformances).toHaveLength(1)
-  })
-
   it('keeps analytics hidden until computation is strictly newer than the current choice', async () => {
     const owner = await createOwner('strict-freshness')
     const participant = await createParticipant('strict-freshness')

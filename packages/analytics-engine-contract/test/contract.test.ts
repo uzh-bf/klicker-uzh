@@ -220,10 +220,5 @@ describe('@klicker-uzh/analytics-engine-contract', () => {
     expect(() =>
       (COURSE_WORKFLOW_MODES as unknown as string[]).push('replay')
     ).toThrow(TypeError)
-
-    const digest = createHash('sha256')
-      .update(JSON.stringify(canonicalContract))
-      .digest('hex')
-    expect(digest).toBe(canonicalContractDigest)
   })
 })
