@@ -1,4 +1,3 @@
-import { isDeepStrictEqual } from 'node:util'
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
@@ -10,9 +9,8 @@ import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
-import * as ElementService from '../services/elements.js'
 import * as ElementGenerationService from '../services/elementGeneration.js'
-import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
+import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as FreeTextEvaluationService from '../services/freeTextEvaluation.js'
 import * as GroupService from '../services/groups.js'
@@ -23,6 +21,7 @@ import * as NotificationService from '../services/notifications.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
+import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
 import * as ResourcesService from '../services/resources.js'
 import * as ResponseExamplesService from '../services/responseExamples.js'
 import * as SharingService from '../services/sharing.js'
@@ -44,6 +43,7 @@ import {
   Tag,
   TemplateBlockInput,
 } from './element.js'
+import { ElementStatus, ElementType } from './elementData.js'
 import {
   ElementGenerationBuildInputRef,
   ElementGenerationBuildRef,
@@ -56,7 +56,6 @@ import {
   StartElementGenerationInputRef,
   UpdateGeneratedElementDraftInputRef,
 } from './elementGeneration.js'
-import { ElementStatus, ElementType } from './elementData.js'
 import { FreeTextPracticeStateType } from './freeTextEvaluation.js'
 import {
   GroupActivity,
@@ -182,10 +181,7 @@ export const Mutation = builder.mutationType({
           clientSubmissionId: t.arg.string({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await FreeTextEvaluationService.createFreeTextAttempt(
-            args,
-            ctx
-          )
+          return await StacksService.createAndApplyFreeTextAttempt(args, ctx)
         },
       }),
 
@@ -1265,30 +1261,6 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve: async (_, args, ctx) => {
-          if (
-            args.options &&
-            Object.hasOwn(args.options, 'semanticEvaluation')
-          ) {
-            const existing = args.id
-              ? await ctx.prisma.element.findUnique({
-                  where: { id: args.id },
-                  select: { options: true },
-                })
-              : null
-            const previousSemantic = (
-              existing?.options as {
-                semanticEvaluation?: unknown
-              } | null
-            )?.semanticEvaluation
-            const semanticChanged = !isDeepStrictEqual(
-              previousSemantic ?? null,
-              args.options.semanticEvaluation ?? null
-            )
-            const catalystEntitled =
-              ctx.user.catalystInstitutional || ctx.user.catalystIndividual
-            if (semanticChanged && !catalystEntitled) return null
-          }
-
           // if element is edited, >= WRITE permissions on element required
           if (typeof args.id !== 'undefined' && args.id !== null) {
             const validAccess = await checkAccess(

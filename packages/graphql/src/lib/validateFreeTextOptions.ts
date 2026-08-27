@@ -31,6 +31,7 @@ function validateFreeTextOptions(options?: ElementOptionsInput | null) {
   // if sample solution is enabled, at least one valid solution is required
   if (
     options.hasSampleSolution &&
+    options.semanticEvaluation == null &&
     (!options.solutions ||
       options.solutions.length === 0 ||
       options.solutions[0] === '')

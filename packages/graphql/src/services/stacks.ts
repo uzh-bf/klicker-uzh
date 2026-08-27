@@ -66,7 +66,12 @@ import type {
   CaseStudyElementOptions,
   ResponseInput,
 } from '../ops.js'
-import { createFreeTextAttempt } from './freeTextEvaluation.js'
+import {
+  type CreateFreeTextAttemptInput,
+  createFreeTextAttempt,
+  type FreeTextEvaluationServiceOptions,
+} from './freeTextEvaluation.js'
+import { applyFreeTextAttemptResponseInTransaction as applyFreeTextAttemptResponseCore } from './freeTextResponseApplication.js'
 import { upsertDailyTimelineEntry } from './participants.js'
 
 type ExistingInstanceType = DB.ElementInstance & {
@@ -2604,7 +2609,27 @@ async function updateLeaderboardOnQuestionResponse({
   })
 }
 
+type RespondToQuestionArgs = {
+  id: number
+  courseId: string
+  response: ResponseInput
+  answerTime: number
+  participation: (DB.Participation & { participant: DB.Participant }) | null
+  skipTracking?: boolean
+  correctnessOverride?: number
+  freeTextAttemptId?: string
+}
+
 export async function respondToQuestion(
+  args: RespondToQuestionArgs,
+  ctx: Context
+) {
+  return await ctx.prisma.$transaction(async (prisma) =>
+    respondToQuestionInTransaction(args, ctx, prisma)
+  )
+}
+
+export async function respondToQuestionInTransaction(
   {
     id,
     courseId,
@@ -2614,400 +2639,360 @@ export async function respondToQuestion(
     skipTracking,
     correctnessOverride,
     freeTextAttemptId,
-  }: {
-    id: number
-    courseId: string
-    response: ResponseInput
-    answerTime: number
-    participation: (DB.Participation & { participant: DB.Participant }) | null
-    skipTracking?: boolean
-    correctnessOverride?: number
-    freeTextAttemptId?: string
-  },
-  ctx: Context
+  }: RespondToQuestionArgs,
+  ctx: Context,
+  prisma: PrismaTransactionClient
 ) {
-  const result = await ctx.prisma.$transaction(async (prisma) => {
-    const freeTextAttempt = freeTextAttemptId
-      ? await prisma.freeTextAttempt.findUnique({
-          where: { id: freeTextAttemptId },
-          include: { cycle: true },
-        })
+  const freeTextAttempt = freeTextAttemptId
+    ? await prisma.freeTextAttempt.findUnique({
+        where: { id: freeTextAttemptId },
+        include: { cycle: true },
+      })
+    : null
+  if (
+    freeTextAttemptId &&
+    (!freeTextAttempt ||
+      freeTextAttempt.questionResponseDetailId !== null ||
+      freeTextAttempt.evaluationStatus !==
+        DB.FreeTextEvaluationStatus.EVALUATED)
+  ) {
+    return null
+  }
+
+  const existingInstance = await getValidateElementInstance({
+    prisma,
+    id,
+    participantId:
+      ctx.user?.role === DB.UserRole.PARTICIPANT ? ctx.user?.sub : undefined,
+  })
+
+  // if the instance does not exist or the elementData is not defined, return early
+  if (!existingInstance || !existingInstance?.elementData) {
+    return null
+  }
+
+  const existingResponse =
+    existingInstance.responses &&
+    existingInstance.responses.length > 0 &&
+    existingInstance.responses[0]
+      ? existingInstance.responses[0]
       : null
-    if (
-      freeTextAttemptId &&
-      (!freeTextAttempt ||
-        freeTextAttempt.questionResponseDetailId !== null ||
-        freeTextAttempt.evaluationStatus !==
-          DB.FreeTextEvaluationStatus.EVALUATED)
-    ) {
-      return null
+
+  // conver the case study solutions to object form for more efficient access
+  const caseStudySolutions =
+    existingInstance.elementType === DB.ElementType.CASE_STUDY
+      ? convertCaseStudySolutionsObject({
+          instance: existingInstance,
+        })
+      : undefined
+
+  // evaluate response correctness and compute updated instance results
+  const { correctness, results, modified } = updateQuestionResults({
+    existingInstance,
+    participation,
+    response,
+    caseStudySolutions,
+    correctnessOverride,
+  })
+
+  if (!modified || results === null) {
+    return null
+  }
+
+  // average answer time computations if participant is logged in
+  const { newAverageResponseTime, newAverageInstanceTime } = participation
+    ? computeNewAverageTimes({
+        existingInstance,
+        existingResponse,
+        answerTime,
+      })
+    : {
+        newAverageInstanceTime: undefined,
+        newAverageResponseTime: answerTime,
+      }
+
+  // compute updated instance statistics
+  const instanceInPracticeQuiz = !!existingInstance.elementStack?.practiceQuizId
+  const statisticsUpdate = computeUpdatedInstanceStatistics({
+    participation,
+    existingResponse: existingResponse, // this is safe because we only use it inside the function if the participation is defined
+    newAverageInstanceTime,
+    answerCorrect: correctness === 1,
+    answerPartial: (correctness ?? 0) < 1 && (correctness ?? 0) > 0,
+    answerIncorrect: correctness === 0,
+    instanceInPracticeQuiz,
+  })
+
+  // update the element instance
+  const updatedInstance = !skipTracking
+    ? await prisma.elementInstance.update({
+        where: { id },
+        data: {
+          results: participation ? results : undefined,
+          anonymousResults: participation ? undefined : results,
+          instanceStatistics: statisticsUpdate,
+        },
+        include: {
+          elementStack: true,
+        },
+      })
+    : existingInstance
+
+  // compute question evaluation
+  const questionEval = computeQuestionEvaluation({
+    elementData: existingInstance.elementData,
+    results: updatedInstance.results,
+    anonymousResults: updatedInstance.anonymousResults,
+    correctness,
+    multiplier: updatedInstance.options.pointsMultiplier,
+  })
+
+  // processing of percentile into status of instance
+  const percentile = questionEval?.percentile ?? 0
+  const status =
+    percentile === 0
+      ? StackFeedbackStatus.INCORRECT
+      : percentile === 1
+        ? StackFeedbackStatus.CORRECT
+        : StackFeedbackStatus.PARTIAL
+
+  // if participant is not logged in, return early and return the evaluation
+  if (
+    !questionEval ||
+    !participation ||
+    !ctx.user?.sub ||
+    ctx.user.role !== DB.UserRole.PARTICIPANT
+  ) {
+    return {
+      ...updatedInstance,
+      evaluation: questionEval
+        ? {
+            ...questionEval,
+            pointsAwarded: undefined,
+            newPointsFrom: undefined,
+            xpAwarded: undefined,
+            newXpFrom: undefined,
+          }
+        : undefined,
+      status,
+    }
+  }
+
+  // compute the awarded points & XP and all associated dates
+  let {
+    pointsAwarded,
+    newPointsFrom,
+    lastAwardedAt,
+    lastXpAwardedAt,
+    xpAwarded,
+    newXpFrom,
+  } = computeAwardedPointsAndXP({
+    score: questionEval.score ?? 0,
+    xp: questionEval.xp ?? 0,
+    existingResponse,
+    participation,
+    instance: updatedInstance,
+  })
+
+  if (freeTextAttempt) {
+    const previousBest = await prisma.freeTextAttempt.aggregate({
+      where: {
+        cycleId: freeTextAttempt.cycleId,
+        id: { not: freeTextAttempt.id },
+        evaluationStatus: DB.FreeTextEvaluationStatus.EVALUATED,
+      },
+      _max: { aggregateScore: true },
+    })
+    const previousPercentage = (previousBest._max.aggregateScore ?? 0) / 100
+    const previousScore =
+      previousPercentage *
+      POINTS_PER_INSTANCE *
+      (updatedInstance.options.pointsMultiplier ?? 1)
+    const previousXp = computeAwardedXp({
+      pointsPercentage: previousPercentage,
+    })
+    pointsAwarded = participation.isActive
+      ? freeTextAttempt.cycle.pointsRewardEligible
+        ? Math.max(0, (questionEval.score ?? 0) - previousScore)
+        : 0
+      : null
+    xpAwarded = freeTextAttempt.cycle.xpRewardEligible
+      ? Math.max(0, (questionEval.xp ?? 0) - previousXp)
+      : 0
+    if ((pointsAwarded ?? 0) > 0) {
+      lastAwardedAt = new Date()
+      newPointsFrom = dayjs(lastAwardedAt)
+        .add(
+          updatedInstance.options.resetTimeDays ?? POINTS_AWARD_TIMEFRAME_DAYS,
+          'days'
+        )
+        .toDate()
+    }
+    if (xpAwarded > 0) {
+      lastXpAwardedAt = new Date()
+      newXpFrom = dayjs(lastXpAwardedAt)
+        .add(XP_AWARD_TIMEFRAME_DAYS, 'days')
+        .toDate()
+    }
+  }
+
+  // create a question response detail
+  if (!skipTracking) {
+    // compute updated aggregated responses
+    const newAggResponses = computeAggregatedResponsesQuestion({
+      instance: updatedInstance,
+      existingResponse,
+      response,
+      correctness,
+      caseStudySolutions,
+    })
+
+    if (!newAggResponses) {
+      throw new Error(
+        `Failed to compute aggregated responses for question type ${updatedInstance.elementType}`
+      )
     }
 
-    const existingInstance = await getValidateElementInstance({
+    // update aggregated results for choices and open questions
+    const streakIncrement = percentile === 1 ? 1 : 0
+    const resultSpacedRepetition = updateSpacedRepetition({
+      eFactor: existingResponse?.eFactor ?? 2.5,
+      interval: existingResponse?.interval ?? 1,
+      streak: (existingResponse?.correctCountStreak ?? 0) + streakIncrement,
+      grade: percentile,
+    })
+
+    const responseDetail = await createQuestionResponseDetail({
       prisma,
       id,
-      participantId:
-        ctx.user?.role === DB.UserRole.PARTICIPANT ? ctx.user?.sub : undefined,
-    })
-
-    // if the instance does not exist or the elementData is not defined, return early
-    if (!existingInstance || !existingInstance?.elementData) {
-      return null
-    }
-
-    const existingResponse =
-      existingInstance.responses &&
-      existingInstance.responses.length > 0 &&
-      existingInstance.responses[0]
-        ? existingInstance.responses[0]
-        : null
-
-    // conver the case study solutions to object form for more efficient access
-    const caseStudySolutions =
-      existingInstance.elementType === DB.ElementType.CASE_STUDY
-        ? convertCaseStudySolutionsObject({
-            instance: existingInstance,
-          })
-        : undefined
-
-    // evaluate response correctness and compute updated instance results
-    const { correctness, results, modified } = updateQuestionResults({
-      existingInstance,
-      participation,
+      participantId: ctx.user.sub,
+      courseId,
       response,
-      caseStudySolutions,
-      correctnessOverride,
-    })
-
-    if (!modified || results === null) {
-      return null
-    }
-
-    // average answer time computations if participant is logged in
-    const { newAverageResponseTime, newAverageInstanceTime } = participation
-      ? computeNewAverageTimes({
-          existingInstance,
-          existingResponse,
-          answerTime,
-        })
-      : {
-          newAverageInstanceTime: undefined,
-          newAverageResponseTime: answerTime,
-        }
-
-    // compute updated instance statistics
-    const instanceInPracticeQuiz =
-      !!existingInstance.elementStack?.practiceQuizId
-    const statisticsUpdate = computeUpdatedInstanceStatistics({
-      participation,
-      existingResponse: existingResponse, // this is safe because we only use it inside the function if the participation is defined
-      newAverageInstanceTime,
-      answerCorrect: correctness === 1,
-      answerPartial: (correctness ?? 0) < 1 && (correctness ?? 0) > 0,
-      answerIncorrect: correctness === 0,
-      instanceInPracticeQuiz,
-    })
-
-    // update the element instance
-    const updatedInstance = !skipTracking
-      ? await prisma.elementInstance.update({
-          where: { id },
-          data: {
-            results: participation ? results : undefined,
-            anonymousResults: participation ? undefined : results,
-            instanceStatistics: statisticsUpdate,
-          },
-          include: {
-            elementStack: true,
-          },
-        })
-      : existingInstance
-
-    // compute question evaluation
-    const questionEval = computeQuestionEvaluation({
-      elementData: existingInstance.elementData,
-      results: updatedInstance.results,
-      anonymousResults: updatedInstance.anonymousResults,
-      correctness,
-      multiplier: updatedInstance.options.pointsMultiplier,
-    })
-
-    // processing of percentile into status of instance
-    const percentile = questionEval?.percentile ?? 0
-    const status =
-      percentile === 0
-        ? StackFeedbackStatus.INCORRECT
-        : percentile === 1
-          ? StackFeedbackStatus.CORRECT
-          : StackFeedbackStatus.PARTIAL
-
-    // if participant is not logged in, return early and return the evaluation
-    if (
-      !questionEval ||
-      !participation ||
-      !ctx.user?.sub ||
-      ctx.user.role !== DB.UserRole.PARTICIPANT
-    ) {
-      return {
-        ...updatedInstance,
-        evaluation: questionEval
-          ? {
-              ...questionEval,
-              pointsAwarded: undefined,
-              newPointsFrom: undefined,
-              xpAwarded: undefined,
-              newXpFrom: undefined,
-            }
-          : undefined,
-        status,
-      }
-    }
-
-    // compute the awarded points & XP and all associated dates
-    let {
-      pointsAwarded,
-      newPointsFrom,
-      lastAwardedAt,
-      lastXpAwardedAt,
-      xpAwarded,
-      newXpFrom,
-    } = computeAwardedPointsAndXP({
       score: questionEval.score ?? 0,
-      xp: questionEval.xp ?? 0,
-      existingResponse,
-      participation,
-      instance: updatedInstance,
+      pointsAwarded,
+      xpAwarded,
+      answerTime,
+      practiceQuizId: updatedInstance.elementStack?.practiceQuizId ?? undefined,
+      microLearningId:
+        updatedInstance.elementStack?.microLearningId ?? undefined,
     })
 
     if (freeTextAttempt) {
-      const previousBest = await prisma.freeTextAttempt.aggregate({
-        where: {
-          cycleId: freeTextAttempt.cycleId,
-          id: { not: freeTextAttempt.id },
-          evaluationStatus: DB.FreeTextEvaluationStatus.EVALUATED,
+      await prisma.freeTextAttempt.update({
+        where: { id: freeTextAttempt.id },
+        data: { questionResponseDetailId: responseDetail.id },
+      })
+      await prisma.freeTextPracticeCycle.update({
+        where: { id: freeTextAttempt.cycleId },
+        data: {
+          pointsAwarded: { increment: pointsAwarded ?? 0 },
+          xpAwarded: { increment: xpAwarded },
+          bestXp: Math.max(freeTextAttempt.cycle.bestXp, questionEval.xp ?? 0),
         },
-        _max: { aggregateScore: true },
       })
-      const previousPercentage = (previousBest._max.aggregateScore ?? 0) / 100
-      const previousScore =
-        previousPercentage *
-        POINTS_PER_INSTANCE *
-        (updatedInstance.options.pointsMultiplier ?? 1)
-      const previousXp = computeAwardedXp({
-        pointsPercentage: previousPercentage,
-      })
-      pointsAwarded = participation.isActive
-        ? freeTextAttempt.cycle.pointsRewardEligible
-          ? Math.max(0, (questionEval.score ?? 0) - previousScore)
-          : 0
-        : null
-      xpAwarded = freeTextAttempt.cycle.xpRewardEligible
-        ? Math.max(0, (questionEval.xp ?? 0) - previousXp)
-        : 0
-      if ((pointsAwarded ?? 0) > 0) {
-        lastAwardedAt = new Date()
-        newPointsFrom = dayjs(lastAwardedAt)
-          .add(
-            updatedInstance.options.resetTimeDays ??
-              POINTS_AWARD_TIMEFRAME_DAYS,
-            'days'
-          )
-          .toDate()
-      }
-      if (xpAwarded > 0) {
-        lastXpAwardedAt = new Date()
-        newXpFrom = dayjs(lastXpAwardedAt)
-          .add(XP_AWARD_TIMEFRAME_DAYS, 'days')
-          .toDate()
-      }
     }
 
-    // create a question response detail
-    if (!skipTracking) {
-      // compute updated aggregated responses
-      const newAggResponses = computeAggregatedResponsesQuestion({
-        instance: updatedInstance,
-        existingResponse,
-        response,
-        correctness,
-        caseStudySolutions,
-      })
+    // upsert the question response
+    await upsertQuestionResponse({
+      prisma,
+      id,
+      participantId: ctx.user.sub,
+      courseId,
+      response,
+      correctness: percentile,
+      score: questionEval.score ?? 0,
+      pointsAwarded,
+      lastAwardedAt: lastAwardedAt ?? new Date(),
+      xpAwarded,
+      lastXpAwardedAt: lastXpAwardedAt ?? new Date(),
+      newAverageResponseTime,
+      existingResponse,
+      newAggResponses,
+      practiceQuizId: updatedInstance.elementStack?.practiceQuizId ?? undefined,
+      microLearningId:
+        updatedInstance.elementStack?.microLearningId ?? undefined,
+      resultSpacedRepetition,
+    })
 
-      if (!newAggResponses) {
-        throw new Error(
-          `Failed to compute aggregated responses for question type ${updatedInstance.elementType}`
-        )
-      }
-
-      // update aggregated results for choices and open questions
-      const streakIncrement = percentile === 1 ? 1 : 0
-      const resultSpacedRepetition = updateSpacedRepetition({
-        eFactor: existingResponse?.eFactor ?? 2.5,
-        interval: existingResponse?.interval ?? 1,
-        streak: (existingResponse?.correctCountStreak ?? 0) + streakIncrement,
-        grade: percentile,
-      })
-
-      const responseDetail = await createQuestionResponseDetail({
+    // increment participant xp
+    if (xpAwarded > 0) {
+      await incrementParticipantXp({
         prisma,
-        id,
+        participantId: ctx.user.sub,
+        xpAwarded,
+      })
+    }
+
+    // create or increment the leaderboard entry, if the participant has an active participation in the course
+    // active participation has already been checked during computation of pointsAwarded
+    if (typeof pointsAwarded === 'number' && pointsAwarded !== null) {
+      await updateLeaderboardOnQuestionResponse({
+        prisma,
         participantId: ctx.user.sub,
         courseId,
-        response,
-        score: questionEval.score ?? 0,
         pointsAwarded,
-        xpAwarded,
-        answerTime,
-        practiceQuizId:
-          updatedInstance.elementStack?.practiceQuizId ?? undefined,
-        microLearningId:
-          updatedInstance.elementStack?.microLearningId ?? undefined,
       })
+    }
 
-      if (freeTextAttempt) {
-        await prisma.freeTextAttempt.update({
-          where: { id: freeTextAttempt.id },
-          data: { questionResponseDetailId: responseDetail.id },
-        })
-        await prisma.freeTextPracticeCycle.update({
-          where: { id: freeTextAttempt.cycleId },
-          data: {
-            pointsAwarded: { increment: pointsAwarded ?? 0 },
-            xpAwarded: { increment: xpAwarded },
-            bestXp: Math.max(
-              freeTextAttempt.cycle.bestXp,
-              questionEval.xp ?? 0
-            ),
-          },
-        })
-      }
-
-      // upsert the question response
-      await upsertQuestionResponse({
+    // if either XP or points are awarded, update the daily student timeline entry
+    if (
+      xpAwarded > 0 ||
+      (typeof pointsAwarded === 'number' && pointsAwarded !== null)
+    ) {
+      await upsertDailyTimelineEntry({
         prisma,
-        id,
         participantId: ctx.user.sub,
         courseId,
-        response,
-        correctness: percentile,
-        score: questionEval.score ?? 0,
-        pointsAwarded,
-        lastAwardedAt: lastAwardedAt ?? new Date(),
         xpAwarded,
-        lastXpAwardedAt: lastXpAwardedAt ?? new Date(),
-        newAverageResponseTime,
-        existingResponse,
-        newAggResponses,
-        practiceQuizId:
-          updatedInstance.elementStack?.practiceQuizId ?? undefined,
-        microLearningId:
-          updatedInstance.elementStack?.microLearningId ?? undefined,
-        resultSpacedRepetition,
+        pointsAwarded: pointsAwarded ?? undefined,
       })
-
-      // increment participant xp
-      if (xpAwarded > 0) {
-        await incrementParticipantXp({
-          prisma,
-          participantId: ctx.user.sub,
-          xpAwarded,
-        })
-      }
-
-      // create or increment the leaderboard entry, if the participant has an active participation in the course
-      // active participation has already been checked during computation of pointsAwarded
-      if (typeof pointsAwarded === 'number' && pointsAwarded !== null) {
-        await updateLeaderboardOnQuestionResponse({
-          prisma,
-          participantId: ctx.user.sub,
-          courseId,
-          pointsAwarded,
-        })
-      }
-
-      // if either XP or points are awarded, update the daily student timeline entry
-      if (
-        xpAwarded > 0 ||
-        (typeof pointsAwarded === 'number' && pointsAwarded !== null)
-      ) {
-        await upsertDailyTimelineEntry({
-          prisma,
-          participantId: ctx.user.sub,
-          courseId,
-          xpAwarded,
-          pointsAwarded: pointsAwarded ?? undefined,
-        })
-      }
     }
+  }
 
-    return {
-      ...updatedInstance,
-      evaluation: {
-        ...questionEval,
-        pointsAwarded,
-        newPointsFrom,
-        xpAwarded,
-        newXpFrom,
-      },
-      status,
-    }
-  })
-
-  return result
+  return {
+    ...updatedInstance,
+    evaluation: {
+      ...questionEval,
+      pointsAwarded,
+      newPointsFrom,
+      xpAwarded,
+      newXpFrom,
+    },
+    status,
+  }
 }
 
 export async function applyFreeTextAttemptResponse(
-  { attemptId }: { attemptId: string },
+  args: { attemptId: string },
   prisma: DB.PrismaClient
 ) {
-  const attempt = await prisma.freeTextAttempt.findUnique({
-    where: { id: attemptId },
-    include: {
-      cycle: {
-        include: {
-          participant: true,
-          participation: { include: { participant: true } },
-          practiceQuiz: true,
-        },
-      },
-    },
-  })
-  if (
-    !attempt ||
-    attempt.questionResponseDetailId !== null ||
-    attempt.evaluationStatus !== DB.FreeTextEvaluationStatus.EVALUATED ||
-    attempt.aggregateScore === null
-  ) {
-    return false
-  }
-
-  await respondToQuestion(
-    {
-      id: attempt.cycle.elementInstanceId,
-      courseId: attempt.cycle.practiceQuiz.courseId,
-      response: { value: attempt.answer },
-      answerTime: attempt.answerTime,
-      participation: attempt.cycle.participation,
-      correctnessOverride: attempt.aggregateScore / 100,
-      freeTextAttemptId: attempt.id,
-    },
-    {
-      prisma,
-      user: {
-        sub: attempt.cycle.participantId,
-        role: DB.UserRole.PARTICIPANT,
-        scope: DB.UserLoginScope.READ_ONLY,
-        catalystInstitutional: false,
-        catalystIndividual: false,
-      },
-    } as Context
+  return await prisma.$transaction(async (tx) =>
+    applyFreeTextAttemptResponseInTransaction(args, tx)
   )
+}
 
-  const linked = await prisma.freeTextAttempt.findUnique({
-    where: { id: attempt.id },
-    select: { questionResponseDetailId: true },
-  })
-  return linked?.questionResponseDetailId !== null
+export async function applyFreeTextAttemptResponseInTransaction(
+  { attemptId }: { attemptId: string },
+  prisma: PrismaTransactionClient
+) {
+  return await applyFreeTextAttemptResponseCore(
+    { attemptId },
+    prisma,
+    respondToQuestionInTransaction
+  )
+}
+
+export async function createAndApplyFreeTextAttempt(
+  input: CreateFreeTextAttemptInput,
+  ctx: ContextWithUser,
+  options?: FreeTextEvaluationServiceOptions
+) {
+  return await createFreeTextAttempt(
+    input,
+    ctx,
+    applyFreeTextAttemptResponseInTransaction,
+    options
+  )
 }
 // #endregion
 
@@ -3213,7 +3198,7 @@ async function respondToElement({
             'Semantic free-text responses require an answer and client submission ID'
           )
         }
-        const semanticState = await createFreeTextAttempt(
+        const semanticState = await createAndApplyFreeTextAttempt(
           {
             instanceId: response.instanceId,
             answer: response.freeTextResponse,

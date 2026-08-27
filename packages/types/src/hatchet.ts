@@ -1,5 +1,6 @@
 import type EventEmitter from 'node:events'
 import type {
+  BaseWorkflowDeclaration,
   Context,
   HatchetClient,
   JsonObject,
@@ -157,7 +158,7 @@ export interface HatchetHandlers {
     executionCtx: Context<unknown>
   ) => Promise<{ success: boolean; applied: boolean }>
   handleReapStalledFreeTextAttempts: (
-    {},
+    _args: Record<string, never>,
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
@@ -165,9 +166,9 @@ export interface HatchetHandlers {
 
 // Contract for the tasks that are passed into the GraphQL context.
 export interface PreparedHatchetTasks {
-  evaluateFreeTextAttempt: TaskWorkflowDeclaration<
+  evaluateFreeTextAttempt: BaseWorkflowDeclaration<
     { attemptId: string; evaluationRevision: number },
-    { success: boolean; applied: boolean }
+    JsonObject
   >
   ingestKBResource: TaskWorkflowDeclaration<
     IngestKBResourceInput,

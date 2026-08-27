@@ -1757,6 +1757,34 @@ type FreeTextActivityEvaluationData {
   type: ElementType!
 }
 
+type FreeTextAttemptState {
+  aggregateScore: Float
+  answer: String!
+  availabilityReason: String
+  completedAt: Date
+  correctness: FreeTextCorrectnessCategory
+  createdAt: Date!
+  evaluationRevision: Int!
+  evaluationSource: FreeTextEvaluationSource
+  evaluationStatus: FreeTextEvaluationStatus!
+  evaluatorVersion: String
+  id: String!
+  modelVersion: String
+  ordinal: Int!
+  outcomeBandId: String
+  outcomeBandLabel: String
+  pointsAwarded: Float
+  retryable: Boolean!
+  structuredResult: Json
+  xpAwarded: Float!
+}
+
+enum FreeTextCorrectnessCategory {
+  CORRECT
+  INCORRECT
+  PARTIAL
+}
+
 type FreeTextElement {
   basePoints: Boolean!
   content: String!
@@ -1802,7 +1830,19 @@ type FreeTextElementOptions {
   hasAnswerFeedbacks: Boolean
   hasSampleSolution: Boolean
   restrictions: FreeTextRestrictions
+  semanticEvaluation: Json
   solutions: [String!]
+}
+
+enum FreeTextEvaluationSource {
+  EXACT_MATCH
+  SEMANTIC
+}
+
+enum FreeTextEvaluationStatus {
+  EVALUATED
+  PENDING
+  UNAVAILABLE
 }
 
 type FreeTextInstanceEvaluation {
@@ -1820,9 +1860,42 @@ type FreeTextInstanceEvaluation {
   pointsAwarded: Float
   pointsMultiplier: Int!
   score: Float!
+  semanticState: FreeTextPracticeState
   solutions: [String!]
   xp: Int
   xpAwarded: Int
+}
+
+type FreeTextPeerAnswer {
+  count: Int!
+  value: String!
+}
+
+enum FreeTextPracticeCycleStatus {
+  ACTIVE
+  CORRECT
+  EXHAUSTED
+  SOLUTION_REVEALED
+}
+
+type FreeTextPracticeState {
+  attemptLimit: Int!
+  attempts: [FreeTextAttemptState!]!
+  attemptsRemaining: Int!
+  attemptsUsed: Int!
+  canPracticeAgain: Boolean!
+  canRetryEvaluation: Boolean!
+  canRevealSolution: Boolean!
+  canSubmitAnswer: Boolean!
+  currentAttempt: FreeTextAttemptState
+  cycleId: String!
+  cycleOrdinal: Int!
+  cycleStatus: FreeTextPracticeCycleStatus!
+  explanation: String
+  instanceId: Int!
+  peerAnswers: [FreeTextPeerAnswer!]!
+  referenceSolution: String
+  solutionAuthorized: Boolean!
 }
 
 type FreeTextRestrictions {
@@ -2538,6 +2611,7 @@ type Mutation {
   createUserGroup(members: [UserGroupMembersInput!]!, name: String!): UserGroup
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
   deactivateLiveQuizBlock(blockId: Int!, quizId: String!): Boolean
+  decideSemanticEvaluationConsent(accepted: Boolean!, disclosureVersion: String!): Boolean!
   declineObjectSharingRequest(requestId: Int!, userId: String!): Boolean!
   deleteActivityMessage(id: Int!): Boolean!
   deleteActivityTemplate(activityId: String!, activityType: ActivityType!): String
@@ -2640,6 +2714,8 @@ type Mutation {
   respondToElementStack(courseId: String!, isOwner: Boolean!, responses: [StackResponseInput!]!, stackAnswerTime: Int!, stackId: Int!): StackFeedback
   respondToFeedback(id: Int!, liveQuizId: String!, responseContent: String!): Feedback
   retryElementGeneration(input: ElementGenerationBuildInput!): ElementGenerationBuild!
+  retryFreeTextEvaluation(attemptId: String!): FreeTextPracticeState!
+  revealFreeTextSolution(cycleId: String!): FreeTextPracticeState!
   reviewElementGeneration(input: ReviewElementGenerationInput!): ElementGenerationBuild!
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
@@ -2657,8 +2733,10 @@ type Mutation {
   shareObject(objectId: String!, objectType: ObjectType!, permissionLevel: PermissionLevel!, propagation: Boolean!, shortnameOrEmail: String, userGroupId: Int): PermissionInfo
   startCourseDuplication(color: String, description: String, displayName: String!, duplicateGroupActivities: Boolean, duplicateLiveQuizzes: Boolean, duplicateMicrolearnings: Boolean, duplicatePracticeQuizzes: Boolean, endDate: Date!, groupDeadlineDate: Date!, isGamificationEnabled: Boolean, isGroupCreationEnabled: Boolean!, language: LocaleType!, maxGroupSize: Int!, name: String!, notificationEmail: String, preferredGroupSize: Int!, sourceCourseId: String!, startDate: Date!): CourseDuplicationStatus
   startElementGeneration(input: StartElementGenerationInput!): ElementGenerationBuild!
+  startFreeTextPracticeCycle(instanceId: Int!): FreeTextPracticeState!
   startGroupActivity(activityId: String!, groupId: String!): GroupActivityDetails
   startLiveQuiz(id: String!): LiveQuizMeta
+  submitFreeTextAttempt(answer: String!, answerTime: Float!, clientSubmissionId: String!, instanceId: Int!): FreeTextPracticeState!
   submitGroupActivityDecisions(activityId: Int!, responses: [StackResponseInput!]!): Int
   subscribeToPush(courseId: String!, subscriptionObject: SubscriptionObjectInput!): Participation
   toggleArchiveCourse(id: String!, isArchived: Boolean!): Course
@@ -2850,6 +2928,7 @@ input OptionsFreeTextInput {
   hasSampleSolution: Boolean
   placeholder: String
   restrictions: FreeTextRestrictionsInput
+  semanticEvaluation: Json
   solutions: [String!]
 }
 
@@ -3148,6 +3227,7 @@ type Query {
   elementGenerationSources: [ElementGenerationSource!]!
   endedLiveQuizzesCourse(courseId: String!): [LiveQuizSelectionItem!]
   feedbacks(quizId: String!): [Feedback!]
+  freeTextPracticeState(instanceId: Int!): FreeTextPracticeState
   getActiveUserCourses(activityId: String, activityType: ActivityType): [Course!]
   getActivityAnalytics(activityId: String!): QuizAnalytics
   getActivityTemplate(templateId: String!): ActivityTemplate
@@ -3239,6 +3319,7 @@ type Query {
   searchKbKnowledgeGraph(kbId: ID!, query: String!): KnowledgeGraphResponse!
   self(liveQuizId: String): Participant
   selfWithAchievements: ParticipantWithAchievements
+  semanticFreeTextCapability: SemanticFreeTextCapability!
   shortnameQuizzes(shortname: String!): [LiveQuiz!]
   studentAssessmentResults(courseId: String!): StudentAssessmentResults
   studentCourseResults(courseId: String!, participantId: String!): [ActivityStudentPerformance!]
@@ -3465,6 +3546,21 @@ type SelectionInstanceEvaluation {
   xpAwarded: Int
 }
 
+type SemanticFreeTextCapability {
+  availability: SemanticFreeTextCapabilityAvailability!
+  disclosureVersion: String!
+  entitled: Boolean!
+  provider: String!
+  reason: String
+  retryable: Boolean!
+}
+
+enum SemanticFreeTextCapabilityAvailability {
+  AVAILABLE
+  DEGRADED
+  UNAVAILABLE
+}
+
 input SetGeneratedElementDecisionInput {
   decision: GeneratedElementDecision!
   draftId: ID!
@@ -3592,6 +3688,7 @@ enum StackFeedbackStatus {
 input StackResponseInput {
   caseStudyResponse: [CaseStudyCaseResponse!]
   choicesResponse: [ChoicesResponse!]
+  clientSubmissionId: String
   contentReponse: Boolean
   flashcardResponse: FlashcardCorrectnessType
   freeTextResponse: String

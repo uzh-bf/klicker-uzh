@@ -2,7 +2,7 @@ import type { Context } from '@hatchet-dev/typescript-sdk/index.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import type { HatchetHandlerGlobalContext } from '@klicker-uzh/types'
 import {
-  completeFreeTextAttemptEvaluation,
+  completeFreeTextAttemptEvaluationInTransaction,
   getSemanticEvaluationDisclosureVersion,
   getSemanticFreeTextConfig,
   getSemanticFreeTextConfigHash,
@@ -12,7 +12,10 @@ import {
   RetryableSemanticEvaluatorError,
   requestSemanticFreeTextEvaluation,
 } from './semanticFreeTextEvaluator.js'
-import { applyFreeTextAttemptResponse } from './stacks.js'
+import {
+  applyFreeTextAttemptResponse,
+  applyFreeTextAttemptResponseInTransaction,
+} from './stacks.js'
 
 export async function handleEvaluateFreeTextAttempt(
   {
@@ -44,6 +47,11 @@ export async function handleEvaluateFreeTextAttempt(
       { attemptId },
       globalCtx.prisma
     )
+    if (!applied) {
+      throw new Error(
+        'Evaluated free-text attempt could not apply its response'
+      )
+    }
     return { success: true, applied }
   }
   if (
@@ -143,33 +151,30 @@ export async function handleEvaluateFreeTextAttempt(
     return { success: true, applied: true }
   }
 
-  const applied = await completeFreeTextAttemptEvaluation(
-    {
-      attemptId,
-      evaluationRevision,
-      evaluation: evaluatorResult.response,
-    },
-    globalCtx.prisma
-  )
-  const responseApplied = applied
-    ? await applyFreeTextAttemptResponse({ attemptId }, globalCtx.prisma)
-    : false
-  if (applied && !responseApplied) {
-    // The evaluation is committed but the reward/response application was
-    // skipped (instance missing or results unchanged). Surface this loudly:
-    // the participant sees feedback without XP/points and nothing else would
-    // indicate the gap.
-    console.error(
-      JSON.stringify({
-        service: 'semantic-free-text-evaluator',
-        attemptId,
-        reasonClass: 'REWARD_APPLICATION_SKIPPED',
-        detail:
-          'Evaluation completed but applyFreeTextAttemptResponse returned false',
-      })
+  const applied = await globalCtx.prisma.$transaction(async (tx) => {
+    const evaluationApplied =
+      await completeFreeTextAttemptEvaluationInTransaction(
+        {
+          attemptId,
+          evaluationRevision,
+          evaluation: evaluatorResult.response,
+        },
+        tx
+      )
+    if (!evaluationApplied) return false
+
+    const responseApplied = await applyFreeTextAttemptResponseInTransaction(
+      { attemptId },
+      tx
     )
-  }
-  return { success: true, applied: applied && responseApplied }
+    if (!responseApplied) {
+      throw new Error(
+        'Free-text evaluation could not apply its response atomically'
+      )
+    }
+    return true
+  })
+  return { success: true, applied }
 }
 
 export async function handleEvaluateFreeTextAttemptFailure(
@@ -205,7 +210,7 @@ export async function handleEvaluateFreeTextAttemptFailure(
 const REAP_STALLED_AFTER_MINUTES = 10
 
 export async function handleReapStalledFreeTextAttempts(
-  {},
+  _input: Record<string, never>,
   globalCtx: HatchetHandlerGlobalContext,
   _executionCtx: Context<unknown>
 ) {

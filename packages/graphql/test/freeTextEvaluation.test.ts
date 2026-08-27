@@ -36,14 +36,16 @@ import {
 } from '../src/schema/elementData.js'
 import { manipulateElement } from '../src/services/elements.js'
 import {
-  createFreeTextAttempt,
+  completeFreeTextAttemptEvaluationInTransaction,
   decideSemanticEvaluationConsent,
   getFreeTextPracticeState,
+  markFreeTextAttemptUnavailable,
   retryFreeTextEvaluation,
   revealFreeTextSolution,
   startFreeTextPracticeCycle,
 } from '../src/services/freeTextEvaluation.js'
 import { handleEvaluateFreeTextAttempt } from '../src/services/freeTextEvaluationHandler.js'
+import { createAndApplyFreeTextAttempt as createFreeTextAttempt } from '../src/services/stacks.js'
 
 const TEST_PREFIX = `free-text-evaluation-${Date.now()}`
 
@@ -120,7 +122,7 @@ function lecturerContext(lecturerId: string): ContextWithUser {
       role: UserRole.USER,
       scope: UserLoginScope.ACCOUNT_OWNER,
       catalystInstitutional: false,
-      catalystIndividual: false,
+      catalystIndividual: true,
     },
   } as unknown as ContextWithUser
 }
@@ -404,22 +406,62 @@ describe('semantic free-text practice state', () => {
       correctness: 'CORRECT',
       aggregateScore: 100,
     })
-    expect(schedule).toHaveBeenCalledTimes(1)
-
-    const applied = await handleEvaluateFreeTextAttempt(
-      {
-        attemptId: state.currentAttempt!.id,
-        evaluationRevision: 0,
-      },
-      { prisma } as never,
-      {} as never
-    )
-    expect(applied).toEqual({ success: true, applied: true })
+    expect(schedule).not.toHaveBeenCalled()
     expect(
       await prisma.questionResponseDetail.count({
         where: { freeTextAttempt: { id: state.currentAttempt!.id } },
       })
     ).toBe(1)
+  })
+
+  it('rolls back an exact-match attempt when the cycle transition fails', async () => {
+    const failingPrisma = prisma.$extends({
+      query: {
+        freeTextPracticeCycle: {
+          update({ args, query }) {
+            if (args.data.status === 'CORRECT') {
+              throw new Error('simulated cycle transition failure')
+            }
+            return query(args)
+          },
+          updateMany({ args, query }) {
+            if (args.data.status === 'CORRECT') {
+              throw new Error('simulated cycle transition failure')
+            }
+            return query(args)
+          },
+        },
+      },
+    })
+    const schedule = vi.fn().mockResolvedValue(workflowRunRef())
+    const ctx = {
+      ...participantContext(fixture.participant.id, schedule),
+      prisma: failingPrisma,
+    } as unknown as ContextWithUser
+
+    await expect(
+      createFreeTextAttempt(
+        {
+          instanceId: fixture.instance.id,
+          answer: 'Diversification reduces idiosyncratic risk.',
+          answerTime: 3,
+          clientSubmissionId: randomUUID(),
+        },
+        ctx
+      )
+    ).rejects.toThrow('simulated cycle transition failure')
+
+    const cycle = await prisma.freeTextPracticeCycle.findFirstOrThrow({
+      where: {
+        participantId: fixture.participant.id,
+        elementInstanceId: fixture.instance.id,
+      },
+    })
+    expect(cycle.status).toBe('ACTIVE')
+    expect(
+      await prisma.freeTextAttempt.count({ where: { cycleId: cycle.id } })
+    ).toBe(0)
+    expect(schedule).not.toHaveBeenCalled()
   })
 
   it('uses honest unavailable fallback after consent is declined', async () => {
@@ -482,6 +524,94 @@ describe('semantic free-text practice state', () => {
       evaluationStatus: 'PENDING',
     })
     expect(retried.attemptsUsed).toBe(0)
+  })
+
+  it('schedules one revision when evaluation retry requests race', async () => {
+    const schedule = vi.fn().mockResolvedValue(workflowRunRef())
+    const ctx = participantContext(fixture.participant.id, schedule)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: false },
+      ctx
+    )
+    const unavailable = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'It makes a portfolio safer.',
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
+
+    const retries = await Promise.all(
+      Array.from({ length: 4 }, () =>
+        retryFreeTextEvaluation(
+          { attemptId: unavailable.currentAttempt!.id },
+          ctx,
+          { disclosureVersion: '2026-08-18' }
+        )
+      )
+    )
+
+    expect(schedule).toHaveBeenCalledTimes(1)
+    expect(
+      retries.map((state) => state.currentAttempt?.evaluationRevision)
+    ).toEqual([1, 1, 1, 1])
+    expect(
+      retries.map((state) => state.currentAttempt?.evaluationStatus)
+    ).toEqual(['PENDING', 'PENDING', 'PENDING', 'PENDING'])
+  })
+
+  it('keeps retry and solution reveal as mutually exclusive transitions', async () => {
+    const schedule = vi.fn().mockResolvedValue(workflowRunRef())
+    const ctx = participantContext(fixture.participant.id, schedule)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: false },
+      ctx
+    )
+    const unavailable = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'It makes a portfolio safer.',
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
+
+    await Promise.all([
+      retryFreeTextEvaluation(
+        { attemptId: unavailable.currentAttempt!.id },
+        ctx,
+        { disclosureVersion: '2026-08-18' }
+      ),
+      revealFreeTextSolution({ cycleId: unavailable.cycleId }, ctx),
+    ])
+
+    const state = await getFreeTextPracticeState(
+      { instanceId: fixture.instance.id },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+    expect(
+      state?.cycleStatus === 'SOLUTION_REVEALED' &&
+        state.currentAttempt?.evaluationStatus === 'PENDING'
+    ).toBe(false)
+    if (state?.currentAttempt?.evaluationStatus === 'PENDING') {
+      expect(state.cycleStatus).toBe('ACTIVE')
+    } else {
+      expect(state?.cycleStatus).toBe('SOLUTION_REVEALED')
+    }
   })
 
   it('reveals the solution terminally and permits a new cycle', async () => {
@@ -761,6 +891,163 @@ describe('semantic free-text practice state', () => {
     ).toBe(2)
   })
 
+  it('rolls back semantic evaluation when response application fails', async () => {
+    const ctx = participantContext(fixture.participant.id)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
+    const pending = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'It spreads investments across assets.',
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+    const attempt = pending.currentAttempt!
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify(evaluatorResponse(attempt.id, 60, 'complete')),
+            { status: 200, headers: { 'content-type': 'application/json' } }
+          )
+        )
+    )
+    const failingPrisma = prisma.$extends({
+      query: {
+        questionResponseDetail: {
+          create() {
+            throw new Error('simulated response application failure')
+          },
+        },
+      },
+    })
+
+    await expect(
+      handleEvaluateFreeTextAttempt(
+        {
+          attemptId: attempt.id,
+          evaluationRevision: attempt.evaluationRevision,
+        },
+        { prisma: failingPrisma } as never,
+        {} as never
+      )
+    ).rejects.toThrow('simulated response application failure')
+
+    const storedAttempt = await prisma.freeTextAttempt.findUniqueOrThrow({
+      where: { id: attempt.id },
+      include: { cycle: true },
+    })
+    expect(storedAttempt.evaluationStatus).toBe('PENDING')
+    expect(storedAttempt.cycle.status).toBe('ACTIVE')
+    expect(storedAttempt.questionResponseDetailId).toBeNull()
+  })
+
+  it.each([
+    'retry',
+    'reveal',
+  ] as const)('does not let stale worker completion overwrite a %s transition', async (transition) => {
+    const schedule = vi.fn().mockResolvedValue(workflowRunRef())
+    const ctx = participantContext(fixture.participant.id, schedule)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
+    const pending = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'It spreads investments across assets.',
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+    const attempt = pending.currentAttempt!
+    let releaseWorker!: () => void
+    let workerReachedTransition!: () => void
+    const workerPaused = new Promise<void>((resolve) => {
+      workerReachedTransition = resolve
+    })
+    const workerRelease = new Promise<void>((resolve) => {
+      releaseWorker = resolve
+    })
+    const racingPrisma = prisma.$extends({
+      query: {
+        freeTextAttempt: {
+          async updateMany({ args, query }) {
+            if (
+              args.where?.id === attempt.id &&
+              args.data.evaluationStatus === FreeTextEvaluationStatus.EVALUATED
+            ) {
+              workerReachedTransition()
+              await workerRelease
+            }
+            return await query(args)
+          },
+        },
+      },
+    })
+    const workerCompletion = racingPrisma.$transaction(async (tx) =>
+      completeFreeTextAttemptEvaluationInTransaction(
+        {
+          attemptId: attempt.id,
+          evaluationRevision: attempt.evaluationRevision,
+          evaluation: evaluatorResponse(attempt.id, 60, 'complete'),
+        },
+        tx as never
+      )
+    )
+
+    await workerPaused
+    await markFreeTextAttemptUnavailable(
+      {
+        attemptId: attempt.id,
+        evaluationRevision: attempt.evaluationRevision,
+        reason: 'SIMULATED_RECOVERY',
+        retryable: true,
+      },
+      prisma
+    )
+    const participantTransition =
+      transition === 'retry'
+        ? retryFreeTextEvaluation({ attemptId: attempt.id }, ctx, {
+            disclosureVersion: '2026-08-18',
+          })
+        : revealFreeTextSolution({ cycleId: pending.cycleId }, ctx)
+    releaseWorker()
+
+    const [workerApplied, state] = await Promise.all([
+      workerCompletion,
+      participantTransition,
+    ])
+    expect(workerApplied).toBe(false)
+    expect(state.currentAttempt?.evaluationSource).toBeNull()
+    if (transition === 'retry') {
+      expect(state).toMatchObject({
+        cycleStatus: 'ACTIVE',
+        currentAttempt: {
+          evaluationRevision: 1,
+          evaluationStatus: 'PENDING',
+        },
+      })
+    } else {
+      expect(state).toMatchObject({
+        cycleStatus: 'SOLUTION_REVEALED',
+        currentAttempt: {
+          evaluationRevision: 0,
+          evaluationStatus: 'UNAVAILABLE',
+        },
+      })
+    }
+  })
+
   it('marks uncertain output unavailable without consuming an answer attempt', async () => {
     const ctx = participantContext(fixture.participant.id)
     await decideSemanticEvaluationConsent(
@@ -957,6 +1244,12 @@ describe('semantic free-text practice state', () => {
       {
         id: fixture.instance.elementId,
         type: ElementType.FREE_TEXT,
+        status: 'READY',
+        name: 'Why diversify?',
+        content: 'What is the principal benefit of diversification?',
+        explanation: 'Diversification reduces asset-specific risk.',
+        basePoints: true,
+        pointsMultiplier: 1,
         options: {
           hasSampleSolution: true,
           solutions: ['Diversification reduces idiosyncratic risk.'],
@@ -969,6 +1262,65 @@ describe('semantic free-text practice state', () => {
       lecturerContext(fixture.lecturer.id)
     )
     expect(result).toBeNull()
+  })
+
+  it('enforces semantic authoring entitlement inside the element service', async () => {
+    const ctx = lecturerContext(fixture.lecturer.id)
+    ctx.user.catalystInstitutional = false
+    ctx.user.catalystIndividual = false
+
+    const result = await manipulateElement(
+      {
+        id: fixture.instance.elementId,
+        type: ElementType.FREE_TEXT,
+        options: {
+          hasSampleSolution: true,
+          semanticEvaluation: { ...semanticConfig, attempt_limit: 3 },
+        },
+      },
+      ctx
+    )
+
+    expect(result).toBeNull()
+    const element = await prisma.element.findUniqueOrThrow({
+      where: { id: fixture.instance.elementId },
+    })
+    expect(
+      (element.options as ElementOptionsFreeText).semanticEvaluation
+        ?.attempt_limit
+    ).toBe(2)
+  })
+
+  it('accepts a semantic reference solution without a legacy exact solution', async () => {
+    const result = await manipulateElement(
+      {
+        id: fixture.instance.elementId,
+        type: ElementType.FREE_TEXT,
+        status: 'READY',
+        name: 'Why diversify?',
+        content: 'What is the principal benefit of diversification?',
+        explanation: 'Diversification reduces asset-specific risk.',
+        basePoints: true,
+        pointsMultiplier: 1,
+        options: {
+          hasSampleSolution: true,
+          semanticEvaluation: semanticConfig,
+        },
+      },
+      lecturerContext(fixture.lecturer.id)
+    )
+
+    expect(result).not.toBeNull()
+    const element = await prisma.element.findUniqueOrThrow({
+      where: { id: fixture.instance.elementId },
+    })
+    expect(element.options).toMatchObject({
+      hasSampleSolution: true,
+      semanticEvaluation: semanticConfig,
+    })
+    expect(
+      (element.options as ElementOptionsFreeText).solutions
+    ).toBeUndefined()
   })
 
   it('withholds semantic authoring data from participant activity reads', async () => {
