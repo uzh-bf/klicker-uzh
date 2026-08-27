@@ -4,12 +4,16 @@ import type { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
 import ProductUpdateCard from '../components/productUpdates/ProductUpdateCard'
+import { useProductUpdateSpotlight } from '../components/productUpdates/useProductUpdateSpotlight'
 import { useProductUpdates } from '../components/productUpdates/useProductUpdates'
 
 function Updates() {
   const t = useTranslations()
   const { entries, loading, recordPresentation, markRead, dismiss } =
     useProductUpdates()
+  // Replay only: the header's runner owns the unsolicited spotlight, and a
+  // dismissed entry stays replayable from this archive.
+  const { replaySpotlight } = useProductUpdateSpotlight()
 
   return (
     <Layout displayName={t('manage.productUpdates.pageTitle')}>
@@ -37,6 +41,7 @@ function Updates() {
                 onPresent={recordPresentation}
                 onRead={markRead}
                 onDismiss={entry.dismissed ? undefined : dismiss}
+                onShowSpotlight={replaySpotlight}
               />
             ))
           )}

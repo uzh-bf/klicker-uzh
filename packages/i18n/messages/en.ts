@@ -1837,6 +1837,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       showAll: 'See all product updates',
       readMore: 'Read more',
       dismiss: 'Dismiss',
+      showMeWhere: 'Show me where',
+      spotlightConfirm: 'Show me',
+      spotlightDismiss: "Don't show again",
       maturity: {
         preview: 'Preview',
         pilot: 'Pilot',

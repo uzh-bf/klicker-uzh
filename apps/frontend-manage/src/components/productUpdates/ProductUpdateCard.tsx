@@ -9,6 +9,7 @@ import { useRouter } from 'next/router'
 import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { isKnownSpotlightTarget } from './spotlightTargets'
 import { trackProductUpdate } from './tracking'
 
 function useLocalized() {
@@ -25,6 +26,7 @@ function ProductUpdateCard({
   onPresent,
   onRead,
   onDismiss,
+  onShowSpotlight,
 }: {
   update: ProductUpdate
   dismissed?: boolean
@@ -38,6 +40,9 @@ function ProductUpdateCard({
   // Omitted where dismissal makes no sense, such as an already dismissed entry
   // in the persistent archive.
   onDismiss?: (updateId: string) => void
+  // Replays the contextual spotlight on demand. Omitted by surfaces that have
+  // no spotlight runner attached.
+  onShowSpotlight?: (update: ProductUpdate) => void
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -152,6 +157,16 @@ function ProductUpdateCard({
               size="sm"
             />
           </a>
+        )}
+        {onShowSpotlight && isKnownSpotlightTarget(update.spotlightTarget) && (
+          <Button
+            basic
+            onClick={() => onShowSpotlight(update)}
+            className={{ root: 'text-sm text-blue-600 hover:underline' }}
+            data={{ cy: `product-update-spotlight-${update.id}` }}
+          >
+            {t('manage.productUpdates.showMeWhere')}
+          </Button>
         )}
         {onDismiss && (
           <Button

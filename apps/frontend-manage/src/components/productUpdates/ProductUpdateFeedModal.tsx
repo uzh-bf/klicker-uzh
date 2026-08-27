@@ -1,10 +1,19 @@
+import type { ProductUpdate } from '@klicker-uzh/product-updates'
 import { Modal } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import ProductUpdateCard from './ProductUpdateCard'
 import { useProductUpdates } from './useProductUpdates'
 
-function ProductUpdateFeedModal({ onClose }: { onClose: () => void }) {
+function ProductUpdateFeedModal({
+  onClose,
+  onShowSpotlight,
+}: {
+  onClose: () => void
+  // Provided by the header, which owns the spotlight runner and closes this
+  // modal before the overlay opens.
+  onShowSpotlight: (update: ProductUpdate) => void
+}) {
   const t = useTranslations()
   const router = useRouter()
   const { entries, loading, recordPresentation, markRead, dismiss } =
@@ -41,6 +50,7 @@ function ProductUpdateFeedModal({ onClose }: { onClose: () => void }) {
               onPresent={recordPresentation}
               onRead={markRead}
               onDismiss={dismiss}
+              onShowSpotlight={onShowSpotlight}
             />
           ))
         )}
