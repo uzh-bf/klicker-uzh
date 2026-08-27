@@ -1,7 +1,7 @@
 ---
 title: Manage assistant session UX
 date: 2026-08-27
-status: in-progress
+status: complete
 path: full
 target_branch: v3-ai
 branch: rs/manage-assistant-session-ux
@@ -134,8 +134,10 @@ slice review for cross-origin and accessibility behavior.
 Add an in-frame “New conversation” control that uses the pinned runtime reset
 API. Guard destructive reset as settled above. Expand the welcome capabilities
 to mention guidance through relevant official KlickerUZH documentation while
-retaining practical examples. Update the lecturer tutorial, testing wiki, chat
-platform wiki, and change log entry.
+retaining practical examples. Update the lecturer tutorial, testing wiki, and
+chat platform wiki. The generated root release changelog is intentionally not
+hand-edited; the final reviewer accepted the affected wiki and plan records as
+the behavior log for this package.
 
 Acceptance: unit and Playwright coverage proves empty reset, confirmed non-empty
 reset, disabled reset during generation, clearing messages/composer/attachments,
@@ -187,4 +189,26 @@ upstream integration, or an external delivery action.
 - [x] S2 complete proposal review.
 - [x] S3 non-modal adaptive dock.
 - [x] S4 conversation lifecycle and discovery.
-- [ ] Integrated verification, reviews, screenshots, and runtime shutdown.
+- [x] Integrated verification, reviews, screenshots, and runtime shutdown.
+
+## Completion evidence
+
+- Shared types built, and Chat, Manage, and Playwright type checks passed.
+  Three focused proposal suites passed with 15 tests.
+- Desktop English and mobile German browser journeys verified the non-modal
+  dock, responsive resizing, readiness state, reset lifecycle, retained iframe,
+  background interaction, translated capabilities, complete proposal review,
+  and reachable composer actions. The corrected toolbar and first message had
+  no overlap, with eight pixels of clearance.
+- The simplifier corrections landed in `44f2a63a9`. The final reviewer found
+  four issues, all were dispositioned in `0877f1e03`, and its corrective
+  re-review passed without findings.
+- Full Chromium Playwright execution remains unavailable because the pinned
+  browser installation stalled during extraction. The specification typechecks.
+  Repository-wide `check:all` remains blocked only by the unrelated Analytics
+  Python toolchain, where Python 3.14 cannot build pandas without a C compiler.
+- `origin/v3-ai` advanced by three commits during execution. No upstream merge
+  or rebase was authorized, so the branch remains on its original base.
+- The exact `rs-manage-assistant-session-ux` DevPod is stopped and all 11
+  namespaced routes were freed. Provider state is `Stopped`, and the exact
+  remaining route count is zero. The worktree and runtime data are preserved.
