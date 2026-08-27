@@ -211,7 +211,7 @@ async function generateRevision(
     model: options.model,
     schema: generationCandidateSchema,
     system:
-      'Revise one flashcard using only the supplied course chunks. Follow the student instruction, preserve factual meaning, and cite at least one exact chunk id. The explanation is the answer on the card back; write a substantive answer, never a provenance-only disclaimer.',
+      'Revise one flashcard using only the supplied course chunks. Follow the student instruction, preserve factual meaning, and cite at least one exact chunk id. The back is the answer on the card; write a substantive answer.',
     prompt: JSON.stringify({
       language: options.courseLanguage,
       instruction: entry.instruction,
@@ -232,9 +232,9 @@ async function generateRevision(
     chunks
   )
   return {
-    name: generated.object.name,
-    content: generated.object.content,
-    explanation: generated.object.explanation,
+    name: generated.object.title,
+    content: generated.object.front,
+    explanation: generated.object.back,
     sources: sources.filter((source) => citedChunkIds.includes(source.chunkId)),
   }
 }
@@ -388,7 +388,7 @@ async function generateCard(
       model: options.model,
       schema: generationCandidateSchema,
       system:
-        'Generate one concise flashcard from the supplied course chunks. Use only the chunks. Cite at least one exact chunk id, and do not invent ids. The explanation is the answer on the card back; write a substantive answer, never a provenance-only disclaimer.',
+        'Generate one concise flashcard from the supplied course chunks. Use only the chunks. Cite at least one exact chunk id, and do not invent ids. The back is the answer on the card; write a substantive answer.',
       prompt: JSON.stringify({
         language: options.courseLanguage,
         title: entry.title,
@@ -422,8 +422,8 @@ async function generateCard(
     // generates the card body, but must not silently change the deduplication
     // key after acceptance.
     name: entry.title,
-    content: generated.object.content,
-    explanation: generated.object.explanation,
+    content: generated.object.front,
+    explanation: generated.object.back,
     sources: selectedSources,
     sourceMessageId: options.sourceMessageId,
     sourceToolCallId: toolCallId,

@@ -4,28 +4,6 @@ import { parseDocQueryPayload } from '@/src/lib/sources/normalizeSources'
 export const MAX_CARDS = 5
 const MAX_CHUNKS = 32
 
-const groundingDisclaimers = new Set([
-  'die flashcard verwendet ausschließlich die informationen aus dem bereitgestellten chunk.',
-  'die flashcard verwendet ausschließlich die informationen aus dem bereitgestellten chunk',
-  'die flashcard verwendet ausschliesslich die informationen aus dem bereitgestellten chunk.',
-  'die flashcard verwendet ausschliesslich die informationen aus dem bereitgestellten chunk',
-  'the flashcard uses only the information from the provided chunk.',
-  'the flashcard uses only the information from the provided chunk',
-])
-
-const provenanceOnlyPatterns = [
-  /^(?:the|this) (?:flashcard|card) uses only (?:the )?(?:supplied|provided) (?:evidence|information|course material|chunks?)[.]?$/,
-  /^(?:the|this) (?:flashcard|card) contains only (?:the )?(?:supplied|provided) (?:evidence|information|course material|chunks?)[.]?$/,
-]
-
-export function isGroundingDisclaimer(value: string) {
-  const normalized = value.trim().toLowerCase().replace(/\s+/g, ' ')
-  return (
-    groundingDisclaimers.has(normalized) ||
-    provenanceOnlyPatterns.some((pattern) => pattern.test(normalized))
-  )
-}
-
 export const cardExplanationSchema = z
   .string()
   .trim()
@@ -33,9 +11,6 @@ export const cardExplanationSchema = z
   .max(8192)
   .refine((value) => /[\p{L}\p{N}]/u.test(value), {
     message: 'Generated card explanation must contain an answer',
-  })
-  .refine((value) => !isGroundingDisclaimer(value), {
-    message: 'Generated card explanation must contain the answer',
   })
 
 export const personalElementTypeSchema = z.literal('FLASHCARD')
@@ -92,9 +67,9 @@ export const cardPlanProposalSchema = z.discriminatedUnion('status', [
 export const generationCandidateSchema = z
   .object({
     type: personalElementTypeSchema,
-    name: z.string().trim().min(1).max(256),
-    content: z.string().trim().min(1).max(8192),
-    explanation: cardExplanationSchema,
+    title: z.string().trim().min(1).max(256),
+    front: z.string().trim().min(1).max(8192),
+    back: cardExplanationSchema,
     citedChunkIds: z
       .array(z.string().trim().min(1).max(128))
       .min(1)

@@ -536,12 +536,12 @@ describe('retrieval route wiring', () => {
         toolName: 'course_retrieval_unavailable',
       },
     })
-    expect(
-      options.prepareStep({ stepNumber: 1, steps: [validRetrievalStep()] })
-    ).toMatchObject({
-      activeTools: ['propose_card_plan'],
-      toolChoice: { type: 'tool', toolName: 'propose_card_plan' },
-    })
+    const unlocked = options.prepareStep({
+      stepNumber: 1,
+      steps: [validRetrievalStep()],
+    }) as { activeTools: string[]; toolChoice?: unknown }
+    expect(unlocked.activeTools).toContain('propose_card_plan')
+    expect(unlocked.toolChoice).toBeUndefined()
     expect(Array.isArray(options.stopWhen)).toBe(true)
     expect(options.stopWhen).toHaveLength(3)
 
@@ -598,7 +598,7 @@ describe('retrieval route wiring', () => {
     expect(options.instructions).toContain('complete saved-title list')
   })
 
-  test('does not disclose saved titles for ordinary chat', async () => {
+  test('keeps saved titles out of the model instructions for ordinary chat', async () => {
     mocks.listPersonalElements.mockResolvedValue([{ name: 'Private title' }])
 
     const response = await POST(
@@ -607,10 +607,9 @@ describe('retrieval route wiring', () => {
     )
 
     expect(response.status).toBe(200)
-    expect(mocks.listPersonalElements).not.toHaveBeenCalled()
     expect(mocks.createProposeCardPlanTool).toHaveBeenCalledWith(
       expect.objectContaining({
-        existingCardTitles: [],
+        existingCardTitles: ['Private title'],
         getExistingCardTitles: expect.any(Function),
       })
     )

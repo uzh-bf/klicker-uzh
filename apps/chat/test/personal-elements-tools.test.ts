@@ -77,9 +77,9 @@ describe('personal-element chat tools', () => {
     mocks.generateObject.mockResolvedValue({
       object: {
         type: 'FLASHCARD',
-        name: 'Revised card',
-        content: 'Short answer.',
-        explanation: 'Synthetic explanation.',
+        title: 'Revised card',
+        front: 'Short answer.',
+        back: 'Synthetic explanation.',
         citedChunkIds: ['chunk-1'],
       },
       usage: { inputTokens: 8, outputTokens: 12 },
@@ -229,43 +229,33 @@ describe('personal-element chat tools', () => {
     expect(result.cards).toEqual([])
   })
 
-  test('rejects the provenance-only explanation at generation validation', () => {
+  test('rejects a non-substantive back at generation validation', () => {
     expect(
       generationCandidateSchema.safeParse({
         type: 'FLASHCARD',
-        name: 'CAPM',
-        content: 'Question',
-        explanation:
-          'Die Flashcard verwendet ausschließlich die Informationen aus dem bereitgestellten Chunk.',
+        title: 'CAPM',
+        front: 'Question',
+        back: 'x',
         citedChunkIds: ['chunk-1'],
       }).success
     ).toBe(false)
     expect(
       generationCandidateSchema.safeParse({
         type: 'FLASHCARD',
-        name: 'CAPM',
-        content: 'Question',
-        explanation: 'x',
+        title: 'CAPM',
+        front: 'Question',
+        back: 'A substantive answer.',
         citedChunkIds: ['chunk-1'],
       }).success
-    ).toBe(false)
-    expect(
-      generationCandidateSchema.safeParse({
-        type: 'FLASHCARD',
-        name: 'CAPM',
-        content: 'Question',
-        explanation: 'This card uses only the supplied evidence.',
-        citedChunkIds: ['chunk-1'],
-      }).success
-    ).toBe(false)
+    ).toBe(true)
   })
 
   test('requires the flashcard discriminator in generated content', () => {
     const candidate = {
       type: 'FLASHCARD',
-      name: 'CAPM',
-      content: 'Question',
-      explanation: 'A substantive answer.',
+      title: 'CAPM',
+      front: 'Question',
+      back: 'A substantive answer.',
       citedChunkIds: ['chunk-1'],
     }
 

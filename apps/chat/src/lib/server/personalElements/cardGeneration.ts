@@ -5,7 +5,6 @@ import {
   isSettledTerminalPartialPersonalElementPart,
   isTerminalPartialPersonalElementPart,
 } from '@/src/lib/personalElements/failure'
-import { shouldRequireCourseRetrieval } from '@/src/lib/server/retrievalPolicy'
 import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import {
   isPersonalCardGenerationEnabled,
@@ -43,15 +42,6 @@ import {
 
 const MAX_RETRIEVAL_ATTEMPTS = 2
 const RETRIEVAL_UNAVAILABLE_TOOL_NAME = 'course_retrieval_unavailable'
-
-const CARD_NOUN =
-  /(?:flash\s*cards?|practice\s+cards?|lernkarte(?:n)?|karteikarte(?:n)?)/iu
-const CARD_GENERATION_PHRASE =
-  /(?:\b(?:generate|create|make|build|prepare|write|draft|produce)\b|\b(?:give|show)\s+me\s+(?:some|new|a\s+few)\b|\b(?:i\s+)?(?:want|would\s+like|need)\s+(?:some|new|a\s+few)\b|\b(?:generier|erstell|mach|gib|stell|schreib|verfass)\w*\b)/iu
-const CARD_TOPIC_PHRASE =
-  /(?:flash\s*cards?|practice\s+cards?|lernkarte(?:n)?|karteikarte(?:n)?)\s+(?:about|on|for|zu|zur|zum|über)\b/iu
-const CARD_NON_GENERATION_PHRASE =
-  /(?:what\s+(?:are|is)|how\s+.*\b(?:work|function)|explain|tell\s+me\s+about\b|show\s+me\s+(?:my|the|these|those)?\s*(?:flash\s*cards?|practice\s+cards?|lernkarte|karteikarte)|(?:ich\s+)?möchte\s+(?:verstehen|wissen|erfahren)|(?:ich\s+)?will\s+(?:verstehen|wissen|erfahren)|my\s+saved|saved\s+.*\b(?:flash\s*cards?|practice\s+cards?|lernkarte|karteikarte)|^(?:are|is)\b.*\b(?:effective|useful|helpful|necessary|worth)\b|^(?:was\s+sind|wie\s+funktion\w*|sind)\b.*\b(?:lernkarte|karteikarte|flash\s*cards?|practice\s+cards?))/iu
 
 type AcceptedPlanReference = {
   messageId: string
@@ -115,7 +105,6 @@ export type CardGenerationSetup = {
   telemetry: {
     docQueryToolName: string | null
     retrievalRequired: boolean
-    cardGenerationRequest: boolean
     personalToolsEligible: boolean
     cardGenerationEnabled: boolean
     generationEligible: boolean
@@ -126,26 +115,6 @@ export type CardGenerationSetup = {
     assistantMessageContent: unknown
   }) => Promise<LeaseSettlement>
   abortLease: () => Promise<void>
-}
-
-function normalizeMessage(content: string): string {
-  return content
-    .trim()
-    .toLocaleLowerCase('de-CH')
-    .replace(/\s+/gu, ' ')
-    .replace(/[.!?,;:]+$/gu, '')
-    .trim()
-}
-
-export function isCardGenerationRequest(content: string): boolean {
-  const normalized = normalizeMessage(content)
-  const hasExplicitGenerationPhrase = CARD_GENERATION_PHRASE.test(normalized)
-  return (
-    CARD_NOUN.test(normalized) &&
-    (hasExplicitGenerationPhrase ||
-      (CARD_TOPIC_PHRASE.test(normalized) &&
-        !CARD_NON_GENERATION_PHRASE.test(normalized)))
-  )
 }
 
 function createRetrievalUnavailableTool() {
@@ -160,26 +129,14 @@ function createRetrievalUnavailableTool() {
 function getForcedToolName({
   docQueryToolName,
   retrievalRequired,
-  cardGenerationRequest,
-  generationEligible,
   hasRetrieved,
 }: {
   docQueryToolName: string | undefined
   retrievalRequired: boolean
-  cardGenerationRequest: boolean
-  generationEligible: boolean
   hasRetrieved: boolean
 }): string | null {
   if (docQueryToolName && retrievalRequired && !hasRetrieved) {
     return docQueryToolName
-  }
-  if (
-    docQueryToolName &&
-    cardGenerationRequest &&
-    generationEligible &&
-    hasRetrieved
-  ) {
-    return 'propose_card_plan'
   }
   return null
 }
@@ -230,11 +187,7 @@ export async function createCardGeneration({
 }): Promise<CardGenerationSetup | CardGenerationError> {
   const baseToolNames = Object.keys(baseTools)
   const docQueryToolName = baseToolNames.find(isDocQueryToolName)
-  const retrievalRequired = shouldRequireCourseRetrieval(
-    latestUserContent,
-    hasImage
-  )
-  const cardGenerationRequest = isCardGenerationRequest(latestUserContent)
+  const retrievalRequired = hasImage || latestUserContent.trim().length > 0
   const personalToolsEligible = Boolean(docQueryToolName)
   let cardGenerationEnabled = false
   if (personalToolsEligible) {
@@ -251,9 +204,7 @@ export async function createCardGeneration({
   }
   const generationEligible =
     personalToolsEligible && cardGenerationEnabled && hasGenerationCredits
-  const duplicateCheckRequired =
-    generationEligible &&
-    (cardGenerationRequest || Boolean(acceptedPlanReference))
+  const duplicateCheckRequired = generationEligible
   const branchIds = getActiveBranchMessageIds(threadHistory, activeBranchLeafId)
   let tools: ToolSet = baseTools
   let toolOrder = [...baseToolNames]
@@ -551,8 +502,6 @@ export async function createCardGeneration({
     const forcedToolName = getForcedToolName({
       docQueryToolName,
       retrievalRequired,
-      cardGenerationRequest,
-      generationEligible,
       hasRetrieved,
     })
     if (forcedToolName) {
@@ -589,7 +538,7 @@ export async function createCardGeneration({
 
   const stopWhen = acceptedPlan
     ? hasToolCall('generate_cards')
-    : cardGenerationRequest && generationEligible
+    : generationEligible
       ? [
           hasToolCall('propose_card_plan'),
           hasToolCall(RETRIEVAL_UNAVAILABLE_TOOL_NAME),
@@ -731,7 +680,6 @@ export async function createCardGeneration({
     telemetry: {
       docQueryToolName: docQueryToolName ?? null,
       retrievalRequired,
-      cardGenerationRequest,
       personalToolsEligible,
       cardGenerationEnabled,
       generationEligible,

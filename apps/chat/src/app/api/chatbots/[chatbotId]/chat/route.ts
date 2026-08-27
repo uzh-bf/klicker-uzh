@@ -1336,7 +1336,6 @@ export async function POST(
     const {
       docQueryToolName,
       retrievalRequired,
-      cardGenerationRequest,
       personalToolsEligible,
       cardGenerationEnabled,
       generationEligible,
@@ -1468,7 +1467,6 @@ export async function POST(
       hasChatContext: Boolean(chatContextPrompt),
       docQueryToolName: docQueryToolName ?? null,
       retrievalRequired,
-      cardGenerationRequest,
       personalToolsEligible,
       cardGenerationEnabled,
       generationEligible,
