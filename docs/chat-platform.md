@@ -578,8 +578,13 @@ error bodies into `ChatMessage.content`. The live SSE path applies the same boun
 The mobile layout exports `viewportFit: 'cover'`, keeps the standalone composer
 in normal layout with bottom safe-area padding, wraps Markdown tables in
 horizontal scrolling, and uses a compact mode dropdown in an overflow-safe
-header grid. Embedded mode shows the loading state and compact credit/model
-information through the shared settings components. Direct thread URL
+header grid. The Chat/Knowledge graph workspace switch appears once in that
+header's right-hand control cluster in standalone and embedded layouts; the
+sidebar and content area do not repeat it
+(`src/components/assistant.tsx:SidebarMain`,
+`src/components/assistant.tsx:AssistantLayout`). Embedded mode shows the
+loading state and compact credit/model information through the shared settings
+components. Direct thread URL
 activation resynchronizes the thread's stored chat mode once per activation,
 without overriding a mode manually chosen afterward.
 
