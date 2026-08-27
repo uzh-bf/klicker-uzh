@@ -9,7 +9,7 @@ const expectedWorkerData = {
     'http://ingestion-resource-api.stg-ingestion.svc.cluster.local:8000',
   KB_INGESTION_PROJECT_ID: 'klicker-course-materials',
   KB_SOURCE_GATEWAY_URL:
-    'http://klicker-backend.stg-klicker.svc.cluster.local:3000',
+    'http://app-klicker-klicker-uzh-v2-backend-graphql.stg-klicker.svc.cluster.local:3000',
 }
 const expectedBackendData = {
   KB_GRAPH_DISABLED: 'true',
