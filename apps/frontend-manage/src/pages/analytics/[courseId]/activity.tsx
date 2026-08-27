@@ -1,17 +1,20 @@
 import { useQuery } from '@apollo/client'
-import { GetCourseActivityAnalyticsDocument } from '@klicker-uzh/graphql/dist/ops'
-import { H1 } from '@uzh-bf/design-system'
-import { GetStaticPropsContext } from 'next'
+import { GetCourseActivityAnalyticsV2Document } from '@klicker-uzh/graphql/dist/ops'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  H1,
+  H2,
+  UserNotification,
+} from '@uzh-bf/design-system'
+import type { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import ActivityAnalyticsNavigation from '../../../components/analytics/activity/ActivityAnalyticsNavigation'
-import DailyActivityPlot from '../../../components/analytics/activity/DailyActivityPlot'
-import DailyActivityTimeSeries from '../../../components/analytics/activity/DailyActivityTimeSeries'
-import TotalStudentActivityPlot from '../../../components/analytics/activity/TotalStudentActivityPlot'
-import WeeklyActivityTimeSeries from '../../../components/analytics/activity/WeeklyActivityTimeSeries'
 import AnalyticsAccessGuard from '../../../components/analytics/AnalyticsAccessGuard'
 import useCourseLearningAnalyticsControl from '../../../components/analytics/useCourseLearningAnalyticsControl'
-import PreviewTag from '../../../components/common/PreviewTag'
 import Layout from '../../../components/Layout'
 
 function ActivityDashboard() {
@@ -24,14 +27,14 @@ function ActivityDashboard() {
   const control = useCourseLearningAnalyticsControl(courseId)
 
   const { data, loading, error } = useQuery(
-    GetCourseActivityAnalyticsDocument,
+    GetCourseActivityAnalyticsV2Document,
     {
       variables: { courseId: courseId ?? '' },
       skip: !courseId || !control.courseEnabled || !control.analyticsValid,
       fetchPolicy: 'network-only',
     }
   )
-  const course = data?.getCourseActivityAnalytics
+  const analytics = data?.getCourseActivityAnalyticsV2
   const navigation = courseId ? (
     <ActivityAnalyticsNavigation courseId={courseId} />
   ) : undefined
@@ -44,50 +47,77 @@ function ActivityDashboard() {
       control={control}
       loading={loading}
       error={error}
-      data={course}
+      data={analytics}
     >
-      {(course) => (
+      {(analytics) => (
         <Layout displayName={t('manage.analytics.activityDashboard')}>
           {navigation}
-          <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
-            <div className="flex flex-row items-center gap-5">
-              <H1 className={{ root: 'mb-0' }}>
-                {t('manage.analytics.activityDashboard')}: {course.name}
-              </H1>
-              <PreviewTag className="text-base" />
-            </div>
-            <div>
-              {t('manage.analytics.totalParticipants', {
-                number: course.totalParticipants,
-              })}
-            </div>
-          </div>
-          <div className="flex flex-col gap-4">
-            <WeeklyActivityTimeSeries
-              activity={course.weeklyActivity}
-              courseName={course.name}
-              courseParticipants={course.totalParticipants}
-            />
-            <div className="flex w-full flex-col gap-3 lg:flex-row">
-              <div className="w-full lg:w-2/3">
-                <DailyActivityTimeSeries
-                  activity={course.dailyActivity}
-                  courseParticipants={course.totalParticipants}
+          <main className="flex flex-col gap-5" data-cy="analytics-activity-v2">
+            <H1 className={{ root: 'mb-0' }}>
+              {t('manage.analytics.activityDashboard')}
+            </H1>
+            {analytics.isSuppressed ||
+            analytics.effectiveN === null ||
+            analytics.effectiveN === undefined ? (
+              <div data-cy="analytics-suppressed">
+                <UserNotification
+                  type="info"
+                  message={t('manage.analytics.suppressedV2')}
                 />
               </div>
-              <div className="w-full lg:w-1/3">
-                <DailyActivityPlot
-                  courseParticipants={course.totalParticipants}
-                  activeDays={course.activeDays}
-                />
-              </div>
-            </div>
-            <TotalStudentActivityPlot
-              courseName={course.name}
-              courseWeeks={course.courseWeeks}
-              participantActivity={course.participantCourseAnalytics}
-            />
-          </div>
+            ) : (
+              <>
+                <div data-cy="analytics-effective-n">
+                  <Card className="gap-1 px-4 py-3">
+                    <CardHeader className="px-0">
+                      <CardTitle className="font-normal">
+                        {t('manage.analytics.releasedSampleSizeV2')}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-0 text-2xl font-bold">
+                      {analytics.effectiveN}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <section className="flex flex-col gap-3">
+                  <H2 className={{ root: 'mb-0' }}>
+                    {t('manage.analytics.weeklyActivityV2')}
+                  </H2>
+                  {analytics.weeklyActivity.length === 0 ? (
+                    <div data-cy="analytics-weekly-empty">
+                      <UserNotification
+                        type="info"
+                        message={t('manage.analytics.noReleasedWeeklyCellsV2')}
+                      />
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {analytics.weeklyActivity.map((week) => (
+                        <Card
+                          key={week.periodIndex}
+                          className="gap-1 px-4 py-3"
+                        >
+                          <CardHeader className="px-0">
+                            <CardTitle className="font-normal">
+                              {t('manage.analytics.weekN', {
+                                number: week.periodIndex,
+                              })}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="px-0">
+                            {t('manage.analytics.effectiveNV2', {
+                              number: week.effectiveN,
+                            })}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </>
+            )}
+          </main>
         </Layout>
       )}
     </AnalyticsAccessGuard>

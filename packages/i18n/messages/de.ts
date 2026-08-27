@@ -4408,6 +4408,33 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       analyticsLoadingWait: 'Lade Analyse-Daten. Bitte warten...',
       analyticsLoadingFailed:
         'Beim Laden der Analyse-Daten ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.',
+      suppressedV2:
+        'Das Ergebnis erreicht die Freigabeschwelle nicht. Zum Schutz der Privatsphäre wird keine Anzahl der Teilnehmenden angezeigt.',
+      releasedSampleSizeV2: 'Freigegebenes effektives N',
+      effectiveNV2: 'Effektives N: {number}',
+      effectiveNLabelV2: 'Effektives N',
+      weeklyActivityV2: 'Freigegebene wöchentliche Aktivität',
+      noReleasedWeeklyCellsV2:
+        'Das Gesamtergebnis ist freigegeben, aber keine Wochenzelle erreicht die Freigabeschwelle.',
+      activitySummariesV2: 'Freigegebene Aktivitätsübersichten',
+      noReleasedActivitySummariesV2:
+        'Keine Aktivitätsübersicht erreicht die Freigabeschwelle.',
+      activityNV2: 'Aktivität {number}',
+      activityTypeV2: 'Typ',
+      completionPercentV2: 'Abschluss',
+      correctnessPercentV2: 'Korrektheit',
+      correctnessUnavailableV2: 'Nicht verfügbar',
+      percentV2: '{number} %',
+      studentReportV2: 'De-identifizierter Bericht',
+      randomizedLabelsV2:
+        'Die Bezeichnungen der Studierenden sind de-identifiziert und werden für jeden Bericht neu zufällig vergeben. Die Bezeichnungen in einem Download können von dieser Ansicht abweichen.',
+      studentLabelV2: 'Student',
+      completedActivitiesV2: 'Abgeschlossene Aktivitäten',
+      meanCompletionV2: 'Mittlerer Abschluss',
+      exportCsvV2: 'CSV herunterladen',
+      exportJsonV2: 'JSON herunterladen',
+      exportFailedV2:
+        'Der de-identifizierte Bericht konnte nicht heruntergeladen werden. Bitte versuchen Sie es erneut.',
       weeklyStudentActivity: 'Wöchentliche Aktivität der Studierenden',
       dailyStudentActivity: 'Tägliche Aktivität der Studierenden',
       totalParticipants: 'Kurs-Teilnehmende: {number}',

@@ -186,12 +186,6 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
           label: t('manage.analytics.performance'),
           onClick: () => router.push(`/analytics/${course.id}/performance`),
         },
-        {
-          key: `quiz-dashboard-${course.name}`,
-          type: 'link',
-          label: t('manage.analytics.quizzes'),
-          onClick: () => router.push(`/analytics/${course.id}/quizzes`),
-        },
       ],
     })) ?? []),
     {

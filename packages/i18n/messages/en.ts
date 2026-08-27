@@ -4335,6 +4335,33 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       analyticsLoadingWait: 'Loading analytics data. Please wait...',
       analyticsLoadingFailed:
         'An error occurred while loading the analytics data. Please try again later or contact the support.',
+      suppressedV2:
+        'The result does not meet the release threshold. To protect privacy, no participant count is displayed.',
+      releasedSampleSizeV2: 'Released effective N',
+      effectiveNV2: 'Effective N: {number}',
+      effectiveNLabelV2: 'Effective N',
+      weeklyActivityV2: 'Released weekly activity',
+      noReleasedWeeklyCellsV2:
+        'The overall result is released, but no weekly cell meets the release threshold.',
+      activitySummariesV2: 'Released activity summaries',
+      noReleasedActivitySummariesV2:
+        'No activity summary meets the release threshold.',
+      activityNV2: 'Activity {number}',
+      activityTypeV2: 'Type',
+      completionPercentV2: 'Completion',
+      correctnessPercentV2: 'Correctness',
+      correctnessUnavailableV2: 'Unavailable',
+      percentV2: '{number}%',
+      studentReportV2: 'De-identified student report',
+      randomizedLabelsV2:
+        'Student labels are de-identified and freshly randomized for each report. Labels in a download can differ from this view.',
+      studentLabelV2: 'Student',
+      completedActivitiesV2: 'Completed activities',
+      meanCompletionV2: 'Mean completion',
+      exportCsvV2: 'Download CSV',
+      exportJsonV2: 'Download JSON',
+      exportFailedV2:
+        'The de-identified report could not be downloaded. Please try again.',
       weeklyStudentActivity: 'Weekly Student Activity',
       dailyStudentActivity: 'Daily Student Activity',
       totalParticipants: 'Course participants: {number}',
