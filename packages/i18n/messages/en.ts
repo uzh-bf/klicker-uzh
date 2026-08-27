@@ -75,6 +75,12 @@ export default {
       disclaimerDeclinedMessage:
         'You declined the chatbot disclaimer. Accept the terms to continue using the chatbot.',
       showDisclaimerAgain: 'Show disclaimer again',
+      newConversation: 'Start a new conversation',
+      confirmNewConversation: 'Confirm starting a new conversation',
+      confirmNewConversationShort: 'Start over?',
+      newConversationWait: 'Wait until the current answer is complete',
+      newConversationArmed:
+        'Confirmation required: activate again to start a new conversation.',
     },
     recovery: {
       notFoundTitle: 'Chatbot not found',
@@ -1736,6 +1742,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       title: 'KlickerUZH Assistant',
       subtitle: 'AI assistant for your courses and question pool',
       openInNewTab: 'Open assistant in a new tab',
+      loading: 'Loading assistant…',
+      resize: 'Resize assistant',
+      resizeHint: 'Drag to resize. The arrow keys also resize the assistant.',
       elementCreatedToast: 'Draft "{name}" added to your question pool',
     },
     ai: {

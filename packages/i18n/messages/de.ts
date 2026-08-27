@@ -77,6 +77,13 @@ export default {
       disclaimerDeclinedMessage:
         'Du hast den Haftungsausschluss des Chatbots abgelehnt. Akzeptiere die Bedingungen, um den Chatbot weiterhin zu verwenden.',
       showDisclaimerAgain: 'Haftungsausschluss erneut anzeigen',
+      newConversation: 'Neue Konversation starten',
+      confirmNewConversation: 'Neue Konversation wirklich starten',
+      confirmNewConversationShort: 'Neu starten?',
+      newConversationWait:
+        'Warte, bis die aktuelle Antwort vollständig generiert wurde',
+      newConversationArmed:
+        'Bestätigung erforderlich: Aktiviere die Schaltfläche erneut, um eine neue Konversation zu starten.',
     },
     recovery: {
       notFoundTitle: 'Chatbot nicht gefunden',
@@ -1754,6 +1761,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       title: 'KlickerUZH Assistant',
       subtitle: 'KI-Assistent für Ihre Kurse und Ihren Fragepool',
       openInNewTab: 'Assistent in einem neuen Tab öffnen',
+      loading: 'Assistent wird geladen…',
+      resize: 'Grösse des Assistenten ändern',
+      resizeHint:
+        'Ziehen Sie, um die Grösse zu ändern. Die Pfeiltasten ändern die Grösse ebenfalls.',
       elementCreatedToast: 'Entwurf "{name}" zum Fragepool hinzugefügt',
     },
     ai: {

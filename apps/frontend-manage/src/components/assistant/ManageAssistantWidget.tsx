@@ -1,6 +1,8 @@
 import { useApolloClient } from '@apollo/client'
 import {
   faArrowUpRightFromSquare,
+  faSpinner,
+  faUpRightAndDownLeftFromCenter,
   faWandMagicSparkles,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons'
@@ -11,9 +13,18 @@ import {
   MANAGE_CONTEXT_READY_MESSAGE_TYPE,
 } from '@klicker-uzh/types'
 import { toast } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import {
+  type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { createPortal } from 'react-dom'
 import { twMerge } from 'tailwind-merge'
 
@@ -24,12 +35,21 @@ import {
   type ManageAssistantContext,
 } from './manageAssistantContext'
 import {
+  clampManageAssistantPanelSize,
+  DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE,
+  getManageAssistantKeyboardResizeDelta,
+  type ManageAssistantPanelSize,
+  parseManageAssistantPanelSize,
+  resizeManageAssistantPanelFromTopLeft,
+} from './manageAssistantPanelSize'
+import {
   isManageElementCreatedMessage,
   sanitizeManageElementCreatedPayload,
 } from './manageElementCreatedMessage'
 
-const MANAGE_APP_ROOT_ID = '__app'
-const MANAGE_ASSISTANT_DIALOG_ID = 'manage-assistant-dialog'
+const MANAGE_ASSISTANT_PANEL_ID = 'manage-assistant-panel'
+const MANAGE_ASSISTANT_PANEL_SIZE_STORAGE_KEY =
+  'klicker-manage-assistant-panel-size-v1'
 
 export function ManageAssistantWidget() {
   const t = useTranslations()
@@ -37,11 +57,21 @@ export function ManageAssistantWidget() {
   const apolloClient = useApolloClient()
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
-  const panelRef = useRef<HTMLDivElement | null>(null)
   const shouldRestoreFocusRef = useRef(false)
+  const resizeSessionRef = useRef<{
+    pointerId: number
+    startSize: ManageAssistantPanelSize
+    startX: number
+    startY: number
+  } | null>(null)
   const [open, setOpen] = useState(false)
   const [hasOpened, setHasOpened] = useState(false)
-  const [frameLoaded, setFrameLoaded] = useState(false)
+  const [frameLoadedUrl, setFrameLoadedUrl] = useState<string | null>(null)
+  const [frameReadyUrl, setFrameReadyUrl] = useState<string | null>(null)
+  const [panelSize, setPanelSize] = useState(
+    DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE
+  )
+  const [panelSizeInitialized, setPanelSizeInitialized] = useState(false)
 
   // Mounted app-wide rather than inside Layout, so the login screen has to be
   // excluded explicitly: every other Manage route requires a signed-in user.
@@ -57,6 +87,8 @@ export function ManageAssistantWidget() {
       }),
     [router.locale]
   )
+  const frameLoaded = frameLoadedUrl === assistantUrl
+  const frameReady = frameReadyUrl === assistantUrl
   // A clean, non-embedded URL for the "open in new tab" link: the embedded
   // URL hides the assistant's login CTA and other affordances that only make
   // sense when Manage itself provides the surrounding chrome.
@@ -110,55 +142,12 @@ export function ManageAssistantWidget() {
     triggerRef.current?.focus()
   }, [open])
 
-  // Move focus into the panel as soon as it opens, so keyboard/AT users land
-  // inside the dialog rather than on whatever was focused before it opened.
-  useEffect(() => {
-    if (!open) return
-    const panel = panelRef.current
-    if (!panel) return
-
-    const target = getFocusableElements(panel)[0] ?? panel
-    target.focus()
-  }, [open])
-
   useEffect(() => {
     if (!open) return
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         closeWidget()
-        return
-      }
-
-      if (event.key !== 'Tab') return
-
-      // Trap Tab/Shift+Tab within the panel's own focusable elements (close
-      // button, new-tab link, iframe). The iframe is cross-origin, so once
-      // focus moves inside its document, Tab handling is delegated to that
-      // document and this listener no longer sees the keydown — the browser
-      // takes over as usual until focus returns to the top-level document.
-      const panel = panelRef.current
-      if (!panel) return
-
-      const focusables = getFocusableElements(panel)
-      if (focusables.length === 0) {
-        event.preventDefault()
-        panel.focus()
-        return
-      }
-
-      const first = focusables[0]
-      const last = focusables[focusables.length - 1]
-      const active = document.activeElement
-
-      if (event.shiftKey) {
-        if (active === first || !panel.contains(active)) {
-          event.preventDefault()
-          last.focus()
-        }
-      } else if (active === last || !panel.contains(active)) {
-        event.preventDefault()
-        first.focus()
       }
     }
 
@@ -166,43 +155,114 @@ export function ManageAssistantWidget() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [closeWidget, open])
 
-  // The dialog is portalled outside the app root below, so the whole Manage
-  // page can be removed from keyboard and screen-reader navigation while the
-  // modal is open. Restore the prior state exactly on close/unmount.
   useEffect(() => {
-    if (!open) return
-
-    const appRoot = document.getElementById(MANAGE_APP_ROOT_ID)
-    if (!appRoot) return
-
-    const wasInert = appRoot.inert
-    const previousAriaHidden = appRoot.getAttribute('aria-hidden')
-    appRoot.inert = true
-    appRoot.setAttribute('aria-hidden', 'true')
-
-    return () => {
-      appRoot.inert = wasInert
-      if (previousAriaHidden === null) {
-        appRoot.removeAttribute('aria-hidden')
-      } else {
-        appRoot.setAttribute('aria-hidden', previousAriaHidden)
-      }
+    const storedSize = readStoredPanelSize()
+    if (storedSize) {
+      setPanelSize(
+        clampManageAssistantPanelSize(storedSize, {
+          height: window.innerHeight,
+          width: window.innerWidth,
+        })
+      )
     }
-  }, [open])
+    setPanelSizeInitialized(true)
+  }, [])
 
   useEffect(() => {
-    if (!open || !assistantOrigin) return
+    if (!panelSizeInitialized) return
+    window.localStorage.setItem(
+      MANAGE_ASSISTANT_PANEL_SIZE_STORAGE_KEY,
+      JSON.stringify(panelSize)
+    )
+  }, [panelSize, panelSizeInitialized])
+
+  useEffect(() => {
+    function handleResize() {
+      setPanelSize((currentSize) =>
+        clampManageAssistantPanelSize(currentSize, {
+          height: window.innerHeight,
+          width: window.innerWidth,
+        })
+      )
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  const handleResizePointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      if (event.button !== 0) return
+      event.preventDefault()
+      event.currentTarget.setPointerCapture(event.pointerId)
+      resizeSessionRef.current = {
+        pointerId: event.pointerId,
+        startSize: panelSize,
+        startX: event.clientX,
+        startY: event.clientY,
+      }
+    },
+    [panelSize]
+  )
+
+  const handleResizePointerMove = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      const session = resizeSessionRef.current
+      if (!session || session.pointerId !== event.pointerId) return
+
+      setPanelSize(
+        resizeManageAssistantPanelFromTopLeft({
+          deltaX: event.clientX - session.startX,
+          deltaY: event.clientY - session.startY,
+          size: session.startSize,
+          viewport: { height: window.innerHeight, width: window.innerWidth },
+        })
+      )
+    },
+    []
+  )
+
+  const handleResizePointerEnd = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      if (resizeSessionRef.current?.pointerId !== event.pointerId) return
+      resizeSessionRef.current = null
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId)
+      }
+    },
+    []
+  )
+
+  const handleResizeKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+      const delta = getManageAssistantKeyboardResizeDelta(event.key)
+      if (!delta) return
+      event.preventDefault()
+      setPanelSize((currentSize) =>
+        resizeManageAssistantPanelFromTopLeft({
+          ...delta,
+          size: currentSize,
+          viewport: { height: window.innerHeight, width: window.innerWidth },
+        })
+      )
+    },
+    []
+  )
+
+  useEffect(() => {
+    if (!assistantOrigin) return
 
     function handleMessage(event: MessageEvent) {
       if (event.origin !== assistantOrigin) return
 
       const frameWindow = iframeRef.current?.contentWindow
-      if (frameWindow && event.source !== frameWindow) return
+      if (!frameWindow || event.source !== frameWindow) return
 
       // The iframe announces readiness once its listener exists. Re-send the
       // current context then: this handshake alone is enough to deliver the
       // context to a slow-hydrating iframe, without a timed retry burst.
       if (isManageContextReadyMessage(event.data)) {
+        setFrameReadyUrl(assistantUrl)
         sendCurrentContext()
         return
       }
@@ -227,16 +287,18 @@ export function ManageAssistantWidget() {
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [apolloClient, assistantOrigin, open, sendCurrentContext, t])
+  }, [apolloClient, assistantOrigin, assistantUrl, sendCurrentContext, t])
 
   // Sends the current context once the iframe has loaded, and again whenever
   // the context itself changes (e.g. a route change while the widget stays
   // open). The `klicker:manage-context-ready` handshake above covers the
   // case where the iframe is still hydrating when this first send happens.
   useEffect(() => {
-    if (!open || !frameLoaded || !assistantOrigin || !iframeRef.current) return
-    sendCurrentContext()
-  }, [assistantContext, assistantOrigin, frameLoaded, open, sendCurrentContext])
+    if (!hasOpened || !frameLoaded || !assistantOrigin || !iframeRef.current) {
+      return
+    }
+    postManageContext(iframeRef.current, assistantContext, assistantOrigin)
+  }, [assistantContext, assistantOrigin, frameLoaded, hasOpened])
 
   if (!enabled || !assistantUrl) {
     return null
@@ -248,9 +310,8 @@ export function ManageAssistantWidget() {
         <button
           ref={triggerRef}
           type="button"
-          aria-controls={MANAGE_ASSISTANT_DIALOG_ID}
+          aria-controls={MANAGE_ASSISTANT_PANEL_ID}
           aria-expanded={open}
-          aria-haspopup="dialog"
           aria-label={t('manage.assistant.open')}
           onClick={() => {
             setHasOpened(true)
@@ -269,22 +330,45 @@ export function ManageAssistantWidget() {
       {(open || hasOpened) &&
         typeof document !== 'undefined' &&
         createPortal(
-          <div
-            id={MANAGE_ASSISTANT_DIALOG_ID}
-            ref={panelRef}
-            role="dialog"
-            aria-modal={open ? 'true' : undefined}
+          <aside
+            id={MANAGE_ASSISTANT_PANEL_ID}
             aria-hidden={!open}
             aria-label={t('manage.assistant.title')}
             inert={!open}
-            tabIndex={-1}
+            style={
+              {
+                '--manage-assistant-height': `${panelSize.height}px`,
+                '--manage-assistant-width': `${panelSize.width}px`,
+              } as CSSProperties
+            }
             className={twMerge(
-              'fixed bottom-0 left-0 right-0 z-40 flex h-[min(85dvh,44rem)] min-h-[28rem] w-screen flex-col overflow-hidden overscroll-contain border-t border-gray-200 bg-white shadow-2xl focus:outline-none md:inset-x-auto md:bottom-6 md:left-auto md:right-6 md:h-[min(42rem,calc(100dvh-3rem))] md:w-[28rem] md:rounded-md md:border',
+              'fixed bottom-0 left-0 right-0 z-40 flex h-[min(85dvh,44rem)] min-h-[28rem] w-screen flex-col overflow-hidden overscroll-contain border-t border-gray-200 bg-white shadow-2xl md:inset-x-auto md:bottom-6 md:left-auto md:right-6 md:h-[var(--manage-assistant-height)] md:w-[var(--manage-assistant-width)] md:rounded-md md:border',
               !open && 'hidden'
             )}
             data-cy="manage-assistant-drawer"
           >
-            <div className="flex shrink-0 items-start gap-3 border-b bg-white px-3 py-3">
+            <div className="relative flex shrink-0 items-start gap-3 border-b bg-white px-3 py-3 md:pl-9">
+              <button
+                type="button"
+                className="focus-visible:outline-uzh-blue-40 absolute left-1 top-1 hidden size-7 touch-none cursor-nwse-resize items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 md:inline-flex"
+                aria-label={t('manage.assistant.resize')}
+                aria-describedby="manage-assistant-resize-hint"
+                data-cy="manage-assistant-resize"
+                onPointerDown={handleResizePointerDown}
+                onPointerMove={handleResizePointerMove}
+                onPointerUp={handleResizePointerEnd}
+                onPointerCancel={handleResizePointerEnd}
+                onKeyDown={handleResizeKeyDown}
+              >
+                <FontAwesomeIcon
+                  icon={faUpRightAndDownLeftFromCenter}
+                  aria-hidden
+                  className="size-3"
+                />
+              </button>
+              <span id="manage-assistant-resize-hint" className="sr-only">
+                {t('manage.assistant.resizeHint')}
+              </span>
               <AssistantAvatar className="text-uzh-blue mt-0.5 size-11 border border-gray-200 bg-gray-50" />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold">
@@ -315,17 +399,37 @@ export function ManageAssistantWidget() {
               </button>
             </div>
 
-            <div className="min-h-0 flex-1 bg-white">
+            <div className="relative min-h-0 flex-1 bg-white">
+              {!frameReady ? (
+                <div
+                  role="status"
+                  className="absolute inset-0 z-10 flex items-center justify-center gap-3 bg-white text-sm text-gray-600"
+                  data-cy="manage-assistant-loading"
+                >
+                  <FontAwesomeIcon
+                    icon={faSpinner}
+                    spin
+                    aria-hidden
+                    className="text-uzh-blue size-5"
+                  />
+                  <span>{t('manage.assistant.loading')}</span>
+                </div>
+              ) : null}
               <iframe
                 ref={iframeRef}
                 src={assistantUrl}
                 title={t('manage.assistant.title')}
-                className="h-full min-h-[24rem] w-full border-0"
+                aria-hidden={!frameReady}
+                tabIndex={frameReady ? undefined : -1}
+                className={twMerge(
+                  'h-full min-h-[24rem] w-full border-0 transition-opacity',
+                  frameReady ? 'opacity-100' : 'pointer-events-none opacity-0'
+                )}
                 data-cy="manage-assistant-frame"
-                onLoad={() => setFrameLoaded(true)}
+                onLoad={() => setFrameLoadedUrl(assistantUrl)}
               />
             </div>
-          </div>,
+          </aside>,
           document.body
         )}
     </>
@@ -358,14 +462,10 @@ function isManageContextReadyMessage(data: unknown): data is {
   )
 }
 
-// Returns the panel's own focusable elements in DOM order (close button,
-// new-tab link, iframe, ...). Deliberately shallow: it only needs to cover
-// the widget's own chrome, not content inside the cross-origin iframe.
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])'
-
-function getFocusableElements(container: HTMLElement): HTMLElement[] {
-  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+function readStoredPanelSize(): ManageAssistantPanelSize | null {
+  return parseManageAssistantPanelSize(
+    window.localStorage.getItem(MANAGE_ASSISTANT_PANEL_SIZE_STORAGE_KEY)
+  )
 }
 
 function getUrlOrigin(url: string | null) {
