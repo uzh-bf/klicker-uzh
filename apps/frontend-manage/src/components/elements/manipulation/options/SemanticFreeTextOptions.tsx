@@ -71,13 +71,8 @@ function SemanticFreeTextOptions({
       })
       setExactAnswerKeys(newConfig.accepted_exact_answers.map(() => nanoid()))
       setFieldValue('options.semanticEvaluation', newConfig)
-      setFieldValue('options.hasSampleSolution', true)
     } else {
       setExactAnswerKeys([])
-      setFieldValue(
-        'options.solutions',
-        config?.accepted_exact_answers ?? values.options.solutions
-      )
       setFieldValue('options.semanticEvaluation', undefined)
     }
   }
