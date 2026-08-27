@@ -92,14 +92,30 @@ export function useProductUpdates(): UseProductUpdatesResult {
     (cache: ApolloCache<unknown>, state: ProductUpdateState) => {
       cache.updateQuery(
         { query: ProductUpdateStatesDocument, variables: { updateIds } },
-        (existing) => ({
-          productUpdateStates: [
-            ...(existing?.productUpdateStates ?? []).filter(
-              (entry) => entry.updateId !== state.updateId
-            ),
-            state,
-          ],
-        })
+        (existing) => {
+          const cached = (existing?.productUpdateStates ?? []).find(
+            (entry) => entry.updateId === state.updateId
+          )
+
+          // A card reports its first presentation and its read at the same
+          // moment, and the two writes may be answered out of order. An answer
+          // that was computed before the read must not hand back a row that
+          // drops the read or dismissal the other answer already delivered.
+          const merged = {
+            ...state,
+            readAt: state.readAt ?? cached?.readAt,
+            dismissedAt: state.dismissedAt ?? cached?.dismissedAt,
+          }
+
+          return {
+            productUpdateStates: [
+              ...(existing?.productUpdateStates ?? []).filter(
+                (entry) => entry.updateId !== state.updateId
+              ),
+              merged,
+            ],
+          }
+        }
       )
     },
     [updateIds]
@@ -182,7 +198,9 @@ export function useProductUpdates(): UseProductUpdatesResult {
 
   return {
     entries,
-    unreadCount: entries.filter((entry) => entry.unread).length,
+    // Nothing is known to be unread while the stored states are still on their
+    // way, so the header dot stays quiet instead of flashing on every cold load.
+    unreadCount: loading ? 0 : entries.filter((entry) => entry.unread).length,
     loading,
     recordPresentation,
     markRead,
