@@ -557,6 +557,16 @@ no migration.
   and build pass; the two activitySharing failures are pre-existing
   test-isolation flakes in a file the stack does not touch. GraphQL package
   byte-identical across A/B/C after cascade.
+- [x] S1 review gates — simplifier and architecture/data-integrity slice
+  review both returned PASS_WITH_CONCERNS (disclosed fallback route after
+  provider credit exhaustion). Dispositions committed on A as `1e55b7adb`:
+  `validateCardCandidate` now returns `Boolean!` (result wrapper removed),
+  `CardPlanEntryInput.type` uses the `ElementType` enum, plan preparation
+  authorizes and loads language in one query, docs/JSDoc no longer overclaim
+  a save-transaction duplicate check (S2 implements it), and tests added for
+  the 64 KiB aggregate bound, non-FLASHCARD type, and >5-card plans (30/30
+  pass). GraphQL check and build pass at the new head; package byte-identical
+  across A/B/C.
 - [ ] Execute S1 through S6 with their review gates and local commits.
 - [ ] Complete exact-head verification and the integrated native
   `final-reviewer` gate.
