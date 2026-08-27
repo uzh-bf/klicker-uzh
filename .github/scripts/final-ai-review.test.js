@@ -1987,15 +1987,20 @@ test('rejects duplicate disposition markers as ambiguous', () => {
   assert.equal(parseDispositionRecord(`${marker}\n${marker}`), null)
 })
 
-function promotionFile(release, tag = 'v3') {
-  return Array.from(
-    { length: 15 },
+function promotionFile(release, tag = 'v3-ai') {
+  const tags = Array.from(
+    { length: 17 },
+    (_, index) => `service${index}:\n  tag: ${tag}`
+  )
+  const annotations = Array.from(
+    { length: 16 },
     (_, index) =>
-      `service${index}:\n  tag: ${tag}\n  podAnnotations:\n    rollout.klicker.uzh.ch/release: '${release}'`
-  ).join('\n')
+      `rollout${index}:\n  podAnnotations:\n    rollout.klicker.uzh.ch/release: '${release}'`
+  )
+  return [...tags, ...annotations].join('\n')
 }
 
-function validPromotionInput(sourceBranch = 'v3') {
+function validPromotionInput(sourceBranch = 'v3-ai') {
   const targetSha = '123456789abc'.padEnd(40, 'd')
   const shortSha = targetSha.slice(0, 12)
   const baseContent = promotionFile('aaaaaaaaaaaa')
@@ -2009,7 +2014,7 @@ function validPromotionInput(sourceBranch = 'v3') {
     pull: {
       state: 'open',
       draft: false,
-      baseRef: 'v3',
+      baseRef: sourceBranch,
       baseSha: 'b'.repeat(40),
       baseRepo: 'uzh-bf/klicker-uzh',
       headRef: `chore/promote-stg-${shortSha}`,
@@ -2045,6 +2050,46 @@ test('accepts current and source-switch generated promotions', () => {
     validatePromotionContract(validPromotionInput('release-candidate')).valid,
     true
   )
+})
+
+test('requires non-empty dynamic promotion inventories', () => {
+  const noTags = validPromotionInput()
+  noTags.baseContent = noTags.baseContent.replace(/^([ \t]+tag: ).*$/gm, '')
+  noTags.headContent = buildExpectedPromotionContent(
+    noTags.baseContent,
+    noTags.buildEvidence.targetSha.slice(0, 12),
+    noTags.sourceBranch
+  ).content
+  assert.equal(validatePromotionContract(noTags).valid, false)
+
+  const noAnnotations = validPromotionInput()
+  noAnnotations.baseContent = noAnnotations.baseContent.replace(
+    /^([ \t]*rollout\.klicker\.uzh\.ch\/release: ).*$/gm,
+    ''
+  )
+  noAnnotations.headContent = buildExpectedPromotionContent(
+    noAnnotations.baseContent,
+    noAnnotations.buildEvidence.targetSha.slice(0, 12),
+    noAnnotations.sourceBranch
+  ).content
+  assert.equal(validatePromotionContract(noAnnotations).valid, false)
+})
+
+test('staging promoter targets the selected source without fixed value counts', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/deploy-stg-promote.yml'),
+    'utf8'
+  )
+
+  assert.match(workflow, /Build Docker image for mcp-lecturer \(stg\)/)
+  assert.match(workflow, /Build Docker image for mcp-student \(stg\)/)
+  assert.match(
+    workflow,
+    /ref: \$\{\{ steps\.target\.outputs\.source_branch \}\}/
+  )
+  assert.ok(workflow.includes('--base "$SOURCE_BRANCH"'))
+  assert.ok(workflow.includes('Verified generated staging promotion'))
+  assert.doesNotMatch(workflow, /expected 15/)
 })
 
 test('requires every trusted exact-SHA staging build run for a promotion', async () => {
@@ -2230,7 +2275,7 @@ test('verifies the generated-promotion no-report status through the repository v
   const workflow = {
     conclusion: 'success',
     event: 'push',
-    head_branch: 'v3',
+    head_branch: input.sourceBranch,
     head_sha: input.buildEvidence.targetSha,
     path: workflowPath,
     repository: { full_name: input.repository },
@@ -2331,7 +2376,7 @@ test('verifies the generated-promotion no-report status through the repository v
       github,
       context: reviewContext(),
       pull,
-      sourceBranch: 'v3',
+      sourceBranch: input.sourceBranch,
       trustedSha,
     }),
     true
@@ -2348,6 +2393,9 @@ test('rejects every material promotion-contract deviation', () => {
     },
     (input) => {
       input.pull.headRepo = 'attacker/fork'
+    },
+    (input) => {
+      input.pull.baseRef = 'v3'
     },
     (input) => {
       input.pull.title = 'chore(deploy): bypass review'

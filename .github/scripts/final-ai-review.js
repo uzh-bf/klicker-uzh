@@ -671,7 +671,6 @@ function validatePromotionContract(input) {
     pull,
     permission,
     repository,
-    defaultBranch,
     sourceBranch,
     commits,
     files,
@@ -685,7 +684,7 @@ function validatePromotionContract(input) {
     return invalidPromotion('promotion PR must be open and ready')
   }
   if (
-    pull.baseRef !== defaultBranch ||
+    pull.baseRef !== sourceBranch ||
     pull.baseRepo !== repository ||
     pull.headRepo !== repository
   ) {
@@ -752,7 +751,7 @@ function validatePromotionContract(input) {
     shortSha,
     sourceBranch
   )
-  if (expected.releaseCount !== 15 || expected.tagCount !== 15) {
+  if (expected.releaseCount === 0 || expected.tagCount === 0) {
     return invalidPromotion('base promotion file has unexpected structure')
   }
   if (headContent !== expected.content) {
@@ -1275,7 +1274,6 @@ async function inspectPromotion({
     },
     permission,
     repository: `${context.repo.owner}/${context.repo.repo}`,
-    defaultBranch: context.payload.repository.default_branch,
     sourceBranch,
     commits: commits.map((commit) => ({
       message: commit.commit.message,
