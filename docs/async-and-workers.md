@@ -56,6 +56,22 @@ To correlate a user report ("my duplication vanished") with only a course name o
 
 **Rolling back this feature:** old code never registers the `process-course-duplication` workflow, so already-enqueued events stay QUEUED in Hatchet and mid-flight job records simply age out at their TTLs; users lose completion signals until the rollback completes, but no partial copies exist at any point (the copy is one database transaction). Recovery-by-resubmit works immediately after rollback because the legacy synchronous path ignores duplication locks. To release held source locks without waiting for TTL expiry: `SCAN 0 MATCH "course-duplication:source:*"` then `DEL` the listed keys.
 
+## Learning analytics contract boundary
+
+`packages/analytics-engine-contract/src/constants.ts:COURSE_WORKFLOW_NAME` and
+`PLATFORM_WORKFLOW_NAME` reserve `learning-analytics-course-v1` and
+`learning-analytics-platform-v1`. The public package validates dispatch input and
+successful identity echoes through
+`packages/analytics-engine-contract/src/stubs.ts:createAnalyticsEngineStubs`; failures
+and cancellations remain rejected workflow calls rather than successful status
+objects. `packages/analytics-engine-contract/src/conformance.ts:runBlackBoxConformance`
+checks that boundary without importing a Hatchet SDK.
+
+This contract is inert. No public task registration, worker, schedule, coordinator, or
+deployment exists for these names yet. The Catalyst runtime owns the eventual Hatchet
+workflow implementation; KlickerUZH will add its dispatch and product-state updates in
+later public layers.
+
 ## Running locally (config-derived — verify on your machine)
 
 The Hatchet engine runs as the `hatchet` compose service using `hatchet-lite-dev` (gRPC 7077, UI 8888, no UI authentication required); workers pick up the client token automatically minted to `/config/authdisabled-token` or populated by `./util/_create_hatchet_token.sh`. Workers must see the **same `DATABASE_URL`, `APP_SECRET`, and Redis settings** as the app stack — a worker pointed at the wrong database happily processes events into nowhere. The `packages/graphql` vitest suite also requires a live Hatchet + `HATCHET_CLIENT_TOKEN` (see [Testing](./testing.md)).
