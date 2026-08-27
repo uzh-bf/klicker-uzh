@@ -120,12 +120,15 @@ export const Mutation = builder.mutationType({
     }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
-    const asUserWithCatalyst = { ...asUser, catalyst: true }
     const asUserSessionExec = {
       ...asUser,
       scope: DB.UserLoginScope.SESSION_EXEC,
     }
     const asUserFullAccess = { ...asUser, scope: DB.UserLoginScope.FULL_ACCESS }
+    const asUserFullAccessWithCatalyst = {
+      ...asUserFullAccess,
+      catalyst: true,
+    }
     const asUserFullAccessForStandardActivities = asUserFullAccess
     const asUserOwner = { ...asUser, scope: DB.UserLoginScope.ACCOUNT_OWNER }
     const courseCreationArgs = {
@@ -1437,7 +1440,7 @@ export const Mutation = builder.mutationType({
       }),
 
       setCourseLearningAnalyticsEnabled: t
-        .withAuth({ ...asUserFullAccess, ...asUserWithCatalyst })
+        .withAuth(asUserFullAccessWithCatalyst)
         .field({
           nullable: true,
           type: Course,
@@ -1536,7 +1539,7 @@ export const Mutation = builder.mutationType({
       }),
 
       recomputeCourseAnalytics: t
-        .withAuth({ ...asUserFullAccess, ...asUserWithCatalyst })
+        .withAuth(asUserFullAccessWithCatalyst)
         .boolean({
           nullable: true,
           args: {
