@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-26'
+timestamp: '2026-08-27'
 tags:
   - testing
   - ci
@@ -20,7 +20,7 @@ tags:
 | React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                   | `npx agent-browser@0.32.2` against the adopting app                                                                 |
 | GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                  |
 | Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
-| UI / user flows                                                                   | Playwright e2e                                                                             | see routing below                                                                                                   |
+| UI / user flows                                                                   | Playwright e2e                                                                             | `pnpm playwright:host -- <args>` from the host; see routing below                                                   |
 | Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
 
 For server-paginated manage lists, browser coverage must exercise finite page
@@ -72,11 +72,21 @@ The Office Add-in has a separate host boundary. Its pure URL contract runs under
 
 **Playwright is the sole e2e test suite.** All e2e specs live under `playwright/`.
 
+Local Playwright has a strict host/container boundary. The canonical command is
+`pnpm playwright:host -- <args>` from a host shell. It reconciles the exact
+devrouter workspace, maps every browser origin, discovers the workspace's
+random loopback PostgreSQL port, and runs Playwright with host dependencies and
+browser binaries. Package scripts route to the same launcher, while
+`playwright.config.ts` rejects direct local commands and every local container
+before global setup can reset data. The devcontainer also sets a non-directory
+browser path so browser installation fails there. GitHub Actions is explicitly
+allowed and retains the direct official-container workflow.
+
 Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `Z-credential-verification`).
 
 |               | Playwright (`playwright/`)                                 |
 | ------------- | ---------------------------------------------------------- |
-| Stack scripts | `dev:playwright` / `start:playwright`                      |
+| Local command | `pnpm playwright:host -- <args>`                           |
 | Infisical env | `dev-playwright`                                           |
 | Seed          | own `seedDatabase()` in `global-setup.ts` (once, wipes DB) |
 | CI            | official Playwright container, 8-way shard, all PRs        |
@@ -102,8 +112,11 @@ For authoring specifics, helper patterns, and failure triage, use the `klicker-p
 
 The path-filtered `test-unit` workflow runs the chat, grading, markdown, and util
 suites with one frozen install. It builds Prisma, types, grading, and util once,
-then keeps each suite as a separately visible step. Later suites still run after
-an earlier test failure, but not after setup or dependency-build failure. Draft
+then keeps each suite as a separately visible step. The chat suite runs against
+a PostgreSQL 15 service; the workflow resets that disposable test database
+before the suite and enables the account-usage integration cases. Later suites
+still run after an earlier test failure, but not after setup or
+dependency-build failure. Draft
 PR updates skip this job; use its manual dispatch for exact-head proof without
 marking a draft ready. This single-job workflow is not a required branch
 protection context and needs no companion status gate.
@@ -127,6 +140,12 @@ dependency symlinks survive the cross-job handoff. Each shard also restores the
 generated GraphQL client map from the built package because Turbo cache hits do
 not restore generated source files. Dedicated `-status` fail-open gates remain
 for the required multi-job workflows (`test-graphql`, `test-playwright`).
+Playwright cancellation is job-scoped: hosted stages cancel only their matching
+predecessors, while the public reusable-workflow call cancels the complete older
+public route. The required status gate deliberately has no concurrency group,
+so a stale reporter waiting for GitHub-hosted capacity cannot block current
+filtering, builds, or shards. Public container jobs also trust the exact mounted
+`GITHUB_WORKSPACE` after checkout because its host and container owners differ.
 
 **Hatchet tokens differ per workflow, because `test-playwright` is the only one that runs inside a `container:`.** `test-graphql` runs straight on the runner, so it reaches Hatchet at `localhost` and reads its boot-minted token with `docker exec`. Inside a container job neither works: service containers resolve by service **name** (`hatchet:8888` / `hatchet:7077`, exactly like the `postgres:5432` the same job already uses), and the Playwright image ships no Docker CLI. So `test-playwright` shares `/config` with the Hatchet service through the `hatchet_lite_config` volume and reads `/config/authdisabled-token` directly. Do not "simplify" those hostnames to `localhost` — every shard then fails in `Prepare .env files` before a single test runs. The HTTP token API is not a fallback: `hatchet-lite-dev` disables auth and answers `POST /api/v1/tenants/{id}/api-tokens` with 401 for every caller. The token's own claims always say `localhost`, which is harmless — `packages/hatchet/src/client.ts` passes `host_port`/`api_url` explicitly, and process env beats the `.env` templates for both `node --env-file` and `dotenv`.
 

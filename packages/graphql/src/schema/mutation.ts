@@ -4,6 +4,7 @@ import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
+import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
@@ -80,6 +81,7 @@ import {
 import {
   AnswerCollection,
   AnswerCollectionEntry,
+  ChatAccountUsageOverviewRef,
   Chatbot,
   ChatbotReasoningConfigInput,
 } from './resource.js'
@@ -117,6 +119,7 @@ export const Mutation = builder.mutationType({
     }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
+    const asUserWithCatalyst = { ...asUser, catalyst: true }
     const asUserSessionExec = {
       ...asUser,
       scope: DB.UserLoginScope.SESSION_EXEC,
@@ -1453,6 +1456,110 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotsService.updateChatbotModelSettings(args, ctx)
+        },
+      }),
+
+      setChatAccountUsageBudgets: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: ChatAccountUsageOverviewRef,
+        args: {
+          ownerId: t.arg.string({ required: true }),
+          baseBudgetCredits: t.arg.float({ required: true }),
+          advancedBudgetCredits: t.arg.float({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatAccountUsageService.setChatAccountUsageBudgets(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      createChatbot: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          type: Chatbot,
+          args: {
+            name: t.arg.string({
+              required: true,
+              validate: { minLength: 1 },
+            }),
+            description: t.arg.string({ required: false }),
+            avatar: t.arg.string({ required: false }),
+            courseId: t.arg.string({ required: true }),
+          },
+          resolve: async (_, args, ctx) => {
+            return await ChatbotsService.createChatbot(args, ctx)
+          },
+        }),
+
+      updateChatbot: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: Chatbot,
+          args: {
+            id: t.arg.string({ required: true }),
+            name: t.arg.string({
+              required: false,
+              validate: { minLength: 1 },
+            }),
+            description: t.arg.string({ required: false }),
+            avatar: t.arg.string({ required: false }),
+          },
+          resolve: async (_, args, ctx) => {
+            return await ChatbotsService.updateChatbot(args, ctx)
+          },
+        }),
+
+      requestChatbotPublication: t
+        .withAuth({ ...asUserWithCatalyst, ...asUserFullAccess })
+        .field({
+          nullable: true,
+          type: Chatbot,
+          args: {
+            id: t.arg.string({ required: true }),
+            useCase: t.arg.string({
+              required: true,
+              validate: { minLength: 1, maxLength: 2000 },
+            }),
+            expectedStudentCount: t.arg.int({
+              required: true,
+              validate: { min: 1 },
+            }),
+            proposedCredits: t.arg.int({
+              required: true,
+              validate: { min: 1 },
+            }),
+          },
+          resolve: async (_, args, ctx) => {
+            return await ChatbotsService.requestChatbotPublication(args, ctx)
+          },
+        }),
+
+      approveChatbotPublication: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.approveChatbotPublication(args, ctx)
+        },
+      }),
+
+      rejectChatbotPublication: t.withAuth(asAdmin).field({
+        nullable: true,
+        type: Chatbot,
+        args: {
+          id: t.arg.string({ required: true }),
+          comment: t.arg.string({
+            required: true,
+            validate: { minLength: 1, regex: /\S/ },
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ChatbotsService.rejectChatbotPublication(args, ctx)
         },
       }),
 
