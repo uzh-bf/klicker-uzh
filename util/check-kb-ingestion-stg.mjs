@@ -4,15 +4,11 @@ import { parseAllDocuments } from 'yaml'
 const chartPath = 'deploy/charts/klicker-uzh-v3'
 const stagingValuesPath = 'deploy/env-uzh-stg/values.yaml'
 const expectedWorkerData = {
-  KB_GRAPH_DISABLED: 'true',
   KB_INGESTION_API_URL:
     'http://ingestion-resource-api.stg-ingestion.svc.cluster.local:8000',
   KB_INGESTION_PROJECT_ID: 'klicker-course-materials',
   KB_SOURCE_GATEWAY_URL:
     'http://app-klicker-klicker-uzh-v2-backend-graphql.stg-klicker.svc.cluster.local:3000',
-}
-const expectedBackendData = {
-  KB_GRAPH_DISABLED: 'true',
 }
 const workerOnlyKeys = [
   ...Object.keys(expectedWorkerData),
@@ -96,7 +92,10 @@ const responseProcessors = configMaps.filter((value) =>
   value.metadata?.name?.includes('-config-hatchet-worker-response-processor')
 )
 
-requireData(backend, expectedBackendData)
+// KB_GRAPH_DISABLED is intentionally absent on staging since #5612 enabled
+// graph generation; an open gate must not render the kill-switch key.
+requireAbsent(backend, ['KB_GRAPH_DISABLED'])
+requireAbsent(generalWorker, ['KB_GRAPH_DISABLED'])
 requireData(generalWorker, expectedWorkerData)
 requireAbsent(backend, ['KB_INGESTION_DISABLED'])
 requireAbsent(generalWorker, ['KB_INGESTION_WORKER_DISABLED'])
