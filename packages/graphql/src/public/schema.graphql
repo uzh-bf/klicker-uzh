@@ -448,6 +448,13 @@ type AwardEntry {
   type: String!
 }
 
+input CardPlanEntryInput {
+  intent: String!
+  query: String!
+  title: String!
+  type: String!
+}
+
 type CaseStudyActivityEvaluationData {
   cases: [CaseStudyElementResultCaseInfo!]!
   content: String!
@@ -673,13 +680,6 @@ type CaseStudySolution {
 input CaseStudySolutionInput {
   criteriaSolutions: [CaseStudyCriteriaSolutionInput!]!
   itemId: Int!
-}
-
-input CardPlanEntryInput {
-  intent: String!
-  query: String!
-  title: String!
-  type: String!
 }
 
 type CatalogCollection {
@@ -3100,27 +3100,6 @@ input PersonalElementSourceInput {
   url: String
 }
 
-input PrepareCardPlanInput {
-  cards: [CardPlanEntryInput!]!
-  courseId: String!
-  topic: String!
-}
-
-type PreparedCardPlan {
-  cards: [PreparedCardPlanEntry!]!
-  courseLanguage: LocaleType!
-  discardedDuplicates: [DiscardedDuplicateCard!]!
-  existingTitles: [String!]!
-}
-
-type PreparedCardPlanEntry {
-  candidateId: String!
-  intent: String!
-  query: String!
-  title: String!
-  type: ElementType!
-}
-
 type PointCorrection {
   basePoints: Boolean
   bonusPoints: Boolean
@@ -3163,6 +3142,27 @@ type PracticeQuiz {
   status: PublicationStatus!
   templateName: String
   updatedAt: Date
+}
+
+input PrepareCardPlanInput {
+  cards: [CardPlanEntryInput!]!
+  courseId: String!
+  topic: String!
+}
+
+type PreparedCardPlan {
+  cards: [PreparedCardPlanEntry!]!
+  courseLanguage: LocaleType!
+  discardedDuplicates: [DiscardedDuplicateCard!]!
+  existingTitles: [String!]!
+}
+
+type PreparedCardPlanEntry {
+  candidateId: String!
+  intent: String!
+  query: String!
+  title: String!
+  type: ElementType!
 }
 
 type PublicAssessmentReportCourse {
@@ -3854,21 +3854,6 @@ input UpdateGeneratedElementDraftInput {
   expectedRevision: Int!
 }
 
-input ValidateCardCandidateInput {
-  back: String!
-  candidateId: String!
-  courseId: String!
-  front: String!
-  sourceMessageId: String!
-  sourceToolCallId: String!
-  sources: [PersonalElementSourceInput!]!
-  title: String!
-}
-
-type ValidateCardCandidateResult {
-  ok: Boolean!
-}
-
 type User {
   aiFeaturesEnabled: Boolean!
   catalyst: Boolean!
@@ -3943,6 +3928,21 @@ enum UserRole {
   PARTICIPANT
   TEMPORARY_PARTICIPANT
   USER
+}
+
+input ValidateCardCandidateInput {
+  back: String!
+  candidateId: String!
+  courseId: String!
+  front: String!
+  sourceMessageId: String!
+  sourceToolCallId: String!
+  sources: [PersonalElementSourceInput!]!
+  title: String!
+}
+
+type ValidateCardCandidateResult {
+  ok: Boolean!
 }
 
 type WeekdayActivityAnalytics {
