@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-08-25'
+timestamp: '2026-08-27'
 tags:
   - backend
   - prisma
@@ -37,11 +37,11 @@ Participant-global data-use state lives in `Participant`: both research and
 learning-analytics choices default to `false` and retain only the current
 choice, choice time, and disclosure version. A future research export may
 include all stored canonical data when research consent is `true` and none when
-it is `false`. Learning-analytics re-enable uses
-`learningAnalyticsIncludedFrom` as a prospective boundary, with no backfill.
-`Participation` remains course membership and carries no
-per-course data-use choice or history. The schema foundation is inert until
-the owning export and analytics paths explicitly consume these fields.
+it is `false`. Learning-analytics consent follows the same current-state rule:
+`true` includes all stored canonical data and `false` includes none.
+`Participation` remains course membership and carries no per-course data-use
+choice or history. The schema foundation is inert until the owning export and
+analytics paths explicitly consume these fields.
 
 Analytics tables keyed by a chatbot or live quiz do not duplicate `courseId`;
 course scope resolves through the owning `Chatbot` or `LiveQuiz`. This prevents
