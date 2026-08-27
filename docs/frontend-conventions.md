@@ -76,6 +76,14 @@ contract is unchanged.
 
 Apollo Client with **generated documents only** — `import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'`; never inline `gql`. Standard query guard: `if (!data?.field) return <Loader />`. Mutations declare `refetchQueries`. New/changed ops require the codegen ritual ([API layer](./graphql-api-layer.md)). Server state lives in Apollo cache; local state in React hooks. The PWA additionally uses **localforage** as an offline side-channel for live-quiz answers (`apps/frontend-pwa/src/components/liveQuiz/storageHelpers.ts`).
 
+The participant account settings page keeps research and learning-analytics
+choices in a dedicated section outside the profile form
+(`apps/frontend-pwa/src/components/participant/DataUseSettings.tsx`). Each
+account-wide choice has its own mutation and pending state. The controls wait
+for `GetParticipantDataUse`; after a successful mutation, each control updates
+only its own fields in that query cache so concurrent choices cannot overwrite
+one another. They never infer a choice from missing or nullable query data.
+
 The manage Elements and Activities lists use the shared `Pagination` control
 with finite `10`, `20`, and `50` page sizes plus an opt-in `All` value. `All`
 keeps the active filters and sort, resets to page 1, omits `numEntries` and
