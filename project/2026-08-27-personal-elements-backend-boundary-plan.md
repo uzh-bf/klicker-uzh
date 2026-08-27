@@ -548,6 +548,15 @@ no migration.
   `866e4e2de`, C `0d8f2c56d`; all zero behind `origin/v3-ai`; ancestry
   verified; conflicts were additive (response-example and personal-element
   schema/doc sections) and resolved with both sides retained.
+- [x] S1 — implemented on A: `9505eca9c` centralizes plan preparation and
+  candidate validation in GraphQL (participant-authed mutations, ported
+  title-similarity policy, zod bounds, disclaimer heuristics removed);
+  `b2cb52f89` aligns the generated schema with codegen order; `052bf3c74`
+  aligns the exported input types with the wire contract. Verified at exact
+  head in the plan container: GraphQL check, 27/27 personal-elements tests,
+  and build pass; the two activitySharing failures are pre-existing
+  test-isolation flakes in a file the stack does not touch. GraphQL package
+  byte-identical across A/B/C after cascade.
 - [ ] Execute S1 through S6 with their review gates and local commits.
 - [ ] Complete exact-head verification and the integrated native
   `final-reviewer` gate.
