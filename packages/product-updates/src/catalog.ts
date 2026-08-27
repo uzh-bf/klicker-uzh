@@ -1,4 +1,4 @@
-import type { ProductUpdate } from './types'
+import type { ProductUpdate } from './types.js'
 
 // Newest entry first — consumers present the list in array order, and the
 // validation suite enforces the ordering. Entries are never deleted; an entry

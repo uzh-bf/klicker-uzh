@@ -1,3 +1,3 @@
-export * from './catalog'
-export * from './select'
-export * from './types'
+export * from './catalog.js'
+export * from './select.js'
+export * from './types.js'

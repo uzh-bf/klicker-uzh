@@ -3,7 +3,7 @@ import type {
   ProductUpdate,
   ProductUpdateAudience,
   ProductUpdateSurface,
-} from './types'
+} from './types.js'
 
 export interface SelectEligibleUpdatesArgs {
   updates: ProductUpdate[]
