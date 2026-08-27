@@ -170,13 +170,13 @@ The policy must survive stored lecturer prompts and apply to the existing Inform
 
 ## Progress
 
-- Status: integrated final review completed with two accepted prompt-text corrections active.
-- Completed: remote-source review, AI Buddy comparison, Informatik und Wirtschaft prompt review, product-primitive pass, native planning review, isolated worktree and branch creation, human approval, fresh compatible ref verification, approved plan commit, scoped implementation commit, static checks, simplification review, slice risk review, and the accepted privacy-boundary correction.
-- Active slice: exclude attached images from reply-language detection and cover non-email contact details in tool privacy.
-- Remaining: commit and re-review the final corrections, then push and open the pull request.
+- Status: implementation and required reviews complete; pull-request delivery is active.
+- Completed: remote-source review, AI Buddy comparison, Informatik und Wirtschaft prompt review, product-primitive pass, native planning review, isolated worktree and branch creation, human approval, fresh compatible ref verification, approved plan commit, scoped implementation commit, static checks, simplification review, slice risk review, accepted corrections, and the integrated final-review correction pass with status `DONE`.
+- Active slice: push the reviewed branch and open its draft pull request against `v3`.
+- Remaining: publish the branch, create the draft pull request, record its identity, and read back its current checks.
 - Latest verified baseline: branch base `59e57481057a601a8fdb1e57208ca6392e20068b`; current target `origin/v3` at `31cbbb36a3fca6d50371975bad982f51424e2abc` with no overlapping paths; AI Buddy deployment `origin/main` at `794a1ca9c5bf605af72de335a519c27aba7a21ac` with no prompt-policy path changes from the reviewed baseline.
 - Required delivery layer: pushed pull request against `v3`.
 - Achieved delivery layer: committed plan and S1 implementation in the isolated worktree.
 - Runtime: an initial managed-runtime setup was stopped immediately after the user clarified that no runtime was wanted. Its post-start readiness failed before checks ran; provider `rs-chat-course-language-groundin` is `Stopped` and the exact worktree has zero routes.
-- Unresolved gates: final-review correction pass and pull-request delivery. Local toolchain and chatbot tests are deliberately not run; pull-request CI is the authoritative check. Integration, secrets, live evaluation, database, deployment, merge, and cleanup remain withheld.
-- Next action: commit the final corrections and return them to the same final reviewer.
+- Unresolved gates: pull-request delivery and hosted CI. Local toolchain and chatbot tests are deliberately not run; pull-request CI is the authoritative check. Integration, secrets, live evaluation, database, deployment, merge, and cleanup remain withheld.
+- Next action: push the reviewed branch and open its draft pull request.
