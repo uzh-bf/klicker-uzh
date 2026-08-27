@@ -595,13 +595,11 @@ test.describe('Manage Assistant — Slow hydration', () => {
       `${process.env.URL_MANAGE ?? URL_MANAGE}/courses/${COURSE_ID_TEST}`
     )
 
-    // Stretch the iframe's own script fetches well past its `load` event, so
-    // ManageAssistantWidget's send-on-frameLoaded post races ahead of the
-    // not-yet-mounted useEmbeddedManageContext listener and is dropped. The
-    // course-dashboard suggestions below only ever replace the defaults once
-    // the manage context lands, so this proves the iframe's own
-    // `klicker:manage-context-ready` ping — and the parent's resend on that
-    // ping — is what delivers it, with no timed retry burst involved.
+    // Stretch the iframe's own script fetches so the Chat listener and its
+    // `klicker:manage-context-ready` ping arrive late. The course-dashboard
+    // suggestions below only replace the defaults once the Manage context
+    // lands, so this proves that the validated ready ping delivers the initial
+    // context with no load-time send or timed retry burst.
     await delayChatIframeScripts(page, 1_000)
 
     await page.getByTestId('manage-assistant-open').click()

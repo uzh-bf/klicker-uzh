@@ -8,12 +8,6 @@ import { parseManageProposalPayload } from '../services/proposalToElementInstanc
 import { ManageProposalPreview } from './manage-proposal-preview'
 import { formatToolName } from './tool-labels'
 
-export {
-  getManageProposalResult,
-  isManageProposalResult,
-  type ManageProposalResult,
-} from '../services/manageProposalResult'
-
 type ConfirmedElement = {
   id: number
   name: string

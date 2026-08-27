@@ -69,7 +69,6 @@ export function ManageAssistantWidget() {
   } | null>(null)
   const [open, setOpen] = useState(false)
   const [hasOpened, setHasOpened] = useState(false)
-  const [frameLoadedUrl, setFrameLoadedUrl] = useState<string | null>(null)
   const [frameReadyUrl, setFrameReadyUrl] = useState<string | null>(null)
   const [panelSize, setPanelSize] = useState(
     DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE
@@ -90,7 +89,6 @@ export function ManageAssistantWidget() {
       }),
     [router.locale]
   )
-  const frameLoaded = frameLoadedUrl === assistantUrl
   const frameReady = frameReadyUrl === assistantUrl
   // A clean, non-embedded URL for the "open in new tab" link: the embedded
   // URL hides the assistant's login CTA and other affordances that only make
@@ -317,16 +315,15 @@ export function ManageAssistantWidget() {
     t,
   ])
 
-  // Sends the current context once the iframe has loaded, and again whenever
-  // the context itself changes (e.g. a route change while the widget stays
-  // open). The `klicker:manage-context-ready` handshake above covers the
-  // case where the iframe is still hydrating when this first send happens.
+  // Send later route changes after the validated readiness handshake. The
+  // handshake itself sends the initial context, including after a locale
+  // change loads a new iframe URL.
   useEffect(() => {
-    if (!hasOpened || !frameLoaded || !assistantOrigin || !iframeRef.current) {
+    if (!frameReady || !assistantOrigin || !iframeRef.current) {
       return
     }
     postManageContext(iframeRef.current, assistantContext, assistantOrigin)
-  }, [assistantContext, assistantOrigin, frameLoaded, hasOpened])
+  }, [assistantContext, assistantOrigin, frameReady])
 
   if (!enabled || !assistantUrl) {
     return null
@@ -455,7 +452,6 @@ export function ManageAssistantWidget() {
                   frameReady ? 'opacity-100' : 'pointer-events-none opacity-0'
                 )}
                 data-cy="manage-assistant-frame"
-                onLoad={() => setFrameLoadedUrl(assistantUrl)}
               />
             </div>
           </aside>,
