@@ -32,9 +32,9 @@ The policy must survive stored lecturer prompts and apply to the existing Inform
 - Execution owner: current main session.
 - Autonomy: after one human approval of this reviewed plan, execute through the terminal condition without intermediate approval checkpoints.
 - Boundary owner: `self`.
-- Authority: create local commits, make only the scoped edits below, use the managed worktree runtime for deterministic repository checks, dispatch required read-only reviews, apply verified corrections, push the task branch, and create or update its pull request against `v3`.
-- Withheld: merge/rebase or other upstream integration, browser or live-chatbot testing, secrets, live model calls, database reads or writes, cluster access, deployment, merge, and worktree or branch deletion.
-- Terminal: a pushed, independently reviewed pull request against `v3` that passes the named deterministic checks on its `origin/v3` baseline, with its exact managed runtime stopped and model-compliance limits documented.
+- Authority: create local commits, make only the scoped prompt, contract-test, and documentation edits below, run static Git checks, dispatch required read-only reviews, apply verified corrections, push the task branch, and create or update its pull request against `v3`.
+- Withheld: merge/rebase or other upstream integration, any local runtime or chatbot exercise, local toolchain checks, browser or live-chatbot testing, secrets, live model calls, database reads or writes, cluster access, deployment, merge, and worktree or branch deletion.
+- Terminal: a pushed, independently reviewed pull request against `v3` with a clean static diff, model-compliance limits documented, and local tests explicitly left to pull-request CI by user direction.
 - Pause: stop if fresh refs materially change the compiler or ADR contract; the task branch or worktree has unclear foreign changes; the outcome requires injecting lecturer-authored labels or deterministic classification; a required check cannot run safely; or a withheld action becomes necessary.
 
 ## Problem
@@ -149,15 +149,11 @@ The policy must survive stored lecturer prompts and apply to the existing Inform
   - Extend `apps/chat/test/system-prompt-compiler.test.ts` and the existing language helper tests when that is the narrowest stable seam.
   - Update `docs/chat-platform.md`, bump its timestamp, and add `docs/log/2026-08-27-course-chatbot-policy.md`.
   - Do not edit route inputs, labels, defaults, seeds, schemas, tools, citation numbering, or AI Buddy files.
-- Check inside the exact managed worktree runtime without opening or exercising the chatbot:
-  - Focused compiler, language, and prompt-cache identity tests.
-  - `pnpm --filter @klicker-uzh/chat test:run`.
-  - `bash ~/.agents/skills/rs-llm-wiki-okf/scripts/validate.sh docs`.
-  - `pnpm run check:all`.
-  - `pnpm run build`.
-  - Inspect the exact diff and staged content for unrelated changes, secrets, and personal data.
-  - Stop the exact runtime and verify it stopped.
-- Explicitly do not perform browser, seeded-course, live-model, or local conversation testing; model obedience remains outside this package.
+- Check without starting a local runtime:
+  - Run `git diff --check` and inspect the exact diff and staged content for unrelated changes, secrets, and personal data.
+  - Confirm the compiler tests cover stored, default, and unknown-mode prompts with and without a `doc_query` tool.
+  - Leave the chat test suite, wiki validator, `check:all`, and build to pull-request CI; report their status without presenting them as local evidence.
+- Explicitly do not perform local toolchain, browser, seeded-course, live-model, or conversation testing; model obedience remains outside this package.
 - Commit:
   - `enhance(chat): enforce course language and grounding policy`.
   - Add one correction commit only if an accepted review finding requires it.
@@ -173,12 +169,13 @@ The policy must survive stored lecturer prompts and apply to the existing Inform
 
 ## Progress
 
-- Status: approved; S1 is active.
-- Completed: remote-source review, AI Buddy comparison, Informatik und Wirtschaft prompt review, product-primitive pass, native planning review, isolated worktree and branch creation, human approval, and fresh compatible ref verification.
-- Active slice: S1, fixed course language and grounding policy.
-- Remaining: commit the approved plan; implement S1; run deterministic verification; run slice simplification and review; handle findings; run integrated final review; stop and verify the runtime; push and open the pull request.
+- Status: S1 implementation complete; static pre-commit review is active.
+- Completed: remote-source review, AI Buddy comparison, Informatik und Wirtschaft prompt review, product-primitive pass, native planning review, isolated worktree and branch creation, human approval, fresh compatible ref verification, approved plan commit, and the scoped prompt/compiler/test/wiki edits.
+- Active slice: S1, static verification and immutable implementation commit.
+- Remaining: commit S1; run slice simplification and review; handle findings; run integrated final review; push and open the pull request.
 - Latest verified baseline: Klicker `origin/v3` at `59e57481057a601a8fdb1e57208ca6392e20068b`; AI Buddy deployment `origin/main` at `794a1ca9c5bf605af72de335a519c27aba7a21ac` with no prompt-policy path changes from the reviewed baseline.
 - Required delivery layer: pushed pull request against `v3`.
-- Achieved delivery layer: uncommitted reviewed plan in the isolated worktree.
-- Unresolved gates: deterministic verification and required reviews. Integration, browser/live chatbot testing, secrets, live evaluation, database, deployment, merge, and cleanup remain withheld.
-- Next action: commit this approved plan, then implement S1.
+- Achieved delivery layer: committed plan plus an uncommitted S1 implementation in the isolated worktree.
+- Runtime: an initial managed-runtime setup was stopped immediately after the user clarified that no runtime was wanted. Its post-start readiness failed before checks ran; provider `rs-chat-course-language-groundin` is `Stopped` and the exact worktree has zero routes.
+- Unresolved gates: static verification and required reviews. Local toolchain and chatbot tests are deliberately not run; pull-request CI is the authoritative check. Integration, secrets, live evaluation, database, deployment, merge, and cleanup remain withheld.
+- Next action: finish the S1 prompt diff and static checks, then commit it for required reviews.
