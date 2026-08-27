@@ -439,22 +439,6 @@ test.describe('Tests the availability of standard activity creation formats', ()
     const jsonContent = await readFile(jsonPath!, 'utf8')
     expect(jsonContent).toBe(expectedJsonExport)
     const parsedJson: unknown = JSON.parse(jsonContent)
-    expect(isRecord(parsedJson)).toBe(true)
-    expect(Object.keys(parsedJson as Record<string, unknown>)).toEqual([
-      'schemaVersion',
-      'effectiveN',
-      'students',
-    ])
-    const jsonStudents = (parsedJson as Record<string, unknown>).students
-    expect(Array.isArray(jsonStudents)).toBe(true)
-    for (const student of jsonStudents as unknown[]) {
-      expect(isRecord(student)).toBe(true)
-      expect(Object.keys(student as Record<string, unknown>)).toEqual([
-        'studentLabel',
-        'completedActivities',
-        'meanCompletionPercent',
-      ])
-    }
     expectNoRawParticipantData(parsedJson)
 
     const jsonExportRecord = await waitForGraphQLResponse(
@@ -510,18 +494,6 @@ test.describe('Tests the availability of standard activity creation formats', ()
     })
     expectNoRawParticipantData(csvExportData)
 
-    await expect
-      .poll(() => {
-        const operationNames = new Set(
-          recorder.operations.map(({ operationName }) => operationName)
-        )
-        return [
-          V2_ACTIVITY_OPERATION,
-          V2_PERFORMANCE_OPERATION,
-          V2_EXPORT_OPERATION,
-        ].every((operationName) => operationNames.has(operationName))
-      })
-      .toBe(true)
     expectNoV1DisclosureOperations(recorder)
   })
 

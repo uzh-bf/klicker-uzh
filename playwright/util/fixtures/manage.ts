@@ -186,6 +186,28 @@ export async function prepareSeededLearningAnalyticsV2({
   const choiceAt = new Date('2026-08-26T09:00:00.000Z')
   const analyticsLastComputedAt = new Date(choiceAt.getTime() + 60_000)
   const weeklyTimestamp = new Date('2026-08-24T00:00:00.000Z')
+  const participantCourseAnalyticsData = {
+    activeWeeks: 1,
+    activeDaysPerWeek: 1,
+    meanElementsPerDay: 1,
+    activityLevel: ActivityLevel.HIGH,
+    hasChatActivity: false,
+  }
+  const participantAnalyticsData = {
+    computedAt: weeklyTimestamp,
+    trialsCount: 1,
+    responseCount: 1,
+    totalScore: 1,
+    totalPoints: 1,
+    totalXp: 1,
+    meanCorrectCount: 1,
+    meanPartialCorrectCount: 0,
+    meanWrongCount: 0,
+  }
+  const participantActivityPerformanceData = {
+    totalScore: 1,
+    completion: 1,
+  }
 
   return prisma.$transaction(async (transaction) => {
     const practiceQuiz = await transaction.practiceQuiz.findFirstOrThrow({
@@ -231,19 +253,9 @@ export async function prepareSeededLearningAnalyticsV2({
         create: {
           courseId: COURSE_ID_TEST,
           participantId,
-          activeWeeks: 1,
-          activeDaysPerWeek: 1,
-          meanElementsPerDay: 1,
-          activityLevel: ActivityLevel.HIGH,
-          hasChatActivity: false,
+          ...participantCourseAnalyticsData,
         },
-        update: {
-          activeWeeks: 1,
-          activeDaysPerWeek: 1,
-          meanElementsPerDay: 1,
-          activityLevel: ActivityLevel.HIGH,
-          hasChatActivity: false,
-        },
+        update: participantCourseAnalyticsData,
       })
       await transaction.participantAnalytics.upsert({
         where: {
@@ -259,27 +271,9 @@ export async function prepareSeededLearningAnalyticsV2({
           courseId: COURSE_ID_TEST,
           participantId,
           timestamp: weeklyTimestamp,
-          computedAt: weeklyTimestamp,
-          trialsCount: 1,
-          responseCount: 1,
-          totalScore: 1,
-          totalPoints: 1,
-          totalXp: 1,
-          meanCorrectCount: 1,
-          meanPartialCorrectCount: 0,
-          meanWrongCount: 0,
+          ...participantAnalyticsData,
         },
-        update: {
-          computedAt: weeklyTimestamp,
-          trialsCount: 1,
-          responseCount: 1,
-          totalScore: 1,
-          totalPoints: 1,
-          totalXp: 1,
-          meanCorrectCount: 1,
-          meanPartialCorrectCount: 0,
-          meanWrongCount: 0,
-        },
+        update: participantAnalyticsData,
       })
       await transaction.participantActivityPerformance.upsert({
         where: {
@@ -291,13 +285,9 @@ export async function prepareSeededLearningAnalyticsV2({
         create: {
           participantId,
           practiceQuizId: practiceQuiz.id,
-          totalScore: 1,
-          completion: 1,
+          ...participantActivityPerformanceData,
         },
-        update: {
-          totalScore: 1,
-          completion: 1,
-        },
+        update: participantActivityPerformanceData,
       })
     }
 
