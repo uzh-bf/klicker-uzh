@@ -654,6 +654,28 @@ no migration.
   two focused tests added (non-eligible stopWhen, no-doc_query-tool
   lockout). Verified at exact head in the plan container: 54/54 focused
   tests, Chat check and lint pass.
+- [x] S6 — implemented on C: `07098905d` removes the generatedCards
+  extraction from serializeMessageContent so tool-call candidate JSON no
+  longer enters future model messages (only text parts serialize), deletes
+  candidatePresentation.ts and its test (the only language-specific
+  presentation filter), and renders candidate.explanation unconditionally
+  through the existing Markdown component. Docs corrected in the same
+  commit: ADR 0027 replaces the EN/DE retrieval allowlist with the forced
+  retrieval protocol and adds the latency/cost consequence; chat-platform
+  and graphql-api-layer drop the stale allowlist, boilerplate-rejection,
+  and direct-service-import claims. Verified at exact head in the plan
+  container: 10/10 focused test files (91 tests), full Chat suite 825
+  passed with only the two pre-existing modelRegistryParity failures,
+  Chat check pass, Biome findings on the touched files byte-identical to
+  the parent baseline.
+- [x] S6 review gates — simplifier returned PASS_WITH_CONCERNS and the
+  UI/history slice review returned PASS (disclosed fallback route after
+  provider credit exhaustion). The single P2 (chat-platform overstating
+  GraphQL-only access while the adapter keeps participant-scoped Prisma
+  reads for lease and discard state) was verified against graphqlClient.ts
+  and fixed in `4ce51cc86`; the two P3s (boilerplate can now render as a
+  card back, redundant local variable) are accepted as intended
+  consequences of removing the language-specific filter.
 - [ ] Execute S1 through S6 with their review gates and local commits.
 - [ ] Complete exact-head verification and the integrated native
   `final-reviewer` gate.
