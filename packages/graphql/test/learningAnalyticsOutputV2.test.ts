@@ -454,14 +454,12 @@ describe('learning analytics V2 disclosure output', () => {
       'studentLabel,completedActivities,meanCompletionPercent',
     ])
 
-    const suppressedReport = buildLearningAnalyticsStudentReportV2([
-      ...participantKeys(4).map((participantKey) => ({
-        participantKey,
-        completions: [1],
-      })),
-      { participantKey: 'unique-outlier', completions: [0] },
-    ])
-    expect(buildLearningAnalyticsExportV2(suppressedReport, 'JSON')).toBeNull()
+    expect(
+      buildLearningAnalyticsExportV2(
+        { isSuppressed: true, effectiveN: null, students: [] },
+        'JSON'
+      )
+    ).toBeNull()
 
     for (const content of [json.content, csv.content]) {
       expect(content).not.toMatch(

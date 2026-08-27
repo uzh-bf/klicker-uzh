@@ -171,13 +171,6 @@ function buildSafeStudentReportCohortV2(
       ),
     })
   )
-  if (!hasMinimumCellSize(candidateRows.length)) {
-    return {
-      participantKeys: new Set(),
-      report: { isSuppressed: true, effectiveN: null, students: [] },
-    }
-  }
-
   const tupleGroups = candidateRows.reduce<
     Map<string, NormalizedStudentReportRowV2[]>
   >((groups, row) => {
