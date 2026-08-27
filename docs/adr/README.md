@@ -25,6 +25,7 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0020](./0020-two-tier-chatbot-approval.md) — Two-tier approval: account AI capability plus per-chatbot publication
 - [0021](./0021-templated-standard-modes-reviewed-custom-modes.md) — Standard modes are templated, custom modes are reviewed; both layer over fixed scaffolding
 - [0022](./0022-no-student-text-in-manage.md) — The manage surface shows no student-authored text
+- [0028](./0028-native-product-updates-subsystem.md) — Build product updates as a native subsystem, not a changelog service
 - [0037](./0037-standard-activity-formats.md) — Practice quizzes, microlearnings, and group activities are standard capabilities
 - [0041](./0041-chatbot-trusted-pilot-boundary.md) — Stage chatbot usage enforcement and keep the trusted pilot operations-assisted
 
@@ -32,5 +33,6 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 independently before this index existed. Numbers are not reassigned, because
 existing records cite them. `0005` is reserved by an open PR, and open branches
 claim numbers through `0018` (KB line `0009`–`0016`, feature flags, UZH
-theming). Pick the next free number by checking this directory **and**
+theming) as well as `0023`–`0027` (chatbot lecturer configuration). Pick the
+next free number by checking this directory **and**
 `docs/adr/` on open branches, not by counting entries.

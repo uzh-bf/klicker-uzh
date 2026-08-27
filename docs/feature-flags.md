@@ -270,6 +270,11 @@ the same reviewed change rather than broadening it preemptively.
 6. Document whether the flag hides, disables, or changes behavior and reiterate
    that it is not an authorization boundary.
 
+Before removing a flag, check whether an entry in
+[Product Updates](./product-updates.md) still names it. The flag reference is
+removed from the catalog entry first, because a deleted key fails the catalog
+validation suite.
+
 ## Deployment setup checklist
 
 1. Create one browser SDK connection and one server SDK connection for each
