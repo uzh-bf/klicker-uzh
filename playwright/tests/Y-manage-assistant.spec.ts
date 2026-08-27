@@ -391,6 +391,17 @@ test.describe('Manage Assistant — Messaging', () => {
     )
     await expect(trigger).toHaveAttribute('aria-expanded', 'false')
     await expect(trigger).not.toHaveAttribute('aria-haspopup', 'dialog')
+    const triggerBox = await trigger.boundingBox()
+    const viewport = page.viewportSize()
+    expect(triggerBox).not.toBeNull()
+    expect(viewport).not.toBeNull()
+    expect(
+      Math.abs(
+        (triggerBox?.x ?? 0) +
+          (triggerBox?.width ?? 0) / 2 -
+          (viewport?.width ?? 0) / 2
+      )
+    ).toBeLessThanOrEqual(1)
 
     await openManageAssistantWidget(page)
 
@@ -450,6 +461,13 @@ test.describe('Manage Assistant — Messaging', () => {
     page,
   }) => {
     await mockManageChatStream(page)
+    await page.evaluate(() => {
+      window.localStorage.setItem(
+        'klicker-manage-assistant-panel-size-v1',
+        JSON.stringify({ height: 560, width: 440 })
+      )
+    })
+    await page.reload()
     await openManageAssistantWidget(page)
 
     const panel = page.getByTestId('manage-assistant-drawer')
@@ -495,6 +513,60 @@ test.describe('Manage Assistant — Messaging', () => {
     const reopened = await panel.boundingBox()
     expect(reopened?.width).toBe(resized?.width)
     expect(reopened?.height).toBe(resized?.height)
+  })
+
+  test('Short desktop viewports keep the default dock controls reachable', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page)
+    await page.evaluate(() => {
+      window.localStorage.removeItem('klicker-manage-assistant-panel-size-v1')
+    })
+    await page.setViewportSize({ height: 560, width: 900 })
+    await page.reload()
+
+    await openManageAssistantWidget(page)
+
+    const panel = page.getByTestId('manage-assistant-drawer')
+    const panelBox = await panel.boundingBox()
+    expect(panelBox).not.toBeNull()
+    expect(panelBox?.y).toBeGreaterThanOrEqual(0)
+    expect(panelBox?.height).toBeLessThanOrEqual(512)
+    await expect(panel.getByRole('button', { name: 'Close' })).toBeVisible()
+  })
+
+  test('Assistant dock remains usable when browser storage is blocked', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page)
+    const blockedStorageErrors: string[] = []
+    page.on('pageerror', (error) => {
+      if (error.message === 'Storage blocked') {
+        blockedStorageErrors.push(error.message)
+      }
+    })
+    await page.addInitScript((storageKey) => {
+      const originalGetItem = Storage.prototype.getItem
+      const originalSetItem = Storage.prototype.setItem
+
+      Storage.prototype.getItem = function (key) {
+        if (key === storageKey) throw new Error('Storage blocked')
+        return originalGetItem.call(this, key)
+      }
+      Storage.prototype.setItem = function (key, value) {
+        if (key === storageKey) throw new Error('Storage blocked')
+        return originalSetItem.call(this, key, value)
+      }
+    }, 'klicker-manage-assistant-panel-size-v1')
+    await page.reload()
+
+    await openManageAssistantWidget(page)
+
+    const panel = page.getByTestId('manage-assistant-drawer')
+    await expect(panel).toBeVisible()
+    await expect(panel.getByRole('button', { name: 'Close' })).toBeVisible()
+    await expect(page.getByTestId('manage-assistant-resize')).toBeVisible()
+    expect(blockedStorageErrors).toEqual([])
   })
 
   test('Mobile opening keeps the full dock reachable without overwriting desktop dimensions', async ({

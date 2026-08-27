@@ -162,17 +162,16 @@ export function ManageAssistantWidget() {
   }, [closeWidget, open])
 
   useEffect(() => {
-    const storedSize = readStoredPanelSize()
-    if (storedSize) {
-      setPanelSize(
-        window.matchMedia(DESKTOP_PANEL_MEDIA_QUERY).matches
-          ? clampManageAssistantPanelSize(storedSize, {
-              height: window.innerHeight,
-              width: window.innerWidth,
-            })
-          : storedSize
-      )
-    }
+    const initialSize =
+      readStoredPanelSize() ?? DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE
+    setPanelSize(
+      window.matchMedia(DESKTOP_PANEL_MEDIA_QUERY).matches
+        ? clampManageAssistantPanelSize(initialSize, {
+            height: window.innerHeight,
+            width: window.innerWidth,
+          })
+        : initialSize
+    )
     setPanelSizeInitialized(true)
   }, [])
 
@@ -183,10 +182,7 @@ export function ManageAssistantWidget() {
     ) {
       return
     }
-    window.localStorage.setItem(
-      MANAGE_ASSISTANT_PANEL_SIZE_STORAGE_KEY,
-      JSON.stringify(panelSize)
-    )
+    writeStoredPanelSize(panelSize)
   }, [panelSize, panelSizeInitialized])
 
   useEffect(() => {
@@ -342,7 +338,7 @@ export function ManageAssistantWidget() {
             setHasOpened(true)
             setOpen(true)
           }}
-          className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex h-14 min-w-14 items-center justify-center gap-3 rounded-full px-3 text-white shadow-lg transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 md:bottom-6 md:right-6 md:px-4"
+          className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-30 inline-flex h-14 min-w-14 -translate-x-1/2 items-center justify-center gap-3 rounded-full px-3 text-white shadow-lg transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 md:bottom-6 md:px-4"
           data-cy="manage-assistant-open"
         >
           <AssistantAvatar className="text-uzh-blue size-10 border border-white/40 bg-white" />
@@ -498,9 +494,24 @@ function isManageCloseRequestMessage(data: unknown): data is {
 }
 
 function readStoredPanelSize(): ManageAssistantPanelSize | null {
-  return parseManageAssistantPanelSize(
-    window.localStorage.getItem(MANAGE_ASSISTANT_PANEL_SIZE_STORAGE_KEY)
-  )
+  try {
+    return parseManageAssistantPanelSize(
+      window.localStorage.getItem(MANAGE_ASSISTANT_PANEL_SIZE_STORAGE_KEY)
+    )
+  } catch {
+    return null
+  }
+}
+
+function writeStoredPanelSize(size: ManageAssistantPanelSize) {
+  try {
+    window.localStorage.setItem(
+      MANAGE_ASSISTANT_PANEL_SIZE_STORAGE_KEY,
+      JSON.stringify(size)
+    )
+  } catch {
+    // The dock remains usable when browser privacy settings block storage.
+  }
 }
 
 function getUrlOrigin(url: string | null) {
