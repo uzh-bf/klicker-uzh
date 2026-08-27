@@ -1241,8 +1241,8 @@ export async function POST(
     const baseToolNames = Object.keys(chatTools)
 
     // Compile the full system prompt now that `toolNames` is known: the resolved
-    // base prompt plus the layered runtime contracts (conditional citation, then
-    // unconditional Swiss High German language style — see compileSystemPrompt).
+    // base prompt plus the layered runtime contracts (course policy, conditional
+    // citations, then unconditional language policy — see compileSystemPrompt).
     // Assigning the finished value here (rather than a separate `instructions`
     // variable) keeps the `systemPromptLength` / `systemPromptHash` telemetry
     // below truthful to what is actually sent to the model.
