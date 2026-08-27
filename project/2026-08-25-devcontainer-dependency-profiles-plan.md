@@ -408,14 +408,13 @@
 - Completed: Fresh downstream worktree, dependency and process mapping,
   first-party Dev Container and DevPod research, upstream package decomposition,
   and required planning review.
-- Remaining: Run the integrated final review, push the final Klicker commits,
-  update PR #5574, and prove the exact runtime stopped.
-- Latest verified target: `origin/v3` at `a36c21626`. The package is ten
-  commits ahead and two deployment-only commits behind; those target commits
-  touch only `deploy/env-uzh-stg/values.yaml`, outside this package's diff.
-- Runtime: The exact linked-worktree runtime is active on the `ai,chat,mcp`
-  profile for final checks. It will be stopped without deletion after the final
-  runtime-dependent check.
+- Remaining: Monitor the failed-shard CI rerun, trigger `/final-review` after
+  a maintainer repairs the repo-wide final-review gate, and hand the PR off as
+  ready for merge.
+- Latest verified target: `origin/v3` at `d0eab767`, integrated into this
+  branch on 2026-08-27 (see dated entry below).
+- Runtime: The exact linked-worktree runtime is stopped with proof recorded on
+  2026-08-27. No volume, worktree, branch, or container deletion was performed.
 - Active children: none.
 - Unresolved gates: Integrated final review and downstream exact-head CI.
   Klicker PR merge remains separately withheld.
@@ -501,5 +500,45 @@
   package with exact runtime stopped.
 - Achieved delivery layer: Integrated local implementation, released upstream
   dependency, and source-built plus published-artifact runtime proof.
-- Next action: Run final review, publish the Klicker branch and PR update, then
-  stop the exact runtime and prove no owned resource remains active.
+- Next action: Confirm the failed-shard CI rerun on the integrated head, then
+  post `/final-review` once the trusted_policy gate fault is repaired.
+
+- 2026-08-27 upstream integration: The single approved integration pass merged
+  `origin/v3` (`d0eab767`, 24 commits including the alpha.73 promotion,
+  ARM64 runner work, and the manual final-review lifecycle) into the reviewed
+  head `b9bee559` as `b3c1d7d17`. The three conflicts
+  (`.devcontainer/README.md`, `docs/getting-started.md`, `docs/testing.md`)
+  kept both the Profiles model and upstream's Playwright host-only policy;
+  Prettier was applied and timestamps unified. After rebuilding stale
+  `packages/util`, `packages/prisma`, and `packages/graphql` dist artifacts,
+  `pnpm --filter @klicker-uzh/graphql generate` succeeded and full
+  `check:all` passed 25/25 tasks. The branch was pushed; the remote matches.
+- 2026-08-27 hosted CI readback on `b3c1d7d17`: builds, check, units, GraphQL,
+  OLAT API, SonarCloud, CodeQL, and the repository gitleaks gate pass. Playwright
+  shards 2 and 3 pass; shard 1 failed twice on
+  `O-live-quiz.spec.ts:3481` (embedding-modal evaluation links) with
+  `page.reload: net::ERR_ABORTED`, and a pagination test flaked once. The same
+  base commit passed the full Playwright suite on `v3` (run 33068604272), the
+  failing test is outside this branch's diff, and the run's teardown shows
+  Postgres `postmaster exit` instability on the ARM64 runner, so the failure
+  was classified as runner-infrastructure flake and only the failed jobs were
+  rerun (same run 33073016409). GitGuardian's one finding was verified as a
+  false positive: the flagged 40-character strings are devrouter's public
+  upstream commit SHA and npm's published `dist.shasum` for
+  `@devrouter/cli@0.0.40`, confirmed against the npm registry.
+- 2026-08-27 final-review gate fault: every `Final AI review` run since the
+  2026-08-26 lifecycle change fails in about 4 seconds at `trusted_policy`
+  ("Workflow definition commit could not be verified") while comparing
+  `GITHUB_WORKFLOW_SHA` (`d0eab767`) against an API fetch of itself; the API
+  confirms that SHA is the verified `v3` head. The fault hits unrelated PRs
+  (FalkorDB, Next/TS upgrade, manage-UI fix), so this is a repo-wide workflow
+  fault requiring a maintainer fix to `.github/workflows/check-ocr-final-review.yml`.
+  Re-triggering was stopped on purpose; `/final-review` stays deferred until
+  the repair lands.
+- 2026-08-27 runtime stop: `devpod stop rs-devcontainer-dependency-profi`
+  returned exit 0. Readback: the workspace reports NotFound via status, is
+  absent from `devpod ls`, Docker lists no container for it, and `devrouter ls`
+  shows zero routes owned by this task. No unrelated workspace, route, volume,
+  or branch was touched. Note: DevPod removed the workspace metadata record on
+  stop rather than retaining a "Stopped" entry; the Git worktree and branch on
+  disk remain intact.
