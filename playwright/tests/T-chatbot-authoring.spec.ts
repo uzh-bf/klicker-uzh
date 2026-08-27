@@ -239,7 +239,26 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     )
     const submitButton = page.getByTestId('request-chatbot-publication')
     await expect(submitButton).toBeEnabled()
+    // While the mutation is in flight, all publication inputs lock with the
+    // submit button so late edits cannot diverge from the submitted payload.
+    await page.route('**/graphql', async (route) => {
+      const request = route.request()
+      if (request.postDataJSON()?.query?.includes('requestChatbotPublication')) {
+        await new Promise((resolve) => setTimeout(resolve, 800))
+        await route.continue()
+      } else {
+        await route.continue()
+      }
+    })
     await submitButton.click()
+    await expect(submitButton).toBeDisabled()
+    await expect(page.getByTestId('chatbot-publication-use-case')).toBeDisabled()
+    await expect(
+      page.getByTestId('chatbot-publication-expected-student-count')
+    ).toBeDisabled()
+    await expect(
+      page.getByTestId('chatbot-publication-proposed-credits')
+    ).toBeDisabled()
 
     await expect(
       page.getByTestId('chatbot-details').getByTestId('chatbot-status')

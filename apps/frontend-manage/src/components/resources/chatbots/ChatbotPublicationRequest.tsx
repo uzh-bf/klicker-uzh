@@ -253,6 +253,7 @@ function ChatbotPublicationRequest({
           <FormikTextareaField
             required
             maxLength={2000}
+            disabled={isSubmitting || requestLoading}
             name="useCase"
             label={t('manage.resources.chatbotPublicationUseCase')}
             data={{ cy: 'chatbot-publication-use-case' }}
@@ -262,6 +263,7 @@ function ChatbotPublicationRequest({
               required
               min={1}
               precision={0}
+              disabled={isSubmitting || requestLoading}
               name="expectedStudentCount"
               label={t(
                 'manage.resources.chatbotPublicationExpectedStudentCount'
@@ -272,6 +274,7 @@ function ChatbotPublicationRequest({
               required
               min={1}
               precision={0}
+              disabled={isSubmitting || requestLoading}
               name="proposedCredits"
               label={t('manage.resources.chatbotPublicationProposedCredits')}
               data={{ cy: 'chatbot-publication-proposed-credits' }}
