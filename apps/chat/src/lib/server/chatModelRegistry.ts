@@ -167,7 +167,7 @@ export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = parseRegistryValue([
     usesResponsesApi: true,
     supportsImageAttachments: true,
     supportedReasoningEfforts: ['none', 'low', 'medium', 'high', 'xhigh'],
-    maxOutputTokens: 2048,
+    maxOutputTokens: 4096,
     cost: { input: 5.0, output: 30.0 },
   },
   {
@@ -180,7 +180,7 @@ export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = parseRegistryValue([
     usesResponsesApi: true,
     supportsImageAttachments: true,
     supportedReasoningEfforts: ['none', 'low', 'medium', 'high', 'xhigh'],
-    maxOutputTokens: 2048,
+    maxOutputTokens: 4096,
     cost: { input: 2.5, output: 15.0 },
   },
   {
@@ -193,7 +193,7 @@ export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = parseRegistryValue([
     usesResponsesApi: true,
     supportsImageAttachments: true,
     supportedReasoningEfforts: ['none', 'minimal', 'low', 'medium', 'high'],
-    maxOutputTokens: 2048,
+    maxOutputTokens: 4096,
     cost: { input: 1.25, output: 10.0 },
   },
   {

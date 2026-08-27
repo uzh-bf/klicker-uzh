@@ -54,6 +54,9 @@ function costsById(models: readonly ParityModel[]) {
 const expectedDefaultCosts = {
   auto: { input: 1, output: 5 },
   'gpt-5.6-luna': { input: 0.2, output: 1.2 },
+  'gpt-5.5': { input: 5, output: 30 },
+  'gpt-5.4': { input: 2.5, output: 15 },
+  'gpt-5.1': { input: 1.25, output: 10 },
   'gpt-4.1': { input: 2, output: 8 },
   'gpt-4.1-mini': { input: 0.4, output: 1.6 },
 }

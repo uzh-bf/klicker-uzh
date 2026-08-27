@@ -1728,8 +1728,8 @@ test.describe('Chatbot Settings Panel', () => {
 
     await openSettings(page)
     const modelSection = page.getByTestId('chat-model-selection')
-    await expect(modelSection).toContainText('GPT-4.1')
-    await expect(modelSection).not.toContainText('GPT-4.1 Mini')
+    await expect(modelSection).toContainText('GPT-5.5')
+    await expect(modelSection).not.toContainText('GPT-5.6 Luna')
   })
 
   test('Mobile keeps the credit balance and fallback notice outside the sidebar', async ({
