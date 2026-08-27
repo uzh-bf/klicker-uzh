@@ -7,14 +7,12 @@ import ChatbotItem from './ChatbotItem'
 function ChatbotList({
   chatbots,
   loading,
-  selectedId,
-  onSelect,
-}: {
+  onOpen,
+}: Readonly<{
   chatbots?: Chatbot[]
   loading: boolean
-  selectedId?: string
-  onSelect: (chatbot: Chatbot) => void
-}) {
+  onOpen: (chatbot: Chatbot) => void
+}>) {
   const t = useTranslations()
 
   if (loading) {
@@ -34,8 +32,7 @@ function ChatbotList({
             <ChatbotItem
               key={`chatbot-${chatbot.id}`}
               chatbot={chatbot}
-              selected={chatbot.id === selectedId}
-              onSelect={() => onSelect(chatbot)}
+              onOpen={() => onOpen(chatbot)}
             />
           ))}
         </div>

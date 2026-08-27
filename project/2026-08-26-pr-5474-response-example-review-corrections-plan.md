@@ -183,21 +183,23 @@ No new product primitive is created or retired.
 
 | Item | Current evidence | Consequence |
 | --- | --- | --- |
-| `origin/v3-ai` | `332e044f34a1a5a0c8be00075795d8b3a19e7397`; sibling `trees/v3-ai-sync` is clean and exactly synchronized | The base-reconciliation dependency is resolved. This task still must not mutate the sibling worktree or branch. |
-| Current task head | K1 at `3659e5b22`, clean; 0 behind and 16 ahead of current `origin/v3-ai` | K1 corrections, review dispositions, and Gate 2 evidence are committed locally; K2 starts from its preserved pre-correction ref and is being restacked onto this K1 head. |
-| PR #5474 | remote K1 head `eef688e0fa4b4d34ad00a02f1d8a65509d5c7189`; base has moved and GitHub merge state is recalculating | Treat the old head and CI as historical only. |
-| PR #5498 | remote K2 head `3d54fbdbee5378212e65ff97bccf6dbc87f8ceba`; currently conflicting | Restack after K1 is rebased and corrected. |
+| `origin/v3-ai` | `e49804e3327609436e211cbe5d3765d7d408ed55`; both layers were rebased onto this target without semantic conflicts | The final review and publication evidence use the actual integrated target. This task still must not mutate the sibling `v3-ai` worktree or branch. |
+| Reviewed product-code heads | K1 `c1626000f3dbff73aa16b93235459335d1b8fc7f` and K2 `43e5416ab826b95cd334d2feea91e61d52e1d97a`; both worktrees were clean, K1 was 0 behind the selected `origin/v3-ai`, and K2 was directly stacked on K1 | The corrected product-code layers are published. This progress update becomes the final K2 evidence head before integrated review and CI. |
+| PR #5474 | remote K1 head `c1626000f3dbff73aa16b93235459335d1b8fc7f`; open, non-draft, and mergeable | Preserve its `v3-ai` base and wait once for corrected-head CI. |
+| PR #5498 | remote K2 product-code head `43e5416ab826b95cd334d2feea91e61d52e1d97a`; open, non-draft, mergeable, and based on K1 | Publish this progress update without changing the remote topology, then wait once for corrected-head CI. |
 | GitHub stack #5503 | remote order is K1 then K2 with the expected PRs and published heads | Preserve this topology. |
 | Local `gh-stack` metadata | repaired for local stack work; no remote topology mutation | Keep the existing K1 -> K2 order and use stack-aware force-with-lease only at the final publication boundary. |
 
 ### Code findings
 
-- `packages/util/src/citations.ts` is a roughly 2,000-line second Markdown
-  grammar with an avoidable repeated suffix scan and an open CodeQL discrepancy
-  around alternate HTML comment termination.
-- `packages/markdown` already owns `unified`, `remark-parse`, `remark-math`, and
-  the citation-marker AST transformer. Its `./citations` entry can be kept
-  React-free and consumed by GraphQL as a workspace dependency.
+- The pre-correction `packages/util/src/citations.ts` was a roughly 2,000-line
+  second Markdown grammar with an avoidable repeated suffix scan and an open
+  CodeQL discrepancy around alternate HTML comment termination.
+- The corrected package boundary keeps the canonical React-free citation AST
+  transformer and digest helper in `packages/util`. Markdown re-exports the
+  citation transformer for compatibility and uses it in the renderer; GraphQL
+  consumes the same utility contract without pulling UI peers into the
+  `mcp-student` pruned dependency closure.
 - The renderer normalizes Markdown before parsing. Validation must use that
   same normalization, Remark parser, math settings, and marker transformer;
   matching regexes are not sufficient.
@@ -219,18 +221,18 @@ No new product primitive is created or retired.
 - Verdict: `DONE_WITH_CONCERNS`
 - Accepted: final data and API contract belongs in K1; K2 owns only the
   lecturer workflow; one K1 migration replaces both current migration deltas;
-  the custom scanner is deleted rather than patched; the React-free Markdown
-  citations subpath becomes the shared parser; K1 receives a mandatory Gate 2;
-  local-only stack tracking repair is explicit authority.
+  the custom scanner is deleted rather than patched; one React-free citation
+  AST contract is shared by validation and Markdown rendering; K1 receives a
+  mandatory Gate 2; local-only stack tracking repair is explicit authority.
 - Verified correction: the review initially observed an active sibling base,
-  but fresh readback now proves `v3-ai` is clean and synchronized at the
-  revision above. The remaining pre-execution blocker is Gate 1 approval for
-  local stack repair and rebase.
+  but fresh readback proved `v3-ai` clean at the selected revision above. The
+  approved local stack repair, rebase, correction, and product-code publication
+  are complete without changing stack topology.
 
 ### Limitations
 
-- No implementation or corrected-head check has run. Old CI cannot prove the
-  rebased correction.
+- Corrected product-code checks and browser verification have run locally.
+  Corrected-head GitHub CI remains the final external evidence gate.
 - Local synthetic fixtures prove product behavior, not KB source freshness,
   model quality, deployment, or production activation.
 - PR #5092 remains outside this package even though it targets `v3`.
@@ -441,7 +443,64 @@ Neither follow-up is authorized by this plan.
 
 ## Progress
 
-- Status: K1 Gate 2 evidence accepted; K2 lecturer-review corrections are now in progress
+- 2026-08-27 publication: rebased K1 and K2 onto `origin/v3-ai`
+  `e49804e3327609436e211cbe5d3765d7d408ed55` and published the corrected
+  product-code heads with exact force-with-lease protection. PR #5474 now
+  points to K1 `c1626000f3dbff73aa16b93235459335d1b8fc7f`; PR #5498 pointed to K2
+  `43e5416ab826b95cd334d2feea91e61d52e1d97a` before this progress commit. Both
+  PRs remain open, non-draft, mergeable, and retain the approved K1 -> K2
+  topology.
+- 2026-08-27 current-base verification: K1 focused response-example GraphQL
+  tests pass 10/10, utility tests pass 113/113, Markdown tests pass 37/37, and
+  the GraphQL, utility, Markdown, and Manage package checks pass after current
+  Prisma and GraphQL generation. Both force-with-lease pushes passed the
+  repository pre-push production build with 26/26 Turbo tasks.
+- 2026-08-27 browser evidence: the local K2 route rendered four repeated `[1]`
+  citation markers as four example-scoped links with four distinct targets.
+  Following the first link selected its one matching target with no browser
+  errors. This verifies the opt-in scoped citation fix against the selected
+  `v3-ai` base using synthetic local examples.
+- 2026-08-27 review evidence: K1 and K2 simplification passes and the K2
+  risk-selected review pass. The integrated final review passed every code,
+  migration, schema, authorization, data-integrity, Markdown, UX, upstream,
+  and plan-compliance lens. Its one evidence finding was resolved by capturing
+  current EN desktop, DE mobile, and German stale-edit screenshots from K2
+  product head `34f01f1a0`.
+- Current base: `origin/v3-ai` at
+  `e49804e3327609436e211cbe5d3765d7d408ed55`.
+- Active slice: F1 PR description refresh, one corrected-head CI wait, and
+  exact runtime shutdown. Merge, deployment, live activation, K3, and Test &
+  Teach remain withheld.
+
+- 2026-08-26 CI correction: moved canonical citation parsing and response-set
+  digest computation into React-free utility exports. GraphQL no longer pulls
+  Markdown and its UI peers into `mcp-student`; Markdown renders through the
+  same citation transformer. The exact `mcp-student` Docker builder target now
+  completes on both architectures' shared Dockerfile path.
+- 2026-08-26 review correction: preserved JavaScript code-unit ordering,
+  threaded the renderer's single-dollar math setting through citation parity,
+  removed the duplicate K2 seed digest implementation, centralized approval
+  error mapping, and made the three reported component prop objects readonly.
+  K1 simplification and risk correction reviews pass. K2 simplification passes;
+  its risk correction review and the integrated final review are in progress.
+- Current base: `origin/v3-ai` at
+  `c8e1c9b22c96716288469d18dca85aecb1b3d990`.
+- Current local heads: K1
+  `2504e270edee043e22449a89d368122fa9002cd2`; K2
+  `84be8f3a549054dc737a331be4625f6c2091d13b`.
+- Current runtime limitation: the K2 managed DevPod passes package checks, but
+  its post-start cannot resolve the workspace Azurite alias. Existing browser
+  screenshots remain valid because the CI correction does not alter rendered
+  UI. No local runtime or product code was changed to work around this route.
+- Active slice: F1 final review, publication, PR description refresh, and one
+  CI wait.
+
+The entries below are the retained pre-CI-correction execution history. Their
+hashes are historical and are superseded by the current heads above.
+
+- Status: K1 Gate 2 evidence accepted; K2 correction implementation, focused
+  browser journey, screenshots, and final integrated review are complete
+  locally; publication and corrected-head CI remain pending
 - Completed: external review analysis; focused correction scope; fresh Git,
   GitHub PR, GitHub stack, sibling-worktree, and local-stack evidence; planning
   specialist review; complete correction plan; local stack tracking repair;
@@ -455,9 +514,47 @@ Neither follow-up is authorized by this plan.
   `3d54fbdbee5378212e65ff97bccf6dbc87f8ceba`
 - Rebased local heads before correction: K1 `ec254bea755bfa3a3d9a93b760aa9ad715643444`;
   K2 `3b54dfb36cf747f4063341ea1bc85e4ade6aa67d`
-- Corrected local K1 head: `c70bf0e8a` (latest documentation and evidence commit atop the corrected implementation)
+- Corrected local K1 head: `3d30349441d4f042b65d92d42a950fc1df1df8e2` (latest documentation and evidence commit atop the corrected implementation)
+- Reviewed local K2 product-code head: `be259ad5a82f56053ceac1248ddb6985f3837c92` (latest fixture-path and browser-journey correction atop K1)
 - Active slice: K2 lecturer-review workflow corrections
-- Plan commit: `c525e6c60 docs(project): plan response-example review corrections`
+- Plan commit: `6531937e3 docs(project): plan response-example review corrections`
+- K2 implementation commit: `3a1cbd45b fix(manage): align response-example review workflow`
+- K2 follow-up corrections commit: `007fa0dcc fix(manage): close response-example review gaps`
+  restores the AI-beta gate and invalid-chatbot handling, resets review state
+  when switching chatbots, computes the seeded digest canonically, and seeds
+  the chatbot/examples inside the focused Playwright journey
+- K2 fixture-path correction commit: `6f63a11ca fix(test): resolve chatbot seed prompts from module`
+  anchors seed prompt files to the module instead of the caller's working
+  directory; the focused journey then exposed one unsupported Modal fixture
+  prop, corrected in `be259ad5a fix(test): expose response example modal fixture`
+- K2 fallback reviews: native and generic continuity routes were unavailable
+  with `unreadable_encrypted_agent_task`; trusted GPT-5.6 Luna max fallback
+  reports are recorded under `project/_local/reviews/`. Their findings were
+  verified and dispositioned in the follow-up corrections.
+- Final integrated review over `a1c63c644..be259ad5a` found no actionable
+  findings. It verified the fixture-path and supported Modal fixture fixes,
+  the owner workflow, migration/schema provenance, GraphQL contract, stale-write
+  integrity, parser boundary, UX/accessibility, and plan compliance.
+- K2 verification so far: direct Manage, Prisma-data, and Playwright TypeScript
+  checks pass; focused Manage ESLint and Prettier checks pass; Markdown citation
+  tests and focused response-example GraphQL contract/service tests pass; the
+  isolated response-example seed runner exits successfully against the task
+  runtime; the repository-native focused Playwright journey passes 1 test in
+  40.3 seconds against the disposable local database after global reset and
+  self-seeding.
+- Current browser screenshots are local-only artifacts, not repository links.
+  Verified files are
+  `/Users/rschlae/.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-en-desktop-citations-34f01f1a0.png`,
+  `/Users/rschlae/.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-de-mobile-34f01f1a0.png`,
+  and
+  `/Users/rschlae/.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-stale-de-desktop-34f01f1a0.png`.
+  They cover the current scoped-citation link and matching evidence target,
+  both required locale/viewport combinations, and stale-save draft
+  preservation with the save action disabled after the coded stale response.
+- Upstream boundary: the KB task's W8 work remains responsible for ingestion
+  and producer activation seams. This package has no implementation overlap and
+  does not assume graph delivery; response-example runtime activation remains
+  deferred.
 - K1 evidence: focused Markdown citation tests pass, including 100,000 unmatched
   brackets and 5,000 nested blockquotes; focused response-example GraphQL
   contract and service tests pass, including every transition, rejected edit,
@@ -473,6 +570,7 @@ Neither follow-up is authorized by this plan.
   findings, including the documentation and non-owner edit follow-ups, were
   applied and reverified over immutable K1 range
   `332e044f34a1a5a0c8be00075795d8b3a19e7397..a86d5ae96`.
-- Next: restack the preserved K2 branch onto the corrected K1 head and implement the lecturer-review corrections.
-- Delivery pending: K2 correction, corrected branch push, PR updates,
-  corrected-head CI, merge, deployment, runtime activation, K3, and Test & Teach
+- Next: publish the two corrected branches, update their existing PRs, and
+  wait once for corrected-head CI.
+- Delivery pending: corrected branch push, PR updates, corrected-head CI,
+  merge, deployment, runtime activation, K3, and Test & Teach

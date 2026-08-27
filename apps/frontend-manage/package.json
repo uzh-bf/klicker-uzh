@@ -25,6 +25,7 @@
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
+    "@klicker-uzh/util": "workspace:*",
     "@socialgouv/matomo-next": "1.9.1",
     "@tanstack/react-table": "8.20.5",
     "@uidotdev/usehooks": "2.4.1",

@@ -1,14 +1,12 @@
 import { useQuery } from '@apollo/client'
 import {
-  Chatbot,
-  ChatModelCapability,
+  type Chatbot,
   GetChatbotsInfoDocument,
-  GetChatModelRegistryDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { H2 } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
-import ChatbotDetails from './chatbots/ChatbotDetails'
+import { useTranslations } from 'next-intl'
+import { useEffect } from 'react'
 import ChatbotList from './chatbots/ChatbotList'
 
 function Chatbots() {
@@ -17,53 +15,41 @@ function Chatbots() {
   const { data, loading } = useQuery(GetChatbotsInfoDocument, {
     fetchPolicy: 'network-only',
   })
-  const { data: modelRegistryData, loading: modelRegistryLoading } = useQuery(
-    GetChatModelRegistryDocument,
-    {
-      fetchPolicy: 'cache-first',
+
+  const fetchedChatbots = data?.getChatbotsInfo
+  const chatbots = fetchedChatbots ?? []
+
+  useEffect(() => {
+    const legacyChatbotId = router.query.chatbotId
+    if (loading || typeof legacyChatbotId !== 'string' || !fetchedChatbots) {
+      return
     }
-  )
 
-  const chatbots = data?.getChatbotsInfo ?? []
-  const modelRegistry: ChatModelCapability[] =
-    modelRegistryData?.getChatModelRegistry ?? []
-  const selectedId =
-    typeof router.query?.chatbotId === 'string'
-      ? router.query.chatbotId
-      : undefined
-  const selectedChatbot =
-    chatbots.find((chatbot) => chatbot.id === selectedId) ?? chatbots[0]
+    const chatbot = fetchedChatbots.find(
+      (candidate) => candidate.id === legacyChatbotId
+    )
+    if (!chatbot) return
 
-  const handleSelect = (chatbot: Chatbot) => {
-    void router.push(
-      {
-        pathname: router.pathname,
-        query: { ...router.query, chatbotId: chatbot.id },
-      },
+    void router.replace(
+      `/resources/chatbots/${encodeURIComponent(chatbot.id)}`,
       undefined,
       { shallow: true }
     )
+  }, [fetchedChatbots, loading, router])
+
+  const handleOpenChatbot = (chatbot: Chatbot) => {
+    void router.push(`/resources/chatbots/${encodeURIComponent(chatbot.id)}`)
   }
 
   return (
     <div className="min-h-full w-full shrink-0">
       <H2>{t('manage.resources.chatbots')}</H2>
-      <div className="mt-6 flex flex-col lg:flex-row-reverse">
-        <div className="lg:w-1/2 lg:border-l lg:pl-4">
-          <ChatbotDetails
-            chatbot={selectedChatbot}
-            modelRegistry={modelRegistry}
-            loading={loading || modelRegistryLoading}
-          />
-        </div>
-        <div className="lg:w-1/2 lg:pr-4">
-          <ChatbotList
-            chatbots={chatbots}
-            loading={loading}
-            selectedId={selectedChatbot?.id}
-            onSelect={handleSelect}
-          />
-        </div>
+      <div className="mt-6 max-w-3xl">
+        <ChatbotList
+          chatbots={chatbots}
+          loading={loading}
+          onOpen={handleOpenChatbot}
+        />
       </div>
     </div>
   )

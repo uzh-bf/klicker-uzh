@@ -24,6 +24,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { getChatbotStatusTranslationKey } from './chatbotStatus'
+import ChatbotResponseExampleReview from './ChatbotResponseExampleReview'
 
 type ReasoningConfigState = Record<string, string[]>
 
@@ -574,6 +575,8 @@ function ChatbotDetails({
             </div>
           </div>
         )}
+
+        <ChatbotResponseExampleReview key={chatbot.id} chatbotId={chatbot.id} />
 
         <div>
           <div className="mb-2 text-sm font-medium text-gray-700">
