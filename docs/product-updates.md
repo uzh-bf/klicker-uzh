@@ -195,7 +195,13 @@ viewport, through an `IntersectionObserver` guarded by a per-mount ref. Two
 consequences are deliberate. Opening the feed does not mark entries below the
 fold as read, which is the read semantics ADR 0028 requires. And because the feed
 modal unmounts when it closes, `presentationCount` counts feed openings that
-reached the card, not renders.
+reached the card, not renders. Reporting waits until the stored states have
+arrived, because that query response replaces the whole cached state array and
+would otherwise discard the cache write of a mutation answered before it.
+
+The `/updates` page also renders dismissed entries and reports a presentation on
+every visit, so `presentationCount` includes archive-page impressions and keeps
+growing on revisits — which matters for any spotlight cap that reads the counter.
 
 Matomo receives the adoption funnel under the category `Product Update` with the
 catalog id as the event name: `Eligible` once per page load per entry, then
