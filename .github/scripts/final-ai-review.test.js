@@ -2024,7 +2024,6 @@ function validPromotionInput(sourceBranch = 'v3-ai') {
     },
     permission: 'write',
     repository: 'uzh-bf/klicker-uzh',
-    defaultBranch: 'v3',
     sourceBranch,
     commits: [
       {
