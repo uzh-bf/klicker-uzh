@@ -125,10 +125,6 @@ export const ParticipantDataUse = ParticipantDataUseRef.implement({
       'learningAnalyticsDisclosureVersion',
       { nullable: true }
     ),
-    learningAnalyticsIncludedFrom: t.expose('learningAnalyticsIncludedFrom', {
-      type: 'Date',
-      nullable: true,
-    }),
   }),
 })
 

@@ -25,10 +25,8 @@ async function getEligibleParticipantIdsForCourseAnalytics(
       AND p."learningAnalyticsConsent" IS TRUE
       AND p."learningAnalyticsChoiceAt" IS NOT NULL
       AND NULLIF(btrim(p."learningAnalyticsDisclosureVersion"), '') IS NOT NULL
-      AND p."learningAnalyticsIncludedFrom" IS NOT NULL
-      AND p."learningAnalyticsIncludedFrom" <= p."learningAnalyticsChoiceAt"
       AND c."analyticsLastComputedAt" IS NOT NULL
-      AND c."analyticsLastComputedAt" >= p."learningAnalyticsIncludedFrom"
+      AND c."analyticsLastComputedAt" > p."learningAnalyticsChoiceAt"
   `
 
   return rows.map(({ participantId }) => participantId)
@@ -65,10 +63,8 @@ async function getEligibleParticipantIdsForPerformanceAnalytics(
     WHERE p."learningAnalyticsConsent" IS TRUE
       AND p."learningAnalyticsChoiceAt" IS NOT NULL
       AND NULLIF(btrim(p."learningAnalyticsDisclosureVersion"), '') IS NOT NULL
-      AND p."learningAnalyticsIncludedFrom" IS NOT NULL
-      AND p."learningAnalyticsIncludedFrom" <= p."learningAnalyticsChoiceAt"
       AND c."analyticsLastComputedAt" IS NOT NULL
-      AND c."analyticsLastComputedAt" >= p."learningAnalyticsIncludedFrom"
+      AND c."analyticsLastComputedAt" > p."learningAnalyticsChoiceAt"
   `
 
   return rows.map(({ participantId }) => participantId)

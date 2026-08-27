@@ -30,7 +30,6 @@ function participantState(
     learningAnalyticsConsent: false,
     learningAnalyticsChoiceAt: null,
     learningAnalyticsDisclosureVersion: null,
-    learningAnalyticsIncludedFrom: null,
     ...overrides,
   }
 }
@@ -129,7 +128,7 @@ type CourseFindUniqueArgs = {
 }
 
 describe('participant data-use API', () => {
-  it('returns only the seven current-state fields and keeps them out of Participant', () => {
+  it('exposes six current-state fields and keeps them out of Participant', () => {
     const dataUseType = schema.getType('ParticipantDataUse')
     expect(dataUseType).toBeDefined()
     if (!dataUseType) return
@@ -140,7 +139,6 @@ describe('participant data-use API', () => {
       'learningAnalyticsChoiceAt',
       'learningAnalyticsConsent',
       'learningAnalyticsDisclosureVersion',
-      'learningAnalyticsIncludedFrom',
       'researchConsent',
       'researchConsentChoiceAt',
       'researchConsentDisclosureVersion',
@@ -152,8 +150,16 @@ describe('participant data-use API', () => {
     const participantFields = (
       participantType as { getFields: () => Record<string, unknown> }
     ).getFields()
-    expect(participantFields).not.toHaveProperty('researchConsent')
-    expect(participantFields).not.toHaveProperty('learningAnalyticsConsent')
+    for (const field of [
+      'researchConsent',
+      'researchConsentChoiceAt',
+      'researchConsentDisclosureVersion',
+      'learningAnalyticsConsent',
+      'learningAnalyticsChoiceAt',
+      'learningAnalyticsDisclosureVersion',
+    ]) {
+      expect(participantFields).not.toHaveProperty(field)
+    }
 
     const queryField = schema.getQueryType()!.getFields().selfDataUse
     expect(queryField).toBeDefined()
@@ -174,41 +180,44 @@ describe('participant data-use API', () => {
     expect(userContext.prisma.$transaction).not.toHaveBeenCalled()
   })
 
-  it('records the initial explicit no with database time and v1', async () => {
-    const fixture = participantContext()
-    const result = await setResearchConsent({ consent: false }, fixture.ctx)
-
-    expect(result).toMatchObject({
+  it('records current choices with database time and server-owned v1 metadata', async () => {
+    const researchFixture = participantContext()
+    await expect(
+      setResearchConsent({ consent: false }, researchFixture.ctx)
+    ).resolves.toMatchObject({
       researchConsent: false,
       researchConsentChoiceAt: nextTime,
       researchConsentDisclosureVersion: PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
     })
-    expect(fixture.current.researchConsentChoiceAt).toEqual(nextTime)
-    expect(fixture.current.learningAnalyticsIncludedFrom).toBeNull()
-    expect(fixture.queryStatements).toEqual([
+    expect(researchFixture.queryStatements).toEqual([
       expect.stringContaining('clock_timestamp'),
     ])
-    expect(fixture.executeStatements).toHaveLength(0)
+    expect(researchFixture.executeStatements).toHaveLength(0)
 
     const learningAnalyticsFixture = participantContext()
-    const learningAnalyticsResult = await setLearningAnalyticsConsent(
-      { consent: false },
-      learningAnalyticsFixture.ctx
-    )
-    expect(learningAnalyticsResult).toMatchObject({
-      learningAnalyticsConsent: false,
+    await expect(
+      setLearningAnalyticsConsent(
+        {
+          consent: true,
+        },
+        learningAnalyticsFixture.ctx
+      )
+    ).resolves.toMatchObject({
+      learningAnalyticsConsent: true,
       learningAnalyticsChoiceAt: nextTime,
       learningAnalyticsDisclosureVersion:
         PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-      learningAnalyticsIncludedFrom: null,
     })
     expect(learningAnalyticsFixture.executeStatements[0]).toContain(
       'lock_timeout'
     )
+    expect(learningAnalyticsFixture.executeStatements[1]).toContain(
+      'pg_advisory_xact_lock'
+    )
+    expect(learningAnalyticsFixture.participant.update).toHaveBeenCalledOnce()
   })
 
   it('keeps a same-state recorded choice idempotent', async () => {
-    const boundary = new Date('2026-08-01T00:00:00.000Z')
     const choiceAt = new Date('2026-08-02T00:00:00.000Z')
     const fixture = participantContext({
       state: participantState({
@@ -220,7 +229,6 @@ describe('participant data-use API', () => {
         learningAnalyticsChoiceAt: choiceAt,
         learningAnalyticsDisclosureVersion:
           PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-        learningAnalyticsIncludedFrom: boundary,
       }),
     })
 
@@ -231,68 +239,57 @@ describe('participant data-use API', () => {
       setLearningAnalyticsConsent({ consent: true }, fixture.ctx)
     ).resolves.toEqual(fixture.current)
     expect(fixture.participant.update).not.toHaveBeenCalled()
+    expect(fixture.queryStatements).not.toContain(
+      expect.stringContaining('clock_timestamp')
+    )
     expect(fixture.executeStatements).toEqual([
       expect.stringContaining('lock_timeout'),
       expect.stringContaining('pg_advisory_xact_lock'),
     ])
-    expect(fixture.queryStatements).not.toContain(
-      expect.stringContaining('clock_timestamp')
-    )
-    expect(fixture.current.learningAnalyticsIncludedFrom).toEqual(boundary)
   })
 
-  it('refreshes disclosure metadata without moving the learning boundary', async () => {
-    const boundary = new Date('2026-08-01T00:00:00.000Z')
+  it('refreshes disclosure metadata and the current choice timestamp', async () => {
     const fixture = participantContext({
       state: participantState({
         learningAnalyticsConsent: true,
         learningAnalyticsChoiceAt: initialTime,
         learningAnalyticsDisclosureVersion: 'previous-v1',
-        learningAnalyticsIncludedFrom: boundary,
-      }),
-    })
-    expect(boundary.getTime()).toBeLessThan(initialTime.getTime())
-
-    const result = await setLearningAnalyticsConsent(
-      { consent: true },
-      fixture.ctx
-    )
-
-    expect(result).toMatchObject({
-      learningAnalyticsConsent: true,
-      learningAnalyticsChoiceAt: nextTime,
-      learningAnalyticsDisclosureVersion:
-        PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-      learningAnalyticsIncludedFrom: boundary,
-    })
-    expect(fixture.participant.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.not.objectContaining({
-          learningAnalyticsIncludedFrom: expect.anything(),
-        }),
-      })
-    )
-  })
-
-  it('fails closed on an enabled boundary after its recorded choice and repairs on withdrawal', async () => {
-    const choiceAt = new Date('2026-08-02T00:00:00.000Z')
-    const impossibleBoundary = new Date('2026-08-03T00:00:00.000Z')
-    const fixture = participantContext({
-      state: participantState({
-        learningAnalyticsConsent: true,
-        learningAnalyticsChoiceAt: choiceAt,
-        learningAnalyticsDisclosureVersion:
-          PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-        learningAnalyticsIncludedFrom: impossibleBoundary,
       }),
     })
 
     await expect(
       setLearningAnalyticsConsent({ consent: true }, fixture.ctx)
-    ).rejects.toMatchObject({
-      extensions: { code: 'PARTICIPANT_DATA_USE_MALFORMED_STATE' },
+    ).resolves.toMatchObject({
+      learningAnalyticsConsent: true,
+      learningAnalyticsChoiceAt: nextTime,
+      learningAnalyticsDisclosureVersion:
+        PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
     })
-    expect(fixture.participant.update).not.toHaveBeenCalled()
+    expect(fixture.participant.update).toHaveBeenCalledOnce()
+  })
+
+  it('repairs incomplete current metadata instead of using a second boundary', async () => {
+    const fixture = participantContext({
+      state: participantState({ learningAnalyticsConsent: true }),
+    })
+
+    await expect(
+      setLearningAnalyticsConsent({ consent: true }, fixture.ctx)
+    ).resolves.toMatchObject({
+      learningAnalyticsConsent: true,
+      learningAnalyticsChoiceAt: nextTime,
+      learningAnalyticsDisclosureVersion:
+        PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
+    })
+    expect(fixture.participant.update).toHaveBeenCalledOnce()
+  })
+
+  it('normalizes a recorded false choice when its metadata is incomplete', async () => {
+    const fixture = participantContext({
+      state: participantState({
+        learningAnalyticsChoiceAt: initialTime,
+      }),
+    })
 
     await expect(
       setLearningAnalyticsConsent({ consent: false }, fixture.ctx)
@@ -301,81 +298,30 @@ describe('participant data-use API', () => {
       learningAnalyticsChoiceAt: nextTime,
       learningAnalyticsDisclosureVersion:
         PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-      learningAnalyticsIncludedFrom: null,
     })
+    expect(fixture.participant.update).toHaveBeenCalledOnce()
   })
 
-  it('uses one database timestamp for a false-to-true boundary and clears it on withdrawal', async () => {
+  it('uses database time for each changed current choice', async () => {
     const fixture = participantContext()
-    const included = await setLearningAnalyticsConsent(
-      { consent: true },
-      fixture.ctx
-    )
-    expect(included).toMatchObject({
-      learningAnalyticsConsent: true,
-      learningAnalyticsChoiceAt: nextTime,
-      learningAnalyticsIncludedFrom: nextTime,
-    })
-
-    const withdrawn = await setLearningAnalyticsConsent(
-      { consent: false },
-      fixture.ctx
-    )
-    expect(withdrawn).toMatchObject({
-      learningAnalyticsConsent: false,
-      learningAnalyticsChoiceAt: nextTime,
-      learningAnalyticsIncludedFrom: null,
-    })
-    expect(fixture.executeStatements).toHaveLength(4)
-    expect(fixture.executeStatements[0]).toContain('lock_timeout')
-    expect(
-      fixture.queryStatements.filter((sql) => sql.includes('clock_timestamp'))
-    ).toHaveLength(2)
-  })
-
-  it('fails closed on malformed enablement and normalizes withdrawal', async () => {
-    const fixture = participantContext({
-      state: participantState({
-        learningAnalyticsConsent: true,
-        learningAnalyticsChoiceAt: null,
-        learningAnalyticsDisclosureVersion:
-          PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-        learningAnalyticsIncludedFrom: null,
-      }),
-    })
 
     await expect(
       setLearningAnalyticsConsent({ consent: true }, fixture.ctx)
-    ).rejects.toMatchObject({
-      extensions: { code: 'PARTICIPANT_DATA_USE_MALFORMED_STATE' },
-    })
-    expect(fixture.participant.update).not.toHaveBeenCalled()
-    expect(fixture.queryStatements).not.toContain(
-      expect.stringContaining('clock_timestamp')
-    )
-
-    const contradictoryWithdrawal = participantContext({
-      state: participantState({
-        learningAnalyticsConsent: false,
-        learningAnalyticsChoiceAt: initialTime,
-        learningAnalyticsDisclosureVersion:
-          PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-        learningAnalyticsIncludedFrom: initialTime,
-      }),
+    ).resolves.toMatchObject({
+      learningAnalyticsConsent: true,
+      learningAnalyticsChoiceAt: nextTime,
     })
     await expect(
-      setLearningAnalyticsConsent(
-        { consent: false },
-        contradictoryWithdrawal.ctx
-      )
+      setLearningAnalyticsConsent({ consent: false }, fixture.ctx)
     ).resolves.toMatchObject({
       learningAnalyticsConsent: false,
       learningAnalyticsChoiceAt: nextTime,
-      learningAnalyticsDisclosureVersion:
-        PARTICIPANT_DATA_USE_DISCLOSURE_VERSION,
-      learningAnalyticsIncludedFrom: null,
     })
-    expect(contradictoryWithdrawal.participant.update).toHaveBeenCalledOnce()
+
+    expect(fixture.executeStatements).toHaveLength(4)
+    expect(
+      fixture.queryStatements.filter((sql) => sql.includes('clock_timestamp'))
+    ).toHaveLength(2)
   })
 
   it('uses a bounded global lock and maps lock timeout without changing state', async () => {
@@ -402,7 +348,7 @@ describe('participant data-use API', () => {
     )
   })
 
-  it('filters individual analytics at the source while preserving aggregate output', async () => {
+  it('filters individual analytics with a strict current-choice freshness check', async () => {
     const queryStatements: string[] = []
     const courseFindUnique = vi.fn(async (args: CourseFindUniqueArgs) => {
       if (args.include.participantCourseAnalytics) {
@@ -415,14 +361,7 @@ describe('participant data-use API', () => {
             { type: 'DAILY', timestamp: initialTime, participantCount: 2 },
           ],
           aggregatedCourseAnalytics: null,
-          participantCourseAnalytics: [
-            {
-              activeWeeks: 1,
-              activeDaysPerWeek: 1,
-              meanElementsPerDay: 1,
-              activityLevel: 'HIGH',
-            },
-          ],
+          participantCourseAnalytics: [{ activeWeeks: 1 }],
         }
       }
 
@@ -457,33 +396,21 @@ describe('participant data-use API', () => {
     if (!activityCall?.include.participantCourseAnalytics) {
       throw new Error('missing activity analytics query')
     }
-    const activityWhere = activityCall.include.participantCourseAnalytics.where
-    expect(activityWhere.participantId.in).toEqual([participantId])
-    expect(activityWhere).not.toHaveProperty('participant')
+    expect(
+      activityCall.include.participantCourseAnalytics.where.participantId.in
+    ).toEqual([participantId])
     expect(activityResult?.dailyActivity).toHaveLength(1)
     expect(activityResult?.participantCourseAnalytics).toHaveLength(1)
-    expect(queryStatements[0]).toContain('analyticsLastComputedAt')
-    expect(queryStatements[0]).toContain('learningAnalyticsIncludedFrom')
     expect(queryStatements[0]).toContain(
-      'learningAnalyticsIncludedFrom" <= p."learningAnalyticsChoiceAt'
+      'c."analyticsLastComputedAt" > p."learningAnalyticsChoiceAt"'
     )
 
     await getCoursePerformanceAnalytics(
       { courseId: '10000000-0000-4000-8000-000000000001' },
       ctx
     )
-    const performanceCall = courseFindUnique.mock.calls[1]?.[0]
-    if (!performanceCall?.include.participantPerformances) {
-      throw new Error('missing performance analytics query')
-    }
-    const performanceWhere =
-      performanceCall.include.participantPerformances.where
-    expect(performanceWhere.participantId.in).toEqual([participantId])
-    expect(performanceWhere).not.toHaveProperty('participant')
-    expect(queryStatements[1]).toContain('ParticipantPerformance')
-    expect(queryStatements[1]).toContain('ParticipantActivityPerformance')
     expect(queryStatements[1]).toContain(
-      'learningAnalyticsIncludedFrom" <= p."learningAnalyticsChoiceAt'
+      'c."analyticsLastComputedAt" > p."learningAnalyticsChoiceAt"'
     )
   })
 

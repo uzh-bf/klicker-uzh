@@ -40,8 +40,9 @@ canonical data for that participant; `false` excludes all of it. Returning to
 `true` makes all stored canonical data eligible for future exports again.
 `learningAnalyticsConsent` follows the same current-state rule: `true` makes
 all stored canonical data eligible for learning analytics and `false` excludes
-all of it. The separate
-`Course.isLearningAnalyticsEnabled` course control also defaults to `false`.
+all of it. Individual results become readable only after a course computation
+newer than the current choice. The separate `Course.isLearningAnalyticsEnabled`
+course control also defaults to `false`.
 
 `Participation` remains the course-membership row and keeps its existing
 leaderboard meaning. It carries no research or learning-analytics choice or
@@ -49,9 +50,8 @@ history, and participants have no per-course data-use choice in this schema.
 
 The public Prisma schema is the sole authority for these models. Catalyst must
 pin the exact immutable public commit and digest it consumes; a moving branch,
-dirty tree, or generated Analytics mirror is not provenance. These fields are
-an inert schema foundation: their presence does not enable export, computation,
-or workflow dispatch by itself.
+dirty tree, or generated Analytics mirror is not provenance. The stored fields
+alone do not enable export, computation, or workflow dispatch.
 
 Chatbot and live-quiz analytics rows reference their owning `Chatbot` or
 `LiveQuiz` instead of storing a second, independently writable `courseId`.
