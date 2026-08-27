@@ -36,7 +36,10 @@ export function buildManageAssistantSystemPrompt(
   previousProposal: ManageElementCreateProposal | null = null
 ) {
   const contextPrompt = formatManageContextForPrompt(context)
-  const proposalPrompt = formatManageProposalContextForPrompt(previousProposal)
+  const proposalPrompt = formatManageProposalContextForPrompt(
+    previousProposal,
+    toolOutputFenceSentinel
+  )
   const toolPrompt = !toolsAvailable
     ? 'Lecturer MCP tools are currently unavailable. Be transparent that live Klicker data cannot be queried in this response.'
     : draftToolsAvailable
