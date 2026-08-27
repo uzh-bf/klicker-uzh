@@ -265,5 +265,6 @@ Merge, readiness, deployment, activation, and source retirement are separate gat
   `b9a3f0e14c766c234aead4165e5250f75bf13d02f84f905baedbf6fb4c0d733c` remain
   unchanged from the original LA-P1 head. The retired `docs/log/` path remains absent.
 - [ ] Final gates complete.
-- [ ] Branch pushed and draft PR published.
-- [ ] Immutable public commit and digest read back for Catalyst.
+- [x] Original branch published as draft PR #5413.
+- [ ] Restacked exact head pushed and PR #5413 based on the participant-settings layer.
+- [ ] Restacked immutable public commit and digest read back for Catalyst.
