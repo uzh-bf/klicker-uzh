@@ -63,12 +63,14 @@ separate unsaved-revision path; each generated card is either saved or
 discarded. The server-only GraphQL service is the single owner of
 authorization, caps, and revision semantics.
 
-Personal-element access is GraphQL-only: the Chat server mints a short-lived
-participant JWT and calls the persisted-query operations through
-`src/lib/server/personalElements/graphqlClient.ts` instead of importing
-backend services or reading Prisma directly. The client exposes list, save,
-discard, lease, and update operations; the backend owns authorization, caps,
-duplicate policy, and revision semantics.
+Personal-element access is GraphQL-only for operations: the Chat server mints
+a short-lived participant JWT and calls the persisted-query operations
+through `src/lib/server/personalElements/graphqlClient.ts` instead of
+importing backend services. The client exposes list, save, discard, lease
+mutations, and update operations; lease and discard state reads the GraphQL
+surface does not expose stay as participant-scoped Prisma reads inside the
+adapter. The backend owns authorization, caps, duplicate policy, and
+revision semantics.
 
 Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/layout.tsx` validates the route parameter as a UUID before querying Prisma, then calls `notFound()` for malformed or absent chatbot IDs; the root `src/app/not-found.tsx` preserves the 404 status while showing branded recovery and a safe return link. The root `src/app/error.tsx` sits above the dynamic layout, uses Next's `unstable_retry` callback to refresh a failed server payload, and exposes only retry/return actions; it never renders the underlying error text. The loading state in `src/components/assistant.tsx` uses the same branded card/skeleton language, and `/noLogin` keeps only a concise return notice instead of printing the UUID-bearing redirect URL.
 
