@@ -159,9 +159,8 @@ this, so its build — including the deployment pipeline outside this repository
 must build the catalog package first. `turbo.json` covers the local `dev:docs`
 task and the four application dev tasks.
 
-The lecturer feed in `frontend-manage` is described below. The student surface in
-`frontend-pwa` does not exist yet; ADR 0028 describes its intended shape, and the
-read-state API above is already in place for it.
+The lecturer feed in `frontend-manage` and the student feed in `frontend-pwa`
+are described below.
 
 ## The lecturer feed
 
@@ -211,3 +210,43 @@ Entry copy always comes from the catalog in the reader's locale. Only the chrome
 around it — feed title, empty state, dismiss and read-more labels, and the
 `preview`/`pilot` maturity labels — lives under `manage.productUpdates` in
 `packages/i18n/messages/de.ts` and `en.ts`.
+
+## The student feed
+
+`apps/frontend-pwa/src/components/productUpdates/` mirrors the lecturer surface
+for audience `student` on surface `pwa`: the same hook shape, the same card, the
+same funnel events, with its chrome under `pwa.productUpdates`. The card and the
+hook are copies rather than shared code, because the two applications do not
+share a component package for this.
+
+`apps/frontend-pwa/src/components/Layout.tsx` owns the surface. It decides
+whether product updates may appear at all, reads the feed once, hands the unread
+count and the opener to the header bullhorn, adds a badged item to the mobile
+menu bar, and renders the feed modal for both entry points. The modal is
+`fullScreen`, which gives a phone the whole viewport for a card while the
+desktop keeps the usual modal width.
+
+| Excluded when                                              | Because                                                                                      |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_IS_ASSESSMENT` is `true`                      | The assessment build shows no product news at all                                            |
+| The page is embedded, or runs inside a frame               | Announcements must not appear inside a learning management system                            |
+| A live quiz is being answered (`liveQuizId`, `/session/…`) | Nothing may compete with an open question                                                    |
+| `self.role` is not `PARTICIPANT`                           | Temporary and anonymous participants are outside the subsystem, and the API rejects them too |
+
+Suppression is complete, not cosmetic: an excluded surface issues no
+product-update query, no mutation, and no identity query for flag targeting.
+
+`PwaFeatureFlagProvider` (`apps/frontend-pwa/src/components/featureFlags/`) is
+mounted in `_app.tsx` inside the Apollo provider and sets
+`{ id, actorType: 'participant' }` for a registered participant and
+`{ actorType: 'anonymous' }` otherwise. It stays mounted even in the assessment
+build, where it is constructed **without** an API host and client key: the
+GrowthBook hooks throw when no provider is above them, while a client without
+credentials starts from an empty payload and never reaches the network, so every
+flag reads as false.
+
+A card reports its presentation and its read one after the other rather than
+together. Both writes create the state row when an entry is seen for the first
+time, and the backend cannot absorb two concurrent inserts of the same row — the
+second one fails on the unique constraint and its timestamp is lost, which for a
+participant meant the entry stayed unread forever.
