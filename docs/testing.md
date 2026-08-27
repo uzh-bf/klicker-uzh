@@ -71,8 +71,9 @@ lanes, empty selection without a zero-request bulk dispatch, the spawn gate,
 platform-after-course ordering, cancellation checks after start and spawn-gate
 tasks, and cancellation followed by termination wait at the hard deadline,
 including child references that resolve after cancellation begins. They also
-verify that the deadline child derives a replay-stable duration from the
-PostgreSQL clock and that an expired deadline does not schedule a sleep. These
+verify the delayed-dispatch window, seven-hour durable timeout budget, that the
+deadline child derives a replay-stable duration from the PostgreSQL clock, and
+that an expired deadline does not schedule a sleep. These
 tests prove the public control-plane behavior only; they do not execute private
 analytics stages or prove deployment and live qualification.
 

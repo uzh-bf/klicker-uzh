@@ -33,8 +33,8 @@ const NIGHTLY_STOP_MINUTES = 5 * 60 + 45
 const NIGHTLY_DEADLINE_MINUTES = 6 * 60
 const MANUAL_STOP_MINUTES = 5 * 60 + 15
 const MANUAL_DEADLINE_MINUTES = 5 * 60 + 30
-const NIGHTLY_LOCAL_HOUR = 0
-const NIGHTLY_LOCAL_MINUTE = 30
+const NIGHTLY_LOCAL_START_MINUTE_OF_DAY = 30
+const NIGHTLY_LOCAL_END_MINUTE_OF_DAY = 90
 
 interface BatchClock {
   localDate: string
@@ -192,9 +192,10 @@ export async function prepareScheduledLearningAnalyticsBatch(
   if (!isLearningAnalyticsCoordinatorEnabled()) return null
 
   const clock = await readBatchClock(prisma, 'nightly')
+  const localMinuteOfDay = clock.localHour * 60 + clock.localMinute
   if (
-    clock.localHour !== NIGHTLY_LOCAL_HOUR ||
-    clock.localMinute !== NIGHTLY_LOCAL_MINUTE
+    localMinuteOfDay < NIGHTLY_LOCAL_START_MINUTE_OF_DAY ||
+    localMinuteOfDay >= NIGHTLY_LOCAL_END_MINUTE_OF_DAY
   )
     return null
   return buildBatchInput({ clock, selection: 'nightly' })

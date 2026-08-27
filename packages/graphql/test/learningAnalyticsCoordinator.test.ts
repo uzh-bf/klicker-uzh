@@ -170,14 +170,15 @@ afterEach(() => {
 })
 
 describe('learning analytics coordinator', () => {
-  it('uses the PostgreSQL clock for the nightly 00:30 gate and stable daily run IDs', async () => {
+  it('accepts delayed nightly dispatch before 01:30 with stable daily run IDs', async () => {
     process.env.LEARNING_ANALYTICS_COORDINATOR_ENABLED = 'true'
     process.env.LEARNING_ANALYTICS_BATCH_IN_FLIGHT_LIMIT = '10'
     const queryRaw = vi
       .fn()
       .mockResolvedValueOnce([batchClock({ localMinute: 29 })])
       .mockResolvedValueOnce([batchClock()])
-      .mockResolvedValueOnce([batchClock()])
+      .mockResolvedValueOnce([batchClock({ localHour: 1, localMinute: 29 })])
+      .mockResolvedValueOnce([batchClock({ localHour: 1, localMinute: 30 })])
     const prisma = { $queryRaw: queryRaw }
 
     await expect(
@@ -186,6 +187,9 @@ describe('learning analytics coordinator', () => {
 
     const first = await prepareScheduledLearningAnalyticsBatch(prisma)
     const second = await prepareScheduledLearningAnalyticsBatch(prisma)
+    await expect(
+      prepareScheduledLearningAnalyticsBatch(prisma)
+    ).resolves.toBeNull()
 
     expect(first).not.toBeNull()
     expect(first).toEqual(second)
@@ -200,7 +204,7 @@ describe('learning analytics coordinator', () => {
     expect(first?.runId).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
     )
-    expect(queryRaw).toHaveBeenCalledTimes(3)
+    expect(queryRaw).toHaveBeenCalledTimes(4)
   })
 
   it('derives a replay-stable remaining deadline from the PostgreSQL clock', async () => {

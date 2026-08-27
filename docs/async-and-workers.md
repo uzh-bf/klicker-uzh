@@ -95,8 +95,9 @@ Hatchet cron expressions are UTC, so the scheduled task declares both `30 22 * *
 and `30 23 * * *`. These are the two UTC instants that can represent 00:30 in
 `Europe/Zurich` across daylight-saving time. The
 `packages/graphql/src/services/learningAnalyticsCoordinator.ts:prepareScheduledLearningAnalyticsBatch`
-handler reads the PostgreSQL clock in that timezone and accepts only local hour
-`00` and minute `30`; the non-matching UTC invocation is a no-op.
+handler reads the PostgreSQL clock in that timezone and accepts local dispatches
+from `00:30` until, but not including, `01:30`. This bounded retry window admits
+a delayed first invocation while the alternate UTC invocation remains a no-op.
 
 The nightly batch records a local 05:45 stop-spawning time and a 06:00 hard
 deadline. The batch input carries only the immutable `hardDeadlineAt` instant;
@@ -107,7 +108,9 @@ up, with a minimum of one second while the deadline is still ahead; an already
 reached deadline returns zero and the batch fails without extending it. The
 spawn-gate checks the database clock before each new
 course child, so work already running can drain for the remaining fifteen
-minutes. When the durable deadline fires,
+minutes. Batch, lane, and course durable tasks have seven-hour execution limits,
+which cover the longer elapsed interval on the autumn clock-change night plus a
+bounded cancellation grace period. When the durable deadline fires,
 `packages/hatchet/src/learningAnalytics.ts:cancelAndAwait` requests cancellation
 for every active child reference and awaits each child output before the batch
 fails. Dispatch promises are tracked as well, so a child reference that resolves

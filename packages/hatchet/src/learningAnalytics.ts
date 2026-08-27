@@ -34,6 +34,7 @@ const CHILD_METADATA = {
   component: 'public-learning-analytics-coordinator',
   contractVersion: 'v1',
 } as const
+const DURABLE_EXECUTION_TIMEOUT = '7h'
 
 export const LEARNING_ANALYTICS_TASK_NAMES = {
   batch: 'learning-analytics-public-batch-v1',
@@ -123,7 +124,7 @@ export function prepareLearningAnalyticsTasks({
     name: LEARNING_ANALYTICS_TASK_NAMES.course,
     retries: 1,
     backoff: { factor: 2, maxSeconds: 30 },
-    executionTimeout: '6h',
+    executionTimeout: DURABLE_EXECUTION_TIMEOUT,
     scheduleTimeout: '6h',
     concurrency: {
       expression: 'input.courseId',
@@ -286,7 +287,7 @@ export function prepareLearningAnalyticsTasks({
     name: LEARNING_ANALYTICS_TASK_NAMES.batchLane,
     retries: 1,
     backoff: { factor: 2, maxSeconds: 30 },
-    executionTimeout: '6h',
+    executionTimeout: DURABLE_EXECUTION_TIMEOUT,
     scheduleTimeout: '30m',
     fn: async (
       input: LearningAnalyticsBatchLaneInput,
@@ -392,7 +393,7 @@ export function prepareLearningAnalyticsTasks({
     name: LEARNING_ANALYTICS_TASK_NAMES.batch,
     retries: 1,
     backoff: { factor: 2, maxSeconds: 30 },
-    executionTimeout: '6h',
+    executionTimeout: DURABLE_EXECUTION_TIMEOUT,
     scheduleTimeout: '30m',
     concurrency: {
       expression: '"global"',

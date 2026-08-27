@@ -12,6 +12,7 @@ type TaskDefinition = {
   fn: (input: unknown, context: FakeExecutionContext) => unknown
   onCrons?: string[]
   concurrency?: Record<string, unknown>
+  executionTimeout?: string
 }
 
 type TaskOptions = TaskDefinition
@@ -172,6 +173,13 @@ describe('@klicker-uzh/hatchet learning-analytics coordinator', () => {
       maxRuns: 1,
       limitStrategy: ConcurrencyLimitStrategy.GROUP_ROUND_ROBIN,
     })
+    expect(
+      [
+        'learning-analytics-public-course-v1',
+        'learning-analytics-public-batch-lane-v1',
+        'learning-analytics-public-batch-v1',
+      ].map((name) => task(definitions, name).executionTimeout)
+    ).toEqual(['7h', '7h', '7h'])
   })
 
   it('runs one course through public start, private v1 contract, and completion with deterministic keys', async () => {
