@@ -567,6 +567,19 @@ no migration.
   the 64 KiB aggregate bound, non-FLASHCARD type, and >5-card plans (30/30
   pass). GraphQL check and build pass at the new head; package byte-identical
   across A/B/C.
+- [x] S2 — implemented on A: `7f7d0edaa` exposes the full lifecycle as
+  participant-authed GraphQL mutations (claim/complete/abort lease, Save,
+  Discard, revision) with the final title-similarity duplicate check inside
+  the save transaction; `8af4a8677` aligns the generated schema; `d8b5d0eb3`
+  aligns the workflow input types with the wire contract and retries Prisma 7
+  serialization conflicts (DriverAdapterError TransactionWriteConflict) so
+  the concurrent-save race resolves to PERSONAL_ELEMENTS_DUPLICATE_TITLE.
+  Verified at exact head in the plan container: GraphQL check, 36/36
+  personal-elements tests (including the DB-backed save race and lease
+  lifecycle), and build pass. GraphQL package byte-identical across A/B/C
+  after cascade; the docs/domain-model.md conflict during the C cascade was
+  resolved keeping the S2 lifecycle paragraph and the Chat-side
+  CardGenerationLease paragraph.
 - [ ] Execute S1 through S6 with their review gates and local commits.
 - [ ] Complete exact-head verification and the integrated native
   `final-reviewer` gate.
