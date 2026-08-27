@@ -51,6 +51,8 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
     update: {
       modelSelection: true,
       allowedModelIds: ['auto', 'gpt-5.6-luna', 'gpt-4.1-mini'],
+      // Repair status on reseed of an existing DB so the bot stays reachable.
+      status: 'PUBLISHED',
     },
     create: {
       id: CHATBOT_ID_TEST,
@@ -77,6 +79,7 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
       modelSelection: true, // Allow model selection for testing
       allowedModelIds: ['auto', 'gpt-5.6-luna', 'gpt-4.1-mini'],
       disclaimerId: testDisclaimer.id,
+      status: 'PUBLISHED', // seeded bot is live for participants
     },
   })
 

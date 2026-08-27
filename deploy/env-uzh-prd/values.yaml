@@ -29,7 +29,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.72
+        tag: v3.4.0-alpha.73
       resources:
         requests:
           cpu: 50m
@@ -68,7 +68,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.72
+        tag: v3.4.0-alpha.73
       resources:
         requests:
           cpu: 50m
@@ -107,7 +107,7 @@ hatchet:
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor-arm
         pullPolicy: IfNotPresent
-        tag: v3.4.0-alpha.72
+        tag: v3.4.0-alpha.73
       resources:
         requests:
           cpu: 50m
@@ -177,7 +177,7 @@ auth:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/auth-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.72
+    tag: v3.4.0-alpha.73
 
   ingress:
     annotations:
@@ -224,7 +224,7 @@ chat:
 
   automaticModels:
     primaryId: auto
-    fallbackId: gpt-4.1-mini
+    fallbackId: gpt-5.6-luna
 
   modelRegistry:
     # "Auto" routes through the LiteLLM auto-router, which self-selects the
@@ -235,8 +235,9 @@ chat:
     # therefore use Auto by default; explicit model selections remain respected.
     # A chatbot can be pinned to Auto-only via its DB columns
     # (modelSelection=false + allowedModelIds=["auto"]).
-    # cost mirrors the gpt-5.6-luna tier (the typical COMPLEX route); REASONING
-    # (gpt-5.6-sol-medium) is rare. Tune if the routed mix shifts.
+    # The accounting rate is the accepted rounded blend for an observed
+    # generation mix of about 90% Luna and 10% Sol. Classifier and embedding
+    # overhead remain outside the registry's selected-model token fields.
     - id: auto
       deploymentId: klickeruzh/azure/auto-router
       name: Auto
@@ -244,15 +245,36 @@ chat:
       supportsImageAttachments: true
       usesResponsesApi: true
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
-        input: 1.25
-        output: 10.0
+        input: 1.0
+        output: 5.0
+    - id: gpt-5.6-luna
+      deploymentId: klickeruzh/azure/gpt-5.6-luna
+      name: GPT-5.6 Luna
+      description: OpenAI reasoning model
+      supportsImageAttachments: true
+      supportsReasoning: true
+      supportedReasoningEfforts:
+        - low
+        - medium
+        - high
+        - xhigh
+      fallback: true
+      usageClass: BASE
+      maxOutputTokens: 4096
+      cost:
+        input: 0.2
+        output: 1.2
     - id: gpt-4.1
       deploymentId: klickeruzh/azure/gpt-4.1
       name: GPT-4.1
       description: OpenAI model
       supportsImageAttachments: true
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 2.0
         output: 8.0
@@ -269,6 +291,8 @@ chat:
         - medium
         - high
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 1.25
         output: 10.0
@@ -285,9 +309,11 @@ chat:
         - high
         - xhigh
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
-        input: 1.25
-        output: 10.0
+        input: 2.5
+        output: 15.0
     - id: gpt-5.5
       deploymentId: klickeruzh/azure/gpt-5.5
       name: GPT-5.5
@@ -302,6 +328,8 @@ chat:
         - high
         - xhigh
       fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 5.0
         output: 30.0
@@ -310,7 +338,9 @@ chat:
       name: GPT-4.1 Mini
       description: Small OpenAI model
       supportsImageAttachments: true
-      fallback: true
+      fallback: false
+      usageClass: ADVANCED
+      maxOutputTokens: 4096
       cost:
         input: 0.4
         output: 1.6
@@ -330,7 +360,7 @@ chat:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/chat-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.72
+    tag: v3.4.0-alpha.73
 
   ingress:
     annotations:
@@ -385,7 +415,7 @@ frontendPWA:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-pwa-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.72
+    tag: v3.4.0-alpha.73
 
   ingress:
     className: haproxy
@@ -438,7 +468,7 @@ frontendManage:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-manage-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.72
+    tag: v3.4.0-alpha.73
 
   ingress:
     className: haproxy
@@ -476,7 +506,7 @@ frontendControl:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/frontend-control-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.72
+    tag: v3.4.0-alpha.73
 
   autoscaling:
     enabled: false
@@ -545,7 +575,7 @@ backendGraphql:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.72
+    tag: v3.4.0-alpha.73
 
   appManageSubdomain: manage
   appStudentSubdomain: pwa
@@ -598,7 +628,7 @@ olatApi:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/olat-api-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.72
+    tag: v3.4.0-alpha.73
 
   autoscaling:
     enabled: false
@@ -671,7 +701,7 @@ lti:
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/lti-arm
     pullPolicy: IfNotPresent
-    tag: v3.4.0-alpha.72
+    tag: v3.4.0-alpha.73
 
   ingress:
     className: haproxy
@@ -703,7 +733,7 @@ responseApi:
 
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
-    tag: v3.4.0-alpha.72
+    tag: v3.4.0-alpha.73
     pullPolicy: IfNotPresent
 
   autoscaling:
@@ -798,7 +828,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/frontend-assessment-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.72
+      tag: v3.4.0-alpha.73
 
     ingress:
       className: haproxy
@@ -875,7 +905,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.72
+      tag: v3.4.0-alpha.73
 
     appManageSubdomain: manage
     appStudentSubdomain: assessment
@@ -954,7 +984,7 @@ assessment:
     image:
       repository: ghcr.io/uzh-bf/klicker-uzh/response-api-arm
       pullPolicy: IfNotPresent
-      tag: v3.4.0-alpha.72
+      tag: v3.4.0-alpha.73
 
     ingress:
       className: haproxy

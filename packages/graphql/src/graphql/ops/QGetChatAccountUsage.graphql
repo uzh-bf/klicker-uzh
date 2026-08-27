@@ -1,0 +1,19 @@
+query GetChatAccountUsage($ownerId: String) {
+  getChatAccountUsage(ownerId: $ownerId) {
+    authorized
+    baseModelUsage {
+      usageClass
+      budgetCredits
+      usedCredits
+      remainingCredits
+      resetAt
+    }
+    advancedModelUsage {
+      usageClass
+      budgetCredits
+      usedCredits
+      remainingCredits
+      resetAt
+    }
+  }
+}

@@ -12,7 +12,7 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 | You changed…                                                                      | Run                                                                                                                                                                                         |
 | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pure logic in grading/util/export/word-cloud and feature-flags core/Node adapters | `pnpm --filter @klicker-uzh/<pkg> test` — safe with no services                                                                                                                             |
-| Chat app logic (`apps/chat`)                                                      | `pnpm --filter @klicker-uzh/chat test:run` — the package has no plain `test` script; CI runs the suite via `test-chat.yml`, but still run it locally before claiming verification           |
+| Chat app logic (`apps/chat`)                                                      | `pnpm --filter @klicker-uzh/chat test:run` — the package has no plain `test` script; CI includes it in `test-unit.yml`, but still run it locally before claiming verification               |
 | `packages/graphql` services/schema                                                | `pnpm --filter @klicker-uzh/graphql test:local` — one-command bootstrap (real Postgres + Redis + Hatchet); serialized, don't parallelize                                                    |
 | Auth adapter against shared Prisma client                                         | `pnpm --filter @klicker-uzh/auth test:prisma-adapter` — guarded, disposable local PostgreSQL only                                                                                           |
 | React/browser feature-flag behavior                                               | browser verification with `npx agent-browser@0.32.2`; use e2e when a user flow covers it                                                                                                    |
@@ -80,14 +80,15 @@ Direct checks for `auth`, `chat`, `frontend-control`, `frontend-manage`, and `fr
 
 For Next framework or bundler changes, verify both repository-supported paths. `pnpm run build:test` uses Turbopack in all five Next apps. `pnpm run build` uses Turbopack for auth/chat and Webpack for control/manage/PWA until their service-worker integration moves to Serwist. Confirm standalone server paths for all five apps and `sw.js`, Workbox, and custom worker outputs for the three PWA apps.
 
-The Playwright build job must tar the five `.next` trees before artifact upload and extract them in each shard. Direct artifact upload dereferences Turbopack's `.next/node_modules` symlinks and can omit transitive runtime links, producing HTTP 500 before the suite starts.
+The Playwright build job must tar the five `.next` trees before artifact upload and extract them in each shard. Direct artifact upload dereferences Turbopack's `.next/node_modules` symlinks and can omit transitive runtime links, producing HTTP 500 before the suite starts. Each shard restores the generated GraphQL client map from `packages/graphql/dist/client.json` before tests because Turbo cache hits do not restore generated source files.
 
 ## Decide whether e2e is warranted locally
 
 CI runs Playwright (8-way shard) on almost every code PR — CI is the real e2e gate. Run e2e locally only when your change plausibly breaks a flow (new UI, changed selectors/`data-cy`, auth/redirect changes, activity lifecycle). If you do:
 
-- You are **authorized to start the required servers for this purpose** — test stack via the e2e skills' setup instructions, plus the Hatchet general worker for publish/schedule/end flows and response-api + response processor for live-answer flows (exact triage in the e2e skills).
-- Tear down afterwards (`./_down.sh`); leave the machine as you found it.
+- Run `pnpm playwright:host -- <args>` from the host. Never invoke Playwright or install browsers through `devrouter exec`, a DevPod shell, or another local container.
+- You are **authorized to start the required servers for this purpose** through the host launcher. It reconciles the full devrouter profile, including the Hatchet workers, response-api, and response processor.
+- If the launcher started a runtime for your task, tear it down afterwards with `devrouter stop .`; leave the machine as you found it.
 - On environment failure, switch to `klicker-environment-doctor` before blaming the test.
 
 For Chat model-picker or LiteLLM routing changes, treat the local proxy as a

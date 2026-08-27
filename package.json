@@ -47,9 +47,10 @@
     "build:test": "bash ./util/_with_local_test_origins.sh cross-env NODE_ENV=test turbo run build:test --cache-dir=.turbo",
     "check": "turbo run check --parallel --continue",
     "check:agents-md": "node ./util/check-agents-md.mjs",
-    "check:all": "run-p --npm-path pnpm check check:format check:lint check:syncpack check:agents-md check:removed-doc-artifacts check:prisma-sync",
+    "check:all": "run-p --npm-path pnpm check check:format check:lint check:syncpack check:agents-md check:removed-doc-artifacts check:prisma-sync check:playwright-host",
     "check:format": "lint-staged",
     "check:lint": "turbo run lint --parallel --continue",
+    "check:playwright-host": "node --test ./util/run-playwright-host.test.mjs",
     "check:prisma-sync": "bash ./util/check-prisma-sync.sh",
     "check:removed-doc-artifacts": "node ./util/check-removed-doc-artifacts.mjs",
     "check:syncpack": "syncpack lint",
@@ -70,6 +71,7 @@
     "knip": "knip",
     "lint": "turbo run lint --parallel --continue",
     "lint:biome": "biome lint .",
+    "playwright:host": "node ./util/run-playwright-host.mjs",
     "prepare": "husky",
     "prisma:deploy": "pnpm run --filter @klicker-uzh/prisma prisma:deploy",
     "prisma:migrate": "pnpm run --filter @klicker-uzh/prisma prisma:migrate",
@@ -104,7 +106,7 @@
     "test:dev-runtime": "bash ./util/test-dev-runtime.sh",
     "test:profile-resolver": "bash ./util/test-profile-resolver.sh",
     "test:run": "turbo run test:run",
-    "test:run:playwright": "pnpm --filter @klicker-uzh/playwright test:run",
+    "test:run:playwright": "pnpm playwright:host",
     "test:watch": "run-p --npm-path pnpm test dev:playwright"
   },
   "engines": {

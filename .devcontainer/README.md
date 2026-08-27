@@ -92,6 +92,19 @@ container plus that base and start no Turbo process; switching profiles never
 recreates the container, reruns post-create, resets the database, or removes
 volumes.
 
+## Playwright runs on the host
+
+Run `pnpm playwright:host -- <args>` from a host shell. The launcher reconciles
+this exact checkout, uses its namespaced HTTPS routes, and discovers the
+workspace Postgres container's random loopback port for test cleanup and
+seeding. The Playwright process, Node dependencies, and browser binaries stay
+on the host; applications and services stay in this devcontainer.
+
+Direct local Playwright commands fail before global setup, and this container
+sets its Playwright browser path to a non-directory target. Do not run Playwright
+or install browsers through `devrouter exec` or a DevPod shell. GitHub Actions
+continues to run directly in the official Playwright container.
+
 ## How routing works
 
 The monorepo runs the selected apps in **one container** via `turbo dev`;
@@ -162,7 +175,7 @@ boot because its `HatchetClient.init` runs at module load (not lazy).
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
 host-side `initialize.sh` creates the persistent machine-local pnpm store,
 `post-create.sh` links dependencies into the worktree-specific `node_modules`
-volume and builds/seeds the workspace, then `devrouter ensure` delivers its
+volumes and builds/seeds the workspace, then `devrouter ensure` delivers its
 matching process helper and invokes `post-start.sh`. Runtime state is
 `/tmp/devrouter-process-klicker-dev.state` for the app stack and
 `/tmp/devrouter-process-klicker-local-mcp.state` for the seeded local MCP
@@ -198,9 +211,11 @@ analytics image and lint CI so the root quality gate runs inside the container.
 
 ## Notes
 
-- `node_modules` is a named volume (pnpm hoists natives into the root
-  `node_modules/.pnpm`, so one root volume covers the monorepo). Its dependency
-  stamp prevents reuse after lockfile or workspace-manifest changes.
+- The root `node_modules` is a named volume because pnpm hoists native packages
+  into `node_modules/.pnpm`. Playwright, Prisma, and shared types also have
+  package-level volumes. Those prevent the Linux install from overwriting the
+  host Playwright runner's Darwin dependency links. The dependency stamp
+  prevents reuse after lockfile or workspace-manifest changes.
 - `/pnpm/.pnpm-store` is the only machine-shared cache. The external Docker
   volume `klicker-uzh-pnpm-store-v1` is created idempotently before Compose and
   survives individual DevPod deletion. `node_modules`, `.next`, and PostgreSQL

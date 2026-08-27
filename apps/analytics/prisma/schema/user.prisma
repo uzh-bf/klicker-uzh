@@ -107,6 +107,14 @@ model User {
   catalystIndividual    Boolean @default(false)
   catalystTier          String?
 
+  // Account-level AI chatbot publishing capability. Approved by the team out of
+  // band (cost center recorded) and checked against this row, never a JWT claim,
+  // when a lecturer requests publication. Separate from Catalyst, which only
+  // reveals the configuration features. See
+  // docs/adr/0020-two-tier-chatbot-approval.md.
+  aiChatbotPublishingEnabled Boolean @default(false)
+  aiChatbotCostCenter        String?
+
   publicPreview  Boolean @default(false)
   privatePreview Boolean @default(false)
 
@@ -125,6 +133,7 @@ model User {
   competencyTrees            CompetencyTree[]
   answerCollections          AnswerCollection[]
   chatbots                   Chatbot[]
+  chatAccountUsages          ChatAccountUsage[]
   chatbotDisclaimers         ChatbotDisclaimer[]
   revokedVerificationRecords VerifiableCredential[] @relation("RevokedVerifiableCredentials")
 
