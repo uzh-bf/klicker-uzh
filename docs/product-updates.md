@@ -268,6 +268,12 @@ it closes. A second tab can therefore cost one more appearance; the presentation
 counter is what bounds the total. When storage is unavailable the guard cannot be
 honoured, so nothing is presented at all rather than repeatedly.
 
+The unsolicited overlay opens one animation frame after the runner decides to
+show it. A mount that is undone immediately — React's development double
+invocation, or a layout that flips back to its loading state — therefore cancels
+the appearance instead of spending the session's single spotlight on an overlay
+that is torn down again in the same commit.
+
 Presenting records a presentation, which is what makes the counter cap
 self-limiting: two unsolicited appearances exhaust it without anyone acting.
 Note that feed and `/updates` card impressions increment the same counter, so a

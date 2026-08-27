@@ -182,12 +182,20 @@ export function useProductUpdateSpotlight({
     )
     if (!candidate) return
 
-    // The session slot is claimed before the overlay opens: if presenting fails
-    // for any reason, the next page load must not try again, or the cap would
-    // silently depend on render timing.
-    autoPresented.current = true
-    rememberSpotlightThisSession()
-    present(candidate.update)
+    // Opening is deferred by one frame so that a mount which is undone straight
+    // away — React's development double-invocation, or a layout that flips back
+    // to its loading state — cannot burn the session's single spotlight on an
+    // overlay that is torn down again immediately.
+    const frame = requestAnimationFrame(() => {
+      // The session slot is claimed before the overlay opens: if presenting
+      // fails for any reason, the next page load must not try again, or the cap
+      // would silently depend on render timing.
+      autoPresented.current = true
+      rememberSpotlightThisSession()
+      present(candidate.update)
+    })
+
+    return () => cancelAnimationFrame(frame)
   }, [autoPresent, entries, loading, present, router.pathname])
 
   useEffect(() => {
