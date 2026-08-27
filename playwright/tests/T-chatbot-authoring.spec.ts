@@ -109,9 +109,9 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
 
     await createChatbot(page, SECOND_CHATBOT)
     await expect(page.getByTestId('chatbot-disclaimer-title')).toHaveValue('')
-    await expect(page.getByTestId('chatbot-disclaimer-intro')).not.toContainText(
-      'Use this chatbot as a learning aid.'
-    )
+    await expect(
+      page.getByTestId('chatbot-disclaimer-intro')
+    ).not.toContainText('Use this chatbot as a learning aid.')
 
     await page.getByTestId(`chatbot-${FIRST_CHATBOT}`).click()
     await expect(page.getByTestId('chatbot-name')).toHaveValue(FIRST_CHATBOT)

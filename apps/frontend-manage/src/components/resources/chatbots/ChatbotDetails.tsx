@@ -263,7 +263,7 @@ function ChatbotDetails({
     <div data-cy="chatbot-details">
       <H3>{t('manage.resources.chatbotDetails')}</H3>
       <div className="mt-3">
-        <ChatbotAuthoring chatbot={chatbot} />
+        <ChatbotAuthoring key={chatbot.id} chatbot={chatbot} />
       </div>
       <div className="mt-3 space-y-6">
         <div>

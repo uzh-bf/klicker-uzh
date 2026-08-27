@@ -1,14 +1,14 @@
 import { useQuery } from '@apollo/client'
 import {
-  Chatbot,
-  ChatModelCapability,
+  type Chatbot,
+  type ChatModelCapability,
   GetChatbotsInfoDocument,
   GetChatModelRegistryDocument,
   GetUserCoursesDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { H2 } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import ChatbotCreateModal from './chatbots/ChatbotCreateModal'
 import ChatbotDetails from './chatbots/ChatbotDetails'

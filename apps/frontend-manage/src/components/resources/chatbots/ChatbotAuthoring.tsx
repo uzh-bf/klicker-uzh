@@ -8,15 +8,15 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import {
   Button,
-  FormLabel,
   FormikTextareaField,
   FormikTextField,
+  FormLabel,
   H4,
   UserNotification,
 } from '@uzh-bf/design-system'
 import { Form, Formik, useField } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import * as Yup from 'yup'
 import ContentInput from '../../common/ContentInput'
 import ChatbotDisclaimerPreview from './ChatbotDisclaimerPreview'
@@ -71,13 +71,6 @@ function ChatbotAuthoring({ chatbot }: { chatbot: Chatbot }) {
   const [metadataSuccess, setMetadataSuccess] = useState(false)
   const [disclaimerError, setDisclaimerError] = useState<string | null>(null)
   const [disclaimerSuccess, setDisclaimerSuccess] = useState(false)
-
-  useEffect(() => {
-    setMetadataError(null)
-    setMetadataSuccess(false)
-    setDisclaimerError(null)
-    setDisclaimerSuccess(false)
-  }, [chatbot.id])
 
   const metadataEditable = metadataEditableStatuses.includes(chatbot.status)
   const disclaimerEditable = disclaimerEditableStatuses.includes(chatbot.status)
@@ -212,10 +205,12 @@ function ChatbotAuthoring({ chatbot }: { chatbot: Chatbot }) {
                 )
                 .test({
                   message: t('manage.resources.chatbotDisclaimerIntroRequired'),
-                  test: (value) =>
-                    Boolean(
-                      value && value.trim() && !/^<br>\s*$/i.test(value.trim())
-                    ),
+                  test: (value) => {
+                    const normalizedValue = value?.trim()
+                    return Boolean(
+                      normalizedValue && !/^<br>\s*$/i.test(normalizedValue)
+                    )
+                  },
                 }),
             })}
             onSubmit={async (values) => {
