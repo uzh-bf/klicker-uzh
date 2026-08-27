@@ -147,3 +147,7 @@ that would expand the regression surface without improving deletion semantics.
   persisted background progress, completed successfully in the Hatchet worker,
   and removed the course after polling. Real screenshots are stored under
   `docs/screenshots/background-course-deletion/` for the draft PR.
+- 2026-08-27: The final independent review found one low-severity E2E timing
+  risk. The completion toast is now asserted before waiting for the asynchronous
+  course-list refetch, preventing its six-second visibility window from expiring
+  on a slow CI runner.
