@@ -37,7 +37,7 @@ function CreationButton({
         root: 'h-10 justify-between gap-6 px-6 disabled:cursor-pointer md:h-12',
       }}
       data={data}
-      aria-describedby={describedById}
+      aria-describedby={comingSoon && disabled ? undefined : describedById}
       onClick={onClick}
     >
       <div className="flex flex-row items-center gap-3">
