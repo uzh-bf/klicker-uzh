@@ -4,6 +4,8 @@
 // Not.toBeAttached() mirrors cy.should('not.exist') — elements absent from DOM.
 
 import {
+  ActivityLevel,
+  AnalyticsType,
   ElementInstanceType,
   ElementStackType,
   ElementType,
@@ -18,6 +20,7 @@ import {
   LECTURER_ID,
   LECTURER_IND_ID,
   LECTURER_SHORTNAME,
+  PARTICIPANT_IDS,
   SEED,
   SEEDED_COURSE,
   URL_MANAGE,
@@ -171,6 +174,137 @@ export async function prepareSeededCourseLearningAnalytics({
   })
 }
 
+export type PrepareSeededLearningAnalyticsV2Options = {
+  eligibleParticipants: 4 | 5
+}
+
+export async function prepareSeededLearningAnalyticsV2({
+  eligibleParticipants,
+}: PrepareSeededLearningAnalyticsV2Options) {
+  const prisma = await getPrisma()
+  const eligibleParticipantIds = PARTICIPANT_IDS.slice(0, eligibleParticipants)
+  const choiceAt = new Date('2026-08-26T09:00:00.000Z')
+  const analyticsLastComputedAt = new Date(choiceAt.getTime() + 60_000)
+  const weeklyTimestamp = new Date('2026-08-24T00:00:00.000Z')
+
+  return prisma.$transaction(async (transaction) => {
+    const practiceQuiz = await transaction.practiceQuiz.findFirstOrThrow({
+      where: { courseId: COURSE_ID_TEST, name: SEED.practiceQuiz },
+      select: { id: true },
+    })
+
+    await transaction.participant.updateMany({
+      where: { id: { in: PARTICIPANT_IDS } },
+      data: {
+        learningAnalyticsConsent: false,
+        learningAnalyticsChoiceAt: null,
+        learningAnalyticsDisclosureVersion: null,
+      },
+    })
+    await transaction.participant.updateMany({
+      where: { id: { in: eligibleParticipantIds } },
+      data: {
+        learningAnalyticsConsent: true,
+        learningAnalyticsChoiceAt: choiceAt,
+        learningAnalyticsDisclosureVersion: 'v1',
+      },
+    })
+    await transaction.course.update({
+      where: { id: COURSE_ID_TEST },
+      data: {
+        isLearningAnalyticsEnabled: true,
+        areAnalyticsValid: true,
+        analyticsLastComputedAt,
+        analyticsFinalizedAt: analyticsLastComputedAt,
+        chatAnalyticsValidAt: analyticsLastComputedAt,
+      },
+    })
+
+    for (const participantId of eligibleParticipantIds) {
+      await transaction.participantCourseAnalytics.upsert({
+        where: {
+          courseId_participantId: {
+            courseId: COURSE_ID_TEST,
+            participantId,
+          },
+        },
+        create: {
+          courseId: COURSE_ID_TEST,
+          participantId,
+          activeWeeks: 1,
+          activeDaysPerWeek: 1,
+          meanElementsPerDay: 1,
+          activityLevel: ActivityLevel.HIGH,
+          hasChatActivity: false,
+        },
+        update: {
+          activeWeeks: 1,
+          activeDaysPerWeek: 1,
+          meanElementsPerDay: 1,
+          activityLevel: ActivityLevel.HIGH,
+          hasChatActivity: false,
+        },
+      })
+      await transaction.participantAnalytics.upsert({
+        where: {
+          type_courseId_participantId_timestamp: {
+            type: AnalyticsType.WEEKLY,
+            courseId: COURSE_ID_TEST,
+            participantId,
+            timestamp: weeklyTimestamp,
+          },
+        },
+        create: {
+          type: AnalyticsType.WEEKLY,
+          courseId: COURSE_ID_TEST,
+          participantId,
+          timestamp: weeklyTimestamp,
+          computedAt: weeklyTimestamp,
+          trialsCount: 1,
+          responseCount: 1,
+          totalScore: 1,
+          totalPoints: 1,
+          totalXp: 1,
+          meanCorrectCount: 1,
+          meanPartialCorrectCount: 0,
+          meanWrongCount: 0,
+        },
+        update: {
+          computedAt: weeklyTimestamp,
+          trialsCount: 1,
+          responseCount: 1,
+          totalScore: 1,
+          totalPoints: 1,
+          totalXp: 1,
+          meanCorrectCount: 1,
+          meanPartialCorrectCount: 0,
+          meanWrongCount: 0,
+        },
+      })
+      await transaction.participantActivityPerformance.upsert({
+        where: {
+          participantId_practiceQuizId: {
+            participantId,
+            practiceQuizId: practiceQuiz.id,
+          },
+        },
+        create: {
+          participantId,
+          practiceQuizId: practiceQuiz.id,
+          totalScore: 1,
+          completion: 1,
+        },
+        update: {
+          totalScore: 1,
+          completion: 1,
+        },
+      })
+    }
+
+    return { practiceQuizId: practiceQuiz.id }
+  })
+}
+
 export async function prepareSeededCourseLearningAnalyticsReadAccess() {
   const prisma = await getPrisma()
   const permission = await prisma.permission.upsert({
@@ -282,17 +416,12 @@ export async function validateFeatureAvailabilityFixture(
     page,
     'MICRO_LEARNING',
     SEED.microlearning,
-    microLearningAnalytics
+    `view-activity-log-${SEED.microlearning}`
   )
   await expect(
     page.getByTestId(`view-activity-log-${SEED.microlearning}`)
   ).toBeVisible()
-  await expectFlaggedControl(
-    page,
-    page.getByTestId(microLearningAnalytics),
-    options.learningAnalytics,
-    LEARNING_ANALYTICS_UNAVAILABLE
-  )
+  await expect(page.getByTestId(microLearningAnalytics)).not.toBeAttached()
   if (options.privatePreview) {
     await expect(
       page.getByTestId(`share-microlearning-${SEED.microlearning}`)
@@ -311,17 +440,12 @@ export async function validateFeatureAvailabilityFixture(
     page,
     'PRACTICE_QUIZ',
     SEED.practiceQuiz,
-    practiceQuizAnalytics
+    `view-activity-log-${SEED.practiceQuiz}`
   )
   await expect(
     page.getByTestId(`view-activity-log-${SEED.practiceQuiz}`)
   ).toBeVisible()
-  await expectFlaggedControl(
-    page,
-    page.getByTestId(practiceQuizAnalytics),
-    options.learningAnalytics,
-    LEARNING_ANALYTICS_UNAVAILABLE
-  )
+  await expect(page.getByTestId(practiceQuizAnalytics)).not.toBeAttached()
   if (options.privatePreview) {
     await expect(
       page.getByTestId(`share-practice-quiz-${SEED.practiceQuiz}`)
@@ -355,8 +479,7 @@ export async function validateFeatureAvailabilityFixture(
   }
   await page.keyboard.press('Escape')
 
-  // Direct asynchronous evaluation routes remain reachable. The flag controls
-  // only the analytics affordance rendered by the shared evaluation header.
+  // Evaluation routes remain reachable, but item-level analytics are retired.
   const prisma = await getPrisma()
   const microLearning = await prisma.microLearning.findFirstOrThrow({
     where: { name: SEED.microlearning },
@@ -364,12 +487,7 @@ export async function validateFeatureAvailabilityFixture(
   })
   const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
   await page.goto(`${manageUrl}/microLearning/${microLearning.id}/evaluation`)
-  await expectFlaggedControl(
-    page,
-    page.getByTestId('quiz-analytics'),
-    options.learningAnalytics,
-    LEARNING_ANALYTICS_UNAVAILABLE
-  )
+  await expect(page.getByTestId('quiz-analytics')).not.toBeAttached()
 }
 
 // ---------------------------------------------------------------------------
