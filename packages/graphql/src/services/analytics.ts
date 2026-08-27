@@ -24,7 +24,6 @@ async function getEligibleParticipantIdsForCourseAnalytics(
     JOIN "Participation" AS membership
       ON membership."courseId" = pca."courseId"
       AND membership."participantId" = pca."participantId"
-      AND membership."isActive" IS TRUE
     WHERE pca."courseId" = CAST(${courseId} AS uuid)
       AND p."learningAnalyticsConsent" IS TRUE
       AND p."learningAnalyticsChoiceAt" IS NOT NULL
@@ -70,7 +69,6 @@ async function getEligibleParticipantIdsForPerformanceAnalytics(
     JOIN "Participation" AS membership
       ON membership."courseId" = c."id"
       AND membership."participantId" = individual_rows."participantId"
-      AND membership."isActive" IS TRUE
     WHERE p."learningAnalyticsConsent" IS TRUE
       AND p."learningAnalyticsChoiceAt" IS NOT NULL
       AND NULLIF(btrim(p."learningAnalyticsDisclosureVersion"), '') IS NOT NULL

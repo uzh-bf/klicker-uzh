@@ -89,8 +89,8 @@ that an unchanged course remains incremental with its existing `windowSince`.
 The participant data-use suite checks current consent metadata plus the strict
 course-marker-versus-choice-time freshness comparison. The read-gate suite keeps
 focused disabled, invalid, and activity-owner coverage, while the PostgreSQL
-coordinator integration covers current active membership, participation
-deactivation, archive behavior, and real individual-row filtering. That
+coordinator integration covers current membership, leaderboard opt-out,
+archive behavior, and real individual-row filtering. That
 integration also interleaves consent and archive changes with in-flight
 recomputations, proves that stale runs publish no marker,
 proves that a future private completion time cannot advance the public marker,

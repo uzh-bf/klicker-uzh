@@ -571,25 +571,18 @@ describe('learning-analytics coordinator PostgreSQL integration', () => {
       },
       data: { isActive: false },
     })
-    const hiddenAfterParticipationDeactivation =
-      await getCourseActivityAnalytics({ courseId: course.id }, ctx)
+    const visibleAfterLeaderboardOptOut = await getCourseActivityAnalytics(
+      { courseId: course.id },
+      ctx
+    )
     expect(
-      hiddenAfterParticipationDeactivation?.participantCourseAnalytics
-    ).toHaveLength(0)
-    const hiddenPerformanceAfterParticipationDeactivation =
+      visibleAfterLeaderboardOptOut?.participantCourseAnalytics
+    ).toHaveLength(1)
+    const visiblePerformanceAfterLeaderboardOptOut =
       await getCoursePerformanceAnalytics({ courseId: course.id }, ctx)
     expect(
-      hiddenPerformanceAfterParticipationDeactivation?.participantPerformances
-    ).toHaveLength(0)
-    await prisma.participation.update({
-      where: {
-        courseId_participantId: {
-          courseId: course.id,
-          participantId: participant.id,
-        },
-      },
-      data: { isActive: true },
-    })
+      visiblePerformanceAfterLeaderboardOptOut?.participantPerformances
+    ).toHaveLength(1)
 
     const withdrawn = await setLearningAnalyticsConsent({ consent: false }, ctx)
     expect(withdrawn?.learningAnalyticsConsent).toBe(false)
@@ -672,11 +665,7 @@ describe('learning-analytics coordinator PostgreSQL integration', () => {
     ).toHaveLength(0)
 
     await prisma.participation.create({
-      data: {
-        courseId: course.id,
-        participantId: participant.id,
-        isActive: true,
-      },
+      data: { courseId: course.id, participantId: participant.id },
     })
     await prisma.course.update({
       where: { id: course.id },
