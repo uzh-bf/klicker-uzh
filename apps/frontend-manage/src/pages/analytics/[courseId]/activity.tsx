@@ -9,9 +9,7 @@ import DailyActivityPlot from '../../../components/analytics/activity/DailyActiv
 import DailyActivityTimeSeries from '../../../components/analytics/activity/DailyActivityTimeSeries'
 import TotalStudentActivityPlot from '../../../components/analytics/activity/TotalStudentActivityPlot'
 import WeeklyActivityTimeSeries from '../../../components/analytics/activity/WeeklyActivityTimeSeries'
-import AnalyticsErrorView from '../../../components/analytics/AnalyticsErrorView'
-import AnalyticsLoadingView from '../../../components/analytics/AnalyticsLoadingView'
-import AnalyticsUnavailableView from '../../../components/analytics/AnalyticsUnavailableView'
+import AnalyticsAccessGuard from '../../../components/analytics/AnalyticsAccessGuard'
 import useCourseLearningAnalyticsControl from '../../../components/analytics/useCourseLearningAnalyticsControl'
 import PreviewTag from '../../../components/common/PreviewTag'
 import Layout from '../../../components/Layout'
@@ -19,131 +17,82 @@ import Layout from '../../../components/Layout'
 function ActivityDashboard() {
   const t = useTranslations()
   const router = useRouter()
-  const courseId = router.query.courseId
-  const control = useCourseLearningAnalyticsControl(courseId as string)
+  const courseId =
+    typeof router.query.courseId === 'string'
+      ? router.query.courseId
+      : undefined
+  const control = useCourseLearningAnalyticsControl(courseId)
 
   const { data, loading, error } = useQuery(
     GetCourseActivityAnalyticsDocument,
     {
-      variables: { courseId: courseId as string },
+      variables: { courseId: courseId ?? '' },
       skip: !courseId || !control.courseEnabled || !control.analyticsValid,
+      fetchPolicy: 'network-only',
     }
   )
   const course = data?.getCourseActivityAnalytics
-  const navigation = (
-    <ActivityAnalyticsNavigation courseId={courseId as string} />
-  )
-
-  if (!control.globallyEnabled) {
-    return (
-      <AnalyticsUnavailableView
-        title={t('manage.analytics.activityDashboard')}
-        message={t('manage.analytics.featureUnavailable')}
-      />
-    )
-  }
-
-  if (control.loading || !courseId) {
-    return (
-      <AnalyticsLoadingView
-        title={t('manage.analytics.activityDashboard')}
-        navigation={navigation}
-      />
-    )
-  }
-
-  if (control.error || !control.exists) {
-    return (
-      <AnalyticsUnavailableView
-        title={t('manage.analytics.activityDashboard')}
-        navigation={navigation}
-        message={t('manage.analytics.statusUnavailable')}
-        type="error"
-      />
-    )
-  }
-
-  if (!control.courseEnabled) {
-    return (
-      <AnalyticsUnavailableView
-        title={t('manage.analytics.activityDashboard')}
-        navigation={navigation}
-        message={t('manage.analytics.courseDisabled')}
-      />
-    )
-  }
-
-  if (!control.analyticsValid) {
-    return (
-      <AnalyticsUnavailableView
-        title={t('manage.analytics.activityDashboard')}
-        navigation={navigation}
-        message={t('manage.analytics.recomputationPending')}
-      />
-    )
-  }
-
-  if (loading) {
-    return (
-      <AnalyticsLoadingView
-        title={t('manage.analytics.activityDashboard')}
-        navigation={navigation}
-      />
-    )
-  }
-
-  if (course === null || typeof course === 'undefined' || error) {
-    return (
-      <AnalyticsErrorView
-        title={t('manage.analytics.activityDashboard')}
-        navigation={navigation}
-      />
-    )
-  }
+  const navigation = courseId ? (
+    <ActivityAnalyticsNavigation courseId={courseId} />
+  ) : undefined
 
   return (
-    <Layout displayName={t('manage.analytics.activityDashboard')}>
-      {navigation}
-      <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
-        <div className="flex flex-row items-center gap-5">
-          <H1 className={{ root: 'mb-0' }}>
-            {t('manage.analytics.activityDashboard')}: {course.name}
-          </H1>
-          <PreviewTag className="text-base" />
-        </div>
-        <div>
-          {t('manage.analytics.totalParticipants', {
-            number: course.totalParticipants,
-          })}
-        </div>
-      </div>
-      <div className="flex flex-col gap-4">
-        <WeeklyActivityTimeSeries
-          activity={course.weeklyActivity}
-          courseName={course.name}
-          courseParticipants={course.totalParticipants}
-        />
-        <div className="flex w-full flex-col gap-3 lg:flex-row">
-          <div className="w-full lg:w-2/3">
-            <DailyActivityTimeSeries
-              activity={course.dailyActivity}
-              courseParticipants={course.totalParticipants}
-            />
-          </div>
-          <div className="w-full lg:w-1/3">
-            <DailyActivityPlot
-              courseParticipants={course.totalParticipants}
-              activeDays={course.activeDays}
-            />
-          </div>
-        </div>
-        <TotalStudentActivityPlot
-          courseName={course.name}
-          courseWeeks={course.courseWeeks}
-          participantActivity={course.participantCourseAnalytics}
-        />
-      </div>
-    </Layout>
+    <AnalyticsAccessGuard
+      title={t('manage.analytics.activityDashboard')}
+      courseId={courseId}
+      navigation={navigation}
+      control={control}
+      loading={loading}
+      error={error}
+      hasData={course !== null && typeof course !== 'undefined'}
+    >
+      {() =>
+        course ? (
+          <Layout displayName={t('manage.analytics.activityDashboard')}>
+            {navigation}
+            <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
+              <div className="flex flex-row items-center gap-5">
+                <H1 className={{ root: 'mb-0' }}>
+                  {t('manage.analytics.activityDashboard')}: {course.name}
+                </H1>
+                <PreviewTag className="text-base" />
+              </div>
+              <div>
+                {t('manage.analytics.totalParticipants', {
+                  number: course.totalParticipants,
+                })}
+              </div>
+            </div>
+            <div className="flex flex-col gap-4">
+              <WeeklyActivityTimeSeries
+                activity={course.weeklyActivity}
+                courseName={course.name}
+                courseParticipants={course.totalParticipants}
+              />
+              <div className="flex w-full flex-col gap-3 lg:flex-row">
+                <div className="w-full lg:w-2/3">
+                  <DailyActivityTimeSeries
+                    activity={course.dailyActivity}
+                    courseParticipants={course.totalParticipants}
+                  />
+                </div>
+                <div className="w-full lg:w-1/3">
+                  <DailyActivityPlot
+                    courseParticipants={course.totalParticipants}
+                    activeDays={course.activeDays}
+                  />
+                </div>
+              </div>
+              <TotalStudentActivityPlot
+                courseName={course.name}
+                courseWeeks={course.courseWeeks}
+                participantActivity={course.participantCourseAnalytics}
+              />
+            </div>
+          </Layout>
+        ) : null
+      }
+    </AnalyticsAccessGuard>
   )
 }
 

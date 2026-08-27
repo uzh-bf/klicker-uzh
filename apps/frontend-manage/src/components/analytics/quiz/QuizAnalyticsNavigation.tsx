@@ -17,6 +17,7 @@ function QuizAnalyticsNavigation({
 }) {
   const { data, loading } = useQuery(GetCourseActivitiesDocument, {
     variables: { courseId },
+    fetchPolicy: 'network-only',
   })
   const t = useTranslations()
   const router = useRouter()

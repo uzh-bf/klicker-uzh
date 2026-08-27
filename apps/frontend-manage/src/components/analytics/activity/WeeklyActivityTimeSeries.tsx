@@ -26,6 +26,7 @@ function WeeklyActivityTimeSeries({
   const { data, loading } = useQuery(GetCourseWeeklyActivityDocument, {
     variables: { courseId: courseComparison?.id },
     skip: typeof courseComparison === 'undefined',
+    fetchPolicy: 'network-only',
   })
   const secondParticipants =
     data?.getCourseWeeklyActivity?.totalParticipants ?? 0

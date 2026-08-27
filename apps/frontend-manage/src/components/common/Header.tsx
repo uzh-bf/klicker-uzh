@@ -25,6 +25,7 @@ import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { isCourseLearningAnalyticsAvailable } from '../analytics/courseEligibility'
 import SupportModal from './SupportModal'
 
 type UserProfile = NonNullable<UserProfileQuery['userProfile']>
@@ -42,15 +43,13 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
     fetchPolicy: 'cache-first',
   })
   const { data: courseData } = useQuery(GetLearningAnalyticsCoursesDocument, {
-    fetchPolicy: 'cache-first',
+    fetchPolicy: 'network-only',
     skip: !learningAnalyticsEnabled,
   })
 
   const quizzes = liveQuizData?.userRunningLiveQuizzes
   const courses = courseData?.userCourses?.filter(
-    (course) =>
-      course.isLearningAnalyticsEnabled &&
-      course.analyticsStatus.areAnalyticsValid
+    isCourseLearningAnalyticsAvailable
   )
 
   const resourceElements: NavigationMenuItemProps[] = [

@@ -7,6 +7,7 @@ import {
   mockGrowthBookLearningAnalytics,
   prepareSeededAnalyticsActivities,
   prepareSeededCourseLearningAnalytics,
+  prepareSeededCourseLearningAnalyticsReadAccess,
   updateLecturerPrivatePreview,
 } from '../util/fixtures/manage.js'
 
@@ -130,6 +131,83 @@ test.describe('Tests the availability of standard activity creation formats', ()
       learningAnalytics: false,
       privatePreview: false,
     })
+  })
+
+  test('Show analytics to a non-manager without exposing course settings', async ({
+    page,
+    loginIndividualCatalyst,
+  }) => {
+    await prepareSeededCourseLearningAnalytics()
+    await prepareSeededCourseLearningAnalyticsReadAccess()
+    await loginIndividualCatalyst()
+    await page.getByTestId('courses').click()
+    await page.getByTestId(`course-list-button-${SEEDED_COURSE}`).click()
+
+    await openCourseActionMenu(page, 'course-learning-analytics-link')
+    await expect(
+      page.getByTestId('course-learning-analytics-link')
+    ).toBeEnabled()
+    await expect(
+      page.getByTestId('course-learning-analytics-settings')
+    ).not.toBeAttached()
+  })
+
+  test('Show the pending state while analytics recomputation is incomplete', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await prepareSeededCourseLearningAnalytics({ valid: false })
+    await loginLecturer()
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await page.goto(`${manageUrl}/analytics/${COURSE_ID_TEST}/activity`)
+
+    await expect(
+      page.getByText(
+        'Learning analytics is being prepared for this course. Dashboards become available after the next successful recomputation.'
+      )
+    ).toBeVisible()
+  })
+
+  test('Fail closed in an open analytics tab after an out-of-band disable', async ({
+    page,
+    context,
+    loginLecturer,
+  }) => {
+    await prepareSeededCourseLearningAnalytics()
+    await loginLecturer()
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await page.goto(`${manageUrl}/analytics/${COURSE_ID_TEST}/activity`)
+    await expect(
+      page.getByRole('heading', { name: /Activity Dashboard: Testkurs/ })
+    ).toBeVisible()
+
+    const secondTab = await context.newPage()
+    try {
+      await secondTab.goto('about:blank')
+      await secondTab.bringToFront()
+
+      const prisma = await getPrisma()
+      await prisma.course.update({
+        where: { id: COURSE_ID_TEST },
+        data: {
+          isLearningAnalyticsEnabled: false,
+          areAnalyticsValid: false,
+          analyticsFinalizedAt: null,
+          chatAnalyticsValidAt: null,
+        },
+      })
+
+      await page.bringToFront()
+      await page.evaluate(() => {
+        document.dispatchEvent(new Event('visibilitychange'))
+        window.dispatchEvent(new Event('focus'))
+      })
+      await expect(
+        page.getByText('Learning analytics is disabled for this course.')
+      ).toBeVisible()
+    } finally {
+      await secondTab.close()
+    }
   })
 
   test('Disable course learning analytics and hide dashboards immediately', async ({

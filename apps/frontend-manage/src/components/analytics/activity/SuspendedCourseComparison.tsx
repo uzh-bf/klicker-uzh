@@ -5,6 +5,7 @@ import { Checkbox, H3, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { isCourseLearningAnalyticsAvailable } from '../courseEligibility'
 
 function SuspendedCourseComparison({
   courseComparison,
@@ -21,14 +22,15 @@ function SuspendedCourseComparison({
   const router = useRouter()
   const [showCourseDropdown, setShowCourseDropdown] = useState(false)
 
-  const { data } = useSuspenseQuery(GetLearningAnalyticsCoursesDocument)
+  const { data } = useSuspenseQuery(GetLearningAnalyticsCoursesDocument, {
+    fetchPolicy: 'network-only',
+  })
   const courses =
     data.userCourses
       ?.filter(
         (course) =>
           course.id !== router.query.courseId &&
-          course.isLearningAnalyticsEnabled &&
-          course.analyticsStatus.areAnalyticsValid
+          isCourseLearningAnalyticsAvailable(course)
       )
       .map((course) => ({
         label: course.name,

@@ -7,6 +7,7 @@ import {
   ElementInstanceType,
   ElementStackType,
   ElementType,
+  PermissionLevel,
   PublicationStatus,
 } from '@klicker-uzh/prisma/client'
 import { expect, type Locator, type Page } from '@playwright/test'
@@ -15,6 +16,7 @@ import { openActivityActionMenu, openCourseActionMenu } from '../actions.js'
 import {
   COURSE_ID_TEST,
   LECTURER_ID,
+  LECTURER_IND_ID,
   LECTURER_SHORTNAME,
   SEED,
   SEEDED_COURSE,
@@ -147,16 +149,67 @@ export async function prepareSeededAnalyticsActivities() {
   })
 }
 
-export async function prepareSeededCourseLearningAnalytics() {
+export type PrepareSeededCourseLearningAnalyticsOptions = {
+  enabled?: boolean
+  valid?: boolean
+}
+
+export async function prepareSeededCourseLearningAnalytics({
+  enabled = true,
+  valid = true,
+}: PrepareSeededCourseLearningAnalyticsOptions = {}) {
   const prisma = await getPrisma()
-  const computedAt = new Date()
+  const computedAt = valid ? new Date() : null
   await prisma.course.update({
     where: { id: COURSE_ID_TEST },
     data: {
-      isLearningAnalyticsEnabled: true,
-      areAnalyticsValid: true,
+      isLearningAnalyticsEnabled: enabled,
+      areAnalyticsValid: valid,
       analyticsLastComputedAt: computedAt,
       chatAnalyticsValidAt: computedAt,
+    },
+  })
+}
+
+export async function prepareSeededCourseLearningAnalyticsReadAccess() {
+  const prisma = await getPrisma()
+  const permission = await prisma.permission.upsert({
+    where: {
+      courseId_userId: {
+        courseId: COURSE_ID_TEST,
+        userId: LECTURER_IND_ID,
+      },
+    },
+    create: {
+      permissionLevel: PermissionLevel.READ,
+      propagation: false,
+      course: { connect: { id: COURSE_ID_TEST } },
+      user: { connect: { id: LECTURER_IND_ID } },
+    },
+    update: {
+      permissionLevel: PermissionLevel.READ,
+      propagation: false,
+    },
+  })
+
+  await prisma.derivedPermission.upsert({
+    where: {
+      courseId_userId: {
+        courseId: COURSE_ID_TEST,
+        userId: LECTURER_IND_ID,
+      },
+    },
+    create: {
+      permissionLevel: PermissionLevel.READ,
+      derived: false,
+      directPermission: { connect: { id: permission.id } },
+      course: { connect: { id: COURSE_ID_TEST } },
+      user: { connect: { id: LECTURER_IND_ID } },
+    },
+    update: {
+      permissionLevel: PermissionLevel.READ,
+      derived: false,
+      directPermission: { connect: { id: permission.id } },
     },
   })
 }

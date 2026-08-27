@@ -17,9 +17,7 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
-import AnalyticsErrorView from '../../../../components/analytics/AnalyticsErrorView'
-import AnalyticsLoadingView from '../../../../components/analytics/AnalyticsLoadingView'
-import AnalyticsUnavailableView from '../../../../components/analytics/AnalyticsUnavailableView'
+import AnalyticsAccessGuard from '../../../../components/analytics/AnalyticsAccessGuard'
 import useCourseLearningAnalyticsControl from '../../../../components/analytics/useCourseLearningAnalyticsControl'
 import QuizSelectionNavigation from '../../../../components/analytics/quiz/QuizSelectionNavigation'
 import PreviewTag from '../../../../components/common/PreviewTag'
@@ -45,17 +43,23 @@ const ActivityLink = ({
 function ActivityDashboard() {
   const t = useTranslations()
   const router = useRouter()
-  const courseId = router.query.courseId as string
+  const courseId =
+    typeof router.query.courseId === 'string'
+      ? router.query.courseId
+      : undefined
   const control = useCourseLearningAnalyticsControl(courseId)
   const [practiceSearch, setPracticeSearch] = useState('')
   const [microSearch, setMicroSearch] = useState('')
 
   const { data, loading, error } = useQuery(GetCourseActivitiesDocument, {
-    variables: { courseId },
+    variables: { courseId: courseId ?? '' },
     skip: !courseId || !control.courseEnabled || !control.analyticsValid,
+    fetchPolicy: 'network-only',
   })
 
-  const navigation = <QuizSelectionNavigation courseId={courseId} />
+  const navigation = courseId ? (
+    <QuizSelectionNavigation courseId={courseId} />
+  ) : undefined
   const course = data?.getCourseActivities
 
   const practiceSearchEngine = useMemo(() => {
@@ -86,144 +90,95 @@ function ActivityDashboard() {
     return microSearchEngine.search(microSearch) as MicroLearning[]
   }, [microSearch, course?.microLearnings, microSearchEngine])
 
-  if (!control.globallyEnabled) {
-    return (
-      <AnalyticsUnavailableView
-        title={t('manage.analytics.quizDashboard')}
-        message={t('manage.analytics.featureUnavailable')}
-      />
-    )
-  }
-
-  if (control.loading || !courseId) {
-    return (
-      <AnalyticsLoadingView
-        title={t('manage.analytics.quizDashboard')}
-        navigation={navigation}
-      />
-    )
-  }
-
-  if (control.error || !control.exists) {
-    return (
-      <AnalyticsUnavailableView
-        title={t('manage.analytics.quizDashboard')}
-        navigation={navigation}
-        message={t('manage.analytics.statusUnavailable')}
-        type="error"
-      />
-    )
-  }
-
-  if (!control.courseEnabled) {
-    return (
-      <AnalyticsUnavailableView
-        title={t('manage.analytics.quizDashboard')}
-        navigation={navigation}
-        message={t('manage.analytics.courseDisabled')}
-      />
-    )
-  }
-
-  if (!control.analyticsValid) {
-    return (
-      <AnalyticsUnavailableView
-        title={t('manage.analytics.quizDashboard')}
-        navigation={navigation}
-        message={t('manage.analytics.recomputationPending')}
-      />
-    )
-  }
-
-  if (loading) {
-    return (
-      <AnalyticsLoadingView
-        title={t('manage.analytics.quizDashboard')}
-        navigation={navigation}
-      />
-    )
-  }
-
-  if (course === null || typeof course === 'undefined' || error) {
-    return (
-      <AnalyticsErrorView
-        title={t('manage.analytics.quizDashboard')}
-        navigation={navigation}
-      />
-    )
-  }
-
   return (
-    <Layout displayName={t('manage.analytics.quizDashboard')}>
-      {navigation}
-      <div>
-        <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
-          <div className="flex flex-row items-center gap-5">
-            <H1 className={{ root: 'mb-0' }}>
-              {t('manage.analytics.quizAnalytics')}: {course.name}
-            </H1>
-            <PreviewTag className="text-base" />
-          </div>
-        </div>
-        <div>{t('manage.analytics.selectActivityAnalytics')}</div>
-        <div className="mt-8 flex h-max flex-row">
-          <div className="flex h-full w-1/2 flex-col items-center border-r-2 border-solid border-gray-400 pr-4">
-            <H3>{t('shared.generic.practiceQuizzes')}</H3>
-            <TextField
-              placeholder={t('manage.analytics.searchPracticeQuizzes')}
-              className={{ input: 'my-2 h-8' }}
-              value={practiceSearch}
-              onChange={(newValue) => setPracticeSearch(newValue)}
-            />
-            {!course.practiceQuizzes || course.practiceQuizzes.length === 0 ? (
-              <UserNotification
-                type="info"
-                message={t('manage.analytics.noPracticeQuizzes')}
-                className={{ root: 'w-full' }}
-              />
-            ) : (
-              <div className="grid w-full grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
-                {filteredPracticeQuizzes?.map((quiz) => (
-                  <ActivityLink
-                    key={quiz.id}
-                    courseId={courseId}
-                    activityId={quiz.id}
-                    activityName={quiz.name}
-                  />
-                ))}
+    <AnalyticsAccessGuard
+      title={t('manage.analytics.quizDashboard')}
+      courseId={courseId}
+      navigation={navigation}
+      control={control}
+      loading={loading}
+      error={error}
+      hasData={course !== null && typeof course !== 'undefined'}
+    >
+      {() => {
+        if (!course || !courseId) return null
+
+        return (
+          <Layout displayName={t('manage.analytics.quizDashboard')}>
+            {navigation}
+            <div>
+              <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
+                <div className="flex flex-row items-center gap-5">
+                  <H1 className={{ root: 'mb-0' }}>
+                    {t('manage.analytics.quizAnalytics')}: {course.name}
+                  </H1>
+                  <PreviewTag className="text-base" />
+                </div>
               </div>
-            )}
-          </div>
-          <div className="flex h-full w-1/2 flex-col items-center pl-4">
-            <H3>{t('shared.generic.microlearnings')}</H3>
-            <TextField
-              placeholder={t('manage.analytics.searchMicroLearnings')}
-              className={{ input: 'my-2 h-8' }}
-              value={microSearch}
-              onChange={(newValue) => setMicroSearch(newValue)}
-            />
-            {!course.microLearnings || course.microLearnings.length === 0 ? (
-              <UserNotification
-                type="info"
-                message={t('manage.analytics.noMicroLearnings')}
-                className={{ root: 'w-full' }}
-              />
-            ) : (
-              <div className="grid w-full grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
-                {filteredMicroLearnings?.map((micro) => (
-                  <ActivityLink
-                    key={micro.id}
-                    courseId={courseId}
-                    activityId={micro.id}
-                    activityName={micro.name}
+              <div>{t('manage.analytics.selectActivityAnalytics')}</div>
+              <div className="mt-8 flex h-max flex-row">
+                <div className="flex h-full w-1/2 flex-col items-center border-r-2 border-solid border-gray-400 pr-4">
+                  <H3>{t('shared.generic.practiceQuizzes')}</H3>
+                  <TextField
+                    placeholder={t('manage.analytics.searchPracticeQuizzes')}
+                    className={{ input: 'my-2 h-8' }}
+                    value={practiceSearch}
+                    onChange={(newValue) => setPracticeSearch(newValue)}
                   />
-                ))}
+                  {!course.practiceQuizzes ||
+                  course.practiceQuizzes.length === 0 ? (
+                    <UserNotification
+                      type="info"
+                      message={t('manage.analytics.noPracticeQuizzes')}
+                      className={{ root: 'w-full' }}
+                    />
+                  ) : (
+                    <div className="grid w-full grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
+                      {filteredPracticeQuizzes?.map((quiz) => (
+                        <ActivityLink
+                          key={quiz.id}
+                          courseId={courseId}
+                          activityId={quiz.id}
+                          activityName={quiz.name}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex h-full w-1/2 flex-col items-center pl-4">
+                  <H3>{t('shared.generic.microlearnings')}</H3>
+                  <TextField
+                    placeholder={t('manage.analytics.searchMicroLearnings')}
+                    className={{ input: 'my-2 h-8' }}
+                    value={microSearch}
+                    onChange={(newValue) => setMicroSearch(newValue)}
+                  />
+                  {!course.microLearnings ||
+                  course.microLearnings.length === 0 ? (
+                    <UserNotification
+                      type="info"
+                      message={t('manage.analytics.noMicroLearnings')}
+                      className={{ root: 'w-full' }}
+                    />
+                  ) : (
+                    <div className="grid w-full grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
+                      {filteredMicroLearnings?.map((micro) => (
+                        <ActivityLink
+                          key={micro.id}
+                          courseId={courseId}
+                          activityId={micro.id}
+                          activityName={micro.name}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </Layout>
+            </div>
+          </Layout>
+        )
+      }}
+    </AnalyticsAccessGuard>
   )
 }
 

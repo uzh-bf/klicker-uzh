@@ -10,6 +10,7 @@ import { SelectField } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { isCourseLearningAnalyticsAvailable } from '../courseEligibility'
 
 interface AnalyticsNavigationProps {
   hrefLeft: string
@@ -26,7 +27,9 @@ function AnalyticsNavigation({
   labelRight,
   slug,
 }: AnalyticsNavigationProps) {
-  const { data, loading } = useQuery(GetLearningAnalyticsCoursesDocument)
+  const { data, loading } = useQuery(GetLearningAnalyticsCoursesDocument, {
+    fetchPolicy: 'network-only',
+  })
   const router = useRouter()
   const t = useTranslations()
 
@@ -50,11 +53,7 @@ function AnalyticsNavigation({
           value={router.query.courseId as string}
           items={
             data?.userCourses
-              ?.filter(
-                (course) =>
-                  course.isLearningAnalyticsEnabled &&
-                  course.analyticsStatus.areAnalyticsValid
-              )
+              ?.filter(isCourseLearningAnalyticsAvailable)
               .map((course) => ({
                 label: course.name,
                 value: course.id,
