@@ -144,7 +144,7 @@ See [Domain Model](docs/domain-model.md) for the canonical explanation.
 
 ### Self-contained devcontainer (recommended)
 
-Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm/prisma/tests **inside the container**, never on the host.
+Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm, Prisma, and unit tests **inside the container**. Playwright is the exception: always run `pnpm playwright:host -- <args>` from the host against the routed container stack. Never invoke Playwright or install its browsers through `devrouter exec`, a DevPod shell, or another local container; CI keeps its existing official Playwright container path.
 
 ```bash
 devrouter ensure .
