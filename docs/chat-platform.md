@@ -31,11 +31,12 @@ chatbot has a `doc_query`-style MCP tool and the server-side
 `personal-card-generation` capability is enabled for the participant and
 chatbot. The flag defaults to false and a missing or unhealthy evaluator fails
 closed; saved-card listing, practice, revision, and removal remain available.
-Substantive requests force the retrieval tool before an answer; a narrow
-English/German social-message allowlist remains conversational. The plan tool
-is additionally gated by positive participant credits and can run only after
-retrieval in the current turn. The approval button sends a visible user
-message and a persisted plan/tool-call identifier; the route rechecks
+Every non-empty text or image turn forces the retrieval tool before an
+answer; there is no phrase or locale allowlist, so greetings and short
+acknowledgements pay the same retrieval call as substantive questions. The
+plan tool is additionally gated by positive participant credits and can run
+only after retrieval in the current turn. The approval button sends a visible
+user message and a persisted plan/tool-call identifier; the route rechecks
 participant, thread, chatbot course, latest plan, credit, capability, and
 one-shot approval claim before forcing `generate_cards`.
 
@@ -61,6 +62,13 @@ and keeps the card's source-linked origin wording. Candidate cards do not have a
 separate unsaved-revision path; each generated card is either saved or
 discarded. The server-only GraphQL service is the single owner of
 authorization, caps, and revision semantics.
+
+Personal-element access is GraphQL-only: the Chat server mints a short-lived
+participant JWT and calls the persisted-query operations through
+`src/lib/server/personalElements/graphqlClient.ts` instead of importing
+backend services or reading Prisma directly. The client exposes list, save,
+discard, lease, and update operations; the backend owns authorization, caps,
+duplicate policy, and revision semantics.
 
 Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/layout.tsx` validates the route parameter as a UUID before querying Prisma, then calls `notFound()` for malformed or absent chatbot IDs; the root `src/app/not-found.tsx` preserves the 404 status while showing branded recovery and a safe return link. The root `src/app/error.tsx` sits above the dynamic layout, uses Next's `unstable_retry` callback to refresh a failed server payload, and exposes only retry/return actions; it never renders the underlying error text. The loading state in `src/components/assistant.tsx` uses the same branded card/skeleton language, and `/noLogin` keeps only a concise return notice instead of printing the UUID-bearing redirect URL.
 
@@ -650,11 +658,12 @@ change, or retrieved-text persistence.
 
 Generated card explanations are the card backs, so the generation schema and
 the personal-element save service require a substantive, alphanumeric answer
-and reject known provenance-only grounding boilerplate on both create and
-update. The model is instructed to write the substantive answer instead;
-preview and later practice therefore share the same persisted content. If a
-generation attempt is partial, saved or discarded plan entries remain decided
-and a retry runs only the unresolved entries.
+on both create and update; validation is structural and never matches
+language-specific boilerplate. The model is instructed to write the
+substantive answer instead; preview and later practice therefore share the
+same persisted content. If a generation attempt is partial, saved or
+discarded plan entries remain decided and a retry runs only the unresolved
+entries.
 
 An answer's sources are **derived from the message's own tool-call parts**, not carried in a
 dedicated API field or database column ([ADR 0004](./adr/0004-chat-citations-from-tool-call-parts.md)).

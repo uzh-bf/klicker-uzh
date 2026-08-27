@@ -141,34 +141,7 @@ export function useChatResponse(
             .map((part) => part.text)
             .join('')
 
-          const generatedCards = message.content
-            .filter((part) => {
-              if (!part || typeof part !== 'object') return false
-              const candidate = part as {
-                type?: unknown
-                toolName?: unknown
-                result?: unknown
-              }
-              return (
-                candidate.type === 'tool-call' &&
-                candidate.toolName === 'generate_cards' &&
-                candidate.result &&
-                typeof candidate.result === 'object'
-              )
-            })
-            .map((part) => {
-              const result = (part as { result: unknown }).result
-              return JSON.stringify(result).slice(0, 20_000)
-            })
-
-          return [
-            text,
-            generatedCards.length > 0
-              ? `Generated personal card candidates for revision:\n${generatedCards.join('\n')}`
-              : '',
-          ]
-            .filter((value) => value.length > 0)
-            .join('\n\n')
+          return text
         }
 
         if (

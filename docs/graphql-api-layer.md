@@ -57,8 +57,10 @@ cannot update revised content.
 
 The public participant API consists of `personalElements`,
 `respondToPersonalElement`, and `deletePersonalElement`. Chat is the only
-creation transport; its server route calls the same service for Save and
-Discard decisions. The generated public operations are `QPersonalElements`,
+creation transport; its server route reaches Save and Discard through the
+same service via the persisted-query operations `MCreatePersonalElements`
+and `MDiscardPersonalElementCandidate`, never through a direct service
+import. The generated public operations are `QPersonalElements`,
 `MRespondToPersonalElement`, and `MDeletePersonalElement` in
 `packages/graphql/src/graphql/ops/`; rerun codegen whenever these fields or
 their selection sets change. `getPracticeQuizList` includes courses that have
@@ -70,9 +72,9 @@ course language and the complete saved-title list, screens proposed titles
 against saved cards and within the proposal, and assigns stable candidate
 identities. `validateCardCandidate` re-checks participation, source-message
 ownership, the structural Flashcard payload, source bounds, and current title
-similarity before a candidate can render. Chat calls these operations through
-generated GraphQL documents and no longer imports backend services for
-language, titles, duplicate policy, or candidate validation.
+similarity before a candidate can render. Chat keeps its own deterministic
+title-similarity check for the plan tool and no longer imports backend
+services for language, titles, duplicate policy, or candidate validation.
 
 The remaining lifecycle is exposed as participant-authenticated mutations:
 `claimCardGenerationLease`, `completeCardGenerationLease`, and

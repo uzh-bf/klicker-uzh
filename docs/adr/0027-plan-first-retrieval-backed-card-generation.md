@@ -38,9 +38,9 @@ Generation is a two-tool contract inside a configured course-chatbot mode:
    source metadata; every cited ID must be a non-empty subset of that card's
    retrieved IDs. Missing, malformed, or evidence-free output fails closed.
    Grounding is enforced by the pipeline, not by the prompt. The generated
-   explanation must be a substantive, alphanumeric card back; the known
-   provenance-only boilerplate is rejected at generation, save, and update
-   boundaries. Cards stream as
+   explanation must be a substantive, alphanumeric card back; validation is
+   structural (non-empty, bounded, contains letters or digits) and never
+   matches language-specific boilerplate. Cards stream as
    preliminary results; the final result carries bounded card-local sources
    in the retrieval result shape. The Chat surface exposes the running tool
    call and `completed/total` progress, and the generation turn ends with the
@@ -61,11 +61,11 @@ discarded, so successful decisions are not regenerated or blocked by their own
 titles.
 Neither tool is offered when the selected mode has no retrieval tool or the
 student has no credits left. When a selected mode has a retrieval tool, every
-substantive request first calls that named tool. The route uses a narrow
-English/German social-message allowlist for greetings, thanks, and short
-acknowledgements; ambiguous messages default to retrieval. If retrieval has no
-usable course material, the assistant reports that limitation rather than
-answering from uncited general knowledge.
+non-empty text or image turn first calls that named tool; there is no phrase
+or locale allowlist, so greetings and short acknowledgements pay the same
+retrieval call as substantive questions. If retrieval has no usable course
+material, the assistant reports that limitation rather than answering from
+uncited general knowledge.
 
 ## Consequences
 
@@ -78,6 +78,9 @@ answering from uncited general knowledge.
   practice candidates.
 - Revision reuses the same per-card pipeline, so a corrected card is
   re-grounded, not patched.
+- Every substantive turn now pays one retrieval call before any answer,
+  adding latency and retrieval cost to ordinary conversation in modes that
+  expose the generation tools.
 
 ## Amendment — 2026-08-26
 

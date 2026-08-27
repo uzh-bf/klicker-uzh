@@ -10,7 +10,6 @@ import { useChatStore } from '@/src/stores/chatStore'
 import { CitationChip } from '../citation-chip'
 import { useMessageSourcesContext } from '../message-sources-context'
 import { SourcePreviewContent } from '../source-preview-content'
-import { isGroundingDisclaimer } from './candidatePresentation'
 import { isFailedCandidateAttemptInMessages } from './runtime-context'
 
 const EMPTY_MESSAGES: never[] = []
@@ -327,9 +326,7 @@ export function CandidateCards({ part }: { part: CandidatePart }) {
             ? [{ index: normalized.index, source: normalized }]
             : []
         })
-        const explanation = isGroundingDisclaimer(candidate.explanation)
-          ? null
-          : candidate.explanation
+        const explanation = candidate.explanation
 
         return (
           <article
