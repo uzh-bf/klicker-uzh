@@ -183,10 +183,10 @@ No new product primitive is created or retired.
 
 | Item | Current evidence | Consequence |
 | --- | --- | --- |
-| `origin/v3-ai` | `c8e1c9b22c96716288469d18dca85aecb1b3d990`; it advanced by three KB-ingestion commits during this package and both layers were rebased again without semantic conflicts | The final review and publication evidence use the actual current target. This task still must not mutate the sibling `v3-ai` worktree or branch. |
-| Reviewed product-code heads | K1 `2504e270edee043e22449a89d368122fa9002cd2` and K2 `84be8f3a549054dc737a331be4625f6c2091d13b`; both worktrees are clean, K1 is 0 behind current `origin/v3-ai`, and K2 is directly stacked on K1 | The corrected layers are locally complete pending the final integrated review and publication ledger commit. |
-| PR #5474 | remote K1 head `3d30349441d4f042b65d92d42a950fc1df1df8e2`; open and non-draft with historical failing checks on that superseded head | Publish the reviewed corrected K1 head with stack-aware force-with-lease; treat old CI as historical only. |
-| PR #5498 | remote K2 head `bdba64d94d7b0dc8ce6701ca2a0e3f8567acff85`; open and non-draft on K1 | Publish K1 then K2 without changing the remote topology. |
+| `origin/v3-ai` | `e49804e3327609436e211cbe5d3765d7d408ed55`; both layers were rebased onto this target without semantic conflicts | The final review and publication evidence use the actual integrated target. This task still must not mutate the sibling `v3-ai` worktree or branch. |
+| Reviewed product-code heads | K1 `c1626000f3dbff73aa16b93235459335d1b8fc7f` and K2 `43e5416ab826b95cd334d2feea91e61d52e1d97a`; both worktrees were clean, K1 was 0 behind the selected `origin/v3-ai`, and K2 was directly stacked on K1 | The corrected product-code layers are published. This progress update becomes the final K2 evidence head before integrated review and CI. |
+| PR #5474 | remote K1 head `c1626000f3dbff73aa16b93235459335d1b8fc7f`; open, non-draft, and mergeable | Preserve its `v3-ai` base and wait once for corrected-head CI. |
+| PR #5498 | remote K2 product-code head `43e5416ab826b95cd334d2feea91e61d52e1d97a`; open, non-draft, mergeable, and based on K1 | Publish this progress update without changing the remote topology, then wait once for corrected-head CI. |
 | GitHub stack #5503 | remote order is K1 then K2 with the expected PRs and published heads | Preserve this topology. |
 | Local `gh-stack` metadata | repaired for local stack work; no remote topology mutation | Keep the existing K1 -> K2 order and use stack-aware force-with-lease only at the final publication boundary. |
 
@@ -225,14 +225,14 @@ No new product primitive is created or retired.
   AST contract is shared by validation and Markdown rendering; K1 receives a
   mandatory Gate 2; local-only stack tracking repair is explicit authority.
 - Verified correction: the review initially observed an active sibling base,
-  but fresh readback now proves `v3-ai` is clean and synchronized at the
-  revision above. The remaining pre-execution blocker is Gate 1 approval for
-  local stack repair and rebase.
+  but fresh readback proved `v3-ai` clean at the selected revision above. The
+  approved local stack repair, rebase, correction, and product-code publication
+  are complete without changing stack topology.
 
 ### Limitations
 
-- No implementation or corrected-head check has run. Old CI cannot prove the
-  rebased correction.
+- Corrected product-code checks and browser verification have run locally.
+  Corrected-head GitHub CI remains the final external evidence gate.
 - Local synthetic fixtures prove product behavior, not KB source freshness,
   model quality, deployment, or production activation.
 - PR #5092 remains outside this package even though it targets `v3`.
@@ -442,6 +442,32 @@ extending this stack:
 Neither follow-up is authorized by this plan.
 
 ## Progress
+
+- 2026-08-27 publication: rebased K1 and K2 onto `origin/v3-ai`
+  `e49804e3327609436e211cbe5d3765d7d408ed55` and published the corrected
+  product-code heads with exact force-with-lease protection. PR #5474 now
+  points to K1 `c1626000f3dbff73aa16b93235459335d1b8fc7f`; PR #5498 pointed to K2
+  `43e5416ab826b95cd334d2feea91e61d52e1d97a` before this progress commit. Both
+  PRs remain open, non-draft, mergeable, and retain the approved K1 -> K2
+  topology.
+- 2026-08-27 current-base verification: K1 focused response-example GraphQL
+  tests pass 10/10, utility tests pass 113/113, Markdown tests pass 37/37, and
+  the GraphQL, utility, Markdown, and Manage package checks pass after current
+  Prisma and GraphQL generation. Both force-with-lease pushes passed the
+  repository pre-push production build with 26/26 Turbo tasks.
+- 2026-08-27 browser evidence: the local K2 route rendered four repeated `[1]`
+  citation markers as four example-scoped links with four distinct targets.
+  Following the first link selected its one matching target with no browser
+  errors. This verifies the opt-in scoped citation fix against the selected
+  `v3-ai` base using synthetic local examples.
+- 2026-08-27 review evidence: K1 and K2 simplification passes and the K2
+  risk-selected review pass. The integrated final review and the one
+  corrected-head CI wait remain before `pr_ready`.
+- Current base: `origin/v3-ai` at
+  `e49804e3327609436e211cbe5d3765d7d408ed55`.
+- Active slice: F1 integrated final review, PR description refresh, one CI
+  wait, and exact runtime shutdown. Merge, deployment, live activation, K3,
+  and Test & Teach remain withheld.
 
 - 2026-08-26 CI correction: moved canonical citation parsing and response-set
   digest computation into React-free utility exports. GraphQL no longer pulls
