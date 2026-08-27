@@ -23,6 +23,7 @@ The policy must survive stored lecturer prompts and apply to the existing Inform
 - Worktree: `trees/chat-course-language-grounding-policy`
 - Target: `v3`
 - Baseline: `origin/v3` at `59e57481057a601a8fdb1e57208ca6392e20068b`
+- Latest inspected target: `origin/v3` at `31cbbb36a3fca6d50371975bad982f51424e2abc`; its two newer commits touch only Playwright workflows and the staging image pin, with no overlap in this package.
 - Pull request: none
 - AI Buddy reference: deployment `origin/main` at `794a1ca9c5bf605af72de335a519c27aba7a21ac`; the prompt-policy paths are unchanged from the reviewed `d503344c0afda69bb11bb76051a227c7f9748c42` baseline.
 - History: the old Informatik und Wirtschaft runtime/provisioner branches remain read-only evidence and are not integration sources.
@@ -169,13 +170,13 @@ The policy must survive stored lecturer prompts and apply to the existing Inform
 
 ## Progress
 
-- Status: S1 implementation committed; one accepted slice-review correction is active.
-- Completed: remote-source review, AI Buddy comparison, Informatik und Wirtschaft prompt review, product-primitive pass, native planning review, isolated worktree and branch creation, human approval, fresh compatible ref verification, approved plan commit, scoped implementation commit, static checks, simplification review, and slice risk review.
-- Active slice: S1, clarify the boundary between personal identifiers and exact non-personal course or source labels.
-- Remaining: commit the accepted correction; run integrated final review; push and open the pull request.
-- Latest verified baseline: Klicker `origin/v3` at `59e57481057a601a8fdb1e57208ca6392e20068b`; AI Buddy deployment `origin/main` at `794a1ca9c5bf605af72de335a519c27aba7a21ac` with no prompt-policy path changes from the reviewed baseline.
+- Status: S1 implementation and accepted slice-review correction are committed; integrated final review is active.
+- Completed: remote-source review, AI Buddy comparison, Informatik und Wirtschaft prompt review, product-primitive pass, native planning review, isolated worktree and branch creation, human approval, fresh compatible ref verification, approved plan commit, scoped implementation commit, static checks, simplification review, slice risk review, and the accepted privacy-boundary correction.
+- Active slice: integrated final review of the committed package.
+- Remaining: resolve final-review findings, then push and open the pull request.
+- Latest verified baseline: branch base `59e57481057a601a8fdb1e57208ca6392e20068b`; current target `origin/v3` at `31cbbb36a3fca6d50371975bad982f51424e2abc` with no overlapping paths; AI Buddy deployment `origin/main` at `794a1ca9c5bf605af72de335a519c27aba7a21ac` with no prompt-policy path changes from the reviewed baseline.
 - Required delivery layer: pushed pull request against `v3`.
 - Achieved delivery layer: committed plan and S1 implementation in the isolated worktree.
 - Runtime: an initial managed-runtime setup was stopped immediately after the user clarified that no runtime was wanted. Its post-start readiness failed before checks ran; provider `rs-chat-course-language-groundin` is `Stopped` and the exact worktree has zero routes.
-- Unresolved gates: accepted review correction, integrated final review, and pull-request delivery. Local toolchain and chatbot tests are deliberately not run; pull-request CI is the authoritative check. Integration, secrets, live evaluation, database, deployment, merge, and cleanup remain withheld.
-- Next action: commit the review correction, then run the integrated final review.
+- Unresolved gates: integrated final review and pull-request delivery. Local toolchain and chatbot tests are deliberately not run; pull-request CI is the authoritative check. Integration, secrets, live evaluation, database, deployment, merge, and cleanup remain withheld.
+- Next action: run the integrated final review over the exact committed package.
