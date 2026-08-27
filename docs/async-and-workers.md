@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-08-20'
+timestamp: '2026-08-27'
 tags:
   - backend
   - hatchet
@@ -56,21 +56,80 @@ To correlate a user report ("my duplication vanished") with only a course name o
 
 **Rolling back this feature:** old code never registers the `process-course-duplication` workflow, so already-enqueued events stay QUEUED in Hatchet and mid-flight job records simply age out at their TTLs; users lose completion signals until the rollback completes, but no partial copies exist at any point (the copy is one database transaction). Recovery-by-resubmit works immediately after rollback because the legacy synchronous path ignores duplication locks. To release held source locks without waiting for TTL expiry: `SCAN 0 MATCH "course-duplication:source:*"` then `DEL` the listed keys.
 
-## Learning analytics contract boundary
+## Learning analytics control plane
 
+The public repository owns scheduling, authorization, course selection, bounded
+fan-out, cancellation, and product-state transitions. The task map returned by
+`packages/hatchet/src/index.ts:prepareHatchetTasks` attaches the task map built by
+`packages/hatchet/src/learningAnalytics.ts:prepareLearningAnalyticsTasks`, which
+includes the durable public batch (`learning-analytics-public-batch-v1`), lane
+(`learning-analytics-public-batch-lane-v1`), and course
+(`learning-analytics-public-course-v1`) workflows, plus ordinary selector,
+deadline, spawn-gate, start, and completion tasks. Their database handlers live in
+`packages/graphql/src/services/learningAnalyticsCoordinator.ts`; no run, outbox,
+or revision model is added.
+
+The public course coordinator performs the public start transition, invokes the
+private course workflow, and performs the public completion transition. The
+private implementation is deliberately opaque to this repository. The only
+cross-repository boundary is the exact `v1` contract exposed by
 `packages/analytics-engine-contract/src/constants.ts:COURSE_WORKFLOW_NAME` and
-`PLATFORM_WORKFLOW_NAME` reserve `learning-analytics-course-v1` and
-`learning-analytics-platform-v1`. The public package validates dispatch input and
-successful identity echoes through
-`packages/analytics-engine-contract/src/stubs.ts:createAnalyticsEngineStubs`; failures
-and cancellations remain rejected workflow calls rather than successful status
-objects. `packages/analytics-engine-contract/src/conformance.ts:runBlackBoxConformance`
-checks that boundary without importing a Hatchet SDK.
+`PLATFORM_WORKFLOW_NAME`: `learning-analytics-course-v1` and
+`learning-analytics-platform-v1`. The SDK-free
+`packages/analytics-engine-contract/src/stubs.ts:createAnalyticsEngineStubs`
+validates the request, requires the successful result to echo its identities and
+return an RFC3339 `completedAt`, and leaves failures or cancellations as failed
+or cancelled child runs. The batch invokes the platform workflow only after all
+selected course lanes succeed. This page does not describe the private DAG.
 
-This contract is inert. No public task registration, worker, schedule, coordinator, or
-deployment exists for these names yet. The Catalyst runtime owns the eventual Hatchet
-workflow implementation; KlickerUZH will add its dispatch and product-state updates in
-later public layers.
+### Nightly schedule and lifecycle
+
+Hatchet cron expressions are UTC, so the scheduled task declares both `30 22 * * *`
+and `30 23 * * *`. These are the two UTC instants that can represent 00:30 in
+`Europe/Zurich` across daylight-saving time. The
+`packages/graphql/src/services/learningAnalyticsCoordinator.ts:prepareScheduledLearningAnalyticsBatch`
+handler reads the PostgreSQL clock in that timezone and accepts only local hour
+`00` and minute `30`; the non-matching UTC invocation is a no-op.
+
+The nightly batch records a local 05:45 stop-spawning time and a 06:00 hard
+deadline. The batch input carries only the immutable `hardDeadlineAt` instant;
+the ordinary `learning-analytics-batch-deadline` child reads
+`clock_timestamp()` and returns the remaining whole seconds immediately before
+the durable batch calls `sleepFor`. A positive fractional remainder is rounded
+up, with a minimum of one second while the deadline is still ahead; an already
+reached deadline returns zero and the batch fails without extending it. The
+spawn-gate checks the database clock before each new
+course child, so work already running can drain for the remaining fifteen
+minutes. When the durable deadline fires,
+`packages/hatchet/src/learningAnalytics.ts:cancelAndAwait` requests cancellation
+for every active child reference and awaits each child output before the batch
+fails. Dispatch promises are tracked as well, so a child reference that resolves
+after the deadline is still cancelled and awaited. Lane and course coordinators
+apply the same late-reference check to nested course and private children. A
+cancelled or failed course does not receive a successful completion timestamp;
+an active course that was invalidated at start therefore remains unreadable
+until a later successful run.
+
+### Bounded parallelism
+
+The selector reads stable pages of 250 course IDs with a keyset cursor. The
+`LEARNING_ANALYTICS_BATCH_IN_FLIGHT_LIMIT` value is required to be an integer from
+1 through 500. The batch creates at most that many lanes and assigns courses in
+round-robin order; each lane starts at most one course child at a time, while
+different lanes run concurrently. The public batch itself is globally serialized,
+and the public course workflow is serialized by `input.courseId` using Hatchet's
+`GROUP_ROUND_ROBIN` strategy. This keeps same-course writes ordered while allowing
+independent courses to use the available batch capacity.
+
+### Default-off configuration
+
+The coordinator is disabled unless
+`LEARNING_ANALYTICS_COORDINATOR_ENABLED` is exactly `true`. With the variable
+unset or any other value, the scheduled preparation returns no batch and GraphQL
+dispatch is rejected as disabled. There is no guessed in-flight default:
+`LEARNING_ANALYTICS_BATCH_IN_FLIGHT_LIMIT` must be configured and valid when a
+batch is prepared. These are code-level safeguards; this page does not claim
+deployment, activation, or live qualification.
 
 ## Running locally (config-derived — verify on your machine)
 

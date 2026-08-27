@@ -4026,6 +4026,10 @@ export async function getControlCourse(
     ? ({
         id: course?.id,
         name: course?.name,
+        areAnalyticsValid: course.areAnalyticsValid,
+        analyticsLastComputedAt: course.analyticsLastComputedAt,
+        analyticsFinalizedAt: course.analyticsFinalizedAt,
+        chatAnalyticsValidAt: course.chatAnalyticsValidAt,
         liveQuizzes: course?.liveQuizzes.map((quiz) => ({
           id: quiz.id,
           name: quiz.name,

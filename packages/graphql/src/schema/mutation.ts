@@ -10,6 +10,7 @@ import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
+import * as LearningAnalyticsCoordinatorService from '../services/learningAnalyticsCoordinator.js'
 import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
@@ -24,7 +25,7 @@ import * as TemplateService from '../services/templates.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
-import { Course, CourseDuplicationStatus } from './course.js'
+import { AnalyticsMode, Course, CourseDuplicationStatus } from './course.js'
 import {
   Element,
   ElementInstance,
@@ -1508,6 +1509,43 @@ export const Mutation = builder.mutationType({
             return await CourseService.toggleArchiveCourse(args, ctx)
           }
         ),
+      }),
+
+      recomputeCourseAnalytics: t.withAuth(asUserFullAccess).boolean({
+        nullable: true,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          mode: t.arg({ type: AnalyticsMode, required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.ADMIN,
+          async (_, args, ctx) => {
+            const mode = {
+              INCREMENTAL: 'incremental',
+              FINALIZE: 'finalize',
+              FULL: 'full',
+            }[args.mode] as 'incremental' | 'finalize' | 'full'
+
+            return await LearningAnalyticsCoordinatorService.dispatchCourseLearningAnalytics(
+              { courseId: args.courseId, mode },
+              ctx
+            )
+          }
+        ),
+      }),
+
+      recomputeLearningAnalyticsBatch: t.withAuth(asAdmin).boolean({
+        nullable: true,
+        args: {
+          courseIds: t.arg.stringList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await LearningAnalyticsCoordinatorService.dispatchFullLearningAnalyticsBatch(
+            { courseIds: args.courseIds },
+            ctx
+          )
+        },
       }),
 
       updateTagOrdering: t.withAuth(asUserFullAccess).field({

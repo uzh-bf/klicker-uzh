@@ -1,0 +1,3 @@
+mutation MRecomputeLearningAnalyticsBatch($courseIds: [String!]!) {
+  recomputeLearningAnalyticsBatch(courseIds: $courseIds)
+}

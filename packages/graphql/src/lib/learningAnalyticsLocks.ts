@@ -1,0 +1,22 @@
+import type { PrismaTransactionClient } from '@klicker-uzh/util'
+
+export const LEARNING_ANALYTICS_GLOBAL_LOCK_NAMESPACE = 1_279_340_545
+export const LEARNING_ANALYTICS_COURSE_LOCK_NAMESPACE = 1_279_340_546
+
+export async function lockLearningAnalyticsCourseMutation(
+  prisma: PrismaTransactionClient,
+  courseId: string
+): Promise<void> {
+  await prisma.$executeRaw`
+    SELECT pg_advisory_xact_lock_shared(
+      ${LEARNING_ANALYTICS_GLOBAL_LOCK_NAMESPACE},
+      0
+    )
+  `
+  await prisma.$executeRaw`
+    SELECT pg_advisory_xact_lock(
+      ${LEARNING_ANALYTICS_COURSE_LOCK_NAMESPACE},
+      hashtext(CAST(${courseId} AS text))
+    )
+  `
+}

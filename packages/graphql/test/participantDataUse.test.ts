@@ -121,6 +121,11 @@ type ParticipantAnalyticsFilter = {
 }
 
 type CourseFindUniqueArgs = {
+  where?: {
+    id?: string
+    isLearningAnalyticsEnabled?: boolean
+    areAnalyticsValid?: boolean
+  }
   include: {
     participantCourseAnalytics?: { where: ParticipantAnalyticsFilter }
     participantPerformances?: { where: ParticipantAnalyticsFilter }
@@ -381,6 +386,8 @@ describe('participant data-use API', () => {
       if (args.include.participantCourseAnalytics) {
         return {
           name: 'course',
+          isLearningAnalyticsEnabled: true,
+          areAnalyticsValid: true,
           startDate: initialTime,
           endDate: nextTime,
           participations: [{ id: 'participation' }],
@@ -394,6 +401,8 @@ describe('participant data-use API', () => {
 
       return {
         name: 'course',
+        isLearningAnalyticsEnabled: true,
+        areAnalyticsValid: true,
         _count: { participations: 1 },
         practiceQuizzes: [],
         microLearnings: [],
@@ -423,9 +432,13 @@ describe('participant data-use API', () => {
     if (!activityCall?.include.participantCourseAnalytics) {
       throw new Error('missing activity analytics query')
     }
-    expect(
-      activityCall.include.participantCourseAnalytics.where.participantId.in
-    ).toEqual([participantId])
+    const activityWhere = activityCall.include.participantCourseAnalytics.where
+    expect(activityCall.where).toMatchObject({
+      isLearningAnalyticsEnabled: true,
+      areAnalyticsValid: true,
+    })
+    expect(activityWhere.participantId.in).toEqual([participantId])
+    expect(activityWhere).not.toHaveProperty('participant')
     expect(activityResult?.dailyActivity).toHaveLength(1)
     expect(activityResult?.participantCourseAnalytics).toHaveLength(1)
     expect(queryStatements[0]).toContain('analyticsLastComputedAt')
@@ -437,6 +450,20 @@ describe('participant data-use API', () => {
       { courseId: '10000000-0000-4000-8000-000000000001' },
       ctx
     )
+    const performanceCall = courseFindUnique.mock.calls[1]?.[0]
+    if (!performanceCall?.include.participantPerformances) {
+      throw new Error('missing performance analytics query')
+    }
+    const performanceWhere =
+      performanceCall.include.participantPerformances.where
+    expect(performanceCall.where).toMatchObject({
+      isLearningAnalyticsEnabled: true,
+      areAnalyticsValid: true,
+    })
+    expect(performanceWhere.participantId.in).toEqual([participantId])
+    expect(performanceWhere).not.toHaveProperty('participant')
+    expect(queryStatements[1]).toContain('ParticipantPerformance')
+    expect(queryStatements[1]).toContain('ParticipantActivityPerformance')
     expect(queryStatements[1]).toContain(
       'analyticsLastComputedAt" > p."learningAnalyticsChoiceAt'
     )

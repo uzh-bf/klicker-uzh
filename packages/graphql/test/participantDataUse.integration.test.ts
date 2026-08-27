@@ -200,6 +200,7 @@ async function createCourse(ownerId: string, participantId: string) {
       groupDeadlineDate: endDate,
       authType: CourseAuthType.SSO,
       isLearningAnalyticsEnabled: true,
+      areAnalyticsValid: true,
       participations: {
         create: { participantId },
       },
@@ -288,7 +289,7 @@ describe('participant data-use PostgreSQL integration', () => {
         }
       )
 
-      await new Promise((resolve) => setTimeout(resolve, 25))
+      await wait(150)
       expect(settled).toBe(false)
       await expect(getParticipantDataUse(ctx)).resolves.toMatchObject({
         learningAnalyticsConsent: false,
@@ -297,6 +298,7 @@ describe('participant data-use PostgreSQL integration', () => {
 
       holder.release()
       const result = await mutation
+      await holder.done
       const after = await prisma.$queryRaw<Array<{ now: Date }>>`
         SELECT clock_timestamp() AS "now"
       `
@@ -311,7 +313,6 @@ describe('participant data-use PostgreSQL integration', () => {
       expect(result!.learningAnalyticsChoiceAt!.getTime()).toBeLessThanOrEqual(
         after[0]!.now.getTime()
       )
-      await holder.done
       await expectLearningAnalyticsWriterGateReleased()
     } finally {
       holder.release()
@@ -634,6 +635,20 @@ describe('participant data-use PostgreSQL integration', () => {
     expect(withdrawnPerformance?.participantActivityPerformances).toHaveLength(
       0
     )
+    expect({
+      totalParticipants: withdrawnActivity!.totalParticipants,
+      dailyActivity: withdrawnActivity!.dailyActivity,
+      weeklyActivity: withdrawnActivity!.weeklyActivity,
+      activeDays: withdrawnActivity!.activeDays,
+    }).toEqual(initialActivityAggregates)
+    expect({
+      totalParticipants: withdrawnPerformance!.totalParticipants,
+      activityProgresses: withdrawnPerformance!.activityProgresses,
+      activityPerformances: withdrawnPerformance!.activityPerformances,
+      instancePerformances: withdrawnPerformance!.instancePerformances,
+      instanceFeedbacks: withdrawnPerformance!.instanceFeedbacks,
+      activityFeedbacks: withdrawnPerformance!.activityFeedbacks,
+    }).toEqual(initialPerformanceAggregates)
 
     await wait(10)
     const reenabled = await setLearningAnalyticsConsent({ consent: true }, ctx)
@@ -653,6 +668,20 @@ describe('participant data-use PostgreSQL integration', () => {
     expect(
       beforeRecomputePerformance?.participantActivityPerformances
     ).toHaveLength(0)
+    expect({
+      totalParticipants: beforeRecomputeActivity!.totalParticipants,
+      dailyActivity: beforeRecomputeActivity!.dailyActivity,
+      weeklyActivity: beforeRecomputeActivity!.weeklyActivity,
+      activeDays: beforeRecomputeActivity!.activeDays,
+    }).toEqual(initialActivityAggregates)
+    expect({
+      totalParticipants: beforeRecomputePerformance!.totalParticipants,
+      activityProgresses: beforeRecomputePerformance!.activityProgresses,
+      activityPerformances: beforeRecomputePerformance!.activityPerformances,
+      instancePerformances: beforeRecomputePerformance!.instancePerformances,
+      instanceFeedbacks: beforeRecomputePerformance!.instanceFeedbacks,
+      activityFeedbacks: beforeRecomputePerformance!.activityFeedbacks,
+    }).toEqual(initialPerformanceAggregates)
 
     // The writer must clean up rows from the previous consent window before
     // publishing replacement rows and advancing the recomputation marker.

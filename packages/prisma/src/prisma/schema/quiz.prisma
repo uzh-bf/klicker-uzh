@@ -68,6 +68,8 @@ model PracticeQuiz {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([courseId])
 }
 
 // #endregion
@@ -201,6 +203,8 @@ model MicroLearning {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([courseId])
 }
 
 // #endregion

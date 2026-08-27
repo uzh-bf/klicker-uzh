@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-20'
+timestamp: '2026-08-27'
 tags:
   - testing
   - ci
@@ -14,15 +14,16 @@ tags:
 
 ## Which level for which change
 
-| Change                                                                            | Test level                                                                                 | Command                                                                                                             |
-| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| Pure logic (grading, util, export, word-cloud, markdown, feature-flags core/Node) | package vitest — **safe without any services**                                             | `pnpm --filter @klicker-uzh/grading test` (etc.); chat is the exception: `pnpm --filter @klicker-uzh/chat test:run` |
-| Learning analytics engine contract                                                | package contract suite — **safe without services, Hatchet, or a database**                 | `pnpm --filter @klicker-uzh/analytics-engine-contract test`                                                         |
-| React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                   | `npx agent-browser@0.32.2` against the adopting app                                                                 |
-| GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                  |
-| Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
-| UI / user flows                                                                   | Playwright e2e                                                                             | see routing below                                                                                                   |
-| Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
+| Change                                                                            | Test level                                                                                     | Command                                                                                                                                                                |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pure logic (grading, util, export, word-cloud, markdown, feature-flags core/Node) | package vitest — **safe without any services**                                                 | `pnpm --filter @klicker-uzh/grading test` (etc.); chat is the exception: `pnpm --filter @klicker-uzh/chat test:run`                                                    |
+| Learning analytics engine contract                                                | package contract suite — **safe without services, Hatchet, or a database**                     | `pnpm --filter @klicker-uzh/analytics-engine-contract test`                                                                                                            |
+| Public learning-analytics coordinator and Hatchet orchestration                   | focused vitest suites — coordinator/read-gate tests use fakes; Hatchet tests use a fake client | `pnpm --filter @klicker-uzh/graphql test -- test/learningAnalyticsCoordinator.test.ts` and `pnpm --filter @klicker-uzh/hatchet test -- test/learningAnalytics.test.ts` |
+| React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                       | `npx agent-browser@0.32.2` against the adopting app                                                                                                                    |
+| GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN`     | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                                                                     |
+| Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                                | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                                                                                  |
+| UI / user flows                                                                   | Playwright e2e                                                                                 | see routing below                                                                                                                                                      |
+| Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                            | `pnpm --filter @klicker-uzh/office-addin test`                                                                                                                         |
 
 For server-paginated manage lists, browser coverage must exercise finite page
 sizes, the opt-in `All` transition, the reset back to 50, and explicit
@@ -58,6 +59,35 @@ it does not prove a LiteLLM/provider cache hit, router resolution, production
 behavior, latency, or cost impact. This is server-side request policy, so it
 does not require browser evidence; add the normal browser path if the change
 also affects UI, auth, redirect, cookie, or user-visible chat behavior.
+
+For the public learning-analytics coordinator, the focused suites cover the
+PostgreSQL-clock 00:30 gate, deterministic daily IDs, keyset paging and cleanup
+priority, active-course invalidation, exact private `completedAt` persistence,
+stale-completion rejection, disabled/archived cleanup-only behavior, and the
+course-level invalid-result read gate. The Hatchet suite additionally covers
+stable task names, same-course serialization, round-robin lanes, the spawn gate,
+platform-after-course ordering, and cancellation followed by termination wait
+at the hard deadline, including child references that resolve after cancellation
+begins. They also verify that the deadline child derives a
+replay-stable duration from the PostgreSQL clock and that an expired deadline
+does not schedule a sleep. These tests prove the public control-plane behavior only;
+they do not execute private analytics stages or prove deployment and live
+qualification.
+
+The coordinator's database integration checks belong in the normal GraphQL local
+stack because they exercise PostgreSQL advisory locks, transaction timestamps,
+the participant-derived selection query, and the two concurrent selector-index
+plans. Use `pnpm --filter @klicker-uzh/graphql test:local` for that service-backed
+pass, and keep the analytics contract suite separate because it is intentionally
+SDK- and database-free. The focused coordinator suite also asserts that no
+historical inclusion predicate remains, that a membership choice at or after
+the course marker selects a full course run, that a missing marker selects full
+mode, and that an unchanged course remains incremental with its existing
+`windowSince`. The read gate suite checks current consent metadata plus the
+strict course-marker-versus-choice-time freshness comparison. The PostgreSQL
+coordinator integration also interleaves a consent change between course start
+and completion, proves that the stale run publishes no marker, and proves that a
+fresh run can make the individual rows visible.
 
 For chat conversation-rendering changes, `playwright/util/chat.ts` also supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser
