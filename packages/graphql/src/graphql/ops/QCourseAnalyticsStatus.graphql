@@ -1,0 +1,11 @@
+query QCourseAnalyticsStatus($courseId: String!) {
+  course(id: $courseId) {
+    id
+    analyticsStatus {
+      areAnalyticsValid
+      analyticsLastComputedAt
+      analyticsFinalizedAt
+      chatAnalyticsValidAt
+    }
+  }
+}

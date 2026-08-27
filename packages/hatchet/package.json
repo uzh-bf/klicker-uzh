@@ -9,6 +9,7 @@
   ],
   "dependencies": {
     "@hatchet-dev/typescript-sdk": "1.9.4",
+    "@klicker-uzh/analytics-engine-contract": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
     "@klicker-uzh/types": "workspace:*"
   },
@@ -24,7 +25,8 @@
     "rollup": "~4.34.9",
     "rollup-plugin-copy": "~3.5.0",
     "tsx": "~4.19.4",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "~3.2.4"
   },
   "scripts": {
     "build": "run-s --npm-path pnpm build:ts",
@@ -34,7 +36,8 @@
     "dev": "run-p --npm-path pnpm dev:ts",
     "dev:infisical": "../../util/_run_with_infisical.sh --env dev pnpm run dev",
     "dev:offline": "pnpm run dev",
-    "dev:ts": "cross-env NODE_ENV=development rollup -c --watch"
+    "dev:ts": "cross-env NODE_ENV=development rollup -c --watch",
+    "test": "vitest run"
   },
   "engines": {
     "node": "=24"

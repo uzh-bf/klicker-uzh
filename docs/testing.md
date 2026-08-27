@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-20'
+timestamp: '2026-08-27'
 tags:
   - testing
   - ci
@@ -14,15 +14,16 @@ tags:
 
 ## Which level for which change
 
-| Change                                                                            | Test level                                                                                 | Command                                                                                                             |
-| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| Pure logic (grading, util, export, word-cloud, markdown, feature-flags core/Node) | package vitest — **safe without any services**                                             | `pnpm --filter @klicker-uzh/grading test` (etc.); chat is the exception: `pnpm --filter @klicker-uzh/chat test:run` |
-| Learning analytics engine contract                                                | package contract suite — **safe without services, Hatchet, or a database**                 | `pnpm --filter @klicker-uzh/analytics-engine-contract test`                                                         |
-| React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                   | `npx agent-browser@0.32.2` against the adopting app                                                                 |
-| GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                  |
-| Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
-| UI / user flows                                                                   | Playwright e2e                                                                             | see routing below                                                                                                   |
-| Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
+| Change                                                                            | Test level                                                                                     | Command                                                                                                                                                                |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pure logic (grading, util, export, word-cloud, markdown, feature-flags core/Node) | package vitest — **safe without any services**                                                 | `pnpm --filter @klicker-uzh/grading test` (etc.); chat is the exception: `pnpm --filter @klicker-uzh/chat test:run`                                                    |
+| Learning analytics engine contract                                                | package contract suite — **safe without services, Hatchet, or a database**                     | `pnpm --filter @klicker-uzh/analytics-engine-contract test`                                                                                                            |
+| Public learning-analytics coordinator and Hatchet orchestration                   | focused vitest suites — coordinator/read-gate tests use fakes; Hatchet tests use a fake client | `pnpm --filter @klicker-uzh/graphql test -- test/learningAnalyticsCoordinator.test.ts` and `pnpm --filter @klicker-uzh/hatchet test -- test/learningAnalytics.test.ts` |
+| React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                       | `npx agent-browser@0.32.2` against the adopting app                                                                                                                    |
+| GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN`     | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                                                                     |
+| Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                                | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                                                                                  |
+| UI / user flows                                                                   | Playwright e2e                                                                                 | see routing below                                                                                                                                                      |
+| Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                            | `pnpm --filter @klicker-uzh/office-addin test`                                                                                                                         |
 
 For server-paginated manage lists, browser coverage must exercise finite page
 sizes, the opt-in `All` transition, the reset back to 50, and explicit
@@ -58,6 +59,46 @@ it does not prove a LiteLLM/provider cache hit, router resolution, production
 behavior, latency, or cost impact. This is server-side request policy, so it
 does not require browser evidence; add the normal browser path if the change
 also affects UI, auth, redirect, cookie, or user-visible chat behavior.
+
+For the public learning-analytics coordinator, the focused suites cover the
+PostgreSQL-clock 00:30 gate, deterministic daily IDs, keyset paging and cleanup
+priority, active-course invalidation, effective-request upgrades at start,
+PostgreSQL publication-time markers with private `completedAt` retained as
+workflow output, stale-completion rejection, disabled/archived cleanup-only
+behavior, and the course-level invalid-result read gate. The Hatchet suite
+additionally covers stable task names, same-course serialization, round-robin
+lanes, empty selection without a zero-request bulk dispatch, the spawn gate,
+platform-after-course ordering, cancellation checks after start and spawn-gate
+tasks, and cancellation followed by termination wait at the hard deadline,
+including child references that resolve after cancellation begins. They also
+verify the delayed-dispatch window, seven-hour durable timeout budget, that the
+deadline child derives a replay-stable duration from the PostgreSQL clock, and
+that an expired deadline does not schedule a sleep. These
+tests prove the public control-plane behavior only; they do not execute private
+analytics stages or prove deployment and live qualification.
+
+The coordinator's database integration checks belong in the normal GraphQL local
+stack because they exercise PostgreSQL advisory locks, transaction timestamps,
+the participant-derived selection query, representative direct, practice-quiz,
+and chatbot ownership paths, and the two concurrent selector-index plans. Use
+`pnpm --filter @klicker-uzh/graphql test:local` for that service-backed pass, and
+keep the analytics contract suite separate because it is intentionally SDK- and
+database-free. The focused coordinator suite also asserts that no historical
+inclusion predicate remains, that a membership choice at or after the course
+marker selects a full course run, that a missing marker selects full mode, and
+that an unchanged course remains incremental with its existing `windowSince`.
+It also verifies that a queued incremental request upgrades when finalization
+becomes due before start.
+The participant data-use suite checks current consent metadata plus the strict
+course-marker-versus-choice-time freshness comparison. The read-gate suite keeps
+focused disabled, invalid, and activity-owner coverage, while the PostgreSQL
+coordinator integration covers current membership, leaderboard opt-out,
+archive behavior, and real individual-row filtering. That
+integration also interleaves consent and archive changes with in-flight
+recomputations, proves that stale runs publish no marker,
+proves that a future private completion time cannot advance the public marker,
+and proves that individual rows stay hidden until a successful fresh
+recomputation.
 
 For chat conversation-rendering changes, `playwright/util/chat.ts` also supports
 `textChunks` and `chunkDelayMs` to deliver separate deltas through a browser
@@ -101,7 +142,7 @@ For authoring specifics, helper patterns, and failure triage, use the `klicker-p
 
 ## CI matrix
 
-Path-filtered unit workflows: `test-grading`, `test-util`, `test-markdown`, and `test-analytics-engine-contract` (package-only, no services), `test-graphql` (spins Postgres ×2 + hatchet-lite + Redis), `test-olat-api` (docker compose test stack). The consolidated `test-unit` workflow builds shared dependencies and runs the chat, grading, markdown, and util suites after relevant package or workspace-manifest changes; its pull-request job intentionally waits until the PR leaves draft. The analytics contract workflow runs on draft PR changes and verifies its tests, typecheck, and build because Catalyst consumes an immutable public commit before the public PR becomes ready. `test-chat` runs the `apps/chat` vitest suite (path filter: `apps/chat/` + `packages/{i18n,prisma,graphql}/` + workspace manifests; it builds `packages/prisma` first because the model-registry parity test imports the backend registry, which imports the prisma client at runtime). Playwright tests use a path-scoped filter and compile once in a `build-and-compile` job before running the 8 shards. The workflow tars the five `.next` trees before artifact upload and extracts them in each shard so Turbopack's runtime dependency symlinks survive the cross-job handoff. Dedicated `-status` fail-open gates exist for the multi-job workflows (`test-graphql`, `test-playwright`); the single-job filtered workflows (`test-grading`, `test-util`, `test-markdown`, `test-chat`, `test-analytics-engine-contract`) always run their one job and report directly, so they need no companion gate.
+Path-filtered unit workflows: `test-grading`, `test-util`, `test-markdown`, and `test-analytics-engine-contract` (package-only, no services), `test-graphql` (spins Postgres ×2 + hatchet-lite + Redis and runs both GraphQL and public Hatchet orchestration tests), `test-olat-api` (docker compose test stack). The GraphQL workflow is also triggered by analytics-engine-contract changes and builds that contract before GraphQL code generation. The consolidated `test-unit` workflow builds shared dependencies and runs the chat, grading, markdown, and util suites after relevant package or workspace-manifest changes; its pull-request job intentionally waits until the PR leaves draft. The analytics contract workflow runs on draft PR changes and verifies its tests, typecheck, and build because Catalyst consumes an immutable public commit before the public PR becomes ready. `test-chat` runs the `apps/chat` vitest suite (path filter: `apps/chat/` + `packages/{i18n,prisma,graphql}/` + workspace manifests; it builds `packages/prisma` first because the model-registry parity test imports the backend registry, which imports the prisma client at runtime). Playwright tests use a path-scoped filter and compile once in a `build-and-compile` job before running the 8 shards. The workflow tars the five `.next` trees before artifact upload and extracts them in each shard so Turbopack's runtime dependency symlinks survive the cross-job handoff. Dedicated `-status` fail-open gates exist for the multi-job workflows (`test-graphql`, `test-playwright`); the single-job filtered workflows (`test-grading`, `test-util`, `test-markdown`, `test-chat`, `test-analytics-engine-contract`) always run their one job and report directly, so they need no companion gate.
 
 **Hatchet tokens differ per workflow, because `test-playwright` is the only one that runs inside a `container:`.** `test-graphql` runs straight on the runner, so it reaches Hatchet at `localhost` and reads its boot-minted token with `docker exec`. Inside a container job neither works: service containers resolve by service **name** (`hatchet:8888` / `hatchet:7077`, exactly like the `postgres:5432` the same job already uses), and the Playwright image ships no Docker CLI. So `test-playwright` shares `/config` with the Hatchet service through the `hatchet_lite_config` volume and reads `/config/authdisabled-token` directly. Do not "simplify" those hostnames to `localhost` — every shard then fails in `Prepare .env files` before a single test runs. The HTTP token API is not a fallback: `hatchet-lite-dev` disables auth and answers `POST /api/v1/tenants/{id}/api-tokens` with 401 for every caller. The token's own claims always say `localhost`, which is harmless — `packages/hatchet/src/client.ts` passes `host_port`/`api_url` explicitly, and process env beats the `.env` templates for both `node --env-file` and `dotenv`.
 

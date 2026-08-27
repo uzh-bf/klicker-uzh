@@ -8,6 +8,78 @@ import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
 
+export type LearningAnalyticsCourseMode = 'finalize' | 'full' | 'incremental'
+
+export type LearningAnalyticsCourseControlInput = {
+  contractVersion: 'v1'
+  runId: string
+  courseId: string
+  mode: LearningAnalyticsCourseMode
+  windowSince?: string
+}
+
+export type LearningAnalyticsCourseControlOutput = {
+  courseId: string
+  completedAt: string
+  cleanupOnly: boolean
+}
+
+export type LearningAnalyticsCourseStartOutput = {
+  courseId: string
+  request: LearningAnalyticsCourseControlInput
+  cleanupOnly: boolean
+  fenceAt: string
+}
+
+export type LearningAnalyticsCourseCompletionInput = {
+  request: LearningAnalyticsCourseControlInput
+  completedAt: string
+  cleanupOnly: boolean
+  fenceAt: string
+}
+
+export type LearningAnalyticsBatchControlInput = {
+  runId: string
+  batchDate: string
+  selection: 'explicit-full' | 'nightly'
+  explicitCourseIds?: string[]
+  includePlatform: boolean
+  inFlightLimit: number
+  stopSpawningAt: string
+  hardDeadlineAt: string
+}
+
+export type LearningAnalyticsBatchDeadlineInput = {
+  hardDeadlineAt: string
+}
+
+export type LearningAnalyticsBatchDeadlineOutput = {
+  remainingSeconds: number
+}
+
+export type LearningAnalyticsBatchSelectionOutput = {
+  courses: LearningAnalyticsCourseControlInput[]
+}
+
+export type LearningAnalyticsBatchLaneInput = {
+  runId: string
+  courses: LearningAnalyticsCourseControlInput[]
+  stopSpawningAt: string
+}
+
+export type LearningAnalyticsBatchLaneOutput = {
+  completedCourseIds: string[]
+  failedCourseIds: string[]
+  notStartedCourseIds: string[]
+}
+
+export type LearningAnalyticsBatchControlOutput = {
+  runId: string
+  selectedCourses: number
+  completedCourses: number
+  platformCompletedAt?: string
+}
+
 export interface HatchetHandlerGlobalContext {
   hatchet: HatchetClient
   pubSub: PubSub<any>
@@ -21,6 +93,36 @@ export interface HatchetHandlerGlobalContext {
 
 // Shared contract for Hatchet task handler injections.
 export interface HatchetHandlers {
+  handlePrepareScheduledLearningAnalyticsBatch: (
+    _args: Record<string, never>,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<LearningAnalyticsBatchControlInput | null>
+  handleSelectLearningAnalyticsBatchCourses: (
+    args: LearningAnalyticsBatchControlInput,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<LearningAnalyticsBatchSelectionOutput>
+  handleGetLearningAnalyticsBatchDeadline: (
+    args: LearningAnalyticsBatchDeadlineInput,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<LearningAnalyticsBatchDeadlineOutput>
+  handleCanStartLearningAnalyticsCourse: (
+    args: { stopSpawningAt: string },
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
+  handleStartLearningAnalyticsCourse: (
+    args: LearningAnalyticsCourseControlInput,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<LearningAnalyticsCourseStartOutput>
+  handleCompleteLearningAnalyticsCourse: (
+    args: LearningAnalyticsCourseCompletionInput,
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<LearningAnalyticsCourseControlOutput>
   handleSendTeamsNotification: (
     { scope, text }: { scope: string; text: string },
     globalCtx: HatchetHandlerGlobalContext,
@@ -105,6 +207,42 @@ export interface HatchetHandlers {
 
 // Contract for the tasks that are passed into the GraphQL context.
 export interface PreparedHatchetTasks {
+  learningAnalyticsScheduledDispatch: TaskWorkflowDeclaration<
+    Record<string, never>,
+    { dispatched: boolean; runId?: string }
+  >
+  learningAnalyticsBatchCoordinator: TaskWorkflowDeclaration<
+    LearningAnalyticsBatchControlInput,
+    LearningAnalyticsBatchControlOutput
+  >
+  learningAnalyticsBatchSelector: TaskWorkflowDeclaration<
+    LearningAnalyticsBatchControlInput,
+    LearningAnalyticsBatchSelectionOutput
+  >
+  learningAnalyticsBatchDeadline: TaskWorkflowDeclaration<
+    LearningAnalyticsBatchDeadlineInput,
+    LearningAnalyticsBatchDeadlineOutput
+  >
+  learningAnalyticsBatchLane: TaskWorkflowDeclaration<
+    LearningAnalyticsBatchLaneInput,
+    LearningAnalyticsBatchLaneOutput
+  >
+  learningAnalyticsSpawnGate: TaskWorkflowDeclaration<
+    { stopSpawningAt: string },
+    { canStart: boolean }
+  >
+  learningAnalyticsCourseCoordinator: TaskWorkflowDeclaration<
+    LearningAnalyticsCourseControlInput,
+    LearningAnalyticsCourseControlOutput
+  >
+  learningAnalyticsCourseStart: TaskWorkflowDeclaration<
+    LearningAnalyticsCourseControlInput,
+    LearningAnalyticsCourseStartOutput
+  >
+  learningAnalyticsCourseCompletion: TaskWorkflowDeclaration<
+    LearningAnalyticsCourseCompletionInput,
+    LearningAnalyticsCourseControlOutput
+  >
   createAuditLogEntry: TaskWorkflowDeclaration<
     {
       message: Record<string, string | undefined> & {

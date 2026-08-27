@@ -95,6 +95,41 @@ export interface ICourse extends DB.Course {
   isShared?: boolean // flag to signal whether the object is owned or shared
   isRemovable?: boolean // = derived from other object / direct user group permission => removal disabled
 }
+
+export interface ICourseAnalyticsStatus {
+  areAnalyticsValid: boolean
+  analyticsLastComputedAt: Date | null
+  analyticsFinalizedAt: Date | null
+  chatAnalyticsValidAt: Date | null
+}
+
+export const CourseAnalyticsStatusRef =
+  builder.objectRef<ICourseAnalyticsStatus>('CourseAnalyticsStatus')
+export const CourseAnalyticsStatus = builder.objectType(
+  CourseAnalyticsStatusRef,
+  {
+    fields: (t) => ({
+      areAnalyticsValid: t.exposeBoolean('areAnalyticsValid'),
+      analyticsLastComputedAt: t.expose('analyticsLastComputedAt', {
+        type: 'Date',
+        nullable: true,
+      }),
+      analyticsFinalizedAt: t.expose('analyticsFinalizedAt', {
+        type: 'Date',
+        nullable: true,
+      }),
+      chatAnalyticsValidAt: t.expose('chatAnalyticsValidAt', {
+        type: 'Date',
+        nullable: true,
+      }),
+    }),
+  }
+)
+
+export const AnalyticsMode = builder.enumType('AnalyticsMode', {
+  values: ['INCREMENTAL', 'FINALIZE', 'FULL'] as const,
+})
+
 export const CourseRef = builder.objectRef<ICourse>('Course')
 export const Course = builder.objectType(CourseRef, {
   fields: (t) => ({
@@ -221,6 +256,16 @@ export const Course = builder.objectType(CourseRef, {
     owner: t.expose('owner', {
       type: UserRef,
       nullable: true,
+    }),
+
+    analyticsStatus: t.field({
+      type: CourseAnalyticsStatus,
+      resolve: (course: ICourse) => ({
+        areAnalyticsValid: course.areAnalyticsValid,
+        analyticsLastComputedAt: course.analyticsLastComputedAt,
+        analyticsFinalizedAt: course.analyticsFinalizedAt,
+        chatAnalyticsValidAt: course.chatAnalyticsValidAt,
+      }),
     }),
   }),
 })

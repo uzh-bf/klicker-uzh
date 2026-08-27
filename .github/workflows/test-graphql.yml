@@ -25,7 +25,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
+          pattern: '^(packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/analytics-engine-contract/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
 
   test-graphql:
     needs: filter
@@ -141,6 +141,8 @@ jobs:
           pnpm run build
           cd ../util
           pnpm run build
+          cd ../analytics-engine-contract
+          pnpm run build
           cd ../graphql
           pnpm run build
           cd ../hatchet
@@ -216,6 +218,8 @@ jobs:
             echo "Hatchet worker failed to start. See logs above." >&2
             exit 1
           fi
+
+          pnpm --filter @klicker-uzh/hatchet test
 
           cd packages/graphql
           pnpm vitest run

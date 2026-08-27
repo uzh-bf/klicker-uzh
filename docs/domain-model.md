@@ -44,8 +44,9 @@ recomputation whose marker is strictly newer than the current choice; `false`
 excludes individual learning analytics. The choice time is a
 revision/freshness watermark for the read gate, not a cutoff on activity
 history. Withdrawal filters individual reads immediately, while the next
-successful overnight cleanup removes existing individual rows and aggregate
-outputs remain on their ordinary recomputation path. The separate
+successful overnight cleanup removes existing individual rows. Aggregate
+outputs remain on their ordinary recomputation schedule and are not recomputed
+immediately when the choice changes. The separate
 `Course.isLearningAnalyticsEnabled` course control also defaults to `false`.
 
 `Participation` remains the course-membership row and keeps its existing

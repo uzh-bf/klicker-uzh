@@ -242,6 +242,12 @@ enum ActivityType {
   PRACTICE_QUIZ
 }
 
+enum AnalyticsMode {
+  FINALIZE
+  FULL
+  INCREMENTAL
+}
+
 type AnswerCollection {
   createdAt: Date
   description: String!
@@ -986,6 +992,7 @@ type ContentInstanceEvaluation {
 }
 
 type Course {
+  analyticsStatus: CourseAnalyticsStatus!
   averageScore: Float
   awards: [AwardEntry!]
   color: String!
@@ -1052,6 +1059,13 @@ type CourseActivityList {
   liveQuizzes: [CourseActivityItem!]!
   microLearnings: [CourseActivityItem!]!
   practiceQuizzes: [CourseActivityItem!]!
+}
+
+type CourseAnalyticsStatus {
+  analyticsFinalizedAt: Date
+  analyticsLastComputedAt: Date
+  areAnalyticsValid: Boolean!
+  chatAnalyticsValidAt: Date
 }
 
 type CourseAssessmentReportRecord {
@@ -2065,6 +2079,8 @@ type Mutation {
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(availableFrom: Date, id: String!): PracticeQuiz
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
+  recomputeCourseAnalytics(courseId: String!, mode: AnalyticsMode!): Boolean
+  recomputeLearningAnalyticsBatch(courseIds: [String!]!): Boolean
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
   removeObject(objectId: String!, objectType: ObjectType!): String
   removeUserFromGroup(groupId: Int!, userId: String!): Boolean!

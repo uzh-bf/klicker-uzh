@@ -46,13 +46,69 @@ A future research export may include all stored canonical data when research
 consent is `true` and none when it is `false`. Learning-analytics consent
 follows the same current-state rule: `true` permits all eligible stored activity
 history, but individual reads become eligible only after a successful course
-recomputation whose marker is strictly newer than the current choice; `false`
-permits no individual learning-analytics data. The choice time is a
-revision/freshness watermark for this read gate, not a cutoff on activity
-history. Existing individual rows are cleaned up during the next successful
-overnight cleanup after withdrawal, while aggregate outputs remain on their
-ordinary recomputation path; canonical outputs are unchanged. `Participation`
-remains course membership and carries no per-course data-use choice or history.
+recomputation whose `Course.analyticsLastComputedAt` is strictly later than
+`Participant.learningAnalyticsChoiceAt`; `false` permits no individual
+learning-analytics data. The choice time is a revision/race/freshness watermark
+for this read gate, not a cutoff on activity history. Existing individual rows
+are cleaned up during the next successful overnight cleanup after withdrawal,
+while aggregate outputs remain on their ordinary recomputation schedule and are
+not recomputed immediately when the choice changes; canonical outputs are
+unchanged. `Participation` remains course membership and carries no per-course
+data-use choice or history.
+
+The public learning-analytics selector
+(`packages/graphql/src/services/learningAnalyticsCoordinator.ts:selectLearningAnalyticsBatchCourses`)
+evaluates this current account state, not a consent event or per-course choice
+history. Every enabled course is a candidate. A disabled or archived course
+with an individual row in `ParticipantAnalytics`, `ParticipantCourseAnalytics`,
+`ParticipantPerformance`, `ParticipantActivityPerformance` (through its
+practice-quiz or micro-learning owner), `ParticipantChatAnalytics`,
+`ParticipantChatOutcome`, or `ParticipantLiveQuizAnalytics` is selected for
+cleanup. An enabled course with an individual row is selected when its current
+membership, consent, or disclosure metadata is no longer eligible. For nightly
+requests, the selector first keyset-pages candidate course IDs, then derives
+for that page whether any membership's `learningAnalyticsChoiceAt` is at or
+after `Course.analyticsLastComputedAt` with a bounded `EXISTS` check. A missing
+course marker, an invalid course, or that derived dirty-choice value selects full
+mode for both consent transitions (equality is fail-safe). On the normal nightly schedule,
+that full run includes all eligible stored history after a `true` choice and
+cleans individual rows after a `false` choice; aggregate outputs stay on their
+ordinary recomputation path. Cleanup candidates are ordered before invalid
+enabled courses, then valid enabled courses, and the query remains
+keyset-paginated by `Course.id`.
+
+The public learning-analytics coordinator dispatches Hatchet workflows and
+owns scheduling, selection, locking, and product-state transitions; the
+private analytics engine owns the business computation. The public course
+handlers keep product status separate from private row cleanup.
+`packages/graphql/src/services/learningAnalyticsCoordinator.ts:startLearningAnalyticsCourse`
+acquires the shared global and course advisory locks. It re-evaluates the current
+member choices while holding those locks and returns the effective request to the
+workflow. A queued `incremental` or `finalize` request becomes `full` when a
+member choice is at or after the course marker; the private workflow receives that
+effective request, not the stale queued mode. For an enabled, non-archived course
+it sets `areAnalyticsValid` to `false` and clears `chatAnalyticsValidAt`, while
+preserving prior computation markers, and captures a transient database-time
+fence after both locks are held. A disabled or archived course is cleanup-only
+and does not advance or invalidate public status. On ordinary success,
+`packages/graphql/src/services/learningAnalyticsCoordinator.ts:completeLearningAnalyticsCourse`
+reacquires the locks and first checks whether any current course member has a
+`learningAnalyticsChoiceAt` at or after that fence. If so, it publishes no marker
+and leaves the course invalid for a fresh run. Otherwise it validates the private
+result's RFC3339 `completedAt` as workflow provenance/output, captures PostgreSQL
+publication time for `analyticsLastComputedAt` and `chatAnalyticsValidAt`, sets
+`areAnalyticsValid` to `true`, and sets `analyticsFinalizedAt` from the same
+PostgreSQL publication time for a `finalize` request. The public markers never use
+the private engine clock; they use PostgreSQL time at publication.
+The fence stays in the public Hatchet control layer and never enters the private
+`v1` engine contract. Cleanup-only completions, disabled or archived courses,
+and completions whose start fence predates the stored public marker leave public
+state unchanged. Restoring an archived course acquires the same course lock,
+invalidates its analytics, advances the public marker with PostgreSQL time, and
+clears its chat and finalization markers. The advanced marker rejects any
+pre-restoration completion, while the invalid state makes the next selector pass
+and any directly dispatched incremental or finalize request require a full rebuild
+before any individual analytics become readable again.
 
 Analytics tables keyed by a chatbot or live quiz do not duplicate `courseId`;
 course scope resolves through the owning `Chatbot` or `LiveQuiz`. This prevents
@@ -60,6 +116,16 @@ cross-course combinations that separate foreign keys cannot reject. Existing-
 table support indexes use one-statement `CREATE INDEX CONCURRENTLY` migrations;
 only indexes on newly created empty analytics tables stay in the schema-creation
 migration.
+
+The stale-course selector crosses `ParticipantActivityPerformance` through both
+`PracticeQuiz.courseId` and `MicroLearning.courseId`. Those populated-table
+indexes are declared in the shared schema and built independently by the
+one-statement migrations
+`packages/prisma/src/prisma/schema/migrations/20260826090925_practice_quiz_course_index/migration.sql`
+and
+`packages/prisma/src/prisma/schema/migrations/20260826090926_micro_learning_course_index/migration.sql`.
+Do not combine either `CREATE INDEX CONCURRENTLY` statement with another SQL
+statement in the same migration.
 
 `ParticipantActivityPerformance` must reference exactly one activity owner:
 either `practiceQuizId` or `microLearningId`, never neither or both. The

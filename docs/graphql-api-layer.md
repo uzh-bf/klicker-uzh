@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-08-26'
+timestamp: '2026-08-27'
 tags:
   - backend
   - graphql
@@ -69,12 +69,62 @@ lock_timeout`; research changes do not take that gate.
 Existing individual analytics reads apply the learning-analytics predicate in
 their source queries. A participant result is returned only when the current
 choice is true, all choice metadata is present, and the course's
-`analyticsLastComputedAt` is strictly newer than the current choice timestamp.
-The choice timestamp is a revision/freshness watermark, not a cutoff on
-activity history. Aggregate and canonical outputs are unaffected. The read
-paths use a repeatable database snapshot while resolving eligible participant
-IDs, so withdrawn or not-yet-recomputed individual rows never reach the
-response for that snapshot.
+`analyticsLastComputedAt` is strictly newer than
+`Participant.learningAnalyticsChoiceAt`. `learningAnalyticsChoiceAt` is a
+revision/race/freshness watermark for this read gate, not a cutoff on activity
+history. Withdrawal excludes individual rows immediately; a newly recorded
+choice remains hidden until a successful recomputation makes the course marker
+strictly later than that choice. Aggregate and canonical outputs are
+unaffected. Aggregate outputs follow their normal recomputation schedule and
+are not recomputed immediately when the choice changes. The read paths use a
+repeatable database snapshot while resolving eligible participant IDs, so
+withdrawn or not-yet-recomputed individual rows never reach the response for
+that snapshot. They also require a current `Participation` row for the same
+course and participant; leaderboard opt-out does not remove learning-analytics
+data. Archived courses expose no individual rows while their aggregate outputs
+remain available.
+
+### Learning analytics coordinator API
+
+`Course.analyticsStatus` exposes the public state needed by a caller:
+`areAnalyticsValid`, `analyticsLastComputedAt`, `analyticsFinalizedAt`, and
+`chatAnalyticsValidAt` (`packages/graphql/src/schema/course.ts:CourseAnalyticsStatus`).
+`recomputeCourseAnalytics` accepts `INCREMENTAL`, `FINALIZE`, or `FULL` and
+requires a full-access user with `ADMIN` permission on the course. The global
+`recomputeLearningAnalyticsBatch` mutation accepts an explicit course-ID list
+and requires the `ADMIN` role (`packages/graphql/src/schema/mutation.ts`). Both
+operations enqueue the public Hatchet coordinator. The public coordinator
+dispatches Hatchet workflows and owns scheduling, selection, bounded fan-out,
+locking, and product-state transitions; the private analytics engine owns the
+business computation. No analytics computation runs in the GraphQL request.
+
+All course-level analytics reads require both
+`isLearningAnalyticsEnabled` and `areAnalyticsValid`. The individual activity
+read also applies the same conditions through its owning course. A public run
+invalidates an enabled course before private computation, so a failed or
+cancelled run cannot expose a partial result. Start captures a transient
+database-time fence after the public locks are held; completion under those locks
+publishes no marker if a current member's choice time is at or after the fence.
+That fence is public control metadata and is never sent through the private `v1`
+engine contract. Individual participant rows add
+the current consent and metadata checks; aggregate rows remain governed by the
+course-level status and normal recomputation schedule. The nightly selector
+keyset-pages candidate course IDs before checking the current page's
+memberships. It forces full mode when a membership choice is at or after the
+course marker (equality is fail-safe), or when the marker is missing, for either
+a `true` or `false` transition, and prioritizes those dirty-choice courses ahead
+of ordinary recomputation. The relevant gates are in
+`packages/graphql/src/services/analytics.ts` (`getCourseActivityAnalytics`,
+`getCourseWeeklyActivity`, `getCoursePerformanceAnalytics`, and
+`getActivityAnalytics`).
+
+Coordinator dispatch remains default-off. The service only prepares or enqueues
+work when `LEARNING_ANALYTICS_COORDINATOR_ENABLED` is exactly `true`, and batch
+preparation requires the explicitly configured
+`LEARNING_ANALYTICS_BATCH_IN_FLIGHT_LIMIT` value. Public batches remain globally
+serialized while their bounded parallel lanes process independent courses, and
+same-course workflows remain serialized; see [Async & Workers](./async-and-workers.md)
+for the UTC schedule, lane limit, and deadline behavior.
 
 ### Assessment invitation API
 

@@ -23,6 +23,11 @@ import {
   type ElementData,
   type ElementInstanceOptions,
   type ElementInstanceResults,
+  type LearningAnalyticsBatchControlInput,
+  type LearningAnalyticsBatchDeadlineInput,
+  type LearningAnalyticsBatchLaneInput,
+  type LearningAnalyticsCourseCompletionInput,
+  type LearningAnalyticsCourseControlInput,
 } from '@klicker-uzh/types'
 import {
   getInitialInstanceResults,
@@ -146,6 +151,71 @@ export async function testInitialization(
 
   // initialize tasks to be called
   const tasks = {
+    learningAnalyticsScheduledDispatch: hatchet.task({
+      name: 'learning-analytics-scheduled-dispatch-test',
+      fn: vi.fn(async (_input: Record<string, never>) => ({
+        dispatched: false,
+      })),
+    }),
+    learningAnalyticsBatchCoordinator: hatchet.task({
+      name: 'learning-analytics-public-batch-v1-test',
+      fn: vi.fn(async (input: LearningAnalyticsBatchControlInput) => ({
+        runId: input.runId,
+        selectedCourses: 0,
+        completedCourses: 0,
+      })),
+    }),
+    learningAnalyticsBatchSelector: hatchet.task({
+      name: 'learning-analytics-batch-selector-test',
+      fn: vi.fn(async (_input: LearningAnalyticsBatchControlInput) => ({
+        courses: [],
+      })),
+    }),
+    learningAnalyticsBatchDeadline: hatchet.task({
+      name: 'learning-analytics-batch-deadline-test',
+      fn: vi.fn(async (_input: LearningAnalyticsBatchDeadlineInput) => ({
+        remainingSeconds: 3600,
+      })),
+    }),
+    learningAnalyticsBatchLane: hatchet.task({
+      name: 'learning-analytics-public-batch-lane-v1-test',
+      fn: vi.fn(async (_input: LearningAnalyticsBatchLaneInput) => ({
+        completedCourseIds: [],
+        failedCourseIds: [],
+        notStartedCourseIds: [],
+      })),
+    }),
+    learningAnalyticsSpawnGate: hatchet.task({
+      name: 'learning-analytics-spawn-gate-test',
+      fn: vi.fn(async (_input: { stopSpawningAt: string }) => ({
+        canStart: false,
+      })),
+    }),
+    learningAnalyticsCourseCoordinator: hatchet.task({
+      name: 'learning-analytics-public-course-v1-test',
+      fn: vi.fn(async (input: LearningAnalyticsCourseControlInput) => ({
+        courseId: input.courseId,
+        completedAt: '2026-01-01T00:00:00Z',
+        cleanupOnly: false,
+      })),
+    }),
+    learningAnalyticsCourseStart: hatchet.task({
+      name: 'learning-analytics-course-start-test',
+      fn: vi.fn(async (input: LearningAnalyticsCourseControlInput) => ({
+        courseId: input.courseId,
+        request: input,
+        cleanupOnly: false,
+        fenceAt: '2026-01-01T00:00:00Z',
+      })),
+    }),
+    learningAnalyticsCourseCompletion: hatchet.task({
+      name: 'learning-analytics-course-completion-test',
+      fn: vi.fn(async (input: LearningAnalyticsCourseCompletionInput) => ({
+        courseId: input.request.courseId,
+        completedAt: input.completedAt,
+        cleanupOnly: input.cleanupOnly,
+      })),
+    }),
     createAuditLogEntry: hatchet.task({
       name: 'create-audit-log-entry',
       fn: async ({

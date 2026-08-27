@@ -6,6 +6,7 @@ import builder from './builder.js'
 
 import './schema/achievement.js'
 import './schema/activities.js'
+import './schema/analytics.js'
 import './schema/assessment.js'
 import './schema/course.js'
 import './schema/element.js'
@@ -65,6 +66,14 @@ import {
 } from './services/notifications.js'
 import { handleUpdateWeeklyTimelineEntries } from './services/participants.js'
 import { handlePublishScheduledPracticeQuiz } from './services/practiceQuizzes.js'
+import {
+  handleCanStartLearningAnalyticsCourse,
+  handleCompleteLearningAnalyticsCourse,
+  handleGetLearningAnalyticsBatchDeadline,
+  handlePrepareScheduledLearningAnalyticsBatch,
+  handleSelectLearningAnalyticsBatchCourses,
+  handleStartLearningAnalyticsCourse,
+} from './services/learningAnalyticsCoordinator.js'
 
 export const schema = builder.toSchema({
   schemaDirectives: {
@@ -73,6 +82,12 @@ export const schema = builder.toSchema({
 })
 
 export const handlers: HatchetHandlers = {
+  handlePrepareScheduledLearningAnalyticsBatch,
+  handleSelectLearningAnalyticsBatchCourses,
+  handleGetLearningAnalyticsBatchDeadline,
+  handleCanStartLearningAnalyticsCourse,
+  handleStartLearningAnalyticsCourse,
+  handleCompleteLearningAnalyticsCourse,
   handleFinalRandomGroupAssignments,
   handleRunningRandomGroupAssignments,
   handleUpdateGroupAverageScores,

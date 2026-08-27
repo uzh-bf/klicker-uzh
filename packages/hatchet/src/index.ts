@@ -4,6 +4,7 @@ import { prisma } from '@klicker-uzh/prisma'
 import type { HatchetHandlers, PreparedHatchetTasks } from '@klicker-uzh/types'
 import type { PubSub } from 'graphql-yoga'
 import type { Redis } from 'ioredis'
+import { prepareLearningAnalyticsTasks } from './learningAnalytics.js'
 
 export type { HatchetHandlers, PreparedHatchetTasks } from '@klicker-uzh/types'
 export * from './client.js'
@@ -59,6 +60,12 @@ export function prepareHatchetTasks({
       return preparedTasks
     },
   }
+
+  const learningAnalyticsTasks = prepareLearningAnalyticsTasks({
+    hatchet,
+    handlers,
+    globalContext,
+  })
 
   // ! AUDIT LOGGING
   // #region
@@ -355,6 +362,7 @@ export function prepareHatchetTasks({
   })
 
   const tasks = {
+    ...learningAnalyticsTasks,
     updateGroupAverageScores,
     runningRandomGroupAssignments,
     finalRandomGroupAssignments,

@@ -22,6 +22,12 @@ query GetSingleCourse($courseId: String!) {
     maxGroupSize
     preferredGroupSize
     randomAssignmentFinalized
+    analyticsStatus {
+      areAnalyticsValid
+      analyticsLastComputedAt
+      analyticsFinalizedAt
+      chatAnalyticsValidAt
+    }
     derivedAccess
     numSharedUsers
     permissionLevel
