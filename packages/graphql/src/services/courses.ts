@@ -22,6 +22,7 @@ import { prop, sortBy } from 'remeda'
 import type { ICourse, ILeaderboardEntry } from '@/schema/course.js'
 import type { Context, ContextWithUser } from '../lib/context.js'
 import convertDateToUTCDatetime from '../lib/convertDateToUTCDatetime.js'
+import { lockLearningAnalyticsCourseMutation } from '../lib/learningAnalyticsLocks.js'
 import { computeRanks, orderStacks } from '../lib/util.js'
 import {
   calculateAssessmentCourseScores,
@@ -2686,9 +2687,45 @@ export async function toggleArchiveCourse(
   { id, isArchived }: { id: string; isArchived: boolean },
   ctx: ContextWithUser
 ) {
-  const course = await ctx.prisma.course.update({
-    where: { id, endDate: { lte: new Date() } },
-    data: { isArchived },
+  const now = new Date()
+  const course = await ctx.prisma.$transaction(async (transaction) => {
+    await lockLearningAnalyticsCourseMutation(transaction, id)
+    const current = await transaction.course.findUnique({
+      where: { id, endDate: { lte: now } },
+      select: { isArchived: true },
+    })
+    const restoresArchivedCourse = !isArchived && current?.isArchived
+    const invalidationRows = restoresArchivedCourse
+      ? await transaction.$queryRaw<Array<{ invalidatedAt: Date }>>(DB.Prisma
+          .sql`
+          SELECT clock_timestamp() AS "invalidatedAt"
+        `)
+      : []
+    const invalidatedAt = invalidationRows[0]?.invalidatedAt
+    if (
+      restoresArchivedCourse &&
+      (!(invalidatedAt instanceof Date) ||
+        Number.isNaN(invalidatedAt.valueOf()))
+    ) {
+      throw new Error(
+        'PostgreSQL did not return an analytics invalidation time'
+      )
+    }
+
+    return transaction.course.update({
+      where: { id, endDate: { lte: now } },
+      data: {
+        isArchived,
+        ...(restoresArchivedCourse
+          ? {
+              areAnalyticsValid: false,
+              analyticsLastComputedAt: invalidatedAt,
+              chatAnalyticsValidAt: null,
+              analyticsFinalizedAt: null,
+            }
+          : {}),
+      },
+    })
   })
 
   return course

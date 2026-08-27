@@ -11,6 +11,7 @@ import {
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { setLearningAnalyticsConsent } from '../src/services/participants.js'
+import { toggleArchiveCourse } from '../src/services/courses.js'
 import {
   completeLearningAnalyticsCourse,
   selectLearningAnalyticsBatchCourses,
@@ -36,6 +37,19 @@ function participantContext(participantId: string): ContextWithUser {
     user: {
       sub: participantId,
       role: UserRole.PARTICIPANT,
+      scope: UserLoginScope.FULL_ACCESS,
+      catalystInstitutional: false,
+      catalystIndividual: false,
+    },
+  } as unknown as ContextWithUser
+}
+
+function ownerContext(userId: string): ContextWithUser {
+  return {
+    prisma,
+    user: {
+      sub: userId,
+      role: UserRole.USER,
       scope: UserLoginScope.FULL_ACCESS,
       catalystInstitutional: false,
       catalystIndividual: false,
@@ -372,7 +386,7 @@ describe('learning-analytics coordinator PostgreSQL integration', () => {
     )
   })
 
-  it('rejects an in-flight recomputation after consent changes and accepts a fresh run', async () => {
+  it('rejects in-flight recomputation after consent or archive changes and accepts fresh runs', async () => {
     const user = await prisma.user.create({
       data: {
         email: `${TEST_PREFIX}@example.test`,
@@ -631,7 +645,10 @@ describe('learning-analytics coordinator PostgreSQL integration', () => {
     })
     await prisma.course.update({
       where: { id: course.id },
-      data: { isArchived: true },
+      data: {
+        isArchived: true,
+        endDate: new Date('2026-08-20T00:00:00.000Z'),
+      },
     })
     const hiddenAfterArchive = await getCourseActivityAnalytics(
       { courseId: course.id },
@@ -645,6 +662,172 @@ describe('learning-analytics coordinator PostgreSQL integration', () => {
     )
     expect(hiddenPerformanceAfterArchive?.participantPerformances).toHaveLength(
       0
+    )
+
+    await prisma.course.update({
+      where: { id: course.id },
+      data: { isArchived: false },
+    })
+    const inFlightRequest = {
+      ...request,
+      runId: '00000000-0000-0000-0000-000000000004',
+      mode: 'incremental' as const,
+      windowSince: '2026-08-26',
+    }
+    const inFlightStart = await startLearningAnalyticsCourse(
+      inFlightRequest,
+      prisma
+    )
+    expect(inFlightStart.cleanupOnly).toBe(false)
+    await prisma.course.update({
+      where: { id: course.id },
+      data: { isArchived: true },
+    })
+
+    const markerBeforeCleanup = await prisma.course.findUniqueOrThrow({
+      where: { id: course.id },
+      select: { analyticsLastComputedAt: true },
+    })
+    const cleanupRequest = {
+      ...request,
+      runId: '00000000-0000-0000-0000-000000000005',
+    }
+    const cleanupStart = await startLearningAnalyticsCourse(
+      cleanupRequest,
+      prisma
+    )
+    expect(cleanupStart.cleanupOnly).toBe(true)
+    await prisma.participantCourseAnalytics.deleteMany({
+      where: { courseId: course.id },
+    })
+    await prisma.participantPerformance.deleteMany({
+      where: { courseId: course.id },
+    })
+    await completeLearningAnalyticsCourse(
+      {
+        request: cleanupStart.request,
+        completedAt: new Date().toISOString(),
+        cleanupOnly: true,
+        fenceAt: cleanupStart.fenceAt,
+      },
+      prisma
+    )
+    await expect(
+      prisma.course.findUniqueOrThrow({
+        where: { id: course.id },
+        select: { analyticsLastComputedAt: true },
+      })
+    ).resolves.toEqual(markerBeforeCleanup)
+
+    const unarchiveBefore = await readPostgresNow()
+    await toggleArchiveCourse(
+      { id: course.id, isArchived: false },
+      ownerContext(user.id)
+    )
+    const unarchiveAfter = await readPostgresNow()
+    const restoredCourse = await prisma.course.findUniqueOrThrow({
+      where: { id: course.id },
+      select: {
+        isArchived: true,
+        areAnalyticsValid: true,
+        analyticsLastComputedAt: true,
+        chatAnalyticsValidAt: true,
+        analyticsFinalizedAt: true,
+      },
+    })
+    expect(restoredCourse).toMatchObject({
+      isArchived: false,
+      areAnalyticsValid: false,
+      chatAnalyticsValidAt: null,
+      analyticsFinalizedAt: null,
+    })
+    expect(restoredCourse.analyticsLastComputedAt).toBeInstanceOf(Date)
+    expect(
+      restoredCourse.analyticsLastComputedAt!.getTime()
+    ).toBeGreaterThanOrEqual(unarchiveBefore.getTime())
+    expect(
+      restoredCourse.analyticsLastComputedAt!.getTime()
+    ).toBeLessThanOrEqual(unarchiveAfter.getTime())
+    await expect(
+      getCourseActivityAnalytics({ courseId: course.id }, ctx)
+    ).resolves.toBeNull()
+
+    await completeLearningAnalyticsCourse(
+      {
+        request: inFlightStart.request,
+        completedAt: new Date().toISOString(),
+        cleanupOnly: false,
+        fenceAt: inFlightStart.fenceAt,
+      },
+      prisma
+    )
+    await expect(
+      prisma.course.findUniqueOrThrow({
+        where: { id: course.id },
+        select: {
+          areAnalyticsValid: true,
+          analyticsLastComputedAt: true,
+        },
+      })
+    ).resolves.toEqual({
+      areAnalyticsValid: false,
+      analyticsLastComputedAt: restoredCourse.analyticsLastComputedAt,
+    })
+
+    const selectedAfterUnarchive = await selectLearningAnalyticsBatchCourses(
+      {
+        runId: '00000000-0000-4000-8000-000000000022',
+        batchDate: '2026-08-27',
+        selection: 'nightly',
+        includePlatform: true,
+        inFlightLimit: 10,
+        stopSpawningAt: '2026-08-27T03:45:00.000Z',
+        hardDeadlineAt: '2026-08-27T04:00:00.000Z',
+      },
+      prisma
+    )
+    expect(
+      selectedAfterUnarchive.courses.find(
+        (selectedCourse) => selectedCourse.courseId === course.id
+      )
+    ).toMatchObject({ courseId: course.id, mode: 'full' })
+
+    await prisma.participantCourseAnalytics.create({
+      data: {
+        courseId: course.id,
+        participantId: participant.id,
+        activeWeeks: 1,
+        activeDaysPerWeek: 1,
+        meanElementsPerDay: 1,
+        activityLevel: ActivityLevel.MEDIUM,
+      },
+    })
+    const rebuildRequest = {
+      ...request,
+      runId: '00000000-0000-0000-0000-000000000006',
+      mode: 'incremental' as const,
+      windowSince: '2026-08-26',
+    }
+    const rebuildStart = await startLearningAnalyticsCourse(
+      rebuildRequest,
+      prisma
+    )
+    expect(rebuildStart.request.mode).toBe('full')
+    await completeLearningAnalyticsCourse(
+      {
+        request: rebuildStart.request,
+        completedAt: new Date().toISOString(),
+        cleanupOnly: false,
+        fenceAt: rebuildStart.fenceAt,
+      },
+      prisma
+    )
+    const visibleAfterArchiveRebuild = await getCourseActivityAnalytics(
+      { courseId: course.id },
+      ctx
+    )
+    expect(visibleAfterArchiveRebuild?.participantCourseAnalytics).toHaveLength(
+      1
     )
   })
 })

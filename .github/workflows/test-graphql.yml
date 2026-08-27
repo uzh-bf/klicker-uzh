@@ -219,6 +219,8 @@ jobs:
             exit 1
           fi
 
+          pnpm --filter @klicker-uzh/hatchet test
+
           cd packages/graphql
           pnpm vitest run
         env:

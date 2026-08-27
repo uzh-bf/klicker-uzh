@@ -108,7 +108,7 @@ function coursePrisma(
     memberChoiceAt?: Date | null
   } = {}
 ) {
-  let current = { ...initial }
+  let current = { areAnalyticsValid: true, ...initial }
   const queryRaw = vi.fn(
     async (query: { strings?: string[]; values?: unknown[] }) => {
       const sql = query.strings?.join(' ') ?? ''
@@ -306,8 +306,7 @@ describe('learning analytics coordinator', () => {
     })
     expect(result.courses[1]).toMatchObject({
       courseId: courseIdAt(1001),
-      mode: 'incremental',
-      windowSince: '2026-08-26',
+      mode: 'full',
     })
     expect(result.courses[2]).toMatchObject({
       courseId: courseIdAt(0),
@@ -475,6 +474,27 @@ describe('learning analytics coordinator', () => {
       isLearningAnalyticsEnabled: true,
       isArchived: false,
       analyticsLastComputedAt: null,
+    })
+    const request = {
+      ...courseRequest(),
+      windowSince: '2026-08-26',
+    }
+
+    await expect(
+      startLearningAnalyticsCourse(request, fixture.prisma)
+    ).resolves.toMatchObject({
+      courseId,
+      request: courseRequest('full'),
+    })
+    expect(fixture.queryRaw).toHaveBeenCalledOnce()
+  })
+
+  it('upgrades a direct incremental request to full while analytics are invalid', async () => {
+    const fixture = coursePrisma({
+      isLearningAnalyticsEnabled: true,
+      isArchived: false,
+      areAnalyticsValid: false,
+      analyticsLastComputedAt: new Date('2026-08-27T01:00:00.000Z'),
     })
     const request = {
       ...courseRequest(),

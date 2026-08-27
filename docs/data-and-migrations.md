@@ -69,8 +69,8 @@ membership, consent, or disclosure metadata is no longer eligible. For nightly
 requests, the selector first keyset-pages candidate course IDs, then derives
 for that page whether any membership's `learningAnalyticsChoiceAt` is at or
 after `Course.analyticsLastComputedAt` with a bounded `EXISTS` check. A missing
-course marker or that derived dirty-choice value selects full mode for both
-consent transitions (equality is fail-safe). On the normal nightly schedule,
+course marker, an invalid course, or that derived dirty-choice value selects full
+mode for both consent transitions (equality is fail-safe). On the normal nightly schedule,
 that full run includes all eligible stored history after a `true` choice and
 cleans individual rows after a `false` choice; aggregate outputs stay on their
 ordinary recomputation path. Cleanup candidates are ordered before invalid
@@ -103,7 +103,12 @@ the private engine clock; they use PostgreSQL time at publication.
 The fence stays in the public Hatchet control layer and never enters the private
 `v1` engine contract. Cleanup-only completions, disabled or archived courses,
 and completions whose start fence predates the stored public marker leave public
-state unchanged.
+state unchanged. Restoring an archived course acquires the same course lock,
+invalidates its analytics, advances the public marker with PostgreSQL time, and
+clears its chat and finalization markers. The advanced marker rejects any
+pre-restoration completion, while the invalid state makes the next selector pass
+and any directly dispatched incremental or finalize request require a full rebuild
+before any individual analytics become readable again.
 
 Analytics tables keyed by a chatbot or live quiz do not duplicate `courseId`;
 course scope resolves through the owning `Chatbot` or `LiveQuiz`. This prevents

@@ -236,7 +236,11 @@ function courseMode(
   input: LearningAnalyticsBatchControlInput
 ): CourseWorkflowMode {
   if (input.selection === 'explicit-full') return 'full'
-  if (!row.analyticsLastComputedAt || row.hasDirtyLearningAnalyticsChoice)
+  if (
+    !row.areAnalyticsValid ||
+    !row.analyticsLastComputedAt ||
+    row.hasDirtyLearningAnalyticsChoice
+  )
     return 'full'
   const finalizationCutoff = new Date(`${input.batchDate}T00:00:00.000Z`)
   finalizationCutoff.setUTCDate(
@@ -452,6 +456,7 @@ export async function startLearningAnalyticsCourse(
       select: {
         isLearningAnalyticsEnabled: true,
         isArchived: true,
+        areAnalyticsValid: true,
         analyticsLastComputedAt: true,
       },
     })
@@ -459,8 +464,9 @@ export async function startLearningAnalyticsCourse(
 
     let effectiveRequest = request
     if (request.mode !== 'full') {
-      let hasRecentChoice = course.analyticsLastComputedAt === null
-      if (!hasRecentChoice) {
+      let requiresFull =
+        !course.areAnalyticsValid || course.analyticsLastComputedAt === null
+      if (!requiresFull) {
         const revisionRows = await transaction.$queryRaw<
           Array<{ hasRecentChoice: boolean }>
         >(
@@ -482,9 +488,9 @@ export async function startLearningAnalyticsCourse(
             'PostgreSQL did not return an analytics revision check'
           )
         }
-        hasRecentChoice = recentChoice
+        requiresFull = recentChoice
       }
-      if (hasRecentChoice) effectiveRequest = fullCourseRequest(request)
+      if (requiresFull) effectiveRequest = fullCourseRequest(request)
     }
 
     const cleanupOnly = !course.isLearningAnalyticsEnabled || course.isArchived
