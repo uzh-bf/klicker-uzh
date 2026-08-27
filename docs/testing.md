@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-26'
+timestamp: '2026-08-27'
 tags:
   - testing
   - ci
@@ -20,7 +20,7 @@ tags:
 | React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                   | `npx agent-browser@0.32.2` against the adopting app                                                                 |
 | GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                  |
 | Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
-| UI / user flows                                                                   | Playwright e2e                                                                             | see routing below                                                                                                   |
+| UI / user flows                                                                   | Playwright e2e                                                                             | `pnpm playwright:host -- <args>` from the host; see routing below                                                   |
 | Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
 
 For server-paginated manage lists, browser coverage must exercise finite page
@@ -72,11 +72,21 @@ The Office Add-in has a separate host boundary. Its pure URL contract runs under
 
 **Playwright is the sole e2e test suite.** All e2e specs live under `playwright/`.
 
+Local Playwright has a strict host/container boundary. The canonical command is
+`pnpm playwright:host -- <args>` from a host shell. It reconciles the exact
+devrouter workspace, maps every browser origin, discovers the workspace's
+random loopback PostgreSQL port, and runs Playwright with host dependencies and
+browser binaries. Package scripts route to the same launcher, while
+`playwright.config.ts` rejects direct local commands and every local container
+before global setup can reset data. The devcontainer also sets a non-directory
+browser path so browser installation fails there. GitHub Actions is explicitly
+allowed and retains the direct official-container workflow.
+
 Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `Z-credential-verification`).
 
 |               | Playwright (`playwright/`)                                 |
 | ------------- | ---------------------------------------------------------- |
-| Stack scripts | `dev:playwright` / `start:playwright`                      |
+| Local command | `pnpm playwright:host -- <args>`                           |
 | Infisical env | `dev-playwright`                                           |
 | Seed          | own `seedDatabase()` in `global-setup.ts` (once, wipes DB) |
 | CI            | official Playwright container, 8-way shard, all PRs        |

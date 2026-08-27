@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-08-25'
+timestamp: '2026-08-27'
 tags:
   - environment
   - onboarding
@@ -56,6 +56,14 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
         Use `devrouter workspace up <branch-name>` from the main repository to create a new worktree. Do not use bare `devpod up` or manual route-token loops; `ensure` owns the persisted identity, Git mount, overlay, aliases, runtime proof, and routes together.
      3. Those namespaced hosts only work because `allowedDevOrigins` in `packages/next-config/index.js` is `['**.localhost']` in development (and `undefined` in production) — Next's implicit `*.localhost` matches a single label only. If that glob ever stops covering a worktree host, the symptom is an app that serves HTML but never hydrates, with no obvious error.
 3. **Logs:** The dev servers auto-start inside the container. View logs via `devrouter exec . -- tail -f /tmp/dev.log`.
+
+Playwright is the deliberate toolchain exception. Run
+`pnpm playwright:host -- <args>` from the host; the launcher calls
+`devrouter ensure`, resolves the exact worktree routes, and connects the host
+Prisma setup to that workspace's random loopback PostgreSQL port. The browser
+and Playwright process never enter the devcontainer. Direct local Playwright
+commands fail before database cleanup, and the devcontainer blocks browser
+downloads. GitHub Actions keeps its existing official Playwright container.
 
 For OpenRouter-backed Chat, follow the host-side `rs-infisical-operator`
 workflow in [AGENTS.md](../AGENTS.md). Use only seeded or synthetic content;
