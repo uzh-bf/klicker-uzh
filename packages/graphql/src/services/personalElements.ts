@@ -175,7 +175,7 @@ const sourceSchema = z
   .object({
     sourceId: z.string().trim().min(1).max(MAX_ID_LENGTH),
     chunkId: z.string().trim().min(1).max(MAX_ID_LENGTH),
-    title: z.string().trim().min(1).max(MAX_TITLE_LENGTH).nullish(),
+    title: z.string().trim().min(1).max(MAX_TITLE_LENGTH).optional(),
     url: z
       .string()
       .trim()
@@ -184,11 +184,11 @@ const sourceSchema = z
       .refine((value) => /^https?:\/\//i.test(value), {
         message: 'Source URLs must use http or https',
       })
-      .nullish(),
-    page: z.number().finite().nullish(),
+      .optional(),
+    page: z.number().finite().optional(),
     metadata: z
       .record(z.string().max(MAX_ID_LENGTH), sourceMetadataValueSchema)
-      .nullish(),
+      .optional(),
   })
   .strict()
   .superRefine((source, refinementContext) => {
@@ -592,7 +592,10 @@ function normalizeCandidates(
   }
 
   const parsed = candidates.map((candidate) =>
-    parsePersonalElementInput(candidateSchema, candidate)
+    parsePersonalElementInput(candidateSchema, {
+      ...candidate,
+      sources: toPersistedSources(candidate.sources),
+    })
   )
   const candidateIds = parsed.map((candidate) => candidate.candidateId)
   if (new Set(candidateIds).size !== candidateIds.length) {
@@ -602,6 +605,22 @@ function normalizeCandidates(
     )
   }
   return parsed
+}
+
+// The GraphQL wire contract allows null for optional source fields; Prisma
+// rejects null in Json values, so absent fields are normalized to undefined
+// before validation and persistence.
+function toPersistedSources(
+  sources: readonly PersonalElementSourceInput[]
+) {
+  return sources.map((source) => ({
+    sourceId: source.sourceId,
+    chunkId: source.chunkId,
+    title: source.title ?? undefined,
+    url: source.url ?? undefined,
+    page: source.page ?? undefined,
+    metadata: source.metadata ?? undefined,
+  }))
 }
 
 const NEW_PERSONAL_ELEMENT_STATE = {
@@ -1105,15 +1124,15 @@ export async function updatePersonalElement(
     name: input.name?.trim(),
     content: input.content?.trim(),
     explanation: input.explanation?.trim(),
-    sources: input.sources ?? undefined,
+    sources: input.sources ? toPersistedSources(input.sources) : undefined,
   }
   const parsedUpdate = parsePersonalElementInput(
     z
       .object({
-        name: z.string().min(1).max(MAX_TITLE_LENGTH).nullish(),
-        content: z.string().min(1).max(8_192).nullish(),
-        explanation: cardExplanationSchema.nullish(),
-        sources: sourcesSchema.nullish(),
+        name: z.string().min(1).max(MAX_TITLE_LENGTH).optional(),
+        content: z.string().min(1).max(8_192).optional(),
+        explanation: cardExplanationSchema.optional(),
+        sources: sourcesSchema.optional(),
       })
       .strict(),
     updateData
