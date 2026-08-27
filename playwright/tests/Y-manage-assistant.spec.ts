@@ -76,18 +76,22 @@ test.describe('Manage Assistant — Messaging', () => {
       assistant.getByText('New single-choice question ready for review')
     ).toBeVisible()
 
-    // Real question preview (StudentElement), rendered from the signed
-    // proposal payload. Scope to the preview's testids so the assertions do not
-    // also match the card's collapsible "Show raw JSON" block, whose serialized
-    // payload contains the same strings.
+    // Static lecturer review rendered from the signed proposal payload. It
+    // exposes correctness and feedback before the draft is created.
     await expect(
-      assistant.getByTestId('instance-question-content')
+      assistant.getByTestId('chat-manage-proposal-question')
     ).toContainText('What is the powerhouse of the cell?')
-    await expect(assistant.getByTestId('sc-0-answer-option-0')).toContainText(
-      'Mitochondria'
+    const options = assistant.getByTestId('chat-manage-proposal-option')
+    await expect(options).toHaveCount(2)
+    await expect(options.nth(0)).toContainText('Mitochondria')
+    await expect(options.nth(0)).toContainText('Correct')
+    await expect(options.nth(0)).toContainText(
+      'Correct: mitochondria generate most cellular ATP.'
     )
-    await expect(assistant.getByTestId('sc-0-answer-option-1')).toContainText(
-      'Nucleus'
+    await expect(options.nth(1)).toContainText('Nucleus')
+    await expect(options.nth(1)).toContainText('Incorrect')
+    await expect(options.nth(1)).toContainText(
+      'The nucleus stores DNA but is not the cellular powerhouse.'
     )
 
     await expect(

@@ -155,6 +155,8 @@ One narrow exception supports conversational revisions such as “make this ques
 
 A total 60-second abort deadline covers body parsing, the MCP transport's actual composed fetch signal, model streaming, and the response-lifetime slot, because self-hosted Next does not itself enforce the route's exported `maxDuration`.
 
+Signed question proposals render as static lecturer reviews rather than interactive student previews. Choice questions show every option with explicit “Correct” or “Incorrect” text and its answer feedback; free-text questions show sample solutions and response-length restrictions. Both forms show the general explanation and use the sanitized Markdown renderer. The raw canonical JSON remains available only as an optional disclosure for diagnosis.
+
 Inline base64 images make parsing memory-intensive. Only one Manage request per Chat pod may enter the body/model path at a time; an overlapping authenticated request receives a generic retryable `503` before its body is read. Staging and production therefore request 200 MiB and limit the Chat pod to 400 MiB: a production-standalone probe with ten concurrent 15.5 MiB requests peaked at 235 MiB, below the 280 MiB (70%) risk threshold, with one parsed request and nine pre-read rejections. The Manage composer accepts at most two 5 MiB images so its largest supported request fits the route envelope; participant chat intentionally retains its separate three-image limit.
 
 The Manage assistant's response-quality guardrails are part of the system prompt:

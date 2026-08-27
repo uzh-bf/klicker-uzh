@@ -80,11 +80,21 @@ const DEFAULT_PROPOSAL_PAYLOAD = {
   name: 'Powerhouse of the cell',
   options: {
     choices: [
-      { correct: true, ix: 0, value: 'Mitochondria' },
-      { correct: false, ix: 1, value: 'Nucleus' },
+      {
+        correct: true,
+        feedback: 'Correct: mitochondria generate most cellular ATP.',
+        ix: 0,
+        value: 'Mitochondria',
+      },
+      {
+        correct: false,
+        feedback: 'The nucleus stores DNA but is not the cellular powerhouse.',
+        ix: 1,
+        value: 'Nucleus',
+      },
     ],
     displayMode: 'LIST',
-    hasAnswerFeedbacks: false,
+    hasAnswerFeedbacks: true,
     hasSampleSolution: true,
   },
   pointsMultiplier: 1,
