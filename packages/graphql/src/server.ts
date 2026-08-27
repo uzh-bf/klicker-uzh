@@ -1,5 +1,9 @@
 export {
+  abortCardGenerationLease,
+  claimCardGenerationLease,
+  completeCardGenerationLease,
   createPersonalElements,
+  discardPersonalElementCandidate,
   deletePersonalElement,
   getPersonalElementCounts,
   listPersonalElements,
@@ -8,8 +12,9 @@ export {
 } from './services/personalElements.js'
 
 export type {
+  CardGenerationLeaseInput,
   CreatePersonalElementsInput,
-  PersonalElementActor,
+  DiscardPersonalElementCandidateInput,
   PersonalElementCandidate,
   PersonalElementServiceContext,
   PersonalElementSource,

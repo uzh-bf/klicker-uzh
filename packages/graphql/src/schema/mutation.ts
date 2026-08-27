@@ -76,11 +76,7 @@ import {
   LiveQuizMeta,
 } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
-import {
-  PersonalElement,
-  PersonalElementCandidateInput,
-  PersonalElementSourceInput,
-} from './personalElement.js'
+import { PersonalElement } from './personalElement.js'
 import {
   AvatarSettingsInput,
   GroupMessage,
@@ -629,37 +625,6 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createPersonalElements: t.withAuth(asParticipant).field({
-        nullable: true,
-        type: [PersonalElement],
-        args: {
-          courseId: t.arg.string({ required: true }),
-          candidates: t.arg({
-            type: [PersonalElementCandidateInput],
-            required: true,
-          }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await PersonalElementService.createPersonalElements(
-            {
-              courseId: args.courseId,
-              candidates: args.candidates.map((candidate) => ({
-                ...candidate,
-                sources: candidate.sources.map((source) => ({
-                  ...source,
-                  title: source.title ?? undefined,
-                  url: source.url ?? undefined,
-                })),
-              })),
-            },
-            {
-              prisma: ctx.prisma,
-              actor: { participantId: ctx.user.sub, role: ctx.user.role },
-            }
-          )
-        },
-      }),
-
       respondToPersonalElement: t.withAuth(asParticipant).field({
         nullable: true,
         type: PersonalElement,
@@ -671,45 +636,8 @@ export const Mutation = builder.mutationType({
         resolve: async (_, args, ctx) => {
           return await PersonalElementService.respondToPersonalElement(args, {
             prisma: ctx.prisma,
-            actor: { participantId: ctx.user.sub, role: ctx.user.role },
+            participantId: ctx.user.sub,
           })
-        },
-      }),
-
-      updatePersonalElement: t.withAuth(asParticipant).field({
-        nullable: true,
-        type: PersonalElement,
-        args: {
-          id: t.arg.string({ required: true }),
-          expectedVersion: t.arg.int({ required: true }),
-          name: t.arg.string({ required: false }),
-          content: t.arg.string({ required: false }),
-          explanation: t.arg.string({ required: false }),
-          sources: t.arg({
-            type: [PersonalElementSourceInput],
-            required: false,
-          }),
-        },
-        resolve: async (_, args, ctx) => {
-          return await PersonalElementService.updatePersonalElement(
-            {
-              id: args.id,
-              expectedVersion: args.expectedVersion,
-              name: args.name ?? undefined,
-              content: args.content ?? undefined,
-              explanation: args.explanation ?? undefined,
-              sources: args.sources?.map((source) => ({
-                ...source,
-                title: source.title ?? undefined,
-                url: source.url ?? undefined,
-                metadata: source.metadata ?? undefined,
-              })),
-            },
-            {
-              prisma: ctx.prisma,
-              actor: { participantId: ctx.user.sub, role: ctx.user.role },
-            }
-          )
         },
       }),
 
@@ -719,7 +647,7 @@ export const Mutation = builder.mutationType({
         resolve: async (_, args, ctx) => {
           return await PersonalElementService.deletePersonalElement(args, {
             prisma: ctx.prisma,
-            actor: { participantId: ctx.user.sub, role: ctx.user.role },
+            participantId: ctx.user.sub,
           })
         },
       }),

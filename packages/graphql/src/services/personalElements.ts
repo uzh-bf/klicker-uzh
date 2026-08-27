@@ -1,6 +1,6 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import { FlashcardCorrectness } from '@klicker-uzh/types'
+import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import { isDeepEqual } from 'remeda'
 import { z } from 'zod'
@@ -10,11 +10,46 @@ const PERSONAL_ELEMENT_LIMIT = 500
 const TRANSACTION_RETRY_LIMIT = 3
 const TRANSACTION_MAX_WAIT_MS = 5_000
 const TRANSACTION_TIMEOUT_MS = 15_000
+const CARD_GENERATION_LEASE_MS = 5 * 60 * 1000
 const MAX_SOURCE_COUNT = 32
 const MAX_ID_LENGTH = 128
 const MAX_TITLE_LENGTH = 256
 const MAX_URL_LENGTH = 2_048
 const MAX_METADATA_BYTES = 64 * 1024
+
+const groundingDisclaimers = new Set([
+  'die flashcard verwendet ausschließlich die informationen aus dem bereitgestellten chunk.',
+  'die flashcard verwendet ausschließlich die informationen aus dem bereitgestellten chunk',
+  'die flashcard verwendet ausschliesslich die informationen aus dem bereitgestellten chunk.',
+  'die flashcard verwendet ausschliesslich die informationen aus dem bereitgestellten chunk',
+  'the flashcard uses only the information from the provided chunk.',
+  'the flashcard uses only the information from the provided chunk',
+])
+
+const provenanceOnlyPatterns = [
+  /^(?:the|this) (?:flashcard|card) uses only (?:the )?(?:supplied|provided) (?:evidence|information|course material|chunks?)[.]?$/,
+  /^(?:the|this) (?:flashcard|card) contains only (?:the )?(?:supplied|provided) (?:evidence|information|course material|chunks?)[.]?$/,
+]
+
+function isGroundingDisclaimer(value: string) {
+  const normalized = value.trim().toLowerCase().replace(/\s+/g, ' ')
+  return (
+    groundingDisclaimers.has(normalized) ||
+    provenanceOnlyPatterns.some((pattern) => pattern.test(normalized))
+  )
+}
+
+const cardExplanationSchema = z
+  .string()
+  .trim()
+  .min(2)
+  .max(8_192)
+  .refine((value) => /[\p{L}\p{N}]/u.test(value), {
+    message: 'Generated card explanation must contain an answer',
+  })
+  .refine((value) => !isGroundingDisclaimer(value), {
+    message: 'Generated card explanation must contain the answer',
+  })
 
 const sourceMetadataValueSchema = z.union([
   z.string().max(MAX_TITLE_LENGTH),
@@ -37,6 +72,7 @@ const sourceSchema = z
         message: 'Source URLs must use http or https',
       })
       .optional(),
+    page: z.number().finite().optional(),
     metadata: z
       .record(z.string().max(MAX_ID_LENGTH), sourceMetadataValueSchema)
       .optional(),
@@ -84,11 +120,19 @@ const candidateSchema = z
     candidateId: z.string().trim().min(1).max(MAX_ID_LENGTH),
     name: z.string().trim().min(1).max(MAX_TITLE_LENGTH),
     content: z.string().trim().min(1).max(8_192),
-    explanation: z.string().trim().min(1).max(8_192),
+    explanation: cardExplanationSchema,
     sources: sourcesSchema,
     sourceMessageId: z.string().trim().min(1).max(MAX_ID_LENGTH),
     sourceToolCallId: z.string().trim().min(1).max(MAX_ID_LENGTH),
     origin: z.enum(['AI_GENERATED', 'AUTHORED']).optional(),
+  })
+  .strict()
+
+const cardGenerationLeaseInputSchema = z
+  .object({
+    planMessageId: z.string().uuid(),
+    planToolCallId: z.string().trim().min(1).max(MAX_ID_LENGTH),
+    attemptToken: z.string().trim().min(1).max(MAX_ID_LENGTH),
   })
   .strict()
 
@@ -110,14 +154,15 @@ export type UpdatePersonalElementInput = {
   sources?: readonly PersonalElementSource[]
 }
 
-export type PersonalElementActor = {
-  participantId: string
-  role: DB.UserRole
-}
-
 export type PersonalElementServiceContext = {
   prisma: DB.PrismaClient
-  actor: PersonalElementActor
+  participantId: string
+}
+
+export type CardGenerationLeaseInput = {
+  planMessageId: string
+  planToolCallId: string
+  attemptToken: string
 }
 
 function personalElementError(code: string, message = code) {
@@ -147,11 +192,8 @@ function parsePersonalElementInput<T>(schema: z.ZodType<T>, value: unknown) {
   }
 }
 
-function assertParticipantActor(actor: PersonalElementActor) {
-  if (
-    actor.role !== DB.UserRole.PARTICIPANT ||
-    actor.participantId.trim().length === 0
-  ) {
+function assertParticipantContext(context: PersonalElementServiceContext) {
+  if (context.participantId.trim().length === 0) {
     throw personalElementError(
       'PERSONAL_ELEMENTS_UNAUTHORIZED',
       'Only authenticated participants can use personal elements'
@@ -161,14 +203,14 @@ function assertParticipantActor(actor: PersonalElementActor) {
 
 async function assertCourseParticipation(
   prisma: PrismaTransactionClient,
-  actor: PersonalElementActor,
+  participantId: string,
   courseId: string
 ) {
   const participation = await prisma.participation.findUnique({
     where: {
       courseId_participantId: {
         courseId,
-        participantId: actor.participantId,
+        participantId,
       },
     },
     select: { id: true },
@@ -193,26 +235,14 @@ function normalizeCandidates(candidates: readonly PersonalElementCandidate[]) {
   const parsed = candidates.map((candidate) =>
     parsePersonalElementInput(candidateSchema, candidate)
   )
-  const keys = parsed.map(
-    (candidate) =>
-      `${candidate.sourceMessageId}\u0000${candidate.sourceToolCallId}\u0000${candidate.candidateId}`
-  )
-  if (new Set(keys).size !== keys.length) {
+  const candidateIds = parsed.map((candidate) => candidate.candidateId)
+  if (new Set(candidateIds).size !== candidateIds.length) {
     throw personalElementError(
       'PERSONAL_ELEMENTS_INVALID_INPUT',
-      'Candidate linkage must be unique within a batch'
+      'Candidate IDs must be unique within a batch'
     )
   }
-
   return parsed
-}
-
-function candidateKey(candidate: {
-  sourceMessageId: string | null
-  sourceToolCallId: string | null
-  candidateId: string | null
-}) {
-  return `${candidate.sourceMessageId ?? ''}\u0000${candidate.sourceToolCallId ?? ''}\u0000${candidate.candidateId ?? ''}`
 }
 
 const NEW_PERSONAL_ELEMENT_STATE = {
@@ -255,20 +285,147 @@ async function runSerializable<T>(
   throw personalElementError('PERSONAL_ELEMENTS_TRANSACTION_FAILED')
 }
 
+export async function claimCardGenerationLease(
+  input: CardGenerationLeaseInput,
+  context: PersonalElementServiceContext
+) {
+  assertParticipantContext(context)
+  const parsed = parsePersonalElementInput(
+    cardGenerationLeaseInputSchema,
+    input
+  )
+  const ownsPlanMessage = await context.prisma.chatMessage.findFirst({
+    where: {
+      id: parsed.planMessageId,
+      thread: { participantId: context.participantId },
+    },
+    select: { id: true },
+  })
+  if (!ownsPlanMessage) {
+    throw personalElementError(
+      'CARD_GENERATION_PLAN_NOT_FOUND',
+      'The card plan is not available to this participant'
+    )
+  }
+
+  const now = new Date()
+  const leaseExpiresAt = new Date(now.getTime() + CARD_GENERATION_LEASE_MS)
+  try {
+    return await context.prisma.cardGenerationLease.create({
+      data: {
+        participantId: context.participantId,
+        ...parsed,
+        leaseExpiresAt,
+      },
+    })
+  } catch (error) {
+    if (!isPrismaError(error, 'P2002')) throw error
+  }
+
+  const existing = await context.prisma.cardGenerationLease.findUnique({
+    where: {
+      participantId_planMessageId_planToolCallId: {
+        participantId: context.participantId,
+        planMessageId: parsed.planMessageId,
+        planToolCallId: parsed.planToolCallId,
+      },
+    },
+  })
+  if (existing?.completedAt) {
+    throw personalElementError(
+      'CARD_GENERATION_ALREADY_COMPLETED',
+      'This card plan has already been used'
+    )
+  }
+  if (!existing || existing.leaseExpiresAt > now) {
+    throw personalElementError(
+      'CARD_GENERATION_IN_PROGRESS',
+      'This card plan is already being generated'
+    )
+  }
+
+  const reclaimed = await context.prisma.cardGenerationLease.updateMany({
+    where: {
+      id: existing.id,
+      completedAt: null,
+      leaseExpiresAt: { lte: now },
+    },
+    data: {
+      attemptToken: parsed.attemptToken,
+      leaseExpiresAt,
+    },
+  })
+  if (reclaimed.count === 0) {
+    throw personalElementError(
+      'CARD_GENERATION_IN_PROGRESS',
+      'This card plan is already being generated'
+    )
+  }
+
+  return context.prisma.cardGenerationLease.findUniqueOrThrow({
+    where: { id: existing.id },
+  })
+}
+
+export async function completeCardGenerationLease(
+  id: string,
+  attemptToken: string,
+  context: PersonalElementServiceContext
+) {
+  assertParticipantContext(context)
+  const now = new Date()
+  const parsed = parsePersonalElementInput(
+    z.object({ id: z.string().uuid(), attemptToken: z.string().min(1) }),
+    { id, attemptToken }
+  )
+  const completed = await context.prisma.cardGenerationLease.updateMany({
+    where: {
+      id: parsed.id,
+      participantId: context.participantId,
+      attemptToken: parsed.attemptToken,
+      completedAt: null,
+      leaseExpiresAt: { gt: now },
+    },
+    data: { completedAt: new Date() },
+  })
+  return completed.count === 1
+}
+
+export async function abortCardGenerationLease(
+  id: string,
+  attemptToken: string,
+  context: PersonalElementServiceContext
+) {
+  assertParticipantContext(context)
+  const parsed = parsePersonalElementInput(
+    z.object({ id: z.string().uuid(), attemptToken: z.string().min(1) }),
+    { id, attemptToken }
+  )
+  const aborted = await context.prisma.cardGenerationLease.updateMany({
+    where: {
+      id: parsed.id,
+      participantId: context.participantId,
+      attemptToken: parsed.attemptToken,
+      completedAt: null,
+    },
+    data: { leaseExpiresAt: new Date() },
+  })
+  return aborted.count === 1
+}
+
 function toCreateData(
   candidate: PersonalElementCandidate,
-  actor: PersonalElementActor,
+  participantId: string,
   courseId: string
 ) {
   return {
-    participantId: actor.participantId,
+    participantId,
     courseId,
     version: 1,
     type: DB.ElementType.FLASHCARD,
     name: candidate.name,
     content: candidate.content,
     explanation: candidate.explanation,
-    options: {},
     sources: candidate.sources,
     ...NEW_PERSONAL_ELEMENT_STATE,
     origin:
@@ -285,41 +442,53 @@ export async function createPersonalElements(
   input: CreatePersonalElementsInput,
   context: PersonalElementServiceContext
 ) {
-  assertParticipantActor(context.actor)
+  assertParticipantContext(context)
   const candidates = normalizeCandidates(input.candidates)
 
   return runSerializable(context.prisma, async (transaction) => {
-    await assertCourseParticipation(transaction, context.actor, input.courseId)
+    await assertCourseParticipation(
+      transaction,
+      context.participantId,
+      input.courseId
+    )
+
+    const discarded = await transaction.personalElementDiscard.findMany({
+      where: {
+        participantId: context.participantId,
+        courseId: input.courseId,
+        candidateId: {
+          in: candidates.map((candidate) => candidate.candidateId),
+        },
+      },
+      select: { candidateId: true },
+    })
+    if (discarded.length > 0) {
+      throw personalElementError(
+        'PERSONAL_ELEMENTS_CANDIDATE_DISCARDED',
+        'A candidate has already been discarded'
+      )
+    }
 
     const existing = await transaction.personalElement.findMany({
       where: {
-        participantId: context.actor.participantId,
+        participantId: context.participantId,
         courseId: input.courseId,
-        OR: candidates.map((candidate) => ({
-          sourceMessageId: candidate.sourceMessageId,
-          sourceToolCallId: candidate.sourceToolCallId,
-          candidateId: candidate.candidateId,
-        })),
+        candidateId: {
+          in: candidates.map((candidate) => candidate.candidateId),
+        },
       },
     })
-    const existingByKey = new Map(
-      existing.map((element) => [candidateKey(element), element])
+    const existingByCandidateId = new Map(
+      existing.map((element) => [element.candidateId, element] as const)
     )
     const missing = candidates.filter(
-      (candidate) =>
-        !existingByKey.has(
-          candidateKey({
-            sourceMessageId: candidate.sourceMessageId,
-            sourceToolCallId: candidate.sourceToolCallId,
-            candidateId: candidate.candidateId,
-          })
-        )
+      (candidate) => !existingByCandidateId.has(candidate.candidateId)
     )
 
     if (missing.length > 0) {
       const count = await transaction.personalElement.count({
         where: {
-          participantId: context.actor.participantId,
+          participantId: context.participantId,
           courseId: input.courseId,
         },
       })
@@ -332,22 +501,71 @@ export async function createPersonalElements(
 
       for (const candidate of missing) {
         const created = await transaction.personalElement.create({
-          data: toCreateData(candidate, context.actor, input.courseId),
+          data: toCreateData(candidate, context.participantId, input.courseId),
         })
-        existingByKey.set(candidateKey(created), created)
+        existingByCandidateId.set(candidate.candidateId, created)
       }
     }
 
     return candidates.map(
-      (candidate) =>
-        existingByKey.get(
-          candidateKey({
-            sourceMessageId: candidate.sourceMessageId,
-            sourceToolCallId: candidate.sourceToolCallId,
-            candidateId: candidate.candidateId,
-          })
-        )!
+      (candidate) => existingByCandidateId.get(candidate.candidateId)!
     )
+  })
+}
+
+export type DiscardPersonalElementCandidateInput = {
+  courseId: string
+  candidateId: string
+}
+
+/**
+ * Records a candidate discard through the same serializable transaction
+ * policy as candidate creation. The shared transaction boundary prevents a
+ * concurrent save and discard from observing each other as absent.
+ */
+export async function discardPersonalElementCandidate(
+  input: DiscardPersonalElementCandidateInput,
+  context: PersonalElementServiceContext
+) {
+  assertParticipantContext(context)
+
+  return runSerializable(context.prisma, async (transaction) => {
+    await assertCourseParticipation(
+      transaction,
+      context.participantId,
+      input.courseId
+    )
+
+    const existingElement = await transaction.personalElement.findFirst({
+      where: {
+        participantId: context.participantId,
+        courseId: input.courseId,
+        candidateId: input.candidateId,
+      },
+      select: { id: true },
+    })
+    if (existingElement) {
+      throw personalElementError(
+        'PERSONAL_ELEMENTS_CANDIDATE_SAVED',
+        'Candidate has already been saved'
+      )
+    }
+
+    return transaction.personalElementDiscard.upsert({
+      where: {
+        participantId_courseId_candidateId: {
+          participantId: context.participantId,
+          courseId: input.courseId,
+          candidateId: input.candidateId,
+        },
+      },
+      create: {
+        participantId: context.participantId,
+        courseId: input.courseId,
+        candidateId: input.candidateId,
+      },
+      update: {},
+    })
   })
 }
 
@@ -355,12 +573,16 @@ export async function listPersonalElements(
   { courseId }: { courseId: string },
   context: PersonalElementServiceContext
 ) {
-  assertParticipantActor(context.actor)
-  await assertCourseParticipation(context.prisma, context.actor, courseId)
+  assertParticipantContext(context)
+  await assertCourseParticipation(
+    context.prisma,
+    context.participantId,
+    courseId
+  )
 
   const elements = await context.prisma.personalElement.findMany({
     where: {
-      participantId: context.actor.participantId,
+      participantId: context.participantId,
       courseId,
     },
   })
@@ -380,18 +602,22 @@ export async function getPersonalElementCounts(
   { courseId }: { courseId: string },
   context: PersonalElementServiceContext
 ) {
-  assertParticipantActor(context.actor)
-  await assertCourseParticipation(context.prisma, context.actor, courseId)
+  assertParticipantContext(context)
+  await assertCourseParticipation(
+    context.prisma,
+    context.participantId,
+    courseId
+  )
 
   const [personalElementCount, personalDueCount] = await Promise.all([
     context.prisma.personalElement.count({
-      where: { participantId: context.actor.participantId, courseId },
+      where: { participantId: context.participantId, courseId },
     }),
     context.prisma.personalElement.count({
       where: {
-        participantId: context.actor.participantId,
+        participantId: context.participantId,
         courseId,
-        nextDueAt: { lte: new Date() },
+        OR: [{ nextDueAt: null }, { nextDueAt: { lte: new Date() } }],
       },
     }),
   ])
@@ -407,7 +633,7 @@ export async function respondToPersonalElement(
   }: { id: string; response: FlashcardCorrectness; expectedVersion: number },
   context: PersonalElementServiceContext
 ) {
-  assertParticipantActor(context.actor)
+  assertParticipantContext(context)
   if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
     throw personalElementError('PERSONAL_ELEMENT_INVALID_VERSION')
   }
@@ -419,12 +645,12 @@ export async function respondToPersonalElement(
     const element = await transaction.personalElement.findUnique({
       where: { id },
     })
-    if (!element || element.participantId !== context.actor.participantId) {
+    if (!element || element.participantId !== context.participantId) {
       throw personalElementError('PERSONAL_ELEMENT_NOT_FOUND')
     }
     await assertCourseParticipation(
       transaction,
-      context.actor,
+      context.participantId,
       element.courseId
     )
     if (element.version !== expectedVersion) {
@@ -454,7 +680,7 @@ export async function respondToPersonalElement(
     const result = await transaction.personalElement.updateMany({
       where: {
         id,
-        participantId: context.actor.participantId,
+        participantId: context.participantId,
         version: expectedVersion,
       },
       data: {
@@ -487,7 +713,7 @@ export async function updatePersonalElement(
   input: UpdatePersonalElementInput,
   context: PersonalElementServiceContext
 ) {
-  assertParticipantActor(context.actor)
+  assertParticipantContext(context)
   if (!Number.isInteger(input.expectedVersion) || input.expectedVersion < 1) {
     throw personalElementError('PERSONAL_ELEMENT_INVALID_VERSION')
   }
@@ -503,7 +729,7 @@ export async function updatePersonalElement(
       .object({
         name: z.string().min(1).max(MAX_TITLE_LENGTH).optional(),
         content: z.string().min(1).max(8_192).optional(),
-        explanation: z.string().min(1).max(8_192).optional(),
+        explanation: cardExplanationSchema.optional(),
         sources: sourcesSchema.optional(),
       })
       .strict(),
@@ -520,12 +746,12 @@ export async function updatePersonalElement(
     const element = await transaction.personalElement.findUnique({
       where: { id: input.id },
     })
-    if (!element || element.participantId !== context.actor.participantId) {
+    if (!element || element.participantId !== context.participantId) {
       throw personalElementError('PERSONAL_ELEMENT_NOT_FOUND')
     }
     await assertCourseParticipation(
       transaction,
-      context.actor,
+      context.participantId,
       element.courseId
     )
     if (element.version !== input.expectedVersion) {
@@ -563,18 +789,18 @@ export async function deletePersonalElement(
   { id }: { id: string },
   context: PersonalElementServiceContext
 ) {
-  assertParticipantActor(context.actor)
+  assertParticipantContext(context)
 
   return runSerializable(context.prisma, async (transaction) => {
     const element = await transaction.personalElement.findUnique({
       where: { id },
     })
-    if (!element || element.participantId !== context.actor.participantId) {
+    if (!element || element.participantId !== context.participantId) {
       throw personalElementError('PERSONAL_ELEMENT_NOT_FOUND')
     }
     await assertCourseParticipation(
       transaction,
-      context.actor,
+      context.participantId,
       element.courseId
     )
     await transaction.personalElement.delete({ where: { id } })

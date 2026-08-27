@@ -1,8 +1,6 @@
 -- CreateEnum
 CREATE TYPE "PersonalElementOrigin" AS ENUM ('AI_GENERATED', 'AUTHORED');
 
--- CreateEnum
-CREATE TYPE "ChatGenerationApprovalStatus" AS ENUM ('CLAIMED', 'COMPLETED', 'ABORTED');
 
 -- CreateTable
 CREATE TABLE "PersonalElement" (
@@ -14,12 +12,11 @@ CREATE TABLE "PersonalElement" (
     "name" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "explanation" TEXT NOT NULL,
-    "options" JSONB NOT NULL,
     "sources" JSONB,
     "origin" "PersonalElementOrigin" NOT NULL DEFAULT 'AI_GENERATED',
     "sourceMessageId" UUID,
     "sourceToolCallId" TEXT,
-    "candidateId" TEXT,
+    "candidateId" TEXT NOT NULL,
     "eFactor" DOUBLE PRECISION NOT NULL DEFAULT 2.5,
     "interval" INTEGER NOT NULL DEFAULT 0,
     "correctCountStreak" INTEGER NOT NULL DEFAULT 0,
@@ -39,33 +36,46 @@ CREATE TABLE "PersonalElement" (
 );
 
 -- CreateTable
-CREATE TABLE "ChatGenerationApproval" (
+CREATE TABLE "CardGenerationLease" (
     "id" UUID NOT NULL,
     "participantId" UUID NOT NULL,
-    "chatbotId" UUID NOT NULL,
-    "threadId" UUID NOT NULL,
     "planMessageId" UUID NOT NULL,
     "planToolCallId" TEXT NOT NULL,
-    "status" "ChatGenerationApprovalStatus" NOT NULL DEFAULT 'CLAIMED',
+    "attemptToken" TEXT NOT NULL,
     "leaseExpiresAt" TIMESTAMP(3) NOT NULL,
-    "generatedAssistantMessageId" UUID,
+    "completedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "ChatGenerationApproval_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "CardGenerationLease_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PersonalElementDiscard" (
+    "id" UUID NOT NULL,
+    "participantId" UUID NOT NULL,
+    "courseId" UUID NOT NULL,
+    "candidateId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PersonalElementDiscard_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
 CREATE INDEX "PersonalElement_participantId_courseId_nextDueAt_idx" ON "PersonalElement"("participantId", "courseId", "nextDueAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "PersonalElement_participantId_sourceMessageId_sourceToolCal_key" ON "PersonalElement"("participantId", "sourceMessageId", "sourceToolCallId", "candidateId");
+CREATE UNIQUE INDEX "PersonalElement_participantId_courseId_candidateId_key" ON "PersonalElement"("participantId", "courseId", "candidateId");
 
 -- CreateIndex
-CREATE INDEX "ChatGenerationApproval_threadId_status_leaseExpiresAt_idx" ON "ChatGenerationApproval"("threadId", "status", "leaseExpiresAt");
+CREATE INDEX "CardGenerationLease_leaseExpiresAt_idx" ON "CardGenerationLease"("leaseExpiresAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ChatGenerationApproval_participantId_planMessageId_planTool_key" ON "ChatGenerationApproval"("participantId", "planMessageId", "planToolCallId");
+CREATE UNIQUE INDEX "CardGenerationLease_participantId_planMessageId_planToolCallId_key" ON "CardGenerationLease"("participantId", "planMessageId", "planToolCallId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PersonalElementDiscard_participantId_courseId_candidateId_key" ON "PersonalElementDiscard"("participantId", "courseId", "candidateId");
 
 -- AddForeignKey
 ALTER TABLE "PersonalElement" ADD CONSTRAINT "PersonalElement_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "Participant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -74,16 +84,13 @@ ALTER TABLE "PersonalElement" ADD CONSTRAINT "PersonalElement_participantId_fkey
 ALTER TABLE "PersonalElement" ADD CONSTRAINT "PersonalElement_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ChatGenerationApproval" ADD CONSTRAINT "ChatGenerationApproval_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "Participant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CardGenerationLease" ADD CONSTRAINT "CardGenerationLease_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "Participant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ChatGenerationApproval" ADD CONSTRAINT "ChatGenerationApproval_chatbotId_fkey" FOREIGN KEY ("chatbotId") REFERENCES "Chatbot"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CardGenerationLease" ADD CONSTRAINT "CardGenerationLease_planMessageId_fkey" FOREIGN KEY ("planMessageId") REFERENCES "ChatMessage"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ChatGenerationApproval" ADD CONSTRAINT "ChatGenerationApproval_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "ChatThread"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "PersonalElementDiscard" ADD CONSTRAINT "PersonalElementDiscard_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "Participant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ChatGenerationApproval" ADD CONSTRAINT "ChatGenerationApproval_planMessageId_fkey" FOREIGN KEY ("planMessageId") REFERENCES "ChatMessage"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ChatGenerationApproval" ADD CONSTRAINT "ChatGenerationApproval_generatedAssistantMessageId_fkey" FOREIGN KEY ("generatedAssistantMessageId") REFERENCES "ChatMessage"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "PersonalElementDiscard" ADD CONSTRAINT "PersonalElementDiscard_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;

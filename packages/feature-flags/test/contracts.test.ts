@@ -10,6 +10,7 @@ describe('feature flag contracts', () => {
     expect(FEATURE_FLAG_DEFAULTS).toEqual({
       'ai-beta': false,
       'learning-analytics': false,
+      'personal-card-generation': false,
     })
   })
 

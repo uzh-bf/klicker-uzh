@@ -1,16 +1,19 @@
+import { randomUUID } from 'node:crypto'
+import { prisma } from '@klicker-uzh/prisma'
 import {
   ElementType,
   type PersonalElement,
   type PrismaClient,
-  UserRole,
 } from '@klicker-uzh/prisma/client'
-import { prisma } from '@klicker-uzh/prisma'
 import { FlashcardCorrectness } from '@klicker-uzh/types'
-import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import {
+  abortCardGenerationLease,
+  claimCardGenerationLease,
+  completeCardGenerationLease,
   createPersonalElements,
   deletePersonalElement,
+  discardPersonalElementCandidate,
   listPersonalElements,
   respondToPersonalElement,
   updatePersonalElement,
@@ -19,10 +22,7 @@ import {
 const createdUserIds: string[] = []
 const createdParticipantIds: string[] = []
 const createdCourseIds: string[] = []
-
-function actor(participantId: string, role: UserRole = UserRole.PARTICIPANT) {
-  return { participantId, role }
-}
+const createdChatbotIds: string[] = []
 
 function candidate(
   overrides: Partial<
@@ -40,6 +40,7 @@ function candidate(
         chunkId: randomUUID(),
         title: 'Economics notes',
         url: 'https://example.org/economics',
+        page: 4,
       },
     ],
     sourceMessageId: randomUUID(),
@@ -73,15 +74,33 @@ async function createFixture() {
       participations: { create: [{ courseId: course.id }] },
     },
   })
+  const chatbot = await prisma.chatbot.create({
+    data: {
+      name: `Chatbot ${randomUUID()}`,
+      courseId: course.id,
+      ownerId: user.id,
+    },
+  })
+  const thread = await prisma.chatThread.create({
+    data: { participantId: participant.id, chatbotId: chatbot.id },
+  })
+  const planMessage = await prisma.chatMessage.create({
+    data: {
+      threadId: thread.id,
+      role: 'assistant',
+      content: [],
+    },
+  })
 
   createdUserIds.push(user.id)
   createdCourseIds.push(course.id)
   createdParticipantIds.push(participant.id)
-  return { course, participant }
+  createdChatbotIds.push(chatbot.id)
+  return { course, participant, chatbot, planMessage }
 }
 
-function context(participantId: string, role: UserRole = UserRole.PARTICIPANT) {
-  return { prisma, actor: actor(participantId, role) }
+function context(participantId: string) {
+  return { prisma, participantId }
 }
 
 function expectNewLearningState(
@@ -124,8 +143,14 @@ describe('personal elements service', () => {
     await prisma.personalElement.deleteMany({
       where: { participantId: { in: createdParticipantIds } },
     })
-    await prisma.chatGenerationApproval.deleteMany({
+    await prisma.personalElementDiscard.deleteMany({
       where: { participantId: { in: createdParticipantIds } },
+    })
+    await prisma.cardGenerationLease.deleteMany({
+      where: { participantId: { in: createdParticipantIds } },
+    })
+    await prisma.chatbot.deleteMany({
+      where: { id: { in: createdChatbotIds } },
     })
     await prisma.participant.deleteMany({
       where: { id: { in: createdParticipantIds } },
@@ -135,18 +160,19 @@ describe('personal elements service', () => {
     createdParticipantIds.length = 0
     createdCourseIds.length = 0
     createdUserIds.length = 0
+    createdChatbotIds.length = 0
   })
 
   afterAll(async () => {
     await prisma.$disconnect()
   })
 
-  it('rejects temporary and non-participating actors before writing', async () => {
-    const { course, participant } = await createFixture()
+  it('rejects missing and non-participating participants before writing', async () => {
+    const { course } = await createFixture()
     await expect(
       createPersonalElements(
         { courseId: course.id, candidates: [candidate()] },
-        context(participant.id, UserRole.TEMPORARY_PARTICIPANT)
+        context('')
       )
     ).rejects.toMatchObject({
       extensions: { code: 'PERSONAL_ELEMENTS_UNAUTHORIZED' },
@@ -182,6 +208,376 @@ describe('personal elements service', () => {
     expect(await prisma.personalElement.count()).toBe(1)
     expect(first[0]?.type).toBe(ElementType.FLASHCARD)
     expect(first[0]?.sources).toEqual(input.sources)
+  })
+
+  it('rejects repeated candidate IDs within one batch', async () => {
+    const { course, participant } = await createFixture()
+    const input = candidate()
+    const retryInput = candidate({
+      candidateId: input.candidateId,
+      sourceMessageId: randomUUID(),
+      sourceToolCallId: `retry-tool-${randomUUID()}`,
+    })
+
+    await expect(
+      createPersonalElements(
+        { courseId: course.id, candidates: [input, retryInput] },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },
+    })
+    expect(
+      await prisma.personalElement.count({
+        where: { participantId: participant.id, courseId: course.id },
+      })
+    ).toBe(0)
+  })
+
+  it('rejects the provenance-only generated-card explanation', async () => {
+    const { course, participant } = await createFixture()
+
+    await expect(
+      createPersonalElements(
+        {
+          courseId: course.id,
+          candidates: [
+            candidate({
+              explanation:
+                'Die Flashcard verwendet ausschließlich die Informationen aus dem bereitgestellten Chunk.',
+            }),
+          ],
+        },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },
+    })
+
+    await expect(
+      createPersonalElements(
+        {
+          courseId: course.id,
+          candidates: [candidate({ explanation: 'x' })],
+        },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },
+    })
+  })
+
+  it('rejects the provenance-only explanation during card updates', async () => {
+    const { course, participant } = await createFixture()
+    const [element] = await createPersonalElements(
+      { courseId: course.id, candidates: [candidate()] },
+      context(participant.id)
+    )
+
+    await expect(
+      updatePersonalElement(
+        {
+          id: element!.id,
+          expectedVersion: element!.version,
+          explanation:
+            'Die Flashcard verwendet ausschließlich die Informationen aus dem bereitgestellten Chunk.',
+        },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },
+    })
+
+    await expect(
+      updatePersonalElement(
+        {
+          id: element!.id,
+          expectedVersion: element!.version,
+          explanation: 'This card uses only the supplied evidence.',
+        },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },
+    })
+  })
+
+  it('rejects a candidate that was durably discarded', async () => {
+    const { course, participant } = await createFixture()
+    const input = candidate()
+    await prisma.personalElementDiscard.create({
+      data: {
+        participantId: participant.id,
+        courseId: course.id,
+        candidateId: input.candidateId,
+      },
+    })
+
+    await expect(
+      createPersonalElements(
+        { courseId: course.id, candidates: [input] },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_CANDIDATE_DISCARDED' },
+    })
+    expect(
+      await prisma.personalElement.count({
+        where: { participantId: participant.id, courseId: course.id },
+      })
+    ).toBe(0)
+  })
+
+  it('serializes save and discard so only one candidate disposition wins', async () => {
+    const { course, participant } = await createFixture()
+    const savedInput = candidate()
+    const discardedInput = candidate({
+      candidateId: savedInput.candidateId,
+      sourceMessageId: randomUUID(),
+      sourceToolCallId: `retry-tool-${randomUUID()}`,
+    })
+
+    const results = await Promise.allSettled([
+      createPersonalElements(
+        { courseId: course.id, candidates: [savedInput] },
+        context(participant.id)
+      ),
+      discardPersonalElementCandidate(
+        {
+          courseId: course.id,
+          candidateId: discardedInput.candidateId,
+        },
+        context(participant.id)
+      ),
+    ])
+
+    const saved = await prisma.personalElement.count({
+      where: {
+        participantId: participant.id,
+        courseId: course.id,
+        candidateId: savedInput.candidateId,
+      },
+    })
+    const discarded = await prisma.personalElementDiscard.count({
+      where: {
+        participantId: participant.id,
+        courseId: course.id,
+        candidateId: savedInput.candidateId,
+      },
+    })
+
+    expect(saved + discarded).toBe(1)
+    expect(
+      results.filter((result) => result.status === 'fulfilled')
+    ).toHaveLength(1)
+  })
+
+  it('treats the plan candidate ID as stable across generation attempts', async () => {
+    const { course, participant } = await createFixture()
+    const firstAttempt = candidate()
+    const retryAttempt = candidate({
+      candidateId: firstAttempt.candidateId,
+      sourceMessageId: randomUUID(),
+      sourceToolCallId: `retry-tool-${randomUUID()}`,
+    })
+
+    const [saved] = await createPersonalElements(
+      { courseId: course.id, candidates: [firstAttempt] },
+      context(participant.id)
+    )
+    const [sameSaved] = await createPersonalElements(
+      { courseId: course.id, candidates: [retryAttempt] },
+      context(participant.id)
+    )
+
+    expect(sameSaved?.id).toBe(saved?.id)
+    expect(sameSaved?.sourceMessageId).toBe(firstAttempt.sourceMessageId)
+    expect(
+      await prisma.personalElement.count({
+        where: { participantId: participant.id, courseId: course.id },
+      })
+    ).toBe(1)
+
+    const discardedAttempt = candidate({
+      candidateId: randomUUID(),
+      sourceMessageId: randomUUID(),
+      sourceToolCallId: `discard-tool-${randomUUID()}`,
+    })
+    await discardPersonalElementCandidate(
+      {
+        courseId: course.id,
+        candidateId: discardedAttempt.candidateId,
+      },
+      context(participant.id)
+    )
+    await expect(
+      createPersonalElements(
+        {
+          courseId: course.id,
+          candidates: [
+            candidate({
+              candidateId: discardedAttempt.candidateId,
+              sourceMessageId: randomUUID(),
+              sourceToolCallId: `retry-tool-${randomUUID()}`,
+            }),
+          ],
+        },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_CANDIDATE_DISCARDED' },
+    })
+  })
+
+  it('allows only one concurrent generation lease claim', async () => {
+    const { participant, planMessage } = await createFixture()
+    const key = {
+      planMessageId: planMessage.id,
+      planToolCallId: `plan-${randomUUID()}`,
+    }
+    const claims = await Promise.allSettled([
+      claimCardGenerationLease(
+        { ...key, attemptToken: `attempt-${randomUUID()}` },
+        context(participant.id)
+      ),
+      claimCardGenerationLease(
+        { ...key, attemptToken: `attempt-${randomUUID()}` },
+        context(participant.id)
+      ),
+    ])
+
+    expect(claims.filter((claim) => claim.status === 'fulfilled')).toHaveLength(
+      1
+    )
+    expect(claims.filter((claim) => claim.status === 'rejected')).toHaveLength(
+      1
+    )
+    expect(
+      await prisma.cardGenerationLease.count({
+        where: { participantId: participant.id },
+      })
+    ).toBe(1)
+  })
+
+  it('reclaims an expired lease once and protects the new owner', async () => {
+    const { participant, planMessage } = await createFixture()
+    const key = {
+      planMessageId: planMessage.id,
+      planToolCallId: `plan-${randomUUID()}`,
+    }
+    const staleAttemptToken = `attempt-${randomUUID()}`
+    const initial = await claimCardGenerationLease(
+      { ...key, attemptToken: staleAttemptToken },
+      context(participant.id)
+    )
+    await prisma.cardGenerationLease.update({
+      where: { id: initial.id },
+      data: { leaseExpiresAt: new Date(Date.now() - 1_000) },
+    })
+
+    const attemptTokens = [`attempt-${randomUUID()}`, `attempt-${randomUUID()}`]
+    const reclaims = await Promise.allSettled(
+      attemptTokens.map((attemptToken) =>
+        claimCardGenerationLease(
+          { ...key, attemptToken },
+          context(participant.id)
+        )
+      )
+    )
+    expect(
+      reclaims.filter((reclaim) => reclaim.status === 'fulfilled')
+    ).toHaveLength(1)
+    expect(
+      await abortCardGenerationLease(
+        initial.id,
+        staleAttemptToken,
+        context(participant.id)
+      )
+    ).toBe(false)
+    expect(
+      await completeCardGenerationLease(
+        initial.id,
+        staleAttemptToken,
+        context(participant.id)
+      )
+    ).toBe(false)
+
+    const current = await prisma.cardGenerationLease.findUniqueOrThrow({
+      where: { id: initial.id },
+    })
+    expect(current.attemptToken).not.toBe(staleAttemptToken)
+    expect(
+      await completeCardGenerationLease(
+        current.id,
+        current.attemptToken,
+        context(participant.id)
+      )
+    ).toBe(true)
+    await expect(
+      claimCardGenerationLease(
+        { ...key, attemptToken: `attempt-${randomUUID()}` },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'CARD_GENERATION_ALREADY_COMPLETED' },
+    })
+  })
+
+  it('releases an aborted lease for retry', async () => {
+    const { participant, planMessage } = await createFixture()
+    const key = {
+      planMessageId: planMessage.id,
+      planToolCallId: `plan-${randomUUID()}`,
+    }
+    const attemptToken = `attempt-${randomUUID()}`
+    const lease = await claimCardGenerationLease(
+      { ...key, attemptToken },
+      context(participant.id)
+    )
+    expect(
+      await abortCardGenerationLease(
+        lease.id,
+        attemptToken,
+        context(participant.id)
+      )
+    ).toBe(true)
+    expect(
+      await completeCardGenerationLease(
+        lease.id,
+        attemptToken,
+        context(participant.id)
+      )
+    ).toBe(false)
+
+    const retry = await claimCardGenerationLease(
+      { ...key, attemptToken: `attempt-${randomUUID()}` },
+      context(participant.id)
+    )
+    expect(retry.id).toBe(lease.id)
+  })
+
+  it('does not complete an expired lease', async () => {
+    const { participant, planMessage } = await createFixture()
+    const lease = await claimCardGenerationLease(
+      {
+        planMessageId: planMessage.id,
+        planToolCallId: `plan-${randomUUID()}`,
+        attemptToken: `attempt-${randomUUID()}`,
+      },
+      context(participant.id)
+    )
+    await prisma.cardGenerationLease.update({
+      where: { id: lease.id },
+      data: { leaseExpiresAt: new Date(Date.now() - 1_000) },
+    })
+
+    expect(
+      await completeCardGenerationLease(
+        lease.id,
+        lease.attemptToken,
+        context(participant.id)
+      )
+    ).toBe(false)
   })
 
   it('progresses SM-2 and guards revisions by version', async () => {
@@ -243,6 +639,23 @@ describe('personal elements service', () => {
     expect(revised.content).toBe(
       'What is the value of the next-best alternative?'
     )
+    const revisedSources = [
+      {
+        sourceId: 'updated-source',
+        chunkId: 'updated-chunk',
+        title: 'Updated notes',
+      },
+    ]
+    const revisedWithSources = await updatePersonalElement(
+      {
+        id: element!.id,
+        expectedVersion: 2,
+        sources: revisedSources,
+      },
+      context(participant.id)
+    )
+    expect(revisedWithSources.version).toBe(3)
+    expect(revisedWithSources.sources).toEqual(revisedSources)
     await expect(
       updatePersonalElement(
         { id: element!.id, expectedVersion: 1, content: 'stale' },
@@ -415,7 +828,7 @@ describe('personal elements service', () => {
         response: FlashcardCorrectness.CORRECT,
         expectedVersion: 1,
       },
-      { prisma: concurrentPrisma, actor: actor(participant.id) }
+      { prisma: concurrentPrisma, participantId: participant.id }
     )
     // The response transaction has read version 1 and is paused immediately
     // before its conditional scheduling write.

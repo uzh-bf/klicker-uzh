@@ -1552,3 +1552,12 @@ Settled rulings for this implementation:
   integrated review found no change-introduced issues; exact-head CI is now
   pending on the refreshed published refs. Merge, deployment, and feature
   enablement remain withheld.
+- 2026-08-27 (v3-ai layer-safety correction): The integrated stack review found
+  that Layer A still exposed participant-callable create and update mutations
+  which Layer C removed. The reviewed final backend state now lives in Layer A:
+  the public schema excludes those mutations, Chat retains its internal
+  server-only services, and the existing single migration contains the final
+  personal-element model. GraphQL TypeScript checks and all 53 feature-flag
+  tests pass. The exact Layer A DevPod cannot start because DevRouter truncates
+  the three similar branch names to one workspace identity already owned by
+  Layer C, so exact-head CI remains the layer-specific runtime proof.

@@ -11,6 +11,7 @@ fragment FPersonalElement on PersonalElement {
     chunkId
     title
     url
+    page
     metadata
   }
   origin

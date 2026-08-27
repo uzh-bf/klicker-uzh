@@ -113,7 +113,6 @@ model ChatThread {
   title String?
 
   messages ChatMessage[]
-  generationApprovals ChatGenerationApproval[]
 
   participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   participantId String      @db.Uuid
@@ -143,8 +142,7 @@ model ChatMessage {
 
   attachments ChatAttachment[]
 
-  generationApprovalsAsPlan     ChatGenerationApproval[] @relation("ChatGenerationApprovalPlanMessage")
-  generationApprovalsAsGenerated ChatGenerationApproval[] @relation("ChatGenerationApprovalGeneratedMessage")
+  cardGenerationLeases CardGenerationLease[]
 
   thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
@@ -218,8 +216,6 @@ model Chatbot {
   threads           ChatThread[]
   usageCredits      ChatUsageCredits[]
   responseExampleSet ResponseExampleSet?
-  generationApprovals ChatGenerationApproval[]
-
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
 
