@@ -15,8 +15,10 @@ import {
   deletePersonalElement,
   discardPersonalElementCandidate,
   listPersonalElements,
+  prepareCardPlan,
   respondToPersonalElement,
   updatePersonalElement,
+  validateCardCandidate,
 } from '../src/services/personalElements.js'
 
 const createdUserIds: string[] = []
@@ -234,25 +236,21 @@ describe('personal elements service', () => {
     ).toBe(0)
   })
 
-  it('rejects the provenance-only generated-card explanation', async () => {
+  it('accepts a structurally valid explanation regardless of language', async () => {
     const { course, participant } = await createFixture()
-
-    await expect(
-      createPersonalElements(
-        {
-          courseId: course.id,
-          candidates: [
-            candidate({
-              explanation:
-                'Die Flashcard verwendet ausschließlich die Informationen aus dem bereitgestellten Chunk.',
-            }),
-          ],
-        },
-        context(participant.id)
-      )
-    ).rejects.toMatchObject({
-      extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },
-    })
+    const [element] = await createPersonalElements(
+      {
+        courseId: course.id,
+        candidates: [
+          candidate({
+            explanation:
+              'Die Flashcard verwendet ausschließlich die Informationen aus dem bereitgestellten Chunk.',
+          }),
+        ],
+      },
+      context(participant.id)
+    )
+    expect(element).toBeDefined()
 
     await expect(
       createPersonalElements(
@@ -267,39 +265,25 @@ describe('personal elements service', () => {
     })
   })
 
-  it('rejects the provenance-only explanation during card updates', async () => {
+  it('accepts a provenance-only explanation during card updates', async () => {
     const { course, participant } = await createFixture()
     const [element] = await createPersonalElements(
       { courseId: course.id, candidates: [candidate()] },
       context(participant.id)
     )
 
-    await expect(
-      updatePersonalElement(
-        {
-          id: element!.id,
-          expectedVersion: element!.version,
-          explanation:
-            'Die Flashcard verwendet ausschließlich die Informationen aus dem bereitgestellten Chunk.',
-        },
-        context(participant.id)
-      )
-    ).rejects.toMatchObject({
-      extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },
-    })
-
-    await expect(
-      updatePersonalElement(
-        {
-          id: element!.id,
-          expectedVersion: element!.version,
-          explanation: 'This card uses only the supplied evidence.',
-        },
-        context(participant.id)
-      )
-    ).rejects.toMatchObject({
-      extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },
-    })
+    const revised = await updatePersonalElement(
+      {
+        id: element!.id,
+        expectedVersion: element!.version,
+        explanation:
+          'Die Flashcard verwendet ausschließlich die Informationen aus dem bereitgestellten Chunk.',
+      },
+      context(participant.id)
+    )
+    expect(revised.explanation).toBe(
+      'Die Flashcard verwendet ausschließlich die Informationen aus dem bereitgestellten Chunk.'
+    )
   })
 
   it('rejects a candidate that was durably discarded', async () => {
@@ -899,5 +883,325 @@ describe('personal elements service', () => {
     expect(
       await prisma.personalElement.findUnique({ where: { id: first!.id } })
     ).toBeNull()
+  })
+
+  it('prepares a card plan with course language and the complete title list', async () => {
+    const { course, participant } = await createFixture()
+    await createPersonalElements(
+      {
+        courseId: course.id,
+        candidates: [candidate({ name: 'Opportunity cost' })],
+      },
+      context(participant.id)
+    )
+
+    const plan = await prepareCardPlan(
+      {
+        courseId: course.id,
+        topic: 'Economics',
+        cards: [
+          {
+            type: 'FLASHCARD',
+            title: 'Sunk cost',
+            intent: 'Define sunk cost',
+            query: 'sunk cost definition',
+          },
+        ],
+      },
+      context(participant.id)
+    )
+
+    expect(plan.courseLanguage).toBe('en')
+    expect(plan.existingTitles).toEqual(['Opportunity cost'])
+    expect(plan.cards).toHaveLength(1)
+    expect(plan.cards[0]).toMatchObject({
+      type: 'FLASHCARD',
+      title: 'Sunk cost',
+      intent: 'Define sunk cost',
+      query: 'sunk cost definition',
+    })
+    expect(plan.discardedDuplicates).toEqual([])
+  })
+
+  it('screens duplicate titles within the proposal and against saved cards', async () => {
+    const { course, participant } = await createFixture()
+    await createPersonalElements(
+      {
+        courseId: course.id,
+        candidates: [candidate({ name: 'Opportunity cost' })],
+      },
+      context(participant.id)
+    )
+
+    const plan = await prepareCardPlan(
+      {
+        courseId: course.id,
+        topic: 'Economics',
+        cards: [
+          {
+            type: 'FLASHCARD',
+            title: 'Opportunity cost',
+            intent: 'Define opportunity cost',
+            query: 'opportunity cost definition',
+          },
+          {
+            type: 'FLASHCARD',
+            title: 'Sunk cost',
+            intent: 'Define sunk cost',
+            query: 'sunk cost definition',
+          },
+          {
+            type: 'FLASHCARD',
+            title: 'Sunk cost',
+            intent: 'Explain the sunk cost fallacy',
+            query: 'sunk cost fallacy',
+          },
+        ],
+      },
+      context(participant.id)
+    )
+
+    expect(plan.cards.map((card) => card.title)).toEqual(['Sunk cost'])
+    expect(plan.discardedDuplicates).toHaveLength(2)
+    expect(plan.discardedDuplicates[0]).toMatchObject({
+      title: 'Opportunity cost',
+      matchedTitle: 'Opportunity cost',
+    })
+    expect(plan.discardedDuplicates[1]).toMatchObject({
+      title: 'Sunk cost',
+      matchedTitle: 'Sunk cost',
+    })
+  })
+
+  it('assigns stable server-issued candidate identities', async () => {
+    const { course, participant } = await createFixture()
+    const plan = await prepareCardPlan(
+      {
+        courseId: course.id,
+        topic: 'Economics',
+        cards: [
+          {
+            type: 'FLASHCARD',
+            title: 'Sunk cost',
+            intent: 'Define sunk cost',
+            query: 'sunk cost definition',
+          },
+          {
+            type: 'FLASHCARD',
+            title: 'Marginal cost',
+            intent: 'Define marginal cost',
+            query: 'marginal cost definition',
+          },
+        ],
+      },
+      context(participant.id)
+    )
+
+    expect(plan.cards).toHaveLength(2)
+    const [first, second] = plan.cards
+    expect(first?.candidateId).toMatch(/^[0-9a-f-]{36}:card-1$/)
+    expect(second?.candidateId).toMatch(/^[0-9a-f-]{36}:card-2$/)
+    expect(first?.candidateId).not.toBe(second?.candidateId)
+  })
+
+  it('denies card plan preparation to non-participating participants', async () => {
+    const { course } = await createFixture()
+
+    await expect(
+      prepareCardPlan(
+        {
+          courseId: course.id,
+          topic: 'Economics',
+          cards: [
+            {
+              type: 'FLASHCARD',
+              title: 'Sunk cost',
+              intent: 'Define sunk cost',
+              query: 'sunk cost definition',
+            },
+          ],
+        },
+        context(randomUUID())
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_NOT_PARTICIPATING' },
+    })
+  })
+
+  it('validates a structurally sound candidate with owned sources', async () => {
+    const { course, participant, planMessage } = await createFixture()
+    const result = await validateCardCandidate(
+      {
+        courseId: course.id,
+        candidateId: randomUUID(),
+        title: 'Opportunity cost',
+        front: 'What is opportunity cost?',
+        back: 'The value of the best alternative forgone.',
+        sources: [
+          {
+            sourceId: 'course-material',
+            chunkId: randomUUID(),
+            title: 'Economics notes',
+            url: 'https://example.org/economics',
+            page: 4,
+          },
+        ],
+        sourceMessageId: planMessage.id,
+        sourceToolCallId: 'tool-' + randomUUID(),
+      },
+      context(participant.id)
+    )
+    expect(result).toEqual({ ok: true })
+  })
+
+  it('rejects a candidate whose source message is not owned by the participant', async () => {
+    const { course, participant } = await createFixture()
+    await expect(
+      validateCardCandidate(
+        {
+          courseId: course.id,
+          candidateId: randomUUID(),
+          title: 'Opportunity cost',
+          front: 'What is opportunity cost?',
+          back: 'The value of the best alternative forgone.',
+          sources: [
+            {
+              sourceId: 'course-material',
+              chunkId: randomUUID(),
+              title: 'Economics notes',
+            },
+          ],
+          sourceMessageId: randomUUID(),
+          sourceToolCallId: 'tool-' + randomUUID(),
+        },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_SOURCE_MESSAGE_NOT_FOUND' },
+    })
+  })
+
+  it('rejects a candidate whose title duplicates a saved card', async () => {
+    const { course, participant, planMessage } = await createFixture()
+    await createPersonalElements(
+      {
+        courseId: course.id,
+        candidates: [candidate({ name: 'Opportunity cost' })],
+      },
+      context(participant.id)
+    )
+
+    await expect(
+      validateCardCandidate(
+        {
+          courseId: course.id,
+          candidateId: randomUUID(),
+          title: 'Opportunity cost',
+          front: 'What is opportunity cost?',
+          back: 'The value of the best alternative forgone.',
+          sources: [
+            {
+              sourceId: 'course-material',
+              chunkId: randomUUID(),
+              title: 'Economics notes',
+            },
+          ],
+          sourceMessageId: planMessage.id,
+          sourceToolCallId: 'tool-' + randomUUID(),
+        },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_DUPLICATE_TITLE' },
+    })
+  })
+
+  it('rejects candidates with excessive or duplicate sources', async () => {
+    const { course, participant, planMessage } = await createFixture()
+    const base = {
+      courseId: course.id,
+      candidateId: randomUUID(),
+      title: 'Opportunity cost',
+      front: 'What is opportunity cost?',
+      back: 'The value of the best alternative forgone.',
+      sourceMessageId: planMessage.id,
+      sourceToolCallId: 'tool-' + randomUUID(),
+    }
+
+    await expect(
+      validateCardCandidate(
+        {
+          ...base,
+          sources: Array.from({ length: 33 }, (_, index) => ({
+            sourceId: 'source-' + index,
+            chunkId: randomUUID(),
+            title: 'Economics notes',
+          })),
+        },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },
+    })
+
+    const chunkId = randomUUID()
+    await expect(
+      validateCardCandidate(
+        {
+          ...base,
+          sources: [
+            { sourceId: 'a', chunkId, title: 'Notes' },
+            { sourceId: 'b', chunkId, title: 'Notes' },
+          ],
+        },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },
+    })
+  })
+
+  it('rejects candidates with raw-text metadata or oversized backs', async () => {
+    const { course, participant, planMessage } = await createFixture()
+    const base = {
+      courseId: course.id,
+      candidateId: randomUUID(),
+      title: 'Opportunity cost',
+      front: 'What is opportunity cost?',
+      back: 'The value of the best alternative forgone.',
+      sourceMessageId: planMessage.id,
+      sourceToolCallId: 'tool-' + randomUUID(),
+    }
+
+    await expect(
+      validateCardCandidate(
+        {
+          ...base,
+          sources: [
+            {
+              sourceId: 'course-material',
+              chunkId: randomUUID(),
+              title: 'Economics notes',
+              metadata: { text: 'raw chunk content' },
+            },
+          ],
+        },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },
+    })
+
+    await expect(
+      validateCardCandidate(
+        {
+          ...base,
+          back: 'x'.repeat(8_193),
+        },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },
+    })
   })
 })

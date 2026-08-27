@@ -59,6 +59,15 @@ are the `QPersonalElements` and `M*PersonalElement*` documents in
 their selection sets change. `getPracticeQuizList` includes courses that have
 personal cards and exposes `personalElementCount` and `personalDueCount`.
 
+The backend also owns card-plan preparation and candidate validation through
+`prepareCardPlan` and `validateCardCandidate`. `prepareCardPlan` returns the
+course language and the complete saved-title list, screens proposed titles
+against saved cards and within the proposal, and assigns stable candidate
+identities. `validateCardCandidate` re-checks participation, source-message
+ownership, the structural Flashcard payload, source bounds, and current title
+similarity before a candidate can render. Chat calls these operations through
+generated GraphQL documents and no longer imports backend services for
+language, titles, duplicate policy, or candidate validation.
 ## Layering contract
 
 - `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.deleteCourse(args, ctx)`.

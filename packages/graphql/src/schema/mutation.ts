@@ -76,7 +76,13 @@ import {
   LiveQuizMeta,
 } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
-import { PersonalElement } from './personalElement.js'
+import {
+  PersonalElement,
+  PrepareCardPlanInput,
+  PreparedCardPlan,
+  ValidateCardCandidateInput,
+  ValidateCardCandidateResult,
+} from './personalElement.js'
 import {
   AvatarSettingsInput,
   GroupMessage,
@@ -638,6 +644,37 @@ export const Mutation = builder.mutationType({
             prisma: ctx.prisma,
             participantId: ctx.user.sub,
           })
+        },
+      }),
+
+      prepareCardPlan: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: PreparedCardPlan,
+        args: {
+          input: t.arg({ type: PrepareCardPlanInput, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.prepareCardPlan(args.input, {
+            prisma: ctx.prisma,
+            participantId: ctx.user.sub,
+          })
+        },
+      }),
+
+      validateCardCandidate: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: ValidateCardCandidateResult,
+        args: {
+          input: t.arg({ type: ValidateCardCandidateInput, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.validateCardCandidate(
+            args.input,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
         },
       }),
 

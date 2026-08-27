@@ -71,6 +71,18 @@ The `origin` field records whether content was AI-generated or authored. Content
 revisions increment `version`; the revision and learning-state reset contract is
 defined by the service and does not create a lecturer trust state.
 
+The backend owns the card-plan and candidate lifecycle. prepareCardPlan
+authorizes course participation, returns the course language and the complete
+saved-title list as read-only model context, screens proposed titles against
+saved cards and within the proposal using the deterministic title-similarity
+policy, and assigns stable server-issued candidate identities.
+validateCardCandidate re-checks participation, source-message ownership, the
+structural Flashcard payload, source bounds, and current title similarity
+before a candidate can render. Generated content is validated structurally
+(non-empty, bounded, contains letters or digits), never by matching English or
+German sentences. The final duplicate check repeats inside the save
+transaction so two accepted candidates cannot pass a stale read.
+
 `ChatGenerationApproval` is the durable claim for an approved Chat generation.
 Its participant, chatbot, thread, plan message, and optional generated message
 relations are separate from the card content, with a unique

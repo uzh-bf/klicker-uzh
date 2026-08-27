@@ -1,8 +1,15 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import builder from '../builder.js'
-import { type PersonalElementSource as PersonalElementSourceValue } from '../services/personalElements.js'
+import {
+  type DiscardedDuplicateCard as DiscardedDuplicateCardValue,
+  type PersonalElementSource as PersonalElementSourceValue,
+  type PreparedCardPlan as PreparedCardPlanValue,
+  type PreparedCardPlanEntry as PreparedCardPlanEntryValue,
+  type ValidateCardCandidateResult as ValidateCardCandidateResultValue,
+} from '../services/personalElements.js'
 import { ElementType } from './elementData.js'
 import { ResponseCorrectness } from './evaluation.js'
+import { LocaleType } from './user.js'
 
 export const PersonalElementOrigin = builder.enumType('PersonalElementOrigin', {
   values: Object.values(DB.PersonalElementOrigin),
@@ -21,6 +28,109 @@ export const PersonalElementSource = PersonalElementSourceRef.implement({
     metadata: t.expose('metadata', { type: 'Json', nullable: true }),
   }),
 })
+
+export const PersonalElementSourceInput = builder.inputType(
+  'PersonalElementSourceInput',
+  {
+    fields: (t) => ({
+      sourceId: t.string({ required: true }),
+      chunkId: t.string({ required: true }),
+      title: t.string({ required: false }),
+      url: t.string({ required: false }),
+      page: t.float({ required: false }),
+      metadata: t.field({ type: 'Json', required: false }),
+    }),
+  }
+)
+
+export const CardPlanEntryInput = builder.inputType('CardPlanEntryInput', {
+  fields: (t) => ({
+    type: t.string({ required: true }),
+    title: t.string({ required: true }),
+    intent: t.string({ required: true }),
+    query: t.string({ required: true }),
+  }),
+})
+
+export const PrepareCardPlanInput = builder.inputType(
+  'PrepareCardPlanInput',
+  {
+    fields: (t) => ({
+      courseId: t.string({ required: true }),
+      topic: t.string({ required: true }),
+      cards: t.field({ type: [CardPlanEntryInput], required: true }),
+    }),
+  }
+)
+
+export const ValidateCardCandidateInput = builder.inputType(
+  'ValidateCardCandidateInput',
+  {
+    fields: (t) => ({
+      courseId: t.string({ required: true }),
+      candidateId: t.string({ required: true }),
+      title: t.string({ required: true }),
+      front: t.string({ required: true }),
+      back: t.string({ required: true }),
+      sources: t.field({
+        type: [PersonalElementSourceInput],
+        required: true,
+      }),
+      sourceMessageId: t.string({ required: true }),
+      sourceToolCallId: t.string({ required: true }),
+    }),
+  }
+)
+
+export const DiscardedDuplicateCardRef =
+  builder.objectRef<DiscardedDuplicateCardValue>('DiscardedDuplicateCard')
+
+export const DiscardedDuplicateCard = DiscardedDuplicateCardRef.implement({
+  fields: (t) => ({
+    title: t.exposeString('title'),
+    matchedTitle: t.exposeString('matchedTitle'),
+    similarity: t.exposeFloat('similarity'),
+  }),
+})
+
+export const PreparedCardPlanEntryRef =
+  builder.objectRef<PreparedCardPlanEntryValue>('PreparedCardPlanEntry')
+
+export const PreparedCardPlanEntry = PreparedCardPlanEntryRef.implement({
+  fields: (t) => ({
+    type: t.expose('type', { type: ElementType }),
+    candidateId: t.exposeString('candidateId'),
+    title: t.exposeString('title'),
+    intent: t.exposeString('intent'),
+    query: t.exposeString('query'),
+  }),
+})
+
+export const PreparedCardPlanRef =
+  builder.objectRef<PreparedCardPlanValue>('PreparedCardPlan')
+
+export const PreparedCardPlan = PreparedCardPlanRef.implement({
+  fields: (t) => ({
+    courseLanguage: t.expose('courseLanguage', { type: LocaleType }),
+    existingTitles: t.exposeStringList('existingTitles'),
+    cards: t.expose('cards', { type: [PreparedCardPlanEntry] }),
+    discardedDuplicates: t.expose('discardedDuplicates', {
+      type: [DiscardedDuplicateCard],
+    }),
+  }),
+})
+
+export const ValidateCardCandidateResultRef =
+  builder.objectRef<ValidateCardCandidateResultValue>(
+    'ValidateCardCandidateResult'
+  )
+
+export const ValidateCardCandidateResult =
+  ValidateCardCandidateResultRef.implement({
+    fields: (t) => ({
+      ok: t.exposeBoolean('ok'),
+    }),
+  })
 
 export const PersonalElementRef =
   builder.objectRef<DB.PersonalElement>('PersonalElement')

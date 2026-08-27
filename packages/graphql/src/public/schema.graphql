@@ -675,6 +675,13 @@ input CaseStudySolutionInput {
   itemId: Int!
 }
 
+input CardPlanEntryInput {
+  intent: String!
+  query: String!
+  title: String!
+  type: String!
+}
+
 type CatalogCollection {
   access: ObjectAccess!
   id: String!
@@ -1235,6 +1242,12 @@ type DerivedPermissionOriginInformation {
   parentTargetUser: String
   parentTargetUserGroup: String
   permissionUser: String!
+}
+
+type DiscardedDuplicateCard {
+  matchedTitle: String!
+  similarity: Float!
+  title: String!
 }
 
 union Element = CaseStudyElement | ChoicesElement | ContentElement | FlashcardElement | FreeTextElement | NumericalElement | SelectionElement
@@ -2618,6 +2631,7 @@ type Mutation {
   modifyAnswerCollection(description: String, id: Int!, name: String): AnswerCollection
   openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!, liveQuizId: String!): Feedback
+  prepareCardPlan(input: PrepareCardPlanInput!): PreparedCardPlan
   promoteGroupMemberToAdmin(groupId: Int!, memberId: String!): Boolean!
   publishFeedback(id: Int!, isPublished: Boolean!, liveQuizId: String!): Feedback
   publishGroupActivity(id: String!): GroupActivity
@@ -2684,6 +2698,7 @@ type Mutation {
   updateUserLogin(id: String!, password: String!): UserLogin
   updateWeeklyTimelineEntriesCourse(courseId: String!): Boolean
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
+  validateCardCandidate(input: ValidateCardCandidateInput!): ValidateCardCandidateResult
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
@@ -3074,6 +3089,36 @@ type PersonalElementSource {
   sourceId: String!
   title: String
   url: String
+}
+
+input PersonalElementSourceInput {
+  chunkId: String!
+  metadata: Json
+  page: Float
+  sourceId: String!
+  title: String
+  url: String
+}
+
+input PrepareCardPlanInput {
+  cards: [CardPlanEntryInput!]!
+  courseId: String!
+  topic: String!
+}
+
+type PreparedCardPlan {
+  cards: [PreparedCardPlanEntry!]!
+  courseLanguage: LocaleType!
+  discardedDuplicates: [DiscardedDuplicateCard!]!
+  existingTitles: [String!]!
+}
+
+type PreparedCardPlanEntry {
+  candidateId: String!
+  intent: String!
+  query: String!
+  title: String!
+  type: ElementType!
 }
 
 type PointCorrection {
@@ -3807,6 +3852,21 @@ input UpdateGeneratedElementDraftInput {
   current: GeneratedElementEditableInput!
   draftId: ID!
   expectedRevision: Int!
+}
+
+input ValidateCardCandidateInput {
+  back: String!
+  candidateId: String!
+  courseId: String!
+  front: String!
+  sourceMessageId: String!
+  sourceToolCallId: String!
+  sources: [PersonalElementSourceInput!]!
+  title: String!
+}
+
+type ValidateCardCandidateResult {
+  ok: Boolean!
 }
 
 type User {

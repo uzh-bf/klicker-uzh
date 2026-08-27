@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
 import { FlashcardCorrectness } from '@klicker-uzh/types'
 import type { PrismaTransactionClient } from '@klicker-uzh/util'
@@ -16,27 +17,141 @@ const MAX_ID_LENGTH = 128
 const MAX_TITLE_LENGTH = 256
 const MAX_URL_LENGTH = 2_048
 const MAX_METADATA_BYTES = 64 * 1024
+const MAX_PLAN_CARDS = 5
+const MAX_TOPIC_LENGTH = 500
+const MAX_INTENT_LENGTH = 1_000
+const MAX_QUERY_LENGTH = 500
 
-const groundingDisclaimers = new Set([
-  'die flashcard verwendet ausschließlich die informationen aus dem bereitgestellten chunk.',
-  'die flashcard verwendet ausschließlich die informationen aus dem bereitgestellten chunk',
-  'die flashcard verwendet ausschliesslich die informationen aus dem bereitgestellten chunk.',
-  'die flashcard verwendet ausschliesslich die informationen aus dem bereitgestellten chunk',
-  'the flashcard uses only the information from the provided chunk.',
-  'the flashcard uses only the information from the provided chunk',
-])
+export const CARD_TITLE_SIMILARITY_THRESHOLD = 0.8
 
-const provenanceOnlyPatterns = [
-  /^(?:the|this) (?:flashcard|card) uses only (?:the )?(?:supplied|provided) (?:evidence|information|course material|chunks?)[.]?$/,
-  /^(?:the|this) (?:flashcard|card) contains only (?:the )?(?:supplied|provided) (?:evidence|information|course material|chunks?)[.]?$/,
-]
+export type DiscardedDuplicateCard = {
+  title: string
+  matchedTitle: string
+  similarity: number
+}
 
-function isGroundingDisclaimer(value: string) {
-  const normalized = value.trim().toLowerCase().replace(/\s+/g, ' ')
+function normalizeTitle(value: string) {
+  return value
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+}
+
+function titleTokens(value: string) {
+  const words = normalizeTitle(value).split(/\s+/).filter(Boolean)
+  const tokens = new Set(words)
+
+  // Titles often mix an abbreviation with its expanded form (for example,
+  // "CAPM" and "Capital Asset Pricing Model"). Add short initialisms so the
+  // deterministic check catches that common duplicate shape without a model.
+  for (let start = 0; start < words.length; start += 1) {
+    for (
+      let length = 3;
+      length <= 5 && start + length <= words.length;
+      length += 1
+    ) {
+      tokens.add(
+        words
+          .slice(start, start + length)
+          .map((word) => word[0])
+          .join('')
+      )
+    }
+  }
+
+  return tokens
+}
+
+function characterNgrams(value: string) {
+  const normalized = normalizeTitle(value).replace(/\s+/g, ' ')
+  if (normalized.length < 3) return new Set(normalized ? [normalized] : [])
+
+  const ngrams = new Set<string>()
+  for (let index = 0; index <= normalized.length - 3; index += 1) {
+    ngrams.add(normalized.slice(index, index + 3))
+  }
+  return ngrams
+}
+
+function jaccardSimilarity<T>(left: Set<T>, right: Set<T>) {
+  if (left.size === 0 || right.size === 0) return 0
+
+  let intersection = 0
+  for (const value of left) {
+    if (right.has(value)) intersection += 1
+  }
+  return intersection / (left.size + right.size - intersection)
+}
+
+function isInitialismOf(shortTitle: string, longTitle: string) {
+  if (!/^\p{L}{3,5}$/u.test(shortTitle)) return false
+  const words = longTitle.split(/\s+/).filter(Boolean)
   return (
-    groundingDisclaimers.has(normalized) ||
-    provenanceOnlyPatterns.some((pattern) => pattern.test(normalized))
+    words.length >= 3 && words.map((word) => word[0]).join('') === shortTitle
   )
+}
+
+/**
+ * Compares titles without sending them to another provider. Exact matches,
+ * token-subset variants, and close spelling variants are treated as possible
+ * duplicates; this is intentionally a conservative pre-generation gate.
+ */
+export function cardTitleSimilarity(left: string, right: string) {
+  const normalizedLeft = normalizeTitle(left)
+  const normalizedRight = normalizeTitle(right)
+  if (!normalizedLeft || !normalizedRight) return 0
+  if (normalizedLeft === normalizedRight) return 1
+
+  if (
+    isInitialismOf(normalizedLeft, normalizedRight) ||
+    isInitialismOf(normalizedRight, normalizedLeft)
+  ) {
+    return 0.95
+  }
+
+  const leftTokens = titleTokens(left)
+  const rightTokens = titleTokens(right)
+  const tokenSimilarity = jaccardSimilarity(leftTokens, rightTokens)
+  const shorterTokenCount = Math.min(leftTokens.size, rightTokens.size)
+  let similarity = tokenSimilarity
+
+  // Do not let a one-word title such as "Overview" suppress every longer
+  // title containing that word. Multi-word subsets are materially stronger.
+  const leftIsSubset = [...leftTokens].every((token) => rightTokens.has(token))
+  const rightIsSubset = [...rightTokens].every((token) => leftTokens.has(token))
+  if (
+    shorterTokenCount >= 2 &&
+    tokenSimilarity > 0 &&
+    (leftIsSubset || rightIsSubset)
+  ) {
+    similarity = Math.max(similarity, 0.9)
+  }
+
+  return Math.max(
+    similarity,
+    jaccardSimilarity(characterNgrams(left), characterNgrams(right))
+  )
+}
+
+export function findPotentialDuplicateTitle(
+  title: string,
+  existingTitles: readonly string[]
+) {
+  let match: { matchedTitle: string; similarity: number } | null = null
+
+  for (const existingTitle of existingTitles) {
+    const similarity = cardTitleSimilarity(title, existingTitle)
+    if (
+      similarity >= CARD_TITLE_SIMILARITY_THRESHOLD &&
+      (!match || similarity > match.similarity)
+    ) {
+      match = { matchedTitle: existingTitle, similarity }
+    }
+  }
+
+  return match
 }
 
 const cardExplanationSchema = z
@@ -46,9 +161,6 @@ const cardExplanationSchema = z
   .max(8_192)
   .refine((value) => /[\p{L}\p{N}]/u.test(value), {
     message: 'Generated card explanation must contain an answer',
-  })
-  .refine((value) => !isGroundingDisclaimer(value), {
-    message: 'Generated card explanation must contain the answer',
   })
 
 const sourceMetadataValueSchema = z.union([
@@ -128,6 +240,36 @@ const candidateSchema = z
   })
   .strict()
 
+const cardPlanEntrySchema = z
+  .object({
+    type: z.literal('FLASHCARD'),
+    title: z.string().trim().min(1).max(MAX_TITLE_LENGTH),
+    intent: z.string().trim().min(1).max(MAX_INTENT_LENGTH),
+    query: z.string().trim().min(1).max(MAX_QUERY_LENGTH),
+  })
+  .strict()
+
+const cardPlanInputSchema = z
+  .object({
+    courseId: z.string().trim().min(1).max(MAX_ID_LENGTH),
+    topic: z.string().trim().min(1).max(MAX_TOPIC_LENGTH),
+    cards: z.array(cardPlanEntrySchema).min(1).max(MAX_PLAN_CARDS),
+  })
+  .strict()
+
+const validateCardCandidateInputSchema = z
+  .object({
+    courseId: z.string().trim().min(1).max(MAX_ID_LENGTH),
+    candidateId: z.string().trim().min(1).max(MAX_ID_LENGTH),
+    title: z.string().trim().min(1).max(MAX_TITLE_LENGTH),
+    front: z.string().trim().min(1).max(8_192),
+    back: cardExplanationSchema,
+    sources: sourcesSchema,
+    sourceMessageId: z.string().trim().min(1).max(MAX_ID_LENGTH),
+    sourceToolCallId: z.string().trim().min(1).max(MAX_ID_LENGTH),
+  })
+  .strict()
+
 const cardGenerationLeaseInputSchema = z
   .object({
     planMessageId: z.string().uuid(),
@@ -139,6 +281,14 @@ const cardGenerationLeaseInputSchema = z
 export type PersonalElementSource = z.infer<typeof sourceSchema>
 
 export type PersonalElementCandidate = z.infer<typeof candidateSchema>
+
+export type CardPlanEntry = z.infer<typeof cardPlanEntrySchema>
+
+export type PrepareCardPlanInput = z.infer<typeof cardPlanInputSchema>
+
+export type ValidateCardCandidateInput = z.infer<
+  typeof validateCardCandidateInputSchema
+>
 
 export type CreatePersonalElementsInput = {
   courseId: string
@@ -222,6 +372,151 @@ async function assertCourseParticipation(
       'The participant is not enrolled in this course'
     )
   }
+}
+
+export type PreparedCardPlanEntry = {
+  type: 'FLASHCARD'
+  candidateId: string
+  title: string
+  intent: string
+  query: string
+}
+
+export type PreparedCardPlan = {
+  courseLanguage: DB.Locale
+  existingTitles: string[]
+  cards: PreparedCardPlanEntry[]
+  discardedDuplicates: DiscardedDuplicateCard[]
+}
+
+/**
+ * Prepares a card plan on the backend: authorizes the course, loads the
+ * course language and the complete saved-title list, screens the proposed
+ * titles against saved cards and within the proposal, and assigns stable
+ * server-issued candidate identities. The complete title list is returned as
+ * read-only model context; the backend repeats authoritative checks at
+ * candidate validation and at save time.
+ */
+export async function prepareCardPlan(
+  input: PrepareCardPlanInput,
+  context: PersonalElementServiceContext
+): Promise<PreparedCardPlan> {
+  assertParticipantContext(context)
+  const parsed = parsePersonalElementInput(cardPlanInputSchema, input)
+
+  const course = await context.prisma.course.findUnique({
+    where: { id: parsed.courseId },
+    select: { language: true },
+  })
+  if (!course) {
+    throw personalElementError(
+      'PERSONAL_ELEMENTS_NOT_PARTICIPATING',
+      'The participant is not enrolled in this course'
+    )
+  }
+  await assertCourseParticipation(
+    context.prisma,
+    context.participantId,
+    parsed.courseId
+  )
+
+  const savedElements = await context.prisma.personalElement.findMany({
+    where: {
+      participantId: context.participantId,
+      courseId: parsed.courseId,
+    },
+    select: { name: true },
+  })
+  const existingTitles = savedElements.map((element) => element.name)
+
+  const planId = randomUUID()
+  const retained: PreparedCardPlanEntry[] = []
+  const discardedDuplicates: DiscardedDuplicateCard[] = []
+  const titlesToCompare = [...existingTitles]
+
+  for (const [index, card] of parsed.cards.entries()) {
+    const match = findPotentialDuplicateTitle(card.title, titlesToCompare)
+    if (match) {
+      discardedDuplicates.push({ title: card.title, ...match })
+      continue
+    }
+    retained.push({
+      type: 'FLASHCARD',
+      candidateId: planId + ':card-' + (index + 1),
+      title: card.title,
+      intent: card.intent,
+      query: card.query,
+    })
+    titlesToCompare.push(card.title)
+  }
+
+  return {
+    courseLanguage: course.language,
+    existingTitles,
+    cards: retained,
+    discardedDuplicates,
+  }
+}
+
+export type ValidateCardCandidateResult = {
+  ok: true
+}
+
+/**
+ * Validates a generated Flashcard candidate before it can render: course
+ * participation, source-message ownership, the structural FLASHCARD payload,
+ * source bounds, and current title similarity against saved cards. This is
+ * the shared validation seam that the save workflow reuses.
+ */
+export async function validateCardCandidate(
+  input: ValidateCardCandidateInput,
+  context: PersonalElementServiceContext
+): Promise<ValidateCardCandidateResult> {
+  assertParticipantContext(context)
+  const parsed = parsePersonalElementInput(
+    validateCardCandidateInputSchema,
+    input
+  )
+
+  await assertCourseParticipation(
+    context.prisma,
+    context.participantId,
+    parsed.courseId
+  )
+
+  const sourceMessage = await context.prisma.chatMessage.findFirst({
+    where: {
+      id: parsed.sourceMessageId,
+      thread: { participantId: context.participantId },
+    },
+    select: { id: true },
+  })
+  if (!sourceMessage) {
+    throw personalElementError(
+      'PERSONAL_ELEMENTS_SOURCE_MESSAGE_NOT_FOUND',
+      'The source message is not available to this participant'
+    )
+  }
+
+  const savedElements = await context.prisma.personalElement.findMany({
+    where: {
+      participantId: context.participantId,
+      courseId: parsed.courseId,
+    },
+    select: { name: true },
+  })
+  const duplicate = findPotentialDuplicateTitle(
+    parsed.title,
+    savedElements.map((element) => element.name)
+  )
+  if (duplicate) {
+    throw personalElementError(
+      'PERSONAL_ELEMENTS_DUPLICATE_TITLE',
+      'A card with a similar title already exists: ' + duplicate.matchedTitle
+    )
+  }
+
+  return { ok: true }
 }
 
 function normalizeCandidates(candidates: readonly PersonalElementCandidate[]) {
