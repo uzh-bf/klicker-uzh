@@ -1210,6 +1210,27 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       createProfileFailed:
         'Unfortunately, your account could not be created or linked. Please check your entries and try again.',
       editProfileSuccess: 'Your profile has been updated successfully.',
+      dataUseTitle: 'Research and learning analytics',
+      dataUseDescription:
+        'These choices apply to your entire KlickerUZH account. You can change them at any time.',
+      dataUseLoadFailed:
+        'Your data-use choices could not be loaded. Please try again.',
+      researchConsentTitle: 'Research',
+      researchConsentDescription:
+        'Yes allows future research exports to include all data stored for your account. No excludes your data from future research exports. If you turn this back on, data already stored for your account can be included again. Research exports that have already been created are not recalled.',
+      researchConsentSaved: 'Your research choice has been saved.',
+      researchConsentFailed:
+        'Your research choice could not be saved. Please reload the page before trying again.',
+      learningAnalyticsConsentTitle: 'Learning analytics',
+      learningAnalyticsConsentDescription:
+        'Yes allows KlickerUZH to use your later activity for individual learning analytics. No excludes you immediately. Individual learning-analytics data already created for you is deleted during the next successful overnight processing cycle. Aggregate results are updated when they are next recomputed. If you turn this back on, only later activity is used; earlier activity is not added retroactively.',
+      learningAnalyticsConsentSaved:
+        'Your learning-analytics choice has been saved.',
+      learningAnalyticsConsentFailed:
+        'Your learning-analytics choice could not be saved. Please reload the page before trying again.',
+      dataUseCanonicalDataNotice:
+        'These choices do not delete your account, course participation, activity submissions, or responses.',
+      dataUsePrivacyPolicy: 'Read the privacy policy.',
       achievements: 'Achievements',
       myProfile: 'My Profile',
       createProfile: 'Create Profile',

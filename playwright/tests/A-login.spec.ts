@@ -109,6 +109,108 @@ test.describe('Login / Logout workflows for lecturer and students', () => {
     })
   })
 
+  test('Participant data-use choices are independent and persist', async ({
+    page,
+    loginStudent,
+  }) => {
+    await loginStudent()
+    await expect(page.getByTestId('homepage')).toBeVisible()
+    await page.getByTestId('header-avatar').click()
+    await page.getByTestId('participant-profile-login').click()
+    await page.getByTestId('edit-profile').click()
+
+    const researchConsent = page.getByTestId('participant-research-consent')
+    const learningAnalyticsConsent = page.getByTestId(
+      'participant-learning-analytics-consent'
+    )
+
+    await expect(researchConsent).toBeVisible()
+    await expect(learningAnalyticsConsent).toBeVisible()
+
+    try {
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'false'
+      )
+
+      await page.route('**/api/graphql', async (route) => {
+        const request = route.request()
+        const postData = request.postData()
+        const operationName = postData
+          ? (JSON.parse(postData) as { operationName?: string }).operationName
+          : undefined
+
+        if (
+          request.method() === 'POST' &&
+          operationName === 'SetResearchConsent'
+        ) {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: { setResearchConsent: null },
+              errors: [{ message: 'Synthetic save failure' }],
+            }),
+          })
+          return
+        }
+
+        await route.continue()
+      })
+
+      await researchConsent.click()
+      await expect(
+        page.getByText(/Your research choice could not be saved/)
+      ).toBeVisible()
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'false')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'false'
+      )
+      await page.unroute('**/api/graphql')
+
+      await researchConsent.click()
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'true')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'false'
+      )
+
+      await page.reload()
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'true')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'false'
+      )
+
+      await learningAnalyticsConsent.click()
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'true')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'true'
+      )
+
+      await page.reload()
+      await expect(researchConsent).toHaveAttribute('aria-checked', 'true')
+      await expect(learningAnalyticsConsent).toHaveAttribute(
+        'aria-checked',
+        'true'
+      )
+    } finally {
+      await page.unroute('**/api/graphql')
+      await page.reload()
+
+      // Leave the shared test account at the fail-closed baseline.
+      for (const consentSwitch of [researchConsent, learningAnalyticsConsent]) {
+        if ((await consentSwitch.getAttribute('aria-checked')) === 'true') {
+          await consentSwitch.click()
+          await expect(consentSwitch).toHaveAttribute('aria-checked', 'false')
+        }
+      }
+    }
+  })
+
   // -------------------------------------------------------------------------
   // Student: password change and revert
   // -------------------------------------------------------------------------
