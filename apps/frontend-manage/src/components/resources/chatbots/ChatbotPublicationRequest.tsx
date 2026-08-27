@@ -134,7 +134,12 @@ function ChatbotPublicationRequest({
   const editable =
     chatbot.status === ChatbotStatus.Draft ||
     chatbot.status === ChatbotStatus.Rejected
-  const hasDisclaimer = Boolean(chatbot.disclaimerSummary)
+  // Completeness matches the server guard: a linked disclaimer only enables
+  // submission when its normalized title and introduction are both non-empty.
+  const hasDisclaimer = Boolean(
+    chatbot.disclaimerSummary?.title?.trim() &&
+      chatbot.disclaimerSummary?.introText?.trim()
+  )
   const canSubmit =
     editable &&
     hasDisclaimer &&

@@ -63,11 +63,13 @@ async function seedPublicationChatbot({
   name,
   status,
   withDisclaimer,
+  incompleteDisclaimer,
   reviewComment,
 }: {
   name: string
   status: PublicationChatbotStatus
   withDisclaimer: boolean
+  incompleteDisclaimer?: boolean
   reviewComment?: string
 }) {
   const prisma = await getPrisma()
@@ -75,8 +77,14 @@ async function seedPublicationChatbot({
     ? await prisma.chatbotDisclaimer.create({
         data: {
           name: `${name} disclaimer`,
-          title: 'Synthetic chatbot disclaimer',
-          introText: 'Synthetic disclaimer text for this test chatbot.',
+          title:
+            incompleteDisclaimer === true
+              ? '   '
+              : 'Synthetic chatbot disclaimer',
+          introText:
+            incompleteDisclaimer === true
+              ? ''
+              : 'Synthetic disclaimer text for this test chatbot.',
           ownerId: USER_ID_TEST,
         },
       })
@@ -340,6 +348,31 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
         'This account is not approved to request chatbot publication.'
       )
     ).toBeVisible()
+    await expect(
+      page.getByText(
+        'Save a complete disclaimer before requesting publication.'
+      )
+    ).toBeVisible()
+  })
+
+  test('blocks submission for a linked but incomplete disclaimer', async ({
+    page,
+  }) => {
+    await setPublishingAuthorization(true)
+    await seedPublicationChatbot({
+      name: `${CHATBOT_PREFIX} Blank Disclaimer`,
+      status: 'DRAFT',
+      withDisclaimer: true,
+      incompleteDisclaimer: true,
+    })
+    await page.reload()
+
+    // The linked disclaimer exists but its normalized content is empty, so
+    // submission must stay disabled exactly as if no disclaimer were linked.
+    await expect(
+      page.getByTestId('chatbot-publication-use-case')
+    ).toBeVisible()
+    await expect(page.getByTestId('request-chatbot-publication')).toBeDisabled()
     await expect(
       page.getByText(
         'Save a complete disclaimer before requesting publication.'
