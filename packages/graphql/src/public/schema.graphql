@@ -452,7 +452,7 @@ input CardPlanEntryInput {
   intent: String!
   query: String!
   title: String!
-  type: String!
+  type: ElementType!
 }
 
 type CaseStudyActivityEvaluationData {
@@ -2698,7 +2698,7 @@ type Mutation {
   updateUserLogin(id: String!, password: String!): UserLogin
   updateWeeklyTimelineEntriesCourse(courseId: String!): Boolean
   upvoteFeedback(feedbackId: Int!, increment: Int!): Feedback
-  validateCardCandidate(input: ValidateCardCandidateInput!): ValidateCardCandidateResult
+  validateCardCandidate(input: ValidateCardCandidateInput!): Boolean!
   voteFeedbackResponse(id: Int!, incrementDownvote: Int!, incrementUpvote: Int!): FeedbackResponse
 }
 
@@ -3939,10 +3939,6 @@ input ValidateCardCandidateInput {
   sourceToolCallId: String!
   sources: [PersonalElementSourceInput!]!
   title: String!
-}
-
-type ValidateCardCandidateResult {
-  ok: Boolean!
 }
 
 type WeekdayActivityAnalytics {

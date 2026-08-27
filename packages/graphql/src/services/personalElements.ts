@@ -420,7 +420,7 @@ export type PreparedCardPlan = {
  * titles against saved cards and within the proposal, and assigns stable
  * server-issued candidate identities. The complete title list is returned as
  * read-only model context; the backend repeats authoritative checks at
- * candidate validation and at save time.
+ * candidate validation.
  */
 export async function prepareCardPlan(
   input: PrepareCardPlanInput,
@@ -429,21 +429,21 @@ export async function prepareCardPlan(
   assertParticipantContext(context)
   const parsed = parsePersonalElementInput(cardPlanInputSchema, input)
 
-  const course = await context.prisma.course.findUnique({
-    where: { id: parsed.courseId },
-    select: { language: true },
+  const participation = await context.prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId: parsed.courseId,
+        participantId: context.participantId,
+      },
+    },
+    select: { course: { select: { language: true } } },
   })
-  if (!course) {
+  if (!participation) {
     throw personalElementError(
       'PERSONAL_ELEMENTS_NOT_PARTICIPATING',
       'The participant is not enrolled in this course'
     )
   }
-  await assertCourseParticipation(
-    context.prisma,
-    context.participantId,
-    parsed.courseId
-  )
 
   const savedElements = await context.prisma.personalElement.findMany({
     where: {
@@ -476,27 +476,22 @@ export async function prepareCardPlan(
   }
 
   return {
-    courseLanguage: course.language,
+    courseLanguage: participation.course.language,
     existingTitles,
     cards: retained,
     discardedDuplicates,
   }
 }
 
-export type ValidateCardCandidateResult = {
-  ok: true
-}
-
 /**
  * Validates a generated Flashcard candidate before it can render: course
  * participation, source-message ownership, the structural FLASHCARD payload,
- * source bounds, and current title similarity against saved cards. This is
- * the shared validation seam that the save workflow reuses.
+ * source bounds, and current title similarity against saved cards.
  */
 export async function validateCardCandidate(
   input: ValidateCardCandidateInput,
   context: PersonalElementServiceContext
-): Promise<ValidateCardCandidateResult> {
+): Promise<true> {
   assertParticipantContext(context)
   const parsed = parsePersonalElementInput(
     validateCardCandidateInputSchema,
@@ -541,7 +536,7 @@ export async function validateCardCandidate(
     )
   }
 
-  return { ok: true }
+  return true
 }
 
 function normalizeCandidates(candidates: readonly PersonalElementCandidate[]) {

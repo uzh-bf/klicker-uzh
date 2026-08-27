@@ -80,8 +80,10 @@ validateCardCandidate re-checks participation, source-message ownership, the
 structural Flashcard payload, source bounds, and current title similarity
 before a candidate can render. Generated content is validated structurally
 (non-empty, bounded, contains letters or digits), never by matching English or
-German sentences. The final duplicate check repeats inside the save
-transaction so two accepted candidates cannot pass a stale read.
+German sentences. The save transaction enforces candidate-ID uniqueness and
+the per-course card cap; the final title-similarity check is planned to run
+inside the save transaction so two accepted candidates cannot pass a stale
+read.
 
 `ChatGenerationApproval` is the durable claim for an approved Chat generation.
 Its participant, chatbot, thread, plan message, and optional generated message

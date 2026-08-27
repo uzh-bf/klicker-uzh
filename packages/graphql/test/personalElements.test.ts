@@ -1051,7 +1051,7 @@ describe('personal elements service', () => {
       },
       context(participant.id)
     )
-    expect(result).toEqual({ ok: true })
+    expect(result).toBe(true)
   })
 
   it('rejects a candidate whose source message is not owned by the participant', async () => {
@@ -1213,6 +1213,81 @@ describe('personal elements service', () => {
           back: 'x'.repeat(8_193),
         },
         context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },
+    })
+  })
+
+  it('rejects candidates with aggregate source metadata over 64 KiB', async () => {
+    const { course, participant, planMessage } = await createFixture()
+
+    await expect(
+      validateCardCandidate(
+        {
+          courseId: course.id,
+          candidateId: randomUUID(),
+          title: 'Opportunity cost',
+          front: 'What is opportunity cost?',
+          back: 'The value of the best alternative forgone.',
+          sources: [
+            {
+              sourceId: 'course-material',
+              chunkId: randomUUID(),
+              title: 'Economics notes',
+              metadata: { note: 'x'.repeat(70_000) },
+            },
+          ],
+          sourceMessageId: planMessage.id,
+          sourceToolCallId: 'tool-' + randomUUID(),
+        },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },
+    })
+  })
+
+  it('rejects a candidate with a non-FLASHCARD type in the plan', async () => {
+    const { course } = await createFixture()
+
+    await expect(
+      prepareCardPlan(
+        {
+          courseId: course.id,
+          topic: 'Economics',
+          cards: [
+            {
+              type: 'MC',
+              title: 'Sunk cost',
+              intent: 'Define sunk cost',
+              query: 'sunk cost definition',
+            },
+          ],
+        },
+        context(randomUUID())
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },
+    })
+  })
+
+  it('rejects a plan with more than five cards', async () => {
+    const { course } = await createFixture()
+
+    await expect(
+      prepareCardPlan(
+        {
+          courseId: course.id,
+          topic: 'Economics',
+          cards: Array.from({ length: 6 }, (_, index) => ({
+            type: 'FLASHCARD',
+            title: 'Card ' + index,
+            intent: 'Define card ' + index,
+            query: 'card ' + index + ' definition',
+          })),
+        },
+        context(randomUUID())
       )
     ).rejects.toMatchObject({
       extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },

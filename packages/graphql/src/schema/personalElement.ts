@@ -5,7 +5,6 @@ import {
   type PersonalElementSource as PersonalElementSourceValue,
   type PreparedCardPlan as PreparedCardPlanValue,
   type PreparedCardPlanEntry as PreparedCardPlanEntryValue,
-  type ValidateCardCandidateResult as ValidateCardCandidateResultValue,
 } from '../services/personalElements.js'
 import { ElementType } from './elementData.js'
 import { ResponseCorrectness } from './evaluation.js'
@@ -45,7 +44,7 @@ export const PersonalElementSourceInput = builder.inputType(
 
 export const CardPlanEntryInput = builder.inputType('CardPlanEntryInput', {
   fields: (t) => ({
-    type: t.string({ required: true }),
+    type: t.field({ type: ElementType, required: true }),
     title: t.string({ required: true }),
     intent: t.string({ required: true }),
     query: t.string({ required: true }),
@@ -119,18 +118,6 @@ export const PreparedCardPlan = PreparedCardPlanRef.implement({
     }),
   }),
 })
-
-export const ValidateCardCandidateResultRef =
-  builder.objectRef<ValidateCardCandidateResultValue>(
-    'ValidateCardCandidateResult'
-  )
-
-export const ValidateCardCandidateResult =
-  ValidateCardCandidateResultRef.implement({
-    fields: (t) => ({
-      ok: t.exposeBoolean('ok'),
-    }),
-  })
 
 export const PersonalElementRef =
   builder.objectRef<DB.PersonalElement>('PersonalElement')

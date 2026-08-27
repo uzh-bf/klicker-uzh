@@ -81,7 +81,6 @@ import {
   PrepareCardPlanInput,
   PreparedCardPlan,
   ValidateCardCandidateInput,
-  ValidateCardCandidateResult,
 } from './personalElement.js'
 import {
   AvatarSettingsInput,
@@ -661,9 +660,7 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      validateCardCandidate: t.withAuth(asParticipant).field({
-        nullable: true,
-        type: ValidateCardCandidateResult,
+      validateCardCandidate: t.withAuth(asParticipant).boolean({
         args: {
           input: t.arg({ type: ValidateCardCandidateInput, required: true }),
         },

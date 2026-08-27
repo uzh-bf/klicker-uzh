@@ -68,6 +68,7 @@ ownership, the structural Flashcard payload, source bounds, and current title
 similarity before a candidate can render. Chat calls these operations through
 generated GraphQL documents and no longer imports backend services for
 language, titles, duplicate policy, or candidate validation.
+
 ## Layering contract
 
 - `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.deleteCourse(args, ctx)`.
