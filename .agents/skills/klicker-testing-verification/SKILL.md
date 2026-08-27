@@ -131,6 +131,11 @@ reasoning against the deployed LiteLLM router.
 Without `UPSTREAM_OPENAI_API_KEY`, stop at picker/error-state verification and
 report the live-answer gap explicitly.
 
+For Chat/Knowledge graph workspace-switch placement, verify that standalone and
+embedded layouts show exactly one compact switch in the header, the standalone
+sidebar contains no duplicate, both destinations retain their active state, and
+the header does not overflow at desktop or mobile widths.
+
 For the seeded local MCP smoke test, verify
 `http://localhost:1417/health`, keep `Auto Mode` selected in Benibot, and send
 the prompt recorded in `AGENTS.md`. Require a completed
