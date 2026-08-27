@@ -631,6 +631,29 @@ no migration.
   affected Chat tests, full Chat suite 88/90 (two pre-existing
   modelRegistryParity failures), Chat check and lint pass, GraphQL check
   and build pass.
+- [x] S5 — implemented on C: `7b917d61a` deletes retrievalPolicy.ts and
+  replaces the lexical policy with deterministic protocol state:
+  retrievalRequired = hasImage || non-empty text; doc_query is forced first
+  and only doc_query; propose_card_plan and grounded tools unlock only after
+  a chunked retrieval result; the terminal course_retrieval_unavailable
+  tool fires after two failed attempts; the isCardGenerationRequest intent
+  classifier and its four regexes are gone; stopWhen ends on
+  propose_card_plan whenever generation is eligible; the saved-title list
+  loads lazily through the plan tool; generationCandidateSchema is
+  structural type/title/front/back/citedChunkIds with the boundary mapping
+  title-to-name, front-to-content, back-to-explanation; isGroundingDisclaimer
+  and the disclaimer refine are removed from contracts. Verified at exact
+  head in the plan container: 52/52 focused tests, full Chat suite 88/90
+  (two pre-existing modelRegistryParity failures), Chat check and lint pass.
+- [x] S5 review gates — simplifier and retrieval/AI-contract slice review
+  both returned PASS_WITH_CONCERNS with no P1 (disclosed fallback route
+  after provider credit exhaustion). Dispositions committed on C as
+  `3c125b575`: the eager saved-title fetch (a new per-turn GraphQL call
+  that could 500 ordinary Q&A) is removed in favor of the lazy getter the
+  plan tool already used, the duplicateCheckRequired alias is inlined, and
+  two focused tests added (non-eligible stopWhen, no-doc_query-tool
+  lockout). Verified at exact head in the plan container: 54/54 focused
+  tests, Chat check and lint pass.
 - [ ] Execute S1 through S6 with their review gates and local commits.
 - [ ] Complete exact-head verification and the integrated native
   `final-reviewer` gate.
