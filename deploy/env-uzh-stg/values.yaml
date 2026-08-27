@@ -27,7 +27,7 @@ hatchet:
     sourceGatewayUrl: 'http://klicker-backend.stg-klicker.svc.cluster.local:3000'
     workerDisabled: false
   kbGraph:
-    disabled: true
+    disabled: false
     hostPort: 'hatchet-grpc.stg-hatchet-svc.svc.cluster.local:7070'
     apiUrl: 'http://app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080'
     tlsStrategy: 'none'
@@ -634,7 +634,7 @@ backendGraphql:
   appControlDomain: control.klicker.stg.df-app.ch
   cookieDomain: .klicker.stg.df-app.ch
   kbIngestionDisabled: false
-  kbGraphDisabled: true
+  kbGraphDisabled: false
 
   knowledgeGraph:
     host: 'stg-falkordb-aigeneric-falkordb-falkordb.stg-kb-falkordb-aigeneric.svc.cluster.local'
