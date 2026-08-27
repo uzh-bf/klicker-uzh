@@ -601,6 +601,36 @@ no migration.
   package, which is identical across the stack), so no compatibility edit
   and no new B commit were required. B head `df8a465af` is an ancestor of
   C; C's unique commits were replayed onto it.
+- [x] S4 — implemented on C: `fc22dff76` replaces direct service access in
+  Chat with a server-only GraphQL adapter (graphqlClient.ts: five-minute
+  participant JWT via signJWT, persisted-query calls with Bearer, CSRF,
+  and origin headers, typed wrappers for the seven generated operations)
+  and rewires lease, card-decision, tool, and generation modules plus the
+  personal-elements route to it. Three Prisma-backed read helpers stay
+  inside the adapter (getGenerationLeaseState,
+  listDiscardedCandidateIds, listCompletedGenerationLeaseAttemptTokens)
+  because the GraphQL surface exposes no read operations for those states;
+  both reviewers accepted this deviation. The adapter pins
+  PersonalElementOrigin.AiGenerated and compactElement tolerates an
+  optional nextDueAt. Verified at exact head in the plan container: 71/71
+  Chat tests across the six touched files, Chat check and lint pass, GraphQL
+  check and build pass; the two modelRegistryParity failures are
+  pre-existing.
+- [x] S4 review gates — slice review and simplifier both returned
+  PASS_WITH_CONCERNS (disclosed fallback route after provider credit
+  exhaustion). Dispositions committed on C as `4788f6dc5`: compactElement
+  now passes nextDueAt through as the wire string instead of calling
+  toISOString() on it (regression test added with a non-null string),
+  unused getGraphqlEndpoint and PersonalElementGraphQLError exports
+  dropped, and the adapter test now asserts the persisted-query hash plus
+  CSRF and origin headers. The empty packages/graphql/src/server.ts and
+  its rollup input were removed on A (`fa1161556`, `38fe7a033`) and
+  cascaded through B (`508fa4821`) to C (`c6852d140`); the GraphQL package
+  is byte-identical across the stack and no @klicker-uzh/graphql/dist/server
+  import remains. Verified at exact head in the plan container: 27/27
+  affected Chat tests, full Chat suite 88/90 (two pre-existing
+  modelRegistryParity failures), Chat check and lint pass, GraphQL check
+  and build pass.
 - [ ] Execute S1 through S6 with their review gates and local commits.
 - [ ] Complete exact-head verification and the integrated native
   `final-reviewer` gate.
