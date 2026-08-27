@@ -94,13 +94,14 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       'Use this chatbot as a learning aid.'
     )
     const disclaimerEditor = page.getByTestId('chatbot-disclaimer-intro')
-    await disclaimerEditor.press('ControlOrMeta+A')
     const boldButton = page.getByTestId('content-input-bold')
     await expect(boldButton).toHaveJSProperty('tagName', 'BUTTON')
     await boldButton.focus()
     await boldButton.press('Enter')
+    await expect(boldButton).toHaveAttribute('aria-pressed', 'true')
+    await disclaimerEditor.pressSequentially(' Verify important information.')
     await expect(disclaimerEditor.locator('strong')).toContainText(
-      'Use this chatbot as a learning aid.'
+      'Verify important information.'
     )
     const preview = page.getByTestId('chatbot-disclaimer-preview')
     await expect(preview).toContainText('Course chatbot conditions')
@@ -135,7 +136,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     )
     await expect(
       page.getByTestId('chatbot-disclaimer-intro').locator('strong')
-    ).toContainText('Use this chatbot as a learning aid.')
+    ).toContainText('Verify important information.')
 
     await page.reload()
     await expect(page.getByTestId('chatbot-name')).toHaveValue(FIRST_CHATBOT)
@@ -147,6 +148,6 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     )
     await expect(
       page.getByTestId('chatbot-disclaimer-intro').locator('strong')
-    ).toContainText('Use this chatbot as a learning aid.')
+    ).toContainText('Verify important information.')
   })
 })
