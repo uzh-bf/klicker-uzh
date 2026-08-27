@@ -9,11 +9,14 @@ import { useProductUpdates } from '../components/productUpdates/useProductUpdate
 
 function Updates() {
   const t = useTranslations()
+  const productUpdates = useProductUpdates()
   const { entries, loading, recordPresentation, markRead, dismiss } =
-    useProductUpdates()
+    productUpdates
   // Replay only: the header's runner owns the unsolicited spotlight, and a
   // dismissed entry stays replayable from this archive.
-  const { replaySpotlight } = useProductUpdateSpotlight()
+  const { replaySpotlight } = useProductUpdateSpotlight({
+    updates: productUpdates,
+  })
 
   return (
     <Layout displayName={t('manage.productUpdates.pageTitle')}>

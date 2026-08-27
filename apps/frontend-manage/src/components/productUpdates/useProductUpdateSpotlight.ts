@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { resolveSpotlightTarget } from './spotlightTargets'
 import { trackProductUpdate } from './tracking'
-import { useProductUpdates } from './useProductUpdates'
+import type { UseProductUpdatesResult } from './useProductUpdates'
 
 // A "browser session" is one tab: sessionStorage is per tab and disappears when
 // the tab closes, which is the closest thing to a session the client can observe
@@ -19,6 +19,31 @@ const SESSION_GUARD_KEY = 'klicker-uzh.productUpdates.spotlightPresented'
 // counter only moves when a presentation is explicitly recorded, so the cap is
 // reached by two real appearances rather than by rerenders.
 const MAX_UNSOLICITED_PRESENTATIONS = 2
+
+// Driver.js blocks pointer events on the entire document while an overlay is
+// open, so an uninvited spotlight on a page where the lecturer is steering a
+// running session would freeze the very controls they need. These routes show a
+// spotlight only when the lecturer asks for one; the values are Next.js route
+// patterns as reported by `router.pathname`.
+const AUTO_PRESENT_SUPPRESSED_ROUTES = new Set([
+  '/quizzes/[id]/cockpit',
+  '/courses/[id]/assessment/liveQuiz/[quizId]',
+])
+
+const HTML_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+}
+
+// Driver.js writes every popover string into the DOM with innerHTML, unlike the
+// feed card, where React escapes the same catalog text. A title such as
+// "Faster grading (<2s)" would otherwise lose part of itself to the parser.
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => HTML_ESCAPES[character]!)
+}
 
 function spotlightSeenThisSession(): boolean {
   try {
@@ -53,22 +78,30 @@ export type UseProductUpdateSpotlightResult = {
  * replay-only instance.
  *
  * Replays are what the reader explicitly asked for, so they ignore both caps.
+ *
+ * The caller passes in its own feed result rather than the hook reading the feed
+ * again, so that a component showing both the cards and the spotlight keeps one
+ * query and reports eligibility once.
  */
 export function useProductUpdateSpotlight({
+  updates,
   autoPresent = false,
 }: {
+  updates: UseProductUpdatesResult
   autoPresent?: boolean
-} = {}): UseProductUpdateSpotlightResult {
+}): UseProductUpdateSpotlightResult {
   const t = useTranslations()
   const locale = useLocale()
   const router = useRouter()
-  const { entries, loading, recordPresentation, markRead, dismiss } =
-    useProductUpdates()
+  // Destructured once: the individual callbacks keep a stable identity across
+  // renders, while the result object itself does not.
+  const { entries, loading, recordPresentation, markRead, dismiss } = updates
 
   const language = locale === 'de' ? 'de' : 'en'
 
-  // Driver.js takes over the whole document, so at most one overlay may live at
-  // a time and it has to be torn down when this component goes away.
+  // Driver.js tears the overlay down when this component goes away. The ref is
+  // per instance rather than global; two instances triggering at once cannot
+  // interleave anyway, because the first overlay blocks the page.
   const activeDriver = useRef<Driver | null>(null)
   const autoPresented = useRef(false)
   const [pendingReplay, setPendingReplay] = useState<ProductUpdate | null>(null)
@@ -92,14 +125,14 @@ export function useProductUpdateSpotlight({
       instance.highlight({
         element,
         popover: {
-          title: update.title[language],
-          description: update.summary[language],
+          title: escapeHtml(update.title[language]),
+          description: escapeHtml(update.summary[language]),
           // Driver.js offers three button slots. A one-step highlight has
           // nothing to go back to, so the previous slot carries the dismissal,
           // while the close icon means "not now" and leaves the entry alone.
           showButtons: ['next', 'previous', 'close'],
-          nextBtnText: t('manage.productUpdates.spotlightConfirm'),
-          prevBtnText: t('manage.productUpdates.spotlightDismiss'),
+          nextBtnText: escapeHtml(t('manage.productUpdates.spotlightConfirm')),
+          prevBtnText: escapeHtml(t('manage.productUpdates.spotlightDismiss')),
           onNextClick: () => {
             instance.destroy()
             markRead(update.id)
@@ -135,6 +168,9 @@ export function useProductUpdateSpotlight({
 
   useEffect(() => {
     if (!autoPresent || loading || autoPresented.current) return
+    // Checked before the session slot is claimed, so leaving the live session
+    // for an ordinary page still shows the spotlight there.
+    if (AUTO_PRESENT_SUPPRESSED_ROUTES.has(router.pathname)) return
     if (spotlightSeenThisSession()) return
 
     const candidate = entries.find(
@@ -152,7 +188,7 @@ export function useProductUpdateSpotlight({
     autoPresented.current = true
     rememberSpotlightThisSession()
     present(candidate.update)
-  }, [autoPresent, entries, loading, present])
+  }, [autoPresent, entries, loading, present, router.pathname])
 
   useEffect(() => {
     if (!pendingReplay) return

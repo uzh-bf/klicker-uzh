@@ -40,10 +40,14 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
   const [showSupportModal, setShowSupportModal] = useState(false)
   const [showProductUpdates, setShowProductUpdates] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
-  const { unreadCount } = useProductUpdates()
+  const productUpdates = useProductUpdates()
+  const unreadCount = productUpdates.unreadCount
   // The header is the one place that auto-presents: it renders on every manage
   // page, so the once-per-session cap belongs to exactly this mount.
-  const { replaySpotlight } = useProductUpdateSpotlight({ autoPresent: true })
+  const { replaySpotlight } = useProductUpdateSpotlight({
+    updates: productUpdates,
+    autoPresent: true,
+  })
 
   const { data: pendingRequestData } = useQuery(
     CountCatalogSharingRequestsDocument
