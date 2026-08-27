@@ -743,8 +743,7 @@ export async function getCoursePerformanceAnalytics(
 
 async function getCoursePerformanceAnalyticsV2InTransaction(
   prisma: PrismaTransactionClient,
-  courseId: string,
-  nextRandomInt?: (max: number) => number
+  courseId: string
 ) {
   const eligibleParticipantIds =
     await getEligibleParticipantIdsForPerformanceAnalytics(prisma, courseId)
@@ -795,22 +794,15 @@ async function getCoursePerformanceAnalyticsV2InTransaction(
   return buildCoursePerformanceAnalyticsV2({
     eligibleParticipantKeys: eligibleParticipantIds,
     activities,
-    nextRandomInt,
   })
 }
 
 export async function getCoursePerformanceAnalyticsV2(
   { courseId }: { courseId: string },
-  ctx: ContextWithUser,
-  nextRandomInt?: (max: number) => number
+  ctx: ContextWithUser
 ) {
   return ctx.prisma.$transaction(
-    (prisma) =>
-      getCoursePerformanceAnalyticsV2InTransaction(
-        prisma,
-        courseId,
-        nextRandomInt
-      ),
+    (prisma) => getCoursePerformanceAnalyticsV2InTransaction(prisma, courseId),
     {
       maxWait: 10_000,
       timeout: 60_000,
@@ -824,15 +816,13 @@ export async function getCourseLearningAnalyticsExportV2(
     courseId,
     format,
   }: { courseId: string; format: LearningAnalyticsExportFormatV2 },
-  ctx: ContextWithUser,
-  nextRandomInt?: (max: number) => number
+  ctx: ContextWithUser
 ) {
   return ctx.prisma.$transaction(
     async (prisma) => {
       const analytics = await getCoursePerformanceAnalyticsV2InTransaction(
         prisma,
-        courseId,
-        nextRandomInt
+        courseId
       )
 
       if (!analytics || analytics.studentReport.isSuppressed) return null

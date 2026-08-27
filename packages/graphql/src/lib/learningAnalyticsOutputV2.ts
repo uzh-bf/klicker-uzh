@@ -73,6 +73,15 @@ function hasMinimumCellSize(count: number) {
   return count >= LEARNING_ANALYTICS_MINIMUM_CELL_SIZE
 }
 
+function hasSafeCellSize(count: number, cohortSize: number) {
+  const complementSize = cohortSize - count
+
+  return (
+    hasMinimumCellSize(count) &&
+    (complementSize === 0 || hasMinimumCellSize(complementSize))
+  )
+}
+
 export function roundPercentToTen(value: number) {
   if (!Number.isFinite(value)) return 0
 
@@ -116,7 +125,7 @@ export function buildCourseActivityAnalyticsV2({
   )
     .sort(([firstPeriod], [secondPeriod]) => firstPeriod - secondPeriod)
     .map(([, participants]) => participants.size)
-    .filter(hasMinimumCellSize)
+    .filter((cellSize) => hasSafeCellSize(cellSize, eligibleParticipants.size))
 
   return {
     isSuppressed: false,
@@ -128,11 +137,20 @@ export function buildCourseActivityAnalyticsV2({
   }
 }
 
-export function buildLearningAnalyticsStudentReportV2(
+type NormalizedStudentReportRowV2 = {
+  participantKey: string
+  completedActivities: number
+  meanCompletionPercent: number
+}
+
+function buildSafeStudentReportCohortV2(
   rows: StudentReportInput[],
   nextRandomInt: (max: number) => number = randomInt
-): LearningAnalyticsStudentReportV2 {
-  const reportRows = Array.from(
+): {
+  participantKeys: Set<string>
+  report: LearningAnalyticsStudentReportV2
+} {
+  const candidateRows = Array.from(
     rows.reduce<Map<string, number[]>>((participants, row) => {
       if (row.completions.length === 0) return participants
 
@@ -141,13 +159,45 @@ export function buildLearningAnalyticsStudentReportV2(
       participants.set(row.participantKey, completions)
       return participants
     }, new Map()),
-    ([participantKey, completions]) => ({ participantKey, completions })
+    ([participantKey, completions]): NormalizedStudentReportRowV2 => ({
+      participantKey,
+      completedActivities: completions.filter(
+        (completion) => normalizeCompletion(completion) >= 1
+      ).length,
+      meanCompletionPercent: roundPercentToTen(
+        mean(
+          completions.map((completion) => normalizeCompletion(completion) * 100)
+        )
+      ),
+    })
   )
-  if (!hasMinimumCellSize(reportRows.length)) {
-    return { isSuppressed: true, effectiveN: null, students: [] }
+  if (!hasMinimumCellSize(candidateRows.length)) {
+    return {
+      participantKeys: new Set(),
+      report: { isSuppressed: true, effectiveN: null, students: [] },
+    }
   }
 
-  const shuffledRows = [...reportRows]
+  const tupleGroups = candidateRows.reduce<
+    Map<string, NormalizedStudentReportRowV2[]>
+  >((groups, row) => {
+    const tuple = `${row.completedActivities}:${row.meanCompletionPercent}`
+    const group = groups.get(tuple) ?? []
+    group.push(row)
+    groups.set(tuple, group)
+    return groups
+  }, new Map())
+  const safeRows = Array.from(tupleGroups.values()).flatMap((group) =>
+    hasMinimumCellSize(group.length) ? group : []
+  )
+  if (!hasMinimumCellSize(safeRows.length)) {
+    return {
+      participantKeys: new Set(),
+      report: { isSuppressed: true, effectiveN: null, students: [] },
+    }
+  }
+
+  const shuffledRows = [...safeRows]
   for (let index = shuffledRows.length - 1; index > 0; index--) {
     const randomIndex = nextRandomInt(index + 1)
     ;[shuffledRows[index], shuffledRows[randomIndex]] = [
@@ -157,22 +207,24 @@ export function buildLearningAnalyticsStudentReportV2(
   }
 
   return {
-    isSuppressed: false,
-    effectiveN: reportRows.length,
-    students: shuffledRows.map((row, index) => ({
-      studentLabel: `Student ${index + 1}`,
-      completedActivities: row.completions.filter(
-        (completion) => normalizeCompletion(completion) >= 1
-      ).length,
-      meanCompletionPercent: roundPercentToTen(
-        mean(
-          row.completions.map(
-            (completion) => normalizeCompletion(completion) * 100
-          )
-        )
-      ),
-    })),
+    participantKeys: new Set(safeRows.map((row) => row.participantKey)),
+    report: {
+      isSuppressed: false,
+      effectiveN: safeRows.length,
+      students: shuffledRows.map((row, index) => ({
+        studentLabel: `Student ${index + 1}`,
+        completedActivities: row.completedActivities,
+        meanCompletionPercent: row.meanCompletionPercent,
+      })),
+    },
   }
+}
+
+export function buildLearningAnalyticsStudentReportV2(
+  rows: StudentReportInput[],
+  nextRandomInt: (max: number) => number = randomInt
+): LearningAnalyticsStudentReportV2 {
+  return buildSafeStudentReportCohortV2(rows, nextRandomInt).report
 }
 
 export function buildCoursePerformanceAnalyticsV2({
@@ -226,18 +278,16 @@ export function buildCoursePerformanceAnalyticsV2({
 
     return { activityType: activity.activityType, completions }
   })
-  const disclosedActivities = eligibleActivities.filter((activity) =>
-    hasMinimumCellSize(activity.completions.length)
-  )
-  const studentReport = buildLearningAnalyticsStudentReportV2(
+  const studentReportCohort = buildSafeStudentReportCohortV2(
     Array.from(studentCompletions, ([participantKey, completions]) => ({
       participantKey,
       completions,
     })),
     nextRandomInt
   )
+  const studentReport = studentReportCohort.report
 
-  if (studentReport.isSuppressed) {
+  if (studentReport.isSuppressed || studentReport.effectiveN === null) {
     return {
       isSuppressed: true,
       effectiveN: null,
@@ -245,10 +295,22 @@ export function buildCoursePerformanceAnalyticsV2({
       studentReport,
     }
   }
+  const safeCohortSize = studentReport.effectiveN
+
+  const disclosedActivities = eligibleActivities
+    .map((activity) => ({
+      ...activity,
+      completions: activity.completions.filter(([participantKey]) =>
+        studentReportCohort.participantKeys.has(participantKey)
+      ),
+    }))
+    .filter((activity) =>
+      hasSafeCellSize(activity.completions.length, safeCohortSize)
+    )
 
   return {
     isSuppressed: false,
-    effectiveN: studentReport.effectiveN,
+    effectiveN: safeCohortSize,
     activitySummaries: disclosedActivities.map((activity, index) => ({
       activityIndex: index + 1,
       activityType: activity.activityType,
@@ -257,7 +319,7 @@ export function buildCoursePerformanceAnalyticsV2({
         mean(activity.completions.map(([, completion]) => completion * 100))
       ),
       // Existing aggregate correctness rows cannot prove identity-equivalent
-      // membership with this currently eligible activity cohort.
+      // membership with this safe student-report cohort.
       correctPercent: null,
     })),
     studentReport,

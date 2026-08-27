@@ -97,8 +97,39 @@ describe('learning analytics V2 disclosure output', () => {
     })
   })
 
+  it.each([
+    { rootSize: 6, cellSize: 5, expectedCells: [] },
+    { rootSize: 8, cellSize: 5, expectedCells: [] },
+    {
+      rootSize: 10,
+      cellSize: 5,
+      expectedCells: [{ periodIndex: 1, effectiveN: 5 }],
+    },
+    {
+      rootSize: 6,
+      cellSize: 6,
+      expectedCells: [{ periodIndex: 1, effectiveN: 6 }],
+    },
+  ])(
+    'protects the complement for a weekly $cellSize-of-$rootSize cell',
+    ({ rootSize, cellSize, expectedCells }) => {
+      const eligibleParticipantKeys = participantKeys(rootSize)
+      const analytics = buildCourseActivityAnalyticsV2({
+        eligibleParticipantKeys,
+        weeklyActivity: eligibleParticipantKeys
+          .slice(0, cellSize)
+          .map((participantKey) => ({
+            participantKey,
+            period: new Date('2026-01-05T00:00:00.000Z'),
+          })),
+      })
+
+      expect(analytics.weeklyActivity).toEqual(expectedCells)
+    }
+  )
+
   it('numbers only disclosed periods and activities', () => {
-    const eligibleParticipantKeys = participantKeys(5)
+    const eligibleParticipantKeys = participantKeys(10)
     const firstPeriod = new Date('2026-01-05T00:00:00.000Z')
     const secondPeriod = new Date('2026-01-12T00:00:00.000Z')
     const activity = buildCourseActivityAnalyticsV2({
@@ -108,7 +139,7 @@ describe('learning analytics V2 disclosure output', () => {
           participantKey,
           period: firstPeriod,
         })),
-        ...eligibleParticipantKeys.map((participantKey) => ({
+        ...eligibleParticipantKeys.slice(0, 5).map((participantKey) => ({
           participantKey,
           period: secondPeriod,
         })),
@@ -136,6 +167,61 @@ describe('learning analytics V2 disclosure output', () => {
     })
     expect(performance.activitySummaries[0]?.activityIndex).toBe(1)
     expect(performance.activitySummaries).toHaveLength(1)
+  })
+
+  it.each([
+    { cohortSize: 6, expectedEffectiveNs: [] },
+    { cohortSize: 8, expectedEffectiveNs: [] },
+    { cohortSize: 10, expectedEffectiveNs: [5, 5] },
+  ])(
+    'protects activity complements within a safe cohort of $cohortSize',
+    ({ cohortSize, expectedEffectiveNs }) => {
+      const eligibleParticipantKeys = participantKeys(cohortSize)
+      const performance = buildCoursePerformanceAnalyticsV2({
+        eligibleParticipantKeys,
+        activities: [
+          {
+            activityType: ActivityType.PRACTICE_QUIZ,
+            participantCompletions: eligibleParticipantKeys
+              .slice(0, 5)
+              .map((participantKey) => ({ participantKey, completion: 1 })),
+          },
+          {
+            activityType: ActivityType.MICRO_LEARNING,
+            participantCompletions: eligibleParticipantKeys
+              .slice(5)
+              .map((participantKey) => ({ participantKey, completion: 1 })),
+          },
+        ],
+        nextRandomInt: (max) => max - 1,
+      })
+
+      expect(performance.effectiveN).toBe(cohortSize)
+      expect(performance.studentReport.effectiveN).toBe(cohortSize)
+      expect(
+        performance.activitySummaries.map(({ effectiveN }) => effectiveN)
+      ).toEqual(expectedEffectiveNs)
+    }
+  )
+
+  it('releases an all-cohort activity cell', () => {
+    const eligibleParticipantKeys = participantKeys(6)
+    const performance = buildCoursePerformanceAnalyticsV2({
+      eligibleParticipantKeys,
+      activities: [
+        {
+          activityType: ActivityType.PRACTICE_QUIZ,
+          participantCompletions: eligibleParticipantKeys.map(
+            (participantKey) => ({ participantKey, completion: 1 })
+          ),
+        },
+      ],
+      nextRandomInt: (max) => max - 1,
+    })
+
+    expect(performance.activitySummaries).toMatchObject([
+      { activityIndex: 1, effectiveN: 6, completionPercent: 100 },
+    ])
   })
 
   it('counts only eligible participants with activity-performance rows', () => {
@@ -179,10 +265,92 @@ describe('learning analytics V2 disclosure output', () => {
     expect(report.students).toHaveLength(5)
   })
 
+  it('releases only student tuple groups with at least five members', () => {
+    const report = buildLearningAnalyticsStudentReportV2(
+      [
+        ...participantKeys(5).map((participantKey) => ({
+          participantKey,
+          completions: [1],
+        })),
+        ...participantKeys(4).map((_, index) => ({
+          participantKey: `secondary-${index + 1}`,
+          completions: [0.4],
+        })),
+        { participantKey: 'unique-outlier', completions: [0] },
+      ],
+      (max) => max - 1
+    )
+
+    expect(report).toEqual({
+      isSuppressed: false,
+      effectiveN: 5,
+      students: participantKeys(5).map((_, index) => ({
+        studentLabel: `Student ${index + 1}`,
+        completedActivities: 1,
+        meanCompletionPercent: 100,
+      })),
+    })
+    expect(JSON.stringify(report)).not.toMatch(
+      /participant|secondary|unique-outlier/
+    )
+  })
+
+  it('derives performance summaries only from the released student cohort', () => {
+    const eligibleParticipantKeys = participantKeys(6)
+    const performance = buildCoursePerformanceAnalyticsV2({
+      eligibleParticipantKeys,
+      activities: [
+        {
+          activityType: ActivityType.PRACTICE_QUIZ,
+          participantCompletions: eligibleParticipantKeys.map(
+            (participantKey, index) => ({
+              participantKey,
+              completion: index < 5 ? 1 : 0,
+            })
+          ),
+        },
+      ],
+      nextRandomInt: (max) => max - 1,
+    })
+
+    expect(performance).toMatchObject({
+      isSuppressed: false,
+      effectiveN: 5,
+      activitySummaries: [
+        { activityIndex: 1, effectiveN: 5, completionPercent: 100 },
+      ],
+      studentReport: { isSuppressed: false, effectiveN: 5 },
+    })
+    expect(JSON.stringify(performance)).not.toContain('participant-')
+  })
+
+  it('suppresses a student report when no released tuple group remains', () => {
+    const report = buildLearningAnalyticsStudentReportV2([
+      ...participantKeys(4).map((participantKey) => ({
+        participantKey,
+        completions: [1],
+      })),
+      ...participantKeys(4).map((_, index) => ({
+        participantKey: `secondary-${index + 1}`,
+        completions: [0.5],
+      })),
+      ...participantKeys(2).map((_, index) => ({
+        participantKey: `tertiary-${index + 1}`,
+        completions: [0],
+      })),
+    ])
+
+    expect(report).toEqual({
+      isSuppressed: true,
+      effectiveN: null,
+      students: [],
+    })
+  })
+
   it('assigns freshly shuffled report-local labels with an injectable RNG', () => {
-    const rows = participantKeys(5).map((participantKey, index) => ({
+    const rows = participantKeys(10).map((participantKey, index) => ({
       participantKey,
-      completions: [index / 10],
+      completions: [index < 5 ? 0.2 : 0.8],
     }))
     const first = buildLearningAnalyticsStudentReportV2(rows, () => 0)
     const second = buildLearningAnalyticsStudentReportV2(rows, (max) => max - 1)
@@ -193,9 +361,16 @@ describe('learning analytics V2 disclosure output', () => {
       'Student 3',
       'Student 4',
       'Student 5',
+      'Student 6',
+      'Student 7',
+      'Student 8',
+      'Student 9',
+      'Student 10',
     ])
-    expect(first.students[0]?.meanCompletionPercent).not.toBe(
-      second.students[0]?.meanCompletionPercent
+    expect(
+      first.students.map((student) => student.meanCompletionPercent)
+    ).not.toEqual(
+      second.students.map((student) => student.meanCompletionPercent)
     )
     expect(JSON.stringify(first)).not.toContain('participant-')
   })
@@ -210,32 +385,33 @@ describe('learning analytics V2 disclosure output', () => {
 
     const performance = buildCoursePerformanceAnalyticsV2({
       eligibleParticipantKeys: participantKeys(5),
-      activities: [
-        {
-          activityType: ActivityType.MICRO_LEARNING,
-          participantCompletions: [-1, 0.44, 0.45, 1, 2].map(
-            (completion, index) => ({
-              participantKey: `participant-${index + 1}`,
-              completion,
-            })
-          ),
-        },
-      ],
+      activities: [-1, 0.44, 0.45, 1, 2].map((completion) => ({
+        activityType: ActivityType.MICRO_LEARNING,
+        participantCompletions: participantKeys(5).map((participantKey) => ({
+          participantKey,
+          completion,
+        })),
+      })),
       nextRandomInt: (max) => max - 1,
     })
 
-    expect(performance.activitySummaries).toEqual([
-      {
-        activityIndex: 1,
-        activityType: ActivityType.MICRO_LEARNING,
-        effectiveN: 5,
-        completionPercent: 60,
-        correctPercent: null,
-      },
+    expect(
+      performance.activitySummaries.map(
+        ({ activityIndex, completionPercent }) => ({
+          activityIndex,
+          completionPercent,
+        })
+      )
+    ).toEqual([
+      { activityIndex: 1, completionPercent: 0 },
+      { activityIndex: 2, completionPercent: 40 },
+      { activityIndex: 3, completionPercent: 50 },
+      { activityIndex: 4, completionPercent: 100 },
+      { activityIndex: 5, completionPercent: 100 },
     ])
     expect(performance.studentReport.students.at(-1)).toMatchObject({
-      completedActivities: 1,
-      meanCompletionPercent: 100,
+      completedActivities: 2,
+      meanCompletionPercent: 60,
     })
   })
 
@@ -278,12 +454,14 @@ describe('learning analytics V2 disclosure output', () => {
       'studentLabel,completedActivities,meanCompletionPercent',
     ])
 
-    expect(
-      buildLearningAnalyticsExportV2(
-        { isSuppressed: true, effectiveN: null, students: [] },
-        'JSON'
-      )
-    ).toBeNull()
+    const suppressedReport = buildLearningAnalyticsStudentReportV2([
+      ...participantKeys(4).map((participantKey) => ({
+        participantKey,
+        completions: [1],
+      })),
+      { participantKey: 'unique-outlier', completions: [0] },
+    ])
+    expect(buildLearningAnalyticsExportV2(suppressedReport, 'JSON')).toBeNull()
 
     for (const content of [json.content, csv.content]) {
       expect(content).not.toMatch(
