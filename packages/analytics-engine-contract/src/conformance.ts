@@ -50,6 +50,12 @@ export async function runBlackBoxConformance(
     callback('failure', COURSE_WORKFLOW_NAME, courseInputWithWindowFixture)
   )
   await requireRejection(
+    callback('failure', PLATFORM_WORKFLOW_NAME, platformInputFixture)
+  )
+  await requireRejection(
+    callback('cancelled', COURSE_WORKFLOW_NAME, courseInputWithWindowFixture)
+  )
+  await requireRejection(
     callback('cancelled', PLATFORM_WORKFLOW_NAME, platformInputFixture)
   )
 }

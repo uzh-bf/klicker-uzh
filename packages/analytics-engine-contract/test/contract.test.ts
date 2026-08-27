@@ -164,6 +164,8 @@ describe('@klicker-uzh/analytics-engine-contract', () => {
       [PLATFORM_WORKFLOW_NAME, 'success'],
       [COURSE_WORKFLOW_NAME, 'invalid-input'],
       [COURSE_WORKFLOW_NAME, 'failure'],
+      [PLATFORM_WORKFLOW_NAME, 'failure'],
+      [COURSE_WORKFLOW_NAME, 'cancelled'],
       [PLATFORM_WORKFLOW_NAME, 'cancelled'],
     ])
     expect(callbackCalls[0]?.input).not.toHaveProperty('scenario')
