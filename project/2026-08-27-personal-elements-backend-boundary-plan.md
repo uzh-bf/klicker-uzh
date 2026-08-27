@@ -688,7 +688,20 @@ no migration.
   tests pass); the Progress item for S1-S6 execution is ticked. The
   remaining P2 (browser evidence for the UI/e2e portfolio items) is
   deferred to the exact-head verification step, which is still open.
+- [x] Exact-head browser verification — the plan container was running a
+  stale Turbopack module graph (chat dev server started before S6 landed),
+  so the dev stack was restarted through `devrouter ensure` and the
+  database was reseeded (it had been reset without seed data). With the
+  seeded synthetic users, agent-browser verified at exact head
+  `cd9a586c7`: participant login (testuser1), the course page AI tutor
+  link, the chat disclaimer flow, the loaded Benibot chat workspace with
+  Tutor mode and conversation starters, the practice area with per-course
+  "Lecturer elements" and "Own elements" buttons, and the own-elements
+  practice route. Screenshots recorded under
+  `~/.codex/visualizations/2026/08/21/01a02362-f0f4-7510-b35b-d98fb79ae7c9/s6-browser-evidence/`.
+  A live AI generation run remains a separate external-provider boundary
+  and is not part of this gate.
 - [x] Execute S1 through S6 with their review gates and local commits.
-- [ ] Complete exact-head verification and the integrated native
+- [x] Complete exact-head verification and the integrated native
   `final-reviewer` gate.
 - [ ] Obtain separate authority for push and pull-request updates.
