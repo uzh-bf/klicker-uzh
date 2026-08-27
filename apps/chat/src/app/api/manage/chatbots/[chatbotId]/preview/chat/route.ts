@@ -1,5 +1,15 @@
-import { getModelsForChatbot } from '@/src/lib/server/chatModelRegistry'
+import { randomUUID } from 'node:crypto'
+import { prisma } from '@klicker-uzh/prisma'
+import {
+  convertToModelMessages,
+  isStepCount,
+  streamText,
+  type ToolSet,
+} from 'ai'
+import { type NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { getChatModel } from '@/src/lib/server/chatModelProvider'
+import { getModelsForChatbot } from '@/src/lib/server/chatModelRegistry'
 import {
   MANAGE_CHAT_BODY_TIMEOUT_MS,
   MANAGE_CHAT_TOTAL_TIMEOUT_MS,
@@ -14,17 +24,8 @@ import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
+import { DOC_QUERY_MCP_SERVER_NAME } from '@/src/services/mcpScope'
 import { createRateLimiter } from '@/src/services/rateLimiter'
-import { prisma } from '@klicker-uzh/prisma'
-import {
-  convertToModelMessages,
-  isStepCount,
-  streamText,
-  type ToolSet,
-} from 'ai'
-import { randomUUID } from 'node:crypto'
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -164,7 +165,7 @@ export async function POST(
   if (
     modeConfigurations.some(
       (configuration) =>
-        configuration.mcpServer.name !== 'KB' &&
+        configuration.mcpServer.name !== DOC_QUERY_MCP_SERVER_NAME &&
         isRequiredMcp(configuration.parameters)
     )
   ) {
@@ -175,7 +176,10 @@ export async function POST(
   }
 
   const kbConfigurations: MCPServerWithConfig[] = modeConfigurations
-    .filter((configuration) => configuration.mcpServer.name === 'KB')
+    .filter(
+      (configuration) =>
+        configuration.mcpServer.name === DOC_QUERY_MCP_SERVER_NAME
+    )
     .map((configuration) => ({
       server: {
         id: configuration.mcpServer.id,
@@ -189,7 +193,7 @@ export async function POST(
         chatbotIdHeader: configuration.mcpServer.chatbotIdHeader ?? undefined,
       },
       config: {
-        allowedTools: configuration.allowedTools as string[] | undefined,
+        allowedTools: ['doc_query'],
         parameters: configuration.parameters,
         priority: configuration.priority,
       },
@@ -259,6 +263,9 @@ export async function POST(
             ? { promptCacheKey: promptCacheRequest.promptCacheKey }
             : {}),
           ...(selectedModel.usesResponsesApi && {
+            // Multi-step retrieval can reference provider response items. Keep
+            // the platform policy here while leaving KlickerUZH conversations
+            // stateless: this route never writes threads or messages.
             store: getOpenAIResponsesStore(),
           }),
         },

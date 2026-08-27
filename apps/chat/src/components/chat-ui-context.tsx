@@ -2,10 +2,10 @@
 
 import {
   createContext,
+  type ReactNode,
   useContext,
   useMemo,
   useSyncExternalStore,
-  type ReactNode,
 } from 'react'
 import { useEmbedded } from '../hooks/useEmbedded'
 
@@ -14,6 +14,7 @@ interface ChatUiContextValue {
   showSidebar: boolean
   showMinimalSettings: boolean
   showMessageActions: boolean
+  variant: ChatUiVariant
 }
 
 type ChatUiVariant = 'participant' | 'owner-preview'
@@ -36,8 +37,9 @@ export function ChatUiProvider({
       showSidebar: !embedded && !ownerPreview,
       showMinimalSettings: embedded && !ownerPreview,
       showMessageActions: !embedded && !ownerPreview,
+      variant,
     }),
-    [embedded, ownerPreview]
+    [embedded, ownerPreview, variant]
   )
 
   return (

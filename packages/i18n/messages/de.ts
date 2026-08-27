@@ -81,12 +81,14 @@ export default {
     ownerPreview: {
       badge: 'Eigentümer-Vorschau',
       description:
-        'Teste die aktuelle Chatbot-Konfiguration. Dieses Gespräch bleibt in diesem Browser und wird nicht gespeichert.',
+        'Teste die aktuelle Chatbot-Konfiguration. Dieses Gespräch wird nicht zu Deinen gespeicherten Gesprächen hinzugefügt.',
       backToManage: 'Zurück zu den Chatbot-Einstellungen',
       loginTitle: 'Anmeldung für Dozierende erforderlich',
       loginMessage:
         'Melde Dich in KlickerUZH Manage mit dem Konto an, dem dieser Chatbot gehört, um die Vorschau zu öffnen.',
       loginButton: 'KlickerUZH Manage öffnen',
+      opensInNewTab:
+        '(öffnet in einem neuen Tab; kehre nach der Anmeldung hierher zurück)',
     },
     recovery: {
       notFoundTitle: 'Chatbot nicht gefunden',

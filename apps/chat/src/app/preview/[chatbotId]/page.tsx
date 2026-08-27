@@ -23,7 +23,9 @@ export default async function OwnerPreviewPage({
 
   const access = await getOwnerPreviewAccess(chatbotId)
   if ('error' in access) {
-    if (access.error === 'UNAUTHORIZED') return <PreviewLoginRequired />
+    if (access.error === 'UNAUTHORIZED') {
+      return <PreviewLoginRequired chatbotId={chatbotId} />
+    }
     notFound()
   }
 
@@ -61,11 +63,13 @@ export default async function OwnerPreviewPage({
   )
 }
 
-async function PreviewLoginRequired() {
+async function PreviewLoginRequired({ chatbotId }: { chatbotId: string }) {
   const t = await getTranslations('chat.ownerPreview')
   const manageBaseUrl = (
     process.env.NEXT_PUBLIC_MANAGE_URL ?? 'https://manage.klicker.uzh.ch'
   ).replace(/\/$/, '')
+  const chatbotSettingsUrl = `${manageBaseUrl}/resources/chatbots/${encodeURIComponent(chatbotId)}`
+  const loginUrl = `${manageBaseUrl}/login?redirect_to=${encodeURIComponent(chatbotSettingsUrl)}`
 
   return (
     <main
@@ -78,11 +82,14 @@ async function PreviewLoginRequired() {
         </h1>
         <p className="text-muted-foreground mt-4">{t('loginMessage')}</p>
         <Link
-          href={`${manageBaseUrl}/login`}
+          href={loginUrl}
+          target="_blank"
+          rel="noopener noreferrer"
           className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring mt-8 inline-flex min-h-11 w-full items-center justify-center rounded-md px-4 py-2 font-semibold transition focus-visible:outline-none focus-visible:ring-2"
           prefetch={false}
         >
-          {t('loginButton')}
+          <span>{t('loginButton')}</span>
+          <span className="sr-only"> {t('opensInNewTab')}</span>
         </Link>
       </div>
     </main>

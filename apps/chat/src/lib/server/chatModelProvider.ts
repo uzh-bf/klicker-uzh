@@ -1,13 +1,11 @@
-import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { createOpenAI } from '@ai-sdk/openai'
-import { type Chatbot } from '@klicker-uzh/prisma/client'
+import type { Chatbot } from '@klicker-uzh/prisma/client'
 import { safeDecrypt } from '@klicker-uzh/util'
-import { type ChatModelConfig } from './chatModelRegistry'
+import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
+import type { ChatModelConfig } from './chatModelRegistry'
 
 export type ChatModelRouting = {
   source: 'custom' | 'default'
-  hasCustomKey: boolean
-  baseUrl: string | undefined
 }
 
 function getOpenAIModel(
@@ -48,8 +46,6 @@ export function getChatModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
 
     const routing: ChatModelRouting = {
       source: 'custom',
-      hasCustomKey,
-      baseUrl,
     }
 
     return {
@@ -67,8 +63,6 @@ export function getChatModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
 
   const routing: ChatModelRouting = {
     source: 'default',
-    hasCustomKey: false,
-    baseUrl: process.env.OPENAI_BASE_URL,
   }
 
   return {

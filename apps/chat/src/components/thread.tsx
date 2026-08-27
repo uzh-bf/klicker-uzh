@@ -47,13 +47,17 @@ import {
   hasAnyImageAttachmentData,
   parentMessageHasImageAttachment,
 } from '@/src/lib/attachments/attachmentState'
-import { getAttachmentPreviewSrc } from '@/src/lib/attachments/attachmentUi'
-import type { ThreadSuggestion } from '@/src/lib/config/manageSuggestions'
+import {
+  canUseComposerAttachments,
+  getAttachmentPreviewSrc,
+} from '@/src/lib/attachments/attachmentUi'
 import {
   ATTACHMENT_ERROR_CODE,
   AttachmentAdapterError,
   imageAttachmentAdapter,
 } from '@/src/lib/attachments/imageAttachmentAdapter'
+import type { ThreadSuggestion } from '@/src/lib/config/manageSuggestions'
+import { getAssistantRuntimeRunOutcome } from '@/src/lib/runAnnouncements'
 import {
   type ExtendedThreadMessageLike,
   useChatStore,
@@ -410,12 +414,59 @@ export const Thread: FC<ThreadProps> = ({
  * four state transitions are announced — never the streamed tokens, which
  * would talk over the reader for the whole answer.
  *
- * The end of a run is read from the store's `lastRunOutcome` rather than from
- * `isRunning` alone, because cancelling clears the running flag before the
- * response hook records the outcome: a running-only signal announces a
- * stopped answer as a completed one.
+ * Participant chat reads the store's `lastRunOutcome`; owner preview maps the
+ * assistant runtime's terminal message status. Both avoid treating a cleared
+ * running flag as a completed answer when the run was stopped or failed.
  */
 const ThreadRunAnnouncer: FC = () => {
+  const { variant } = useChatUi()
+  return variant === 'owner-preview' ? (
+    <AssistantRuntimeRunAnnouncer />
+  ) : (
+    <ParticipantRunAnnouncer />
+  )
+}
+
+const AssistantRuntimeRunAnnouncer: FC = () => {
+  const t = useTranslations()
+  const isRunning = useAuiState((state) => state.thread.isRunning)
+  const lastMessageStatus = useAuiState(
+    (state) => state.thread.messages.at(-1)?.status ?? null
+  )
+  const [announcement, setAnnouncement] = useState('')
+  const wasRunningRef = useRef(false)
+
+  useEffect(() => {
+    if (isRunning) {
+      if (!wasRunningRef.current) {
+        setAnnouncement(t('chat.thread.runStarted'))
+      }
+      wasRunningRef.current = true
+      return
+    }
+
+    if (!wasRunningRef.current) return
+    const outcome = getAssistantRuntimeRunOutcome(lastMessageStatus)
+    if (!outcome) return
+
+    wasRunningRef.current = false
+    setAnnouncement(
+      outcome === 'completed'
+        ? t('chat.thread.runCompleted')
+        : outcome === 'stopped'
+          ? t('chat.thread.runStopped')
+          : t('chat.thread.runFailed')
+    )
+  }, [isRunning, lastMessageStatus, t])
+
+  return (
+    <div data-cy="chat-run-status" role="status" className="sr-only">
+      {announcement}
+    </div>
+  )
+}
+
+const ParticipantRunAnnouncer: FC = () => {
   const t = useTranslations()
   const activeThreadId = useChatStore((state) => state.activeThreadId)
   const isRunning = useChatStore(
@@ -974,6 +1025,10 @@ const ComposerDropzone: FC<
   children,
 }) => {
   const supportsImages = useSupportsImageAttachments()
+  const attachmentsEnabled = canUseComposerAttachments({
+    supportsImages,
+    maxImageAttachments,
+  })
 
   useComposerAttachmentLimit({
     setError,
@@ -984,7 +1039,7 @@ const ComposerDropzone: FC<
   return (
     <ComposerPrimitive.AttachmentDropzone
       data-testid="composer-dropzone"
-      disabled={!supportsImages}
+      disabled={!attachmentsEnabled}
       className={twMerge(
         'data-[dragging]:ring-primary/40 group relative transition-colors data-[dragging]:ring-2',
         roundedClass,
@@ -992,7 +1047,9 @@ const ComposerDropzone: FC<
       )}
     >
       {children}
-      {supportsImages && <ComposerDropOverlay roundedClass={roundedClass} />}
+      {attachmentsEnabled && (
+        <ComposerDropOverlay roundedClass={roundedClass} />
+      )}
     </ComposerPrimitive.AttachmentDropzone>
   )
 }

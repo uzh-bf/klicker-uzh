@@ -79,12 +79,13 @@ export default {
     ownerPreview: {
       badge: 'Owner preview',
       description:
-        'Test the current chatbot configuration. This conversation stays in this browser and is not saved.',
+        'Test the current chatbot configuration. This conversation is not added to your saved conversations.',
       backToManage: 'Back to chatbot settings',
       loginTitle: 'Lecturer login required',
       loginMessage:
         'Sign in to KlickerUZH Manage with the account that owns this chatbot to open its preview.',
       loginButton: 'Go to KlickerUZH Manage',
+      opensInNewTab: '(opens in a new tab; return here after signing in)',
     },
     recovery: {
       notFoundTitle: 'Chatbot not found',

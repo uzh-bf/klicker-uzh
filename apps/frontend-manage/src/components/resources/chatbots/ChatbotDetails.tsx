@@ -23,9 +23,9 @@ import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { getChatbotStatusTranslationKey } from './chatbotStatus'
-import { buildChatbotOwnerPreviewUrl } from './chatbotOwnerPreviewUrl'
 import ChatbotResponseExampleReview from './ChatbotResponseExampleReview'
+import { buildChatbotOwnerPreviewUrl } from './chatbotOwnerPreviewUrl'
+import { getChatbotStatusTranslationKey } from './chatbotStatus'
 
 type ReasoningConfigState = Record<string, string[]>
 
@@ -285,7 +285,15 @@ function ChatbotDetails({
                 data-cy="chatbot-owner-preview-link"
               >
                 <span>{t('manage.resources.openOwnerPreview')}</span>
-                <FontAwesomeIcon icon={faExternalLinkAlt} className="h-3 w-3" />
+                <span className="sr-only">
+                  {' '}
+                  {t('chat.common.opensInNewTab')}
+                </span>
+                <FontAwesomeIcon
+                  icon={faExternalLinkAlt}
+                  className="h-3 w-3"
+                  aria-hidden="true"
+                />
               </a>
             )}
           </div>

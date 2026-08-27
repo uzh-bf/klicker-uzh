@@ -24,15 +24,7 @@ type OwnerPreviewAssistantProps = {
   manageUrl: string
 }
 
-export function OwnerPreviewAssistant(props: OwnerPreviewAssistantProps) {
-  return (
-    <ChatUiProvider variant="owner-preview">
-      <OwnerPreviewAssistantInner {...props} />
-    </ChatUiProvider>
-  )
-}
-
-function OwnerPreviewAssistantInner({
+export function OwnerPreviewAssistant({
   chatbot,
   initialModeOptions,
   initialModeOptionsAreFallback,
@@ -60,43 +52,45 @@ function OwnerPreviewAssistantInner({
   const runtime = useChatRuntime({ transport })
 
   return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      <div className="bg-background flex h-dvh w-full flex-col overflow-hidden">
-        <header className="border-border bg-card shrink-0 border-b px-4 py-3 sm:px-6">
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="truncate text-lg font-semibold">
-                  {chatbot.name}
-                </h1>
-                <span className="border-primary/20 bg-primary/5 text-primary inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold">
-                  <FlaskConicalIcon className="size-3.5" />
-                  {t('badge')}
-                </span>
+    <ChatUiProvider variant="owner-preview">
+      <AssistantRuntimeProvider runtime={runtime}>
+        <div className="bg-background flex h-dvh w-full flex-col overflow-hidden">
+          <header className="border-border bg-card shrink-0 border-b px-4 py-3 sm:px-6">
+            <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="truncate text-lg font-semibold">
+                    {chatbot.name}
+                  </h1>
+                  <span className="border-primary/20 bg-primary/5 text-primary inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold">
+                    <FlaskConicalIcon className="size-3.5" />
+                    {t('badge')}
+                  </span>
+                </div>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  {t('description')}
+                </p>
               </div>
-              <p className="text-muted-foreground mt-1 text-sm">
-                {t('description')}
-              </p>
+              <a
+                href={manageUrl}
+                className="border-border bg-background hover:bg-accent focus-visible:ring-ring inline-flex min-h-10 items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2"
+              >
+                {t('backToManage')}
+              </a>
             </div>
-            <a
-              href={manageUrl}
-              className="border-border bg-background hover:bg-accent focus-visible:ring-ring inline-flex min-h-10 items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2"
-            >
-              {t('backToManage')}
-            </a>
-          </div>
-        </header>
+          </header>
 
-        <main id="main-content" className="flex min-h-0 flex-1 flex-col">
-          <Thread
-            chatbotAvatar={chatbot.avatar ?? ''}
-            chatbotName={chatbot.name}
-            initialModeOptions={initialModeOptions}
-            initialModeOptionsAreFallback={initialModeOptionsAreFallback}
-            maxImageAttachments={0}
-          />
-        </main>
-      </div>
-    </AssistantRuntimeProvider>
+          <main id="main-content" className="flex min-h-0 flex-1 flex-col">
+            <Thread
+              chatbotAvatar={chatbot.avatar ?? ''}
+              chatbotName={chatbot.name}
+              initialModeOptions={initialModeOptions}
+              initialModeOptionsAreFallback={initialModeOptionsAreFallback}
+              maxImageAttachments={0}
+            />
+          </main>
+        </div>
+      </AssistantRuntimeProvider>
+    </ChatUiProvider>
   )
 }

@@ -6,6 +6,8 @@ Give chatbot owners a lecturer-only preview of their chatbot in the chat app: au
 
 **Non-goals:** no participant-data access or reuse; no message/thread persistence server-side (no ChatThread rows — the model requires a Participant); no changes to the participant chat route's behavior; no response-example writes; no runtime skill activation; no knowledge-graph or RAG seam changes.
 
+Provider response-item storage follows the existing chat platform policy because multi-step retrieval may reference prior tool-call items. “Stateless” means that KlickerUZH creates no preview thread or message records and exposes no saved preview history.
+
 ## Execution contract
 
 - **Authority (granted):** worktree/branch `trees/chatbot-owner-preview` on `rs/chatbot-owner-preview` (base `origin/v3-ai` at ff97214be); in-scope edits; repo-native checks in the DevPod/devrouter runtime; local commits. **Withheld:** push, PR publication, merge, deployment, staging/production changes, and any live-cluster action — each requires separate authorization. `preview-local` route startup on devrouter is authorized for verification.
@@ -93,8 +95,9 @@ Execution-tier note: P1–P3 are bounded, settled-behavior slices suited to the 
 
 ## Progress
 
-- Status: executing the approved package locally; external delivery remains withheld.
-- Completed: research, planner review, P0 blocker ruling, isolated DevPod startup, P1 owner authorization and stateless preview route implementation with focused checks.
-- In progress: P2 owner-preview page and P3 Manage entry point.
-- Remaining: slice reviews, integrated checks, browser evidence, final review, target-drift reconciliation.
-- Required delivery layer: green reviewed package branch ready for PR publication (publication itself withheld).
+- Status: P1–P3 are implemented locally; reviewer corrections are being verified before browser evidence and integrated final review. External delivery remains withheld.
+- Completed: research, planner review, P0 blocker ruling, P1 owner authorization and stateless preview route, P2 owner-preview page, P3 Manage entry point, and the initial simplifier and slice-review passes for both committed implementation ranges.
+- Latest evidence: focused owner-preview tests pass (32 tests), and the Chat and Manage type checks pass in the exact devrouter runtime. Review corrections constrain preview tools to `doc_query`, add executable route coverage, disable attachment drops, preserve run-status announcements, and keep the signed-out preview tab recoverable.
+- Slice review: corrections applied from the P1 and P2/P3 reports; one same-child correction pass remains after the correction commit.
+- Remaining: commit reviewer corrections, correction review, integrated checks, EN/DE browser evidence, negative participant probe, runtime release, final review, and target-drift reconciliation.
+- Delivery: required layer is a green reviewed local branch ready for PR publication; achieved layer remains local commits only. Push, PR publication, merge, deployment, and live activation are withheld.
