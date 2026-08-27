@@ -94,9 +94,18 @@ test.describe('Manage Assistant — Messaging', () => {
       'The nucleus stores DNA but is not the cellular powerhouse.'
     )
 
-    await expect(
-      assistant.getByRole('button', { name: 'Create draft' })
-    ).toBeEnabled()
+    const createDraft = assistant.getByRole('button', { name: 'Create draft' })
+    await expect(createDraft).toBeEnabled()
+
+    const createDraftBox = await createDraft.boundingBox()
+    const composerBox = await assistant
+      .getByTestId('chat-composer')
+      .boundingBox()
+    expect(createDraftBox).not.toBeNull()
+    expect(composerBox).not.toBeNull()
+    expect(
+      (createDraftBox?.y ?? 0) + (createDraftBox?.height ?? 0)
+    ).toBeLessThanOrEqual(composerBox?.y ?? 0)
   })
 
   test('Confirming a proposal shows a success state and notifies the manage parent window', async ({
@@ -197,10 +206,18 @@ test.describe('Manage Assistant — Messaging', () => {
     await expect(welcome).toContainText(
       'Suggest improvements to question feedback'
     )
+    await expect(welcome).toContainText(
+      'Explain KlickerUZH features using its documentation and tutorials'
+    )
     await expect(welcome).toContainText('Read-only for everything else')
     await expect(
       welcome.getByText(/Read-only for everything else/)
     ).toHaveClass(/(^|\s)text-muted-foreground(\s|$)/)
+
+    const reset = assistant.getByTestId('manage-assistant-new-conversation')
+    await reset.click()
+    await expect(reset).not.toContainText('Start over?')
+    await expect(welcome).toBeVisible()
   })
 
   test('Manage composer accepts at most two images without changing the participant limit', async ({
@@ -245,6 +262,86 @@ test.describe('Manage Assistant — Messaging', () => {
     )
   })
 
+  test('A guarded reset starts a clean in-session conversation without reloading the iframe', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page, {
+      text: 'This answer belongs to the current conversation.',
+    })
+    const assistant = await openManageAssistantWidget(page)
+
+    await sendManageAssistantMessage(assistant, 'Start this conversation')
+    await expect(assistant.getByTestId('chat-assistant-message')).toBeVisible()
+    const input = assistant.getByTestId('chat-composer-input')
+    await expect(async () => {
+      await input.evaluate((element, value) => {
+        const textarea = element as HTMLTextAreaElement
+        const setValue = Object.getOwnPropertyDescriptor(
+          window.HTMLTextAreaElement.prototype,
+          'value'
+        )?.set
+        setValue?.call(textarea, value)
+        textarea.dispatchEvent(new Event('input', { bubbles: true }))
+      }, 'Unsent follow-up')
+      await expect(assistant.getByTestId('chat-send-button')).toBeEnabled({
+        timeout: 1_000,
+      })
+    }).toPass({ timeout: 15_000 })
+    await assistant
+      .getByTestId('chat-composer-attach-input')
+      .setInputFiles(testImageUpload('reset-me.png'))
+    await expect(assistant.getByTestId('chat-composer-attachment')).toHaveCount(
+      1
+    )
+    await assistant.locator('body').evaluate((body) => {
+      body.dataset.resetMarker = 'same-document'
+    })
+
+    const reset = assistant.getByTestId('manage-assistant-new-conversation')
+    await reset.click()
+    await expect(reset).toContainText('Start over?')
+    await expect(reset).toHaveAccessibleName(
+      'Confirm starting a new conversation'
+    )
+
+    await reset.click()
+
+    await expect(assistant.getByTestId('chat-user-message')).toHaveCount(0)
+    await expect(assistant.getByTestId('chat-assistant-message')).toHaveCount(0)
+    await expect(assistant.getByTestId('chat-welcome-message')).toBeVisible()
+    await expect(input).toHaveValue('')
+    await expect(assistant.getByTestId('chat-composer-attachment')).toHaveCount(
+      0
+    )
+    expect(
+      await assistant
+        .locator('body')
+        .evaluate((body) => body.dataset.resetMarker)
+    ).toBe('same-document')
+  })
+
+  test('Reset is disabled while an answer is running', async ({ page }) => {
+    await page.context().route('**/api/manage/chat', async (route) => {
+      if (route.request().method() !== 'POST') return route.fallback()
+      await new Promise((resolve) => setTimeout(resolve, 2_000))
+      return route.fulfill({
+        body: 'data: {"type":"start"}\n\ndata: {"type":"finish"}\n\ndata: [DONE]\n\n',
+        headers: {
+          'content-type': 'text/event-stream',
+          'x-vercel-ai-ui-message-stream': 'v1',
+        },
+        status: 200,
+      })
+    })
+    const assistant = await openManageAssistantWidget(page)
+
+    await sendManageAssistantMessage(assistant, 'Keep running briefly')
+
+    await expect(
+      assistant.getByTestId('manage-assistant-new-conversation')
+    ).toBeDisabled()
+  })
+
   test('Closing and reopening preserves the loaded assistant runtime', async ({
     page,
   }) => {
@@ -265,48 +362,96 @@ test.describe('Manage Assistant — Messaging', () => {
     await expect(input).toHaveValue(draftPrompt)
   })
 
-  test('Dialog exposes modal semantics and isolates the Manage page', async ({
-    page,
-  }) => {
+  test('Assistant dock keeps the Manage page interactive', async ({ page }) => {
     await mockManageChatStream(page)
 
     const trigger = page.getByTestId('manage-assistant-open')
     await expect(trigger).toHaveAttribute(
       'aria-controls',
-      'manage-assistant-dialog'
+      'manage-assistant-panel'
     )
     await expect(trigger).toHaveAttribute('aria-expanded', 'false')
-    await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
+    await expect(trigger).not.toHaveAttribute('aria-haspopup', 'dialog')
 
     await openManageAssistantWidget(page)
 
-    const dialog = page.getByTestId('manage-assistant-drawer')
-    await expect(dialog).toHaveAttribute('id', 'manage-assistant-dialog')
-    await expect(dialog).toHaveAttribute('aria-modal', 'true')
-    expect(await dialog.evaluate((element) => element.tagName)).toBe('DIV')
+    const panel = page.getByTestId('manage-assistant-drawer')
+    await expect(panel).toHaveAttribute('id', 'manage-assistant-panel')
+    await expect(panel).not.toHaveAttribute('aria-modal', 'true')
+    expect(await panel.evaluate((element) => element.tagName)).toBe('ASIDE')
     expect(
-      await dialog.evaluate((element) => element.closest('#__app') === null)
+      await panel.evaluate((element) => element.closest('#__app') === null)
     ).toBe(true)
 
     const appRoot = page.locator('#__app')
-    await expect(appRoot).toHaveAttribute('aria-hidden', 'true')
-    expect(
-      await appRoot.evaluate((element) => (element as HTMLElement).inert)
-    ).toBe(true)
-
-    await dialog.getByRole('button', { name: 'Close' }).click()
-
-    await expect(dialog).toBeHidden()
-    await expect(dialog).toHaveAttribute('aria-hidden', 'true')
-    await expect(dialog).not.toHaveAttribute('aria-modal', 'true')
-    expect(
-      await dialog.evaluate((element) => (element as HTMLElement).inert)
-    ).toBe(true)
     await expect(appRoot).not.toHaveAttribute('aria-hidden', 'true')
     expect(
       await appRoot.evaluate((element) => (element as HTMLElement).inert)
     ).toBe(false)
+
+    const search = page.getByPlaceholder('Search...')
+    await search.fill('Keep Manage interactive')
+    await expect(search).toHaveValue('Keep Manage interactive')
+
+    await panel.getByRole('button', { name: 'Close' }).click()
+
+    await expect(panel).toBeHidden()
+    await expect(panel).toHaveAttribute('aria-hidden', 'true')
+    expect(
+      await panel.evaluate((element) => (element as HTMLElement).inert)
+    ).toBe(true)
     await expect(trigger).toBeFocused()
+  })
+
+  test('Assistant dock resizes with the keyboard and retains its dimensions', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page)
+    await openManageAssistantWidget(page)
+
+    const panel = page.getByTestId('manage-assistant-drawer')
+    const resize = page.getByTestId('manage-assistant-resize')
+    const initial = await panel.boundingBox()
+    expect(initial).not.toBeNull()
+
+    await resize.focus()
+    await resize.press('ArrowLeft')
+    await resize.press('ArrowUp')
+
+    await expect(async () => {
+      const keyboardResized = await panel.boundingBox()
+      expect(keyboardResized?.width).toBe((initial?.width ?? 0) + 16)
+      expect(keyboardResized?.height).toBe((initial?.height ?? 0) + 16)
+    }).toPass()
+
+    const keyboardResized = await panel.boundingBox()
+    const resizeBox = await resize.boundingBox()
+    expect(resizeBox).not.toBeNull()
+    await page.mouse.move(
+      (resizeBox?.x ?? 0) + (resizeBox?.width ?? 0) / 2,
+      (resizeBox?.y ?? 0) + (resizeBox?.height ?? 0) / 2
+    )
+    await page.mouse.down()
+    await page.mouse.move(
+      (resizeBox?.x ?? 0) + (resizeBox?.width ?? 0) / 2 - 24,
+      (resizeBox?.y ?? 0) + (resizeBox?.height ?? 0) / 2 - 24
+    )
+    await page.mouse.up()
+
+    await expect(async () => {
+      const pointerResized = await panel.boundingBox()
+      expect(pointerResized?.width).toBe((keyboardResized?.width ?? 0) + 24)
+      expect(pointerResized?.height).toBe((keyboardResized?.height ?? 0) + 24)
+    }).toPass()
+
+    const resized = await panel.boundingBox()
+    await panel.getByRole('button', { name: 'Close' }).click()
+    await page.getByTestId('manage-assistant-open').click()
+    await expect(panel).toBeVisible()
+
+    const reopened = await panel.boundingBox()
+    expect(reopened?.width).toBe(resized?.width)
+    expect(reopened?.height).toBe(resized?.height)
   })
 })
 
@@ -392,7 +537,16 @@ test.describe('Manage Assistant — Slow hydration', () => {
     // ping — is what delivers it, with no timed retry burst involved.
     await delayChatIframeScripts(page, 1_000)
 
-    const assistant = await openManageAssistantWidget(page)
+    await page.getByTestId('manage-assistant-open').click()
+    const loading = page.getByTestId('manage-assistant-loading')
+    await expect(loading).toBeVisible()
+    await expect(loading).toContainText('Loading assistant')
+
+    const assistant = page.frameLocator('[data-cy="manage-assistant-frame"]')
+    await assistant
+      .getByTestId('chat-composer')
+      .waitFor({ state: 'visible', timeout: 20_000 })
+    await expect(loading).toBeHidden()
     const suggestions = assistant.getByTestId('chat-welcome-suggestions')
 
     for (const text of [

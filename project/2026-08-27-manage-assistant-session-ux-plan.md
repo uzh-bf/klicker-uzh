@@ -186,5 +186,5 @@ upstream integration, or an external delivery action.
 - [x] S1 trusted proposal continuity.
 - [x] S2 complete proposal review.
 - [x] S3 non-modal adaptive dock.
-- [ ] S4 conversation lifecycle and discovery.
+- [x] S4 conversation lifecycle and discovery.
 - [ ] Integrated verification, reviews, screenshots, and runtime shutdown.

@@ -1,17 +1,24 @@
 'use client'
 
-import { AssistantRuntimeProvider } from '@assistant-ui/react'
+import {
+  AssistantRuntimeProvider,
+  useAui,
+  useAuiState,
+} from '@assistant-ui/react'
 import {
   AssistantChatTransport,
   useChatRuntime,
 } from '@assistant-ui/react-ai-sdk'
 import {
+  BookOpenTextIcon,
   FilePenLineIcon,
   MessageSquareTextIcon,
+  RotateCcwIcon,
   SearchIcon,
   WandSparkles,
 } from 'lucide-react'
-import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
+import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useEmbeddedManageContext } from '../hooks/useEmbeddedManageContext'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
@@ -36,6 +43,10 @@ const MANAGE_ASSISTANT_CAPABILITIES: ThreadWelcomeCapability[] = [
   {
     icon: MessageSquareTextIcon,
     text: 'Suggest improvements to question feedback',
+  },
+  {
+    icon: BookOpenTextIcon,
+    text: 'Explain KlickerUZH features using its documentation and tutorials',
   },
 ]
 const MANAGE_ASSISTANT_LIMITS_NOTE =
@@ -69,12 +80,12 @@ function ManageAssistantInner() {
                 <span className="truncate">{contextLabel ?? 'Manage'}</span>
               </div>
             </div>
-            <EmbeddedSettings />
+            <ManageAssistantToolbar />
           </div>
         )}
         {embedded && (
           <div className="absolute right-3 top-3 z-10">
-            <EmbeddedSettings />
+            <ManageAssistantToolbar />
           </div>
         )}
         <Thread
@@ -90,6 +101,70 @@ function ManageAssistantInner() {
         />
       </div>
     </ManageAssistantRuntimeProvider>
+  )
+}
+
+function ManageAssistantToolbar() {
+  const t = useTranslations()
+  const aui = useAui()
+  const isRunning = useAuiState((state) => state.thread.isRunning)
+  const messageCount = useAuiState((state) => state.thread.messages.length)
+  const composerIsEmpty = useAuiState((state) => state.composer.isEmpty)
+  const [confirmingReset, setConfirmingReset] = useState(false)
+  const hasConversation = messageCount > 0 || !composerIsEmpty
+
+  async function handleReset() {
+    if (isRunning) return
+    if (hasConversation && !confirmingReset) {
+      setConfirmingReset(true)
+      return
+    }
+
+    setConfirmingReset(false)
+    await aui.composer.reset()
+    aui.thread.reset()
+  }
+
+  return (
+    <div className="flex min-w-0 items-center justify-end gap-2">
+      <EmbeddedSettings />
+      <button
+        type="button"
+        disabled={isRunning}
+        onClick={() => void handleReset()}
+        onBlur={() => setConfirmingReset(false)}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            setConfirmingReset(false)
+          }
+        }}
+        aria-label={
+          confirmingReset
+            ? t('chat.assistant.confirmNewConversation')
+            : t('chat.assistant.newConversation')
+        }
+        title={
+          isRunning
+            ? t('chat.assistant.newConversationWait')
+            : t('chat.assistant.newConversation')
+        }
+        data-cy="manage-assistant-new-conversation"
+        className={twMerge(
+          'focus-visible:ring-ring inline-flex h-7 shrink-0 items-center justify-center rounded-md border bg-white text-xs font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+          confirmingReset
+            ? 'border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 gap-1.5 px-2'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground w-7'
+        )}
+      >
+        <RotateCcwIcon aria-hidden className="size-3.5" />
+        {confirmingReset ? (
+          <span>{t('chat.assistant.confirmNewConversationShort')}</span>
+        ) : null}
+      </button>
+      <span role="status" className="sr-only">
+        {confirmingReset ? t('chat.assistant.newConversationArmed') : ''}
+      </span>
+    </div>
   )
 }
 
