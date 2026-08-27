@@ -41,6 +41,26 @@ function resolveActor(ctx: ContextWithUser): ProductUpdateActor {
   }
 }
 
+// Writes follow the repository's scope floor for mutations: a delegated
+// lecturer login that may only read or run a live quiz can see its own state
+// but not change it. Participant tokens carry no scope claim at all, so the
+// floor applies to lecturer sessions only.
+function resolveWritingActor(ctx: ContextWithUser): ProductUpdateActor {
+  const actor = resolveActor(ctx)
+
+  if (
+    actor.type === 'user' &&
+    ctx.user.scope !== DB.UserLoginScope.ACCOUNT_OWNER &&
+    ctx.user.scope !== DB.UserLoginScope.FULL_ACCESS
+  ) {
+    throw new GraphQLError(
+      'This login is not allowed to change product update state'
+    )
+  }
+
+  return actor
+}
+
 // `updateId` has no foreign key because the catalog lives in code, so an
 // unknown id would otherwise create an orphaned row that no surface can ever
 // display or clean up.
@@ -54,27 +74,15 @@ function assertKnownUpdateIds(updateIds: string[]) {
   }
 }
 
-function findState(
-  actor: ProductUpdateActor,
-  updateId: string,
-  ctx: ContextWithUser
-): Promise<ProductUpdateState | null> {
-  if (actor.type === 'user') {
-    return ctx.prisma.userProductUpdateState.findUnique({
-      where: { userId_updateId: { userId: actor.id, updateId } },
-    })
-  }
-
-  return ctx.prisma.participantProductUpdateState.findUnique({
-    where: { participantId_updateId: { participantId: actor.id, updateId } },
-  })
-}
-
 // A row can be created by a read or a dismissal that arrives before any
 // presentation was recorded. The presentation timestamps are not nullable, so
 // they are filled with the moment the entry demonstrably reached the actor,
 // while `presentationCount` keeps counting explicit presentations only.
-function createState(
+//
+// The empty `update` makes this an insert-if-absent: Prisma delegates it to a
+// native database upsert, so two concurrent first interactions cannot collide
+// on the unique constraint.
+function insertStateIfAbsent(
   actor: ProductUpdateActor,
   updateId: string,
   data: { readAt?: Date; dismissedAt?: Date },
@@ -89,13 +97,17 @@ function createState(
   }
 
   if (actor.type === 'user') {
-    return ctx.prisma.userProductUpdateState.create({
-      data: { ...state, userId: actor.id },
+    return ctx.prisma.userProductUpdateState.upsert({
+      where: { userId_updateId: { userId: actor.id, updateId } },
+      create: { ...state, userId: actor.id },
+      update: {},
     })
   }
 
-  return ctx.prisma.participantProductUpdateState.create({
-    data: { ...state, participantId: actor.id },
+  return ctx.prisma.participantProductUpdateState.upsert({
+    where: { participantId_updateId: { participantId: actor.id, updateId } },
+    create: { ...state, participantId: actor.id },
+    update: {},
   })
 }
 
@@ -146,55 +158,55 @@ interface ProductUpdateStateArgs {
   updateId: string
 }
 
+// `readAt` and `dismissedAt` record the first read and the first dismissal, so
+// once set they never move: a second call returns the row unchanged.
+async function claimStateTimestamp(
+  actor: ProductUpdateActor,
+  updateId: string,
+  field: 'readAt' | 'dismissedAt',
+  ctx: ContextWithUser
+): Promise<ProductUpdateState> {
+  const now = new Date()
+  const state = await insertStateIfAbsent(
+    actor,
+    updateId,
+    { [field]: now },
+    now,
+    ctx
+  )
+
+  if (state[field]) {
+    return state
+  }
+
+  return updateState(actor, updateId, { [field]: now }, ctx)
+}
+
 export async function markProductUpdateRead(
   { updateId }: ProductUpdateStateArgs,
   ctx: ContextWithUser
 ): Promise<ProductUpdateState> {
-  const actor = resolveActor(ctx)
+  const actor = resolveWritingActor(ctx)
   assertKnownUpdateIds([updateId])
 
-  const now = new Date()
-  const existingState = await findState(actor, updateId, ctx)
-
-  if (!existingState) {
-    return createState(actor, updateId, { readAt: now }, now, ctx)
-  }
-
-  // `readAt` records when the entry was first read, so a second read of the
-  // same card must not move it.
-  if (existingState.readAt) {
-    return existingState
-  }
-
-  return updateState(actor, updateId, { readAt: now }, ctx)
+  return await claimStateTimestamp(actor, updateId, 'readAt', ctx)
 }
 
 export async function dismissProductUpdate(
   { updateId }: ProductUpdateStateArgs,
   ctx: ContextWithUser
 ): Promise<ProductUpdateState> {
-  const actor = resolveActor(ctx)
+  const actor = resolveWritingActor(ctx)
   assertKnownUpdateIds([updateId])
 
-  const now = new Date()
-  const existingState = await findState(actor, updateId, ctx)
-
-  if (!existingState) {
-    return createState(actor, updateId, { dismissedAt: now }, now, ctx)
-  }
-
-  if (existingState.dismissedAt) {
-    return existingState
-  }
-
-  return updateState(actor, updateId, { dismissedAt: now }, ctx)
+  return await claimStateTimestamp(actor, updateId, 'dismissedAt', ctx)
 }
 
 export async function recordProductUpdatePresentation(
   { updateId }: ProductUpdateStateArgs,
   ctx: ContextWithUser
 ): Promise<ProductUpdateState> {
-  const actor = resolveActor(ctx)
+  const actor = resolveWritingActor(ctx)
   assertKnownUpdateIds([updateId])
 
   const now = new Date()

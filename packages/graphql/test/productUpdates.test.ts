@@ -216,6 +216,42 @@ describe('product update read state services', () => {
     ).resolves.toBe(0)
   })
 
+  it('lets a delegated lecturer login below full access read but not write', async () => {
+    const lecturer = await createLecturer()
+
+    for (const scope of [
+      UserLoginScope.READ_ONLY,
+      UserLoginScope.SESSION_EXEC,
+    ]) {
+      const ctx = actorContext(lecturer.id, UserRole.USER, scope)
+
+      await expect(
+        markProductUpdateRead({ updateId: UPDATE_ID }, ctx)
+      ).rejects.toThrow(
+        'This login is not allowed to change product update state'
+      )
+      await expect(
+        dismissProductUpdate({ updateId: UPDATE_ID }, ctx)
+      ).rejects.toThrow(
+        'This login is not allowed to change product update state'
+      )
+      await expect(
+        recordProductUpdatePresentation({ updateId: UPDATE_ID }, ctx)
+      ).rejects.toThrow(
+        'This login is not allowed to change product update state'
+      )
+
+      // The feed still renders for a read-only login, so the query stays open.
+      await expect(
+        getProductUpdateStates({ updateIds: [UPDATE_ID] }, ctx)
+      ).resolves.toEqual([])
+    }
+
+    await expect(
+      prisma.userProductUpdateState.count({ where: { userId: lecturer.id } })
+    ).resolves.toBe(0)
+  })
+
   it('rejects an update id that is not in the catalog', async () => {
     const lecturer = await createLecturer()
     const ctx = actorContext(lecturer.id, UserRole.USER)
