@@ -10,6 +10,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   completeLearningAnalyticsCourse,
   getLearningAnalyticsBatchDeadline,
+  handleCanStartLearningAnalyticsCourse,
+  handleCompleteLearningAnalyticsCourse,
+  handleGetLearningAnalyticsBatchDeadline,
+  handleSelectLearningAnalyticsBatchCourses,
+  handleStartLearningAnalyticsCourse,
   prepareScheduledLearningAnalyticsBatch,
   selectLearningAnalyticsBatchCourses,
   startLearningAnalyticsCourse,
@@ -187,6 +192,66 @@ describe('learning analytics coordinator', () => {
       prepareScheduledLearningAnalyticsBatch({ $queryRaw: queryRaw })
     ).resolves.toBeNull()
     expect(queryRaw).not.toHaveBeenCalled()
+  })
+
+  it('fails closed at every resumed Hatchet boundary while Catalyst is unavailable', async () => {
+    process.env.LEARNING_ANALYTICS_COORDINATOR_ENABLED = 'true'
+    process.env.CATALYST_LEARNING_ANALYTICS_AVAILABLE = 'false'
+    const queryRaw = vi.fn()
+    const transaction = vi.fn()
+    const globalCtx = {
+      prisma: { $queryRaw: queryRaw, $transaction: transaction },
+    } as unknown as Parameters<
+      typeof handleSelectLearningAnalyticsBatchCourses
+    >[1]
+    const executionCtx = undefined as never
+    const completion = {
+      request: courseRequest(),
+      completedAt: '2026-08-27T03:00:00.000Z',
+      cleanupOnly: false,
+      fenceAt: '2026-08-27T02:00:00.000Z',
+    }
+    const calls = [
+      () =>
+        handleSelectLearningAnalyticsBatchCourses(
+          validBatchInput(),
+          globalCtx,
+          executionCtx
+        ),
+      () =>
+        handleGetLearningAnalyticsBatchDeadline(
+          { hardDeadlineAt: '2026-08-27T04:00:00.000Z' },
+          globalCtx,
+          executionCtx
+        ),
+      () =>
+        handleCanStartLearningAnalyticsCourse(
+          { stopSpawningAt: '2026-08-27T03:45:00.000Z' },
+          globalCtx,
+          executionCtx
+        ),
+      () =>
+        handleStartLearningAnalyticsCourse(
+          courseRequest(),
+          globalCtx,
+          executionCtx
+        ),
+      () =>
+        handleCompleteLearningAnalyticsCourse(
+          completion,
+          globalCtx,
+          executionCtx
+        ),
+    ]
+
+    for (const call of calls) {
+      await expect(call()).rejects.toMatchObject({
+        message: 'CATALYST_LEARNING_ANALYTICS_UNAVAILABLE',
+        extensions: { code: 'CATALYST_LEARNING_ANALYTICS_UNAVAILABLE' },
+      })
+    }
+    expect(queryRaw).not.toHaveBeenCalled()
+    expect(transaction).not.toHaveBeenCalled()
   })
 
   it('accepts delayed nightly dispatch before 01:30 with stable daily run IDs', async () => {

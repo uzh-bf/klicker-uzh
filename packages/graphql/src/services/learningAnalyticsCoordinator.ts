@@ -717,21 +717,31 @@ export const handlePrepareScheduledLearningAnalyticsBatch: HatchetHandlers['hand
     prepareScheduledLearningAnalyticsBatch(globalCtx.prisma)
 
 export const handleSelectLearningAnalyticsBatchCourses: HatchetHandlers['handleSelectLearningAnalyticsBatchCourses'] =
-  async (args, globalCtx) =>
-    selectLearningAnalyticsBatchCourses(args, globalCtx.prisma)
+  async (args, globalCtx) => {
+    requireLearningAnalyticsCoordinatorAvailable()
+    return selectLearningAnalyticsBatchCourses(args, globalCtx.prisma)
+  }
 
 export const handleGetLearningAnalyticsBatchDeadline: HatchetHandlers['handleGetLearningAnalyticsBatchDeadline'] =
-  async (args, globalCtx) =>
-    getLearningAnalyticsBatchDeadline(args, globalCtx.prisma)
+  async (args, globalCtx) => {
+    requireLearningAnalyticsCoordinatorAvailable()
+    return getLearningAnalyticsBatchDeadline(args, globalCtx.prisma)
+  }
 
 export const handleCanStartLearningAnalyticsCourse: HatchetHandlers['handleCanStartLearningAnalyticsCourse'] =
-  async (args, globalCtx) =>
-    canStartLearningAnalyticsCourse(args, globalCtx.prisma)
+  async (args, globalCtx) => {
+    requireLearningAnalyticsCoordinatorAvailable()
+    return canStartLearningAnalyticsCourse(args, globalCtx.prisma)
+  }
 
 export const handleStartLearningAnalyticsCourse: HatchetHandlers['handleStartLearningAnalyticsCourse'] =
-  async (args, globalCtx) =>
-    startLearningAnalyticsCourse(args, globalCtx.prisma)
+  async (args, globalCtx) => {
+    requireLearningAnalyticsCoordinatorAvailable()
+    return startLearningAnalyticsCourse(args, globalCtx.prisma)
+  }
 
 export const handleCompleteLearningAnalyticsCourse: HatchetHandlers['handleCompleteLearningAnalyticsCourse'] =
-  async (args, globalCtx) =>
-    completeLearningAnalyticsCourse(args, globalCtx.prisma)
+  async (args, globalCtx) => {
+    requireLearningAnalyticsCoordinatorAvailable()
+    return completeLearningAnalyticsCourse(args, globalCtx.prisma)
+  }

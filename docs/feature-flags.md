@@ -59,12 +59,17 @@ configuration, not a GrowthBook flag, provider probe, health check, or URL
 reachability test.
 
 The public coordinator and V2 course reads require both gates. Course controls
-also require their existing full-access role and course permission. A missing
-availability setting fails closed with the stable
+also require their existing full-access role and course permission. Enabling a
+course requires private-service availability, while disabling remains available
+during an outage so lecturers can hide individual analytics immediately. A
+missing availability setting otherwise fails closed with the stable
 `CATALYST_LEARNING_ANALYTICS_UNAVAILABLE` GraphQL error code before any
 analytics service call. The platform-admin batch keeps its existing admin-role
 entitlement, but its coordinator dispatch still requires the same runtime
-availability gate. The default remains unavailable.
+availability gate. Resumed Hatchet tasks recheck both coordinator settings at
+selection, deadline, course-spawn, course-start, and completion boundaries. No
+new work starts and no result is published while either setting is unavailable.
+The default remains unavailable.
 
 ## Package contract
 

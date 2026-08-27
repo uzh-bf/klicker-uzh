@@ -1,4 +1,8 @@
-import { UserLoginScope, UserRole } from '@klicker-uzh/prisma/client'
+import {
+  PermissionLevel,
+  UserLoginScope,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
 import { createYoga } from 'graphql-yoga'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -40,33 +44,46 @@ type GatedOperation = (typeof gatedOperations)[number]
 function buildContext({
   catalystInstitutional = false,
   catalystIndividual = false,
-  hasCoursePermission = true,
+  permissionLevel = PermissionLevel.ADMIN,
+  role = UserRole.USER,
 }: {
   catalystInstitutional?: boolean
   catalystIndividual?: boolean
-  hasCoursePermission?: boolean
+  permissionLevel?: PermissionLevel | null
+  role?: UserRole
 } = {}) {
   const derivedPermissionFindUnique = vi
     .fn()
-    .mockResolvedValue(
-      hasCoursePermission ? { permissionLevel: 'ADMIN' } : null
+    .mockImplementation(
+      async ({
+        where,
+      }: {
+        where: { permissionLevel: { in: PermissionLevel[] } }
+      }) =>
+        permissionLevel && where.permissionLevel.in.includes(permissionLevel)
+          ? { permissionLevel }
+          : null
     )
   const courseFindUnique = vi.fn().mockResolvedValue({
     analyticsLastComputedAt: null,
   })
-  const runNoWait = vi.fn().mockResolvedValue(undefined)
+  const queryRaw = vi.fn()
+  const courseRunNoWait = vi.fn().mockResolvedValue(undefined)
+  const batchRunNoWait = vi.fn().mockResolvedValue(undefined)
 
   const context = {
     prisma: {
+      $queryRaw: queryRaw,
       course: { findUnique: courseFindUnique },
       derivedPermission: { findUnique: derivedPermissionFindUnique },
     },
     tasks: {
-      learningAnalyticsCourseCoordinator: { runNoWait },
+      learningAnalyticsBatchCoordinator: { runNoWait: batchRunNoWait },
+      learningAnalyticsCourseCoordinator: { runNoWait: courseRunNoWait },
     },
     user: {
       sub: '00000000-0000-0000-0000-000000000001',
-      role: UserRole.USER,
+      role,
       scope: UserLoginScope.FULL_ACCESS,
       catalystInstitutional,
       catalystIndividual,
@@ -75,20 +92,25 @@ function buildContext({
 
   return {
     context,
+    batchRunNoWait,
     courseFindUnique,
     derivedPermissionFindUnique,
-    runNoWait,
+    queryRaw,
+    runNoWait: courseRunNoWait,
   }
 }
 
-function operationQuery(operation: GatedOperation): string {
+function operationQuery(
+  operation: GatedOperation,
+  { isEnabled = true }: { isEnabled?: boolean } = {}
+): string {
   switch (operation) {
     case 'setCourseLearningAnalyticsEnabled':
       return `
         mutation {
           setCourseLearningAnalyticsEnabled(
             courseId: "${courseId}"
-            isEnabled: true
+            isEnabled: ${isEnabled}
           ) {
             id
             isLearningAnalyticsEnabled
@@ -136,7 +158,8 @@ function operationQuery(operation: GatedOperation): string {
 
 async function executeOperation(
   operation: GatedOperation,
-  context: ContextWithUser
+  context: ContextWithUser,
+  options?: { isEnabled?: boolean }
 ) {
   const yoga = createYoga({
     schema,
@@ -146,7 +169,31 @@ async function executeOperation(
   const response = await yoga.fetch('http://localhost/graphql', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ query: operationQuery(operation) }),
+    body: JSON.stringify({ query: operationQuery(operation, options) }),
+  })
+
+  return (await response.json()) as {
+    data?: Record<string, unknown>
+    errors?: { message: string; extensions?: { code?: string } }[]
+  }
+}
+
+async function executeAdminBatch(context: ContextWithUser) {
+  const yoga = createYoga({
+    schema,
+    context: () => context,
+    graphqlEndpoint: '/graphql',
+  })
+  const response = await yoga.fetch('http://localhost/graphql', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      query: `
+        mutation {
+          recomputeLearningAnalyticsBatch(courseIds: ["${courseId}"])
+        }
+      `,
+    }),
   })
 
   return (await response.json()) as {
@@ -250,7 +297,7 @@ describe('Catalyst learning-analytics GraphQL gates', () => {
   )('keeps course permission required for %s', async (operation) => {
     const { context, derivedPermissionFindUnique, runNoWait } = buildContext({
       catalystInstitutional: true,
-      hasCoursePermission: false,
+      permissionLevel: null,
     })
 
     const result = await executeOperation(operation, context)
@@ -289,5 +336,77 @@ describe('Catalyst learning-analytics GraphQL gates', () => {
     for (const mock of Object.values(serviceMocks)) {
       expect(mock, operation).not.toHaveBeenCalled()
     }
+  })
+
+  it('allows an entitled course admin to disable learning analytics while Catalyst is unavailable', async () => {
+    process.env.CATALYST_LEARNING_ANALYTICS_AVAILABLE = 'false'
+    serviceMocks.setCourseLearningAnalyticsEnabled.mockResolvedValue({
+      id: courseId,
+      isLearningAnalyticsEnabled: false,
+    })
+    const { context, runNoWait } = buildContext({
+      catalystIndividual: true,
+    })
+
+    const result = await executeOperation(
+      'setCourseLearningAnalyticsEnabled',
+      context,
+      { isEnabled: false }
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.setCourseLearningAnalyticsEnabled).toEqual({
+      id: courseId,
+      isLearningAnalyticsEnabled: false,
+    })
+    expect(
+      serviceMocks.setCourseLearningAnalyticsEnabled
+    ).toHaveBeenCalledOnce()
+    expect(
+      serviceMocks.setCourseLearningAnalyticsEnabled.mock.calls[0]?.[0]
+    ).toEqual({ courseId, isEnabled: false })
+    expect(runNoWait).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    [PermissionLevel.ADMIN, true],
+    [PermissionLevel.WRITE, false],
+    [PermissionLevel.READ, false],
+  ])('requires course ADMIN permission for the learning-analytics control when the caller has %s', async (permissionLevel, isAllowed) => {
+    const { context } = buildContext({
+      catalystInstitutional: true,
+      permissionLevel,
+    })
+
+    const result = await executeOperation(
+      'setCourseLearningAnalyticsEnabled',
+      context
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.setCourseLearningAnalyticsEnabled ?? null).toEqual(
+      isAllowed ? { id: courseId, isLearningAnalyticsEnabled: true } : null
+    )
+    expect(
+      serviceMocks.setCourseLearningAnalyticsEnabled
+    ).toHaveBeenCalledTimes(isAllowed ? 1 : 0)
+  })
+
+  it('rejects the admin batch before database access or Hatchet enqueue when Catalyst is unavailable', async () => {
+    process.env.CATALYST_LEARNING_ANALYTICS_AVAILABLE = 'false'
+    const { context, batchRunNoWait, queryRaw } = buildContext({
+      role: UserRole.ADMIN,
+    })
+
+    const result = await executeAdminBatch(context)
+
+    expect(result.errors?.[0]?.message).toBe(
+      'CATALYST_LEARNING_ANALYTICS_UNAVAILABLE'
+    )
+    expect(result.errors?.[0]?.extensions?.code).toBe(
+      'CATALYST_LEARNING_ANALYTICS_UNAVAILABLE'
+    )
+    expect(queryRaw).not.toHaveBeenCalled()
+    expect(batchRunNoWait).not.toHaveBeenCalled()
   })
 })

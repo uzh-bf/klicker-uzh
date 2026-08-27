@@ -1452,7 +1452,9 @@ export const Mutation = builder.mutationType({
             (args) => ({ courseId: args.courseId }),
             DB.PermissionLevel.ADMIN,
             async (_, args, ctx) => {
-              requireCatalystLearningAnalyticsAvailable()
+              if (args.isEnabled) {
+                requireCatalystLearningAnalyticsAvailable()
+              }
               return await CourseService.setCourseLearningAnalyticsEnabled(
                 args,
                 ctx

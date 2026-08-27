@@ -154,6 +154,13 @@ must be configured and valid when a batch is prepared. These are code-level
 safeguards; this page does not claim deployment, activation, or live
 qualification.
 
+Already queued or resumed Hatchet workflows recheck both settings before
+selection, deadline calculation, each course spawn, course invalidation and
+private dispatch, and result publication. This prevents further work and leaves
+analytics invalid rather than publishing a result while the private service is
+unavailable. A course administrator can still disable learning analytics during
+an outage; enabling and every recomputation path remain fail-closed.
+
 ## Running locally (config-derived — verify on your machine)
 
 The Hatchet engine runs as the `hatchet` compose service using `hatchet-lite-dev` (gRPC 7077, UI 8888, no UI authentication required); workers pick up the client token automatically minted to `/config/authdisabled-token` or populated by `./util/_create_hatchet_token.sh`. Workers must see the **same `DATABASE_URL`, `APP_SECRET`, and Redis settings** as the app stack — a worker pointed at the wrong database happily processes events into nowhere. The `packages/graphql` vitest suite also requires a live Hatchet + `HATCHET_CLIENT_TOKEN` (see [Testing](./testing.md)).
