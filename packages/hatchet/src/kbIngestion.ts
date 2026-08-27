@@ -894,9 +894,20 @@ export async function monitorActiveKBIngestions(
     },
     ingestionAttemptId: { not: null },
     externalOperationId: { not: null },
-    externalOperationStartedAt: {
-      lte: new Date(now.getTime() - KB_INGESTION_CALLBACK_GRACE_MS),
-    },
+    // An accepted legacy operation can lack a start timestamp. Reconcile it
+    // immediately instead of leaving the resource permanently unmonitored.
+    AND: [
+      {
+        OR: [
+          { externalOperationStartedAt: null },
+          {
+            externalOperationStartedAt: {
+              lte: new Date(now.getTime() - KB_INGESTION_CALLBACK_GRACE_MS),
+            },
+          },
+        ],
+      },
+    ],
     OR: [
       {
         ingestionOperation: KBIngestionOperation.UPSERT,
