@@ -18,8 +18,8 @@ import { useEmbedded } from '../hooks/useEmbedded'
 import { useChatStore } from '../stores/chatStore'
 import { AppSidebar } from './app-sidebar'
 import { ChatUiProvider, useChatUi } from './chat-ui-context'
-import { DisclaimerModal } from './disclaimer-modal'
 import { MobileCreditsBar } from './credits-footer'
+import { DisclaimerModal } from './disclaimer-modal'
 import { EmbeddedCreditsBar, EmbeddedSettings } from './embedded-settings'
 import { ModeSwitcher } from './mode-switcher'
 import { Thread } from './thread'
@@ -286,7 +286,9 @@ function ParticipationRequired({
     : 'https://pwa.klicker.uzh.ch'
 
   return (
-    <div
+    <main
+      id="main-content"
+      tabIndex={-1}
       data-cy="chat-participation-required"
       className={twMerge(
         'bg-muted flex w-full items-center justify-center px-4',
@@ -325,7 +327,7 @@ function ParticipationRequired({
           </Link>
         )}
       </div>
-    </div>
+    </main>
   )
 }
 
@@ -333,16 +335,17 @@ function ChatLoading({ embedded }: { readonly embedded: boolean }) {
   const t = useTranslations()
 
   return (
-    <output
+    <main
+      id="main-content"
+      tabIndex={-1}
       data-cy="chat-loading"
-      aria-live="polite"
-      aria-busy="true"
       className={twMerge(
         'bg-muted flex items-center justify-center px-4',
         embedded ? 'h-full' : 'min-h-screen'
       )}
     >
-      <span
+      <output
+        aria-live="polite"
         className={twMerge(
           'bg-card flex w-full items-center gap-4 rounded-xl border p-6 shadow-sm',
           embedded ? 'max-w-xs p-4' : 'max-w-sm'
@@ -369,8 +372,8 @@ function ChatLoading({ embedded }: { readonly embedded: boolean }) {
             {t('chat.assistant.loading')}
           </span>
         </span>
-      </span>
-    </output>
+      </output>
+    </main>
   )
 }
 
@@ -387,7 +390,9 @@ function DisclaimerDeclined({
 
   return (
     <>
-      <div
+      <main
+        id="main-content"
+        tabIndex={-1}
         data-cy="chat-disclaimer-declined"
         className={twMerge(
           'flex items-center justify-center',
@@ -412,23 +417,17 @@ function DisclaimerDeclined({
             {t('chat.assistant.disclaimerDeclinedMessage')}
           </p>
           {!embedded && (
-            // text-white, not text-destructive-foreground: this app's
-            // theme only defines --color-destructive (see globals.css),
-            // no matching foreground token. White sits ~4.8:1 on the solid
-            // destructive bg, near the 4.5:1 AA floor — so the hover must
-            // darken (brightness-90), not alpha-lighten like the app's
-            // hover:bg-primary/90 pattern, which would drop below AA here.
             <button
               type="button"
               data-cy="chat-show-disclaimer-again"
               onClick={onShowDisclaimer}
-              className="bg-destructive mt-4 min-h-11 rounded px-4 py-2 text-white transition-[filter] touch-manipulation hover:brightness-90 fine-pointer:min-h-8"
+              className="bg-primary hover:bg-primary/90 focus-visible:outline-primary/40 mt-4 min-h-11 touch-manipulation rounded-md px-4 py-2 text-base font-semibold text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 fine-pointer:min-h-8"
             >
               {t('chat.assistant.showDisclaimerAgain')}
             </button>
           )}
         </div>
-      </div>
+      </main>
 
       {!embedded && disclaimer && (
         <DisclaimerModal
@@ -501,23 +500,27 @@ function SidebarMain({
   }
 
   return (
-    <SidebarInset>
-      <div className="bg-muted/50 flex shrink-0 items-center gap-2 border-b px-2 py-1.5">
+    <SidebarInset id="main-content" tabIndex={-1}>
+      <header
+        data-cy="chat-header"
+        className="bg-muted/50 grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2 border-b px-2 py-1.5"
+      >
+        {/* Only visible when the sidebar is closed — once it's open, the
+            sidebar's own trigger closes it, so this stays the single toggle
+            on screen at any given time. The dedicated grid column keeps the
+            title, mode menu, and new-chat action from overlapping at narrow
+            widths. */}
+        <SidebarTrigger
+          className={twMerge(
+            'size-11 touch-manipulation fine-pointer:size-8',
+            open && 'md:hidden'
+          )}
+          aria-label={t('chat.sidebar.openSidebar')}
+        />
+        {/* Persistent header identity (V3): name (+ avatar) stays visible
+            here regardless of sidebar open/closed state, so the sidebar's own
+            header no longer repeats it (see app-sidebar.tsx). */}
         <div className="flex min-w-0 items-center gap-2">
-          {/* Only visible when the sidebar is closed — once it's open, the
-              sidebar's own trigger closes it, so this stays the single
-              toggle on screen at any given time (Overrides the design
-              system's hardcoded English sr-only label). */}
-          <SidebarTrigger
-            className={twMerge(
-              'size-11 touch-manipulation fine-pointer:size-8',
-              open && 'md:hidden'
-            )}
-            aria-label={t('chat.sidebar.openSidebar')}
-          />
-          {/* Persistent header identity (V3): name (+ avatar) stays visible
-              here regardless of sidebar open/closed state, so the sidebar's
-              own header no longer repeats it (see app-sidebar.tsx). */}
           {chatbot.avatar && (
             <Image
               src={`${process.env.NEXT_PUBLIC_AVATAR_BASE_PATH}/${chatbot.avatar}.svg`}
@@ -525,14 +528,12 @@ function SidebarMain({
               width={24}
               height={24}
               unoptimized
-              className="ring-border size-6 shrink-0 rounded-full bg-white ring-1"
+              className="ring-border hidden size-6 shrink-0 rounded-full bg-white ring-1 sm:block"
             />
           )}
           <h1 className="min-w-0 truncate text-sm">{chatbot.name}</h1>
         </div>
-        <div className="flex min-w-0 flex-1 justify-center">
-          <ModeSwitcher />
-        </div>
+        <ModeSwitcher />
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -540,17 +541,17 @@ function SidebarMain({
               onClick={handleNewThread}
               disabled={participationRequired}
               className={twMerge(
-                'text-muted-foreground hover:text-foreground inline-flex size-11 items-center justify-center rounded-sm transition-colors touch-manipulation disabled:pointer-events-none disabled:opacity-50 fine-pointer:size-8',
+                'text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex size-11 items-center justify-center rounded-full transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 fine-pointer:size-8',
                 open && 'md:hidden'
               )}
             >
-              <Plus className="size-4" />
+              <Plus aria-hidden="true" className="size-4" />
               <span className="sr-only">{t('chat.sidebar.newChat')}</span>
             </button>
           </TooltipTrigger>
           <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
         </Tooltip>
-      </div>
+      </header>
       <MobileCreditsBar />
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="relative flex min-h-0 flex-1 flex-col">
@@ -604,7 +605,11 @@ function AssistantLayout({
         </h1>
         <EmbeddedSettings />
       </div>
-      <div className="flex min-h-0 flex-1 flex-col">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex min-h-0 flex-1 flex-col"
+      >
         <div className="relative flex min-h-0 flex-1 flex-col">
           {isLoading && (
             <div className="bg-background absolute inset-0 z-10 overflow-y-auto">
@@ -619,7 +624,7 @@ function AssistantLayout({
           />
         </div>
         <EmbeddedCreditsBar />
-      </div>
+      </main>
     </div>
   )
 }

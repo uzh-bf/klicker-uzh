@@ -1,6 +1,7 @@
 import {
   CourseAuthType,
   ElementBlockStatus,
+  InvitationStatus,
   PermissionLevel,
   PublicationStatus,
   ResponseCorrectness,
@@ -252,6 +253,53 @@ export async function createCourseRecord({
   }
 
   return course
+}
+
+export async function createParticipantInvitationRecord({
+  courseId,
+  email,
+  matriculationNumber,
+  status = InvitationStatus.PENDING,
+  participantUsername,
+}: {
+  courseId: string
+  email: string
+  matriculationNumber?: string
+  status?: InvitationStatus
+  participantUsername?: string
+}) {
+  const prisma = await getPrisma()
+  const participant = participantUsername
+    ? await prisma.participant.findUnique({
+        where: { username: participantUsername },
+        select: { id: true },
+      })
+    : null
+
+  if (participantUsername && !participant) {
+    throw new Error(
+      'Participant invitation fixture requires an existing participant'
+    )
+  }
+
+  if (status === InvitationStatus.ACCEPTED && !participant) {
+    throw new Error('Accepted invitations require an existing participant')
+  }
+
+  if (status !== InvitationStatus.ACCEPTED && participant) {
+    throw new Error('Pending invitations must not reference a participant')
+  }
+
+  return await prisma.participantInvitation.create({
+    data: {
+      courseId,
+      email,
+      matriculationNumber,
+      status,
+      participantId: participant?.id,
+      acceptedAt: status === InvitationStatus.ACCEPTED ? new Date() : null,
+    },
+  })
 }
 
 export async function updateCourseGroupDeadlineDate({

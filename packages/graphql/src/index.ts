@@ -14,6 +14,7 @@ import './schema/evaluation.js'
 import './schema/groupActivity.js'
 import './schema/microLearning.js'
 import './schema/participant.js'
+import './schema/participantInvitation.js'
 import './schema/resource.js'
 import './schema/sharing.js'
 import './schema/template.js'
@@ -38,6 +39,10 @@ import './schema/subscription.js'
 //   })
 // }
 
+import {
+  handleProcessCourseDuplication,
+  handleSweepStaleCourseDuplications,
+} from './services/courseDuplication.js'
 import {
   handleEndExpiredGroupActivity,
   handleFinalRandomGroupAssignments,
@@ -82,4 +87,6 @@ export const handlers: HatchetHandlers = {
   handlePublishScheduledMicroLearning,
   handleStandardLiveQuizBlockClosureAggregation,
   handleAssessmentLiveQuizBlockClosureAggregation,
+  handleProcessCourseDuplication,
+  handleSweepStaleCourseDuplications,
 }

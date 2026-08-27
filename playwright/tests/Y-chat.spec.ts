@@ -50,6 +50,13 @@ async function sendMessage(page: Page, text: string) {
   await page.getByTestId('chat-send-button').click()
 }
 
+async function selectChatMode(page: Page, mode: string, label: string) {
+  const switcher = page.getByTestId('chat-mode-switcher')
+  await switcher.click()
+  await page.getByTestId('chat-mode-option-' + mode).click()
+  await expect(switcher).toContainText(label)
+}
+
 // ===========================================================================
 // Authentication & Access Control
 // ===========================================================================
@@ -95,11 +102,11 @@ test.describe('Chatbot Authentication & Access Control', () => {
     })
 
     expect(response?.status()).toBe(404)
-    await expect(page.getByTestId('chat-not-found')).toBeVisible()
-    await expect(page.getByTestId('chat-not-found-title')).toHaveText(
+    await expect(page.locator('[data-cy="chat-not-found"]')).toBeVisible()
+    await expect(page.locator('[data-cy="chat-not-found-title"]')).toHaveText(
       'Chatbot not found'
     )
-    await expect(page.getByTestId('chat-not-found-home')).toContainText(
+    await expect(page.locator('[data-cy="chat-not-found-home"]')).toContainText(
       'Open KlickerUZH'
     )
   })
@@ -114,8 +121,8 @@ test.describe('Chatbot Authentication & Access Control', () => {
     })
 
     expect(response?.status()).toBe(404)
-    await expect(page.getByTestId('chat-not-found')).toBeVisible()
-    await expect(page.getByTestId('chat-not-found-title')).toHaveText(
+    await expect(page.locator('[data-cy="chat-not-found"]')).toBeVisible()
+    await expect(page.locator('[data-cy="chat-not-found-title"]')).toHaveText(
       'Chatbot not found'
     )
   })
@@ -576,6 +583,50 @@ test.describe('Chatbot Messaging Interface', () => {
     })
 
     expect(stayedMounted).toBe(true)
+  })
+
+  test('Filled-square stop button cancels a running answer from the keyboard', async ({
+    page,
+  }) => {
+    await mockChatStream(page, {
+      textChunks: ['A response that is still running', ' and should not land.'],
+      chunkDelayMs: 40,
+      pauseAfterTextChunk: 1,
+    })
+    await visitChat(page)
+
+    await sendMessage(page, 'Start a response I can stop')
+    await expect(
+      page.getByText('A response that is still running')
+    ).toBeVisible({ timeout: 15_000 })
+
+    const cancelButton = page.getByTestId('chat-cancel-button')
+    await expect(cancelButton).toHaveAccessibleName('Stop response')
+    const square = cancelButton.locator('svg.lucide-square')
+    await expect(square).toHaveCount(1)
+    expect(
+      await square.evaluate(
+        (element) => getComputedStyle(element).fill !== 'none'
+      )
+    ).toBe(true)
+
+    await cancelButton.focus()
+    await page.keyboard.press('Enter')
+
+    // No manual stream release: aborting the request must itself break the
+    // mock stream (the mock honors init.signal like a real fetch) — that is
+    // exactly the product behavior under test.
+    await expect(cancelButton).toHaveAttribute('aria-hidden', 'true')
+    await expect(cancelButton).toHaveAttribute('inert', '')
+    await expect(cancelButton).toHaveAttribute('tabindex', '-1')
+
+    const sendButton = page.getByTestId('chat-send-button')
+    await expect(sendButton).toHaveAttribute('aria-hidden', 'false')
+    await expect(sendButton).not.toHaveAttribute('inert', '')
+    await expect(sendButton).toHaveAttribute('tabindex', '0')
+    await expect(
+      page.getByTestId('chat-assistant-message-content')
+    ).not.toContainText('and should not land.')
   })
 
   test('Streaming hides incomplete LaTeX until the formula closes', async ({
@@ -1553,10 +1604,16 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(page.getByTestId('chat-settings-panel')).toHaveCount(0)
   })
 
-  test('Mode switcher shows available modes', async ({ page }) => {
+  test('Mode dropdown shows the selected mode and available options', async ({
+    page,
+  }) => {
     await visitChat(page)
 
-    await expect(page.getByTestId('chat-mode-switcher')).toBeVisible()
+    const switcher = page.getByTestId('chat-mode-switcher')
+    await expect(switcher).toBeVisible()
+    await expect(switcher).toContainText('Tutor')
+    await switcher.click()
+
     await expect(page.getByTestId('chat-mode-option-tutor')).toContainText(
       'Tutor'
     )
@@ -1570,26 +1627,63 @@ test.describe('Chatbot Settings Panel', () => {
   }) => {
     await visitChat(page)
 
-    const explainerOption = page.getByTestId('chat-mode-option-explainer')
-    await explainerOption.click()
-    await expect(explainerOption).toHaveAttribute('aria-pressed', 'true')
+    await selectChatMode(page, 'explainer', 'Explainer')
+
+    const switcher = page.getByTestId('chat-mode-switcher')
+    await expect(switcher).toHaveAccessibleName('Chat mode: Explainer')
+    await switcher.click()
+    await expect(
+      page.getByTestId('chat-mode-option-explainer')
+    ).toHaveAttribute('aria-selected', 'true')
     await expect(page.getByTestId('chat-mode-option-tutor')).toHaveAttribute(
-      'aria-pressed',
+      'aria-selected',
       'false'
     )
   })
 
-  test('Mode switcher explains what each mode is for', async ({ page }) => {
+  test('Mode dropdown supports keyboard selection and restores trigger focus', async ({
+    page,
+  }) => {
     await visitChat(page)
 
-    await page.getByTestId('chat-mode-option-tutor').hover()
-    await expect(
-      page.getByRole('tooltip').getByTestId('chat-mode-description-tutor')
-    ).toContainText('patient')
+    const switcher = page.getByTestId('chat-mode-switcher')
+    await switcher.focus()
+    await page.keyboard.press('Enter')
+    await expect(page.getByTestId('chat-mode-option-tutor')).toBeVisible()
 
-    await page.getByTestId('chat-mode-option-explainer').hover()
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('chat-mode-option-tutor')).toHaveCount(0)
+    await expect(switcher).toBeFocused()
+
+    await page.keyboard.press('Enter')
+    const explainerOption = page.getByTestId('chat-mode-option-explainer')
+    await expect(explainerOption).toBeVisible()
+
+    // Radix moves item highlight asynchronously (positioned auto-focus on
+    // open, then a deferred focusFirst after ArrowDown): synchronize on
+    // data-highlighted before each keypress so Enter commits the intended
+    // option instead of racing the still-focused checked item.
+    await expect(page.getByTestId('chat-mode-option-tutor')).toHaveAttribute(
+      'data-highlighted',
+      ''
+    )
+
+    await page.keyboard.press('ArrowDown')
+    await expect(explainerOption).toHaveAttribute('data-highlighted', '')
+    await page.keyboard.press('Enter')
+    await expect(switcher).toContainText('Explainer')
+    await expect(switcher).toBeFocused()
+  })
+
+  test('Mode dropdown explains what each mode is for', async ({ page }) => {
+    await visitChat(page)
+
+    await page.getByTestId('chat-mode-switcher').click()
+    await expect(page.getByTestId('chat-mode-description-tutor')).toContainText(
+      'patient'
+    )
     await expect(
-      page.getByRole('tooltip').getByTestId('chat-mode-description-explainer')
+      page.getByTestId('chat-mode-description-explainer')
     ).toContainText('difficult concepts')
   })
 
@@ -1796,9 +1890,7 @@ test.describe('Chatbot Settings Panel', () => {
 
     // Persist "explainer" as the session's selected mode (e.g. picked while
     // starting a new chat), independent of the tutor thread above.
-    const explainerOption = page.getByTestId('chat-mode-option-explainer')
-    await explainerOption.click()
-    await expect(explainerOption).toHaveAttribute('aria-pressed', 'true')
+    await selectChatMode(page, 'explainer', 'Explainer')
 
     // Open the tutor thread via a direct URL load (bookmark/reload), not a
     // sidebar click.
@@ -1806,13 +1898,154 @@ test.describe('Chatbot Settings Panel', () => {
       waitUntil: 'domcontentloaded',
     })
 
-    await expect(page.getByTestId('chat-mode-option-tutor')).toHaveAttribute(
-      'aria-pressed',
-      'true'
-    )
+    await expect(page.getByTestId('chat-mode-switcher')).toContainText('Tutor')
+  })
+})
+
+// ===========================================================================
+// History Rail
+// ===========================================================================
+test.describe('Chatbot History Rail', () => {
+  let participantId: string
+
+  test.beforeEach(async ({ page }) => {
+    participantId = await getEnrolledParticipantId()
+    await clearChatCookies(page)
+    await setParticipantToken(page, participantId)
+    await resetChatState(participantId)
+    await setDisclaimerState(participantId, 'accepted')
+  })
+
+  test('pairs turns, keeps tool calls out of the rail, and navigates on desktop and mobile', async ({
+    page,
+  }) => {
+    const firstUserId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c50'
+    const firstAssistantId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c51'
+    const secondUserId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c52'
+    const secondAssistantId = '3f0c1a7e-4d2b-4a91-8f6c-2b7d1e5a9c53'
+
+    await seedThread(participantId, {
+      title: 'History rail test',
+      messages: [
+        {
+          id: firstUserId,
+          role: 'user',
+          content: [{ type: 'text', text: 'First rail question' }],
+        },
+        {
+          id: firstAssistantId,
+          role: 'assistant',
+          content: [{ type: 'text', text: 'First rail answer' }],
+        },
+        {
+          id: secondUserId,
+          role: 'user',
+          content: [{ type: 'text', text: 'Second rail question' }],
+        },
+        {
+          id: secondAssistantId,
+          role: 'assistant',
+          content: [
+            { type: 'text', text: 'Second rail answer' },
+            {
+              type: 'tool-call',
+              toolCallId: 'history-rail-call-1',
+              toolName: 'library_search',
+              args: {},
+              result: { content: [{ type: 'text', text: 'First result' }] },
+            },
+            {
+              type: 'tool-call',
+              toolCallId: 'history-rail-call-2',
+              toolName: 'library_search',
+              args: {},
+              result: { content: [{ type: 'text', text: 'Second result' }] },
+            },
+          ],
+        },
+      ],
+    })
+
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const rail = page.locator('[data-cy="chat-history-rail"]')
+    await expect(rail).toBeVisible()
+    const ticks = rail.locator('[data-history-rail-tick]')
+    await expect(ticks).toHaveCount(2)
+    const toolGroupToggle = page.getByTestId('chat-tool-group-toggle')
+    await expect(toolGroupToggle).toHaveCount(1)
+    await expect(toolGroupToggle).toHaveAttribute('aria-expanded', 'false')
+
+    await ticks.first().hover()
+    const popover = page.getByTestId('chat-history-rail-turn-popover')
+    await expect(popover).toContainText('First rail question')
+    await expect(popover).toContainText('First rail answer')
+    // Radix's hoverable tooltip closes on the pointermove that follows the
+    // leave event: one synthetic move only fires the leave, so nudge the
+    // pointer again to let the grace-area listener dismiss the popover.
+    await page.mouse.move(0, 0)
+    await page.mouse.move(1, 1)
+    await expect(popover).toHaveCount(0)
+
+    const currentTick = rail.locator('[aria-current="step"]')
+    await expect(currentTick).toHaveCount(1)
+    await currentTick.click()
+    // Both the desktop and the mobile dialog mount while the history is open;
+    // CSS hides the one outside the current breakpoint, so scope every dialog
+    // locator to its rail container to keep strict mode unambiguous.
+    const dialog = rail.locator('[data-history-rail-dialog]')
+    await expect(dialog).toBeVisible()
+    await expect(dialog.locator('[data-history-dialog-entry]')).toHaveCount(2)
+    await dialog.locator('[data-history-dialog-entry]').first().click()
     await expect(
-      page.getByTestId('chat-mode-option-explainer')
-    ).toHaveAttribute('aria-pressed', 'false')
+      page.locator(`[data-history-rail-anchor="message:${firstUserId}"]`)
+    ).toBeFocused()
+
+    // A second navigation issued right after the first jump must leave the
+    // last-selected tick current; a stale scroll-spy callback must not win.
+    // Navigating closes the dialog, so reopen it before picking the next row.
+    await currentTick.click()
+    await expect(dialog).toBeVisible()
+    await dialog.locator('[data-history-dialog-entry]').nth(1).click()
+    await expect(
+      page.locator(`[data-history-rail-anchor="message:${secondUserId}"]`)
+    ).toBeFocused()
+    await expect(page.locator('[aria-current="step"]')).toHaveCount(1)
+
+    // Close the desktop dialog with Escape; focus returns to the invoking tick.
+    await currentTick.click()
+    await expect(dialog).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+    await expect(currentTick).toBeFocused()
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    await expect(rail).toBeHidden()
+    const mobileTrigger = page.getByTestId('chat-history-rail-mobile-trigger')
+    await expect(mobileTrigger).toBeVisible()
+    await expect(mobileTrigger).toContainText('/2')
+    await mobileTrigger.click()
+    const mobileDialog = page
+      .getByTestId('chat-history-rail-mobile')
+      .locator('[data-history-rail-dialog]')
+    await expect(mobileDialog).toBeVisible()
+    await expect(
+      mobileDialog.locator('[data-history-dialog-entry]')
+    ).toHaveCount(2)
+    await mobileDialog.locator('[data-history-dialog-entry]').nth(1).click()
+    await expect(
+      page.locator(`[data-history-rail-anchor="message:${secondUserId}"]`)
+    ).toBeFocused()
+    // Close the mobile dialog with the 44px close button; focus returns to the
+    // mobile trigger.
+    await mobileTrigger.click()
+    await expect(mobileDialog).toBeVisible()
+    await mobileDialog
+      .getByRole('button', { name: /close full history/i })
+      .click()
+    await expect(mobileDialog).toHaveCount(0)
+    await expect(mobileTrigger).toBeFocused()
   })
 })
 
@@ -1864,6 +2097,41 @@ test.describe('Chatbot Source Citations', () => {
               sources_used: sources.length,
               sources,
             }),
+          },
+        ],
+      },
+    }
+  }
+
+  type DocumentsModeSource = {
+    reference: string
+    reference_type: string
+    source_type: string
+    title: string
+    chunks: Array<{
+      content: string
+      page_number?: number
+      labeled_page_number?: string
+    }>
+  }
+
+  function documentsQueryPart({
+    toolCallId,
+    sources,
+  }: {
+    toolCallId: string
+    sources: DocumentsModeSource[]
+  }) {
+    return {
+      type: 'tool-call' as const,
+      toolCallId,
+      toolName: 'KB_doc_query',
+      args: { query: 'preview query' },
+      result: {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({ mode: 'documents', sources }),
           },
         ],
       },
@@ -1928,7 +2196,8 @@ test.describe('Chatbot Source Citations', () => {
 
   test('Sources section renders one card per unique source in first-appearance order with a count heading', async ({
     page,
-  }) => {
+  }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
     const messageId = '4a1b2c3d-0001-4a91-8f6c-2b7d1e5a9c40'
     await seedThread(participantId, {
       title: 'Sources order',
@@ -1986,6 +2255,97 @@ test.describe('Chatbot Source Citations', () => {
     await expect(page.locator(`#src-${messageId}-3`)).toContainText(
       'Gamma Notes.pdf'
     )
+
+    const modeSwitcher = page.getByTestId('chat-mode-switcher')
+    await modeSwitcher.click()
+    await expect(page.getByTestId('chat-mode-option-explainer')).toBeVisible()
+
+    const screenshotPath = testInfo.outputPath('desktop-mode-and-sources.png')
+    await page.screenshot({
+      path: screenshotPath,
+      animations: 'disabled',
+    })
+    await testInfo.attach('Desktop mode dropdown and source grid', {
+      path: screenshotPath,
+      contentType: 'image/png',
+    })
+  })
+
+  test('Source details stay in hover and focus previews for cards and citations', async ({
+    page,
+  }) => {
+    const messageId = '4a1b2c3d-0013-4a91-8f6c-2b7d1e5a9c40'
+    const excerpt =
+      'This excerpt belongs in the source preview, not in the source card.'
+
+    await seedThread(participantId, {
+      title: 'Source previews',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Show the source details' }],
+        },
+        {
+          id: messageId,
+          role: 'assistant',
+          content: [
+            documentsQueryPart({
+              toolCallId: 'call-preview',
+              sources: [
+                {
+                  reference: 'preview-guide.pdf',
+                  reference_type: 'pdf',
+                  source_type: 'document',
+                  title: 'Preview Guide.pdf',
+                  chunks: [{ content: excerpt, page_number: 12 }],
+                },
+              ],
+            }),
+            { type: 'text', text: 'See [1] for the supporting passage.' },
+          ],
+        },
+      ],
+    })
+    await visitChat(page)
+    await page.getByTestId('chat-thread-select').first().click()
+
+    const card = page.locator(`#src-${messageId}-1`)
+    const openPreviews = page.getByRole('tooltip')
+    await expect(card).toContainText('Preview Guide.pdf')
+    await expect(card).toContainText('p. 12')
+    await expect(card).not.toContainText(excerpt)
+    await expect(openPreviews).toHaveCount(0)
+
+    await card.hover()
+    const preview = page.getByRole('tooltip').getByTestId('chat-source-preview')
+    await expect(preview).toBeVisible()
+    await expect(preview).toContainText(excerpt)
+    await expect(preview).toContainText('p. 12')
+
+    await page.mouse.move(0, 0)
+    // Radix's hoverable tooltip closes on the pointermove that follows the
+    // leave event: one synthetic move only fires the leave, so nudge the
+    // pointer again to let the grace-area listener dismiss the popover.
+    await page.mouse.move(1, 1)
+    await expect(openPreviews).toHaveCount(0)
+
+    await card.focus()
+    await expect(preview).toBeVisible()
+
+    const citation = page.getByTestId('chat-citation')
+    await citation.focus()
+    // Each source trigger owns an independent Radix tooltip root, so the
+    // still-focused card tooltip and the newly opened citation tooltip can
+    // be open at the same time; scope this part of the contract to the
+    // citation tooltip itself instead of assuming global exclusivity.
+    const citationTooltip = page
+      .getByRole('tooltip')
+      .filter({ hasText: 'Go to source' })
+    await expect(citationTooltip).toBeVisible()
+    await citation.hover()
+    await expect(
+      citationTooltip.getByTestId('chat-source-preview')
+    ).toContainText(excerpt)
   })
 
   // Regression guard: a terminal assistant turn whose only content is a
@@ -2086,7 +2446,7 @@ test.describe('Chatbot Source Citations', () => {
     await expect(page.locator(`#src-${messageId}-4`)).toHaveCount(0)
   })
 
-  test('A valid [n] citation renders a citation button while an out-of-range marker stays literal text', async ({
+  test('A valid [n] citation renders a citation chip/link while an out-of-range marker stays literal text', async ({
     page,
   }) => {
     await seedThread(participantId, {
@@ -2130,10 +2490,18 @@ test.describe('Chatbot Source Citations', () => {
     ).toContainText('[9]')
   })
 
-  test('Clicking a citation scrolls to its source without navigating or changing the URL hash', async ({
+  test('Clicking a high-numbered citation with its preview open scrolls to the matching source without navigating', async ({
     page,
   }) => {
-    await seedThread(participantId, {
+    await page.setViewportSize({ width: 600, height: 1200 })
+
+    const messageId = '4a1b2c3d-0014-4a91-8f6c-2b7d1e5a9c40'
+    const longAnswer = Array.from(
+      { length: 40 },
+      (_, index) => `Supporting context line ${index + 1}.`
+    ).join('\n\n')
+
+    const thread = await seedThread(participantId, {
       title: 'Citation click',
       messages: [
         {
@@ -2141,37 +2509,65 @@ test.describe('Chatbot Source Citations', () => {
           content: [{ type: 'text', text: 'Explain the concept' }],
         },
         {
+          id: messageId,
           role: 'assistant',
           content: [
             docQueryPart({
               toolCallId: 'call-1',
-              sources: [
-                {
-                  file_name: 'Reference.pdf',
-                  source_url: 'https://example.com/reference.pdf',
-                  source_type: 'document',
-                  page_number: 1,
-                },
-              ],
+              sources: Array.from({ length: 12 }, (_, index) => ({
+                file_name:
+                  index === 6 ? 'Reference.pdf' : `Reference ${index + 1}.pdf`,
+                source_url: `https://example.com/reference-${index + 1}.pdf`,
+                source_type: 'document',
+                page_number: index + 1,
+              })),
             }),
-            { type: 'text', text: 'As shown in [1].' },
+            { type: 'text', text: `As shown in [7].\n\n${longAnswer}` },
           ],
         },
       ],
     })
-    await visitChat(page)
-    await page.getByTestId('chat-thread-select').first().click()
-    // Selecting a thread is itself a client-side navigation. Let it commit
-    // before the baseline is taken, or the citation click gets blamed for a
-    // URL change the router had already queued.
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`, {
+      waitUntil: 'domcontentloaded',
+    })
+    // Let the direct thread navigation settle before taking the baseline, or
+    // the citation click could be blamed for an unrelated URL transition.
     await expect(page).toHaveURL(/\/threads\//)
-    await expect(page.getByTestId('chat-citation')).toBeVisible()
+    const citation = page.getByTestId('chat-citation')
+    const source = page.locator(`#src-${messageId}-7`)
+    await expect(citation).toBeVisible()
+    await expect(source).toBeVisible()
+
+    // Put the citation in view while its distant source card remains below
+    // the viewport. This makes the assertion red-capable when the click does
+    // not actually scroll, instead of only checking that the URL stayed put.
+    await citation.scrollIntoViewIfNeeded()
+    await expect(citation).toBeInViewport()
+    await expect(source).not.toBeInViewport()
 
     const urlBefore = page.url()
     const hashBefore = await page.evaluate(() => window.location.hash)
 
-    await page.getByTestId('chat-citation').click()
+    await citation.hover()
+    await expect(
+      page.getByRole('tooltip').filter({ hasText: 'Go to source' })
+    ).toBeVisible()
+    await citation.click()
 
+    await expect
+      .poll(async () => {
+        const [sourceBox, composerBox] = await Promise.all([
+          source.boundingBox(),
+          page.getByTestId('chat-composer').boundingBox(),
+        ])
+
+        if (!sourceBox || !composerBox) return false
+
+        return (
+          sourceBox.y >= 0 && sourceBox.y + sourceBox.height <= composerBox.y
+        )
+      })
+      .toBe(true)
     expect(page.url()).toBe(urlBefore)
     expect(await page.evaluate(() => window.location.hash)).toBe(hashBefore)
   })
@@ -2247,29 +2643,37 @@ test.describe('Chatbot Source Citations', () => {
   test('Citations and source cards render on a live streamed answer', async ({
     page,
   }) => {
+    const streamedParagraphs = Array.from(
+      { length: 24 },
+      (_, index) =>
+        `Streaming paragraph ${index + 1} keeps the answer growing while sources remain hidden.`
+    ).join('\n\n')
     await mockChatStream(page, {
-      text: 'Live answer citing [1] and also [2].',
+      textChunks: [
+        `Live answer citing [7].\n\n${streamedParagraphs}`,
+        '\n\nThe final paragraph also cites [2].',
+      ],
       chunkDelayMs: 20,
       pauseAfterToolOutput: true,
+      pauseAfterTextChunk: 1,
       toolCalls: [
         {
           toolCallId: 'live-call-1',
           toolName: 'KB_doc_query',
           input: { query: 'live query' },
-          output: docQueryToolOutput([
-            {
-              file_name: 'Live Alpha.pdf',
-              source_url: 'https://example.com/live-alpha.pdf',
+          output: docQueryToolOutput(
+            Array.from({ length: 8 }, (_, index) => ({
+              file_name:
+                index === 0
+                  ? 'Live Alpha.pdf'
+                  : index === 1
+                    ? 'Live Beta.pdf'
+                    : `Live Source ${index + 1}.pdf`,
+              source_url: `https://example.com/live-source-${index + 1}.pdf`,
               source_type: 'document',
-              page_number: 2,
-            },
-            {
-              file_name: 'Live Beta.pdf',
-              source_url: 'https://example.com/live-beta.pdf',
-              source_type: 'document',
-              page_number: 6,
-            },
-          ]),
+              page_number: index + 2,
+            }))
+          ),
         },
       ],
     })
@@ -2284,6 +2688,49 @@ test.describe('Chatbot Source Citations', () => {
     )
     await expect(section).toHaveCount(0)
     await expect(page.getByText('Live answer citing')).toHaveCount(0)
+    const viewport = page.getByTestId('chat-thread-viewport')
+    const scrollTopBeforeText = await viewport.evaluate(
+      (element) => element.scrollTop
+    )
+    const cancelButton = page.getByTestId('chat-cancel-button')
+    await expect(cancelButton).toBeVisible()
+    await expect(cancelButton).toHaveAccessibleName('Stop response')
+    expect(
+      await cancelButton
+        .locator('svg.lucide-square')
+        .evaluate((element) => getComputedStyle(element).fill !== 'none')
+    ).toBe(true)
+
+    // Let answer text start, then pause again. Sources must remain out of
+    // layout for the entire running state and the viewport must follow the
+    // streamed answer itself.
+    await page.evaluate(() => {
+      const state = window as typeof window & {
+        __releaseMockChatStream?: () => void
+      }
+      state.__releaseMockChatStream?.()
+    })
+
+    await expect(page.getByText('Live answer citing')).toBeVisible({
+      timeout: 15_000,
+    })
+    await expect(section).toHaveCount(0)
+    expect(
+      await viewport.evaluate(
+        (element) => element.scrollHeight > element.clientHeight
+      )
+    ).toBe(true)
+    await expect
+      .poll(() => viewport.evaluate((element) => element.scrollTop))
+      .toBeGreaterThan(scrollTopBeforeText)
+    await expect
+      .poll(() =>
+        viewport.evaluate(
+          (element) =>
+            element.scrollHeight - element.scrollTop - element.clientHeight
+        )
+      )
+      .toBeLessThanOrEqual(1)
 
     await page.evaluate(() => {
       const state = window as typeof window & {
@@ -2293,17 +2740,39 @@ test.describe('Chatbot Source Citations', () => {
     })
 
     await expect(section).toBeVisible({ timeout: 15_000 })
-    await expect(section).toContainText('Sources · 2')
-    await expect(page.getByTestId('chat-source-card')).toHaveCount(2)
+    await expect(section).toContainText('Sources · 8')
+    await expect(page.getByTestId('chat-source-card')).toHaveCount(8)
+    await expect(section.getByRole('heading')).toBeInViewport()
+    await expect
+      .poll(() =>
+        viewport.evaluate(
+          (element) =>
+            element.scrollHeight - element.scrollTop - element.clientHeight
+        )
+      )
+      .toBeGreaterThan(100)
 
     const citations = page.getByTestId('chat-citation')
     await expect(citations).toHaveCount(2)
     await expect(citations.nth(0)).toHaveAccessibleName(
-      'Source 1: Live Alpha.pdf'
+      'Source 7: Live Source 7.pdf'
     )
     await expect(citations.nth(1)).toHaveAccessibleName(
       'Source 2: Live Beta.pdf'
     )
+
+    const citedSource = page.getByTestId('chat-source-card').nth(6)
+    await citations.nth(0).scrollIntoViewIfNeeded()
+    await expect(citations.nth(0)).toBeInViewport()
+    await expect(citedSource).not.toBeInViewport()
+
+    await citations.nth(0).hover()
+    await expect(
+      page.getByRole('tooltip').filter({ hasText: 'Go to source' })
+    ).toBeVisible()
+    await citations.nth(0).click()
+
+    await expect(citedSource).toBeInViewport()
   })
 
   test('Composer hint is visible in standalone mode and hidden when embedded', async ({
@@ -2323,6 +2792,112 @@ test.describe('Chatbot Source Citations', () => {
 
     await expect(page.getByTestId('chat-composer')).toBeVisible()
     await expect(page.getByTestId('chat-composer-hint')).toHaveCount(0)
+  })
+
+  test('Mobile header and sources stay clear of the expanded composer', async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    const thread = await seedThread(participantId, {
+      title: 'Mobile source layout',
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Show the mobile source layout' }],
+        },
+        {
+          role: 'assistant',
+          content: [
+            docQueryPart({
+              toolCallId: 'call-mobile-layout',
+              sources: Array.from({ length: 6 }, (_, index) => ({
+                file_name: 'Course source ' + (index + 1) + '.mp4',
+                source_url: 'https://example.com/video-' + (index + 1),
+                source_type: 'video',
+                page_number: index + 1,
+              })),
+            }),
+            {
+              type: 'text',
+              text: 'A concise answer with several supporting sources.',
+            },
+          ],
+        },
+      ],
+    })
+
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}/threads/${thread.id}`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    const header = page.getByTestId('chat-header')
+    await expect(header).toBeVisible()
+    expect(
+      await header.evaluate(
+        (element) => element.scrollWidth - element.clientWidth
+      )
+    ).toBeLessThanOrEqual(1)
+    await selectChatMode(page, 'explainer', 'Explainer')
+
+    const composerInput = page.getByTestId('chat-composer-input')
+    await composerInput.fill(
+      Array.from(
+        { length: 8 },
+        (_, index) => `Expanded mobile composer line ${index + 1}`
+      ).join('\n')
+    )
+    await page
+      .getByTestId('chat-composer-attach-input')
+      .setInputFiles(testImageUpload())
+    await expect(page.getByTestId('chat-composer-attachment')).toBeVisible()
+
+    const viewport = page.getByTestId('chat-thread-viewport')
+
+    // Scroll instantly (bypassing the viewport's scroll-smooth behavior) so
+    // the measurement reads the settled position, not mid-animation.
+    await viewport.evaluate((element) => {
+      element.style.scrollBehavior = 'auto'
+      element.scrollTop = element.scrollHeight
+      element.style.scrollBehavior = ''
+    })
+
+    // Assert against the scroller fold, not only the composer box:
+    // boundingBox() reports layout rects across clip boundaries, so a card
+    // scrolled out of the viewport can numerically intersect the composer
+    // band. Fully scrolled down, the last source card must sit above the
+    // scroller's bottom edge, and the scroller itself must end above the
+    // expanded composer. The second check catches an accidental overlay even
+    // when the source card happens to remain above the viewport fold.
+    await expect(async () => {
+      const lastSource = page.getByTestId('chat-source-card').last()
+      await expect(lastSource).toBeVisible()
+      const [lastSourceBox, viewportBox, composerBox] = await Promise.all([
+        lastSource.boundingBox(),
+        viewport.boundingBox(),
+        page.getByTestId('chat-composer').boundingBox(),
+      ])
+      expect(lastSourceBox).not.toBeNull()
+      expect(viewportBox).not.toBeNull()
+      expect(composerBox).not.toBeNull()
+      expect(lastSourceBox!.y + lastSourceBox!.height).toBeLessThanOrEqual(
+        viewportBox!.y + viewportBox!.height - 8
+      )
+      expect(viewportBox!.y + viewportBox!.height).toBeLessThanOrEqual(
+        composerBox!.y + 1
+      )
+    }).toPass()
+
+    const screenshotPath = testInfo.outputPath(
+      'mobile-sources-and-composer.png'
+    )
+    await page.screenshot({
+      path: screenshotPath,
+      animations: 'disabled',
+    })
+    await testInfo.attach('Mobile sources and expanded composer', {
+      path: screenshotPath,
+      contentType: 'image/png',
+    })
   })
 
   test('Assistant message caption exposes a parseable ISO timestamp', async ({
@@ -2465,9 +3040,7 @@ test.describe('Chatbot Streamed Answer Metadata & Failure States', () => {
     })
     await visitChat(page)
 
-    const explainerOption = page.getByTestId('chat-mode-option-explainer')
-    await explainerOption.click()
-    await expect(explainerOption).toHaveAttribute('aria-pressed', 'true')
+    await selectChatMode(page, 'explainer', 'Explainer')
 
     await sendMessage(page, 'What does the caption say?')
 

@@ -1,3 +1,44 @@
+import { EventEmitter } from 'node:events'
+import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import { hatchetClient } from '@klicker-uzh/hatchet'
+import { prisma } from '@klicker-uzh/prisma'
+import {
+  type AnswerCollection,
+  type CatalogCollection,
+  CourseAuthType,
+  type Element,
+  ElementInstanceType,
+  ElementStackType,
+  ElementType,
+  ObjectAccess,
+  PermissionLevel,
+  type PrismaClient,
+  PublicationStatus,
+  ResponseCorrectness,
+  UserLoginScope,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
+import {
+  DisplayMode,
+  type ElementData,
+  type ElementInstanceOptions,
+  type ElementInstanceResults,
+} from '@klicker-uzh/types'
+import {
+  getInitialInstanceResults,
+  MISSING_CATALOG_COLLECTION_ID,
+  processElementData,
+  recomputeDerivedPermissions,
+} from '@klicker-uzh/util'
+import generatePassword from 'generate-password'
+import { createPubSub, Repeater } from 'graphql-yoga'
+import { Redis } from 'ioredis'
+import { v4 as uuidv4 } from 'uuid'
+import { vi } from 'vitest'
+import {
+  handleProcessCourseDuplication,
+  handleSweepStaleCourseDuplications,
+} from '@/services/courseDuplication.js'
 import {
   handleEndExpiredGroupActivity,
   handlePublishScheduledGroupActivity,
@@ -12,43 +53,6 @@ import {
   handlePublishScheduledMicroLearning,
 } from '@/services/microLearning.js'
 import { handlePublishScheduledPracticeQuiz } from '@/services/practiceQuizzes.js'
-import type { Hatchet } from '@hatchet-dev/typescript-sdk'
-import { hatchetClient } from '@klicker-uzh/hatchet'
-import { prisma } from '@klicker-uzh/prisma'
-import {
-  AnswerCollection,
-  CatalogCollection,
-  CourseAuthType,
-  Element,
-  ElementInstanceType,
-  ElementStackType,
-  ElementType,
-  ObjectAccess,
-  PermissionLevel,
-  PrismaClient,
-  PublicationStatus,
-  ResponseCorrectness,
-  UserLoginScope,
-  UserRole,
-} from '@klicker-uzh/prisma/client'
-import {
-  DisplayMode,
-  ElementData,
-  ElementInstanceOptions,
-  ElementInstanceResults,
-} from '@klicker-uzh/types'
-import {
-  getInitialInstanceResults,
-  MISSING_CATALOG_COLLECTION_ID,
-  processElementData,
-  recomputeDerivedPermissions,
-} from '@klicker-uzh/util'
-import { EventEmitter } from 'events'
-import generatePassword from 'generate-password'
-import { createPubSub, Repeater } from 'graphql-yoga'
-import { Redis } from 'ioredis'
-import { v4 as uuidv4 } from 'uuid'
-import { vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 import { createAnswerCollection } from '../src/services/resources.js'
 import { createCatalogCollection } from '../src/services/sharing.js'
@@ -137,6 +141,7 @@ export async function testInitialization(
     redisExec,
     redisAssessmentExec,
     prisma,
+    tasks: {} as ContextWithUser['tasks'],
   }
 
   // initialize tasks to be called
@@ -278,7 +283,30 @@ export async function testInitialization(
         return { success }
       },
     }),
+    processCourseDuplication: hatchet.task({
+      name: 'process-course-duplication',
+      fn: vi.fn(async ({ jobId }: { jobId: string }, executionCtx) => {
+        const success = await handleProcessCourseDuplication(
+          { jobId },
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      }),
+    }),
+    sweepStaleCourseDuplications: hatchet.task({
+      name: 'sweep-stale-course-duplications',
+      fn: vi.fn(async (_input: Record<string, never>, executionCtx) => {
+        const success = await handleSweepStaleCourseDuplications(
+          {},
+          hatchetCtx,
+          executionCtx
+        )
+        return { success }
+      }),
+    }),
   }
+  hatchetCtx.tasks = tasks
 
   // mock context with user including all required properties
   const userOneCtx: ContextWithUser = {

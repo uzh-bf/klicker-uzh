@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-14'
+timestamp: '2026-08-22'
 tags:
   - frontend
   - chat
@@ -36,6 +36,7 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 - `src/components/history-rail.tsx` and `src/lib/history-rail.ts` — the read-only active-path history projection, transcript anchors, and responsive navigation rail.
 - `src/components/ui/` — the app's own shadcn-style primitives (`tooltip.tsx`, `action-bar-button.ts`), separate from `@uzh-bf/design-system`.
 - `src/lib/sources/` — the doc_query source normalizer (`normalizeSources.ts`) and the display helpers shared by cards and citation previews (`sourceDisplay.ts`).
+- `src/components/source-preview-content.tsx` — the shared title, locator, excerpt, and optional navigation hint rendered inside source and citation tooltips.
 - `src/lib/config/` — shared vocabulary and prompt configuration: chat modes, reasoning efforts, MCP tool-name matching, starter suggestions, models, prompts, allowed tools.
 - `src/lib/markdown/remarkCitationMarkers.ts` — the remark plugin that rewrites `[n]` markers into citation links.
 - `src/lib/toolOutput.ts` — live-SSE tool-result normalization (the streaming half of the provider-error redaction boundary).
@@ -52,7 +53,10 @@ detach upstream generation from `req.signal` or guarantee completion after a
 client abort. The root layout also declares
 `interactiveWidget: 'resizes-content'` alongside `viewportFit: 'cover'`; this
 is required for Android keyboard resizing because the thread viewport is the
-only conversation scroller and the composer is positioned over it.
+only conversation scroller. The standalone composer remains in the thread's
+flex layout so expanded text, attachments, and errors reduce the viewport
+instead of covering its final content; only embedded mode keeps the compact
+overlay treatment.
 
 The OpenAI-compatible `provider.chat(...)` path uses an aligned AI SDK 7 patch
 train: `ai@7.0.52`, `@ai-sdk/openai@4.0.30`, and `@ai-sdk/mcp@2.0.25`, which
@@ -232,14 +236,16 @@ reasoning parts share one disclosure, adjacent tool calls share one group when t
 than one, and a single tool call keeps its direct result disclosure. Reasoning auto-opens only
 while active until the participant manually chooses an open state; that manual choice then wins.
 The source-card section is derived from completed `doc_query` tool results but
-stays hidden while the same assistant message is actively running without
-non-whitespace answer text. This keeps tool activity in stream order and
-prevents a result card from appearing as if it were the answer during the gap
-between tool completion and the model's next text step. If the turn becomes
-terminal before producing answer text, including an incomplete or aborted
-tool-only turn, valid completed sources are shown instead of being lost on
-reload. The source component still suppresses the section when normalization
-produces no sources.
+stays hidden for the full time the same assistant message is actively running,
+including after answer text begins. This lets the viewport follow the growing
+answer instead of jumping over it to a large source grid. When the turn becomes
+terminal, resize-driven bottom scrolling switches off and the section fades
+in. If the participant was following at the bottom, only the source heading is
+scrolled into view; a large grid never jumps directly to its final card. If the
+participant had scrolled up, their position is preserved. Terminal incomplete,
+aborted, and tool-only turns still show valid completed sources instead of
+losing them on reload. The source component suppresses the section when
+normalization produces no sources.
 The runtime render boundary is deliberately narrow: `RuntimeProvider` selects only the active
 thread's messages/running state and the actions it calls, while `Thread` renders its message rows
 through the assistant-ui 0.15 children renderer and passes the chatbot avatar through context. Runtime
@@ -255,13 +261,26 @@ an LLM key.
 
 The history rail is a derived navigation view over `activeThread.messages`, which is the current
 branch path reconstructed by `chatStore.switchToBranch`. It never reads `allMessages`, persists
-anything, or renders sibling branches. User and assistant message entries use the assistant-ui
-`data-message-id` boundary plus a rail-specific focus target; grouped reasoning, tool calls, and
-client error parts get deterministic part anchors from the message id and part identity. The desktop
-rail is a vertical `nav`; mobile collapses it into a horizontal, numbered control. Entry activation
-scrolls and focuses the matching transcript target, while a scroll spy highlights the entry at the
-current reading position. The projection normalizes running, partial, and error states so loading,
-aborted, and incomplete turns remain navigable without duplicating message rows.
+anything, or renders sibling branches. Adjacent user and assistant messages are projected into one
+turn landmark; user-only and assistant-only messages remain navigable as orphan turns. On desktop
+("md" and up) the rail is a vertical column of bounded ticks, one per turn (or per bounded turn
+range); each tick targets a stable message-root focus target and exposes the complete user message
+and assistant response in an on-demand hover/focus popover. On mobile the tick strip is replaced by
+a single 44px trigger button (current turn / total) that opens the same history dialog used by the
+desktop current tick — precision tick targets do not meet touch guidelines, so the dialog is the
+only mobile navigation surface. Reasoning, tool calls, and client error parts stay in the transcript
+and influence the turn status, but do not create rail landmarks or part anchors. Details appear only
+on hover or focus.
+Entry activation scrolls and focuses the matching transcript target, while a token-guarded
+programmatic-scroll lock prevents the scroll spy from changing the highlighted turn mid-navigation.
+On mobile, activation also preserves the trigger's top gutter so the selected message is not
+covered by the history control.
+The projection normalizes running, partial, and error states so loading, aborted, and incomplete
+turns remain navigable without duplicating message rows; a persisted `chat-stopped` data part maps
+its turn to the `partial` status. Tick and dialog labels go through `toHistoryRailPlainText`
+(`src/lib/history-rail.ts`), which strips Markdown, collapses whitespace, and truncates to 100
+characters, so assistive tech never reads raw Markdown syntax; the full Markdown text remains
+available in the hover/focus popover body.
 
 ## Participant entry points (course page)
 
@@ -291,7 +310,9 @@ record for the course. Each button opens the existing PWA deep-link route
 when needed, runs `ensureParticipation` server-side, and then 302-redirects to
 `chat.klicker.uzh.ch/<chatbotId>`. The public GraphQL shape is `ChatbotPublic`
 (`id`, `name`, `description`, `avatar`) and matches the v3-ai blueprint so a
-later v3-ai sync reconciles without a diff.
+later v3-ai sync reconciles without a diff. That sync is sequenced by
+[ADR 0007](./adr/0007-reintegrate-v3-ai-behind-feature-flags.md): v3 merges into
+v3-ai first, and v3-ai comes back into v3 with its surfaces flagged default-off.
 
 Initial thread and message loading uses skeleton rows and message-shaped placeholders, and an
 empty running assistant message shows a localized thinking indicator. Send/stream failures,
@@ -303,9 +324,10 @@ primary action. Students must choose one of those two explicit outcomes. Stream/
 inside a message render as a styled callout, not inline markdown:
 `useChatResponse` pushes a `{ type: 'data', name: 'chat-error', data: { errorLabel, message } }`
 content part (assistant-ui's official `DataMessagePart` shape) and `message-parts.tsx` renders it
-as `ChatErrorPart` (`data-cy="chat-message-error"`). The convention is client-side only — data
-parts never persist and `serializeMessageContent` excludes them from the model-visible history,
-so an error label can never leak into a follow-up prompt. A `hasStreamError` guard keeps the
+as `ChatErrorPart` (`data-cy="chat-message-error"`). The error convention is client-side only —
+`chat-error` parts never persist (the `chat-stopped` marker under Client-state gotchas is the
+persisted exception) and `serializeMessageContent` excludes data parts from the model-visible
+history, so an error label can never leak into a follow-up prompt. A `hasStreamError` guard keeps the
 partial text from being re-pushed alongside the error part. Truncated responses append the
 localized `chat.response.truncated` notice, and a failed image-attachment read surfaces the
 typed `AttachmentAdapterError` from `imageAttachmentAdapter.ts` as a localized composer error
@@ -344,11 +366,13 @@ MCP `tool-result` envelopes with `output.isError === true` persist only the gene
 error bodies into `ChatMessage.content`. The live SSE path applies the same boundary through
 `src/lib/toolOutput.ts:normalizeLiveToolOutput` before a result reaches `ToolFallback`.
 
-The mobile layout exports `viewportFit: 'cover'`, reserves the bottom safe area for the
-composer, wraps Markdown tables in horizontal scrolling, and makes the mode pills horizontally
-scrollable. Embedded mode shows the loading state and compact credit/model information through
-the shared settings components. Direct thread URL activation resynchronizes the thread's stored
-chat mode once per activation, without overriding a mode manually chosen afterward.
+The mobile layout exports `viewportFit: 'cover'`, keeps the standalone composer
+in normal layout with bottom safe-area padding, wraps Markdown tables in
+horizontal scrolling, and uses a compact mode dropdown in an overflow-safe
+header grid. Embedded mode shows the loading state and compact credit/model
+information through the shared settings components. Direct thread URL
+activation resynchronizes the thread's stored chat mode once per activation,
+without overriding a mode manually chosen afterward.
 
 Switching mode mid-thread affects **only the turns sent afterwards**, and the choice is not
 persisted until the next send: a thread's stored mode is `lastChatMode`, derived from its most
@@ -382,10 +406,12 @@ long-name regression case lives in `test/mcp-clients.test.ts`.
 
 `normalizeSourcesFromParts` is deliberately forgiving and never throws: it unwraps the raw MCP
 `CallToolResult` envelope (`{ content: [{ type: 'text', text: '<json>' }] }`), a JSON string, or
-an already-parsed object; it treats the pipeline's literal `"N/A"` as absent; it dedupes by
-file/page/url and numbers what survives **1..N in first-appearance order across every doc_query
-call in one message**, capped at `MAX_SOURCES`. Two rules follow from that numbering and are easy
-to break independently:
+an already-parsed object. FastMCP may put the JSON payload in a `structuredContent.result` string;
+the normalizer unwraps that compatibility layer before applying the same rules. It treats the
+pipeline's literal `"N/A"` as absent; it dedupes by file/page/url and normalized video range
+(`startSec`/`endSec`), so citations for different video ranges remain separate, then numbers what
+survives **1..N in first-appearance order across every doc_query call in one message**, capped at
+`MAX_SOURCES`. Two rules follow from that numbering and are easy to break independently:
 
 Chatbot MCP configs are optional unless their existing `parameters` JSON contains the reserved
 runtime policy `{ "required": true, "toolAlias": "<name>" }`. A strict config must allow exactly
@@ -416,7 +442,7 @@ punctuation after it must not wrap alone either. Two mechanisms enforce that and
 needed: `splitCitationMarkers` strips spaces/tabs directly before a marker (newlines survive —
 a soft break is content), and `CitationChip` emits a U+2060 WORD JOINER on **both** sides of
 the chip (`CITATION_CHIP_JOINER`, exported from `citation-chip.tsx`), because an atomic inline
-like the chip's button is a legal break point under UAX #14 even with no whitespace around it.
+like the chip's inline element is a legal break point under UAX #14 even with no whitespace around it.
 LB11 makes the joiner glue only what is immediately adjacent — it cannot reach past a space
 (LB18 still allows the break after a space), so a symmetric joiner welds `word[1].` into one
 unit and adjacent chip runs like `[1][2]` into another, while normal inter-word wrapping stays
@@ -428,23 +454,28 @@ The line under a source's name is per-type, chosen by `getSourceSecondaryLine` i
 documents lead with the page (`p. 12` / `S. 12`, plus the publisher's own label when distinct)
 and fall back to a cleaned display URL when they carry no page; web links always lead with the
 display URL (host kept visible, scheme/`www.`/trailing slash stripped, middle-truncated); videos
-lead with a `12:34`-style position; images keep their type label. **doc_query has no timestamp
-field** — its source shape is `source_url`/`source_type`/`file_name`/`page_number`/
-`labeled_page_number` — so a video position can only come from a clock- or `1m30s`-valued
-`labeled_page_number` or from a `t`/`start`/`time_continue`/`#t=` parameter on the source URL
-(`getSourceTimestamp`). A bare numeric `labeled_page_number` remains a publisher page label,
-never seconds; bare seconds are accepted only from URL time parameters, where their meaning is
-unambiguous. Other labels such as `Kapitel IV` also remain page text. A dedicated timestamp
-field is phase-2 work in the doc-query service. Each card's index badge mirrors the inline chip —
+lead with a `12:34`-style position; images keep their type label. doc_query video results now carry
+structured `start_sec` and optional `end_sec` values in the first chunk, plus a clock-valued
+`labeled_page_number` compatibility field. The source normalizer maps those to `startSec`/`endSec`
+and prefers the structured start for the card and citation preview. Legacy results remain
+supported: a video position can still come from a clock- or `1m30s`-valued `labeled_page_number`
+or from a `t`/`start`/`time_continue`/`#t=` parameter on the source URL (`getSourceTimestamp`).
+A bare numeric `labeled_page_number` remains a publisher page label, never seconds; other labels
+such as `Kapitel IV` also remain page text. Each card's index badge mirrors the inline chip —
 a bare digit in a small `bg-primary/10` rounded square (`sources-section.tsx`), not a
 zero-padded `01` — so the number on the card and the `[n]` in the answer read as the same
-token. Card titles clamp at two lines with the
-full name in the `title` attribute — and note that `line-clamp-2` needs `display: -webkit-box`,
-so adding `block` alongside it silently disables the clamp. Document cards lay out with
-`repeat(auto-fit, minmax(min(230px, 100%), 1fr))`: `auto-fit` (not `auto-fill`) collapses empty
-tracks so fewer cards stretch across the whole row and only wrap when they genuinely no longer
-fit, and the `min(230px, 100%)` floor keeps a track from forcing horizontal overflow in
-containers narrower than 230px (embedded mode).
+token. Cards show only the title and locator by default; hover or keyboard focus opens a
+shared tooltip with the full title and excerpt when one exists. Inline citation previews use the
+same content and add the existing navigation hint. These are passive Radix tooltips, so touch
+behavior remains compact cards plus the existing URL and in-page citation actions. Card titles
+clamp at two lines — and note that `line-clamp-2` needs `display: -webkit-box`, so adding `block`
+alongside it silently disables the clamp. All source types share one
+`repeat(auto-fit, minmax(min(230px, 100%), 1fr))` grid: `auto-fit` (not
+`auto-fill`) collapses empty tracks so fewer cards stretch across the whole row
+and only wrap when they genuinely no longer fit. Equal-width tracks keep mixed
+document/media results aligned, and the `min(230px, 100%)` floor keeps a track
+from forcing horizontal overflow in containers narrower than 230px (mobile and
+embedded mode).
 
 The activity chip's four states come from the pure `getDocQueryChipState` in `tool-fallback.tsx`.
 "No results" is claimed only for a payload that actually **parsed**: a cancelled call leaves the
@@ -491,14 +522,14 @@ needs a live key the devcontainer does not carry.
 
 Two recurring traps in this app's strings:
 
-- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the own-property known-mode predicate and `formatModeLabel` (used by the thread-list mode subtitle; unknown modes fall back to their capitalized raw name), while the older call sites still translate inline alongside their icon lookups; `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. The mode switcher's tooltip — a Radix popover, not a native `title` — uses the same localized label, never the English-only registry description. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value. When a model registry or LiteLLM alias introduces a new effort id, add it to `KNOWN_REASONING_EFFORTS` and to both message files in the same change — otherwise the raw-name fallback leaks an English id (`xhigh` shipped that way and read "Xhigh" next to Niedrig/Mittel/Hoch until it was fixed, and `none` — offered by `gpt-5.1` and `gpt-5.5` in prd, by `gpt-5.1` only in stg, and by no model in the local default registry — read "None" for the same reason). The local `DEFAULT_MODEL_REGISTRY` and the deployed registries in `deploy/env-uzh-{stg,prd}/values.yaml` only overlap partly — local has a `gpt-5.6-luna` the deployments do not ship, and the deployments offer effort ids (`none`, `minimal`) that no local model does — so check both before assuming a browser pass covered every effort id.
+- **Per-chatbot vocabulary is free-form**, so chat modes (`systemPrompts` keys) and reasoning efforts are `string`, not unions. Only the well-known values get a translation; anything else falls back to its raw name. `src/lib/config/modes.ts` holds the own-property known-mode predicate and `formatModeLabel` (used by the mode dropdown and thread-list subtitle; unknown modes fall back to their capitalized raw name), while `src/lib/config/reasoning.ts` exports `formatReasoningEffort` outright, since its three call sites want nothing but the label and had already drifted apart once. The mode dropdown shows the same localized label and description in its Radix menu, never an English-only registry description for a known mode. Either way, go through those modules so the selector and the caption under an answer cannot end up with different words for the same value. When a model registry or LiteLLM alias introduces a new effort id, add it to `KNOWN_REASONING_EFFORTS` and to both message files in the same change — otherwise the raw-name fallback leaks an English id (`xhigh` shipped that way and read "Xhigh" next to Niedrig/Mittel/Hoch until it was fixed, and `none` — offered by `gpt-5.1` and `gpt-5.5` in prd, by `gpt-5.1` only in stg, and by no model in the local default registry — read "None" for the same reason). The local `DEFAULT_MODEL_REGISTRY` and the deployed registries in `deploy/env-uzh-{stg,prd}/values.yaml` only overlap partly — local has a `gpt-5.6-luna` the deployments do not ship, and the deployments offer effort ids (`none`, `minimal`) that no local model does — so check both before assuming a browser pass covered every effort id.
 - **ICU plurals must be selected on the displayed number.** `formatCredits(1.2)` renders `1` but `Intl.PluralRules.select(1.2)` is `other`, so passing the raw float prints "1 credits". Feed `count` the rounded value the user actually sees.
 
 ## Message feedback and Langfuse
 
 Participants rate assistant answers through `ChatMessage.rating` (`ChatMessageRating` enum, nullable — null means no vote; [ADR 0002](./adr/0002-message-feedback-as-a-rating-field.md) records why a field on the message beat a separate feedback entity). `POST …/threads/[threadId]/messages/[messageId]/feedback` scopes its lookup by participant _and_ chatbot and reports someone else's message as 404, not 403, so the endpoint cannot be used to probe which message ids exist.
 
-A failed rating request (`chatStore.rateMessage`) reverts the optimistic vote **silently** — no toast, no inline error. This is deliberate: `@uzh-bf/design-system` exports a `toast`/`Toaster` primitive used by `frontend-pwa`/`frontend-manage`, but `apps/chat` neither mounts a `<Toaster/>` nor imports `toast` anywhere, so wiring one in just for this rare, low-stakes failure was judged out of scope for a P3 polish pass. Revisit if a `<Toaster/>` provider gets added for another reason. Rapid votes are serialized per thread/message, not globally: `src/stores/ratingRequestCoordinator.ts` applies each choice optimistically, starts each request after the previous same-message request settles, and lets only the latest failed request roll the visible value back to the last confirmed database rating. The action-bar buttons intentionally bypass assistant-ui's feedback adapter so clicking the active vote can send `rating: null` and retract it without remounting the conversation.
+A failed rating request (`chatStore.rateMessage`) rolls the optimistic vote back and surfaces an inline `role="alert"` notice next to the rating buttons ("Rating could not be saved."), which clears on the next attempt. There is still no toast — `apps/chat` mounts no `<Toaster/>` — the inline alert replaced the earlier deliberate silent revert because a silent rollback is invisible to screen-reader users and indistinguishable from a lost click for everyone else. Rapid votes are serialized per thread/message, not globally: `src/stores/ratingRequestCoordinator.ts` applies each choice optimistically, starts each request after the previous same-message request settles, and lets only the latest failed request roll the visible value back to the last confirmed database rating. The action-bar buttons intentionally bypass assistant-ui's feedback adapter so clicking the active vote can send `rating: null` and retract it without remounting the conversation.
 
 Ratings are currently **write-only**: nothing in the repository reads them back. There is no lecturer-facing view and no GraphQL field or aggregate over `ChatMessage.rating`, so votes accumulate in the database for a consumer that does not exist yet — do not cite them as a feedback loop that lecturers can act on.
 
@@ -510,6 +541,8 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 
 - **Zustand async actions must set fallback state in `catch`**, not just log — otherwise the UI hangs in loading state on network errors.
 - **Cancel persistence lives in `onAbort`, not `onEnd`.** The chat route's `onEnd` returns early after an abort (ai@7 still flushes it when ≥1 step completed, and letting it run overwrote the partial answer and rewrote its credits). `onAbort` persists the streamed partial text/reasoning and charges the summed per-step cost; when nothing streamed (a pure tool-call first step), it persists the completed steps' tool calls instead — `partialContent` already contains completed steps' text, so the two content sources are mutually exclusive by design.
+- **Stopped turns carry a persisted `chat-stopped` data marker, not a string.** `buildAbortedAssistantContent` (`src/lib/server/persistedAssistantContent.ts`) always ends aborted content with `{ type: 'data', name: 'chat-stopped', data: {} }` (marker-only when nothing streamed), so a reloaded thread can tell a stopped turn from a completed one without any user-facing text in the database; the client renders it via `ChatStoppedPart` (localized notice plus a retry that uses the assistant-ui reload path, so retrying creates a sibling version instead of a duplicate turn), `isStoppedWithoutText` (`message-parts-state.ts`) switches marker-only turns to error-style chrome (no rating, no reload), and the history rail maps the marker to the `partial` status. On the client, the `AbortError` branch in `useChatResponse` writes the stopped turn into **both** `messages` and `allMessages` one macrotask after assistant-ui's `cancelRun` resync (which itself defers via `setTimeout(0)`) — an earlier write is clobbered by that resync. Empty-text assistant turns are filtered out of outgoing request bodies so a marker-only turn never reaches the model as an empty assistant message. Known edge: a zero-content abort can outrun server persistence entirely, so its in-session marker-only turn has no server row and disappears on reload.
+- **Run-state announcements come from a dedicated sr-only live region** in `thread.tsx`, driven by a `lastRunOutcome` store field rather than `isRunning` alone — cancel clears `isRunning` before the abort settles, so without the outcome field a stop would announce as a completion. The thinking indicator deliberately carries no `role="status"` to avoid double announcements.
 - **Edited-message image hydration** needs the persisted source message id (`attachmentSourceMessageId`) distinct from the fresh local message id (`src/hooks/useThreadManagement.ts`, `src/stores/chatStore.ts`).
 - **`ComposerPrimitive.AttachmentDropzone` must wrap both normal and edit composer roots** — it owns the drag/drop capture that prevents native browser file navigation (`src/components/thread.tsx`).
 - **Login redirects**: `src/app/noLogin/page.tsx` must pass an **absolute** chat URL as the PWA login `redirect_to`; a relative path makes the PWA redirect to its own domain and 404.
@@ -537,9 +570,9 @@ does not validate retrieval quality or a deployed MCP server.
 
 Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. The runner is `environment: 'node'` with no jsdom/testing-library, so component behavior is tested by extracting the decision logic into pure modules next to the component (`message-parts-state.ts`, `thread-list-state.ts`) — follow that pattern rather than adding a DOM environment. The whole suite shares **one fork** (`singleFork: true`), so a `vi.stubGlobal` is process-global: the config sets `unstubGlobals: true`, but that only restores before each _test_ — the next file's module **import** still sees whatever the previous file's last test left stubbed (a leaked `window`/`URL` once broke zustand-persist feature detection and `new URL` in unrelated files, order-dependently). Any file stubbing environment-shaped globals (`window`, `URL`, `document`) must also clean up itself with `afterEach(() => vi.unstubAllGlobals())`. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts`).
 
-`history-rail.test.ts` pins active-path ordering, stable message/tool/error anchors, reasoning-group collapse, duplicate tool-call suppression, and running/partial/error states. Browser verification must additionally exercise desktop and mobile entry activation, focus, current-entry highlighting, and EN/DE rail labels; the seeded local app can prove the navigation and error states without an upstream model key.
+`history-rail.test.ts` pins active-path order, adjacent user/assistant pairing, orphan messages, complete text, stable message anchors, exclusion of reasoning/tool/error part landmarks, and running/partial/error states. Browser verification must additionally exercise desktop tick activation, the mobile history-trigger/dialog flow, complete-text popovers, focus, current-entry highlighting, rapid navigation, and EN/DE rail labels; the seeded local app can prove the navigation and error states without an upstream model key.
 
-The `Chatbot Source Citations` block in that spec exercises the citation pipeline against real persisted tool-call parts: card ordering and count, dedupe across two doc_query calls, a valid `[n]` rendering as a button while an out-of-range marker stays literal, click-scroll without navigation, all four activity-chip labels with their icon gating, the composer hint's standalone/embedded gate, and the message timestamp. Seed tool results in the raw MCP envelope shape (`result: { content: [{ type: 'text', text: '<json>' }], isError }`) — that is what production sends, and `convertApiMessageToMessage` hoists `isError` to the part. Put more than one tool-call part on a single message only when you mean to: `message-parts.tsx` wraps two or more adjacent ones in a collapsed group that a test must expand first.
+The `Chatbot Source Citations` block in that spec exercises the citation pipeline against real persisted tool-call parts: card ordering and count, dedupe across two doc_query calls, a valid `[n]` rendering as a citation chip/link while an out-of-range marker stays literal, compact cards with hover/focus previews for cards and inline citations, click-scroll without navigation, all four activity-chip labels with their icon gating, the composer hint's standalone/embedded gate, and the message timestamp. Seed tool results in the raw MCP envelope shape (`result: { content: [{ type: 'text', text: '<json>' }], isError }`) — that is what production sends, and `convertApiMessageToMessage` hoists `isError` to the part. Put more than one tool-call part on a single message only when you mean to: `message-parts.tsx` wraps two or more adjacent ones in a collapsed group that a test must expand first.
 
 The chat package uses Turbopack for development, test, and production builds
 (`apps/chat/package.json:scripts`). For a production-readiness gate, run the package check,

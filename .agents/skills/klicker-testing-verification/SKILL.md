@@ -9,16 +9,23 @@ Facts about the test landscape: [docs/testing.md](../../../docs/testing.md). Thi
 
 ## Route the change
 
-| You changed…                                 | Run                                                                                                                                                                                         |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pure logic in grading/util/export/word-cloud | `pnpm --filter @klicker-uzh/<pkg> test` — safe with no services                                                                                                                             |
-| Learning analytics engine contract           | Run `test`, `check`, and `build` for `@klicker-uzh/analytics-engine-contract`; no Hatchet, database, services, or browser are needed                                                        |
-| Chat app logic (`apps/chat`)                 | `pnpm --filter @klicker-uzh/chat test:run` — the package has no plain `test` script; CI runs the suite via `test-chat.yml`, but still run it locally before claiming verification           |
-| `packages/graphql` services/schema           | `pnpm --filter @klicker-uzh/graphql test:local` — one-command bootstrap (real Postgres + Redis + Hatchet); serialized, don't parallelize                                                    |
-| Auth adapter against shared Prisma client    | `pnpm --filter @klicker-uzh/auth test:prisma-adapter` — guarded, disposable local PostgreSQL only                                                                                           |
-| UI or user flows                             | e2e — use `klicker-playwright-e2e`                                                                                                                                                          |
-| React component appearance/behavior only     | there is **no component-test layer** — verify in the browser (below) and rely on e2e if a flow covers it                                                                                    |
-| Office Add-in source, build, or manifest     | Run its `check`, `lint`, `test`, `build:docs`, `verify:docs`, and `validate` scripts; use a stubbed Office API for browser UI checks and sideload the manifest in PowerPoint before release |
+| You changed…                                                                      | Run                                                                                                                                                                                         |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pure logic in grading/util/export/word-cloud and feature-flags core/Node adapters | `pnpm --filter @klicker-uzh/<pkg> test` — safe with no services                                                                                                                             |
+| Learning analytics engine contract                                                | Run `test`, `check`, and `build` for `@klicker-uzh/analytics-engine-contract`; no Hatchet, database, services, or browser are needed                                                        |
+| Chat app logic (`apps/chat`)                                                      | `pnpm --filter @klicker-uzh/chat test:run` — the package has no plain `test` script; CI runs the suite via `test-chat.yml`, but still run it locally before claiming verification           |
+| `packages/graphql` services/schema                                                | `pnpm --filter @klicker-uzh/graphql test:local` — one-command bootstrap (real Postgres + Redis + Hatchet); serialized, don't parallelize                                                    |
+| Auth adapter against shared Prisma client                                         | `pnpm --filter @klicker-uzh/auth test:prisma-adapter` — guarded, disposable local PostgreSQL only                                                                                           |
+| React/browser feature-flag behavior                                               | browser verification with `npx agent-browser@0.32.2`; use e2e when a user flow covers it                                                                                                    |
+| UI or user flows                                                                  | e2e — use `klicker-playwright-e2e`                                                                                                                                                          |
+| React component appearance/behavior only                                          | there is **no component-test layer** — verify in the browser (below) and rely on e2e if a flow covers it                                                                                    |
+| Office Add-in source, build, or manifest                                          | Run its `check`, `lint`, `test`, `build:docs`, `verify:docs`, and `validate` scripts; use a stubbed Office API for browser UI checks and sideload the manifest in PowerPoint before release |
+
+For the manage-list `All` page size, the focused browser evidence must cover
+the finite-to-All-to-50 state transition and explicit selection. A 200-record
+fixture is a bounded acceptance probe: verify the rendered count, batch-modal
+usability, and returned mutation count; do not infer production performance or
+atomicity from it.
 
 Never run root `pnpm run test:run` blind — the graphql vitest config forces `pool: forks, singleFork: true` (serialized specs sharing DB state).
 
@@ -43,11 +50,17 @@ when the bug concerns remounts or flicker. A passing final-text assertion alone
 does not prove that the conversation stayed mounted.
 
 For the active-branch chat history rail, keep the projection contract in
-`apps/chat/test/history-rail.test.ts` and verify navigation in the browser at
-desktop and mobile widths. The browser check must cover click/focus behavior,
-current-entry highlighting, and the matching EN/DE labels; a local environment
-without an upstream model key can still prove the rail's error-state rendering
-and navigation, but not model-backed reasoning or tool content.
+`apps/chat/test/history-rail.test.ts`: adjacent user/assistant messages form one
+turn, orphan messages remain standalone, complete text is preserved for the
+popover, and reasoning/tool/error parts never become rail landmarks. Verify
+navigation in the browser at desktop and mobile widths. The browser check must
+cover the bounded desktop tick rail ("md" and up) and the mobile history-trigger
+dialog flow below "md", complete-text hover/focus popovers that are
+hidden otherwise, click/focus behavior, current-entry highlighting, rapid
+second-target navigation, collapsed tool groups remaining closed, and the
+matching EN/DE labels; a local environment without an upstream model key can
+still prove the rail's error-state rendering and navigation, but not
+model-backed reasoning or tool content.
 
 For chat Markdown or KaTeX streaming changes, `apps/chat/src/components/markdown-text.tsx`
 uses the dependency-free `src/lib/markdown/streamingMath.ts` scanner to hide only unmatched
@@ -103,10 +116,17 @@ the prompt recorded in `AGENTS.md`. Require a completed
 `KB_doc_query` chip, the `KLICKER_LOCAL_MCP_OK` marker, and the synthetic source
 card in a non-empty final answer both before and after reloading the thread.
 During the live stream, a completed tool chip may precede answer text, but the
-source section must stay absent while the assistant is still running and has
-not emitted a non-whitespace answer delta. A terminal incomplete or aborted
+source section must stay absent for the assistant message's entire running
+state, including after answer text begins. A terminal incomplete or aborted
 tool-only turn must still expose valid completed sources after reload.
 Use direct `GPT-5.6 Luna` only to isolate the router from the model/tool path.
+
+For source citation presentation changes, the browser pass must verify that
+source cards keep the source name and locator visible while excerpts stay in
+hover/focus tooltips, and that inline citation chips expose the same preview
+content plus their existing navigation hint. Keep touch verification scoped to
+the compact card and existing URL/in-page citation actions because Radix
+tooltips do not provide a separate tap disclosure contract.
 
 ## Pre-PR verification checklist
 
@@ -115,9 +135,11 @@ Every item, in order; paste evidence (command + tail of output, screenshots) int
 1. `pnpm run check:all` — typecheck + format + lint + syncpack + AGENTS.md validation + Prisma-sync validation (same as pre-commit hook). The Prisma package check regenerates its client before typechecking, so it is safe from a clean checkout.
 2. `pnpm run build` — same as pre-push hook; also refreshes generated artifacts.
 3. Targeted tests per the routing table above — quote failures exactly; never delete/weaken a test to pass.
-4. **Codegen artifacts committed** if any `.graphql` op or schema changed (`git status` must be clean after `pnpm --filter @klicker-uzh/graphql generate`).
+4. **Codegen verified** if any `.graphql` op or schema changed: run `pnpm --filter @klicker-uzh/graphql generate`, confirm the ignored typed documents and persisted-query maps exist, and confirm the tracked `packages/graphql/src/public/schema.graphql` has no unstaged generated diff.
 5. **i18n pair check** if UI text changed: the key exists in BOTH `packages/i18n/messages/de.ts` and `en.ts`.
 6. **Browser evidence for UI changes** — open the changed pages with `npx agent-browser@0.32.2` (never bare `agent-browser`), log in with delegated/test credentials (AGENTS.md), capture before/after screenshots. "The logic looks correct" does not count.
+
+For Hatchet deployment endpoint changes, render the target environment's Helm chart and inspect every generated `HATCHET_API_URL`. Separately confirm that the configured HTTP API service and the secret-backed gRPC host belong to the same active Hatchet installation. A connected worker validates only gRPC; it does not prove that programmatic scheduled runs can reach the HTTP API.
 
 For TypeScript or other compiler/toolchain upgrades, root `check:all` includes the Playwright compiler through its package `check` script. Also run `pnpm run build:test` and the Docs production build; those surfaces remain outside the root check. Use direct package `tsc --noEmit -p tsconfig.json` commands only to isolate a Playwright failure. When a check config extends a declaration-emitting config, verify the resolved compiler options: `noEmit` does not disable declaration portability analysis, so the check may also need explicit `declaration: false` and `declarationMap: false`. Incremental checks must use a different `tsBuildInfoFile` from the emitting build.
 

@@ -1,5 +1,11 @@
 export default {
   chat: {
+    common: {
+      opensInNewTab: '(öffnet in neuem Tab)',
+    },
+    a11y: {
+      skipToContent: 'Zum Inhalt springen',
+    },
     modes: {
       switcherLabel: 'Chat-Modus',
       tutor: 'Tutor',
@@ -58,6 +64,8 @@ export default {
       toggleSidebar: 'Seitenleiste umschalten',
       conversationsLabel: 'Konversationen',
       logoAlt: 'Klicker-Logo',
+      copyright:
+        '©{year} DF Teaching Center, Department of Finance, University of Zurich. Alle Rechte vorbehalten.',
     },
     assistant: {
       participationRequiredTitle: 'Kurszugang erforderlich',
@@ -91,11 +99,11 @@ export default {
       itemRange: 'Einträge {start}-{end} von {total}',
       openHistory: 'Gesamten Verlauf öffnen',
       closeHistory: 'Gesamten Verlauf schliessen',
+      turn: 'Gesprächsrunde',
       you: 'Du',
       assistant: 'Assistent',
-      reasoning: 'Denkprozess',
-      tool: 'Tool: {tool}',
-      toolFallback: 'Tool-Schritt',
+      noText: 'Kein Text',
+      noResponse: 'Noch keine Antwort',
       inProgress: 'In Bearbeitung',
       partial: 'Unvollständige Antwort',
       error: 'Fehler',
@@ -148,15 +156,22 @@ export default {
       deleteChat: 'Chat löschen',
       deleteConfirm: 'Löschen?',
       deleteConfirmAria: 'Löschen dieses Chats bestätigen',
+      deleteArmedStatus:
+        'Bestätigung erforderlich: Betätige Löschen erneut, um diesen Chat zu löschen.',
       emptyState: 'Starte Deine erste Konversation mit einer Nachricht.',
       loadError: 'Deine Chats konnten nicht geladen werden.',
       retry: 'Erneut versuchen',
       loading: 'Deine Chats werden geladen...',
     },
     thread: {
+      viewportLabel: 'Gesprächsverlauf',
       scrollToBottom: 'Nach unten scrollen',
       loading: 'Die Konversation wird geladen...',
       thinking: 'Antwort wird vorbereitet …',
+      runStarted: 'Antwort wird generiert …',
+      runCompleted: 'Antwort abgeschlossen.',
+      runStopped: 'Antwort gestoppt.',
+      runFailed: 'Antwort fehlgeschlagen.',
       welcomeTitle: 'Willkommen!',
       welcomeTo: 'Du chattest mit {chatbot}.',
       welcomeSubtitle: 'Wähle einen Einstieg oder schreibe Deine eigene Frage.',
@@ -191,6 +206,8 @@ export default {
       retry: 'Erneut versuchen',
       rateUp: 'Hilfreiche Antwort',
       rateDown: 'Keine hilfreiche Antwort',
+      ratingError: 'Bewertung konnte nicht gespeichert werden.',
+      stoppedNotice: 'Du hast diese Antwort gestoppt.',
       toolCallsGroupLabel:
         '{count, plural, one {1 Tool-Aufruf} other {{count} Tool-Aufrufe}}',
     },
@@ -708,6 +725,12 @@ export default {
         'Diese Option erzeugt eine nicht-nummerierte Liste. Um neue Punkte zu erstellen, fügen Sie einfach nach einem bestehenden Element eine neue Zeile ein. Um zu Standard-Text zurückzukehren, drücken Sie diesen Knopf erneut.',
       image:
         'Wählen Sie diese Einstellung, um ein Bild einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden.',
+      video: 'Binden Sie ein YouTube- oder Kaltura-Video ein.',
+      videoUrl: 'YouTube- oder Kaltura-URL',
+      videoUrlPlaceholder: 'YouTube- oder Kaltura-Video-URL einfügen',
+      videoUrlInvalid:
+        'Geben Sie eine gültige YouTube- oder Kaltura-Video-URL ein.',
+      insertVideo: 'Video einfügen',
       latex:
         'Wählen Sie diese Einstellung, um eine LaTeX-Formel inline einzubinden. Benutzen Sie dieselbe Schreibweise, um Formeln in Antortmöglichkeiten einzubinden.',
       latexCentered:
@@ -1194,6 +1217,27 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createProfileFailed:
         'Leider konnte Ihr Konto nicht erstellt oder verknüpft werden. Bitte überprüfen Sie Ihre Eingaben und versuchen Sie es erneut.',
       editProfileSuccess: 'Ihr Profil wurde erfolgreich aktualisiert.',
+      dataUseTitle: 'Forschung und Learning Analytics',
+      dataUseDescription:
+        'Diese Einstellungen gelten für Dein gesamtes KlickerUZH-Konto. Du kannst sie jederzeit ändern.',
+      dataUseLoadFailed:
+        'Deine Einstellungen zur Datennutzung konnten nicht geladen werden. Bitte versuche es erneut.',
+      researchConsentTitle: 'Forschung',
+      researchConsentDescription:
+        'Ja erlaubt, dass künftige Forschungsexporte alle für Dein Konto gespeicherten Daten enthalten. Nein schliesst Deine Daten von künftigen Forschungsexporten aus. Wenn Du diese Einstellung wieder aktivierst, können bereits gespeicherte Daten wieder einbezogen werden. Bereits erstellte Forschungsexporte werden nicht zurückgerufen.',
+      researchConsentSaved: 'Deine Forschungseinstellung wurde gespeichert.',
+      researchConsentFailed:
+        'Deine Forschungseinstellung konnte nicht gespeichert werden. Bitte lade die Seite neu, bevor Du es erneut versuchst.',
+      learningAnalyticsConsentTitle: 'Learning Analytics',
+      learningAnalyticsConsentDescription:
+        'Ja erlaubt KlickerUZH, Deine späteren Aktivitäten für individuelle Learning Analytics zu nutzen. Nein schliesst Dich sofort aus. Bereits erstellte individuelle Learning-Analytics-Daten werden beim nächsten erfolgreichen nächtlichen Verarbeitungslauf gelöscht. Aggregierte Ergebnisse werden bei ihrer nächsten regulären Neuberechnung aktualisiert. Wenn Du diese Einstellung wieder aktivierst, werden nur spätere Aktivitäten verwendet; frühere Aktivitäten werden nicht nachträglich einbezogen.',
+      learningAnalyticsConsentSaved:
+        'Deine Learning-Analytics-Einstellung wurde gespeichert.',
+      learningAnalyticsConsentFailed:
+        'Deine Learning-Analytics-Einstellung konnte nicht gespeichert werden. Bitte lade die Seite neu, bevor Du es erneut versuchst.',
+      dataUseCanonicalDataNotice:
+        'Diese Einstellungen löschen weder Dein Konto noch Kursteilnahmen, Eingaben oder Antworten.',
+      dataUsePrivacyPolicy: 'Datenschutzerklärung lesen.',
       achievements: 'Errungenschaften',
       myProfile: 'Mein Profil',
       createProfile: 'Profil erstellen',
@@ -1388,6 +1432,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       identitySourceLabel: 'Verifizierte Identitätsquelle',
       identitySourceCourseInvitation:
         'E-Mail-Adresse aus der angenommenen Assessment-Kurseinladung',
+      identitySourceEduId: 'SWITCH edu-ID',
       achievedPointsLabel: 'Erreicht',
       availablePointsLabel: 'Verfügbar',
       performanceInsightsTitle: 'Peer-Vergleich',
@@ -1427,6 +1472,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       privacyAndTransparencyNotice:
         'Ein Peer-Vergleich wird erst ab 10 aktiven Teilnehmenden ausgegeben. Zehn initiale Punktebereiche werden zusammengeführt, bis jeder angezeigte Bereich mindestens 3 Teilnehmende repräsentiert. Der Bericht enthält keine einzelnen Peer-Punktzahlen oder Identifikatoren.',
       courseNameLabel: 'Kurs',
+      studentNameLabel: 'Name der studierenden Person',
+      studentEmailAddressLabel: 'E-Mail-Adresse',
+      matriculationNumberLabel: 'Matrikelnummer',
       studentEmailLabel: 'Studierende/r',
       pointsSummaryLabel: 'Punkteübersicht',
       yourScoreLabel: 'Du',
@@ -1590,7 +1638,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       reviewStatusUpdateFailed:
         'Aktualisierung des Review-Status fehlgeschlagen',
       openElementsInLibrary: 'Elemente in Bibliothek öffnen',
-      batchOperations: 'Batch-Operationen ({numActivities} Aktivitäten)',
+      batchOperations:
+        'Batch-Operationen ({numActivities, plural, =1 {1 Aktivität} other {# Aktivitäten}})',
       batchOperationsOnlyDraftScheduled:
         'Batch-Operationen können nur mit Entwurfs- oder geplanten Aktivitäten ausgeführt werden.',
       batchOperationsActivities: 'Aktivitäten - Batch-Operationen',
@@ -1599,6 +1648,9 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modifyMultiplier: 'Multiplikator ändern',
       changeCourse: 'Kurszuweisung ändern',
       modifyLiveQuizPoints: 'Bepunktung anpassen (nur Live Quiz)',
+      deleteSelectedActivities: 'Aktivitäten löschen',
+      batchDeleteDescription:
+        'Berechtigte Aktivitäten unwiderruflich löschen. Das Löschen kann nicht mit anderen Batch-Aktionen kombiniert werden.',
       enableLiveQuizPointsModification:
         'Basis, Korrektheits- und Bonuspunkte anpassen',
       bonusTime: 'Bonuszeit',
@@ -1606,6 +1658,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Zeitspanne während welcher Bonuspunkte vergeben werden muss mindestens 1 Sekunde betragen. Um keine Bonuspunkte zu vergeben, setzen Sie die Bonuspunkte auf 0.',
       noActivitiesWillBeUpdated: 'Keine Aktivitäten werden verändert',
       nActivitiesWillBeUpdated: '{number} Aktivitäten werden angepasst',
+      noActivitiesWillBeDeleted: 'Keine Aktivitäten werden gelöscht',
+      nActivitiesWillBeDeleted:
+        '{number, plural, =1 {# Aktivität wird gelöscht} other {# Aktivitäten werden gelöscht}}',
+      nOfMActivitiesWillBeDeleted:
+        '{affected}/{total} Aktivitäten werden gelöscht',
       activityContainsNoElements: 'Diese {activity} enthält keine Elemente.',
       multiplierRequiresGamifiedAssessmentCourse:
         'Ein Multiplikator kann nur für gamifizierte Aktivitäten oder Aktivitäten in Assessment-Kursen definiert werden, da nur in diesen Kursen Punkte gesammelt werden können. Sie haben die Zuweisung zu einem Kurs gewählt, welcher diese Bedingungen nicht erfüllt.',
@@ -1618,21 +1675,25 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
 <li>Veränderungen des Multiplikators sind nur für gamifizierte Aktivitäten oder Aktivitäten als Teil eines Assessment-Kurses möglich. Wird eine neue Kurszuweisung im gleichen Schritt als Batch-Operation gewählt, werden die Gamifizierungs- und Assessment-Einstellungen dieses Kurses genutzt.</li>
 <li>Aktivitäten können grundsätzlich allen laufenden und zukünftigen Kursen zugewiesen werden. Bei Microlearnings und Gruppenaktivitäten werden zusätzlich nur Zuweisungen erlaubt, bei welchen das Verfügbarkeits-Intervall der Aktivität vollständig in der Kurslaufzeit liegt.</li>
 <li>Basis-, Korrektheits- und Bonuspunkte können nur für Live Quizzes definiert und angepasst werden. Bei Aktivierung dieser Option werden andere Aktivitätstypen nicht geupdated.</li>
-<li>Alle Anpassungen erfordern mindestens Schreibrechte auf der jeweiligen Aktivität.</li>
+<li>Alle Anpassungen erfordern mindestens Schreibrechte auf der jeweiligen Aktivität. Für das unwiderrufliche Löschen ist Administratorzugriff erforderlich.</li>
 </ul>
       `,
       selectedActivitiesDescription:
-        'Sie haben die folgenden Aktivitäten ausgewählt. Alle Aktivitäten, welche von den gewählten Aktionen betroffen sind, sind markiert. Hovern Sie über dem Symbol für nicht betroffene Elemente für mehr Informationen. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
+        'Sie haben die folgenden Aktivitäten ausgewählt. Alle Aktivitäten, welche von den gewählten Aktionen betroffen sind, sind markiert. Hovern Sie über dem Symbol für nicht betroffene Aktivitäten für mehr Informationen. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
       batchInvalidStatus:
         'Nur Entwurfs- und geplante Aktivitäten können über Batch-Operations angepasst werden.',
       batchNeedEditorPermissions:
         'Um eine Aktivität über die Batch-Operationen anzupassen, benötigen Sie mindestens Schreibzugriff.',
+      batchNeedManagerPermissions:
+        'Um eine Aktivität unwiderruflich zu löschen, benötigen Sie Administratorzugriff.',
       batchMultiplierRequiresGamificationOrAssessment:
         'Eine Veränderung des Multiplikators ist nur für gamifizierte Aktivitäten oder Aktivitäten mit Assessment-Kurs Zuweisung möglich.',
       batchGroupActivityRequiresGroupsEnabled:
         'Gruppenaktivitäten können nur Kursen zugewiesen werden, in welchen die Gruppenbildung aktiviert ist.',
       batchAssessmentRemovalAdminOnly:
         'Aktivitäten, welche sich im Assessment-Modus (mit Zuweisung zu einem Assessment-Kurs) befinden, können nur von Administratoren des entsprechenden Kurses aus diesem entfernt werden.',
+      batchAssessmentDeletionAdminOnly:
+        'Assessment-Live-Quizzes können nur von Administratoren des entsprechenden Assessment-Kurses gelöscht werden.',
       batchActivityDatesOutsideCourse:
         'Das Verfügbarkeitsintervall von Gruppenaktivtäten und Microlearnings muss vollständig innerhalb der Kurslaufzeit liegen.',
       batchGroupActivityRequiresFinalizedGroups:
@@ -1647,11 +1708,95 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Nur ein Teil Ihrer Batch-Operation konnte erfolgreich angewendet werden. Bitte überprüfen Sie die betroffenen Aktivitäten und Ihre Berechtigungen.',
       batchOperationFailed:
         'Beim Anwenden der Batch-Operation ist ein Fehler aufgetreten. Bitte überprüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
+      confirmBatchDeletionTitle: 'Ausgewählte Aktivitäten löschen',
+      confirmBatchDeletionMessage:
+        'Sie sind im Begriff, {number, plural, =1 {1 Aktivität} other {# Aktivitäten}} einschliesslich der zugehörigen Teilnehmerdaten und Resultate unwiderruflich zu löschen. Diese Aktion kann nicht rückgängig gemacht werden.',
+      confirmBatchDeletionIrreversible:
+        'Ich verstehe, dass {number, plural, =1 {die Aktivität und die zugehörigen Daten} other {alle # Aktivitäten und die zugehörigen Daten}} unwiderruflich gelöscht und nicht wiederhergestellt werden können.',
+      confirmBatchDeletionAcknowledge: 'Bestätigen',
+      confirmBatchDeletionSubmit: 'Aktivitäten löschen',
+      batchDeletionProgress:
+        'Löschung läuft: {completed} von {total, plural, =1 {1 Aktivität} other {# Aktivitäten}} abgeschlossen. Bitte lassen Sie dieses Fenster geöffnet.',
+      batchDeletionRefreshFailed:
+        'Die Löschung ist abgeschlossen, aber die Aktivitätenliste konnte nicht aktualisiert werden. Laden Sie die Liste neu, bevor Sie fortfahren.',
+      batchDeletionNoEligibleActivities:
+        'Keine der ausgewählten Aktivitäten war zum Löschen berechtigt. Die Auswahl wurde zurückgesetzt; überprüfen Sie die Aktivitätenliste, bevor Sie es erneut versuchen.',
+      batchDeletionSuccess:
+        'Die berechtigten ausgewählten Aktivitäten wurden erfolgreich gelöscht.',
+      batchDeletionPartialSuccess:
+        'Nur ein Teil der ausgewählten Aktivitäten konnte gelöscht werden. Bitte überprüfen Sie die verbleibenden Aktivitäten und Ihre Berechtigungen.',
+      batchDeletionUncertain:
+        'Das Ergebnis einiger Löschvorgänge konnte nicht bestätigt werden. Bitte überprüfen Sie die Aktivitätenliste und laden Sie diese bei Bedarf neu, bevor Sie es erneut versuchen.',
+      batchDeletionFailed:
+        'Die ausgewählten Aktivitäten konnten nicht gelöscht werden. Bitte überprüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
     },
     assessment: {
       assessmentResults: 'Assessment Resultate',
+      participantInvitations: 'Teilnehmendeneinladungen',
+      participantInvitationsDescription:
+        'Laden Sie Teilnehmende zu diesem Assessment-Kurs ein und verfolgen Sie, ob die Einladung angenommen wurde.',
+      invitationBackToCourse: 'Zurück zum Kurs',
+      invitationImportTitle: 'Einladungen importieren',
+      invitationImportDescription:
+        'Wählen Sie eine CSV-Datei mit den E-Mail-Adressen und Matrikelnummern der Teilnehmenden. Die Datei wird in Ihrem Browser verarbeitet, bevor die Einladungen übermittelt werden.',
+      invitationAffiliationWarning:
+        'Verwenden Sie genau die E-Mail-Adresse, die in der Swiss Edu-ID als verifizierte Hochschulzugehörigkeit hinterlegt ist (z. B. eine @uzh.ch-Adresse). Private E-Mail-Adressen können bei der Anmeldung möglicherweise nicht zugeordnet werden.',
+      invitationDownloadTemplate: 'CSV-Vorlage herunterladen',
+      invitationCsvPrompt: 'CSV-Datei mit Teilnehmenden auswählen',
+      invitationCsvHeaders:
+        'Erforderliche Spalten: email und matriculationNumber (Komma oder Semikolon als Trennzeichen).',
+      invitationCsvReady:
+        '{count, plural, one {# Zeile ist für den Import bereit} other {# Zeilen sind für den Import bereit}}',
+      invitationSelectCsv: 'CSV-Datei auswählen',
+      invitationImportButton:
+        '{count, plural, one {# Einladung importieren} other {# Einladungen importieren}}',
+      invitationCsvMissingHeaders:
+        'Die CSV-Datei muss die Spalten email und matriculationNumber enthalten.',
+      invitationCsvInvalidHeaders:
+        'Die CSV-Datei muss genau eine email-Spalte und eine matriculationNumber-Spalte enthalten.',
+      invitationCsvInvalidRows:
+        'Jede CSV-Zeile muss gleich viele Spalten wie die Kopfzeile enthalten.',
+      invitationCsvEmpty: 'Die CSV-Datei enthält keine Teilnehmendenzeilen.',
+      invitationCsvParseError:
+        'Die CSV-Datei konnte nicht gelesen werden. Prüfen Sie das Format und versuchen Sie es erneut.',
+      invitationCsvTooLarge:
+        'Die CSV-Datei ist zu gross. Wählen Sie eine Datei mit höchstens 1 MB.',
+      invitationCsvTooManyRows:
+        'Die CSV-Datei enthält mehr als {count} Teilnehmendenzeilen. Teilen Sie sie in kleinere Dateien auf.',
+      invitationImportCompleted: 'Der Einladungsimport wurde abgeschlossen.',
+      invitationImportFailed:
+        'Die Einladungen konnten nicht importiert werden. Bitte versuchen Sie es erneut.',
+      invitationImportInvalidEmail: 'Ungültiges E-Mail-Format',
+      invitationImportSummary:
+        'Verarbeitet: {total, plural, one {# Zeile} other {# Zeilen}}; {created} ausstehend, {accepted} angenommen, {duplicates} bereits vorhanden, {errors} Fehler.',
+      invitationListTitle: 'Einladungen',
+      invitationListDescription:
+        'Angenommene Einladungen bleiben als Nachweis sichtbar. Ausstehende Einladungen können gelöscht werden.',
+      invitationCount:
+        '{count, plural, one {# Einladung} other {# Einladungen}}',
+      invitationEmail: 'E-Mail',
+      invitationMatriculationNumber: 'Matrikelnummer',
+      invitationStatus: 'Status',
+      invitationInvitedAt: 'Eingeladen',
+      invitationActions: 'Aktionen',
+      invitationStatusPending: 'Ausstehend',
+      invitationStatusAccepted: 'Angenommen',
+      invitationDeleteLabel: 'Ausstehende Einladung für {email} löschen',
+      invitationDeleteTitle: 'Ausstehende Einladung löschen',
+      invitationDeleteDescription:
+        'Möchten Sie die ausstehende Einladung für {email} löschen? Die teilnehmende Person kann sie danach nicht mehr annehmen.',
+      invitationDeleteSuccess: 'Die ausstehende Einladung wurde gelöscht.',
+      invitationDeleteFailed:
+        'Die ausstehende Einladung konnte nicht gelöscht werden. Aktualisieren Sie die Seite und versuchen Sie es erneut.',
+      invitationEmpty: 'Es wurden noch keine Einladungen erstellt.',
+      invitationLoadingError:
+        'Die Teilnehmendeneinladungen konnten nicht geladen werden. Prüfen Sie Ihre Berechtigungen und versuchen Sie es erneut.',
       liveQuizStudentResultsTitle: 'Studierendenresultate',
       liveQuizStudentEmailColumn: 'Studierende (E-Mail)',
+      liveQuizStudentGivenNameColumn: 'Vorname der studierenden Person',
+      liveQuizStudentSurnameColumn: 'Nachname der studierenden Person',
+      liveQuizStudentMatriculationNumberColumn:
+        'Matrikelnummer der studierenden Person',
       liveQuizStudentResultsEmpty:
         'Es sind noch keine Studierendenresultate vorhanden.',
       errorLoadingLiveQuizResults:
@@ -1722,13 +1867,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       modalTitle: 'Support KlickerUZH',
       yourFeedback: 'Ihr Feedback',
       feedbackText:
-        'Haben Sie Feedback für uns? Haben Sie Probleme bei der Nutzung von KlickerUZH? Bitte geben Sie uns Ihr Feedback, damit wir KlickerUZH für Sie weiter verbessern können.',
-      featureRequest: 'Feature Request',
-      featureRequestDesc: 'Ich möchte ein neues Feature anfragen.',
-      bugReport: 'Bug Report',
-      bugReportDesc: 'Ich möchte einen Fehler oder ein Problem melden.',
-      selfHosting: 'Self-Hosting',
-      selfHostingDesc: 'Ich habe Probleme beim Self-Hosting von KlickerUZH.',
+        'Was funktioniert für Sie gut und was sollten wir verbessern? Teilen Sie Ideen, positive Erfahrungen und Probleme auf unserer öffentlichen Feedback-Plattform. Bitte geben Sie keine persönlichen Angaben oder Kursdaten ein.',
+      feedbackDesc: 'Teilen Sie Ideen, positive Erfahrungen und Probleme.',
       furtherResources: 'Weitere Ressourcen',
       documentationDesc: 'Tutorials, Funktionsdokumentation und Release Notes',
       faq: 'FAQ',
@@ -1751,6 +1891,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       githubRepositoryDesc: 'Quellcode des Open-Source Projekts',
       survey:
         'Wir möchten gerne wissen, was Sie über KlickerUZH und unsere zukünftigen Pläne denken! Bitte geben Sie uns Ihr Feedback in einer <link>kurzen Umfrage (5 - 10min)</link>.',
+      catalystRequest: {
+        title: 'Catalyst-Zugang anfragen',
+        subtitle:
+          'Beschreiben Sie Ihren Anwendungsfall und wir melden uns bei Ihnen.',
+        explanation:
+          'Ihre Anfrage geht an klicker@df.uzh.ch. Wir antworten auf die E-Mail-Adresse Ihres Kontos und verwenden Ihre Daten ausschliesslich zur Bearbeitung dieser Anfrage.',
+        institution: 'Institution',
+        institutionRequired: 'Bitte geben Sie Ihre Institution ein.',
+        institutionMin: 'Bitte geben Sie mindestens 2 Zeichen ein.',
+        institutionMax: 'Bitte geben Sie höchstens 160 Zeichen ein.',
+        useCase: 'Geplante Verwendung',
+        useCaseRequired: 'Bitte beschreiben Sie die geplante Verwendung.',
+        useCaseMin: 'Bitte geben Sie mindestens 20 Zeichen ein.',
+        useCaseMax: 'Bitte geben Sie höchstens 2000 Zeichen ein.',
+        submit: 'Anfrage senden',
+      },
     },
     login: {
       lecturerLogin: 'Login Dozierende',
@@ -1885,6 +2041,17 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       numSelected: '{count}/{total}',
       moveToArchive: 'Ins Archiv verschieben',
       restoreFromArchive: 'Element wiederherstellen',
+      elementArchivedSuccessfully: 'Das Element wurde ins Archiv verschoben.',
+      elementRestoredSuccessfully:
+        'Das Element wurde aus dem Archiv wiederhergestellt.',
+      elementArchiveActionUnchanged:
+        'Das Element befand sich bereits im gewünschten Archivstatus.',
+      elementArchiveActionFailed:
+        'Der Archivstatus des Elements konnte nicht geändert werden.',
+      elementArchiveActionUncertain:
+        'Der Archivstatus konnte nicht bestätigt werden. Prüfen Sie die Elementliste, bevor Sie es erneut versuchen.',
+      elementArchiveRefreshFailed:
+        'Der Archivstatus konnte nicht bestätigt werden, weil die Elementliste nicht aktualisiert werden konnte. Laden Sie die Seite neu, um den aktuellen Status anzuzeigen.',
       showFeedbacksExplanation: 'Antwort-Feedbacks & Erklärung anzeigen',
       showExplanation: 'Erklärung anzeigen',
       showFeedbacksExplanationTooltip:
@@ -1897,21 +2064,70 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Antwort-Feedbacks können nur für Single-Choice, Multiple-Choice, und KPRIM Fragen erfasst werden.',
       batchOperations: 'Batch-Operationen ({numElements} Elemente)',
       batchOperationsElements: 'Elemente - Batch-Operationen',
+      batchOperationsApplying: 'Batch-Operationen werden angewendet…',
       selectedElementsDescription:
-        'Sie haben die folgenden Elemente ausgewählt. Alle Elemente, welche von den gewählten Aktionen betroffen sind, sind markiert. Hovern Sie über dem Symbol für nicht betroffene Elemente für mehr Informationen. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
+        'Sie haben die folgenden Elemente ausgewählt. Alle Elemente, welche von den gewählten Aktionen betroffen sind, sind markiert. Fokussieren Sie das Symbol für nicht betroffene Elemente mit der Tastatur oder Maus, um weitere Informationen zu erhalten. Bitte beachten Sie: Einige Aktionen können nur einzeln durchgeführt werden oder erfordern bestimmte Zugriffsrechte (siehe Tooltip). Überprüfen Sie die ausgewählten Aktionen sorgfältig, bevor Sie diese anwenden.',
+      batchElementName: 'Element',
+      batchElementPermission: 'Ihre Berechtigung',
+      batchUpdateStatus: 'Eignung für Elementänderungen',
+      batchUpdateStatusInactive: 'Keine Elementänderung konfiguriert',
+      batchSharingStatus: 'Eignung für Elementfreigaben',
       actionApplies: 'Aktion wird angewendet',
+      batchSharingApplies: 'Freigabe wird angewendet',
       modifyStatus: 'Status ändern',
       modifyMultiplier: 'Multiplikator ändern',
       modifyBasePoints: 'Basispunkte ändern',
       awardBasePoints: 'Basispunkte vergeben',
       noElementsWillBeUpdated: 'Keine Elemente werden verändert',
       nElementsWillBeUpdated: '{number} Elemente werden angepasst',
+      batchSharing: 'Elemente teilen',
+      batchSharingDescription:
+        'Erteilen Sie dieselbe direkte Berechtigung für alle ausgewählten Elemente. Die Freigabe wird nicht auf Aktivitäten übertragen, aber verknüpfte Antwortsammlungen erhalten den erforderlichen abgeleiteten Lesezugriff.',
+      batchSharingLimit:
+        'Das Teilen ist auf {max} Elemente pro Vorgang beschränkt. Reduzieren Sie die Auswahl oder deaktivieren Sie das Teilen.',
+      batchSharingUserOrEmail: 'Benutzer:in',
+      batchSharingGroup: 'Benutzergruppe',
+      batchSharingPermission: 'Berechtigung',
+      noElementsWillBeShared: 'Keine Elemente können geteilt werden',
+      nElementsWillBeShared: '{number} Elemente können geteilt werden',
+      batchSharingNotApplicableExplanation:
+        'Die ausgewählte Freigabe kann aus den folgenden Gründen nicht auf dieses Element angewendet werden:',
+      batchSharingInsufficientPermission:
+        'Das Teilen von Elementen erfordert mindestens Adminrechte.',
+      batchOperationsResult: 'Ergebnis der Batch-Operation',
+      batchOperationsResultDescription:
+        'Überprüfen Sie unten die ausgeführten und übersprungenen Operationen. Dieses Ergebnis kann nicht bearbeitet werden.',
+      batchUpdateResultSuccess:
+        'Die ausgewählten Elementänderungen wurden erfolgreich angewendet.',
+      batchUpdateResultPartial:
+        '{updated}/{total} ausgewählte Elementänderungen wurden angewendet.',
+      batchUpdateResultFailed:
+        'Die ausgewählten Elementänderungen konnten nicht angewendet werden.',
+      batchUpdateResultSkipped:
+        'Elementänderungen wurden übersprungen, da keines der ausgewählten Elemente dafür geeignet war.',
+      batchSharingResult: 'Freigabeergebnis',
+      batchSharingResultShared: 'Geteilt',
+      batchSharingResultSkippedInsufficientPermission:
+        'Übersprungen: Adminrechte erforderlich',
+      batchSharingResultElementUnavailable:
+        'Übersprungen: Element nicht verfügbar',
+      batchSharingResultFailed: 'Freigabe fehlgeschlagen',
+      batchSharingResultNotProcessed: 'Nicht verarbeitet',
+      batchSharingRequestFailed:
+        'Die Freigabeanfrage ist fehlgeschlagen, bevor alle Ergebnisse zurückgegeben werden konnten.',
+      batchSharingTargetInvalidOrSelf:
+        'Der Zielbenutzer existiert nicht oder ist Ihr eigenes Konto.',
+      batchSharingTargetGroupUnavailable:
+        'Die ausgewählte Benutzergruppe ist nicht mehr verfügbar.',
+      batchOperationsRefreshFailed:
+        'Die Operationen wurden beendet, aber die Elementliste konnte nicht aktualisiert werden.',
       batchUpdatesInformation: `Abhängig von den ausgewählten Aktionen und den Berechtigungen für die selektierten Elemente gelten die folgenden Regeln:
 <ul>
 <li>Das Archivieren von Elementen / das Wiederherstellen von Elementen aus dem Archiv ist nur für nicht archivierte respektive archivierte Elemente möglich. Diese Aktion kann nur von Benutzern mit Administratorrechten für die betreffenden Elemente ausgeführt werden.</li>
 <li>Multiplikatoren können nur für Fragen mit einer definierten Musterlösung geändert werden. Diese Aktion erfordert mindestens Schreibrechte.</li>
 <li>Basispunkte können nur für Fragen (nicht für Lernkarten oder Inhaltselemente) aktiviert / deaktiviert werden. Diese Aktion erfordert mindestens Schreibrechte.</li>
 <li>Änderungen des Elementstatus sind durch alle Nutzer möglich.</li>
+<li>Das Teilen erfordert für jedes Element mindestens Adminrechte. Die Freigabe wird nicht auf Aktivitäten übertragen, aber verknüpfte Antwortsammlungen erhalten den erforderlichen abgeleiteten Lesezugriff.</li>
 </ul>
       `,
       updateActivitiesBatchInfo:
@@ -3061,13 +3277,25 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       courseDuplicationEndDateInPast:
         'Das gewählte Enddatum liegt in der Vergangenheit. Der duplizierte Kurs ist bereits beendet, sobald er erstellt wird - verschieben Sie das Startdatum, falls Studierende auf den Kurs zugreifen sollen.',
       courseDuplicationFailed: 'Duplizieren des Kurses fehlgeschlagen.',
+      courseDuplicationAlreadyInProgress:
+        'Dieser Kurs wird bereits dupliziert.',
       courseDuplicationNoAccess:
         'Sie verfügen nicht mehr über ausreichende Berechtigungen, um diesen Kurs zu duplizieren.',
       courseDuplicationPartialFailure:
         'Nicht alle ausgewählten Aktivitäten oder Aktivitätsinstanzen konnten dupliziert werden. Es wurde kein unvollständiger Kurs erstellt.',
       courseDuplicationInProgress:
         'Das Duplizieren grosser Kurse kann einen Moment dauern.',
+      courseDuplicationBackgroundInfo:
+        'Sie können diesen Dialog schliessen. Sobald die Kopie bereit ist, erhalten Sie eine Benachrichtigung mit einem Link zum Öffnen.',
+      courseDuplicationStatusTab: 'Kursduplizierungen',
+      courseDuplicationStatusCount:
+        '{count, plural, one {# laufender Kursduplizierungsauftrag} other {# laufende Kursduplizierungsaufträge}}',
+      courseDuplicationStatusTitle: 'Laufende Kursduplizierungen',
+      courseDuplicationStatusDescription:
+        'Sie können weiterarbeiten, während diese Kurse kopiert werden.',
+      courseDuplicationStatusSource: 'Kopie von "{source}"',
       courseDuplicationSucceeded: 'Kurs "{name}" wurde erfolgreich dupliziert.',
+      courseDuplicationOpenCourse: 'Kurs öffnen',
       noCoursesFound:
         'Es konnten keine Kurse gefunden werden. Bitte erstellen Sie einen neuen Kurs.',
       createCourseNow: 'Jetzt einen Kurs erstellen!',
@@ -3177,6 +3405,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noLiveQuizzesDisconnected: 'Dieser Kurs enthält keine Live-Quizzes.',
       disconnectLiveQuizzes:
         '{number} Live-Quizz(es) werden vom Kurs getrennt. Sie können weiterhin über die Aktivitätenliste aufgerufen werden.',
+      deleteDraftActivitiesOption:
+        'Alle verknüpften Aktivitäten im Entwurfsstatus ebenfalls unwiderruflich löschen.',
+      deleteDraftActivities:
+        'Alle verknüpften Aktivitäten im Entwurfsstatus werden unwiderruflich gelöscht. Alle übrigen Live-Quizzes werden vom Kurs getrennt und bleiben über die Aktivitätenliste zugänglich.',
       noPracticeQuizzesToDelete: 'Dieser Kurs enthält keine Übungs-Quizzes.',
       deletePracticeQuizzes:
         '{number} Übungs-Quizz(es) (inklusive deren Resultate) werden unwiderruflich gelöscht.',
@@ -3205,6 +3437,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       moreCourseActions: 'Weitere Kursaktionen',
       pointCorrections: 'Punktekorrekturen',
       assessmentResults: 'Assessment Resultate',
+      participantInvitations: 'Teilnehmendeneinladungen',
       appliedCorrections: 'Angewendete Punktkorrekturen',
       nameWithPin: 'Kurs: {name} (PIN: {pin})',
       joinCourse: 'Kurs beitreten',
@@ -4154,6 +4387,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       performanceDashboard: 'Leistungs- und Fortschritts-Dashboard',
       quizDashboard: 'Quiz-Dashboard',
       quizAnalytics: 'Quiz Analytics',
+      featureUnavailable:
+        'Learning Analytics sind für Ihr Benutzerkonto noch nicht verfügbar.',
       analyticsLoadingWait: 'Lade Analyse-Daten. Bitte warten...',
       analyticsLoadingFailed:
         'Beim Laden der Analyse-Daten ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.',

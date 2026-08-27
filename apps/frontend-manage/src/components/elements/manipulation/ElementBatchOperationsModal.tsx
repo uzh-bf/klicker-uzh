@@ -1,27 +1,102 @@
-import { useMutation } from '@apollo/client'
+import { useQuery } from '@apollo/client'
 import { faCheck, faX } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ApplyElementBatchOperationsDocument,
-  Element,
-  ElementType,
+  type Element,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Modal, toast } from '@uzh-bf/design-system'
+import { Button, Modal } from '@uzh-bf/design-system'
+import { Formik } from 'formik'
 import { useTranslations } from 'next-intl'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { isShallowEqual, omit } from 'remeda'
 import { twMerge } from 'tailwind-merge'
+import * as Yup from 'yup'
+import { deriveElementBatchEligibility } from './batchOperations/deriveElementBatchEligibility'
 import ElementArchiveCard from './batchOperations/ElementArchiveCard'
 import ElementBasePointsCard from './batchOperations/ElementBasePointsCard'
 import ElementBatchOperationsInfo from './batchOperations/ElementBatchOperationsInfo'
+import ElementBatchOperationsResult from './batchOperations/ElementBatchOperationsResult'
+import ElementBatchSharingCard from './batchOperations/ElementBatchSharingCard'
 import ElementInstanceUpdatesCard from './batchOperations/ElementInstanceUpdatesCard'
 import ElementMultiplierCard from './batchOperations/ElementMultiplierCard'
 import ElementStatusCard from './batchOperations/ElementStatusCard'
 import SelectedElementsList from './batchOperations/SelectedElementsList'
 import {
-  ElementBatchOperationActions,
+  type ElementBatchExecutionResult,
+  type ElementBatchSharingFormValues,
+  INITIAL_ELEMENT_BATCH_SHARING,
+} from './batchOperations/types'
+import useElementBatchExecution from './batchOperations/useElementBatchExecution'
+import {
+  type ElementBatchOperationActions,
   INITIAL_ELEMENT_BATCH_OPERATIONS,
 } from './types'
+
+const ELEMENT_BATCH_SHARING_MAX_ELEMENTS = 50
+
+function BatchOperationSummary({
+  updatesConfigured,
+  updatedCount,
+  sharedCount,
+  sharingEnabled,
+  totalCount,
+}: {
+  updatesConfigured: boolean
+  updatedCount: number
+  sharedCount: number
+  sharingEnabled: boolean
+  totalCount: number
+}) {
+  const t = useTranslations()
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      {updatesConfigured ? (
+        <span
+          className={twMerge(
+            'text-sm text-green-700',
+            updatedCount === 0 && 'text-red-600'
+          )}
+        >
+          <FontAwesomeIcon
+            icon={updatedCount === 0 ? faX : faCheck}
+            className="mr-1.5"
+          />
+          {updatedCount === 0
+            ? t('manage.questionPool.noElementsWillBeUpdated')
+            : t('manage.questionPool.nElementsWillBeUpdated', {
+                number:
+                  updatedCount === totalCount
+                    ? updatedCount
+                    : `${updatedCount}/${totalCount}`,
+              })}
+        </span>
+      ) : null}
+      {sharingEnabled ? (
+        <span
+          className={twMerge(
+            'text-sm text-green-700',
+            sharedCount === 0 && 'text-red-600'
+          )}
+        >
+          <FontAwesomeIcon
+            icon={sharedCount === 0 ? faX : faCheck}
+            className="mr-1.5"
+          />
+          {sharedCount === 0
+            ? t('manage.questionPool.noElementsWillBeShared')
+            : t('manage.questionPool.nElementsWillBeShared', {
+                number:
+                  sharedCount === totalCount
+                    ? sharedCount
+                    : `${sharedCount}/${totalCount}`,
+              })}
+        </span>
+      ) : null}
+    </div>
+  )
+}
 
 function ElementBatchOperationsModal({
   selectedElements,
@@ -35,262 +110,284 @@ function ElementBatchOperationsModal({
   refetchElements: () => Promise<void>
 }) {
   const t = useTranslations()
-  const [affectedElements, setAffectedElements] = useState(
-    selectedElements.map((element) => ({
-      ...element,
-      actionsApplied: true,
-      reasons: [] as string[],
-    }))
-  )
+  const [selectionSnapshot] = useState<Element[]>(() => [...selectedElements])
   const [selectedActions, setSelectedActions] =
     useState<ElementBatchOperationActions>(INITIAL_ELEMENT_BATCH_OPERATIONS)
+  const [executionResult, setExecutionResult] =
+    useState<ElementBatchExecutionResult>()
 
-  // application function for element list batch operations
-  const [applyElementBatchOperations, { loading: applying }] = useMutation(
-    ApplyElementBatchOperationsDocument
+  const { data: userData } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-only',
+  })
+  const updatesConfigured = useMemo(
+    () =>
+      !isShallowEqual(
+        omit(selectedActions, ['updateInstances', 'updateTemplateInstances']),
+        omit(INITIAL_ELEMENT_BATCH_OPERATIONS, [
+          'updateInstances',
+          'updateTemplateInstances',
+        ])
+      ),
+    [selectedActions]
   )
 
-  // whenever the applied filters change, update the affected elements
-  useEffect(() => {
-    const updatedAffectedElements = selectedElements.map((element) => {
-      let actionsApplied = true
-      const reasons: string[] = []
+  const affectedElements = useMemo(
+    () =>
+      deriveElementBatchEligibility({
+        elements: selectionSnapshot,
+        selectedActions,
+        messages: {
+          unarchiveOnlyArchived: t(
+            'manage.questionPool.batchUnarchiveOnlyArchivedElements'
+          ),
+          unarchiveOnlyManager: t(
+            'manage.questionPool.batchUnarchiveOnlyManagerElements'
+          ),
+          archiveOnlyUnarchived: t(
+            'manage.questionPool.batchArchiveOnlyUnarchivedElements'
+          ),
+          archiveOnlyManager: t(
+            'manage.questionPool.batchArchiveOnlyManagerElements'
+          ),
+          multiplierOnlySampleSolution: t(
+            'manage.questionPool.batchMultiplierOnlySampleSolution'
+          ),
+          multiplierOnlyEditor: t(
+            'manage.questionPool.batchMultiplierOnlyEditorElements'
+          ),
+          basePointsOnlyQuestions: t(
+            'manage.questionPool.batchBasePointsOnlyQuestions'
+          ),
+          basePointsOnlyEditor: t(
+            'manage.questionPool.batchBasePointsOnlyEditorElements'
+          ),
+          sharingInsufficientPermission: t(
+            'manage.questionPool.batchSharingInsufficientPermission'
+          ),
+        },
+      }),
+    [selectionSnapshot, selectedActions, t]
+  )
 
-      // archive / unarchive
-      if (selectedActions.unarchive) {
-        if (!element.isArchived) {
-          actionsApplied = false
-          reasons.push(
-            t('manage.questionPool.batchUnarchiveOnlyArchivedElements')
-          )
-        }
-        if (element.isArchived && !element.isManager) {
-          actionsApplied = false
-          reasons.push(
-            t('manage.questionPool.batchUnarchiveOnlyManagerElements')
-          )
-        }
-      } else if (selectedActions.archive) {
-        if (element.isArchived) {
-          actionsApplied = false
-          reasons.push(
-            t('manage.questionPool.batchArchiveOnlyUnarchivedElements')
-          )
-        }
-        if (!element.isManager) {
-          actionsApplied = false
-          reasons.push(t('manage.questionPool.batchArchiveOnlyManagerElements'))
-        }
-      }
+  const updateElementIds = useMemo(
+    () =>
+      affectedElements
+        .filter((element) => element.actionsApplied)
+        .map((element) => element.id),
+    [affectedElements]
+  )
+  const numOfUpdatedElements = updateElementIds.length
+  const numOfSharedElements = useMemo(
+    () => affectedElements.filter((element) => element.sharingApplied).length,
+    [affectedElements]
+  )
+  const sharingLimitExceeded =
+    selectionSnapshot.length > ELEMENT_BATCH_SHARING_MAX_ELEMENTS
 
-      // multiplier modification
-      if (selectedActions.multiplier) {
-        if (!('options' in element && element.options.hasSampleSolution)) {
-          actionsApplied = false
-          reasons.push(
-            t('manage.questionPool.batchMultiplierOnlySampleSolution')
-          )
-        }
-        if (!element.isEditor) {
-          actionsApplied = false
-          reasons.push(
-            t('manage.questionPool.batchMultiplierOnlyEditorElements')
-          )
-        }
-      }
+  const sharingValidationSchema = useMemo(
+    () =>
+      Yup.object({
+        enabled: Yup.boolean().required(),
+        shortnameOrEmail: Yup.string()
+          .trim()
+          .test(
+            'not-self',
+            t('manage.sharing.noSelfSharing'),
+            (value, validationContext) => {
+              const values =
+                validationContext.parent as ElementBatchSharingFormValues
+              if (!values.enabled || !value || !userData?.userProfile) {
+                return true
+              }
 
-      // base points modification
-      if (typeof selectedActions.basePoints !== 'undefined') {
-        if (
-          element.type === ElementType.Flashcard ||
-          element.type === ElementType.Content
-        ) {
-          actionsApplied = false
-          reasons.push(t('manage.questionPool.batchBasePointsOnlyQuestions'))
+              const normalizedValue = value.trim().toLowerCase()
+              return ![
+                userData.userProfile.shortname,
+                userData.userProfile.email,
+              ]
+                .filter(Boolean)
+                .some(
+                  (identifier) =>
+                    identifier?.trim().toLowerCase() === normalizedValue
+                )
+            }
+          ),
+        userGroupId: Yup.string().trim(),
+        permissionLevel: Yup.string().required(),
+      }).test(
+        'recipient-required',
+        t('manage.sharing.shortnameEmailOrGroupRequired'),
+        (values, validationContext) => {
+          if (
+            !values?.enabled ||
+            values.shortnameOrEmail?.trim() ||
+            values.userGroupId?.trim()
+          ) {
+            return true
+          }
+          return validationContext.createError({ path: 'shortnameOrEmail' })
         }
-        if (!element.isEditor) {
-          actionsApplied = false
-          reasons.push(
-            t('manage.questionPool.batchBasePointsOnlyEditorElements')
-          )
-        }
-      }
+      ),
+    [t, userData?.userProfile]
+  )
 
-      return {
-        ...element,
-        actionsApplied,
-        reasons,
-      }
-    })
+  const applyConfiguredOperations = useElementBatchExecution({
+    selectionSnapshot,
+    updateElementIds,
+    selectedActions,
+    updatesConfigured,
+    refetchElements,
+    resetSelectedElements,
+    onClose,
+    setExecutionResult,
+  })
 
-    setAffectedElements(updatedAffectedElements)
-  }, [selectedElements, selectedActions])
-
-  const numOfUpdatedElements = useMemo(() => {
-    return affectedElements.filter((element) => element.actionsApplied).length
-  }, [affectedElements])
+  function closeResult() {
+    resetSelectedElements()
+    onClose()
+  }
 
   return (
-    <Modal
-      open
-      onClose={onClose}
-      title={t('manage.questionPool.batchOperationsElements')}
-      className={{
-        content: 'xl:w-220 h-max w-[calc(100%-2rem)] lg:overflow-hidden',
+    <Formik<ElementBatchSharingFormValues>
+      initialValues={INITIAL_ELEMENT_BATCH_SHARING}
+      validationSchema={sharingValidationSchema}
+      validateOnMount
+      onSubmit={async (values) => {
+        await applyConfiguredOperations(values)
       }}
-      dataCloseButton={{ cy: 'close-batch-operations-modal' }}
     >
-      <div className="flex h-auto min-h-0 flex-col gap-6 md:flex-row md:gap-6 lg:h-full lg:max-h-full">
-        <div className="flex h-max max-h-full min-h-0 w-full flex-col gap-4 overflow-auto md:w-1/2 lg:max-h-[calc(100vh-6rem)] lg:w-2/5">
-          <div className="text-sm">
-            {t('manage.questionPool.selectedElementsDescription')}
-          </div>
-          <div className="min-h-0 flex-1 overflow-auto">
-            <SelectedElementsList
-              selectedElements={selectedElements}
-              affectedElements={affectedElements}
-            />
-          </div>
-        </div>
-        <div className="w-full overflow-auto px-0.5 pb-2 md:w-1/2 lg:max-h-[calc(100vh-6rem)] lg:w-3/5">
-          <div className="flex flex-row items-center gap-2.5">
-            <div className="font-bold">
-              {t('shared.generic.availableActions')}
-            </div>
-            <ElementBatchOperationsInfo />
-          </div>
-
-          <div className="mt-2 flex flex-col gap-3">
-            <ElementArchiveCard
-              selectedActions={selectedActions}
-              setSelectedActions={setSelectedActions}
-            />
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-              <ElementStatusCard
-                selectedActions={selectedActions}
-                setSelectedActions={setSelectedActions}
-              />
-              <ElementMultiplierCard
-                selectedActions={selectedActions}
-                setSelectedActions={setSelectedActions}
-              />
-              <ElementBasePointsCard
-                selectedActions={selectedActions}
-                setSelectedActions={setSelectedActions}
-              />
-              <ElementInstanceUpdatesCard
-                selectedActions={selectedActions}
-                setSelectedActions={setSelectedActions}
-              />
-            </div>
-            <div className="flex flex-row items-center gap-5 self-end">
-              <span
-                className={twMerge(
-                  'text-sm text-green-700',
-                  numOfUpdatedElements === 0 && 'text-red-600'
-                )}
-              >
-                <FontAwesomeIcon
-                  icon={numOfUpdatedElements === 0 ? faX : faCheck}
-                  className="mr-1.5"
-                />
-                {numOfUpdatedElements === 0
-                  ? t('manage.questionPool.noElementsWillBeUpdated')
-                  : t('manage.questionPool.nElementsWillBeUpdated', {
-                      number:
-                        numOfUpdatedElements === selectedElements.length
-                          ? numOfUpdatedElements
-                          : `${numOfUpdatedElements}/${selectedElements.length}`,
-                    })}
-              </span>
+      {({
+        values: sharingValues,
+        isValid: sharingFormValid,
+        isSubmitting,
+        submitForm,
+      }) => (
+        <Modal
+          open
+          onClose={
+            isSubmitting
+              ? () => undefined
+              : executionResult
+                ? closeResult
+                : onClose
+          }
+          title={t('manage.questionPool.batchOperationsElements')}
+          className={{
+            content: 'xl:w-220 h-max w-[calc(100%-2rem)] lg:overflow-hidden',
+          }}
+          dataCloseButton={{ cy: 'close-batch-operations-modal' }}
+        >
+          {executionResult ? (
+            <div className="flex max-h-[calc(100vh-6rem)] flex-col gap-5 overflow-auto">
+              <ElementBatchOperationsResult result={executionResult} />
               <Button
                 primary
-                disabled={
-                  applying ||
-                  numOfUpdatedElements === 0 ||
-                  isShallowEqual(
-                    omit(selectedActions, [
-                      'updateInstances',
-                      'updateTemplateInstances',
-                    ]),
-                    omit(INITIAL_ELEMENT_BATCH_OPERATIONS, [
-                      'updateInstances',
-                      'updateTemplateInstances',
-                    ])
-                  )
-                }
-                onClick={async () => {
-                  try {
-                    // submit the batch operations
-                    const { data: res } = await applyElementBatchOperations({
-                      variables: {
-                        elementIds: affectedElements
-                          .filter((element) => element.actionsApplied)
-                          .map((element) => element.id),
-                        archive: selectedActions.archive,
-                        unarchive: selectedActions.unarchive,
-                        status: selectedActions.status ?? undefined,
-                        multiplier:
-                          typeof selectedActions.multiplier !== 'undefined' &&
-                          selectedActions.multiplier !== ''
-                            ? parseInt(selectedActions.multiplier, 10)
-                            : null,
-                        basePoints: selectedActions.basePoints ?? undefined,
-                        updateInstances: selectedActions.updateInstances,
-                        updateTemplateInstances:
-                          selectedActions.updateTemplateInstances,
-                      },
-                    })
-
-                    // in case of success, reset the selected elements and refetch the elements
-                    if (
-                      res?.applyElementBatchOperations === numOfUpdatedElements
-                    ) {
-                      resetSelectedElements()
-                      await refetchElements()
-                      toast({
-                        type: 'success',
-                        message: t('manage.questionPool.batchOperationSuccess'),
-                        options: { duration: 3000 },
-                      })
-                      onClose()
-                    } else if (res?.applyElementBatchOperations !== 0) {
-                      resetSelectedElements()
-                      await refetchElements()
-                      toast({
-                        type: 'warning',
-                        message: t(
-                          'manage.questionPool.batchOperationPartialSuccess'
-                        ),
-                        options: { duration: 4500 },
-                      })
-                      onClose()
-                    } else {
-                      toast({
-                        type: 'error',
-                        message: t('manage.questionPool.batchOperationFailed'),
-                        options: { duration: 5000 },
-                      })
-                    }
-                  } catch (error) {
-                    console.error(error)
-                    toast({
-                      type: 'error',
-                      message: t('manage.questionPool.batchOperationFailed'),
-                      options: { duration: 5000 },
-                    })
-                  }
-                }}
-                className={{ root: 'h-9' }}
-                data={{ cy: 'apply-batch-operations' }}
+                onClick={closeResult}
+                disabled={isSubmitting}
+                className={{ root: 'h-9 self-end' }}
+                data={{ cy: 'close-batch-operations-result' }}
               >
-                {t('shared.generic.apply')}
+                {t('shared.generic.close')}
               </Button>
             </div>
-          </div>
-        </div>
-      </div>
-    </Modal>
+          ) : (
+            <div className="flex h-auto min-h-0 flex-col gap-6 md:flex-row md:gap-6 lg:h-full lg:max-h-full">
+              <div className="flex h-max max-h-full min-h-0 w-full flex-col gap-4 overflow-auto md:w-1/2 lg:max-h-[calc(100vh-6rem)] lg:w-2/5">
+                <div className="text-sm">
+                  {t('manage.questionPool.selectedElementsDescription')}
+                </div>
+                <div className="min-h-0 flex-1 overflow-auto">
+                  <SelectedElementsList
+                    affectedElements={affectedElements}
+                    updatesConfigured={updatesConfigured}
+                    sharingEnabled={sharingValues.enabled}
+                  />
+                </div>
+              </div>
+              <div className="w-full overflow-auto px-0.5 pb-2 md:w-1/2 lg:max-h-[calc(100vh-6rem)] lg:w-3/5">
+                <div className="flex items-center gap-2.5">
+                  <div className="font-bold">
+                    {t('shared.generic.availableActions')}
+                  </div>
+                  <ElementBatchOperationsInfo />
+                </div>
+
+                <fieldset
+                  disabled={isSubmitting}
+                  className="mt-2 flex flex-col gap-3"
+                  aria-busy={isSubmitting}
+                >
+                  <ElementArchiveCard
+                    selectedActions={selectedActions}
+                    setSelectedActions={setSelectedActions}
+                  />
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                    <ElementStatusCard
+                      selectedActions={selectedActions}
+                      setSelectedActions={setSelectedActions}
+                    />
+                    <ElementMultiplierCard
+                      selectedActions={selectedActions}
+                      setSelectedActions={setSelectedActions}
+                    />
+                    <ElementBasePointsCard
+                      selectedActions={selectedActions}
+                      setSelectedActions={setSelectedActions}
+                    />
+                    <ElementInstanceUpdatesCard
+                      selectedActions={selectedActions}
+                      setSelectedActions={setSelectedActions}
+                    />
+                  </div>
+                  {userData?.userProfile?.privatePreview ? (
+                    <>
+                      <ElementBatchSharingCard disabled={isSubmitting} />
+                      {sharingValues.enabled && sharingLimitExceeded ? (
+                        <p className="text-sm text-red-600" role="alert">
+                          {t('manage.questionPool.batchSharingLimit', {
+                            max: ELEMENT_BATCH_SHARING_MAX_ELEMENTS,
+                          })}
+                        </p>
+                      ) : null}
+                    </>
+                  ) : null}
+                  <div className="flex items-end justify-end gap-5">
+                    <BatchOperationSummary
+                      updatesConfigured={updatesConfigured}
+                      updatedCount={numOfUpdatedElements}
+                      sharedCount={numOfSharedElements}
+                      sharingEnabled={sharingValues.enabled}
+                      totalCount={selectionSnapshot.length}
+                    />
+                    <Button
+                      primary
+                      disabled={
+                        isSubmitting ||
+                        (sharingValues.enabled && !sharingFormValid) ||
+                        (sharingValues.enabled && sharingLimitExceeded) ||
+                        !(
+                          (updatesConfigured && numOfUpdatedElements > 0) ||
+                          (sharingValues.enabled && numOfSharedElements > 0)
+                        )
+                      }
+                      onClick={() => {
+                        void submitForm()
+                      }}
+                      className={{ root: 'h-9' }}
+                      data={{ cy: 'apply-batch-operations' }}
+                    >
+                      {isSubmitting
+                        ? t('manage.questionPool.batchOperationsApplying')
+                        : t('shared.generic.apply')}
+                    </Button>
+                  </div>
+                </fieldset>
+              </div>
+            </div>
+          )}
+        </Modal>
+      )}
+    </Formik>
   )
 }
 

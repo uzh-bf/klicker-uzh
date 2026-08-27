@@ -14,8 +14,12 @@ model Course {
   startDate         DateTime
   endDate           DateTime
   notificationEmail String?
-  areAnalyticsValid Boolean  @default(false)
-  isArchived        Boolean  @default(false)
+  areAnalyticsValid          Boolean   @default(false)
+  analyticsLastComputedAt    DateTime?
+  chatAnalyticsValidAt       DateTime?
+  analyticsFinalizedAt       DateTime?
+  isLearningAnalyticsEnabled Boolean   @default(false)
+  isArchived                 Boolean   @default(false)
 
   authType CourseAuthType @default(PIN)
   pinCode  Int?           @unique
@@ -55,6 +59,7 @@ model Course {
   timelineEntries            TimelineEntry[]
   chatbots                   Chatbot[]
   participantInvitations     ParticipantInvitation[]
+  participantChatOutcomes      ParticipantChatOutcome[]
 
   directPermissions  Permission[]
   permissions        DerivedPermission[]
@@ -71,4 +76,6 @@ model Course {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([isLearningAnalyticsEnabled, id])
 }

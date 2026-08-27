@@ -11,25 +11,32 @@ Facts (schema layout, seed paths, gotchas): [docs/data-and-migrations.md](../../
 
 ```bash
 # 1. edit the right area file in packages/prisma/src/prisma/schema/ (15 schema files)
-pnpm run prisma:migrate      # 2. create/apply migration + regenerate TS client (needs dev postgres)
+pnpm run prisma:migrate      # 2. create/apply migration; Prisma 7.8 wrapper explicitly runs generate (needs dev postgres)
 pnpm run prisma:sync         # 3. mirror model files into apps/analytics — NEVER skip
 pnpm run build               # 4. regenerate Prisma client + dependent packages
 ```
 
 Then, if the change is API-visible: update Pothos types/resolvers (`klicker-graphql-api`) — the Pothos Prisma plugin picks up new fields, but object types expose them explicitly.
 
-Run Prisma client generation through `pnpm --filter @klicker-uzh/prisma generate` (or a build/migrate/push wrapper that calls it). Prisma 7.8 and JSON generator 5.1 emit TypeScript 6-compatible declarations directly; there is no generated-source patch. The package's canonical `check` regenerates before compiling.
+Run Prisma client generation through `pnpm --filter @klicker-uzh/prisma generate` (or a build/migrate/push wrapper that calls it). Prisma 7.8's `migrate dev` and `db push` do not generate implicitly; this repository's wrappers call `generate` explicitly. Prisma 7.8 and JSON generator 5.1 emit TypeScript 6-compatible declarations directly; there is no generated-source patch. The package's canonical `check` regenerates before compiling.
 
 Provenance: steps 2 requires a database; on a machine without one running, write the schema change and STOP — hand the migration step to the user rather than faking a migration file.
+
+Schema authority: `packages/prisma/src/prisma/schema/` is the public source of
+truth for participant data-use and analytics models. `prisma:sync` produces the
+Analytics mirror; Catalyst must pin the exact immutable public commit and digest
+it consumes, never a moving branch, dirty tree, or generated mirror.
 
 ## Rules that prevent real incidents
 
 - **Pick the right area file** — don't create new `.prisma` files; `js.prisma` is generators-only and the shared `datasource.prisma` declares only the provider. JavaScript URLs live in `packages/prisma/prisma.config.ts`.
 - **Migrations may carry data backfills** (plain SQL in the migration file — `ROW_NUMBER()` example in `20260414223500_*`). Write the backfill in the same migration as the DDL.
 - **Every migration must be expand-contract (backward-compatible).** Deployments apply migrations as an ArgoCD PreSync hook _while the previous app version is still serving_, so a drop/rename/narrowing that the old code still depends on takes production down. Split it across releases: add and backfill first, switch the code, remove in a later release. There is no automatic undo — a wrong migration is recovered by rolling forward with a compensating one, and a failed one blocks every deploy to that environment ([runbook](../../../docs/data-and-migrations.md#recovering-a-failed-migration-hook)). Lock-heavy DDL runs unattended with no `lock_timeout`: an `ACCESS EXCLUSIVE` wait queues app queries behind it.
+- **Build indexes on populated tables concurrently.** Put each `CREATE INDEX CONCURRENTLY` statement in its own one-statement migration so PostgreSQL does not place it inside the implicit transaction used for a multi-statement migration. Plain `CREATE INDEX` remains appropriate for a new empty table in its creation migration.
 - **Typed Json fields are two edits**: `/// [TypeName]` doc comment on the field AND the declaration in `packages/graphql/src/types/app.ts` (`PrismaJson` namespace, shape from `@klicker-uzh/types`).
 - **Decimal fields**: Python client needs `enable_experimental_decimal = true` in `apps/analytics/prisma/schema/py.prisma` (already set — don't remove); TS side never truthy-checks Decimals.
 - **Don't touch synced Analytics model files by hand** — `prisma:sync` overwrites them while preserving Analytics-owned `py.prisma` and `datasource.prisma`.
+- **Keep participant data-use controls global** — research and learning-analytics choices belong on `Participant` as current state; `Participation` remains course membership with no per-course choice or history. Research consent allows future exports to include all stored canonical data or none, while learning-analytics re-enable starts at a prospective boundary without backfill.
 - **Participant email uniqueness is per auth mode** (`@@unique([email, isSSOAccount])`) — cross-mode duplicate prevention lives in service logic, not the schema.
 
 ## Seeds — two independent paths

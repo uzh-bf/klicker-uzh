@@ -1,11 +1,6 @@
 import type { ExtendedThreadMessageLike } from '../stores/chatStore'
 
-export type HistoryRailEntryKind =
-  | 'user'
-  | 'assistant'
-  | 'reasoning'
-  | 'tool'
-  | 'error'
+export type HistoryRailEntryKind = 'turn'
 
 export type HistoryRailEntryStatus =
   | 'complete'
@@ -15,13 +10,14 @@ export type HistoryRailEntryStatus =
 
 export type HistoryRailEntry = {
   anchor: string
+  assistantMessageId?: string
+  assistantText?: string
   id: string
   kind: HistoryRailEntryKind
   messageId: string
-  partKey?: string
-  preview?: string
   status: HistoryRailEntryStatus
-  toolName?: string
+  userMessageId?: string
+  userText?: string
 }
 
 export type HistoryRailTickRange = {
@@ -32,7 +28,7 @@ export type HistoryRailTickRange = {
 
 type MessageWithId = ExtendedThreadMessageLike & { id: string }
 
-const MAX_PREVIEW_LENGTH = 72
+const MAX_PLAIN_TEXT_LENGTH = 100
 
 const getStatusType = (status: unknown): string | undefined => {
   if (typeof status !== 'object' || status === null || !('type' in status)) {
@@ -58,14 +54,7 @@ const normalizeStatus = (status: unknown): HistoryRailEntryStatus => {
   }
 }
 
-const truncatePreview = (value: string): string | undefined => {
-  const normalized = value.replace(/\s+/g, ' ').trim()
-  if (!normalized) return undefined
-  if (normalized.length <= MAX_PREVIEW_LENGTH) return normalized
-  return `${normalized.slice(0, MAX_PREVIEW_LENGTH - 1).trimEnd()}…`
-}
-
-const getMessagePreview = (message: MessageWithId): string | undefined => {
+const getMessageText = (message: MessageWithId): string | undefined => {
   const content = Array.isArray(message.content)
     ? message.content
     : [{ type: 'text' as const, text: message.content }]
@@ -74,9 +63,64 @@ const getMessagePreview = (message: MessageWithId): string | undefined => {
     .map((part) =>
       'text' in part && typeof part.text === 'string' ? part.text : ''
     )
-    .join(' ')
+    .filter((part) => part.trim().length > 0)
+    .join('\n\n')
+    .trim()
 
-  return truncatePreview(text)
+  return text || undefined
+}
+
+// Best-effort Markdown stripper, not a full CommonMark parser: it keeps text
+// content while dropping syntax markers, sized for short navigation labels
+// rather than faithful rendering.
+const stripMarkdown = (value: string): string =>
+  value
+    .replace(/^ {0,3}`{3}[^\n]*$/gm, '') // fenced code block delimiter lines
+    .replace(/`{1,3}/g, '') // remaining inline code backticks
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1') // images -> alt text
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // links -> link text
+    .replace(/^ {0,3}#{1,6}\s+/gm, '') // headings
+    .replace(/^\s*>\s?/gm, '') // blockquotes
+    .replace(/^\s*(?:[-*+]|\d+[.)])\s+/gm, '') // list markers
+    .replace(/(\*\*\*|___)([\s\S]+?)\1/g, '$2') // bold+italic
+    .replace(/(\*\*|__)([\s\S]+?)\1/g, '$2') // bold
+    .replace(/\*([\s\S]+?)\*/g, '$1') // italic (asterisk)
+    // Underscore italic only when the delimiters sit outside word characters,
+    // so identifiers like snake_case_name keep their underscores.
+    .replace(/(?<!\w)_([\s\S]+?)_(?!\w)/g, '$1') // italic (underscore)
+    .replace(/~~([\s\S]+?)~~/g, '$1') // strikethrough
+
+/**
+ * Projects raw (possibly Markdown) turn text into a plain-text navigation
+ * label: strips Markdown syntax, collapses whitespace, and truncates to a
+ * length suitable for rail tick labels and history dialog rows. The full
+ * Markdown text stays available separately for the hover popover body.
+ */
+export const toHistoryRailPlainText = (
+  value: string | undefined
+): string | undefined => {
+  const normalized = stripMarkdown(value ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!normalized) return undefined
+  if (normalized.length <= MAX_PLAIN_TEXT_LENGTH) return normalized
+  return `${normalized.slice(0, MAX_PLAIN_TEXT_LENGTH - 1).trimEnd()}…`
+}
+
+const hasDataPart = (message: MessageWithId, name: string): boolean =>
+  Array.isArray(message.content) &&
+  message.content.some(
+    (part) => part.type === 'data' && 'name' in part && part.name === name
+  )
+
+const getMessageStatus = (message: MessageWithId): HistoryRailEntryStatus => {
+  if (hasDataPart(message, 'chat-error')) return 'error'
+  // A turn the participant stopped mid-stream is incomplete but not failed.
+  if (hasDataPart(message, 'chat-stopped')) return 'partial'
+
+  return normalizeStatus(
+    (message as ExtendedThreadMessageLike & { status?: unknown }).status
+  )
 }
 
 /**
@@ -110,155 +154,69 @@ export const getHistoryRailTickRanges = (
 export const getHistoryRailMessageAnchor = (messageId: string): string =>
   `message:${messageId}`
 
-export const getHistoryRailPartAnchor = (
-  messageId: string,
-  partKey: string
-): string => `part:${messageId}:${partKey}`
+const createTurnEntry = ({
+  assistant,
+  user,
+}: {
+  assistant?: MessageWithId
+  user?: MessageWithId
+}): HistoryRailEntry => {
+  const message = user ?? assistant
+  if (!message) {
+    throw new Error('A history rail turn needs at least one message')
+  }
 
-const createMessageEntry = (message: MessageWithId): HistoryRailEntry => {
+  const userText = user ? getMessageText(user) : undefined
+  const assistantText = assistant ? getMessageText(assistant) : undefined
   const anchor = getHistoryRailMessageAnchor(message.id)
 
   return {
     anchor,
-    id: anchor,
-    kind: message.role === 'user' ? 'user' : 'assistant',
+    assistantMessageId: assistant?.id,
+    assistantText,
+    id: `turn:${user?.id ?? 'none'}:${assistant?.id ?? 'none'}`,
+    kind: 'turn',
     messageId: message.id,
-    preview: getMessagePreview(message),
-    status: normalizeStatus(
-      (message as ExtendedThreadMessageLike & { status?: unknown }).status
-    ),
+    status: assistant ? getMessageStatus(assistant) : 'complete',
+    userMessageId: user?.id,
+    userText,
   }
 }
 
-const createPartEntry = ({
-  kind,
-  message,
-  partKey,
-  preview,
-  status,
-  toolName,
-}: {
-  kind: Exclude<HistoryRailEntryKind, 'user' | 'assistant'>
-  message: MessageWithId
-  partKey: string
-  preview?: string
-  status: unknown
-  toolName?: string
-}): HistoryRailEntry => {
-  const anchor = getHistoryRailPartAnchor(message.id, partKey)
-
-  return {
-    anchor,
-    id: anchor,
-    kind,
-    messageId: message.id,
-    partKey,
-    preview,
-    status: normalizeStatus(status),
-    toolName,
-  }
-}
-
-const getAssistantPartEntries = (
-  message: MessageWithId
+/**
+ * Projects the selected conversation path into one landmark per turn.
+ *
+ * The active path is intentionally paired locally: a user message followed
+ * by an assistant message becomes one rail entry. Tool calls, reasoning, and
+ * error parts stay in the transcript and affect the assistant status, but do
+ * not become additional navigation landmarks.
+ */
+export const getHistoryRailEntries = (
+  messages: readonly ExtendedThreadMessageLike[]
 ): HistoryRailEntry[] => {
+  const messagePath = messages.filter(
+    (message): message is MessageWithId =>
+      (message.role === 'user' || message.role === 'assistant') &&
+      typeof message.id === 'string'
+  )
   const entries: HistoryRailEntry[] = []
-  const seenToolCallIds = new Set<string>()
-  const messageStatus = (
-    message as ExtendedThreadMessageLike & { status?: unknown }
-  ).status
-  let reasoningGroupStart: number | null = null
 
-  const content = Array.isArray(message.content) ? message.content : []
+  for (let index = 0; index < messagePath.length; index += 1) {
+    const message = messagePath[index]
+    const nextMessage = messagePath[index + 1]
 
-  for (const [index, part] of content.entries()) {
-    if (part.type === 'reasoning') {
-      const text =
-        'text' in part && typeof part.text === 'string' ? part.text : ''
-      if (text.trim().length === 0) continue
-
-      if (reasoningGroupStart === null) {
-        reasoningGroupStart = index
-        entries.push(
-          createPartEntry({
-            kind: 'reasoning',
-            message,
-            partKey: `reasoning:${index}`,
-            preview: truncatePreview(text),
-            status: (part as { status?: unknown }).status ?? messageStatus,
-          })
-        )
+    if (message.role === 'user') {
+      if (nextMessage?.role === 'assistant') {
+        entries.push(createTurnEntry({ assistant: nextMessage, user: message }))
+        index += 1
+      } else {
+        entries.push(createTurnEntry({ user: message }))
       }
       continue
     }
 
-    reasoningGroupStart = null
-
-    if (part.type === 'tool-call') {
-      const toolCallId =
-        'toolCallId' in part && typeof part.toolCallId === 'string'
-          ? part.toolCallId
-          : undefined
-      const toolName =
-        'toolName' in part && typeof part.toolName === 'string'
-          ? part.toolName
-          : undefined
-
-      if (toolCallId && seenToolCallIds.has(toolCallId)) continue
-      if (toolCallId) seenToolCallIds.add(toolCallId)
-
-      entries.push(
-        createPartEntry({
-          kind: 'tool',
-          message,
-          partKey: `tool:${toolCallId ?? index}`,
-          status: (part as { status?: unknown }).status ?? messageStatus,
-          toolName,
-        })
-      )
-      continue
-    }
-
-    if (
-      part.type === 'data' &&
-      'name' in part &&
-      part.name === 'chat-error' &&
-      !entries.some((entry) => entry.kind === 'error')
-    ) {
-      entries.push(
-        createPartEntry({
-          kind: 'error',
-          message,
-          partKey: 'error',
-          status: { type: 'error' },
-        })
-      )
-    }
+    entries.push(createTurnEntry({ assistant: message }))
   }
 
   return entries
 }
-
-/**
- * Projects the selected conversation path into navigable history entries.
- * `messages` is intentionally the active path, not `allMessages`, so branch
- * switching cannot leave stale sibling entries in the rail.
- */
-export const getHistoryRailEntries = (
-  messages: readonly ExtendedThreadMessageLike[]
-): HistoryRailEntry[] =>
-  messages.flatMap((message) => {
-    if (
-      (message.role !== 'user' && message.role !== 'assistant') ||
-      typeof message.id !== 'string'
-    ) {
-      return []
-    }
-
-    const messageWithId = message as MessageWithId
-
-    const messageEntry = createMessageEntry(messageWithId)
-    return message.role === 'assistant'
-      ? [messageEntry, ...getAssistantPartEntries(messageWithId)]
-      : [messageEntry]
-  })

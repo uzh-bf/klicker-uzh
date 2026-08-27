@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-08-04'
+timestamp: '2026-08-26'
 tags:
   - backend
   - prisma
@@ -19,7 +19,7 @@ pnpm run prisma:sync      # 3. mirror model files into apps/analytics
 pnpm run build            # 4. rebuild the generated client and dependents
 ```
 
-`prisma:migrate` explicitly regenerates the TypeScript client after Prisma 7's `migrate dev`; Prisma no longer does that implicitly (`packages/prisma/package.json:scripts`). Forgetting step 3 still silently desynchronizes Analytics: `util/sync-schema.sh` copies the shared model files but excludes both `js.prisma` and `datasource.prisma`. Analytics keeps its own `py.prisma` generator and URL-bearing `datasource.prisma`; `util/check-prisma-sync.sh` fails closed if either owned file disappears. Update GraphQL types/resolvers if the API surface changed ([API layer](./graphql-api-layer.md)).
+`prisma:migrate` explicitly regenerates the TypeScript client after Prisma 7's `migrate dev`; Prisma no longer does that implicitly (`packages/prisma/package.json:scripts`). Forgetting step 3 still silently desynchronizes Analytics: `util/sync-schema.sh` copies the shared model files but excludes both `js.prisma` and `datasource.prisma`. Analytics keeps its own `py.prisma` generator and URL-bearing `datasource.prisma`; `util/check-prisma-sync.sh` fails closed if either owned file disappears. Participant research and learning-analytics choices are participant-global current-state fields in the public schema; the generated Analytics mirror is not an authority for their meaning. Update GraphQL types/resolvers if the API surface changed ([API layer](./graphql-api-layer.md)).
 
 ## Prisma 7 client and datasource ownership
 
@@ -29,25 +29,58 @@ Prisma Client 7.8.0 and `prisma-json-types-generator` 5.1.0 emit declarations th
 
 ## Split schema
 
-The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`), 15 files split by area: `user`, `participant`, `course`, `element`, `quiz`, `response`, `gamification`, `sharing`, `chat`, `analytics`, `resources`, `verification`, `other`, plus `datasource.prisma` (PostgreSQL provider only) and `js.prisma` (generators only: `prisma-client` ESM output to `../client`, Pothos types, `prisma-json-types-generator`). JavaScript datasource and migration settings live in `prisma.config.ts`.
+The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`), 15 files split by area: `user`, `participant`, `course`, `element`, `quiz`, `response`, `gamification`, `sharing`, `chat`, `analytics`, `resources`, `verification`, `other`, plus `datasource.prisma` (PostgreSQL provider only) and `js.prisma` (generators only: `prisma-client` ESM output to `../client`, Pothos types, `prisma-json-types-generator`). JavaScript datasource and migration settings live in `prisma.config.ts`. The public Prisma schema is the sole authority for participant data-use semantics; Catalyst integrations must pin an exact immutable public commit and digest rather than a branch or generated mirror.
 
 The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-py` with `interface = "sync"` and **`enable_experimental_decimal = true`** — keep that flag whenever shared schema `Decimal` fields exist (chat credit fields are `@db.Decimal(18,6)`), and note the Python side still uses the older `prismaSchemaFolder` preview flag.
+
+Participant-global data-use state lives in `Participant`: both research and
+learning-analytics choices default to `false` and retain only the current
+choice, choice time, and disclosure version. The participant-only
+`selfDataUse` query exposes those seven fields; the generic `Participant`
+GraphQL object does not. The two Boolean mutations store server-owned
+disclosure version `v1` and capture PostgreSQL `clock_timestamp()` immediately
+before the write. Learning-analytics changes take the global advisory gate with
+a bounded lock timeout; research changes do not take that gate.
+
+A future research export may include all stored canonical data when research
+consent is `true` and none when it is `false`. Learning-analytics re-enable uses
+`learningAnalyticsIncludedFrom` as a prospective boundary, with no backfill.
+The existing individual analytics reads also require true current consent,
+complete metadata and `Course.analyticsLastComputedAt >=
+Participant.learningAnalyticsIncludedFrom`; aggregate and canonical outputs are
+unchanged. `Participation` remains course membership and carries no
+per-course data-use choice or history.
+
+Analytics tables keyed by a chatbot or live quiz do not duplicate `courseId`;
+course scope resolves through the owning `Chatbot` or `LiveQuiz`. This prevents
+cross-course combinations that separate foreign keys cannot reject. Existing-
+table support indexes use one-statement `CREATE INDEX CONCURRENTLY` migrations;
+only indexes on newly created empty analytics tables stay in the schema-creation
+migration.
+
+`ParticipantActivityPerformance` must reference exactly one activity owner:
+either `practiceQuizId` or `microLearningId`, never neither or both. The
+participant data-use and analytics schema migration performs a redacted,
+count-only preflight before adding the PostgreSQL check constraint. Any
+malformed rows fail the migration without automatic remediation or row-level
+output.
 
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
+- A concurrent index build on a populated table gets its own one-statement migration. Multiple statements in one PostgreSQL query can share an implicit transaction, where `CREATE INDEX CONCURRENTLY` is invalid. New empty tables can receive ordinary indexes in their creation migration.
 - Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`.
 
 ### Deployment migrations
 
-`prisma migrate deploy` runs **automatically** on every stg rollout as an ArgoCD **`PreSync` hook Job** (`deploy/charts/klicker-uzh-v3/templates/job-migrate.yaml`), not by hand. On prd the hook ships **disabled** until the pinned tags reach a migrator-bearing release (see Bootstrap and rollback below), so prd migrations remain manual for now. Mechanics:
+`prisma migrate deploy` runs **automatically** on every stg and prd rollout as an ArgoCD **`PreSync` hook Job** (`deploy/charts/klicker-uzh-v3/templates/job-migrate.yaml`), not by hand. On prd the hook is **enabled** because the pinned tags have reached a migrator-bearing release (see Bootstrap and rollback below), so normal prd migrations run through ArgoCD. Mechanics:
 
-- A dedicated migrator image (`packages/prisma/Dockerfile`: `node:24.16.0-alpine` + a **local** `prisma` install, carrying `prisma.config.ts` + the schema + `migrations/`) runs `./node_modules/.bin/prisma migrate deploy`. The install must stay local, not `-g` — Prisma 7's `prisma.config.ts` imports `prisma/config`, which only resolves from `/app/node_modules`; the config supplies the datasource URL from `DATABASE_URL`. It exists because the backend runtime image installs `--prod --ignore-scripts` and so ships neither the Prisma CLI nor the migration engine. CI builds it as `backend-docker-migrator{-arm,-amd}` in lockstep with `backend-docker` (`v3_backend-docker-{stg,prd}.yml`). Its image **tag** auto-tracks the backend tag — the chart defaults `migrator.image.tag` to `backendGraphql.image.tag`, so each env pins only the migrator **repository** and never a separate tag.
+- A dedicated migrator image (`packages/prisma/Dockerfile`: `node:24.16.0-alpine` + a **local** `prisma` install, carrying `prisma.config.ts` + the schema + `migrations/`) runs `./node_modules/.bin/prisma migrate deploy`. The install must stay local, not `-g` — Prisma 7's `prisma.config.ts` imports `prisma/config`, which only resolves from `/app/node_modules`; the config supplies the datasource URL from `DATABASE_URL`. It exists because the backend runtime image installs `--prod --ignore-scripts` and so ships neither the Prisma CLI nor the migration engine. CI builds `backend-docker-migrator-arm` in lockstep with `backend-docker-arm` (`v3_backend-docker-{stg,prd}.yml`); the retained AMD migrator job is disabled. Its image **tag** auto-tracks the backend tag — the chart defaults `migrator.image.tag` to `backendGraphql.image.tag`, so each env pins only the migrator **repository** and never a separate tag.
 - The hook draws `DATABASE_URL` from the externally-provisioned `…-secret-backend-graphql` Secret only (a PreSync hook must not depend on Sync-phase ConfigMaps). Toggle with `migrator.enabled`.
 - A **failed** hook aborts the whole sync — app Deployments never roll onto an unmigrated DB. The Job runs while the **previous** app version is still live, so migrations must be **backward-compatible (expand-contract)**; a destructive/renaming migration must be split across releases.
 - **Break-glass only:** `pnpm --filter @klicker-uzh/prisma prisma:deploy:prod` (Infisical `--env prd`) still applies migrations manually from a workstation. Use it only when the hook is unavailable; `prisma:resolve:prod` resolves a failed/partial migration.
 - **Scope:** the hook migrates only the database in the `…-secret-backend-graphql` Secret. The assessment stack binds a separate `…-secret-backend-assessment` Secret; if that points at a different database, it is **not** covered here and still needs the manual path. Both Secrets are provisioned outside this repo, so confirm in Infisical before assuming coverage.
-- **Bootstrap and rollback:** the tag coupling means a release tag with no matching migrator image renders an unpullable hook image, which fails the sync after `activeDeadlineSeconds`. No migrator image exists for any tag cut before this feature landed, so `migrator.enabled` stays `false` on prd until the env tags reach the first release whose CI built it — and rolling prd back to a pre-hook tag means setting it back to `false`. Stg is unaffected: its floating `v3` tag is rebuilt on every merge.
+- **Bootstrap and rollback:** the tag coupling means a release tag with no matching migrator image renders an unpullable hook image, which fails the sync after `activeDeadlineSeconds`. Production now uses migrator-bearing release tags with `migrator.enabled: true`; rolling prd back to a pre-hook tag means setting it back to `false`. The alpha.70 and alpha.71 release workflows both built matching migrator images. Stg is unaffected: its selected floating source tag is rebuilt on every merge.
 
 Where `migrate deploy` is invoked in deployment is now the PreSync hook above (see [CI & Deployment → Deployment migrations](./ci-and-deployment.md#deployment-migrations)). Rationale and rejected alternatives: [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md).
 
@@ -55,9 +88,9 @@ Where `migrate deploy` is invoked in deployment is now the PreSync hook above (s
 
 A failed hook blocks **every** sync to that environment, by design. Recovery order:
 
-Nothing alerts on hook failure — detection is whoever is watching ArgoCD, so a blocked environment stays blocked silently until someone looks.
+Nothing alerts on hook failure — detection is whoever is watching ArgoCD, so a blocked environment stays blocked silently until someone looks. (The df-cloud staging Prometheus rules now provide early detection of stuck operations and failed syncs; see the linked solution doc below.)
 
-1. **Get the logs first.** Find the Job with `kubectl get jobs -n <ns> -l app.kubernetes.io/component=migrate` (it is named `<helm-release>-klicker-uzh-v2-migrate` unless the release name already contains the chart name), then `kubectl logs job/<name> -n <ns>` — the failed Job is kept (`hook-delete-policy: BeforeHookCreation,HookSucceeded`, no TTL), but the next sync deletes it. Treat the output as potentially containing row data from backfill migrations; scrub before pasting it anywhere.
+1. **Get the logs first.** Find the Job with `kubectl get jobs -n <ns> -l app.kubernetes.io/component=migrate` (it is named `<helm-release>-klicker-uzh-v2-migrate` unless the release name already contains the chart name), then `kubectl logs job/<name> -n <ns>` — with the default values, both successful and failed Jobs are kept until the next sync (`hook-delete-policy: BeforeHookCreation`, no TTL by default). Keeping successful jobs prevents an upstream ArgoCD finalizer race from deadlocking the sync (see the [df-cloud incident analysis](https://gitlab.uzh.ch/uzh-bf/cloud/df-cloud-klickeruzh/-/blob/stg/docs/solutions/integration/argocd-hook-job-finalizer-update.md)). Treat the output as potentially containing row data from backfill migrations; scrub before pasting it anywhere.
 2. **Classify the failure.** Image pull (`ImagePullBackOff` → the rendered tag has no migrator image, see bootstrap above); connection error (DB unreachable — `backoffLimit: 1` gives little retry, so a failover during the hook simply needs a re-sync); or a SQL error inside a migration.
 3. **A SQL failure leaves the DB partially migrated.** Prisma marks the migration failed and every later run stops with `P3009` until it is resolved. `prisma migrate resolve` only rewrites that bookkeeping — it does **not** undo DDL the failed migration already committed. Inspect the schema, undo the partial DDL by hand, then `prisma:resolve:prod` with `--rolled-back` (re-apply later) or `--applied` (you finished it manually).
 4. **Killed mid-migration is the same case.** The CLI ignores `SIGTERM`, so hitting `activeDeadlineSeconds: 600`, evicting the pod, or terminating the sync escalates to `SIGKILL` and leaves exactly the partial state above. An orphaned backend can also hold the advisory lock briefly; a later run then reports a connection-ish error that is really lock contention.
@@ -120,6 +153,68 @@ Points and badges are independent per row: `points` defaults to 0 and `awards` t
 Points earned inside Klicker (Swiss Quiz, microlearnings) are already on the leaderboard and are never part of these payloads — only externally-run activities are seeded. Awards that depend on in-platform behaviour are derived from the database rather than the workbook: `prepareMicrolearningAwards.ts` grants a round's `derivedAward` (Busy Bee, for Summer School) when the participant has a `QuestionResponse` for every `ElementInstance` of every non-deleted `MicroLearning` in the course. The derivation is frozen into the payload rather than recomputed at write time, so the payload hash still pins exactly what gets written.
 
 **Do not derive microlearning completion from `ParticipantActivityPerformance.completion`, `MicroLearning.completedCount`, or `startedCount`.** All three are empty for the Summer School 2026 course (zero rows, zero counters) even though responses exist, so they silently yield zero for every participant instead of failing. `QuestionResponse` is the reliable signal; cross-check the derived count against the workbook before seeding.
+
+### Dedicated demo participants
+
+The three lecturer-demo courses use dedicated manual participant accounts. The
+reconciler is idempotent: it creates the missing account, repairs only the
+dedicated account's active/private state, activates its matching leaderboard
+participation,
+and deactivates an active leaderboard participation in another course without
+deleting it.
+It never touches the shared `teststudent` account. Course and chatbot names are
+resolved under owner shortname `klick`; missing, archived, duplicated, or
+re-owned targets fail before any write.
+
+`Participation.isActive` is the course-leaderboard opt-in flag only. The
+reconciler's participation updates change leaderboard inclusion; they do not
+grant or revoke course, assessment, or chatbot access. Access remains governed
+by the endpoint-specific authorization and invitation/account rules, so a
+leaderboard change must never be presented as a security change.
+
+| Demo         | Course                  | Chatbot                     | Participant username  | Password secret name                             |
+| ------------ | ----------------------- | --------------------------- | --------------------- | ------------------------------------------------ |
+| IuW          | `testkurs IuW`          | `Informatik und Wirtschaft` | `teststudent-iuw`     | `KLICKER_DEMO_IUW_PARTICIPANT_PASSWORD`          |
+| RadioSurfVet | `testkurs RadioSurfVet` | `RadioSurfVet`              | `teststudent-rsv`     | `KLICKER_DEMO_RADIOSURFVET_PARTICIPANT_PASSWORD` |
+| Culture      | `Demo Course Copy`      | `Culture Scenario Lab`      | `teststudent-culture` | `KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD`      |
+
+Run this from the repository root with the PRD operator profile. The default
+mode and `--readback` are read-only; `--apply` is the sole write mode and
+requires all three password mappings. The operator injects `DATABASE_URL` and
+the password values only into this child process, so no `.env` file or shell
+history entry carries them:
+
+```bash
+rs-infisical-operator --profile klicker-prd run \
+  --map DATABASE_URL=DATABASE_URL \
+  -- pnpm --filter @klicker-uzh/prisma-data run seed:demo-participants
+
+rs-infisical-operator --profile klicker-prd run \
+  --map DATABASE_URL=DATABASE_URL \
+  -- pnpm --filter @klicker-uzh/prisma-data run seed:demo-participants --readback
+
+rs-infisical-operator --profile klicker-prd run \
+  --map DATABASE_URL=DATABASE_URL \
+  --map KLICKER_DEMO_IUW_PARTICIPANT_PASSWORD=KLICKER_DEMO_IUW_PARTICIPANT_PASSWORD \
+  --map KLICKER_DEMO_RADIOSURFVET_PARTICIPANT_PASSWORD=KLICKER_DEMO_RADIOSURFVET_PARTICIPANT_PASSWORD \
+  --map KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD=KLICKER_DEMO_CULTURE_PARTICIPANT_PASSWORD \
+  -- pnpm --filter @klicker-uzh/prisma-data run seed:demo-participants --apply
+```
+
+The password names need exact read and write permission in that profile before
+the first run. Write permission is used only to create a missing random value
+with `rs-infisical-operator set-random --bytes 32`; do not rotate an existing
+value without a separate decision. Never print, copy, or read back the values.
+The script reports fixed target labels, status names, and booleans only. The
+apply transaction verifies active, private, manual accounts, matching active
+participations, password matches, and no active off-target participation before
+commit; run `--readback` afterward for the non-secret account and participation
+checks.
+
+These password variables are deliberately not added to `turbo.json` global
+environment inputs. Broad Turbo propagation would expose credentials to
+unrelated tasks, so invoke this maintenance script directly through the
+operator boundary.
 
 ## Typed Json fields
 

@@ -19,6 +19,8 @@ export function ChatRecoveryCard({
   return (
     <main
       data-cy={dataCy}
+      id="main-content"
+      tabIndex={-1}
       className="bg-muted flex min-h-screen w-full items-center justify-center px-4 py-8"
     >
       <section

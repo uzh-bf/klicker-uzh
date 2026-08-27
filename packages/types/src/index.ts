@@ -1003,6 +1003,9 @@ export type StudentPointCorrection = {
 export type StudentAssessmentResultsItem = {
   participantId: string
   participantEmail: string
+  assessmentGivenName: string | null
+  assessmentSurname: string | null
+  assessmentMatriculationNumber: string | null
   basePoints: number
   correctnessPoints: number
   bonusPoints: number

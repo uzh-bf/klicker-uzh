@@ -78,8 +78,11 @@ model ChatMessage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Retain the existing single-column lookup path in this expand-only migration.
   @@index([threadId])
   @@index([parentId])
+  @@index([createdAt])
+  @@index([threadId, createdAt])
 }
 
 model ChatAttachment {
@@ -134,6 +137,9 @@ model Chatbot {
   mcpConfigurations ChatbotMCPConfig[]
   threads           ChatThread[]
   usageCredits      ChatUsageCredits[]
+  participantChatAnalytics   ParticipantChatAnalytics[]
+  aggregatedChatbotAnalytics AggregatedChatbotAnalytics[]
+  topicClusters              ChatTopicCluster[]
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -143,6 +149,8 @@ model Chatbot {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([courseId])
 }
 
 model ChatbotMCPServer {

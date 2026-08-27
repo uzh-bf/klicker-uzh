@@ -1,76 +1,152 @@
-import { ContextWithUser } from '@/lib/context.js'
 import * as DB from '@klicker-uzh/prisma/client'
-import {
+import type {
   ActivityFeedback,
   ActivityPerformance,
-  ActivityType,
   InstanceFeedback,
   InstancePerformance,
   InstanceQuizAnalytics,
   ParticipantActivityPerformance,
 } from '@klicker-uzh/types'
+import { ActivityType } from '@klicker-uzh/types'
+import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
+import type { ContextWithUser } from '@/lib/context.js'
+
+async function getEligibleParticipantIdsForCourseAnalytics(
+  prisma: PrismaTransactionClient,
+  courseId: string
+) {
+  const rows = await prisma.$queryRaw<Array<{ participantId: string }>>`
+    SELECT pca."participantId" AS "participantId"
+    FROM "ParticipantCourseAnalytics" AS pca
+    JOIN "Participant" AS p ON p."id" = pca."participantId"
+    JOIN "Course" AS c ON c."id" = pca."courseId"
+    WHERE pca."courseId" = CAST(${courseId} AS uuid)
+      AND p."learningAnalyticsConsent" IS TRUE
+      AND p."learningAnalyticsChoiceAt" IS NOT NULL
+      AND NULLIF(btrim(p."learningAnalyticsDisclosureVersion"), '') IS NOT NULL
+      AND p."learningAnalyticsIncludedFrom" IS NOT NULL
+      AND p."learningAnalyticsIncludedFrom" <= p."learningAnalyticsChoiceAt"
+      AND c."analyticsLastComputedAt" IS NOT NULL
+      AND c."analyticsLastComputedAt" >= p."learningAnalyticsIncludedFrom"
+  `
+
+  return rows.map(({ participantId }) => participantId)
+}
+
+async function getEligibleParticipantIdsForPerformanceAnalytics(
+  prisma: PrismaTransactionClient,
+  courseId: string
+) {
+  const rows = await prisma.$queryRaw<Array<{ participantId: string }>>`
+    WITH individual_rows AS (
+      SELECT pp."participantId" AS "participantId"
+      FROM "ParticipantPerformance" AS pp
+      WHERE pp."courseId" = CAST(${courseId} AS uuid)
+
+      UNION
+
+      SELECT pap."participantId" AS "participantId"
+      FROM "ParticipantActivityPerformance" AS pap
+      JOIN "PracticeQuiz" AS pq ON pq."id" = pap."practiceQuizId"
+      WHERE pq."courseId" = CAST(${courseId} AS uuid)
+
+      UNION
+
+      SELECT pap."participantId" AS "participantId"
+      FROM "ParticipantActivityPerformance" AS pap
+      JOIN "MicroLearning" AS ml ON ml."id" = pap."microLearningId"
+      WHERE ml."courseId" = CAST(${courseId} AS uuid)
+    )
+    SELECT individual_rows."participantId" AS "participantId"
+    FROM individual_rows
+    JOIN "Participant" AS p ON p."id" = individual_rows."participantId"
+    JOIN "Course" AS c ON c."id" = CAST(${courseId} AS uuid)
+    WHERE p."learningAnalyticsConsent" IS TRUE
+      AND p."learningAnalyticsChoiceAt" IS NOT NULL
+      AND NULLIF(btrim(p."learningAnalyticsDisclosureVersion"), '') IS NOT NULL
+      AND p."learningAnalyticsIncludedFrom" IS NOT NULL
+      AND p."learningAnalyticsIncludedFrom" <= p."learningAnalyticsChoiceAt"
+      AND c."analyticsLastComputedAt" IS NOT NULL
+      AND c."analyticsLastComputedAt" >= p."learningAnalyticsIncludedFrom"
+  `
+
+  return rows.map(({ participantId }) => participantId)
+}
 
 export async function getCourseActivityAnalytics(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
-  const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
-    include: {
-      participations: true,
-      aggregatedAnalytics: {
-        orderBy: { timestamp: 'asc' },
-      },
-      aggregatedCourseAnalytics: true,
-      participantCourseAnalytics: true,
+  return ctx.prisma.$transaction(
+    async (prisma) => {
+      const eligibleParticipantIds =
+        await getEligibleParticipantIdsForCourseAnalytics(prisma, courseId)
+      const course = await prisma.course.findUnique({
+        where: { id: courseId },
+        include: {
+          participations: true,
+          aggregatedAnalytics: {
+            orderBy: { timestamp: 'asc' },
+          },
+          aggregatedCourseAnalytics: true,
+          participantCourseAnalytics: {
+            where: { participantId: { in: eligibleParticipantIds } },
+          },
+        },
+      })
+
+      if (!course) {
+        return null
+      }
+
+      // map daily and weekly student activity into the format required by the frontend
+      const dailyActivity = course.aggregatedAnalytics
+        .filter((analytics) => analytics.type === 'DAILY')
+        .map((analytics) => ({
+          date: analytics.timestamp,
+          activeParticipants: analytics.participantCount,
+        }))
+      const weeklyActivity = course.aggregatedAnalytics
+        .filter((analytics) => analytics.type === 'WEEKLY')
+        .map((analytics) => ({
+          date: analytics.timestamp,
+          activeParticipants: analytics.participantCount,
+        }))
+
+      // compute the duration of the course in weeks (until current date, if course is still running)
+      const courseWeeks = Math.ceil(
+        dayjs(
+          course.endDate && dayjs(course.endDate).isBefore(dayjs())
+            ? course.endDate
+            : dayjs()
+        ).diff(dayjs(course.startDate), 'week', true)
+      )
+
+      return {
+        name: course.name,
+        courseWeeks,
+        totalParticipants: course.participations.length,
+        dailyActivity,
+        weeklyActivity,
+        activeDays: {
+          monday: course.aggregatedCourseAnalytics?.activityMonday ?? 0,
+          tuesday: course.aggregatedCourseAnalytics?.activityTuesday ?? 0,
+          wednesday: course.aggregatedCourseAnalytics?.activityWednesday ?? 0,
+          thursday: course.aggregatedCourseAnalytics?.activityThursday ?? 0,
+          friday: course.aggregatedCourseAnalytics?.activityFriday ?? 0,
+          saturday: course.aggregatedCourseAnalytics?.activitySaturday ?? 0,
+          sunday: course.aggregatedCourseAnalytics?.activitySunday ?? 0,
+        },
+        participantCourseAnalytics: course.participantCourseAnalytics,
+      }
     },
-  })
-
-  if (!course) {
-    return null
-  }
-
-  // map daily and weekly student activity into the format required by the frontend
-  const dailyActivity = course.aggregatedAnalytics
-    .filter((analytics) => analytics.type === 'DAILY')
-    .map((analytics) => ({
-      date: analytics.timestamp,
-      activeParticipants: analytics.participantCount,
-    }))
-  const weeklyActivity = course.aggregatedAnalytics
-    .filter((analytics) => analytics.type === 'WEEKLY')
-    .map((analytics) => ({
-      date: analytics.timestamp,
-      activeParticipants: analytics.participantCount,
-    }))
-
-  // compute the duration of the course in weeks (until current date, if course is still running)
-  const courseWeeks = Math.ceil(
-    dayjs(
-      course.endDate && dayjs(course.endDate).isBefore(dayjs())
-        ? course.endDate
-        : dayjs()
-    ).diff(dayjs(course.startDate), 'week', true)
+    {
+      maxWait: 10_000,
+      timeout: 60_000,
+      isolationLevel: DB.Prisma.TransactionIsolationLevel.RepeatableRead,
+    }
   )
-
-  return {
-    name: course.name,
-    courseWeeks,
-    totalParticipants: course.participations.length,
-    dailyActivity,
-    weeklyActivity,
-    activeDays: {
-      monday: course.aggregatedCourseAnalytics?.activityMonday ?? 0,
-      tuesday: course.aggregatedCourseAnalytics?.activityTuesday ?? 0,
-      wednesday: course.aggregatedCourseAnalytics?.activityWednesday ?? 0,
-      thursday: course.aggregatedCourseAnalytics?.activityThursday ?? 0,
-      friday: course.aggregatedCourseAnalytics?.activityFriday ?? 0,
-      saturday: course.aggregatedCourseAnalytics?.activitySaturday ?? 0,
-      sunday: course.aggregatedCourseAnalytics?.activitySunday ?? 0,
-    },
-    participantCourseAnalytics: course.participantCourseAnalytics,
-  }
 }
 
 export async function getCourseWeeklyActivity(
@@ -474,89 +550,109 @@ export async function getCoursePerformanceAnalytics(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
 ) {
-  const course = await ctx.prisma.course.findUnique({
-    where: { id: courseId },
-    include: {
-      _count: { select: { participations: true } },
-      practiceQuizzes: {
+  return ctx.prisma.$transaction(
+    async (prisma) => {
+      const eligibleParticipantIds =
+        await getEligibleParticipantIdsForPerformanceAnalytics(prisma, courseId)
+      const participantFilter = {
+        participantId: { in: eligibleParticipantIds },
+      }
+      const course = await prisma.course.findUnique({
+        where: { id: courseId },
         include: {
-          progress: true,
-          performance: true,
-          participantPerformances: { include: { participant: true } },
-          stacks: {
+          _count: { select: { participations: true } },
+          practiceQuizzes: {
             include: {
-              elements: {
-                include: { instancePerformance: true, feedbacks: true },
+              progress: true,
+              performance: true,
+              participantPerformances: {
+                where: participantFilter,
+                include: { participant: true },
+              },
+              stacks: {
+                include: {
+                  elements: {
+                    include: { instancePerformance: true, feedbacks: true },
+                  },
+                },
               },
             },
+            orderBy: { createdAt: 'desc' },
           },
-        },
-        orderBy: { createdAt: 'desc' },
-      },
-      microLearnings: {
-        include: {
-          progress: true,
-          performance: true,
-          participantPerformances: { include: { participant: true } },
-          stacks: {
+          microLearnings: {
             include: {
-              elements: {
-                include: { instancePerformance: true, feedbacks: true },
+              progress: true,
+              performance: true,
+              participantPerformances: {
+                where: participantFilter,
+                include: { participant: true },
+              },
+              stacks: {
+                include: {
+                  elements: {
+                    include: { instancePerformance: true, feedbacks: true },
+                  },
+                },
               },
             },
+            orderBy: { scheduledStartAt: 'desc' },
           },
+          participantPerformances: { where: participantFilter },
         },
-        orderBy: { scheduledStartAt: 'desc' },
-      },
-      participantPerformances: true,
+      })
+
+      if (!course) {
+        return null
+      }
+
+      if (
+        course.practiceQuizzes.length === 0 &&
+        course.microLearnings.length === 0
+      ) {
+        return {
+          name: course.name,
+          totalParticipants: course._count.participations,
+          activityProgresses: [],
+          activityPerformances: [],
+          participantActivityPerformances: [],
+          instancePerformances: [],
+          participantPerformances: course.participantPerformances,
+          instanceFeedbacks: [],
+          activityFeedbacks: [],
+        }
+      }
+
+      // map the metrics for all activities in the course to the desired performance and progress values
+      const {
+        activityProgresses,
+        activityPerformances,
+        participantActivityPerformances,
+        instancePerformances,
+      } = computeActivityInstancePerformance({
+        course,
+      })
+
+      const { instanceFeedbacks, activityFeedbacks } =
+        computeActivityInstanceFeedbacks({ course })
+
+      return {
+        name: course.name,
+        totalParticipants: course._count.participations,
+        activityProgresses,
+        activityPerformances,
+        participantActivityPerformances,
+        instancePerformances,
+        participantPerformances: course.participantPerformances,
+        instanceFeedbacks,
+        activityFeedbacks,
+      }
     },
-  })
-
-  if (!course) {
-    return null
-  }
-
-  if (
-    course.practiceQuizzes.length === 0 &&
-    course.microLearnings.length === 0
-  ) {
-    return {
-      name: course.name,
-      totalParticipants: course._count.participations,
-      activityProgresses: [],
-      activityPerformances: [],
-      participantActivityPerformances: [],
-      instancePerformances: [],
-      participantPerformances: course.participantPerformances,
-      instanceFeedbacks: [],
-      activityFeedbacks: [],
+    {
+      maxWait: 10_000,
+      timeout: 60_000,
+      isolationLevel: DB.Prisma.TransactionIsolationLevel.RepeatableRead,
     }
-  }
-
-  // map the metrics for all activities in the course to the desired performance and progress values
-  const {
-    activityProgresses,
-    activityPerformances,
-    participantActivityPerformances,
-    instancePerformances,
-  } = computeActivityInstancePerformance({
-    course,
-  })
-
-  const { instanceFeedbacks, activityFeedbacks } =
-    computeActivityInstanceFeedbacks({ course })
-
-  return {
-    name: course.name,
-    totalParticipants: course._count.participations,
-    activityProgresses,
-    activityPerformances,
-    participantActivityPerformances,
-    instancePerformances,
-    participantPerformances: course.participantPerformances,
-    instanceFeedbacks,
-    activityFeedbacks,
-  }
+  )
 }
 
 export async function getActivityAnalytics(

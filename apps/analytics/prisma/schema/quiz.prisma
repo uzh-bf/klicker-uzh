@@ -133,6 +133,9 @@ model LiveQuiz {
   templateInfo ActivityTemplate?
   templateName String? // name of the template the quiz was created from
 
+  participantLiveQuizAnalytics ParticipantLiveQuizAnalytics[]
+  aggregatedLiveQuizAnalytics  AggregatedLiveQuizAnalytics?
+
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
 
@@ -141,6 +144,8 @@ model LiveQuiz {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([courseId])
 }
 
 // #endregion

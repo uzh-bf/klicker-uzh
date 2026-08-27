@@ -1,13 +1,10 @@
 'use client'
 
 import {
-  BotIcon,
-  BrainCircuitIcon,
   CircleAlertIcon,
-  CircleIcon,
+  HistoryIcon,
   LoaderCircleIcon,
   MessageCircleIcon,
-  WrenchIcon,
   XIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -16,29 +13,24 @@ import {
   type KeyboardEvent,
   type ReactNode,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react'
 
-import type {
-  HistoryRailEntry,
-  HistoryRailEntryKind,
-  HistoryRailTickRange,
-} from '../lib/history-rail'
 import {
-  getHistoryRailMessageAnchor,
   getHistoryRailTickRanges,
-} from '../lib/history-rail'
+  type HistoryRailEntry,
+  type HistoryRailEntryKind,
+  type HistoryRailTickRange,
+  toHistoryRailPlainText,
+} from '@/src/lib/history-rail'
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
 type HistoryRailProps = {
   entries: readonly HistoryRailEntry[]
 }
 
-const DESKTOP_COLLAPSE_THRESHOLD = 12
-const MOBILE_COLLAPSE_THRESHOLD = 6
 const DESKTOP_TICK_LIMIT = 12
-const MOBILE_TICK_LIMIT = 6
 const HISTORY_DIALOG_DESKTOP_ID = 'chat-history-rail-dialog-desktop'
 const HISTORY_DIALOG_MOBILE_ID = 'chat-history-rail-dialog-mobile'
 
@@ -49,20 +41,6 @@ const findAnchor = (
   Array.from(
     viewport.querySelectorAll<HTMLElement>('[data-history-rail-anchor]')
   ).find((element) => element.dataset.historyRailAnchor === anchor)
-
-const revealCollapsedToolGroups = (
-  viewport: HTMLElement,
-  messageId: string
-): void => {
-  const message = findAnchor(viewport, getHistoryRailMessageAnchor(messageId))
-  if (!message) return
-
-  for (const button of message.querySelectorAll<HTMLButtonElement>(
-    '[data-cy="chat-tool-group-toggle"][aria-expanded="false"]'
-  )) {
-    button.click()
-  }
-}
 
 const revealCurrentEntry = (
   container: HTMLElement,
@@ -96,15 +74,8 @@ const revealCurrentEntry = (
   }
 }
 
-const formatToolName = (value: string): string =>
-  value
-    .split(/[\s_-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ')
-
 const getEntryIcon = (
-  kind: HistoryRailEntryKind,
+  _kind: HistoryRailEntryKind,
   status: HistoryRailEntry['status']
 ): ReactNode => {
   if (status === 'running') {
@@ -119,30 +90,12 @@ const getEntryIcon = (
     return <CircleAlertIcon className="size-3.5" aria-hidden />
   }
 
-  switch (kind) {
-    case 'user':
-      return <MessageCircleIcon className="size-3.5" aria-hidden />
-    case 'assistant':
-      return <BotIcon className="size-3.5" aria-hidden />
-    case 'reasoning':
-      return <BrainCircuitIcon className="size-3.5" aria-hidden />
-    case 'tool':
-      return <WrenchIcon className="size-3.5" aria-hidden />
-    case 'error':
-      return <CircleAlertIcon className="size-3.5" aria-hidden />
-    default:
-      return <CircleIcon className="size-3.5" aria-hidden />
-  }
+  return <MessageCircleIcon className="size-3.5" aria-hidden />
 }
 
-const HistoryRailEntryButton: FC<{
+const HistoryRailTurnDetails: FC<{
   entry: HistoryRailEntry
-  index: number
-  isCurrent: boolean
-  mobile?: boolean
-  onNavigate: (anchor: string) => void
-  title: string
-}> = ({ entry, index, isCurrent, mobile = false, onNavigate, title }) => {
+}> = ({ entry }) => {
   const t = useTranslations()
   const statusLabel =
     entry.status === 'running'
@@ -152,43 +105,49 @@ const HistoryRailEntryButton: FC<{
         : entry.status === 'error'
           ? t('chat.historyRail.error')
           : undefined
-  const preview = entry.preview ? `: ${entry.preview}` : ''
-  const accessibleLabel = [title + preview, statusLabel]
-    .filter(Boolean)
-    .join(' — ')
 
   return (
-    <button
-      type="button"
-      data-cy="chat-history-rail-entry"
-      data-history-rail-entry={entry.id}
-      aria-current={isCurrent ? 'step' : undefined}
-      aria-label={accessibleLabel}
-      title={accessibleLabel}
-      onClick={() => onNavigate(entry.anchor)}
-      className={
-        mobile
-          ? `border-border/70 flex size-7 shrink-0 touch-manipulation items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 ${isCurrent ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground hover:bg-accent hover:text-foreground'}`
-          : `group relative flex size-8 shrink-0 touch-manipulation items-center justify-center rounded-lg transition-colors focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 ${isCurrent ? 'bg-primary/10 text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`
-      }
+    <TooltipContent
+      align="center"
+      className="max-h-72 max-w-[min(24rem,calc(100vw-2rem))] overflow-y-auto p-3 text-left"
+      data-cy="chat-history-rail-turn-popover"
+      side="right"
+      sideOffset={8}
     >
-      <span
-        className={`relative z-10 flex size-5 shrink-0 items-center justify-center rounded-full ${isCurrent ? 'bg-primary text-primary-foreground' : entry.status === 'error' ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground group-hover:bg-background'}`}
-      >
-        {getEntryIcon(entry.kind, entry.status)}
-      </span>
-      <span className="sr-only">
-        {mobile ? `${index + 1}. ` : ''}
-        {accessibleLabel}
-      </span>
-    </button>
+      <div className="space-y-2">
+        {entry.userMessageId && (
+          <div>
+            <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wide">
+              {t('chat.historyRail.you')}
+            </p>
+            <p className="whitespace-pre-wrap break-words text-xs leading-4">
+              {entry.userText ?? t('chat.historyRail.noText')}
+            </p>
+          </div>
+        )}
+        {entry.assistantMessageId && (
+          <div>
+            <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wide">
+              {t('chat.historyRail.assistant')}
+            </p>
+            <p className="whitespace-pre-wrap break-words text-xs leading-4">
+              {entry.assistantText ?? t('chat.historyRail.noResponse')}
+            </p>
+          </div>
+        )}
+        {statusLabel && (
+          <p className="text-muted-foreground text-[10px] leading-3">
+            {statusLabel}
+          </p>
+        )}
+      </div>
+    </TooltipContent>
   )
 }
 
-const HistoryRailCollapsedTick: FC<{
+const HistoryRailTick: FC<{
   dialogId?: string
   entry: HistoryRailEntry
-  index: number
   isCurrent: boolean
   isOpen?: boolean
   onNavigate: (anchor: string) => void
@@ -199,7 +158,6 @@ const HistoryRailCollapsedTick: FC<{
 }> = ({
   dialogId,
   entry,
-  index,
   isCurrent,
   isOpen = false,
   onNavigate,
@@ -230,7 +188,16 @@ const HistoryRailCollapsedTick: FC<{
         })
   const accessibleLabel = [
     itemLabel,
-    `${title}${entry.preview ? `: ${entry.preview}` : ''}`,
+    // The title deliberately carries no text excerpt: the You/Assistant
+    // lines below already announce the same plain-text projection, so an
+    // excerpt after the title would be read out twice in a row.
+    title,
+    entry.userMessageId
+      ? `${t('chat.historyRail.you')}: ${toHistoryRailPlainText(entry.userText) ?? t('chat.historyRail.noText')}`
+      : undefined,
+    entry.assistantMessageId
+      ? `${t('chat.historyRail.assistant')}: ${toHistoryRailPlainText(entry.assistantText) ?? t('chat.historyRail.noResponse')}`
+      : undefined,
     statusLabel,
     isCurrent
       ? t(
@@ -242,147 +209,74 @@ const HistoryRailCollapsedTick: FC<{
   ]
     .filter(Boolean)
     .join(' — ')
-  const detailClassName = isCurrent
-    ? 'max-h-8 max-w-40 rounded-full group-hover:max-h-28 group-hover:w-72 group-hover:max-w-[calc(100vw-3rem)] group-hover:rounded-lg group-hover:px-3 group-focus-visible:max-h-28 group-focus-visible:w-72 group-focus-visible:max-w-[calc(100vw-3rem)] group-focus-visible:rounded-lg group-focus-visible:px-3'
-    : 'max-h-28 w-72 max-w-[calc(100vw-3rem)] rounded-lg opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100'
-  const detailTextClassName = isCurrent
-    ? 'max-h-0 overflow-hidden opacity-0 transition-[max-height,opacity] group-hover:max-h-12 group-hover:opacity-100 group-focus-visible:max-h-12 group-focus-visible:opacity-100'
-    : 'line-clamp-2'
 
   return (
-    <button
-      type="button"
-      aria-controls={isCurrent ? dialogId : undefined}
-      aria-current={isCurrent ? 'step' : undefined}
-      aria-expanded={isCurrent ? isOpen : undefined}
-      aria-haspopup={isCurrent ? 'dialog' : undefined}
-      aria-label={accessibleLabel}
-      data-history-rail-tick={entry.anchor}
-      title={accessibleLabel}
-      onClick={(event) => {
-        if (isCurrent) {
-          onToggle?.(event.currentTarget)
-        } else {
-          onNavigate(entry.anchor)
-        }
-      }}
-      className={`group relative flex h-4 w-full touch-manipulation items-center justify-center rounded-full focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 ${isCurrent ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-    >
-      <span
-        aria-hidden="true"
-        className={`block rounded-full transition-[width,height,background-color] ${isCurrent ? 'bg-primary h-0.5 w-4' : 'bg-border/80 h-0.5 w-2 group-hover:bg-foreground group-hover:w-3 group-focus-visible:bg-foreground group-focus-visible:w-3'}`}
-      />
-      <span
-        aria-hidden="true"
-        className={`pointer-events-none absolute left-7 top-1/2 z-30 flex -translate-y-1/2 flex-col overflow-hidden border border-border/70 bg-background/95 px-2 py-1 shadow-sm backdrop-blur-md transition-[max-height,opacity,width,padding] ${detailClassName}`}
-      >
-        <span className="block truncate text-left text-[11px] font-medium leading-4">
-          {title} · {isCurrent ? `${index + 1}/${total}` : itemLabel}
-        </span>
-        {entry.preview && (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-controls={isCurrent && isOpen ? dialogId : undefined}
+          aria-current={isCurrent ? 'step' : undefined}
+          aria-expanded={isCurrent ? isOpen : undefined}
+          aria-haspopup={isCurrent ? 'dialog' : undefined}
+          aria-label={accessibleLabel}
+          data-history-rail-tick={entry.anchor}
+          onClick={(event) => {
+            if (isCurrent) {
+              onToggle?.(event.currentTarget)
+            } else {
+              onNavigate(entry.anchor)
+            }
+          }}
+          className={`group relative flex h-5 w-full touch-manipulation items-center justify-center rounded-full focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isCurrent ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+        >
           <span
-            className={`text-muted-foreground block text-left text-[11px] leading-4 ${detailTextClassName}`}
-          >
-            {entry.preview}
-          </span>
-        )}
-        {statusLabel && (
-          <span
-            className={`text-muted-foreground block text-left text-[10px] leading-3 ${detailTextClassName}`}
-          >
-            {statusLabel}
-          </span>
-        )}
-      </span>
-    </button>
-  )
-}
-
-const HistoryCurrentButton: FC<{
-  dialogId: string
-  entry: HistoryRailEntry
-  index: number
-  isOpen: boolean
-  mobile?: boolean
-  onToggle: (button: HTMLButtonElement) => void
-  title: string
-  total: number
-  top?: number | null
-}> = ({
-  dialogId,
-  entry,
-  index,
-  isOpen,
-  mobile = false,
-  onToggle,
-  title,
-  total,
-  top,
-}) => {
-  const t = useTranslations()
-  const itemLabel = t('chat.historyRail.item', {
-    current: index + 1,
-    total,
-  })
-  const accessibleLabel = [
-    t('chat.historyRail.label'),
-    `${title}, ${itemLabel}`,
-    t(
-      isOpen ? 'chat.historyRail.closeHistory' : 'chat.historyRail.openHistory'
-    ),
-  ].join('. ')
-
-  return (
-    <button
-      type="button"
-      aria-controls={dialogId}
-      aria-expanded={isOpen}
-      aria-haspopup="dialog"
-      aria-label={accessibleLabel}
-      title={accessibleLabel}
-      onClick={(event) => onToggle(event.currentTarget)}
-      className={
-        mobile
-          ? 'border-border/70 bg-background text-muted-foreground flex min-h-11 min-w-11 shrink-0 touch-manipulation items-center justify-center gap-1 rounded-full border px-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700'
-          : 'pointer-events-auto absolute left-8 z-30 max-w-40 -translate-y-1/2 touch-manipulation truncate rounded-full border border-border/70 bg-background/95 px-2 py-1 text-[11px] font-medium leading-4 shadow-sm backdrop-blur-md transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700'
-      }
-      style={mobile ? undefined : { top: top ?? 0 }}
-    >
-      {mobile && (
-        <span className="bg-primary text-primary-foreground flex size-5 shrink-0 items-center justify-center rounded-full">
-          {getEntryIcon(entry.kind, entry.status)}
-        </span>
-      )}
-      <span className={mobile ? 'text-[11px] font-semibold' : 'truncate'}>
-        {mobile ? `${index + 1}/${total}` : `${title} · ${index + 1}/${total}`}
-      </span>
-    </button>
+            aria-hidden="true"
+            className={`block rounded-full transition-[width,height,background-color] ${isCurrent ? 'bg-primary h-0.5 w-4' : 'bg-muted-foreground/80 h-0.5 w-2 group-hover:bg-foreground group-hover:w-3 group-focus-visible:bg-foreground group-focus-visible:w-3'}`}
+          />
+        </button>
+      </TooltipTrigger>
+      <HistoryRailTurnDetails entry={entry} />
+    </Tooltip>
   )
 }
 
 const HistoryDialog: FC<{
   desktop?: boolean
   entries: readonly HistoryRailEntry[]
-  entryTitles: readonly string[]
   id: string
   currentAnchor: string | null
   onClose: () => void
   onNavigate: (anchor: string) => void
-}> = ({
-  desktop = false,
-  entries,
-  entryTitles,
-  id,
-  currentAnchor,
-  onClose,
-  onNavigate,
-}) => {
+}> = ({ desktop = false, entries, id, currentAnchor, onClose, onNavigate }) => {
   const t = useTranslations()
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
       event.preventDefault()
       onClose()
+      return
+    }
+
+    // `aria-modal="true"` tells assistive tech everything outside is inert,
+    // so keyboard focus must not walk out either: wrap Tab between the
+    // dialog's focusable buttons (the close button and the entry rows).
+    if (event.key === 'Tab') {
+      const focusables = Array.from(
+        event.currentTarget.querySelectorAll<HTMLButtonElement>(
+          'button:not([disabled])'
+        )
+      ).filter((el) => el.getClientRects().length > 0)
+      if (focusables.length === 0) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
       return
     }
 
@@ -428,11 +322,12 @@ const HistoryDialog: FC<{
     <div
       id={id}
       aria-labelledby={`${id}-title`}
+      aria-modal="true"
       data-history-rail-dialog
       onKeyDown={handleKeyDown}
       role="dialog"
       tabIndex={-1}
-      className={`border-border/70 bg-background/95 absolute z-40 flex max-h-[60vh] min-h-0 flex-col overflow-hidden rounded-xl border p-2 shadow-lg backdrop-blur-md ${desktop ? 'left-8 top-2 w-72 max-w-[calc(100vw-3rem)]' : 'left-0 top-full mt-2 w-[min(360px,calc(100vw-1rem))] max-h-[70dvh]'}`}
+      className={`border-border/70 bg-background/95 absolute z-40 flex max-h-[60vh] min-h-0 flex-col overflow-hidden rounded-xl border p-2 shadow-lg backdrop-blur-md ${desktop ? 'left-8 top-2 w-72 max-w-[calc(100vw-3rem)]' : 'right-0 top-full mt-2 w-[min(360px,calc(100vw-1rem))] max-h-[70dvh]'}`}
     >
       <div className="flex shrink-0 items-center justify-between gap-2 px-2 pb-1">
         <h2 id={`${id}-title`} className="text-xs font-semibold">
@@ -441,7 +336,7 @@ const HistoryDialog: FC<{
         <button
           type="button"
           aria-label={t('chat.historyRail.closeHistory')}
-          className="text-muted-foreground hover:bg-accent hover:text-foreground flex size-8 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700"
+          className="text-muted-foreground hover:bg-accent hover:text-foreground flex size-11 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={onClose}
         >
           <XIcon className="size-4" aria-hidden />
@@ -457,16 +352,17 @@ const HistoryDialog: FC<{
                 : entry.status === 'error'
                   ? t('chat.historyRail.error')
                   : undefined
-          const preview = entry.preview ? `: ${entry.preview}` : ''
           const itemLabel = t('chat.historyRail.item', {
             current: index + 1,
             total: entries.length,
           })
-          const rowLabel = [
-            itemLabel,
-            `${entryTitles[index]}${preview}`,
-            statusLabel,
-          ]
+          const userLabel = entry.userMessageId
+            ? `${t('chat.historyRail.you')}: ${toHistoryRailPlainText(entry.userText) ?? t('chat.historyRail.noText')}`
+            : undefined
+          const assistantLabel = entry.assistantMessageId
+            ? `${t('chat.historyRail.assistant')}: ${toHistoryRailPlainText(entry.assistantText) ?? t('chat.historyRail.noResponse')}`
+            : undefined
+          const rowLabel = [itemLabel, userLabel, assistantLabel, statusLabel]
             .filter(Boolean)
             .join(' — ')
 
@@ -480,7 +376,7 @@ const HistoryDialog: FC<{
                 }
                 aria-label={rowLabel}
                 onClick={() => onNavigate(entry.anchor)}
-                className={`hover:bg-accent flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 ${entry.anchor === currentAnchor ? 'bg-primary/10' : ''}`}
+                className={`hover:bg-accent flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${entry.anchor === currentAnchor ? 'bg-primary/10' : ''}`}
               >
                 <span className="text-muted-foreground w-10 shrink-0 text-right text-[10px] tabular-nums">
                   {index + 1}/{entries.length}
@@ -490,11 +386,16 @@ const HistoryDialog: FC<{
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-xs font-medium">
-                    {entryTitles[index]}
+                    {t('chat.historyRail.turn')}
                   </span>
-                  {entry.preview && (
+                  {userLabel && (
                     <span className="text-muted-foreground line-clamp-1 block text-[11px] leading-4">
-                      {entry.preview}
+                      {userLabel}
+                    </span>
+                  )}
+                  {assistantLabel && (
+                    <span className="text-muted-foreground line-clamp-1 block text-[11px] leading-4">
+                      {assistantLabel}
                     </span>
                   )}
                   {statusLabel && (
@@ -515,93 +416,41 @@ const HistoryDialog: FC<{
 export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
   const t = useTranslations()
   const railRef = useRef<HTMLElement>(null)
+  const mobileNavRef = useRef<HTMLElement>(null)
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const navigationLockRef = useRef<{
+    anchor: string
+    token: number
+  } | null>(null)
+  const navigationTokenRef = useRef(0)
   const returnFocusRef = useRef(true)
   const wasHistoryOpenRef = useRef(false)
   const [currentAnchor, setCurrentAnchor] = useState<string | null>(
     entries[0]?.anchor ?? null
   )
-  const [currentLabelTop, setCurrentLabelTop] = useState<number | null>(null)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
-
-  const entryTitles = useMemo(
-    () =>
-      entries.map((entry) => {
-        switch (entry.kind) {
-          case 'user':
-            return t('chat.historyRail.you')
-          case 'assistant':
-            return t('chat.historyRail.assistant')
-          case 'reasoning':
-            return t('chat.historyRail.reasoning')
-          case 'tool':
-            return t('chat.historyRail.tool', {
-              tool: formatToolName(
-                entry.toolName ?? t('chat.historyRail.toolFallback')
-              ),
-            })
-          case 'error':
-            return t('chat.historyRail.error')
-          default:
-            return t('chat.historyRail.assistant')
-        }
-      }),
-    [entries, t]
-  )
 
   const currentIndex = Math.max(
     0,
     entries.findIndex((entry) => entry.anchor === currentAnchor)
   )
-  const isDesktopCollapsed = entries.length > DESKTOP_COLLAPSE_THRESHOLD
-  const isMobileCollapsed = entries.length > MOBILE_COLLAPSE_THRESHOLD
-
   useEffect(() => {
+    if (
+      navigationLockRef.current &&
+      !entries.some(
+        (entry) => entry.anchor === navigationLockRef.current?.anchor
+      )
+    ) {
+      navigationTokenRef.current += 1
+      navigationLockRef.current = null
+    }
+
     setCurrentAnchor((previous) =>
       entries.some((entry) => entry.anchor === previous)
         ? previous
         : (entries[0]?.anchor ?? null)
     )
   }, [entries])
-
-  useEffect(() => {
-    const rail = railRef.current
-    if (!rail) return
-
-    const updateCurrentLabelPosition = () => {
-      const railRect = rail.getBoundingClientRect()
-      if (isDesktopCollapsed) {
-        setCurrentLabelTop(null)
-        return
-      }
-
-      const currentButton = Array.from(
-        rail.querySelectorAll<HTMLButtonElement>('[data-history-rail-entry]')
-      ).find((button) => button.dataset.historyRailEntry === currentAnchor)
-
-      if (!currentButton) {
-        setCurrentLabelTop(null)
-        return
-      }
-
-      const buttonRect = currentButton.getBoundingClientRect()
-      setCurrentLabelTop(buttonRect.top - railRect.top + buttonRect.height / 2)
-    }
-
-    updateCurrentLabelPosition()
-    const scrollList = isDesktopCollapsed
-      ? null
-      : rail.querySelector<HTMLElement>('ol')
-    scrollList?.addEventListener('scroll', updateCurrentLabelPosition, {
-      passive: true,
-    })
-    window.addEventListener('resize', updateCurrentLabelPosition)
-
-    return () => {
-      scrollList?.removeEventListener('scroll', updateCurrentLabelPosition)
-      window.removeEventListener('resize', updateCurrentLabelPosition)
-    }
-  }, [currentAnchor, isDesktopCollapsed])
 
   useEffect(() => {
     if (!currentAnchor) return
@@ -611,11 +460,6 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
         '[data-cy="chat-history-rail"]'
       )
       if (desktopRail) revealCurrentEntry(desktopRail, currentAnchor, 'block')
-
-      const mobileRail = document.querySelector<HTMLElement>(
-        '[data-cy="chat-history-rail-mobile"]'
-      )
-      if (mobileRail) revealCurrentEntry(mobileRail, currentAnchor, 'inline')
     }
 
     revealEntries()
@@ -646,11 +490,6 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
   }, [isHistoryOpen])
 
   useEffect(() => {
-    if (isDesktopCollapsed || isMobileCollapsed) return
-    setIsHistoryOpen(false)
-  }, [isDesktopCollapsed, isMobileCollapsed])
-
-  useEffect(() => {
     if (entries.length === 0) return
 
     const viewport = document.querySelector<HTMLElement>(
@@ -660,6 +499,14 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
 
     let frame: number | undefined
     const updateCurrentAnchor = () => {
+      const navigationLock = navigationLockRef.current
+      if (navigationLock) {
+        setCurrentAnchor((previous) =>
+          previous === navigationLock.anchor ? previous : navigationLock.anchor
+        )
+        return
+      }
+
       const anchorElements = new Map<string, HTMLElement>()
       for (const element of viewport.querySelectorAll<HTMLElement>(
         '[data-history-rail-anchor]'
@@ -720,6 +567,49 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
     }
   }, [entries])
 
+  // Backstop dismissal for the expanded history dialog: a document-level
+  // Escape (in case focus ever lands outside the dialog's own onKeyDown
+  // subtree) and a click/tap outside both rail containers. Registered only
+  // while the dialog is open, so it never intercepts input elsewhere in the
+  // app.
+  useEffect(() => {
+    if (!isHistoryOpen) return
+
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      // The dialog's own onKeyDown already closes on Escape and calls
+      // preventDefault; skip so an Escape handled there isn't acted on twice.
+      if (event.key !== 'Escape' || event.defaultPrevented) return
+      returnFocusRef.current = true
+      setIsHistoryOpen(false)
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (!(target instanceof Node)) return
+      if (railRef.current?.contains(target)) return
+      if (mobileNavRef.current?.contains(target)) return
+      // The tick hover popover renders in a portal outside both rail
+      // containers, so a pointer interaction inside it (e.g. scrolling a
+      // long popover) must not count as "outside".
+      const targetElement =
+        target instanceof Element ? target : target.parentElement
+      if (targetElement?.closest('[data-cy="chat-history-rail-turn-popover"]'))
+        return
+
+      // Unlike Escape, dismissing by clicking elsewhere shouldn't yank focus
+      // back to the tick that opened the dialog.
+      returnFocusRef.current = false
+      setIsHistoryOpen(false)
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('pointerdown', handlePointerDown)
+    }
+  }, [isHistoryOpen])
+
   if (entries.length === 0) return null
 
   const handleToggleHistory = (button: HTMLButtonElement) => {
@@ -739,56 +629,59 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
     )
     if (!viewport) return
 
-    const navigateToTarget = (): boolean => {
-      const target = findAnchor(viewport, anchor)
-      if (!target) return false
+    const target = findAnchor(viewport, anchor)
+    if (!target) return
 
-      returnFocusRef.current = false
-      setIsHistoryOpen(false)
-      setCurrentAnchor(anchor)
-      const prefersReducedMotion = window.matchMedia(
-        '(prefers-reduced-motion: reduce)'
-      ).matches
-      const viewportRect = viewport.getBoundingClientRect()
-      const targetRect = target.getBoundingClientRect()
-      viewport.scrollTo({
-        top: Math.max(
-          0,
-          viewport.scrollTop + targetRect.top - viewportRect.top
-        ),
-        behavior: prefersReducedMotion ? 'auto' : 'smooth',
-      })
-      target.focus({ preventScroll: true })
-      return true
+    const token = navigationTokenRef.current + 1
+    navigationTokenRef.current = token
+    navigationLockRef.current = { anchor, token }
+
+    returnFocusRef.current = false
+    setIsHistoryOpen(false)
+    setCurrentAnchor(anchor)
+    const viewportRect = viewport.getBoundingClientRect()
+    const targetRect = target.getBoundingClientRect()
+    const mobileTopGutter = window.matchMedia('(max-width: 767px)').matches
+      ? Number.parseFloat(window.getComputedStyle(viewport).paddingTop) || 0
+      : 0
+    const targetTop = Math.max(
+      0,
+      viewport.scrollTop + targetRect.top - viewportRect.top - mobileTopGutter
+    )
+    // The thread viewport sets CSS scroll-smooth, which makes a programmatic
+    // scroll animate and could outlive the short navigation lock, letting the
+    // scroll spy overwrite the selected turn mid-jump. Override the viewport's
+    // scroll-behavior just for this instant reposition, then restore it so
+    // ordinary scrolling keeps its smooth feel.
+    const previousScrollBehavior = viewport.style.scrollBehavior
+    viewport.style.scrollBehavior = 'auto'
+    viewport.scrollTo({ top: targetTop })
+    viewport.style.scrollBehavior = previousScrollBehavior
+    target.focus({ preventScroll: true })
+
+    const clearNavigationLock = (remainingFrames: number) => {
+      if (navigationLockRef.current?.token !== token) return
+
+      if (
+        remainingFrames <= 0 ||
+        Math.abs(viewport.scrollTop - targetTop) <= 1
+      ) {
+        navigationLockRef.current = null
+        return
+      }
+
+      window.requestAnimationFrame(() =>
+        clearNavigationLock(remainingFrames - 1)
+      )
     }
-
-    if (navigateToTarget()) return
-
-    const entry = entries.find((candidate) => candidate.anchor === anchor)
-    if (entry?.kind !== 'tool') return
-
-    revealCollapsedToolGroups(viewport, entry.messageId)
-    window.requestAnimationFrame(navigateToTarget)
+    window.requestAnimationFrame(() => clearNavigationLock(12))
   }
 
-  const currentEntry = entries[currentIndex] ?? entries[0]
-  if (!currentEntry) return null
-
-  const currentTitle =
-    entryTitles[currentIndex] ?? t('chat.historyRail.assistant')
   const desktopTickRanges = getHistoryRailTickRanges(
     entries.length,
     DESKTOP_TICK_LIMIT
   )
-  const mobileTickRanges = getHistoryRailTickRanges(
-    entries.length,
-    MOBILE_TICK_LIMIT
-  )
   const desktopCurrentTick = desktopTickRanges.findIndex(
-    (range) =>
-      currentIndex >= range.startIndex && currentIndex <= range.endIndex
-  )
-  const mobileCurrentTick = mobileTickRanges.findIndex(
     (range) =>
       currentIndex >= range.startIndex && currentIndex <= range.endIndex
   )
@@ -799,84 +692,50 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
         aria-label={t('chat.historyRail.label')}
         data-cy="chat-history-rail"
         ref={railRef}
-        className="absolute inset-y-3 left-1 z-20 hidden w-8 overflow-visible sm:block"
+        className="absolute inset-y-3 left-1 z-20 hidden w-8 overflow-visible md:block"
       >
-        <nav
-          className={`relative flex h-full max-h-full flex-col items-center ${isDesktopCollapsed ? 'justify-center' : ''}`}
-          aria-label={t('chat.historyRail.label')}
-        >
+        {/* Nested inside the labeled `aside` above; left unlabeled so this
+            navigation landmark doesn't duplicate its parent's accessible
+            name. */}
+        <nav className="relative flex h-full max-h-full flex-col items-center">
           <span
             aria-hidden="true"
-            className={`bg-border/60 pointer-events-none absolute left-1/2 w-px -translate-x-1/2 ${isDesktopCollapsed ? 'top-1/2 h-36 -translate-y-1/2' : 'inset-y-3'}`}
+            className="bg-border/60 pointer-events-none absolute left-1/2 top-1/2 h-36 w-px -translate-x-1/2 -translate-y-1/2"
           />
-          {isDesktopCollapsed ? (
-            <ol className="relative flex h-36 w-full flex-col justify-between py-1">
-              {desktopTickRanges.map((range, index) => {
-                const isCurrent = index === desktopCurrentTick
-                const representativeIndex = isCurrent
-                  ? currentIndex
-                  : range.representativeIndex
-                const entry = entries[representativeIndex]
-                if (!entry) return null
+          <ol className="relative flex h-36 w-full flex-col justify-between py-1">
+            {desktopTickRanges.map((range, index) => {
+              const isCurrent = index === desktopCurrentTick
+              const representativeIndex = isCurrent
+                ? currentIndex
+                : range.representativeIndex
+              const entry = entries[representativeIndex]
+              if (!entry) return null
 
-                return (
-                  <li
-                    key={`desktop-tick-${range.startIndex}`}
-                    className="relative flex min-h-0 flex-1 items-center justify-center"
-                  >
-                    <HistoryRailCollapsedTick
-                      dialogId={HISTORY_DIALOG_DESKTOP_ID}
-                      entry={entry}
-                      index={representativeIndex}
-                      isCurrent={isCurrent}
-                      isOpen={isHistoryOpen}
-                      onNavigate={handleNavigate}
-                      onToggle={handleToggleHistory}
-                      range={range}
-                      title={
-                        entryTitles[representativeIndex] ??
-                        t('chat.historyRail.assistant')
-                      }
-                      total={entries.length}
-                    />
-                  </li>
-                )
-              })}
-            </ol>
-          ) : (
-            <ol className="relative flex max-h-full flex-col items-center gap-0.5 overflow-y-auto py-1 scrollbar-none">
-              {entries.map((entry, index) => (
-                <li key={entry.id}>
-                  <HistoryRailEntryButton
+              return (
+                <li
+                  key={`desktop-tick-${range.startIndex}`}
+                  className="relative flex min-h-0 flex-1 items-center justify-center"
+                >
+                  <HistoryRailTick
+                    dialogId={HISTORY_DIALOG_DESKTOP_ID}
                     entry={entry}
-                    index={index}
-                    isCurrent={entry.anchor === currentAnchor}
+                    isCurrent={isCurrent}
+                    isOpen={isHistoryOpen}
                     onNavigate={handleNavigate}
-                    title={
-                      entryTitles[index] ?? t('chat.historyRail.assistant')
-                    }
+                    onToggle={handleToggleHistory}
+                    range={range}
+                    title={t('chat.historyRail.turn')}
+                    total={entries.length}
                   />
                 </li>
-              ))}
-            </ol>
-          )}
+              )
+            })}
+          </ol>
         </nav>
-        {!isDesktopCollapsed && currentLabelTop !== null && (
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute left-8 z-30 max-w-40 -translate-y-1/2 rounded-full border border-border/70 bg-background/95 px-2 py-1 shadow-sm backdrop-blur-md"
-            style={{ top: currentLabelTop }}
-          >
-            <span className="block max-w-36 truncate text-[11px] font-medium leading-4">
-              {currentTitle}
-            </span>
-          </span>
-        )}
-        {isHistoryOpen && isDesktopCollapsed && (
+        {isHistoryOpen && (
           <HistoryDialog
             desktop
             entries={entries}
-            entryTitles={entryTitles}
             id={HISTORY_DIALOG_DESKTOP_ID}
             currentAnchor={currentAnchor}
             onClose={handleCloseHistory}
@@ -888,73 +747,35 @@ export const HistoryRail: FC<HistoryRailProps> = ({ entries }) => {
       <nav
         aria-label={t('chat.historyRail.label')}
         data-cy="chat-history-rail-mobile"
-        className="absolute left-2 top-2 z-20 sm:hidden"
+        ref={mobileNavRef}
+        className="absolute right-2 top-2 z-20 md:hidden"
       >
-        {isMobileCollapsed ? (
-          <>
-            <div className="border-border/70 bg-background/95 flex w-fit max-w-[calc(100vw-1rem)] items-center gap-1 rounded-lg border px-1 py-1 shadow-sm backdrop-blur-md">
-              <ol
-                aria-hidden="true"
-                className="flex h-5 w-20 items-center justify-between gap-1 px-1"
-              >
-                {mobileTickRanges.map((range, index) => (
-                  <li
-                    key={`mobile-tick-${range.startIndex}`}
-                    className="flex items-center"
-                  >
-                    <span
-                      className={`block rounded-full ${index === mobileCurrentTick ? 'bg-primary size-1.5' : 'bg-border size-1'}`}
-                    />
-                  </li>
-                ))}
-              </ol>
-              <HistoryCurrentButton
-                dialogId={HISTORY_DIALOG_MOBILE_ID}
-                entry={currentEntry}
-                index={currentIndex}
-                isOpen={isHistoryOpen}
-                mobile
-                onToggle={handleToggleHistory}
-                title={currentTitle}
-                total={entries.length}
-              />
-            </div>
-            {isHistoryOpen && (
-              <HistoryDialog
-                entries={entries}
-                entryTitles={entryTitles}
-                id={HISTORY_DIALOG_MOBILE_ID}
-                currentAnchor={currentAnchor}
-                onClose={handleCloseHistory}
-                onNavigate={handleNavigate}
-              />
-            )}
-          </>
-        ) : (
-          <div className="border-border/70 bg-background/95 flex w-fit max-w-[calc(100vw-1rem)] items-center gap-1 rounded-lg border px-1 py-1 shadow-sm backdrop-blur-md">
-            <span className="text-muted-foreground shrink-0 px-1 text-[10px] font-semibold uppercase tracking-wide">
-              {t('chat.historyRail.mobileLabel', {
-                current: currentIndex + 1,
-                total: entries.length,
-              })}
-            </span>
-            <ol className="flex min-w-0 gap-0.5 overflow-x-auto">
-              {entries.map((entry, index) => (
-                <li key={entry.id}>
-                  <HistoryRailEntryButton
-                    entry={entry}
-                    index={index}
-                    isCurrent={entry.anchor === currentAnchor}
-                    mobile
-                    onNavigate={handleNavigate}
-                    title={
-                      entryTitles[index] ?? t('chat.historyRail.assistant')
-                    }
-                  />
-                </li>
-              ))}
-            </ol>
-          </div>
+        <button
+          type="button"
+          aria-controls={isHistoryOpen ? HISTORY_DIALOG_MOBILE_ID : undefined}
+          aria-expanded={isHistoryOpen}
+          aria-haspopup="dialog"
+          aria-label={t('chat.historyRail.mobileLabel', {
+            current: currentIndex + 1,
+            total: entries.length,
+          })}
+          data-cy="chat-history-rail-mobile-trigger"
+          onClick={(event) => handleToggleHistory(event.currentTarget)}
+          className="border-border/70 bg-background/95 text-muted-foreground hover:text-foreground flex h-11 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium tabular-nums shadow-sm backdrop-blur-md transition-colors touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <HistoryIcon className="size-4 shrink-0" aria-hidden />
+          <span aria-hidden>
+            {currentIndex + 1}/{entries.length}
+          </span>
+        </button>
+        {isHistoryOpen && (
+          <HistoryDialog
+            entries={entries}
+            id={HISTORY_DIALOG_MOBILE_ID}
+            currentAnchor={currentAnchor}
+            onClose={handleCloseHistory}
+            onNavigate={handleNavigate}
+          />
         )}
       </nav>
     </>

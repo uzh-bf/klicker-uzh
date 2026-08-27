@@ -21,6 +21,7 @@ model ParticipantInvitation {
 
   @@unique([email, courseId])
   @@index([email])
+  @@index([courseId, invitedAt, id])
 }
 
 model ParticipantAccount {
@@ -64,6 +65,15 @@ model Participant {
   isProfilePublic Boolean @default(true)
   isSSOAccount    Boolean @default(false)
 
+  researchConsent                  Boolean   @default(false)
+  researchConsentChoiceAt          DateTime?
+  researchConsentDisclosureVersion String?
+
+  learningAnalyticsConsent           Boolean   @default(false)
+  learningAnalyticsChoiceAt          DateTime?
+  learningAnalyticsDisclosureVersion String?
+  learningAnalyticsIncludedFrom      DateTime?
+
   lastLoginAt DateTime?
 
   locale Locale @default(en)
@@ -90,6 +100,9 @@ model Participant {
   messages                        GroupMessage[]
   chatThreads                     ChatThread[]
   chatUsageCredits                ChatUsageCredits[]
+  participantChatAnalytics        ParticipantChatAnalytics[]
+  participantChatOutcomes         ParticipantChatOutcome[]
+  participantLiveQuizAnalytics    ParticipantLiveQuizAnalytics[]
   invitations                     ParticipantInvitation[]
   pointCorrections                PointCorrection[]
   individualPointCorrections      PointCorrection[]                @relation("PointCorrectionParticipants")
@@ -99,6 +112,8 @@ model Participant {
   updatedAt DateTime @updatedAt
 
   @@unique([email, isSSOAccount])
+  @@index([researchConsent, id])
+  @@index([learningAnalyticsConsent, learningAnalyticsIncludedFrom, id])
 }
 
 model ParticipantGroup {
@@ -148,6 +163,11 @@ model Participation {
   // enable participants to disable their participation
   // keeps the collected points but removes them from all views
   isActive Boolean @default(false)
+
+  // edu-ID identity captured only for participants in assessment courses
+  assessmentGivenName           String?
+  assessmentSurname             String?
+  assessmentMatriculationNumber String?
 
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   courseId String @db.Uuid

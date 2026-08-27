@@ -195,7 +195,8 @@ framework independence.
   `docs/testing.md`.
 - Update `.agents/skills/klicker-testing-verification/SKILL.md` so pure analytics
   contract changes route to the package checks.
-- Add `docs/log/2026-08-15-learning-analytics-contract.md`.
+- Keep the contract history in this plan and Git; the retired `docs/log/` path must
+  remain absent.
 - Update this progress ledger with exact verification and review evidence.
 
 **Check**

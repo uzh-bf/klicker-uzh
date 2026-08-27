@@ -482,11 +482,23 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
             return originalFetch(input, init)
           }
 
+          // Honor abort like a real fetch would: the app wires the cancel
+          // button to an AbortController whose signal arrives via `init`.
+          // Without this, a stop cannot interrupt the mocked stream.
+          const signal = init?.signal
+          const abortError = () =>
+            new DOMException('The stream was aborted.', 'AbortError')
+
           let lineIndex = 0
           let textChunkCount = 0
           const encoder = new TextEncoder()
+          let wakePause: (() => void) | undefined
           const stream = new ReadableStream<Uint8Array>({
             async pull(controller) {
+              if (signal?.aborted) {
+                controller.error(abortError())
+                return
+              }
               if (lineIndex >= streamLines.length) {
                 controller.close()
                 return
@@ -494,6 +506,10 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
 
               if (lineIndex > 0) {
                 await new Promise((resolve) => setTimeout(resolve, delayMs))
+                if (signal?.aborted) {
+                  controller.error(abortError())
+                  return
+                }
               }
 
               const line = streamLines[lineIndex]
@@ -510,21 +526,50 @@ export async function mockChatStream(page: Page, options: StreamOptions = {}) {
               if (eventType === 'text-delta') {
                 textChunkCount += 1
                 if (textChunkCount === pauseAfterTextChunk) {
+                  if (signal?.aborted) {
+                    controller.error(abortError())
+                    return
+                  }
                   await new Promise<void>((resolve) => {
+                    wakePause = resolve
                     releasePausedStream = resolve
                   })
+                  if (signal?.aborted) {
+                    controller.error(abortError())
+                    return
+                  }
                 }
               }
               if (
                 pauseAfterToolOutput &&
                 eventType === 'tool-output-available'
               ) {
+                if (signal?.aborted) {
+                  controller.error(abortError())
+                  return
+                }
                 await new Promise<void>((resolve) => {
+                  wakePause = resolve
                   releasePausedStream = resolve
                 })
+                if (signal?.aborted) {
+                  controller.error(abortError())
+                  return
+                }
               }
             },
           })
+
+          signal?.addEventListener(
+            'abort',
+            () => {
+              // Wake a parked pause so pull() can observe the abort instead
+              // of hanging until the test releases the stream manually.
+              wakePause?.()
+              wakePause = undefined
+            },
+            { once: true }
+          )
 
           return new Response(stream, {
             status: 200,

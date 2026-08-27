@@ -1,5 +1,11 @@
 export default {
   chat: {
+    common: {
+      opensInNewTab: '(opens in new tab)',
+    },
+    a11y: {
+      skipToContent: 'Skip to content',
+    },
     modes: {
       switcherLabel: 'Chat mode',
       tutor: 'Tutor',
@@ -56,6 +62,8 @@ export default {
       toggleSidebar: 'Toggle sidebar',
       conversationsLabel: 'Conversations',
       logoAlt: 'Klicker Logo',
+      copyright:
+        '©{year} DF Teaching Center, Department of Finance, University of Zurich. All rights reserved.',
     },
     assistant: {
       participationRequiredTitle: 'Course Access Required',
@@ -89,11 +97,11 @@ export default {
       itemRange: 'Items {start}-{end} of {total}',
       openHistory: 'Open full history',
       closeHistory: 'Close full history',
+      turn: 'Conversation turn',
       you: 'You',
       assistant: 'Assistant',
-      reasoning: 'Reasoning',
-      tool: 'Tool: {tool}',
-      toolFallback: 'tool step',
+      noText: 'No text',
+      noResponse: 'No response yet',
       inProgress: 'In progress',
       partial: 'Partial response',
       error: 'Error',
@@ -145,15 +153,22 @@ export default {
       deleteChat: 'Delete chat',
       deleteConfirm: 'Delete?',
       deleteConfirmAria: 'Confirm deleting this chat',
+      deleteArmedStatus:
+        'Confirmation required: activate delete again to delete this chat.',
       emptyState: 'Start your first conversation with a message.',
       loadError: 'Your chats could not be loaded.',
       retry: 'Retry',
       loading: 'Loading conversations...',
     },
     thread: {
+      viewportLabel: 'Conversation transcript',
       scrollToBottom: 'Scroll to bottom',
       loading: 'Loading the conversation...',
       thinking: 'Preparing an answer …',
+      runStarted: 'Generating an answer …',
+      runCompleted: 'Answer complete.',
+      runStopped: 'Answer stopped.',
+      runFailed: 'Answer failed.',
       welcomeTitle: 'Welcome!',
       welcomeTo: 'You are chatting with {chatbot}.',
       welcomeSubtitle: 'Choose a starter or write your own question.',
@@ -188,6 +203,8 @@ export default {
       retry: 'Try again',
       rateUp: 'Helpful answer',
       rateDown: 'Not a helpful answer',
+      ratingError: 'Rating could not be saved.',
+      stoppedNotice: 'You stopped this answer.',
       toolCallsGroupLabel:
         '{count, plural, one {1 tool call} other {{count} tool calls}}',
     },
@@ -702,6 +719,11 @@ export default {
         'This option creates an unnumbered list. To create new points, simply insert a new line after an existing element. To return to standard text, press this button again.',
       image:
         'Select this setting to include an image. Use the same syntax to include formulas in answer options.',
+      video: 'Embed a YouTube or Kaltura video.',
+      videoUrl: 'YouTube or Kaltura URL',
+      videoUrlPlaceholder: 'Paste a YouTube or Kaltura video URL',
+      videoUrlInvalid: 'Enter a valid YouTube or Kaltura video URL.',
+      insertVideo: 'Insert video',
       latex:
         'Select this setting to include an inline LaTeX formula. Use the same syntax to include formulas in answer options.',
       latexCentered:
@@ -1188,6 +1210,27 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       createProfileFailed:
         'Unfortunately, your account could not be created or linked. Please check your entries and try again.',
       editProfileSuccess: 'Your profile has been updated successfully.',
+      dataUseTitle: 'Research and learning analytics',
+      dataUseDescription:
+        'These choices apply to your entire KlickerUZH account. You can change them at any time.',
+      dataUseLoadFailed:
+        'Your data-use choices could not be loaded. Please try again.',
+      researchConsentTitle: 'Research',
+      researchConsentDescription:
+        'Yes allows future research exports to include all data stored for your account. No excludes your data from future research exports. If you turn this back on, data already stored for your account can be included again. Research exports that have already been created are not recalled.',
+      researchConsentSaved: 'Your research choice has been saved.',
+      researchConsentFailed:
+        'Your research choice could not be saved. Please reload the page before trying again.',
+      learningAnalyticsConsentTitle: 'Learning analytics',
+      learningAnalyticsConsentDescription:
+        'Yes allows KlickerUZH to use your later activity for individual learning analytics. No excludes you immediately. Individual learning-analytics data already created for you is deleted during the next successful overnight processing cycle. Aggregate results are updated when they are next recomputed. If you turn this back on, only later activity is used; earlier activity is not added retroactively.',
+      learningAnalyticsConsentSaved:
+        'Your learning-analytics choice has been saved.',
+      learningAnalyticsConsentFailed:
+        'Your learning-analytics choice could not be saved. Please reload the page before trying again.',
+      dataUseCanonicalDataNotice:
+        'These choices do not delete your account, course participation, activity submissions, or responses.',
+      dataUsePrivacyPolicy: 'Read the privacy policy.',
       achievements: 'Achievements',
       myProfile: 'My Profile',
       createProfile: 'Create Profile',
@@ -1383,6 +1426,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       identitySourceLabel: 'Verified identity source',
       identitySourceCourseInvitation:
         'Accepted assessment-course invitation email',
+      identitySourceEduId: 'SWITCH edu-ID',
       achievedPointsLabel: 'Achieved',
       availablePointsLabel: 'Available',
       performanceInsightsTitle: 'Peer comparison',
@@ -1422,6 +1466,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       privacyAndTransparencyNotice:
         'Peer comparison is released only for at least 10 active participants. Ten initial score ranges are merged until every displayed range represents at least 3 participants. The report contains no peer scores or identifiers.',
       courseNameLabel: 'Course',
+      studentNameLabel: 'Student name',
+      studentEmailAddressLabel: 'Email address',
+      matriculationNumberLabel: 'Matriculation number',
       studentEmailLabel: 'Student',
       pointsSummaryLabel: 'Points Summary',
       yourScoreLabel: 'You',
@@ -1583,7 +1630,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       reviewStatusUpdated: 'Review status updated successfully',
       reviewStatusUpdateFailed: 'Update of review status failed',
       openElementsInLibrary: 'Open elements in library',
-      batchOperations: 'Batch operations ({numActivities} activities)',
+      batchOperations:
+        'Batch operations ({numActivities, plural, =1 {1 activity} other {# activities}})',
       batchOperationsOnlyDraftScheduled:
         'Batch operations can only be performed on draft or scheduled activities.',
       batchOperationsActivities: 'Activities - Batch Operations',
@@ -1592,6 +1640,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modifyMultiplier: 'Modify multiplier',
       changeCourse: 'Change course assignment',
       modifyLiveQuizPoints: 'Adjust scoring (Live Quiz only)',
+      deleteSelectedActivities: 'Delete activities',
+      batchDeleteDescription:
+        'Permanently delete eligible activities. Deletion cannot be combined with other batch actions.',
       enableLiveQuizPointsModification:
         'Modify base, correctness and bonus points',
       bonusTime: 'Bonus time',
@@ -1599,6 +1650,11 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The time period during which bonus points are awarded must be at least 1 second. To not award any bonus points, set the bonus points to 0.',
       noActivitiesWillBeUpdated: 'No activities will be updated',
       nActivitiesWillBeUpdated: '{number} activities will be updated',
+      noActivitiesWillBeDeleted: 'No activities will be deleted',
+      nActivitiesWillBeDeleted:
+        '{number, plural, =1 {# activity will be deleted} other {# activities will be deleted}}',
+      nOfMActivitiesWillBeDeleted:
+        '{affected}/{total} activities will be deleted',
       activityContainsNoElements:
         'This {activity} does not contain any elements.',
       multiplierRequiresGamifiedAssessmentCourse:
@@ -1612,21 +1668,25 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
 <li>Changes to the multiplier are only possible for gamified activities or activities that are part of assessment courses. If a new course assignment is chosen as a batch operation in the same step, the gamification and assessment settings of that course will apply.</li>
 <li>Activities can generally be assigned to all ongoing and future courses. For microlearnings and group activities, only assignments where the availability interval of the activity is fully within the course duration are allowed.</li>
 <li>Base, correctness, and bonus points can only be defined and adjusted for live quizzes. If this option is activated, other activity types will not be updated.</li>
-<li>All adjustments require at least write permissions on the respective activities.</li>
+<li>All adjustments require at least write permissions on the respective activities. Permanent deletion requires admin access.</li>
 </ul>
       `,
       selectedActivitiesDescription:
-        'You have selected the following activities. All activities affected by the selected actions are marked. Hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed individually or require specific access rights (see tooltip). Carefully review the selected actions before applying them.',
+        'You have selected the following activities. All activities affected by the selected actions are marked. Hover over the icon for unaffected activities for more information. Please note: Some actions can only be performed individually or require specific access rights (see tooltip). Carefully review the selected actions before applying them.',
       batchInvalidStatus:
         'Only draft and scheduled activities can be adjusted via batch operations.',
       batchNeedEditorPermissions:
         'To adjust an activity via batch operations, you need at least write access.',
+      batchNeedManagerPermissions:
+        'To permanently delete an activity, you need admin access.',
       batchMultiplierRequiresGamificationOrAssessment:
         'A multiplier can only be set for gamified activities or activities in assessment courses, as points can only be collected in these courses.',
       batchGroupActivityRequiresGroupsEnabled:
         'Group activities can only be assigned to courses where group formation is enabled.',
       batchAssessmentRemovalAdminOnly:
         'Activities that are in assessment mode (assigned to an assessment course) can only be removed from it by administrators of the corresponding course.',
+      batchAssessmentDeletionAdminOnly:
+        'Assessment live quizzes can only be deleted by administrators of the corresponding assessment course.',
       batchActivityDatesOutsideCourse:
         'The availability interval of group activities and microlearnings must be fully within the course duration.',
       batchGroupActivityRequiresFinalizedGroups:
@@ -1640,11 +1700,94 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Only a part of your batch operation could be applied successfully. Please check the affected activities and your permissions.',
       batchOperationFailed:
         'An error occurred while applying the batch operation. Please check your permissions and try again.',
+      confirmBatchDeletionTitle: 'Delete selected activities',
+      confirmBatchDeletionMessage:
+        'You are about to permanently delete {number, plural, =1 {1 activity} other {# activities}}, including their associated participant data and results. This action cannot be undone.',
+      confirmBatchDeletionIrreversible:
+        'I understand that {number, plural, =1 {the activity and its associated data} other {all # activities and their associated data}} will be permanently deleted and cannot be restored.',
+      confirmBatchDeletionAcknowledge: 'Acknowledge',
+      confirmBatchDeletionSubmit: 'Delete activities',
+      batchDeletionProgress:
+        'Deletion in progress: {completed} of {total, plural, =1 {1 activity} other {# activities}} completed. Please keep this window open.',
+      batchDeletionRefreshFailed:
+        'Deletion finished, but the activity list could not be refreshed. Reload the list before continuing.',
+      batchDeletionNoEligibleActivities:
+        'No selected activities were eligible for deletion. The selection was reset; review the activity list before trying again.',
+      batchDeletionSuccess:
+        'The eligible selected activities were successfully deleted.',
+      batchDeletionPartialSuccess:
+        'Only some of the selected activities could be deleted. Please check the remaining activities and your permissions.',
+      batchDeletionUncertain:
+        'The result of some deletions could not be confirmed. Please check the activity list and refresh it if needed before trying again.',
+      batchDeletionFailed:
+        'The selected activities could not be deleted. Please check your permissions and try again.',
     },
     assessment: {
       assessmentResults: 'Assessment Results',
+      participantInvitations: 'Participant invitations',
+      participantInvitationsDescription:
+        'Invite participants to this assessment course and track whether they have accepted their invitation.',
+      invitationBackToCourse: 'Back to course',
+      invitationImportTitle: 'Import invitations',
+      invitationImportDescription:
+        'Select a CSV file containing the participant email addresses and matriculation numbers. The file is parsed in your browser before the invitations are submitted.',
+      invitationAffiliationWarning:
+        'Use the exact email address listed as a verified Swiss Edu-ID affiliation (for example, an @uzh.ch address). Personal email addresses may not be matched when the participant signs in.',
+      invitationDownloadTemplate: 'Download CSV template',
+      invitationCsvPrompt: 'Select a participant CSV file',
+      invitationCsvHeaders:
+        'Required headers: email and matriculationNumber (comma or semicolon separated).',
+      invitationCsvReady:
+        '{count, plural, one {# row ready to import} other {# rows ready to import}}',
+      invitationSelectCsv: 'Select CSV file',
+      invitationImportButton:
+        '{count, plural, one {Import # invitation} other {Import # invitations}}',
+      invitationCsvMissingHeaders:
+        'The CSV must contain email and matriculationNumber columns.',
+      invitationCsvInvalidHeaders:
+        'The CSV must contain exactly one email column and one matriculationNumber column.',
+      invitationCsvInvalidRows:
+        'Every CSV row must contain the same number of columns as the header.',
+      invitationCsvEmpty: 'The CSV does not contain any participant rows.',
+      invitationCsvParseError:
+        'The CSV could not be read. Check its format and try again.',
+      invitationCsvTooLarge:
+        'The CSV file is too large. Choose a file no larger than 1 MB.',
+      invitationCsvTooManyRows:
+        'The CSV contains more than {count} participant rows. Split it into smaller files.',
+      invitationImportCompleted: 'The invitation import has completed.',
+      invitationImportFailed:
+        'The invitations could not be imported. Please try again.',
+      invitationImportInvalidEmail: 'Invalid email format',
+      invitationImportSummary:
+        'Processed {total, plural, one {# row} other {# rows}}: {created} pending, {accepted} accepted, {duplicates} already present, {errors, plural, one {# error} other {# errors}}.',
+      invitationListTitle: 'Invitations',
+      invitationListDescription:
+        'Accepted invitations remain visible as a record. Pending invitations can be deleted.',
+      invitationCount:
+        '{count, plural, one {# invitation} other {# invitations}}',
+      invitationEmail: 'Email',
+      invitationMatriculationNumber: 'Matriculation number',
+      invitationStatus: 'Status',
+      invitationInvitedAt: 'Invited',
+      invitationActions: 'Actions',
+      invitationStatusPending: 'Pending',
+      invitationStatusAccepted: 'Accepted',
+      invitationDeleteLabel: 'Delete pending invitation for {email}',
+      invitationDeleteTitle: 'Delete pending invitation',
+      invitationDeleteDescription:
+        'Delete the pending invitation for {email}? The participant will no longer be able to accept it.',
+      invitationDeleteSuccess: 'The pending invitation has been deleted.',
+      invitationDeleteFailed:
+        'The pending invitation could not be deleted. Refresh the page and try again.',
+      invitationEmpty: 'No participant invitations have been created yet.',
+      invitationLoadingError:
+        'The participant invitations could not be loaded. Check your permissions and try again.',
       liveQuizStudentResultsTitle: 'Student Results',
       liveQuizStudentEmailColumn: 'Student (email)',
+      liveQuizStudentGivenNameColumn: 'Student given name',
+      liveQuizStudentSurnameColumn: 'Student surname',
+      liveQuizStudentMatriculationNumberColumn: 'Student matriculation number',
       liveQuizStudentResultsEmpty: 'No student results available yet.',
       errorLoadingLiveQuizResults:
         'An error occurred while loading the results. Please try again.',
@@ -1712,13 +1855,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       modalTitle: 'Support KlickerUZH',
       yourFeedback: 'Your Feedback',
       feedbackText:
-        'Do you have any feedback for us? Are you experiencing issues when using KlickerUZH? Please provide us with your feedback so we can continue to improve KlickerUZH for you.',
-      featureRequest: 'Feature Request',
-      featureRequestDesc: 'I would like to request a new feature.',
-      bugReport: 'Bug Report',
-      bugReportDesc: 'I would like to report a bug or issue.',
-      selfHosting: 'Self-Hosting',
-      selfHostingDesc: 'I have problems when self-hosting KlickerUZH.',
+        'What works well for you, and what should we improve? Share ideas, positive experiences, and problems on our public feedback platform. Please do not include personal or course data.',
+      feedbackDesc: 'Share ideas, positive experiences, and problems.',
       furtherResources: 'Further Resources',
       documentationDesc: 'Tutorials, feature documentation, and release notes',
       faq: 'FAQ',
@@ -1742,6 +1880,21 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       githubRepositoryDesc: 'Source code of the open-source project',
       survey:
         'We would like to know what you think about KlickerUZH and our future plans! Please give us your feedback in a <link>short survey (5 - 10min)</link>.',
+      catalystRequest: {
+        title: 'Request Catalyst Access',
+        subtitle: 'Tell us about your use case and we will get back to you.',
+        explanation:
+          'Send your request to klicker@df.uzh.ch. We will reply to your account email and use your data only to process this request.',
+        institution: 'Institution',
+        institutionRequired: 'Please enter your institution.',
+        institutionMin: 'Please enter at least 2 characters.',
+        institutionMax: 'Please enter at most 160 characters.',
+        useCase: 'Intended Use',
+        useCaseRequired: 'Please describe your intended use.',
+        useCaseMin: 'Please enter at least 20 characters.',
+        useCaseMax: 'Please enter at most 2000 characters.',
+        submit: 'Send Request',
+      },
     },
     login: {
       lecturerLogin: 'Login Lecturers',
@@ -1875,6 +2028,16 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       numSelected: '{count}/{total}',
       moveToArchive: 'Move to archive',
       restoreFromArchive: 'Restore from archive',
+      elementArchivedSuccessfully: 'The element was moved to the archive.',
+      elementRestoredSuccessfully: 'The element was restored from the archive.',
+      elementArchiveActionUnchanged:
+        'The element was already in the requested archive state.',
+      elementArchiveActionFailed:
+        'The archive state of the element could not be changed.',
+      elementArchiveActionUncertain:
+        'The archive state could not be confirmed. Please check the element list before trying again.',
+      elementArchiveRefreshFailed:
+        'The archive state could not be confirmed because the element list could not be refreshed. Reload the page to see the current state.',
       showFeedbacksExplanation: 'Show answer feedbacks & explanation',
       showExplanation: 'Show explanation',
       showFeedbacksExplanationTooltip:
@@ -1887,21 +2050,69 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Answer feedbacks can only be recorded for single-choice, multiple-choice, and Kprime questions.',
       batchOperations: 'Batch operations ({numElements} elements)',
       batchOperationsElements: 'Elements - Batch Operations',
+      batchOperationsApplying: 'Applying batch operations…',
       selectedElementsDescription:
-        'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
+        'You have selected the following elements. All elements, which are affected by the selected actions, are marked. Focus or hover over the icon for unaffected elements for more information. Please note: Some actions can only be performed separately or require specific permissions (see tooltip). Carefully review the selected actions and affected elements before applying them.',
+      batchElementName: 'Element',
+      batchElementPermission: 'Your permission',
+      batchUpdateStatus: 'Element update eligibility',
+      batchUpdateStatusInactive: 'No element update configured',
+      batchSharingStatus: 'Element sharing eligibility',
       actionApplies: 'Action applies',
+      batchSharingApplies: 'Sharing applies',
       modifyStatus: 'Modify status',
       modifyMultiplier: 'Modify multiplier',
       modifyBasePoints: 'Modify base points',
       awardBasePoints: 'Award base points',
       noElementsWillBeUpdated: 'No elements will be updated',
       nElementsWillBeUpdated: '{number} elements will be updated',
+      batchSharing: 'Share elements',
+      batchSharingDescription:
+        'Grant the same direct permission on all selected elements. Sharing does not propagate to activities, but linked answer collections receive the required derived read access.',
+      batchSharingLimit:
+        'Sharing is limited to {max} elements per operation. Reduce the selection or disable sharing.',
+      batchSharingUserOrEmail: 'User',
+      batchSharingGroup: 'User group',
+      batchSharingPermission: 'Permission',
+      noElementsWillBeShared: 'No elements can be shared',
+      nElementsWillBeShared: '{number} elements can be shared',
+      batchSharingNotApplicableExplanation:
+        'The selected sharing action cannot be applied to this element for the following reasons:',
+      batchSharingInsufficientPermission:
+        'Sharing elements requires at least admin permissions.',
+      batchOperationsResult: 'Batch operation result',
+      batchOperationsResultDescription:
+        'Review the completed and skipped operations below. This result is read-only.',
+      batchUpdateResultSuccess:
+        'The selected element updates were applied successfully.',
+      batchUpdateResultPartial:
+        '{updated}/{total} selected element updates were applied.',
+      batchUpdateResultFailed:
+        'The selected element updates could not be applied.',
+      batchUpdateResultSkipped:
+        'Element updates were skipped because none of the selected elements were eligible.',
+      batchSharingResult: 'Sharing result',
+      batchSharingResultShared: 'Shared',
+      batchSharingResultSkippedInsufficientPermission:
+        'Skipped: admin permission required',
+      batchSharingResultElementUnavailable: 'Skipped: element unavailable',
+      batchSharingResultFailed: 'Sharing failed',
+      batchSharingResultNotProcessed: 'Not processed',
+      batchSharingRequestFailed:
+        'The sharing request failed before all results could be returned.',
+      batchSharingTargetInvalidOrSelf:
+        'The target user does not exist or is your own account.',
+      batchSharingTargetGroupUnavailable:
+        'The selected user group is no longer available.',
+      batchOperationsRefreshFailed:
+        'The operations finished, but the element list could not be refreshed.',
       batchUpdatesInformation: `Depending on the selected actions and the permissions on the selected elements, the following rules apply:
 <ul>
 <li>Archiving elements / recovering elements from the archive only applies to non-archived / archived elements, respectively. This action can only be executed by users with admin permissions on the elements in question.</li>
 <li>Multipliers can only be changed for questions with a defined sample solution. This action requires at least write permissions.</li>
 <li>Base points can only be enabled / disabled for questions (not flashcards or content elements). This action requires at least write permissions.</li>
 <li>Element status changes can be performed by all users.</li>
+<li>Sharing requires at least admin permissions for each element. It does not propagate to activities, but linked answer collections receive the required derived read access.</li>
 </ul>
       `,
       updateActivitiesBatchInfo:
@@ -3016,14 +3227,26 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       courseDuplicationEndDateInPast:
         'The selected end date lies in the past. The duplicated course will already have ended when it is created - shift the start date if students should be able to access it.',
       courseDuplicationFailed: 'Failed to duplicate course.',
+      courseDuplicationAlreadyInProgress:
+        'This course is already being duplicated.',
       courseDuplicationNoAccess:
         'You no longer have sufficient permissions to duplicate this course.',
       courseDuplicationPartialFailure:
         'Not all selected activities or activity instances could be duplicated. No partial course was created.',
       courseDuplicationInProgress:
         'Duplicating large courses can take a while.',
+      courseDuplicationBackgroundInfo:
+        'You can close this dialog. When the copy is ready, you will get a notification with a link to open it.',
+      courseDuplicationStatusTab: 'Course duplications',
+      courseDuplicationStatusCount:
+        '{count, plural, one {# active course duplication request} other {# active course duplication requests}}',
+      courseDuplicationStatusTitle: 'Active course duplications',
+      courseDuplicationStatusDescription:
+        'You can continue working while these courses are copied.',
+      courseDuplicationStatusSource: 'Copying from "{source}"',
       courseDuplicationSucceeded:
         'Course "{name}" has been duplicated successfully.',
+      courseDuplicationOpenCourse: 'Open course',
       noCoursesFound: 'No courses found. Please create a new course.',
       createCourseNow: 'Create a course now!',
       courseNameReq: 'Please enter a name for the course.',
@@ -3124,6 +3347,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       noLiveQuizzesDisconnected: 'This course contains no live quizzes.',
       disconnectLiveQuizzes:
         '{number} live quizze(s) will be disconnected from the course. They can still be accessed through the activity list.',
+      deleteDraftActivitiesOption:
+        'Also irreversibly delete all linked draft activities.',
+      deleteDraftActivities:
+        'All linked draft activities will be irreversibly deleted. Any remaining live quizzes will be disconnected from the course and remain accessible through the activity list.',
       noPracticeQuizzesToDelete: 'This course contains no practice quizzes.',
       deletePracticeQuizzes:
         '{number} practice quizze(s) (including their results) will be irreversibly deleted.',
@@ -3151,6 +3378,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       moreCourseActions: 'More course actions',
       pointCorrections: 'Point Corrections',
       assessmentResults: 'Assessment Results',
+      participantInvitations: 'Participant Invitations',
       appliedCorrections: 'Applied Point Corrections',
       nameWithPin: 'Course: {name} (PIN: {pin})',
       joinCourse: 'Join course',
@@ -4086,6 +4314,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       performanceDashboard: 'Performance and Progress Dashboard',
       quizDashboard: 'Quiz Dashboard',
       quizAnalytics: 'Quiz Analytics',
+      featureUnavailable:
+        'Learning analytics are not available for your account yet.',
       analyticsLoadingWait: 'Loading analytics data. Please wait...',
       analyticsLoadingFailed:
         'An error occurred while loading the analytics data. Please try again later or contact the support.',
