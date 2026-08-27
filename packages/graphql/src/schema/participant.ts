@@ -144,7 +144,6 @@ export interface IParticipant
     | 'learningAnalyticsConsent'
     | 'learningAnalyticsChoiceAt'
     | 'learningAnalyticsDisclosureVersion'
-    | 'learningAnalyticsIncludedFrom'
   > {
   role?: DB.UserRole
   scopeQuizId?: string | null // live quiz id for which the temporary participant is scoped -> null for regular participants

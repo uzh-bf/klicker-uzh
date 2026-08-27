@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-26'
+timestamp: '2026-08-27'
 tags:
   - backend
   - prisma
@@ -38,9 +38,9 @@ append-only choice ledger.
 `researchConsent = true` allows a future research export to include all stored
 canonical data for that participant; `false` excludes all of it. Returning to
 `true` makes all stored canonical data eligible for future exports again.
-`learningAnalyticsIncludedFrom` marks the prospective learning-analytics
-boundary. An initial opt-in or re-enable starts inclusion at a new boundary and
-does not backfill activity from before it. The separate
+`learningAnalyticsConsent` follows the same current-state rule: `true` makes
+all stored canonical data eligible for learning analytics and `false` excludes
+all of it. The separate
 `Course.isLearningAnalyticsEnabled` course control also defaults to `false`.
 
 `Participation` remains the course-membership row and keeps its existing

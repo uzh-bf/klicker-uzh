@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-08-26'
+timestamp: '2026-08-27'
 tags:
   - backend
   - prisma
@@ -36,20 +36,20 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 Participant-global data-use state lives in `Participant`: both research and
 learning-analytics choices default to `false` and retain only the current
 choice, choice time, and disclosure version. The participant-only
-`selfDataUse` query exposes those seven fields; the generic `Participant`
+`selfDataUse` query exposes those six fields; the generic `Participant`
 GraphQL object does not. The two Boolean mutations store server-owned
 disclosure version `v1` and capture PostgreSQL `clock_timestamp()` immediately
 before the write. Learning-analytics changes take the global advisory gate with
 a bounded lock timeout; research changes do not take that gate.
 
 A future research export may include all stored canonical data when research
-consent is `true` and none when it is `false`. Learning-analytics re-enable uses
-`learningAnalyticsIncludedFrom` as a prospective boundary, with no backfill.
-The existing individual analytics reads also require true current consent,
-complete metadata and `Course.analyticsLastComputedAt >=
-Participant.learningAnalyticsIncludedFrom`; aggregate and canonical outputs are
-unchanged. `Participation` remains course membership and carries no
-per-course data-use choice or history.
+consent is `true` and none when it is `false`. Learning-analytics consent
+follows the same current-state rule: `true` includes all stored canonical data
+and `false` includes none. Individual analytics reads additionally require
+complete current metadata and a successful recomputation marker strictly newer
+than the learning-analytics choice time; aggregate and canonical outputs are
+unchanged. `Participation` remains course membership and carries no per-course
+data-use choice or history.
 
 Analytics tables keyed by a chatbot or live quiz do not duplicate `courseId`;
 course scope resolves through the owning `Chatbot` or `LiveQuiz`. This prevents

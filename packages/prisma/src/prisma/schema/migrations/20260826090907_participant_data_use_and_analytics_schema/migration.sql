@@ -52,7 +52,6 @@ ADD COLUMN     "isLearningAnalyticsEnabled" BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE "Participant" ADD COLUMN     "learningAnalyticsChoiceAt" TIMESTAMP(3),
 ADD COLUMN     "learningAnalyticsConsent" BOOLEAN NOT NULL DEFAULT false,
 ADD COLUMN     "learningAnalyticsDisclosureVersion" TEXT,
-ADD COLUMN     "learningAnalyticsIncludedFrom" TIMESTAMP(3),
 ADD COLUMN     "researchConsent" BOOLEAN NOT NULL DEFAULT false,
 ADD COLUMN     "researchConsentChoiceAt" TIMESTAMP(3),
 ADD COLUMN     "researchConsentDisclosureVersion" TEXT;
