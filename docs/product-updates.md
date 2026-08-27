@@ -159,6 +159,49 @@ this, so its build — including the deployment pipeline outside this repository
 must build the catalog package first. `turbo.json` covers the local `dev:docs`
 task and the four application dev tasks.
 
-The in-app feed surfaces in `frontend-manage` and `frontend-pwa` do not exist
-yet; ADR 0028 describes their intended shape. The read-state API above is
-already in place for them.
+The lecturer feed in `frontend-manage` is described below. The student surface in
+`frontend-pwa` does not exist yet; ADR 0028 describes its intended shape, and the
+read-state API above is already in place for it.
+
+## The lecturer feed
+
+`apps/frontend-manage/src/components/productUpdates/` holds the whole surface.
+`useProductUpdates` is its single entry point: it selects the catalog entries
+eligible for audience `lecturer` on surface `manage`, pairs each with the stored
+read state, and exposes the three write calls. Several components may call it at
+once — the header and the `/updates` page do — because they share one Apollo
+query, and every mutation writes its returned row back into that query's cache
+entry instead of refetching.
+
+Flags are evaluated through `useFeatureFlags` from `@klicker-uzh/feature-flags`,
+which asks GrowthBook once per render for every key the catalog gates on. One
+`useFeatureFlag` call per catalog entry would break the rules-of-hooks lint rule
+as soon as the number of entries can change, so the hook count must stay
+independent of the catalog length.
+
+| Surface                                         | Shows                                                           |
+| ----------------------------------------------- | --------------------------------------------------------------- |
+| Bullhorn in the header, before the support icon | Unread dot when an eligible entry is neither read nor dismissed |
+| Feed modal behind the bullhorn                  | Eligible entries that are not dismissed                         |
+| `/updates` page                                 | All eligible entries, including dismissed ones                  |
+
+The unread dot comes from `NotificationBadgeWrapper` around the button rather
+than the navigation item's own `notification` prop: the design system pins that
+prop to `undefined` for icon-only buttons, so an icon-only navigation entry
+cannot carry it.
+
+A card reports both a presentation and a read once it actually enters the
+viewport, through an `IntersectionObserver` guarded by a per-mount ref. Two
+consequences are deliberate. Opening the feed does not mark entries below the
+fold as read, which is the read semantics ADR 0028 requires. And because the feed
+modal unmounts when it closes, `presentationCount` counts feed openings that
+reached the card, not renders.
+
+Matomo receives the adoption funnel under the category `Product Update` with the
+catalog id as the event name: `Eligible` once per page load per entry, then
+`Presented`, `Opened`, `Dismissed`, `CTA Clicked`, and `Details Opened`.
+
+Entry copy always comes from the catalog in the reader's locale. Only the chrome
+around it — feed title, empty state, dismiss and read-more labels, and the
+`preview`/`pilot` maturity labels — lives under `manage.productUpdates` in
+`packages/i18n/messages/de.ts` and `en.ts`.
