@@ -34,6 +34,14 @@ assert.deepEqual(
 )
 
 assert.deepEqual(
+  clampManageAssistantPanelSize(
+    { height: 672, width: 448 },
+    { height: 390, width: 800 }
+  ),
+  { height: 342, width: 448 }
+)
+
+assert.deepEqual(
   resizeManageAssistantPanelFromTopLeft({
     deltaX: -32,
     deltaY: -48,

@@ -304,6 +304,13 @@ test.describe('Manage Assistant — Messaging', () => {
       'Confirm starting a new conversation'
     )
 
+    await reset.press('Escape')
+    await expect(reset).not.toContainText('Start over?')
+    await expect(page.getByTestId('manage-assistant-drawer')).toBeVisible()
+
+    await reset.click()
+    await expect(reset).toContainText('Start over?')
+
     await reset.click()
 
     await expect(assistant.getByTestId('chat-user-message')).toHaveCount(0)
@@ -403,6 +410,30 @@ test.describe('Manage Assistant — Messaging', () => {
     await expect(trigger).toBeFocused()
   })
 
+  test('Keyboard focus enters the dock and Escape closes it from inside the iframe', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page)
+
+    const trigger = page.getByTestId('manage-assistant-open')
+    await trigger.focus()
+    await trigger.press('Enter')
+
+    const panel = page.getByTestId('manage-assistant-drawer')
+    const close = panel.getByRole('button', { name: 'Close' })
+    await expect(panel).toBeVisible()
+    await expect(close).toBeFocused()
+
+    const assistant = page.frameLocator('[data-cy="manage-assistant-frame"]')
+    const input = assistant.getByTestId('chat-composer-input')
+    await input.waitFor({ state: 'visible' })
+    await input.focus()
+    await input.press('Escape')
+
+    await expect(panel).toBeHidden()
+    await expect(trigger).toBeFocused()
+  })
+
   test('Assistant dock resizes with the keyboard and retains its dimensions', async ({
     page,
   }) => {
@@ -452,6 +483,42 @@ test.describe('Manage Assistant — Messaging', () => {
     const reopened = await panel.boundingBox()
     expect(reopened?.width).toBe(resized?.width)
     expect(reopened?.height).toBe(resized?.height)
+  })
+
+  test('Mobile opening keeps the full dock reachable without overwriting desktop dimensions', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page)
+    const desktopSize = { height: 700, width: 600 }
+    await page.evaluate((size) => {
+      window.localStorage.setItem(
+        'klicker-manage-assistant-panel-size-v1',
+        JSON.stringify(size)
+      )
+    }, desktopSize)
+    await page.setViewportSize({ height: 390, width: 390 })
+    await page.reload()
+
+    await openManageAssistantWidget(page)
+
+    const panel = page.getByTestId('manage-assistant-drawer')
+    const panelBox = await panel.boundingBox()
+    expect(panelBox).not.toBeNull()
+    expect(panelBox?.x).toBe(0)
+    expect(panelBox?.y).toBeGreaterThanOrEqual(0)
+    expect(panelBox?.width).toBe(390)
+    expect(panelBox?.height).toBeLessThanOrEqual(390)
+    await expect(panel.getByRole('button', { name: 'Close' })).toBeVisible()
+    await expect(page.getByTestId('manage-assistant-resize')).toBeHidden()
+    expect(
+      await page.evaluate(() =>
+        JSON.parse(
+          window.localStorage.getItem(
+            'klicker-manage-assistant-panel-size-v1'
+          ) ?? 'null'
+        )
+      )
+    ).toEqual(desktopSize)
   })
 })
 

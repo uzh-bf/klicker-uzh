@@ -135,6 +135,7 @@ function ManageAssistantToolbar() {
         onBlur={() => setConfirmingReset(false)}
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
+            event.stopPropagation()
             setConfirmingReset(false)
           }
         }}

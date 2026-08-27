@@ -9,6 +9,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { GetUserElementsDocument } from '@klicker-uzh/graphql/dist/ops'
 import {
+  MANAGE_CLOSE_REQUEST_MESSAGE_TYPE,
   MANAGE_CONTEXT_MESSAGE_TYPE,
   MANAGE_CONTEXT_READY_MESSAGE_TYPE,
 } from '@klicker-uzh/types'
@@ -50,6 +51,7 @@ import {
 const MANAGE_ASSISTANT_PANEL_ID = 'manage-assistant-panel'
 const MANAGE_ASSISTANT_PANEL_SIZE_STORAGE_KEY =
   'klicker-manage-assistant-panel-size-v1'
+const DESKTOP_PANEL_MEDIA_QUERY = '(min-width: 768px)'
 
 export function ManageAssistantWidget() {
   const t = useTranslations()
@@ -57,6 +59,7 @@ export function ManageAssistantWidget() {
   const apolloClient = useApolloClient()
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null)
   const shouldRestoreFocusRef = useRef(false)
   const resizeSessionRef = useRef<{
     pointerId: number
@@ -144,6 +147,11 @@ export function ManageAssistantWidget() {
 
   useEffect(() => {
     if (!open) return
+    closeButtonRef.current?.focus()
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
@@ -159,17 +167,24 @@ export function ManageAssistantWidget() {
     const storedSize = readStoredPanelSize()
     if (storedSize) {
       setPanelSize(
-        clampManageAssistantPanelSize(storedSize, {
-          height: window.innerHeight,
-          width: window.innerWidth,
-        })
+        window.matchMedia(DESKTOP_PANEL_MEDIA_QUERY).matches
+          ? clampManageAssistantPanelSize(storedSize, {
+              height: window.innerHeight,
+              width: window.innerWidth,
+            })
+          : storedSize
       )
     }
     setPanelSizeInitialized(true)
   }, [])
 
   useEffect(() => {
-    if (!panelSizeInitialized) return
+    if (
+      !panelSizeInitialized ||
+      !window.matchMedia(DESKTOP_PANEL_MEDIA_QUERY).matches
+    ) {
+      return
+    }
     window.localStorage.setItem(
       MANAGE_ASSISTANT_PANEL_SIZE_STORAGE_KEY,
       JSON.stringify(panelSize)
@@ -178,6 +193,7 @@ export function ManageAssistantWidget() {
 
   useEffect(() => {
     function handleResize() {
+      if (!window.matchMedia(DESKTOP_PANEL_MEDIA_QUERY).matches) return
       setPanelSize((currentSize) =>
         clampManageAssistantPanelSize(currentSize, {
           height: window.innerHeight,
@@ -258,6 +274,11 @@ export function ManageAssistantWidget() {
       const frameWindow = iframeRef.current?.contentWindow
       if (!frameWindow || event.source !== frameWindow) return
 
+      if (isManageCloseRequestMessage(event.data)) {
+        closeWidget()
+        return
+      }
+
       // The iframe announces readiness once its listener exists. Re-send the
       // current context then: this handshake alone is enough to deliver the
       // context to a slow-hydrating iframe, without a timed retry burst.
@@ -287,7 +308,14 @@ export function ManageAssistantWidget() {
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [apolloClient, assistantOrigin, assistantUrl, sendCurrentContext, t])
+  }, [
+    apolloClient,
+    assistantOrigin,
+    assistantUrl,
+    closeWidget,
+    sendCurrentContext,
+    t,
+  ])
 
   // Sends the current context once the iframe has loaded, and again whenever
   // the context itself changes (e.g. a route change while the widget stays
@@ -342,7 +370,7 @@ export function ManageAssistantWidget() {
               } as CSSProperties
             }
             className={twMerge(
-              'fixed bottom-0 left-0 right-0 z-40 flex h-[min(85dvh,44rem)] min-h-[28rem] w-screen flex-col overflow-hidden overscroll-contain border-t border-gray-200 bg-white shadow-2xl md:inset-x-auto md:bottom-6 md:left-auto md:right-6 md:h-[var(--manage-assistant-height)] md:w-[var(--manage-assistant-width)] md:rounded-md md:border',
+              'fixed bottom-0 left-0 right-0 z-40 flex h-[min(85dvh,44rem)] w-screen flex-col overflow-hidden overscroll-contain border-t border-gray-200 bg-white shadow-2xl md:inset-x-auto md:bottom-6 md:left-auto md:right-6 md:h-[var(--manage-assistant-height)] md:w-[var(--manage-assistant-width)] md:rounded-md md:border',
               !open && 'hidden'
             )}
             data-cy="manage-assistant-drawer"
@@ -390,6 +418,7 @@ export function ManageAssistantWidget() {
                 <FontAwesomeIcon icon={faArrowUpRightFromSquare} aria-hidden />
               </a>
               <button
+                ref={closeButtonRef}
                 type="button"
                 onClick={closeWidget}
                 className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
@@ -422,7 +451,7 @@ export function ManageAssistantWidget() {
                 aria-hidden={!frameReady}
                 tabIndex={frameReady ? undefined : -1}
                 className={twMerge(
-                  'h-full min-h-[24rem] w-full border-0 transition-opacity',
+                  'h-full min-h-0 w-full border-0 transition-opacity',
                   frameReady ? 'opacity-100' : 'pointer-events-none opacity-0'
                 )}
                 data-cy="manage-assistant-frame"
@@ -459,6 +488,16 @@ function isManageContextReadyMessage(data: unknown): data is {
     typeof data === 'object' &&
     data !== null &&
     (data as { type?: unknown }).type === MANAGE_CONTEXT_READY_MESSAGE_TYPE
+  )
+}
+
+function isManageCloseRequestMessage(data: unknown): data is {
+  type: typeof MANAGE_CLOSE_REQUEST_MESSAGE_TYPE
+} {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    (data as { type?: unknown }).type === MANAGE_CLOSE_REQUEST_MESSAGE_TYPE
   )
 }
 

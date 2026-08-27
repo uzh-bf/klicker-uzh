@@ -47,17 +47,19 @@ export function clampManageAssistantPanelSize(
   viewport: { height: number; width: number }
 ): ManageAssistantPanelSize {
   const maximumHeight = Math.max(
-    MIN_PANEL_HEIGHT,
+    0,
     Math.min(MAX_PANEL_HEIGHT, viewport.height - VIEWPORT_MARGIN)
   )
   const maximumWidth = Math.max(
-    MIN_PANEL_WIDTH,
+    0,
     Math.min(MAX_PANEL_WIDTH, viewport.width - VIEWPORT_MARGIN)
   )
+  const minimumHeight = Math.min(MIN_PANEL_HEIGHT, maximumHeight)
+  const minimumWidth = Math.min(MIN_PANEL_WIDTH, maximumWidth)
 
   return {
-    height: clamp(size.height, MIN_PANEL_HEIGHT, maximumHeight),
-    width: clamp(size.width, MIN_PANEL_WIDTH, maximumWidth),
+    height: clamp(size.height, minimumHeight, maximumHeight),
+    width: clamp(size.width, minimumWidth, maximumWidth),
   }
 }
 
