@@ -14,4 +14,16 @@ describe('package subpath exports', () => {
 
     expect(clientAuth.getStoredAuthToken('missing')).toBeNull()
   })
+
+  it('loads citation helpers through the public package path', async () => {
+    const citations = await import('@klicker-uzh/util/citations')
+
+    expect(citations.extractCitationIndexes('Grounded [1].')).toEqual([1])
+  })
+
+  it('loads response-example digest helpers through the public package path', async () => {
+    const digest = await import('@klicker-uzh/util/response-example-digest')
+
+    expect(digest.computeResponseExampleSetDigest).toBeTypeOf('function')
+  })
 })

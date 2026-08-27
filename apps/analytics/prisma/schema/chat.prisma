@@ -43,6 +43,22 @@ enum ChatUsageClass {
   ADVANCED
 }
 
+enum ResponseExampleStatus {
+  CANDIDATE
+  APPROVED
+  NEEDS_REVIEW
+  REJECTED
+}
+
+enum ResponseExampleStyle {
+  GUIDED_QUESTIONS
+  STEP_BY_STEP_EXPLANATION
+  CONCISE_ANSWER
+  CLARIFYING_QUESTION
+  WORKED_EXAMPLE
+  COMPARE_OPTIONS
+}
+
 model ChatUsageCredits {
   total   Decimal @default(0) @db.Decimal(18, 6)
   current Decimal @default(0) @db.Decimal(18, 6)
@@ -197,6 +213,7 @@ model Chatbot {
   knowledgeBases    KBChatbot[]
   threads           ChatThread[]
   usageCredits      ChatUsageCredits[]
+  responseExampleSet ResponseExampleSet?
 
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
@@ -206,6 +223,62 @@ model Chatbot {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ResponseExampleSet {
+  id String @id @default(uuid()) @db.Uuid
+
+  chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  chatbotId String  @unique @db.Uuid
+
+  digest   String @default("")
+  examples ResponseExample[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ResponseExample {
+  id String @id @default(uuid()) @db.Uuid
+
+  set   ResponseExampleSet @relation(fields: [setId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  setId String             @db.Uuid
+
+  chatMode        String
+  studentMessage  String                @db.Text
+  referenceAnswer String                @db.Text
+  responseStyle   ResponseExampleStyle
+  status          ResponseExampleStatus @default(CANDIDATE)
+  reviewedById    String?               @db.Uuid
+  reviewedAt      DateTime?
+
+  evidenceReferences ResponseExampleEvidenceReference[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([setId, chatMode, studentMessage], map: "ResponseExample_set_mode_question_key")
+  @@index([setId, chatMode, status], map: "ResponseExample_set_mode_status_idx")
+}
+
+model ResponseExampleEvidenceReference {
+  id String @id @default(uuid()) @db.Uuid
+
+  responseExample   ResponseExample @relation(fields: [responseExampleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  responseExampleId String          @db.Uuid
+
+  sourceId         String
+  chunkId          String
+  contentHash      String
+  citationIndex    Int
+  citationAnchor   String  @db.Text
+  evidenceEligible Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@unique([responseExampleId, citationIndex], map: "ResponseExampleEvidence_citationIndex_key")
+  @@unique([responseExampleId, sourceId, chunkId, contentHash, citationAnchor], map: "ResponseExampleEvidence_source_key")
+  @@index([responseExampleId], map: "ResponseExampleEvidence_responseExampleId_idx")
 }
 
 model ChatbotMCPServer {

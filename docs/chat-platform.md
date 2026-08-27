@@ -38,12 +38,30 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 - `src/lib/sources/` — the doc_query source normalizer (`normalizeSources.ts`) and the display helpers shared by cards and citation previews (`sourceDisplay.ts`).
 - `src/components/source-preview-content.tsx` — the shared title, locator, excerpt, and optional navigation hint rendered inside source and citation tooltips.
 - `src/lib/config/` — shared vocabulary and prompt configuration: chat modes, reasoning efforts, MCP tool-name matching, starter suggestions, models, prompts, allowed tools.
-- `src/lib/markdown/remarkCitationMarkers.ts` — the remark plugin that rewrites `[n]` markers into citation links.
+- `packages/util/src/citations.ts` — the shared, React-free Markdown citation
+  parser and opt-in `[n]` marker transformer used by response-example checks
+  and rendering. The student chat renderer keeps its app-local plugin.
 - `src/lib/toolOutput.ts` — live-SSE tool-result normalization (the streaming half of the provider-error redaction boundary).
 - `src/lib/attachments/` — image attachment adapter plus attachment state and UI helpers.
 - Local model proxy: the `litellm` compose service (port 4000).
 - Local MCP fixture: `scripts/local-mcp-server.mjs` exposes a deterministic,
   read-only `doc_query` tool on port 1417 for the seeded Benibot.
+
+## Owner-governed response examples
+
+Klicker stores one canonical `ResponseExampleSet` per chatbot. Each current
+example carries the exact `chatMode`, the student's message, a Markdown
+reference answer, an intuitive response-style choice, an approval status, and
+source/chunk/content-hash/citation-index/citation-anchor lineage. Approved
+edits replace the current row immediately; there is no revision-history model.
+The set digest changes with canonical example or lineage content, not reviewer
+timestamps.
+
+The owner-only GraphQL surface is the source of truth for lecturer review:
+the owner can inspect the set, approve, edit and approve, or reject an entry.
+Non-owners receive `null`, and no production GraphQL or chat runtime path
+creates candidates or marks evidence eligible. Local/test fixtures may seed
+synthetic candidates and evidence solely to exercise the review lifecycle.
 
 The chat route returns an AI SDK UI message stream and passes
 `consumeSseStream: consumeStream` to `toUIMessageStreamResponse`. Keep this

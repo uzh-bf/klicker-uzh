@@ -1,0 +1,44 @@
+fragment ResponseExampleEvidenceReferenceData on ResponseExampleEvidenceReference {
+  id
+  responseExampleId
+  sourceId
+  chunkId
+  contentHash
+  citationIndex
+  citationAnchor
+  evidenceEligible
+  createdAt
+}
+
+fragment ResponseExampleData on ResponseExample {
+  id
+  setId
+  chatMode
+  studentMessage
+  referenceAnswer
+  responseStyle
+  status
+  canApprove
+  canEditAndApprove
+  canReject
+  hasCompleteEligibleCitationParity
+  reviewedById
+  reviewedAt
+  evidenceReferences {
+    ...ResponseExampleEvidenceReferenceData
+  }
+  createdAt
+  updatedAt
+}
+
+fragment ResponseExampleSetData on ResponseExampleSet {
+  id
+  chatbotId
+  digest
+  chatModes
+  examples {
+    ...ResponseExampleData
+  }
+  createdAt
+  updatedAt
+}

@@ -33,6 +33,14 @@ The schema is a **folder** (`prisma.config.ts` → `schema: 'src/prisma/schema'`
 
 The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-py` with `interface = "sync"` and **`enable_experimental_decimal = true`** — keep that flag whenever shared schema `Decimal` fields exist (chat credit fields are `@db.Decimal(18,6)`), and note the Python side still uses the older `prismaSchemaFolder` preview flag.
 
+### Chatbot response-example state
+
+The `chat.prisma` response-example models are current-state only: one
+`ResponseExampleSet` per chatbot, scoped entries, stable evidence lineage, and
+a digest. Candidate creation and evidence-eligibility writes are confined to
+local and test fixtures; no production seed or runtime caller may create them.
+The owner lifecycle is documented in the [GraphQL API layer](./graphql-api-layer.md#chatbot-response-examples).
+
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.

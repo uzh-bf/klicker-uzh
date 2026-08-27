@@ -8,8 +8,10 @@ const config = defineConfig([
     input: [
       'src/index.ts',
       'src/auth.ts',
+      'src/citations.ts',
       'src/clientAuth.ts',
       'src/publicUrl.ts',
+      'src/responseExampleDigest.ts',
     ],
     output: {
       dir: 'dist',

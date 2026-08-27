@@ -22,6 +22,7 @@ import * as ParticipantInvitationService from '../services/participantInvitation
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
+import * as ResponseExamplesService from '../services/responseExamples.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as SupportService from '../services/support.js'
@@ -106,6 +107,7 @@ import {
   Chatbot,
   ChatbotReasoningConfigInput,
 } from './resource.js'
+import { ResponseExampleSet, ResponseExampleStyle } from './responseExample.js'
 import {
   ActivityLogEntry,
   CatalogCollection,
@@ -1581,6 +1583,47 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ChatbotsService.rejectChatbotPublication(args, ctx)
+        },
+      }),
+
+      approveResponseExample: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: ResponseExampleSet,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ResponseExamplesService.approveResponseExample(args, ctx)
+        },
+      }),
+
+      editAndApproveResponseExample: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: ResponseExampleSet,
+        args: {
+          id: t.arg.string({ required: true }),
+          chatMode: t.arg.string({ required: true }),
+          studentMessage: t.arg.string({ required: true }),
+          referenceAnswer: t.arg.string({ required: true }),
+          responseStyle: t.arg({ type: ResponseExampleStyle, required: true }),
+          expectedUpdatedAt: t.arg({ type: 'Date', required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ResponseExamplesService.editAndApproveResponseExample(
+            args,
+            ctx
+          )
+        },
+      }),
+
+      rejectResponseExample: t.withAuth(asUserFullAccess).field({
+        nullable: true,
+        type: ResponseExampleSet,
+        args: {
+          id: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ResponseExamplesService.rejectResponseExample(args, ctx)
         },
       }),
 

@@ -13,7 +13,10 @@
     "@klicker-uzh/types": "workspace:*",
     "ioredis": "5.4.1",
     "jose": "5.9.4",
+    "remark-math": "6.0.0",
+    "remark-parse": "11.0.0",
     "remeda": "2.15.0",
+    "unified": "11.0.5",
     "uuid": "10.0.0"
   },
   "devDependencies": {
@@ -54,6 +57,10 @@
       "types": "./dist/auth.d.ts",
       "default": "./dist/auth.js"
     },
+    "./citations": {
+      "types": "./dist/citations.d.ts",
+      "default": "./dist/citations.js"
+    },
     "./client-auth": {
       "types": "./dist/clientAuth.d.ts",
       "default": "./dist/clientAuth.js"
@@ -61,6 +68,10 @@
     "./public-url": {
       "types": "./dist/publicUrl.d.ts",
       "default": "./dist/publicUrl.js"
+    },
+    "./response-example-digest": {
+      "types": "./dist/responseExampleDigest.d.ts",
+      "default": "./dist/responseExampleDigest.js"
     }
   },
   "type": "module"
