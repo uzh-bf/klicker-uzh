@@ -14,12 +14,18 @@ workflow.
 ## Work package
 
 - Branch: `rs/learning-analytics-contract`
-- Base: `origin/v3` at `2bcaddabe3bf3b39e23e71e7cf3eda7179f6291f`
+- Review base: `rs/participant-data-use-settings` at
+  `a31d5cd6a760e5c6e34bc5c3fd170a4efffc16d5`.
+- Provenance: the original LA-P1 head
+  `10a4204e469f7801343299af362ec38c2ed8f3ec`, based at
+  `2bcaddabe3bf3b39e23e71e7cf3eda7179f6291f`, was restacked by an explicit merge so
+  the published branch can advance without rewriting history.
 - Worktree: `trees/learning-analytics-contract`
 - Ceremony: full path because this is a cross-repository public contract.
-- Target: one independently reviewable, green, inert draft PR.
+- Target: existing inert draft PR #5413, independently reviewable above the
+  participant data-use settings layer.
 - Expected substantive size: 300-500 lines across at most ten substantive files,
-  excluding this plan, wiki/log documentation, generated lockfile changes, and CI.
+  excluding this plan, wiki documentation, generated lockfile changes, and CI.
 - Complexity stop: pause above roughly 600 substantive lines or ten substantive files
   and recheck the package boundary.
 - Actual repository-defined substantive size: `+812/-5` across 17 files, excluding
@@ -108,7 +114,7 @@ Add the package under `packages/analytics-engine-contract` with:
 - a black-box callback conformance runner;
 - contract tests;
 - a path-filtered CI workflow;
-- public architecture, asynchronous-worker, testing, skill, and dated-log updates.
+- public architecture, asynchronous-worker, testing, and skill updates.
 
 ## Exclusions
 
@@ -231,7 +237,8 @@ Merge, readiness, deployment, activation, and source retirement are separate gat
 
 ## Progress
 
-- [x] Public branch and base verified at `2bcaddabe3bf3b39e23e71e7cf3eda7179f6291f`.
+- [x] Original public branch and source base verified at
+  `2bcaddabe3bf3b39e23e71e7cf3eda7179f6291f`.
 - [x] Catalyst framework-neutral pipeline PR #11 merged.
 - [x] Public codebase and package patterns mapped.
 - [x] Planning-stage specialist review completed with no unresolved owner decision.
@@ -252,6 +259,11 @@ Merge, readiness, deployment, activation, and source retirement are separate gat
   both the strict schemas and digest tree; focused tests, typecheck, and build pass.
 - [x] Substantive size measured at `+812/-5` across 17 files and accepted as one
   coherent contract package rather than separating its verification or documentation.
+- [x] Restacked without force-push by merging exact participant-settings head
+  `a31d5cd6a760e5c6e34bc5c3fd170a4efffc16d5`; the analytics contract package tree and
+  pinned digest
+  `b9a3f0e14c766c234aead4165e5250f75bf13d02f84f905baedbf6fb4c0d733c` remain
+  unchanged from the original LA-P1 head. The retired `docs/log/` path remains absent.
 - [ ] Final gates complete.
 - [ ] Branch pushed and draft PR published.
 - [ ] Immutable public commit and digest read back for Catalyst.
