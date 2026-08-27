@@ -282,6 +282,17 @@ export type PersonalElementSource = z.infer<typeof sourceSchema>
 
 export type PersonalElementCandidate = z.infer<typeof candidateSchema>
 
+export type PersonalElementCandidateInput = {
+  candidateId: string
+  name: string
+  content: string
+  explanation: string
+  sources: PersonalElementSourceInput[]
+  sourceMessageId: string
+  sourceToolCallId: string
+  origin?: 'AI_GENERATED' | 'AUTHORED' | null
+}
+
 export type PersonalElementSourceInput = {
   sourceId: string
   chunkId: string
@@ -317,16 +328,16 @@ export type ValidateCardCandidateInput = {
 
 export type CreatePersonalElementsInput = {
   courseId: string
-  candidates: readonly PersonalElementCandidate[]
+  candidates: readonly PersonalElementCandidateInput[]
 }
 
 export type UpdatePersonalElementInput = {
   id: string
   expectedVersion: number
-  name?: string
-  content?: string
-  explanation?: string
-  sources?: readonly PersonalElementSource[]
+  name?: string | null
+  content?: string | null
+  explanation?: string | null
+  sources?: readonly PersonalElementSourceInput[] | null
 }
 
 export type PersonalElementServiceContext = {
@@ -350,6 +361,18 @@ function isPrismaError(error: unknown, code: 'P2002' | 'P2034') {
     error !== null &&
     'code' in error &&
     error.code === code
+  )
+}
+
+function isSerializationConflict(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'cause' in error &&
+    typeof error.cause === 'object' &&
+    error.cause !== null &&
+    'kind' in error.cause &&
+    error.cause.kind === 'TransactionWriteConflict'
   )
 }
 
@@ -539,7 +562,9 @@ export async function validateCardCandidate(
   return true
 }
 
-function normalizeCandidates(candidates: readonly PersonalElementCandidate[]) {
+function normalizeCandidates(
+  candidates: readonly PersonalElementCandidateInput[]
+) {
   if (candidates.length === 0 || candidates.length > MAX_SOURCE_COUNT) {
     throw personalElementError(
       'PERSONAL_ELEMENTS_INVALID_INPUT',
@@ -588,7 +613,9 @@ async function runSerializable<T>(
       })
     } catch (error) {
       if (
-        (isPrismaError(error, 'P2034') || isPrismaError(error, 'P2002')) &&
+        (isPrismaError(error, 'P2034') ||
+          isPrismaError(error, 'P2002') ||
+          isSerializationConflict(error)) &&
         attempt < TRANSACTION_RETRY_LIMIT - 1
       ) {
         continue
