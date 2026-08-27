@@ -28,6 +28,8 @@ const DAILY_BATCH_NAMESPACE = '72695e3d-8c60-4db3-bef1-b995d55b283b'
 const FIRST_UUID = '00000000-0000-0000-0000-000000000000'
 const SELECTOR_PAGE_SIZE = 250
 const FINALIZATION_GRACE_DAYS = 7
+const FINALIZATION_GRACE_MILLISECONDS =
+  FINALIZATION_GRACE_DAYS * 24 * 60 * 60 * 1000
 const MAX_IN_FLIGHT_COURSES = 500
 const NIGHTLY_STOP_MINUTES = 5 * 60 + 45
 const NIGHTLY_DEADLINE_MINUTES = 6 * 60
@@ -289,14 +291,15 @@ function courseRequest(
   }
 }
 
-function fullCourseRequest(
-  request: LearningAnalyticsCourseControlInput
+function replaceCourseMode(
+  request: LearningAnalyticsCourseControlInput,
+  mode: 'finalize' | 'full'
 ): LearningAnalyticsCourseControlInput {
   return {
     contractVersion: request.contractVersion,
     runId: request.runId,
     courseId: request.courseId,
-    mode: 'full',
+    mode,
   }
 }
 
@@ -474,6 +477,8 @@ export async function startLearningAnalyticsCourse(
         isArchived: true,
         areAnalyticsValid: true,
         analyticsLastComputedAt: true,
+        analyticsFinalizedAt: true,
+        endDate: true,
       },
     })
     if (!course) throw new Error('Learning-analytics course does not exist')
@@ -506,7 +511,18 @@ export async function startLearningAnalyticsCourse(
         }
         requiresFull = recentChoice
       }
-      if (requiresFull) effectiveRequest = fullCourseRequest(request)
+      if (requiresFull) {
+        effectiveRequest = replaceCourseMode(request, 'full')
+      } else if (
+        request.mode === 'incremental' &&
+        course.isLearningAnalyticsEnabled &&
+        !course.isArchived &&
+        course.analyticsFinalizedAt === null &&
+        course.endDate.valueOf() + FINALIZATION_GRACE_MILLISECONDS <=
+          fenceAt.valueOf()
+      ) {
+        effectiveRequest = replaceCourseMode(request, 'finalize')
+      }
     }
 
     const cleanupOnly = !course.isLearningAnalyticsEnabled || course.isArchived

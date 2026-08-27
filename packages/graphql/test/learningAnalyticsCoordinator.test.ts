@@ -94,6 +94,8 @@ type CourseState = {
   isArchived: boolean
   analyticsLastComputedAt: Date | null
   areAnalyticsValid?: boolean
+  analyticsFinalizedAt?: Date | null
+  endDate?: Date
 }
 
 function coursePrisma(
@@ -108,7 +110,12 @@ function coursePrisma(
     memberChoiceAt?: Date | null
   } = {}
 ) {
-  let current = { areAnalyticsValid: true, ...initial }
+  let current = {
+    areAnalyticsValid: true,
+    analyticsFinalizedAt: null,
+    endDate: new Date('2026-09-01T00:00:00.000Z'),
+    ...initial,
+  }
   const queryRaw = vi.fn(
     async (query: { strings?: string[]; values?: unknown[] }) => {
       const sql = query.strings?.join(' ') ?? ''
@@ -471,6 +478,34 @@ describe('learning analytics coordinator', () => {
     await expect(
       startLearningAnalyticsCourse(request, fixture.prisma)
     ).resolves.toMatchObject({ courseId, request })
+  })
+
+  it('upgrades a queued incremental request when finalization becomes due before start', async () => {
+    const marker = new Date('2026-08-26T00:00:00.000Z')
+    const request = {
+      ...courseRequest(),
+      windowSince: '2026-08-26',
+    }
+    const fixture = coursePrisma(
+      {
+        isLearningAnalyticsEnabled: true,
+        isArchived: false,
+        analyticsLastComputedAt: marker,
+        analyticsFinalizedAt: null,
+        endDate: new Date('2026-08-20T01:59:59.999Z'),
+      },
+      {
+        fenceAt: new Date('2026-08-27T02:00:00.000Z'),
+        memberChoiceAt: new Date(marker.getTime() - 1),
+      }
+    )
+
+    await expect(
+      startLearningAnalyticsCourse(request, fixture.prisma)
+    ).resolves.toMatchObject({
+      courseId,
+      request: courseRequest('finalize'),
+    })
   })
 
   it('upgrades a queued request to full when the preserved marker is missing', async () => {

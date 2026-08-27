@@ -87,6 +87,8 @@ database-free. The focused coordinator suite also asserts that no historical
 inclusion predicate remains, that a membership choice at or after the course
 marker selects a full course run, that a missing marker selects full mode, and
 that an unchanged course remains incremental with its existing `windowSince`.
+It also verifies that a queued incremental request upgrades when finalization
+becomes due before start.
 The participant data-use suite checks current consent metadata plus the strict
 course-marker-versus-choice-time freshness comparison. The read-gate suite keeps
 focused disabled, invalid, and activity-owner coverage, while the PostgreSQL

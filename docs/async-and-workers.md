@@ -122,6 +122,10 @@ cancelled or failed course does not receive a successful completion timestamp;
 an active course that was invalidated at start therefore remains unreadable
 until a later successful run.
 
+Course start also re-evaluates finalization under the current course lock. An
+incremental request that crosses the seven-day finalization grace period while
+queued is upgraded to `finalize`; a full rebuild still takes precedence.
+
 ### Bounded parallelism
 
 The selector reads stable pages of 250 course IDs with a keyset cursor. The

@@ -35,6 +35,7 @@ const CHILD_METADATA = {
   contractVersion: 'v1',
 } as const
 const DURABLE_EXECUTION_TIMEOUT = '7h'
+const NIGHTLY_CRONS = ['30 22 * * *', '30 23 * * *']
 
 export const LEARNING_ANALYTICS_TASK_NAMES = {
   batch: 'learning-analytics-public-batch-v1',
@@ -640,7 +641,7 @@ export function prepareLearningAnalyticsTasks({
     backoff: { factor: 2, maxSeconds: 30 },
     executionTimeout: '2m',
     scheduleTimeout: '30m',
-    onCrons: ['30 22 * * *', '30 23 * * *'],
+    onCrons: NIGHTLY_CRONS,
     fn: async (_input: Record<string, never>, executionContext) => {
       const batch = await handlers.handlePrepareScheduledLearningAnalyticsBatch(
         {},

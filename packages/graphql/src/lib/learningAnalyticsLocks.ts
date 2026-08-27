@@ -3,7 +3,8 @@ import { LEARNING_ANALYTICS_ADVISORY_LOCK } from './learningAnalytics.js'
 
 export const LEARNING_ANALYTICS_GLOBAL_LOCK_NAMESPACE =
   LEARNING_ANALYTICS_ADVISORY_LOCK.classId
-export const LEARNING_ANALYTICS_COURSE_LOCK_NAMESPACE = 1_279_340_546
+export const LEARNING_ANALYTICS_COURSE_LOCK_NAMESPACE =
+  LEARNING_ANALYTICS_ADVISORY_LOCK.classId + 1
 
 export async function lockLearningAnalyticsCourseMutation(
   prisma: PrismaTransactionClient,
