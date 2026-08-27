@@ -866,7 +866,7 @@ describe('personal elements service', () => {
       context(participant.id)
     )
     const [second] = await createPersonalElements(
-      { courseId: course.id, candidates: [candidate()] },
+      { courseId: course.id, candidates: [candidate({ name: 'Sunk cost' })] },
       context(participant.id)
     )
     await prisma.personalElement.update({
@@ -883,6 +883,146 @@ describe('personal elements service', () => {
     expect(
       await prisma.personalElement.findUnique({ where: { id: first!.id } })
     ).toBeNull()
+  })
+
+  it('rejects a save whose title duplicates a saved card', async () => {
+    const { course, participant } = await createFixture()
+    await createPersonalElements(
+      {
+        courseId: course.id,
+        candidates: [candidate({ name: 'Opportunity cost' })],
+      },
+      context(participant.id)
+    )
+
+    await expect(
+      createPersonalElements(
+        {
+          courseId: course.id,
+          candidates: [candidate({ name: 'Opportunity cost' })],
+        },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_DUPLICATE_TITLE' },
+    })
+    expect(
+      await prisma.personalElement.count({
+        where: { participantId: participant.id, courseId: course.id },
+      })
+    ).toBe(1)
+  })
+
+  it('rejects a batch atomically when one title duplicates a saved card', async () => {
+    const { course, participant } = await createFixture()
+    await createPersonalElements(
+      {
+        courseId: course.id,
+        candidates: [candidate({ name: 'Opportunity cost' })],
+      },
+      context(participant.id)
+    )
+
+    await expect(
+      createPersonalElements(
+        {
+          courseId: course.id,
+          candidates: [
+            candidate({ name: 'Sunk cost' }),
+            candidate({ name: 'Opportunity cost' }),
+          ],
+        },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_DUPLICATE_TITLE' },
+    })
+    expect(
+      await prisma.personalElement.count({
+        where: { participantId: participant.id, courseId: course.id },
+      })
+    ).toBe(1)
+  })
+
+  it('allows same-title candidates within one batch', async () => {
+    const { course, participant } = await createFixture()
+    const elements = await createPersonalElements(
+      {
+        courseId: course.id,
+        candidates: [candidate(), candidate()],
+      },
+      context(participant.id)
+    )
+    expect(elements).toHaveLength(2)
+  })
+
+  it('rejects exactly one of two concurrent saves with the same title', async () => {
+    const { course, participant } = await createFixture()
+    const results = await Promise.allSettled([
+      createPersonalElements(
+        { courseId: course.id, candidates: [candidate()] },
+        context(participant.id)
+      ),
+      createPersonalElements(
+        { courseId: course.id, candidates: [candidate()] },
+        context(participant.id)
+      ),
+    ])
+
+    expect(
+      results.filter((result) => result.status === 'fulfilled')
+    ).toHaveLength(1)
+    const rejected = results.find((result) => result.status === 'rejected')
+    expect(rejected).toBeDefined()
+    if (rejected && rejected.status === 'rejected') {
+      expect(rejected.reason).toMatchObject({
+        extensions: { code: 'PERSONAL_ELEMENTS_DUPLICATE_TITLE' },
+      })
+    }
+    expect(
+      await prisma.personalElement.count({
+        where: { participantId: participant.id, courseId: course.id },
+      })
+    ).toBe(1)
+  })
+
+  it('persists a discard idempotently', async () => {
+    const { course, participant } = await createFixture()
+    const input = candidate()
+    await discardPersonalElementCandidate(
+      { courseId: course.id, candidateId: input.candidateId },
+      context(participant.id)
+    )
+    await discardPersonalElementCandidate(
+      { courseId: course.id, candidateId: input.candidateId },
+      context(participant.id)
+    )
+    expect(
+      await prisma.personalElementDiscard.count({
+        where: {
+          participantId: participant.id,
+          courseId: course.id,
+          candidateId: input.candidateId,
+        },
+      })
+    ).toBe(1)
+  })
+
+  it('denies revision of a card owned by another participant', async () => {
+    const { course, participant } = await createFixture()
+    const [element] = await createPersonalElements(
+      { courseId: course.id, candidates: [candidate()] },
+      context(participant.id)
+    )
+
+    await expect(
+      updatePersonalElement(
+        { id: element!.id, expectedVersion: 1, name: 'Renamed' },
+        context(randomUUID())
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENT_NOT_FOUND' },
+    })
   })
 
   it('prepares a card plan with course language and the complete title list', async () => {

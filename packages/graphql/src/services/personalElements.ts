@@ -801,6 +801,31 @@ export async function createPersonalElements(
     )
 
     if (missing.length > 0) {
+      const savedTitles = await transaction.personalElement.findMany({
+        where: {
+          participantId: context.participantId,
+          courseId: input.courseId,
+          candidateId: {
+            notIn: candidates.map((candidate) => candidate.candidateId),
+          },
+        },
+        select: { name: true },
+      })
+      const titlesToScreen = savedTitles.map((element) => element.name)
+      for (const candidate of missing) {
+        const duplicate = findPotentialDuplicateTitle(
+          candidate.name,
+          titlesToScreen
+        )
+        if (duplicate) {
+          throw personalElementError(
+            'PERSONAL_ELEMENTS_DUPLICATE_TITLE',
+            'A card with a similar title already exists: ' +
+              duplicate.matchedTitle
+          )
+        }
+      }
+
       const count = await transaction.personalElement.count({
         where: {
           participantId: context.participantId,

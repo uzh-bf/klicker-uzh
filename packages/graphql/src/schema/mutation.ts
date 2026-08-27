@@ -77,9 +77,13 @@ import {
 } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
+  CardGenerationLease,
+  CardGenerationLeaseInput,
+  CreatePersonalElementsInput,
   PersonalElement,
   PrepareCardPlanInput,
   PreparedCardPlan,
+  UpdatePersonalElementInput,
   ValidateCardCandidateInput,
 } from './personalElement.js'
 import {
@@ -666,6 +670,108 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await PersonalElementService.validateCardCandidate(
+            args.input,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
+        },
+      }),
+
+      claimCardGenerationLease: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: CardGenerationLease,
+        args: {
+          input: t.arg({ type: CardGenerationLeaseInput, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.claimCardGenerationLease(
+            args.input,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
+        },
+      }),
+
+      completeCardGenerationLease: t.withAuth(asParticipant).boolean({
+        args: {
+          id: t.arg.string({ required: true }),
+          attemptToken: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.completeCardGenerationLease(
+            args.id,
+            args.attemptToken,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
+        },
+      }),
+
+      abortCardGenerationLease: t.withAuth(asParticipant).boolean({
+        args: {
+          id: t.arg.string({ required: true }),
+          attemptToken: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.abortCardGenerationLease(
+            args.id,
+            args.attemptToken,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
+        },
+      }),
+
+      createPersonalElements: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: [PersonalElement],
+        args: {
+          input: t.arg({ type: CreatePersonalElementsInput, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.createPersonalElements(
+            args.input,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
+        },
+      }),
+
+      discardPersonalElementCandidate: t.withAuth(asParticipant).boolean({
+        args: {
+          courseId: t.arg.string({ required: true }),
+          candidateId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          await PersonalElementService.discardPersonalElementCandidate(
+            args,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
+          return true
+        },
+      }),
+
+      updatePersonalElement: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: PersonalElement,
+        args: {
+          input: t.arg({ type: UpdatePersonalElementInput, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.updatePersonalElement(
             args.input,
             {
               prisma: ctx.prisma,

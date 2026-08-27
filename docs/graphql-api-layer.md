@@ -69,6 +69,15 @@ similarity before a candidate can render. Chat calls these operations through
 generated GraphQL documents and no longer imports backend services for
 language, titles, duplicate policy, or candidate validation.
 
+The remaining lifecycle is exposed as participant-authenticated mutations:
+`claimCardGenerationLease`, `completeCardGenerationLease`, and
+`abortCardGenerationLease` own generation claim and settlement;
+`createPersonalElements` saves candidates idempotently and repeats the
+title-similarity check inside its serializable transaction;
+`discardPersonalElementCandidate` persists the negative decision; and
+`updatePersonalElement` applies the expected-version revision contract.
+`personalElements` returns the durable saved state for reload.
+
 ## Layering contract
 
 - `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.deleteCourse(args, ctx)`.

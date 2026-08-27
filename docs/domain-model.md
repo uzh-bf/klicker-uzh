@@ -81,9 +81,19 @@ structural Flashcard payload, source bounds, and current title similarity
 before a candidate can render. Generated content is validated structurally
 (non-empty, bounded, contains letters or digits), never by matching English or
 German sentences. The save transaction enforces candidate-ID uniqueness and
-the per-course card cap; the final title-similarity check is planned to run
-inside the save transaction so two accepted candidates cannot pass a stale
+the per-course card cap, and repeats the title-similarity check inside the
+serializable save transaction so two accepted candidates cannot pass a stale
 read.
+
+The full lifecycle is exposed through participant-authenticated GraphQL
+operations. claimCardGenerationLease atomically claims or reclaims the
+generation lease for an owned plan message; completeCardGenerationLease and
+abortCardGenerationLease settle only the caller's current attempt.
+createPersonalElements saves candidates idempotently with the final duplicate
+check in its transaction, discardPersonalElementCandidate persists the
+negative decision idempotently, and updatePersonalElement applies the
+expected-version and scheduling contract to a saved card. listPersonalElements
+returns the durable saved state for reload.
 
 `ChatGenerationApproval` is the durable claim for an approved Chat generation.
 Its participant, chatbot, thread, plan message, and optional generated message

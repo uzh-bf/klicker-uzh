@@ -42,6 +42,76 @@ export const PersonalElementSourceInput = builder.inputType(
   }
 )
 
+export const CardGenerationLeaseInput = builder.inputType(
+  'CardGenerationLeaseInput',
+  {
+    fields: (t) => ({
+      planMessageId: t.string({ required: true }),
+      planToolCallId: t.string({ required: true }),
+      attemptToken: t.string({ required: true }),
+    }),
+  }
+)
+
+export const PersonalElementCandidateInput = builder.inputType(
+  'PersonalElementCandidateInput',
+  {
+    fields: (t) => ({
+      candidateId: t.string({ required: true }),
+      name: t.string({ required: true }),
+      content: t.string({ required: true }),
+      explanation: t.string({ required: true }),
+      sources: t.field({
+        type: [PersonalElementSourceInput],
+        required: true,
+      }),
+      sourceMessageId: t.string({ required: true }),
+      sourceToolCallId: t.string({ required: true }),
+      origin: t.field({ type: PersonalElementOrigin, required: false }),
+    }),
+  }
+)
+
+export const CreatePersonalElementsInput = builder.inputType(
+  'CreatePersonalElementsInput',
+  {
+    fields: (t) => ({
+      courseId: t.string({ required: true }),
+      candidates: t.field({
+        type: [PersonalElementCandidateInput],
+        required: true,
+      }),
+    }),
+  }
+)
+
+export const UpdatePersonalElementInput = builder.inputType(
+  'UpdatePersonalElementInput',
+  {
+    fields: (t) => ({
+      id: t.string({ required: true }),
+      expectedVersion: t.int({ required: true }),
+      name: t.string({ required: false }),
+      content: t.string({ required: false }),
+      explanation: t.string({ required: false }),
+      sources: t.field({
+        type: [PersonalElementSourceInput],
+        required: false,
+      }),
+    }),
+  }
+)
+
+export const CardGenerationLeaseRef =
+  builder.objectRef<DB.CardGenerationLease>('CardGenerationLease')
+
+export const CardGenerationLease = CardGenerationLeaseRef.implement({
+  fields: (t) => ({
+    id: t.exposeID('id'),
+    attemptToken: t.exposeString('attemptToken'),
+  }),
+})
+
 export const CardPlanEntryInput = builder.inputType('CardPlanEntryInput', {
   fields: (t) => ({
     type: t.field({ type: ElementType, required: true }),
