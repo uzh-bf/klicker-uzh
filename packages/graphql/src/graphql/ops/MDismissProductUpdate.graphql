@@ -1,0 +1,11 @@
+mutation DismissProductUpdate($updateId: String!) {
+  dismissProductUpdate(updateId: $updateId) {
+    id
+    updateId
+    firstPresentedAt
+    lastPresentedAt
+    presentationCount
+    readAt
+    dismissedAt
+  }
+}

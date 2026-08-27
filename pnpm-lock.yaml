@@ -1718,6 +1718,9 @@ importers:
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../prisma
+      '@klicker-uzh/product-updates':
+        specifier: workspace:*
+        version: link:../product-updates
       '@klicker-uzh/types':
         specifier: workspace:*
         version: link:../types

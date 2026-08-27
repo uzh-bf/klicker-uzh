@@ -17,6 +17,7 @@ import * as NotificationService from '../services/notifications.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
+import * as ProductUpdatesService from '../services/productUpdates.js'
 import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
@@ -78,6 +79,7 @@ import {
   StackFeedback,
   StackResponseInput,
 } from './practiceQuiz.js'
+import { ProductUpdateState } from './productUpdates.js'
 import {
   AnswerCollection,
   AnswerCollectionEntry,
@@ -127,6 +129,10 @@ export const Mutation = builder.mutationType({
     const asUserFullAccess = { ...asUser, scope: DB.UserLoginScope.FULL_ACCESS }
     const asUserFullAccessForStandardActivities = asUserFullAccess
     const asUserOwner = { ...asUser, scope: DB.UserLoginScope.ACCOUNT_OWNER }
+    // Lecturers and participants share these fields, which the single-role
+    // `role` scope cannot express. The service does the role branch and rejects
+    // the actor types that are excluded from the feature.
+    const asAnyActor = { authenticated: true }
     const courseCreationArgs = {
       name: t.arg.string({ required: true }),
       displayName: t.arg.string({ required: true }),
@@ -3753,6 +3759,33 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await SupportService.requestCatalystAccess(args, ctx)
+        },
+      }),
+
+      markProductUpdateRead: t.withAuth(asAnyActor).field({
+        type: ProductUpdateState,
+        args: { updateId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await ProductUpdatesService.markProductUpdateRead(args, ctx)
+        },
+      }),
+
+      dismissProductUpdate: t.withAuth(asAnyActor).field({
+        type: ProductUpdateState,
+        args: { updateId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await ProductUpdatesService.dismissProductUpdate(args, ctx)
+        },
+      }),
+
+      recordProductUpdatePresentation: t.withAuth(asAnyActor).field({
+        type: ProductUpdateState,
+        args: { updateId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await ProductUpdatesService.recordProductUpdatePresentation(
+            args,
+            ctx
+          )
         },
       }),
 

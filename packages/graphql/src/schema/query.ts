@@ -17,6 +17,7 @@ import * as MicroLearningService from '../services/microLearning.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
+import * as ProductUpdatesService from '../services/productUpdates.js'
 import * as ResourcesService from '../services/resources.js'
 import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
@@ -98,6 +99,7 @@ import {
   ReviewStatus,
   StackFeedback,
 } from './practiceQuiz.js'
+import { ProductUpdateState } from './productUpdates.js'
 import {
   AnswerCollection,
   AnswerCollectionPreviewEntry,
@@ -135,6 +137,10 @@ export const Query = builder.queryType({
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
+    // Lecturers and participants share these fields, which the single-role
+    // `role` scope cannot express. The service does the role branch and rejects
+    // the actor types that are excluded from the feature.
+    const asAnyActor = { authenticated: true }
 
     return {
       self: t.field({
@@ -2189,6 +2195,16 @@ export const Query = builder.queryType({
         },
         resolve: async (_, args, ctx) => {
           return await SharingService.getAnswerCollectionCatalogInfo(args, ctx)
+        },
+      }),
+
+      productUpdateStates: t.withAuth(asAnyActor).field({
+        type: [ProductUpdateState],
+        args: {
+          updateIds: t.arg.stringList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await ProductUpdatesService.getProductUpdateStates(args, ctx)
         },
       }),
     }

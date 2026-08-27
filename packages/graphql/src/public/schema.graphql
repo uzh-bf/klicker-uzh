@@ -2043,6 +2043,7 @@ type Mutation {
   deleteUserGroup(groupId: Int!): Boolean!
   deleteUserLogin(id: String!): UserLogin
   demoteGroupAdminToMember(adminId: String!, groupId: Int!): Boolean!
+  dismissProductUpdate(updateId: String!): ProductUpdateState!
   duplicateAnswerCollection(id: Int!): AnswerCollection
   editActivityTemplate(activityId: String!, activityType: ActivityType!, description: String!, instructions: String!, name: String!, templateId: String!): Boolean!
   editAnswerCollectionEntry(collectionId: Int!, id: Int!, value: String!): AnswerCollectionEntry
@@ -2090,6 +2091,7 @@ type Mutation {
   manipulateSelectionQuestion(basePoints: Boolean, content: String, explanation: String, id: Int, name: String, options: OptionsSelectionInput, pointsMultiplier: Int, status: ElementStatus, tags: [String!]): Element
   manualRandomGroupAssignments(courseId: String!): [ParticipantGroup!]
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
+  markProductUpdateRead(updateId: String!): ProductUpdateState!
   modifyAnswerCollection(description: String, id: Int!, name: String): AnswerCollection
   openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!, liveQuizId: String!): Feedback
@@ -2099,6 +2101,7 @@ type Mutation {
   publishMicroLearning(id: String!): MicroLearning
   publishPracticeQuiz(availableFrom: Date, id: String!): PracticeQuiz
   rateElement(elementId: Int!, elementInstanceId: Int!, rating: Int!): ElementFeedback
+  recordProductUpdatePresentation(updateId: String!): ProductUpdateState!
   rejectChatbotPublication(comment: String!, id: String!): Chatbot
   removeCatalogObjectAssignment(assignmentId: Int!): Boolean!
   removeObject(objectId: String!, objectType: ObjectType!): String
@@ -2537,6 +2540,16 @@ type PracticeQuiz {
   updatedAt: Date
 }
 
+type ProductUpdateState {
+  dismissedAt: Date
+  firstPresentedAt: Date!
+  id: Int!
+  lastPresentedAt: Date!
+  presentationCount: Int!
+  readAt: Date
+  updateId: String!
+}
+
 type PublicAssessmentReportCourse {
   displayName: String!
   name: String!
@@ -2680,6 +2693,7 @@ type Query {
   participations(assessmentOnly: Boolean, endpoint: String): [Participation!]
   practiceQuiz(id: String!): PracticeQuiz
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
+  productUpdateStates(updateIds: [String!]!): [ProductUpdateState!]!
   publicParticipantProfile(participantId: String!): Participant
   self(liveQuizId: String): Participant
   selfWithAchievements: ParticipantWithAchievements
