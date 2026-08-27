@@ -139,18 +139,23 @@ export async function getProductUpdateStates(
   ctx: ContextWithUser
 ): Promise<ProductUpdateState[]> {
   const actor = resolveActor(ctx)
-  assertKnownUpdateIds(updateIds)
+
+  // Unlike the mutations, the read path ignores unknown ids instead of
+  // rejecting the request: during a rollout a newer frontend asks about
+  // catalog entries an older backend does not carry yet, and failing the whole
+  // query would blank the feed for every entry the backend does know.
+  const knownIds = updateIds.filter((id) => KNOWN_UPDATE_IDS.has(id))
 
   // Entries the actor has never interacted with have no row; the caller treats
   // a missing entry as unread and never presented.
   if (actor.type === 'user') {
     return ctx.prisma.userProductUpdateState.findMany({
-      where: { userId: actor.id, updateId: { in: updateIds } },
+      where: { userId: actor.id, updateId: { in: knownIds } },
     })
   }
 
   return ctx.prisma.participantProductUpdateState.findMany({
-    where: { participantId: actor.id, updateId: { in: updateIds } },
+    where: { participantId: actor.id, updateId: { in: knownIds } },
   })
 }
 

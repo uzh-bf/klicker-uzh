@@ -123,6 +123,11 @@ Four authenticated root fields in `packages/graphql/src/schema/productUpdates.ts
 | `dismissProductUpdate(updateId)`            | Sets `dismissedAt` once, in the same idempotent way                  |
 | `recordProductUpdatePresentation(updateId)` | Upserts and increments `presentationCount`, moving `lastPresentedAt` |
 
+An id that is not in the catalog is ignored by `productUpdateStates`, which
+answers for the remaining ids, but rejected by all three mutations. That
+asymmetry keeps a newer frontend's feed working against a backend that does not
+carry the newest entries yet, while still refusing to write an orphaned row.
+
 These are the only fields in the schema that serve lecturers and participants
 under one name. Pothos' `role` scope takes a single role, so they are authorized
 as `{ authenticated: true }` and the service performs the role branch: `USER` and
@@ -136,9 +141,14 @@ a delegated lecturer login with `READ_ONLY` or `SESSION_EXEC` scope is rejected,
 while the query stays open to it so the feed still renders. Participant tokens
 carry no scope claim, so the floor applies to lecturer sessions only.
 
-All three mutations reach the row through a single upsert rather than a
-read-modify-write, so two browser tabs interacting with the same entry at once
-cannot collide on the unique constraint or lose an increment.
+The write path comes in two shapes, both safe under two browser tabs touching
+the same entry at once. `recordProductUpdatePresentation` is a single upsert
+with a database-side increment, so no presentation is lost to a
+read-modify-write race. `markProductUpdateRead` and `dismissProductUpdate`
+insert the row if it is absent and then claim the timestamp only while it is
+still unset: the insert is an upsert, so it cannot collide on the unique
+constraint, and the second statement keeps the first read and the first
+dismissal from moving.
 
 ## Current consumers
 

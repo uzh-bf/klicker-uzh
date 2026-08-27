@@ -252,7 +252,7 @@ describe('product update read state services', () => {
     ).resolves.toBe(0)
   })
 
-  it('rejects an update id that is not in the catalog', async () => {
+  it('rejects a write to an update id that is not in the catalog', async () => {
     const lecturer = await createLecturer()
     const ctx = actorContext(lecturer.id, UserRole.USER)
 
@@ -265,12 +265,33 @@ describe('product update read state services', () => {
     await expect(
       recordProductUpdatePresentation({ updateId: UNKNOWN_UPDATE_ID }, ctx)
     ).rejects.toThrow(`Unknown product update id(s): ${UNKNOWN_UPDATE_ID}`)
-    await expect(
-      getProductUpdateStates({ updateIds: [UPDATE_ID, UNKNOWN_UPDATE_ID] }, ctx)
-    ).rejects.toThrow(`Unknown product update id(s): ${UNKNOWN_UPDATE_ID}`)
 
     await expect(
       prisma.userProductUpdateState.count({ where: { userId: lecturer.id } })
     ).resolves.toBe(0)
+  })
+
+  // A newer frontend may ask about catalog entries this backend does not carry
+  // yet, so the read path has to answer for the ids it knows.
+  it('ignores unknown update ids on read and returns the known-id states', async () => {
+    const lecturer = await createLecturer()
+    const ctx = actorContext(lecturer.id, UserRole.USER)
+
+    const presented = await recordProductUpdatePresentation(
+      { updateId: UPDATE_ID },
+      ctx
+    )
+
+    const mixed = await getProductUpdateStates(
+      { updateIds: [UNKNOWN_UPDATE_ID, UPDATE_ID] },
+      ctx
+    )
+    expect(mixed).toHaveLength(1)
+    expect(mixed[0]!.updateId).toBe(UPDATE_ID)
+    expect(mixed[0]!.id).toBe(presented.id)
+
+    await expect(
+      getProductUpdateStates({ updateIds: [UNKNOWN_UPDATE_ID] }, ctx)
+    ).resolves.toEqual([])
   })
 })
