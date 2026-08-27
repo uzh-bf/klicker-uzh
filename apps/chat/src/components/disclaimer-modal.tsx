@@ -189,10 +189,12 @@ export const DisclaimerModal = ({
           </Button>
           <Button
             ref={acceptButtonRef}
-            primary
             data-cy="chat-disclaimer-accept"
             onClick={handleAccept}
             disabled={isLoading}
+            className={{
+              root: 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground disabled:hover:bg-primary border-transparent font-semibold',
+            }}
           >
             {isLoading
               ? t('chat.disclaimer.saving')
