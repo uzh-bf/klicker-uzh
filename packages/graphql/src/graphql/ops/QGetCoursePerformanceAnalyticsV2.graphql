@@ -1,0 +1,22 @@
+query GetCoursePerformanceAnalyticsV2($courseId: String!) {
+  getCoursePerformanceAnalyticsV2(courseId: $courseId) {
+    isSuppressed
+    effectiveN
+    activitySummaries {
+      activityIndex
+      activityType
+      effectiveN
+      completionPercent
+      correctPercent
+    }
+    studentReport {
+      isSuppressed
+      effectiveN
+      students {
+        studentLabel
+        completedActivities
+        meanCompletionPercent
+      }
+    }
+  }
+}

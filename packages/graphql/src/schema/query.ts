@@ -28,8 +28,12 @@ import {
 import {
   ActivityType,
   CourseActivityAnalytics,
+  CourseActivityAnalyticsV2,
   CoursePerformanceAnalytics,
+  CoursePerformanceAnalyticsV2,
   ElementFeedback,
+  LearningAnalyticsExportFormatV2,
+  LearningAnalyticsExportV2,
   QuizAnalytics,
   WeeklyCourseActivities,
 } from './analytics.js'
@@ -1311,6 +1315,20 @@ export const Query = builder.queryType({
         ),
       }),
 
+      getCourseActivityAnalyticsV2: t.withAuth(asUser).field({
+        nullable: true,
+        type: CourseActivityAnalyticsV2,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) =>
+            AnalyticsService.getCourseActivityAnalyticsV2(args, ctx)
+        ),
+      }),
+
       getCourseWeeklyActivity: t.withAuth(asUser).field({
         nullable: true,
         type: WeeklyCourseActivities,
@@ -1359,6 +1377,38 @@ export const Query = builder.queryType({
               ctx
             )
           }
+        ),
+      }),
+
+      getCoursePerformanceAnalyticsV2: t.withAuth(asUser).field({
+        nullable: true,
+        type: CoursePerformanceAnalyticsV2,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) =>
+            AnalyticsService.getCoursePerformanceAnalyticsV2(args, ctx)
+        ),
+      }),
+
+      getCourseLearningAnalyticsExportV2: t.withAuth(asUser).field({
+        nullable: true,
+        type: LearningAnalyticsExportV2,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          format: t.arg({
+            type: LearningAnalyticsExportFormatV2,
+            required: true,
+          }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) =>
+            AnalyticsService.getCourseLearningAnalyticsExportV2(args, ctx)
         ),
       }),
 

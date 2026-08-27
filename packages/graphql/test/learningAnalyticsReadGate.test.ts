@@ -3,7 +3,10 @@ import type { ContextWithUser } from '../src/lib/context.js'
 import {
   getActivityAnalytics,
   getCourseActivityAnalytics,
+  getCourseActivityAnalyticsV2,
+  getCourseLearningAnalyticsExportV2,
   getCoursePerformanceAnalytics,
+  getCoursePerformanceAnalyticsV2,
   getCourseWeeklyActivity,
 } from '../src/services/analytics.js'
 
@@ -93,6 +96,18 @@ describe('learning analytics read gate', () => {
     await expect(
       getCoursePerformanceAnalytics({ courseId }, disabled.ctx)
     ).resolves.toBeNull()
+    await expect(
+      getCourseActivityAnalyticsV2({ courseId }, disabled.ctx)
+    ).resolves.toBeNull()
+    await expect(
+      getCoursePerformanceAnalyticsV2({ courseId }, disabled.ctx)
+    ).resolves.toBeNull()
+    await expect(
+      getCourseLearningAnalyticsExportV2(
+        { courseId, format: 'CSV' },
+        disabled.ctx
+      )
+    ).resolves.toBeNull()
 
     const invalid = analyticsContext({
       course: { isLearningAnalyticsEnabled: true, areAnalyticsValid: false },
@@ -105,6 +120,18 @@ describe('learning analytics read gate', () => {
     ).resolves.toBeNull()
     await expect(
       getCoursePerformanceAnalytics({ courseId }, invalid.ctx)
+    ).resolves.toBeNull()
+    await expect(
+      getCourseActivityAnalyticsV2({ courseId }, invalid.ctx)
+    ).resolves.toBeNull()
+    await expect(
+      getCoursePerformanceAnalyticsV2({ courseId }, invalid.ctx)
+    ).resolves.toBeNull()
+    await expect(
+      getCourseLearningAnalyticsExportV2(
+        { courseId, format: 'JSON' },
+        invalid.ctx
+      )
     ).resolves.toBeNull()
 
     for (const call of disabled.courseFindUnique.mock.calls) {

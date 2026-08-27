@@ -11,6 +11,12 @@ import { ActivityType } from '@klicker-uzh/types'
 import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import type { ContextWithUser } from '@/lib/context.js'
+import {
+  buildCourseActivityAnalyticsV2,
+  buildCoursePerformanceAnalyticsV2,
+  buildLearningAnalyticsExportV2,
+  type LearningAnalyticsExportFormatV2,
+} from '../lib/learningAnalyticsOutputV2.js'
 
 async function getEligibleParticipantIdsForCourseAnalytics(
   prisma: PrismaTransactionClient,
@@ -155,6 +161,52 @@ export async function getCourseActivityAnalytics(
         },
         participantCourseAnalytics: course.participantCourseAnalytics,
       }
+    },
+    {
+      maxWait: 10_000,
+      timeout: 60_000,
+      isolationLevel: DB.Prisma.TransactionIsolationLevel.RepeatableRead,
+    }
+  )
+}
+
+export async function getCourseActivityAnalyticsV2(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.$transaction(
+    async (prisma) => {
+      const eligibleParticipantIds =
+        await getEligibleParticipantIdsForCourseAnalytics(prisma, courseId)
+      const course = await prisma.course.findUnique({
+        where: {
+          id: courseId,
+          isLearningAnalyticsEnabled: true,
+          areAnalyticsValid: true,
+          isArchived: false,
+          analyticsLastComputedAt: { not: null },
+        },
+        select: { id: true },
+      })
+
+      if (!course) return null
+
+      const weeklyRows = await prisma.participantAnalytics.findMany({
+        where: {
+          courseId,
+          type: 'WEEKLY',
+          participantId: { in: eligibleParticipantIds },
+        },
+        select: { timestamp: true, participantId: true },
+        orderBy: { timestamp: 'asc' },
+      })
+      return buildCourseActivityAnalyticsV2({
+        eligibleParticipantKeys: eligibleParticipantIds,
+        weeklyActivity: weeklyRows.map((row) => ({
+          participantKey: row.participantId,
+          period: row.timestamp,
+        })),
+      })
     },
     {
       maxWait: 10_000,
@@ -680,6 +732,112 @@ export async function getCoursePerformanceAnalytics(
         instanceFeedbacks,
         activityFeedbacks,
       }
+    },
+    {
+      maxWait: 10_000,
+      timeout: 60_000,
+      isolationLevel: DB.Prisma.TransactionIsolationLevel.RepeatableRead,
+    }
+  )
+}
+
+async function getCoursePerformanceAnalyticsV2InTransaction(
+  prisma: PrismaTransactionClient,
+  courseId: string,
+  nextRandomInt?: (max: number) => number
+) {
+  const eligibleParticipantIds =
+    await getEligibleParticipantIdsForPerformanceAnalytics(prisma, courseId)
+  const participantFilter = { participantId: { in: eligibleParticipantIds } }
+  const participantPerformanceSelection = {
+    where: participantFilter,
+    select: { participantId: true, completion: true },
+  }
+  const course = await prisma.course.findUnique({
+    where: {
+      id: courseId,
+      isLearningAnalyticsEnabled: true,
+      areAnalyticsValid: true,
+      isArchived: false,
+      analyticsLastComputedAt: { not: null },
+    },
+    select: {
+      practiceQuizzes: {
+        select: { participantPerformances: participantPerformanceSelection },
+        orderBy: { createdAt: 'asc' },
+      },
+      microLearnings: {
+        select: { participantPerformances: participantPerformanceSelection },
+        orderBy: { scheduledStartAt: 'asc' },
+      },
+    },
+  })
+
+  if (!course) return null
+
+  const activities = [
+    ...course.practiceQuizzes.map((activity) => ({
+      activityType: ActivityType.PRACTICE_QUIZ as const,
+      rows: activity.participantPerformances,
+    })),
+    ...course.microLearnings.map((activity) => ({
+      activityType: ActivityType.MICRO_LEARNING as const,
+      rows: activity.participantPerformances,
+    })),
+  ].map((activity) => ({
+    activityType: activity.activityType,
+    participantCompletions: activity.rows.map((row) => ({
+      participantKey: row.participantId,
+      completion: row.completion,
+    })),
+  }))
+
+  return buildCoursePerformanceAnalyticsV2({
+    eligibleParticipantKeys: eligibleParticipantIds,
+    activities,
+    nextRandomInt,
+  })
+}
+
+export async function getCoursePerformanceAnalyticsV2(
+  { courseId }: { courseId: string },
+  ctx: ContextWithUser,
+  nextRandomInt?: (max: number) => number
+) {
+  return ctx.prisma.$transaction(
+    (prisma) =>
+      getCoursePerformanceAnalyticsV2InTransaction(
+        prisma,
+        courseId,
+        nextRandomInt
+      ),
+    {
+      maxWait: 10_000,
+      timeout: 60_000,
+      isolationLevel: DB.Prisma.TransactionIsolationLevel.RepeatableRead,
+    }
+  )
+}
+
+export async function getCourseLearningAnalyticsExportV2(
+  {
+    courseId,
+    format,
+  }: { courseId: string; format: LearningAnalyticsExportFormatV2 },
+  ctx: ContextWithUser,
+  nextRandomInt?: (max: number) => number
+) {
+  return ctx.prisma.$transaction(
+    async (prisma) => {
+      const analytics = await getCoursePerformanceAnalyticsV2InTransaction(
+        prisma,
+        courseId,
+        nextRandomInt
+      )
+
+      if (!analytics || analytics.studentReport.isSuppressed) return null
+
+      return buildLearningAnalyticsExportV2(analytics.studentReport, format)
     },
     {
       maxWait: 10_000,

@@ -1050,6 +1050,12 @@ type CourseActivityAnalytics {
   weeklyActivity: [ParticipantActivityTimestamp!]!
 }
 
+type CourseActivityAnalyticsV2 {
+  effectiveN: Int
+  isSuppressed: Boolean!
+  weeklyActivity: [LearningAnalyticsWeeklyActivityV2!]!
+}
+
 type CourseActivityItem {
   id: String!
   name: String!
@@ -1138,6 +1144,13 @@ type CoursePerformanceAnalytics {
   participantActivityPerformances: [ParticipantActivityPerformances!]!
   participantPerformances: [ParticipantPerformance!]!
   totalParticipants: Int!
+}
+
+type CoursePerformanceAnalyticsV2 {
+  activitySummaries: [LearningAnalyticsActivitySummaryV2!]!
+  effectiveN: Int
+  isSuppressed: Boolean!
+  studentReport: LearningAnalyticsStudentReportV2!
 }
 
 type CourseStudentTimeline {
@@ -1826,6 +1839,44 @@ type LeaderboardEntry {
 type LeaderboardStatistics {
   averageScore: Float!
   participantCount: Int!
+}
+
+type LearningAnalyticsActivitySummaryV2 {
+  activityIndex: Int!
+  activityType: ActivityType!
+  completionPercent: Int!
+  correctPercent: Int
+  effectiveN: Int!
+}
+
+enum LearningAnalyticsExportFormatV2 {
+  CSV
+  JSON
+}
+
+type LearningAnalyticsExportV2 {
+  content: String!
+  effectiveN: Int!
+  filename: String!
+  format: LearningAnalyticsExportFormatV2!
+  mimeType: String!
+}
+
+type LearningAnalyticsStudentReportV2 {
+  effectiveN: Int
+  isSuppressed: Boolean!
+  students: [LearningAnalyticsStudentSummaryV2!]!
+}
+
+type LearningAnalyticsStudentSummaryV2 {
+  completedActivities: Int!
+  meanCompletionPercent: Int!
+  studentLabel: String!
+}
+
+type LearningAnalyticsWeeklyActivityV2 {
+  effectiveN: Int!
+  periodIndex: Int!
 }
 
 type LeaveCourseParticipation {
@@ -2613,11 +2664,14 @@ type Query {
   getChatbotsInfo: [Chatbot!]
   getCourseActivities(courseId: String!): Course
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
+  getCourseActivityAnalyticsV2(courseId: String!): CourseActivityAnalyticsV2
   getCourseActivityIds(courseId: String): CourseActivityList
   getCourseGroups(courseId: String!): Course
   getCourseLeaderboard(courseId: String!, courseSelection: Boolean!, customSelection: Boolean!, days: Int, endDate: String, rollingSelection: Boolean!, startDate: String, weeklySelection: Boolean!): CourseLeaderboard
+  getCourseLearningAnalyticsExportV2(courseId: String!, format: LearningAnalyticsExportFormatV2!): LearningAnalyticsExportV2
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getCoursePerformanceAnalytics(courseId: String!): CoursePerformanceAnalytics
+  getCoursePerformanceAnalyticsV2(courseId: String!): CoursePerformanceAnalyticsV2
   getCoursePublishedMicroLearnings(courseId: String!): [MicroLearning!]
   getCoursePublishedPracticeQuizzes(courseId: String!): [PracticeQuiz!]
   getCourseRunningLiveQuizzes(courseId: String!): [LiveQuiz!]

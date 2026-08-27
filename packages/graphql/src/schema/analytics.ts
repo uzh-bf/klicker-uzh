@@ -13,6 +13,15 @@ import {
   PerformanceRates as PerformanceRatesType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
+import type {
+  CourseActivityAnalyticsV2 as CourseActivityAnalyticsV2Type,
+  CoursePerformanceAnalyticsV2 as CoursePerformanceAnalyticsV2Type,
+  LearningAnalyticsActivitySummaryV2 as LearningAnalyticsActivitySummaryV2Type,
+  LearningAnalyticsExportV2 as LearningAnalyticsExportV2Type,
+  LearningAnalyticsStudentReportV2 as LearningAnalyticsStudentReportV2Type,
+  LearningAnalyticsStudentSummaryV2 as LearningAnalyticsStudentSummaryV2Type,
+  LearningAnalyticsWeeklyActivityV2 as LearningAnalyticsWeeklyActivityV2Type,
+} from '../lib/learningAnalyticsOutputV2.js'
 import { ElementType } from './elementData.js'
 
 export const ActivityLevel = builder.enumType('ActivityLevel', {
@@ -133,6 +142,35 @@ export const CourseActivityAnalytics = builder.objectType(
       activeDays: t.expose('activeDays', { type: WeekdayActivityAnalytics }),
       participantCourseAnalytics: t.expose('participantCourseAnalytics', {
         type: [ParticipantCourseActivity],
+      }),
+    }),
+  }
+)
+
+export const LearningAnalyticsWeeklyActivityV2Ref =
+  builder.objectRef<LearningAnalyticsWeeklyActivityV2Type>(
+    'LearningAnalyticsWeeklyActivityV2'
+  )
+export const LearningAnalyticsWeeklyActivityV2 = builder.objectType(
+  LearningAnalyticsWeeklyActivityV2Ref,
+  {
+    fields: (t) => ({
+      periodIndex: t.exposeInt('periodIndex'),
+      effectiveN: t.exposeInt('effectiveN'),
+    }),
+  }
+)
+
+export const CourseActivityAnalyticsV2Ref =
+  builder.objectRef<CourseActivityAnalyticsV2Type>('CourseActivityAnalyticsV2')
+export const CourseActivityAnalyticsV2 = builder.objectType(
+  CourseActivityAnalyticsV2Ref,
+  {
+    fields: (t) => ({
+      isSuppressed: t.exposeBoolean('isSuppressed'),
+      effectiveN: t.exposeInt('effectiveN', { nullable: true }),
+      weeklyActivity: t.expose('weeklyActivity', {
+        type: [LearningAnalyticsWeeklyActivityV2],
       }),
     }),
   }
@@ -341,6 +379,95 @@ export const CoursePerformanceAnalytics = builder.objectType(
       activityFeedbacks: t.expose('activityFeedbacks', {
         type: [ActivityFeedback],
       }),
+    }),
+  }
+)
+
+export const LearningAnalyticsActivitySummaryV2Ref =
+  builder.objectRef<LearningAnalyticsActivitySummaryV2Type>(
+    'LearningAnalyticsActivitySummaryV2'
+  )
+export const LearningAnalyticsActivitySummaryV2 = builder.objectType(
+  LearningAnalyticsActivitySummaryV2Ref,
+  {
+    fields: (t) => ({
+      activityIndex: t.exposeInt('activityIndex'),
+      activityType: t.expose('activityType', { type: ActivityType }),
+      effectiveN: t.exposeInt('effectiveN'),
+      completionPercent: t.exposeInt('completionPercent'),
+      correctPercent: t.exposeInt('correctPercent', { nullable: true }),
+    }),
+  }
+)
+
+export const LearningAnalyticsStudentSummaryV2Ref =
+  builder.objectRef<LearningAnalyticsStudentSummaryV2Type>(
+    'LearningAnalyticsStudentSummaryV2'
+  )
+export const LearningAnalyticsStudentSummaryV2 = builder.objectType(
+  LearningAnalyticsStudentSummaryV2Ref,
+  {
+    fields: (t) => ({
+      studentLabel: t.exposeString('studentLabel'),
+      completedActivities: t.exposeInt('completedActivities'),
+      meanCompletionPercent: t.exposeInt('meanCompletionPercent'),
+    }),
+  }
+)
+
+export const LearningAnalyticsStudentReportV2Ref =
+  builder.objectRef<LearningAnalyticsStudentReportV2Type>(
+    'LearningAnalyticsStudentReportV2'
+  )
+export const LearningAnalyticsStudentReportV2 = builder.objectType(
+  LearningAnalyticsStudentReportV2Ref,
+  {
+    fields: (t) => ({
+      isSuppressed: t.exposeBoolean('isSuppressed'),
+      effectiveN: t.exposeInt('effectiveN', { nullable: true }),
+      students: t.expose('students', {
+        type: [LearningAnalyticsStudentSummaryV2],
+      }),
+    }),
+  }
+)
+
+export const CoursePerformanceAnalyticsV2Ref =
+  builder.objectRef<CoursePerformanceAnalyticsV2Type>(
+    'CoursePerformanceAnalyticsV2'
+  )
+export const CoursePerformanceAnalyticsV2 = builder.objectType(
+  CoursePerformanceAnalyticsV2Ref,
+  {
+    fields: (t) => ({
+      isSuppressed: t.exposeBoolean('isSuppressed'),
+      effectiveN: t.exposeInt('effectiveN', { nullable: true }),
+      activitySummaries: t.expose('activitySummaries', {
+        type: [LearningAnalyticsActivitySummaryV2],
+      }),
+      studentReport: t.expose('studentReport', {
+        type: LearningAnalyticsStudentReportV2,
+      }),
+    }),
+  }
+)
+
+export const LearningAnalyticsExportFormatV2 = builder.enumType(
+  'LearningAnalyticsExportFormatV2',
+  { values: ['CSV', 'JSON'] as const }
+)
+
+export const LearningAnalyticsExportV2Ref =
+  builder.objectRef<LearningAnalyticsExportV2Type>('LearningAnalyticsExportV2')
+export const LearningAnalyticsExportV2 = builder.objectType(
+  LearningAnalyticsExportV2Ref,
+  {
+    fields: (t) => ({
+      format: t.expose('format', { type: LearningAnalyticsExportFormatV2 }),
+      filename: t.exposeString('filename'),
+      mimeType: t.exposeString('mimeType'),
+      effectiveN: t.exposeInt('effectiveN'),
+      content: t.exposeString('content'),
     }),
   }
 )
