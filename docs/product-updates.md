@@ -246,13 +246,22 @@ belongs to — so a spotlight that cannot find its element simply does not appea
 
 `useProductUpdateSpotlight` runs the overlay. The manage header is the only mount
 that may present unsolicited, because it renders on every page; every other
-caller receives a replay-only instance. Three rules bound the unsolicited case:
+caller receives a replay-only instance. Four rules bound the unsolicited case:
 
 | Rule                                      | Mechanism                                                 |
 | ----------------------------------------- | --------------------------------------------------------- |
 | At most one per browser session           | A `sessionStorage` flag, claimed before the overlay opens |
 | Never for an entry the lecturer dismissed | `dismissedAt` from the stored read state                  |
 | Never after two recorded presentations    | `presentationCount >= 2` from the same state              |
+| Never on a live-session route             | A route pattern match against `router.pathname`           |
+
+The route rule exists because Driver.js blocks pointer events on the whole
+document while the overlay is open. On `/quizzes/[id]/cockpit` that would freeze
+the controls a lecturer needs to advance, evaluate, or end a running quiz, and on
+`/courses/[id]/assessment/liveQuiz/[quizId]` it would sit on top of grading
+corrections. Both routes are matched before the session flag is claimed, so
+leaving them for an ordinary page still shows the spotlight there. The rule
+covers unsolicited appearances only; a replay stays available everywhere.
 
 A browser session is one tab, because `sessionStorage` is per tab and clears when
 it closes. A second tab can therefore cost one more appearance; the presentation
@@ -270,6 +279,11 @@ entry's call to action when it has one. "Don't show again" calls
 Closing the popover with the corner icon means "not now" and changes no state.
 Driver.js gives a one-step highlight three button slots, and since a single step
 has nothing to go back to, the previous slot carries the dismissal.
+
+Every string handed to the popover is HTML-escaped first, because Driver.js
+writes popover text into the DOM with `innerHTML` while the same catalog text is
+escaped by React in the feed card. Without escaping, a title such as
+"Faster grading (<2s)" would lose part of itself to the HTML parser.
 
 ### Replays are always allowed
 
