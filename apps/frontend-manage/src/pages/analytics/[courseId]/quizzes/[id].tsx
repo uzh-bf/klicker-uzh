@@ -77,63 +77,57 @@ function QuizAnalytics() {
       control={control}
       loading={loading || courseActivitiesLoading}
       error={error ?? courseActivitiesError}
-      hasData={
-        activityBelongsToCourse &&
-        analytics !== null &&
-        typeof analytics !== 'undefined'
-      }
+      data={activityBelongsToCourse ? analytics : undefined}
     >
-      {() =>
-        analytics ? (
-          <Layout displayName={t('manage.analytics.quizDashboard')}>
-            {navigation}
-            <div className="mx-auto flex w-full max-w-3xl flex-col items-center">
-              <div className="relative mb-3 flex w-full flex-row items-end justify-between">
-                <div className="flex flex-row items-center gap-5">
-                  <H1 className={{ root: 'mb-0' }}>
-                    {t('manage.analytics.quizAnalytics')}:{' '}
-                    {analytics.activityName}
-                  </H1>
-                  <PreviewTag className="text-base" />
-                </div>
-                <Button
-                  className={{ root: 'h-8' }}
-                  onClick={() =>
-                    window.open(
-                      analytics.activityType === ActivityType.PracticeQuiz
-                        ? `${router.locale ? `/${router.locale}` : ''}/practiceQuiz/${activityId}/evaluation`
-                        : `${router.locale ? `/${router.locale}` : ''}/microLearning/${activityId}/evaluation`,
-                      '_blank'
-                    )
-                  }
-                  data={{ cy: 'activity-evaluation-link' }}
-                >
-                  <Button.Icon icon={faChartSimple} />
-                  <Button.Label>{t('shared.generic.evaluation')}</Button.Label>
-                </Button>
+      {(analytics) => (
+        <Layout displayName={t('manage.analytics.quizDashboard')}>
+          {navigation}
+          <div className="mx-auto flex w-full max-w-3xl flex-col items-center">
+            <div className="relative mb-3 flex w-full flex-row items-end justify-between">
+              <div className="flex flex-row items-center gap-5">
+                <H1 className={{ root: 'mb-0' }}>
+                  {t('manage.analytics.quizAnalytics')}:{' '}
+                  {analytics.activityName}
+                </H1>
+                <PreviewTag className="text-base" />
               </div>
-              <ActivityAnalyticsCharts
-                activityName={analytics.activityName}
-                activityType={analytics.activityType}
-                analytics={analytics.activityQuizAnalytics}
-                colors={chartColors}
-                className="mb-6 w-full"
-              />
-              <div className="flex w-full flex-col gap-2">
-                {analytics.instanceQuizAnalytics.map((instance, idx) => (
-                  <InstanceQuizAnalytics
-                    key={instance.id}
-                    analytics={instance}
-                    colors={chartColors}
-                    initiallyOpen={idx === 0}
-                    showLegend={idx === 0}
-                  />
-                ))}
-              </div>
+              <Button
+                className={{ root: 'h-8' }}
+                onClick={() =>
+                  window.open(
+                    analytics.activityType === ActivityType.PracticeQuiz
+                      ? `${router.locale ? `/${router.locale}` : ''}/practiceQuiz/${activityId}/evaluation`
+                      : `${router.locale ? `/${router.locale}` : ''}/microLearning/${activityId}/evaluation`,
+                    '_blank'
+                  )
+                }
+                data={{ cy: 'activity-evaluation-link' }}
+              >
+                <Button.Icon icon={faChartSimple} />
+                <Button.Label>{t('shared.generic.evaluation')}</Button.Label>
+              </Button>
             </div>
-          </Layout>
-        ) : null
-      }
+            <ActivityAnalyticsCharts
+              activityName={analytics.activityName}
+              activityType={analytics.activityType}
+              analytics={analytics.activityQuizAnalytics}
+              colors={chartColors}
+              className="mb-6 w-full"
+            />
+            <div className="flex w-full flex-col gap-2">
+              {analytics.instanceQuizAnalytics.map((instance, idx) => (
+                <InstanceQuizAnalytics
+                  key={instance.id}
+                  analytics={instance}
+                  colors={chartColors}
+                  initiallyOpen={idx === 0}
+                  showLegend={idx === 0}
+                />
+              ))}
+            </div>
+          </div>
+        </Layout>
+      )}
     </AnalyticsAccessGuard>
   )
 }

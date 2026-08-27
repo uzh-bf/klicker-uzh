@@ -44,54 +44,52 @@ function ActivityDashboard() {
       control={control}
       loading={loading}
       error={error}
-      hasData={course !== null && typeof course !== 'undefined'}
+      data={course}
     >
-      {() =>
-        course ? (
-          <Layout displayName={t('manage.analytics.activityDashboard')}>
-            {navigation}
-            <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
-              <div className="flex flex-row items-center gap-5">
-                <H1 className={{ root: 'mb-0' }}>
-                  {t('manage.analytics.activityDashboard')}: {course.name}
-                </H1>
-                <PreviewTag className="text-base" />
+      {(course) => (
+        <Layout displayName={t('manage.analytics.activityDashboard')}>
+          {navigation}
+          <div className="mb-3 flex w-full flex-row items-end justify-between font-bold">
+            <div className="flex flex-row items-center gap-5">
+              <H1 className={{ root: 'mb-0' }}>
+                {t('manage.analytics.activityDashboard')}: {course.name}
+              </H1>
+              <PreviewTag className="text-base" />
+            </div>
+            <div>
+              {t('manage.analytics.totalParticipants', {
+                number: course.totalParticipants,
+              })}
+            </div>
+          </div>
+          <div className="flex flex-col gap-4">
+            <WeeklyActivityTimeSeries
+              activity={course.weeklyActivity}
+              courseName={course.name}
+              courseParticipants={course.totalParticipants}
+            />
+            <div className="flex w-full flex-col gap-3 lg:flex-row">
+              <div className="w-full lg:w-2/3">
+                <DailyActivityTimeSeries
+                  activity={course.dailyActivity}
+                  courseParticipants={course.totalParticipants}
+                />
               </div>
-              <div>
-                {t('manage.analytics.totalParticipants', {
-                  number: course.totalParticipants,
-                })}
+              <div className="w-full lg:w-1/3">
+                <DailyActivityPlot
+                  courseParticipants={course.totalParticipants}
+                  activeDays={course.activeDays}
+                />
               </div>
             </div>
-            <div className="flex flex-col gap-4">
-              <WeeklyActivityTimeSeries
-                activity={course.weeklyActivity}
-                courseName={course.name}
-                courseParticipants={course.totalParticipants}
-              />
-              <div className="flex w-full flex-col gap-3 lg:flex-row">
-                <div className="w-full lg:w-2/3">
-                  <DailyActivityTimeSeries
-                    activity={course.dailyActivity}
-                    courseParticipants={course.totalParticipants}
-                  />
-                </div>
-                <div className="w-full lg:w-1/3">
-                  <DailyActivityPlot
-                    courseParticipants={course.totalParticipants}
-                    activeDays={course.activeDays}
-                  />
-                </div>
-              </div>
-              <TotalStudentActivityPlot
-                courseName={course.name}
-                courseWeeks={course.courseWeeks}
-                participantActivity={course.participantCourseAnalytics}
-              />
-            </div>
-          </Layout>
-        ) : null
-      }
+            <TotalStudentActivityPlot
+              courseName={course.name}
+              courseWeeks={course.courseWeeks}
+              participantActivity={course.participantCourseAnalytics}
+            />
+          </div>
+        </Layout>
+      )}
     </AnalyticsAccessGuard>
   )
 }

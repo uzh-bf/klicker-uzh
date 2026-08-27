@@ -6,25 +6,27 @@ import AnalyticsLoadingView from './AnalyticsLoadingView'
 import AnalyticsUnavailableView from './AnalyticsUnavailableView'
 import type { CourseLearningAnalyticsControl } from './useCourseLearningAnalyticsControl'
 
-function AnalyticsAccessGuard({
-  title,
-  courseId,
-  navigation,
-  control,
-  loading,
-  error,
-  hasData,
-  children,
-}: {
+type AnalyticsAccessGuardProps<TData> = {
   title: string
   courseId?: string
   navigation?: ReactNode
   control: CourseLearningAnalyticsControl
   loading: boolean
   error?: ApolloError
-  hasData: boolean
-  children: () => ReactNode
-}) {
+  data: TData
+  children: (data: NonNullable<TData>) => ReactNode
+}
+
+function AnalyticsAccessGuard<TData>({
+  title,
+  courseId,
+  navigation,
+  control,
+  loading,
+  error,
+  data,
+  children,
+}: AnalyticsAccessGuardProps<TData>) {
   const t = useTranslations()
 
   if (!control.globallyEnabled) {
@@ -75,11 +77,11 @@ function AnalyticsAccessGuard({
     return <AnalyticsLoadingView title={title} navigation={navigation} />
   }
 
-  if (error || !hasData) {
+  if (error || data == null) {
     return <AnalyticsErrorView title={title} navigation={navigation} />
   }
 
-  return <>{children()}</>
+  return <>{children(data)}</>
 }
 
 export default AnalyticsAccessGuard

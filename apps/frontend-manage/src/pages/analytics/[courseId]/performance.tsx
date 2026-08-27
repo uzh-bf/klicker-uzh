@@ -54,10 +54,10 @@ function PerformanceDashboard() {
       control={control}
       loading={loading}
       error={error}
-      hasData={course !== null && typeof course !== 'undefined'}
+      data={course}
     >
-      {() => {
-        if (!course || !courseId) return null
+      {(course) => {
+        if (!courseId) return null
 
         return (
           <Layout displayName={t('manage.analytics.performanceDashboard')}>

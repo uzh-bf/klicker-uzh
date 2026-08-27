@@ -25,6 +25,7 @@ import dayjs from 'dayjs'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { isCourseLearningAnalyticsAvailable } from '../analytics/courseEligibility'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import { useCourseDuplicationStatus } from './CourseDuplicationStatusProvider'
@@ -91,6 +92,8 @@ function CourseOverviewHeader({
     course.isLearningAnalyticsEnabled === true
   const courseLearningAnalyticsValid =
     course.analyticsStatus.areAnalyticsValid === true
+  const courseLearningAnalyticsAvailable =
+    learningAnalyticsEnabled && isCourseLearningAnalyticsAvailable(course)
 
   const ltiDropdownItems = [
     getLTIAccessLink({
@@ -165,11 +168,7 @@ function CourseOverviewHeader({
         t('manage.course.learningAnalytics')
       ),
       onClick: (event: React.MouseEvent) => {
-        if (
-          !learningAnalyticsEnabled ||
-          !courseLearningAnalyticsEnabled ||
-          !courseLearningAnalyticsValid
-        ) {
+        if (!courseLearningAnalyticsAvailable) {
           event.preventDefault()
           event.stopPropagation()
           return
@@ -177,10 +176,7 @@ function CourseOverviewHeader({
 
         window.open(`/analytics/${course.id}/activity`, '_blank')
       },
-      disabled:
-        !learningAnalyticsEnabled ||
-        !courseLearningAnalyticsEnabled ||
-        !courseLearningAnalyticsValid,
+      disabled: !courseLearningAnalyticsAvailable,
       tooltip: !learningAnalyticsEnabled
         ? t('manage.analytics.featureUnavailable')
         : !courseLearningAnalyticsEnabled
@@ -191,12 +187,9 @@ function CourseOverviewHeader({
       className: {
         // The disabled item remains inert, but its explanation still needs to
         // receive pointer input through the design-system tooltip trigger.
-        item:
-          !learningAnalyticsEnabled ||
-          !courseLearningAnalyticsEnabled ||
-          !courseLearningAnalyticsValid
-            ? 'data-disabled:pointer-events-auto'
-            : undefined,
+        item: !courseLearningAnalyticsAvailable
+          ? 'data-disabled:pointer-events-auto'
+          : undefined,
       },
       data: { cy: 'course-learning-analytics-link' },
     },
