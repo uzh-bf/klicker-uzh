@@ -1,20 +1,18 @@
 'use client'
 
 import { CheckIcon, LoaderCircleIcon, XIcon } from 'lucide-react'
-import { useState, type FC } from 'react'
+import { type FC, useState } from 'react'
 import { notifyManageParent } from '../services/manageParentNotify'
+import type { ManageProposalResult } from '../services/manageProposalResult'
 import { parseManageProposalPayload } from '../services/proposalToElementInstance'
-import { unfenceToolResultText } from '../services/toolFenceSyntax'
 import { ManageProposalPreview } from './manage-proposal-preview'
 import { formatToolName } from './tool-labels'
 
-export type ManageProposalResult = {
-  kind: string
-  proposalToken?: string
-  summary?: string
-  requiresConfirmation: boolean
-  payload: unknown
-}
+export {
+  getManageProposalResult,
+  isManageProposalResult,
+  type ManageProposalResult,
+} from '../services/manageProposalResult'
 
 type ConfirmedElement = {
   id: number
@@ -57,50 +55,6 @@ type ManageProposalCardProps = {
   result: ManageProposalResult
   status: { type: string }
   toolName: string
-}
-
-export function isManageProposalResult(
-  value: unknown
-): value is ManageProposalResult {
-  if (!value || typeof value !== 'object') return false
-
-  const record = value as Record<string, unknown>
-  return (
-    typeof record.kind === 'string' &&
-    typeof record.requiresConfirmation === 'boolean' &&
-    'payload' in record &&
-    (record.proposalToken === undefined ||
-      typeof record.proposalToken === 'string') &&
-    (record.summary === undefined || typeof record.summary === 'string')
-  )
-}
-
-export function getManageProposalResult(
-  value: unknown
-): ManageProposalResult | null {
-  if (isManageProposalResult(value)) return value
-  if (!value || typeof value !== 'object') return null
-
-  const content = (value as { content?: unknown }).content
-  if (!Array.isArray(content)) return null
-
-  for (const item of content) {
-    if (!item || typeof item !== 'object') continue
-    const record = item as Record<string, unknown>
-    if (record.type !== 'text' || typeof record.text !== 'string') continue
-
-    try {
-      // Tool results reach the browser fenced (X4 output fencing wraps every
-      // MCP result, the proposal tool's included), so unwrap the envelope
-      // before parsing — a bare JSON.parse throws on the marker line.
-      const parsed = JSON.parse(unfenceToolResultText(record.text))
-      if (isManageProposalResult(parsed)) return parsed
-    } catch {
-      // Ignore non-JSON MCP text payloads and keep looking.
-    }
-  }
-
-  return null
 }
 
 export const ManageProposalCard: FC<ManageProposalCardProps> = ({

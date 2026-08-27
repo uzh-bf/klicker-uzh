@@ -182,8 +182,8 @@ upstream integration, or an external delivery action.
 - [x] Native planning review completed and its required corrections integrated.
 - [x] Reset-loss behavior settled: immediate when empty, confirm when non-empty,
   disabled while running.
-- [ ] S0 plan commit.
-- [ ] S1 trusted proposal continuity.
+- [x] S0 plan commit.
+- [x] S1 trusted proposal continuity.
 - [ ] S2 complete proposal review.
 - [ ] S3 non-modal adaptive dock.
 - [ ] S4 conversation lifecycle and discovery.

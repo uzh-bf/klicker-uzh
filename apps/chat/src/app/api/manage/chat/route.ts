@@ -1,3 +1,6 @@
+import { createOpenAI } from '@ai-sdk/openai'
+import { convertToModelMessages, isStepCount, streamText } from 'ai'
+import { type NextRequest, NextResponse } from 'next/server'
 import { getChatModelRegistry } from '@/src/lib/server/chatModelRegistry'
 import { isManageAiEnabled } from '@/src/lib/server/featureFlags'
 import { getAuthenticatedManageUser } from '@/src/lib/server/manageAuth'
@@ -16,11 +19,9 @@ import {
   selectManageAssistantModel,
 } from '@/src/services/manageAssistantRuntime'
 import { sanitizeManageAssistantContext } from '@/src/services/manageContext'
+import { resolveLatestManageProposalContext } from '@/src/services/manageProposalContext'
 import { createRateLimiter } from '@/src/services/rateLimiter'
 import { createFenceSentinel } from '@/src/services/toolOutputFencing'
-import { createOpenAI } from '@ai-sdk/openai'
-import { convertToModelMessages, isStepCount, streamText } from 'ai'
-import { NextRequest, NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -139,6 +140,17 @@ export async function POST(req: NextRequest) {
     }
 
     const context = sanitizeManageAssistantContext(parsed.manageContext)
+    const proposalSecret =
+      process.env.MCP_LECTURER_JWT_SECRET ?? process.env.APP_SECRET
+    const proposalIssuer = process.env.APP_ORIGIN_AUTH
+    const previousProposal =
+      proposalSecret && proposalIssuer
+        ? await resolveLatestManageProposalContext(
+            parsed.proposalTokens,
+            userId,
+            { issuer: proposalIssuer, secret: proposalSecret }
+          )
+        : null
     // The gate above already refused every request that must not reach the
     // tools, so loading them needs no second check. A load failure still
     // leaves a toolless but usable assistant rather than ending the turn.
@@ -182,7 +194,8 @@ export async function POST(req: NextRequest) {
           context,
           toolCount > 0,
           lecturerMcp.hasDraftScope,
-          lecturerMcp.sentinel
+          lecturerMcp.sentinel,
+          previousProposal
         ),
         toolChoice: 'auto',
         tools: lecturerMcp.tools,

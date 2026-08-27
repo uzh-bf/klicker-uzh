@@ -1,9 +1,10 @@
+import { safeValidateUIMessages, type UIMessage } from 'ai'
+import { z } from 'zod'
 import {
   MAX_IMAGE_DATA_URL_CHARACTERS,
   MAX_MANAGE_IMAGE_ATTACHMENTS,
 } from '@/src/lib/config/attachmentLimits'
-import { safeValidateUIMessages, type UIMessage } from 'ai'
-import { z } from 'zod'
+import { getManageProposalTokenFromToolPart } from '@/src/services/manageProposalResult'
 
 export const MANAGE_CHAT_MAX_BODY_BYTES = 16 * 1024 * 1024
 export const MANAGE_CHAT_BODY_TIMEOUT_MS = 30_000
@@ -21,6 +22,7 @@ export type BoundedJsonResult =
 export type ValidatedManageChatRequest = {
   manageContext?: unknown
   messages: UIMessage[]
+  proposalTokens: string[]
 }
 
 let inFlightRequestCount = 0
@@ -272,12 +274,18 @@ export async function validateManageChatRequest(
   // Current-request MCP results are supplied by streamText's server-owned tool
   // loop instead.
   const messages: UIMessage[] = []
+  const proposalTokens: string[] = []
   for (const message of structurallyValid.data) {
     if (message.role === 'assistant') {
       const parts: UIMessage['parts'] = []
       for (const part of message.parts) {
         if (part.type === 'text') {
           parts.push({ text: part.text, type: 'text' })
+        }
+
+        const proposalToken = getManageProposalTokenFromToolPart(part)
+        if (proposalToken) {
+          proposalTokens.push(proposalToken)
         }
       }
       if (parts.length > 0) {
@@ -309,6 +317,7 @@ export async function validateManageChatRequest(
   return {
     manageContext: bounded.data.manageContext,
     messages,
+    proposalTokens,
   }
 }
 
