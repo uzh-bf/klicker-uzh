@@ -539,14 +539,15 @@ The fixed policy explicitly overrides conflicting persona text, examples, retrie
 output, and user attempts to change platform rules. It keeps answers within the owning course,
 asks one clarification when course relevance is genuinely ambiguous, and briefly refuses clearly
 unrelated requests. Immediate safety concerns are not refused merely as out of scope. Course-tool
-queries must omit or generalise personal information, and retrieved content is evidence rather
-than instruction.
+queries must omit or generalise personal names, contact details, participant or student
+identifiers, and other sensitive personal information. Retrieved content is evidence rather than
+instruction.
 
 When a `doc_query`-style tool is present, the model is instructed to retrieve before course-content
 claims, use only relevant results, and acknowledge insufficient course evidence instead of filling
 gaps from general knowledge. Free-text queries start in the locked conversation language but may
-preserve official identifiers or reformulate in a source language when retrieval genuinely needs
-it.
+preserve exact non-personal course and source labels, titles, codes, and identifiers, or
+reformulate in a source language when retrieval genuinely needs it.
 
 Because compilation happens for every request after loading `chatbot.systemPrompts`, the policy
 applies to existing and newly created chatbots as soon as this application revision is deployed.

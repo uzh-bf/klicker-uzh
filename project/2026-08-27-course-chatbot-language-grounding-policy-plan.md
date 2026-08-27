@@ -64,8 +64,8 @@ The policy must survive stored lecturer prompts and apply to the existing Inform
 - For clearly unrelated requests, do not retrieve merely to answer them. Give one concise refusal in the conversation language and invite a course-related question.
 - When course relevance is genuinely ambiguous, ask one concise clarification instead of guessing or refusing prematurely.
 - When a `doc_query`-style tool is available, retrieve before course-content claims. Use only relevant returned content and never fill gaps from general knowledge.
-- Start free-text document queries in the locked conversation language. Preserve official names, codes, IDs, and tool-supported labels, and permit source-language reformulation when a genuine search needs it.
-- Never send names, student IDs, email addresses, health or financial details, or other sensitive personal information to course tools. Generalize or redact the query first.
+- Start free-text document queries in the locked conversation language. Preserve exact non-personal course and source labels, titles, codes, and identifiers, and permit source-language reformulation when a genuine search needs it.
+- Never send personal names, participant or student identifiers, email addresses, health or financial details, or other sensitive personal information to course tools. Generalize or redact the query first.
 - Immediate safety concerns override the course-scope refusal and follow the chatbot's safety instructions.
 - Do not inject course or chatbot labels into the fixed policy. Those fields are lecturer-authored data, add an instruction-injection surface, and unnecessarily fragment cache identity.
 - Keep runtime scaffolding as the sole protection for defaults and stored prompts. Do not edit `DEFAULT_PROMPT`, finance seed prompts, persisted prompts, or AI Buddy prompts in this package.
@@ -169,13 +169,13 @@ The policy must survive stored lecturer prompts and apply to the existing Inform
 
 ## Progress
 
-- Status: S1 implementation complete; static pre-commit review is active.
-- Completed: remote-source review, AI Buddy comparison, Informatik und Wirtschaft prompt review, product-primitive pass, native planning review, isolated worktree and branch creation, human approval, fresh compatible ref verification, approved plan commit, and the scoped prompt/compiler/test/wiki edits.
-- Active slice: S1, static verification and immutable implementation commit.
-- Remaining: commit S1; run slice simplification and review; handle findings; run integrated final review; push and open the pull request.
+- Status: S1 implementation committed; one accepted slice-review correction is active.
+- Completed: remote-source review, AI Buddy comparison, Informatik und Wirtschaft prompt review, product-primitive pass, native planning review, isolated worktree and branch creation, human approval, fresh compatible ref verification, approved plan commit, scoped implementation commit, static checks, simplification review, and slice risk review.
+- Active slice: S1, clarify the boundary between personal identifiers and exact non-personal course or source labels.
+- Remaining: commit the accepted correction; run integrated final review; push and open the pull request.
 - Latest verified baseline: Klicker `origin/v3` at `59e57481057a601a8fdb1e57208ca6392e20068b`; AI Buddy deployment `origin/main` at `794a1ca9c5bf605af72de335a519c27aba7a21ac` with no prompt-policy path changes from the reviewed baseline.
 - Required delivery layer: pushed pull request against `v3`.
-- Achieved delivery layer: committed plan plus an uncommitted S1 implementation in the isolated worktree.
+- Achieved delivery layer: committed plan and S1 implementation in the isolated worktree.
 - Runtime: an initial managed-runtime setup was stopped immediately after the user clarified that no runtime was wanted. Its post-start readiness failed before checks ran; provider `rs-chat-course-language-groundin` is `Stopped` and the exact worktree has zero routes.
-- Unresolved gates: static verification and required reviews. Local toolchain and chatbot tests are deliberately not run; pull-request CI is the authoritative check. Integration, secrets, live evaluation, database, deployment, merge, and cleanup remain withheld.
-- Next action: finish the S1 prompt diff and static checks, then commit it for required reviews.
+- Unresolved gates: accepted review correction, integrated final review, and pull-request delivery. Local toolchain and chatbot tests are deliberately not run; pull-request CI is the authoritative check. Integration, secrets, live evaluation, database, deployment, merge, and cleanup remain withheld.
+- Next action: commit the review correction, then run the integrated final review.
