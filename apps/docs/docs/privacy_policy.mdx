@@ -56,6 +56,33 @@ If the learning-analytics choice is **Yes**, eligible individual analytics may u
 
 Changing either choice does not delete canonical course, activity, response, or account data.
 
+### Learning analytics for administrators
+
+Learning analytics V2 is offered only through a gradual rollout that is off by
+default. Course managers also decide whether learning analytics is enabled for
+each course. Disabling it hides the reports immediately. After enabling it, the
+reports remain hidden until a later recomputation succeeds.
+
+V2 shows only groups with at least five eligible participants. Counts from one
+through four are not displayed. Weeks and activities receive ordinal numbers
+after small groups have been removed. Percentages are reported in ten-point
+steps. Labels such as `Student 1` are freshly randomized for each report and
+apply only within that report.
+
+The reports and JSON or CSV exports are de-identified, but they are not
+guaranteed to be anonymous. The export contains only the schema version,
+effective participant count, temporary label, completed activity count, and
+mean completion percentage in a ten-point step. V2 contains no names, email
+addresses, account or participant identifiers, free text, exact timestamps,
+stable activity identifiers, item sequences, or rare attributes. It has no
+quiz, item, or individual activity detail and no daily, weekday, or course
+comparison view.
+
+ADMINISTRATORS may use these reports and exports only for teaching. They must
+protect exports and must not attempt to re-identify participants or link the
+results with other data sources. Research use requires separate participant
+consent and is not covered by the learning-analytics choice.
+
 ### Data elements collected
 
 | Data Element                                                                                                                        | Who                                           | Purpose                                       | Comment                                                                                   |

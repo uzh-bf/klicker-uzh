@@ -1,0 +1,62 @@
+---
+title: Learning Analytics
+---
+
+:::caution Availability
+Learning analytics is part of a flag-controlled rollout and is off by default.
+This page describes the V2 lecturer view when the rollout is enabled for your
+account. It does not mean that the feature is available for every account or
+course.
+:::
+
+## Who is included in learning analytics?
+
+Each participant has one current learning-analytics choice for their entire
+KlickerUZH account. This is not a course-specific choice. Individual data can
+only appear after the participant has chosen **Yes** and the course has
+completed a later successful recomputation. Choosing **No** excludes the
+participant from individual learning analytics.
+
+A course manager controls learning analytics separately for each course. New
+courses start with learning analytics disabled. Disabling it hides the course
+dashboards immediately. Enabling it does not make a previous report available:
+the dashboards remain unavailable until a later recomputation succeeds.
+
+## What does the V2 report show?
+
+V2 provides a deliberately limited view of course activity and progress:
+
+- Weekly activity uses ordinal labels such as `Period 1`. It does not expose
+  calendar dates or weekdays.
+- Activity summaries use ordinal labels such as `Activity 1` and identify only
+  the activity type. Reported percentages use coarse ten-point steps.
+- The student report uses freshly randomized, report-local labels such as
+  `Student 1`. These labels can change whenever a report or export is created
+  and cannot be used to follow one participant between reports.
+
+KlickerUZH suppresses every V2 report or cell that has fewer than five eligible
+participants. Counts from one through four are never shown. Ordinal labels are
+assigned after suppression, so their sequence does not reveal omitted periods
+or activities.
+
+V2 has no quiz or item breakdown, daily or weekday view, activity-detail view,
+or course comparison. It does not disclose names, email addresses, account or
+participant identifiers, free-text responses, exact timestamps, stable
+activity identifiers, item sequences, or rare attributes.
+
+The report is de-identified, but it is not guaranteed to be anonymous. You must
+therefore continue to treat it as protected course data.
+
+## What can I export?
+
+The JSON and CSV exports use the same fixed fields as the V2 student report:
+
+- schema version and effective participant count;
+- the temporary `Student N` label;
+- completed activity count; and
+- mean completion percentage in a ten-point step.
+
+Use learning-analytics reports and exports only for teaching. Store and share
+exports securely. Do not try to identify participants or link the output with
+other data sources. Research use requires separate participant consent and is
+not covered by the learning-analytics choice or this lecturer feature.

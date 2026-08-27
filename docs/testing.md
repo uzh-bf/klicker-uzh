@@ -18,6 +18,7 @@ tags:
 | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Pure logic (grading, util, export, word-cloud, markdown, feature-flags core/Node) | package vitest — **safe without any services**                                                         | `pnpm --filter @klicker-uzh/grading test` (etc.); chat is the exception: `pnpm --filter @klicker-uzh/chat test:run`                                                                                                                |
 | Learning analytics engine contract                                                | package contract suite — **safe without services, Hatchet, or a database**                             | `pnpm --filter @klicker-uzh/analytics-engine-contract test`                                                                                                                                                                        |
+| Learning analytics V2 disclosure and legacy-contract pin                          | focused GraphQL vitest — **safe without services or a database**                                       | `pnpm --filter @klicker-uzh/graphql exec vitest run test/learningAnalyticsOutputV2.test.ts`                                                                                                                                        |
 | Public learning-analytics coordinator, course control, and Hatchet orchestration  | focused vitest suites — coordinator/read-gate/control tests use fakes; Hatchet tests use a fake client | `pnpm --filter @klicker-uzh/graphql exec vitest run test/learningAnalyticsCoordinator.test.ts test/learningAnalyticsCourseControl.test.ts` and `pnpm --filter @klicker-uzh/hatchet exec vitest run test/learningAnalytics.test.ts` |
 | React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                               | `npx agent-browser@0.32.2` against the adopting app                                                                                                                                                                                |
 | GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN`             | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                                                                                                                                 |
@@ -76,6 +77,19 @@ deadline child derives a replay-stable duration from the PostgreSQL clock, and
 that an expired deadline does not schedule a sleep. These
 tests prove the public control-plane behavior only; they do not execute private
 analytics stages or prove deployment and live qualification.
+
+The V2 output suite is the disclosure-contract gate. It verifies suppression
+below five eligible participants, ordinal numbering after suppression,
+ten-point percentage rounding, freshly randomized report-local student labels,
+the fixed JSON/CSV whitelist, and byte-identical V1 operations and schema
+definitions. The read-gate suite must cover disabled and invalid courses for all
+three V2 reads, including export. Browser verification must prove that the
+flag-disabled route and course-disabled state issue no V1 or V2 analytics
+request, enabling stays unavailable until a later successful recomputation, the
+available LA-P3 views request only V2 operations, suppressed cells never reveal
+counts from one through four, and exported JSON and CSV expose only the fixed
+whitelist. These browser checks are rollout acceptance evidence, not proof of
+deployment or general availability.
 
 The coordinator's database integration checks belong in the normal GraphQL local
 stack because they exercise PostgreSQL advisory locks, transaction timestamps,

@@ -24,6 +24,7 @@ module.exports = {
       'tutorials/element_updates_activities',
       'tutorials/chatbot',
     ],
+    'Lecturer - Analytics': ['tutorials/learning_analytics'],
     'Lecturer - Sharing': [
       // 'tutorials/permissions_groups',
       // 'tutorials/direct_sharing',

@@ -126,6 +126,26 @@ of ordinary recomputation. The relevant gates are in
 `getCourseWeeklyActivity`, `getCoursePerformanceAnalytics`, and
 `getActivityAnalytics`).
 
+The LA-P3 lecturer surface uses the additive
+`getCourseActivityAnalyticsV2`, `getCoursePerformanceAnalyticsV2`, and
+`getCourseLearningAnalyticsExportV2` fields. It does not request the legacy V1
+fields. The V1 schema definitions and operations remain byte-identical and
+dormant so existing consumers keep their contract.
+
+The V2 disclosure builder applies a minimum cell size of five after participant
+eligibility filtering. It never returns counts from one through four. Weekly
+periods and activities receive ordinal indices only after suppressed cells have
+been removed. Percentages are rounded to ten-point steps. Each student report
+freshly randomizes report-local `Student N` labels, so a label is not stable
+between views or exports. The backend builds the JSON and CSV exports from the
+same fixed whitelist: schema version, effective participant count, student
+label, completed activity count, and mean completion percentage. V2 never
+returns identifiers, email addresses, free text, exact timestamps, stable
+activity IDs, item sequences, or rare attributes. It has no quiz-level,
+item-level, daily, weekday, activity-detail, or course-comparison disclosure.
+These controls make the output de-identified, not guaranteed anonymous
+(`packages/graphql/src/lib/learningAnalyticsOutputV2.ts`).
+
 Coordinator dispatch remains default-off. The service only prepares or enqueues
 work when `LEARNING_ANALYTICS_COORDINATOR_ENABLED` is exactly `true`, and batch
 preparation requires the explicitly configured
