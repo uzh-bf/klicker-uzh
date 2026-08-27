@@ -1124,6 +1124,13 @@ describe('personal elements service', () => {
       title: 'Opportunity cost',
       front: 'What is opportunity cost?',
       back: 'The value of the best alternative forgone.',
+      sources: [
+        {
+          sourceId: 'course-material',
+          chunkId: randomUUID(),
+          title: 'Economics notes',
+        },
+      ],
       sourceMessageId: planMessage.id,
       sourceToolCallId: 'tool-' + randomUUID(),
     }
@@ -1169,6 +1176,13 @@ describe('personal elements service', () => {
       title: 'Opportunity cost',
       front: 'What is opportunity cost?',
       back: 'The value of the best alternative forgone.',
+      sources: [
+        {
+          sourceId: 'course-material',
+          chunkId: randomUUID(),
+          title: 'Economics notes',
+        },
+      ],
       sourceMessageId: planMessage.id,
       sourceToolCallId: 'tool-' + randomUUID(),
     }

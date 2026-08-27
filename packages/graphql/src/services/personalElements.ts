@@ -282,13 +282,38 @@ export type PersonalElementSource = z.infer<typeof sourceSchema>
 
 export type PersonalElementCandidate = z.infer<typeof candidateSchema>
 
-export type CardPlanEntry = z.infer<typeof cardPlanEntrySchema>
+export type PersonalElementSourceInput = {
+  sourceId: string
+  chunkId: string
+  title?: string | null
+  url?: string | null
+  page?: number | null
+  metadata?: unknown
+}
 
-export type PrepareCardPlanInput = z.infer<typeof cardPlanInputSchema>
+export type CardPlanEntry = {
+  type: string
+  title: string
+  intent: string
+  query: string
+}
 
-export type ValidateCardCandidateInput = z.infer<
-  typeof validateCardCandidateInputSchema
->
+export type PrepareCardPlanInput = {
+  courseId: string
+  topic: string
+  cards: CardPlanEntry[]
+}
+
+export type ValidateCardCandidateInput = {
+  courseId: string
+  candidateId: string
+  title: string
+  front: string
+  back: string
+  sources: PersonalElementSourceInput[]
+  sourceMessageId: string
+  sourceToolCallId: string
+}
 
 export type CreatePersonalElementsInput = {
   courseId: string
