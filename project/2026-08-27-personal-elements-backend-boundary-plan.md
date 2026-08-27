@@ -595,6 +595,12 @@ no migration.
   tests, and build pass; the two activitySharing failures are the
   pre-existing test-isolation flakes. GraphQL package byte-identical across
   A/B/C after cascade.
+- [x] S3 — cascaded B onto the new A head twice (disposition and
+  null-normalization commits). B's PWA content is byte-identical to the
+  previously reviewed head `33291fb8a` (zero diff outside the GraphQL
+  package, which is identical across the stack), so no compatibility edit
+  and no new B commit were required. B head `df8a465af` is an ancestor of
+  C; C's unique commits were replayed onto it.
 - [ ] Execute S1 through S6 with their review gates and local commits.
 - [ ] Complete exact-head verification and the integrated native
   `final-reviewer` gate.
