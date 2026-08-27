@@ -18,7 +18,8 @@ import { useTranslations } from 'next-intl'
 function DataUseSettings() {
   const t = useTranslations()
   const { data, loading, error, refetch } = useQuery(
-    GetParticipantDataUseDocument
+    GetParticipantDataUseDocument,
+    { fetchPolicy: 'network-only' }
   )
   const [setResearchConsent, { loading: savingResearchConsent }] = useMutation(
     SetResearchConsentDocument
