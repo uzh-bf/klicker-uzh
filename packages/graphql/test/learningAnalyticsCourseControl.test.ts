@@ -5,13 +5,21 @@ import { setCourseLearningAnalyticsEnabled } from '../src/services/courses.js'
 function createContext({
   currentEnabled,
   invalidatedAt = new Date('2026-08-27T01:00:00.000Z'),
+  analyticsStatus = {},
 }: {
   currentEnabled: boolean
   invalidatedAt?: Date
+  analyticsStatus?: {
+    areAnalyticsValid?: boolean
+    analyticsLastComputedAt?: Date | null
+    analyticsFinalizedAt?: Date | null
+    chatAnalyticsValidAt?: Date | null
+  }
 }) {
   const course = {
     id: 'course-id',
     isLearningAnalyticsEnabled: currentEnabled,
+    ...analyticsStatus,
   }
   const transactionClient = {
     $executeRaw: vi.fn().mockResolvedValue(1),
@@ -21,7 +29,11 @@ function createContext({
         .fn()
         .mockResolvedValueOnce({ isLearningAnalyticsEnabled: currentEnabled })
         .mockResolvedValue(course),
-      update: vi.fn().mockResolvedValue(course),
+      update: vi
+        .fn()
+        .mockImplementation(({ data }) =>
+          Promise.resolve({ ...course, ...data })
+        ),
     },
   }
   const prisma = {
@@ -58,15 +70,29 @@ describe('setCourseLearningAnalyticsEnabled', () => {
     expect(transactionClient.course.update).not.toHaveBeenCalled()
   })
 
-  it('invalidates every published analytics marker when state changes', async () => {
+  it('marks newly enabled analytics as pending and invalidates every published marker', async () => {
     const { ctx, transactionClient, invalidatedAt } = createContext({
       currentEnabled: false,
+      analyticsStatus: {
+        areAnalyticsValid: true,
+        analyticsLastComputedAt: new Date('2026-08-26T01:00:00.000Z'),
+        analyticsFinalizedAt: new Date('2026-08-26T02:00:00.000Z'),
+        chatAnalyticsValidAt: new Date('2026-08-26T03:00:00.000Z'),
+      },
     })
 
-    await setCourseLearningAnalyticsEnabled(
-      { courseId: 'course-id', isEnabled: true },
-      ctx
-    )
+    await expect(
+      setCourseLearningAnalyticsEnabled(
+        { courseId: 'course-id', isEnabled: true },
+        ctx
+      )
+    ).resolves.toMatchObject({
+      isLearningAnalyticsEnabled: true,
+      areAnalyticsValid: false,
+      analyticsLastComputedAt: invalidatedAt,
+      analyticsFinalizedAt: null,
+      chatAnalyticsValidAt: null,
+    })
 
     expect(transactionClient.$executeRaw).toHaveBeenCalledTimes(2)
     expect(
