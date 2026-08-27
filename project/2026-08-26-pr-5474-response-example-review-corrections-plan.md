@@ -461,13 +461,16 @@ Neither follow-up is authorized by this plan.
   errors. This verifies the opt-in scoped citation fix against the selected
   `v3-ai` base using synthetic local examples.
 - 2026-08-27 review evidence: K1 and K2 simplification passes and the K2
-  risk-selected review pass. The integrated final review and the one
-  corrected-head CI wait remain before `pr_ready`.
+  risk-selected review pass. The integrated final review passed every code,
+  migration, schema, authorization, data-integrity, Markdown, UX, upstream,
+  and plan-compliance lens. Its one evidence finding was resolved by capturing
+  current EN desktop, DE mobile, and German stale-edit screenshots from K2
+  product head `34f01f1a0`.
 - Current base: `origin/v3-ai` at
   `e49804e3327609436e211cbe5d3765d7d408ed55`.
-- Active slice: F1 integrated final review, PR description refresh, one CI
-  wait, and exact runtime shutdown. Merge, deployment, live activation, K3,
-  and Test & Teach remain withheld.
+- Active slice: F1 PR description refresh, one corrected-head CI wait, and
+  exact runtime shutdown. Merge, deployment, live activation, K3, and Test &
+  Teach remain withheld.
 
 - 2026-08-26 CI correction: moved canonical citation parsing and response-set
   digest computation into React-free utility exports. GraphQL no longer pulls
@@ -539,7 +542,15 @@ hashes are historical and are superseded by the current heads above.
   runtime; the repository-native focused Playwright journey passes 1 test in
   40.3 seconds against the disposable local database after global reset and
   self-seeding.
-- Current browser screenshots are local-only artifacts, not repository links. Verified files are `/Users/rschlae/.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-en-desktop-be259ad5a.png`, `/Users/rschlae/.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-de-mobile-be259ad5a.png`, and `/Users/rschlae/.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-de-desktop-be259ad5a.png`. They were captured from the reviewed K2 head; the fixture-only changes do not alter the rendered workflow.
+- Current browser screenshots are local-only artifacts, not repository links.
+  Verified files are
+  `/Users/rschlae/.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-en-desktop-citations-34f01f1a0.png`,
+  `/Users/rschlae/.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-de-mobile-34f01f1a0.png`,
+  and
+  `/Users/rschlae/.codex/visualizations/2026/08/21/01a024db-5268-7242-955f-d505e8a295e4/response-examples-k2-final-stale-de-desktop-34f01f1a0.png`.
+  They cover the current scoped-citation link and matching evidence target,
+  both required locale/viewport combinations, and stale-save draft
+  preservation with the save action disabled after the coded stale response.
 - Upstream boundary: the KB task's W8 work remains responsible for ingestion
   and producer activation seams. This package has no implementation overlap and
   does not assume graph delivery; response-example runtime activation remains
