@@ -115,6 +115,8 @@ export async function proxy(request: NextRequest) {
     pathname === '/noLogin' ||
     pathname === '/manage' ||
     pathname.startsWith('/manage/') ||
+    pathname === '/preview' ||
+    pathname.startsWith('/preview/') ||
     pathname === '/KlickerLogo.png' ||
     pathname === '/user-solid.svg' ||
     pathname.startsWith('/_next') ||

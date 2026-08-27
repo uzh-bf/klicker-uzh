@@ -24,6 +24,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { getChatbotStatusTranslationKey } from './chatbotStatus'
+import { buildChatbotOwnerPreviewUrl } from './chatbotOwnerPreviewUrl'
 import ChatbotResponseExampleReview from './ChatbotResponseExampleReview'
 
 type ReasoningConfigState = Record<string, string[]>
@@ -170,6 +171,10 @@ function ChatbotDetails({
   const localePrefix = locale ? `/${locale}` : ''
   const buildChatbotUrl = (courseId: string) =>
     `${pwaBaseUrl}${localePrefix}/course/${encodeURIComponent(courseId)}/chatbot/${encodeURIComponent(chatbot.id)}`
+  const ownerPreviewUrl = buildChatbotOwnerPreviewUrl({
+    chatbotId: chatbot.id,
+    chatUrl: process.env.NEXT_PUBLIC_CHAT_URL,
+  })
   const chatbotStatusLabel = t(getChatbotStatusTranslationKey(chatbot.status))
 
   const handleAllowedModelToggle = (modelId: string, checked: boolean) => {
@@ -271,6 +276,18 @@ function ChatbotDetails({
                 {chatbotStatusLabel}
               </Badge>
             </div>
+            {ownerPreviewUrl && chatbot.status !== ChatbotStatus.Paused && (
+              <a
+                href={ownerPreviewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="border-primary-100 text-primary-100 hover:bg-primary-20 focus-visible:ring-primary-80 inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md border bg-white px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2"
+                data-cy="chatbot-owner-preview-link"
+              >
+                <span>{t('manage.resources.openOwnerPreview')}</span>
+                <FontAwesomeIcon icon={faExternalLinkAlt} className="h-3 w-3" />
+              </a>
+            )}
           </div>
           {chatbot.description && (
             <div className="mt-1 text-sm text-gray-600">
