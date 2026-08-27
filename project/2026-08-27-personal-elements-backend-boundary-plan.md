@@ -580,6 +580,21 @@ no migration.
   after cascade; the docs/domain-model.md conflict during the C cascade was
   resolved keeping the S2 lifecycle paragraph and the Chat-side
   CardGenerationLease paragraph.
+- [x] S2 review gates — simplifier and authorization/concurrency slice
+  review both returned PASS_WITH_CONCERNS (disclosed fallback route after
+  provider credit exhaustion). Dispositions committed on A as `0ea1edf9d`
+  (saved-title fetches consolidated into one helper, mixed-batch duplicate
+  bypass fixed by screening only missing candidates, explicit null source
+  fields normalized before persistence, shared lease-settlement schema,
+  abort refuses expired leases, dedicated candidate-batch constant, inline
+  CardGenerationLease ref, serialization-conflict comment) plus `06d98b06c`
+  and `6390149ec` (null normalization and key omission so persisted Json
+  matches the parsed shape). Three regression tests added (mixed-batch
+  duplicate screen, expired-lease abort, null update fields). Verified at
+  exact head in the plan container: GraphQL check, 39/39 personal-elements
+  tests, and build pass; the two activitySharing failures are the
+  pre-existing test-isolation flakes. GraphQL package byte-identical across
+  A/B/C after cascade.
 - [ ] Execute S1 through S6 with their review gates and local commits.
 - [ ] Complete exact-head verification and the integrated native
   `final-reviewer` gate.
