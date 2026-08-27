@@ -205,9 +205,79 @@ growing on revisits — which matters for any spotlight cap that reads the count
 
 Matomo receives the adoption funnel under the category `Product Update` with the
 catalog id as the event name: `Eligible` once per page load per entry, then
-`Presented`, `Opened`, `Dismissed`, `CTA Clicked`, and `Details Opened`.
+`Presented`, `Opened`, `Dismissed`, `CTA Clicked`, and `Details Opened`, plus
+`Spotlight Presented` and `Spotlight Dismissed` for the overlay described below.
+Spotlight impressions stay separate from card impressions because they reach
+lecturers who never opened the feed.
 
 Entry copy always comes from the catalog in the reader's locale. Only the chrome
-around it — feed title, empty state, dismiss and read-more labels, and the
-`preview`/`pilot` maturity labels — lives under `manage.productUpdates` in
-`packages/i18n/messages/de.ts` and `en.ts`.
+around it — feed title, empty state, dismiss and read-more labels, the
+`preview`/`pilot` maturity labels, and the spotlight buttons — lives under
+`manage.productUpdates` in `packages/i18n/messages/de.ts` and `en.ts`.
+
+## The contextual spotlight
+
+An entry with the promotion `spotlight` does not only wait in the feed: it
+highlights the piece of the manage interface it announces, with the entry's own
+title and summary in a Driver.js popover. This is the loudest promotion level
+the subsystem has, so everything below exists to keep it rare.
+
+### Targets are registry keys, not selectors
+
+`apps/frontend-manage/src/components/productUpdates/spotlightTargets.ts` maps
+every legal `spotlightTarget` key to one element carrying
+`data-product-feature="<key>"`. The catalog never contains a CSS selector, and it
+must not: the catalog is editorial content in a package that knows nothing about
+any application's markup, and a selector written there would break silently the
+next time a component moves.
+
+Adding a target therefore means two edits in the same pull request — a key in the
+registry, and `spotlightTargetProps` spread onto exactly one element. Design
+system components do not forward unknown attributes, so a wrapper element is
+often the right place; the first registered target,
+`manage-header-analytics`, wraps the header's analytics menu for that reason.
+
+Resolving a key returns null both for a key this frontend does not know and for a
+known key whose element is not on the current page. Both are normal — the catalog
+can be newer than the deployed application, and a target lives on the page it
+belongs to — so a spotlight that cannot find its element simply does not appear.
+
+### Caps
+
+`useProductUpdateSpotlight` runs the overlay. The manage header is the only mount
+that may present unsolicited, because it renders on every page; every other
+caller receives a replay-only instance. Three rules bound the unsolicited case:
+
+| Rule                                      | Mechanism                                                 |
+| ----------------------------------------- | --------------------------------------------------------- |
+| At most one per browser session           | A `sessionStorage` flag, claimed before the overlay opens |
+| Never for an entry the lecturer dismissed | `dismissedAt` from the stored read state                  |
+| Never after two recorded presentations    | `presentationCount >= 2` from the same state              |
+
+A browser session is one tab, because `sessionStorage` is per tab and clears when
+it closes. A second tab can therefore cost one more appearance; the presentation
+counter is what bounds the total. When storage is unavailable the guard cannot be
+honoured, so nothing is presented at all rather than repeatedly.
+
+Presenting records a presentation, which is what makes the counter cap
+self-limiting: two unsolicited appearances exhaust it without anyone acting.
+Note that feed and `/updates` card impressions increment the same counter, so a
+lecturer who browses the archive reaches the cap sooner.
+
+The popover offers two decisions. "Show me" marks the entry read and follows the
+entry's call to action when it has one. "Don't show again" calls
+`dismissProductUpdate`, which suppresses every future unsolicited appearance.
+Closing the popover with the corner icon means "not now" and changes no state.
+Driver.js gives a one-step highlight three button slots, and since a single step
+has nothing to go back to, the previous slot carries the dismissal.
+
+### Replays are always allowed
+
+Every card whose entry names a known target shows a "Show me where" button, in
+the feed modal and on the `/updates` archive. It ignores both caps, because the
+lecturer asked for it — including for an entry that was dismissed, which is why
+the archive keeps the button on dismissed cards.
+
+The header owns the runner, so a feed replay closes the modal first and opens the
+overlay one animation frame later; the modal's focus trap and the popover would
+otherwise fight over the page.
