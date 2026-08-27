@@ -17,14 +17,14 @@ The policy must survive stored lecturer prompts and apply to the existing Inform
 
 ## Plan identity
 
-- Plan: `project/2026-08-27-course-chatbot-language-grounding-policy-plan.md`
+- Plan: `project/2026-08-27-pr-5608-course-chatbot-language-grounding-policy-plan.md`
 - Repository: `uzh-bf/klicker-uzh`
 - Branch: `rs/chat-course-language-grounding-policy`
 - Worktree: `trees/chat-course-language-grounding-policy`
 - Target: `v3`
 - Baseline: `origin/v3` at `59e57481057a601a8fdb1e57208ca6392e20068b`
 - Latest inspected target: `origin/v3` at `31cbbb36a3fca6d50371975bad982f51424e2abc`; its two newer commits touch only Playwright workflows and the staging image pin, with no overlap in this package.
-- Pull request: none
+- Pull request: [#5608](https://github.com/uzh-bf/klicker-uzh/pull/5608)
 - AI Buddy reference: deployment `origin/main` at `794a1ca9c5bf605af72de335a519c27aba7a21ac`; the prompt-policy paths are unchanged from the reviewed `d503344c0afda69bb11bb76051a227c7f9748c42` baseline.
 - History: the old Informatik und Wirtschaft runtime/provisioner branches remain read-only evidence and are not integration sources.
 
@@ -170,13 +170,13 @@ The policy must survive stored lecturer prompts and apply to the existing Inform
 
 ## Progress
 
-- Status: implementation and required reviews complete; pull-request delivery is active.
-- Completed: remote-source review, AI Buddy comparison, Informatik und Wirtschaft prompt review, product-primitive pass, native planning review, isolated worktree and branch creation, human approval, fresh compatible ref verification, approved plan commit, scoped implementation commit, static checks, simplification review, slice risk review, accepted corrections, and the integrated final-review correction pass with status `DONE`.
-- Active slice: push the reviewed branch and open its draft pull request against `v3`.
-- Remaining: publish the branch, create the draft pull request, record its identity, and read back its current checks.
+- Status: terminal delivery reached with draft pull request [#5608](https://github.com/uzh-bf/klicker-uzh/pull/5608).
+- Completed: remote-source review, AI Buddy comparison, Informatik und Wirtschaft prompt review, product-primitive pass, native planning review, isolated worktree and branch creation, human approval, fresh compatible ref verification, approved plan commit, scoped implementation commit, static checks, simplification review, slice risk review, accepted corrections, integrated final-review correction pass with status `DONE`, branch publication, and draft pull-request creation.
+- Active slice: none.
+- Remaining: none within the approved package terminal condition.
 - Latest verified baseline: branch base `59e57481057a601a8fdb1e57208ca6392e20068b`; current target `origin/v3` at `31cbbb36a3fca6d50371975bad982f51424e2abc` with no overlapping paths; AI Buddy deployment `origin/main` at `794a1ca9c5bf605af72de335a519c27aba7a21ac` with no prompt-policy path changes from the reviewed baseline.
 - Required delivery layer: pushed pull request against `v3`.
-- Achieved delivery layer: committed plan and S1 implementation in the isolated worktree.
+- Achieved delivery layer: pushed draft pull request [#5608](https://github.com/uzh-bf/klicker-uzh/pull/5608) against `v3`.
 - Runtime: an initial managed-runtime setup was stopped immediately after the user clarified that no runtime was wanted. Its post-start readiness failed before checks ran; provider `rs-chat-course-language-groundin` is `Stopped` and the exact worktree has zero routes.
-- Unresolved gates: pull-request delivery and hosted CI. Local toolchain and chatbot tests are deliberately not run; pull-request CI is the authoritative check. Integration, secrets, live evaluation, database, deployment, merge, and cleanup remain withheld.
-- Next action: push the reviewed branch and open its draft pull request.
+- Unresolved gates outside this terminal condition: hosted CI before ready marking or merge. Local toolchain and chatbot tests were deliberately not run. Integration, secrets, live evaluation, database, deployment, merge, and cleanup remain withheld.
+- Next action: none under the current authority. PR readiness, merge, deployment, live evaluation, and cleanup require separate direction.
