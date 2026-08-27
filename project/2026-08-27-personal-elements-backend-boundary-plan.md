@@ -178,9 +178,11 @@ hierarchy, or action enum to reduce operation count. Separate operations make
 authorization, idempotency, and failure behavior explicit.
 
 The complete title list is read-only model context required by the approved
-product behavior. Chat does not compare or filter it. The backend still screens
-the proposed plan, validates every candidate against current data, and repeats
-the check inside Save.
+product behavior. Chat applies a deterministic local similarity pre-filter to
+the proposed plan so the model does not re-propose near-duplicate titles
+(accepted deviation, requested by the product owner); the backend remains
+authoritative and still screens the proposed plan, validates every candidate
+against current data, and repeats the check inside Save.
 
 After all callers use generated operations, remove
 `packages/graphql/src/server.ts`, its build entry, and every
@@ -676,7 +678,17 @@ no migration.
   and fixed in `4ce51cc86`; the two P3s (boilerplate can now render as a
   card back, redundant local variable) are accepted as intended
   consequences of removing the language-specific filter.
-- [ ] Execute S1 through S6 with their review gates and local commits.
+- [x] Integrated final review — native final-reviewer returned
+  PASS_WITH_CONCERNS at exact top head `d0026dbbd` (disclosed fallback
+  route after provider credit exhaustion). Dispositions: the retained
+  Chat-side title-similarity pre-filter is recorded as an accepted
+  deviation in the target architecture (product-owner-requested; the
+  backend stays authoritative); a regression test was added asserting
+  generate_cards tool-call parts serialize to text only (12/12 hydration
+  tests pass); the Progress item for S1-S6 execution is ticked. The
+  remaining P2 (browser evidence for the UI/e2e portfolio items) is
+  deferred to the exact-head verification step, which is still open.
+- [x] Execute S1 through S6 with their review gates and local commits.
 - [ ] Complete exact-head verification and the integrated native
   `final-reviewer` gate.
 - [ ] Obtain separate authority for push and pull-request updates.

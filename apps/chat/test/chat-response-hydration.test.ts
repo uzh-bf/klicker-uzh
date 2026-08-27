@@ -788,4 +788,71 @@ describe('useChatResponse attachment hydration', () => {
       'message-2',
     ])
   })
+
+  test('generate_cards tool-call parts serialize to text only', async () => {
+    const fetchSpy = vi
+      .fn()
+      .mockResolvedValue(
+        createStreamingResponse([
+          'data: {"type":"text-delta","delta":"hi"}',
+          'data: {"type":"finish","messageMetadata":{}}',
+          'data: [DONE]',
+        ])
+      )
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const { generateChatResponse } = useChatResponse(
+      'model-1',
+      'chat',
+      'medium'
+    )
+
+    await generateChatResponse(
+      [
+        {
+          id: 'message-1',
+          role: 'user',
+          content: [{ type: 'text', text: 'make me cards' }],
+          parentId: null,
+        },
+        {
+          id: 'assistant-cards',
+          role: 'assistant',
+          content: [
+            { type: 'text', text: 'Here are your cards.' },
+            {
+              type: 'tool-call',
+              toolName: 'generate_cards',
+              result: {
+                cards: [
+                  {
+                    candidateId: 'plan:card-1',
+                    title: 'CAPM',
+                    content: '**front**',
+                    explanation: 'back',
+                  },
+                ],
+              },
+            },
+          ],
+          parentId: 'message-1',
+        },
+        {
+          id: 'message-2',
+          role: 'user',
+          content: [{ type: 'text', text: 'thanks' }],
+          parentId: 'assistant-cards',
+        },
+      ] as any,
+      'thread-1'
+    )
+
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body)
+    const assistantMessage = body.messages.find(
+      (message: { id: string }) => message.id === 'assistant-cards'
+    )
+    expect(assistantMessage.content).toBe('Here are your cards.')
+    expect(assistantMessage.content).not.toContain('candidateId')
+    expect(assistantMessage.content).not.toContain('generate_cards')
+  })
 })
