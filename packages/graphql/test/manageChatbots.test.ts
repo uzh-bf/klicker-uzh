@@ -1,6 +1,6 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
-import { ChatbotStatus, PrismaClient } from '@klicker-uzh/prisma/client'
-import { EventEmitter } from 'events'
+import { ChatbotStatus, type PrismaClient } from '@klicker-uzh/prisma/client'
+import type { EventEmitter } from 'events'
 import type { ContextWithUser } from '../src/lib/context.js'
 import {
   createChatbot,
@@ -332,6 +332,60 @@ describe('Integration tests for lecturer chatbot create/update', () => {
       ).resolves.toMatchObject({ title: 'Original title' })
     })
 
+    it('accepts the basic disclaimer Markdown subset', async () => {
+      const { chatbot, disclaimer } = await seedChatbotWithDisclaimer()
+      const introText = [
+        'A **bold** and *italic* paragraph.',
+        '',
+        '1. First ordered item',
+        '2. Second ordered item',
+        '',
+        '- First unordered item',
+      ].join('\n')
+
+      await saveChatbotDisclaimer(
+        {
+          chatbotId: chatbot.id,
+          expectedDisclaimerId: disclaimer?.id,
+          title: 'Supported formatting',
+          introText,
+        },
+        userOneCtx
+      )
+
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({
+          where: { id: chatbot.id },
+          select: { disclaimer: { select: { introText: true } } },
+        })
+      ).resolves.toMatchObject({ disclaimer: { introText } })
+    })
+
+    it('applies disclaimer length bounds after normalization', async () => {
+      const { chatbot, disclaimer } = await seedChatbotWithDisclaimer()
+      const title = 'x'.repeat(160)
+      const introText = 'y'.repeat(10_000)
+
+      await saveChatbotDisclaimer(
+        {
+          chatbotId: chatbot.id,
+          expectedDisclaimerId: disclaimer?.id,
+          title: ` ${title} `,
+          introText: `\r\n${introText}\r\n`,
+        },
+        userOneCtx
+      )
+
+      await expect(
+        prisma.chatbot.findUniqueOrThrow({
+          where: { id: chatbot.id },
+          select: {
+            disclaimer: { select: { title: true, introText: true } },
+          },
+        })
+      ).resolves.toMatchObject({ disclaimer: { title, introText } })
+    })
+
     it('creates the first disclaimer and does not create a row for a normalized no-op', async () => {
       const { chatbot } = await seedChatbotWithDisclaimer(
         ChatbotStatus.DRAFT,
@@ -498,6 +552,31 @@ describe('Integration tests for lecturer chatbot create/update', () => {
             chatbotId: chatbot.id,
             expectedDisclaimerId: disclaimer?.id,
             ...content,
+          },
+          userOneCtx
+        )
+      ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+    })
+
+    it.each([
+      '# Heading',
+      '[Link](https://invalid.example)',
+      '![Image](https://invalid.example/image.png)',
+      '`inline code`',
+      '> Quote',
+      '<strong>raw HTML</strong>',
+      '~~strikethrough~~',
+      '- [x] task list item',
+    ])('rejects unsupported disclaimer Markdown: %s', async (introText) => {
+      const { chatbot, disclaimer } = await seedChatbotWithDisclaimer()
+
+      await expect(
+        saveChatbotDisclaimer(
+          {
+            chatbotId: chatbot.id,
+            expectedDisclaimerId: disclaimer?.id,
+            title: 'Unsupported formatting',
+            introText,
           },
           userOneCtx
         )

@@ -135,6 +135,10 @@ export const Query = builder.queryType({
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
+    const asChatbotAuthor = {
+      ...asUser,
+      chatbotAuthoring: true,
+    }
 
     return {
       self: t.field({
@@ -1470,6 +1474,12 @@ export const Query = builder.queryType({
         type: [Chatbot],
         resolve: async (_, __, ctx) => {
           return await ChatbotsService.getChatbotsInfo(ctx)
+        },
+      }),
+
+      getChatbotPublishingCapability: t.withAuth(asChatbotAuthor).boolean({
+        resolve: async (_, __, ctx) => {
+          return await ChatbotsService.getChatbotPublishingCapability(ctx)
         },
       }),
 
