@@ -27,10 +27,11 @@ export function spotlightTargetProps(
 }
 
 /**
- * Whether a catalog entry names a target this frontend knows. Pure, so it is
- * safe during render — unlike resolving the element, which needs the document.
+ * Whether a catalog entry names a target this frontend knows. Knowing the key
+ * is necessary but not sufficient: only resolving tells whether the element is
+ * on the page the reader is looking at, so callers use that instead.
  */
-export function isKnownSpotlightTarget(
+function isKnownSpotlightTarget(
   key: string | undefined
 ): key is SpotlightTargetKey {
   return key !== undefined && key in SPOTLIGHT_TARGETS

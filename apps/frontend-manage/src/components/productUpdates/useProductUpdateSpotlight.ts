@@ -4,6 +4,7 @@ import 'driver.js/dist/driver.css'
 import { useRouter } from 'next/router'
 import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { openProductUpdateCta } from './openCta'
 import { resolveSpotlightTarget } from './spotlightTargets'
 import { trackProductUpdate } from './tracking'
 import type { UseProductUpdatesResult } from './useProductUpdates'
@@ -21,8 +22,9 @@ const SESSION_GUARD_KEY = 'klicker-uzh.productUpdates.spotlightPresented'
 const MAX_UNSOLICITED_PRESENTATIONS = 2
 
 // Driver.js blocks pointer events on the entire document while an overlay is
-// open, so an uninvited spotlight on a page where the lecturer is steering a
-// running session would freeze the very controls they need. These routes show a
+// open. These are the routes where that would interrupt time-critical steering
+// or grading work: the live quiz cockpit drives a running quiz, and the
+// assessment live quiz page carries the point corrections. They show a
 // spotlight only when the lecturer asks for one; the values are Next.js route
 // patterns as reported by `router.pathname`.
 const AUTO_PRESENT_SUPPRESSED_ROUTES = new Set([
@@ -95,7 +97,8 @@ export function useProductUpdateSpotlight({
   const router = useRouter()
   // Destructured once: the individual callbacks keep a stable identity across
   // renders, while the result object itself does not.
-  const { entries, loading, recordPresentation, markRead, dismiss } = updates
+  const { entries, statesLoaded, recordPresentation, markRead, dismiss } =
+    updates
 
   const language = locale === 'de' ? 'de' : 'en'
 
@@ -140,12 +143,7 @@ export function useProductUpdateSpotlight({
             if (!update.cta) return
 
             trackProductUpdate('CTA Clicked', update.id)
-
-            if (update.cta.href.startsWith('/')) {
-              void router.push(update.cta.href)
-            } else {
-              window.open(update.cta.href, '_blank', 'noopener,noreferrer')
-            }
+            openProductUpdateCta(update.cta, router)
           },
           onPrevClick: () => {
             instance.destroy()
@@ -167,7 +165,10 @@ export function useProductUpdateSpotlight({
   )
 
   useEffect(() => {
-    if (!autoPresent || loading || autoPresented.current) return
+    // Waiting for `statesLoaded` rather than for the plain loading flag keeps a
+    // failed states query from looking like an actor who has never dismissed or
+    // seen anything, which would let a dismissed entry return.
+    if (!autoPresent || !statesLoaded || autoPresented.current) return
     // Checked before the session slot is claimed, so leaving the live session
     // for an ordinary page still shows the spotlight there.
     if (AUTO_PRESENT_SUPPRESSED_ROUTES.has(router.pathname)) return
@@ -196,7 +197,7 @@ export function useProductUpdateSpotlight({
     })
 
     return () => cancelAnimationFrame(frame)
-  }, [autoPresent, entries, loading, present, router.pathname])
+  }, [autoPresent, entries, statesLoaded, present, router.pathname])
 
   useEffect(() => {
     if (!pendingReplay) return

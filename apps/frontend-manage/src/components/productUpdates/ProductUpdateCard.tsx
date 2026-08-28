@@ -7,9 +7,10 @@ import dayjs from 'dayjs'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useLocale, useTranslations } from 'next-intl'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { isKnownSpotlightTarget } from './spotlightTargets'
+import { openProductUpdateCta } from './openCta'
+import { resolveSpotlightTarget } from './spotlightTargets'
 import { trackProductUpdate } from './tracking'
 
 function useLocalized() {
@@ -85,13 +86,19 @@ function ProductUpdateCard({
     if (!update.cta) return
 
     trackProductUpdate('CTA Clicked', update.id)
-
-    if (update.cta.href.startsWith('/')) {
-      void router.push(update.cta.href)
-    } else {
-      window.open(update.cta.href, '_blank', 'noopener,noreferrer')
-    }
+    openProductUpdateCta(update.cta, router)
   }, [router, update.cta, update.id])
+
+  // Whether the spotlight can actually reach its target from the page this card
+  // is on. Resolving needs the document, so it happens after mounting rather
+  // than during render, and it is redone whenever the card shows another entry.
+  const [spotlightReachable, setSpotlightReachable] = useState(false)
+
+  useEffect(() => {
+    setSpotlightReachable(
+      resolveSpotlightTarget(update.spotlightTarget) !== null
+    )
+  }, [update.spotlightTarget])
 
   const body = update.bodyMarkdown ? localized(update.bodyMarkdown) : undefined
 
@@ -158,7 +165,7 @@ function ProductUpdateCard({
             />
           </a>
         )}
-        {onShowSpotlight && isKnownSpotlightTarget(update.spotlightTarget) && (
+        {onShowSpotlight && spotlightReachable && (
           <Button
             basic
             onClick={() => onShowSpotlight(update)}
