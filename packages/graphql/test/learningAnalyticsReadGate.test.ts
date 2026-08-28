@@ -27,6 +27,7 @@ function analyticsContext({
   course = { isLearningAnalyticsEnabled: false, areAnalyticsValid: true },
   activity = null,
   eligibleParticipantIds = [],
+  participantAnalyticsRows = [],
 }: {
   course?: {
     isLearningAnalyticsEnabled: boolean
@@ -35,6 +36,10 @@ function analyticsContext({
   }
   activity?: unknown
   eligibleParticipantIds?: string[]
+  participantAnalyticsRows?: Array<{
+    timestamp: Date
+    participantId: string
+  }>
 } = {}) {
   const courseFindUnique = vi.fn(async (args?: AnalyticsReadArgs) => {
     if (
@@ -57,6 +62,9 @@ function analyticsContext({
   const transactionClient = {
     $queryRaw: queryRaw,
     course: { findUnique: courseFindUnique },
+    participantAnalytics: {
+      findMany: vi.fn(async () => participantAnalyticsRows),
+    },
   }
   const practiceQuizFindUnique = vi.fn(async () => {
     if (
@@ -236,6 +244,45 @@ describe('learning analytics read gate', () => {
     expect(eligibilitySql).toContain('FROM "Participation" AS membership')
     expect(eligibilitySql).not.toContain('ParticipantPerformance')
     expect(eligibilitySql).not.toContain('ParticipantActivityPerformance')
+  })
+
+  it('uses the shared eligible membership cohort for V2 activity suppression', async () => {
+    const eligibleParticipantIds = Array.from(
+      { length: 6 },
+      (_, index) =>
+        `30000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`
+    )
+    const fixture = analyticsContext({
+      eligibleParticipantIds,
+      participantAnalyticsRows: eligibleParticipantIds
+        .slice(0, 5)
+        .map((analyticsParticipantId) => ({
+          timestamp: new Date('2026-01-05T00:00:00.000Z'),
+          participantId: analyticsParticipantId,
+        })),
+      course: {
+        isArchived: false,
+        isLearningAnalyticsEnabled: true,
+        areAnalyticsValid: true,
+      },
+    })
+
+    await expect(
+      getCourseActivityAnalyticsV2({ courseId }, fixture.ctx)
+    ).resolves.toEqual({
+      isSuppressed: false,
+      effectiveN: 6,
+      weeklyActivity: [],
+    })
+
+    const eligibilityQuery = fixture.queryRaw.mock.calls[0]?.[0] as
+      | string[]
+      | { strings?: string[] }
+    const eligibilitySql = Array.isArray(eligibilityQuery)
+      ? eligibilityQuery.join(' ')
+      : (eligibilityQuery.strings?.join(' ') ?? '')
+    expect(eligibilitySql).toContain('FROM "Participation" AS membership')
+    expect(eligibilitySql).not.toContain('ParticipantCourseAnalytics')
   })
 
   it('gates individual activity analytics by the owning course state', async () => {
