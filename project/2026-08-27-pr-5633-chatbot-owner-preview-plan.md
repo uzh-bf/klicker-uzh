@@ -1,4 +1,4 @@
-# Chatbot Owner Preview — Implementation Plan
+# PR #5633 — Chatbot Owner Preview Implementation Plan
 
 ## Goal
 
@@ -17,8 +17,8 @@ Provider response-item storage follows the existing chat platform policy because
 
 ## Plan identity
 
-- Plan: `project/2026-08-27-chatbot-owner-preview-plan.md` (this file, first commit on the branch)
-- Branch: `rs/chatbot-owner-preview` · Target: `v3-ai` · PR: not yet created (ID unknown)
+- Plan: `project/2026-08-27-pr-5633-chatbot-owner-preview-plan.md` (this file, first committed on the branch under its pre-PR filename)
+- Branch: `rs/chatbot-owner-preview` · Target: `v3-ai` · PR: [#5633](https://github.com/uzh-bf/klicker-uzh/pull/5633) (draft)
 - History: `project/2026-08-21-chatbot-response-example-design.md` (roadmap), `project/2026-08-26-pr-5474-response-example-review-corrections-plan.md` (Test & Teach boundary), `project/_local/reviews/2026-08-27-test-teach-planning.md` (planner findings; gitignored, local)
 
 ## Research summary (verified seams)
@@ -95,10 +95,10 @@ Execution-tier note: P1–P3 are bounded, settled-behavior slices suited to the 
 
 ## Progress
 
-- Status: P1–P4 complete on the local package branch. Source implementation, correction reviews, focused verification, browser evidence, and the integrated final review have passed. External delivery remains withheld.
+- Status: P1–P4 complete and published as draft PR [#5633](https://github.com/uzh-bf/klicker-uzh/pull/5633). Source implementation, correction reviews, focused verification, browser evidence, and the integrated final review have passed.
 - Completed: research, planner review, P0 blocker ruling, P1 owner authorization and stateless preview route, P2 owner-preview page, P3 Manage entry point, both simplifier passes, both slice reviews, their corrections, the same-reviewer correction passes, and the P4 browser gate.
 - Verification: focused owner-preview tests pass (32 tests); Chat and Manage type checks pass; scoped lint passes with no errors; formatting and `git diff --check` pass. The final correction also passes its focused Manage access-scope assertion. Review corrections constrain preview tools to `doc_query`, add executable route coverage, disable attachment drops, preserve run-status announcements, keep the signed-out preview recoverable, and hide the Manage action from `READ_ONLY` and `SESSION_EXEC` scopes.
 - Browser evidence: the exact namespaced runtime captured authenticated English and German previews, the owner-visible Manage entry point, and denial for a signed-in synthetic participant. The local runtime has no upstream model key and the seeded chatbot has no enabled knowledge-base binding, so provider-backed answer generation is not local evidence; focused route and component tests cover the streaming and citation contracts.
 - Runtime: local proof used the repository-supported Webpack fallback for Auth and Manage dynamic routes, the verified-free Azurite port `11003`, and scoped `chat,manage` / `chat,pwa` profiles. These were verification-only choices. The package scripts are restored, the exact DevPod is stopped, and the worktree owns zero devrouter routes.
-- Remaining boundary: the branch is 6 commits ahead and 2 commits behind `origin/v3-ai`. The two target-only commits affect KB deployment checks and staging values, not this package, but one upstream integration pass remains separately permission-gated. Push, PR publication, merge, deployment, staging/production mutation, and live activation remain withheld.
-- Delivery: achieved layer is a green, reviewed local branch ready for the authorized upstream-integration pass and subsequent PR publication decision.
+- Remaining boundary: the branch is 8 commits ahead and 3 commits behind `origin/v3-ai` after this PR-metadata commit. The target-only changes overlap `thread.tsx` and the English/German messages, so one upstream integration pass remains separately permission-gated. Screenshot publication, ready-for-review transition, merge, deployment, staging/production mutation, and live activation remain withheld.
+- Delivery: achieved layer is a published draft PR with a reviewed source package. The next package action is the separately authorized upstream-integration pass, affected verification, and ready-for-review decision.
