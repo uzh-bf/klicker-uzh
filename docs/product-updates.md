@@ -248,20 +248,29 @@ belongs to — so a spotlight that cannot find its element simply does not appea
 that may present unsolicited, because it renders on every page; every other
 caller receives a replay-only instance. Four rules bound the unsolicited case:
 
-| Rule                                      | Mechanism                                                 |
-| ----------------------------------------- | --------------------------------------------------------- |
-| At most one per browser session           | A `sessionStorage` flag, claimed before the overlay opens |
-| Never for an entry the lecturer dismissed | `dismissedAt` from the stored read state                  |
-| Never after two recorded presentations    | `presentationCount >= 2` from the same state              |
-| Never on a live-session route             | A route pattern match against `router.pathname`           |
+| Rule                                              | Mechanism                                                 |
+| ------------------------------------------------- | --------------------------------------------------------- |
+| At most one per browser session                   | A `sessionStorage` flag, claimed before the overlay opens |
+| Never for an entry the lecturer dismissed         | `dismissedAt` from the stored read state                  |
+| Never after two recorded presentations            | `presentationCount >= 2` from the same state              |
+| Never where it would interrupt time-critical work | A route pattern match against `router.pathname`           |
 
 The route rule exists because Driver.js blocks pointer events on the whole
-document while the overlay is open. On `/quizzes/[id]/cockpit` that would freeze
-the controls a lecturer needs to advance, evaluate, or end a running quiz, and on
-`/courses/[id]/assessment/liveQuiz/[quizId]` it would sit on top of grading
-corrections. Both routes are matched before the session flag is claimed, so
+document while the overlay is open, which is unacceptable wherever a lecturer is
+doing time-critical steering or grading work. Two routes qualify today:
+`/quizzes/[id]/cockpit`, where the overlay would freeze the controls that
+advance, evaluate, or end a running quiz, and
+`/courses/[id]/assessment/liveQuiz/[quizId]`, where it would sit on top of the
+point corrections. Both are matched before the session flag is claimed, so
 leaving them for an ordinary page still shows the spotlight there. The rule
 covers unsolicited appearances only; a replay stays available everywhere.
+
+Two of these rules read stored state, so nothing is presented until that state is
+known to be complete. A failed states query resolves with no rows, which looks
+exactly like an actor who has never seen anything; treating that as permission
+would bring a dismissed entry back. `useProductUpdates` therefore reports
+`statesLoaded`, false while loading and false on error, and the runner waits for
+it.
 
 A browser session is one tab, because `sessionStorage` is per tab and clears when
 it closes. A second tab can therefore cost one more appearance; the presentation
@@ -293,10 +302,12 @@ escaped by React in the feed card. Without escaping, a title such as
 
 ### Replays are always allowed
 
-Every card whose entry names a known target shows a "Show me where" button, in
-the feed modal and on the `/updates` archive. It ignores both caps, because the
-lecturer asked for it — including for an entry that was dismissed, which is why
-the archive keeps the button on dismissed cards.
+A card shows a "Show me where" button once its target actually resolves on the
+page the card is displayed on, in the feed modal and on the `/updates` archive.
+The button ignores both caps, because the lecturer asked for it — including for
+an entry that was dismissed, which is why the archive keeps the button on
+dismissed cards. A target that is not on this page hides the button rather than
+offering a replay that would silently do nothing.
 
 The header owns the runner, so a feed replay closes the modal first and opens the
 overlay one animation frame later; the modal's focus trap and the popover would
