@@ -2,6 +2,7 @@ import { validateEvaluateFreeTextResponse } from '@klicker-uzh/grading'
 import type {
   EvaluateFreeTextRequestV1,
   EvaluateFreeTextResponseV1,
+  FreeTextEvaluationAvailabilityReason,
   FreeTextRubricSchema,
 } from '@klicker-uzh/types'
 
@@ -39,7 +40,10 @@ export type SemanticEvaluatorResult =
   | { ok: true; response: EvaluateFreeTextResponseV1 }
   | {
       ok: false
-      reason: 'EVALUATOR_REJECTED_REQUEST' | 'EVALUATOR_RESULT_UNAVAILABLE'
+      reason: Extract<
+        FreeTextEvaluationAvailabilityReason,
+        'EVALUATOR_REJECTED_REQUEST' | 'EVALUATOR_RESULT_UNAVAILABLE'
+      >
       retryable: boolean
     }
 

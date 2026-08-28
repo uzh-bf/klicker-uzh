@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import {
   getDefaultFreeTextOutcomeBands,
   mapFreeTextOutcome,
@@ -24,6 +25,12 @@ import {
   getActiveOrCreateCycle,
   loadCycleState,
 } from './freeTextEvaluationState.js'
+import {
+  markConsentRequiredAttemptsDeclinedInTransaction,
+  markFreeTextAttemptUnavailable,
+  retryFreeTextAttemptInTransaction,
+  revealFreeTextSolutionInTransaction,
+} from './freeTextEvaluationTransitions.js'
 import { applyEvaluatedFreeTextAttemptInTransaction } from './freeTextPracticeResponseApplication.js'
 
 // Absolute ceiling for participant free-text answers on semantic elements,
@@ -36,19 +43,50 @@ async function scheduleAttempt(
   attempt: DB.FreeTextAttempt,
   ctx: ContextWithUser
 ) {
-  const run = await ctx.tasks.evaluateFreeTextAttempt.runNoWait({
-    attemptId: attempt.id,
-    evaluationRevision: attempt.evaluationRevision,
-  })
-  const workflowRunId = await run.getWorkflowRunId()
-  await ctx.prisma.freeTextAttempt.updateMany({
+  const schedulingClaim = `scheduling:${randomUUID()}`
+  const claimed = await ctx.prisma.freeTextAttempt.updateMany({
     where: {
       id: attempt.id,
       evaluationRevision: attempt.evaluationRevision,
       workflowRunId: null,
+      OR: [
+        { evaluationStatus: DB.FreeTextEvaluationStatus.PENDING },
+        {
+          evaluationStatus: DB.FreeTextEvaluationStatus.EVALUATED,
+          questionResponseDetailId: null,
+        },
+      ],
     },
-    data: { workflowRunId },
+    data: { workflowRunId: schedulingClaim },
   })
+  if (claimed.count !== 1) return false
+
+  try {
+    const run = await ctx.tasks.evaluateFreeTextAttempt.runNoWait({
+      attemptId: attempt.id,
+      evaluationRevision: attempt.evaluationRevision,
+    })
+    const workflowRunId = await run.getWorkflowRunId()
+    const scheduled = await ctx.prisma.freeTextAttempt.updateMany({
+      where: {
+        id: attempt.id,
+        evaluationRevision: attempt.evaluationRevision,
+        workflowRunId: schedulingClaim,
+      },
+      data: { workflowRunId },
+    })
+    return scheduled.count === 1
+  } catch (error) {
+    await ctx.prisma.freeTextAttempt.updateMany({
+      where: {
+        id: attempt.id,
+        evaluationRevision: attempt.evaluationRevision,
+        workflowRunId: schedulingClaim,
+      },
+      data: { workflowRunId: null },
+    })
+    throw error
+  }
 }
 
 async function schedulePendingAttempt(
@@ -62,20 +100,30 @@ async function schedulePendingAttempt(
       `Failed to schedule pending free-text attempt ${attempt.id}:`,
       error
     )
-    await ctx.prisma.freeTextAttempt.updateMany({
-      where: {
-        id: attempt.id,
+    await markFreeTextAttemptUnavailable(
+      {
+        attemptId: attempt.id,
         evaluationRevision: attempt.evaluationRevision,
-        evaluationStatus: DB.FreeTextEvaluationStatus.PENDING,
-      },
-      data: {
-        evaluationStatus: DB.FreeTextEvaluationStatus.UNAVAILABLE,
+        reason: 'SCHEDULING_FAILED',
         retryable: true,
-        availabilityReason: 'SCHEDULING_FAILED',
-        completedAt: new Date(),
-        workflowRunId: null,
       },
-    })
+      ctx.prisma
+    )
+  }
+}
+
+async function resumeAttemptIfNeeded(
+  attempt: DB.FreeTextAttempt,
+  ctx: ContextWithUser
+) {
+  if (attempt.workflowRunId !== null) return
+  if (attempt.evaluationStatus === DB.FreeTextEvaluationStatus.PENDING) {
+    await schedulePendingAttempt(attempt, ctx)
+  } else if (
+    attempt.evaluationStatus === DB.FreeTextEvaluationStatus.EVALUATED &&
+    attempt.questionResponseDetailId === null
+  ) {
+    await scheduleAttempt(attempt, ctx)
   }
 }
 
@@ -127,6 +175,20 @@ export async function createFreeTextAttempt(
       'BAD_USER_INPUT'
     )
   }
+  const priorDuplicate = await ctx.prisma.freeTextAttempt.findFirst({
+    where: {
+      clientSubmissionId,
+      cycle: {
+        participantId: ctx.user.sub,
+        elementInstanceId: instanceId,
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  })
+  if (priorDuplicate) {
+    await resumeAttemptIfNeeded(priorDuplicate, ctx)
+    return await loadCycleState(priorDuplicate.cycleId, ctx, options)
+  }
   const cycle = await getActiveOrCreateCycle(semanticInstance, ctx)
   const duplicate = await ctx.prisma.freeTextAttempt.findUnique({
     where: {
@@ -134,18 +196,7 @@ export async function createFreeTextAttempt(
     },
   })
   if (duplicate) {
-    if (
-      duplicate.workflowRunId === null &&
-      (duplicate.evaluationStatus === DB.FreeTextEvaluationStatus.PENDING ||
-        (duplicate.evaluationStatus === DB.FreeTextEvaluationStatus.EVALUATED &&
-          duplicate.questionResponseDetailId === null))
-    ) {
-      if (duplicate.evaluationStatus === DB.FreeTextEvaluationStatus.PENDING) {
-        await schedulePendingAttempt(duplicate, ctx)
-      } else {
-        await scheduleAttempt(duplicate, ctx)
-      }
-    }
+    await resumeAttemptIfNeeded(duplicate, ctx)
     return await loadCycleState(cycle.id, ctx, options)
   }
 
@@ -153,6 +204,10 @@ export async function createFreeTextAttempt(
     where: { cycleId: cycle.id },
     orderBy: { ordinal: 'desc' },
   })
+  if (currentAttempt?.clientSubmissionId === clientSubmissionId) {
+    await resumeAttemptIfNeeded(currentAttempt, ctx)
+    return await loadCycleState(cycle.id, ctx, options)
+  }
   if (
     currentAttempt &&
     currentAttempt.evaluationStatus !== DB.FreeTextEvaluationStatus.EVALUATED
@@ -225,39 +280,42 @@ export async function createFreeTextAttempt(
   }
   let attempt: DB.FreeTextAttempt
   try {
-    attempt = exactMatch
-      ? await ctx.prisma.$transaction(async (tx) => {
-          const created = await tx.freeTextAttempt.create({ data: attemptData })
-          const transitioned = await tx.freeTextPracticeCycle.updateMany({
-            where: {
-              id: cycle.id,
-              status: DB.FreeTextPracticeCycleStatus.ACTIVE,
-            },
-            data: {
+    attempt = await ctx.prisma.$transaction(async (tx) => {
+      const created = await tx.freeTextAttempt.create({ data: attemptData })
+      const transitioned = await tx.freeTextPracticeCycle.updateMany({
+        where: {
+          id: cycle.id,
+          status: DB.FreeTextPracticeCycleStatus.ACTIVE,
+        },
+        data: exactMatch
+          ? {
               status: DB.FreeTextPracticeCycleStatus.CORRECT,
               endedAt: new Date(),
               bestScore: 100,
-            },
-          })
-          if (transitioned.count !== 1) {
-            throw freeTextEvaluationError(
-              'Free-text practice cycle is no longer active',
-              'FREE_TEXT_EVALUATION_INVALID_STATE'
-            )
-          }
-          const responseApplied =
-            await applyEvaluatedFreeTextAttemptInTransaction(
-              { attemptId: created.id },
-              tx
-            )
-          if (!responseApplied) {
-            throw new Error(
-              'Exact-match evaluation could not apply its response atomically'
-            )
-          }
-          return created
-        })
-      : await ctx.prisma.freeTextAttempt.create({ data: attemptData })
+              stateVersion: { increment: 1 },
+            }
+          : { stateVersion: { increment: 1 } },
+      })
+      if (transitioned.count !== 1) {
+        throw freeTextEvaluationError(
+          'Free-text practice cycle is no longer active',
+          'FREE_TEXT_EVALUATION_INVALID_STATE'
+        )
+      }
+      if (exactMatch) {
+        const responseApplied =
+          await applyEvaluatedFreeTextAttemptInTransaction(
+            { attemptId: created.id, bumpStateVersion: false },
+            tx
+          )
+        if (!responseApplied) {
+          throw new Error(
+            'Exact-match evaluation could not apply its response atomically'
+          )
+        }
+      }
+      return created
+    })
   } catch (error) {
     if (!isUniqueConstraintError(error)) throw error
     const racedDuplicate = await ctx.prisma.freeTextAttempt.findUnique({
@@ -352,33 +410,17 @@ export async function retryFreeTextEvaluation(
     throw freeTextEvaluationError(unavailableReason, unavailableReason)
   }
 
-  const transitioned = await ctx.prisma.$transaction(async (prisma) => {
-    await prisma.$queryRaw`
-      SELECT "id"
-      FROM "FreeTextPracticeCycle"
-      WHERE "id" = ${attempt.cycleId}
-      FOR UPDATE
-    `
-    return await prisma.freeTextAttempt.updateMany({
-      where: {
-        id: attempt.id,
+  const transitioned = await ctx.prisma.$transaction((prisma) =>
+    retryFreeTextAttemptInTransaction(
+      {
+        attemptId: attempt.id,
+        cycleId: attempt.cycleId,
         evaluationRevision: attempt.evaluationRevision,
-        evaluationStatus: DB.FreeTextEvaluationStatus.UNAVAILABLE,
-        retryable: true,
-        cycle: { status: DB.FreeTextPracticeCycleStatus.ACTIVE },
       },
-      data: {
-        evaluationRevision: { increment: 1 },
-        evaluationStatus: DB.FreeTextEvaluationStatus.PENDING,
-        evaluationSource: null,
-        retryable: false,
-        availabilityReason: null,
-        completedAt: null,
-        workflowRunId: null,
-      },
-    })
-  })
-  if (transitioned.count !== 1) {
+      prisma
+    )
+  )
+  if (!transitioned) {
     return await loadCycleState(attempt.cycleId, ctx, options)
   }
   const updated = await ctx.prisma.freeTextAttempt.findUniqueOrThrow({
@@ -411,6 +453,9 @@ export async function revealFreeTextSolution(
     cycle.elementInstanceId,
     ctx
   )
+  if (cycle.status === DB.FreeTextPracticeCycleStatus.SOLUTION_REVEALED) {
+    return await loadCycleState(cycle.id, ctx, options)
+  }
   const config = semanticInstance.config
   const currentAttempt = cycle.attempts[0]
   if (
@@ -425,37 +470,17 @@ export async function revealFreeTextSolution(
       'FREE_TEXT_SOLUTION_NOT_REVEALABLE'
     )
   }
-  const revealed = await ctx.prisma.$transaction(async (prisma) => {
-    await prisma.$queryRaw`
-      SELECT "id"
-      FROM "FreeTextPracticeCycle"
-      WHERE "id" = ${cycle.id}
-      FOR UPDATE
-    `
-    return await prisma.freeTextPracticeCycle.updateMany({
-      where: {
-        id: cycle.id,
-        status: {
-          in: [
-            DB.FreeTextPracticeCycleStatus.ACTIVE,
-            DB.FreeTextPracticeCycleStatus.UNAVAILABLE,
-          ],
-        },
-        attempts: {
-          some: {
-            id: currentAttempt.id,
-            evaluationRevision: currentAttempt.evaluationRevision,
-            evaluationStatus: currentAttempt.evaluationStatus,
-          },
-        },
+  const revealed = await ctx.prisma.$transaction((prisma) =>
+    revealFreeTextSolutionInTransaction(
+      {
+        cycleId: cycle.id,
+        attemptId: currentAttempt.id,
+        evaluationRevision: currentAttempt.evaluationRevision,
+        evaluationStatus: currentAttempt.evaluationStatus,
       },
-      data: {
-        status: DB.FreeTextPracticeCycleStatus.SOLUTION_REVEALED,
-        solutionRevealedAt: new Date(),
-        endedAt: new Date(),
-      },
-    })
-  })
+      prisma
+    )
+  )
   if (revealed.count !== 1) {
     return await loadCycleState(cycle.id, ctx, options)
   }
@@ -476,17 +501,28 @@ export async function startFreeTextPracticeCycle(
     },
   })
   if (active) {
-    throw freeTextEvaluationError(
-      'An active free-text practice cycle already exists',
-      'FREE_TEXT_EVALUATION_INVALID_STATE'
-    )
+    return await loadCycleState(active.id, ctx, options)
   }
-  const cycle = await createCycle({
-    ...semanticInstance,
-    participantId: ctx.user.sub,
-    ctx,
-  })
-  return await loadCycleState(cycle.id, ctx, options)
+  try {
+    const cycle = await createCycle({
+      ...semanticInstance,
+      participantId: ctx.user.sub,
+      ctx,
+    })
+    return await loadCycleState(cycle.id, ctx, options)
+  } catch (error) {
+    if (!isUniqueConstraintError(error)) throw error
+    const racedCycle = await ctx.prisma.freeTextPracticeCycle.findFirst({
+      where: {
+        participantId: ctx.user.sub,
+        elementInstanceId: instanceId,
+        status: DB.FreeTextPracticeCycleStatus.ACTIVE,
+      },
+      orderBy: { ordinal: 'desc' },
+    })
+    if (racedCycle) return await loadCycleState(racedCycle.id, ctx, options)
+    throw error
+  }
 }
 
 export async function decideSemanticEvaluationConsent(
@@ -515,17 +551,10 @@ export async function decideSemanticEvaluationConsent(
     })
 
     if (!accepted) {
-      await prisma.freeTextAttempt.updateMany({
-        where: {
-          cycle: {
-            participantId: ctx.user.sub,
-            status: DB.FreeTextPracticeCycleStatus.ACTIVE,
-          },
-          evaluationStatus: DB.FreeTextEvaluationStatus.UNAVAILABLE,
-          availabilityReason: 'CONSENT_REQUIRED',
-        },
-        data: { availabilityReason: 'CONSENT_DECLINED' },
-      })
+      await markConsentRequiredAttemptsDeclinedInTransaction(
+        ctx.user.sub,
+        prisma
+      )
     }
 
     return consent

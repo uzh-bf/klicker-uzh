@@ -48,6 +48,7 @@ import {
   type TemplateBlockInput as TemplateBlockInputType,
 } from '@klicker-uzh/types'
 import builder, { JsonScalar } from '../builder.js'
+import type { FreeTextPracticeState } from '../services/freeTextEvaluation.js'
 import { ActivityType, ElementFeedbackRef } from './analytics.js'
 import {
   CaseStudyCaseSolution,
@@ -525,8 +526,15 @@ export const SingleFreeTextResponse = builder
     }),
   })
 
+type FreeTextInstanceEvaluationWithSemanticState =
+  IInstanceEvaluationFreeText & {
+    semanticState?: FreeTextPracticeState | null
+  }
+
 export const FreeTextInstanceEvaluation = builder
-  .objectRef<IInstanceEvaluationFreeText>('FreeTextInstanceEvaluation')
+  .objectRef<FreeTextInstanceEvaluationWithSemanticState>(
+    'FreeTextInstanceEvaluation'
+  )
   .implement({
     fields: (t) => ({
       ...sharedEvaluationProps(t),
@@ -538,12 +546,7 @@ export const FreeTextInstanceEvaluation = builder
       semanticState: t.field({
         type: FreeTextPracticeStateType,
         nullable: true,
-        resolve: (evaluation) =>
-          (
-            evaluation as IInstanceEvaluationFreeText & {
-              semanticState?: unknown
-            }
-          ).semanticState as never,
+        resolve: (evaluation) => evaluation.semanticState ?? null,
       }),
       lastResponse: t.expose('lastResponse', {
         type: SingleQuestionResponseValue,

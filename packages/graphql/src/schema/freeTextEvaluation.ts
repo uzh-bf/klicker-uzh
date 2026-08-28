@@ -1,5 +1,10 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import builder, { DateScalar, JsonScalar } from '../builder.js'
+import type {
+  FreeTextEvaluationFeedback,
+  FreeTextFeedback,
+  FreeTextRubricFeedback,
+} from '@klicker-uzh/types'
+import builder, { DateScalar } from '../builder.js'
 import type {
   FreeTextAttemptState,
   FreeTextPracticeState,
@@ -36,6 +41,41 @@ export const SemanticEvaluationConsentDecision = builder.enumType(
   { values: Object.values(DB.SemanticEvaluationConsentDecision) }
 )
 
+const FreeTextRubricFeedbackType = builder
+  .objectRef<FreeTextRubricFeedback>('FreeTextRubricFeedback')
+  .implement({
+    fields: (t) => ({
+      rubricId: t.exposeString('rubricId'),
+      rubricName: t.exposeString('rubricName'),
+      proposedLevel: t.exposeString('proposedLevel'),
+      normalizedScore: t.exposeFloat('normalizedScore'),
+      rationale: t.exposeString('rationale'),
+    }),
+  })
+
+const FreeTextFeedbackType = builder
+  .objectRef<FreeTextFeedback>('FreeTextFeedback')
+  .implement({
+    fields: (t) => ({
+      rubricId: t.exposeString('rubricId'),
+      rubricName: t.exposeString('rubricName'),
+      feedback: t.exposeString('feedback'),
+    }),
+  })
+
+const FreeTextEvaluationFeedbackType = builder
+  .objectRef<FreeTextEvaluationFeedback>('FreeTextEvaluationFeedback')
+  .implement({
+    fields: (t) => ({
+      rubricAssessments: t.expose('rubricAssessments', {
+        type: [FreeTextRubricFeedbackType],
+      }),
+      feedbackProposals: t.expose('feedbackProposals', {
+        type: [FreeTextFeedbackType],
+      }),
+    }),
+  })
+
 export const FreeTextAttemptStateRef = builder.objectRef<FreeTextAttemptState>(
   'FreeTextAttemptState'
 )
@@ -66,7 +106,7 @@ export const FreeTextAttemptStateType = FreeTextAttemptStateRef.implement({
     evaluatorVersion: t.exposeString('evaluatorVersion', { nullable: true }),
     modelVersion: t.exposeString('modelVersion', { nullable: true }),
     structuredResult: t.expose('structuredResult', {
-      type: JsonScalar,
+      type: FreeTextEvaluationFeedbackType,
       nullable: true,
     }),
     pointsAwarded: t.exposeFloat('pointsAwarded', { nullable: true }),
@@ -97,6 +137,7 @@ export const FreeTextPracticeStateType = FreeTextPracticeStateRef.implement({
     cycleStatus: t.expose('cycleStatus', {
       type: FreeTextPracticeCycleStatus,
     }),
+    stateVersion: t.exposeInt('stateVersion'),
     attemptLimit: t.exposeInt('attemptLimit'),
     attemptsUsed: t.exposeInt('attemptsUsed'),
     attemptsRemaining: t.exposeInt('attemptsRemaining'),

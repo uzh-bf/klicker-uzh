@@ -3,6 +3,7 @@ fragment FreeTextPracticeStateData on FreeTextPracticeState {
   cycleId
   cycleOrdinal
   cycleStatus
+  stateVersion
   attemptLimit
   attemptsUsed
   attemptsRemaining
@@ -32,7 +33,20 @@ fragment FreeTextPracticeStateData on FreeTextPracticeState {
     correctness
     evaluatorVersion
     modelVersion
-    structuredResult
+    structuredResult {
+      rubricAssessments {
+        rubricId
+        rubricName
+        proposedLevel
+        normalizedScore
+        rationale
+      }
+      feedbackProposals {
+        rubricId
+        rubricName
+        feedback
+      }
+    }
     pointsAwarded
     xpAwarded
     createdAt
@@ -53,7 +67,20 @@ fragment FreeTextPracticeStateData on FreeTextPracticeState {
     correctness
     evaluatorVersion
     modelVersion
-    structuredResult
+    structuredResult {
+      rubricAssessments {
+        rubricId
+        rubricName
+        proposedLevel
+        normalizedScore
+        rationale
+      }
+      feedbackProposals {
+        rubricId
+        rubricName
+        feedback
+      }
+    }
     pointsAwarded
     xpAwarded
     createdAt

@@ -6,6 +6,7 @@ import type {
 import { StackFeedbackStatus } from '@klicker-uzh/types'
 import type { ContextWithUser } from '@/lib/context.js'
 import { createFreeTextAttempt } from './freeTextEvaluationCommands.js'
+import type { FreeTextPracticeState } from './freeTextEvaluationState.js'
 import { POINTS_PER_INSTANCE } from './questionResponseEvaluation.js'
 
 type SemanticResponse = {
@@ -13,6 +14,10 @@ type SemanticResponse = {
   type: DB.ElementType
   freeTextResponse?: string | null
   clientSubmissionId?: string | null
+}
+
+export type SemanticFreeTextInstanceEvaluation = InstanceEvaluationFreeText & {
+  semanticState: FreeTextPracticeState
 }
 
 /** Maps semantic practice state back to the longstanding stack response API. */
@@ -62,21 +67,23 @@ export async function submitSemanticFreeTextPracticeResponse({
         (instance.options.pointsMultiplier ?? 1)
       : null
 
+  const evaluation: SemanticFreeTextInstanceEvaluation = {
+    instanceId: response.instanceId,
+    elementType: DB.ElementType.FREE_TEXT,
+    score: score ?? 0,
+    pointsMultiplier: instance.options.pointsMultiplier ?? 1,
+    explanation: semanticState.solutionAuthorized
+      ? semanticState.explanation
+      : null,
+    feedbacks: [],
+    answers: [],
+    solutions: [],
+    semanticState,
+  }
+
   return {
     grading,
     score,
-    evaluation: {
-      instanceId: response.instanceId,
-      elementType: DB.ElementType.FREE_TEXT,
-      score: score ?? 0,
-      pointsMultiplier: instance.options.pointsMultiplier ?? 1,
-      explanation: semanticState.solutionAuthorized
-        ? semanticState.explanation
-        : null,
-      feedbacks: [],
-      answers: [],
-      solutions: [],
-      semanticState,
-    } as InstanceEvaluationFreeText,
+    evaluation,
   }
 }

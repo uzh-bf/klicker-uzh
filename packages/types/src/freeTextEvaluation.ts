@@ -139,3 +139,22 @@ export type FreeTextEvaluationResult = {
   rubric_assessments: FreeTextRubricAssessment[]
   feedback_proposals?: FreeTextFeedbackProposal[]
 }
+
+export type FreeTextRubricFeedback = {
+  rubricId: string
+  rubricName: string
+  proposedLevel: string
+  normalizedScore: number
+  rationale: string
+}
+
+export type FreeTextFeedback = {
+  rubricId: string
+  rubricName: string
+  feedback: string
+}
+
+export type FreeTextEvaluationFeedback = {
+  rubricAssessments: FreeTextRubricFeedback[]
+  feedbackProposals: FreeTextFeedback[]
+}

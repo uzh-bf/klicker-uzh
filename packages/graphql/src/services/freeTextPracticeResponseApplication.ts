@@ -10,7 +10,10 @@ import { applyQuestionResponseInTransaction } from './questionResponsePersistenc
  * generic stack service only receives a response and an explicit actor.
  */
 export async function applyEvaluatedFreeTextAttemptInTransaction(
-  { attemptId }: { attemptId: string },
+  {
+    attemptId,
+    bumpStateVersion = true,
+  }: { attemptId: string; bumpStateVersion?: boolean },
   prisma: PrismaTransactionClient
 ) {
   await prisma.$queryRaw`
@@ -98,6 +101,7 @@ export async function applyEvaluatedFreeTextAttemptInTransaction(
       pointsAwarded: { increment: pointsAwarded ?? 0 },
       xpAwarded: { increment: xpAwarded },
       bestXp: Math.max(attempt.cycle.bestXp, currentXp),
+      ...(bumpStateVersion ? { stateVersion: { increment: 1 as const } } : {}),
     },
   })
   return true

@@ -4,7 +4,10 @@ import {
   mapFreeTextOutcome,
 } from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
-import type { EvaluateFreeTextResponseV1 } from '@klicker-uzh/types'
+import type {
+  EvaluateFreeTextResponseV1,
+  FreeTextEvaluationAvailabilityReason,
+} from '@klicker-uzh/types'
 import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import { parseSemanticConfig } from './freeTextEvaluationPolicy.js'
 
@@ -117,6 +120,7 @@ export async function completeFreeTextAttemptEvaluationInTransaction(
       endedAt: isCorrect || isExhausted ? completedAt : null,
       solutionRevealedAt:
         isExhausted && config.solution_reveal_enabled ? completedAt : null,
+      stateVersion: { increment: 1 },
     },
   })
   if (cycleTransitioned.count !== 1) {
@@ -134,7 +138,7 @@ export async function markFreeTextAttemptUnavailable(
   }: {
     attemptId: string
     evaluationRevision: number
-    reason: string
+    reason: FreeTextEvaluationAvailabilityReason
     retryable: boolean
   },
   prisma: DB.PrismaClient
@@ -169,24 +173,164 @@ export async function markFreeTextAttemptUnavailable(
     })
     if (result.count !== 1) return false
 
-    if (!retryable) {
-      const cycleTransitioned = await tx.freeTextPracticeCycle.updateMany({
-        where: {
-          id: cycleId,
-          status: DB.FreeTextPracticeCycleStatus.ACTIVE,
-        },
-        data: {
-          status: DB.FreeTextPracticeCycleStatus.UNAVAILABLE,
-          endedAt: completedAt,
-        },
-      })
-      if (cycleTransitioned.count !== 1) {
-        throw new Error(
-          'Free-text practice cycle changed while evaluation became unavailable'
-        )
-      }
+    const cycleTransitioned = await tx.freeTextPracticeCycle.updateMany({
+      where: {
+        id: cycleId,
+        status: DB.FreeTextPracticeCycleStatus.ACTIVE,
+      },
+      data: {
+        ...(retryable
+          ? {}
+          : {
+              status: DB.FreeTextPracticeCycleStatus.UNAVAILABLE,
+              endedAt: completedAt,
+            }),
+        stateVersion: { increment: 1 },
+      },
+    })
+    if (cycleTransitioned.count !== 1) {
+      throw new Error(
+        'Free-text practice cycle changed while evaluation became unavailable'
+      )
     }
 
     return true
   })
+}
+
+export async function retryFreeTextAttemptInTransaction(
+  {
+    attemptId,
+    cycleId,
+    evaluationRevision,
+  }: { attemptId: string; cycleId: string; evaluationRevision: number },
+  prisma: PrismaTransactionClient
+) {
+  await prisma.$queryRaw`
+    SELECT "id"
+    FROM "FreeTextPracticeCycle"
+    WHERE "id" = ${cycleId}
+    FOR UPDATE
+  `
+  const transitioned = await prisma.freeTextAttempt.updateMany({
+    where: {
+      id: attemptId,
+      evaluationRevision,
+      evaluationStatus: DB.FreeTextEvaluationStatus.UNAVAILABLE,
+      retryable: true,
+      cycle: { status: DB.FreeTextPracticeCycleStatus.ACTIVE },
+    },
+    data: {
+      evaluationRevision: { increment: 1 },
+      evaluationStatus: DB.FreeTextEvaluationStatus.PENDING,
+      evaluationSource: null,
+      retryable: false,
+      availabilityReason: null,
+      completedAt: null,
+      workflowRunId: null,
+    },
+  })
+  if (transitioned.count !== 1) return false
+
+  const cycleTransitioned = await prisma.freeTextPracticeCycle.updateMany({
+    where: { id: cycleId, status: DB.FreeTextPracticeCycleStatus.ACTIVE },
+    data: { stateVersion: { increment: 1 } },
+  })
+  if (cycleTransitioned.count !== 1) {
+    throw new Error('Free-text practice cycle changed during retry')
+  }
+  return true
+}
+
+export async function revealFreeTextSolutionInTransaction(
+  {
+    cycleId,
+    attemptId,
+    evaluationRevision,
+    evaluationStatus,
+  }: {
+    cycleId: string
+    attemptId: string
+    evaluationRevision: number
+    evaluationStatus: DB.FreeTextEvaluationStatus
+  },
+  prisma: PrismaTransactionClient
+) {
+  await prisma.$queryRaw`
+    SELECT "id"
+    FROM "FreeTextPracticeCycle"
+    WHERE "id" = ${cycleId}
+    FOR UPDATE
+  `
+  return await prisma.freeTextPracticeCycle.updateMany({
+    where: {
+      id: cycleId,
+      status: {
+        in: [
+          DB.FreeTextPracticeCycleStatus.ACTIVE,
+          DB.FreeTextPracticeCycleStatus.UNAVAILABLE,
+        ],
+      },
+      attempts: {
+        some: {
+          id: attemptId,
+          evaluationRevision,
+          evaluationStatus,
+        },
+      },
+    },
+    data: {
+      status: DB.FreeTextPracticeCycleStatus.SOLUTION_REVEALED,
+      solutionRevealedAt: new Date(),
+      endedAt: new Date(),
+      stateVersion: { increment: 1 },
+    },
+  })
+}
+
+export async function markConsentRequiredAttemptsDeclinedInTransaction(
+  participantId: string,
+  prisma: PrismaTransactionClient
+) {
+  await prisma.$queryRaw`
+    SELECT "id"
+    FROM "FreeTextPracticeCycle"
+    WHERE "participantId" = ${participantId}
+      AND "status" = 'ACTIVE'
+    ORDER BY "id"
+    FOR UPDATE
+  `
+  const affectedCycles = await prisma.freeTextAttempt.findMany({
+    where: {
+      cycle: {
+        participantId,
+        status: DB.FreeTextPracticeCycleStatus.ACTIVE,
+      },
+      evaluationStatus: DB.FreeTextEvaluationStatus.UNAVAILABLE,
+      availabilityReason: 'CONSENT_REQUIRED',
+    },
+    select: { cycleId: true },
+    distinct: ['cycleId'],
+  })
+  if (affectedCycles.length === 0) return 0
+
+  const cycleIds = affectedCycles.map(({ cycleId }) => cycleId)
+  const transitioned = await prisma.freeTextAttempt.updateMany({
+    where: {
+      cycleId: { in: cycleIds },
+      evaluationStatus: DB.FreeTextEvaluationStatus.UNAVAILABLE,
+      availabilityReason: 'CONSENT_REQUIRED',
+    },
+    data: { availabilityReason: 'CONSENT_DECLINED' },
+  })
+  if (transitioned.count === 0) return 0
+
+  await prisma.freeTextPracticeCycle.updateMany({
+    where: {
+      id: { in: cycleIds },
+      status: DB.FreeTextPracticeCycleStatus.ACTIVE,
+    },
+    data: { stateVersion: { increment: 1 } },
+  })
+  return transitioned.count
 }

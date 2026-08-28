@@ -98,12 +98,14 @@ describe('semantic free-text evaluation worker', () => {
     expect(duplicate).toEqual({ success: true, applied: false })
     expect(state).toMatchObject({
       cycleStatus: 'ACTIVE',
+      stateVersion: 3,
       attemptsUsed: 1,
       attemptsRemaining: 1,
       currentAttempt: {
         evaluationStatus: 'EVALUATED',
         evaluationSource: 'SEMANTIC',
-        aggregateScore: 60,
+        aggregateScore: null,
+        outcomeBandId: null,
         correctness: 'PARTIAL',
       },
     })
@@ -159,6 +161,23 @@ describe('semantic free-text evaluation worker', () => {
       orderBy: { createdAt: 'asc' },
     })
     expect(completed?.cycleStatus).toBe('CORRECT')
+    expect(completed?.stateVersion).toBe(5)
+    expect(completed?.attempts[0]).toMatchObject({
+      aggregateScore: 60,
+      outcomeBandId: 'partially-correct',
+      structuredResult: {
+        rubricAssessments: [
+          {
+            rubricId: 'risk',
+            rubricName: 'Risk reduction',
+            proposedLevel: 'complete',
+            normalizedScore: 60,
+            rationale: 'The answer identifies diversification of risk.',
+          },
+        ],
+        feedbackProposals: [],
+      },
+    })
     expect(details.map((detail) => detail.pointsAwarded)).toEqual([6, 4])
     expect(completed?.attempts.map((attempt) => attempt.pointsAwarded)).toEqual(
       [6, 4]
@@ -421,7 +440,7 @@ describe('semantic free-text evaluation worker', () => {
       {
         attemptId: attempt.id,
         evaluationRevision: attempt.evaluationRevision,
-        reason: 'SIMULATED_RECOVERY',
+        reason: 'EVALUATOR_RESULT_UNAVAILABLE',
         retryable: true,
       },
       prisma

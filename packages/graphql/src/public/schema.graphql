@@ -1776,7 +1776,7 @@ type FreeTextAttemptState {
   outcomeBandLabel: String
   pointsAwarded: Float
   retryable: Boolean!
-  structuredResult: Json
+  structuredResult: FreeTextEvaluationFeedback
   xpAwarded: Float!
 }
 
@@ -1836,6 +1836,11 @@ type FreeTextElementOptions {
   solutions: [String!]
 }
 
+type FreeTextEvaluationFeedback {
+  feedbackProposals: [FreeTextFeedback!]!
+  rubricAssessments: [FreeTextRubricFeedback!]!
+}
+
 enum FreeTextEvaluationSource {
   EXACT_MATCH
   SEMANTIC
@@ -1845,6 +1850,12 @@ enum FreeTextEvaluationStatus {
   EVALUATED
   PENDING
   UNAVAILABLE
+}
+
+type FreeTextFeedback {
+  feedback: String!
+  rubricId: String!
+  rubricName: String!
 }
 
 type FreeTextInstanceEvaluation {
@@ -1899,6 +1910,7 @@ type FreeTextPracticeState {
   peerAnswers: [FreeTextPeerAnswer!]!
   referenceSolution: String
   solutionAuthorized: Boolean!
+  stateVersion: Int!
 }
 
 type FreeTextRestrictions {
@@ -1926,6 +1938,14 @@ type FreeTextRetryCategoryCounts {
   correct: Int!
   incorrect: Int!
   partial: Int!
+}
+
+type FreeTextRubricFeedback {
+  normalizedScore: Float!
+  proposedLevel: String!
+  rationale: String!
+  rubricId: String!
+  rubricName: String!
 }
 
 enum GeneratableElementType {

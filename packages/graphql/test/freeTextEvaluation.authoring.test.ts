@@ -65,6 +65,34 @@ describe('semantic free-text authoring', () => {
     })
   })
 
+  it('removes semantic configuration when a client explicitly disables it', async () => {
+    await manipulateElement(
+      {
+        id: fixture.instance.elementId,
+        type: ElementType.FREE_TEXT,
+        status: 'READY',
+        name: 'Why diversify?',
+        content: 'What is the principal benefit of diversification?',
+        explanation: 'Diversification reduces asset-specific risk.',
+        basePoints: true,
+        pointsMultiplier: 1,
+        options: {
+          hasSampleSolution: true,
+          solutions: ['Diversification reduces idiosyncratic risk.'],
+          semanticEvaluation: null,
+        },
+      },
+      lecturerContext(fixture.lecturer.id)
+    )
+
+    const element = await prisma.element.findUniqueOrThrow({
+      where: { id: fixture.instance.elementId },
+    })
+    expect(
+      (element.options as ElementOptionsFreeText).semanticEvaluation
+    ).toBeUndefined()
+  })
+
   it('rejects invalid semantic configuration before persistence', async () => {
     const result = await manipulateElement(
       {

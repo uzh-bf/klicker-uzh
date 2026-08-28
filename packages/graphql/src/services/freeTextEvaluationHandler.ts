@@ -78,22 +78,6 @@ export async function handleEvaluateFreeTextAttempt(
     return { success: true, applied: true }
   }
 
-  const ownerEntitled =
-    attempt.cycle.practiceQuiz.owner.catalystInstitutional ||
-    attempt.cycle.practiceQuiz.owner.catalystIndividual
-  if (!ownerEntitled) {
-    await markFreeTextAttemptUnavailable(
-      {
-        attemptId,
-        evaluationRevision,
-        reason: 'LECTURER_ENTITLEMENT_UNAVAILABLE',
-        retryable: true,
-      },
-      globalCtx.prisma
-    )
-    return { success: true, applied: true }
-  }
-
   const latestConsentEvent =
     await globalCtx.prisma.freeTextConsentEvent.findFirst({
       where: {
@@ -115,6 +99,22 @@ export async function handleEvaluateFreeTextAttempt(
           DB.SemanticEvaluationConsentDecision.DECLINED
             ? 'CONSENT_DECLINED'
             : 'CONSENT_REQUIRED',
+        retryable: true,
+      },
+      globalCtx.prisma
+    )
+    return { success: true, applied: true }
+  }
+
+  const ownerEntitled =
+    attempt.cycle.practiceQuiz.owner.catalystInstitutional ||
+    attempt.cycle.practiceQuiz.owner.catalystIndividual
+  if (!ownerEntitled) {
+    await markFreeTextAttemptUnavailable(
+      {
+        attemptId,
+        evaluationRevision,
+        reason: 'LECTURER_ENTITLEMENT_UNAVAILABLE',
         retryable: true,
       },
       globalCtx.prisma
@@ -164,7 +164,7 @@ export async function handleEvaluateFreeTextAttempt(
     if (!evaluationApplied) return false
 
     const responseApplied = await applyEvaluatedFreeTextAttemptInTransaction(
-      { attemptId },
+      { attemptId, bumpStateVersion: false },
       tx
     )
     if (!responseApplied) {
@@ -217,26 +217,36 @@ export async function handleReapStalledFreeTextAttempts(
   const stalledBefore = new Date(
     Date.now() - REAP_STALLED_AFTER_MINUTES * 60 * 1000
   )
-  const result = await globalCtx.prisma.freeTextAttempt.updateMany({
+  const stalledAttempts = await globalCtx.prisma.freeTextAttempt.findMany({
     where: {
       evaluationStatus: DB.FreeTextEvaluationStatus.PENDING,
       updatedAt: { lt: stalledBefore },
       cycle: { status: DB.FreeTextPracticeCycleStatus.ACTIVE },
     },
-    data: {
-      evaluationStatus: DB.FreeTextEvaluationStatus.UNAVAILABLE,
-      evaluationSource: null,
-      availabilityReason: 'EVALUATION_STALLED',
-      retryable: true,
-      completedAt: new Date(),
-    },
+    select: { id: true, evaluationRevision: true },
+    orderBy: { updatedAt: 'asc' },
+    take: 100,
   })
-  if (result.count > 0) {
+  const applied = await Promise.all(
+    stalledAttempts.map((attempt) =>
+      markFreeTextAttemptUnavailable(
+        {
+          attemptId: attempt.id,
+          evaluationRevision: attempt.evaluationRevision,
+          reason: 'EVALUATION_STALLED',
+          retryable: true,
+        },
+        globalCtx.prisma
+      )
+    )
+  )
+  const appliedCount = applied.filter(Boolean).length
+  if (appliedCount > 0) {
     console.warn(
       JSON.stringify({
         service: 'semantic-free-text-evaluator',
         reasonClass: 'STALLED_ATTEMPTS_REAPED',
-        count: result.count,
+        count: appliedCount,
       })
     )
   }

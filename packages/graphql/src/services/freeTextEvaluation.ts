@@ -22,4 +22,4 @@ export type {
 export {
   completeFreeTextAttemptEvaluationInTransaction,
   markFreeTextAttemptUnavailable,
-} from './freeTextEvaluationWorker.js'
+} from './freeTextEvaluationTransitions.js'

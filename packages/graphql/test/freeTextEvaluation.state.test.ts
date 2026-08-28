@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@klicker-uzh/prisma'
 import {
+  ElementType,
   FreeTextEvaluationStatus,
   PublicationStatus,
   SemanticEvaluationConsentDecision,
 } from '@klicker-uzh/prisma/client'
+import { StackFeedbackStatus } from '@klicker-uzh/types'
 import {
   afterAll,
   afterEach,
@@ -25,6 +27,7 @@ import {
   revealFreeTextSolution,
   startFreeTextPracticeCycle,
 } from '../src/services/freeTextEvaluation.js'
+import { respondToElementStack } from '../src/services/stacks.js'
 import {
   cleanupFixtures,
   createFixture,
@@ -118,7 +121,7 @@ describe('semantic free-text practice state', () => {
         where: { cycleId: first.cycleId },
       })
     ).toBe(1)
-    expect(schedule).toHaveBeenCalled()
+    expect(schedule).toHaveBeenCalledTimes(1)
   })
 
   it('makes scheduling failures retryable without duplicating the answer', async () => {
@@ -203,12 +206,13 @@ describe('semantic free-text practice state', () => {
 
   it('confirms an accepted exact answer without external processing', async () => {
     const schedule = vi.fn().mockResolvedValue(workflowRunRef())
+    const clientSubmissionId = randomUUID()
     const state = await createFreeTextAttempt(
       {
         instanceId: fixture.instance.id,
         answer: '  diversification REDUCES idiosyncratic risk. ',
         answerTime: 3,
-        clientSubmissionId: randomUUID(),
+        clientSubmissionId,
       },
       participantContext(fixture.participant.id, schedule)
     )
@@ -221,11 +225,64 @@ describe('semantic free-text practice state', () => {
       aggregateScore: 100,
     })
     expect(schedule).not.toHaveBeenCalled()
+    const duplicate = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'Diversification reduces idiosyncratic risk.',
+        answerTime: 3,
+        clientSubmissionId,
+      },
+      participantContext(fixture.participant.id, schedule)
+    )
+    expect(duplicate.currentAttempt?.id).toBe(state.currentAttempt?.id)
+    expect(duplicate.stateVersion).toBe(state.stateVersion)
+    expect(state.stateVersion).toBe(2)
+    expect(
+      await prisma.freeTextPracticeCycle.count({
+        where: {
+          participantId: fixture.participant.id,
+          elementInstanceId: fixture.instance.id,
+        },
+      })
+    ).toBe(1)
+    expect(
+      await prisma.freeTextAttempt.count({ where: { cycleId: state.cycleId } })
+    ).toBe(1)
     expect(
       await prisma.questionResponseDetail.count({
         where: { freeTextAttempt: { id: state.currentAttempt!.id } },
       })
     ).toBe(1)
+  })
+
+  it('keeps legacy free-text submissions on exact grading without semantic attempts', async () => {
+    const result = await respondToElementStack(
+      {
+        stackId: fixture.practiceQuiz.stacks[0]!.id,
+        courseId: fixture.course.id,
+        responses: [
+          {
+            instanceId: fixture.instance.id,
+            type: ElementType.FREE_TEXT,
+            freeTextResponse: 'Diversification reduces idiosyncratic risk.',
+          },
+        ],
+        stackAnswerTime: 3,
+      },
+      participantContext(fixture.participant.id)
+    )
+
+    expect(result?.status).toBe(StackFeedbackStatus.CORRECT)
+    expect(
+      await prisma.freeTextAttempt.count({
+        where: {
+          cycle: {
+            participantId: fixture.participant.id,
+            elementInstanceId: fixture.instance.id,
+          },
+        },
+      })
+    ).toBe(0)
   })
 
   it('rolls back an exact-match attempt when the cycle transition fails', async () => {
@@ -307,6 +364,7 @@ describe('semantic free-text practice state', () => {
 
   it('persists a declined disclosure on an existing unavailable attempt', async () => {
     const ctx = participantContext(fixture.participant.id)
+    vi.stubEnv('CATALYST_FORMATIVE_EVALUATOR_URL', '')
     const awaitingConsent = await createFreeTextAttempt(
       {
         instanceId: fixture.instance.id,
@@ -322,6 +380,7 @@ describe('semantic free-text practice state', () => {
       evaluationStatus: 'UNAVAILABLE',
       availabilityReason: 'CONSENT_REQUIRED',
     })
+    expect(awaitingConsent.stateVersion).toBe(2)
 
     await decideSemanticEvaluationConsent(
       { disclosureVersion: '2026-08-18', accepted: false },
@@ -339,6 +398,7 @@ describe('semantic free-text practice state', () => {
       retryable: true,
     })
     expect(declined?.canRetryEvaluation).toBe(false)
+    expect(declined?.stateVersion).toBe(3)
   })
 
   it('returns the latest participant consent decision for the current disclosure', async () => {
@@ -373,6 +433,7 @@ describe('semantic free-text practice state', () => {
 
   it('allows declined consent to be accepted later and retries the same answer revision', async () => {
     const ctx = participantContext(fixture.participant.id)
+    vi.stubEnv('CATALYST_FORMATIVE_EVALUATOR_URL', '')
     await decideSemanticEvaluationConsent(
       { disclosureVersion: '2026-08-18', accepted: false },
       ctx
@@ -387,10 +448,15 @@ describe('semantic free-text practice state', () => {
       ctx,
       { disclosureVersion: '2026-08-18' }
     )
+    expect(unavailable).toMatchObject({
+      stateVersion: 2,
+      currentAttempt: { availabilityReason: 'CONSENT_DECLINED' },
+    })
     await decideSemanticEvaluationConsent(
       { disclosureVersion: '2026-08-18', accepted: true },
       ctx
     )
+    vi.stubEnv('CATALYST_FORMATIVE_EVALUATOR_URL', 'http://evaluator.test')
 
     const retried = await retryFreeTextEvaluation(
       { attemptId: unavailable.currentAttempt!.id },
@@ -403,6 +469,7 @@ describe('semantic free-text practice state', () => {
       evaluationRevision: 1,
       evaluationStatus: 'PENDING',
     })
+    expect(retried.stateVersion).toBe(3)
     expect(retried.attemptsUsed).toBe(0)
   })
 
@@ -521,14 +588,32 @@ describe('semantic free-text practice state', () => {
       explanation: 'Diversification reduces asset-specific risk.',
       canPracticeAgain: true,
     })
-
-    const restarted = await startFreeTextPracticeCycle(
-      { instanceId: fixture.instance.id },
+    const repeatedReveal = await revealFreeTextSolution(
+      { cycleId: active.cycleId },
       ctx
     )
+    expect(repeatedReveal.stateVersion).toBe(revealed.stateVersion)
+
+    const restarts = await Promise.all(
+      Array.from({ length: 4 }, () =>
+        startFreeTextPracticeCycle({ instanceId: fixture.instance.id }, ctx)
+      )
+    )
+    const restarted = restarts[0]!
     expect(restarted.cycleId).not.toBe(active.cycleId)
     expect(restarted.cycleOrdinal).toBe(2)
     expect(restarted.cycleStatus).toBe('ACTIVE')
+    expect(new Set(restarts.map(({ cycleId }) => cycleId))).toEqual(
+      new Set([restarted.cycleId])
+    )
+    expect(
+      await prisma.freeTextPracticeCycle.count({
+        where: {
+          participantId: fixture.participant.id,
+          elementInstanceId: fixture.instance.id,
+        },
+      })
+    ).toBe(2)
   })
 
   it('persists consent decisions as an append-only event history', async () => {

@@ -1,7 +1,10 @@
 import { createHash } from 'node:crypto'
 import { validateSemanticFreeTextConfig } from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
-import type { SemanticFreeTextConfig } from '@klicker-uzh/types'
+import type {
+  FreeTextEvaluationAvailabilityReason,
+  SemanticFreeTextConfig,
+} from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '@/lib/context.js'
 
@@ -10,6 +13,14 @@ const DEFAULT_DISCLOSURE_VERSION = '2026-08-18'
 export type FreeTextEvaluationServiceOptions = {
   disclosureVersion?: string
 }
+
+type EvaluationGateAvailabilityReason = Extract<
+  FreeTextEvaluationAvailabilityReason,
+  | 'CONSENT_DECLINED'
+  | 'CONSENT_REQUIRED'
+  | 'EVALUATOR_UNAVAILABLE'
+  | 'LECTURER_ENTITLEMENT_UNAVAILABLE'
+>
 
 export type SemanticFreeTextCapabilityData = {
   entitled: boolean
@@ -200,16 +211,16 @@ export function evaluationAvailabilityReason({
 }: {
   ownerEntitled: boolean
   consent: DB.SemanticEvaluationConsentDecision | null
-}) {
-  if (!ownerEntitled) return 'LECTURER_ENTITLEMENT_UNAVAILABLE'
-  if (!process.env.CATALYST_FORMATIVE_EVALUATOR_URL) {
-    return 'EVALUATOR_UNAVAILABLE'
-  }
+}): EvaluationGateAvailabilityReason | null {
   if (consent === DB.SemanticEvaluationConsentDecision.DECLINED) {
     return 'CONSENT_DECLINED'
   }
   if (consent !== DB.SemanticEvaluationConsentDecision.ACCEPTED) {
     return 'CONSENT_REQUIRED'
+  }
+  if (!ownerEntitled) return 'LECTURER_ENTITLEMENT_UNAVAILABLE'
+  if (!process.env.CATALYST_FORMATIVE_EVALUATOR_URL) {
+    return 'EVALUATOR_UNAVAILABLE'
   }
   return null
 }

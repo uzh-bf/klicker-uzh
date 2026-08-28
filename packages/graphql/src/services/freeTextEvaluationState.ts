@@ -1,5 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
+  FreeTextEvaluationAvailabilityReason,
+  FreeTextEvaluationFeedback,
   FreeTextEvaluationResult,
   SemanticFreeTextConfig,
 } from '@klicker-uzh/types'
@@ -36,14 +38,14 @@ export type FreeTextAttemptState = {
   evaluationStatus: DB.FreeTextEvaluationStatus
   evaluationSource: DB.FreeTextEvaluationSource | null
   retryable: boolean
-  availabilityReason: string | null
+  availabilityReason: FreeTextEvaluationAvailabilityReason | null
   aggregateScore: number | null
   outcomeBandId: string | null
   outcomeBandLabel: string | null
   correctness: DB.FreeTextCorrectnessCategory | null
   evaluatorVersion: string | null
   modelVersion: string | null
-  structuredResult: FreeTextEvaluationResult | null
+  structuredResult: FreeTextEvaluationFeedback | null
   pointsAwarded: number | null
   xpAwarded: number
   createdAt: Date
@@ -55,6 +57,7 @@ export type FreeTextPracticeState = {
   cycleId: string
   cycleOrdinal: number
   cycleStatus: DB.FreeTextPracticeCycleStatus
+  stateVersion: number
   attemptLimit: number
   attemptsUsed: number
   attemptsRemaining: number
@@ -179,6 +182,7 @@ function toAttemptState(
   attempt: CycleWithAttempts['attempts'][number],
   solutionAuthorized: boolean
 ): FreeTextAttemptState {
+  const result = attempt.structuredResult as FreeTextEvaluationResult | null
   return {
     id: attempt.id,
     ordinal: attempt.ordinal,
@@ -187,16 +191,33 @@ function toAttemptState(
     evaluationStatus: attempt.evaluationStatus,
     evaluationSource: attempt.evaluationSource,
     retryable: attempt.retryable,
-    availabilityReason: attempt.availabilityReason,
-    aggregateScore: attempt.aggregateScore,
-    outcomeBandId: attempt.outcomeBandId,
+    availabilityReason:
+      attempt.availabilityReason as FreeTextEvaluationAvailabilityReason | null,
+    aggregateScore: solutionAuthorized ? attempt.aggregateScore : null,
+    outcomeBandId: solutionAuthorized ? attempt.outcomeBandId : null,
     outcomeBandLabel: attempt.outcomeBandLabel,
     correctness: attempt.correctness,
     evaluatorVersion: solutionAuthorized ? attempt.evaluatorVersion : null,
     modelVersion: solutionAuthorized ? attempt.modelVersion : null,
-    structuredResult: solutionAuthorized
-      ? (attempt.structuredResult as FreeTextEvaluationResult | null)
-      : null,
+    structuredResult:
+      solutionAuthorized && result
+        ? {
+            rubricAssessments: result.rubric_assessments.map((assessment) => ({
+              rubricId: assessment.rubric_id,
+              rubricName: assessment.rubric_name,
+              proposedLevel: assessment.proposed_level,
+              normalizedScore: assessment.normalized_score,
+              rationale: assessment.rationale,
+            })),
+            feedbackProposals: (result.feedback_proposals ?? []).map(
+              (proposal) => ({
+                rubricId: proposal.rubric_id,
+                rubricName: proposal.rubric_name,
+                feedback: proposal.feedback,
+              })
+            ),
+          }
+        : null,
     pointsAwarded: attempt.questionResponseDetail?.pointsAwarded ?? null,
     xpAwarded: attempt.questionResponseDetail?.xpAwarded ?? 0,
     createdAt: attempt.createdAt,
@@ -244,6 +265,7 @@ async function stateFromCycle(
     cycleId: cycle.id,
     cycleOrdinal: cycle.ordinal,
     cycleStatus: cycle.status,
+    stateVersion: cycle.stateVersion,
     attemptLimit: cycle.attemptLimit,
     attemptsUsed,
     attemptsRemaining: Math.max(0, cycle.attemptLimit - attemptsUsed),
