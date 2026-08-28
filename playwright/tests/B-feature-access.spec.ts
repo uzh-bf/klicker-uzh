@@ -570,6 +570,55 @@ test.describe('Tests the availability of standard activity creation formats', ()
     })
     expectNoRawParticipantData(activityData)
 
+    const performanceRequestsBeforeNavigation = recorder.operations.filter(
+      ({ operationName }) => operationName === V2_PERFORMANCE_OPERATION
+    ).length
+    let releaseControlResponse = () => {}
+    let markControlRequestStarted = () => {}
+    const controlResponseGate = new Promise<void>((resolve) => {
+      releaseControlResponse = resolve
+    })
+    const controlRequestStarted = new Promise<void>((resolve) => {
+      markControlRequestStarted = resolve
+    })
+    let delayNextControlRequest = true
+    await page.route('**/graphql', async (route) => {
+      const operation = parseGraphQLOperation(route.request())
+      if (
+        delayNextControlRequest &&
+        operation?.operationName === 'GetCourseLearningAnalyticsControl' &&
+        operation.variables.courseId === COURSE_ID_TEST
+      ) {
+        delayNextControlRequest = false
+        markControlRequestStarted()
+        await controlResponseGate
+      }
+      await route.continue()
+    })
+
+    try {
+      await page
+        .getByRole('link', { name: 'Performance and Progress Dashboard' })
+        .click()
+      await controlRequestStarted
+      await expect(
+        page.getByText('Loading analytics data. Please wait...')
+      ).toBeVisible()
+      await expect(
+        page.getByTestId('analytics-performance-v2')
+      ).not.toBeAttached()
+      expect(
+        recorder.operations.filter(
+          ({ operationName }) => operationName === V2_PERFORMANCE_OPERATION
+        )
+      ).toHaveLength(performanceRequestsBeforeNavigation)
+    } finally {
+      releaseControlResponse()
+    }
+
+    await expect(page.getByTestId('analytics-performance-v2')).toBeVisible()
+    await page.unroute('**/graphql')
+
     await page.setViewportSize(viewPorts.mobile)
     await page.goto(analyticsUrl('de', 'performance'))
     await expect(page.locator('html')).toHaveAttribute('lang', 'de')

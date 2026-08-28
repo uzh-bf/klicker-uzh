@@ -44,6 +44,7 @@ function useCourseLearningAnalyticsControl(
   )
   const refetchInFlight = useRef(false)
   const controlError = entitlementError ?? error
+  const controlLoading = loading || networkStatus === NetworkStatus.refetch
   const courseArchived = data?.course?.isArchived === true
   const courseEnabled = data?.course?.isLearningAnalyticsEnabled === true
   const analyticsValid =
@@ -81,7 +82,7 @@ function useCourseLearningAnalyticsControl(
     globallyEnabled,
     catalystEntitled,
     entitlementLoading,
-    loading: loading || networkStatus === NetworkStatus.refetch,
+    loading: controlLoading,
     error: controlError,
     exists: Boolean(data?.course),
     courseArchived,
@@ -90,6 +91,7 @@ function useCourseLearningAnalyticsControl(
     canQueryAnalytics:
       hasAccess &&
       !controlError &&
+      !controlLoading &&
       !courseArchived &&
       courseEnabled &&
       analyticsValid,
