@@ -69,6 +69,7 @@ write_file "$FAKE_BIN/curl" '#!/usr/bin/env bash
 url="${!#}"
 printf "%s\n" "$url" >>"$KLICKER_TEST_CURL_LOG"
 case "$url" in
+  */api/chatbots/*) printf "401\tapplication/json" ;;
   */healthz) printf "200\tapplication/json" ;;
   *) printf "307\ttext/html" ;;
 esac'
@@ -314,11 +315,16 @@ if bash "$RUNTIME_SCRIPT" probe-app unsupported >/dev/null 2>&1; then
 fi
 
 : >"$CURL_LOG"
-PORT=7171 READINESS_APPS=response-api bash "$RUNTIME_SCRIPT" doctor >/dev/null
-assert_equal "$(cat "$CURL_LOG")" 'http://localhost:7171/healthz'
+READINESS_APPS=response-api bash "$RUNTIME_SCRIPT" doctor >/dev/null
+assert_equal "$(cat "$CURL_LOG")" 'http://localhost:7078/healthz'
 
 : >"$CURL_LOG"
 READINESS_APPS='' bash "$RUNTIME_SCRIPT" doctor >/dev/null
 [ ! -s "$CURL_LOG" ] || fail 'capability-only doctor probed an unselected app'
+
+: >"$CURL_LOG"
+unset READINESS_APPS
+bash "$RUNTIME_SCRIPT" doctor >/dev/null
+assert_equal "$(wc -l <"$CURL_LOG" | tr -d ' ')" '6'
 
 echo '[test-dev-runtime] PASS'

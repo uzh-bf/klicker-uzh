@@ -73,17 +73,32 @@ while IFS='|' read -r selection wants_dev wants_mcp wants_workers want_filters w
   [ "$got_readiness" = "$want_readiness" ] || fail "$selection readiness: got '$got_readiness' want '$want_readiness'"
 done <<<"$CASES"
 
-# Shell word splitting already ignores separator-adjacent whitespace. Keep this
-# explicit because DEVROUTER_PROFILE may also be set manually during diagnosis.
+# The resolver trims separator-adjacent whitespace because DEVROUTER_PROFILE
+# may also be set manually during diagnosis.
 export DEVROUTER_PROFILE='manage, pwa'
-[ "$(profile_turbo_filters)" = "$B $A $P $M" ] ||
+[ "$(profile_turbo_filters)" = "$B $A $M $P" ] ||
   fail 'separator-adjacent whitespace changed the merged profile'
-[ "$(profile_readiness_apps)" = 'auth frontend-pwa frontend-manage' ] ||
+[ "$(profile_readiness_apps)" = 'auth frontend-manage frontend-pwa' ] ||
   fail 'separator-adjacent whitespace changed merged readiness'
 
 status=0
 profile_wants unsupported-marker || status=$?
 [ "$status" -eq 2 ] || fail "unknown marker must fail closed with exit 2 (got $status)"
+
+# Sourceable resolver entry points preserve devrouter's fail-closed grammar.
+for selection in '' ',manage' 'manage,' 'manage,,pwa' 'manage, ,pwa'; do
+  export DEVROUTER_PROFILE="$selection"
+  for resolver in profile_wants profile_turbo_filters profile_readiness_apps; do
+    status=0
+    if [ "$resolver" = profile_wants ]; then
+      profile_wants klicker-dev >/dev/null || status=$?
+    else
+      "$resolver" >/dev/null || status=$?
+    fi
+    [ "$status" -eq 2 ] ||
+      fail "malformed selection '$selection' was accepted by $resolver (got $status)"
+  done
+done
 
 # Unknown components fail closed with exit 2 from every resolver entry point.
 export DEVROUTER_PROFILE="chat,does-not-exist"

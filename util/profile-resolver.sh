@@ -15,20 +15,44 @@ KLICKER_PROFILE_RESPONSE_ROOT='--filter=@klicker-uzh/response-api'
 KLICKER_PROFILE_WORKER_GENERAL_ROOT='--filter=@klicker-uzh/hatchet-worker-general'
 KLICKER_PROFILE_WORKER_RESPONSE_ROOT='--filter=@klicker-uzh/hatchet-worker-response-processor'
 
+_profile_components() {
+  local remaining="${DEVROUTER_PROFILE-}" component has_more
+  local -a components=()
+
+  [ -n "$remaining" ] || return 2
+  while true; do
+    if [[ "$remaining" == *,* ]]; then
+      component="${remaining%%,*}"
+      remaining="${remaining#*,}"
+      has_more=yes
+    else
+      component="$remaining"
+      has_more=no
+    fi
+
+    component="${component#"${component%%[![:space:]]*}"}"
+    component="${component%"${component##*[![:space:]]}"}"
+    case "$component" in
+      full|manage|pwa|chat|live-quiz|mcp|ai|email) ;;
+      *) return 2 ;;
+    esac
+    components+=("$component")
+
+    [ "$has_more" = yes ] || break
+  done
+
+  printf '%s\n' "${components[@]}" | sort -u
+}
+
 # profile_wants <marker>: exit 0 when the selection selects the managed marker.
 profile_wants() {
-  local marker="$1" component
+  local marker="$1" component components
   case "$marker" in
     klicker-dev|klicker-local-mcp|klicker-workers) ;;
     *) return 2 ;;
   esac
-  for component in $(printf '%s' "${DEVROUTER_PROFILE}" | tr ',' '\n' | sort -u); do
-    case "${component}" in
-      full|manage|pwa|chat|live-quiz|mcp|ai|email) ;;
-      *) return 2 ;;
-    esac
-  done
-  for component in $(printf '%s' "${DEVROUTER_PROFILE}" | tr ',' '\n' | sort -u); do
+  components="$(_profile_components)" || return 2
+  for component in $components; do
     case "${component}" in
       full) return 0 ;;
       manage|pwa|chat) [ "$marker" = klicker-dev ] && return 0 ;;
@@ -48,12 +72,13 @@ profile_wants() {
 # profile_turbo_filters: exact per-package turbo --filter flags for klicker-dev.
 # 'full' starts every routed app plus both workers (turbo default: no filter).
 profile_turbo_filters() {
-  local filters="" component status
+  local filters="" component components status
   profile_wants klicker-dev
   status=$?
   [ "$status" -eq 2 ] && return 2
   [ "$status" -ne 0 ] && return 0
-  for component in $(printf '%s' "${DEVROUTER_PROFILE}" | tr ',' '\n' | sort -u); do
+  components="$(_profile_components)" || return 2
+  for component in $components; do
     case "${component}" in
       full) return 0 ;;
       manage) filters="${filters} ${KLICKER_PROFILE_MANAGE_ROOT}" ;;
@@ -72,12 +97,13 @@ profile_turbo_filters() {
 
 # profile_readiness_apps: runtime apps whose semantic readiness must be proven.
 profile_readiness_apps() {
-  local apps="" component status
+  local apps="" component components status
   profile_wants klicker-dev
   status=$?
   [ "$status" -eq 2 ] && return 2
   [ "$status" -ne 0 ] && return 0
-  for component in $(printf '%s' "${DEVROUTER_PROFILE}" | tr ',' '\n' | sort -u); do
+  components="$(_profile_components)" || return 2
+  for component in $components; do
     case "${component}" in
       full) printf 'auth chat frontend-control frontend-manage frontend-pwa response-api\n'; return 0 ;;
       manage) apps="${apps} frontend-manage" ;;

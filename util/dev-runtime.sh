@@ -154,7 +154,7 @@ probe_url() {
     frontend-control) echo 'http://localhost:3003/login' ;;
     frontend-manage) echo 'http://localhost:3002/login' ;;
     frontend-pwa) echo 'http://localhost:3001/login' ;;
-    response-api) echo "http://localhost:${PORT:-7078}/healthz" ;;
+    response-api) echo 'http://localhost:7078/healthz' ;;
     *) return 1 ;;
   esac
 }
