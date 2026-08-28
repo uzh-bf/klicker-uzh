@@ -1,0 +1,119 @@
+name: Test lightweight unit suites
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['v3', 'v3*']
+    paths:
+      - 'apps/chat/**'
+      - 'packages/grading/**'
+      - 'packages/graphql/**'
+      - 'packages/i18n/**'
+      - 'packages/markdown/**'
+      - 'packages/next-config/**'
+      - 'packages/prisma/**'
+      - 'packages/shared-components/**'
+      - 'packages/types/**'
+      - 'packages/util/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig.json'
+      - '.github/workflows/test-unit.yml'
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'apps/chat/**'
+      - 'packages/grading/**'
+      - 'packages/graphql/**'
+      - 'packages/i18n/**'
+      - 'packages/markdown/**'
+      - 'packages/next-config/**'
+      - 'packages/prisma/**'
+      - 'packages/shared-components/**'
+      - 'packages/types/**'
+      - 'packages/util/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig.json'
+      - '.github/workflows/test-unit.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-unit:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: klicker
+          POSTGRES_PASSWORD: klicker
+          POSTGRES_DB: klicker-prod
+        options: >-
+          --health-cmd "pg_isready -U klicker -d klicker-prod"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+
+      - name: Set up Node.js with pnpm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build unit-test dependencies
+        id: build
+        shell: bash
+        run: |
+          pnpm --filter @klicker-uzh/prisma build
+          pnpm --filter @klicker-uzh/types build
+          pnpm --filter @klicker-uzh/grading build
+          pnpm --filter @klicker-uzh/util build
+
+      - name: Setup chat test database
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force
+        env:
+          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+
+      - name: Test chat app
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/chat test:run
+        env:
+          CHAT_ACCOUNT_USAGE_INTEGRATION: '1'
+          CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED: 'false'
+          DATABASE_URL: postgresql://klicker:klicker@localhost:5432/klicker-prod
+
+      - name: Test grading package
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/grading test
+
+      - name: Test markdown package
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/markdown test
+
+      - name: Test util package
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/util test

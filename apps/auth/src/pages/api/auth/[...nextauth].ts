@@ -1,16 +1,3 @@
-import { MANAGER_COOKIE_NAME, PARTICIPANT_COOKIE_NAME } from '@/lib/constants'
-import {
-  createOrLinkParticipant,
-  createUserAffiliations,
-  decode,
-  encode,
-  ExtendedProfile,
-  ExtendedUser,
-  getAuthContext,
-  getLecturerHosts,
-  getStudentHosts,
-} from '@/lib/helpers'
-import { sendTeamsNotifications } from '@/lib/util'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@klicker-uzh/prisma'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
@@ -23,15 +10,57 @@ import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import type { NextAuthOptions } from 'next-auth'
+import type { UserinfoEndpointHandler } from 'next-auth/providers/oauth'
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { Provider } from 'next-auth/providers/index'
+import { MANAGER_COOKIE_NAME, PARTICIPANT_COOKIE_NAME } from '@/lib/constants'
+import {
+  createOrLinkParticipant,
+  createUserAffiliations,
+  decode,
+  ExtendedProfile,
+  ExtendedUser,
+  encode,
+  getAuthContext,
+  getLecturerHosts,
+  getStudentHosts,
+} from '@/lib/helpers'
+import { isSameOriginRedirect } from '@/lib/redirect'
+import { sendTeamsNotifications } from '@/lib/util'
 
 // Validate required environment variables
 if (!process.env.APP_ORIGIN_AUTH) {
   console.error('APP_ORIGIN_AUTH is required but not defined')
   process.exit(1)
 }
+
+// SWITCH edu-ID decides per attribute whether a claim is released in the ID token
+// or only from the UserInfo endpoint, and that choice lives in the AAI Resource
+// Registry rather than in this repository. NextAuth builds the profile purely from
+// the ID token whenever a provider sets `idToken`, so any attribute that edu-ID
+// only exposes through UserInfo would silently arrive as undefined.
+//
+// Setting EDUID_FETCH_USERINFO=true additionally calls the UserInfo endpoint and
+// merges its claims over the ID token ones, which makes the Resource Registry's
+// ID-token settings irrelevant. The ID token is still validated either way. The
+// flag defaults to off so the deployed behaviour only changes when it is set.
+const eduIdUserinfo: UserinfoEndpointHandler | undefined =
+  process.env.EDUID_FETCH_USERINFO === 'true'
+    ? {
+        async request({ tokens, client }) {
+          // NextAuth types `tokens` with its own loose TokenSet, but what arrives
+          // here is the openid-client TokenSet holding the validated ID token.
+          const oidcTokens = tokens as unknown as Parameters<
+            typeof client.userinfo
+          >[0] & { claims: () => Record<string, unknown> }
+          return {
+            ...oidcTokens.claims(),
+            ...(await client.userinfo(oidcTokens)),
+          }
+        },
+      }
+    : undefined
 
 const SHARED_OPTIONS: Partial<NextAuthOptions> = {
   secret: process.env.APP_SECRET,
@@ -71,26 +100,38 @@ function getParticipantConfig({
           type: 'oauth',
           authorization: {
             params: {
+              // SWITCH edu-ID does not advertise claims_parameter_supported in its
+              // discovery document, so this claims request is not honoured: claim
+              // release is driven purely by the requested scopes plus the attribute
+              // settings registered in the AAI Resource Registry. It is kept as a
+              // record of which claims the client depends on. The scope list follows
+              // the SWITCH integration guide; `profile` is what releases given_name
+              // and family_name, and `User.Read` the swissEduPerson* claims.
               claims: {
                 id_token: {
                   sub: { essential: true },
                   email: { essential: true },
                   swissEduPersonUniqueID: { essential: true },
+                  given_name: { essential: true },
+                  family_name: { essential: true },
+                  swissEduPersonMatriculationNumber: { essential: false },
                   swissEduIDLinkedAffiliation: { essential: false },
                   swissEduIDLinkedAffiliationMail: { essential: false },
                   swissEduIDLinkedAffiliationUniqueID: { essential: false },
                 },
               },
-              scope: 'openid email https://login.eduid.ch/authz/User.Read',
+              scope:
+                'openid email profile https://login.eduid.ch/authz/User.Read',
             },
           },
           idToken: true,
+          userinfo: eduIdUserinfo,
           checks: ['pkce', 'state'],
 
           profile(profile) {
             // Ensure we have the required fields for NextAuth
             if (!profile.sub) {
-              console.error('Missing sub in EduID profile:', profile)
+              console.error('Missing sub in EduID profile')
               throw new Error('Missing sub in EduID profile')
             }
 
@@ -199,6 +240,10 @@ function getParticipantConfig({
           url,
           baseUrl,
         })
+        if (isSameOriginRedirect(url, baseUrl)) {
+          return url
+        }
+
         // Handle relative URLs
         if (url.startsWith('/')) {
           const out = `${baseUrl}${url}`
@@ -277,6 +322,7 @@ function getLecturerConfig({
             },
           },
           idToken: true,
+          userinfo: eduIdUserinfo,
           checks: ['pkce', 'state'],
 
           profile(profile) {
@@ -483,6 +529,10 @@ function getLecturerConfig({
           url,
           baseUrl,
         })
+        if (isSameOriginRedirect(url, baseUrl)) {
+          return url
+        }
+
         // Handle relative URLs
         if (url.startsWith('/')) {
           const out = `${baseUrl}${url}`

@@ -3,10 +3,11 @@ import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import Footer from '@klicker-uzh/shared-components/src/Footer'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { UserNotification } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import React, { useEffect } from 'react'
+import { useTranslations } from 'next-intl'
+import type React from 'react'
+import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Header from './common/Header'
 
@@ -33,7 +34,12 @@ function Layout({
     loading: loadingUser,
     error: errorUser,
     data: dataUser,
-  } = useQuery(UserProfileDocument, { fetchPolicy: 'cache-and-network' })
+  } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-and-network',
+    // The profile is cookie-scoped; never make a server-rendered page depend on
+    // a request that cannot be reused safely across users.
+    ssr: false,
+  })
 
   const redirectToLogin = !dataUser && !loadingUser
 

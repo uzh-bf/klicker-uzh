@@ -4,12 +4,14 @@ on:
   push:
     branches: ['v3', 'v3*']
   pull_request:
-    branches: ['v3', 'v3*']
     types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 env:
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
@@ -68,6 +70,9 @@ jobs:
 
       - name: Check AGENTS.md command smoke
         run: pnpm run check:agents-md
+
+      - name: Check removed engineering-wiki paths
+        run: pnpm run check:removed-doc-artifacts
 
       - name: Build packages for typecheck (turbo)
         run: |

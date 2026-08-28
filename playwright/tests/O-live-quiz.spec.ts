@@ -5,6 +5,7 @@
  */
 import { expect, type Page } from '@playwright/test'
 import fs from 'node:fs'
+import { chooseActionByTestId } from '../util/actions.js'
 import { setSessionCookieForUrl } from '../util/authSession.js'
 import { PARTICIPANT_IDS } from '../util/constants.js'
 import { test } from '../util/fixtures.js'
@@ -1733,8 +1734,11 @@ test.describe.serial('Different live-quiz workflows', () => {
       data.protected.gamifiedCourse.liveQuiz,
       data.protected.nonGamifiedCourse.liveQuiz,
     ]).entries()) {
-      await page.getByTestId('running-live-quiz-dropdown').click()
-      await page.getByTestId(`running-live-quiz-${quiz}`).click()
+      await chooseActionByTestId(
+        page,
+        'running-live-quiz-dropdown',
+        `running-live-quiz-${quiz}`
+      )
       for (let i = 0; i < 2; i++) {
         const nextBlockButton = page.getByTestId('next-block-timeline')
         if (

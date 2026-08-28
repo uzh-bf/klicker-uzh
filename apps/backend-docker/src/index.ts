@@ -1,5 +1,10 @@
 import { createRedisEventTarget } from '@graphql-yoga/redis-event-target'
-import { enhanceContext, handlers, schema } from '@klicker-uzh/graphql'
+import {
+  enhanceContext,
+  getChatModelRegistry,
+  handlers,
+  schema,
+} from '@klicker-uzh/graphql'
 import { prisma as prismaBase } from '@klicker-uzh/prisma'
 // import * as Sentry from '@sentry/node'
 // import '@sentry/tracing'
@@ -101,6 +106,8 @@ const pubSub = createPubSub({ eventTarget })
 
 // ! Server and context setup
 // #region
+getChatModelRegistry()
+
 migrate(prisma).then(() => {
   // initialize tasks to be able to call / schedule them inside service functions
   const tasks = prepareHatchetTasks({

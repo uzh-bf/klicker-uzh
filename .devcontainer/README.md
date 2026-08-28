@@ -41,7 +41,7 @@ The primary checkout keeps fixed localhost ports and receives stable unnamespace
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.35 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.38 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -65,6 +65,19 @@ devrouter stop .
 Open the Manage URL printed by `ensure` and log in as **`lecturer` / `abcd`**
 (accept the terms checkbox). The dev servers run in the background; inspect
 `/tmp/dev.log` through `devrouter exec` or an exact DevPod shell.
+
+## Playwright runs on the host
+
+Run `pnpm playwright:host -- <args>` from a host shell. The launcher reconciles
+this exact checkout, uses its namespaced HTTPS routes, and discovers the
+workspace Postgres container's random loopback port for test cleanup and
+seeding. The Playwright process, Node dependencies, and browser binaries stay
+on the host; applications and services stay in this devcontainer.
+
+Direct local Playwright commands fail before global setup, and this container
+sets its Playwright browser path to a non-directory target. Do not run Playwright
+or install browsers through `devrouter exec` or a DevPod shell. GitHub Actions
+continues to run directly in the official Playwright container.
 
 ## How routing works
 
@@ -127,32 +140,58 @@ the hardcoded defaults only know `klicker.com`.
 | `litellm`                           | `ghcr.io/berriai/litellm-database:v1.96.2` | LLM proxy + Auto V2 complexity router for chat (port 4000 intra-net) |
 
 Environment lives in `devcontainer.env` (committed, dev-only). Lifecycle:
-`post-create.sh` (install + build packages + prisma reset/push/seed + token) then
-host-side `devrouter ensure` delivers its matching process helper and invokes
-`post-start.sh` (set Klicker origins and call that helper). Runtime state is
+host-side `initialize.sh` creates the persistent machine-local pnpm store,
+`post-create.sh` links dependencies into the worktree-specific `node_modules`
+volumes and builds/seeds the workspace, then `devrouter ensure` delivers its
+matching process helper and invokes `post-start.sh`. Runtime state is
 `/tmp/devrouter-process-klicker-dev.state` for the app stack and
 `/tmp/devrouter-process-klicker-local-mcp.state` for the seeded local MCP
 fixture. Exact workspace, command, adapter bytes, and declared non-secret
 runtime-origin values are fingerprinted for reuse; stale owned groups are
 replaced boundedly, and unknown processes are never killed. The MCP command
 also carries the fixture source hash so a source edit forces managed
-replacement. HTTP readiness remains in
-`devrouter ensure .`; the root build script forces production mode even though
-the live container exports `NODE_ENV=development`. Rerun ensure after
-`pnpm run build` so stale Next.js dev output can trigger the single
-container-recreate budget.
+replacement. The app command also fingerprints dependency inputs, Next.js route
+structure, configuration, and the checked-out commit. A true process start
+preserves each worktree's `.next/dev` output; a changed dependency fingerprint
+runs one frozen install against the persistent `node_modules` volume and shared
+pnpm content store.
+
+Before `post-start` reports success, it probes every Next app's readiness
+contract. Unauthenticated Chat must answer `401 application/json` on a nested
+API route, and the committed shell pages of auth, PWA, manage, and control must
+answer `2xx` HTML or a redirect. Five consecutive `404 text/html` responses on such a
+known-existing route after the startup grace period identify stale Next.js
+route state. Only that signature requests one managed restart with a full
+`.next` cleanup for exactly the affected apps. Other errors fail closed without
+removing caches; a data-driven 404, for example a missing quiz evaluation, is
+an application failure rather than a cache signature. Run
+`devrouter exec . -- pnpm run dev:doctor` for the same read-only check across
+all five apps. The root build script forces production mode even though the
+live container exports `NODE_ENV=development`; rerun `devrouter ensure .`
+afterward to restore and prove the development runtime.
 
 The image also carries uv `0.11.12` and selects Python 3.12, matching the
 analytics image and lint CI so the root quality gate runs inside the container.
 
 ## Notes
 
-- `node_modules` is a named volume (pnpm hoists natives into the root
-  `node_modules/.pnpm`, so one root volume covers the monorepo).
+- The root `node_modules` is a named volume because pnpm hoists native packages
+  into `node_modules/.pnpm`. Playwright, Prisma, and shared types also have
+  package-level volumes. Those prevent the Linux install from overwriting the
+  host Playwright runner's Darwin dependency links. The dependency stamp
+  prevents reuse after lockfile or workspace-manifest changes.
+- `/pnpm/.pnpm-store` is the only machine-shared cache. The external Docker
+  volume `klicker-uzh-pnpm-store-v1` is created idempotently before Compose and
+  survives individual DevPod deletion. `node_modules`, `.next`, and PostgreSQL
+  data remain worktree-scoped.
+- Removing `klicker-uzh-pnpm-store-v1` is destructive cache cleanup. Stop every
+  Klicker DevPod that uses it first, then remove that exact volume manually with
+  `docker volume rm klicker-uzh-pnpm-store-v1`; never use broad Docker pruning.
 - Reset the DB without seeding: `pnpm --filter @klicker-uzh/prisma run prisma:reset:raw --force`.
-- `response-api` + both workers run `tsx --watch --env-file=.env`; node 24 errors
-  if `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir
-  (the container env from `devcontainer.env` is what actually applies).
+- `response-api` runs `tsx --watch --env-file=.env`; both Hatchet workers compile
+  with Rollup and run the emitted JavaScript under nodemon. Node 24 errors if
+  `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir (the
+  container env from `devcontainer.env` is what actually applies).
 - Tier 3 (`chat`) needs an upstream LLM key: set `UPSTREAM_OPENAI_API_KEY`.
 - Auto V2 sends its Luna-low classification and semantic embedding requests to
   the same upstream as the selected answer model. With OpenRouter, use only

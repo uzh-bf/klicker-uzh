@@ -3,7 +3,8 @@
 ## Quick Reference
 
 - **Monorepo**: pnpm 11.x + Turborepo, Node.js 24 (Volta-pinned; see `volta` in root `package.json` for exact versions)
-- **Main branch**: `v3`
+- **Main branch**: `v3` (active development)
+- **Legacy branches**: `dev` and `master` belong to the older Klicker variant and are not actively developed.
 - **Package names**: `@klicker-uzh/<name>` (e.g., `@klicker-uzh/graphql`)
 
 ## Stacked PRs
@@ -55,6 +56,11 @@ The commands above are the legacy host/Infisical path. In the self-contained Dev
 pnpm --filter @klicker-uzh/graphql generate   # one-shot codegen
 pnpm --filter @klicker-uzh/graphql dev        # watch mode (codegen + rollup)
 ```
+
+The generated client documents and persisted-query maps are build outputs and
+are ignored by Git; package builds regenerate them before producing `dist`.
+The generated public SDL snapshot remains tracked for schema review and local
+GraphQL tooling.
 
 ### Tests
 
@@ -114,7 +120,7 @@ packages/
 
 ## GraphQL Workflow
 
-Code-first with **Pothos** in `packages/graphql/src/`. After changing types/resolvers (`src/graphql/`) or `.graphql` ops (`src/graphql/ops/`), regenerate with `pnpm --filter @klicker-uzh/graphql generate` (codegen is required — ops are stale otherwise). Op-name prefixes: `Q` query, `M` mutation, `S` subscription, `F` fragment. The public schema definition is generated at [packages/graphql/src/public/schema.graphql](packages/graphql/src/public/schema.graphql).
+Code-first with **Pothos** in `packages/graphql/src/`. After changing types/resolvers (`src/graphql/`) or `.graphql` ops (`src/graphql/ops/`), regenerate with `pnpm --filter @klicker-uzh/graphql generate` (codegen is required — ops are stale otherwise). Op-name prefixes: `Q` query, `M` mutation, `S` subscription, `F` fragment. Package builds regenerate the ignored typed documents and persisted-query maps; the generated public SDL snapshot at `packages/graphql/src/public/schema.graphql` remains tracked for review and local GraphQL tooling.
 
 ## Database Workflow
 
@@ -126,11 +132,19 @@ Prisma split-schema under `packages/prisma/src/prisma/schema/`. After editing a 
 - **Participants**: magic link, LTI, username/password, temporary (anonymous)
 - JWT tokens; GraphQL resolvers enforce three-layer auth: authenticate -> authorize -> execute
 
+### Participation state boundary
+
+`Participation.isActive` is a **leaderboard opt-in flag**, not an enrollment,
+course-access, or security flag. Toggling it changes leaderboard inclusion only;
+it must never be used to grant or revoke assessment, course, or chatbot access.
+Use the endpoint-specific authorization and invitation/account rules instead.
+See [Domain Model](docs/domain-model.md) for the canonical explanation.
+
 ## Local Dev Setup
 
 ### Self-contained devcontainer (recommended)
 
-Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm/prisma/tests **inside the container**, never on the host.
+Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm, Prisma, and unit tests **inside the container**. Playwright is the exception: always run `pnpm playwright:host -- <args>` from the host against the routed container stack. Never invoke Playwright or install its browsers through `devrouter exec`, a DevPod shell, or another local container; CI keeps its existing official Playwright container path.
 
 ```bash
 devrouter ensure .
@@ -140,21 +154,34 @@ The same command starts and proves primary and linked checkouts. Use `devrouter 
 
 The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The stack runs every routed app plus the two Hatchet workers (no worker route); analytics, Office add-in, and docs remain outside it. See `.devcontainer/README.md`.
 
-**OpenRouter-backed local chat:** Start a new or stopped environment through
-Infisical so the local LiteLLM container receives the OpenRouter key without
-writing it to disk:
+**OpenRouter-backed local chat:** Infisical authentication and secret injection
+must run from a host shell outside the Codex sandbox. Do not run Infisical
+inside `devrouter exec`, the DevPod, or a container. Use the restricted
+`rs-infisical-operator` as the only repository-supported injection path. Inject
+the upstream key only at runtime, never into a file or the shell history:
 
 ```bash
-infisical run \
-  --projectId f855faee-8a7f-4615-86a8-dbe7ae7c7d30 \
-  -- sh -c 'UPSTREAM_OPENAI_API_KEY="$OPENROUTER_API_KEY" UPSTREAM_OPENAI_BASE_URL=https://openrouter.ai/api/v1 devrouter ensure .'
+rs-infisical-operator --profile <profile> status
+rs-infisical-operator --profile <profile> permissions
+rs-infisical-operator --profile <profile> run \
+  --map OPENROUTER_API_KEY=UPSTREAM_OPENAI_API_KEY -- \
+  env UPSTREAM_OPENAI_BASE_URL=https://openrouter.ai/api/v1 \
+  devrouter ensure <checkout-path> --json
 ```
 
-If LiteLLM is already running without those variables, stop the workspace with
-`devrouter workspace stop <workspace>` and rerun the command; `ensure` does not
-replace environment variables inside an existing service container. Use only
-seeded or synthetic test content because OpenRouter is an external upstream and
-the Azure-specific chatbot disclaimer does not describe this local path.
+If the host-side operator profile or login is missing, stop and complete the
+operator setup outside the sandbox. Do not substitute raw `infisical run`,
+copy the key into a file, or pass it through chat, arguments, or logs.
+
+If LiteLLM is already running without those variables, stop the exact linked
+checkout with `devrouter stop <checkout-path>` and rerun the injection command;
+`ensure` does not replace environment variables inside an existing service
+container. Verify only that the destination exists with
+`devrouter exec <checkout-path> -- sh -c 'test -n "$UPSTREAM_OPENAI_API_KEY"'`.
+Use only seeded or synthetic test content because OpenRouter is an external
+upstream and the Azure-specific chatbot disclaimer does not describe this
+local path. The repeatable smoke and troubleshooting details live in
+[the OpenRouter local Chat solution](docs/solutions/integration/openrouter-local-chat-runtime.md).
 
 Local Auto Mode is selected by `CHAT_PRIMARY_MODEL_ID=auto`. Chat sends the
 `auto-router` deployment to LiteLLM at `http://litellm:4000`; LiteLLM classifies
@@ -167,8 +194,10 @@ OpenRouter supplies the selected models but does not make the routing decision.
 This adds one classifier request and, for semantic matching, one embedding
 request to the same external OpenRouter data boundary. It therefore adds local
 latency and usage cost. LiteLLM falls back from Sol medium to `gpt-5.1` on an
-upstream failure. Separately, when Chat credits reach zero, Chat selects
-`gpt-4.1-mini` before calling LiteLLM and bypasses Auto Mode.
+upstream failure. Separately, zero-credit fallback remains within the selected
+usage class. Chat can select allow-listed Luna for a BASE selection before
+calling LiteLLM; current ADVANCED selections such as Auto are denied while no
+ADVANCED fallback is allow-listed.
 
 The seeded Benibot exposes a deterministic local `doc_query` MCP tool in Tutor
 and Explainer modes. `post-start.sh` runs it at `http://localhost:1417/mcp`;
@@ -182,7 +211,7 @@ card. Reload the thread and require the tool result, answer, and source to
 remain visible. Use the direct `GPT-5.6 Luna` option only when isolating the
 router from the model/tool integration.
 
-**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.35 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
+**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.38 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
 
 ```bash
 devrouter setup --yes # Traefik + devnet + mkcert CA
@@ -222,6 +251,21 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - Students: `testuser1`-`testuser50`, password `abcdabcd` (enrolled in "Testkurs")
 - Additional: `testuser51`-`testuser52` exist but are not enrolled in any course by default
 
+### Authenticated load-test login
+
+- Keep participant credential values only in Infisical. Do not put them in this file, repository files, command arguments, logs, or chat.
+- The approved operator profile is `klicker-dev`; it intentionally maps to Infisical project `klicker-uzh-dev` in environment `dev`. Inject the allowlisted names directly into the child process:
+
+  ```bash
+  rs-infisical-operator --profile klicker-dev run \
+    --map KLICKER_TESTSTUDENT_USERNAME=KLICKER_PARTICIPANT_USERNAME_OR_EMAIL \
+    --map KLICKER_TESTSTUDENT_PASSWORD=KLICKER_PARTICIPANT_PASSWORD \
+    -- k6 run util/load-test/chatbot-auth.js
+  ```
+
+- Set the target-specific `KLICKER_BASE_URL` and `KLICKER_API_URL` in the child environment. Normal login also requires `KLICKER_ALLOW_LOGIN=true`; PRD additionally requires `KLICKER_ALLOW_PRODUCTION=true`.
+- Use `KLICKER_PARTICIPANT_TOKEN` instead when an already-issued token is supplied. Never print or persist either the token or the injected credential values.
+
 ## Code Conventions
 
 - **TypeScript strict mode** everywhere
@@ -251,23 +295,37 @@ Traefik reverse proxy serves the apps on `*.klicker.com` domains (needs `/etc/ho
 - Keep changes small, follow existing patterns in the touched app/package.
 - Don't add/update dependencies unless required for the task.
 - Feature branches from `v3`. Conventional commits preferred.
-- **Keep this file high-level.** Facts and non-obvious concepts live in the engineering wiki at [docs/index.md](docs/index.md); architectural decisions are recorded as ADRs in [docs/adr/](docs/adr/README.md). Update the matching page/ADR as you work (per the `klicker-wiki-maintenance` skill), rather than growing this overview.
+- **Keep this file high-level.** Durable, non-obvious engineering knowledge lives in [docs/](docs/); architectural decisions are recorded as ADRs in [docs/adr/](docs/adr/). Update the matching page or ADR when a change makes it inaccurate or introduces a durable contract that the code does not explain, rather than growing this overview.
 
 ## Engineering Wiki
 
-Ground truth for working on this codebase is the agent-facing wiki at **[docs/index.md](docs/index.md)** (not to be confused with `apps/docs`, the user-facing site). Read the relevant page before working in an unfamiliar area, and keep it current — **any PR that changes behavior must update the affected wiki pages in `docs/` and relevant skills in `.agents/skills/` within the same PR.** The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
+[docs/](docs/) is the selective, agent-facing OKF v0.1 engineering wiki for working on this codebase (not to be confused with `apps/docs`, the user-facing site). It contains durable knowledge that is non-obvious from the source: top-level area guides explain _what_ and _how_, [docs/adr/](docs/adr/) records _why_, and `docs/solutions/` captures reusable lessons from resolved problems. Preserve concept frontmatter and use descriptive filenames, direct links, and repository search. The OKF index and log paths (`docs/index.md`, `docs/log.md`, and `docs/log/`) are intentionally absent and must never be created or restored because they duplicate directory discovery and Git history.
 
-Architectural decisions are recorded as ADRs in [docs/adr/](docs/adr/README.md) — the decision record of _why_. The wiki explains non-obvious concepts and links the relevant ADR; it does not itself hold the decision. Retrospective fixes and durable lessons live in `docs/solutions/`; check both before re-deriving a solved problem.
+Read the relevant pages before working in an unfamiliar area. Update `docs/` and the relevant skills in `.agents/skills/` in the same PR when a change makes existing guidance inaccurate or introduces a durable contract that the code does not explain. A behavior change does not require a ceremonial documentation edit. The former `project/CODEBASE_NOTES.md` is a retired pointer stub.
 
 ## AI Assistance (Skills)
 
-Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync. Task-shaped `klicker-*` skills cover the feature lifecycle — environment diagnosis (`klicker-environment-doctor`), design (`klicker-feature-design`), API (`klicker-graphql-api`), schema/data (`klicker-data-model`), UI (`klicker-frontend-ui`), testing/verification (`klicker-testing-verification`), e2e (`klicker-playwright-e2e`), and wiki upkeep (`klicker-wiki-maintenance`); the routing table lives in [docs/index.md](docs/index.md).
+Skills live in `.agents/skills/` (the canonical location); `.claude/skills` and `.github/skills` symlink to it, so Claude Code and GitHub stay in sync. Task-shaped `klicker-*` skills cover the feature lifecycle — environment diagnosis (`klicker-environment-doctor`), design (`klicker-feature-design`), API (`klicker-graphql-api`), schema/data (`klicker-data-model`), UI (`klicker-frontend-ui`), testing/verification (`klicker-testing-verification`), e2e (`klicker-playwright-e2e`), and wiki upkeep (`klicker-wiki-maintenance`).
 
 - **`agent-browser`** — **mandatory** verification for any change touching frontend apps, shared components, styling, i18n text, frontend-facing GraphQL ops, or auth/redirect/cookie flows. Open the page and confirm with before/after screenshots; don't rely on "the logic looks correct". Run via `npx agent-browser`, and log in with **delegated** access, not Edu-ID (credentials under [Test credentials](#test-credentials-local-seeded-db-only)). Full workflow + Traefik troubleshooting: [.agents/skills/agent-browser/SKILL.md](.agents/skills/agent-browser/SKILL.md).
 - **`web-design-guidelines`** — UI/UX/accessibility review ([SKILL.md](.agents/skills/web-design-guidelines/SKILL.md)).
 - **`vercel-react-best-practices`** — React/Next performance guidance ([SKILL.md](.agents/skills/vercel-react-best-practices/SKILL.md)).
 
 <!-- devrouter -->
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live in ClickUp, reached through the `clickup_*` MCP tools; GitHub Issues are not used. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage roles keep their default names and are applied as ClickUp tags. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one shared `CONTEXT.md` at the root plus `docs/adr/`, with no context map. See `docs/agents/domain.md`.
 
 ## devrouter
 

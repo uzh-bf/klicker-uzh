@@ -65,8 +65,10 @@
     "eslint": "~9.30.1",
     "eslint-config-next": "~16.2.10",
     "tailwindcss": "~4.1.11",
+    "tsx": "~4.19.4",
     "typescript": "~6.0.3",
-    "vitest": "~3.2.4"
+    "vitest": "~3.2.4",
+    "yaml": "~2.6.1"
   },
   "scripts": {
     "build": "cross-env NODE_ENV=production next build --turbopack",
@@ -77,6 +79,7 @@
     "lint": "eslint .",
     "start": "next start --port 3004",
     "start:test": "cross-env NODE_ENV=test pnpm start",
+    "test:account-usage": "cross-env CHAT_ACCOUNT_USAGE_INTEGRATION=1 vitest run test/account-usage.integration.test.ts",
     "test:run": "vitest run",
     "test:watch": "vitest"
   },

@@ -15,6 +15,34 @@ enum ChatMessageRating {
   DOWN
 }
 
+enum ChatMessageLifecycleStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+// Lifecycle state of a chatbot. A chatbot is reachable by participants only
+// while PUBLISHED (enforced in the participant access path). DRAFT and
+// REJECTED are lecturer-editable pre-publication states; PENDING_APPROVAL awaits
+// team review; PAUSED is an operator-only stop with no self-service transition
+// in phase 0. See docs/adr/0020-two-tier-chatbot-approval.md.
+enum ChatbotStatus {
+  DRAFT
+  PENDING_APPROVAL
+  PUBLISHED
+  PAUSED
+  REJECTED
+}
+
+// Usage class of a serving model: BASE for the platform's standard models,
+// ADVANCED for reasoning/large-tier models. Auto is always ADVANCED (see
+// CONTEXT.md and docs/adr/0020-two-tier-chatbot-approval.md); the class is
+// server-derived, never user-selected text.
+enum ChatUsageClass {
+  BASE
+  ADVANCED
+}
+
 model ChatUsageCredits {
   total   Decimal @default(0) @db.Decimal(18, 6)
   current Decimal @default(0) @db.Decimal(18, 6)
@@ -39,6 +67,29 @@ model ChatUsageCredits {
   updatedAt DateTime @updatedAt
 
   @@id([participantId, chatbotId])
+}
+
+// Account-scoped monthly usage budget and used-credit counter for one usage
+// class. One row per owner account + class + Europe/Zurich calendar month;
+// monthStart is the first calendar day of the month (DATE). Rows are created
+// on demand. When the current row is missing, the latest configured budget
+// carries forward while used credits reset to zero. Accounts without usage
+// history remain unconfigured. See CONTEXT.md and
+// docs/adr/0020-two-tier-chatbot-approval.md.
+model ChatAccountUsage {
+  monthStart DateTime @db.Date // first calendar day of the month (Europe/Zurich)
+
+  budgetCredits Decimal @default(0) @db.Decimal(18, 6)
+  usedCredits   Decimal @default(0) @db.Decimal(18, 6)
+
+  owner   User          @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ownerId String        @db.Uuid
+  usageClass ChatUsageClass
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([ownerId, usageClass, monthStart])
 }
 
 model ChatThread {
@@ -68,6 +119,8 @@ model ChatMessage {
   reasoningEffort  String?
   reasoningContent String?  @db.Text
   creditsUsed      Decimal? @db.Decimal(18, 6)
+  lifecycleStatus    ChatMessageLifecycleStatus @default(COMPLETED)
+  lifecycleAttemptId String? @db.Uuid
   // Participant feedback on an assistant answer; null until they vote.
   rating           ChatMessageRating?
 
@@ -129,6 +182,15 @@ model Chatbot {
   // Disclaimer configuration
   disclaimer   ChatbotDisclaimer? @relation(fields: [disclaimerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   disclaimerId String?            @db.Uuid
+
+  // Lifecycle and publication (see docs/adr/0020-two-tier-chatbot-approval.md).
+  // A new chatbot starts as DRAFT; existing rows are backfilled to PUBLISHED by
+  // the introducing migration so live bots keep serving participants.
+  status               ChatbotStatus @default(DRAFT)
+  publicationUseCase   String?       @db.Text // lecturer's stated use case, set on a publication request
+  expectedStudentCount Int? // lecturer's expected student count, set on a publication request
+  reviewComment        String?       @db.Text // team comment on a rejected request; cleared on re-request
+  publishedAt          DateTime? // when the chatbot was first approved for publication
 
   // Relations
   mcpConfigurations ChatbotMCPConfig[]

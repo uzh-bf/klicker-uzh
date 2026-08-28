@@ -21,7 +21,10 @@ import ActivityListSelectAllCheckbox from '../components/activities/overview/Act
 import ActivityListSorting from '../components/activities/overview/ActivityListSorting'
 import ActivityOverviewFilters from '../components/activities/overview/ActivityOverviewFilters'
 import ActivityDetailsModal from '../components/activities/overview/details/ActivityDetailsModal'
-import Pagination from '../components/common/Pagination'
+import Pagination, {
+  isPaginationPageSize,
+  type PaginationPageSize,
+} from '@components/common/Pagination'
 import Layout from '../components/Layout'
 import useActivitySortingAndFiltering, {
   ACTIVITY_SORTING_FILTERING_INITIAL,
@@ -40,13 +43,16 @@ function Activities() {
   const [searchString, setSearchString] = useState('')
 
   // initialize page size from local storage (if available)
-  const [pageSize, setPageSize] = useState(() => {
+  const [pageSize, setPageSize] = useState<PaginationPageSize>(() => {
     // only try to access localStorage when on the client
     if (typeof window !== 'undefined') {
       try {
         const storedPageSize = localStorage.getItem('activity-page-size')
         if (storedPageSize) {
-          return JSON.parse(storedPageSize)
+          const parsedPageSize = JSON.parse(storedPageSize) as unknown
+          if (isPaginationPageSize(parsedPageSize)) {
+            return parsedPageSize
+          }
         }
       } catch (error) {
         console.error(
@@ -125,8 +131,8 @@ function Activities() {
       isPinProtected: filters.mode.pinProtected ? true : undefined,
       sortByType: sort.by,
       sortByAsc: sort.asc,
-      numEntries: pageSize,
-      offset: (currentPage - 1) * pageSize,
+      numEntries: pageSize === 'all' ? undefined : pageSize,
+      offset: pageSize === 'all' ? undefined : (currentPage - 1) * pageSize,
     },
     fetchPolicy: 'network-only',
   })
@@ -144,7 +150,10 @@ function Activities() {
   useEffect(() => {
     if (loadingActivities) return
 
-    const maxPage = Math.max(1, Math.ceil(numOfActivities / pageSize))
+    const maxPage =
+      pageSize === 'all'
+        ? 1
+        : Math.max(1, Math.ceil(numOfActivities / pageSize))
     if (currentPage > maxPage) {
       setCurrentPage(maxPage)
     }
@@ -222,7 +231,8 @@ function Activities() {
     Object.values(filters.mode).some((value) => value)
 
   // compute the number of total pagination pages
-  const totalPages = Math.max(1, Math.ceil(numOfActivities / pageSize))
+  const totalPages =
+    pageSize === 'all' ? 1 : Math.max(1, Math.ceil(numOfActivities / pageSize))
 
   return (
     <Layout
@@ -246,9 +256,9 @@ function Activities() {
             filtersActive={filtersActive}
           />
         </div>
-        <div className="flex w-full flex-1 flex-col overflow-auto">
+        <div className="flex w-full flex-1 flex-col">
           <>
-            <div className="flex flex-row items-start justify-between">
+            <div className="flex flex-none flex-row items-start justify-between">
               <div className="mb-2 flex flex-row items-center gap-1.5">
                 <ActivityListSelectAllCheckbox
                   activities={activities}
@@ -280,11 +290,13 @@ function Activities() {
               ) : null}
             </div>
 
-            <div className="h-full overflow-y-auto">
-              {loadingActivities ? (
+            {loadingActivities ? (
+              <div className="flex flex-1 items-center justify-center">
                 <Loader />
-              ) : (
-                <>
+              </div>
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col">
+                <div className="min-h-0 flex-1 overflow-y-auto">
                   <ActivityList
                     filtersActive={filtersActive}
                     activities={activities}
@@ -297,21 +309,22 @@ function Activities() {
                       await refetchActivities()
                     }}
                   />
+                </div>
 
-                  {activities.length > 0 && (
-                    <Pagination
-                      totalPages={totalPages}
-                      currentPage={currentPage}
-                      setCurrentPage={setCurrentPage}
-                      numOfObjects={numOfActivities}
-                      pageSize={pageSize}
-                      setPageSize={setPageSize}
-                      className="mb-3"
-                    />
-                  )}
-                </>
-              )}
-            </div>
+                {activities.length > 0 && (
+                  <Pagination
+                    totalPages={totalPages}
+                    currentPage={currentPage}
+                    setCurrentPage={setCurrentPage}
+                    numOfObjects={numOfActivities}
+                    pageSize={pageSize}
+                    setPageSize={setPageSize}
+                    showAll
+                    className="flex-none"
+                  />
+                )}
+              </div>
+            )}
           </>
         </div>
       </div>
@@ -342,6 +355,15 @@ function Activities() {
         <ActivityBatchOperationsModal
           selectedActivities={Object.values(selectedActivities)}
           onClose={() => setBatchOperationsOpen(false)}
+          removeSelectedActivities={(activityIds) =>
+            setSelectedActivities((previous) => {
+              const next = { ...previous }
+              for (const activityId of activityIds) {
+                delete next[activityId]
+              }
+              return next
+            })
+          }
           resetSelectedActivities={() => setSelectedActivities({})}
           refetchActivities={async () => {
             await refetchActivities()

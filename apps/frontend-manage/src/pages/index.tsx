@@ -14,7 +14,10 @@ import { useRouter } from 'next/router'
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import ActivityCreation from '../components/activities/ActivityCreation'
 import SuspendedCreationButtons from '../components/activities/creation/SuspendedCreationButtons'
-import Pagination from '../components/common/Pagination'
+import Pagination, {
+  isPaginationPageSize,
+  type PaginationPageSize,
+} from '@components/common/Pagination'
 import ElementList from '../components/elements/ElementList'
 import ElementListSearch from '../components/elements/ElementListSearch'
 import ElementListSelectAllCheckbox from '../components/elements/ElementListSelectAllCheckbox'
@@ -40,13 +43,16 @@ function Index() {
   const [currentPage, setCurrentPage] = useState(1)
 
   // initialize page size from local storage (if available)
-  const [pageSize, setPageSize] = useState(() => {
+  const [pageSize, setPageSize] = useState<PaginationPageSize>(() => {
     // only try to access localStorage when on the client
     if (typeof window !== 'undefined') {
       try {
         const storedPageSize = localStorage.getItem('elements-page-size')
         if (storedPageSize) {
-          return JSON.parse(storedPageSize)
+          const parsedPageSize = JSON.parse(storedPageSize) as unknown
+          if (isPaginationPageSize(parsedPageSize)) {
+            return parsedPageSize
+          }
         }
       } catch (error) {
         console.error(
@@ -137,13 +143,16 @@ function Index() {
       sortByType: sort.by,
       sortByAsc: sort.asc,
       showArchived: filters.archive,
-      numEntries: pageSize,
-      offset: (currentPage - 1) * pageSize,
+      numEntries: pageSize === 'all' ? undefined : pageSize,
+      offset: pageSize === 'all' ? undefined : (currentPage - 1) * pageSize,
     },
     fetchPolicy: 'network-only',
   })
   const numOfElements = dataElements?.userElements?.numOfElements || 0
   const elements = dataElements?.userElements?.elements ?? []
+  const refetchElementsForChildren = useCallback(async () => {
+    await refetchElements()
+  }, [refetchElements])
 
   // on change, store new page size in local storage
   useEffect(() => {
@@ -156,7 +165,8 @@ function Index() {
   useEffect(() => {
     if (loadingElements) return
 
-    const maxPage = Math.max(1, Math.ceil(numOfElements / pageSize))
+    const maxPage =
+      pageSize === 'all' ? 1 : Math.max(1, Math.ceil(numOfElements / pageSize))
     if (currentPage > maxPage) {
       setCurrentPage(maxPage)
     }
@@ -168,7 +178,8 @@ function Index() {
   }, [filters, sort, searchString])
 
   // compute the number of total pagination pages
-  const totalPages = Math.max(1, Math.ceil(numOfElements / pageSize))
+  const totalPages =
+    pageSize === 'all' ? 1 : Math.max(1, Math.ceil(numOfElements / pageSize))
 
   // if the filters or sorting state changes, save it to local storage
   useEffect(() => {
@@ -324,13 +335,11 @@ function Index() {
             toggleAnswerFeedbackFilter={toggleAnswerFeedbackFilter}
             handleToggleArchive={handleToggleArchive}
             isArchiveActive={filters.archive}
-            refetchElements={async () => {
-              await refetchElements()
-            }}
+            refetchElements={refetchElementsForChildren}
           />
         </div>
 
-        <div className="flex w-full flex-1 flex-col overflow-auto">
+        <div className="flex w-full flex-1 flex-col">
           <>
             <div className="flex flex-none flex-row content-center items-end justify-between pb-2.5">
               <div className="flex flex-row items-center gap-1.5">
@@ -386,13 +395,13 @@ function Index() {
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              {!dataElements || loadingElements ? (
-                <div className="flex h-full items-center justify-center">
-                  <Loader />
-                </div>
-              ) : (
-                <>
+            {!dataElements || loadingElements ? (
+              <div className="flex flex-1 items-center justify-center">
+                <Loader />
+              </div>
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col">
+                <div className="min-h-0 flex-1 overflow-y-auto">
                   <ElementList
                     filtersActive={filtersActiveExceptCourse}
                     activityWizardOpen={!!creationMode}
@@ -427,25 +436,24 @@ function Index() {
                       })
                     }
                     handleFilterReset={handleResetCleanURL}
-                    refetchElements={async () => {
-                      await refetchElements()
-                    }}
+                    refetchElements={refetchElementsForChildren}
                   />
+                </div>
 
-                  {elements.length > 0 && (
-                    <Pagination
-                      totalPages={totalPages}
-                      currentPage={currentPage}
-                      setCurrentPage={setCurrentPage}
-                      numOfObjects={numOfElements}
-                      pageSize={pageSize}
-                      setPageSize={setPageSize}
-                      className="mb-3"
-                    />
-                  )}
-                </>
-              )}
-            </div>
+                {elements.length > 0 && (
+                  <Pagination
+                    totalPages={totalPages}
+                    currentPage={currentPage}
+                    setCurrentPage={setCurrentPage}
+                    numOfObjects={numOfElements}
+                    pageSize={pageSize}
+                    setPageSize={setPageSize}
+                    showAll
+                    className="flex-none"
+                  />
+                )}
+              </div>
+            )}
           </>
         </div>
       </div>
@@ -462,9 +470,7 @@ function Index() {
           }
           isOpen={isElementCreationModalOpen}
           mode={ElementEditMode.CREATE}
-          refetchElements={async () => {
-            await refetchElements()
-          }}
+          refetchElements={refetchElementsForChildren}
         />
       )}
       {modificationModalOpen && router.query.editElementId && (
@@ -481,9 +487,7 @@ function Index() {
           }
           elementId={parseInt(router.query.editElementId as string, 10)}
           mode={ElementEditMode.EDIT}
-          refetchElements={async () => {
-            await refetchElements()
-          }}
+          refetchElements={refetchElementsForChildren}
         />
       )}
       {batchOperationsOpen && (
@@ -491,9 +495,7 @@ function Index() {
           selectedElements={Object.values(selectedElements)}
           onClose={() => setBatchOperationsOpen(false)}
           resetSelectedElements={() => setSelectedElements({})}
-          refetchElements={async () => {
-            await refetchElements()
-          }}
+          refetchElements={refetchElementsForChildren}
         />
       )}
       {showRecoveryPrompt && (
@@ -511,9 +513,7 @@ function Index() {
       )}
       <Suspense fallback={<div />}>
         <SuspendedFirstLoginModal
-          refetchElements={async () => {
-            await refetchElements()
-          }}
+          refetchElements={refetchElementsForChildren}
         />
       </Suspense>
     </Layout>

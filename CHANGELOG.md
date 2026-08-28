@@ -2,6 +2,96 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.4.0-alpha.73](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.72...v3.4.0-alpha.73) (2026-08-26)
+
+
+### Bug Fixes
+
+* **auth:** allow same-origin redirect callbacks ([#5570](https://github.com/uzh-bf/klicker-uzh/issues/5570)) ([c6f7c05](https://github.com/uzh-bf/klicker-uzh/commit/c6f7c058fcb8b1dc604d67f830e8a595973fef0b))
+* **course-duplication:** limit Hatchet worker concurrency ([#5568](https://github.com/uzh-bf/klicker-uzh/issues/5568)) ([378be34](https://github.com/uzh-bf/klicker-uzh/commit/378be3443ce97fdb56526b01f7250ddef114ff9b))
+
+
+### Refactors
+
+* **graphql:** build generated client artifacts ([#5537](https://github.com/uzh-bf/klicker-uzh/issues/5537)) ([7515632](https://github.com/uzh-bf/klicker-uzh/commit/7515632f229c9421a7ac7d62668e1743147ba158))
+
+
+### Enhancements
+
+* **dev:** reuse local devcontainer caches ([#5556](https://github.com/uzh-bf/klicker-uzh/issues/5556)) ([861afd1](https://github.com/uzh-bf/klicker-uzh/commit/861afd19383412a7338f491de46ad4ce3b761750))
+
+
+### Build and CI
+
+* **playwright:** restore generated client artifact ([#5567](https://github.com/uzh-bf/klicker-uzh/issues/5567)) ([ac84460](https://github.com/uzh-bf/klicker-uzh/commit/ac84460d2209c51842f0857da75cf7d7f258ae09))
+* **playwright:** update shard timings ([#5565](https://github.com/uzh-bf/klicker-uzh/issues/5565)) ([de103a5](https://github.com/uzh-bf/klicker-uzh/commit/de103a52d982a29af72022069ad668bc68f84094))
+
+## [3.4.0-alpha.72](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.71...v3.4.0-alpha.72) (2026-08-26)
+
+
+### Bug Fixes
+
+* **dev:** self-heal stale Next.js runtime state ([#5535](https://github.com/uzh-bf/klicker-uzh/issues/5535)) ([2619be5](https://github.com/uzh-bf/klicker-uzh/commit/2619be5a20c60884e725711bb739b37e6ac9376b))
+* **manage:** harden course duplication timeouts ([#5446](https://github.com/uzh-bf/klicker-uzh/issues/5446)) ([cd5cfd5](https://github.com/uzh-bf/klicker-uzh/commit/cd5cfd5743bf6ef5d2350a493ee6635b156db6ed))
+
+
+### Enhancements
+
+* **chat:** polish conversation controls and sources ([#5500](https://github.com/uzh-bf/klicker-uzh/issues/5500)) ([f02aa7b](https://github.com/uzh-bf/klicker-uzh/commit/f02aa7b27fe903d09eb440d268efdbe3d80e1730))
+* **manage:** add batch deletion and element archiving ([#5496](https://github.com/uzh-bf/klicker-uzh/issues/5496)) ([2b8c95d](https://github.com/uzh-bf/klicker-uzh/commit/2b8c95d7b85a9a2b65c663a9c3c72e4809d61f96))
+* **manage:** gate learning analytics with GrowthBook ([#5323](https://github.com/uzh-bf/klicker-uzh/issues/5323)) ([4d8d654](https://github.com/uzh-bf/klicker-uzh/commit/4d8d654b2c6e85b72fe89b4bfc68c7dd9f934c93))
+* **manage:** pin and compact list pagination controls ([#5184](https://github.com/uzh-bf/klicker-uzh/issues/5184)) ([4f29a2d](https://github.com/uzh-bf/klicker-uzh/commit/4f29a2d39f098da49675bb322fcfd62c4fca0761))
+
+
+### Build and CI
+
+* consolidate checks and lightweight unit workflows ([#5551](https://github.com/uzh-bf/klicker-uzh/issues/5551)) ([e4ef09e](https://github.com/uzh-bf/klicker-uzh/commit/e4ef09e5bfc64a4019bace0b472630d5a21408c5))
+* disable AMD image builds ([#5554](https://github.com/uzh-bf/klicker-uzh/issues/5554)) ([b8ce110](https://github.com/uzh-bf/klicker-uzh/commit/b8ce110513a65dc5f882f3adc3676a489cfdeb94))
+* **ocr:** add manual final AI review gate ([#5538](https://github.com/uzh-bf/klicker-uzh/issues/5538)) ([b924af4](https://github.com/uzh-bf/klicker-uzh/commit/b924af4830dacc875cb69ee5c8ca5b6ffd261435))
+* **ocr:** tolerate slow draft reviews ([#5544](https://github.com/uzh-bf/klicker-uzh/issues/5544)) ([1d19ad9](https://github.com/uzh-bf/klicker-uzh/commit/1d19ad9efc6e7af57cff2b805255b4746de25c29))
+
+## [3.4.0-alpha.71](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.70...v3.4.0-alpha.71) (2026-08-24)
+
+
+### Features
+
+* **feature-flags:** add shared GrowthBook foundation ([#5444](https://github.com/uzh-bf/klicker-uzh/issues/5444)) ([c4d69c7](https://github.com/uzh-bf/klicker-uzh/commit/c4d69c7f610a9e639ff9a99d6dcb60228c20af9f))
+* **manage:** add assessment participant invitations ([#5394](https://github.com/uzh-bf/klicker-uzh/issues/5394)) ([e2f1bee](https://github.com/uzh-bf/klicker-uzh/commit/e2f1bee2c88d2486528ae21f56f78637da265642))
+
+
+### Bug Fixes
+
+* **auth:** port remaining actionable items from [#5111](https://github.com/uzh-bf/klicker-uzh/issues/5111) onto v3 ([#5516](https://github.com/uzh-bf/klicker-uzh/issues/5516)) ([e0b04d7](https://github.com/uzh-bf/klicker-uzh/commit/e0b04d711d2ef23a788dc1c5511fdbdd891498fb))
+* **deploy:** keep successful migration jobs until next sync ([#5505](https://github.com/uzh-bf/klicker-uzh/issues/5505)) ([c4446a5](https://github.com/uzh-bf/klicker-uzh/commit/c4446a5ae8367e3ab584807b134fe43ed6a8a099))
+* **deploy:** update Hatchet API endpoints ([#5447](https://github.com/uzh-bf/klicker-uzh/issues/5447)) ([03bf805](https://github.com/uzh-bf/klicker-uzh/commit/03bf805bff2d965e85689384465f122d276a0d50))
+
+
+### Documentation
+
+* add a shared CONTEXT.md and agent skill configuration ([#5488](https://github.com/uzh-bf/klicker-uzh/issues/5488)) ([3ff732d](https://github.com/uzh-bf/klicker-uzh/commit/3ff732d59079b0db127bdea526afe00072f7e5f4))
+* **agents:** clarify Infisical profile mapping ([#5522](https://github.com/uzh-bf/klicker-uzh/issues/5522)) ([3a1bc9f](https://github.com/uzh-bf/klicker-uzh/commit/3a1bc9fe9d77a82c75556ab207ab6a58d60c07ee))
+* **load-test:** document chatbot k6 suite and record live-proof roadmap ([#5506](https://github.com/uzh-bf/klicker-uzh/issues/5506)) ([b67cceb](https://github.com/uzh-bf/klicker-uzh/commit/b67cceb09221e39ea2297f9b993a40e737ecf823))
+* **project:** reconcile chatbot k6 roadmap after publication ([#5513](https://github.com/uzh-bf/klicker-uzh/issues/5513)) ([4ef2024](https://github.com/uzh-bf/klicker-uzh/commit/4ef2024920a60b00f0e3d49c811584df65b3adb6))
+* remove conflict-prone wiki indexes and logs ([#5450](https://github.com/uzh-bf/klicker-uzh/issues/5450)) ([9f38b4e](https://github.com/uzh-bf/klicker-uzh/commit/9f38b4e9a48b6f9ae34979e959825c84b6cde1d2))
+
+
+### Enhancements
+
+* **assessment:** store edu-ID participant identity ([#5452](https://github.com/uzh-bf/klicker-uzh/issues/5452)) ([2dc517a](https://github.com/uzh-bf/klicker-uzh/commit/2dc517aed27db7e02aab8cd90bc7c55ee70affc6))
+* **catalyst:** add in-app access request form ([#5510](https://github.com/uzh-bf/klicker-uzh/issues/5510)) ([c33204b](https://github.com/uzh-bf/klicker-uzh/commit/c33204bea9b10f1221e49e6db99ef27c85953594))
+* **chat:** compact source citation previews ([#5479](https://github.com/uzh-bf/klicker-uzh/issues/5479)) ([d9e9b46](https://github.com/uzh-bf/klicker-uzh/commit/d9e9b46a945c481476d2dcd97b2cf7349e49e5a2))
+* **frontend-pwa:** improve assessment report comparison visualization ([#5459](https://github.com/uzh-bf/klicker-uzh/issues/5459)) ([bcfdba3](https://github.com/uzh-bf/klicker-uzh/commit/bcfdba333b7dcb5ffedff613e23e8864da189344))
+* **manage:** add show-all pagination option ([#5451](https://github.com/uzh-bf/klicker-uzh/issues/5451)) ([41e1411](https://github.com/uzh-bf/klicker-uzh/commit/41e1411f286081f0cd550bc1731d034bbfd28c79))
+* **manage:** add video embedding to element editor ([#5497](https://github.com/uzh-bf/klicker-uzh/issues/5497)) ([2c225da](https://github.com/uzh-bf/klicker-uzh/commit/2c225da09212f3197e2bfed6a867caee4d535802))
+* **manage:** optionally delete draft activities with courses ([#5449](https://github.com/uzh-bf/klicker-uzh/issues/5449)) ([65b4ac4](https://github.com/uzh-bf/klicker-uzh/commit/65b4ac4a983e6dc2fe01880c9409a87e30dbbc7b))
+* **manage:** support element batch sharing ([#5423](https://github.com/uzh-bf/klicker-uzh/issues/5423)) ([3f3af82](https://github.com/uzh-bf/klicker-uzh/commit/3f3af82953ab91c6c51a38dfef44f6bc8e72bc85))
+
+
+### Build and CI
+
+* add advisory OpenCodeReview PR review ([#5526](https://github.com/uzh-bf/klicker-uzh/issues/5526)) ([ae9bc7e](https://github.com/uzh-bf/klicker-uzh/commit/ae9bc7ea526b32cdc964057c00f1b1e8e7d045ee))
+* **evaluation:** add eval framework as a private submodule ([#5190](https://github.com/uzh-bf/klicker-uzh/issues/5190)) ([5918af1](https://github.com/uzh-bf/klicker-uzh/commit/5918af158c5236a6b4c3647b6a51e9f5ca2914d8))
+
 ## [3.4.0-alpha.70](https://github.com/uzh-bf/klicker-uzh/compare/v3.4.0-alpha.68...v3.4.0-alpha.70) (2026-08-19)
 
 

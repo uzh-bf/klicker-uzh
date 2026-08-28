@@ -3,7 +3,11 @@ import { cleanupTest } from '../util/cleanup.js'
 import {
   ASSESSMENT_REPORT_COURSE_NAME,
   ASSESSMENT_REPORT_COURSE_REFERENCE,
+  ASSESSMENT_REPORT_EDUID_GIVEN_NAME,
+  ASSESSMENT_REPORT_EDUID_MATRICULATION_NUMBER,
+  ASSESSMENT_REPORT_EDUID_SURNAME,
   ASSESSMENT_REPORT_PARTICIPANT_IDS,
+  ASSESSMENT_REPORT_PROFILE_EMAIL,
   ASSESSMENT_REPORT_SUBJECT_EMAIL,
   COURSE_ID_ASSESSMENT_REPORT,
   URL_MANAGE,
@@ -12,6 +16,7 @@ import {
 import {
   changeAssessmentReportCourseDisplayName,
   changeAssessmentReportSubjectScore,
+  enableAssessmentReportEduIdIdentity,
   expectOneActiveAssessmentReport,
   getAssessmentReportRecords,
   resetAssessmentReportFixture,
@@ -93,6 +98,10 @@ async function exportAssessmentReport(page: Page) {
   const histogramRowCount = await reportPage
     .locator('.histogram-table tbody tr')
     .count()
+  if (histogramRowCount > 0) {
+    await reportPage.emulateMedia({ media: 'print' })
+    await expect(reportPage.locator('.histogram-table')).toBeVisible()
+  }
   await reportPage.close()
   const match = content.match(/\/verify#([a-f0-9]{64})/)
   if (!match?.[1]) throw new Error('ASSESSMENT_REPORT_TOKEN_MISSING')
@@ -204,7 +213,11 @@ test.describe('Assessment report credential lifecycle', () => {
       content.matchAll(/<rect x="[^"]+" y="[^"]+" width="([^"]+)"/g),
       (match) => Number(match[1])
     )
-    expect(histogramBarWidths[0]).toBeGreaterThan(histogramBarWidths[1]!)
+    expect(histogramBarWidths[0]).toBeCloseTo(histogramBarWidths[1]!, 5)
+    expect(content).toContain('stroke="#0028a5" stroke-width="2"')
+    expect(content).toContain('>0</text>')
+    expect(content).toContain('>100</text>')
+    expect(content).toContain('Comparison cohort: 10 active participants')
 
     const record = await expectOneActiveAssessmentReport()
     expect(record.token).toBe(token)
@@ -230,6 +243,61 @@ test.describe('Assessment report credential lifecycle', () => {
     } finally {
       await resetAssessmentReportFixture()
     }
+  })
+
+  test('V2 report uses edu-ID identity privately and only the name publicly', async ({
+    page,
+    loginFactory,
+  }) => {
+    await enableAssessmentReportEduIdIdentity()
+    await loginAssessmentStudent(loginFactory)
+    const { content, pdf, token } = await exportAssessmentReport(page)
+
+    expect(pdf.subarray(0, 5).toString()).toBe('%PDF-')
+    expect(pdf.toString().match(/\/Type\s*\/Page\b/g)).toHaveLength(1)
+    expect(content).toContain(
+      `${ASSESSMENT_REPORT_EDUID_GIVEN_NAME} ${ASSESSMENT_REPORT_EDUID_SURNAME}`
+    )
+    expect(content).toContain(ASSESSMENT_REPORT_EDUID_MATRICULATION_NUMBER)
+    expect(content).toContain('SWITCH edu-ID')
+    // The credential carries the accepted invitation address, which is only ever
+    // matched against a verified edu-ID affiliation, never the profile address.
+    expect(content).toContain(ASSESSMENT_REPORT_SUBJECT_EMAIL)
+    expect(content).not.toContain(ASSESSMENT_REPORT_PROFILE_EMAIL)
+
+    const record = await expectOneActiveAssessmentReport()
+    expect(record.snapshotVersion).toBe(2)
+    expect(record.subjectEmail).toBe(ASSESSMENT_REPORT_SUBJECT_EMAIL)
+    expect(record.snapshot).toMatchObject({
+      version: 2,
+      subject: {
+        email: ASSESSMENT_REPORT_SUBJECT_EMAIL,
+        givenName: ASSESSMENT_REPORT_EDUID_GIVEN_NAME,
+        surname: ASSESSMENT_REPORT_EDUID_SURNAME,
+        matriculationNumber: ASSESSMENT_REPORT_EDUID_MATRICULATION_NUMBER,
+        source: 'SWITCH_EDUID',
+      },
+    })
+
+    await page.goto(`${assessmentStudentUrl}/verify#${token}`)
+    await expect(
+      page.getByRole('heading', { name: 'Active assessment record' })
+    ).toBeVisible()
+    await expect(
+      page.getByText(
+        `${ASSESSMENT_REPORT_EDUID_GIVEN_NAME} ${ASSESSMENT_REPORT_EDUID_SURNAME}`
+      )
+    ).toBeVisible()
+    await expect(page.getByText('SWITCH edu-ID')).toBeVisible()
+    await expect(page.locator('body')).not.toContainText(
+      ASSESSMENT_REPORT_EDUID_MATRICULATION_NUMBER
+    )
+    await expect(page.locator('body')).not.toContainText(
+      ASSESSMENT_REPORT_SUBJECT_EMAIL
+    )
+    await expect(page.locator('body')).not.toContainText(
+      ASSESSMENT_REPORT_PROFILE_EMAIL
+    )
   })
 
   test('student gets a bounded error when the QR logo cannot decode', async ({
@@ -295,7 +363,7 @@ test.describe('Assessment report credential lifecycle', () => {
     await expect(
       page.getByText(ASSESSMENT_REPORT_COURSE_REFERENCE)
     ).toBeVisible()
-    await expect(page.getByText(ASSESSMENT_REPORT_SUBJECT_EMAIL)).toBeVisible()
+    await expect(page.getByText(ASSESSMENT_REPORT_SUBJECT_EMAIL)).toHaveCount(0)
     await expect(
       page.getByText('Accepted assessment-course invitation email')
     ).toBeVisible()

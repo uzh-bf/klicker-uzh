@@ -218,7 +218,10 @@ function SuspendedFirstLoginModal({
                     <Button.Label>{t('shared.generic.community')}</Button.Label>
                   </Button>
                 </Link>
-                <Link href="https://klicker-uzh.feedbear.com" target="_blank">
+                <Link
+                  href="https://www.klicker.uzh.ch/development"
+                  target="_blank"
+                >
                   <Button data={{ cy: 'first-login-roadmap' }} fluid>
                     <Button.Icon icon={faListCheck} />
                     <Button.Label>{t('shared.generic.roadmap')}</Button.Label>

@@ -1,7 +1,13 @@
 import { Page } from '@playwright/test'
 import dmQuestionsData from '../fixtures/DM-questions.json' with { type: 'json' }
 import questionsData from '../fixtures/questions.json' with { type: 'json' }
-import { chooseActivityAction } from '../util/actions.js'
+import {
+  chooseActionByTestId,
+  chooseActivityAction,
+  filterActivitiesByName,
+  openActionMenuByTestId,
+  replaceControlledSearchValue,
+} from '../util/actions.js'
 import { cleanupTest } from '../util/cleanup.js'
 import {
   LECTURER_ID,
@@ -21,6 +27,7 @@ import {
 } from '../util/fixtures/activities.js'
 import {
   createAnswerCollection,
+  createQuestionMC,
   createQuestionSC,
   createQuestionSE,
   deleteElement,
@@ -29,7 +36,10 @@ import {
 } from '../util/fixtures/elements.js'
 import { getDatetimeValidationString } from '../util/helpers.js'
 import { enMessages as messages } from '../util/messages.js'
-import { acceptGamifiedLiveQuizAccountPrompt } from '../util/workflow.js'
+import {
+  acceptGamifiedLiveQuizAccountPrompt,
+  createQuestionNR,
+} from '../util/workflow.js'
 
 type Choice = {
   value: string
@@ -283,9 +293,9 @@ async function shareElementWithUser(
 }
 
 async function openShareModalForElement(page: Page, elementName: string) {
-  await page.getByTestId('elements-search-input').clear()
-  await page.getByTestId('elements-search-input').fill(elementName)
-  await page.keyboard.press('Enter')
+  const searchInput = page.getByTestId('elements-search-input')
+  await replaceControlledSearchValue(searchInput, elementName)
+  await searchInput.press('Enter')
   await page.getByTestId(`actions-element-${elementName}`).click()
   await page.getByTestId(`share-element-${elementName}`).click()
 }
@@ -1142,7 +1152,19 @@ test.describe('Create different types of elements (with and without sample solut
     }) => {
       await loginLecturer()
 
-      await deleteElement(page, data.update.title3)
+      await page.getByTestId('elements-search-input').fill(data.update.title3)
+      await page.getByTestId('elements-search-input').press('Enter')
+      const obsoleteElement = page.getByTestId(
+        `element-item-${data.update.title3}`
+      )
+      if (
+        await obsoleteElement
+          .waitFor({ state: 'visible', timeout: 5000 })
+          .then(() => true)
+          .catch(() => false)
+      ) {
+        await deleteElement(page, data.update.title3)
+      }
 
       await page.getByTestId('activities').click()
       for (const quiz of [
@@ -1150,11 +1172,17 @@ test.describe('Create different types of elements (with and without sample solut
         data.update.liveQuiz2,
         data.update.liveQuiz3,
       ]) {
-        await page.getByTestId('activities-search-input').fill(quiz)
-        await page.keyboard.press('Enter')
+        await filterActivitiesByName(page, quiz)
+        const cockpitButton = page.getByTestId(`live-quiz-cockpit-${quiz}`)
+        const quizExists = await cockpitButton
+          .waitFor({ state: 'visible', timeout: 5000 })
+          .then(() => true)
+          .catch(() => false)
+        if (!quizExists) continue
+
         await Promise.all([
           page.waitForURL(/\/cockpit/, { timeout: 30000 }),
-          page.getByTestId(`live-quiz-cockpit-${quiz}`).click(),
+          cockpitButton.click(),
         ])
         await expect(page.getByTestId('next-block-timeline')).toBeVisible()
         await page.getByTestId('next-block-timeline').click()
@@ -1163,9 +1191,7 @@ test.describe('Create different types of elements (with and without sample solut
         await page.waitForTimeout(500)
         await page.reload()
         await page.getByTestId('activities').click()
-        await expect(page.getByTestId('activities-search-input')).toBeVisible()
-        await page.getByTestId('activities-search-input').fill(quiz)
-        await page.keyboard.press('Enter')
+        await filterActivitiesByName(page, quiz)
         await chooseActivityAction(
           page,
           'LIVE_QUIZ',
@@ -1177,7 +1203,6 @@ test.describe('Create different types of elements (with and without sample solut
           'confirm-deletion-qa-feedbacks',
           'confirm-deletion-confusion-feedbacks',
         ])
-        await page.getByTestId('activities-search-input').clear()
       }
 
       await page.getByTestId('courses').click()
@@ -1949,6 +1974,136 @@ test.describe('Create different types of elements (with and without sample solut
   })
 
   test.describe('Part 6: Direct sharing / enabled functionalities', () => {
+    test('Batch sharing applies updates first and reports elements without ADMIN access', async ({
+      page,
+      loginLecturer,
+      loginInstitutionalCatalyst,
+      loginIndividualCatalyst,
+      logoutUser,
+    }, testInfo) => {
+      const retrySuffix =
+        testInfo.retry === 0 ? '' : ` (retry ${testInfo.retry})`
+      const mcTitle = `${data.MCML.title}${retrySuffix}`
+      const nrTitle = `${data.NRML.title}${retrySuffix}`
+
+      await loginLecturer()
+      await createQuestionMC({
+        name: mcTitle,
+        content: data.MCML.content,
+        choices: data.MCML.choices,
+        userId: LECTURER_ID,
+      })
+      await createQuestionNR(page, {
+        name: nrTitle,
+        content: data.NRML.content,
+        ...data.NRML.options,
+        multiplier: 3,
+        userId: LECTURER_ID,
+      })
+
+      await page.reload()
+      await openShareModalForElement(page, mcTitle)
+      await shareElementWithUser(page, {
+        shortnameOrEmail: LECTURER_INST_SHORTNAME,
+        permission: messages.manage.sharing.permissionsADMIN,
+      })
+      await page.getByTestId('close-share-object').click()
+
+      await openShareModalForElement(page, nrTitle)
+      await shareElementWithUser(page, {
+        shortnameOrEmail: LECTURER_INST_SHORTNAME,
+        permission: messages.manage.sharing.permissionsWRITE,
+      })
+      await page.getByTestId('close-share-object').click()
+
+      await logoutUser()
+      await loginInstitutionalCatalyst()
+      const institutionalSearchInput = page.getByTestId('elements-search-input')
+      await replaceControlledSearchValue(institutionalSearchInput, '')
+      await institutionalSearchInput.press('Enter')
+
+      await page.getByTestId(`element-checkbox-${nrTitle}`).check()
+      await page.getByTestId('element-batch-operations').click()
+      await page.getByTestId('status-checkbox').check()
+      await selectOption(
+        page,
+        '[data-cy="element-status-select"]',
+        messages.shared.READY.statusLabel
+      )
+      await page.getByTestId('element-batch-sharing-checkbox').check()
+      await page
+        .getByTestId('element-batch-sharing-username-or-email')
+        .fill(LECTURER_IND_SHORTNAME)
+      await expect(
+        page.getByTestId(`element-batch-sharing-x-${nrTitle}`)
+      ).toBeVisible()
+      await expect(page.getByTestId('apply-batch-operations')).toBeEnabled()
+      await page.getByTestId('close-batch-operations-modal').click()
+      await page.getByTestId(`element-checkbox-${nrTitle}`).uncheck()
+
+      await page.getByTestId(`element-checkbox-${mcTitle}`).check()
+      await page.getByTestId(`element-checkbox-${nrTitle}`).check()
+      await page.getByTestId('element-batch-operations').click()
+      await page.getByTestId('status-checkbox').check()
+      await selectOption(
+        page,
+        '[data-cy="element-status-select"]',
+        messages.shared.READY.statusLabel
+      )
+      await page.getByTestId('element-batch-sharing-checkbox').check()
+      await page
+        .getByTestId('element-batch-sharing-username-or-email')
+        .fill(LECTURER_IND_SHORTNAME)
+      await selectOption(
+        page,
+        '[data-cy="element-batch-sharing-permission-level"]',
+        messages.manage.sharing.permissionsREAD
+      )
+
+      await expect(
+        page.getByTestId(`element-batch-sharing-check-${mcTitle}`)
+      ).toBeVisible()
+      const writeOnlyElement = page.getByTestId(
+        `element-batch-sharing-x-${nrTitle}`
+      )
+      await expect(writeOnlyElement).toBeVisible()
+      await writeOnlyElement.hover()
+      await expect(
+        page.locator('li:visible').filter({
+          hasText:
+            messages.manage.questionPool.batchSharingInsufficientPermission,
+        })
+      ).toHaveText(
+        messages.manage.questionPool.batchSharingInsufficientPermission
+      )
+
+      await page.getByTestId('apply-batch-operations').click()
+      await expect(page.getByTestId('element-batch-result')).toBeVisible()
+      await expect(
+        page.getByTestId('element-batch-update-result')
+      ).toContainText(messages.manage.questionPool.batchUpdateResultSuccess)
+      await expect(
+        page.getByTestId(`element-batch-sharing-result-${mcTitle}`)
+      ).toContainText(messages.manage.questionPool.batchSharingResultShared)
+      await expect(
+        page.getByTestId(`element-batch-sharing-result-${nrTitle}`)
+      ).toContainText(
+        messages.manage.questionPool
+          .batchSharingResultSkippedInsufficientPermission
+      )
+      await page.getByTestId('close-batch-operations-result').click()
+
+      await validateElement(page, nrTitle, [messages.shared.READY.statusLabel])
+
+      await logoutUser()
+      await loginIndividualCatalyst()
+      await validateElement(page, mcTitle)
+      const individualSearchInput = page.getByTestId('elements-search-input')
+      await replaceControlledSearchValue(individualSearchInput, nrTitle)
+      await individualSearchInput.press('Enter')
+      await expect(page.getByTestId(`element-item-${nrTitle}`)).toBeHidden()
+    })
+
     test('Create a single choice question and share it with different permission levels', async ({
       page,
       loginLecturer,
@@ -2003,6 +2158,9 @@ test.describe('Create different types of elements (with and without sample solut
       await expectNotAttached(
         page.getByTestId(`actions-element-${data.SCML.title}`)
       )
+      await expectNotAttached(
+        page.getByTestId(`archive-element-${data.SCML.title}`)
+      )
       await logoutUser()
 
       await loginInstitutionalCatalyst()
@@ -2018,13 +2176,20 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`duplicate-element-${data.SCML.title}`)
       ).toBeVisible()
-      await page.getByTestId(`actions-element-${data.SCML.title}`).click()
+      await openActionMenuByTestId(
+        page,
+        `actions-element-${data.SCML.title}`,
+        `view-activity-log-${data.SCML.title}`
+      )
       await expect(
         page.getByTestId(`view-activity-log-${data.SCML.title}`)
       ).toBeVisible()
       await expect(
         page.getByTestId(`remove-element-${data.SCML.title}`)
       ).toBeVisible()
+      await expectNotAttached(
+        page.getByTestId(`archive-element-${data.SCML.title}`)
+      )
       await logoutUser()
 
       await loginInstitutionalCatalyst2()
@@ -2040,7 +2205,11 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`duplicate-element-${data.SCML.title}`)
       ).toBeVisible()
-      await page.getByTestId(`actions-element-${data.SCML.title}`).click()
+      await openActionMenuByTestId(
+        page,
+        `actions-element-${data.SCML.title}`,
+        `archive-element-${data.SCML.title}`
+      )
       await expect(
         page.getByTestId(`view-activity-log-${data.SCML.title}`)
       ).toBeVisible()
@@ -2050,6 +2219,79 @@ test.describe('Create different types of elements (with and without sample solut
       await expect(
         page.getByTestId(`delete-element-${data.SCML.title}`)
       ).toBeVisible()
+      await expect(
+        page.getByTestId(`archive-element-${data.SCML.title}`)
+      ).toBeVisible()
+    })
+
+    test('ADMIN users can archive and restore an element from its action menu', async ({
+      page,
+      loginInstitutionalCatalyst2,
+    }) => {
+      await loginInstitutionalCatalyst2()
+      await page.getByTestId('elements-search-input').clear()
+      await page.getByTestId('elements-search-input').fill(data.SCML.title)
+      await page.keyboard.press('Enter')
+
+      const element = page.getByTestId(`element-item-${data.SCML.title}`)
+      const archiveSwitch = page.getByTestId('show-archive-switch')
+      const archiveBadge = page.getByTestId(`archive-badge-${data.SCML.title}`)
+      let archiveAttempted = false
+
+      try {
+        await expect(element).toBeVisible()
+        archiveAttempted = true
+        await chooseActionByTestId(
+          page,
+          `actions-element-${data.SCML.title}`,
+          `archive-element-${data.SCML.title}`
+        )
+        await expect(
+          page.getByText(
+            messages.manage.questionPool.elementArchivedSuccessfully
+          )
+        ).toBeVisible()
+        await expect(element).not.toBeAttached()
+
+        await archiveSwitch.click()
+        await expect(element).toBeVisible()
+        await expect(archiveBadge).toBeVisible()
+
+        await chooseActionByTestId(
+          page,
+          `actions-element-${data.SCML.title}`,
+          `unarchive-element-${data.SCML.title}`
+        )
+        await expect(
+          page.getByText(
+            messages.manage.questionPool.elementRestoredSuccessfully
+          )
+        ).toBeVisible()
+        await expect(archiveBadge).not.toBeAttached()
+        archiveAttempted = false
+      } finally {
+        if (archiveAttempted) {
+          if ((await archiveSwitch.getAttribute('aria-checked')) !== 'true') {
+            await archiveSwitch.click()
+          }
+
+          await element.waitFor({ state: 'visible' }).catch(() => undefined)
+          if (await archiveBadge.isVisible().catch(() => false)) {
+            await chooseActionByTestId(
+              page,
+              `actions-element-${data.SCML.title}`,
+              `unarchive-element-${data.SCML.title}`
+            )
+            await expect(archiveBadge).not.toBeAttached()
+          }
+        }
+
+        if ((await archiveSwitch.getAttribute('aria-checked')) === 'true') {
+          await archiveSwitch.click()
+        }
+      }
+
+      await expect(element).toBeVisible()
     })
 
     test('Cleanup: Delete the created question again and verify deletion', async ({

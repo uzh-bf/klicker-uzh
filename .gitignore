@@ -35,6 +35,12 @@ ssl/
 dist/
 trees/
 
+# GraphQL build outputs (the public SDL snapshot remains tracked for review)
+/packages/graphql/src/ops.ts
+/packages/graphql/src/ops.schema.json
+/packages/graphql/src/public/client.json
+/packages/graphql/src/public/server.json
+
 .idea/
 tsconfig.tsbuildinfo
 
@@ -62,6 +68,7 @@ output/
 
 # Devcontainer: runtime-minted Hatchet client token (post-create writes it)
 .devcontainer/.hatchet.env
+.devcontainer/.runtime/
 playwright/playwright-report/
 playwright/test-results/
 
