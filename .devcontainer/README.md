@@ -273,6 +273,11 @@ disabled and the rest of the DevPod still starts normally.
   `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir (the
   container env from `devcontainer.env` is what actually applies).
 - Tier 3 (`chat`) needs an upstream LLM key: set `UPSTREAM_OPENAI_API_KEY`.
+- Real feature-flag evaluation and scoped doc-query calls can be injected from
+  Infisical by setting `GROWTHBOOK_API_HOST`, `GROWTHBOOK_CLIENT_KEY`,
+  `GROWTHBOOK_ENV`, and the four `DOC_QUERY_SCOPE_*` variables before
+  `devrouter ensure`. The compose service passes these values into the
+  container without storing them in the committed environment file.
 - Both MCP servers run plain `tsx` (no `--watch`) — `tsx --watch` is known to
   silently kill long-running Node 24 servers in this repo, so they deliberately
   do not use it in dev (no restart-on-change; restart the app manually via
