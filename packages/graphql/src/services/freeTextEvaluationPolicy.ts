@@ -150,9 +150,9 @@ export async function getSemanticInstance(
       },
     },
   })
-  if (!participation?.isActive) {
+  if (!participation) {
     throw freeTextEvaluationError(
-      'Participant does not have active access to this course',
+      'Participant does not have access to this course',
       'FORBIDDEN'
     )
   }

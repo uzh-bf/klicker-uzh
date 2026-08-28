@@ -1,5 +1,4 @@
 export {
-  type ApplyFreeTextAttemptResponseInTransaction,
   type CreateFreeTextAttemptInput,
   createFreeTextAttempt,
   decideSemanticEvaluationConsent,

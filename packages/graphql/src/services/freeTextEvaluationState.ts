@@ -257,7 +257,8 @@ async function stateFromCycle(
         current.evaluationStatus === DB.FreeTextEvaluationStatus.EVALUATED),
     canRetryEvaluation,
     canRevealSolution:
-      cycle.status === DB.FreeTextPracticeCycleStatus.ACTIVE &&
+      (cycle.status === DB.FreeTextPracticeCycleStatus.ACTIVE ||
+        cycle.status === DB.FreeTextPracticeCycleStatus.UNAVAILABLE) &&
       config.solution_reveal_enabled &&
       current !== null &&
       current.evaluationStatus !== DB.FreeTextEvaluationStatus.PENDING,

@@ -55,7 +55,9 @@ export async function completeFreeTextAttemptEvaluationInTransaction(
   }
   const outcomeBand = mapFreeTextOutcome({
     score: aggregateScore,
-    outcomeBands: config.outcome_bands ?? getDefaultFreeTextOutcomeBands(),
+    outcomeBands:
+      config.outcome_bands ??
+      getDefaultFreeTextOutcomeBands(config.question_language),
   })
   if (!outcomeBand) {
     throw new Error('Validated evaluator result could not be mapped')
@@ -137,20 +139,54 @@ export async function markFreeTextAttemptUnavailable(
   },
   prisma: DB.PrismaClient
 ) {
-  const result = await prisma.freeTextAttempt.updateMany({
-    where: {
-      id: attemptId,
-      evaluationRevision,
-      evaluationStatus: DB.FreeTextEvaluationStatus.PENDING,
-      cycle: { status: DB.FreeTextPracticeCycleStatus.ACTIVE },
-    },
-    data: {
-      evaluationStatus: DB.FreeTextEvaluationStatus.UNAVAILABLE,
-      evaluationSource: null,
-      availabilityReason: reason,
-      retryable,
-      completedAt: new Date(),
-    },
+  return await prisma.$transaction(async (tx) => {
+    const lockedCycles = await tx.$queryRaw<{ id: string }[]>`
+      SELECT cycle."id"
+      FROM "FreeTextPracticeCycle" AS cycle
+      INNER JOIN "FreeTextAttempt" AS attempt
+        ON attempt."cycleId" = cycle."id"
+      WHERE attempt."id" = ${attemptId}
+      FOR UPDATE OF cycle
+    `
+    const cycleId = lockedCycles[0]?.id
+    if (!cycleId) return false
+
+    const completedAt = new Date()
+    const result = await tx.freeTextAttempt.updateMany({
+      where: {
+        id: attemptId,
+        evaluationRevision,
+        evaluationStatus: DB.FreeTextEvaluationStatus.PENDING,
+        cycle: { status: DB.FreeTextPracticeCycleStatus.ACTIVE },
+      },
+      data: {
+        evaluationStatus: DB.FreeTextEvaluationStatus.UNAVAILABLE,
+        evaluationSource: null,
+        availabilityReason: reason,
+        retryable,
+        completedAt,
+      },
+    })
+    if (result.count !== 1) return false
+
+    if (!retryable) {
+      const cycleTransitioned = await tx.freeTextPracticeCycle.updateMany({
+        where: {
+          id: cycleId,
+          status: DB.FreeTextPracticeCycleStatus.ACTIVE,
+        },
+        data: {
+          status: DB.FreeTextPracticeCycleStatus.UNAVAILABLE,
+          endedAt: completedAt,
+        },
+      })
+      if (cycleTransitioned.count !== 1) {
+        throw new Error(
+          'Free-text practice cycle changed while evaluation became unavailable'
+        )
+      }
+    }
+
+    return true
   })
-  return result.count === 1
 }

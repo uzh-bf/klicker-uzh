@@ -1876,6 +1876,7 @@ enum FreeTextPracticeCycleStatus {
   CORRECT
   EXHAUSTED
   SOLUTION_REVEALED
+  UNAVAILABLE
 }
 
 type FreeTextPracticeState {

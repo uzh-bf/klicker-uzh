@@ -5,7 +5,6 @@ import {
 } from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
 import type { ElementOptionsFreeText } from '@klicker-uzh/types'
-import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import type { ContextWithUser } from '@/lib/context.js'
 import {
   assertParticipant,
@@ -25,6 +24,7 @@ import {
   getActiveOrCreateCycle,
   loadCycleState,
 } from './freeTextEvaluationState.js'
+import { applyEvaluatedFreeTextAttemptInTransaction } from './freeTextPracticeResponseApplication.js'
 
 // Absolute ceiling for participant free-text answers on semantic elements,
 // independent of the lecturer-configured maxLength.
@@ -86,11 +86,6 @@ export type CreateFreeTextAttemptInput = {
   clientSubmissionId: string
 }
 
-export type ApplyFreeTextAttemptResponseInTransaction = (
-  args: { attemptId: string },
-  prisma: PrismaTransactionClient
-) => Promise<boolean>
-
 export async function createFreeTextAttempt(
   {
     instanceId,
@@ -99,7 +94,6 @@ export async function createFreeTextAttempt(
     clientSubmissionId,
   }: CreateFreeTextAttemptInput,
   ctx: ContextWithUser,
-  applyResponseInTransaction: ApplyFreeTextAttemptResponseInTransaction,
   options?: FreeTextEvaluationServiceOptions
 ) {
   if (!answer.trim()) {
@@ -198,7 +192,9 @@ export async function createFreeTextAttempt(
         ownerEntitled: ownerHasCatalyst(semanticInstance.practiceQuiz),
         consent: consent?.decision ?? null,
       })
-  const bands = config.outcome_bands ?? getDefaultFreeTextOutcomeBands()
+  const bands =
+    config.outcome_bands ??
+    getDefaultFreeTextOutcomeBands(config.question_language)
   const exactBand = exactMatch
     ? mapFreeTextOutcome({ score: 100, outcomeBands: bands })
     : null
@@ -249,10 +245,11 @@ export async function createFreeTextAttempt(
               'FREE_TEXT_EVALUATION_INVALID_STATE'
             )
           }
-          const responseApplied = await applyResponseInTransaction(
-            { attemptId: created.id },
-            tx
-          )
+          const responseApplied =
+            await applyEvaluatedFreeTextAttemptInTransaction(
+              { attemptId: created.id },
+              tx
+            )
           if (!responseApplied) {
             throw new Error(
               'Exact-match evaluation could not apply its response atomically'
@@ -417,7 +414,8 @@ export async function revealFreeTextSolution(
   const config = semanticInstance.config
   const currentAttempt = cycle.attempts[0]
   if (
-    cycle.status !== DB.FreeTextPracticeCycleStatus.ACTIVE ||
+    (cycle.status !== DB.FreeTextPracticeCycleStatus.ACTIVE &&
+      cycle.status !== DB.FreeTextPracticeCycleStatus.UNAVAILABLE) ||
     !config.solution_reveal_enabled ||
     !currentAttempt ||
     currentAttempt.evaluationStatus === DB.FreeTextEvaluationStatus.PENDING
@@ -437,7 +435,12 @@ export async function revealFreeTextSolution(
     return await prisma.freeTextPracticeCycle.updateMany({
       where: {
         id: cycle.id,
-        status: DB.FreeTextPracticeCycleStatus.ACTIVE,
+        status: {
+          in: [
+            DB.FreeTextPracticeCycleStatus.ACTIVE,
+            DB.FreeTextPracticeCycleStatus.UNAVAILABLE,
+          ],
+        },
         attempts: {
           some: {
             id: currentAttempt.id,

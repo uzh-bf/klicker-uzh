@@ -102,9 +102,6 @@ fragment StackFeedbackEvaluations on StackFeedback {
         value
       }
       correctness
-      semanticState {
-        ...FreeTextPracticeStateData
-      }
     }
 
     ... on SelectionInstanceEvaluation {

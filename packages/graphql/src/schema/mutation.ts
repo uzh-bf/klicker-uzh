@@ -181,14 +181,22 @@ export const Mutation = builder.mutationType({
           clientSubmissionId: t.arg.string({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          return await StacksService.createAndApplyFreeTextAttempt(args, ctx)
+          return await FreeTextEvaluationService.createFreeTextAttempt(
+            args,
+            ctx
+          )
         },
       }),
 
       retryFreeTextEvaluation: t.withAuth(asParticipant).field({
         nullable: false,
         type: FreeTextPracticeStateType,
-        args: { attemptId: t.arg.string({ required: true }) },
+        args: {
+          attemptId: t.arg.string({
+            required: true,
+            validate: { uuid: true },
+          }),
+        },
         resolve: async (_, args, ctx) => {
           return await FreeTextEvaluationService.retryFreeTextEvaluation(
             args,
@@ -200,7 +208,12 @@ export const Mutation = builder.mutationType({
       revealFreeTextSolution: t.withAuth(asParticipant).field({
         nullable: false,
         type: FreeTextPracticeStateType,
-        args: { cycleId: t.arg.string({ required: true }) },
+        args: {
+          cycleId: t.arg.string({
+            required: true,
+            validate: { uuid: true },
+          }),
+        },
         resolve: async (_, args, ctx) => {
           return await FreeTextEvaluationService.revealFreeTextSolution(
             args,

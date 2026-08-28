@@ -1,0 +1,8 @@
+query GetPreviousStackEvaluationV2($stackId: Int!) {
+  getPreviousStackEvaluation(stackId: $stackId) {
+    id
+    status
+    score
+    ...StackFeedbackEvaluationsV2
+  }
+}

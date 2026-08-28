@@ -9,13 +9,13 @@ import {
   markFreeTextAttemptUnavailable,
 } from './freeTextEvaluation.js'
 import {
+  applyEvaluatedFreeTextAttempt,
+  applyEvaluatedFreeTextAttemptInTransaction,
+} from './freeTextPracticeResponseApplication.js'
+import {
   RetryableSemanticEvaluatorError,
   requestSemanticFreeTextEvaluation,
 } from './semanticFreeTextEvaluator.js'
-import {
-  applyFreeTextAttemptResponse,
-  applyFreeTextAttemptResponseInTransaction,
-} from './stacks.js'
 
 export async function handleEvaluateFreeTextAttempt(
   {
@@ -43,7 +43,7 @@ export async function handleEvaluateFreeTextAttempt(
     attempt.evaluationStatus === DB.FreeTextEvaluationStatus.EVALUATED &&
     attempt.questionResponseDetailId === null
   ) {
-    const applied = await applyFreeTextAttemptResponse(
+    const applied = await applyEvaluatedFreeTextAttempt(
       { attemptId },
       globalCtx.prisma
     )
@@ -163,7 +163,7 @@ export async function handleEvaluateFreeTextAttempt(
       )
     if (!evaluationApplied) return false
 
-    const responseApplied = await applyFreeTextAttemptResponseInTransaction(
+    const responseApplied = await applyEvaluatedFreeTextAttemptInTransaction(
       { attemptId },
       tx
     )

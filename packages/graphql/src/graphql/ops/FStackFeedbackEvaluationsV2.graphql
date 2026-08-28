@@ -1,0 +1,10 @@
+fragment StackFeedbackEvaluationsV2 on StackFeedback {
+  ...StackFeedbackEvaluations
+  evaluations {
+    ... on FreeTextInstanceEvaluation {
+      semanticState {
+        ...FreeTextPracticeStateData
+      }
+    }
+  }
+}
