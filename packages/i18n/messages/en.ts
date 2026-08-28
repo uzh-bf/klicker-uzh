@@ -4329,6 +4329,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       catalystRequired: 'Learning analytics require Catalyst access.',
       statusUnavailable:
         'The learning analytics status could not be loaded. Please reload the page or contact support.',
+      courseArchived:
+        'Learning analytics are unavailable for archived courses. Reactivate the course to use its dashboards.',
       courseDisabled:
         'Learning analytics is disabled for this course. A course manager can enable it in the course actions.',
       recomputationPending:

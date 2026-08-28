@@ -14,6 +14,7 @@ export type CourseLearningAnalyticsControl = {
   loading: boolean
   error?: ApolloError
   exists: boolean
+  courseArchived: boolean
   courseEnabled: boolean
   analyticsValid: boolean
   canQueryAnalytics: boolean
@@ -43,6 +44,7 @@ function useCourseLearningAnalyticsControl(
   )
   const refetchInFlight = useRef(false)
   const controlError = entitlementError ?? error
+  const courseArchived = data?.course?.isArchived === true
   const courseEnabled = data?.course?.isLearningAnalyticsEnabled === true
   const analyticsValid =
     data?.course?.analyticsStatus.areAnalyticsValid === true
@@ -82,10 +84,15 @@ function useCourseLearningAnalyticsControl(
     loading: loading || networkStatus === NetworkStatus.refetch,
     error: controlError,
     exists: Boolean(data?.course),
+    courseArchived,
     courseEnabled,
     analyticsValid,
     canQueryAnalytics:
-      hasAccess && !controlError && courseEnabled && analyticsValid,
+      hasAccess &&
+      !controlError &&
+      !courseArchived &&
+      courseEnabled &&
+      analyticsValid,
   }
 }
 

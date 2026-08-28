@@ -17,6 +17,7 @@ const participantId = '30000000-0000-4000-8000-000000000001'
 type AnalyticsReadArgs = {
   where?: {
     id?: string
+    isArchived?: boolean
     isLearningAnalyticsEnabled?: boolean
     areAnalyticsValid?: boolean
   }
@@ -35,9 +36,10 @@ function analyticsContext({
 } = {}) {
   const courseFindUnique = vi.fn(async (args?: AnalyticsReadArgs) => {
     if (
-      args?.where?.isLearningAnalyticsEnabled === true &&
-      args.where.areAnalyticsValid === true &&
-      (!course.isLearningAnalyticsEnabled || !course.areAnalyticsValid)
+      (args?.where?.isArchived === false && course.isArchived === true) ||
+      (args?.where?.isLearningAnalyticsEnabled === true &&
+        args.where.areAnalyticsValid === true &&
+        (!course.isLearningAnalyticsEnabled || !course.areAnalyticsValid))
     ) {
       return null
     }
@@ -144,6 +146,38 @@ describe('learning analytics read gate', () => {
     for (const call of invalid.courseFindUnique.mock.calls) {
       expect(call[0]?.where).toMatchObject({
         id: courseId,
+        isLearningAnalyticsEnabled: true,
+        areAnalyticsValid: true,
+      })
+    }
+  })
+
+  it('returns no V2 analytics for an archived course', async () => {
+    const archived = analyticsContext({
+      course: {
+        isArchived: true,
+        isLearningAnalyticsEnabled: true,
+        areAnalyticsValid: true,
+      },
+    })
+
+    await expect(
+      getCourseActivityAnalyticsV2({ courseId }, archived.ctx)
+    ).resolves.toBeNull()
+    await expect(
+      getCoursePerformanceAnalyticsV2({ courseId }, archived.ctx)
+    ).resolves.toBeNull()
+    await expect(
+      getCourseLearningAnalyticsExportV2(
+        { courseId, format: 'JSON' },
+        archived.ctx
+      )
+    ).resolves.toBeNull()
+
+    for (const call of archived.courseFindUnique.mock.calls) {
+      expect(call[0]?.where).toMatchObject({
+        id: courseId,
+        isArchived: false,
         isLearningAnalyticsEnabled: true,
         areAnalyticsValid: true,
       })

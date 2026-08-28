@@ -46,7 +46,6 @@ function AnalyticsAccessGuard<TData>({
     return (
       <AnalyticsUnavailableView
         title={title}
-        navigation={navigation}
         message={t('manage.analytics.statusUnavailable')}
         type="error"
       />
@@ -63,7 +62,7 @@ function AnalyticsAccessGuard<TData>({
   }
 
   if (control.loading || !courseId) {
-    return <AnalyticsLoadingView title={title} navigation={navigation} />
+    return <AnalyticsLoadingView title={title} navigation={undefined} />
   }
 
   if (!control.exists) {
@@ -73,6 +72,16 @@ function AnalyticsAccessGuard<TData>({
         navigation={navigation}
         message={t('manage.analytics.statusUnavailable')}
         type="error"
+      />
+    )
+  }
+
+  if (control.courseArchived) {
+    return (
+      <AnalyticsUnavailableView
+        title={title}
+        navigation={navigation}
+        message={t('manage.analytics.courseArchived')}
       />
     )
   }

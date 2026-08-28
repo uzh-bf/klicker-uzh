@@ -22,12 +22,10 @@ describe('getUserCourses learning-analytics filter', () => {
       course: {
         isLearningAnalyticsEnabled: true,
         areAnalyticsValid: true,
+        isArchived: false,
       },
     })
-    expect(objects.orderBy).toEqual([
-      { course: { isArchived: 'asc' } },
-      { course: { endDate: 'desc' } },
-    ])
+    expect(objects.orderBy).toEqual([{ course: { endDate: 'desc' } }])
     expect(objects.take).toBe(5)
   })
 

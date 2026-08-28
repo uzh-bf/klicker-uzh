@@ -416,6 +416,53 @@ test.describe('Tests the availability of standard activity creation formats', ()
     }
   })
 
+  test('Fail closed when analytics access state cannot be established', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await page.route('**/graphql', async (route) => {
+      const operation = parseGraphQLOperation(route.request())
+      if (operation?.operationName === 'GetCourseLearningAnalyticsControl') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            errors: [{ message: 'Synthetic analytics control failure' }],
+            data: { course: null },
+          }),
+        })
+        return
+      }
+
+      await route.continue()
+    })
+    const recorder = recordGraphQLOperations(page)
+    await loginLecturer()
+
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await page.goto(`${manageUrl}/analytics/${COURSE_ID_TEST}/activity`)
+    await expect(
+      page.getByText(
+        'The learning analytics status could not be loaded. Please reload the page or contact support.'
+      )
+    ).toBeVisible()
+    await expect(
+      page.getByTestId('analytics-dashboard-navigation')
+    ).not.toBeAttached()
+
+    const operationNames = recorder.operations.map(
+      (operation) => operation.operationName
+    )
+    for (const protectedOperationName of [
+      'GetLearningAnalyticsCourses',
+      V2_ACTIVITY_OPERATION,
+      V2_PERFORMANCE_OPERATION,
+      V2_EXPORT_OPERATION,
+    ]) {
+      expect(operationNames).not.toContain(protectedOperationName)
+    }
+  })
+
   test('Show analytics to a non-manager without exposing course settings', async ({
     page,
     loginIndividualCatalyst,
@@ -451,6 +498,48 @@ test.describe('Tests the availability of standard activity creation formats', ()
     ).toBeVisible()
   })
 
+  test('Exclude archived courses from analytics selectors and V2 requests', async ({
+    page,
+    loginLecturer,
+  }) => {
+    await prepareSeededLearningAnalyticsV2({ eligibleParticipants: 5 })
+    const prisma = await getPrisma()
+    await prisma.course.update({
+      where: { id: COURSE_ID_TEST },
+      data: { isArchived: true },
+    })
+    const recorder = recordGraphQLOperations(page)
+
+    try {
+      await loginLecturer()
+      const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+      await page.goto(`${manageUrl}/analytics/${COURSE_ID_TEST}/activity`)
+      await expect(
+        page.getByText(
+          'Learning analytics are unavailable for archived courses.'
+        )
+      ).toBeVisible()
+      expect(
+        recorder.operations.some(
+          ({ operationName }) => operationName === V2_ACTIVITY_OPERATION
+        )
+      ).toBe(false)
+
+      await page.goto(`${manageUrl}/analytics`)
+      await expect(
+        page.getByTestId(`activity-dashboard-button-${SEEDED_COURSE}`)
+      ).not.toBeAttached()
+      await expect(
+        page.getByTestId(`performance-dashboard-button-${SEEDED_COURSE}`)
+      ).not.toBeAttached()
+    } finally {
+      await prisma.course.update({
+        where: { id: COURSE_ID_TEST },
+        data: { isArchived: false },
+      })
+    }
+  })
+
   test('Release deidentified V2 analytics at N=5 in EN desktop and DE mobile', async ({
     page,
     loginLecturer,
@@ -462,9 +551,6 @@ test.describe('Tests the availability of standard activity creation formats', ()
     await page.setViewportSize(viewPorts.default)
     await page.goto(analyticsUrl('en', 'activity'))
     await expect(page.locator('html')).toHaveAttribute('lang', 'en')
-    await expect(page.getByTestId('analytics-activity-v2')).toBeVisible()
-    await expect(page.getByTestId('analytics-effective-n')).toContainText('5')
-    await expectV2DashboardNavigation(page)
 
     const activityRecord = await waitForGraphQLResponse(
       recorder,
@@ -473,6 +559,10 @@ test.describe('Tests the availability of standard activity creation formats', ()
     const activityData = withoutTypenames(
       graphQLResponseField(activityRecord, 'getCourseActivityAnalyticsV2')
     )
+    await expect(page.getByTestId('analytics-activity-v2')).toBeVisible()
+    await expect(page.getByTestId('analytics-effective-n')).toContainText('5')
+    await expectV2DashboardNavigation(page)
+
     expect(activityData).toEqual({
       isSuppressed: false,
       effectiveN: 5,

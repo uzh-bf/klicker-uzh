@@ -62,9 +62,11 @@ The public coordinator and V2 course reads require both gates. Browser
 navigation and direct analytics routes also require both the GrowthBook flag and
 the cached Catalyst entitlement before issuing analytics queries. Mounted V2
 queries stop when either gate, the course control, or the control-query health
-becomes unavailable. The global Manage header uses a dedicated operation that
-filters eligible courses in the database and returns at most five menu entries;
-the analytics overview retains its complete course list. Course
+becomes unavailable; an access-state error also suppresses dashboard navigation.
+Archived courses are excluded from selectors and cannot issue V2 queries. The
+global Manage header uses a dedicated operation that filters eligible active
+courses in the database and returns at most five menu entries; the analytics
+overview retains its complete eligible active course list. Course
 controls additionally require their existing full-access role and course
 permission. Enabling a course requires private-service availability, while
 disabling remains available during an outage so lecturers can hide individual
@@ -78,6 +80,10 @@ selection, deadline, course-spawn, course-start, and completion boundaries and
 again immediately before each public or private child dispatch. No new work
 starts and no result is published after a worker observes either setting as
 unavailable. The default remains unavailable.
+
+The local and CI browser harness enables the availability switch explicitly
+through `util/_with_local_test_origins.sh`; production remains opt-in through
+deployment configuration.
 
 ## Package contract
 

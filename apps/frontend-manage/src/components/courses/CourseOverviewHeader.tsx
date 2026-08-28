@@ -101,6 +101,8 @@ function CourseOverviewHeader({
     courseLearningAnalyticsTooltip = t('manage.analytics.featureUnavailable')
   } else if (!user?.catalyst) {
     courseLearningAnalyticsTooltip = t('manage.analytics.catalystRequired')
+  } else if (course.isArchived) {
+    courseLearningAnalyticsTooltip = t('manage.analytics.courseArchived')
   } else if (!courseLearningAnalyticsEnabled) {
     courseLearningAnalyticsTooltip = t('manage.analytics.courseDisabled')
   } else if (!courseLearningAnalyticsValid) {

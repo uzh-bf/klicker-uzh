@@ -166,6 +166,7 @@ export async function prepareSeededCourseLearningAnalytics({
   await prisma.course.update({
     where: { id: COURSE_ID_TEST },
     data: {
+      isArchived: false,
       isLearningAnalyticsEnabled: enabled,
       areAnalyticsValid: valid,
       analyticsLastComputedAt: computedAt,
@@ -234,6 +235,7 @@ export async function prepareSeededLearningAnalyticsV2({
     await transaction.course.update({
       where: { id: COURSE_ID_TEST },
       data: {
+        isArchived: false,
         isLearningAnalyticsEnabled: true,
         areAnalyticsValid: true,
         analyticsLastComputedAt,

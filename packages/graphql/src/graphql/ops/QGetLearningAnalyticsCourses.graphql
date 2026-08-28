@@ -4,6 +4,7 @@ query GetLearningAnalyticsCourses {
     name
     startDate
     endDate
+    isArchived
     isLearningAnalyticsEnabled
     analyticsStatus {
       areAnalyticsValid

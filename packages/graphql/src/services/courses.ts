@@ -2966,6 +2966,7 @@ export async function getUserCourses(
                 course: {
                   isLearningAnalyticsEnabled: true,
                   areAnalyticsValid: true,
+                  isArchived: false,
                 },
               }
             : {}),
@@ -2982,9 +2983,7 @@ export async function getUserCourses(
             },
           },
         },
-        orderBy: learningAnalyticsOnly
-          ? [{ course: { isArchived: 'asc' } }, { course: { endDate: 'desc' } }]
-          : [{ course: { endDate: 'desc' } }],
+        orderBy: [{ course: { endDate: 'desc' } }],
         ...(learningAnalyticsOnly ? { take: 5 } : {}),
       },
     },
