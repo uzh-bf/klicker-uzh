@@ -173,7 +173,11 @@ function ContentInput({
       <Slate
         editor={editor}
         initialValue={editorValue}
-        onChange={(newValue) => onChange(convertToMd(newValue))}
+        onChange={(newValue) => {
+          if (!disabled) {
+            onChange(convertToMd(newValue))
+          }
+        }}
       >
         <div className={twMerge('p-3', className?.content)}>
           <Editable
@@ -187,6 +191,8 @@ function ContentInput({
             aria-describedby={ariaDescribedBy}
             aria-required={ariaRequired}
             aria-invalid={ariaInvalid}
+            aria-disabled={disabled}
+            readOnly={disabled}
             spellCheck
             placeholder={placeholder}
             renderElement={renderElement}
