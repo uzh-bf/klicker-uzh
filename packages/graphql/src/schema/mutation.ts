@@ -2,6 +2,7 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
+import { requireCatalystLearningAnalyticsAvailable } from '../lib/learningAnalyticsAvailability.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
 import * as ChatbotsService from '../services/chatbots.js'
@@ -124,6 +125,10 @@ export const Mutation = builder.mutationType({
       scope: DB.UserLoginScope.SESSION_EXEC,
     }
     const asUserFullAccess = { ...asUser, scope: DB.UserLoginScope.FULL_ACCESS }
+    const asUserFullAccessWithCatalyst = {
+      ...asUserFullAccess,
+      catalyst: true,
+    }
     const asUserFullAccessForStandardActivities = asUserFullAccess
     const asUserOwner = { ...asUser, scope: DB.UserLoginScope.ACCOUNT_OWNER }
     const courseCreationArgs = {
@@ -1434,6 +1439,30 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
+      setCourseLearningAnalyticsEnabled: t
+        .withAuth(asUserFullAccessWithCatalyst)
+        .field({
+          nullable: true,
+          type: Course,
+          args: {
+            courseId: t.arg.string({ required: true }),
+            isEnabled: t.arg.boolean({ required: true }),
+          },
+          resolve: withPermission(
+            (args) => ({ courseId: args.courseId }),
+            DB.PermissionLevel.ADMIN,
+            async (_, args, ctx) => {
+              if (args.isEnabled) {
+                requireCatalystLearningAnalyticsAvailable()
+              }
+              return await CourseService.setCourseLearningAnalyticsEnabled(
+                args,
+                ctx
+              )
+            }
+          ),
+        }),
+
       updateCourseSettings: t.withAuth(asUserFullAccess).field({
         nullable: true,
         type: Course,
@@ -1511,29 +1540,31 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      recomputeCourseAnalytics: t.withAuth(asUserFullAccess).boolean({
-        nullable: true,
-        args: {
-          courseId: t.arg.string({ required: true }),
-          mode: t.arg({ type: AnalyticsMode, required: true }),
-        },
-        resolve: withPermission(
-          (args) => ({ courseId: args.courseId }),
-          DB.PermissionLevel.ADMIN,
-          async (_, args, ctx) => {
-            const modeByApiValue = {
-              INCREMENTAL: 'incremental',
-              FINALIZE: 'finalize',
-              FULL: 'full',
-            } as const
+      recomputeCourseAnalytics: t
+        .withAuth(asUserFullAccessWithCatalyst)
+        .boolean({
+          nullable: true,
+          args: {
+            courseId: t.arg.string({ required: true }),
+            mode: t.arg({ type: AnalyticsMode, required: true }),
+          },
+          resolve: withPermission(
+            (args) => ({ courseId: args.courseId }),
+            DB.PermissionLevel.ADMIN,
+            async (_, args, ctx) => {
+              const modeByApiValue = {
+                INCREMENTAL: 'incremental',
+                FINALIZE: 'finalize',
+                FULL: 'full',
+              } as const
 
-            return await LearningAnalyticsCoordinatorService.dispatchCourseLearningAnalytics(
-              { courseId: args.courseId, mode: modeByApiValue[args.mode] },
-              ctx
-            )
-          }
-        ),
-      }),
+              return await LearningAnalyticsCoordinatorService.dispatchCourseLearningAnalytics(
+                { courseId: args.courseId, mode: modeByApiValue[args.mode] },
+                ctx
+              )
+            }
+          ),
+        }),
 
       recomputeLearningAnalyticsBatch: t.withAuth(asAdmin).boolean({
         nullable: true,

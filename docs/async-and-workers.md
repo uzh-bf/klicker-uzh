@@ -139,13 +139,30 @@ independent courses to use the available batch capacity.
 
 ### Default-off configuration
 
-The coordinator is disabled unless
-`LEARNING_ANALYTICS_COORDINATOR_ENABLED` is exactly `true`. With the variable
-unset or any other value, the scheduled preparation returns no batch and GraphQL
-dispatch is rejected as disabled. There is no guessed in-flight default:
-`LEARNING_ANALYTICS_BATCH_IN_FLIGHT_LIMIT` must be configured and valid when a
-batch is prepared. These are code-level safeguards; this page does not claim
-deployment, activation, or live qualification.
+The coordinator is enabled only when both
+`LEARNING_ANALYTICS_COORDINATOR_ENABLED` and
+`CATALYST_LEARNING_ANALYTICS_AVAILABLE` are exactly `true`. The latter is a
+deployment-global configuration for the private learning-analytics service; it
+does not probe service health, provider reachability, or a URL. With either
+variable unset or any other value, scheduled preparation returns no batch and
+GraphQL dispatch is rejected before course data or Hatchet work is accessed.
+Availability failures use the stable
+`CATALYST_LEARNING_ANALYTICS_UNAVAILABLE` GraphQL error code; an explicitly
+disabled coordinator retains `LEARNING_ANALYTICS_COORDINATOR_DISABLED`. There
+is no guessed in-flight default: `LEARNING_ANALYTICS_BATCH_IN_FLIGHT_LIMIT`
+must be configured and valid when a batch is prepared. These are code-level
+safeguards; this page does not claim deployment, activation, or live
+qualification.
+
+Already queued or resumed Hatchet workflows recheck both settings before
+selection, deadline calculation, each course spawn, course invalidation and
+private dispatch, and result publication. Durable workflows also perform a
+non-recorded current-process check immediately before every public or private
+child dispatch, so replay cannot reuse an earlier successful check to start new
+work. Private work that was already running may finish, but its completion stays
+guarded and cannot publish while unavailable. A course administrator can still
+disable learning analytics during an outage; enabling and every recomputation
+path remain fail-closed.
 
 ## Running locally (config-derived — verify on your machine)
 

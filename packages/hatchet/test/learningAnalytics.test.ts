@@ -110,7 +110,10 @@ function prepare(
     task: register,
     durableTask: register,
   }
-  const handlers = handlerOverrides
+  const handlers = {
+    handleRequireLearningAnalyticsCoordinatorAvailable: () => {},
+    ...handlerOverrides,
+  }
   const tasks = prepareLearningAnalyticsTasks({
     hatchet: fakeHatchet as never,
     handlers: handlers as never,
@@ -273,6 +276,76 @@ describe('@klicker-uzh/hatchet learning-analytics coordinator', () => {
       })
     )
     expect(privateInputs[0]).not.toHaveProperty('fenceAt')
+  })
+
+  it('rechecks current availability after a replayed start before private course dispatch', async () => {
+    let checks = 0
+    const runNoWaitChild = vi.fn(async () => resolvedRef(undefined))
+    const { definitions } = prepare({
+      handleRequireLearningAnalyticsCoordinatorAvailable: () => {
+        checks++
+        if (checks === 2) throw new Error('analytics unavailable')
+      },
+    })
+    const context: FakeExecutionContext = {
+      runChild: async () => ({
+        courseId: COURSE_IDS[0],
+        request: courseInput(COURSE_IDS[0]),
+        cleanupOnly: false,
+        fenceAt: '2026-08-27T02:00:00.000Z',
+      }),
+      runNoWaitChild,
+      bulkRunNoWaitChildren: async () => [],
+      sleepFor: async () => {},
+    }
+
+    await expect(
+      task(definitions, 'learning-analytics-public-course-v1').fn(
+        courseInput(COURSE_IDS[0]),
+        context
+      )
+    ).rejects.toThrow('analytics unavailable')
+    expect(checks).toBe(2)
+    expect(runNoWaitChild).not.toHaveBeenCalled()
+  })
+
+  it('rechecks current availability after private work before completion dispatch', async () => {
+    let checks = 0
+    const runNoWaitChild = vi.fn(async (_workflow: TaskDefinition | string) =>
+      resolvedRef({
+        ...courseInput(COURSE_IDS[0]),
+        completedAt: '2026-08-27T03:00:00Z',
+      })
+    )
+    const { definitions } = prepare({
+      handleRequireLearningAnalyticsCoordinatorAvailable: () => {
+        checks++
+        if (checks === 3) throw new Error('analytics unavailable')
+      },
+    })
+    const context: FakeExecutionContext = {
+      runChild: async () => ({
+        courseId: COURSE_IDS[0],
+        request: courseInput(COURSE_IDS[0]),
+        cleanupOnly: false,
+        fenceAt: '2026-08-27T02:00:00.000Z',
+      }),
+      runNoWaitChild,
+      bulkRunNoWaitChildren: async () => [],
+      sleepFor: async () => {},
+    }
+
+    await expect(
+      task(definitions, 'learning-analytics-public-course-v1').fn(
+        courseInput(COURSE_IDS[0]),
+        context
+      )
+    ).rejects.toThrow('analytics unavailable')
+    expect(checks).toBe(3)
+    expect(runNoWaitChild).toHaveBeenCalledOnce()
+    expect(runNoWaitChild.mock.calls[0]?.[0]).toBe(
+      'learning-analytics-course-v1'
+    )
   })
 
   it('uses the effective request from start for private and completion dispatch', async () => {
@@ -680,6 +753,36 @@ describe('@klicker-uzh/hatchet learning-analytics coordinator', () => {
     })
   })
 
+  it('rechecks current availability after a replayed spawn gate before course dispatch', async () => {
+    let checks = 0
+    const runNoWaitChild = vi.fn(async () => resolvedRef(undefined))
+    const { definitions } = prepare({
+      handleRequireLearningAnalyticsCoordinatorAvailable: () => {
+        checks++
+        if (checks === 2) throw new Error('analytics unavailable')
+      },
+    })
+    const context: FakeExecutionContext = {
+      runChild: async () => ({ canStart: true }),
+      runNoWaitChild,
+      bulkRunNoWaitChildren: async () => [],
+      sleepFor: async () => {},
+    }
+
+    await expect(
+      task(definitions, 'learning-analytics-public-batch-lane-v1').fn(
+        {
+          runId: RUN_ID,
+          courses: [courseInput(COURSE_IDS[0])],
+          stopSpawningAt: '2026-08-27T05:45:00+02:00',
+        },
+        context
+      )
+    ).rejects.toThrow('analytics unavailable')
+    expect(checks).toBe(2)
+    expect(runNoWaitChild).not.toHaveBeenCalled()
+  })
+
   it('stops a lane when cancellation arrives while its spawn gate runs', async () => {
     const runNoWaitChild = vi.fn(async () => resolvedRef(undefined))
     const { definitions } = prepare()
@@ -828,6 +931,37 @@ describe('@klicker-uzh/hatchet learning-analytics coordinator', () => {
       platformCompletedAt: '2026-08-27T04:00:00Z',
     })
     expect(sleepFor).toHaveBeenCalledWith('3600s', `hard-deadline:${RUN_ID}`)
+  })
+
+  it('rechecks current availability after replayed batch work before private platform dispatch', async () => {
+    let checks = 0
+    const runNoWaitChild = vi.fn(async (workflow: TaskDefinition | string) => {
+      expect(typeof workflow === 'string' ? workflow : workflow.name).toBe(
+        'learning-analytics-batch-selector'
+      )
+      return resolvedRef({ courses: [] })
+    })
+    const { definitions } = prepare({
+      handleRequireLearningAnalyticsCoordinatorAvailable: () => {
+        checks++
+        if (checks === 3) throw new Error('analytics unavailable')
+      },
+    })
+    const context: FakeExecutionContext = {
+      runChild: async () => ({ remainingSeconds: 3600 }),
+      runNoWaitChild,
+      bulkRunNoWaitChildren: async () => [],
+      sleepFor: () => new Promise<void>(() => {}),
+    }
+
+    await expect(
+      task(definitions, 'learning-analytics-public-batch-v1').fn(
+        batchInput({ includePlatform: true }),
+        context
+      )
+    ).rejects.toThrow('analytics unavailable')
+    expect(checks).toBe(3)
+    expect(runNoWaitChild).toHaveBeenCalledOnce()
   })
 
   it('does not dispatch an empty course-lane bulk request', async () => {

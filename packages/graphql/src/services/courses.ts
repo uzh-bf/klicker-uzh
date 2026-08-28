@@ -2683,6 +2683,60 @@ export async function createCourse(
   return course
 }
 
+export async function setCourseLearningAnalyticsEnabled(
+  { courseId, isEnabled }: { courseId: string; isEnabled: boolean },
+  ctx: ContextWithUser
+) {
+  return ctx.prisma.$transaction(async (transaction) => {
+    await lockLearningAnalyticsCourseMutation(transaction, courseId)
+
+    const current = await transaction.course.findUnique({
+      where: { id: courseId },
+      select: { isLearningAnalyticsEnabled: true },
+    })
+    if (!current) return null
+
+    if (current.isLearningAnalyticsEnabled === isEnabled) {
+      return transaction.course.findUnique({ where: { id: courseId } })
+    }
+
+    const invalidationData =
+      await getLearningAnalyticsInvalidationData(transaction)
+
+    return transaction.course.update({
+      where: { id: courseId },
+      data: {
+        isLearningAnalyticsEnabled: isEnabled,
+        ...invalidationData,
+      },
+    })
+  })
+}
+
+async function getLearningAnalyticsInvalidationData(
+  transaction: PrismaTransactionClient
+) {
+  const invalidationRows = await transaction.$queryRaw<
+    Array<{ invalidatedAt: Date }>
+  >(DB.Prisma.sql`
+    SELECT clock_timestamp() AS "invalidatedAt"
+  `)
+  const invalidatedAt = invalidationRows[0]?.invalidatedAt
+  if (
+    !(invalidatedAt instanceof Date) ||
+    Number.isNaN(invalidatedAt.valueOf())
+  ) {
+    throw new Error('PostgreSQL did not return an analytics invalidation time')
+  }
+
+  return {
+    areAnalyticsValid: false,
+    analyticsLastComputedAt: invalidatedAt,
+    analyticsFinalizedAt: null,
+    chatAnalyticsValidAt: null,
+  }
+}
+
 export async function toggleArchiveCourse(
   { id, isArchived }: { id: string; isArchived: boolean },
   ctx: ContextWithUser
@@ -2695,35 +2749,15 @@ export async function toggleArchiveCourse(
       select: { isArchived: true },
     })
     const restoresArchivedCourse = !isArchived && current?.isArchived
-    const invalidationRows = restoresArchivedCourse
-      ? await transaction.$queryRaw<Array<{ invalidatedAt: Date }>>(DB.Prisma
-          .sql`
-          SELECT clock_timestamp() AS "invalidatedAt"
-        `)
-      : []
-    const invalidatedAt = invalidationRows[0]?.invalidatedAt
-    if (
-      restoresArchivedCourse &&
-      (!(invalidatedAt instanceof Date) ||
-        Number.isNaN(invalidatedAt.valueOf()))
-    ) {
-      throw new Error(
-        'PostgreSQL did not return an analytics invalidation time'
-      )
-    }
+    const invalidationData = restoresArchivedCourse
+      ? await getLearningAnalyticsInvalidationData(transaction)
+      : undefined
 
     return transaction.course.update({
       where: { id, endDate: { lte: now } },
       data: {
         isArchived,
-        ...(restoresArchivedCourse
-          ? {
-              areAnalyticsValid: false,
-              analyticsLastComputedAt: invalidatedAt,
-              chatAnalyticsValidAt: null,
-              analyticsFinalizedAt: null,
-            }
-          : {}),
+        ...(invalidationData ?? {}),
       },
     })
   })

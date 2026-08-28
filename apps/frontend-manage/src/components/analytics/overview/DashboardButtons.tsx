@@ -3,7 +3,6 @@ import { Button } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import ActivityDashboardLabel from './ActivityDashboardLabel'
 import PerformanceDashboardLabel from './PerformanceDashboardLabel'
-import QuizDashboardLabel from './QuizDashboardLabel'
 
 function DashboardButtons({ course }: { course: Pick<Course, 'id' | 'name'> }) {
   const router = useRouter()
@@ -23,11 +22,6 @@ function DashboardButtons({ course }: { course: Pick<Course, 'id' | 'name'> }) {
           href: `/analytics/${course.id}/performance`,
           label: <PerformanceDashboardLabel />,
           cy: `performance-dashboard-button-${course.name}`,
-        },
-        {
-          href: `/analytics/${course.id}/quizzes`,
-          label: <QuizDashboardLabel />,
-          cy: `quiz-dashboard-button-${course.name}`,
         },
       ].map((button, ix) => (
         <Button

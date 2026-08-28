@@ -41,9 +41,39 @@ The former `User.publicPreview` field is no longer selected by that operation
 and is not authoritative for learning analytics. The Prisma and public GraphQL
 fields remain available for other consumers and a later cleanup.
 
-Direct analytics routes remain reachable to authenticated lecturers. The flag
-controls product affordances, not authorization; routes and APIs continue to
-enforce their own access rules.
+Direct analytics routes remain reachable to authenticated lecturers, but they
+render an unavailable state while the flag is off. When the flag is on, course
+dashboards remain unavailable until the course control is enabled and a fresh
+recomputation is valid. The flag controls product affordances, not
+authorization; routes and APIs continue to enforce their own access rules.
+
+## Catalyst learning-analytics availability
+
+Learning analytics has two independent backend gates. The `catalyst` GraphQL
+scope checks that the caller has institutional or individual Catalyst
+entitlement. The deployment-global `CATALYST_LEARNING_ANALYTICS_AVAILABLE`
+variable checks that the private learning-analytics service is deployed for this
+Klicker environment. It is true only when its value is exactly `true`; unset,
+empty, or any other value is unavailable. This is an explicit deployment
+configuration, not a GrowthBook flag, provider probe, health check, or URL
+reachability test.
+
+The public coordinator and V2 course reads require both gates. Browser
+navigation and direct analytics routes also require both the GrowthBook flag and
+the cached Catalyst entitlement before issuing analytics queries. Course
+controls additionally require their existing full-access role and course
+permission. Enabling a course requires private-service availability, while
+disabling remains available during an outage so lecturers can hide individual
+analytics immediately. A
+missing availability setting otherwise fails closed with the stable
+`CATALYST_LEARNING_ANALYTICS_UNAVAILABLE` GraphQL error code before any
+analytics service call. The platform-admin batch keeps its existing admin-role
+entitlement, but its coordinator dispatch still requires the same runtime
+availability gate. Resumed Hatchet tasks recheck both coordinator settings at
+selection, deadline, course-spawn, course-start, and completion boundaries and
+again immediately before each public or private child dispatch. No new work
+starts and no result is published after a worker observes either setting as
+unavailable. The default remains unavailable.
 
 ## Package contract
 

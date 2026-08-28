@@ -2,6 +2,7 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import type { PrismaTransactionContextWithUser } from '@/lib/context.js'
 import builder from '../builder.js'
+import { requireCatalystLearningAnalyticsAvailable } from '../lib/learningAnalyticsAvailability.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivityService from '../services/activities.js'
 import * as AnalyticsService from '../services/analytics.js'
@@ -28,8 +29,12 @@ import {
 import {
   ActivityType,
   CourseActivityAnalytics,
+  CourseActivityAnalyticsV2,
   CoursePerformanceAnalytics,
+  CoursePerformanceAnalyticsV2,
   ElementFeedback,
+  LearningAnalyticsExportFormatV2,
+  LearningAnalyticsExportV2,
   QuizAnalytics,
   WeeklyCourseActivities,
 } from './analytics.js'
@@ -133,6 +138,7 @@ export const Query = builder.queryType({
   fields(t) {
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
+    const asUserWithCatalyst = { ...asUser, catalyst: true }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
 
     return {
@@ -1311,6 +1317,22 @@ export const Query = builder.queryType({
         ),
       }),
 
+      getCourseActivityAnalyticsV2: t.withAuth(asUserWithCatalyst).field({
+        nullable: true,
+        type: CourseActivityAnalyticsV2,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            requireCatalystLearningAnalyticsAvailable()
+            return AnalyticsService.getCourseActivityAnalyticsV2(args, ctx)
+          }
+        ),
+      }),
+
       getCourseWeeklyActivity: t.withAuth(asUser).field({
         nullable: true,
         type: WeeklyCourseActivities,
@@ -1355,6 +1377,45 @@ export const Query = builder.queryType({
           DB.PermissionLevel.READ,
           async (_, args, ctx) => {
             return await AnalyticsService.getCoursePerformanceAnalytics(
+              args,
+              ctx
+            )
+          }
+        ),
+      }),
+
+      getCoursePerformanceAnalyticsV2: t.withAuth(asUserWithCatalyst).field({
+        nullable: true,
+        type: CoursePerformanceAnalyticsV2,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            requireCatalystLearningAnalyticsAvailable()
+            return AnalyticsService.getCoursePerformanceAnalyticsV2(args, ctx)
+          }
+        ),
+      }),
+
+      getCourseLearningAnalyticsExportV2: t.withAuth(asUserWithCatalyst).field({
+        nullable: true,
+        type: LearningAnalyticsExportV2,
+        args: {
+          courseId: t.arg.string({ required: true }),
+          format: t.arg({
+            type: LearningAnalyticsExportFormatV2,
+            required: true,
+          }),
+        },
+        resolve: withPermission(
+          (args) => ({ courseId: args.courseId }),
+          DB.PermissionLevel.READ,
+          async (_, args, ctx) => {
+            requireCatalystLearningAnalyticsAvailable()
+            return AnalyticsService.getCourseLearningAnalyticsExportV2(
               args,
               ctx
             )

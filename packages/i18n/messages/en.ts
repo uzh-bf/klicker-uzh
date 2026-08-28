@@ -3203,6 +3203,15 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       showDetails: 'Show course details',
       selectCourse: 'Please select a course',
       createNewCourse: 'Create new course',
+      learningAnalyticsEnabled: 'Enable learning analytics',
+      learningAnalyticsExplanation:
+        'Learning analytics uses course activity, progress, response performance, scores, and feedback ratings. Lecturer output is aggregated or de-identified. It never includes names, email addresses, participant IDs, free-text responses, or participant consent choices.',
+      learningAnalyticsEnableNotice:
+        'Dashboards remain unavailable until the next successful overnight recomputation.',
+      learningAnalyticsDisableNotice:
+        'Dashboards become unavailable immediately. Individual derived analytics are removed during the next successful overnight cycle. Aggregate analytics remain stored until ordinary recomputation. Canonical course activity, responses, feedback, grades, points, and XP are unchanged.',
+      learningAnalyticsUpdateFailed:
+        'Learning analytics could not be updated. Please try again or contact support.',
       changeAvailabilityDateMicrolearnings:
         'The availability of microlearnings will be adjusted according to the new course dates based on the offset to the original course start date.',
       changeAvailabilityDateGroupActivities:
@@ -3375,6 +3384,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       shareCourse: 'Share course',
       duplicateCourse: 'Duplicate course',
       learningAnalytics: 'Learning Analytics',
+      learningAnalyticsSettings: 'Learning analytics settings',
       moreCourseActions: 'More course actions',
       pointCorrections: 'Point Corrections',
       assessmentResults: 'Assessment Results',
@@ -4316,9 +4326,43 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       quizAnalytics: 'Quiz Analytics',
       featureUnavailable:
         'Learning analytics are not available for your account yet.',
+      catalystRequired: 'Learning analytics require Catalyst access.',
+      statusUnavailable:
+        'The learning analytics status could not be loaded. Please reload the page or contact support.',
+      courseDisabled:
+        'Learning analytics is disabled for this course. A course manager can enable it in the course actions.',
+      recomputationPending:
+        'Learning analytics is being prepared for this course. Dashboards become available after the next successful recomputation.',
       analyticsLoadingWait: 'Loading analytics data. Please wait...',
       analyticsLoadingFailed:
         'An error occurred while loading the analytics data. Please try again later or contact the support.',
+      suppressedV2:
+        'The result does not meet the release threshold. To protect privacy, no participant count is displayed.',
+      releasedSampleSizeV2: 'Released effective N',
+      effectiveNV2: 'Effective N: {number}',
+      effectiveNLabelV2: 'Effective N',
+      weeklyActivityV2: 'Released weekly activity',
+      noReleasedWeeklyCellsV2:
+        'The overall result is released, but no weekly cell meets the release threshold.',
+      activitySummariesV2: 'Released activity summaries',
+      noReleasedActivitySummariesV2:
+        'No activity summary meets the release threshold.',
+      activityNV2: 'Activity {number}',
+      activityTypeV2: 'Type',
+      completionPercentV2: 'Completion',
+      correctnessPercentV2: 'Correctness',
+      correctnessUnavailableV2: 'Unavailable',
+      percentV2: '{number}%',
+      studentReportV2: 'De-identified student report',
+      randomizedLabelsV2:
+        'Student labels are de-identified and freshly randomized for each report. Labels in a download can differ from this view.',
+      studentLabelV2: 'Student',
+      completedActivitiesV2: 'Completed activities',
+      meanCompletionV2: 'Mean completion',
+      exportCsvV2: 'Download CSV',
+      exportJsonV2: 'Download JSON',
+      exportFailedV2:
+        'The de-identified report could not be downloaded. Please try again.',
       weeklyStudentActivity: 'Weekly Student Activity',
       dailyStudentActivity: 'Daily Student Activity',
       totalParticipants: 'Course participants: {number}',

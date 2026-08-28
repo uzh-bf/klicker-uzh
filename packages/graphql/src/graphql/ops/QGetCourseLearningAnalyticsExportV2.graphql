@@ -1,0 +1,12 @@
+query GetCourseLearningAnalyticsExportV2(
+  $courseId: String!
+  $format: LearningAnalyticsExportFormatV2!
+) {
+  getCourseLearningAnalyticsExportV2(courseId: $courseId, format: $format) {
+    format
+    filename
+    mimeType
+    effectiveN
+    content
+  }
+}

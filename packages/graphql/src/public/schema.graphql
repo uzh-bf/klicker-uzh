@@ -1012,6 +1012,7 @@ type Course {
   isGamificationEnabled: Boolean!
   isGroupCreationEnabled: Boolean!
   isGroupDeadlinePassed: Boolean
+  isLearningAnalyticsEnabled: Boolean!
   isManager: Boolean
   isOwner: Boolean
   isRemovable: Boolean
@@ -1047,6 +1048,12 @@ type CourseActivityAnalytics {
   participantCourseAnalytics: [ParticipantCourseActivity!]!
   totalParticipants: Int!
   weeklyActivity: [ParticipantActivityTimestamp!]!
+}
+
+type CourseActivityAnalyticsV2 {
+  effectiveN: Int
+  isSuppressed: Boolean!
+  weeklyActivity: [LearningAnalyticsWeeklyActivityV2!]!
 }
 
 type CourseActivityItem {
@@ -1137,6 +1144,13 @@ type CoursePerformanceAnalytics {
   participantActivityPerformances: [ParticipantActivityPerformances!]!
   participantPerformances: [ParticipantPerformance!]!
   totalParticipants: Int!
+}
+
+type CoursePerformanceAnalyticsV2 {
+  activitySummaries: [LearningAnalyticsActivitySummaryV2!]!
+  effectiveN: Int
+  isSuppressed: Boolean!
+  studentReport: LearningAnalyticsStudentReportV2!
 }
 
 type CourseStudentTimeline {
@@ -1827,6 +1841,44 @@ type LeaderboardStatistics {
   participantCount: Int!
 }
 
+type LearningAnalyticsActivitySummaryV2 {
+  activityIndex: Int!
+  activityType: ActivityType!
+  completionPercent: Int!
+  correctPercent: Int
+  effectiveN: Int!
+}
+
+enum LearningAnalyticsExportFormatV2 {
+  CSV
+  JSON
+}
+
+type LearningAnalyticsExportV2 {
+  content: String!
+  effectiveN: Int!
+  filename: String!
+  format: LearningAnalyticsExportFormatV2!
+  mimeType: String!
+}
+
+type LearningAnalyticsStudentReportV2 {
+  effectiveN: Int
+  isSuppressed: Boolean!
+  students: [LearningAnalyticsStudentSummaryV2!]!
+}
+
+type LearningAnalyticsStudentSummaryV2 {
+  completedActivities: Int!
+  meanCompletionPercent: Int!
+  studentLabel: String!
+}
+
+type LearningAnalyticsWeeklyActivityV2 {
+  effectiveN: Int!
+  periodIndex: Int!
+}
+
 type LeaveCourseParticipation {
   id: String!
   participation: Participation!
@@ -2098,6 +2150,7 @@ type Mutation {
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
+  setCourseLearningAnalyticsEnabled(courseId: String!, isEnabled: Boolean!): Course
   setLearningAnalyticsConsent(consent: Boolean!): ParticipantDataUse
   setLiveQuizPin(liveQuizId: String!, pin: String!): Boolean!
   setResearchConsent(consent: Boolean!): ParticipantDataUse
@@ -2611,11 +2664,14 @@ type Query {
   getChatbotsInfo: [Chatbot!]
   getCourseActivities(courseId: String!): Course
   getCourseActivityAnalytics(courseId: String!): CourseActivityAnalytics
+  getCourseActivityAnalyticsV2(courseId: String!): CourseActivityAnalyticsV2
   getCourseActivityIds(courseId: String): CourseActivityList
   getCourseGroups(courseId: String!): Course
   getCourseLeaderboard(courseId: String!, courseSelection: Boolean!, customSelection: Boolean!, days: Int, endDate: String, rollingSelection: Boolean!, startDate: String, weeklySelection: Boolean!): CourseLeaderboard
+  getCourseLearningAnalyticsExportV2(courseId: String!, format: LearningAnalyticsExportFormatV2!): LearningAnalyticsExportV2
   getCourseOverviewData(courseId: String!): ParticipantLearningData
   getCoursePerformanceAnalytics(courseId: String!): CoursePerformanceAnalytics
+  getCoursePerformanceAnalyticsV2(courseId: String!): CoursePerformanceAnalyticsV2
   getCoursePublishedMicroLearnings(courseId: String!): [MicroLearning!]
   getCoursePublishedPracticeQuizzes(courseId: String!): [PracticeQuiz!]
   getCourseRunningLiveQuizzes(courseId: String!): [LiveQuiz!]

@@ -3253,6 +3253,15 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       showDetails: 'Kursinformationen anzeigen',
       selectCourse: 'Bitte wählen Sie einen Kurs aus',
       createNewCourse: 'Neuen Kurs erstellen',
+      learningAnalyticsEnabled: 'Learning Analytics aktivieren',
+      learningAnalyticsExplanation:
+        'Learning Analytics verwendet Kursaktivität, Fortschritt, Antwortleistung, Bewertungen und Feedback-Ratings. Die Ausgaben für Dozierende sind aggregiert oder de-identifiziert. Sie enthalten keine Namen, E-Mail-Adressen, Teilnehmer-IDs, Freitextantworten oder Einwilligungsentscheide von Teilnehmenden.',
+      learningAnalyticsEnableNotice:
+        'Die Dashboards bleiben bis zur nächsten erfolgreichen nächtlichen Neuberechnung nicht verfügbar.',
+      learningAnalyticsDisableNotice:
+        'Die Dashboards sind sofort nicht mehr verfügbar. Individuelle abgeleitete Analysedaten werden im nächsten erfolgreichen nächtlichen Lauf entfernt. Aggregierte Analysedaten bleiben bis zur regulären Neuberechnung gespeichert. Kursaktivitäten, Antworten, Feedback, Noten, Punkte und XP bleiben unverändert.',
+      learningAnalyticsUpdateFailed:
+        'Learning Analytics konnte nicht aktualisiert werden. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.',
       changeAvailabilityDateMicrolearnings:
         'Die Verfügbarkeit der Microlearnings wird basierend auf dem ursprünglichen Kursstartdatum an die neuen Kursdaten angepasst.',
       changeAvailabilityDateGroupActivities:
@@ -3434,6 +3443,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       shareCourse: 'Kurs teilen',
       duplicateCourse: 'Kurs duplizieren',
       learningAnalytics: 'Learning Analytics',
+      learningAnalyticsSettings: 'Learning-Analytics-Einstellungen',
       moreCourseActions: 'Weitere Kursaktionen',
       pointCorrections: 'Punktekorrekturen',
       assessmentResults: 'Assessment Resultate',
@@ -4389,9 +4399,43 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       quizAnalytics: 'Quiz Analytics',
       featureUnavailable:
         'Learning Analytics sind für Ihr Benutzerkonto noch nicht verfügbar.',
+      catalystRequired: 'Learning Analytics erfordert Zugriff auf Catalyst.',
+      statusUnavailable:
+        'Der Status von Learning Analytics konnte nicht geladen werden. Bitte laden Sie die Seite neu oder kontaktieren Sie den Support.',
+      courseDisabled:
+        'Learning Analytics ist für diesen Kurs deaktiviert. Eine Kursmanagerin oder ein Kursmanager kann die Funktion in den Kursaktionen aktivieren.',
+      recomputationPending:
+        'Learning Analytics wird für diesen Kurs vorbereitet. Die Dashboards werden nach der nächsten erfolgreichen Neuberechnung verfügbar.',
       analyticsLoadingWait: 'Lade Analyse-Daten. Bitte warten...',
       analyticsLoadingFailed:
         'Beim Laden der Analyse-Daten ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.',
+      suppressedV2:
+        'Das Ergebnis erreicht die Freigabeschwelle nicht. Zum Schutz der Privatsphäre wird keine Anzahl der Teilnehmenden angezeigt.',
+      releasedSampleSizeV2: 'Freigegebenes effektives N',
+      effectiveNV2: 'Effektives N: {number}',
+      effectiveNLabelV2: 'Effektives N',
+      weeklyActivityV2: 'Freigegebene wöchentliche Aktivität',
+      noReleasedWeeklyCellsV2:
+        'Das Gesamtergebnis ist freigegeben, aber keine Wochenzelle erreicht die Freigabeschwelle.',
+      activitySummariesV2: 'Freigegebene Aktivitätsübersichten',
+      noReleasedActivitySummariesV2:
+        'Keine Aktivitätsübersicht erreicht die Freigabeschwelle.',
+      activityNV2: 'Aktivität {number}',
+      activityTypeV2: 'Typ',
+      completionPercentV2: 'Abschluss',
+      correctnessPercentV2: 'Korrektheit',
+      correctnessUnavailableV2: 'Nicht verfügbar',
+      percentV2: '{number} %',
+      studentReportV2: 'De-identifizierter Bericht',
+      randomizedLabelsV2:
+        'Die Bezeichnungen der Studierenden sind de-identifiziert und werden für jeden Bericht neu zufällig vergeben. Die Bezeichnungen in einem Download können von dieser Ansicht abweichen.',
+      studentLabelV2: 'Student',
+      completedActivitiesV2: 'Abgeschlossene Aktivitäten',
+      meanCompletionV2: 'Mittlerer Abschluss',
+      exportCsvV2: 'CSV herunterladen',
+      exportJsonV2: 'JSON herunterladen',
+      exportFailedV2:
+        'Der de-identifizierte Bericht konnte nicht heruntergeladen werden. Bitte versuchen Sie es erneut.',
       weeklyStudentActivity: 'Wöchentliche Aktivität der Studierenden',
       dailyStudentActivity: 'Tägliche Aktivität der Studierenden',
       totalParticipants: 'Kurs-Teilnehmende: {number}',

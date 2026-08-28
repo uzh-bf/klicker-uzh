@@ -1,0 +1,10 @@
+query GetCourseActivityAnalyticsV2($courseId: String!) {
+  getCourseActivityAnalyticsV2(courseId: $courseId) {
+    isSuppressed
+    effectiveN
+    weeklyActivity {
+      periodIndex
+      effectiveN
+    }
+  }
+}

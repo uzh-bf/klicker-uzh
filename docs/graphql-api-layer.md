@@ -16,7 +16,7 @@ tags:
 
 ## Three-layer authorization
 
-1. **Role/scope gate — `t.withAuth(scopeObject)`.** Scope objects are defined once near the top of `packages/graphql/src/schema/mutation.ts` (and mirrored in `query.ts`): `asUser`, `asUserFullAccess`, `asUserSessionExec`, `asUserOwner`, `asParticipant`, `asTemporaryParticipant`, `asAdmin`. Their semantics come from `packages/graphql/src/builder.ts` auth scopes: `authenticated` (logged in, not OTP), `role` (USER also passes for ADMIN; PARTICIPANT is exact), `scope` (a ladder — `ACCOUNT_OWNER > FULL_ACCESS > SESSION_EXEC > READ_ONLY`, a login with a higher scope passes lower requirements), `catalyst`. `defaultStrategy: 'all'`; failure throws `GraphQLError('Unauthorized')`. The former `asUserWithCatalyst` shorthand was removed when the three activity formats became standard (ADR 0037); gate such fields with `asUserFullAccess` and keep the `catalyst` scope for surfaces that genuinely require the paid tier.
+1. **Role/scope gate — `t.withAuth(scopeObject)`.** Scope objects are defined once near the top of `packages/graphql/src/schema/mutation.ts` (and mirrored in `query.ts`): `asUser`, `asUserFullAccess`, `asUserSessionExec`, `asUserOwner`, `asParticipant`, `asTemporaryParticipant`, `asAdmin`. Their semantics come from `packages/graphql/src/builder.ts` auth scopes: `authenticated` (logged in, not OTP), `role` (USER also passes for ADMIN; PARTICIPANT is exact), `scope` (a ladder — `ACCOUNT_OWNER > FULL_ACCESS > SESSION_EXEC > READ_ONLY`, a login with a higher scope passes lower requirements), `catalyst`. `defaultStrategy: 'all'`; failure throws `GraphQLError('Unauthorized')`. There is no global Catalyst shorthand; define a local scope object when a surface genuinely requires the paid tier, as the learning-analytics V2 fields do. The three activity formats remain public and use `asUserFullAccess` without Catalyst.
 2. **Object-level permission — `withPermission(argsToCheck, PermissionLevel, resolver)`** (`packages/graphql/src/services/sharing.ts:withPermission`). Maps resolver args to a `PermissionCheck` (one of `courseId | liveQuizId | practiceQuizId | microLearningId | groupActivityId | elementId | answerCollectionId | catalogCollectionId`) and a required `PermissionLevel`. **On failure it returns `null` instead of throwing** — clients see a null field, not an error. A multi-object batch field cannot use this single-selector wrapper: gate the field with `t.withAuth(...)`, then perform a bounded service query and an explicit permission check for every unique object before mutation. Return per-object outcomes instead of collapsing the batch to one nullable field.
 3. **Derived-permission lookup — `checkAccess`** (same file): resolves ownership and sharing grants (`DerivedPermission`) for the target object.
 
@@ -89,11 +89,25 @@ remain available.
 `Course.analyticsStatus` exposes the public state needed by a caller:
 `areAnalyticsValid`, `analyticsLastComputedAt`, `analyticsFinalizedAt`, and
 `chatAnalyticsValidAt` (`packages/graphql/src/schema/course.ts:CourseAnalyticsStatus`).
+`Course.isLearningAnalyticsEnabled` exposes the course product control.
+`setCourseLearningAnalyticsEnabled` requires a full-access lecturer with
+Catalyst entitlement and `ADMIN` permission on the course. Enabling also
+requires the deployment-global `CATALYST_LEARNING_ANALYTICS_AVAILABLE` setting
+to be exactly `true`; an authorized disable remains available during an outage.
+A state change takes the shared global and exclusive course advisory locks,
+records a database-time invalidation marker, and invalidates every published
+analytics marker without deleting or computing analytics in the GraphQL
+request. An idempotent request returns the course without invalidation.
+
 `recomputeCourseAnalytics` accepts `INCREMENTAL`, `FINALIZE`, or `FULL` and
-requires a full-access user with `ADMIN` permission on the course. The global
-`recomputeLearningAnalyticsBatch` mutation accepts an explicit course-ID list
-and requires the `ADMIN` role (`packages/graphql/src/schema/mutation.ts`). Both
-operations enqueue the public Hatchet coordinator. The public coordinator
+requires a full-access Catalyst-entitled user with `ADMIN` permission on the
+course. The global `recomputeLearningAnalyticsBatch` mutation accepts an
+explicit course-ID list and retains its existing `ADMIN` role entitlement
+(`packages/graphql/src/schema/mutation.ts`). Both operations require the
+deployment-global availability setting before they enqueue the public Hatchet
+coordinator. If it is not exactly `true`, GraphQL returns the stable
+`CATALYST_LEARNING_ANALYTICS_UNAVAILABLE` error code and does not call the
+analytics service or dispatch work. The public coordinator
 dispatches Hatchet workflows and owns scheduling, selection, bounded fan-out,
 locking, and product-state transitions; the private analytics engine owns the
 business computation. No analytics computation runs in the GraphQL request.
@@ -118,8 +132,33 @@ of ordinary recomputation. The relevant gates are in
 `getCourseWeeklyActivity`, `getCoursePerformanceAnalytics`, and
 `getActivityAnalytics`).
 
+The LA-P3 lecturer surface uses the additive
+`getCourseActivityAnalyticsV2`, `getCoursePerformanceAnalyticsV2`, and
+`getCourseLearningAnalyticsExportV2` fields. It does not request the legacy V1
+fields. The V1 schema definitions and operations remain byte-identical and
+dormant so existing consumers keep their contract.
+
+The V2 disclosure builder applies a minimum cell size of five after participant
+eligibility filtering. It never returns counts from one through four, including
+as the complement between a released cell and its parent cohort. Weekly periods
+and activities receive ordinal indices only after suppressed cells have been
+removed. Percentages are rounded to ten-point steps. Student rows are released
+only when at least five candidates share the same normalized completed-activity
+count and mean-completion step; smaller tuple groups and their candidate counts
+are not returned. Each student report freshly randomizes report-local `Student
+N` labels, so a label is not stable between views or exports. The backend builds
+the JSON and CSV exports from the same released cohort and fixed whitelist:
+schema version, effective participant count, student label, completed activity
+count, and mean completion percentage. V2 never
+returns identifiers, email addresses, free text, exact timestamps, stable
+activity IDs, item sequences, or rare attributes. It has no quiz-level,
+item-level, daily, weekday, activity-detail, or course-comparison disclosure.
+These controls make the output de-identified, not guaranteed anonymous
+(`packages/graphql/src/lib/learningAnalyticsOutputV2.ts`).
+
 Coordinator dispatch remains default-off. The service only prepares or enqueues
-work when `LEARNING_ANALYTICS_COORDINATOR_ENABLED` is exactly `true`, and batch
+work when both `LEARNING_ANALYTICS_COORDINATOR_ENABLED` and
+`CATALYST_LEARNING_ANALYTICS_AVAILABLE` are exactly `true`, and batch
 preparation requires the explicitly configured
 `LEARNING_ANALYTICS_BATCH_IN_FLIGHT_LIMIT` value. Public batches remain globally
 serialized while their bounded parallel lanes process independent courses, and

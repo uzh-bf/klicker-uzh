@@ -7,7 +7,7 @@ import { faBolt, faUser } from '@fortawesome/free-solid-svg-icons'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   CountCatalogSharingRequestsDocument,
-  GetUserCoursesDocument,
+  GetLearningAnalyticsCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
   type UserProfileQuery,
   UserRole,
@@ -25,6 +25,7 @@ import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { isCourseLearningAnalyticsAvailable } from '../analytics/courseEligibility'
 import SupportModal from './SupportModal'
 
 type UserProfile = NonNullable<UserProfileQuery['userProfile']>
@@ -34,6 +35,8 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
+  const hasLearningAnalyticsAccess =
+    learningAnalyticsEnabled && user?.catalyst === true
 
   const { data: pendingRequestData } = useQuery(
     CountCatalogSharingRequestsDocument
@@ -41,12 +44,15 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
   const { data: liveQuizData } = useQuery(GetUserRunningLiveQuizzesDocument, {
     fetchPolicy: 'cache-first',
   })
-  const { data: courseData } = useQuery(GetUserCoursesDocument, {
-    fetchPolicy: 'cache-first',
+  const { data: courseData } = useQuery(GetLearningAnalyticsCoursesDocument, {
+    fetchPolicy: 'network-only',
+    skip: !hasLearningAnalyticsAccess,
   })
 
   const quizzes = liveQuizData?.userRunningLiveQuizzes
-  const courses = courseData?.userCourses
+  const courses = courseData?.userCourses?.filter(
+    isCourseLearningAnalyticsAvailable
+  )
 
   const resourceElements: NavigationMenuItemProps[] = [
     {
@@ -182,12 +188,6 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
           label: t('manage.analytics.performance'),
           onClick: () => router.push(`/analytics/${course.id}/performance`),
         },
-        {
-          key: `quiz-dashboard-${course.name}`,
-          type: 'link',
-          label: t('manage.analytics.quizzes'),
-          onClick: () => router.push(`/analytics/${course.id}/quizzes`),
-        },
       ],
     })) ?? []),
     {
@@ -206,7 +206,7 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
     key: 'analytics-menubar-item',
     label: t('manage.general.analytics'),
     icon: faBolt,
-    disabled: !learningAnalyticsEnabled,
+    disabled: !hasLearningAnalyticsAccess,
     active: router.pathname.includes('/analytics'),
     elements: analyticsElements,
     data: { cy: 'analytics' },
@@ -315,11 +315,15 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
             items={leftNavigation}
             className={{ root: 'shadow-none' }}
           />
-          {learningAnalyticsEnabled ? (
+          {hasLearningAnalyticsAccess ? (
             analyticsMenu
           ) : (
             <Tooltip
-              tooltip={t('manage.analytics.featureUnavailable')}
+              tooltip={
+                !learningAnalyticsEnabled
+                  ? t('manage.analytics.featureUnavailable')
+                  : t('manage.analytics.catalystRequired')
+              }
               delay={0}
               dataContent={{ cy: 'analytics-disabled-reason' }}
               className={{ tooltip: 'z-30' }}

@@ -1,10 +1,11 @@
 import { useSuspenseQuery } from '@apollo/client'
-import { GetUserCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetLearningAnalyticsCoursesDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Checkbox, H3, Select } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import { isCourseLearningAnalyticsAvailable } from '../courseEligibility'
 
 function SuspendedCourseComparison({
   courseComparison,
@@ -21,10 +22,16 @@ function SuspendedCourseComparison({
   const router = useRouter()
   const [showCourseDropdown, setShowCourseDropdown] = useState(false)
 
-  const { data } = useSuspenseQuery(GetUserCoursesDocument)
+  const { data } = useSuspenseQuery(GetLearningAnalyticsCoursesDocument, {
+    fetchPolicy: 'network-only',
+  })
   const courses =
     data.userCourses
-      ?.filter((course) => course.id !== router.query.courseId)
+      ?.filter(
+        (course) =>
+          course.id !== router.query.courseId &&
+          isCourseLearningAnalyticsAvailable(course)
+      )
       .map((course) => ({
         label: course.name,
         value: course.id,

@@ -32,6 +32,7 @@ function StudentActivityPerformance({
   const { loading, data } = useQuery(GetCourseActivitiesDocument, {
     variables: { courseId },
     skip: !courseId,
+    fetchPolicy: 'network-only',
   })
   const course = data?.getCourseActivities
 

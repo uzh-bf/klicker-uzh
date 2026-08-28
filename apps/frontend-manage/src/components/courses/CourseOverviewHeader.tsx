@@ -4,6 +4,7 @@ import {
   faChartPie,
   faEllipsis,
   faFilePen,
+  faGear,
   faLink,
   faMessage,
   faPencil,
@@ -24,6 +25,7 @@ import dayjs from 'dayjs'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+import { isCourseLearningAnalyticsAvailable } from '../analytics/courseEligibility'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
 import { useCourseDuplicationStatus } from './CourseDuplicationStatusProvider'
@@ -31,6 +33,7 @@ import getLTIAccessLink from './getLTIAccessLink'
 import CourseDuplicationModal, {
   type CourseDuplicationFormData,
 } from './modals/CourseDuplicationModal'
+import CourseLearningAnalyticsModal from './modals/CourseLearningAnalyticsModal'
 import CourseManipulationModal, {
   type CourseManipulationFormData,
 } from './modals/CourseManipulationModal'
@@ -77,6 +80,7 @@ function CourseOverviewHeader({
   const [correctionsModal, setCorrectionsModal] = useState(false)
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
   const [duplicationModal, setDuplicationModal] = useState(false)
+  const [learningAnalyticsModal, setLearningAnalyticsModal] = useState(false)
   const courseDuplicationInProgress = isSourceCourseDuplicating(course.id)
 
   const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
@@ -84,6 +88,14 @@ function CourseOverviewHeader({
     fetchPolicy: 'cache-only',
   })
   const user = dataUser?.userProfile
+  const courseLearningAnalyticsEnabled =
+    course.isLearningAnalyticsEnabled === true
+  const courseLearningAnalyticsValid =
+    course.analyticsStatus.areAnalyticsValid === true
+  const hasLearningAnalyticsAccess =
+    learningAnalyticsEnabled && user?.catalyst === true
+  const courseLearningAnalyticsAvailable =
+    hasLearningAnalyticsAccess && isCourseLearningAnalyticsAvailable(course)
 
   const ltiDropdownItems = [
     getLTIAccessLink({
@@ -158,7 +170,7 @@ function CourseOverviewHeader({
         t('manage.course.learningAnalytics')
       ),
       onClick: (event: React.MouseEvent) => {
-        if (!learningAnalyticsEnabled) {
+        if (!courseLearningAnalyticsAvailable) {
           event.preventDefault()
           event.stopPropagation()
           return
@@ -166,19 +178,49 @@ function CourseOverviewHeader({
 
         window.open(`/analytics/${course.id}/activity`, '_blank')
       },
-      disabled: !learningAnalyticsEnabled,
+      disabled: !courseLearningAnalyticsAvailable,
       tooltip: !learningAnalyticsEnabled
         ? t('manage.analytics.featureUnavailable')
-        : undefined,
+        : !user?.catalyst
+          ? t('manage.analytics.catalystRequired')
+          : !courseLearningAnalyticsEnabled
+            ? t('manage.analytics.courseDisabled')
+            : !courseLearningAnalyticsValid
+              ? t('manage.analytics.recomputationPending')
+              : undefined,
       className: {
         // The disabled item remains inert, but its explanation still needs to
         // receive pointer input through the design-system tooltip trigger.
-        item: !learningAnalyticsEnabled
+        item: !courseLearningAnalyticsAvailable
           ? 'data-disabled:pointer-events-auto'
           : undefined,
       },
       data: { cy: 'course-learning-analytics-link' },
     },
+    ...(course.isManager
+      ? [
+          {
+            id: 'course-learning-analytics-settings',
+            label: courseActionMenuLabel(
+              <FontAwesomeIcon icon={faGear} className="h-4 w-4" />,
+              t('manage.course.learningAnalyticsSettings')
+            ),
+            onClick: () => setLearningAnalyticsModal(true),
+            disabled: !hasLearningAnalyticsAccess,
+            tooltip: !learningAnalyticsEnabled
+              ? t('manage.analytics.featureUnavailable')
+              : !user?.catalyst
+                ? t('manage.analytics.catalystRequired')
+                : undefined,
+            className: {
+              item: !hasLearningAnalyticsAccess
+                ? 'data-disabled:pointer-events-auto'
+                : undefined,
+            },
+            data: { cy: 'course-learning-analytics-settings' },
+          },
+        ]
+      : []),
     ...(course.isAssessmentEnabled && course.isManager
       ? [
           {
@@ -319,6 +361,13 @@ function CourseOverviewHeader({
 
             return jobStarted
           }}
+        />
+      )}
+      {learningAnalyticsModal && (
+        <CourseLearningAnalyticsModal
+          courseId={course.id}
+          isEnabled={courseLearningAnalyticsEnabled}
+          onClose={() => setLearningAnalyticsModal(false)}
         />
       )}
       {courseSettingsModal && (
