@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-08-25'
+timestamp: '2026-08-27'
 tags:
   - environment
   - onboarding
@@ -42,7 +42,12 @@ You can set up the environment in two ways:
 
 ### Path A: Self-contained Devcontainer (Recommended)
 
-Clone-and-run via a self-contained devcontainer — no Infisical, no external EduID, no `/etc/hosts` edits needed. The container runs every routed app, the two Hatchet workers, the lecturer MCP server (`apps/mcp-lecturer`, port 7081), and the student MCP server (`apps/mcp-student`, port 7080) through one `turbo dev` task set and houses all dependencies (Postgres, Redis, MailHog, Hatchet). Both MCP servers have no external route; `apps/chat` reaches them in-container. They start automatically with the rest of the stack (`package.json:dev:container`), so the Manage assistant and tutor-mode student practice tools need no separate MCP process ([Chat Platform](./chat-platform.md#student-practice-mcp-appsmcp-student)).
+Clone-and-run via a self-contained devcontainer — no Infisical, no external
+EduID, no `/etc/hosts` edits needed. The default `full` profile runs every
+routed app plus the two Hatchet workers. Dependency-aware profiles select only
+the needed app roots, optional services, and managed processes while keeping
+Postgres and Hatchet as the boot-critical base.
+The lecturer MCP server (`apps/mcp-lecturer`, port 7081) and the student MCP server (`apps/mcp-student`, port 7080) start automatically with the rest of the stack (`package.json:dev:container`); both have no external route, and `apps/chat` reaches them in-container.
 
 1. **Start and prove the checkout:**
    ```bash
@@ -52,7 +57,7 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
 2. **Accessing the apps:**
    - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost ports. Lecturer login is `lecturer`/`abcd`.
    - **Mode 2 (linked checkout):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
-     1. Install devrouter ≥ 0.0.38 and run `devrouter setup --yes` once.
+     1. Install devrouter ≥ 0.0.42 and run `devrouter setup --yes` once. Version 0.0.39 is not safe for failed managed profile transitions.
      2. From an existing linked worktree, start and prove the environment with:
         ```bash
         devrouter ensure .
@@ -60,17 +65,46 @@ Clone-and-run via a self-contained devcontainer — no Infisical, no external Ed
         Use `devrouter workspace up <branch-name>` from the main repository to create a new worktree. Do not use bare `devpod up` or manual route-token loops; `ensure` owns the persisted identity, Git mount, overlay, aliases, runtime proof, and routes together.
      3. Those namespaced hosts only work because `allowedDevOrigins` in `packages/next-config/index.js` is `['**.localhost']` in development (and `undefined` in production) — Next's implicit `*.localhost` matches a single label only. If that glob ever stops covering a worktree host, the symptom is an app that serves HTML but never hydrates, with no obvious error.
 3. **Logs:** The dev servers auto-start inside the container. View logs via `devrouter exec . -- tail -f /tmp/dev.log`.
-4. **Browser E2E:** Run Playwright from the host with `bash util/run-host-e2e.sh --project=chromium <spec>`. The runner detects routed linked and primary checkouts, a plain primary devcontainer, and host-run apps; it maps the app URLs and seed database while reusing the host browser cache. Never install Playwright browser binaries in a DevPod. The existing global setup resets and reseeds the mapped database, so use only a disposable local test runtime.
+4. **Browser E2E:** Run Playwright from the host with `pnpm playwright:host -- --project=chromium <spec>`. The launcher reconciles the routed devrouter workspace, maps the app URLs and seed database, and reuses the host browser cache. Never install Playwright browser binaries in a DevPod. The existing global setup resets and reseeds the mapped database, so use only a disposable local test runtime.
+
+Choose an application profile such as `manage`, `pwa`, `chat`, or
+`live-quiz`. Add the orthogonal `ai`, `mcp`, or `email` capability only when
+needed; for example, `devrouter ensure . --profile chat,ai,mcp`. Capability-only
+profiles run no Turbo app process. Omitting `--profile` keeps the compatibility
+default `full`. Profile unions are additive and order-insensitive, and a warm
+transition does not recreate the app container or reset persistent data.
+
+Playwright is the deliberate toolchain exception. Run
+`pnpm playwright:host -- <args>` from the host; the launcher calls
+`devrouter ensure`, resolves the exact worktree routes, and connects the host
+Prisma setup to that workspace's random loopback PostgreSQL port. The browser
+and Playwright process never enter the devcontainer. Direct local Playwright
+commands fail before database cleanup, and the devcontainer blocks browser
+downloads. GitHub Actions keeps its existing official Playwright container.
 
 For OpenRouter-backed Chat, follow the host-side `rs-infisical-operator`
 workflow in [AGENTS.md](../AGENTS.md). Use only seeded or synthetic content;
 do not copy credentials into the repository or use raw Infisical injection.
 
-`post-start.sh` keeps Klicker's environment and origin setup local. Host-side `devrouter ensure` delivers its matching process helper to the exact validated container, then invokes the adapter. Released devrouter `0.0.35` records its owned process group and fingerprints the workspace, command, adapter bytes, and declared non-secret origin environment in `/tmp/devrouter-process-klicker-dev.state`; an exact repeat is idempotent, stale owned groups are replaced boundedly, and unknown processes are never killed.
+`post-start.sh` keeps Klicker's environment and origin setup local. Host-side
+`devrouter ensure` delivers its matching process helper to the exact validated
+container, then invokes the adapter. Devrouter records its owned process
+group and fingerprints the workspace, command, adapter bytes, selected profile,
+and declared non-secret origin environment in
+`/tmp/devrouter-process-klicker-dev.state`. An exact repeat is idempotent,
+stale owned groups are replaced boundedly, unknown processes are never killed,
+and a failed profile transition restores the last usable generated config.
 
-Devrouter owns generic process lifecycle and HTTP readiness. `ensure` verifies all ten routes and can spend one container recreate when an exact workspace is alive but an application remains unhealthy, including after a production build replaces live Next.js output. Each managed dev-process start clears Manage's generated development route manifest and the container startup adapter briefly primes the course list plus a synthetic course-detail URL within one bounded deadline; this closes the cold Turbopack dynamic-route race before a browser can request a real course without replacing devrouter's readiness ownership.
+Devrouter owns generic process lifecycle and route readiness. `ensure` verifies
+the selected routes and can spend one container recreate when an exact
+workspace is alive but an application remains unhealthy. The repository-owned
+semantic checks perform one bounded `.next` repair only after a known route
+repeatedly returns the stale-route signature. The adapter also primes Manage's
+course list and a synthetic course-detail URL within one bounded deadline.
 
-The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.35`. The devcontainer image contains no devrouter package or helper, and `devcontainer.json` does not run the managed adapter independently.
+The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.42`.
+The devcontainer image contains no devrouter package or helper, and
+`devcontainer.json` does not run the managed adapter independently.
 
 The image does include the repository's development toolchain: pnpm `11.5.0`, uv `0.11.12`, and the Python 3.12 selection used by analytics CI. This keeps `pnpm run check:all` reproducible inside the container.
 
@@ -84,14 +118,16 @@ pruning for this cache.
 
 `devrouter doctor --repo .` is the static check. `devrouter ensure .` is the runtime authority: it resolves the checkout-specific overlay and fails unless the actual container aliases, Git mount, managed process, and routes agree.
 
-Klicker's runtime guard adds semantic readiness for every Next app. It
+Klicker's runtime guard adds profile-scoped semantic readiness. It
 fingerprints the dependency graph, checked-out commit, Next.js route structure,
 and app configuration. A true managed start preserves each worktree's
 `.next/dev` output, while a changed dependency fingerprint refreshes the
 persistent `node_modules` volume with a frozen, local-first install.
 Unauthenticated Chat must answer `401 application/json` on a
 nested API route; the shell pages of auth, PWA, manage, and control must answer
-`2xx` HTML or a redirect. Repeated `404 text/html` responses on such known-existing
+`2xx` HTML or a redirect. Response API must answer `200` JSON at `/healthz`,
+and `live-quiz` requires live general and response-processor worker descendants
+of the exact managed Turbo process. Repeated `404 text/html` responses on such known-existing
 routes identify stale route-table state and trigger one full `.next` cleanup
 for the affected apps plus one managed restart. Any other stable response fails
 without deleting caches, so data-driven 404s stay application failures.
