@@ -27,22 +27,21 @@
 - Do not change production deployment, database schema, stored data, user-facing
   application behavior, authentication, secrets, or external data boundaries.
 - Do not add application or package dependencies or call an external model.
-- Do not install or update the host devrouter CLI, publish the upstream package,
-  push, open or merge a pull request, deploy, delete the branch or worktree,
-  remove containers or volumes, or use real or personal data.
+- Do not install or update the host devrouter CLI, publish another upstream
+  package, merge the pull request, deploy, delete the branch or worktree, remove
+  containers or volumes, or use real or personal data.
 
 ## Execution contract
 
-- Authority: Approval authorizes the plan commit now and, after the immutable
-  upstream release gate is satisfied, reversible local consumer implementation
-  in the named worktree, bounded delegation, repository-native checks, exact
-  runtime start/switch/stop, required reviews, Progress updates, and local
-  conventional commits.
-- Authority: Approval does not authorize upstream or downstream push,
-  pull-request creation, merge, release publication, host CLI or package
-  installation/update, deployment, secret access, external provider calls,
-  real or personal data, container or volume removal, branch deletion, or
-  worktree deletion.
+- Authority: The approved finish authorizes review corrections in the named
+  worktree, bounded delegation, repository-native checks, exact runtime
+  start/switch/stop, required reviews, Progress updates, conventional commits,
+  push to the existing PR branch, review replies/resolution, PR description
+  updates, and one integration of current `origin/v3`.
+- Authority: Approval does not authorize merge, another upstream release,
+  host CLI or package installation/update, deployment, secret access, external
+  model calls, real or personal data, container or volume removal, branch
+  deletion, or worktree deletion.
 - Boundary owner: The main execution session owns the profile table, dependency
   decisions, integration, runtime identity, review disposition, and final proof.
   Delegated agents receive only named slices and disjoint write sets.
@@ -50,11 +49,11 @@
   devrouter package is published and its exact version and artifact are verified.
   A local release candidate is not sufficient evidence for the final consumer
   pin or release-compatible completion.
-- Terminal: The consumer branch is locally committed against the published
-  minimum devrouter version; static and runtime matrices pass; all required
-  findings are resolved; the exact task runtime is stopped; zero owned routes,
-  managed processes, and running profile-owned services remain; Progress records
-  the evidence.
+- Terminal: The pushed consumer branch uses the published minimum devrouter
+  version; static and runtime matrices pass; review findings are resolved or
+  rebutted; the approved target integration and exact-head CI pass; the exact
+  task runtime is stopped with zero owned routes; Progress and PR #5574 record
+  the evidence. Merge remains separately withheld.
 - Pause: Stop if the upstream public contract differs from this reviewed plan,
   exact service or process ownership cannot be proven, invalid selection mutates
   the prior runtime, profile switching would recreate the app container or rerun
@@ -63,20 +62,18 @@
 
 ## Plan identity and dependency
 
-- Plan: `project/2026-08-25-devcontainer-dependency-profiles-plan.md`
-- Repository: `/Users/rschlae/Git/klicker/klicker-uzh`
+- Plan: `project/2026-08-25-pr-5574-devcontainer-dependency-profiles-plan.md`
+- Repository: `uzh-bf/klicker-uzh`
 - Branch: `rs/devcontainer-dependency-profiles`
 - Worktree: `trees/devcontainer-dependency-profiles`
 - Target: `v3`
-- Fresh base: `origin/v3` at `cd5cfd574`, 0 ahead and 0 behind after the remote
+- Initial base: `origin/v3` at `cd5cfd574`, 0 ahead and 0 behind after the remote
   advanced while the plan was paused. The task branch was fast-forwarded before
   implementation.
-- Pull request: not created. Push and pull-request creation are outside the
-  local terminal.
-- Prerequisite package: devrouter plan
-  `/Users/rschlae/Git/personal/devrouter/trees/devcontainer-dependency-profiles/docs/project/2026-08-26-devcontainer-dependency-profiles-plan.md`.
-- Release dependency: next published patch after devrouter `0.0.38`; `0.0.39` is
-  expected but not authoritative until release publication is verified.
+- Pull request: [#5574](https://github.com/uzh-bf/klicker-uzh/pull/5574).
+- Prerequisite package: devrouter's repository-relative dependency-profile plan.
+- Release dependency: published devrouter `0.0.40`; its immutable tag and npm
+  artifact must remain verifiable.
 - History: `project/2026-08-24-devrouter-profiles-three-mode-plan.md` and PR #5539
   introduced route/process profiles. This package closes the omitted container
   and process lifecycle seam rather than reopening that merged package.
@@ -374,17 +371,26 @@
 - Commit: `docs(project): record devcontainer profile verification` only when a
   separate final Progress evidence commit is needed.
 
-## Upstream publication checkpoint
+### K6: resolve review feedback and refresh readiness
 
-- The devrouter package's honest local terminal is a verified release candidate
-  with status `release_pending`.
-- Advancing to K1 requires explicit authority for the upstream push, pull
-  request, merge, release publication, and any host package or CLI installation
-  or update. Batch that request with the exact branch, version, and artifact.
-- After publication, verify the released tag/package and update this plan's
-  Progress with the immutable version before changing `.devrouter.yml`.
-- Downstream push and pull-request creation remain separately withheld even
-  after local consumer completion.
+- Do: Fix the still-valid runtime and guidance findings, add focused regression
+  checks for selected-profile doctor behavior and response API port alignment,
+  rebut findings that conflict with the canonical fail-closed contract, and
+  resolve every handled review thread.
+- Do: Integrate current `origin/v3` once after the branch passes on its current
+  base, reconcile the shared Chat documentation without changing application
+  behavior, then push and refresh the whole-branch PR description.
+- Check: Run resolver/runtime tests, ShellCheck, formatting, `check:all`, the
+  full build, the affected runtime profile matrix, exact-head hosted CI, and
+  one final review after the repository-wide trusted-policy gate is repaired.
+- Commit: `fix(devcontainer): address profile readiness review findings`;
+  use a separate merge commit for the approved target integration.
+
+## Upstream publication checkpoint (completed)
+
+- Devrouter `0.0.40` is published and verified by immutable tag, release
+  workflow, npm version, and npm tarball SHA-1. No further upstream publication
+  is part of this correction slice.
 
 ## Expected final evidence
 
@@ -401,23 +407,24 @@
 
 ## Progress
 
-- Status: K0-K5 are implemented and the integrated runtime matrix passes.
-  Devrouter 0.0.40 is released and its published artifact passes the
-  representative downstream lifecycle matrix.
-- Active slice: Integrated final review and PR readiness.
+- Status: K0-K5 are implemented and validated. K6 review correction and current
+  target integration are approved and in progress.
+- Active slice: Resolve review findings on the branch's current base.
 - Completed: Fresh downstream worktree, dependency and process mapping,
   first-party Dev Container and DevPod research, upstream package decomposition,
   and required planning review.
-- Remaining: Monitor the failed-shard CI rerun, trigger `/final-review` after
-  a maintainer repairs the repo-wide final-review gate, and hand the PR off as
-  ready for merge.
-- Latest verified target: `origin/v3` at `d0eab767`, integrated into this
-  branch on 2026-08-27 (see dated entry below).
+- Remaining: Commit and review K6, integrate current `origin/v3` at
+  `86e8ac2e`, rerun affected local/runtime checks, push, resolve review
+  threads, monitor exact-head CI, and trigger `/final-review` after a
+  maintainer repairs the repo-wide final-review gate.
+- Latest verified target: `origin/v3` at `86e8ac2e`; the branch is one
+  commit behind before the approved K6 integration.
 - Runtime: The exact linked-worktree runtime is stopped with proof recorded on
   2026-08-27. No volume, worktree, branch, or container deletion was performed.
 - Active children: none.
-- Unresolved gates: Integrated final review and downstream exact-head CI.
-  Klicker PR merge remains separately withheld.
+- Unresolved gates: Nine inline review threads plus two review-body findings,
+  K6 verification, approved target integration, exact-head CI, and integrated
+  final review. Klicker PR merge remains separately withheld.
 - 2026-08-26 upstream publication: devrouter PR #37 was squash-merged at
   `af55b23`, GitHub release `v0.0.39` was published, and the release workflow
   completed successfully. `npm view @devrouter/cli` reports version 0.0.39;
@@ -500,8 +507,8 @@
   package with exact runtime stopped.
 - Achieved delivery layer: Integrated local implementation, released upstream
   dependency, and source-built plus published-artifact runtime proof.
-- Next action: Confirm the failed-shard CI rerun on the integrated head, then
-  post `/final-review` once the trusted_policy gate fault is repaired.
+- Next action: Commit and review the K6 corrections on the current base, then
+  perform the approved `origin/v3` integration and affected verification.
 
 - 2026-08-27 upstream integration: The single approved integration pass merged
   `origin/v3` (`d0eab767`, 24 commits including the alpha.73 promotion,
@@ -522,10 +529,11 @@
   failing test is outside this branch's diff, and the run's teardown shows
   Postgres `postmaster exit` instability on the ARM64 runner, so the failure
   was classified as runner-infrastructure flake and only the failed jobs were
-  rerun (same run 33073016409). GitGuardian's one finding was verified as a
-  false positive: the flagged 40-character strings are devrouter's public
-  upstream commit SHA and npm's published `dist.shasum` for
-  `@devrouter/cli@0.0.40`, confirmed against the npm registry.
+  rerun (same run 33073016409). Later exact-head run 33082085589 passed all
+  three Playwright shards. GitGuardian's finding is a false positive on the
+  base workflow's static local-test PostgreSQL password in
+  `.github/workflows/test-unit.yml`; the file is outside this PR's effective
+  diff and the repository gitleaks gate passes.
 - 2026-08-27 final-review gate fault: every `Final AI review` run since the
   2026-08-26 lifecycle change fails in about 4 seconds at `trusted_policy`
   ("Workflow definition commit could not be verified") while comparing
