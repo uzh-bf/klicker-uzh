@@ -114,19 +114,27 @@ export default function ElementGenerationBuild({
     setActionError(undefined)
     try {
       await action()
+    } catch (error) {
+      const code = elementGenerationErrorCode(error)
+      setActionError(code ? t('errors.withCode', { code }) : t('errors.action'))
+      return
+    }
+
+    if (resumeInBackground) {
+      window.dispatchEvent(
+        new CustomEvent(GENERATION_STARTED_EVENT, {
+          detail: {
+            kind: 'element',
+            id: currentBuildId,
+            label: t(`elementTypes.${currentElementType}.label`),
+            startedAt: Date.now(),
+          },
+        })
+      )
+    }
+
+    try {
       await refresh()
-      if (resumeInBackground) {
-        window.dispatchEvent(
-          new CustomEvent(GENERATION_STARTED_EVENT, {
-            detail: {
-              kind: 'element',
-              id: currentBuildId,
-              label: t(`elementTypes.${currentElementType}.label`),
-              startedAt: Date.now(),
-            },
-          })
-        )
-      }
     } catch (error) {
       const code = elementGenerationErrorCode(error)
       setActionError(code ? t('errors.withCode', { code }) : t('errors.action'))
@@ -347,15 +355,17 @@ export default function ElementGenerationBuild({
                 type="button"
                 disabled={mutationLoading || !warningsAcknowledged}
                 onClick={() =>
-                  runAction(() =>
-                    publishIncomplete({
-                      variables: {
-                        input: {
-                          buildId: build.id,
-                          warningsAcknowledged,
+                  runAction(
+                    () =>
+                      publishIncomplete({
+                        variables: {
+                          input: {
+                            buildId: build.id,
+                            warningsAcknowledged,
+                          },
                         },
-                      },
-                    })
+                      }),
+                    true
                   )
                 }
                 data={{ cy: 'element-generation-publish-incomplete' }}

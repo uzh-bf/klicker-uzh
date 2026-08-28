@@ -2329,7 +2329,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       starting: 'Wird gestartet…',
       graphQueued: 'Wissensgraph ist eingereiht',
       graphProcessing: 'Wissensgraph wird generiert',
-      elementProgress: '{generated} von {requested} Elementen generiert',
+      elementProgress:
+        '{generated} von {requested, plural, one {# Element} other {# Elementen}} generiert',
       succeeded: '{label} ist bereit.',
       failed: 'Die Generierung im Hintergrund ist fehlgeschlagen.',
       open: 'Ergebnis öffnen',

@@ -2305,7 +2305,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       starting: 'Starting…',
       graphQueued: 'Knowledge graph queued',
       graphProcessing: 'Knowledge graph is being generated',
-      elementProgress: '{generated} of {requested} elements generated',
+      elementProgress:
+        '{generated} of {requested, plural, one {# element} other {# elements}} generated',
       succeeded: '{label} is ready.',
       failed: 'Background generation failed.',
       open: 'Open result',

@@ -94,12 +94,12 @@ function GraphJobTracker({
   onTerminal: (job: GenerationJob, succeeded: boolean) => void
 }>) {
   const t = useTranslations('manage.generationStatus')
-  const query = useQuery(GetKbKnowledgeGraphConfigDocument, {
+  const { data, error, loading } = useQuery(GetKbKnowledgeGraphConfigDocument, {
     variables: { kbId: job.kbId },
     fetchPolicy: 'network-only',
     pollInterval: POLL_INTERVAL_MS,
   })
-  const config = query.data?.getKbKnowledgeGraphConfig
+  const config = data?.getKbKnowledgeGraphConfig
   const [checkedAt, setCheckedAt] = useState(0)
 
   useEffect(() => {
@@ -119,6 +119,7 @@ function GraphJobTracker({
     const matchesBuild =
       config?.buildId === job.id || config?.activeBuildId === job.id
     if (!config || !matchesBuild) {
+      if (loading || error) return
       if (checkedAt - job.startedAt >= UNMATCHED_GRAPH_JOB_TIMEOUT_MS) {
         onTerminal(job, false)
       }
@@ -142,7 +143,7 @@ function GraphJobTracker({
           ? t('graphProcessing')
           : t('graphQueued'),
     })
-  }, [checkedAt, config, job, onProgress, onTerminal, t])
+  }, [checkedAt, config, error, job, loading, onProgress, onTerminal, t])
 
   return null
 }
