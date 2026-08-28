@@ -121,8 +121,8 @@ branch integration, and final delivery are coupled on the critical path.
 
 ## Progress
 
-- Status: Source-reference-only correction implemented and accepted by the
-  slice reviewer.
+- Status: Source-reference-only correction implemented; the final review's
+  preservation-evidence finding is corrected locally.
 - Completed: False-positive classification, current-base worktree, continuity
   planning review, purpose-based naming, reviewed proof custody and lifecycle
   protections, asymmetric marker logic, regression coverage, and wiki
@@ -143,10 +143,17 @@ branch integration, and final delivery are coupled on the critical path.
   configured effort before reading the task. Trusted Luna continuity passes
   completed instead. The simplifier's safe reductions were applied; the risk
   reviewer accepted the correction after transport-retry, strict-manifest, and
-  UUID-canonicalization findings were resolved.
-- Remaining: Final review, target integration decision, explicit push, pull
-  request, exact-head CI, and ready state.
+  UUID-canonicalization findings were resolved. The final reviewer then found
+  that a passing parent receipt synthesized zero-mutation claims instead of
+  validating the child's evidence; the success gate now requires the exact
+  all-zero preservation object.
+- Fresh checks after the final-review correction: Focused Vitest passed 23/23
+  under pinned Node 24; Node syntax, Biome, Prettier, and `git diff --check`
+  passed.
+- Remaining: Final-review correction confirmation, target integration
+  decision, explicit push, pull request, exact-head CI, and ready state.
 - Required delivery layer: Ready pull request. Achieved layer: Verified local
   correction.
-- Next action: Obtain integrated final review, then request the one-time target
-  integration authority required by the deployment-only target drift.
+- Next action: Commit and confirm the final-review correction, then request the
+  one-time target integration authority required by the deployment-only target
+  drift.

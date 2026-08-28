@@ -72,7 +72,10 @@ async function dummyEnvironment() {
   }
 }
 
-function passedReceiptSource(extra = '') {
+function passedReceiptSource(
+  extra = '',
+  preservation = '{databaseWrites:0,configurationChanges:0,bindingChanges:0,clusterChanges:0,productionActions:0,retries:0}'
+) {
   return `
 ${extra}
 process.send({
@@ -85,7 +88,8 @@ process.send({
   failedCaseId: null,
   failedRejectionClass: null,
   counts: {kbExpected:15,kbPassed:15,chatbotsExpected:21,chatbotsPassed:21,excludedExpected:2,positivePassed:21,isolationPassed:21,rejectionsPassed:7},
-  rejections: {missing:'passed',expired:'passed',forged:'passed',wrong_issuer:'passed',wrong_audience:'passed',unknown_key:'passed',trusted_filter_override:'passed'}
+  rejections: {missing:'passed',expired:'passed',forged:'passed',wrong_issuer:'passed',wrong_audience:'passed',unknown_key:'passed',trusted_filter_override:'passed'},
+  preservation: ${preservation}
 }, () => process.exit(0))
 `
 }
@@ -421,25 +425,43 @@ describe('STG Doc Query proof supervisor', () => {
     expect(JSON.stringify(receipt)).not.toContain('dummy-private-key')
   })
 
-  test('rejects incomplete, exit-mismatched, and missing success receipts', async () => {
-    const sources = [
+  test.each([
+    [
+      'an incomplete receipt',
       passedReceiptSource().replace("phase: 'complete'", "phase: 'matrix'"),
+      'protocol_failed',
+    ],
+    [
+      'missing preservation evidence',
+      passedReceiptSource('', 'undefined'),
+      'protocol_failed',
+    ],
+    [
+      'non-zero preservation evidence',
+      passedReceiptSource(
+        '',
+        '{databaseWrites:1,configurationChanges:0,bindingChanges:0,clusterChanges:0,productionActions:0,retries:0}'
+      ),
+      'protocol_failed',
+    ],
+    [
+      'an exit-mismatched receipt',
       passedReceiptSource().replace('process.exit(0)', 'process.exit(1)'),
-      'process.exit(0)',
-    ]
-    for (const source of sources) {
-      const dummy = await writeDummy(source)
-      const receipt = await superviseProof({
-        sourceEnvironment:
-          (await dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
-        childPath: dummy.path,
-        childArgs: [],
-        lockPath: dummy.lockPath,
-        deadlineMs: 2_000,
-      })
-      expect(receipt.result).toBe('failed')
-      expect(receipt.failureClass).toBe('child_failed')
-    }
+      'child_failed',
+    ],
+    ['a missing receipt', 'process.exit(0)', 'child_failed'],
+  ])('rejects %s', async (_name, source, expectedFailure) => {
+    const dummy = await writeDummy(source)
+    const receipt = await superviseProof({
+      sourceEnvironment:
+        (await dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+      childPath: dummy.path,
+      childArgs: [],
+      lockPath: dummy.lockPath,
+      deadlineMs: 2_000,
+    })
+    expect(receipt.result).toBe('failed')
+    expect(receipt.failureClass).toBe(expectedFailure)
   })
 
   test('passes no unrelated environment or file descriptor to the child', async () => {

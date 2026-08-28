@@ -57,6 +57,15 @@ const REJECTION_CLASSES = [
   'trusted_filter_override',
 ]
 
+const PRESERVATION_FIELDS = [
+  'databaseWrites',
+  'configurationChanges',
+  'bindingChanges',
+  'clusterChanges',
+  'productionActions',
+  'retries',
+]
+
 const FAILURE_CLASSES = new Set([
   'none',
   'manifest_refused',
@@ -111,6 +120,20 @@ function requireMarkerList(value) {
     throw new ProofFailure('manifest_refused')
   }
   return [...value]
+}
+
+function zeroPreservation() {
+  return Object.fromEntries(PRESERVATION_FIELDS.map((name) => [name, 0]))
+}
+
+function hasExactZeroPreservation(value) {
+  return (
+    value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.keys(value).length === PRESERVATION_FIELDS.length &&
+    PRESERVATION_FIELDS.every((name) => value[name] === 0)
+  )
 }
 
 export function validateManifest(input) {
@@ -233,14 +256,7 @@ function emptyReceipt() {
     rejections: Object.fromEntries(
       REJECTION_CLASSES.map((name) => [name, 'not_run'])
     ),
-    preservation: {
-      databaseWrites: 0,
-      configurationChanges: 0,
-      bindingChanges: 0,
-      clusterChanges: 0,
-      productionActions: 0,
-      retries: 0,
-    },
+    preservation: zeroPreservation(),
   }
 }
 
@@ -696,7 +712,8 @@ function sanitizeReceipt(value) {
       value.counts?.positivePassed !== EXPECTED_CHATBOT_COUNT ||
       value.counts?.isolationPassed !== EXPECTED_CHATBOT_COUNT ||
       value.counts?.rejectionsPassed !== REJECTION_CLASSES.length ||
-      REJECTION_CLASSES.some((name) => value.rejections?.[name] !== 'passed'))
+      REJECTION_CLASSES.some((name) => value.rejections?.[name] !== 'passed') ||
+      !hasExactZeroPreservation(value.preservation))
   ) {
     return fixedFailureReceipt('protocol_failed')
   }
@@ -831,7 +848,10 @@ export async function superviseProof({
     else if (interrupted) receipt = fixedFailureReceipt('interrupted')
     else if (close.signal) receipt = fixedFailureReceipt('child_signaled')
     else if (close.code === 0) {
-      if (message?.result !== 'passed') {
+      if (
+        message?.result !== 'passed' &&
+        message?.failureClass !== 'protocol_failed'
+      ) {
         receipt = fixedFailureReceipt('child_failed')
       }
     } else if (message === null || message.result === 'passed') {
