@@ -112,6 +112,78 @@ healthcheck:
   retries: 20
 ```
 
+## Profiles
+
+Optional named subsets of routed apps in `.devrouter.yml` so `ensure` can start only what a task needs:
+
+```yaml
+profiles:
+  manage:
+    apps: [manage, api, auth]
+    readiness: [manage, api]
+  pwa:
+    apps: [pwa, api, auth]
+    readiness: [pwa, api]
+  full:
+    apps: ['*']
+    default: true
+```
+
+- `apps` (required for app-only profiles): routed app names (`kind=app`) or `['*']` for everything; with `managedRuntime`, omit it for a route-free capability profile.
+- `dependencies` (optional): `kind=dependency` services this profile needs; omitted = every dependency a kept app requires transitively.
+- `readiness` (optional): subset of the profile's apps that `ensure` HTTP-probes; omitted = all profile apps with an http route.
+- `default` (optional): at most one; used when `--profile` is omitted. No `profiles` key at all = implicit full behavior.
+- Validation is strict at config load: unknown keys, non-routed `apps`, non-dependency `dependencies`, `readiness` outside the profile's apps, and multiple defaults are rejected.
+- Selection: `devrouter ensure <path> --profile <name>`. Comma-separated selections (`--profile manage,pwa`) merge with deduplication; the canonical name is sorted-unique so order never affects identity or fingerprints. A wildcard member collapses to everything.
+- Managed adapters receive `DEVROUTER_PROFILE` (canonical resolved name) in the post-start env; profile switches replace the owned process group via the fingerprint.
+
+### Managed devcontainer resources
+
+The optional `managedRuntime` registry separates the primary container's base
+Compose services, optional profile services, and repository-owned process
+markers. Profiles select those dimensions independently:
+
+```yaml
+managedRuntime:
+  devcontainer:
+    baseServices: [postgres]
+    profileServices: [litellm, mcp-server]
+  processes: [web, local-mcp]
+
+profiles:
+  ai:
+    apps: [web]
+    devcontainerServices: [litellm]
+    processes: [web]
+  mcp:
+    devcontainerServices: [mcp-server]
+    processes: [local-mcp]
+  full:
+    apps: ['*']
+    devcontainerServices: ['*']
+    processes: ['*']
+    default: true
+```
+
+- `baseServices` remain selected with the primary Dev Container service for
+  every managed profile; `profileServices` and `processes` are registries.
+- `devcontainerServices` selects registered optional Compose services, and
+  `processes` selects registered managed process markers.
+- With `managedRuntime`, `apps` may be omitted for a route-free capability
+  profile. An omitted optional dimension selects nothing, so an app-only
+  profile does not start LiteLLM, MCP, MailHog, or another optional service.
+- Use `*` or the `full` profile to select every registered resource. A config
+  without `managedRuntime` keeps the app-only profile behavior.
+- Native Dev Container clients still use the source configuration's full
+  service set. Managed `ensure` derives an ignored, marker-owned sibling
+  configuration and changes only `runServices`.
+- Warm profile changes retain the exact DevPod and volumes, do not rerun
+  `postCreateCommand`, avoid `--recreate` and broad `down`, and stop dropped
+  services/processes only after exact ownership proof. Routes publish last.
+- Inspect managed desired, active, and drift state with `devrouter status` and
+  `devrouter doctor`; values such as credentials and environment contents are
+  never written to managed runtime state.
+
 ## Env var injection
 
 When a host app depends on a TCP Docker service, `devrouter app run` and `devrouter app exec` inject per-dep deterministic vars (where `{PREFIX} = dep.name.toUpperCase().replace(/-/g, "_")`):
@@ -135,10 +207,11 @@ Run several worktrees of one repo in parallel without host/route collisions. A *
 - **When active**: hosts auto-namespace (`web.localhost` → `web.<ws>.localhost`), `${WORKSPACE}` in `upstream` is substituted with the token, and the docker `router` key is suffixed per workspace. Managed `ensure` rejects every HTTP/TCP proxy upstream outside that exact alias namespace before it mutates DevPod or routes. The runtime config is computed in memory only — the committed `.devrouter.yml` is never rewritten.
 - **TLS**: namespaced hosts (`web.<ws>.localhost`) are not covered by the `*.localhost` wildcard; devrouter auto-extends the mkcert cert SANs for active hosts when TLS is enabled.
 - **devcontainer integration**: managed scaffolds list the base compose file, then `${localEnv:DEVCONTAINER_COMPOSE_OVERLAY:docker-compose.default.yml}`; custom repositories may keep another default overlay. Selecting `.devcontainer/docker-compose.devrouter.yml` for linked worktrees must pass `WORKSPACE` and `DEVROUTER_WORKSPACE` across the combined base/overlay config and bind-mount `${DEVROUTER_GIT_COMMON_DIR}` to the same absolute app-container path. The app exposes `${WORKSPACE}-app`; the proxy uses `upstream: ${WORKSPACE}-app:<port>`.
-- **Lifecycle**: after one-time `setup`, use `ensure .` for both primary and linked checkouts; never branch manually on checkout kind or use live verify as startup. `stop .` is non-destructive; `stop . --delete` is explicit exact-owner cleanup without worktree removal; and `exec . -- <command...>` runs one-shot commands only in the exact running DevPod. Never substitute raw `devpod up`, `stop`, or `delete`: they bypass devrouter's machine-global ownership lock. `workspace up` creates linked worktrees; destructive worktree removal and GC remain ledger-scoped. Dirty or locked full down fails before side effects.
+- **Lifecycle**: after one-time `setup`, use `ensure .` for both primary and linked checkouts; never branch manually on checkout kind or use live verify as startup. `stop .` is non-destructive; `stop . --delete` is explicit exact-owner cleanup without worktree removal; and `exec . -- <command...>` runs one-shot commands only in the exact running workspace runtime (DevPod or Devsy). Never substitute raw `devpod up`, `stop`, `delete`, or the Devsy equivalents: they bypass devrouter's machine-global ownership lock. Runtime selection is path-aware: `DEVROUTER_WORKSPACE_RUNTIME=devpod|devsy` forces one runtime, an exact-path registry owner wins next, then the machine preference from `devrouter setup --workspace-runtime`, then installed-CLI auto-detection. `workspace up` creates linked worktrees; destructive worktree removal and GC remain ledger-scoped. Dirty or locked full down fails before side effects.
 - **Managed process identity**: `ensure` executes an exact captured adapter snapshot. Default reuse includes command argv, workspace, and adapter SHA-256. Set `DEVROUTER_PROCESS_FINGERPRINT_ENV` only to comma-separated non-secret environment names whose values affect runtime identity; secret-like names are rejected and raw values are never persisted.
 - **Route state**: the versioned Traefik dynamic file is authoritative for both metadata and rendering. JSON is a compatibility mirror; valid headerless generations migrate automatically, while corrupt canonical metadata fails closed.
-- **Cleanup**: owner status is `present`, `missing`, `locked`, or `conflict`. `workspace gc` is a dry-run report; `--yes` deletes only exact ledger-owned missing/prunable resources and their records. GC never removes Git worktrees, branches, or prune state. Git has no worktree-removal hook.
+- **Cleanup**: `workspace cleanup --repo . --inactive-for 30d --json` is a report-only, no-`--yes` report for managed linked workspaces. It joins ownership (`present|missing|locked|conflict`), workspace runtime registration, runtime state (`running|stopped|busy|not-found|absent|unknown`), checkout, route, advisory activity, and integration evidence without mutating the workspace runtime, routes, ownership, Git, Docker, applications, worktrees, or branches. Local DevPod/Devsy list/status checks always run; `--check-merged` alone enables read-only origin and matching GitHub/GitLab checks. Treat `not-found` as stale runtime after Docker pruning; busy, unavailable, or conflicting evidence suppresses destructive suggestions. Explicit `gc`/`down` can remove exact stale registration only after expected-ID `NotFound` proof and ownership revalidation. GC never removes Git worktrees, branches, or prune state. Git has no worktree-removal hook.
+- **Sizing**: `--measure-size` adds per-workspace storage consumption to that report and stays read-only, but it walks each worktree and runs `docker ps` / `docker inspect --size`, so leave it off when you only need the evidence states. Each row reports reclaimable `worktree` and `containerWritable` bytes, non-reclaimable `imageShared` bytes, and a `reclaimable` total of the first two. `imageShared` covers image layers shared with other containers and overlaps across rows, so never sum it. Attribution is the workspace's own app container; sibling compose services such as a database are excluded. Any untrustworthy figure reports `unknown` with a reason rather than zero, and a workspace with no container reports a measured `0`.
 - **Boundary**: workspace commands require Git. Normal config, app, status, and doctor flows remain usable from a `.devrouter.yml` folder without `.git`.
 
 ## Secret manager interop (Infisical/Doppler)
@@ -189,9 +262,9 @@ Run several worktrees of one repo in parallel without host/route collisions. A *
 - `devrouter -V [--repo .]`: show installed CLI version, local repo version, and next upgrade target
 - `devrouter upgrade [version] [--repo .]`: list upgrade targets or print target Agent Adaptation Prompt
 - `devrouter setup --yes [--repo .] [--json]`: first-run machine setup plus structured diagnostics
-- `devrouter ensure [path] [--open] [--json]`: canonical startup/reconciliation for primary and linked checkouts
-- `devrouter stop [path] [--delete] [--json]`: stop the exact DevPod and remove exact routes; `--delete` explicitly deletes its ownership-proven data without removing the checkout
-- `devrouter exec [path] -- <command...>`: literal one-shot command inside the exact running DevPod
+- `devrouter ensure [path] [--profile <name>] [--open] [--json]`: canonical startup/reconciliation for primary and linked checkouts; a managed profile selects its independent resource dimensions
+- `devrouter stop [path] [--delete] [--json]`: stop the exact workspace runtime and remove exact routes; `--delete` explicitly deletes its ownership-proven data without removing the checkout
+- `devrouter exec [path] -- <command...>`: literal one-shot command inside the exact running workspace runtime
 - `devrouter up` / `devrouter down`: start/stop shared Traefik router
 - `devrouter status`: router/container/network/TLS health
 - `devrouter doctor [--repo .]`: deep diagnostics (global + repo)
@@ -212,8 +285,9 @@ Run several worktrees of one repo in parallel without host/route collisions. A *
 - `devrouter app exec <name> [--shell] [--env <env>] [--workspace <slug>] -- <cmd>`: one-shot command with resolved dep env
 - `devrouter app rm <name> [--keep-config]`: remove app entry (`--keep-config` frees only the live route/hostname, leaves `.devrouter.yml` untouched)
 - `devrouter workspace up <branch> [--path <dir>] [--no-devpod] [--open]`: create a worktree and start/prove it unless create-only mode is requested
-- `devrouter workspace ensure [path] [--open] [--json]`: compatibility alias of `devrouter ensure`
-- `devrouter workspace ls [--json]`: list ownership, Git, DevPod, route, path, and branch evidence
+- `devrouter workspace ensure [path] [--profile <name>] [--open] [--json]`: compatibility alias of `devrouter ensure`
+- `devrouter workspace ls [--json]`: list ownership, Git, workspace runtime, route, path, and branch evidence
+- `devrouter workspace cleanup [--repo .] [--inactive-for 30d] [--check-merged] [--measure-size] [--json]`: report-only cleanup evidence and exact guarded suggestions; no `--yes` or apply mode
 - `devrouter workspace stop <workspace|branch>`: stop DevPod and routes; preserve checkout, owner record, and data
 - `devrouter workspace down <workspace|branch> [--keep-worktree]`: delete runtime/routes and optionally remove the clean worktree and record
 - `devrouter workspace gc [--json] [--yes]`: report missing owners by default; apply exact eligible cleanup with `--yes`
@@ -228,7 +302,7 @@ For devcontainer onboarding:
 4. `devrouter repo devcontainer write --repo . --dry-run --json`
 5. `devrouter repo devcontainer write --repo . --yes`
 6. `devrouter repo devcontainer verify --repo . --json`
-7. Start and prove either checkout kind with `devrouter ensure . --json`
+7. Start and prove either checkout kind with `devrouter ensure . --json`; for managed selective work, use `--profile <name>` and inspect desired/active/drift state
 8. Run seeds or migrations with `devrouter exec . -- <command...>`
 
 For host/docker runtime apps only:

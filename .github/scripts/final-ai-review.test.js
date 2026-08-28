@@ -87,23 +87,71 @@ test('grants clean evidence check access only to the required workflow jobs', ()
   assert.doesNotMatch(permissionsFor('review'), / {6}checks:/)
 })
 
-test('pins trusted review code to the event workflow commit when the default branch moves', () => {
+test('pins trusted review code to the event workflow commit when the default branch moves', async () => {
   for (const workflow of ['../workflows/check-ocr-final-review.yml']) {
     const source = fs.readFileSync(path.join(__dirname, workflow), 'utf8')
+    assert.match(source, /^  pull_request_target:/m)
+    assert.match(source, /^  issue_comment:/m)
     assert.match(
       source,
       /GITHUB_WORKFLOW_SHA: \$\{\{ github\.workflow_sha \}\}/
     )
     assert.match(
       source,
+      /- name: Resolve trusted default-branch commit\n        id: resolve\n        uses: actions\/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9\.0\.0/
+    )
+    assert.match(
+      source,
       /const workflowSha = process\.env\.GITHUB_WORKFLOW_SHA/
     )
     assert.match(source, /github\.rest\.repos\.getCommit/)
+    assert.match(source, /ref: workflowSha/)
+    assert.doesNotMatch(source, /commit_sha: workflowSha/)
     assert.match(source, /core\.setOutput\('trusted_sha', workflowSha\)/)
     assert.doesNotMatch(
       source,
       /const branch = context\.payload\.repository\.default_branch/
     )
+
+    const script = source.match(
+      /- name: Resolve trusted default-branch commit[\s\S]*?\n          script: \|\n((?: {12}.*\n)+)/
+    )?.[1]
+    assert.ok(script)
+    const resolveTrustedPolicy = new Function(
+      'github',
+      'context',
+      'core',
+      'process',
+      `return (async () => {\n${script.replace(/^ {12}/gm, '')}\n})()`
+    )
+    const workflowSha = '86e8ac2e13c77e90a9bcd45d0f6b5f03fff18eed'
+    const getCommit = async (parameters) => {
+      assert.deepEqual(parameters, {
+        owner: 'uzh-bf',
+        repo: 'klicker-uzh',
+        ref: workflowSha,
+      })
+      return { data: { sha: workflowSha } }
+    }
+
+    for (const eventName of ['pull_request_target', 'issue_comment']) {
+      const outputs = new Map()
+      await resolveTrustedPolicy(
+        {
+          rest: { repos: { getCommit } },
+        },
+        {
+          eventName,
+          repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
+        },
+        {
+          setFailed: assert.fail,
+          setOutput: (name, value) => outputs.set(name, value),
+        },
+        { env: { GITHUB_WORKFLOW_SHA: workflowSha } }
+      )
+      assert.equal(outputs.get('trusted_sha'), workflowSha)
+    }
   }
 })
 

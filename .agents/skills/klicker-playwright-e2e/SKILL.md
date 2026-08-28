@@ -29,80 +29,41 @@ Use this skill for Klicker-specific Playwright work. Combine it with `playwright
 Useful check:
 
 ```bash
-volta run pnpm --filter @klicker-uzh/playwright exec playwright test --list --project=chromium
+pnpm playwright:host -- --list --project=chromium
 rg -n "test\\(" playwright/tests
 ```
 
 ## Local Test Setup
 
-### Host-run against a running devrouter workspace (preferred)
-
-Playwright is a black-box driver: run it from the host against the devrouter
-routes. Browser binaries and node_modules come from shared host caches, so
-never download browsers into a DevPod.
-
-```bash
-# auto-detects routed worktrees / plain devcontainer / host-run apps
-bash util/run-host-e2e.sh --project=chromium tests/A-login.spec.ts
-bash util/run-host-e2e.sh --project=chromium tests/Y-kb-management-ux.spec.ts
-
-# inspect the resolved URL + database mapping without running anything
-bash util/run-host-e2e.sh --print
-
-# linked-workspace token override (long branch names can get truncated)
-E2E_WORKSPACE=<token> bash util/run-host-e2e.sh --project=chromium <spec>
-```
-
-The runner installs only the Playwright workspace dependencies on the host,
-builds `@klicker-uzh/prisma` and `@klicker-uzh/types` for global setup, maps
-the application URLs and seed database to the reachable runtime, and reuses
-the host browser cache. Headless runs install only the smaller Chromium shell;
-a headed run needs one full Chromium installation on the host.
-
-The seed database uses the workspace Postgres container's OrbStack host name.
-Node Postgres cannot negotiate libpq direct TLS through the Traefik database
-route; that route remains correct for psql and other libpq tooling.
-On another Docker runtime, pass `E2E_DATABASE_URL` for a disposable database
-that is reachable from the host.
-Container-local dependencies stay behind the routed applications. If a future
-browser journey needs direct access to another service, expose a host route for
-that service instead of running Playwright inside the DevPod.
-
-The existing global setup resets and reseeds the mapped database. Run the host
-runner only against a disposable local test runtime.
-
-### Legacy host-based stack
-
-Run from repo root. Use Volta when Node/pnpm versions are confusing.
-
-```bash
-docker compose down -v
-./_run_app_dependencies.sh
-pnpm run dev:playwright
-```
-
-Run Playwright:
+Run every local Playwright command from a **host shell** at the repository root.
+The host launcher reconciles the exact devrouter workspace, maps all app URLs
+and the worktree database, installs host-only Playwright dependencies and
+browsers when missing, and then runs the browser on the host. The applications,
+workers, and data services remain inside the devcontainer.
 
 ```bash
 # list active Chromium tests without executing them
-volta run pnpm --filter @klicker-uzh/playwright exec playwright test --list --project=chromium
+pnpm playwright:host -- --list --project=chromium
 
 # focused specs
-volta run pnpm --filter @klicker-uzh/playwright exec playwright test --project=chromium tests/O-live-quiz.spec.ts
+pnpm playwright:host -- --project=chromium tests/O-live-quiz.spec.ts
 
 # full active Chromium suite
-volta run pnpm --filter @klicker-uzh/playwright test -- --project=chromium
+pnpm playwright:host -- --project=chromium
+
+# inspect the resolved workspace without exposing credentials
+pnpm playwright:host -- --print-env
 ```
 
-For live quiz answer submission, response processing, scheduled microlearnings, or Hatchet workflow failures, start the missing services explicitly:
+Do not run `playwright test`, package-local raw scripts, browser installation,
+or the host launcher through `devrouter exec` or a DevPod shell. The Playwright
+config rejects direct local invocations before global setup, and the
+devcontainer cannot store Playwright browser binaries. GitHub Actions is the
+explicit exception and keeps running in the official Playwright container.
 
-```bash
-pnpm --filter @klicker-uzh/response-api dev
-pnpm --filter @klicker-uzh/hatchet-worker-response-processor dev
-./util/_run_with_infisical.sh --env dev-playwright pnpm --filter @klicker-uzh/hatchet-worker-general dev
-```
-
-Ensure the response processor is not running with `ASSESSMENT_MODE=true` when validating live quiz mode.
+The launcher starts the full devrouter profile, including response-api and both
+Hatchet workers. Ensure the response processor is not running with
+`ASSESSMENT_MODE=true` when validating live quiz mode.
 
 For `apps/chat` app-router recovery, authenticate the browser with a seeded
 participant before exercising `/<chatbotId>` routes. Both a malformed ID and a
@@ -131,7 +92,7 @@ render of the starter grid.
 
 ## Fast Failure Triage
 
-- `net::ERR_CONNECTION_REFUSED http://127.0.0.1:3002/`: the app server is down, not a selector issue. Check `pnpm run dev:playwright` and service readiness first.
+- `net::ERR_CONNECTION_REFUSED`: the routed app is down, not a selector issue. Run `pnpm playwright:host -- --print-env` and inspect `devrouter exec . -- tail -f /tmp/dev.log` first.
 - `ECONNREFUSED 127.0.0.1:7078`: `response-api` is not running.
 - Hatchet `workflow not found`: the relevant Hatchet worker is not registered/running, often `hatchet-worker-general` for scheduled tasks.
 - Sudden Firefox/WebKit execution: Playwright is running with
@@ -143,10 +104,8 @@ render of the starter grid.
 Before blaming a test, probe the apps:
 
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3000/healthz
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3001
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3002
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3010
+pnpm playwright:host -- --print-env
+devrouter exec . -- tail -n 100 /tmp/dev.log
 ```
 
 ## Klicker Helper Patterns
@@ -226,7 +185,9 @@ For refactors, run:
 ```bash
 volta run pnpm exec prettier --check playwright/util/actions.ts playwright/tests/<changed-spec>.spec.ts
 volta run pnpm --filter @klicker-uzh/playwright exec tsc --noEmit --project tsconfig.json
-volta run pnpm --filter @klicker-uzh/playwright exec playwright test --list --project=chromium
+pnpm playwright:host -- --list --project=chromium
 ```
 
-Only run browser specs when the local stack is up. If endpoints are down, report that runtime validation was not possible instead of producing noisy connection-refused failures.
+The type and format checks can run in the devcontainer; the Playwright command
+cannot. If the host launcher cannot prove the routed stack, report that runtime
+validation was not possible instead of bypassing the boundary.

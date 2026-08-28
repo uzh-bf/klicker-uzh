@@ -13,16 +13,16 @@
   },
   "scripts": {
     "check": "tsc --noEmit -p tsconfig.json",
-    "show-report": "playwright show-report",
-    "test": "../util/_run_with_infisical.sh --env dev-playwright playwright test",
-    "test:headed": "../util/_run_with_infisical.sh --env dev-playwright playwright test --headed --project=chromium",
-    "test:headed:raw": "playwright test --headed --project=chromium",
-    "test:host": "bash ../util/run-host-e2e.sh",
-    "test:raw": "playwright test",
-    "test:run": "../util/_run_with_infisical.sh --env dev-playwright playwright test",
-    "test:run:raw": "playwright test",
-    "test:ui": "../util/_run_with_infisical.sh --env dev-playwright playwright test --ui",
-    "test:ui:raw": "playwright test --ui"
+    "show-report": "node ../util/run-playwright-host.mjs --show-report",
+    "test": "node ../util/run-playwright-host.mjs",
+    "test:headed": "node ../util/run-playwright-host.mjs --headed --project=chromium",
+    "test:headed:raw": "node ../util/run-playwright-host.mjs --headed --project=chromium",
+    "test:host": "node ../util/run-playwright-host.mjs",
+    "test:raw": "node ../util/run-playwright-host.mjs",
+    "test:run": "node ../util/run-playwright-host.mjs",
+    "test:run:raw": "node ../util/run-playwright-host.mjs",
+    "test:ui": "node ../util/run-playwright-host.mjs --ui",
+    "test:ui:raw": "node ../util/run-playwright-host.mjs --ui"
   },
   "engines": {
     "node": "=24"
