@@ -387,9 +387,14 @@
 - `2026-08-28`: K1 bootstrap marker committed as `c68fbe085`. The lifecycle
   slice reviewer identified a documentation ambiguity around bounded Hatchet
   token capture and missing failed-middle-step proof; both corrections are
-  implemented. The dedicated simplifier returned no threshold findings.
-- Current state: `active`. Completed slices: K0. Active: K1 correction commit.
-  Remaining: K2-K4. Latest evidence: `bash util/test-dev-runtime.sh`, shell
+  committed as `3e6adcaff`. The dedicated simplifier returned no threshold
+  findings, and the lifecycle reviewer correction pass returned `APPROVED`.
+- `2026-08-28`: Devrouter PR #41 merged at `118a8e4`; release workflow
+  `33193690771` published `@devrouter/cli@0.0.43` with provenance. Registry
+  metadata and the installed CLI resolve to exact version `0.0.43`. K2 pins
+  that published artifact and synchronizes current consumer guidance.
+- Current state: `active`. Completed slices: K0-K1. Active: K2 static matrix.
+  Remaining: K3-K4. Latest evidence: `bash util/test-dev-runtime.sh`, shell
   syntax for all four scripts, and `git diff --check` pass; no task provider
   runtime is active. Required delivery: merge-ready Klicker PR; achieved
-  delivery: committed plan and marker implementation plus verified corrections.
+  delivery: reviewed bootstrap contract plus published validator pin.
