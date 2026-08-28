@@ -256,6 +256,48 @@ describe('semantic free-text evaluation worker', () => {
     ).toEqual({ score: 6 })
   })
 
+  it('does not apply an evaluated attempt with an invalid aggregate score', async () => {
+    const ctx = participantContext(fixture.participant.id)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
+    const pending = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'It spreads investments across assets.',
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+    const attempt = pending.currentAttempt!
+    await prisma.$transaction((tx) =>
+      completeFreeTextAttemptEvaluationInTransaction(
+        {
+          attemptId: attempt.id,
+          evaluationRevision: attempt.evaluationRevision,
+          evaluation: evaluatorResponse(attempt.id, 60, 'complete'),
+        },
+        tx
+      )
+    )
+    await prisma.freeTextAttempt.update({
+      where: { id: attempt.id },
+      data: { aggregateScore: 101 },
+    })
+
+    await expect(
+      applyEvaluatedFreeTextAttempt({ attemptId: attempt.id }, prisma)
+    ).rejects.toThrow('invalid aggregate score')
+    expect(
+      await prisma.questionResponseDetail.count({
+        where: { freeTextAttempt: { id: attempt.id } },
+      })
+    ).toBe(0)
+  })
+
   it('preserves incremental rewards when recovered attempts apply out of order', async () => {
     const ctx = participantContext(fixture.participant.id)
     await decideSemanticEvaluationConsent(

@@ -180,12 +180,8 @@ export const Mutation = builder.mutationType({
           answerTime: t.arg.float({ required: true }),
           clientSubmissionId: t.arg.string({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          return await FreeTextEvaluationService.createFreeTextAttempt(
-            args,
-            ctx
-          )
-        },
+        resolve: (_, args, ctx) =>
+          FreeTextEvaluationService.createFreeTextAttempt(args, ctx),
       }),
 
       retryFreeTextEvaluation: t.withAuth(asParticipant).field({
@@ -197,12 +193,8 @@ export const Mutation = builder.mutationType({
             validate: { uuid: true },
           }),
         },
-        resolve: async (_, args, ctx) => {
-          return await FreeTextEvaluationService.retryFreeTextEvaluation(
-            args,
-            ctx
-          )
-        },
+        resolve: (_, args, ctx) =>
+          FreeTextEvaluationService.retryFreeTextEvaluation(args, ctx),
       }),
 
       revealFreeTextSolution: t.withAuth(asParticipant).field({
@@ -214,24 +206,16 @@ export const Mutation = builder.mutationType({
             validate: { uuid: true },
           }),
         },
-        resolve: async (_, args, ctx) => {
-          return await FreeTextEvaluationService.revealFreeTextSolution(
-            args,
-            ctx
-          )
-        },
+        resolve: (_, args, ctx) =>
+          FreeTextEvaluationService.revealFreeTextSolution(args, ctx),
       }),
 
       startFreeTextPracticeCycle: t.withAuth(asParticipant).field({
         nullable: false,
         type: FreeTextPracticeStateType,
         args: { instanceId: t.arg.int({ required: true }) },
-        resolve: async (_, args, ctx) => {
-          return await FreeTextEvaluationService.startFreeTextPracticeCycle(
-            args,
-            ctx
-          )
-        },
+        resolve: (_, args, ctx) =>
+          FreeTextEvaluationService.startFreeTextPracticeCycle(args, ctx),
       }),
 
       decideSemanticEvaluationConsent: t.withAuth(asParticipant).boolean({

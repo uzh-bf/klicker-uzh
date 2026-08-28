@@ -241,16 +241,15 @@ export async function createFreeTextAttempt(
   })
   const disclosureVersion = getDisclosureVersion(options)
   const consent = await getConsentDecision(ctx.user.sub, disclosureVersion, ctx)
-  const unavailableReason = exactMatch
-    ? null
-    : evaluationAvailabilityReason({
-        ownerEntitled: ownerHasCatalyst(semanticInstance.practiceQuiz),
-        consent: consent?.decision ?? null,
-      })
+  const unavailableReason = evaluationAvailabilityReason({
+    ownerEntitled: ownerHasCatalyst(semanticInstance.practiceQuiz),
+    consent: consent?.decision ?? null,
+  })
+  const exactMatchFallback = exactMatch && unavailableReason !== null
   const bands =
     config.outcome_bands ??
     getDefaultFreeTextOutcomeBands(config.question_language)
-  const exactBand = exactMatch
+  const exactBand = exactMatchFallback
     ? mapFreeTextOutcome({ score: 100, outcomeBands: bands })
     : null
 
@@ -262,21 +261,23 @@ export async function createFreeTextAttempt(
     answerTime,
     rubricSchemaVersion: config.rubric_schema.schema_version,
     rubricSchemaHash: rubricHash,
-    evaluationStatus: exactMatch
+    evaluationStatus: exactMatchFallback
       ? DB.FreeTextEvaluationStatus.EVALUATED
       : unavailableReason
         ? DB.FreeTextEvaluationStatus.UNAVAILABLE
         : DB.FreeTextEvaluationStatus.PENDING,
-    evaluationSource: exactMatch
+    evaluationSource: exactMatchFallback
       ? DB.FreeTextEvaluationSource.EXACT_MATCH
       : null,
-    retryable: unavailableReason !== null,
-    availabilityReason: unavailableReason,
-    completedAt: exactMatch || unavailableReason ? new Date() : null,
-    aggregateScore: exactMatch ? 100 : null,
+    retryable: !exactMatchFallback && unavailableReason !== null,
+    availabilityReason: exactMatchFallback ? null : unavailableReason,
+    completedAt: exactMatchFallback || unavailableReason ? new Date() : null,
+    aggregateScore: exactMatchFallback ? 100 : null,
     outcomeBandId: exactBand?.id,
     outcomeBandLabel: exactBand?.label,
-    correctness: exactMatch ? DB.FreeTextCorrectnessCategory.CORRECT : null,
+    correctness: exactMatchFallback
+      ? DB.FreeTextCorrectnessCategory.CORRECT
+      : null,
   }
   let attempt: DB.FreeTextAttempt
   try {
@@ -287,7 +288,7 @@ export async function createFreeTextAttempt(
           id: cycle.id,
           status: DB.FreeTextPracticeCycleStatus.ACTIVE,
         },
-        data: exactMatch
+        data: exactMatchFallback
           ? {
               status: DB.FreeTextPracticeCycleStatus.CORRECT,
               endedAt: new Date(),
@@ -302,7 +303,7 @@ export async function createFreeTextAttempt(
           'FREE_TEXT_EVALUATION_INVALID_STATE'
         )
       }
-      if (exactMatch) {
+      if (exactMatchFallback) {
         const responseApplied =
           await applyEvaluatedFreeTextAttemptInTransaction(
             { attemptId: created.id, bumpStateVersion: false },
@@ -332,7 +333,7 @@ export async function createFreeTextAttempt(
     throw error
   }
 
-  if (!exactMatch && !unavailableReason) {
+  if (!unavailableReason) {
     await schedulePendingAttempt(attempt, ctx)
   }
 

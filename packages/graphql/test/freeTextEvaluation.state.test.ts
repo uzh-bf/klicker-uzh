@@ -204,9 +204,14 @@ describe('semantic free-text practice state', () => {
     ).rejects.toThrow('Published practice quiz instance not found')
   })
 
-  it('confirms an accepted exact answer without external processing', async () => {
+  it('schedules an accepted exact answer for semantic rubric feedback', async () => {
     const schedule = vi.fn().mockResolvedValue(workflowRunRef())
     const clientSubmissionId = randomUUID()
+    const ctx = participantContext(fixture.participant.id, schedule)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
     const state = await createFreeTextAttempt(
       {
         instanceId: fixture.instance.id,
@@ -214,17 +219,17 @@ describe('semantic free-text practice state', () => {
         answerTime: 3,
         clientSubmissionId,
       },
-      participantContext(fixture.participant.id, schedule)
+      ctx
     )
 
-    expect(state.cycleStatus).toBe('CORRECT')
+    expect(state.cycleStatus).toBe('ACTIVE')
     expect(state.currentAttempt).toMatchObject({
-      evaluationStatus: 'EVALUATED',
-      evaluationSource: 'EXACT_MATCH',
-      correctness: 'CORRECT',
-      aggregateScore: 100,
+      evaluationStatus: 'PENDING',
+      evaluationSource: null,
+      correctness: null,
+      aggregateScore: null,
     })
-    expect(schedule).not.toHaveBeenCalled()
+    expect(schedule).toHaveBeenCalledTimes(1)
     const duplicate = await createFreeTextAttempt(
       {
         instanceId: fixture.instance.id,
@@ -232,7 +237,7 @@ describe('semantic free-text practice state', () => {
         answerTime: 3,
         clientSubmissionId,
       },
-      participantContext(fixture.participant.id, schedule)
+      ctx
     )
     expect(duplicate.currentAttempt?.id).toBe(state.currentAttempt?.id)
     expect(duplicate.stateVersion).toBe(state.stateVersion)
@@ -252,7 +257,7 @@ describe('semantic free-text practice state', () => {
       await prisma.questionResponseDetail.count({
         where: { freeTextAttempt: { id: state.currentAttempt!.id } },
       })
-    ).toBe(1)
+    ).toBe(0)
   })
 
   it('keeps legacy free-text submissions on exact grading without semantic attempts', async () => {
@@ -360,6 +365,37 @@ describe('semantic free-text practice state', () => {
     })
     expect(state.attemptsUsed).toBe(0)
     expect(state.attemptsRemaining).toBe(2)
+  })
+
+  it('uses exact matching when semantic evaluation is declined', async () => {
+    const schedule = vi.fn().mockResolvedValue(workflowRunRef())
+    const ctx = participantContext(fixture.participant.id, schedule)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: false },
+      ctx
+    )
+
+    const state = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'Diversification reduces idiosyncratic risk.',
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+
+    expect(state.cycleStatus).toBe('CORRECT')
+    expect(state.currentAttempt).toMatchObject({
+      evaluationStatus: 'EVALUATED',
+      evaluationSource: 'EXACT_MATCH',
+      availabilityReason: null,
+      retryable: false,
+      aggregateScore: 100,
+      correctness: 'CORRECT',
+    })
+    expect(schedule).not.toHaveBeenCalled()
   })
 
   it('persists a declined disclosure on an existing unavailable attempt', async () => {

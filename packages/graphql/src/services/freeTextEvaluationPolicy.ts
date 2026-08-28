@@ -130,8 +130,23 @@ export function getSemanticFreeTextConfig(instance: DB.ElementInstance) {
   return parseSemanticConfig(instance)
 }
 
+function sortJsonObjectKeys(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(sortJsonObjectKeys)
+  }
+  if (typeof value !== 'object' || value === null) return value
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, entry]) => [key, sortJsonObjectKeys(entry)])
+  )
+}
+
 export function getSemanticFreeTextConfigHash(config: SemanticFreeTextConfig) {
-  return createHash('sha256').update(JSON.stringify(config)).digest('hex')
+  return createHash('sha256')
+    .update(JSON.stringify(sortJsonObjectKeys(config)))
+    .digest('hex')
 }
 
 export async function getSemanticInstance(

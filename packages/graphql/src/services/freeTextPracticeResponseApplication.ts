@@ -43,6 +43,15 @@ export async function applyEvaluatedFreeTextAttemptInTransaction(
   ) {
     return false
   }
+  if (
+    !Number.isFinite(attempt.aggregateScore) ||
+    attempt.aggregateScore < 0 ||
+    attempt.aggregateScore > 100
+  ) {
+    throw new Error(
+      'Evaluated free-text attempt has an invalid aggregate score'
+    )
+  }
 
   const previousBest = await prisma.freeTextAttempt.aggregate({
     where: {
