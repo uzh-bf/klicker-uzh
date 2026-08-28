@@ -6,8 +6,9 @@ import {
   getSemanticEvaluationDisclosureVersion,
   getSemanticFreeTextConfig,
   getSemanticFreeTextConfigHash,
-  markFreeTextAttemptUnavailable,
 } from './freeTextEvaluation.js'
+import { resolveFreeTextAttemptUnavailability } from './freeTextEvaluationFallback.js'
+import { markFreeTextAttemptUnavailable } from './freeTextEvaluationTransitions.js'
 import {
   applyEvaluatedFreeTextAttempt,
   applyEvaluatedFreeTextAttemptInTransaction,
@@ -90,7 +91,7 @@ export async function handleEvaluateFreeTextAttempt(
     latestConsentEvent?.decision !==
     DB.SemanticEvaluationConsentDecision.ACCEPTED
   ) {
-    await markFreeTextAttemptUnavailable(
+    await resolveFreeTextAttemptUnavailability(
       {
         attemptId,
         evaluationRevision,
@@ -110,7 +111,7 @@ export async function handleEvaluateFreeTextAttempt(
     attempt.cycle.practiceQuiz.owner.catalystInstitutional ||
     attempt.cycle.practiceQuiz.owner.catalystIndividual
   if (!ownerEntitled) {
-    await markFreeTextAttemptUnavailable(
+    await resolveFreeTextAttemptUnavailability(
       {
         attemptId,
         evaluationRevision,
@@ -139,7 +140,7 @@ export async function handleEvaluateFreeTextAttempt(
     rubricSchema: config.rubric_schema,
   })
   if (!evaluatorResult.ok) {
-    await markFreeTextAttemptUnavailable(
+    await resolveFreeTextAttemptUnavailability(
       {
         attemptId,
         evaluationRevision,
@@ -185,7 +186,7 @@ export async function handleEvaluateFreeTextAttemptFailure(
   globalCtx: HatchetHandlerGlobalContext,
   _executionCtx: Context<unknown>
 ) {
-  const applied = await markFreeTextAttemptUnavailable(
+  const applied = await resolveFreeTextAttemptUnavailability(
     {
       attemptId,
       evaluationRevision,
@@ -229,7 +230,7 @@ export async function handleReapStalledFreeTextAttempts(
   })
   const applied = await Promise.all(
     stalledAttempts.map((attempt) =>
-      markFreeTextAttemptUnavailable(
+      resolveFreeTextAttemptUnavailability(
         {
           attemptId: attempt.id,
           evaluationRevision: attempt.evaluationRevision,

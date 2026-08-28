@@ -18,7 +18,10 @@ import {
   retryFreeTextEvaluation,
   revealFreeTextSolution,
 } from '../src/services/freeTextEvaluation.js'
-import { handleEvaluateFreeTextAttempt } from '../src/services/freeTextEvaluationHandler.js'
+import {
+  handleEvaluateFreeTextAttempt,
+  handleEvaluateFreeTextAttemptFailure,
+} from '../src/services/freeTextEvaluationHandler.js'
 import { applyEvaluatedFreeTextAttempt } from '../src/services/freeTextPracticeResponseApplication.js'
 import {
   cleanupFixtures,
@@ -40,6 +43,7 @@ beforeEach(async () => {
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.unstubAllEnvs()
+  vi.restoreAllMocks()
 })
 afterAll(async () => {
   await cleanupFixtures(TEST_PREFIX)
@@ -578,6 +582,155 @@ describe('semantic free-text evaluation worker', () => {
         retryable: true,
       },
     })
+  })
+
+  it('uses exact matching when an evaluator result is uncertain', async () => {
+    const ctx = participantContext(fixture.participant.id)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
+    const pending = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: semanticConfig.accepted_exact_answers[0]!,
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+    const response = evaluatorResponse(
+      pending.currentAttempt!.id,
+      60,
+      'complete'
+    )
+    response.rubric_assessments[0]!.needs_review = true
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify(response), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      )
+    )
+
+    await handleEvaluateFreeTextAttempt(
+      {
+        attemptId: pending.currentAttempt!.id,
+        evaluationRevision: 0,
+      },
+      { prisma } as never,
+      {} as never
+    )
+
+    const storedAttempt = await prisma.freeTextAttempt.findUniqueOrThrow({
+      where: { id: pending.currentAttempt!.id },
+      include: { cycle: true },
+    })
+    expect(storedAttempt).toMatchObject({
+      evaluationStatus: 'EVALUATED',
+      evaluationSource: 'EXACT_MATCH',
+      aggregateScore: 100,
+      correctness: 'CORRECT',
+      availabilityReason: null,
+      retryable: false,
+      cycle: {
+        status: 'CORRECT',
+        bestScore: 100,
+        pointsAwarded: 10,
+      },
+    })
+    expect(storedAttempt.questionResponseDetailId).not.toBeNull()
+  })
+
+  it('uses exact matching after evaluator retries are exhausted exactly once', async () => {
+    const ctx = participantContext(fixture.participant.id)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
+    const pending = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: semanticConfig.accepted_exact_answers[0]!,
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+    const input = {
+      attemptId: pending.currentAttempt!.id,
+      evaluationRevision: 0,
+    }
+
+    const first = await handleEvaluateFreeTextAttemptFailure(
+      input,
+      { prisma } as never,
+      {} as never
+    )
+    const duplicate = await handleEvaluateFreeTextAttemptFailure(
+      input,
+      { prisma } as never,
+      {} as never
+    )
+
+    expect(first).toEqual({ success: true, applied: true })
+    expect(duplicate).toEqual({ success: true, applied: false })
+    expect(
+      await prisma.freeTextAttempt.findUniqueOrThrow({
+        where: { id: input.attemptId },
+        select: {
+          evaluationStatus: true,
+          evaluationSource: true,
+          aggregateScore: true,
+          questionResponseDetailId: true,
+        },
+      })
+    ).toMatchObject({
+      evaluationStatus: 'EVALUATED',
+      evaluationSource: 'EXACT_MATCH',
+      aggregateScore: 100,
+    })
+    expect(
+      await prisma.questionResponseDetail.count({
+        where: { freeTextAttempt: { id: input.attemptId } },
+      })
+    ).toBe(1)
+  })
+
+  it('uses exact matching when semantic evaluation cannot be scheduled', async () => {
+    const schedule = vi.fn().mockRejectedValue(new Error('scheduler offline'))
+    const ctx = participantContext(fixture.participant.id, schedule)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
+
+    const state = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: semanticConfig.accepted_exact_answers[0]!,
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+
+    expect(state).toMatchObject({
+      cycleStatus: 'CORRECT',
+      attemptsUsed: 1,
+      currentAttempt: {
+        evaluationStatus: 'EVALUATED',
+        evaluationSource: 'EXACT_MATCH',
+        correctness: 'CORRECT',
+      },
+    })
+    expect(consoleError).toHaveBeenCalledOnce()
   })
 
   it('ends the cycle after the configured evaluated attempts and reveals the solution', async () => {

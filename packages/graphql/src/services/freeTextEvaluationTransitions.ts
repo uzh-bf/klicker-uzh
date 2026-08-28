@@ -2,6 +2,7 @@ import {
   computeFreeTextAggregate,
   getDefaultFreeTextOutcomeBands,
   mapFreeTextOutcome,
+  matchesAcceptedExactAnswer,
 } from '@klicker-uzh/grading'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
@@ -9,7 +10,10 @@ import type {
   FreeTextEvaluationAvailabilityReason,
 } from '@klicker-uzh/types'
 import type { PrismaTransactionClient } from '@klicker-uzh/util'
-import { parseSemanticConfig } from './freeTextEvaluationPolicy.js'
+import {
+  getSemanticFreeTextConfigHash,
+  parseSemanticConfig,
+} from './freeTextEvaluationPolicy.js'
 
 type CompleteFreeTextAttemptEvaluationArgs = {
   attemptId: string
@@ -125,6 +129,105 @@ export async function completeFreeTextAttemptEvaluationInTransaction(
   })
   if (cycleTransitioned.count !== 1) {
     throw new Error('Free-text practice cycle changed during evaluation')
+  }
+  return true
+}
+
+export async function completeFreeTextAttemptExactMatchFallbackInTransaction(
+  {
+    attemptId,
+    evaluationRevision,
+  }: { attemptId: string; evaluationRevision: number },
+  prisma: PrismaTransactionClient
+) {
+  await prisma.$queryRaw`
+    SELECT cycle."id"
+    FROM "FreeTextPracticeCycle" AS cycle
+    INNER JOIN "FreeTextAttempt" AS attempt
+      ON attempt."cycleId" = cycle."id"
+    WHERE attempt."id" = ${attemptId}
+    FOR UPDATE OF cycle
+  `
+  const attempt = await prisma.freeTextAttempt.findUnique({
+    where: { id: attemptId },
+    include: {
+      cycle: { include: { elementInstance: true } },
+    },
+  })
+  if (
+    !attempt ||
+    attempt.evaluationStatus !== DB.FreeTextEvaluationStatus.PENDING ||
+    attempt.evaluationRevision !== evaluationRevision ||
+    attempt.cycle.status !== DB.FreeTextPracticeCycleStatus.ACTIVE
+  ) {
+    return false
+  }
+
+  let config: ReturnType<typeof parseSemanticConfig>
+  try {
+    config = parseSemanticConfig(attempt.cycle.elementInstance)
+  } catch {
+    return false
+  }
+  if (
+    attempt.rubricSchemaVersion !== config.rubric_schema.schema_version ||
+    attempt.rubricSchemaHash !== getSemanticFreeTextConfigHash(config) ||
+    !matchesAcceptedExactAnswer({
+      response: attempt.answer,
+      acceptedExactAnswers: config.accepted_exact_answers,
+    })
+  ) {
+    return false
+  }
+  const outcomeBand = mapFreeTextOutcome({
+    score: 100,
+    outcomeBands:
+      config.outcome_bands ??
+      getDefaultFreeTextOutcomeBands(config.question_language),
+  })
+  if (outcomeBand?.category !== 'CORRECT') {
+    throw new Error('Exact-match fallback could not be mapped as correct')
+  }
+
+  const completedAt = new Date()
+  const transitioned = await prisma.freeTextAttempt.updateMany({
+    where: {
+      id: attempt.id,
+      evaluationRevision,
+      evaluationStatus: DB.FreeTextEvaluationStatus.PENDING,
+      cycle: { status: DB.FreeTextPracticeCycleStatus.ACTIVE },
+    },
+    data: {
+      evaluationStatus: DB.FreeTextEvaluationStatus.EVALUATED,
+      evaluationSource: DB.FreeTextEvaluationSource.EXACT_MATCH,
+      retryable: false,
+      availabilityReason: null,
+      completedAt,
+      evaluatorVersion: null,
+      modelVersion: null,
+      aggregateScore: 100,
+      outcomeBandId: outcomeBand.id,
+      outcomeBandLabel: outcomeBand.label,
+      correctness: outcomeBand.category,
+      structuredResult: DB.Prisma.DbNull,
+    },
+  })
+  if (transitioned.count !== 1) return false
+
+  const cycleTransitioned = await prisma.freeTextPracticeCycle.updateMany({
+    where: {
+      id: attempt.cycleId,
+      status: DB.FreeTextPracticeCycleStatus.ACTIVE,
+    },
+    data: {
+      bestScore: Math.max(attempt.cycle.bestScore, 100),
+      status: DB.FreeTextPracticeCycleStatus.CORRECT,
+      endedAt: completedAt,
+      stateVersion: { increment: 1 },
+    },
+  })
+  if (cycleTransitioned.count !== 1) {
+    throw new Error('Free-text practice cycle changed during exact fallback')
   }
   return true
 }

@@ -21,5 +21,6 @@ export type {
 } from './freeTextEvaluationState.js'
 export {
   completeFreeTextAttemptEvaluationInTransaction,
+  completeFreeTextAttemptExactMatchFallbackInTransaction,
   markFreeTextAttemptUnavailable,
 } from './freeTextEvaluationTransitions.js'

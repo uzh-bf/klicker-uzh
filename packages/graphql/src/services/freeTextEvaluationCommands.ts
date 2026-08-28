@@ -7,6 +7,7 @@ import {
 import * as DB from '@klicker-uzh/prisma/client'
 import type { ElementOptionsFreeText } from '@klicker-uzh/types'
 import type { ContextWithUser } from '@/lib/context.js'
+import { resolveFreeTextAttemptUnavailability } from './freeTextEvaluationFallback.js'
 import {
   assertParticipant,
   evaluationAvailabilityReason,
@@ -27,7 +28,6 @@ import {
 } from './freeTextEvaluationState.js'
 import {
   markConsentRequiredAttemptsDeclinedInTransaction,
-  markFreeTextAttemptUnavailable,
   retryFreeTextAttemptInTransaction,
   revealFreeTextSolutionInTransaction,
 } from './freeTextEvaluationTransitions.js'
@@ -100,7 +100,7 @@ async function schedulePendingAttempt(
       `Failed to schedule pending free-text attempt ${attempt.id}:`,
       error
     )
-    await markFreeTextAttemptUnavailable(
+    await resolveFreeTextAttemptUnavailability(
       {
         attemptId: attempt.id,
         evaluationRevision: attempt.evaluationRevision,
