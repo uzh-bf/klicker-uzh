@@ -9,8 +9,6 @@ import InstanceNavigation from './InstanceNavigation'
 import StackNavigation from './StackNavigation'
 
 interface EvaluationNavigationProps {
-  courseId: string
-  activityId: string
   stacks: StackEvaluation[]
   stackInstanceMap: Record<number, { label: string; value: number }[]>
   activeStack: ActiveStackType

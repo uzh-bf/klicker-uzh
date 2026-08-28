@@ -27,6 +27,17 @@ import useCourseLearningAnalyticsControl from '../../../components/analytics/use
 import PerformanceAnalyticsNavigation from '../../../components/analytics/performance/PerformanceAnalyticsNavigation'
 import Layout from '../../../components/Layout'
 
+function getActivityTypeTranslation(activityType: ActivityType) {
+  switch (activityType) {
+    case ActivityType.PracticeQuiz:
+      return 'shared.types.PRACTICE_QUIZ'
+    case ActivityType.MicroLearning:
+      return 'shared.types.MICRO_LEARNING'
+    default:
+      return 'shared.generic.unknown'
+  }
+}
+
 function PerformanceDashboard() {
   const t = useTranslations()
   const router = useRouter()
@@ -73,7 +84,9 @@ function PerformanceDashboard() {
               <H1 className={{ root: 'mb-0' }}>
                 {t('manage.analytics.performanceDashboard')}
               </H1>
-              {analytics.isSuppressed || analytics.effectiveN == null ? (
+              {analytics.isSuppressed ||
+              analytics.effectiveN === null ||
+              analytics.effectiveN === undefined ? (
                 <div data-cy="analytics-suppressed">
                   <UserNotification
                     type="info"
@@ -124,13 +137,11 @@ function PerformanceDashboard() {
                               <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
                                 <dt>{t('manage.analytics.activityTypeV2')}</dt>
                                 <dd>
-                                  {summary.activityType ===
-                                  ActivityType.PracticeQuiz
-                                    ? t('shared.types.PRACTICE_QUIZ')
-                                    : summary.activityType ===
-                                        ActivityType.MicroLearning
-                                      ? t('shared.types.MICRO_LEARNING')
-                                      : t('shared.generic.unknown')}
+                                  {t(
+                                    getActivityTypeTranslation(
+                                      summary.activityType
+                                    )
+                                  )}
                                 </dd>
                                 <dt>
                                   {t('manage.analytics.effectiveNLabelV2')}
@@ -177,7 +188,8 @@ function PerformanceDashboard() {
                       {t('manage.analytics.studentReportV2')}
                     </H2>
                     {analytics.studentReport.isSuppressed ||
-                    analytics.studentReport.effectiveN == null ? (
+                    analytics.studentReport.effectiveN === null ||
+                    analytics.studentReport.effectiveN === undefined ? (
                       <div data-cy="analytics-suppressed">
                         <UserNotification
                           type="info"

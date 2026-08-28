@@ -38,7 +38,6 @@ function MicroLearningEvaluation() {
 
   return (
     <ActivityEvaluation
-      courseId={evaluation?.courseId}
       activityId={router.query.id as string}
       activityName={evaluation?.displayName ?? ''}
       stacks={evaluation?.results ?? []}

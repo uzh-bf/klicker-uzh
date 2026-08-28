@@ -96,6 +96,23 @@ function CourseOverviewHeader({
     learningAnalyticsEnabled && user?.catalyst === true
   const courseLearningAnalyticsAvailable =
     hasLearningAnalyticsAccess && isCourseLearningAnalyticsAvailable(course)
+  let courseLearningAnalyticsTooltip: string | undefined
+  if (!learningAnalyticsEnabled) {
+    courseLearningAnalyticsTooltip = t('manage.analytics.featureUnavailable')
+  } else if (!user?.catalyst) {
+    courseLearningAnalyticsTooltip = t('manage.analytics.catalystRequired')
+  } else if (!courseLearningAnalyticsEnabled) {
+    courseLearningAnalyticsTooltip = t('manage.analytics.courseDisabled')
+  } else if (!courseLearningAnalyticsValid) {
+    courseLearningAnalyticsTooltip = t('manage.analytics.recomputationPending')
+  }
+
+  let learningAnalyticsSettingsTooltip: string | undefined
+  if (!learningAnalyticsEnabled) {
+    learningAnalyticsSettingsTooltip = t('manage.analytics.featureUnavailable')
+  } else if (!user?.catalyst) {
+    learningAnalyticsSettingsTooltip = t('manage.analytics.catalystRequired')
+  }
 
   const ltiDropdownItems = [
     getLTIAccessLink({
@@ -179,15 +196,7 @@ function CourseOverviewHeader({
         window.open(`/analytics/${course.id}/activity`, '_blank')
       },
       disabled: !courseLearningAnalyticsAvailable,
-      tooltip: !learningAnalyticsEnabled
-        ? t('manage.analytics.featureUnavailable')
-        : !user?.catalyst
-          ? t('manage.analytics.catalystRequired')
-          : !courseLearningAnalyticsEnabled
-            ? t('manage.analytics.courseDisabled')
-            : !courseLearningAnalyticsValid
-              ? t('manage.analytics.recomputationPending')
-              : undefined,
+      tooltip: courseLearningAnalyticsTooltip,
       className: {
         // The disabled item remains inert, but its explanation still needs to
         // receive pointer input through the design-system tooltip trigger.
@@ -207,11 +216,7 @@ function CourseOverviewHeader({
             ),
             onClick: () => setLearningAnalyticsModal(true),
             disabled: !hasLearningAnalyticsAccess,
-            tooltip: !learningAnalyticsEnabled
-              ? t('manage.analytics.featureUnavailable')
-              : !user?.catalyst
-                ? t('manage.analytics.catalystRequired')
-                : undefined,
+            tooltip: learningAnalyticsSettingsTooltip,
             className: {
               item: !hasLearningAnalyticsAccess
                 ? 'data-disabled:pointer-events-auto'

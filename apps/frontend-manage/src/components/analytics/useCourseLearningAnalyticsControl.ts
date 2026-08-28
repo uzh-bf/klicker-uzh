@@ -22,12 +22,13 @@ function useCourseLearningAnalyticsControl(
   courseId?: string
 ): CourseLearningAnalyticsControl {
   const globallyEnabled = useFeatureFlag('learning-analytics')
-  const { data: userData, loading: entitlementLoading } = useQuery(
-    UserProfileDocument,
-    {
-      fetchPolicy: 'cache-and-network',
-    }
-  )
+  const {
+    data: userData,
+    loading: entitlementLoading,
+    error: entitlementError,
+  } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-and-network',
+  })
   const catalystEntitled = userData?.userProfile?.catalyst === true
   const hasAccess = globallyEnabled && catalystEntitled
   const { data, loading, error, networkStatus, refetch } = useQuery(
@@ -74,7 +75,7 @@ function useCourseLearningAnalyticsControl(
     catalystEntitled,
     entitlementLoading,
     loading: loading || networkStatus === NetworkStatus.refetch,
-    error,
+    error: entitlementError ?? error,
     exists: Boolean(data?.course),
     courseEnabled: data?.course?.isLearningAnalyticsEnabled === true,
     analyticsValid: data?.course?.analyticsStatus.areAnalyticsValid === true,

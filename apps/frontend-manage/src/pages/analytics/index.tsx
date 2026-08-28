@@ -15,22 +15,24 @@ import Layout from '../../components/Layout'
 function Analytics() {
   const t = useTranslations()
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
-  const { data: userData, loading: loadingUser } = useQuery(
-    UserProfileDocument,
-    {
-      fetchPolicy: 'cache-and-network',
-    }
-  )
+  const {
+    data: userData,
+    loading: loadingUser,
+    error: userError,
+  } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-and-network',
+  })
   const catalystEntitled = userData?.userProfile?.catalyst === true
   const hasLearningAnalyticsAccess =
     learningAnalyticsEnabled && catalystEntitled
-  const { loading: loadingCourses, data: dataCourses } = useQuery(
-    GetLearningAnalyticsCoursesDocument,
-    {
-      fetchPolicy: 'network-only',
-      skip: !hasLearningAnalyticsAccess,
-    }
-  )
+  const {
+    loading: loadingCourses,
+    data: dataCourses,
+    error: coursesError,
+  } = useQuery(GetLearningAnalyticsCoursesDocument, {
+    fetchPolicy: 'network-only',
+    skip: !hasLearningAnalyticsAccess,
+  })
 
   if (!learningAnalyticsEnabled) {
     return (
@@ -49,6 +51,16 @@ function Analytics() {
     )
   }
 
+  if (userError) {
+    return (
+      <AnalyticsUnavailableView
+        title={t('shared.generic.learningAnalytics')}
+        message={t('manage.analytics.analyticsLoadingFailed')}
+        type="error"
+      />
+    )
+  }
+
   if (!catalystEntitled) {
     return (
       <AnalyticsUnavailableView
@@ -63,6 +75,16 @@ function Analytics() {
       <Layout displayName={t('shared.generic.learningAnalytics')}>
         <Loader />
       </Layout>
+    )
+  }
+
+  if (coursesError) {
+    return (
+      <AnalyticsUnavailableView
+        title={t('shared.generic.learningAnalytics')}
+        message={t('manage.analytics.analyticsLoadingFailed')}
+        type="error"
+      />
     )
   }
 

@@ -34,7 +34,6 @@ export type ActivityEvaluationType = 'LiveQuiz' | 'Asynchronous'
 export type ActiveStackType = number | 'feedbacks' | 'confusion' | 'leaderboard'
 
 interface ActivityEvaluationProps {
-  courseId?: string | null
   activityId: string
   activityName: string
   courseLanguage?: LocaleType | null
@@ -49,7 +48,6 @@ interface ActivityEvaluationProps {
 }
 
 function ActivityEvaluation({
-  courseId,
   activityId,
   activityName,
   courseLanguage,
@@ -142,8 +140,6 @@ function ActivityEvaluation({
       {router.query.hideControls !== 'true' && (
         <div className="z-20 h-11 flex-none">
           <EvaluationNavigation
-            courseId={courseId ?? ''}
-            activityId={activityId}
             stacks={stacks}
             stackInstanceMap={stackInstanceMap}
             activeStack={activeStack}

@@ -11,23 +11,22 @@ import { useState } from 'react'
 function LearningAnalyticsExportV2({ courseId }: { courseId: string }) {
   const t = useTranslations()
   const [exportFailed, setExportFailed] = useState(false)
-  const [loadCsv, { loading: csvLoading }] = useLazyQuery(
+  const [loadingFormat, setLoadingFormat] =
+    useState<LearningAnalyticsExportFormatV2 | null>(null)
+  const [loadExport] = useLazyQuery(
     GetCourseLearningAnalyticsExportV2Document,
     { fetchPolicy: 'network-only' }
   )
-  const [loadJson, { loading: jsonLoading }] = useLazyQuery(
-    GetCourseLearningAnalyticsExportV2Document,
-    { fetchPolicy: 'network-only' }
-  )
-  const loading = csvLoading || jsonLoading
+  const csvLoading = loadingFormat === LearningAnalyticsExportFormatV2.Csv
+  const jsonLoading = loadingFormat === LearningAnalyticsExportFormatV2.Json
+  const loading = loadingFormat !== null
 
   async function download(format: LearningAnalyticsExportFormatV2) {
     setExportFailed(false)
+    setLoadingFormat(format)
 
     try {
-      const result = await (format === LearningAnalyticsExportFormatV2.Csv
-        ? loadCsv({ variables: { courseId, format } })
-        : loadJson({ variables: { courseId, format } }))
+      const result = await loadExport({ variables: { courseId, format } })
       const exported = result.data?.getCourseLearningAnalyticsExportV2
       if (!exported) throw new Error('Learning analytics export unavailable')
 
@@ -40,9 +39,12 @@ function LearningAnalyticsExportV2({ courseId }: { courseId: string }) {
       document.body.appendChild(link)
       link.click()
       link.remove()
-      URL.revokeObjectURL(url)
-    } catch {
+      window.setTimeout(() => URL.revokeObjectURL(url), 0)
+    } catch (error) {
+      console.error('Learning analytics export failed', error)
       setExportFailed(true)
+    } finally {
+      setLoadingFormat(null)
     }
   }
 

@@ -42,6 +42,17 @@ function AnalyticsAccessGuard<TData>({
     return <AnalyticsLoadingView title={title} navigation={undefined} />
   }
 
+  if (control.error) {
+    return (
+      <AnalyticsUnavailableView
+        title={title}
+        navigation={navigation}
+        message={t('manage.analytics.statusUnavailable')}
+        type="error"
+      />
+    )
+  }
+
   if (!control.catalystEntitled) {
     return (
       <AnalyticsUnavailableView
@@ -55,7 +66,7 @@ function AnalyticsAccessGuard<TData>({
     return <AnalyticsLoadingView title={title} navigation={navigation} />
   }
 
-  if (control.error || !control.exists) {
+  if (!control.exists) {
     return (
       <AnalyticsUnavailableView
         title={title}
