@@ -125,23 +125,20 @@ test('pins trusted review code to the event workflow commit when the default bra
       `return (async () => {\n${script.replace(/^ {12}/gm, '')}\n})()`
     )
     const workflowSha = '86e8ac2e13c77e90a9bcd45d0f6b5f03fff18eed'
+    const getCommit = async (parameters) => {
+      assert.deepEqual(parameters, {
+        owner: 'uzh-bf',
+        repo: 'klicker-uzh',
+        ref: workflowSha,
+      })
+      return { data: { sha: workflowSha } }
+    }
 
     for (const eventName of ['pull_request_target', 'issue_comment']) {
       const outputs = new Map()
       await resolveTrustedPolicy(
         {
-          rest: {
-            repos: {
-              getCommit: async (parameters) => {
-                assert.deepEqual(parameters, {
-                  owner: 'uzh-bf',
-                  repo: 'klicker-uzh',
-                  ref: workflowSha,
-                })
-                return { data: { sha: workflowSha } }
-              },
-            },
-          },
+          rest: { repos: { getCommit } },
         },
         {
           eventName,
