@@ -989,9 +989,9 @@ async function chooseCourseDuplicationAction(page: Page) {
   await page.getByRole('menuitem', { name: 'Duplicate course' }).click()
 }
 
-function courseDuplicationStatusTrigger(page: Page) {
-  const trigger = page.getByTestId('course-duplication-status-trigger')
-  return trigger.or(page.getByRole('button', { name: /Course duplications/ }))
+function asyncTaskCenterTrigger(page: Page) {
+  const trigger = page.getByTestId('async-task-center-trigger')
+  return trigger.or(page.getByRole('button', { name: /tasks need attention/i }))
 }
 
 async function submitCourseDuplication(page: Page, copyName?: string) {
@@ -1021,54 +1021,51 @@ async function submitCourseFormAndWaitForDuplication(
     rejectStatus = reject
   })
 
-  const statusResponseListener = (statusResponse: Response) => {
-    const request = statusResponse.request()
+  const taskResponseListener = (taskResponse: Response) => {
+    const request = taskResponse.request()
     const postData = request.postData() ?? ''
-    const operationName = new URL(statusResponse.url()).searchParams.get(
+    const operationName = new URL(taskResponse.url()).searchParams.get(
       'operationName'
     )
 
     if (
-      (!postData.includes('GetCourseDuplicationStatuses') &&
-        operationName !== 'GetCourseDuplicationStatuses') ||
-      !statusResponse.ok()
+      (!postData.includes('GetAsyncTasks') &&
+        operationName !== 'GetAsyncTasks') ||
+      !taskResponse.ok()
     ) {
       return
     }
 
     void (async () => {
-      const statusBody = (await statusResponse.json().catch(() => null)) as {
+      const taskBody = (await taskResponse.json().catch(() => null)) as {
         data?: {
-          courseDuplicationStatuses?: Array<{
+          asyncTasks?: Array<{
             id?: unknown
             status?: unknown
           }>
         }
       } | null
 
-      const statuses = statusBody?.data?.courseDuplicationStatuses
-      if (!Array.isArray(statuses)) return
+      const tasks = taskBody?.data?.asyncTasks
+      if (!Array.isArray(tasks)) return
 
-      for (const status of statuses) {
-        if (
-          typeof status.id === 'string' &&
-          typeof status.status === 'string'
-        ) {
-          statusesById.set(status.id, status.status)
+      for (const task of tasks) {
+        if (typeof task.id === 'string' && typeof task.status === 'string') {
+          statusesById.set(task.id, task.status)
         }
       }
 
       if (!jobId) return
 
       const status = statusesById.get(jobId)
-      if (status === 'COMPLETED' || status === 'FAILED') {
+      if (status === 'SUCCEEDED' || status === 'FAILED') {
         terminalStatus = status
         resolveStatus?.()
       }
     })().catch(() => undefined)
   }
 
-  page.on('response', statusResponseListener)
+  page.on('response', taskResponseListener)
 
   const startCourseDuplicationResponse = page.waitForResponse(
     (response) => {
@@ -1118,7 +1115,7 @@ async function submitCourseFormAndWaitForDuplication(
 
     try {
       const knownStatus = statusesById.get(duplicationJobId)
-      if (knownStatus === 'COMPLETED' || knownStatus === 'FAILED') {
+      if (knownStatus === 'SUCCEEDED' || knownStatus === 'FAILED') {
         terminalStatus = knownStatus
       } else {
         await statusPromise
@@ -1128,7 +1125,7 @@ async function submitCourseFormAndWaitForDuplication(
       clearTimeout(timeout)
     }
 
-    expect(terminalStatus).toBe(expectSuccess ? 'COMPLETED' : 'FAILED')
+    expect(terminalStatus).toBe(expectSuccess ? 'SUCCEEDED' : 'FAILED')
 
     if (expectSuccess) {
       await expect(
@@ -1146,7 +1143,7 @@ async function submitCourseFormAndWaitForDuplication(
       ).toBeVisible({ timeout: 30_000 })
     }
   } finally {
-    page.off('response', statusResponseListener)
+    page.off('response', taskResponseListener)
   }
 }
 
@@ -3088,7 +3085,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     )
   })
 
-  test('Keeps concurrent duplication status responses paired with their request IDs', async ({
+  test('Keeps concurrent duplication tasks visible when one completes', async ({
     loginLecturer,
     page,
   }) => {
@@ -3106,10 +3103,12 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       )
     ) as Record<string, string>
     const startHash = persistedOperations.StartCourseDuplication
-    const statusHash = persistedOperations.GetCourseDuplicationStatuses
+    const tasksHash = persistedOperations.GetAsyncTasks
     await page.addInitScript(
-      ({ firstJobId, secondJobId, startHash, statusHash }) => {
+      ({ firstJobId, secondJobId, startHash, tasksHash }) => {
         let startCount = 0
+        let twoTaskPollCount = 0
+        const tasks: Array<Record<string, unknown>> = []
         const makeJob = (
           id: string,
           sourceCourseId: string,
@@ -3123,6 +3122,25 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
           createdCourseId: null,
           errorType: null,
           errorMessage: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        const makeTask = (
+          id: string,
+          sourceCourseId: string,
+          targetCourseName: string
+        ) => ({
+          id,
+          kind: 'COURSE_DUPLICATION',
+          status: 'QUEUED',
+          subjectId: sourceCourseId,
+          subjectName: 'Synthetic source course',
+          targetName: targetCourseName,
+          resultId: null,
+          errorCode: null,
+          startedAt: null,
+          finishedAt: null,
+          readAt: null,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         })
@@ -3168,8 +3186,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
                   // malformed variables; treat as a non-matching request
                 }
               }
-              if (h === statusHash)
-                operationName = 'GetCourseDuplicationStatuses'
+              if (h === tasksHash) operationName = 'GetAsyncTasks'
               else if (h === startHash) operationName = 'StartCourseDuplication'
             } catch {
               // relative or malformed URL; fall through to real fetch
@@ -3190,6 +3207,13 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
           if (operationName === 'StartCourseDuplication') {
             const jobId = startCount === 0 ? firstJobId : secondJobId
             startCount += 1
+            tasks.push(
+              makeTask(
+                jobId,
+                String(variables?.sourceCourseId),
+                String(variables?.name)
+              )
+            )
             return new window.Response(
               JSON.stringify({
                 data: {
@@ -3203,34 +3227,28 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
               { headers: { 'Content-Type': 'application/json' } }
             )
           }
-          if (operationName === 'GetCourseDuplicationStatuses') {
-            const requestedIds = variables?.ids ?? []
-            if (requestedIds.length === 1 && requestedIds[0] === firstJobId) {
-              ;(
-                window as unknown as {
-                  __firstDuplicationStatusObserved?: boolean
+          if (operationName === 'GetAsyncTasks') {
+            if (tasks.length === 2) {
+              twoTaskPollCount += 1
+              if (twoTaskPollCount > 1) {
+                tasks[0] = {
+                  ...tasks[0],
+                  status: 'SUCCEEDED',
+                  resultId: firstJobId,
+                  finishedAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
                 }
-              ).__firstDuplicationStatusObserved = true
-              await new Promise<void>((resolve) => {
-                window.addEventListener(
-                  'course-duplication-release',
-                  () => resolve(),
-                  { once: true }
-                )
-              })
+              }
             }
-            const statuses = requestedIds.includes(firstJobId)
-              ? [makeJob(firstJobId, 'source-a', 'Copy A')]
-              : []
             return new window.Response(
-              JSON.stringify({ data: { courseDuplicationStatuses: statuses } }),
+              JSON.stringify({ data: { asyncTasks: tasks } }),
               { headers: { 'Content-Type': 'application/json' } }
             )
           }
           return originalFetch(input, init)
         }
       },
-      { firstJobId, secondJobId, startHash, statusHash }
+      { firstJobId, secondJobId, startHash, tasksHash }
     )
 
     await loginLecturer()
@@ -3256,18 +3274,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       .getByRole('textbox', { name: 'Group Creation Deadline' })
       .fill(getNativeDateInputValue(new Date('2035-06-30T12:00')))
     await page.getByRole('button', { name: 'Duplicate' }).click()
-    await page.waitForFunction(
-      () =>
-        Boolean(
-          (
-            window as unknown as {
-              __firstDuplicationStatusObserved?: boolean
-            }
-          ).__firstDuplicationStatusObserved
-        ),
-      undefined,
-      { timeout: 30_000 }
-    )
+    await expect(asyncTaskCenterTrigger(page)).toContainText('1')
     await page.getByRole('menuitem', { name: 'Courses' }).click()
     await openCourseInManage(page, PAST_COURSE.name)
     await chooseCourseDuplicationAction(page)
@@ -3281,19 +3288,20 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       .getByRole('textbox', { name: 'finance@uzh.ch' })
       .fill('lecturer@df.uzh.ch')
     await page.getByRole('button', { name: 'Duplicate' }).click()
-    await expect(courseDuplicationStatusTrigger(page)).toContainText('2')
+    await expect(asyncTaskCenterTrigger(page)).toContainText('2')
 
-    await page.evaluate(() => {
-      window.dispatchEvent(new Event('course-duplication-release'))
-    })
-    await expect(courseDuplicationStatusTrigger(page)).toContainText('2')
-
-    await expect(courseDuplicationStatusTrigger(page)).toContainText('1', {
-      timeout: 15_000,
-    })
+    await asyncTaskCenterTrigger(page).click()
+    await expect(page.getByTestId(`async-task-${firstJobId}`)).toContainText(
+      messages.manage.asyncTasks.status.succeeded,
+      { timeout: 15_000 }
+    )
+    await expect(page.getByTestId(`async-task-${secondJobId}`)).toContainText(
+      messages.manage.asyncTasks.status.queued
+    )
+    await expect(asyncTaskCenterTrigger(page)).toContainText('2')
   })
 
-  test('Shows separate actions for restored completed duplication jobs', async ({
+  test('Shows separate actions for restored completed duplication tasks', async ({
     loginLecturer,
     page,
   }) => {
@@ -3312,11 +3320,13 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
         id: '55555555-5555-4555-8555-555555555555',
         name: copyAName,
         createdCourseId: seededCourseA!.courseId,
+        readAt: null as string | null,
       },
       {
         id: '66666666-6666-4666-8666-666666666666',
         name: copyBName,
         createdCourseId: seededCourseB!.courseId,
+        readAt: null as string | null,
       },
     ]
 
@@ -3333,12 +3343,14 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
         'utf8'
       )
     ) as Record<string, string>
-    const statusHash = persistedOperations.GetCourseDuplicationStatuses
+    const tasksHash = persistedOperations.GetAsyncTasks
+    const acknowledgeHash = persistedOperations.AcknowledgeAsyncTasks
     await page.addInitScript(
-      ({ statusHash, jobs }) => {
+      ({ acknowledgeHash, tasksHash, jobs }) => {
         const originalFetch = window.fetch.bind(window)
         window.fetch = async (input, init) => {
-          let isStatusPoll = false
+          let isAcknowledgeMutation = false
+          let isTaskQuery = false
           if (
             typeof input === 'string' ||
             input instanceof URL ||
@@ -3374,39 +3386,56 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
                 const e2 = extensions.indexOf(String.fromCharCode(34), s)
                 if (e2 > s) h = extensions.slice(s, e2)
               }
-              if (h === statusHash) isStatusPoll = true
+              if (h === tasksHash) isTaskQuery = true
+              if (h === acknowledgeHash) isAcknowledgeMutation = true
             } catch (e) {
               // relative or malformed URL; treat as non-matching
             }
           }
 
-          if (!isStatusPoll && typeof init?.body === 'string') {
+          if (!isTaskQuery && typeof init?.body === 'string') {
             try {
-              if (
-                JSON.parse(init.body).operationName ===
-                'GetCourseDuplicationStatuses'
-              ) {
-                isStatusPoll = true
+              const operationName = JSON.parse(init.body).operationName
+              if (operationName === 'GetAsyncTasks') {
+                isTaskQuery = true
+              }
+              if (operationName === 'AcknowledgeAsyncTasks') {
+                isAcknowledgeMutation = true
               }
             } catch {
               // not a JSON body; fall through to real fetch
             }
           }
 
-          if (!isStatusPoll) return originalFetch(input, init)
+          if (isAcknowledgeMutation) {
+            const acknowledgedAt = new Date().toISOString()
+            for (const job of jobs) job.readAt = acknowledgedAt
+
+            return new window.Response(
+              JSON.stringify({
+                data: { acknowledgeAsyncTasks: jobs.length },
+              }),
+              { headers: { 'Content-Type': 'application/json' } }
+            )
+          }
+
+          if (!isTaskQuery) return originalFetch(input, init)
 
           return new window.Response(
             JSON.stringify({
               data: {
-                courseDuplicationStatuses: jobs.map((job) => ({
+                asyncTasks: jobs.map((job) => ({
                   id: job.id,
-                  status: 'COMPLETED',
-                  sourceCourseId: 'source-restored',
-                  sourceCourseName: 'Synthetic source course',
-                  targetCourseName: job.name,
-                  createdCourseId: job.createdCourseId,
-                  errorType: null,
-                  errorMessage: null,
+                  kind: 'COURSE_DUPLICATION',
+                  status: 'SUCCEEDED',
+                  subjectId: 'source-restored',
+                  subjectName: 'Synthetic source course',
+                  targetName: job.name,
+                  resultId: job.createdCourseId,
+                  errorCode: null,
+                  startedAt: new Date().toISOString(),
+                  finishedAt: new Date().toISOString(),
+                  readAt: job.readAt,
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString(),
                 })),
@@ -3417,68 +3446,42 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
         }
       },
       {
-        statusHash,
-        jobs: restoredJobs.map(({ id, name, createdCourseId }) => ({
+        acknowledgeHash,
+        tasksHash,
+        jobs: restoredJobs.map(({ id, name, createdCourseId, readAt }) => ({
           id,
           name,
           createdCourseId,
+          readAt,
         })),
       }
     )
 
-    // Seed the persisted ids before the provider mounts on the next page. The
-    // one-shot marker prevents later navigations from reintroducing them.
     const manageUrl = process.env.URL_MANAGE ?? 'http://127.0.0.1:3002'
-    await page.addInitScript((jobs) => {
-      const marker = '__pr5446-restored-duplication-seeded'
-      if (window.sessionStorage.getItem(marker)) return
-
-      window.localStorage.setItem(
-        'course-duplication-job-ids',
-        JSON.stringify(jobs.map((job) => job.id))
-      )
-      window.sessionStorage.setItem(marker, '1')
-    }, restoredJobs)
     await page.goto(`${manageUrl}/?dup-verify=1`, {
       waitUntil: 'domcontentloaded',
     })
-    // Completion must not navigate automatically; capture this URL and
-    // require it to be unchanged until the user clicks a toast action.
     const preActionUrl = page.url()
 
-    const toaster = page.getByLabel(/Notifications/)
-    const toastB = toaster
-      .getByRole('listitem')
-      .filter({ hasText: restoredJobs[1].name })
-    await expect(toastB).toBeVisible({ timeout: 30_000 })
-    await expect(
-      page.getByText(
-        messages.manage.courseList.courseDuplicationSucceeded.replace(
-          '{name}',
-          restoredJobs[0].name
-        )
-      )
-    ).toBeVisible({ timeout: 30_000 })
-    await expect(
-      page.getByText(
-        messages.manage.courseList.courseDuplicationSucceeded.replace(
+    await expect(asyncTaskCenterTrigger(page)).toContainText('2')
+    await asyncTaskCenterTrigger(page).click()
+    const taskA = page.getByTestId(`async-task-${restoredJobs[0].id}`)
+    const taskB = page.getByTestId(`async-task-${restoredJobs[1].id}`)
+    await expect(taskA).toContainText(restoredJobs[0].name)
+    await expect(taskB).toContainText(restoredJobs[1].name)
+    await expect(page.getByTestId(/^async-task-open-/)).toHaveCount(2)
+    await expect(page).toHaveURL(preActionUrl)
+    await page.getByTestId('async-task-mark-read').click()
+    await expect(asyncTaskCenterTrigger(page)).toHaveAttribute(
+      'aria-label',
+      'No tasks need attention'
+    )
+    await taskB
+      .getByRole('button', {
+        name: messages.manage.asyncTasks.openResultLabel.replace(
           '{name}',
           restoredJobs[1].name
-        )
-      )
-    ).toBeVisible({ timeout: 30_000 })
-
-    const openCourseActions = page.getByRole('button', {
-      name: messages.manage.courseList.courseDuplicationOpenCourse,
-    })
-    await expect(openCourseActions).toHaveCount(2)
-    await expect(page).toHaveURL(preActionUrl)
-    // Sonner stacks collapsed toasts on top of each other; hovering the
-    // front toast expands the stack so every action becomes clickable.
-    await toaster.getByRole('listitem').first().hover()
-    await toastB
-      .getByRole('button', {
-        name: messages.manage.courseList.courseDuplicationOpenCourse,
+        ),
       })
       .click()
     await expect(page).toHaveURL(
@@ -3486,7 +3489,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     )
   })
 
-  test('Batches restored duplication status requests above the API limit', async ({
+  test('Shows active and recent tasks from one bounded response', async ({
     loginLecturer,
     page,
   }) => {
@@ -3508,14 +3511,13 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
         'utf8'
       )
     ) as Record<string, string>
-    const statusHash = persistedOperations.GetCourseDuplicationStatuses
+    const tasksHash = persistedOperations.GetAsyncTasks
 
     await page.addInitScript(
-      ({ statusHash, jobs }) => {
+      ({ tasksHash, jobs }) => {
         const originalFetch = window.fetch.bind(window)
         window.fetch = async (input, init) => {
-          let isStatusPoll = false
-          let requestedIds: string[] = []
+          let isTaskQuery = false
 
           if (
             typeof input === 'string' ||
@@ -3550,89 +3552,71 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
                   String.fromCharCode(34),
                   hashStart + marker.length
                 )
-                isStatusPoll =
+                isTaskQuery =
                   extensions.slice(hashStart + marker.length, hashEnd) ===
-                  statusHash
-              }
-              const rawVariables = url.searchParams.get('variables')
-              if (rawVariables) {
-                requestedIds = JSON.parse(rawVariables).ids ?? []
+                  tasksHash
               }
             } catch {
               // malformed persisted-query parameters; use the request body
             }
           }
 
-          if (!isStatusPoll && typeof init?.body === 'string') {
+          if (!isTaskQuery && typeof init?.body === 'string') {
             try {
               const body = JSON.parse(init.body)
-              isStatusPoll =
-                body.operationName === 'GetCourseDuplicationStatuses'
-              requestedIds = body.variables?.ids ?? []
+              isTaskQuery = body.operationName === 'GetAsyncTasks'
             } catch {
               // not a JSON body; fall through to real fetch
             }
           }
 
-          if (!isStatusPoll) return originalFetch(input, init)
-
-          const batchSizes = ((
-            window as unknown as { __duplicationBatchSizes?: number[] }
-          ).__duplicationBatchSizes ??= [])
-          batchSizes.push(requestedIds.length)
+          if (!isTaskQuery) return originalFetch(input, init)
 
           return new window.Response(
             JSON.stringify({
               data: {
-                courseDuplicationStatuses: jobs
-                  .filter((job) => requestedIds.includes(job.id))
-                  .map((job) => ({
-                    id: job.id,
-                    status: 'PENDING',
-                    sourceCourseId: 'source-batched',
-                    sourceCourseName: 'Synthetic source course',
-                    targetCourseName: job.name,
-                    createdCourseId: null,
-                    errorType: null,
-                    errorMessage: null,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                  })),
+                asyncTasks: jobs.map((job, index) => ({
+                  id: job.id,
+                  kind: 'COURSE_DUPLICATION',
+                  status: index < 50 ? 'QUEUED' : 'SUCCEEDED',
+                  subjectId: 'source-bounded',
+                  subjectName: 'Synthetic source course',
+                  targetName: job.name,
+                  resultId: null,
+                  errorCode: null,
+                  startedAt: null,
+                  finishedAt: index < 50 ? null : new Date().toISOString(),
+                  readAt: null,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                })),
               },
             }),
             { headers: { 'Content-Type': 'application/json' } }
           )
         }
       },
-      { statusHash, jobs: restoredJobs }
+      { tasksHash, jobs: restoredJobs }
     )
 
     const manageUrl = process.env.URL_MANAGE ?? 'http://127.0.0.1:3002'
-    await page.addInitScript((jobs) => {
-      window.localStorage.setItem(
-        'course-duplication-job-ids',
-        JSON.stringify(jobs.map((job) => job.id))
-      )
-    }, restoredJobs)
     await page.goto(`${manageUrl}/?dup-batch-verify=1`, {
       waitUntil: 'domcontentloaded',
     })
 
-    await page.waitForFunction(
-      () =>
-        ((window as unknown as { __duplicationBatchSizes?: number[] })
-          .__duplicationBatchSizes?.length ?? 0) >= 2,
-      undefined,
-      { timeout: 30_000 }
-    )
-    await expect(courseDuplicationStatusTrigger(page)).toContainText('51')
-    const batchSizes = await page.evaluate(
-      () =>
-        (window as unknown as { __duplicationBatchSizes?: number[] })
-          .__duplicationBatchSizes ?? []
-    )
-    expect(batchSizes.slice(0, 2)).toEqual([50, 1])
-    expect(batchSizes.every((batchSize) => batchSize <= 50)).toBe(true)
+    await expect(asyncTaskCenterTrigger(page)).toContainText('51', {
+      timeout: 30_000,
+    })
+    await asyncTaskCenterTrigger(page).click()
+    await expect(page.getByTestId(/^async-task-7[0-9-]+$/)).toHaveCount(51)
+    await expect(
+      page.getByText(
+        messages.manage.asyncTasks.inProgress.replace('{count}', '50')
+      )
+    ).toBeVisible()
+    await expect(
+      page.getByText(messages.manage.asyncTasks.recent)
+    ).toBeVisible()
   })
 
   test('Duplicate the course without group creation and verify group activities are not copied', async ({

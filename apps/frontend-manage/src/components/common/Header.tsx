@@ -25,6 +25,7 @@ import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import AsyncTaskCenter from '../asyncTasks/AsyncTaskCenter'
 import SupportModal from './SupportModal'
 
 type UserProfile = NonNullable<UserProfileQuery['userProfile']>
@@ -328,10 +329,17 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
             </Tooltip>
           )}
         </div>
-        <Navigation
-          items={rightNavigation}
-          className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
-        />
+        <div className="flex h-10 flex-row items-center">
+          <Navigation
+            items={rightNavigation.slice(0, 2)}
+            className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
+          />
+          <AsyncTaskCenter />
+          <Navigation
+            items={rightNavigation.slice(2)}
+            className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
+          />
+        </div>
       </div>
       {showSupportModal && (
         <SupportModal onClose={() => setShowSupportModal(false)} user={user} />

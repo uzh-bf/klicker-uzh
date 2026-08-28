@@ -413,6 +413,35 @@ type AssessmentResultsLiveQuiz {
   studentResults: [StudentAssessmentResultsItem!]!
 }
 
+type AsyncTask {
+  createdAt: Date!
+  errorCode: String
+  finishedAt: Date
+  id: ID!
+  kind: AsyncTaskKind!
+  readAt: Date
+  resultId: String
+  startedAt: Date
+  status: AsyncTaskStatus!
+  subjectId: String
+  subjectName: String!
+  targetName: String
+  updatedAt: Date!
+}
+
+enum AsyncTaskKind {
+  COURSE_DUPLICATION
+  KNOWLEDGE_GRAPH_GENERATION
+  QUESTION_GENERATION
+}
+
+enum AsyncTaskStatus {
+  FAILED
+  QUEUED
+  RUNNING
+  SUCCEEDED
+}
+
 type AvatarSettings {
   accessory: String!
   clothing: String!
@@ -1975,6 +2004,7 @@ type MicroLearning {
 }
 
 type Mutation {
+  acknowledgeAsyncTasks(ids: [String!]!): Int!
   activateLiveQuizBlock(blockId: Int!, quizId: String!): LiveQuiz
   activateParticipantAccount(token: String!): ID
   addActivityMessage(message: String!, objectId: String!, objectType: ObjectType!): ActivityLogEntry
@@ -2583,6 +2613,7 @@ type Query {
   assessmentReportVerification(token: String!): PublicAssessmentReportVerification
   assessmentResultsCourse(courseId: String!): AssessmentResultsCourse
   assessmentResultsLiveQuiz(liveQuizId: String!): AssessmentResultsLiveQuiz
+  asyncTasks: [AsyncTask!]!
   basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!

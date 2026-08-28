@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-08-21'
+timestamp: '2026-08-28'
 tags:
   - backend
   - graphql
@@ -48,6 +48,10 @@ pnpm --filter @klicker-uzh/graphql generate
 ```
 
 The package build runs this generation before Rollup. Commit the handwritten operation/schema sources and the generated `src/public/schema.graphql` SDL snapshot; do not commit `src/ops.ts` or `src/public/{client,server}.json`, which are ignored build outputs. Frontends import typed documents from `@klicker-uzh/graphql/dist/ops`, and outside dev/test the backend only executes hashes present in `server.json` (see [Architecture Overview](./architecture-overview.md)). A missing generation step fails in two distinct ways: typecheck errors for missing documents or runtime persisted-query rejection for an unknown hash.
+
+### Lecturer async-task API
+
+`asyncTasks` and `acknowledgeAsyncTasks` use `asUser` without a subject-level permission wrapper because the task itself belongs to the authenticated lecturer. The service is the authorization boundary: every list/update includes `ownerId = ctx.user.sub`, acknowledgement accepts at most 50 unique ids and updates only unread terminal rows, and the query returns bounded active plus recent-terminal sets (`packages/graphql/src/services/asyncTasks.ts:getAsyncTasks`). The API exposes product lifecycle, subjects, stable error codes, and result ids; it does not expose Redis keys, Hatchet runs, leases, or retries.
 
 ### Assessment invitation API
 
