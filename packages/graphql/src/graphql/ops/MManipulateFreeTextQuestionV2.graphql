@@ -1,0 +1,47 @@
+mutation ManipulateFreeTextQuestionV2(
+  $id: Int
+  $status: ElementStatus
+  $name: String
+  $content: String
+  $explanation: String
+  $options: OptionsFreeTextInput
+  $basePoints: Boolean
+  $pointsMultiplier: Int
+  $tags: [String!]
+) {
+  manipulateFreeTextQuestion(
+    id: $id
+    status: $status
+    name: $name
+    content: $content
+    explanation: $explanation
+    options: $options
+    basePoints: $basePoints
+    pointsMultiplier: $pointsMultiplier
+    tags: $tags
+  ) {
+    __typename
+    ... on FreeTextElement {
+      id
+      name
+      status
+      type
+      content
+      explanation
+      basePoints
+      pointsMultiplier
+      options {
+        hasSampleSolution
+        restrictions {
+          maxLength
+        }
+        solutions
+        semanticEvaluation
+      }
+      tags {
+        id
+        name
+      }
+    }
+  }
+}

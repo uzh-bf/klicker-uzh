@@ -1,0 +1,28 @@
+fragment EvaluationResultsV2 on ActivityEvaluation {
+  ...EvaluationResults
+
+  results {
+    instances {
+      ... on FreeTextActivityEvaluationData {
+        retryAnalytics {
+          cycleCount
+          totalAttempts
+          averageAttempts
+          successRate
+          revealRate
+          unavailableCount
+          first {
+            correct
+            partial
+            incorrect
+          }
+          best {
+            correct
+            partial
+            incorrect
+          }
+        }
+      }
+    }
+  }
+}

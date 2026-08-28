@@ -1754,6 +1754,7 @@ type FreeTextActivityEvaluationData {
   id: Int!
   name: String!
   results: FreeElementResults!
+  retryAnalytics: FreeTextRetryAnalytics
   type: ElementType!
 }
 
@@ -1907,6 +1908,23 @@ input FreeTextRestrictionsInput {
   maxLength: Int
   minLength: Int
   pattern: String
+}
+
+type FreeTextRetryAnalytics {
+  averageAttempts: Float!
+  best: FreeTextRetryCategoryCounts!
+  cycleCount: Int!
+  first: FreeTextRetryCategoryCounts!
+  revealRate: Float!
+  successRate: Float!
+  totalAttempts: Int!
+  unavailableCount: Int!
+}
+
+type FreeTextRetryCategoryCounts {
+  correct: Int!
+  incorrect: Int!
+  partial: Int!
 }
 
 enum GeneratableElementType {
