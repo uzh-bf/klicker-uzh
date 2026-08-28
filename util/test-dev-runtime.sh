@@ -38,6 +38,7 @@ write_file() {
 ROOT="$TEST_ROOT/repo"
 FAKE_BIN="$TEST_ROOT/bin"
 INSTALL_LOG="$TEST_ROOT/install.log"
+CURL_LOG="$TEST_ROOT/curl.log"
 DOCKER_LOG="$TEST_ROOT/docker.log"
 DOCKER_VOLUME_STATE="$TEST_ROOT/docker-volume-state"
 NEXT_APPS=(auth chat frontend-control frontend-manage frontend-pwa)
@@ -64,6 +65,14 @@ fi
 printf "%s\n" "$*" >>"$KLICKER_TEST_INSTALL_LOG"'
 write_file "$FAKE_BIN/flock" '#!/usr/bin/env bash
 exit 0'
+write_file "$FAKE_BIN/curl" '#!/usr/bin/env bash
+url="${!#}"
+printf "%s\n" "$url" >>"$KLICKER_TEST_CURL_LOG"
+case "$url" in
+  */api/chatbots/*) printf "401\tapplication/json" ;;
+  */healthz) printf "200\tapplication/json" ;;
+  *) printf "307\ttext/html" ;;
+esac'
 write_file "$FAKE_BIN/mkcert" '#!/usr/bin/env bash
 [ "${1:-}" = "-CAROOT" ] || exit 1
 printf "%s\n" "$KLICKER_TEST_MKCERT_CAROOT"'
@@ -103,10 +112,11 @@ if [ "$volume_action" = "create" ]; then
   exit 0
 fi
 exit 2'
-chmod +x "$FAKE_BIN/pnpm" "$FAKE_BIN/flock" "$FAKE_BIN/mkcert" "$FAKE_BIN/docker"
+chmod +x "$FAKE_BIN/pnpm" "$FAKE_BIN/flock" "$FAKE_BIN/curl" "$FAKE_BIN/mkcert" "$FAKE_BIN/docker"
 
 export PATH="$FAKE_BIN:$PATH"
 export KLICKER_TEST_INSTALL_LOG="$INSTALL_LOG"
+export KLICKER_TEST_CURL_LOG="$CURL_LOG"
 export KLICKER_TEST_DOCKER_LOG="$DOCKER_LOG"
 export KLICKER_TEST_DOCKER_VOLUME_STATE="$DOCKER_VOLUME_STATE"
 export KLICKER_TEST_DOCKER_VOLUME_NAME="$VOLUME_NAME"
@@ -203,6 +213,9 @@ assert_exists "$ROOT/.devcontainer/.runtime/next-repair-request"
 if bash "$RUNTIME_SCRIPT" request-repair unsupported >/dev/null 2>&1; then
   fail 'unsupported repair target was accepted'
 fi
+if bash "$RUNTIME_SCRIPT" request-repair response-api >/dev/null 2>&1; then
+  fail 'non-Next.js readiness target was accepted for cache repair'
+fi
 
 # A stale pass can cover several apps at once: every requested app receives a
 # full .next repair in one start, untouched apps keep their production output,
@@ -262,6 +275,16 @@ assert_equal \
 assert_equal \
   "$(bash "$RUNTIME_SCRIPT" classify-response html-shell 307 '')" \
   'ready: HTTP 307 redirect'
+assert_equal \
+  "$(bash "$RUNTIME_SCRIPT" classify-response health-json 200 'application/json; charset=utf-8')" \
+  'ready: HTTP 200 application/json; charset=utf-8'
+
+classification_status=0
+classification_output="$(
+  bash "$RUNTIME_SCRIPT" classify-response health-json 404 'text/html'
+)" || classification_status=$?
+assert_equal "$classification_status" '22'
+assert_equal "$classification_output" 'unexpected: HTTP 404 text/html'
 
 classification_status=0
 classification_output="$(
@@ -290,5 +313,18 @@ fi
 if bash "$RUNTIME_SCRIPT" probe-app unsupported >/dev/null 2>&1; then
   fail 'app without a probe contract was accepted'
 fi
+
+: >"$CURL_LOG"
+READINESS_APPS=response-api bash "$RUNTIME_SCRIPT" doctor >/dev/null
+assert_equal "$(cat "$CURL_LOG")" 'http://localhost:7078/healthz'
+
+: >"$CURL_LOG"
+READINESS_APPS='' bash "$RUNTIME_SCRIPT" doctor >/dev/null
+[ ! -s "$CURL_LOG" ] || fail 'capability-only doctor probed an unselected app'
+
+: >"$CURL_LOG"
+unset READINESS_APPS
+bash "$RUNTIME_SCRIPT" doctor >/dev/null
+assert_equal "$(wc -l <"$CURL_LOG" | tr -d ' ')" '6'
 
 echo '[test-dev-runtime] PASS'

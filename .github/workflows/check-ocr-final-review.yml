@@ -40,7 +40,7 @@ jobs:
             const response = await github.rest.repos.getCommit({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              commit_sha: workflowSha,
+              ref: workflowSha,
             })
             const sha = response.data?.sha
             if (sha !== workflowSha) {
