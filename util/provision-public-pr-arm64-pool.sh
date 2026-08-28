@@ -305,7 +305,7 @@ apply_runner() {
     if {$ssh_user eq "runner-admin"} {
       set remote_command "sudo -n $remote_command"
     }
-    set command [concat [list ssh] $ssh_args [list "$ssh_user@$host" $remote_command]]
+    set command [concat [list ssh -tt] $ssh_args [list "$ssh_user@$host" $remote_command]]
     spawn {*}$command
     set main_spawn_id $spawn_id
 
