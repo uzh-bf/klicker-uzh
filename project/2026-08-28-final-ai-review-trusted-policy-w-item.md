@@ -50,14 +50,15 @@ No secrets or personal data in this contract. Run-log quotes must contain no tok
 
 ## Progress
 
-- Status: Implementation and post-slice gates complete; integrated final review pending.
+- Status: Complete at the verified local-commit boundary; integrated final review passed after one accepted correction.
 - Active slice: None. The single trusted-SHA resolution slice is complete.
-- Completed commits: plan `e87b62aa9`; implementation `8866380d5`; accepted simplifier adjustment `7deb6f6d5`.
+- Completed commits: plan `e87b62aa9`; implementation `8866380d5`; accepted simplifier adjustment `7deb6f6d5`; final-review correction `487f1842b`.
 - Fresh evidence: `node --check .github/scripts/final-ai-review.test.js` passed; `node --test .github/scripts/final-ai-review.test.js` passed 33/33; Ruby parsed the workflow YAML; `git diff --check` passed.
 - Test delta: Changed the existing trusted-policy test to execute the embedded resolver for `pull_request_target` and `issue_comment`; no test file added or removed.
 - Slice review: done — `project/_local/reviews/2026-08-28-final-review-trusted-policy-slice-review.md`.
 - Simplifier: done — `project/_local/reviews/2026-08-28-final-review-trusted-policy-simplifier.md`; one behavior-preserving net reduction accepted.
-- Required delivery layer: Verified local commits. Achieved layer: committed implementation awaiting integrated final review.
+- Final review: done — `project/_local/reviews/2026-08-28-final-review-trusted-policy-final-review.md`; no remaining finding after the scoped action-pin assertion correction.
+- Required delivery layer: Verified local commits. Achieved layer: complete.
 - Runtime: No devcontainer, dev server, or application runtime was started; none applies to this workflow-only package.
 - Withheld actions remain withheld: no push, PR, workflow rerun, merge, deploy, cleanup, or upstream integration.
-- Next action: Run the integrated final review over the complete committed package, disposition findings, then refresh final verification and this status.
+- Next action: Return the verified local commit range and residual live-run risk to the original coordinator. Any push, PR, workflow rerun, merge, deployment, cleanup, or upstream integration still requires separate authority.
