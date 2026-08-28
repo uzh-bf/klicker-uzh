@@ -350,7 +350,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       if (
         request.postDataJSON()?.query?.includes('requestChatbotPublication')
       ) {
-        await new Promise((resolve) => setTimeout(resolve, 800))
+        await new Promise((resolve) => setTimeout(resolve, 3000))
         await route.continue()
       } else {
         await route.continue()
