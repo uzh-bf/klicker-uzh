@@ -392,6 +392,32 @@ jobs:
             --rule .github/open-code-review/final-review-rules.json \
             >"${RESULT_PATH}" 2>"${STDERR_PATH}"
 
+      - name: Summarize final review failure output
+        if: failure() && steps.run_review.outcome == 'failure'
+        env:
+          RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
+          STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
+        run: |
+          set -euo pipefail
+          {
+            echo '### Final review CLI failure'
+            echo
+            echo '```text'
+            if [[ -f "${STDERR_PATH}" ]]; then
+              tail -c 8000 "${STDERR_PATH}"
+            else
+              echo 'stderr log was not created'
+            fi
+            echo '```'
+            if [[ -f "${RESULT_PATH}" ]]; then
+              echo
+              echo '```json'
+              tail -c 8000 "${RESULT_PATH}"
+              echo
+              echo '```'
+            fi
+          } >>"${GITHUB_STEP_SUMMARY}"
+
       - name: Remove ephemeral OpenRouter access
         id: cleanup
         if: always() && needs.start.outputs.run_review == 'true'
@@ -820,6 +846,32 @@ jobs:
               --rule .github/open-code-review/final-review-rules.json \
               >"${RESULT_PATH}" 2>"${STDERR_PATH}"
           fi
+
+      - name: Summarize cumulative review failure output
+        if: failure() && steps.code_review.outcome == 'failure'
+        env:
+          RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
+          STDERR_PATH: ${{ runner.temp }}/final-ai-stack-code-stderr.log
+        run: |
+          set -euo pipefail
+          {
+            echo '### Cumulative review CLI failure'
+            echo
+            echo '```text'
+            if [[ -f "${STDERR_PATH}" ]]; then
+              tail -c 8000 "${STDERR_PATH}"
+            else
+              echo 'stderr log was not created'
+            fi
+            echo '```'
+            if [[ -f "${RESULT_PATH}" ]]; then
+              echo
+              echo '```json'
+              tail -c 8000 "${RESULT_PATH}"
+              echo
+              echo '```'
+            fi
+          } >>"${GITHUB_STEP_SUMMARY}"
 
       - name: Remove ephemeral OpenRouter access after code review
         id: cleanup
