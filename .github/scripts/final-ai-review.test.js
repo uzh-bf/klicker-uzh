@@ -98,7 +98,7 @@ test('pins trusted review code to the event workflow commit when the default bra
     )
     assert.match(
       source,
-      /actions\/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9\.0\.0/
+      /- name: Resolve trusted default-branch commit\n        id: resolve\n        uses: actions\/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9\.0\.0/
     )
     assert.match(
       source,
