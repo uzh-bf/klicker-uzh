@@ -533,6 +533,11 @@ export function CourseDuplicationProvider({
       inFlightSourceCourseIdsRef.current.add(course.id)
 
       try {
+        if (!values.startDate || !values.endDate) {
+          onError()
+          return false
+        }
+
         const startDateUTC = dayjs(values.startDate).utc().toISOString()
         const endDateUTC = dayjs(values.endDate).utc().toISOString()
         const groupDeadlineDateUTC = dayjs(values.groupCreationDeadline)

@@ -989,6 +989,42 @@ async function chooseCourseDuplicationAction(page: Page) {
   await page.getByRole('menuitem', { name: 'Duplicate course' }).click()
 }
 
+async function selectCourseDuplicationStartDate(
+  page: Page,
+  {
+    expectInitialEmpty = false,
+    durationDays,
+  }: { expectInitialEmpty?: boolean; durationDays?: number } = {}
+) {
+  const startDateInput = page.getByTestId('course-start-date')
+  const endDateInput = page.getByTestId('course-end-date')
+
+  await expect(endDateInput).toBeDisabled()
+
+  if (expectInitialEmpty) {
+    await expect(startDateInput).toHaveValue('')
+    await expect(endDateInput).toHaveValue('')
+    await expect(page.getByTestId('manipulate-course-submit')).toBeDisabled()
+  } else if (await startDateInput.inputValue()) {
+    return
+  }
+
+  const startDate = new Date()
+  startDate.setDate(startDate.getDate() + 1)
+  const startDateValue = getNativeDateInputValue(startDate)
+  await startDateInput.fill(startDateValue)
+  await expect(startDateInput).toHaveValue(startDateValue)
+  await expect(endDateInput).not.toHaveValue('')
+
+  if (durationDays !== undefined) {
+    const expectedEndDate = new Date(startDate)
+    expectedEndDate.setDate(expectedEndDate.getDate() + durationDays)
+    await expect(endDateInput).toHaveValue(
+      getNativeDateInputValue(expectedEndDate)
+    )
+  }
+}
+
 function courseDuplicationStatusTrigger(page: Page) {
   const trigger = page.getByTestId('course-duplication-status-trigger')
   return trigger.or(page.getByRole('button', { name: /Course duplications/ }))
@@ -1009,6 +1045,7 @@ async function submitCourseFormAndWaitForDuplication(
   page: Page,
   { expectSuccess = true }: { expectSuccess?: boolean } = {}
 ) {
+  await selectCourseDuplicationStartDate(page)
   const courseNameInput = page.getByTestId('course-name')
   const targetCourseName = await courseNameInput.inputValue()
   let jobId: string | undefined
@@ -1285,6 +1322,7 @@ async function expectDuplicatedCourseSummary({
 }
 
 async function verifyCourseDuplicationModalUi(page: Page) {
+  await selectCourseDuplicationStartDate(page, { expectInitialEmpty: true })
   await expect(page.getByTestId('course-name')).toHaveValue(
     `${SHARING.course} Copy`
   )
@@ -3249,6 +3287,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await page
       .getByRole('textbox', { name: 'finance@uzh.ch' })
       .fill('lecturer@df.uzh.ch')
+    await selectCourseDuplicationStartDate(page)
     // The seeded source course carries a group-creation deadline older than
     // its start date; adjust it into the copied date range so the shared
     // form passes validation.
@@ -3280,6 +3319,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await page
       .getByRole('textbox', { name: 'finance@uzh.ch' })
       .fill('lecturer@df.uzh.ch')
+    await selectCourseDuplicationStartDate(page)
     await page.getByRole('button', { name: 'Duplicate' }).click()
     await expect(courseDuplicationStatusTrigger(page)).toContainText('2')
 
@@ -3705,6 +3745,10 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       await chooseCourseAction(page, 'course-duplicate-button')
       await page.getByTestId('course-name').fill(copyName)
       await page.getByTestId('course-display-name').fill(copyName)
+      await selectCourseDuplicationStartDate(page, {
+        durationDays: 1,
+        expectInitialEmpty: true,
+      })
       await submitCourseFormAndWaitForDuplication(page, {
         expectSuccess: false,
       })
@@ -4077,6 +4121,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await chooseCourseAction(page, 'course-duplicate-button')
     await page.getByTestId('course-name').fill(copyName)
     await page.getByTestId('course-display-name').fill(copyName)
+    await selectCourseDuplicationStartDate(page)
     for (const testId of [
       'course-practice-quizzes',
       'course-microlearnings',
