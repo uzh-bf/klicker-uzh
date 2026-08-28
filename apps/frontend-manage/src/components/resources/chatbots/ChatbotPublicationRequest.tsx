@@ -84,9 +84,7 @@ function ChatbotPublicationReadOnly({ chatbot }: { chatbot: Chatbot }) {
       className="space-y-3 rounded-md border border-gray-200 bg-gray-50 p-3"
       data-cy="chatbot-publication-readonly"
     >
-      <UserNotification>
-        {stateDescription}
-      </UserNotification>
+      <UserNotification>{stateDescription}</UserNotification>
       <dl className="grid gap-2 text-sm md:grid-cols-3">
         <div>
           <dt className="font-medium text-gray-600">
