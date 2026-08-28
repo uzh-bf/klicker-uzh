@@ -151,3 +151,7 @@ that would expand the regression surface without improving deletion semantics.
   risk. The completion toast is now asserted before waiting for the asynchronous
   course-list refetch, preventing its six-second visibility window from expiring
   on a slow CI runner.
+- 2026-08-28: Aligned the compact deletion status label with course duplication:
+  `Course deletions` in English and `Kurslöschungen` in German. Both locales were
+  verified in the real manage UI with an active synthetic deletion; paired
+  screenshots are stored with the existing draft-PR evidence.
