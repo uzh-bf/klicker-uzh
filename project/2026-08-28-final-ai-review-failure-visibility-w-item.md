@@ -44,4 +44,11 @@ only evidence written to runner temp files the workflow never publishes.
 
 ## Progress
 
-- Status: In progress.
+- Status: Complete at the verified local-commit boundary.
+- Implementation commit: `4d65cac07` — both failure-capture steps added, no
+  other workflow changes; contract file added.
+- Evidence: Ruby YAML parse passed; `git diff --check` clean; Prettier check
+  passed on the workflow; helper tests 33/33 passed on the exact base
+  (`0892b61dc` + this commit); diff limited to the two owned paths.
+- Withheld actions remain withheld: push, PR, merge, workflow reruns, and
+  review commands require separate authority.
