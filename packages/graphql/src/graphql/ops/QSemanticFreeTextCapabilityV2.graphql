@@ -1,0 +1,11 @@
+query SemanticFreeTextCapabilityV2 {
+  semanticFreeTextCapability {
+    entitled
+    availability
+    reason
+    retryable
+    disclosureVersion
+    provider
+    consentDecision
+  }
+}

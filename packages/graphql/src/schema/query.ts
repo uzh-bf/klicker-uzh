@@ -183,11 +183,13 @@ export const Query = builder.queryType({
         },
       }),
 
-      semanticFreeTextCapability: t.withAuth(asUser).field({
+      semanticFreeTextCapability: t.withAuth({ authenticated: true }).field({
         nullable: false,
         type: SemanticFreeTextCapability,
-        resolve: (_, __, ctx) => {
-          return FreeTextEvaluationService.getSemanticFreeTextCapability(ctx)
+        resolve: async (_, __, ctx) => {
+          return await FreeTextEvaluationService.getSemanticFreeTextCapability(
+            ctx
+          )
         },
       }),
 

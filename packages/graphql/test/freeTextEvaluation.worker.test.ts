@@ -160,6 +160,9 @@ describe('semantic free-text evaluation worker', () => {
     })
     expect(completed?.cycleStatus).toBe('CORRECT')
     expect(details.map((detail) => detail.pointsAwarded)).toEqual([6, 4])
+    expect(completed?.attempts.map((attempt) => attempt.pointsAwarded)).toEqual(
+      [6, 4]
+    )
     expect(cycle.pointsAwarded).toBe(10)
     expect(
       await prisma.questionResponseDetail.count({

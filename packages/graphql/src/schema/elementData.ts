@@ -170,6 +170,10 @@ export const FreeTextElementOptions = builder
         resolve: (options, _, ctx) =>
           semanticEvaluationForViewer(options, ctx.user?.role) as never,
       }),
+      hasSemanticEvaluation: t.boolean({
+        nullable: true,
+        resolve: (options) => options.semanticEvaluation != null,
+      }),
     }),
   })
 

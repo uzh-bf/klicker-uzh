@@ -503,13 +503,31 @@ export async function decideSemanticEvaluationConsent(
       'SEMANTIC_DISCLOSURE_STALE'
     )
   }
-  return await ctx.prisma.freeTextConsentEvent.create({
-    data: {
-      participantId: ctx.user.sub,
-      disclosureVersion,
-      decision: accepted
-        ? DB.SemanticEvaluationConsentDecision.ACCEPTED
-        : DB.SemanticEvaluationConsentDecision.DECLINED,
-    },
+  return await ctx.prisma.$transaction(async (prisma) => {
+    const consent = await prisma.freeTextConsentEvent.create({
+      data: {
+        participantId: ctx.user.sub,
+        disclosureVersion,
+        decision: accepted
+          ? DB.SemanticEvaluationConsentDecision.ACCEPTED
+          : DB.SemanticEvaluationConsentDecision.DECLINED,
+      },
+    })
+
+    if (!accepted) {
+      await prisma.freeTextAttempt.updateMany({
+        where: {
+          cycle: {
+            participantId: ctx.user.sub,
+            status: DB.FreeTextPracticeCycleStatus.ACTIVE,
+          },
+          evaluationStatus: DB.FreeTextEvaluationStatus.UNAVAILABLE,
+          availabilityReason: 'CONSENT_REQUIRED',
+        },
+        data: { availabilityReason: 'CONSENT_DECLINED' },
+      })
+    }
+
+    return consent
   })
 }

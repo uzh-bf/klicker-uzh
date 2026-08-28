@@ -20,7 +20,11 @@ const POINTS_AWARD_TIMEFRAME_DAYS = 6
 const XP_AWARD_TIMEFRAME_DAYS = 1
 
 type CycleWithAttempts = DB.FreeTextPracticeCycle & {
-  attempts: DB.FreeTextAttempt[]
+  attempts: Array<
+    DB.FreeTextAttempt & {
+      questionResponseDetail: DB.QuestionResponseDetail | null
+    }
+  >
   elementInstance: DB.ElementInstance
 }
 
@@ -172,8 +176,7 @@ function isSolutionAuthorized(
 }
 
 function toAttemptState(
-  attempt: DB.FreeTextAttempt,
-  cycle: DB.FreeTextPracticeCycle,
+  attempt: CycleWithAttempts['attempts'][number],
   solutionAuthorized: boolean
 ): FreeTextAttemptState {
   return {
@@ -194,8 +197,8 @@ function toAttemptState(
     structuredResult: solutionAuthorized
       ? (attempt.structuredResult as FreeTextEvaluationResult | null)
       : null,
-    pointsAwarded: cycle.pointsAwarded,
-    xpAwarded: cycle.xpAwarded,
+    pointsAwarded: attempt.questionResponseDetail?.pointsAwarded ?? null,
+    xpAwarded: attempt.questionResponseDetail?.xpAwarded ?? 0,
     createdAt: attempt.createdAt,
     completedAt: attempt.completedAt,
   }
@@ -245,10 +248,10 @@ async function stateFromCycle(
     attemptsUsed,
     attemptsRemaining: Math.max(0, cycle.attemptLimit - attemptsUsed),
     attempts: attempts.map((attempt) =>
-      toAttemptState(attempt, cycle, solutionAuthorized)
+      toAttemptState(attempt, solutionAuthorized)
     ),
     currentAttempt: current
-      ? toAttemptState(current, cycle, solutionAuthorized)
+      ? toAttemptState(current, solutionAuthorized)
       : null,
     canSubmitAnswer:
       cycle.status === DB.FreeTextPracticeCycleStatus.ACTIVE &&
@@ -282,7 +285,7 @@ export async function loadCycleState(
   const cycle = await ctx.prisma.freeTextPracticeCycle.findFirst({
     where: { id: cycleId, participantId: ctx.user.sub },
     include: {
-      attempts: true,
+      attempts: { include: { questionResponseDetail: true } },
       elementInstance: true,
     },
   })

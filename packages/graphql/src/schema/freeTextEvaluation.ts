@@ -31,6 +31,11 @@ export const SemanticFreeTextCapabilityAvailability = builder.enumType(
   { values: ['AVAILABLE', 'DEGRADED', 'UNAVAILABLE'] as const }
 )
 
+export const SemanticEvaluationConsentDecision = builder.enumType(
+  'SemanticEvaluationConsentDecision',
+  { values: Object.values(DB.SemanticEvaluationConsentDecision) }
+)
+
 export const FreeTextAttemptStateRef = builder.objectRef<FreeTextAttemptState>(
   'FreeTextAttemptState'
 )
@@ -126,5 +131,9 @@ export const SemanticFreeTextCapability =
       retryable: t.exposeBoolean('retryable'),
       disclosureVersion: t.exposeString('disclosureVersion'),
       provider: t.exposeString('provider'),
+      consentDecision: t.expose('consentDecision', {
+        type: SemanticEvaluationConsentDecision,
+        nullable: true,
+      }),
     }),
   })

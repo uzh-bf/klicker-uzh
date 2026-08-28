@@ -18,6 +18,7 @@ export type SemanticFreeTextCapabilityData = {
   retryable: boolean
   disclosureVersion: string
   provider: string
+  consentDecision: DB.SemanticEvaluationConsentDecision | null
 }
 
 export type SemanticInstanceAccess = {
@@ -72,18 +73,26 @@ export function getSemanticEvaluationDisclosureVersion() {
   return getDisclosureVersion()
 }
 
-export function getSemanticFreeTextCapability(
+export async function getSemanticFreeTextCapability(
   ctx: ContextWithUser
-): SemanticFreeTextCapabilityData {
-  const entitled = ctx.user.catalystInstitutional || ctx.user.catalystIndividual
+): Promise<SemanticFreeTextCapabilityData> {
+  const disclosureVersion = getSemanticEvaluationDisclosureVersion()
+  const consent =
+    ctx.user.role === DB.UserRole.PARTICIPANT
+      ? await getConsentDecision(ctx.user.sub, disclosureVersion, ctx)
+      : null
+  const entitled = !!(
+    ctx.user.catalystInstitutional || ctx.user.catalystIndividual
+  )
   const available = !!process.env.CATALYST_FORMATIVE_EVALUATOR_URL
   return {
     entitled,
     availability: available ? 'AVAILABLE' : 'UNAVAILABLE',
     reason: available ? null : 'EVALUATOR_NOT_CONFIGURED',
     retryable: !available,
-    disclosureVersion: getSemanticEvaluationDisclosureVersion(),
+    disclosureVersion,
     provider: 'CATALYST',
+    consentDecision: consent?.decision ?? null,
   }
 }
 

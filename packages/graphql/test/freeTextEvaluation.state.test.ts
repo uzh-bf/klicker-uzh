@@ -19,6 +19,7 @@ import {
   createFreeTextAttempt,
   decideSemanticEvaluationConsent,
   getFreeTextPracticeState,
+  getSemanticFreeTextCapability,
   markFreeTextAttemptUnavailable,
   retryFreeTextEvaluation,
   revealFreeTextSolution,
@@ -27,6 +28,7 @@ import {
 import {
   cleanupFixtures,
   createFixture,
+  lecturerContext,
   participantContext,
   semanticConfig,
   workflowRunRef,
@@ -301,6 +303,72 @@ describe('semantic free-text practice state', () => {
     })
     expect(state.attemptsUsed).toBe(0)
     expect(state.attemptsRemaining).toBe(2)
+  })
+
+  it('persists a declined disclosure on an existing unavailable attempt', async () => {
+    const ctx = participantContext(fixture.participant.id)
+    const awaitingConsent = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'It makes a portfolio safer.',
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+
+    expect(awaitingConsent.currentAttempt).toMatchObject({
+      evaluationStatus: 'UNAVAILABLE',
+      availabilityReason: 'CONSENT_REQUIRED',
+    })
+
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: false },
+      ctx
+    )
+    const declined = await getFreeTextPracticeState(
+      { instanceId: fixture.instance.id },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+
+    expect(declined?.currentAttempt).toMatchObject({
+      evaluationStatus: 'UNAVAILABLE',
+      availabilityReason: 'CONSENT_DECLINED',
+      retryable: true,
+    })
+    expect(declined?.canRetryEvaluation).toBe(false)
+  })
+
+  it('returns the latest participant consent decision for the current disclosure', async () => {
+    const ctx = participantContext(fixture.participant.id)
+
+    await expect(getSemanticFreeTextCapability(ctx)).resolves.toMatchObject({
+      disclosureVersion: '2026-08-18',
+      entitled: false,
+      consentDecision: null,
+    })
+
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
+    await expect(getSemanticFreeTextCapability(ctx)).resolves.toMatchObject({
+      consentDecision: SemanticEvaluationConsentDecision.ACCEPTED,
+    })
+
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: false },
+      ctx
+    )
+    await expect(getSemanticFreeTextCapability(ctx)).resolves.toMatchObject({
+      consentDecision: SemanticEvaluationConsentDecision.DECLINED,
+    })
+
+    await expect(
+      getSemanticFreeTextCapability(lecturerContext(fixture.lecturer.id))
+    ).resolves.toMatchObject({ consentDecision: null })
   })
 
   it('allows declined consent to be accepted later and retries the same answer revision', async () => {

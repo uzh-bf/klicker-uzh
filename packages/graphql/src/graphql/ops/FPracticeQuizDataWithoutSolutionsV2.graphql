@@ -1,0 +1,8 @@
+fragment PracticeQuizDataWithoutSolutionsV2 on PracticeQuiz {
+  ...PracticeQuizDataWithoutSolutions
+  stacks {
+    elements {
+      ...ElementDataWithoutSolutionsV2
+    }
+  }
+}

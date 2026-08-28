@@ -1830,6 +1830,7 @@ type FreeTextElementData {
 type FreeTextElementOptions {
   hasAnswerFeedbacks: Boolean
   hasSampleSolution: Boolean
+  hasSemanticEvaluation: Boolean
   restrictions: FreeTextRestrictions
   semanticEvaluation: Json
   solutions: [String!]
@@ -3565,8 +3566,14 @@ type SelectionInstanceEvaluation {
   xpAwarded: Int
 }
 
+enum SemanticEvaluationConsentDecision {
+  ACCEPTED
+  DECLINED
+}
+
 type SemanticFreeTextCapability {
   availability: SemanticFreeTextCapabilityAvailability!
+  consentDecision: SemanticEvaluationConsentDecision
   disclosureVersion: String!
   entitled: Boolean!
   provider: String!
