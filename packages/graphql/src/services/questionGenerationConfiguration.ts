@@ -85,7 +85,7 @@ function isBloomLevel(value: string): value is QuestionGenerationBloomLevel {
 function isDifficultyPreset(
   value: string
 ): value is QuestionGenerationDifficultyPreset {
-  return ['EASY', 'MIXED', 'HARD'].includes(value)
+  return ['D1', 'D2', 'D3', 'D4', 'D5', 'EASY', 'MIXED', 'HARD'].includes(value)
 }
 
 export function allocateDifficulty(

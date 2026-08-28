@@ -18,6 +18,7 @@ import LearningAnalyticsRouteGuard from '~/components/featureFlags/LearningAnaly
 import { ManageAssistantWidget } from '../components/assistant/ManageAssistantWidget'
 import { CourseDuplicationProvider } from '../components/courses/CourseDuplicationStatusProvider'
 import ManageFeatureFlagProvider from '../components/featureFlags/ManageFeatureFlagProvider'
+import { GenerationStatusProvider } from '../components/generation/GenerationStatusProvider'
 import '../globals.css'
 import { useApollo } from '../lib/apollo'
 import { isPublicLiveQuizEvaluationRoute } from '../lib/isPublicLiveQuizEvaluationRoute'
@@ -64,19 +65,21 @@ function App({ Component, pageProps }: AppProps) {
           >
             <DndProvider backend={HTML5Backend}>
               <CourseDuplicationProvider>
-                <Toaster closeButton position="top-right" />
-                {pathname.startsWith('/analytics') ? (
-                  <LearningAnalyticsRouteGuard>
+                <GenerationStatusProvider>
+                  <Toaster closeButton position="top-right" />
+                  {pathname.startsWith('/analytics') ? (
+                    <LearningAnalyticsRouteGuard>
+                      <Component {...pageProps} />
+                    </LearningAnalyticsRouteGuard>
+                  ) : (
                     <Component {...pageProps} />
-                  </LearningAnalyticsRouteGuard>
-                ) : (
-                  <Component {...pageProps} />
-                )}
-                {/* Mounted here rather than in Layout so that navigating between
+                  )}
+                  {/* Mounted here rather than in Layout so that navigating between
                     authenticated Manage pages does not tear down the assistant
                     and reload its iframe mid-conversation. Public HMAC
                     evaluations must not issue the assistant's identity query. */}
-                {isPublicEvaluation ? null : <ManageAssistantWidget />}
+                  {isPublicEvaluation ? null : <ManageAssistantWidget />}
+                </GenerationStatusProvider>
               </CourseDuplicationProvider>
             </DndProvider>
           </NextIntlClientProvider>

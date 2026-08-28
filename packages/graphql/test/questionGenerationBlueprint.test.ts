@@ -185,7 +185,7 @@ describe('question generation blueprint', () => {
     expect(parseBlueprint(bytes)).toMatchObject({ item_format: 'mc' })
   })
 
-  it('fails closed for unknown or unbounded selected sources', async () => {
+  it('fails closed for unknown selected sources', async () => {
     await expect(
       createQuestionGenerationBlueprint(
         {
@@ -197,12 +197,38 @@ describe('question generation blueprint', () => {
         sourceSnapshot
       )
     ).rejects.toThrow('absent from the graph snapshot')
+  })
 
-    await expect(
-      createQuestionGenerationBlueprint(configuration, [
-        sourceSnapshot[0]!,
-        { ...sourceSnapshot[1]!, pageCount: null },
-      ])
-    ).rejects.toThrow('page count')
+  it.each([
+    'SC',
+    'MC',
+    'KPRIM',
+  ] as const)('keeps an unbounded selected source for %s when page count is unknown', async (itemType) => {
+    const bytes = await createQuestionGenerationBlueprint(
+      {
+        ...configuration,
+        itemType,
+        sourceScopes: [
+          {
+            resourceId: sourceSnapshot[1]!.resourceId,
+            pageFrom: null,
+            pageTo: null,
+          },
+        ],
+      },
+      [sourceSnapshot[0]!, { ...sourceSnapshot[1]!, pageCount: null }]
+    )
+
+    expect(parseBlueprint(bytes)).toMatchObject({
+      item_format: itemType.toLocaleLowerCase('en'),
+      sources: [
+        {
+          module_id: 'M1',
+          source_file: 'fermentation-notes.pdf',
+          page_from: null,
+          page_to: null,
+        },
+      ],
+    })
   })
 })

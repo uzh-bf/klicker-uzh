@@ -232,6 +232,12 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
     SetKbKnowledgeGraphEnabledDocument
   )
   const config = data?.getKbKnowledgeGraphConfig
+
+  useEffect(() => {
+    if (router.asPath.endsWith('#knowledge-graph')) {
+      setDetailsOpen(true)
+    }
+  }, [router.asPath])
   const formattedBillingLabel =
     config?.billingLabel === 'SEMESTER_QUOTA'
       ? t('kb.graphBillingSemesterQuota')
@@ -312,9 +318,23 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
 
     setOperationError(null)
     try {
-      await rebuildGraph({
+      const result = await rebuildGraph({
         variables: { kbId, qualityTier: selectedTier },
       })
+      const buildId = result.data?.rebuildKbKnowledgeGraph.buildId
+      if (buildId) {
+        window.dispatchEvent(
+          new CustomEvent('klicker:generation-started', {
+            detail: {
+              kind: 'graph',
+              id: buildId,
+              kbId,
+              label: t('kb.graphTitle'),
+              startedAt: Date.now(),
+            },
+          })
+        )
+      }
       await refetch()
     } catch {
       console.error('Failed to rebuild KB knowledge graph', { kbId })
@@ -339,6 +359,8 @@ function KnowledgeGraphPanel({ kbId }: { kbId: string }) {
 
   return (
     <details
+      id="knowledge-graph"
+      open={detailsOpen}
       className="mt-4"
       data-cy="kb-graph-settings"
       onToggle={(event) => setDetailsOpen(event.currentTarget.open)}

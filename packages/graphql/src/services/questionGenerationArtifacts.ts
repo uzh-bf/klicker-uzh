@@ -357,8 +357,8 @@ const designSchema = z
           .object({
             module_id: boundedText(100),
             source_file: boundedText(1024),
-            page_from: z.number().int().min(1),
-            page_to: z.number().int().min(1),
+            page_from: z.number().int().min(1).nullable(),
+            page_to: z.number().int().min(1).nullable(),
           })
           .passthrough()
       )
@@ -1700,13 +1700,13 @@ export function parseQuestionGenerationDesign(
             'Question-generation configuration references an unknown graph source'
           )
         }
-        const pageFrom = scope.pageFrom ?? 1
-        const pageTo = scope.pageTo ?? source.pageCount
-        if (pageTo === null) {
-          return artifactError(
-            'Question-generation source has no bounded registered page range'
-          )
-        }
+        const unbounded = scope.pageFrom === null && scope.pageTo === null
+        const pageFrom = unbounded
+          ? source.pageCount === null
+            ? null
+            : 1
+          : scope.pageFrom
+        const pageTo = unbounded ? source.pageCount : scope.pageTo
         return normalizeReviewSource(
           source.sourceFile,
           pageFrom,

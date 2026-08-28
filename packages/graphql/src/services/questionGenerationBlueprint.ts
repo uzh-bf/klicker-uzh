@@ -43,16 +43,15 @@ export async function createQuestionGenerationBlueprint(
     : configuration.sourceScopes.map((scope) => {
         const source = sourcesById.get(scope.resourceId)!
         const unbounded = scope.pageFrom === null && scope.pageTo === null
-        if (unbounded && source.pageCount === null) {
-          throw new Error(
-            'Selected question-generation source has no trustworthy page count'
-          )
-        }
 
         return {
           module_id: MODULE_ID,
           source_file: sourceBasename(source.sourceFile),
-          page_from: unbounded ? 1 : scope.pageFrom,
+          page_from: unbounded
+            ? source.pageCount === null
+              ? null
+              : 1
+            : scope.pageFrom,
           page_to: unbounded ? source.pageCount : scope.pageTo,
         }
       })

@@ -24,7 +24,15 @@ type ElementGenerationBloomLevelValue =
   | 'apply'
   | 'analyze'
   | 'evaluate'
-type ElementGenerationDifficultyPresetValue = 'EASY' | 'MIXED' | 'HARD'
+type ElementGenerationDifficultyPresetValue =
+  | 'D1'
+  | 'D2'
+  | 'D3'
+  | 'D4'
+  | 'D5'
+  | 'EASY'
+  | 'MIXED'
+  | 'HARD'
 type GeneratedElementCardTypeValue = 'definition' | 'formula' | 'calculation'
 
 export const GeneratableElementType = builder.enumType(
@@ -43,7 +51,9 @@ export const ElementGenerationBloomLevel = builder.enumType(
 )
 export const ElementGenerationDifficultyPreset = builder.enumType(
   'ElementGenerationDifficultyPreset',
-  { values: ['EASY', 'MIXED', 'HARD'] as const }
+  {
+    values: ['D1', 'D2', 'D3', 'D4', 'D5', 'EASY', 'MIXED', 'HARD'] as const,
+  }
 )
 export const GeneratedElementCardType = builder.enumType(
   'GeneratedElementCardType',

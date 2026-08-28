@@ -13,6 +13,7 @@ import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, UserNotification } from '@uzh-bf/design-system'
 import { useFormatter, useTranslations } from 'next-intl'
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { GENERATION_STARTED_EVENT } from '../../generation/GenerationStatusProvider'
 import {
   ELEMENT_TYPE_ORDER,
   elementGenerationErrorCode,
@@ -28,6 +29,40 @@ const DEFAULT_BLOOM_LEVELS = [
   ElementGenerationBloomLevel.Understand,
   ElementGenerationBloomLevel.Apply,
 ]
+const DIFFICULTY_LEVELS = [
+  ElementGenerationDifficultyPreset.D1,
+  ElementGenerationDifficultyPreset.D2,
+  ElementGenerationDifficultyPreset.D3,
+  ElementGenerationDifficultyPreset.D4,
+  ElementGenerationDifficultyPreset.D5,
+] as const
+const BLOOM_LEVEL_STYLES = {
+  [ElementGenerationBloomLevel.Remember]: {
+    badge: 'bg-sky-100 text-sky-900',
+    selected: 'border-sky-500 bg-sky-50 text-sky-950',
+    stripe: 'bg-sky-500',
+  },
+  [ElementGenerationBloomLevel.Understand]: {
+    badge: 'bg-cyan-100 text-cyan-900',
+    selected: 'border-cyan-600 bg-cyan-50 text-cyan-950',
+    stripe: 'bg-cyan-600',
+  },
+  [ElementGenerationBloomLevel.Apply]: {
+    badge: 'bg-emerald-100 text-emerald-900',
+    selected: 'border-emerald-600 bg-emerald-50 text-emerald-950',
+    stripe: 'bg-emerald-600',
+  },
+  [ElementGenerationBloomLevel.Analyze]: {
+    badge: 'bg-amber-100 text-amber-950',
+    selected: 'border-amber-500 bg-amber-50 text-amber-950',
+    stripe: 'bg-amber-500',
+  },
+  [ElementGenerationBloomLevel.Evaluate]: {
+    badge: 'bg-orange-100 text-orange-950',
+    selected: 'border-orange-600 bg-orange-50 text-orange-950',
+    stripe: 'bg-orange-600',
+  },
+} as const
 
 function scopeValues(
   sources: Array<{ resourceId: string }>
@@ -68,7 +103,7 @@ export default function ElementGenerationConfigure({
   const [elementCount, setElementCount] = useState(6)
   const [difficulty, setDifficulty] =
     useState<ElementGenerationDifficultyPreset>(
-      ElementGenerationDifficultyPreset.Mixed
+      ElementGenerationDifficultyPreset.D3
     )
   const [bloomLevels, setBloomLevels] =
     useState<ElementGenerationBloomLevel[]>(DEFAULT_BLOOM_LEVELS)
@@ -262,6 +297,16 @@ export default function ElementGenerationConfigure({
       })
       const buildId = result.data?.startElementGeneration.id
       if (!buildId) throw new Error('Element generation did not return a build')
+      window.dispatchEvent(
+        new CustomEvent(GENERATION_STARTED_EVENT, {
+          detail: {
+            kind: 'element',
+            id: buildId,
+            label: t(`elementTypes.${elementType}.label`),
+            startedAt: Date.now(),
+          },
+        })
+      )
       await onStarted(buildId)
     } catch (error) {
       const code = elementGenerationErrorCode(error)
@@ -407,6 +452,10 @@ export default function ElementGenerationConfigure({
                               />
                             </label>
                           </div>
+                        ) : scope.selected ? (
+                          <p className="ml-7 mt-2 text-xs text-slate-500">
+                            {t('configure.completeSource')}
+                          </p>
                         ) : null}
                       </div>
                     )
@@ -466,18 +515,23 @@ export default function ElementGenerationConfigure({
               <p className="mt-1 text-sm text-slate-600">
                 {t('configure.bloomHelp')}
               </p>
-              <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
-                {capabilities.bloomLevels.map((level) => {
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                {capabilities.bloomLevels.map((level, index) => {
                   const checked = bloomLevels.includes(level)
+                  const styles = BLOOM_LEVEL_STYLES[level]
                   return (
                     <label
                       key={level}
-                      className={`cursor-pointer rounded-lg border-2 px-3 py-4 text-center text-sm font-semibold ${
+                      className={`focus-within:ring-primary-80 relative min-h-40 cursor-pointer overflow-hidden rounded-xl border-2 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-within:ring-2 focus-within:ring-offset-2 ${
                         checked
-                          ? 'border-orange-500 bg-orange-50 text-orange-900'
-                          : 'border-slate-200 text-slate-700'
+                          ? styles.selected
+                          : 'border-slate-200 bg-white text-slate-700'
                       }`}
                     >
+                      <span
+                        aria-hidden="true"
+                        className={`absolute inset-x-0 top-0 h-1.5 ${styles.stripe}`}
+                      />
                       <input
                         type="checkbox"
                         checked={checked}
@@ -491,7 +545,27 @@ export default function ElementGenerationConfigure({
                         className="sr-only"
                         data-cy={`element-generation-bloom-${level}`}
                       />
-                      {t(`bloom.${level}`)}
+                      <span className="flex items-center justify-between gap-2">
+                        <span
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${styles.badge}`}
+                        >
+                          {index + 1}
+                        </span>
+                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          {t('configure.bloomLevel', { level: index + 1 })}
+                        </span>
+                      </span>
+                      <span className="mt-4 block text-base font-bold">
+                        {t(`bloom.${level}`)}
+                      </span>
+                      <span className="mt-1 block text-xs font-normal leading-relaxed text-slate-600">
+                        {t(`bloomExamples.${level}`)}
+                      </span>
+                      <span className="mt-3 block text-xs font-semibold">
+                        {checked
+                          ? t('configure.bloomSelected')
+                          : t('configure.bloomSelect')}
+                      </span>
                     </label>
                   )
                 })}
@@ -540,29 +614,35 @@ export default function ElementGenerationConfigure({
                   <legend className="text-sm font-semibold text-slate-700">
                     {t('configure.difficulty')}
                   </legend>
-                  <div className="mt-2 grid max-w-xl grid-cols-3 gap-2">
-                    {Object.values(ElementGenerationDifficultyPreset).map(
-                      (value) => (
-                        <label
-                          key={value}
-                          className={`cursor-pointer rounded-md border px-3 py-2 text-center text-sm font-medium ${
-                            difficulty === value
-                              ? 'border-primary-100 bg-primary-20 text-primary-100'
-                              : 'border-slate-300 text-slate-700'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="difficulty"
-                            checked={difficulty === value}
-                            onChange={() => setDifficulty(value)}
-                            className="sr-only"
-                            data-cy={`element-generation-difficulty-${value.toLowerCase()}`}
-                          />
-                          {t(`difficulty.${value}`)}
-                        </label>
-                      )
-                    )}
+                  <p className="mt-1 text-xs text-slate-500">
+                    {t('configure.difficultyHelp')}
+                  </p>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+                    {DIFFICULTY_LEVELS.map((value, index) => (
+                      <label
+                        key={value}
+                        className={`focus-within:ring-primary-80 cursor-pointer rounded-lg border-2 px-3 py-3 text-left text-sm transition focus-within:ring-2 focus-within:ring-offset-2 ${
+                          difficulty === value
+                            ? 'border-primary-100 bg-primary-20 text-primary-100 shadow-sm'
+                            : 'border-slate-300 text-slate-700 hover:border-slate-400'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="difficulty"
+                          checked={difficulty === value}
+                          onChange={() => setDifficulty(value)}
+                          className="sr-only"
+                          data-cy={`element-generation-difficulty-${value.toLowerCase()}`}
+                        />
+                        <span className="block font-bold">
+                          D{index + 1} · {t(`difficulty.${value}.label`)}
+                        </span>
+                        <span className="mt-1 block text-xs font-normal leading-snug text-slate-600">
+                          {t(`difficulty.${value}.description`)}
+                        </span>
+                      </label>
+                    ))}
                   </div>
                 </fieldset>
               ) : null}
@@ -591,12 +671,23 @@ export default function ElementGenerationConfigure({
                   <Button.Label>{t('configure.addObjective')}</Button.Label>
                 </Button>
               </div>
+              <div className="mt-3 rounded-lg border border-cyan-200 bg-cyan-50 p-3 text-sm text-cyan-950">
+                <p className="font-semibold">{t('configure.objectiveHint')}</p>
+                <p className="mt-1 text-xs leading-relaxed">
+                  {t('configure.objectiveFormula')}
+                </p>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-xs">
+                  <li>{t('configure.objectiveExampleOne')}</li>
+                  <li>{t('configure.objectiveExampleTwo')}</li>
+                </ul>
+              </div>
               <div className="mt-3 space-y-2">
                 {objectives.map((objective, index) => (
                   <div key={objective.id} className="flex gap-2">
                     <input
                       type="text"
                       value={objective.text}
+                      placeholder={t('configure.objectivePlaceholder')}
                       onChange={(event) =>
                         setObjectives((current) =>
                           current.map((item) =>

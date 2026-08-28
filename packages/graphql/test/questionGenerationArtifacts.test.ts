@@ -736,6 +736,59 @@ describe('question-generation artifact normalization', () => {
     expect(JSON.stringify(summary)).not.toContain('private/worker')
   })
 
+  it.each([
+    ['SC', 'single_choice'],
+    ['MC', 'multiple_choice'],
+    ['KPRIM', 'kprim'],
+  ] as const)('accepts a complete named source without page metadata for %s', (itemType, itemFormat) => {
+    const artifact = design({
+      sources: [
+        {
+          ...design().sources[0],
+          page_from: null,
+          page_to: null,
+        },
+      ],
+      resolved_slots: [
+        {
+          ...design().resolved_slots[0],
+          item_format: itemFormat,
+        },
+      ],
+    })
+    const summary = parseQuestionGenerationDesign(bytes(artifact), {
+      buildId: BUILD_ID,
+      configuration: {
+        ...configuration,
+        itemType,
+        sourceScopes: [
+          {
+            resourceId: RESOURCE_ID,
+            pageFrom: null,
+            pageTo: null,
+          },
+        ],
+      },
+      sourceSnapshot: [
+        { ...sourceSnapshot[0]!, pageCount: null },
+        {
+          ...sourceSnapshot[0]!,
+          resourceId: '123e4567-e89b-42d3-a456-426614174001',
+          title: 'A second source',
+          sourceFile: 'second-source.pdf',
+        },
+      ],
+    })
+
+    expect(summary.sources).toEqual([
+      {
+        sourceFile: 'wine-chemistry.pdf',
+        pageFrom: null,
+        pageTo: null,
+      },
+    ])
+  })
+
   it('keeps worker-classified Bloom intent unresolved during Design review', () => {
     const artifact = design()
     artifact.resolved_slots[0]!.bloom_level = ''
