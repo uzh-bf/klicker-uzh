@@ -395,13 +395,13 @@ test.describe('Manage Assistant — Messaging', () => {
     const viewport = page.viewportSize()
     expect(triggerBox).not.toBeNull()
     expect(viewport).not.toBeNull()
+    // The launcher sits in the bottom-right corner region of the viewport:
+    // right-aligned within the fixed 24px md margin (plus rendering slack),
+    // and comfortably below mid-height.
     expect(
-      Math.abs(
-        (triggerBox?.x ?? 0) +
-          (triggerBox?.width ?? 0) / 2 -
-          (viewport?.width ?? 0) / 2
-      )
-    ).toBeLessThanOrEqual(1)
+      (viewport?.width ?? 0) - ((triggerBox?.x ?? 0) + (triggerBox?.width ?? 0))
+    ).toBeLessThanOrEqual(32)
+    expect(triggerBox?.y ?? 0).toBeGreaterThan((viewport?.height ?? 0) / 2)
 
     await openManageAssistantWidget(page)
 
