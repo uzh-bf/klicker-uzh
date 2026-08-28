@@ -72,25 +72,25 @@ against `v3-ai` without running another live proof or changing runtime state.
 
 ## Delegation map
 
-| Workstream | Owner | Dependency | Acceptance |
-| --- | --- | --- | --- |
-| Proof correction | main | Reviewed inherited helper | Focused and package checks pass |
-| Slice simplification | simplifier | Committed correction | No behavior-changing reduction |
-| Isolation and custody review | slice-reviewer | Committed correction | All findings resolved or rejected with evidence |
-| Integrated readiness | final-reviewer | Final committed range | Correctness, maintainability, security, and architecture pass |
+| Workstream                   | Owner          | Dependency                | Acceptance                                                    |
+| ---------------------------- | -------------- | ------------------------- | ------------------------------------------------------------- |
+| Proof correction             | main           | Reviewed inherited helper | Focused and package checks pass                               |
+| Slice simplification         | simplifier     | Committed correction      | No behavior-changing reduction                                |
+| Isolation and custody review | slice-reviewer | Committed correction      | All findings resolved or rejected with evidence               |
+| Integrated readiness         | final-reviewer | Final committed range     | Correctness, maintainability, security, and architecture pass |
 
 Execution-tier skip reason: The marker semantics, secret-custody invariants,
 branch integration, and final delivery are coupled on the critical path.
 
 ## Test portfolio
 
-| Contract | Obligation | Stable seam | Distinct failure |
-| --- | --- | --- | --- |
-| Positive evidence | Extend existing | `runProofMatrix` | Chunk-only positive marker is missed |
-| Overlapping topics | Extend existing | `runProofMatrix` | Shared chunk text falsely fails isolation |
-| Foreign source reference | Add regression | `runProofMatrix` | Foreign reference is not detected |
-| Manifest migration | Add regression | `validateManifest` | Legacy broad marker field is accepted |
-| Custody and lifecycle | Preserve existing | `superviseProof` | Output, environment, receipt, lock, signal, or timeout contract regresses |
+| Contract                 | Obligation        | Stable seam        | Distinct failure                                                          |
+| ------------------------ | ----------------- | ------------------ | ------------------------------------------------------------------------- |
+| Positive evidence        | Extend existing   | `runProofMatrix`   | Chunk-only positive marker is missed                                      |
+| Overlapping topics       | Extend existing   | `runProofMatrix`   | Shared chunk text falsely fails isolation                                 |
+| Foreign source reference | Add regression    | `runProofMatrix`   | Foreign reference is not detected                                         |
+| Manifest migration       | Add regression    | `validateManifest` | Legacy broad marker field is accepted                                     |
+| Custody and lifecycle    | Preserve existing | `superviseProof`   | Output, environment, receipt, lock, signal, or timeout contract regresses |
 
 ## Slice: make isolation evidence source-specific
 
@@ -121,14 +121,26 @@ branch integration, and final delivery are coupled on the critical path.
 
 ## Progress
 
-- Status: Plan approved; implementation is next.
-- Completed: False-positive classification, current-base worktree, and
-  continuity planning review.
-- Current branch: Recorded `origin/v3-ai@edae58628` baseline. The remote target
-  has since advanced by one deployment-annotation commit; no integration has
-  occurred.
-- Remaining: Implementation, local checks, slice gates, final review, explicit
-  push, pull request, exact-head CI, target integration decision if still
-  required, and ready state.
-- Required delivery layer: Ready pull request. Achieved layer: Reviewed plan.
-- Next action: Implement the source-specific isolation correction.
+- Status: Source-reference-only correction implemented; local review gates are
+  next.
+- Completed: False-positive classification, current-base worktree, continuity
+  planning review, purpose-based naming, reviewed proof custody and lifecycle
+  protections, asymmetric marker logic, regression coverage, and wiki
+  documentation.
+- Current branch: Plan commit over the recorded `origin/v3-ai@edae58628`
+  baseline. The remote target has since advanced by one deployment-annotation
+  commit; no integration has occurred.
+- Fresh checks: Node syntax passed; Biome passed for the helper and test;
+  Prettier passed for the plan and wiki; focused Vitest passed 17/17 under
+  pinned Node 24; `git diff --check` passed.
+- Environment gap: Exact-worktree `devrouter ensure` stopped before creating a
+  runtime because the current target's devcontainer defines
+  `postCreateCommand` without `waitFor`. The host fallback cannot build all
+  internal workspaces, so Chat TypeScript and full-suite collection remain for
+  exact-head CI rather than being claimed as local passes.
+- Remaining: Implementation commit, slice gates, final review, explicit push,
+  pull request, exact-head CI, target integration decision if still required,
+  and ready state.
+- Required delivery layer: Ready pull request. Achieved layer: Verified local
+  correction.
+- Next action: Commit the implementation and run the two required slice gates.
