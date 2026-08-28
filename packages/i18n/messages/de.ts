@@ -77,6 +77,42 @@ export default {
       disclaimerDeclinedMessage:
         'Du hast den Haftungsausschluss des Chatbots abgelehnt. Akzeptiere die Bedingungen, um den Chatbot weiterhin zu verwenden.',
       showDisclaimerAgain: 'Haftungsausschluss erneut anzeigen',
+      newConversation: 'Neue Konversation starten',
+      confirmNewConversation: 'Neue Konversation wirklich starten',
+      confirmNewConversationShort: 'Neu starten?',
+      newConversationWait:
+        'Warte, bis die aktuelle Antwort vollständig generiert wurde',
+      newConversationArmed:
+        'Bestätigung erforderlich: Aktiviere die Schaltfläche erneut, um eine neue Konversation zu starten.',
+    },
+    manageAssistant: {
+      welcome: 'Hallo! Wie kann ich helfen?',
+      manageContext: 'Verwalten',
+      capabilitySearch: 'Kurse und Fragensammlung durchsuchen',
+      capabilityDraft:
+        'Single-Choice-, Multiple-Choice- und Freitextfragen entwerfen — sie werden erst nach Deiner Bestätigung in der Fragensammlung gespeichert',
+      capabilityFeedback: 'Verbesserungen für Fragefeedback vorschlagen',
+      capabilityDocumentation:
+        'Funktionen von KlickerUZH anhand der Dokumentation und Anleitungen erklären',
+      limitsNote:
+        'Alles andere ist schreibgeschützt — der Assistent veröffentlicht nichts und bearbeitet keine bestehenden Inhalte.',
+      proposalReview: {
+        reviewLabel: 'Fragenentwurf prüfen',
+        draftQuestion: 'Fragenentwurf',
+        question: 'Frage',
+        correctAnswer: 'Richtige Antwort',
+        correctAnswers: 'Richtige Antworten',
+        correct: 'Richtig',
+        incorrect: 'Falsch',
+        answerFeedback: 'Antwortfeedback',
+        notProvided: 'Nicht angegeben',
+        sampleSolution: 'Beispiellösung',
+        maximumResponseLength: 'Maximale Antwortlänge: {maxLength} Zeichen',
+        generalExplanation: 'Allgemeine Erklärung',
+        singleChoice: 'Single Choice',
+        multipleChoice: 'Multiple Choice',
+        freeText: 'Freitext',
+      },
     },
     recovery: {
       notFoundTitle: 'Chatbot nicht gefunden',
@@ -1754,6 +1790,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       title: 'KlickerUZH Assistant',
       subtitle: 'KI-Assistent für Ihre Kurse und Ihren Fragepool',
       openInNewTab: 'Assistent in einem neuen Tab öffnen',
+      loading: 'Assistent wird geladen…',
+      resize: 'Grösse des Assistenten ändern',
+      resizeHint:
+        'Ziehen Sie, um die Grösse zu ändern. Die Pfeiltasten ändern die Grösse ebenfalls.',
       elementCreatedToast: 'Entwurf "{name}" zum Fragepool hinzugefügt',
     },
     ai: {

@@ -6,7 +6,7 @@ title: AI Assistant
 
 ![KlickerUZH Assistant in the lecturer interface](/img/ai_assistant/manage_assistant_drawer.png)
 
-The KlickerUZH Assistant is an AI chat companion built into the lecturer interface. You open it with the **Assistant** button in the bottom right corner of any page and it appears as a chat panel next to your work, so you do not have to leave the page you are on. Using the icon in the panel header, you can also open the assistant in a separate browser tab.
+The KlickerUZH Assistant is an AI chat companion built into the lecturer interface. You open it with the **Assistant** button in the bottom right corner of any page and it appears as a chat panel next to your work, so you do not have to leave the page you are on. The page behind the panel remains usable, and on a desktop you can resize the panel from its upper-left corner. Using the icon in the panel header, you can also open the assistant in a separate browser tab.
 
 The assistant knows which part of KlickerUZH you are currently working in (for example your question pool, a course, an activity wizard, or an evaluation) and offers matching starting points for a conversation. This context is only a hint for the conversation — it never grants the assistant access to anything you could not access yourself.
 
@@ -18,11 +18,12 @@ The assistant is currently being rolled out gradually. If you do not see the **A
 
 ![Assistant answering a question about element types](/img/ai_assistant/manage_assistant_response.png)
 
-The assistant works with your own KlickerUZH content and supports three kinds of tasks:
+The assistant works with your own KlickerUZH content and supports four kinds of tasks:
 
 1. **Search your courses and question pool:** It can list the courses you have access to, summarize a single course with its activity counts, and search your questions by topic — including drafts. Use this to find reusable material before creating something new.
 2. **Draft new questions:** It can draft single choice (SC), multiple choice (MC), and free text questions — for choice questions including answer options and sample solutions. Drafts only become real content after you confirm them (see the next section).
 3. **Improve answer feedback:** It can suggest clearer, more specific feedback for the answer options of a question you are working on.
+4. **Explain KlickerUZH:** It knows the KlickerUZH documentation and tutorials, so you can ask how features work even when they are not shown in the suggested conversation starters.
 
 Beyond that, the assistant behaves like a discussion partner for teaching questions: you can ask it to brainstorm topics, balance the difficulty of a planned quiz, or think through results you describe to it.
 
@@ -37,11 +38,19 @@ It is important to know what the assistant **cannot** do:
 
 The assistant never writes into your question pool on its own. Whenever you ask it to create or save a question, it responds with a **proposal card** labelled "Confirmation required" instead of changing anything:
 
-1. The card shows a **preview** of the drafted question with its answer options and feedback, so you can check the content before anything is stored. The underlying raw data can be expanded as well.
+1. The card shows a **preview** of the drafted question with every answer option, which options are correct, and the feedback for each answer, so you can check the content before anything is stored. Free-text proposals show their sample solutions and response-length limit. The underlying raw data can be expanded as well.
 2. Choosing **Create draft** stores the question in your question pool with the status **Draft**, exactly as if you had created it through the [element management](/tutorials/element_management/) dialog. You are notified once the draft exists and it appears in your library.
 3. Choosing **Dismiss** discards the proposal. Nothing is stored.
 
 After you confirm a proposal, its card switches to **Draft created** and no longer offers confirmation. Since new questions always arrive as drafts, they are never visible to students before you review them, complete them, and use them in an activity.
+
+You can continue refining an unconfirmed proposal in the same conversation. For example, write "make it German" or "change the second option" and the assistant receives the signed proposal context from the previous turn. Proposal context expires after a short period, so ask for a new draft if an old proposal can no longer be revised.
+
+## How do I start a new conversation?
+
+Use **Start a new conversation** in the assistant toolbar. If the conversation or message field contains anything, the button asks for a second confirmation before it clears the transcript, unsent text, and attachments. This starts a clean conversation without reloading the KlickerUZH page.
+
+Closing and reopening the panel keeps the current conversation while the page remains open. Conversations are not yet saved as a durable chat history: reloading the page starts a fresh session.
 
 ## Can I attach images to my messages?
 

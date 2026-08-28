@@ -17,6 +17,10 @@ export const MANAGE_CONTEXT_MESSAGE_TYPE = 'klicker:manage-context'
 // slow-hydrating iframe.
 export const MANAGE_CONTEXT_READY_MESSAGE_TYPE = 'klicker:manage-context-ready'
 
+// Chat iframe -> Manage: requests that the non-modal assistant dock closes
+// after Escape is pressed inside the cross-origin iframe.
+export const MANAGE_CLOSE_REQUEST_MESSAGE_TYPE = 'klicker:manage-close-request'
+
 // Chat iframe -> Manage: a signed proposal was confirmed into a new
 // question-pool element, so Manage can refresh its own data without a reload.
 export const MANAGE_ELEMENT_CREATED_MESSAGE_TYPE =
