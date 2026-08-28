@@ -26,4 +26,14 @@ describe('package subpath exports', () => {
 
     expect(digest.computeResponseExampleSetDigest).toBeTypeOf('function')
   })
+
+  it('loads response-example eligibility helpers through the public package path', async () => {
+    const eligibility = await import(
+      '@klicker-uzh/util/response-example-eligibility'
+    )
+
+    expect(eligibility.evaluateResponseExampleCurrentEligibility).toBeTypeOf(
+      'function'
+    )
+  })
 })
