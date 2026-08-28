@@ -1,5 +1,17 @@
 export type FreeTextCorrectnessCategory = 'CORRECT' | 'PARTIAL' | 'INCORRECT'
 
+export type FreeTextEvaluationAvailabilityReason =
+  | 'CONFIGURATION_CHANGED'
+  | 'CONSENT_DECLINED'
+  | 'CONSENT_REQUIRED'
+  | 'EVALUATION_STALLED'
+  | 'EVALUATOR_FAILED'
+  | 'EVALUATOR_REJECTED_REQUEST'
+  | 'EVALUATOR_RESULT_UNAVAILABLE'
+  | 'EVALUATOR_UNAVAILABLE'
+  | 'LECTURER_ENTITLEMENT_UNAVAILABLE'
+  | 'SCHEDULING_FAILED'
+
 export type FreeTextRubricAchievementLevel = {
   name: string
   description: string

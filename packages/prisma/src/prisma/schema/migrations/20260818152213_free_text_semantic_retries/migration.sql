@@ -19,6 +19,7 @@ CREATE TABLE "FreeTextPracticeCycle" (
     "ordinal" INTEGER NOT NULL,
     "status" "FreeTextPracticeCycleStatus" NOT NULL DEFAULT 'ACTIVE',
     "attemptLimit" INTEGER NOT NULL,
+    "stateVersion" INTEGER NOT NULL DEFAULT 1,
     "pointsRewardEligible" BOOLEAN NOT NULL,
     "xpRewardEligible" BOOLEAN NOT NULL,
     "bestScore" DOUBLE PRECISION NOT NULL DEFAULT 0,

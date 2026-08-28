@@ -146,6 +146,7 @@ model FreeTextPracticeCycle {
   ordinal      Int
   status       FreeTextPracticeCycleStatus @default(ACTIVE)
   attemptLimit Int
+  stateVersion Int                         @default(1)
 
   pointsRewardEligible Boolean
   xpRewardEligible     Boolean

@@ -108,6 +108,9 @@ remains available when configured.
 Public KlickerUZH persists the answer before scheduling work. A Hatchet durable
 workflow uses the public attempt ID for idempotency and per-attempt concurrency.
 The public row, not Hatchet metadata, is the status clients query.
+Every participant-visible attempt or cycle transition increments the cycle's
+server-issued `stateVersion`; clients accept only a strictly newer version for
+the same cycle, so a late response cannot roll back revealed feedback.
 
 The evaluator request contains only the versioned contract, attempt ID, question,
 question language, answer, reference solution, and full rubric schema. Catalyst
