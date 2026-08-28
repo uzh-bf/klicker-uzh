@@ -49,6 +49,24 @@ function App({ Component, pageProps }: AppProps) {
     ? (locale as (typeof routing.locales)[number])
     : routing.defaultLocale
 
+  const appContent = (
+    <>
+      <Toaster closeButton position="top-right" />
+      {pathname.startsWith('/analytics') ? (
+        <LearningAnalyticsRouteGuard>
+          <Component {...pageProps} />
+        </LearningAnalyticsRouteGuard>
+      ) : (
+        <Component {...pageProps} />
+      )}
+      {/* Mounted here rather than in Layout so that navigating between
+        authenticated Manage pages does not tear down the assistant
+        and reload its iframe mid-conversation. Public HMAC
+        evaluations must not issue the assistant's identity query. */}
+      {isPublicEvaluation ? null : <ManageAssistantWidget />}
+    </>
+  )
+
   return (
     <div
       id="__app"
@@ -65,21 +83,13 @@ function App({ Component, pageProps }: AppProps) {
           >
             <DndProvider backend={HTML5Backend}>
               <CourseDuplicationProvider>
-                <GenerationStatusProvider>
-                  <Toaster closeButton position="top-right" />
-                  {pathname.startsWith('/analytics') ? (
-                    <LearningAnalyticsRouteGuard>
-                      <Component {...pageProps} />
-                    </LearningAnalyticsRouteGuard>
-                  ) : (
-                    <Component {...pageProps} />
-                  )}
-                  {/* Mounted here rather than in Layout so that navigating between
-                    authenticated Manage pages does not tear down the assistant
-                    and reload its iframe mid-conversation. Public HMAC
-                    evaluations must not issue the assistant's identity query. */}
-                  {isPublicEvaluation ? null : <ManageAssistantWidget />}
-                </GenerationStatusProvider>
+                {isPublicEvaluation ? (
+                  appContent
+                ) : (
+                  <GenerationStatusProvider>
+                    {appContent}
+                  </GenerationStatusProvider>
+                )}
               </CourseDuplicationProvider>
             </DndProvider>
           </NextIntlClientProvider>

@@ -55,6 +55,12 @@ type GenerationJobProgress = {
 const STORAGE_KEY = 'klicker-background-generation-jobs-v1'
 const POLL_INTERVAL_MS = 5000
 const UNMATCHED_GRAPH_JOB_TIMEOUT_MS = 120_000
+const MAX_PERSISTED_JOB_AGE_MS = 24 * 60 * 60 * 1000
+const TERMINAL_QUERY_ERROR_CODES = new Set([
+  'AI_BETA_ACCESS_REQUIRED',
+  'FORBIDDEN',
+  'UNAUTHENTICATED',
+])
 
 function isGenerationJob(value: unknown): value is GenerationJob {
   if (typeof value !== 'object' || value === null) return false
@@ -73,11 +79,48 @@ function isGenerationJob(value: unknown): value is GenerationJob {
 
 function readJobs(): GenerationJob[] {
   try {
+    const now = Date.now()
     const value = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
-    return Array.isArray(value) ? value.filter(isGenerationJob) : []
+    return Array.isArray(value)
+      ? value.filter(
+          (job): job is GenerationJob =>
+            isGenerationJob(job) &&
+            job.startedAt <= now &&
+            now - job.startedAt <= MAX_PERSISTED_JOB_AGE_MS
+        )
+      : []
   } catch {
     return []
   }
+}
+
+function isTerminalGenerationQueryError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false
+
+  const graphQLErrors = Reflect.get(error, 'graphQLErrors')
+  const errors = Array.isArray(graphQLErrors) ? graphQLErrors : [error]
+
+  return errors.some((graphQLError) => {
+    if (typeof graphQLError !== 'object' || graphQLError === null) return false
+
+    const extensions = Reflect.get(graphQLError, 'extensions')
+    const code =
+      typeof extensions === 'object' && extensions !== null
+        ? Reflect.get(extensions, 'code')
+        : undefined
+    if (
+      typeof code === 'string' &&
+      (TERMINAL_QUERY_ERROR_CODES.has(code) || code.endsWith('_NOT_FOUND'))
+    ) {
+      return true
+    }
+
+    const message = Reflect.get(graphQLError, 'message')
+    return (
+      typeof message === 'string' &&
+      (message === 'Unauthorized' || /not found/i.test(message))
+    )
+  })
 }
 
 function jobKey(job: GenerationJob): string {
@@ -112,6 +155,10 @@ function GraphJobTracker({
   }, [])
 
   useEffect(() => {
+    if (isTerminalGenerationQueryError(error)) {
+      onTerminal(job, false)
+      return
+    }
     if (config?.publishedBuildId === job.id) {
       onTerminal(job, true)
       return
@@ -166,6 +213,10 @@ function ElementJobTracker({
   const build = query.data?.elementGenerationBuild
 
   useEffect(() => {
+    if (isTerminalGenerationQueryError(query.error)) {
+      onTerminal(job, false)
+      return
+    }
     if (!build) return
     if (
       build.status === ElementGenerationBuildStatus.Completed ||
@@ -192,7 +243,7 @@ function ElementJobTracker({
         requested: build.requestedElementCount,
       }),
     })
-  }, [build, job, onProgress, onTerminal, t])
+  }, [build, job, onProgress, onTerminal, query.error, t])
 
   return null
 }
