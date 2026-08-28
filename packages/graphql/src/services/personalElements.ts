@@ -611,9 +611,7 @@ function normalizeCandidates(
 // rejects null in Json values, so absent fields are dropped before
 // validation and persistence. Keys are omitted rather than set to undefined
 // so persisted Json matches the parsed shape for deep-equality checks.
-function toPersistedSources(
-  sources: readonly PersonalElementSourceInput[]
-) {
+function toPersistedSources(sources: readonly PersonalElementSourceInput[]) {
   return sources.map((source) => ({
     sourceId: source.sourceId,
     chunkId: source.chunkId,

@@ -753,13 +753,10 @@ export const Mutation = builder.mutationType({
           candidateId: t.arg.string({ required: true }),
         },
         resolve: async (_, args, ctx) => {
-          await PersonalElementService.discardPersonalElementCandidate(
-            args,
-            {
-              prisma: ctx.prisma,
-              participantId: ctx.user.sub,
-            }
-          )
+          await PersonalElementService.discardPersonalElementCandidate(args, {
+            prisma: ctx.prisma,
+            participantId: ctx.user.sub,
+          })
           return true
         },
       }),
