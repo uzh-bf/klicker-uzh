@@ -105,10 +105,10 @@ export const UpdatePersonalElementInput = builder.inputType(
 export const CardGenerationLease = builder
   .objectRef<DB.CardGenerationLease>('CardGenerationLease')
   .implement({
-  fields: (t) => ({
-    id: t.exposeID('id'),
-    attemptToken: t.exposeString('attemptToken'),
-  }),
+    fields: (t) => ({
+      id: t.exposeID('id'),
+      attemptToken: t.exposeString('attemptToken'),
+    }),
   })
 
 export const CardPlanEntryInput = builder.inputType('CardPlanEntryInput', {
@@ -120,16 +120,13 @@ export const CardPlanEntryInput = builder.inputType('CardPlanEntryInput', {
   }),
 })
 
-export const PrepareCardPlanInput = builder.inputType(
-  'PrepareCardPlanInput',
-  {
-    fields: (t) => ({
-      courseId: t.string({ required: true }),
-      topic: t.string({ required: true }),
-      cards: t.field({ type: [CardPlanEntryInput], required: true }),
-    }),
-  }
-)
+export const PrepareCardPlanInput = builder.inputType('PrepareCardPlanInput', {
+  fields: (t) => ({
+    courseId: t.string({ required: true }),
+    topic: t.string({ required: true }),
+    cards: t.field({ type: [CardPlanEntryInput], required: true }),
+  }),
+})
 
 export const ValidateCardCandidateInput = builder.inputType(
   'ValidateCardCandidateInput',
