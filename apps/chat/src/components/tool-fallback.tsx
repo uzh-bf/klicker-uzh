@@ -14,11 +14,9 @@ import {
 import { useTranslations } from 'next-intl'
 import { useState, type FC } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { getManageProposalResult } from '../services/manageProposalResult'
 import { STUDENT_PRACTICE_QUIZ_TOOL_NAME } from '@/src/services/studentPracticeMcp'
-import {
-  getManageProposalResult,
-  ManageProposalCard,
-} from './manage-proposal-card'
+import { ManageProposalCard } from './manage-proposal-card'
 import { StudentPracticeQuizCard } from './student-practice-quiz-card'
 
 const MAX_PREVIEW_LINES = 10

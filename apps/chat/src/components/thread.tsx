@@ -349,7 +349,7 @@ export const Thread: FC<ThreadProps> = ({
         className={twMerge(
           'focus-visible:ring-ring flex min-h-0 flex-1 flex-col items-center scroll-smooth bg-inherit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset motion-reduce:scroll-auto',
           embedded
-            ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-24 pt-2'
+            ? 'scrollbar-none overscroll-contain overflow-y-auto px-2 pb-4 pt-2'
             : twMerge(
                 'overscroll-contain overflow-y-scroll px-2 pb-4 pt-2 sm:px-4 sm:pt-8',
                 showHistoryRail && 'pt-14 md:pl-10 md:pt-8'
@@ -393,7 +393,7 @@ export const Thread: FC<ThreadProps> = ({
         className={twMerge(
           'z-10 flex w-full flex-col items-center justify-end',
           embedded
-            ? 'absolute bottom-0 left-0 right-0 px-2 pb-2'
+            ? 'relative shrink-0 px-2 pb-2'
             : 'relative shrink-0 px-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-4'
         )}
       >

@@ -1,13 +1,6 @@
-import type {
-  ChoicesElementData,
-  FreeTextElementData,
-} from '@klicker-uzh/graphql/dist/ops'
 import { describe, expect, test } from 'vitest'
 import type { ManageElementCreateProposal } from '../src/services/manageProposalSchema'
-import {
-  parseManageProposalPayload,
-  proposalPayloadToElementInstance,
-} from '../src/services/proposalToElementInstance'
+import { parseManageProposalPayload } from '../src/services/proposalToElementInstance'
 
 const baseFields = {
   basePoints: true,
@@ -15,89 +8,6 @@ const baseFields = {
   status: 'DRAFT' as const,
   tags: [] as string[],
 }
-
-describe('proposalPayloadToElementInstance', () => {
-  test('backfills missing choice ix values for SC payloads', () => {
-    const payload = {
-      ...baseFields,
-      content: 'What does standard deviation measure?',
-      name: 'Standard deviation interpretation',
-      options: {
-        choices: [
-          { correct: true, value: 'Variation or dispersion in the data' },
-          { correct: false, value: 'The average value' },
-        ],
-        displayMode: 'LIST',
-        hasAnswerFeedbacks: false,
-        hasSampleSolution: true,
-      },
-      type: 'SC',
-    } satisfies ManageElementCreateProposal['payload']
-
-    const instance = proposalPayloadToElementInstance(payload)
-    const elementData = instance.elementData as ChoicesElementData
-
-    expect(instance.id).toBe(0)
-    expect(instance.type).toBe('LIVE_QUIZ')
-    expect(instance.elementType).toBe('SC')
-    expect(elementData.__typename).toBe('ChoicesElementData')
-    expect(elementData.options.choices).toEqual([
-      expect.objectContaining({
-        ix: 0,
-        value: 'Variation or dispersion in the data',
-      }),
-      expect.objectContaining({ ix: 1, value: 'The average value' }),
-    ])
-  })
-
-  test('preserves explicit choice ix values for MC payloads', () => {
-    const payload = {
-      ...baseFields,
-      content: 'Which of the following are prime numbers?',
-      name: 'Prime numbers',
-      options: {
-        choices: [
-          { correct: true, ix: 5, value: '2' },
-          { correct: true, ix: 2, value: '3' },
-        ],
-        displayMode: 'LIST',
-        hasAnswerFeedbacks: false,
-        hasSampleSolution: true,
-      },
-      type: 'MC',
-    } satisfies ManageElementCreateProposal['payload']
-
-    const instance = proposalPayloadToElementInstance(payload)
-    const elementData = instance.elementData as ChoicesElementData
-
-    expect(elementData.options.choices).toEqual([
-      expect.objectContaining({ ix: 5, value: '2' }),
-      expect.objectContaining({ ix: 2, value: '3' }),
-    ])
-  })
-
-  test('maps FREE_TEXT payloads with minimal options', () => {
-    const payload = {
-      ...baseFields,
-      content: 'Explain the central limit theorem.',
-      name: 'CLT explanation',
-      options: {
-        hasSampleSolution: false,
-        restrictions: {},
-      },
-      type: 'FREE_TEXT',
-    } satisfies ManageElementCreateProposal['payload']
-
-    const instance = proposalPayloadToElementInstance(payload)
-    const elementData = instance.elementData as FreeTextElementData
-
-    expect(elementData.__typename).toBe('FreeTextElementData')
-    expect(elementData.options).toEqual({
-      hasSampleSolution: false,
-      restrictions: {},
-    })
-  })
-})
 
 describe('parseManageProposalPayload', () => {
   test('returns the validated payload for a well-formed proposal envelope', () => {

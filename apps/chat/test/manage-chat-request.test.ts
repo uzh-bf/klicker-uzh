@@ -1,3 +1,4 @@
+import { describe, expect, test, vi } from 'vitest'
 import {
   MAX_IMAGE_DATA_URL_CHARACTERS,
   MAX_MANAGE_IMAGE_ATTACHMENTS,
@@ -13,7 +14,6 @@ import {
   tryAcquireManageChatRequest,
   validateManageChatRequest,
 } from '@/src/lib/server/manageChatRequest'
-import { describe, expect, test, vi } from 'vitest'
 
 const imagePrefix = 'data:image/png;base64,'
 
@@ -479,6 +479,57 @@ describe('validateManageChatRequest', () => {
         parts: [{ text: 'Earlier summary', type: 'text' }],
         role: 'assistant',
       },
+      expect.objectContaining({ role: 'user' }),
+    ])
+    expect(result?.proposalTokens).toEqual([])
+  })
+
+  test('extracts only opaque tokens from the exact signed proposal tool part', async () => {
+    const result = await validateManageChatRequest({
+      messages: [
+        {
+          id: 'assistant-1',
+          parts: [
+            {
+              input: {},
+              output: {
+                content: [
+                  {
+                    text: JSON.stringify({
+                      kind: 'element.create.proposal',
+                      payload: { fabricated: 'ignored' },
+                      proposalToken: ' signed-proposal-token ',
+                      requiresConfirmation: true,
+                    }),
+                    type: 'text',
+                  },
+                ],
+              },
+              state: 'output-available',
+              toolCallId: 'tool-proposal',
+              type: 'tool-klicker_lecturer_element_create_draft_proposal',
+            },
+            {
+              input: {},
+              output: {
+                kind: 'element.create.proposal',
+                payload: {},
+                proposalToken: 'wrong-tool-token',
+                requiresConfirmation: true,
+              },
+              state: 'output-available',
+              toolCallId: 'tool-other',
+              type: 'tool-course-list',
+            },
+          ],
+          role: 'assistant',
+        },
+        textMessage('Make this German'),
+      ],
+    })
+
+    expect(result?.proposalTokens).toEqual(['signed-proposal-token'])
+    expect(result?.messages).toEqual([
       expect.objectContaining({ role: 'user' }),
     ])
   })
