@@ -128,6 +128,11 @@ async function fillPublicationRequest(page: Page, useCase: string) {
 }
 
 test.describe.serial('Lecturer chatbot draft authoring', () => {
+  // The production manage build registers a service worker whose fetch
+  // handling bypasses page-level network interception, so the in-flight
+  // lock below would never observe the delayed mutation in CI.
+  test.use({ serviceWorkers: 'block' })
+
   test.beforeEach(async ({ loginLecturer, page }) => {
     await cleanupAuthoringChatbots()
     await loginLecturer()
