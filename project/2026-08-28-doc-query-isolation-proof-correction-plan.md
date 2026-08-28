@@ -121,8 +121,8 @@ branch integration, and final delivery are coupled on the critical path.
 
 ## Progress
 
-- Status: Source-reference-only correction implemented; slice-review
-  corrections are verified locally.
+- Status: Source-reference-only correction implemented and accepted by the
+  slice reviewer.
 - Completed: False-positive classification, current-base worktree, continuity
   planning review, purpose-based naming, reviewed proof custody and lifecycle
   protections, asymmetric marker logic, regression coverage, and wiki
@@ -139,10 +139,14 @@ branch integration, and final delivery are coupled on the critical path.
   `postCreateCommand` without `waitFor`. The host fallback cannot build all
   internal workspaces, so Chat TypeScript and full-suite collection remain for
   exact-head CI rather than being claimed as local passes.
-- Remaining: Correction commit, slice-review confirmation, final review,
-  explicit push, pull request, exact-head CI, target integration decision if
-  still required, and ready state.
+- Review: The configured simplifier and slice-reviewer routes rejected their
+  configured effort before reading the task. Trusted Luna continuity passes
+  completed instead. The simplifier's safe reductions were applied; the risk
+  reviewer accepted the correction after transport-retry, strict-manifest, and
+  UUID-canonicalization findings were resolved.
+- Remaining: Final review, target integration decision, explicit push, pull
+  request, exact-head CI, and ready state.
 - Required delivery layer: Ready pull request. Achieved layer: Verified local
   correction.
-- Next action: Commit the review corrections and obtain the slice-review
-  confirmation.
+- Next action: Obtain integrated final review, then request the one-time target
+  integration authority required by the deployment-only target drift.
