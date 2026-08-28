@@ -9,63 +9,9 @@ import {
   SubmitFreeTextAttemptDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { preferLatestFreeTextPracticeState } from './freeTextPracticeStateOrder'
 
 type SemanticState = FreeTextPracticeStateDataFragment | null
-
-const CYCLE_STATUS_RANK: Record<string, number> = {
-  ACTIVE: 0,
-  CORRECT: 1,
-  EXHAUSTED: 1,
-  SOLUTION_REVEALED: 1,
-  UNAVAILABLE: 1,
-}
-
-const EVALUATION_STATUS_RANK: Record<string, number> = {
-  PENDING: 0,
-  UNAVAILABLE: 1,
-  EVALUATED: 1,
-}
-
-function preferLatestState(
-  current: SemanticState,
-  incoming: SemanticState
-): SemanticState {
-  if (!incoming) return current
-  if (!current) return incoming
-  if (incoming.cycleOrdinal !== current.cycleOrdinal) {
-    return incoming.cycleOrdinal > current.cycleOrdinal ? incoming : current
-  }
-
-  const incomingAttempt = incoming.currentAttempt
-  const currentAttempt = current.currentAttempt
-  if ((incomingAttempt?.ordinal ?? 0) !== (currentAttempt?.ordinal ?? 0)) {
-    return (incomingAttempt?.ordinal ?? 0) > (currentAttempt?.ordinal ?? 0)
-      ? incoming
-      : current
-  }
-  if (
-    (incomingAttempt?.evaluationRevision ?? 0) !==
-    (currentAttempt?.evaluationRevision ?? 0)
-  ) {
-    return (incomingAttempt?.evaluationRevision ?? 0) >
-      (currentAttempt?.evaluationRevision ?? 0)
-      ? incoming
-      : current
-  }
-
-  const incomingCycleRank = CYCLE_STATUS_RANK[incoming.cycleStatus] ?? 0
-  const currentCycleRank = CYCLE_STATUS_RANK[current.cycleStatus] ?? 0
-  if (incomingCycleRank !== currentCycleRank) {
-    return incomingCycleRank > currentCycleRank ? incoming : current
-  }
-  const incomingEvaluationRank = incomingAttempt
-    ? (EVALUATION_STATUS_RANK[incomingAttempt.evaluationStatus] ?? 0)
-    : 0
-  const currentEvaluationRank = currentAttempt
-    ? (EVALUATION_STATUS_RANK[currentAttempt.evaluationStatus] ?? 0)
-    : 0
-  return incomingEvaluationRank >= currentEvaluationRank ? incoming : current
-}
 
 function createSubmissionId() {
   if (typeof globalThis.crypto?.randomUUID !== 'function') {
@@ -84,10 +30,21 @@ function useFreeTextPracticeState({
   enabled: boolean
   initialState?: SemanticState
 }) {
-  const [state, setState] = useState<SemanticState>(initialState ?? null)
+  const [state, setState] = useState<SemanticState>(
+    initialState?.instanceId === instanceId ? initialState : null
+  )
   const submissionRef = useRef<{ answer: string; id: string } | null>(null)
   const pending =
     state?.currentAttempt?.evaluationStatus === FreeTextEvaluationStatus.Pending
+
+  const acceptState = useCallback(
+    (incoming: SemanticState) => {
+      setState((current) =>
+        preferLatestFreeTextPracticeState(instanceId, current, incoming)
+      )
+    },
+    [instanceId]
+  )
 
   const { data, loading, error, refetch } = useQuery(
     FreeTextPracticeStateDocument,
@@ -112,17 +69,21 @@ function useFreeTextPracticeState({
     StartFreeTextPracticeCycleDocument
   )
   useEffect(() => {
+    submissionRef.current = null
+  }, [instanceId])
+
+  useEffect(() => {
     if (initialState !== undefined) {
-      setState((current) => preferLatestState(current, initialState))
+      acceptState(initialState)
     }
-  }, [initialState])
+  }, [acceptState, initialState])
 
   useEffect(() => {
     const incomingState = data?.freeTextPracticeState
     if (incomingState !== undefined) {
-      setState((current) => preferLatestState(current, incomingState))
+      acceptState(incomingState)
     }
-  }, [data])
+  }, [acceptState, data])
 
   const currentAttemptId = state?.currentAttempt?.id
   const cycleId = state?.cycleId
@@ -143,11 +104,11 @@ function useFreeTextPracticeState({
       })
       const nextState = result.data?.submitFreeTextAttempt
       if (nextState) {
-        setState((current) => preferLatestState(current, nextState))
+        acceptState(nextState)
       }
       return nextState ?? null
     },
-    [instanceId, submitMutation]
+    [acceptState, instanceId, submitMutation]
   )
 
   const retryEvaluation = useCallback(async () => {
@@ -158,10 +119,10 @@ function useFreeTextPracticeState({
     })
     const nextState = result.data?.retryFreeTextEvaluation
     if (nextState) {
-      setState((current) => preferLatestState(current, nextState))
+      acceptState(nextState)
     }
     return nextState ?? null
-  }, [currentAttemptId, retryMutation])
+  }, [acceptState, currentAttemptId, retryMutation])
 
   const revealSolution = useCallback(async () => {
     if (!cycleId) return null
@@ -171,28 +132,28 @@ function useFreeTextPracticeState({
     })
     const nextState = result.data?.revealFreeTextSolution
     if (nextState) {
-      setState((current) => preferLatestState(current, nextState))
+      acceptState(nextState)
     }
     return nextState ?? null
-  }, [cycleId, revealMutation])
+  }, [acceptState, cycleId, revealMutation])
 
   const startPracticeCycle = useCallback(async () => {
     const result = await startMutation({ variables: { instanceId } })
     const nextState = result.data?.startFreeTextPracticeCycle
     if (nextState) {
       submissionRef.current = null
-      setState((current) => preferLatestState(current, nextState))
+      acceptState(nextState)
     }
     return nextState ?? null
-  }, [instanceId, startMutation])
+  }, [acceptState, instanceId, startMutation])
 
   const refresh = useCallback(async () => {
     if (!enabled) return null
     const refreshed = await refetch()
     const nextState = refreshed.data.freeTextPracticeState ?? null
-    setState((current) => preferLatestState(current, nextState))
+    acceptState(nextState)
     return nextState
-  }, [enabled, refetch])
+  }, [acceptState, enabled, refetch])
 
   return {
     state,

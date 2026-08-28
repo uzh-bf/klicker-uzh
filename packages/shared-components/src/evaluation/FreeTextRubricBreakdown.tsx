@@ -6,6 +6,7 @@ import {
   type IconDefinition,
 } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import type { FreeTextEvaluationFeedback } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 
 type RubricAssessment = {
@@ -52,60 +53,41 @@ const STATUS_STYLES: Record<
   },
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function getFeedbackByRubric(value: unknown): Map<string, string> {
-  if (!isRecord(value) || !Array.isArray(value.feedback_proposals)) {
-    return new Map()
-  }
-
+function getFeedbackByRubric(
+  result?: FreeTextEvaluationFeedback | null
+): Map<string, string> {
   return new Map(
-    value.feedback_proposals.flatMap((proposal) => {
-      if (
-        !isRecord(proposal) ||
-        typeof proposal.rubric_id !== 'string' ||
-        typeof proposal.feedback !== 'string' ||
-        proposal.feedback.trim().length === 0
-      ) {
-        return []
-      }
+    (result?.feedbackProposals ?? []).flatMap((proposal) => {
+      const feedback = proposal.feedback.trim()
+      if (feedback.length === 0) return []
 
-      return [[proposal.rubric_id, proposal.feedback.trim()] as const]
+      return [[proposal.rubricId, feedback] as const]
     })
   )
 }
 
-function getRubricAssessments(value: unknown): RubricAssessment[] {
-  if (!isRecord(value) || !Array.isArray(value.rubric_assessments)) return []
-  const feedbackByRubric = getFeedbackByRubric(value)
+function getRubricAssessments(
+  result?: FreeTextEvaluationFeedback | null
+): RubricAssessment[] {
+  const feedbackByRubric = getFeedbackByRubric(result)
 
-  return value.rubric_assessments.flatMap((assessment) => {
+  return (result?.rubricAssessments ?? []).flatMap((assessment) => {
+    const rationale = assessment.rationale.trim()
     if (
-      !isRecord(assessment) ||
-      typeof assessment.rubric_id !== 'string' ||
-      typeof assessment.rubric_name !== 'string' ||
-      typeof assessment.proposed_level !== 'string' ||
-      typeof assessment.normalized_score !== 'number' ||
-      !Number.isFinite(assessment.normalized_score) ||
-      typeof assessment.rationale !== 'string' ||
-      assessment.rationale.trim().length === 0
+      !Number.isFinite(assessment.normalizedScore) ||
+      rationale.length === 0
     ) {
       return []
     }
 
     return [
       {
-        rubricId: assessment.rubric_id,
-        rubricName: assessment.rubric_name,
-        proposedLevel: assessment.proposed_level,
-        normalizedScore: Math.min(
-          100,
-          Math.max(0, assessment.normalized_score)
-        ),
-        rationale: assessment.rationale.trim(),
-        feedback: feedbackByRubric.get(assessment.rubric_id),
+        rubricId: assessment.rubricId,
+        rubricName: assessment.rubricName,
+        proposedLevel: assessment.proposedLevel,
+        normalizedScore: Math.min(100, Math.max(0, assessment.normalizedScore)),
+        rationale,
+        feedback: feedbackByRubric.get(assessment.rubricId),
       },
     ]
   })
@@ -117,7 +99,11 @@ function getRubricStatus(normalizedScore: number): RubricStatus {
   return 'OPEN'
 }
 
-function FreeTextRubricBreakdown({ result }: { result: unknown }) {
+function FreeTextRubricBreakdown({
+  result,
+}: {
+  result?: FreeTextEvaluationFeedback | null
+}) {
   const t = useTranslations()
   const assessments = getRubricAssessments(result)
   if (assessments.length === 0) return null
