@@ -34,7 +34,9 @@ function ChatbotCreateModal({
   onCreated,
 }: ChatbotCreateModalProps) {
   const t = useTranslations()
-  const [createChatbot] = useMutation(CreateChatbotDocument)
+  const [createChatbot, { loading: isCreating }] = useMutation(
+    CreateChatbotDocument
+  )
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   return (
@@ -88,11 +90,13 @@ function ChatbotCreateModal({
             </p>
             <FormikTextField
               required
+              disabled={isSubmitting || isCreating}
               name="name"
               label={t('manage.resources.chatbotName')}
               data={{ cy: 'create-chatbot-name' }}
             />
             <FormikTextareaField
+              disabled={isSubmitting || isCreating}
               name="description"
               label={t('manage.resources.chatbotDescription')}
               data={{ cy: 'create-chatbot-description' }}
@@ -100,6 +104,7 @@ function ChatbotCreateModal({
             {courses.length > 0 ? (
               <FormikSelectField
                 required
+                disabled={isSubmitting || isCreating}
                 name="courseId"
                 label={t('manage.resources.chatbotCourse')}
                 items={courses.map((course) => ({

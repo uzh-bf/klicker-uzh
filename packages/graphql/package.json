@@ -33,6 +33,7 @@
     "node-schedule": "2.1.1",
     "nodemailer": "6.9.15",
     "remark-gfm": "4.0.1",
+    "remark-math": "6.0.0",
     "remark-parse": "11.0.0",
     "remeda": "2.15.0",
     "unified": "11.0.5",

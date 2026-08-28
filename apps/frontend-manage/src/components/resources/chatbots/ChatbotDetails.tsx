@@ -585,7 +585,7 @@ function ChatbotDetails({
                 </span>
                 <Switch
                   checked={modelSelectionEnabled}
-                  disabled={!modelSettingsEditable}
+                  disabled={isSaving || !modelSettingsEditable}
                   onCheckedChange={setModelSelectionEnabled}
                   data={{ cy: 'chatbot-model-selection-switch' }}
                 />
@@ -603,7 +603,7 @@ function ChatbotDetails({
                   type="checkbox"
                   className="h-4 w-4"
                   checked={useAllModels}
-                  disabled={!modelSettingsEditable}
+                  disabled={isSaving || !modelSettingsEditable}
                   data-cy="chatbot-models-all"
                   onChange={(event) =>
                     handleAllModelsToggle(event.target.checked)
@@ -632,7 +632,9 @@ function ChatbotDetails({
                         type="checkbox"
                         className="mt-1 h-4 w-4"
                         checked={checked}
-                        disabled={useAllModels || !modelSettingsEditable}
+                        disabled={
+                          isSaving || useAllModels || !modelSettingsEditable
+                        }
                         data-cy={`chatbot-model-${model.id}`}
                         onChange={(event) =>
                           handleAllowedModelToggle(
@@ -705,7 +707,9 @@ function ChatbotDetails({
                                     type="checkbox"
                                     className="h-3.5 w-3.5"
                                     checked={checked}
-                                    disabled={!modelSettingsEditable}
+                                    disabled={
+                                      isSaving || !modelSettingsEditable
+                                    }
                                     data-cy={`chatbot-reasoning-${model.id}-${effort}`}
                                     onChange={(event) =>
                                       handleReasoningEffortToggle(

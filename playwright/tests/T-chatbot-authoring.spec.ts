@@ -141,11 +141,46 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await cleanupAuthoringChatbots()
   })
 
+  test('locks chatbot creation fields while the request is pending', async ({
+    page,
+  }) => {
+    const createMutationGate = createRequestGate()
+
+    await page.route('**/api/graphql', async (route) => {
+      const request = route.request()
+      if (request.postDataJSON()?.operationName !== 'CreateChatbot') {
+        await route.continue()
+        return
+      }
+
+      const response = await route.fetch()
+      await createMutationGate.wait
+      await route.fulfill({ response })
+    })
+
+    await page.getByTestId('create-chatbot').click()
+    await page.getByTestId('create-chatbot-name').fill(FIRST_CHATBOT)
+    await page
+      .getByTestId('create-chatbot-description')
+      .fill(`${FIRST_CHATBOT} description`)
+    await selectOption(page, '[data-cy="create-chatbot-course"]', 'Testkurs')
+    await page.getByTestId('submit-create-chatbot').click()
+
+    await expect(page.getByTestId('create-chatbot-name')).toBeDisabled()
+    await expect(page.getByTestId('create-chatbot-description')).toBeDisabled()
+    await expect(page.getByTestId('create-chatbot-course')).toBeDisabled()
+    await expect(page.getByTestId('cancel-create-chatbot')).toBeDisabled()
+
+    createMutationGate.release()
+    await expect(page.getByTestId(`chatbot-${FIRST_CHATBOT}`)).toBeVisible()
+  })
+
   test('creates, edits, previews, switches, and reloads draft chatbots', async ({
     page,
   }) => {
     const metadataRequestGate = createRequestGate()
     const disclaimerRequestGate = createRequestGate()
+    const modelSettingsRequestGate = createRequestGate()
 
     await page.route('**/api/graphql', async (route) => {
       const request = route.request()
@@ -154,11 +189,13 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
         ? (JSON.parse(postData) as { operationName?: string }).operationName
         : undefined
       const requestGate =
-        operationName === 'UpdateChatbot'
-          ? metadataRequestGate
-          : operationName === 'SaveChatbotDisclaimer'
-            ? disclaimerRequestGate
-            : undefined
+        operationName === 'UpdateChatbotModelSettings'
+          ? modelSettingsRequestGate
+          : operationName === 'UpdateChatbot'
+            ? metadataRequestGate
+            : operationName === 'SaveChatbotDisclaimer'
+              ? disclaimerRequestGate
+              : undefined
 
       if (!requestGate) {
         await route.continue()
@@ -231,6 +268,20 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(
       page.getByRole('status').filter({ hasText: 'Chatbot disclaimer saved.' })
     ).toBeVisible()
+
+    await page.getByTestId('chatbot-model-selection-switch').click()
+    await page.getByTestId('chatbot-model-settings-save').click()
+    await expect(
+      page.getByTestId('chatbot-model-selection-switch')
+    ).toBeDisabled()
+    await expect(page.getByTestId('chatbot-models-all')).toBeDisabled()
+    for (const input of await page
+      .locator('input[data-cy^="chatbot-model-"]')
+      .all()) {
+      await expect(input).toBeDisabled()
+    }
+    modelSettingsRequestGate.release()
+    await expect(page.getByText('Model settings saved.')).toBeVisible()
 
     await createChatbot(page, SECOND_CHATBOT)
     await expect(page.getByTestId('chatbot-disclaimer-title')).toHaveValue('')
