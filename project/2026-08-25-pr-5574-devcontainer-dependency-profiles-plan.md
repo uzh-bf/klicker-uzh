@@ -72,8 +72,9 @@
   implementation.
 - Pull request: [#5574](https://github.com/uzh-bf/klicker-uzh/pull/5574).
 - Prerequisite package: devrouter's repository-relative dependency-profile plan.
-- Release dependency: published devrouter `0.0.40`; its immutable tag and npm
-  artifact must remain verifiable.
+- Release dependency: published devrouter `0.0.40` is the minimum compatible
+  release; final correction validation uses its current compatible successor,
+  published devrouter `0.0.41`.
 - History: `project/2026-08-24-devrouter-profiles-three-mode-plan.md` and PR #5539
   introduced route/process profiles. This package closes the omitted container
   and process lifecycle seam rather than reopening that merged package.
@@ -407,24 +408,24 @@
 
 ## Progress
 
-- Status: K0-K5 are implemented and validated. K6 review correction and current
-  target integration are approved and in progress.
-- Active slice: Resolve review findings on the branch's current base.
+- Status: K0-K6 are implemented, reviewed, and integrated. Post-integration
+  delivery and hosted exact-head validation are in progress.
+- Active slice: Validate and publish the integrated PR head.
 - Completed: Fresh downstream worktree, dependency and process mapping,
   first-party Dev Container and DevPod research, upstream package decomposition,
   and required planning review.
-- Remaining: Commit and review K6, integrate current `origin/v3` at
-  `86e8ac2e`, rerun affected local/runtime checks, push, resolve review
-  threads, monitor exact-head CI, and trigger `/final-review` after a
-  maintainer repairs the repo-wide final-review gate.
-- Latest verified target: `origin/v3` at `86e8ac2e`; the branch is one
-  commit behind before the approved K6 integration.
-- Runtime: The exact linked-worktree runtime is stopped with proof recorded on
-  2026-08-27. No volume, worktree, branch, or container deletion was performed.
+- Remaining: Commit this evidence, push, resolve review threads, monitor
+  exact-head CI, and trigger `/final-review` after a maintainer repairs the
+  repo-wide final-review gate.
+- Latest verified target: `origin/v3` at `86e8ac2e`, integrated once as merge
+  commit `7df3f056c` without conflicts.
+- Runtime: The exact linked-worktree runtime is stopped. Provider identity
+  `default-rs-401e9` reports `Stopped`, and the exact checkout owns zero routes.
+  No model request, volume, worktree, branch, or container deletion occurred.
 - Active children: none.
-- Unresolved gates: Nine inline review threads plus two review-body findings,
-  K6 verification, approved target integration, exact-head CI, and integrated
-  final review. Klicker PR merge remains separately withheld.
+- Unresolved gates: PR review-thread replies and resolution, exact-head CI, and
+  integrated final review after the repository-wide trusted-policy repair.
+  Klicker PR merge remains separately withheld.
 - 2026-08-26 upstream publication: devrouter PR #37 was squash-merged at
   `af55b23`, GitHub release `v0.0.39` was published, and the release workflow
   completed successfully. `npm view @devrouter/cli` reports version 0.0.39;
@@ -505,10 +506,10 @@
   confirmed the prior `ai,chat,mcp` state remained ready with zero drift.
 - Required delivery layer: locally committed, release-compatible consumer
   package with exact runtime stopped.
-- Achieved delivery layer: Integrated local implementation, released upstream
-  dependency, and source-built plus published-artifact runtime proof.
-- Next action: Commit and review the K6 corrections on the current base, then
-  perform the approved `origin/v3` integration and affected verification.
+- Achieved delivery layer: Reviewed local implementation on current `v3`,
+  released upstream dependency, and source-built plus published-artifact
+  runtime proof, with the exact runtime stopped. Remote exact-head proof remains.
+- Next action: Commit the final evidence and publish the reviewed head.
 
 - 2026-08-27 upstream integration: The single approved integration pass merged
   `origin/v3` (`d0eab767`, 24 commits including the alpha.73 promotion,
@@ -550,3 +551,47 @@
   or branch was touched. Note: DevPod removed the workspace metadata record on
   stop rather than retaining a "Stopped" entry; the Git worktree and branch on
   disk remain intact.
+- 2026-08-28 K6 correction: The resolver now trims component whitespace,
+  rejects empty union components, and centralizes worker selection. Managed
+  startup fails explicitly on worker-readiness errors and warms Manage over
+  loopback before linked routes exist. Runtime diagnostics probe only selected
+  readiness apps, while the response API retains its fixed managed port 7078.
+  LiteLLM guidance resolves the exact Compose project and service and checks
+  only whether the key exists, without printing it.
+- 2026-08-28 K6 review: The configured native specialist routes were
+  unavailable because their provider and effort settings did not match the
+  trusted route. Disclosed trusted Sol fallback passes found the cold Manage
+  route cycle, wrong LiteLLM diagnostic target, fixed-port mismatch, strict
+  parser gap, and stale documentation anchors. All accepted findings were
+  corrected; the final immutable follow-up through `75542f01d` was accepted
+  with no blocker or worthwhile simplification remaining.
+- 2026-08-28 runtime proof: Current released devrouter `0.0.41` was built from
+  its clean tagged source checkout and used for the correction matrix. Cold
+  `manage` reached ready after loopback warm-up; `live-quiz` proved response API
+  health and both worker PIDs; pure `mcp` and pure `ai` started only their
+  selected capability; and canonical `chat,ai,mcp` exposed exactly Chat, PWA,
+  API, Auth, LiteLLM, three Redis services, and the local MCP. LiteLLM and MCP
+  health passed without an external request; all runs reported zero drift.
+- 2026-08-28 static proof: The resolver and runtime regression suites, Bash
+  syntax, focused ShellCheck, Prettier, AGENTS validation, gitleaks, and the
+  repository pre-commit `check:all` pass. An additional exact-container
+  `check:all` reaches analytics, which is outside the managed stack, where
+  pandas 2.2.2 lacks a Python 3.14 wheel and no C compiler is installed. That
+  environment-only analytics lint remains excluded from profile readiness;
+  all six other lint tasks completed before the failure.
+- 2026-08-28 target integration: After the reviewed corrections passed on their
+  existing base, the single approved merge incorporated current `origin/v3`
+  (`86e8ac2e`, course chatbot language and grounding policy) as `7df3f056c`.
+  The merge completed without textual conflicts. The commit had restored a
+  reserved `docs/log/` artifact that its own target-branch check forbids; the
+  redundant log was removed and its package plan corrected to retain evidence
+  in the wiki, plan, and Git history. Post-integration resolver and runtime
+  suites pass; Bash syntax and focused ShellCheck pass with the test-fixture
+  literal warning excluded. The pinned Node 24 exact-container `pnpm run check`
+  also passes all 25 workspace tasks.
+- 2026-08-28 final runtime release: The canonical exact-checkout stop freed the
+  four `ai,chat,mcp` routes. Source-path readback resolved workspace
+  `rs-devcontainer-dependency-profi` and provider identity `default-rs-401e9`;
+  `devpod status` reports `Stopped`, and the exact devrouter route query returns
+  `routeCount: 0`. Runtime data, containers, volumes, Git worktree, and branch
+  were preserved.
