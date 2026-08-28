@@ -114,9 +114,9 @@ upstream.
 ## Examples
 
 - The repository startup contract and synthetic prompt are kept together in
-  [AGENTS.md:143](../../../AGENTS.md#L143).
+  [OpenRouter-backed local chat](../../../AGENTS.md#openrouter-backed-local-chat).
 - LiteLLM's upstream environment contract is explicit in
-  [config.yaml:80](../../../util/litellm/config.yaml#L80) and the embedding
-  route at [config.yaml:144](../../../util/litellm/config.yaml#L144).
+  [config.yaml](../../../util/litellm/config.yaml), including the embedding
+  route.
 - The local MCP fixture is deterministic and read-only at
-  [local-mcp-server.mjs:16](../../../apps/chat/scripts/local-mcp-server.mjs#L16).
+  [local-mcp-server.mjs](../../../apps/chat/scripts/local-mcp-server.mjs).

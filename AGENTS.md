@@ -176,12 +176,12 @@ copy the key into a file, or pass it through chat, arguments, or logs.
 If LiteLLM is already running without those variables, stop the exact linked
 checkout with `devrouter stop <checkout-path>` and rerun the injection command;
 `ensure` does not replace environment variables inside an existing service
-container. Verify only that the destination exists with
-`devrouter exec <checkout-path> -- sh -c 'test -n "$UPSTREAM_OPENAI_API_KEY"'`.
+container. Verify key presence only in the exact LiteLLM service with the
+values-free host-side check in
+[the OpenRouter local Chat solution](docs/solutions/integration/openrouter-local-chat-runtime.md).
 Use only seeded or synthetic test content because OpenRouter is an external
 upstream and the Azure-specific chatbot disclaimer does not describe this
-local path. The repeatable smoke and troubleshooting details live in
-[the OpenRouter local Chat solution](docs/solutions/integration/openrouter-local-chat-runtime.md).
+local path.
 
 Local Auto Mode is selected by `CHAT_PRIMARY_MODEL_ID=auto`. Chat sends the
 `auto-router` deployment to LiteLLM at `http://litellm:4000`; LiteLLM classifies
