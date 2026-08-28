@@ -8,6 +8,7 @@ GENERATION_FILE="$STATE_DIR/generation"
 REPAIR_REQUEST_FILE="$STATE_DIR/next-repair-request"
 DEPENDENCY_STAMP_FILE="$ROOT/node_modules/.klicker-dependency-fingerprint"
 NEXT_APPS=(auth chat frontend-control frontend-manage frontend-pwa)
+RUNTIME_APPS=("${NEXT_APPS[@]}" response-api)
 # Authentication rejects this valid synthetic nested route before any database
 # lookup, so the handler must return JSON 401 even when no seed data exists.
 CHAT_PROBE_URL='http://localhost:3004/api/chatbots/00000000-0000-4000-8000-000000000000/threads'
@@ -153,6 +154,7 @@ probe_url() {
     frontend-control) echo 'http://localhost:3003/login' ;;
     frontend-manage) echo 'http://localhost:3002/login' ;;
     frontend-pwa) echo 'http://localhost:3001/login' ;;
+    response-api) echo 'http://localhost:7078/healthz' ;;
     *) return 1 ;;
   esac
 }
@@ -167,6 +169,7 @@ probe_mode() {
     auth | frontend-control | frontend-manage | frontend-pwa)
       echo 'html-shell'
       ;;
+    response-api) echo 'health-json' ;;
     *) return 1 ;;
   esac
 }
@@ -270,11 +273,17 @@ classify_response() {
       echo "ready: HTTP $status redirect"
       return 0
     fi
+  elif [ "$mode" = 'health-json' ]; then
+    if [ "$status" = '200' ] && [[ "$content_type" == application/json* ]]; then
+      echo "ready: HTTP $status $content_type"
+      return 0
+    fi
   else
     die "Unknown probe mode: $mode."
   fi
 
-  if [ "$status" = '404' ] && [[ "$content_type" == text/html* ]]; then
+  if [ "$mode" != 'health-json' ] && [ "$status" = '404' ] &&
+    [[ "$content_type" == text/html* ]]; then
     echo "stale: HTTP $status $content_type"
     return "$STALE_STATUS"
   fi
@@ -356,8 +365,16 @@ wait_for_app() {
 doctor() {
   local app observation status=0 unhealthy=0
   local any_stale=false any_unexpected=false
+  local doctor_apps=("${RUNTIME_APPS[@]}")
 
-  for app in "${NEXT_APPS[@]}"; do
+  if [ "${READINESS_APPS+x}" = x ]; then
+    doctor_apps=()
+    if [ -n "$READINESS_APPS" ]; then
+      read -r -a doctor_apps <<<"$READINESS_APPS"
+    fi
+  fi
+
+  for app in "${doctor_apps[@]}"; do
     status=0
     observation="$(probe_app "$app")" || status=$?
     if [ "$status" -eq 0 ]; then
@@ -415,9 +432,9 @@ Usage:
   util/dev-runtime.sh ensure-dependencies
   util/dev-runtime.sh request-repair <next-app>
   util/dev-runtime.sh start <fingerprint> <generation> -- <command> [args...]
-  util/dev-runtime.sh classify-response <auth-json|html-shell> <status> <content-type>
-  util/dev-runtime.sh probe-app <next-app>
-  util/dev-runtime.sh wait-app <next-app>
+  util/dev-runtime.sh classify-response <auth-json|html-shell|health-json> <status> <content-type>
+  util/dev-runtime.sh probe-app <runtime-app>
+  util/dev-runtime.sh wait-app <runtime-app>
   util/dev-runtime.sh doctor
 EOF
 }

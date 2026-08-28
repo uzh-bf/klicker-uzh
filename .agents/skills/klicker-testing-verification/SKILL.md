@@ -92,8 +92,9 @@ CI runs Playwright (8-way shard) on almost every code PR — CI is the real e2e 
 - On environment failure, switch to `klicker-environment-doctor` before blaming the test.
 
 For Chat model-picker or LiteLLM routing changes, treat the local proxy as a
-separate proof gate: after `devrouter ensure .`, check LiteLLM liveness and the
-chat credits payload before browser interaction. The local Auto Mode maps to
+separate proof gate: start `devrouter ensure . --profile chat,ai`, adding `mcp`
+only for the seeded tool path. Check LiteLLM liveness and the chat credits
+payload before browser interaction. The local Auto Mode maps to
 LiteLLM's Auto V2 `complexity-router`: require direct embedding and target-model
 probes, then inspect logs for the expected `semantic_keyword_match` or
 `llm_classifier` cause and routed model. A successful answer after a classifier
@@ -111,7 +112,9 @@ Without `UPSTREAM_OPENAI_API_KEY`, stop at picker/error-state verification and
 report the live-answer gap explicitly.
 
 For the seeded local MCP smoke test, verify
-`http://localhost:1417/health`, keep `Auto Mode` selected in Benibot, and send
+`devrouter exec . -- curl --fail --silent http://localhost:1417/health` after
+selecting `chat,ai,mcp`, keep `Auto Mode`
+selected in Benibot, and send
 the prompt recorded in `AGENTS.md`. Require a completed
 `KB_doc_query` chip, the `KLICKER_LOCAL_MCP_OK` marker, and the synthetic source
 card in a non-empty final answer both before and after reloading the thread.
