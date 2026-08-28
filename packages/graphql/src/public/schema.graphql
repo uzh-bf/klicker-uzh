@@ -1905,12 +1905,9 @@ type FreeTextPracticeState {
   cycleId: String!
   cycleOrdinal: Int!
   cycleStatus: FreeTextPracticeCycleStatus!
-  disclosureVersion: String!
-  evaluationProvider: String!
   explanation: String
   instanceId: Int!
   peerAnswers: [FreeTextPeerAnswer!]!
-  questionLanguage: String!
   referenceSolution: String
   solutionAuthorized: Boolean!
   stateVersion: Int!

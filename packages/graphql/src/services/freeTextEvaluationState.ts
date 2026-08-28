@@ -60,9 +60,6 @@ export type FreeTextPracticeState = {
   instanceId: number
   cycleId: string
   cycleOrdinal: number
-  questionLanguage: SemanticFreeTextConfig['question_language']
-  disclosureVersion: string
-  evaluationProvider: string
   cycleStatus: DB.FreeTextPracticeCycleStatus
   stateVersion: number
   attemptLimit: number
@@ -302,9 +299,6 @@ async function stateFromCycle(
     instanceId: cycle.elementInstanceId,
     cycleId: cycle.id,
     cycleOrdinal: cycle.ordinal,
-    questionLanguage: config.question_language,
-    disclosureVersion: getDisclosureVersion(options),
-    evaluationProvider: 'CATALYST',
     cycleStatus: cycle.status,
     stateVersion: cycle.stateVersion,
     attemptLimit: cycle.attemptLimit,

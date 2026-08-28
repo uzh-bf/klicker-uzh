@@ -127,6 +127,43 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
     )
   })
 
+  test('reviews the disclosure and retries the same unavailable answer attempt', async ({
+    page,
+  }) => {
+    await openQuiz(page, 'testuser8')
+    await startQuiz(page, 'decline')
+    await submitInitialStack(page, data.incorrectAnswer)
+
+    const panel = page.getByTestId('semantic-free-text-retry-panel')
+    await expect(panel).toContainText(
+      'Semantic feedback is currently unavailable.'
+    )
+    await expect(
+      page.getByTestId('semantic-attempt-history').locator('li')
+    ).toHaveCount(1)
+
+    await page.getByTestId('semantic-review-disclosure').click()
+    await expect(
+      page.getByRole('dialog', { name: 'AI-assisted feedback' })
+    ).toBeVisible()
+    await expect(page.getByTestId('semantic-evaluation-consent')).toContainText(
+      'If you accept, KlickerUZH sends affected questions'
+    )
+    await expect(page.getByTestId('semantic-consent-accept')).toContainText(
+      'Accept and retry evaluation'
+    )
+    await page.getByTestId('semantic-consent-accept').click()
+
+    await expect(panel).toContainText(data.incorrectLabel)
+    await expect(page.getByTestId('semantic-evaluation-consent')).toHaveCount(0)
+    await expect(page.getByTestId('semantic-attempts-used')).toContainText(
+      '1 of 2'
+    )
+    await expect(
+      page.getByTestId('semantic-attempt-history').locator('li')
+    ).toHaveCount(1)
+  })
+
   test('reveals every rubric criterion after partial feedback', async ({
     page,
   }) => {

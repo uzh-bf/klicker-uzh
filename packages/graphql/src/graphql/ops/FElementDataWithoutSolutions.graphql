@@ -54,7 +54,6 @@ fragment ElementDataWithoutSolutions on ElementInstance {
       pointsMultiplier
       options {
         hasSampleSolution
-        hasSemanticEvaluation
         restrictions {
           maxLength
         }

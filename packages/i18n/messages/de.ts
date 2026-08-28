@@ -1234,6 +1234,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       semanticConsentPolicy: 'Version der Information: {version}',
       semanticConsentDeclineAction: 'Ablehnen und exakt abgleichen',
       semanticConsentAcceptAction: 'Zustimmen und Übungs-Quiz starten',
+      semanticReviewDisclosure: 'KI-Information erneut ansehen',
+      semanticConsentAcceptRetryAction: 'Zustimmen und Bewertung wiederholen',
     },
     microLearning: {
       numOfQuestionSets: 'Anzahl Fragesets: {number}',

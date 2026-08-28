@@ -17,6 +17,7 @@ function FreeTextRetryPanel({
   onTryAgain,
   onSubmitAnswer,
   onRetryEvaluation,
+  onReviewConsent,
   onRevealSolution,
   onToggleDetails,
   onPracticeAgain,
@@ -30,6 +31,7 @@ function FreeTextRetryPanel({
   onTryAgain: () => void
   onSubmitAnswer: () => void
   onRetryEvaluation: () => void
+  onReviewConsent: () => void
   onRevealSolution: () => void
   onToggleDetails: () => void
   onPracticeAgain: () => void
@@ -39,6 +41,10 @@ function FreeTextRetryPanel({
   const pending = attempt?.evaluationStatus === FreeTextEvaluationStatus.Pending
   const unavailable =
     attempt?.evaluationStatus === FreeTextEvaluationStatus.Unavailable
+  const consentRecoveryAvailable =
+    unavailable &&
+    (attempt?.availabilityReason === 'CONSENT_REQUIRED' ||
+      attempt?.availabilityReason === 'CONSENT_DECLINED')
   const evaluated =
     attempt?.evaluationStatus === FreeTextEvaluationStatus.Evaluated
   const explanationId = `semantic-solution-feedback-${state.cycleId}`
@@ -144,6 +150,15 @@ function FreeTextRetryPanel({
             data={{ cy: 'semantic-retry-evaluation' }}
           >
             {t('pwa.practiceQuiz.semanticRetryEvaluation')}
+          </Button>
+        )}
+        {consentRecoveryAvailable && (
+          <Button
+            disabled={loading}
+            onClick={onReviewConsent}
+            data={{ cy: 'semantic-review-disclosure' }}
+          >
+            {t('pwa.practiceQuiz.semanticReviewDisclosure')}
           </Button>
         )}
         {state.canRevealSolution && (

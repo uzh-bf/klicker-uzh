@@ -1226,6 +1226,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       semanticConsentPolicy: 'Disclosure version: {version}',
       semanticConsentDeclineAction: 'Decline and use exact matching',
       semanticConsentAcceptAction: 'Accept and start practice quiz',
+      semanticReviewDisclosure: 'Review AI disclosure',
+      semanticConsentAcceptRetryAction: 'Accept and retry evaluation',
     },
     microLearning: {
       numOfQuestionSets: 'Number of question sets: {number}',

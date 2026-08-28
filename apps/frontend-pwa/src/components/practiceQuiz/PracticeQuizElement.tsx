@@ -1,11 +1,15 @@
+import { useLazyQuery, useMutation } from '@apollo/client'
 import {
+  DecideSemanticEvaluationConsentDocument,
   type ElementInstance,
   ElementType,
   FreeTextEvaluationStatus,
+  SemanticFreeTextCapabilityV2Document,
 } from '@klicker-uzh/graphql/dist/ops'
 import StudentElement, {
   type StackStudentResponseType,
 } from '@klicker-uzh/shared-components/src/StudentElement'
+import { useTranslations } from 'next-intl'
 import {
   type Dispatch,
   type SetStateAction,
@@ -15,6 +19,7 @@ import {
   useState,
 } from 'react'
 import FreeTextRetryPanel from './FreeTextRetryPanel'
+import SemanticEvaluationConsentModal from './SemanticEvaluationConsentModal'
 import useFreeTextPracticeState from './useFreeTextPracticeState'
 
 function runHandledAction(action: () => Promise<unknown>) {
@@ -38,6 +43,7 @@ function PracticeQuizElement({
   semanticEnabled: boolean
   preview?: boolean
 }) {
+  const t = useTranslations()
   const evaluation = stackStorage?.[element.id]?.evaluation
   const initialState =
     evaluation?.__typename === 'FreeTextInstanceEvaluation'
@@ -58,6 +64,14 @@ function PracticeQuizElement({
     enabled: semanticEnabled,
     initialState,
   })
+  const [loadSemanticCapability, capabilityResult] = useLazyQuery(
+    SemanticFreeTextCapabilityV2Document,
+    { fetchPolicy: 'network-only' }
+  )
+  const [decideConsentMutation, consentResult] = useMutation(
+    DecideSemanticEvaluationConsentDocument
+  )
+  const [consentRecoveryOpen, setConsentRecoveryOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const answerStartedAt = useRef(Date.now())
@@ -130,6 +144,32 @@ function PracticeQuizElement({
     await startPracticeCycle()
   }
 
+  const reviewConsent = async () => {
+    const { data } = await loadSemanticCapability()
+    if (data?.semanticFreeTextCapability) {
+      setConsentRecoveryOpen(true)
+    }
+  }
+
+  const decideRecoveryConsent = async (accepted: boolean) => {
+    const capability = capabilityResult.data?.semanticFreeTextCapability
+    if (!capability) return
+
+    await decideConsentMutation({
+      variables: {
+        disclosureVersion: capability.disclosureVersion,
+        accepted,
+      },
+      refetchQueries: [SemanticFreeTextCapabilityV2Document],
+      awaitRefetchQueries: true,
+    })
+    setConsentRecoveryOpen(false)
+
+    if (accepted) {
+      await retryEvaluation()
+    }
+  }
+
   return (
     <>
       <StudentElement
@@ -154,16 +194,43 @@ function PracticeQuizElement({
             answer.trim().length > 0 &&
             answer !== state.currentAttempt?.answer
           }
-          loading={loading || actionLoading}
-          error={error || actionError}
+          loading={
+            loading ||
+            actionLoading ||
+            capabilityResult.loading ||
+            consentResult.loading
+          }
+          error={
+            error ||
+            actionError ||
+            capabilityResult.error ||
+            consentResult.error
+          }
           onTryAgain={beginRetry}
           onSubmitAnswer={() => runHandledAction(submitImprovedAnswer)}
           onRetryEvaluation={() => runHandledAction(retryEvaluation)}
+          onReviewConsent={() => runHandledAction(reviewConsent)}
           onRevealSolution={() => runHandledAction(revealSolution)}
           onToggleDetails={() => setDetailsOpen((open) => !open)}
           onPracticeAgain={() => runHandledAction(practiceAgain)}
         />
       )}
+      {consentRecoveryOpen &&
+        capabilityResult.data?.semanticFreeTextCapability && (
+          <SemanticEvaluationConsentModal
+            provider={capabilityResult.data.semanticFreeTextCapability.provider}
+            disclosureVersion={
+              capabilityResult.data.semanticFreeTextCapability.disclosureVersion
+            }
+            loading={consentResult.loading}
+            error={!!consentResult.error}
+            onAccept={() => runHandledAction(() => decideRecoveryConsent(true))}
+            onDecline={() =>
+              runHandledAction(() => decideRecoveryConsent(false))
+            }
+            acceptLabel={t('pwa.practiceQuiz.semanticConsentAcceptRetryAction')}
+          />
+        )}
     </>
   )
 }

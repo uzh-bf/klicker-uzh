@@ -17,6 +17,7 @@ const CYCLE_STATUS_RANK: Record<string, number> = {
   CORRECT: 1,
   EXHAUSTED: 1,
   SOLUTION_REVEALED: 1,
+  UNAVAILABLE: 1,
 }
 
 const EVALUATION_STATUS_RANK: Record<string, number> = {

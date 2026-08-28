@@ -6,6 +6,5 @@ query SemanticFreeTextCapability {
     retryable
     disclosureVersion
     provider
-    consentDecision
   }
 }

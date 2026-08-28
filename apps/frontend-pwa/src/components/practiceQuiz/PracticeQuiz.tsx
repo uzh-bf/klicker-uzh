@@ -5,7 +5,7 @@ import {
   GetBookmarksPracticeQuizDocument,
   type PracticeQuiz as PracticeQuizType,
   SelfDocument,
-  SemanticFreeTextCapabilityDocument,
+  SemanticFreeTextCapabilityV2Document,
   StackFeedbackStatus,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -88,7 +88,7 @@ function PracticeQuiz({
   const [
     loadSemanticCapability,
     { data: capabilityData, loading: capabilityLoading },
-  ] = useLazyQuery(SemanticFreeTextCapabilityDocument, {
+  ] = useLazyQuery(SemanticFreeTextCapabilityV2Document, {
     fetchPolicy: 'network-only',
   })
   const [decideConsentMutation, consentResult] = useMutation(
@@ -137,7 +137,7 @@ function PracticeQuiz({
           disclosureVersion: capability.disclosureVersion,
           accepted,
         },
-        refetchQueries: [SemanticFreeTextCapabilityDocument],
+        refetchQueries: [SemanticFreeTextCapabilityV2Document],
         awaitRefetchQueries: true,
       })
       const targetIx = consentTargetIx

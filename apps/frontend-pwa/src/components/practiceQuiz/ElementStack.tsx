@@ -5,8 +5,8 @@ import {
   ElementType,
   FlashcardCorrectness,
   FlashcardCorrectnessType,
-  GetPreviousStackEvaluationDocument,
-  RespondToElementStackDocument,
+  GetPreviousStackEvaluationV2Document,
+  RespondToElementStackV2Document,
   type StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
@@ -82,7 +82,7 @@ function ElementStack({
     )
 
   const [respondToElementStack, { loading: submittingResponse }] = useMutation(
-    RespondToElementStackDocument
+    RespondToElementStackV2Document
   )
   const elementFeedbacks = useStackElementFeedbacks({
     instanceIds: stack.elements?.map((element) => element.id) ?? [],
@@ -139,7 +139,7 @@ function ElementStack({
 
   // if single submission is enabled, fetch the previous answer & evaluation and do not submit again
   const { data: evaluationData } = useQuery(
-    GetPreviousStackEvaluationDocument,
+    GetPreviousStackEvaluationV2Document,
     {
       skip: previewOnly || !singleSubmission || !!stackStorage,
       variables: {

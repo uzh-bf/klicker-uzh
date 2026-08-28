@@ -8,6 +8,7 @@ function SemanticEvaluationConsentModal({
   error,
   onAccept,
   onDecline,
+  acceptLabel,
 }: {
   provider: string
   disclosureVersion: string
@@ -15,6 +16,7 @@ function SemanticEvaluationConsentModal({
   error: boolean
   onAccept: () => void
   onDecline: () => void
+  acceptLabel?: string
 }) {
   const t = useTranslations()
 
@@ -64,7 +66,7 @@ function SemanticEvaluationConsentModal({
             onClick={onAccept}
             data={{ cy: 'semantic-consent-accept' }}
           >
-            {t('pwa.practiceQuiz.semanticConsentAcceptAction')}
+            {acceptLabel ?? t('pwa.practiceQuiz.semanticConsentAcceptAction')}
           </Button>
         </div>
       </div>
