@@ -152,10 +152,12 @@ devrouter ensure .
 
 The same command starts and proves primary and linked checkouts. Use `devrouter exec . -- <command...>` for one-shot commands or the exact DevPod ID printed by `ensure` for an interactive shell.
 
-The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The stack runs every routed app plus the two Hatchet workers (no worker route); analytics, Office add-in, and docs remain outside it. See `.devcontainer/README.md`.
+The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The default `full` profile runs every routed app plus the two Hatchet workers (no worker route); `devrouter ensure . --profile <name>[,<name>]` selects exact app/service/process unions (e.g. `chat`, `ai`, `mcp`, `chat,ai,mcp` - see `.devcontainer/README.md`). Analytics, Office add-in, and docs remain outside this stack.
 
-**OpenRouter-backed local chat:** Infisical authentication and secret injection
-must run from a host shell outside the Codex sandbox. Do not run Infisical
+#### OpenRouter-backed local chat
+
+Infisical authentication and secret injection must run from a host shell
+outside the Codex sandbox. Do not run Infisical
 inside `devrouter exec`, the DevPod, or a container. Use the restricted
 `rs-infisical-operator` as the only repository-supported injection path. Inject
 the upstream key only at runtime, never into a file or the shell history:
@@ -166,7 +168,7 @@ rs-infisical-operator --profile <profile> permissions
 rs-infisical-operator --profile <profile> run \
   --map OPENROUTER_API_KEY=UPSTREAM_OPENAI_API_KEY -- \
   env UPSTREAM_OPENAI_BASE_URL=https://openrouter.ai/api/v1 \
-  devrouter ensure <checkout-path> --json
+  devrouter ensure <checkout-path> --profile chat,ai,mcp --json
 ```
 
 If the host-side operator profile or login is missing, stop and complete the
@@ -176,12 +178,12 @@ copy the key into a file, or pass it through chat, arguments, or logs.
 If LiteLLM is already running without those variables, stop the exact linked
 checkout with `devrouter stop <checkout-path>` and rerun the injection command;
 `ensure` does not replace environment variables inside an existing service
-container. Verify only that the destination exists with
-`devrouter exec <checkout-path> -- sh -c 'test -n "$UPSTREAM_OPENAI_API_KEY"'`.
+container. Verify key presence only in the exact LiteLLM service with the
+values-free host-side check in
+[the OpenRouter local Chat solution](docs/solutions/integration/openrouter-local-chat-runtime.md).
 Use only seeded or synthetic test content because OpenRouter is an external
 upstream and the Azure-specific chatbot disclaimer does not describe this
-local path. The repeatable smoke and troubleshooting details live in
-[the OpenRouter local Chat solution](docs/solutions/integration/openrouter-local-chat-runtime.md).
+local path.
 
 Local Auto Mode is selected by `CHAT_PRIMARY_MODEL_ID=auto`. Chat sends the
 `auto-router` deployment to LiteLLM at `http://litellm:4000`; LiteLLM classifies
@@ -211,7 +213,7 @@ card. Reload the thread and require the tool result, answer, and source to
 remain visible. Use the direct `GPT-5.6 Luna` option only when isolating the
 router from the model/tool integration.
 
-**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.38 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
+**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.42 fronts the stack over the shared `devnet` network. Version 0.0.39 is insufficient for rollback-safe managed profile transitions. One-time host setup must happen **before** the container starts:
 
 ```bash
 devrouter setup --yes # Traefik + devnet + mkcert CA
@@ -342,6 +344,7 @@ Quick validation sequence:
 - `devrouter tls install` (required when repo defines tcp/postgres apps)
 - `devrouter app ls --repo .`
 - Primary or linked devcontainer checkout: `devrouter ensure . --json`
+- Managed selective profile: `devrouter ensure . --profile <name> --json`
 - Host/docker runtime app only: `devrouter app run <host-app> --repo . --yes`
 - `devrouter ls`
 <!-- /devrouter -->

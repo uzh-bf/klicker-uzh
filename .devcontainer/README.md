@@ -41,7 +41,7 @@ The primary checkout keeps fixed localhost ports and receives stable unnamespace
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.38 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.42 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -58,6 +58,8 @@ Do not use bare `devpod up`, manual `WORKSPACE`, or per-app `--workspace` route 
 
 ```bash
 devrouter ensure .
+devrouter ensure . --profile chat          # one application profile
+devrouter ensure . --profile chat,ai,mcp   # additive merged selection
 devrouter exec . -- <command...>
 devrouter stop .
 ```
@@ -65,6 +67,31 @@ devrouter stop .
 Open the Manage URL printed by `ensure` and log in as **`lecturer` / `abcd`**
 (accept the terms checkbox). The dev servers run in the background; inspect
 `/tmp/dev.log` through `devrouter exec` or an exact DevPod shell.
+
+## Profiles
+
+This repository pins devrouter 0.0.42. Managed profiles, introduced in 0.0.40,
+select three independent dimensions: routed
+apps, optional Compose services, and managed processes. Merged selections are
+additive and order-insensitive; omitting `--profile` keeps the all-on `full`
+default. The committed native `devcontainer.json` stays all-on for VS Code and
+direct DevPod use - only devrouter generated effective config selects less.
+Do not use 0.0.39 for managed profile transitions: 0.0.40 adds rollback-safe
+generated configuration when a cold or warm transition fails.
+
+| Profile                                 | What starts                                                                   |
+| --------------------------------------- | ----------------------------------------------------------------------------- |
+| `manage` / `pwa` / `chat` / `live-quiz` | That app set + API/Auth (+ PWA for chat; workers for live-quiz), the 3x Redis |
+| `ai`                                    | LiteLLM only - no routes, no app process                                      |
+| `mcp`                                   | The local MCP fixture (Benibot) only                                          |
+| `email`                                 | MailHog only                                                                  |
+| `full` (default)                        | Everything, including LiteLLM, MailHog, and the MCP fixture                   |
+
+Postgres and Hatchet stay in the managed base for every profile (the backend
+treats both as boot-critical). Capability-only selections keep the idle app
+container plus that base and start no Turbo process; switching profiles never
+recreates the container, reruns post-create, resets the database, or removes
+volumes.
 
 ## Playwright runs on the host
 
@@ -81,7 +108,7 @@ continues to run directly in the official Playwright container.
 
 ## How routing works
 
-The monorepo runs **all apps in one container** via `turbo dev`;
+The monorepo runs the selected apps in **one container** via `turbo dev`;
 devrouter's Traefik (on `devnet`) routes each hostname to that container's
 internal port. The linked-worktree overlay publishes no host ports and exposes
 `${WORKSPACE}-app` and `${WORKSPACE}-db` aliases. The primary overlay exposes
@@ -126,7 +153,14 @@ the hardcoded defaults only know `klicker.com`.
 
 ## Hatchet token
 
-`backend` needs a `HATCHET_CLIENT_TOKEN`. In `hatchet-lite-dev`, the engine automatically mints its worker API token on boot to `/config/authdisabled-token` (shared volume); `post-create` writes it to `.devcontainer/.hatchet.env` (gitignored) and `post-start` sources it. The backend **requires** it to boot — its `HatchetClient.init` runs at module load (not lazy).
+`backend` needs a `HATCHET_CLIENT_TOKEN`. In `hatchet-lite-dev`, the engine
+automatically mints its worker API token on boot to
+`/config/authdisabled-token` (shared volume). `post-create` writes it to
+`.devcontainer/.hatchet.env` (gitignored), and `post-start` sources it. On a
+cold application profile, `post-start` also closes the boot race by waiting for
+and persisting a token that appeared just after `post-create` timed out.
+Capability-only profiles skip that wait. The backend **requires** the token to
+boot because its `HatchetClient.init` runs at module load (not lazy).
 
 ## What's inside
 
@@ -156,17 +190,20 @@ preserves each worktree's `.next/dev` output; a changed dependency fingerprint
 runs one frozen install against the persistent `node_modules` volume and shared
 pnpm content store.
 
-Before `post-start` reports success, it probes every Next app's readiness
-contract. Unauthenticated Chat must answer `401 application/json` on a nested
-API route, and the committed shell pages of auth, PWA, manage, and control must
-answer `2xx` HTML or a redirect. Five consecutive `404 text/html` responses on such a
-known-existing route after the startup grace period identify stale Next.js
-route state. Only that signature requests one managed restart with a full
-`.next` cleanup for exactly the affected apps. Other errors fail closed without
-removing caches; a data-driven 404, for example a missing quiz evaluation, is
-an application failure rather than a cache signature. Run
+Before `post-start` reports success, it probes every selected runtime app's
+readiness contract. Unauthenticated Chat must answer `401 application/json` on
+a nested API route, the committed shell pages of auth, PWA, manage, and control
+must answer `2xx` HTML or a redirect, and Response API must answer `200`
+JSON at `/healthz`. Profiles that include live-quiz workers also require one
+live runtime process for each worker below the exact managed Turbo root. Five
+consecutive `404 text/html` responses on a known-existing Next.js route after
+the startup grace period identify stale route state. Only that signature
+requests one managed restart with a full `.next` cleanup for exactly the
+affected Next apps. Other errors fail closed without removing caches; a
+data-driven 404, for example a missing quiz evaluation, is an application
+failure rather than a cache signature. Run
 `devrouter exec . -- pnpm run dev:doctor` for the same read-only check across
-all five apps. The root build script forces production mode even though the
+the five Next apps and Response API. The root build script forces production mode even though the
 live container exports `NODE_ENV=development`; rerun `devrouter ensure .`
 afterward to restore and prove the development runtime.
 
