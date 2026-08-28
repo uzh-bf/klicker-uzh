@@ -171,8 +171,9 @@ test.describe('Test creation and editing functionalities for Free Text elements'
       await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
     }
 
-    await page.getByTestId('save-new-question').click({ force: true })
-    await page.waitForTimeout(1000)
+    const saveButton = page.getByTestId('save-new-question')
+    await saveButton.click({ force: true })
+    await expect(saveButton).toBeHidden()
 
     await validateElement(page, FT.titleEdited, [
       FT.contentEdited,
@@ -222,8 +223,9 @@ test.describe('Test creation and editing functionalities for Free Text elements'
     await page
       .getByTestId('semantic-reference-solution')
       .fill(FT.semanticReferenceSolution)
-    await page.getByTestId('save-new-question').click({ force: true })
-    await page.waitForTimeout(1000)
+    const saveButton = page.getByTestId('save-new-question')
+    await saveButton.click({ force: true })
+    await expect(saveButton).toBeHidden()
 
     await searchAndEdit(page, FT.titleEdited)
     await expect(page.getByTestId('semantic-exact-answer-0')).toHaveValue(
@@ -239,8 +241,8 @@ test.describe('Test creation and editing functionalities for Free Text elements'
         FT.sampleSolution[ix]
       )
     }
-    await page.getByTestId('save-new-question').click({ force: true })
-    await page.waitForTimeout(1000)
+    await saveButton.click({ force: true })
+    await expect(saveButton).toBeHidden()
 
     await searchAndEdit(page, FT.titleEdited)
     await expect(
