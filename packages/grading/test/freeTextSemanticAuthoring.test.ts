@@ -35,7 +35,7 @@ describe('semantic free-text authoring helpers', () => {
         config.outcome_bands?.map((band) => [band.category, band.label]) ?? []
       )
     ).toEqual({
-      INCORRECT: 'Nicht korrekt',
+      INCORRECT: 'Noch nicht korrekt',
       PARTIAL: 'Teilweise korrekt',
       CORRECT: 'Korrekt',
     })

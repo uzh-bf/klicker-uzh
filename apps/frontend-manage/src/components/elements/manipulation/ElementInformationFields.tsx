@@ -2,7 +2,7 @@ import { useMutation } from '@apollo/client'
 import {
   ChangeElementStatusDocument,
   ElementStatus,
-  GetSingleElementDocument,
+  GetSingleElementV2Document,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import {
@@ -77,7 +77,7 @@ function ElementInformationFields({
                     // update single question query
                     cache.updateQuery(
                       {
-                        query: GetSingleElementDocument,
+                        query: GetSingleElementV2Document,
                         variables: { id: elementId },
                       },
                       (data) => ({

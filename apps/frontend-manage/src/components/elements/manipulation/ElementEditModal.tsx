@@ -3,13 +3,13 @@ import {
   CreateAnswerCollectionDocument,
   ElementType,
   FlagOutdatedElementInstancesDocument,
-  GetSingleElementDocument,
+  GetSingleElementV2Document,
   GetUserTagsDocument,
   ManipulateCaseStudyQuestionDocument,
   ManipulateChoicesQuestionDocument,
   ManipulateContentElementDocument,
   ManipulateFlashcardElementDocument,
-  ManipulateFreeTextQuestionDocument,
+  ManipulateFreeTextQuestionV2Document,
   ManipulateNumericalQuestionDocument,
   ManipulateSelectionQuestionDocument,
   UpdateElementInstancesDocument,
@@ -71,7 +71,7 @@ function ElementEditModal({
     )
 
   const { loading: loadingQuestion, data: dataQuestion } = useQuery(
-    GetSingleElementDocument,
+    GetSingleElementV2Document,
     {
       variables: { id: elementId! },
       skip: typeof elementId === 'undefined' || !isOpen,
@@ -92,7 +92,7 @@ function ElementEditModal({
     ManipulateNumericalQuestionDocument
   )
   const [manipulateFreeTextQuestion] = useMutation(
-    ManipulateFreeTextQuestionDocument
+    ManipulateFreeTextQuestionV2Document
   )
   const [manipulateSelectionQuestion] = useMutation(
     ManipulateSelectionQuestionDocument

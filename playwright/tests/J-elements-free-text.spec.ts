@@ -24,6 +24,8 @@ const FT = {
     'Sample Solution 2',
     'Sample Solution 3',
   ],
+  semanticExactAnswer: 'Semantic exact answer',
+  semanticReferenceSolution: 'Semantic reference solution',
 }
 
 test('CLEANUP', cleanupTest)
@@ -176,6 +178,39 @@ test.describe('Test creation and editing functionalities for Free Text elements'
       )
     }
 
+    await page.getByTestId('close-element-modal').click()
+  })
+
+  test('Keep legacy sample solutions separate from semantic exact answers', async ({
+    page,
+  }) => {
+    await searchAndEdit(page, FT.titleEdited)
+
+    await page.getByTestId('configure-semantic-free-text').click()
+    await expect(page.getByTestId('semantic-editor')).toBeVisible()
+    await page
+      .getByTestId('semantic-exact-answer-0')
+      .fill(FT.semanticExactAnswer)
+    await page
+      .getByTestId('semantic-reference-solution')
+      .fill(FT.semanticReferenceSolution)
+    await page.getByTestId('save-new-question').click({ force: true })
+    await page.waitForTimeout(1000)
+
+    await searchAndEdit(page, FT.titleEdited)
+    await expect(page.getByTestId('semantic-exact-answer-0')).toHaveValue(
+      FT.semanticExactAnswer
+    )
+    await expect(page.getByTestId('semantic-reference-solution')).toHaveValue(
+      FT.semanticReferenceSolution
+    )
+
+    await page.getByTestId('configure-semantic-free-text').click()
+    for (let ix = 0; ix < FT.sampleSolution.length; ix++) {
+      await expect(page.getByTestId(`set-solution-ix-${ix}`)).toHaveValue(
+        FT.sampleSolution[ix]
+      )
+    }
     await page.getByTestId('close-element-modal').click()
   })
 })

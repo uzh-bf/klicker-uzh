@@ -201,10 +201,7 @@ export function prepareFreeTextArgs({
     pointsMultiplier: parseInt(values.pointsMultiplier),
 
     options: {
-      hasSampleSolution:
-        values.options.semanticEvaluation != null
-          ? true
-          : values.options.hasSampleSolution,
+      hasSampleSolution: values.options.hasSampleSolution,
       //   placeholder: values.options.placeholder,
       restrictions: {
         maxLength:
@@ -214,9 +211,7 @@ export function prepareFreeTextArgs({
             ? undefined
             : parseInt(String(values.options.restrictions.maxLength)),
       },
-      solutions:
-        values.options.semanticEvaluation?.accepted_exact_answers ??
-        values.options.solutions,
+      solutions: values.options.solutions,
       semanticEvaluation: values.options.semanticEvaluation ?? undefined,
     },
 
