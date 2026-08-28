@@ -148,7 +148,7 @@ The policy must survive stored lecturer prompts and apply to the existing Inform
   - Expand `apps/chat/src/lib/server/languageInstructions.ts` with the conversation-language lock while retaining Swiss High German rules.
   - Update `apps/chat/src/lib/server/systemPromptCompiler.ts` to compose base, course policy, citation policy, and language policy in the decided order.
   - Extend `apps/chat/test/system-prompt-compiler.test.ts` and the existing language helper tests when that is the narrowest stable seam.
-  - Update `docs/chat-platform.md`, bump its timestamp, and add `docs/log/2026-08-27-course-chatbot-policy.md`.
+  - Update `docs/chat-platform.md` and bump its timestamp.
   - Do not edit route inputs, labels, defaults, seeds, schemas, tools, citation numbering, or AI Buddy files.
 - Check without starting a local runtime:
   - Run `git diff --check` and inspect the exact diff and staged content for unrelated changes, secrets, and personal data.
