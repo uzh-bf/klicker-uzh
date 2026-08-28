@@ -3393,6 +3393,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       hideArchive: 'Archiv verbergen',
       deleteCourse: 'Kurs löschen',
       courseDeletionStatusTab: 'Kurslöschungen',
+      courseDeletionPendingBadge: 'Löschung läuft',
       courseDeletionStatusCount:
         '{count, plural, one {# Kurslöschung läuft} other {# Kurslöschungen laufen}}',
       courseDeletionStatusTitle: 'Kurslöschung läuft',

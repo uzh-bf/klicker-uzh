@@ -51,13 +51,15 @@ interface StartCourseDeletionArgs {
 
 interface CourseDeletionStatusContextValue {
   isCourseDeletionActive: (courseId: string) => boolean
+  isCourseDeletionStatusHydrating: boolean
   startCourseDeletion: (args: StartCourseDeletionArgs) => Promise<boolean>
 }
 
 const CourseDeletionStatusContext =
   createContext<CourseDeletionStatusContextValue | null>(null)
 
-const COURSE_DELETION_STORAGE_KEY = 'course-deletion-job-ids'
+const COURSE_DELETION_LEGACY_STORAGE_KEY = 'course-deletion-job-ids'
+const COURSE_DELETION_STORAGE_KEY_PREFIX = 'course-deletion-job:'
 const COURSE_DELETION_POLL_INTERVAL = 5000
 const COURSE_DELETION_STATUS_BATCH_SIZE = 50
 const COURSE_DELETION_HANDLED_TERMINAL_JOB_LIMIT = 100
@@ -80,34 +82,74 @@ function readStoredCourseDeletionJobIds() {
   if (typeof window === 'undefined') return []
 
   try {
-    const storedValue = window.localStorage.getItem(COURSE_DELETION_STORAGE_KEY)
-    const parsedValue = storedValue ? JSON.parse(storedValue) : []
+    const jobIds = new Set<string>()
+    for (let index = 0; index < window.localStorage.length; index++) {
+      const key = window.localStorage.key(index)
+      if (key?.startsWith(COURSE_DELETION_STORAGE_KEY_PREFIX)) {
+        jobIds.add(key.slice(COURSE_DELETION_STORAGE_KEY_PREFIX.length))
+      }
+    }
 
-    return Array.isArray(parsedValue)
-      ? parsedValue.filter(
-          (value): value is string => typeof value === 'string'
+    const storedValue = window.localStorage.getItem(
+      COURSE_DELETION_LEGACY_STORAGE_KEY
+    )
+    let legacyJobIds: string[] = []
+    if (storedValue) {
+      try {
+        const parsedValue = JSON.parse(storedValue)
+        legacyJobIds = Array.isArray(parsedValue)
+          ? parsedValue.filter(
+              (value): value is string => typeof value === 'string'
+            )
+          : []
+      } catch (error) {
+        console.error(
+          'Failed to migrate legacy course deletion jobs from storage',
+          error
         )
-      : []
+      }
+    }
+
+    for (const jobId of legacyJobIds) {
+      jobIds.add(jobId)
+      window.localStorage.setItem(
+        `${COURSE_DELETION_STORAGE_KEY_PREFIX}${jobId}`,
+        '1'
+      )
+    }
+    if (storedValue) {
+      window.localStorage.removeItem(COURSE_DELETION_LEGACY_STORAGE_KEY)
+    }
+
+    return [...jobIds]
   } catch (error) {
     console.error('Failed to read course deletion jobs from storage', error)
     return []
   }
 }
 
-function writeStoredCourseDeletionJobIds(jobIds: string[]) {
+function writeStoredCourseDeletionJobId(jobId: string) {
   if (typeof window === 'undefined') return
 
   try {
-    if (jobIds.length === 0) {
-      window.localStorage.removeItem(COURSE_DELETION_STORAGE_KEY)
-    } else {
-      window.localStorage.setItem(
-        COURSE_DELETION_STORAGE_KEY,
-        JSON.stringify(jobIds)
-      )
-    }
+    window.localStorage.setItem(
+      `${COURSE_DELETION_STORAGE_KEY_PREFIX}${jobId}`,
+      '1'
+    )
   } catch (error) {
     console.error('Failed to persist course deletion jobs', error)
+  }
+}
+
+function removeStoredCourseDeletionJobId(jobId: string) {
+  if (typeof window === 'undefined') return
+
+  try {
+    window.localStorage.removeItem(
+      `${COURSE_DELETION_STORAGE_KEY_PREFIX}${jobId}`
+    )
+  } catch (error) {
+    console.error('Failed to remove persisted course deletion job', error)
   }
 }
 
@@ -199,27 +241,55 @@ export function CourseDeletionProvider({
   const jobIdsRef = useRef<string[]>([])
 
   useEffect(() => {
-    setJobIds(readStoredCourseDeletionJobIds())
+    const storedJobIds = readStoredCourseDeletionJobIds()
+    jobIdsRef.current = storedJobIds
+    setJobIds(storedJobIds)
     setStorageInitialized(true)
   }, [])
 
   useEffect(() => {
-    if (!storageInitialized) return
-    writeStoredCourseDeletionJobIds(jobIds)
-  }, [jobIds, storageInitialized])
+    const handleStorage = (event: StorageEvent) => {
+      if (
+        event.key !== COURSE_DELETION_LEGACY_STORAGE_KEY &&
+        !event.key?.startsWith(COURSE_DELETION_STORAGE_KEY_PREFIX)
+      ) {
+        return
+      }
+      const storedJobIds = readStoredCourseDeletionJobIds()
+      const storedJobIdSet = new Set(storedJobIds)
+      jobIdsRef.current = storedJobIds
+      setJobIds(storedJobIds)
+      setJobsById((currentJobs) =>
+        Object.fromEntries(
+          Object.entries(currentJobs).filter(([jobId]) =>
+            storedJobIdSet.has(jobId)
+          )
+        )
+      )
+    }
 
-  useEffect(() => {
-    jobIdsRef.current = jobIds
-  }, [jobIds])
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
 
   const addJobId = useCallback((jobId: string) => {
-    setJobIds((currentIds) =>
-      currentIds.includes(jobId) ? currentIds : [...currentIds, jobId]
-    )
+    writeStoredCourseDeletionJobId(jobId)
+    const storedJobIds = readStoredCourseDeletionJobIds()
+    const nextJobIds = [
+      ...new Set([...jobIdsRef.current, ...storedJobIds, jobId]),
+    ]
+
+    jobIdsRef.current = nextJobIds
+    setJobIds(nextJobIds)
   }, [])
 
   const removeJobId = useCallback((jobId: string) => {
-    setJobIds((currentIds) => currentIds.filter((id) => id !== jobId))
+    removeStoredCourseDeletionJobId(jobId)
+    const storedJobIds = readStoredCourseDeletionJobIds()
+    removeStoredCourseDeletionJobId(jobId)
+    const nextJobIds = storedJobIds.filter((id) => id !== jobId)
+    jobIdsRef.current = nextJobIds
+    setJobIds(nextJobIds)
     setJobsById((currentJobs) => {
       const { [jobId]: _removedJob, ...nextJobs } = currentJobs
       return nextJobs
@@ -241,13 +311,19 @@ export function CourseDeletionProvider({
     (statuses: CourseDeletionStatusResponse, requestedJobIds: string[]) => {
       const requestedJobIdSet = new Set(requestedJobIds)
       const returnedJobIds = new Set(statuses.map((job) => job.id))
+      const currentJobIdSet = new Set(jobIdsRef.current)
+      let shouldRefetchCourses = false
 
       for (const jobId of requestedJobIds) {
-        if (!returnedJobIds.has(jobId)) removeJobId(jobId)
+        if (currentJobIdSet.has(jobId) && !returnedJobIds.has(jobId)) {
+          removeJobId(jobId)
+        }
       }
 
       for (const job of statuses) {
-        if (!requestedJobIdSet.has(job.id)) continue
+        if (!requestedJobIdSet.has(job.id) || !currentJobIdSet.has(job.id)) {
+          continue
+        }
 
         if (isActiveCourseDeletionStatus(job.status)) {
           upsertJob(job)
@@ -270,12 +346,7 @@ export function CourseDeletionProvider({
           }
         }
         removeJobId(job.id)
-
-        void client
-          .refetchQueries({ include: [GetUserCoursesDocument] })
-          .catch((error) =>
-            console.error('Failed to refetch courses after deletion', error)
-          )
+        shouldRefetchCourses = true
 
         if (job.status === CourseDeletionJobStatus.Completed) {
           toast({
@@ -299,6 +370,14 @@ export function CourseDeletionProvider({
             options: { duration: 6000 },
           })
         }
+      }
+
+      if (shouldRefetchCourses) {
+        void client
+          .refetchQueries({ include: [GetUserCoursesDocument] })
+          .catch((error) =>
+            console.error('Failed to refetch courses after deletion', error)
+          )
       }
     },
     [client, removeJobId, t, upsertJob]
@@ -374,6 +453,10 @@ export function CourseDeletionProvider({
         ),
     [jobsById]
   )
+  const hasUnresolvedJobs = useMemo(
+    () => jobIds.some((jobId) => !jobsById[jobId]),
+    [jobIds, jobsById]
+  )
 
   const isCourseDeletionActive = useCallback(
     (courseId: string) =>
@@ -386,6 +469,7 @@ export function CourseDeletionProvider({
     async ({ courseId, deleteDraftActivities }: StartCourseDeletionArgs) => {
       if (
         inFlightCourseIdsRef.current.has(courseId) ||
+        hasUnresolvedJobs ||
         activeJobs.some((job) => job.courseId === courseId)
       ) {
         toast({
@@ -443,12 +527,23 @@ export function CourseDeletionProvider({
 
       return false
     },
-    [activeJobs, addJobId, startCourseDeletionMutation, t, upsertJob]
+    [
+      activeJobs,
+      addJobId,
+      hasUnresolvedJobs,
+      startCourseDeletionMutation,
+      t,
+      upsertJob,
+    ]
   )
 
   const value = useMemo(
-    () => ({ isCourseDeletionActive, startCourseDeletion }),
-    [isCourseDeletionActive, startCourseDeletion]
+    () => ({
+      isCourseDeletionActive,
+      isCourseDeletionStatusHydrating: hasUnresolvedJobs,
+      startCourseDeletion,
+    }),
+    [hasUnresolvedJobs, isCourseDeletionActive, startCourseDeletion]
   )
 
   return (

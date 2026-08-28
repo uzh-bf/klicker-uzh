@@ -23,9 +23,10 @@ import { Button, Dropdown, H1, UserNotification } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ActivityLogDialog from '../sharing/ActivityLogDialog'
 import ObjectSharingModalWrapper from '../sharing/ObjectSharingModalWrapper'
+import { useCourseDeletionStatus } from './CourseDeletionStatusProvider'
 import { useCourseDuplicationStatus } from './CourseDuplicationStatusProvider'
 import getLTIAccessLink from './getLTIAccessLink'
 import CourseDuplicationModal, {
@@ -70,6 +71,8 @@ function CourseOverviewHeader({
   const router = useRouter()
   const { isSourceCourseDuplicating, startCourseDuplication } =
     useCourseDuplicationStatus()
+  const { isCourseDeletionActive, isCourseDeletionStatusHydrating } =
+    useCourseDeletionStatus()
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
 
   const [courseSettingsModal, setCourseSettingsModal] = useState(false)
@@ -78,6 +81,17 @@ function CourseOverviewHeader({
   const [isActivityLogOpen, setIsActivityLogOpen] = useState(false)
   const [duplicationModal, setDuplicationModal] = useState(false)
   const courseDuplicationInProgress = isSourceCourseDuplicating(course.id)
+  const courseDeletionInProgress = isCourseDeletionActive(course.id)
+  const courseMutationBlocked =
+    courseDeletionInProgress || isCourseDeletionStatusHydrating
+
+  useEffect(() => {
+    if (!courseMutationBlocked) return
+    setCourseSettingsModal(false)
+    setSharingModal(false)
+    setDuplicationModal(false)
+    setIsActivityLogOpen(false)
+  }, [courseMutationBlocked])
 
   const [updateCourseSettings] = useMutation(UpdateCourseSettingsDocument)
   const { data: dataUser } = useQuery(UserProfileDocument, {
@@ -134,6 +148,7 @@ function CourseOverviewHeader({
               t('manage.course.shareCourse')
             ),
             onClick: () => setSharingModal(true),
+            disabled: courseMutationBlocked,
             data: { cy: 'course-share-button' },
           },
         ]
@@ -147,6 +162,7 @@ function CourseOverviewHeader({
               t('manage.course.duplicateCourse')
             ),
             onClick: () => setDuplicationModal(true),
+            disabled: courseMutationBlocked,
             data: { cy: 'course-duplicate-button' },
           },
         ]
@@ -234,6 +250,7 @@ function CourseOverviewHeader({
         {course.isEditor ? (
           <Button
             basic
+            disabled={courseMutationBlocked}
             onClick={() => setCourseSettingsModal(true)}
             className={{
               root: 'text-primary-100 hover:text-primary-100 h-8 text-sm',
@@ -246,6 +263,7 @@ function CourseOverviewHeader({
         ) : null}
         <Button
           basic
+          disabled={courseMutationBlocked}
           onClick={() => setIsActivityLogOpen(true)}
           className={{
             root: 'text-primary-100 hover:text-primary-100 h-8 text-sm',
@@ -301,7 +319,16 @@ function CourseOverviewHeader({
           items={courseActionMenuItems}
         />
       </div>
-      {duplicationModal && (
+      {courseDeletionInProgress ? (
+        <UserNotification
+          className={{ root: 'mt-2 basis-full' }}
+          data={{ cy: 'course-deletion-read-only-notice' }}
+          type="warning"
+        >
+          {t('manage.courseList.courseDeletionInProgress')}
+        </UserNotification>
+      ) : null}
+      {duplicationModal && !courseMutationBlocked && (
         <CourseDuplicationModal
           initialValues={course}
           isDuplicating={courseDuplicationInProgress}
@@ -321,7 +348,7 @@ function CourseOverviewHeader({
           }}
         />
       )}
-      {courseSettingsModal && (
+      {courseSettingsModal && !courseMutationBlocked && (
         <CourseManipulationModal
           initialValues={course}
           earliestGroupDeadline={earliestGroupDeadline}
@@ -408,7 +435,7 @@ function CourseOverviewHeader({
         />
       ) : null}
 
-      {sharingModal && course.isManager ? (
+      {sharingModal && course.isManager && !courseMutationBlocked ? (
         <ObjectSharingModalWrapper
           objectUuid={course.id}
           objectName={course.name}
@@ -417,7 +444,7 @@ function CourseOverviewHeader({
         />
       ) : null}
 
-      {isActivityLogOpen && (
+      {isActivityLogOpen && !courseMutationBlocked && (
         <ActivityLogDialog
           objectId={course.id}
           objectType={ObjectType.Course}

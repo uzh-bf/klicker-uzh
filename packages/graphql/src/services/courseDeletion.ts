@@ -5,6 +5,12 @@ import type { HatchetHandlers } from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import type { ContextWithUser } from '../lib/context.js'
+import {
+  acquireCourseDeletionLock,
+  getCourseDeletionCourseLockKey,
+  getCourseDeletionStatusKey,
+  isTerminalCourseDeletionStatus,
+} from './courseDeletionGuard.js'
 import { deleteCourse } from './courses.js'
 import { checkAccess } from './sharing.js'
 
@@ -14,8 +20,6 @@ const COURSE_DELETION_REPUBLISH_AFTER_MS = 5 * 60 * 1000
 const COURSE_DELETION_PROCESS_LOCK_TTL_SECONDS = 60
 const COURSE_DELETION_PROCESS_LOCK_RENEWAL_MS = 15 * 1000
 const COURSE_DELETION_HEARTBEAT_TTL_SECONDS = 120
-const COURSE_DELETION_STATUS_KEY_PREFIX = 'course-deletion:job'
-const COURSE_DELETION_COURSE_LOCK_KEY_PREFIX = 'course-deletion:course'
 
 export const COURSE_DELETION_JOB_STATUS_VALUES = [
   'COMPLETED',
@@ -53,24 +57,12 @@ interface CourseDeletionJob extends CourseDeletionStatus {
   scheduledTaskIds?: string[]
 }
 
-function getCourseDeletionStatusKey(jobId: string) {
-  return `${COURSE_DELETION_STATUS_KEY_PREFIX}:${jobId}`
-}
-
-function getCourseDeletionCourseLockKey(courseId: string) {
-  return `${COURSE_DELETION_COURSE_LOCK_KEY_PREFIX}:${courseId}`
-}
-
 function getCourseDeletionProcessLockKey(jobId: string) {
-  return `${COURSE_DELETION_STATUS_KEY_PREFIX}:${jobId}:processing`
+  return `${getCourseDeletionStatusKey(jobId)}:processing`
 }
 
 function getCourseDeletionHeartbeatKey(jobId: string) {
-  return `${COURSE_DELETION_STATUS_KEY_PREFIX}:${jobId}:heartbeat`
-}
-
-function isTerminalCourseDeletionStatus(status: CourseDeletionJobStatus) {
-  return status === 'COMPLETED' || status === 'FAILED'
+  return `${getCourseDeletionStatusKey(jobId)}:heartbeat`
 }
 
 function getErrorMessage(error: unknown): string {
@@ -598,15 +590,14 @@ export async function startCourseDeletion(
 
   await persistCourseDeletionJob(ctx.redisExec, job)
 
-  const lockAcquired = await ctx.redisExec.set(
-    lockKey,
+  const lockAcquired = await acquireCourseDeletionLock(
+    ctx.redisExec,
+    id,
     job.id,
-    'EX',
-    COURSE_DELETION_STATUS_TTL_SECONDS,
-    'NX'
+    COURSE_DELETION_STATUS_TTL_SECONDS
   )
 
-  if (lockAcquired !== 'OK') {
+  if (!lockAcquired) {
     const lockedJobId = await ctx.redisExec.get(lockKey)
     const lockedJob = lockedJobId
       ? await getCourseDeletionJob(ctx.redisExec, lockedJobId)
@@ -632,16 +623,17 @@ export async function startCourseDeletion(
       await releaseCourseDeletionLockValue(ctx.redisExec, lockKey, lockedJobId)
     }
 
-    const retryLockAcquired = await ctx.redisExec.set(
-      lockKey,
+    const retryLockAcquired = await acquireCourseDeletionLock(
+      ctx.redisExec,
+      id,
       job.id,
-      'EX',
-      COURSE_DELETION_STATUS_TTL_SECONDS,
-      'NX'
+      COURSE_DELETION_STATUS_TTL_SECONDS
     )
-    if (retryLockAcquired !== 'OK') {
+    if (!retryLockAcquired) {
       await deleteCourseDeletionJob(ctx.redisExec, job.id)
-      return null
+      throw new GraphQLError('Course is currently being changed', {
+        extensions: { code: 'COURSE_MUTATION_IN_PROGRESS' },
+      })
     }
   }
 
@@ -958,7 +950,7 @@ export const handleSweepStaleCourseDeletions: HatchetHandlers['handleSweepStaleC
       const [nextCursor, keys] = await redis.scan(
         cursor,
         'MATCH',
-        `${COURSE_DELETION_STATUS_KEY_PREFIX}:*`,
+        getCourseDeletionStatusKey('*'),
         'COUNT',
         100
       )

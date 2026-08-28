@@ -3335,6 +3335,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       hideArchive: 'Hide archive',
       deleteCourse: 'Delete course',
       courseDeletionStatusTab: 'Course deletions',
+      courseDeletionPendingBadge: 'Deletion in progress',
       courseDeletionStatusCount:
         '{count, plural, one {# course deletion in progress} other {# course deletions in progress}}',
       courseDeletionStatusTitle: 'Course deletion in progress',

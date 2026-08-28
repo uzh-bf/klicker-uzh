@@ -2287,6 +2287,329 @@ test.describe('Part 4: Course deletion', () => {
     await loginLecturer()
   })
 
+  test('Makes a course read-only while its deletion is pending', async ({
+    page,
+  }) => {
+    const jobId = '88888888-8888-4888-8888-888888888888'
+    const persistedOperations = JSON.parse(
+      await readFile(
+        new URL(
+          '../../packages/graphql/src/public/client.json',
+          import.meta.url
+        ),
+        'utf8'
+      )
+    ) as Record<string, string>
+    const statusHash = persistedOperations.GetCourseDeletionStatuses
+
+    await openCourseInManage(page, PAST_COURSE.name)
+    const courseId = new URL(page.url()).pathname.split('/').at(-1)
+    expect(courseId).toBeTruthy()
+    await page.getByTestId('course-settings-button').click()
+    await expect(page.getByTestId('course-name')).toBeVisible()
+    await page.evaluate(
+      ({ courseId, courseName, jobId, statusHash }) => {
+        const testWindow = window as typeof window & {
+          __courseDeletionPollDeferred?: boolean
+          __courseDeletionPollResolved?: boolean
+          __courseDeletionPollStarted?: boolean
+          __resolveCourseDeletionPoll?: () => void
+        }
+        const originalFetch = window.fetch.bind(window)
+        window.fetch = async (input, init) => {
+          let isStatusPoll = false
+
+          if (
+            typeof input === 'string' ||
+            input instanceof URL ||
+            input instanceof Request
+          ) {
+            try {
+              const url = new URL(
+                input instanceof Request ? input.url : String(input),
+                window.location.origin
+              )
+              isStatusPoll = (
+                url.searchParams.get('extensions') ?? ''
+              ).includes(statusHash)
+            } catch {
+              // Relative or malformed URL; inspect a JSON body below.
+            }
+          }
+
+          if (!isStatusPoll && typeof init?.body === 'string') {
+            try {
+              isStatusPoll =
+                JSON.parse(init.body).operationName ===
+                'GetCourseDeletionStatuses'
+            } catch {
+              // Non-JSON request; pass it through unchanged.
+            }
+          }
+
+          if (!isStatusPoll) return originalFetch(input, init)
+
+          if (testWindow.__courseDeletionPollDeferred) {
+            testWindow.__courseDeletionPollStarted = true
+            await new Promise<void>((resolve) => {
+              testWindow.__resolveCourseDeletionPoll = resolve
+            })
+            testWindow.__courseDeletionPollResolved = true
+          }
+
+          return new window.Response(
+            JSON.stringify({
+              data: {
+                courseDeletionStatuses: [
+                  {
+                    id: jobId,
+                    status: 'PENDING',
+                    courseId,
+                    courseName,
+                    errorType: null,
+                    errorMessage: null,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                  },
+                ],
+              },
+            }),
+            { headers: { 'Content-Type': 'application/json' } }
+          )
+        }
+      },
+      {
+        courseId: courseId!,
+        courseName: PAST_COURSE.name,
+        jobId,
+        statusHash,
+      }
+    )
+
+    const setDeletionTracking = async (active: boolean) => {
+      await page.evaluate(
+        ({ active, jobId }) => {
+          const storageKey = `course-deletion-job:${jobId}`
+          if (active) {
+            window.localStorage.setItem(storageKey, '1')
+          } else {
+            window.localStorage.removeItem(storageKey)
+          }
+
+          window.dispatchEvent(new StorageEvent('storage', { key: storageKey }))
+        },
+        { active, jobId }
+      )
+    }
+
+    await setDeletionTracking(true)
+    await expect(
+      page.getByTestId('course-deletion-read-only-notice')
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByTestId('course-name')).not.toBeAttached()
+    await expect(page.getByTestId('course-settings-button')).toBeDisabled()
+
+    await setDeletionTracking(false)
+    await expect(
+      page.getByTestId('course-deletion-read-only-notice')
+    ).not.toBeAttached()
+    await expect(page.getByTestId('course-settings-button')).toBeEnabled()
+    await expect(page.getByTestId('course-name')).not.toBeAttached()
+
+    await chooseCourseAction(page, 'course-share-button')
+    await expect(page.getByTestId('close-share-object')).toBeVisible()
+    await setDeletionTracking(true)
+    await expect(
+      page.getByTestId('course-deletion-read-only-notice')
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByTestId('close-share-object')).not.toBeAttached()
+    await setDeletionTracking(false)
+    await expect(
+      page.getByTestId('course-deletion-read-only-notice')
+    ).not.toBeAttached()
+    await expect(page.getByTestId('close-share-object')).not.toBeAttached()
+
+    await chooseCourseAction(page, 'course-duplicate-button')
+    await expect(page.getByTestId('course-name')).toBeVisible()
+    await setDeletionTracking(true)
+    await expect(
+      page.getByTestId('course-deletion-read-only-notice')
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByTestId('course-name')).not.toBeAttached()
+    await setDeletionTracking(false)
+    await expect(
+      page.getByTestId('course-deletion-read-only-notice')
+    ).not.toBeAttached()
+    await expect(page.getByTestId('course-name')).not.toBeAttached()
+
+    await page.getByTestId('course-activity-log-button').click()
+    await expect(page.getByTestId('activity-log-dialog')).toBeVisible()
+    await setDeletionTracking(true)
+    await expect(
+      page.getByTestId('course-deletion-read-only-notice')
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByTestId('activity-log-dialog')).not.toBeAttached()
+    await expect(page.getByTestId('course-activity-log-button')).toBeDisabled()
+    await setDeletionTracking(false)
+    await expect(
+      page.getByTestId('course-deletion-read-only-notice')
+    ).not.toBeAttached()
+    await expect(page.getByTestId('activity-log-dialog')).not.toBeAttached()
+
+    await setDeletionTracking(true)
+    await page.getByTestId('course-actions-menu').click()
+    await expect(page.getByTestId('course-duplicate-button')).toHaveAttribute(
+      'data-disabled'
+    )
+
+    await page.getByTestId('courses').click()
+    await expect(
+      page.getByTestId(`course-deletion-in-progress-${PAST_COURSE.name}`)
+    ).toBeVisible()
+    await expect(
+      page.getByTestId(`course-list-button-${PAST_COURSE.name}`)
+    ).toBeDisabled()
+    await expect(
+      page.getByTestId(`activity-log-course-${PAST_COURSE.name}`)
+    ).toBeDisabled()
+    await expect(
+      page.getByTestId(`archive-course-${PAST_COURSE.name}`)
+    ).toBeDisabled()
+    await expect(
+      page.getByTestId(`delete-course-${PAST_COURSE.name}`)
+    ).toBeDisabled()
+
+    await setDeletionTracking(false)
+    await expect(
+      page.getByTestId(`course-deletion-in-progress-${PAST_COURSE.name}`)
+    ).not.toBeAttached()
+    await expect(
+      page.getByTestId(`course-list-button-${PAST_COURSE.name}`)
+    ).toBeEnabled()
+    await expect(
+      page.getByTestId(`delete-course-${PAST_COURSE.name}`)
+    ).toBeEnabled()
+
+    await page.getByTestId(`activity-log-course-${PAST_COURSE.name}`).click()
+    await expect(page.getByTestId('activity-log-dialog')).toBeVisible()
+    await setDeletionTracking(true)
+    await expect(page.getByTestId('activity-log-dialog')).not.toBeAttached()
+    await expect(
+      page.getByTestId(`activity-log-course-${PAST_COURSE.name}`)
+    ).toBeDisabled()
+    await setDeletionTracking(false)
+    await expect(page.getByTestId('activity-log-dialog')).not.toBeAttached()
+
+    await page.evaluate((jobId) => {
+      const testWindow = window as typeof window & {
+        __courseDeletionPollDeferred?: boolean
+        __courseDeletionPollResolved?: boolean
+        __courseDeletionPollStarted?: boolean
+      }
+      testWindow.__courseDeletionPollDeferred = true
+      testWindow.__courseDeletionPollResolved = false
+      testWindow.__courseDeletionPollStarted = false
+      const storageKey = `course-deletion-job:${jobId}`
+      window.localStorage.setItem(storageKey, '1')
+      window.dispatchEvent(new StorageEvent('storage', { key: storageKey }))
+    }, jobId)
+    await page.waitForFunction(() =>
+      Boolean(
+        (
+          window as typeof window & {
+            __courseDeletionPollStarted?: boolean
+          }
+        ).__courseDeletionPollStarted
+      )
+    )
+    await expect(
+      page.getByTestId(`course-list-button-${PAST_COURSE.name}`)
+    ).toBeDisabled()
+    await expect(
+      page.getByTestId(`delete-course-${PAST_COURSE.name}`)
+    ).toBeDisabled()
+    await expect(
+      page.getByTestId(`course-deletion-in-progress-${PAST_COURSE.name}`)
+    ).not.toBeAttached()
+    await page.evaluate((jobId) => {
+      const testWindow = window as typeof window & {
+        __resolveCourseDeletionPoll?: () => void
+      }
+      const storageKey = `course-deletion-job:${jobId}`
+      window.localStorage.removeItem(storageKey)
+      window.dispatchEvent(new StorageEvent('storage', { key: storageKey }))
+      testWindow.__resolveCourseDeletionPoll?.()
+    }, jobId)
+    await page.waitForFunction(() =>
+      Boolean(
+        (
+          window as typeof window & {
+            __courseDeletionPollResolved?: boolean
+          }
+        ).__courseDeletionPollResolved
+      )
+    )
+    await page.waitForTimeout(250)
+    await expect(
+      page.getByTestId(`course-deletion-in-progress-${PAST_COURSE.name}`)
+    ).not.toBeAttached()
+    await expect(
+      page.getByTestId(`course-list-button-${PAST_COURSE.name}`)
+    ).toBeEnabled()
+    await expect(
+      page.getByTestId(`delete-course-${PAST_COURSE.name}`)
+    ).toBeEnabled()
+
+    const secondJobId = '99999999-9999-4999-8999-999999999999'
+    const secondPage = await page.context().newPage()
+    await secondPage.goto(page.url())
+    await expect(
+      secondPage.getByTestId(`course-list-button-${PAST_COURSE.name}`)
+    ).toBeVisible()
+    await secondPage.evaluate(() => {
+      window.fetch = async () => await new Promise<never>(() => {})
+    })
+
+    await Promise.all([
+      page.evaluate((id) => {
+        window.localStorage.setItem(`course-deletion-job:${id}`, '1')
+      }, jobId),
+      secondPage.evaluate((id) => {
+        window.localStorage.setItem(`course-deletion-job:${id}`, '1')
+      }, secondJobId),
+    ])
+
+    await expect
+      .poll(async () => {
+        return await page.evaluate(() =>
+          Object.keys(window.localStorage)
+            .filter((key) => key.startsWith('course-deletion-job:'))
+            .sort()
+        )
+      })
+      .toEqual(
+        [
+          `course-deletion-job:${jobId}`,
+          `course-deletion-job:${secondJobId}`,
+        ].sort()
+      )
+    await expect(
+      page.getByTestId(`course-list-button-${PAST_COURSE.name}`)
+    ).toBeDisabled()
+
+    await page.evaluate(
+      (ids) => {
+        for (const id of ids) {
+          const storageKey = `course-deletion-job:${id}`
+          window.localStorage.removeItem(storageKey)
+          window.dispatchEvent(new StorageEvent('storage', { key: storageKey }))
+        }
+      },
+      [jobId, secondJobId]
+    )
+    await secondPage.close()
+  })
+
   test('Create a course with live quiz, practice quiz, and microlearning, and delete it again', async ({
     page,
   }) => {

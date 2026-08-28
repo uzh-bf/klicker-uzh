@@ -4,6 +4,7 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import type { Redis } from 'ioredis'
+import { EventEmitter } from 'node:events'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ContextWithUser } from '../src/lib/context.js'
 
@@ -30,9 +31,11 @@ import {
   handleSweepStaleCourseDeletions,
   startCourseDeletion,
 } from '../src/services/courseDeletion.js'
+import { assertCourseDeletionNotInProgress } from '../src/services/courseDeletionGuard.js'
 
 class FakeRedis {
   readonly values = new Map<string, string>()
+  readonly mutationFences = new Map<string, Map<string, number>>()
 
   async get(key: string) {
     return this.values.get(key) ?? null
@@ -53,6 +56,42 @@ class FakeRedis {
     _numKeys: number,
     ...args: Array<string | number>
   ) {
+    if (script.includes('zremrangebyscore') && script.includes('zadd')) {
+      const [deletionLockKey = '', mutationFenceKey = '', token = ''] =
+        args.map(String)
+      const now = Number(args[3])
+      const expiresAt = Number(args[4])
+      const fences = this.mutationFences.get(mutationFenceKey) ?? new Map()
+      for (const [fenceToken, fenceExpiry] of fences) {
+        if (fenceExpiry <= now) fences.delete(fenceToken)
+      }
+      if (this.values.has(deletionLockKey)) return 0
+      fences.set(token, expiresAt)
+      this.mutationFences.set(mutationFenceKey, fences)
+      return 1
+    }
+
+    if (script.includes('zremrangebyscore') && script.includes('zcard')) {
+      const [deletionLockKey = '', mutationFenceKey = '', jobId = ''] =
+        args.map(String)
+      const now = Number(args[3])
+      const fences = this.mutationFences.get(mutationFenceKey) ?? new Map()
+      for (const [fenceToken, fenceExpiry] of fences) {
+        if (fenceExpiry <= now) fences.delete(fenceToken)
+      }
+      if (this.values.has(deletionLockKey) || fences.size > 0) return 0
+      this.values.set(deletionLockKey, jobId)
+      return 1
+    }
+
+    if (script.includes('zrem') && script.includes('zcard')) {
+      const [mutationFenceKey = '', token = ''] = args.map(String)
+      const fences = this.mutationFences.get(mutationFenceKey)
+      fences?.delete(token)
+      if (fences?.size === 0) this.mutationFences.delete(mutationFenceKey)
+      return 1
+    }
+
     if (script.includes('redis.call("exists"')) {
       const [
         statusKey = '',
@@ -96,7 +135,7 @@ class FakeRedis {
   }
 }
 
-function createContext(userId = 'user-1') {
+function createContext(userId = 'user-1', response?: EventEmitter) {
   const redis = new FakeRedis()
   const findUnique = vi.fn().mockResolvedValue({
     id: 'course-id',
@@ -109,6 +148,7 @@ function createContext(userId = 'user-1') {
   })
   const push = vi.fn().mockResolvedValue(undefined)
   const deleteScheduledTask = vi.fn().mockResolvedValue(undefined)
+  const findActivity = vi.fn().mockResolvedValue({ courseId: 'course-id' })
   const ctx = {
     user: {
       sub: userId,
@@ -117,7 +157,13 @@ function createContext(userId = 'user-1') {
       catalystInstitutional: false,
       catalystIndividual: false,
     },
-    prisma: { course: { findUnique } },
+    prisma: {
+      course: { findUnique },
+      liveQuiz: { findUnique: findActivity },
+      practiceQuiz: { findUnique: findActivity },
+      microLearning: { findUnique: findActivity },
+      groupActivity: { findUnique: findActivity },
+    },
     redisExec: redis as unknown as Redis,
     redisAssessmentExec: {} as Redis,
     pubSub: {},
@@ -128,7 +174,7 @@ function createContext(userId = 'user-1') {
     },
     tasks: {},
     req: undefined as never,
-    res: undefined as never,
+    res: response as never,
   } as unknown as ContextWithUser
 
   return { ctx, deleteScheduledTask, findUnique, push, redis }
@@ -211,6 +257,81 @@ describe('course deletion jobs', () => {
 
     await expect(
       startCourseDeletion({ id: 'course-id' }, otherUserCtx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'COURSE_DELETION_IN_PROGRESS' },
+    })
+  })
+
+  it('does not start deletion after a course mutation is admitted', async () => {
+    const { ctx } = createContext()
+
+    await assertCourseDeletionNotInProgress({ courseId: 'course-id' }, ctx)
+
+    await expect(
+      startCourseDeletion({ id: 'course-id' }, ctx)
+    ).rejects.toMatchObject({
+      extensions: { code: 'COURSE_MUTATION_IN_PROGRESS' },
+    })
+  })
+
+  it('allows deletion after the admitted mutation response finishes', async () => {
+    const response = new EventEmitter()
+    const { ctx, redis } = createContext('user-1', response)
+
+    await assertCourseDeletionNotInProgress({ courseId: 'course-id' }, ctx)
+    response.emit('finish')
+
+    await vi.waitFor(() => expect(redis.mutationFences.size).toBe(0))
+    await expect(
+      startCourseDeletion({ id: 'course-id' }, ctx)
+    ).resolves.toMatchObject({ status: 'PENDING' })
+  })
+
+  it('rejects course and linked activity writes while deletion is active', async () => {
+    const { ctx } = createContext()
+    await startCourseDeletion({ id: 'course-id' }, ctx)
+
+    const selectors = [
+      { courseId: 'course-id' },
+      { liveQuizId: 'live-quiz-id' },
+      { practiceQuizId: 'practice-quiz-id' },
+      { microLearningId: 'micro-learning-id' },
+      { groupActivityId: 'group-activity-id' },
+    ] as const
+
+    for (const selector of selectors) {
+      await expect(
+        assertCourseDeletionNotInProgress(selector, ctx)
+      ).rejects.toMatchObject({
+        extensions: { code: 'COURSE_DELETION_IN_PROGRESS' },
+      })
+    }
+  })
+
+  it('allows writes when the deletion lock references a terminal job', async () => {
+    const { ctx, redis } = createContext()
+    const job = await startCourseDeletion({ id: 'course-id' }, ctx)
+    const statusKey = `course-deletion:job:${job!.id}`
+    const storedJob = JSON.parse(redis.values.get(statusKey)!)
+    redis.values.set(
+      statusKey,
+      JSON.stringify({ ...storedJob, status: 'FAILED' })
+    )
+
+    await expect(
+      assertCourseDeletionNotInProgress({ courseId: 'course-id' }, ctx)
+    ).resolves.toBeUndefined()
+  })
+
+  it('rejects writes when the deletion lock has no readable job', async () => {
+    const { ctx, redis } = createContext()
+    redis.values.set(
+      'course-deletion:course:course-id',
+      'missing-course-deletion-job'
+    )
+
+    await expect(
+      assertCourseDeletionNotInProgress({ courseId: 'course-id' }, ctx)
     ).rejects.toMatchObject({
       extensions: { code: 'COURSE_DELETION_IN_PROGRESS' },
     })

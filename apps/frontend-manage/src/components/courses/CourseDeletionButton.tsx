@@ -16,12 +16,15 @@ function CourseDeletionButton({
     SetStateAction<{ open: boolean; courseId: string | null }>
   >
 }) {
-  const { isCourseDeletionActive } = useCourseDeletionStatus()
+  const { isCourseDeletionActive, isCourseDeletionStatusHydrating } =
+    useCourseDeletionStatus()
   const deletionActive = isCourseDeletionActive(id)
 
   return (
     <Button
-      disabled={isAssessmentEnabled || deletionActive}
+      disabled={
+        isAssessmentEnabled || deletionActive || isCourseDeletionStatusHydrating
+      }
       className={{
         root: 'h-9 w-9 border-red-600 text-red-600 hover:text-red-600',
       }}

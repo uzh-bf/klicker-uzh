@@ -2,11 +2,13 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType as ActivityTypeEnum } from '@klicker-uzh/types'
 import { MISSING_CATALOG_COLLECTION_ID } from '@klicker-uzh/util'
 import builder from '../builder.js'
+import type { ContextWithUser } from '../lib/context.js'
 import * as AccountService from '../services/accounts.js'
 import * as ActivitiesService from '../services/activities.js'
 import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDeletionService from '../services/courseDeletion.js'
+import * as CourseDeletionGuard from '../services/courseDeletionGuard.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
 import * as ElementService from '../services/elements.js'
@@ -111,9 +113,122 @@ import {
   UserLoginScope,
 } from './user.js'
 
-// shorthand for frequently accessed functions
-const checkAccess = SharingService.checkAccess
-const withPermission = SharingService.withPermission
+// Mutation permission checks also fence writes against active course deletion.
+async function checkAccess(
+  checks: SharingService.PermissionCheck[],
+  ctx: ContextWithUser
+) {
+  const access = await SharingService.checkAccess(checks, ctx)
+  if (!access) return false
+
+  for (const check of checks) {
+    const { minimumPermissionLevel: _minimumPermissionLevel, ...selector } =
+      check
+    await CourseDeletionGuard.assertCourseDeletionNotInProgress(selector, ctx)
+  }
+
+  return true
+}
+
+async function assertCourseMutationAllowed(
+  courseId: string | null | undefined,
+  ctx: ContextWithUser
+) {
+  if (!courseId) return
+  await CourseDeletionGuard.assertCourseDeletionNotInProgress({ courseId }, ctx)
+}
+
+async function assertObjectMutationAllowed(
+  objectType: DB.ObjectType,
+  objectId: string,
+  ctx: ContextWithUser
+) {
+  if (objectType === DB.ObjectType.COURSE) {
+    await CourseDeletionGuard.assertCourseDeletionNotInProgress(
+      { courseId: objectId },
+      ctx
+    )
+  } else if (objectType === DB.ObjectType.LIVE_QUIZ) {
+    await CourseDeletionGuard.assertCourseDeletionNotInProgress(
+      { liveQuizId: objectId },
+      ctx
+    )
+  } else if (objectType === DB.ObjectType.PRACTICE_QUIZ) {
+    await CourseDeletionGuard.assertCourseDeletionNotInProgress(
+      { practiceQuizId: objectId },
+      ctx
+    )
+  } else if (objectType === DB.ObjectType.MICRO_LEARNING) {
+    await CourseDeletionGuard.assertCourseDeletionNotInProgress(
+      { microLearningId: objectId },
+      ctx
+    )
+  } else if (objectType === DB.ObjectType.GROUP_ACTIVITY) {
+    await CourseDeletionGuard.assertCourseDeletionNotInProgress(
+      { groupActivityId: objectId },
+      ctx
+    )
+  }
+}
+
+async function assertSharingRequestMutationAllowed(
+  requestId: number,
+  userId: string,
+  ctx: ContextWithUser
+) {
+  const request = await ctx.prisma.accessRequest.findUnique({
+    where: {
+      id: requestId,
+      userId,
+      objectAdminOrOwnerId: ctx.user.sub,
+    },
+    select: {
+      courseId: true,
+      liveQuizId: true,
+      practiceQuizId: true,
+      microLearningId: true,
+      groupActivityId: true,
+    },
+  })
+  if (!request) return
+
+  if (request.courseId) {
+    await assertCourseMutationAllowed(request.courseId, ctx)
+  } else if (request.liveQuizId) {
+    await CourseDeletionGuard.assertCourseDeletionNotInProgress(
+      { liveQuizId: request.liveQuizId },
+      ctx
+    )
+  } else if (request.practiceQuizId) {
+    await CourseDeletionGuard.assertCourseDeletionNotInProgress(
+      { practiceQuizId: request.practiceQuizId },
+      ctx
+    )
+  } else if (request.microLearningId) {
+    await CourseDeletionGuard.assertCourseDeletionNotInProgress(
+      { microLearningId: request.microLearningId },
+      ctx
+    )
+  } else if (request.groupActivityId) {
+    await CourseDeletionGuard.assertCourseDeletionNotInProgress(
+      { groupActivityId: request.groupActivityId },
+      ctx
+    )
+  }
+}
+
+const withPermission: typeof SharingService.withPermission = (
+  selector,
+  level,
+  resolver
+) =>
+  SharingService.withPermission(selector, level, async (root, args, ctx) => {
+    await CourseDeletionGuard.assertCourseDeletionNotInProgress(
+      selector(args),
+      ctx
+    )
+    return resolver(root, args, ctx)
+  })
 
 export const Mutation = builder.mutationType({
   fields(t) {
@@ -698,7 +813,7 @@ export const Mutation = builder.mutationType({
           id: t.arg.string({ required: true }),
           deleteDraftActivities: t.arg.boolean(),
         },
-        resolve: withPermission(
+        resolve: SharingService.withPermission(
           (args) => ({ courseId: args.id }),
           DB.PermissionLevel.ADMIN,
           async (_, args, ctx) => {
@@ -974,6 +1089,7 @@ export const Mutation = builder.mutationType({
           isModerationEnabled: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
+          await assertCourseMutationAllowed(args.courseId, ctx)
           return await LiveQuizService.manipulateLiveQuiz(args, ctx)
         },
       }),
@@ -1004,6 +1120,7 @@ export const Mutation = builder.mutationType({
           (args) => ({ liveQuizId: args.id }),
           DB.PermissionLevel.WRITE,
           async (_, args, ctx) => {
+            await assertCourseMutationAllowed(args.courseId, ctx)
             return await LiveQuizService.manipulateLiveQuiz(args, ctx)
           }
         ),
@@ -1348,6 +1465,7 @@ export const Mutation = builder.mutationType({
           timeToZeroBonus: t.arg.int({ required: false }),
         },
         resolve: async (_, args, ctx) => {
+          await assertCourseMutationAllowed(args.courseId, ctx)
           return await ActivitiesService.applyActivityBatchOperations(args, ctx)
         },
       }),
@@ -1405,6 +1523,7 @@ export const Mutation = builder.mutationType({
           if (!args.sourceCourseId) {
             return await CourseService.createCourse(args, ctx)
           } else {
+            await assertCourseMutationAllowed(args.sourceCourseId, ctx)
             return await CourseDuplicationService.duplicateCourse(args, ctx)
           }
         },
@@ -1510,6 +1629,7 @@ export const Mutation = builder.mutationType({
             courseId: t.arg.string({ required: true }),
           },
           resolve: async (_, args, ctx) => {
+            await assertCourseMutationAllowed(args.courseId, ctx)
             return await ChatbotsService.createChatbot(args, ctx)
           },
         }),
@@ -2620,6 +2740,7 @@ export const Mutation = builder.mutationType({
           }),
         },
         resolve: async (_, args, ctx) => {
+          await assertCourseMutationAllowed(args.courseId, ctx)
           return await TemplateService.createLiveQuizFromTemplate(args, ctx)
         },
       }),
@@ -3201,6 +3322,8 @@ export const Mutation = builder.mutationType({
           objectType: t.arg({ type: ObjectType, required: true }),
         },
         resolve: async (_, args, ctx) => {
+          await assertObjectMutationAllowed(args.objectType, args.objectId, ctx)
+
           if (args.objectType === DB.ObjectType.ANSWER_COLLECTION) {
             return await ResourcesService.removeAnswerCollection(
               { id: parseInt(args.objectId) },
@@ -3256,6 +3379,11 @@ export const Mutation = builder.mutationType({
           propagation: t.arg.boolean({ required: true }),
         },
         resolve: async (_, args, ctx) => {
+          await assertSharingRequestMutationAllowed(
+            args.requestId,
+            args.userId,
+            ctx
+          )
           return await SharingService.resolveObjectSharingRequest(
             { ...args, approved: true },
             ctx
@@ -3307,6 +3435,7 @@ export const Mutation = builder.mutationType({
             resetTimeDays: t.arg.int({ required: true }),
           },
           resolve: async (_, args, ctx) => {
+            await assertCourseMutationAllowed(args.courseId, ctx)
             return await PracticeQuizService.manipulatePracticeQuiz(args, ctx)
           },
         }),
@@ -3337,6 +3466,7 @@ export const Mutation = builder.mutationType({
             (args) => ({ practiceQuizId: args.id }),
             DB.PermissionLevel.WRITE,
             async (_, args, ctx) => {
+              await assertCourseMutationAllowed(args.courseId, ctx)
               return await PracticeQuizService.manipulatePracticeQuiz(args, ctx)
             }
           ),
@@ -3358,6 +3488,7 @@ export const Mutation = builder.mutationType({
             endDate: t.arg({ type: 'Date', required: true }),
           },
           resolve: async (_, args, ctx) => {
+            await assertCourseMutationAllowed(args.courseId, ctx)
             return await MicroLearningService.manipulateMicroLearning(args, ctx)
           },
         }),
@@ -3382,6 +3513,7 @@ export const Mutation = builder.mutationType({
             (args) => ({ microLearningId: args.id }),
             DB.PermissionLevel.WRITE,
             async (_, args, ctx) => {
+              await assertCourseMutationAllowed(args.courseId, ctx)
               return await MicroLearningService.manipulateMicroLearning(
                 args,
                 ctx
@@ -3440,6 +3572,7 @@ export const Mutation = builder.mutationType({
             stack: t.arg({ required: true, type: ElementStackInput }),
           },
           resolve: async (_, args, ctx) => {
+            await assertCourseMutationAllowed(args.courseId, ctx)
             return await GroupService.manipulateGroupActivity(args, ctx)
           },
         }),
@@ -3465,6 +3598,7 @@ export const Mutation = builder.mutationType({
             (args) => ({ groupActivityId: args.id }),
             DB.PermissionLevel.WRITE,
             async (_, args, ctx) => {
+              await assertCourseMutationAllowed(args.courseId, ctx)
               return await GroupService.manipulateGroupActivity(args, ctx)
             }
           ),

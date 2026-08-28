@@ -1,11 +1,12 @@
-import { ContextWithUser } from '@/lib/context.js'
 import * as DB from '@klicker-uzh/prisma/client'
 import { ActivityType, SharingType, SortByType } from '@klicker-uzh/types'
 import {
-  PrismaTransactionClient,
+  type PrismaTransactionClient,
   recomputeDerivedPermissions,
 } from '@klicker-uzh/util'
 import generatePassword from 'generate-password'
+import type { ContextWithUser } from '@/lib/context.js'
+import { assertCourseDeletionNotInProgress } from './courseDeletionGuard.js'
 import { POINTS_PER_GROUP_ACTIVITY_ELEMENT } from './groups.js'
 import { POINTS_PER_INSTANCE } from './stacks.js'
 
@@ -752,6 +753,19 @@ export async function applyActivityBatchOperations(
           include: { stacks: { include: { elements: true } } },
         })
       : []
+
+  const affectedCourseIds = new Set(
+    [
+      courseId,
+      ...liveQuizzes.map((activity) => activity.courseId),
+      ...practiceQuizzes.map((activity) => activity.courseId),
+      ...microLearnings.map((activity) => activity.courseId),
+      ...groupActivities.map((activity) => activity.courseId),
+    ].filter((id): id is string => typeof id === 'string')
+  )
+  for (const affectedCourseId of affectedCourseIds) {
+    await assertCourseDeletionNotInProgress({ courseId: affectedCourseId }, ctx)
+  }
 
   // apply activity updates
   let updatedLiveQuizzes: string[] = []
@@ -1692,6 +1706,22 @@ export async function setActivityReviewStatus(
   },
   ctx: ContextWithUser
 ) {
+  if (activityType === ActivityType.LIVE_QUIZ) {
+    await assertCourseDeletionNotInProgress({ liveQuizId: activityId }, ctx)
+  } else if (activityType === ActivityType.PRACTICE_QUIZ) {
+    await assertCourseDeletionNotInProgress({ practiceQuizId: activityId }, ctx)
+  } else if (activityType === ActivityType.MICRO_LEARNING) {
+    await assertCourseDeletionNotInProgress(
+      { microLearningId: activityId },
+      ctx
+    )
+  } else if (activityType === ActivityType.GROUP_ACTIVITY) {
+    await assertCourseDeletionNotInProgress(
+      { groupActivityId: activityId },
+      ctx
+    )
+  }
+
   const reviewStatus = isReviewed
     ? DB.ReviewStatus.REVIEWED
     : DB.ReviewStatus.INCOMPLETE

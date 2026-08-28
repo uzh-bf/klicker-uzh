@@ -1,18 +1,20 @@
 import { faArchive, faInbox } from '@fortawesome/free-solid-svg-icons'
 import { Button } from '@uzh-bf/design-system'
-import { Dispatch, SetStateAction } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 
 function CourseArchiveButton({
   id,
   name,
   isArchived,
   running,
+  disabled = false,
   showArchiveModal,
 }: {
   id: string
   name: string
   isArchived: boolean
   running: boolean
+  disabled?: boolean
   showArchiveModal?: Dispatch<
     SetStateAction<{
       open: boolean
@@ -31,7 +33,7 @@ function CourseArchiveButton({
         e?.preventDefault()
         showArchiveModal?.({ open: true, courseId: id, isArchived })
       }}
-      disabled={running}
+      disabled={running || disabled}
       data={{ cy: `archive-course-${name}` }}
     >
       <Button.Icon withoutLabel icon={isArchived ? faInbox : faArchive} />

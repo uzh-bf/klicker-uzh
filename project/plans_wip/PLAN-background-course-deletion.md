@@ -14,6 +14,9 @@ accepted, and surface durable progress and completion feedback.
 - Do not remove or repurpose the existing synchronous `deleteCourse` mutation;
   deployed clients retain their persisted operation during rolling releases.
 - Do not refactor course duplication into a generic background-job framework.
+- Do not block unrelated read-only surfaces while deletion is pending; only
+  conflicting writes and navigation into the actively deleting course are
+  guarded.
 
 ## Approach
 
@@ -71,6 +74,22 @@ that would expand the regression surface without improving deletion semantics.
   starts in the current client, and refetches `GetUserCourses` on terminal
   status. The course remains in the list until `COMPLETED`; success removes it
   through the refetch, while failure leaves it available and shows an error.
+  While a job is active, the course-list row and its archive, remove, and
+  deletion controls are disabled and visibly marked as deleting. An already
+  open course disables its mutating header actions.
+- **Concurrent-write guard:** mutation permission checks resolve their target
+  course and acquire renewable request-scoped Redis mutation leases. Deletion
+  lock acquisition atomically rejects active mutation leases, while mutation
+  admission atomically rejects an active deletion lock, closing the
+  check-then-act race in both directions. `startCourseDeletion` remains exempt
+  so its existing idempotent retry behavior is preserved. Direct
+  activity-creation and legacy duplication paths perform the same course check
+  explicitly, as do direct activity-review, object-removal, activity-log, and
+  sharing-request approval mutations.
+- **Cross-tab tracking:** each deletion job uses an independent local-storage
+  key so acknowledgements from simultaneous tabs cannot overwrite one another.
+  Legacy array storage is migrated on read, and stale in-flight status responses
+  cannot resurrect a job that another tab already removed.
 - **Test level:** retain direct service tests for legacy deletion semantics and
   assert the longer transaction budget. Add focused deletion-job tests for
   start/status authorization, worker access recheck, successful completion,
@@ -101,6 +120,9 @@ that would expand the regression surface without improving deletion semantics.
   feedback.
 - Repeated starts and Hatchet retries cannot execute concurrent deletions or
   produce contradictory terminal states.
+- Once deletion is accepted, lecturers cannot reopen the course from the list
+  or perform course/activity mutations against it; stale clients and other
+  managers are rejected by the backend as well as the initiating UI.
 - Assessment and permission boundaries match the existing synchronous API.
 - Large valid deletions are not constrained by the former 60-second transaction
   timeout.

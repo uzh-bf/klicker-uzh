@@ -16,6 +16,7 @@ import type {
   ContextWithUser,
   PrismaTransactionContextWithUser,
 } from '../lib/context.js'
+import { assertCourseDeletionNotInProgress } from './courseDeletionGuard.js'
 
 // ! Helper functions
 // #region
@@ -7364,6 +7365,33 @@ export async function deleteActivityMessage(
   // check if the message exists and if it belongs to the user
   if (!activityMessage || activityMessage.userId !== ctx.user.sub) {
     return false
+  }
+
+  if (activityMessage.courseId) {
+    await assertCourseDeletionNotInProgress(
+      { courseId: activityMessage.courseId },
+      ctx
+    )
+  } else if (activityMessage.liveQuizId) {
+    await assertCourseDeletionNotInProgress(
+      { liveQuizId: activityMessage.liveQuizId },
+      ctx
+    )
+  } else if (activityMessage.practiceQuizId) {
+    await assertCourseDeletionNotInProgress(
+      { practiceQuizId: activityMessage.practiceQuizId },
+      ctx
+    )
+  } else if (activityMessage.microLearningId) {
+    await assertCourseDeletionNotInProgress(
+      { microLearningId: activityMessage.microLearningId },
+      ctx
+    )
+  } else if (activityMessage.groupActivityId) {
+    await assertCourseDeletionNotInProgress(
+      { groupActivityId: activityMessage.groupActivityId },
+      ctx
+    )
   }
 
   // delete the message
