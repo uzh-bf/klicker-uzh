@@ -49,25 +49,43 @@ preview and the later examples-excluded baseline.
 - Keep the first implementation small. Use one server-only response-example
   runtime module in the chat app and shared pure projection helpers in the util
   package. Do not introduce a new workspace package or a broad execution
-  kernel before a second runtime consumer exists.
+  kernel before a second runtime consumer exists. This supersedes K6's earlier
+  package topology in the umbrella plan; K5 adopts the same seam in owner
+  preview only after PR #5633 and K6 are merged.
 - Keep owner review transactions in GraphQL. Extend them with current-source
   validation, and expose the same pure eligibility rules to chat.
 - Treat a source as current only when an enabled chatbot KB contains a live
   resource whose ID and `activeContentSha256` match the stored source lineage.
   `evidenceEligible` remains a captured hint and never overrides current state.
 - Reconcile invalid approved rows to `NEEDS_REVIEW` and refresh the complete
-  set digest under the existing chatbot/set locks. Runtime is fail closed: it
-  excludes an uncertain example and continues the turn without the skill if
-  loading or reconciliation fails.
+  set digest under the existing locks. Resolve the exact Doc Query KB binding
+  first and fail closed on zero or multiple enabled bindings. The valid path is
+  read-only. When reconciliation is needed, lock `Chatbot` before
+  `ResponseExampleSet`, re-read state, conditionally transition only current
+  `APPROVED` rows, clear reviewer fields, and refresh the complete digest once.
+  Runtime excludes an uncertain example and continues the turn without the
+  entire skill if loading or reconciliation fails.
 - The prompt summary contains counts and response-approach guidance only. Full
   questions and ideal answers are available only through the model-invoked
   search tool.
 - Narrow through the existing set, mode, and status index, then rank the
   eligible candidate IDs with bounded PostgreSQL full-text search. This keeps
   the first release scalable without a vector provider or schema migration.
+  The query is parameterized, limited to 4,000 characters, and uses stable ID
+  after rank and update time for deterministic ties.
 - K6 wires participant chat only. The reusable assembly function accepts an
   explicit included or excluded role so PR #5633 and K7 can adopt it without
-  changing the data contract.
+  changing the data contract. The excluded role omits the summary but keeps
+  the identical search-tool schema backed by an empty implementation that
+  never reads examples.
+- The summary is capped at 1,500 characters. Search returns at most three
+  complete examples and 24,000 total characters including metadata, skips an
+  example that does not fit, and never returns renderer-compatible citation
+  markers from an ideal answer.
+- Loader or reconciliation failure omits the whole skill. A later search
+  failure returns a bounded empty degraded result without aborting chat or
+  changing scope. The final prompt and final tool set both feed prompt-cache
+  identity.
 
 ## Primitive impact
 
@@ -93,7 +111,7 @@ preview and the later examples-excluded baseline.
 | Slice | Owner | Dependency | Acceptance |
 | --- | --- | --- | --- |
 | K6.1 current eligibility | main | foundation schema | active, changed, deleted, wrong-KB, citation, transition, and digest tests |
-| K6.2 pure projection | main | K6.1 contract | deterministic summary, ranking, caps, exact mode, and excluded-role tests |
+| K6.2 projection and server search | main | K6.1 contract | deterministic summary, PostgreSQL ranking, caps, exact mode, and excluded-role tests |
 | K6.3 participant integration | executor; main integrates | K6.1 and K6.2 | route keeps auth, persistence, credits, and MCP behavior while adding the bounded tool and prompt |
 | K6.4 final docs and proof | main | all code slices | focused checks, full repository check, required reviews, exact diff, clean commits |
 
@@ -104,8 +122,8 @@ preview and the later examples-excluded baseline.
 | stale or foreign evidence leaks | GraphQL DB fixture | changed hash, missing resource, wrong KB, disabled KB | K6.1 |
 | status and digest diverge | GraphQL transaction fixture | approved to needs-review and digest refresh | K6.1 |
 | prompt grows with full answers | pure projection | strict item and character bounds; no ideal answer in summary | K6.2 |
-| search escapes chatbot or mode | server loader plus pure ranking | exact scope, deterministic ties, max three | K6.2 |
-| baseline later receives examples | pure assembly | excluded role returns no summary and no tool | K6.2 |
+| search escapes chatbot or mode | PostgreSQL-backed server loader | parameterized exact scope, deterministic ties, max three, 24,000-character cap | K6.2 |
+| baseline later receives examples | pure assembly | excluded role has no summary, keeps the same tool schema, and performs no read | K6.2 |
 | participant behavior regresses | chat route tests | unchanged auth, MCP failure, persistence, and credits | K6.3 |
 | loader failure blocks chat | chat route test | warning plus ordinary continuation without example skill | K6.3 |
 
@@ -114,17 +132,24 @@ preview and the later examples-excluded baseline.
 ### K6.1 — Current eligibility and reconciliation
 
 - Problem: stored evidence eligibility becomes stale after KB content changes.
-- Do: add shared pure validation and extend the owner service with current
-  enabled-KB resource lookup, transactional reconciliation, and digest refresh.
-- Check: focused util and GraphQL integration tests.
+- Do: add shared pure validation and extend the owner service with exact
+  enabled-KB resource lookup, read-only valid return, locked reconciliation,
+  reviewer clearing, and one digest refresh.
+- Check: `pnpm --filter @klicker-uzh/util test` and the focused response-example
+  GraphQL fixture suite, including concurrent edit, KB rebind, hash change,
+  retry, and digest rollback.
 - Commit: `fix(chat): validate current response-example evidence`.
 
 ### K6.2 — Bounded hybrid projection
 
 - Problem: the model needs stable guidance without receiving every full answer.
-- Do: add deterministic summary, exact-scope ranking, citation namespacing,
-  included/excluded assembly, and a server loader contract.
-- Check: pure unit tests for all boundaries and failure cases.
+- Do: add deterministic summary and included/excluded pure assembly in
+  `packages/util/src/responseExampleRuntime.ts`; add parameterized exact-scope
+  PostgreSQL ranking and server loading in
+  `apps/chat/src/lib/server/responseExampleRuntime.ts`.
+- Check: util unit tests plus a PostgreSQL-backed service test for ranking,
+  ties, query/item/character caps, exact scope, no renderer-compatible example
+  citation markers, excluded-role no-read, and degraded search.
 - Commit: `feat(chat): add the response-example runtime skill`.
 
 ### K6.3 — Participant chat integration
@@ -133,8 +158,10 @@ preview and the later examples-excluded baseline.
 - Do: load the included projection after MCP discovery; append its summary;
   register the server-bound search tool; preserve prompt-cache identity,
   participant state, credits, and existing tools.
-- Check: route tests and focused chat checks. No browser check is required
-  because this package changes no rendered UI.
+- Check: `pnpm --filter @klicker-uzh/chat test:run`,
+  `pnpm --filter @klicker-uzh/chat check`, existing GraphQL checks, and
+  repository-wide `pnpm run check:all`. No browser check is required because
+  this package changes no rendered UI.
 - Commit: `feat(chat): use response examples in participant chat`.
 
 ### K6.4 — Durable contract and finish
@@ -154,6 +181,9 @@ preview and the later examples-excluded baseline.
   plan transfer, current source seam mapping, and package-plan narrowing.
 - Review note: the configured cross-provider advisor was unavailable because
   the organization disabled Claude Code subscription access. The trusted main
-  session therefore selected the smaller no-new-package design; the required
-  Sol final review remains armed.
-- Next: commit both approved plans, then implement current eligibility.
+  session selected the smaller no-new-package design. The generic-continuity
+  Sol planning review returned `DONE_WITH_CONCERNS`; its required hierarchy,
+  exclusion, concurrency, bounds, degradation, and verification corrections
+  are incorporated. The required Sol final review remains armed.
+- Next: commit the planning-review corrections, then implement current
+  eligibility.

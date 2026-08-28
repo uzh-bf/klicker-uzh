@@ -183,6 +183,7 @@ replaces the previous run and report; the product keeps no evaluation history.
 flowchart LR
   U0[U0 Doc Query lineage] --> K5[K5 Preview capture]
   P5633[PR 5633 Owner preview] --> K5
+  K6[K6 Runtime skill] --> K5
   K6[K6 Runtime skill] --> K7[K7 Excluded baseline]
   U0 --> K7
   U0 --> K8[K8 Automatic candidates]
@@ -202,8 +203,8 @@ evidence and deployed U0 lineage.
 | Package | Repository, branch, and target | Scope and terminal condition | Dependency |
 | --- | --- | --- | --- |
 | U0 — Doc Query lineage | `mcp-doc-query`; proposed `feat/response-example-lineage`; target `dev` only after its branch-flow ruling | Bounded canonical lineage in authorized answer and documents source records; contract tests and bounded security review; source PR ready | Current `main` contract; deployment is separate |
-| K5 — Preview capture | Klicker; `feat/chatbot-response-example-capture`; target fresh `v3-ai` after #5633 lands | Receipt prototype, signed capture, idempotent candidate creation, Manage deep link, and source-aware editor; PR ready | Merged #5633; live proof requires deployed U0 |
-| K6 — Runtime skill | Klicker; `feat/chatbot-response-example-runtime`; target `v3-ai` | Shared execution kernel, current eligibility, deterministic summary, ranked search skill, participant and owner-preview inclusion; PR ready | Merged #5474/#5498 only |
+| K5 — Preview capture | Klicker; `feat/chatbot-response-example-capture`; target fresh `v3-ai` after #5633 and K6 land | Receipt prototype, signed capture, idempotent candidate creation, Manage deep link, source-aware editor, and owner-preview use of the K6 skill; PR ready | Merged #5633 and K6; live proof requires deployed U0 |
+| K6 — Runtime skill | Klicker; `feat/chatbot-response-example-runtime`; target `v3-ai` | Current eligibility, deterministic summary, ranked search skill, participant inclusion, and reusable included/excluded assembly; PR ready | Merged #5474/#5498 only |
 | K7 — Excluded baseline | Klicker; `feat/chatbot-response-example-baseline`; target fresh `v3-ai` after K6 lands | One current async run/report, strict no-example isolation, owner budget, Manage report UI, and the optional owner-authorized normalized export contract; PR ready | Merged K6; trustworthy live lineage proof requires deployed U0 |
 | K8 — Automatic candidates | Klicker; `feat/chatbot-response-example-generation`; no branch until unblocked | Current-state candidate reconciliation from active KB/KG; PR ready, no activation | K5, K6, deployed U0 lineage, and W8 active-serving proof |
 | E1 — Evaluation adapter | `evaluation`; `feat/klicker-response-example-import`; target current default branch | Loader that consumes K7's optional normalized export while preserving stable IDs and provenance; optional PR ready | K7.4 export contract and implementation |
@@ -216,7 +217,7 @@ mega-branch, and K8 does not create an empty branch while blocked.
 
 | Work | Can start now | Evidence boundary |
 | --- | --- | --- |
-| K5 receipt/data-part prototype and UI states | after #5633 lands | synthetic lineage only until U0 is deployed |
+| K5 receipt/data-part prototype and UI states | after #5633 and K6 land | synthetic lineage only until U0 is deployed |
 | K6 runtime eligibility, summary, and ranked search | yes, directly from current `v3-ai` | local fixtures prove selection, not live source freshness |
 | K7 schema, worker, isolation tests, and report UI | after K6 execution-kernel contract | provider-backed source proof waits for U0 and deployment authority |
 | U0 source change | after the upstream branch-flow ruling | merge and deployment remain separate states |
@@ -230,7 +231,7 @@ mega-branch, and K8 does not create an empty branch while blocked.
 | Response example | extend | Adds owner-preview candidate capture; stored answer remains Markdown | Manage review, runtime, evaluation |
 | Evidence lineage | extend | Adds current source authorization/hash resolution and shared citation indexing | capture, approval, runtime, baseline |
 | Preview-turn receipt | create, ephemeral | Short-lived proof of a specific source-grounded preview answer; never a product record | K5 capture only |
-| Response-example skill | create as projection | Bounded summary plus server-bound ranked search over approved eligible examples | participant chat, owner preview |
+| Response-example skill | create as projection | Bounded summary plus server-bound ranked search over approved eligible examples | participant chat in K6; owner preview in K5 |
 | Baseline run/report | create, current only | One current case snapshot and output per set; no history | Manage owner UI, optional export |
 | Candidate generation state | create later, current only | One reconciled state keyed to active-serving evidence | K8 worker and review inbox |
 
@@ -263,10 +264,12 @@ evaluation history, or participant-facing evaluation controls.
 
 ### Canonical source normalization
 
-Create one React-free, server-capable module in the shared chatbot-runtime
-package. It converts authorized Doc Query results into a stable ordered list
-used by preview display, capture receipts, live chat citations, runtime example
-projection, and baseline results.
+Create one React-free pure projection module in the existing util package. It
+converts authorized Doc Query results into a stable ordered list used by
+preview display, capture receipts, live chat citations, runtime example
+projection, and baseline results. K6 adds only the participant-facing server
+loader and search composition in the chat app; K5 later reuses it from the
+merged owner-preview route.
 
 The order is deterministic. Duplicate chunks collapse only when their complete
 canonical lineage matches. Citation indexes refer to this ordered list. Receipt
@@ -373,30 +376,27 @@ Loader or search failure records degraded response-example selection and
 continues with the ordinary mode prompt and Doc Query. It never searches
 another chatbot or mode.
 
-### Shared chatbot execution kernel
+### Response-example runtime composition
 
-Add one small internal workspace package, provisionally
-`@klicker-uzh/chatbot-runtime`. It owns only the server-side composition needed
-to keep included and excluded runs comparable:
+K6 adds a pure projection entry point to the existing util package and one
+server-only chat module. They own only current eligibility, bounded summary,
+the stable search-tool schema, included or excluded implementation, and the
+response-example projection digest. Model selection, base prompts, Doc Query,
+authentication, persistence, credits, and UI remain with their existing
+routes. This narrower topology supersedes the earlier proposed shared runtime
+package because only participant chat exists on the current target branch.
 
-- base-model selection and usage-class metadata;
-- fixed and mode prompt layers plus response-example inclusion/exclusion;
-- Doc Query tool wrapping and canonical source normalization;
-- response-example search tool schema and included/empty implementation;
-- deterministic fingerprints for model, prompts, tools, Doc Query scope,
-  graph/serving state, and response-example set.
-
-Participant chat keeps participant authentication, threads, messages, credits,
-attachments, and error presentation. Owner preview keeps Manage authentication,
-owner authorization, stateless history, and preview UI. The Hatchet baseline
-handler keeps job orchestration and report persistence. The package does not
-become a second API or service.
+Participant chat composes the included role in K6. K5 applies the same
+composition to owner preview after PR #5633 and K6 are merged. K7 uses the
+excluded role: no summary, the identical search-tool schema, an empty result,
+and no response-example read.
 
 ## Baseline isolation and report contract
 
 The baseline is an owner base-model test profile, not a participant-session
-replay. K6 first makes owner preview an included run. K7 invokes the same shared
-execution kernel with exactly two response-example differences:
+replay. K6 makes participant chat an included run, and K5 later does the same
+for owner preview. K7 invokes the same response-example composition with
+exactly two response-example differences:
 
 1. omit the response-example summary from the system prompt and prompt-cache
    identity;
@@ -531,7 +531,8 @@ canonical store and never commits real course examples.
 | Invalid approved examples never enter prompts or tools | citation parity and stored eligibility | current source authorization/hash projection and status reconciliation | shared runtime unit plus database tests | K6 |
 | Search stays exact, deterministic, and bounded | set/mode/status index | query ranking, tie order, mode isolation, three-item and character caps | PostgreSQL-backed service test | K6 |
 | Example citations never masquerade as live citations | Markdown marker validation | namespace rewrite and Doc Query-only live citation assertion | runtime projection and chat route test | K6 |
-| Participant chat and owner preview use the same skill kernel | current routes compose similar services separately | included-run parity fingerprints and route composition tests | chatbot-runtime package and route tests | K6 |
+| Participant chat uses the bounded skill without route regression | response examples are not yet composed at runtime | prompt/tool identity, auth, persistence, credit, and degraded-load tests | chat server module and participant route tests | K6 |
+| Owner preview uses the same skill contract | PR #5633 is not merged into the K6 baseline | included-run parity and zero-persistence tests after both predecessors land | owner-preview route tests | K5 |
 | Baseline target sees no example content | evaluation repo query-first behavior | full provider request capture including prompt-cache metadata | shared kernel exclusion test | K7 |
 | Baseline creates no participant state | owner preview is stateless | zero ChatThread, ChatMessage, participant-credit writes | worker database test | K7 |
 | Async retry cannot overwrite a newer run | existing Hatchet retry patterns | current-run ID compare-and-set, digest movement, retry race tests | report service and handler | K7 |
@@ -645,10 +646,11 @@ paths named by the package plan and do not revert other work.
 | K5.2 receipt contract | main | K5.1 and U0 schema | bounded signed claims validate exact owner/chatbot/KB/mode/content scope without sensitive logs |
 | K5.3 candidate creation | main | K5.2 | owner-only transaction is atomic, current-source checked, idempotent, and digest-correct |
 | K5.4 capture and review UI | executor; main integrates | K5.3 | first-turn action, deep link, Slate editing, current evidence, accessibility, and browser states pass |
+| K5.5 owner-preview inclusion | executor; main integrates | merged K6 and K5.4 | owner preview uses the same included-role skill contract and preserves zero persistence |
 | K6.1 current eligibility | main | merged response-example foundation | every consumer excludes stale evidence and the status/digest reconcile transaction is correct |
-| K6.2 execution kernel | main | K6.1 | routes share deterministic assembly without moving their auth, state, or usage ownership |
+| K6.2 response-example assembly | main | K6.1 | included and excluded roles share one stable schema without moving route ownership |
 | K6.3 hybrid skill | executor; main integrates | K6.1 and K6.2 | summary and ranked search are exact-scope, deterministic, complete-example bounded, and observable |
-| K6.4 route inclusion | executor; main integrates | K6.3 | participant and owner-preview included runs have matching fingerprints and retain existing side effects |
+| K6.4 participant inclusion | executor; main integrates | K6.3 | participant chat receives the skill and retains existing auth, persistence, credit, and tool behavior |
 | K7.1 current report model | main | merged K6 | one generated migration and current-run compare-and-set semantics pass |
 | K7.2 isolated worker | main | K7.1 | no-example provider capture, owner budget, no participant state, and retry guards pass |
 | K7.3 report UI | executor; main integrates | K7.2 | all current report states render accurately and accessibly in EN/DE |
@@ -765,6 +767,23 @@ paths named by the package plan and do not revert other work.
 - **Commit:** `feat(chat): save preview answers as response examples` after
   exact diff classification.
 
+#### K5.5 — Include the runtime skill in owner preview
+
+- **Problem:** K6 cannot wire a route that is still unmerged, but preview must
+  eventually match normal chatbot use.
+- **Evidence:** PR #5633 owns the stateless owner-preview route; K6 owns the
+  reusable included/excluded response-example composition.
+- **Decision:** after both predecessors land, K5 adopts K6's included role in
+  owner preview rather than duplicating the loader or tool.
+- **Risk:** preview/runtime drift or accidental preview persistence.
+- **Do:** compose the identical prompt summary and search-tool schema while
+  retaining owner authorization, stateless history, and zero participant
+  credits.
+- **Check:** included-run projection parity, owner authorization, loader/search
+  degradation, and zero `ChatThread`, `ChatMessage`, and credit writes.
+- **Commit:** fold into K5's owner-preview delivery commit after exact diff
+  classification.
+
 ### K6 — Response-example runtime skill
 
 #### K6.1 — Shared current-eligibility projection
@@ -784,23 +803,22 @@ paths named by the package plan and do not revert other work.
 - **Commit:** `fix(chat): gate response examples on current evidence` after
   exact diff classification.
 
-#### K6.2 — Create the shared execution kernel
+#### K6.2 — Create bounded response-example assembly
 
-- **Problem:** participant chat, owner preview, and baseline must share runtime
-  composition without sharing their authentication or persistence concerns.
-- **Evidence:** current routes independently assemble model, prompt, Doc Query,
-  and tools.
-- **Decision:** introduce one narrow internal package for deterministic server
-  composition only.
-- **Risk:** a large abstraction, dependency cycle, or accidental participant
-  behavior change.
-- **Do:** move only reusable prompt/tool/model/source assembly behind injected
-  dependencies; keep route-specific auth, state, credits, and UI untouched.
-- **Check:** package boundary/build, unchanged participant persistence tests,
-  owner-preview zero-persistence tests, and identical fingerprints for equal
-  inputs.
-- **Commit:** `refactor(chat): share chatbot execution assembly` after exact
-  diff classification.
+- **Problem:** included chat and the later excluded baseline need the same
+  response-example tool contract without moving existing route ownership.
+- **Evidence:** only participant chat exists on the current target branch;
+  owner preview remains in PR #5633.
+- **Decision:** add pure projection helpers to util and one server-only chat
+  module, not a new workspace package or broad execution kernel.
+- **Risk:** hidden coupling or a later baseline that cannot prove exclusion.
+- **Do:** expose included and excluded roles. The excluded role omits the
+  summary and keeps the identical search-tool schema backed by an empty
+  implementation that never reads examples.
+- **Check:** package exports, included/excluded prompt and tool identity, no-read
+  exclusion, and deterministic projection digest tests.
+- **Commit:** `feat(chat): assemble the response-example runtime skill` after
+  exact diff classification.
 
 #### K6.3 — Add bounded summary and ranked search
 
@@ -820,21 +838,20 @@ paths named by the package plan and do not revert other work.
 - **Commit:** `feat(chat): add response-example skill` after exact diff
   classification.
 
-#### K6.4 — Activate inclusion in owner preview and participant chat source
+#### K6.4 — Activate inclusion in participant chat
 
-- **Problem:** the skill must affect both real use and the lecturer's Test &
-  Teach preview through the same kernel.
-- **Evidence:** both routes already select mode, model, Doc Query, and compiled
-  prompts.
-- **Decision:** compose the included-role kernel in both routes without changing
-  their auth, persistence, or credit contracts.
-- **Risk:** participant regression or a preview that does not match normal
-  behavior.
-- **Do:** wire the projection, expose tool traces, record set/projection digest,
-  and preserve all existing route-specific behavior.
+- **Problem:** approved examples do not yet affect normal chatbot answers.
+- **Evidence:** participant chat already composes its final prompt and tools
+  after MCP discovery; owner preview is not in the current target branch.
+- **Decision:** compose the included role in participant chat now. K5 later
+  adopts it in owner preview after PR #5633 lands.
+- **Risk:** participant auth, persistence, credits, MCP tools, or prompt-cache
+  identity change unexpectedly.
+- **Do:** add only the response-example summary and search tool, record the set
+  and projection digest, and feed the final prompt and final tool set into the
+  existing prompt-cache identity.
 - **Check:** route tests, participant persistence/credit regression checks,
-  preview zero-persistence checks, included-run fingerprint parity, and focused
-  browser proof with synthetic approved examples.
+  loader/search degradation, prompt-cache identity, and existing MCP behavior.
 - **Commit:** `feat(chat): use approved response examples at runtime` after
   exact diff classification.
 
