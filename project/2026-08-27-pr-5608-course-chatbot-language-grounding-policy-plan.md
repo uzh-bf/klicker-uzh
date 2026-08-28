@@ -141,7 +141,7 @@ The policy must survive stored lecturer prompts and apply to the existing Inform
 - Decision: Add a dedicated course-policy helper, broaden the language helper, and preserve the citation helper unchanged.
 - Risk: The text controls privacy and safety behavior but remains probabilistic model instruction, not deterministic enforcement.
 - Route: `main`.
-- Acceptance: the scoped diff contains only the plan, runtime policy, tests, wiki update, and wiki log; focused and full checks pass; required reviews have no unresolved must-fix finding.
+- Acceptance: the scoped diff contains only the plan, runtime policy, tests, and wiki update; focused and full checks pass; required reviews have no unresolved must-fix finding.
 - Test obligation: consume every row of the test portfolio above; add no overlapping model-behavior suite.
 - Do:
   - Add `apps/chat/src/lib/server/coursePolicyInstructions.ts` with unconditional course/safety/privacy policy and conditional `doc_query` grounding.

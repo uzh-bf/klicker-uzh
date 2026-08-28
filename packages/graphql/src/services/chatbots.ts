@@ -5,6 +5,9 @@ import {
   getChatModelBasePolicyIssues,
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
+import remarkGfm from 'remark-gfm'
+import remarkParse from 'remark-parse'
+import { unified } from 'unified'
 import { z } from 'zod'
 import type { Context, ContextWithUser } from '../lib/context.js'
 
@@ -164,6 +167,17 @@ function dedupeStrings(values: readonly string[]) {
 
 const CHATBOT_DISCLAIMER_TITLE_MAX_LENGTH = 160
 const CHATBOT_DISCLAIMER_INTRO_MAX_LENGTH = 10_000
+const BASIC_DISCLAIMER_MARKDOWN_NODES = new Set([
+  'root',
+  'paragraph',
+  'text',
+  'strong',
+  'emphasis',
+  'list',
+  'listItem',
+  'break',
+])
+const disclaimerMarkdownParser = unified().use(remarkParse).use(remarkGfm)
 
 const metadataAndModelEditableStatuses: DB.ChatbotStatus[] = [
   DB.ChatbotStatus.DRAFT,
@@ -199,6 +213,40 @@ function validateDisclaimerContent(title: string, introText: string) {
       'Disclaimer introduction must be between 1 and 10000 characters long',
       'BAD_USER_INPUT'
     )
+  }
+
+  const nodes = [
+    disclaimerMarkdownParser.parse(introText) as {
+      type: string
+      checked?: boolean | null
+      children?: unknown[]
+    },
+  ]
+  while (nodes.length > 0) {
+    const node = nodes.pop()
+    if (!node) continue
+
+    if (
+      !BASIC_DISCLAIMER_MARKDOWN_NODES.has(node.type) ||
+      (node.type === 'listItem' && node.checked != null)
+    ) {
+      throw chatbotError(
+        'Disclaimer introduction contains unsupported Markdown',
+        'BAD_USER_INPUT'
+      )
+    }
+
+    for (const child of node.children ?? []) {
+      if (typeof child === 'object' && child !== null && 'type' in child) {
+        nodes.push(
+          child as {
+            type: string
+            checked?: boolean | null
+            children?: unknown[]
+          }
+        )
+      }
+    }
   }
 }
 
@@ -377,6 +425,15 @@ function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(chatbot: T) {
     ),
     courses: chatbot.course ? [chatbot.course] : [],
   }
+}
+
+export async function getChatbotPublishingCapability(ctx: ContextWithUser) {
+  const user = await ctx.prisma.user.findUniqueOrThrow({
+    where: { id: ctx.user.sub },
+    select: { aiChatbotPublishingEnabled: true },
+  })
+
+  return user.aiChatbotPublishingEnabled
 }
 
 export async function getChatbotsInfo(ctx: ContextWithUser) {
