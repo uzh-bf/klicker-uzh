@@ -367,10 +367,12 @@ jobs:
         if: needs.start.outputs.run_review == 'true'
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-review-ocr-config.json
         run: |
           set -euo pipefail
           printf '%s' "${OPENROUTER_API_KEY}" |
             node .github/scripts/final-ai-review.js configure-ocr
+          test -s "${OCR_CONFIG_PATH}"
 
       - name: Run final review
         id: run_review
@@ -378,6 +380,7 @@ jobs:
         env:
           BACKGROUND: ${{ needs.start.outputs.background }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-review-ocr-config.json
           REVIEW_FROM: ${{ steps.range.outputs.review_from }}
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
           STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
@@ -421,6 +424,8 @@ jobs:
       - name: Remove ephemeral OpenRouter access
         id: cleanup
         if: always() && needs.start.outputs.run_review == 'true'
+        env:
+          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-review-ocr-config.json
         run: node .github/scripts/final-ai-review.js cleanup-ocr
 
       - name: Publish consolidated final review
@@ -802,10 +807,12 @@ jobs:
         if: needs.start_stack.outputs.run_review == 'true'
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-stack-ocr-config.json
         run: |
           set -euo pipefail
           printf '%s' "${OPENROUTER_API_KEY}" |
             node .github/scripts/final-ai-review.js configure-ocr
+          test -s "${OCR_CONFIG_PATH}"
 
       - name: Run cumulative code review
         id: code_review
@@ -819,6 +826,7 @@ jobs:
           RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
           RANGE_DIR: ${{ runner.temp }}/final-ai-stack-code-ranges
           STDERR_PATH: ${{ runner.temp }}/final-ai-stack-code-stderr.log
+          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-stack-ocr-config.json
         run: |
           set -euo pipefail
           if [[ "${REVIEW_MODE}" == "incremental" ]]; then
@@ -876,6 +884,8 @@ jobs:
       - name: Remove ephemeral OpenRouter access after code review
         id: cleanup
         if: always() && needs.start_stack.outputs.run_review == 'true'
+        env:
+          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-stack-ocr-config.json
         run: node .github/scripts/final-ai-review.js cleanup-ocr
 
       - name: Run strict topology review
