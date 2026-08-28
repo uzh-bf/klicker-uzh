@@ -177,6 +177,25 @@ describe('semantic free-text evaluation', () => {
         'outcome bands must not overlap or leave gaps',
       ])
     )
+
+    expect(
+      validateFreeTextOutcomeBands([
+        {
+          id: 'retry',
+          label: 'Try once more',
+          min_score: 0,
+          max_score: 60,
+          category: 'INCORRECT',
+        },
+        {
+          id: 'almost',
+          label: 'Almost there',
+          min_score: 60,
+          max_score: 100,
+          category: 'PARTIAL',
+        },
+      ])
+    ).toContain('the outcome band covering score 100 must be correct')
   })
 
   it('validates the lecturer-configurable semantic evaluation settings', () => {

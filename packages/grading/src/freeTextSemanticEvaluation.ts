@@ -384,6 +384,13 @@ export function validateFreeTextOutcomeBands(value: unknown): string[] {
   ) {
     errors.push('outcome bands must cover scores from 0 through 100')
   }
+  if (
+    lastBand &&
+    approximatelyEqual(lastBand.max_score, SCORE_MAX) &&
+    lastBand.category !== 'CORRECT'
+  ) {
+    errors.push('the outcome band covering score 100 must be correct')
+  }
 
   const hasGapOrOverlap = orderedBands.some((band, index) => {
     const nextBand = orderedBands[index + 1]
