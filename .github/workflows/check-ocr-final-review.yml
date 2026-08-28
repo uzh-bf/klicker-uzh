@@ -381,6 +381,9 @@ jobs:
           BACKGROUND: ${{ needs.start.outputs.background }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
           OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-review-ocr-config.json
+          OCR_LLM_URL: https://openrouter.ai/api/v1/chat/completions
+          OCR_LLM_TOKEN: ${{ secrets.OPENROUTER_API_KEY }}
+          OCR_LLM_MODEL: z-ai/glm-5.3-flash
           REVIEW_FROM: ${{ steps.range.outputs.review_from }}
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
           STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
@@ -836,6 +839,9 @@ jobs:
           RANGE_DIR: ${{ runner.temp }}/final-ai-stack-code-ranges
           STDERR_PATH: ${{ runner.temp }}/final-ai-stack-code-stderr.log
           OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-stack-ocr-config.json
+          OCR_LLM_URL: https://openrouter.ai/api/v1/chat/completions
+          OCR_LLM_TOKEN: ${{ secrets.OPENROUTER_API_KEY }}
+          OCR_LLM_MODEL: z-ai/glm-5.3-flash
         run: |
           set -euo pipefail
           if [[ "${REVIEW_MODE}" == "incremental" ]]; then
