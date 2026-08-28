@@ -62,6 +62,9 @@ if [ "${1:-}" = "--version" ]; then
   echo "11.5.0"
   exit 0
 fi
+if [ -n "${KLICKER_TEST_PNPM_FAIL_MATCH:-}" ] && [[ "$*" == *"$KLICKER_TEST_PNPM_FAIL_MATCH"* ]]; then
+  exit 17
+fi
 printf "%s\n" "$*" >>"$KLICKER_TEST_INSTALL_LOG"'
 write_file "$FAKE_BIN/flock" '#!/usr/bin/env bash
 exit 0'
@@ -172,16 +175,36 @@ last_semantic_line() {
 
 assert_equal \
   "$(first_after_strict_mode "$REPO_ROOT/.devcontainer/post-create.sh")" \
-  'bash /workspaces/klicker-uzh/util/dev-runtime.sh begin-bootstrap'
+  'bash "$ROOT/util/dev-runtime.sh" begin-bootstrap'
 assert_equal \
   "$(last_semantic_line "$REPO_ROOT/.devcontainer/post-create.sh")" \
-  'bash /workspaces/klicker-uzh/util/dev-runtime.sh complete-bootstrap'
+  'bash "$ROOT/util/dev-runtime.sh" complete-bootstrap'
 assert_equal \
   "$(first_after_strict_mode "$REPO_ROOT/.devcontainer/post-start.sh")" \
   'bash /workspaces/klicker-uzh/util/dev-runtime.sh require-bootstrap'
 grep -Fq '"waitFor": "postCreateCommand"' \
   "$REPO_ROOT/.devcontainer/devcontainer.json" || \
   fail 'devcontainer does not wait for postCreateCommand'
+
+mkdir -p \
+  "$ROOT/.devcontainer" \
+  "$ROOT/apps/response-api" \
+  "$ROOT/apps/hatchet-worker-general" \
+  "$ROOT/apps/hatchet-worker-response-processor" \
+  "$ROOT/packages/graphql" \
+  "$ROOT/util"
+write_file "$ROOT/.devcontainer/devcontainer.env" ''
+cp "$RUNTIME_SCRIPT" "$ROOT/util/dev-runtime.sh"
+bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
+if KLICKER_DEVCONTAINER_ROOT="$ROOT" \
+  KLICKER_HATCHET_TOKEN_FILE="$TEST_ROOT/missing-hatchet-token" \
+  KLICKER_TEST_PNPM_FAIL_MATCH='exec turbo' \
+  bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null 2>&1; then
+  fail 'post-create ignored a failing middle bootstrap step'
+fi
+assert_absent "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete"
+: > "$INSTALL_LOG"
+rm -f "$ROOT/node_modules/.klicker-dependency-fingerprint"
 
 bash "$INIT_ROOT/initialize.sh"
 bash "$INIT_ROOT/initialize.sh"

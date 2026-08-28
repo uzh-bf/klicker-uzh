@@ -123,6 +123,10 @@
 - `post-create.sh` invalidates any prior marker at its first semantic step. It
   atomically publishes the completion marker only after install, build,
   database setup, seed, runtime shims, and bounded Hatchet handling succeed.
+- Bounded Hatchet handling may end without a token because Hatchet can mint it
+  after post-create. This is not a failed post-create: application profiles
+  retain the existing bounded post-start gate that captures the token before
+  any backend or worker process starts.
 - `post-start.sh` requires the exact marker immediately after strict shell mode,
   before changing directories, sourcing environment files, resolving a profile,
   calling the delivered helper, starting a process, or probing readiness.
@@ -380,8 +384,12 @@
   metadata; generic-continuity used Luna/max. The child was interrupted before
   completion, so the trusted main session verified and completed its partial
   work without a second executor attempt.
-- Current state: `active`. Completed slices: K0. Active: K1 verification and
-  commit. Remaining: K2-K4. Latest evidence: `bash util/test-dev-runtime.sh`,
-  shell syntax, and `git diff --check` pass; no task provider runtime is active.
-  Required delivery: merge-ready Klicker PR; achieved delivery: committed plan
-  plus verified uncommitted K1 implementation.
+- `2026-08-28`: K1 bootstrap marker committed as `c68fbe085`. The lifecycle
+  slice reviewer identified a documentation ambiguity around bounded Hatchet
+  token capture and missing failed-middle-step proof; both corrections are
+  implemented. The dedicated simplifier returned no threshold findings.
+- Current state: `active`. Completed slices: K0. Active: K1 correction commit.
+  Remaining: K2-K4. Latest evidence: `bash util/test-dev-runtime.sh`, shell
+  syntax for all four scripts, and `git diff --check` pass; no task provider
+  runtime is active. Required delivery: merge-ready Klicker PR; achieved
+  delivery: committed plan and marker implementation plus verified corrections.

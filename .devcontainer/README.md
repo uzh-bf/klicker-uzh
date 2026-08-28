@@ -100,6 +100,9 @@ database setup, seed data, runtime shims, and Hatchet preparation succeed.
 Post-start requires the exact marker before reading bootstrap outputs or
 starting any profile process. A missing or malformed marker is a lifecycle
 failure; do not repair it by rerunning post-create during a warm profile switch.
+The bounded post-create Hatchet check may finish before its token appears;
+application profiles close that documented service race in post-start before
+starting the backend or workers.
 
 ## Playwright runs on the host
 
