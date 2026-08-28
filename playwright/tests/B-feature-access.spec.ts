@@ -363,18 +363,33 @@ test.describe('Tests the availability of standard activity creation formats', ()
       await page.keyboard.press('Escape')
     }
 
+    const recorder = recordGraphQLOperations(page)
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+
     for (const path of [
       '/analytics',
       `/analytics/${COURSE_ID_TEST}/activity`,
       `/analytics/${COURSE_ID_TEST}/performance`,
     ]) {
-      await page.goto(`${URL_MANAGE}${path}`)
+      await page.goto(`${manageUrl}${path}`)
       await expect(
         page.getByText('Learning analytics require Catalyst access.', {
           exact: true,
         })
       ).toBeVisible()
     }
+
+    expect(
+      recorder.operations.map((operation) => operation.operationName)
+    ).not.toEqual(
+      expect.arrayContaining([
+        'GetLearningAnalyticsCourses',
+        'GetCourseLearningAnalyticsControl',
+        V2_ACTIVITY_OPERATION,
+        V2_PERFORMANCE_OPERATION,
+        V2_EXPORT_OPERATION,
+      ])
+    )
   })
 
   test('Show analytics to a non-manager without exposing course settings', async ({
