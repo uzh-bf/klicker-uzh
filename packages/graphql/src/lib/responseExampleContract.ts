@@ -71,15 +71,7 @@ export function hasCompleteEligibleCitationParity(
     evidenceEligible: boolean
   }>
 ): boolean {
-  if (
-    evidenceReferences.length === 0 ||
-    evidenceReferences.some(
-      (reference) =>
-        !reference.evidenceEligible ||
-        !Number.isInteger(reference.citationIndex) ||
-        reference.citationIndex < 1
-    )
-  ) {
+  if (evidenceReferences.some((reference) => !reference.evidenceEligible)) {
     return false
   }
 

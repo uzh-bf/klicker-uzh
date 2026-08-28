@@ -2,7 +2,10 @@ import type { Prisma, PrismaClient } from '@klicker-uzh/prisma/client'
 import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma as PrismaRuntime } from '@klicker-uzh/prisma/client'
 import { computeResponseExampleSetDigest } from '@klicker-uzh/util/response-example-digest'
-import { evaluateResponseExampleCurrentEligibility } from '@klicker-uzh/util/response-example-eligibility'
+import {
+  evaluateResponseExampleCurrentEligibility,
+  type ResponseExampleEligibilityInput,
+} from '@klicker-uzh/util/response-example-eligibility'
 import { GraphQLError } from 'graphql'
 import { z } from 'zod'
 import type { ContextWithUser } from '../lib/context.js'
@@ -18,7 +21,6 @@ import {
 type ResponseExamplePrisma = Pick<
   Prisma.TransactionClient,
   | '$queryRaw'
-  | 'chatbot'
   | 'kBChatbot'
   | 'kBResource'
   | 'responseExample'
@@ -55,14 +57,8 @@ type ResponseExampleSetWithModes = ResponseExampleSetWithRelations & {
   chatModes: string[]
 }
 
-type ResponseExampleEligibilityRecord = {
+type ResponseExampleEligibilityRecord = ResponseExampleEligibilityInput & {
   id: string
-  referenceAnswer: string
-  evidenceReferences: readonly {
-    sourceId: string
-    contentHash: string
-    citationIndex: number
-  }[]
 }
 
 function withChatbotModes(
@@ -303,14 +299,8 @@ export async function reconcileCurrentResponseExampleEligibility(
 
     for (const example of set.examples) {
       const current = currentEligibility.get(example.id)
-      for (const [index, reference] of example.evidenceReferences.entries()) {
-        const evidenceEligible = current?.evidenceEligibility[index] ?? false
-        if (reference.evidenceEligible !== evidenceEligible) {
-          await tx.responseExampleEvidenceReference.update({
-            where: { id: reference.id },
-            data: { evidenceEligible },
-          })
-        }
+      if (current) {
+        await updateStoredEvidenceEligibility(tx, example, current)
       }
 
       if (
@@ -356,7 +346,7 @@ export async function getChatbotResponseExamples(
       chatbotId,
       chatbot: { ownerId: ctx.user.sub },
     },
-    include: responseExampleSetInclude,
+    select: { id: true },
   })
 
   if (!set) return null
