@@ -104,8 +104,8 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
+      - name: Restore pnpm cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             ${{ env.STORE_PATH }}
@@ -113,8 +113,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-pnpm-store-
 
-      - name: Cache turbo build artifacts
-        uses: actions/cache@v4
+      - name: Restore turbo build artifacts
+        uses: actions/cache/restore@v4
         with:
           path: |
             .turbo
@@ -127,7 +127,7 @@ jobs:
         run: pnpm install
 
       - name: Build all packages and apps
-        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test --concurrency=2
+        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test --concurrency=4
         env:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
@@ -221,7 +221,7 @@ jobs:
           POSTGRES_DB: klicker-prod
         options: >-
           --health-cmd "pg_isready -U klicker-prod -d klicker-prod"
-          --health-interval 10s
+          --health-interval 5s
           --health-timeout 5s
           --health-retries 5
       postgres_hatchet:
@@ -240,21 +240,21 @@ jobs:
         image: redis:7
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 10s
+          --health-interval 5s
           --health-timeout 5s
           --health-retries 5
       redis_exec:
         image: redis:7
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 10s
+          --health-interval 5s
           --health-timeout 5s
           --health-retries 5
       redis_assessment_exec:
         image: redis:7
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 10s
+          --health-interval 5s
           --health-timeout 5s
           --health-retries 5
       hatchet:
@@ -275,7 +275,7 @@ jobs:
           SERVER_LOGGER_FORMAT: console
         options: >-
           --health-cmd "curl -f http://localhost:8888/healthz"
-          --health-interval 30s
+          --health-interval 5s
           --health-timeout 10s
           --health-retries 10
         volumes:
@@ -305,8 +305,8 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
+      - name: Restore pnpm cache
+        uses: actions/cache/restore@v4
         with:
           path: ${{ env.STORE_PATH }}
           key: ${{ runner.os }}-${{ runner.arch }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
