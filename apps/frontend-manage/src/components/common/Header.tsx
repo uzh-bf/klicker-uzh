@@ -35,6 +35,8 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
   const t = useTranslations()
   const [showSupportModal, setShowSupportModal] = useState(false)
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
+  const hasLearningAnalyticsAccess =
+    learningAnalyticsEnabled && user?.catalyst === true
 
   const { data: pendingRequestData } = useQuery(
     CountCatalogSharingRequestsDocument
@@ -44,7 +46,7 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
   })
   const { data: courseData } = useQuery(GetLearningAnalyticsCoursesDocument, {
     fetchPolicy: 'network-only',
-    skip: !learningAnalyticsEnabled,
+    skip: !hasLearningAnalyticsAccess,
   })
 
   const quizzes = liveQuizData?.userRunningLiveQuizzes
@@ -204,7 +206,7 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
     key: 'analytics-menubar-item',
     label: t('manage.general.analytics'),
     icon: faBolt,
-    disabled: !learningAnalyticsEnabled,
+    disabled: !hasLearningAnalyticsAccess,
     active: router.pathname.includes('/analytics'),
     elements: analyticsElements,
     data: { cy: 'analytics' },
@@ -313,11 +315,15 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
             items={leftNavigation}
             className={{ root: 'shadow-none' }}
           />
-          {learningAnalyticsEnabled ? (
+          {hasLearningAnalyticsAccess ? (
             analyticsMenu
           ) : (
             <Tooltip
-              tooltip={t('manage.analytics.featureUnavailable')}
+              tooltip={
+                !learningAnalyticsEnabled
+                  ? t('manage.analytics.featureUnavailable')
+                  : t('manage.analytics.catalystRequired')
+              }
               delay={0}
               dataContent={{ cy: 'analytics-disabled-reason' }}
               className={{ tooltip: 'z-30' }}

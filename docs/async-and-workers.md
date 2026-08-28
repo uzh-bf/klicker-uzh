@@ -156,10 +156,13 @@ qualification.
 
 Already queued or resumed Hatchet workflows recheck both settings before
 selection, deadline calculation, each course spawn, course invalidation and
-private dispatch, and result publication. This prevents further work and leaves
-analytics invalid rather than publishing a result while the private service is
-unavailable. A course administrator can still disable learning analytics during
-an outage; enabling and every recomputation path remain fail-closed.
+private dispatch, and result publication. Durable workflows also perform a
+non-recorded current-process check immediately before every public or private
+child dispatch, so replay cannot reuse an earlier successful check to start new
+work. Private work that was already running may finish, but its completion stays
+guarded and cannot publish while unavailable. A course administrator can still
+disable learning analytics during an outage; enabling and every recomputation
+path remain fail-closed.
 
 ## Running locally (config-derived — verify on your machine)
 

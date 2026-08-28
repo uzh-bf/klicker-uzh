@@ -93,6 +93,7 @@ export interface HatchetHandlerGlobalContext {
 
 // Shared contract for Hatchet task handler injections.
 export interface HatchetHandlers {
+  handleRequireLearningAnalyticsCoordinatorAvailable: () => void
   handlePrepareScheduledLearningAnalyticsBatch: (
     _args: Record<string, never>,
     globalCtx: HatchetHandlerGlobalContext,

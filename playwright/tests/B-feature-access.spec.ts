@@ -7,6 +7,7 @@ import {
   COURSE_ID_TEST,
   PARTICIPANT_IDS,
   SEEDED_COURSE,
+  USER_ID_TEST2,
   URL_MANAGE,
   viewPorts,
 } from '../util/constants.js'
@@ -15,6 +16,7 @@ import {
   mockGrowthBookLearningAnalytics,
   prepareSeededAnalyticsActivities,
   prepareSeededCourseLearningAnalytics,
+  prepareSeededCourseLearningAnalyticsOwnerAccess,
   prepareSeededCourseLearningAnalyticsReadAccess,
   prepareSeededLearningAnalyticsV2,
   updateLecturerPrivatePreview,
@@ -326,6 +328,40 @@ test.describe('Tests the availability of standard activity creation formats', ()
       learningAnalytics: false,
       privatePreview: false,
     })
+  })
+
+  test('Keep learning analytics affordances disabled without Catalyst access', async ({
+    page,
+    loginFreeUser,
+  }) => {
+    await prepareSeededCourseLearningAnalytics()
+    await prepareSeededCourseLearningAnalyticsOwnerAccess(USER_ID_TEST2)
+    await loginFreeUser()
+
+    const analyticsNavigation = page.getByTestId('analytics')
+    await expect(analyticsNavigation).toBeDisabled()
+    await analyticsNavigation.hover()
+    await expect(page.getByRole('tooltip')).toContainText(
+      'Learning analytics require Catalyst access.'
+    )
+    await page.keyboard.press('Escape')
+
+    await page.getByTestId('courses').click()
+    await page.getByTestId(`course-list-button-${SEEDED_COURSE}`).click()
+    await openCourseActionMenu(page, 'course-learning-analytics-link')
+
+    for (const testId of [
+      'course-learning-analytics-link',
+      'course-learning-analytics-settings',
+    ]) {
+      const affordance = page.getByTestId(testId)
+      await expect(affordance).toBeDisabled()
+      await affordance.locator('[data-slot="tooltip-trigger"]').hover()
+      await expect(page.getByRole('tooltip')).toContainText(
+        'Learning analytics require Catalyst access.'
+      )
+      await page.keyboard.press('Escape')
+    }
   })
 
   test('Show analytics to a non-manager without exposing course settings', async ({

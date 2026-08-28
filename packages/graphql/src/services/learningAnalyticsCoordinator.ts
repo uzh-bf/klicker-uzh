@@ -716,6 +716,9 @@ export const handlePrepareScheduledLearningAnalyticsBatch: HatchetHandlers['hand
   async (_args, globalCtx) =>
     prepareScheduledLearningAnalyticsBatch(globalCtx.prisma)
 
+export const handleRequireLearningAnalyticsCoordinatorAvailable: HatchetHandlers['handleRequireLearningAnalyticsCoordinatorAvailable'] =
+  requireLearningAnalyticsCoordinatorAvailable
+
 export const handleSelectLearningAnalyticsBatchCourses: HatchetHandlers['handleSelectLearningAnalyticsBatchCourses'] =
   async (args, globalCtx) => {
     requireLearningAnalyticsCoordinatorAvailable()

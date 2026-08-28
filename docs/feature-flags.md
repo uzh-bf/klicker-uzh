@@ -67,9 +67,10 @@ missing availability setting otherwise fails closed with the stable
 analytics service call. The platform-admin batch keeps its existing admin-role
 entitlement, but its coordinator dispatch still requires the same runtime
 availability gate. Resumed Hatchet tasks recheck both coordinator settings at
-selection, deadline, course-spawn, course-start, and completion boundaries. No
-new work starts and no result is published while either setting is unavailable.
-The default remains unavailable.
+selection, deadline, course-spawn, course-start, and completion boundaries and
+again immediately before each public or private child dispatch. No new work
+starts and no result is published after a worker observes either setting as
+unavailable. The default remains unavailable.
 
 ## Package contract
 

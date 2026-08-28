@@ -4399,6 +4399,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       quizAnalytics: 'Quiz Analytics',
       featureUnavailable:
         'Learning Analytics sind für Ihr Benutzerkonto noch nicht verfügbar.',
+      catalystRequired: 'Learning Analytics erfordert Zugriff auf Catalyst.',
       statusUnavailable:
         'Der Status von Learning Analytics konnte nicht geladen werden. Bitte laden Sie die Seite neu oder kontaktieren Sie den Support.',
       courseDisabled:

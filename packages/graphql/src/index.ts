@@ -71,6 +71,7 @@ import {
   handleCompleteLearningAnalyticsCourse,
   handleGetLearningAnalyticsBatchDeadline,
   handlePrepareScheduledLearningAnalyticsBatch,
+  handleRequireLearningAnalyticsCoordinatorAvailable,
   handleSelectLearningAnalyticsBatchCourses,
   handleStartLearningAnalyticsCourse,
 } from './services/learningAnalyticsCoordinator.js'
@@ -82,6 +83,7 @@ export const schema = builder.toSchema({
 })
 
 export const handlers: HatchetHandlers = {
+  handleRequireLearningAnalyticsCoordinatorAvailable,
   handlePrepareScheduledLearningAnalyticsBatch,
   handleSelectLearningAnalyticsBatchCourses,
   handleGetLearningAnalyticsBatchDeadline,

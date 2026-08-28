@@ -90,6 +90,9 @@ export function prepareLearningAnalyticsTasks({
   handlers: HatchetHandlers
   globalContext: HatchetHandlerGlobalContext
 }) {
+  const requireCoordinatorAvailable =
+    handlers.handleRequireLearningAnalyticsCoordinatorAvailable
+
   const learningAnalyticsCourseStart = hatchet.task({
     name: LEARNING_ANALYTICS_TASK_NAMES.courseStart,
     retries: 3,
@@ -136,6 +139,7 @@ export function prepareLearningAnalyticsTasks({
       input: LearningAnalyticsCourseControlInput,
       executionContext
     ): Promise<LearningAnalyticsCourseControlOutput> => {
+      requireCoordinatorAvailable()
       const start = (await executionContext.runChild(
         learningAnalyticsCourseStart,
         input,
@@ -162,6 +166,7 @@ export function prepareLearningAnalyticsTasks({
           if (workflowName !== COURSE_WORKFLOW_NAME) {
             throw new Error(`Unexpected course workflow ${workflowName}`)
           }
+          requireCoordinatorAvailable()
           privateRef = await executionContext.runNoWaitChild<
             CourseWorkflowInput,
             CourseWorkflowSuccess
@@ -216,6 +221,7 @@ export function prepareLearningAnalyticsTasks({
         | ChildRunRef<LearningAnalyticsCourseControlOutput>
         | undefined
       try {
+        requireCoordinatorAvailable()
         completionRef = await executionContext.runNoWaitChild<
           LearningAnalyticsCourseCompletionInput,
           LearningAnalyticsCourseControlOutput
@@ -304,6 +310,7 @@ export function prepareLearningAnalyticsTasks({
           )
         }
         const course = input.courses[index]!
+        requireCoordinatorAvailable()
         const gate = await executionContext.runChild(
           learningAnalyticsSpawnGate,
           { stopSpawningAt: input.stopSpawningAt },
@@ -331,6 +338,7 @@ export function prepareLearningAnalyticsTasks({
           }
         }
 
+        requireCoordinatorAvailable()
         const courseRef = await executionContext.runNoWaitChild<
           LearningAnalyticsCourseControlInput,
           LearningAnalyticsCourseControlOutput
@@ -470,6 +478,7 @@ export function prepareLearningAnalyticsTasks({
         await cancelAndAwait(refs)
       }
 
+      requireCoordinatorAvailable()
       const deadlineWindow = await executionContext.runChild(
         learningAnalyticsBatchDeadline,
         { hardDeadlineAt: input.hardDeadlineAt },
@@ -497,6 +506,7 @@ export function prepareLearningAnalyticsTasks({
         .then(() => ({ kind: 'deadline' as const }))
 
       const completion = (async () => {
+        requireCoordinatorAvailable()
         const selectorRef = await trackChild(() =>
           executionContext.runNoWaitChild<
             LearningAnalyticsBatchControlInput,
@@ -530,28 +540,29 @@ export function prepareLearningAnalyticsTasks({
                   stopSpawningAt: input.stopSpawningAt,
                 })
               )
-        const laneRefs =
-          laneInputs.length === 0
-            ? []
-            : await trackChildren(() =>
-                executionContext.bulkRunNoWaitChildren<
-                  LearningAnalyticsBatchLaneInput,
-                  LearningAnalyticsBatchLaneOutput
-                >(
-                  laneInputs.map((lane, index) => ({
-                    workflow: LEARNING_ANALYTICS_TASK_NAMES.batchLane,
-                    input: lane,
-                    options: {
-                      key: `lane:${input.runId}:${index}`,
-                      additionalMetadata: {
-                        ...CHILD_METADATA,
-                        runId: input.runId,
-                        lane: String(index),
-                      },
-                    },
-                  }))
-                )
-              )
+        let laneRefs: ChildRunRef<LearningAnalyticsBatchLaneOutput>[] = []
+        if (laneInputs.length > 0) {
+          requireCoordinatorAvailable()
+          laneRefs = await trackChildren(() =>
+            executionContext.bulkRunNoWaitChildren<
+              LearningAnalyticsBatchLaneInput,
+              LearningAnalyticsBatchLaneOutput
+            >(
+              laneInputs.map((lane, index) => ({
+                workflow: LEARNING_ANALYTICS_TASK_NAMES.batchLane,
+                input: lane,
+                options: {
+                  key: `lane:${input.runId}:${index}`,
+                  additionalMetadata: {
+                    ...CHILD_METADATA,
+                    runId: input.runId,
+                    lane: String(index),
+                  },
+                },
+              }))
+            )
+          )
+        }
         const lanes = await Promise.all(
           laneRefs.map(async (ref) => {
             try {
@@ -589,6 +600,7 @@ export function prepareLearningAnalyticsTasks({
               if (workflowName !== PLATFORM_WORKFLOW_NAME) {
                 throw new Error(`Unexpected platform workflow ${workflowName}`)
               }
+              requireCoordinatorAvailable()
               platformRef = await trackChild(() =>
                 executionContext.runNoWaitChild<
                   PlatformWorkflowInput,
@@ -650,6 +662,7 @@ export function prepareLearningAnalyticsTasks({
       )
       if (!batch) return { dispatched: false }
 
+      requireCoordinatorAvailable()
       await executionContext.runNoWaitChild(
         LEARNING_ANALYTICS_TASK_NAMES.batch,
         batch,

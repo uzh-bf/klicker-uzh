@@ -91,12 +91,13 @@ remain available.
 `chatAnalyticsValidAt` (`packages/graphql/src/schema/course.ts:CourseAnalyticsStatus`).
 `Course.isLearningAnalyticsEnabled` exposes the course product control.
 `setCourseLearningAnalyticsEnabled` requires a full-access lecturer with
-Catalyst entitlement and `ADMIN` permission on the course. It also requires
-the deployment-global `CATALYST_LEARNING_ANALYTICS_AVAILABLE` setting to be
-exactly `true`. A state change takes the shared global and exclusive course
-advisory locks, records a database-time invalidation marker, and invalidates
-every published analytics marker without deleting or computing analytics in the
-GraphQL request. An idempotent request returns the course without invalidation.
+Catalyst entitlement and `ADMIN` permission on the course. Enabling also
+requires the deployment-global `CATALYST_LEARNING_ANALYTICS_AVAILABLE` setting
+to be exactly `true`; an authorized disable remains available during an outage.
+A state change takes the shared global and exclusive course advisory locks,
+records a database-time invalidation marker, and invalidates every published
+analytics marker without deleting or computing analytics in the GraphQL
+request. An idempotent request returns the course without invalidation.
 
 `recomputeCourseAnalytics` accepts `INCREMENTAL`, `FINALIZE`, or `FULL` and
 requires a full-access Catalyst-entitled user with `ADMIN` permission on the

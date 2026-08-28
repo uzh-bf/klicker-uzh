@@ -338,6 +338,27 @@ export async function prepareSeededCourseLearningAnalyticsReadAccess() {
   })
 }
 
+export async function prepareSeededCourseLearningAnalyticsOwnerAccess(
+  userId: string
+) {
+  const prisma = await getPrisma()
+  await prisma.course.update({
+    where: { id: COURSE_ID_TEST },
+    data: { ownerId: userId },
+  })
+  await prisma.derivedPermission.upsert({
+    where: {
+      courseId_userId: { courseId: COURSE_ID_TEST, userId },
+    },
+    create: {
+      permissionLevel: PermissionLevel.OWNER,
+      course: { connect: { id: COURSE_ID_TEST } },
+      user: { connect: { id: userId } },
+    },
+    update: { permissionLevel: PermissionLevel.OWNER },
+  })
+}
+
 export async function validateFeatureAvailabilityFixture(
   page: Page,
   options: ValidateFeatureAvailabilityOptions

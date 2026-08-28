@@ -4326,6 +4326,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       quizAnalytics: 'Quiz Analytics',
       featureUnavailable:
         'Learning analytics are not available for your account yet.',
+      catalystRequired: 'Learning analytics require Catalyst access.',
       statusUnavailable:
         'The learning analytics status could not be loaded. Please reload the page or contact support.',
       courseDisabled:

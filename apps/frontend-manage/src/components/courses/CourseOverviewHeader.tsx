@@ -92,8 +92,10 @@ function CourseOverviewHeader({
     course.isLearningAnalyticsEnabled === true
   const courseLearningAnalyticsValid =
     course.analyticsStatus.areAnalyticsValid === true
+  const hasLearningAnalyticsAccess =
+    learningAnalyticsEnabled && user?.catalyst === true
   const courseLearningAnalyticsAvailable =
-    learningAnalyticsEnabled && isCourseLearningAnalyticsAvailable(course)
+    hasLearningAnalyticsAccess && isCourseLearningAnalyticsAvailable(course)
 
   const ltiDropdownItems = [
     getLTIAccessLink({
@@ -179,11 +181,13 @@ function CourseOverviewHeader({
       disabled: !courseLearningAnalyticsAvailable,
       tooltip: !learningAnalyticsEnabled
         ? t('manage.analytics.featureUnavailable')
-        : !courseLearningAnalyticsEnabled
-          ? t('manage.analytics.courseDisabled')
-          : !courseLearningAnalyticsValid
-            ? t('manage.analytics.recomputationPending')
-            : undefined,
+        : !user?.catalyst
+          ? t('manage.analytics.catalystRequired')
+          : !courseLearningAnalyticsEnabled
+            ? t('manage.analytics.courseDisabled')
+            : !courseLearningAnalyticsValid
+              ? t('manage.analytics.recomputationPending')
+              : undefined,
       className: {
         // The disabled item remains inert, but its explanation still needs to
         // receive pointer input through the design-system tooltip trigger.
@@ -202,12 +206,14 @@ function CourseOverviewHeader({
               t('manage.course.learningAnalyticsSettings')
             ),
             onClick: () => setLearningAnalyticsModal(true),
-            disabled: !learningAnalyticsEnabled,
+            disabled: !hasLearningAnalyticsAccess,
             tooltip: !learningAnalyticsEnabled
               ? t('manage.analytics.featureUnavailable')
-              : undefined,
+              : !user?.catalyst
+                ? t('manage.analytics.catalystRequired')
+                : undefined,
             className: {
-              item: !learningAnalyticsEnabled
+              item: !hasLearningAnalyticsAccess
                 ? 'data-disabled:pointer-events-auto'
                 : undefined,
             },
