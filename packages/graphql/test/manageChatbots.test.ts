@@ -567,6 +567,8 @@ describe('Integration tests for lecturer chatbot create/update', () => {
       '<strong>raw HTML</strong>',
       '~~strikethrough~~',
       '- [x] task list item',
+      'Inline math: $x^2$',
+      'Display math:\n\n$$\nx^2\n$$',
     ])('rejects unsupported disclaimer Markdown: %s', async (introText) => {
       const { chatbot, disclaimer } = await seedChatbotWithDisclaimer()
 

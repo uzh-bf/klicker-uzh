@@ -79,7 +79,8 @@ describe('ChatAccountUsage service and GraphQL API', () => {
   function contextFor(
     sub: string,
     role: UserRole,
-    scope: UserLoginScope
+    scope: UserLoginScope,
+    catalyst = false
   ): ContextWithUser {
     return {
       prisma,
@@ -87,7 +88,7 @@ describe('ChatAccountUsage service and GraphQL API', () => {
         sub,
         role,
         scope,
-        catalystInstitutional: false,
+        catalystInstitutional: catalyst,
         catalystIndividual: false,
       },
     } as ContextWithUser
@@ -680,7 +681,8 @@ describe('ChatAccountUsage service and GraphQL API', () => {
     const fullAccessContext = contextFor(
       ownerId,
       UserRole.USER,
-      UserLoginScope.FULL_ACCESS
+      UserLoginScope.FULL_ACCESS,
+      true
     )
     const enabledResult = await executeGraphql({
       source,

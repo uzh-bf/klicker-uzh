@@ -119,15 +119,13 @@ export const Mutation = builder.mutationType({
     }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
+    const asUserWithCatalyst = { ...asUser, catalyst: true }
     const asUserSessionExec = {
       ...asUser,
       scope: DB.UserLoginScope.SESSION_EXEC,
     }
     const asUserFullAccess = { ...asUser, scope: DB.UserLoginScope.FULL_ACCESS }
-    const asChatbotAuthor = {
-      ...asUser,
-      chatbotAuthoring: true,
-    }
+    const asChatbotAuthor = { ...asUserWithCatalyst, ...asUserFullAccess }
     const asUserFullAccessForStandardActivities = asUserFullAccess
     const asUserOwner = { ...asUser, scope: DB.UserLoginScope.ACCOUNT_OWNER }
     const courseCreationArgs = {
@@ -1445,7 +1443,7 @@ export const Mutation = builder.mutationType({
         ),
       }),
 
-      updateChatbotModelSettings: t.withAuth(asUser).field({
+      updateChatbotModelSettings: t.withAuth(asChatbotAuthor).field({
         nullable: true,
         type: Chatbot,
         args: {
