@@ -3,6 +3,7 @@
 # workspace packages the apps import, prepares the DB, and picks up the Hatchet
 # token. Every routed app plus the two Hatchet workers.
 set -euo pipefail
+bash /workspaces/klicker-uzh/util/dev-runtime.sh begin-bootstrap
 cd /workspaces/klicker-uzh
 
 # DevPod truncates env_file values at '=' (a URL ...?schema=public arrives as
@@ -100,4 +101,5 @@ if [ ! -s "$HATCHET_ENV" ]; then
   echo "[post-create] WARNING: /config/authdisabled-token not present yet; backend will wait for post-start or container env." >&2
 fi
 
-echo "[post-create] Done."
+echo "[post-create] Bootstrap steps succeeded; publishing completion marker."
+bash /workspaces/klicker-uzh/util/dev-runtime.sh complete-bootstrap

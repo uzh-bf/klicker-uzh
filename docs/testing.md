@@ -97,6 +97,14 @@ For authoring specifics, helper patterns, and failure triage, use the `klicker-p
 
 ## E2E environment dependencies
 
+The self-contained devcontainer uses two independent cold-start guards:
+`devcontainer.json` waits for `postCreateCommand`, and the managed post-start
+adapter requires the exact completion marker written at the end of successful
+bootstrap. `bash util/test-dev-runtime.sh` covers missing, malformed,
+symlinked, invalidated, and valid marker states plus the script ordering. This
+is static lifecycle evidence; cold DevPod and Devsy startup remain the
+provider-level acceptance check.
+
 - The local Chat model simulation includes LiteLLM's `auto-router` and
   the GPT-5.6 Luna/Sol target aliases. Start it with
   `devrouter ensure . --profile chat,ai`; add `mcp` for the seeded synthetic

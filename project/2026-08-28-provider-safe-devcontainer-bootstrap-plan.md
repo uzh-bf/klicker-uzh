@@ -373,7 +373,15 @@
 - `2026-08-28`: The user approved both linked plans and the named provider,
   push, PR, and upstream release boundaries. K0 is active; K1 may run in
   parallel with Devrouter D1 in this separate worktree.
-- Current state: `active`. Completed slices: none. Remaining: K0-K4. Latest
-  evidence: refreshed `origin/v3` equals HEAD `0892b61`; worktree contains only
-  this plan. Required delivery: merge-ready Klicker PR; achieved delivery:
-  local planning branch. No task provider runtime is active.
+- `2026-08-28`: K0 committed as `813b7169c`. K1 adds the explicit wait point,
+  fixed container-local completion marker, first/last script assertions,
+  missing/malformed/symlink/invalidation coverage, and synchronized runtime
+  guidance. The configured executor route failed terminally on stale model
+  metadata; generic-continuity used Luna/max. The child was interrupted before
+  completion, so the trusted main session verified and completed its partial
+  work without a second executor attempt.
+- Current state: `active`. Completed slices: K0. Active: K1 verification and
+  commit. Remaining: K2-K4. Latest evidence: `bash util/test-dev-runtime.sh`,
+  shell syntax, and `git diff --check` pass; no task provider runtime is active.
+  Required delivery: merge-ready Klicker PR; achieved delivery: committed plan
+  plus verified uncommitted K1 implementation.

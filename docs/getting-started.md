@@ -89,6 +89,14 @@ and declared non-secret origin environment in
 stale owned groups are replaced boundedly, unknown processes are never killed,
 and a failed profile transition restores the last usable generated config.
 
+The Dev Container waits for `postCreateCommand` before managed post-start.
+Post-create publishes a fixed container-local completion marker only after the
+destructive bootstrap and generated runtime inputs succeed; post-start checks
+that marker before it reads those inputs or starts a process. If the marker is
+missing or malformed, treat the workspace as incompletely bootstrapped and use
+the canonical stop/recovery path. A warm profile switch never manufactures the
+marker or reruns database bootstrap.
+
 Devrouter owns generic process lifecycle and route readiness. `ensure` verifies
 the selected routes and can spend one container recreate when an exact
 workspace is alive but an application remains unhealthy. The repository-owned

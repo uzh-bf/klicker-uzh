@@ -180,6 +180,11 @@ profiles:
 - Warm profile changes retain the exact DevPod and volumes, do not rerun
   `postCreateCommand`, avoid `--recreate` and broad `down`, and stop dropped
   services/processes only after exact ownership proof. Routes publish last.
+- A managed adapter that consumes post-create outputs must pair its
+  `postCreateCommand` with `waitFor: postCreateCommand` (or the later
+  `postStartCommand` wait point). Keep an exact container-local completion
+  marker as a fail-closed assertion; a warm profile switch never writes it or
+  reruns bootstrap.
 - Inspect managed desired, active, and drift state with `devrouter status` and
   `devrouter doctor`; values such as credentials and environment contents are
   never written to managed runtime state.
@@ -317,7 +322,7 @@ For host/docker runtime apps only:
 
 ## Runtime behavior notes
 
-- Managed devcontainer images contain no devrouter package or helper. `devrouter ensure` delivers its matching process helper to the exact running container and invokes the repository-owned `.devcontainer/post-start.sh`; keep `.devrouter.yml` as the only consumer-side devrouter version pin.
+- Managed devcontainer images contain no devrouter package or helper. `devrouter ensure` delivers its matching process helper to the exact running container and invokes the repository-owned `.devcontainer/post-start.sh`; keep `.devrouter.yml` as the only consumer-side devrouter version pin. When the adapter consumes post-create outputs, set `waitFor` to `postCreateCommand` and require an exact completion marker before process startup.
 - `devrouter app run` auto-starts Docker dependencies and waits for health. Host app runs stop auto-started docker deps on exit; docker app runs leave target services running until explicit cleanup.
 - Host-runtime dependencies are NOT auto-started (v1).
 - `kind=dependency` entries do not create routes and cannot be direct targets for `devrouter app run`, `devrouter app exec`, or `devrouter open`.

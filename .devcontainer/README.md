@@ -93,6 +93,14 @@ container plus that base and start no Turbo process; switching profiles never
 recreates the container, reruns post-create, resets the database, or removes
 volumes.
 
+Cold startup waits for `postCreateCommand` before devrouter invokes the managed
+adapter. Post-create invalidates a container-local completion marker before any
+bootstrap work and publishes it only after dependency installation, builds,
+database setup, seed data, runtime shims, and Hatchet preparation succeed.
+Post-start requires the exact marker before reading bootstrap outputs or
+starting any profile process. A missing or malformed marker is a lifecycle
+failure; do not repair it by rerunning post-create during a warm profile switch.
+
 ## Playwright runs on the host
 
 Run `pnpm playwright:host -- <args>` from a host shell. The launcher reconciles

@@ -121,6 +121,7 @@ export KLICKER_TEST_DOCKER_LOG="$DOCKER_LOG"
 export KLICKER_TEST_DOCKER_VOLUME_STATE="$DOCKER_VOLUME_STATE"
 export KLICKER_TEST_DOCKER_VOLUME_NAME="$VOLUME_NAME"
 export KLICKER_DEV_RUNTIME_ROOT="$ROOT"
+export KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR="$TEST_ROOT/bootstrap-state"
 export KLICKER_DEV_RUNTIME_GIT_HEAD=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 INIT_ROOT="$TEST_ROOT/init-repo/.devcontainer"
@@ -129,6 +130,58 @@ mkdir -p "$INIT_ROOT" "$MKCERT_CAROOT"
 cp "$REPO_ROOT/.devcontainer/initialize.sh" "$INIT_ROOT/initialize.sh"
 write_file "$MKCERT_CAROOT/rootCA.pem" 'test CA'
 export KLICKER_TEST_MKCERT_CAROOT="$MKCERT_CAROOT"
+
+if bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null 2>&1; then
+  fail 'missing bootstrap completion marker was accepted'
+fi
+bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
+bash "$RUNTIME_SCRIPT" require-bootstrap
+assert_equal \
+  "$(cat "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete")" \
+  'klicker-devcontainer-bootstrap-v1'
+write_file "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete" 'wrong-bootstrap-token'
+if bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null 2>&1; then
+  fail 'malformed bootstrap completion marker was accepted'
+fi
+bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
+bash "$RUNTIME_SCRIPT" begin-bootstrap >/dev/null
+assert_absent "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete"
+if bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null 2>&1; then
+  fail 'invalidated bootstrap completion marker was accepted'
+fi
+write_file "$TEST_ROOT/outside-bootstrap-marker" 'klicker-devcontainer-bootstrap-v1'
+ln -s "$TEST_ROOT/outside-bootstrap-marker" \
+  "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete"
+if bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null 2>&1; then
+  fail 'symlinked bootstrap completion marker was accepted'
+fi
+bash "$RUNTIME_SCRIPT" begin-bootstrap >/dev/null
+bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
+bash "$RUNTIME_SCRIPT" require-bootstrap
+
+first_after_strict_mode() {
+  awk '
+    /^set -euo pipefail$/ { strict = 1; next }
+    strict && $0 !~ /^[[:space:]]*($|#)/ { print; exit }
+  ' "$1"
+}
+
+last_semantic_line() {
+  awk '$0 !~ /^[[:space:]]*($|#)/ { line = $0 } END { print line }' "$1"
+}
+
+assert_equal \
+  "$(first_after_strict_mode "$REPO_ROOT/.devcontainer/post-create.sh")" \
+  'bash /workspaces/klicker-uzh/util/dev-runtime.sh begin-bootstrap'
+assert_equal \
+  "$(last_semantic_line "$REPO_ROOT/.devcontainer/post-create.sh")" \
+  'bash /workspaces/klicker-uzh/util/dev-runtime.sh complete-bootstrap'
+assert_equal \
+  "$(first_after_strict_mode "$REPO_ROOT/.devcontainer/post-start.sh")" \
+  'bash /workspaces/klicker-uzh/util/dev-runtime.sh require-bootstrap'
+grep -Fq '"waitFor": "postCreateCommand"' \
+  "$REPO_ROOT/.devcontainer/devcontainer.json" || \
+  fail 'devcontainer does not wait for postCreateCommand'
 
 bash "$INIT_ROOT/initialize.sh"
 bash "$INIT_ROOT/initialize.sh"
