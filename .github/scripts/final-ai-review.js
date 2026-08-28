@@ -3138,12 +3138,15 @@ async function verifyCurrentIndividualFinalReview({ repository, prNumber }) {
 function runCli() {
   const command = process.argv[2]
   if (command === 'configure-ocr') {
-    writeOCRConfig({ token: fs.readFileSync(0, 'utf8') })
+    writeOCRConfig({
+      token: fs.readFileSync(0, 'utf8'),
+      configPath: process.env.OCR_CONFIG_PATH || undefined,
+    })
     console.log('Ephemeral OCR configuration created')
     return
   }
   if (command === 'cleanup-ocr') {
-    removeOCRConfig()
+    removeOCRConfig(process.env.OCR_CONFIG_PATH || undefined)
     console.log('Ephemeral OCR configuration removed')
     return
   }
