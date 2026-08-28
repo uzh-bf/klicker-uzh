@@ -83,7 +83,8 @@ devrouter exec . -- cat /tmp/devrouter-process-klicker-dev.state
 devrouter exec . -- tail -n 50 /tmp/dev.log
 ```
 
-Devrouter 0.0.40 or newer is required for managed profiles. `devrouter ensure`
+This repository pins devrouter 0.0.42; managed profiles require 0.0.40 or
+newer. `devrouter ensure`
 delivers its matching process helper to the exact validated container and
 fingerprints the workspace, selection, command, adapter bytes, and declared
 non-secret origin allowlist. The helper replaces a stale owned process group

@@ -52,7 +52,7 @@ Postgres and Hatchet as the boot-critical base.
 2. **Accessing the apps:**
    - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost ports. Lecturer login is `lecturer`/`abcd`.
    - **Mode 2 (linked checkout):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
-     1. Install devrouter ≥ 0.0.40 and run `devrouter setup --yes` once. Version 0.0.39 is not safe for failed managed profile transitions.
+     1. Install devrouter ≥ 0.0.42 and run `devrouter setup --yes` once. Version 0.0.39 is not safe for failed managed profile transitions.
      2. From an existing linked worktree, start and prove the environment with:
         ```bash
         devrouter ensure .
@@ -82,7 +82,7 @@ do not copy credentials into the repository or use raw Infisical injection.
 
 `post-start.sh` keeps Klicker's environment and origin setup local. Host-side
 `devrouter ensure` delivers its matching process helper to the exact validated
-container, then invokes the adapter. Devrouter 0.0.40 records its owned process
+container, then invokes the adapter. Devrouter records its owned process
 group and fingerprints the workspace, command, adapter bytes, selected profile,
 and declared non-secret origin environment in
 `/tmp/devrouter-process-klicker-dev.state`. An exact repeat is idempotent,
@@ -96,7 +96,7 @@ semantic checks perform one bounded `.next` repair only after a known route
 repeatedly returns the stale-route signature. The adapter also primes Manage's
 course list and a synthetic course-detail URL within one bounded deadline.
 
-The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.40`.
+The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.42`.
 The devcontainer image contains no devrouter package or helper, and
 `devcontainer.json` does not run the managed adapter independently.
 

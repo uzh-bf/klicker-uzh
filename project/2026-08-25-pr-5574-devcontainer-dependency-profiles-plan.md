@@ -73,8 +73,8 @@
 - Pull request: [#5574](https://github.com/uzh-bf/klicker-uzh/pull/5574).
 - Prerequisite package: devrouter's repository-relative dependency-profile plan.
 - Release dependency: published devrouter `0.0.40` is the minimum compatible
-  release; final correction validation uses its current compatible successor,
-  published devrouter `0.0.41`.
+  release; the consumer contract and final validation use its current
+  compatible successor, published devrouter `0.0.42`.
 - History: `project/2026-08-24-devrouter-profiles-three-mode-plan.md` and PR #5539
   introduced route/process profiles. This package closes the omitted container
   and process lifecycle seam rather than reopening that merged package.
@@ -595,3 +595,14 @@
   `devpod status` reports `Stopped`, and the exact devrouter route query returns
   `routeCount: 0`. Runtime data, containers, volumes, Git worktree, and branch
   were preserved.
+- 2026-08-28 devrouter consumer upgrade: The repository contract now pins
+  published devrouter `0.0.42`, whose partial-start recovery changes preserve
+  existing DevPod behavior. The generated repository guidance is refreshed for
+  the current lifecycle contract. Doctor reports 23 passing checks, no errors,
+  and resolves this checkout to DevPod from its exact path owner even though
+  the unchanged machine preference is Devsy. A cold `manage` reconciliation
+  selected only API, Auth, Manage, and their three Redis dependencies; LiteLLM
+  and the local MCP remained stopped, and managed drift was empty. The focused
+  resolver regression and documentation formatting pass. Canonical stop freed
+  all three routes; source-path inventory reports `routeCount: 0`, and direct
+  DevPod status is `Stopped`. This package does not configure or start Devsy.

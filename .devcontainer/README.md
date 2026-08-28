@@ -41,7 +41,7 @@ The primary checkout keeps fixed localhost ports and receives stable unnamespace
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.40 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.42 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -70,7 +70,8 @@ Open the Manage URL printed by `ensure` and log in as **`lecturer` / `abcd`**
 
 ## Profiles
 
-Profiles (devrouter >= 0.0.40) select three independent dimensions: routed
+This repository pins devrouter 0.0.42. Managed profiles, introduced in 0.0.40,
+select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` keeps the all-on `full`
 default. The committed native `devcontainer.json` stays all-on for VS Code and
