@@ -70,6 +70,7 @@ function SemanticFreeTextOptions({
         legacySolutions: values.options.solutions ?? [],
       })
       setExactAnswerKeys(newConfig.accepted_exact_answers.map(() => nanoid()))
+      setFieldValue('options.hasSampleSolution', true)
       setFieldValue('options.semanticEvaluation', newConfig)
     } else {
       setExactAnswerKeys([])

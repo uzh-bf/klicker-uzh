@@ -1,17 +1,17 @@
-import {
+import type {
   ApolloCache,
   DefaultContext,
   FetchResult,
   MutationFunctionOptions,
 } from '@apollo/client'
 import {
-  CreateAnswerCollectionMutation,
-  ElementStatus,
-  Exact,
+  type CreateAnswerCollectionMutation,
+  type ElementStatus,
+  type Exact,
   GetAnswerCollectionsInfoDocument,
-  Scalars,
+  type Scalars,
 } from '@klicker-uzh/graphql/dist/ops'
-import {
+import type {
   ElementFormTypesCaseStudy,
   ElementFormTypesCaseStudySolutions,
   ElementFormTypesChoices,
@@ -212,7 +212,7 @@ export function prepareFreeTextArgs({
             : parseInt(String(values.options.restrictions.maxLength)),
       },
       solutions: values.options.solutions,
-      semanticEvaluation: values.options.semanticEvaluation ?? undefined,
+      semanticEvaluation: values.options.semanticEvaluation ?? null,
     },
 
     tags: values.tags,

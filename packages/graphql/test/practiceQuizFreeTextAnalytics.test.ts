@@ -87,11 +87,13 @@ async function createAttempt({
   ordinal,
   evaluationStatus,
   correctness,
+  evaluationRevision = 0,
 }: {
   cycleId: string
   ordinal: number
   evaluationStatus: FreeTextEvaluationStatus
   correctness?: FreeTextCorrectnessCategory
+  evaluationRevision?: number
 }) {
   await prisma.freeTextAttempt.create({
     data: {
@@ -100,6 +102,7 @@ async function createAttempt({
       clientSubmissionId: randomUUID(),
       answer: `synthetic-answer-${ordinal}`,
       answerTime: 1,
+      evaluationRevision,
       evaluationStatus,
       correctness,
       rubricSchemaVersion: semanticConfig.rubric_schema.schema_version,
@@ -153,6 +156,7 @@ describe('practice quiz free-text retry analytics', () => {
       ordinal: 2,
       evaluationStatus: FreeTextEvaluationStatus.EVALUATED,
       correctness: FreeTextCorrectnessCategory.PARTIAL,
+      evaluationRevision: 1,
     })
 
     const successfulCycle = await createCycle(semanticInstance.id, 3)
@@ -191,7 +195,7 @@ describe('practice quiz free-text retry analytics', () => {
         averageAttempts: 5 / 3,
         successRate: 2 / 3,
         revealRate: 1 / 3,
-        unavailableCount: 1,
+        unavailableCount: 2,
         first: { correct: 1, partial: 1, incorrect: 1 },
         best: { correct: 2, partial: 1, incorrect: 0 },
       },

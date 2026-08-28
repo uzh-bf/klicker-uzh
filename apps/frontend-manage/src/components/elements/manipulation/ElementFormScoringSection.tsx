@@ -1,12 +1,12 @@
 import { faBookOpen } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FormLabel, Switch } from '@uzh-bf/design-system'
-import { FormikErrors } from 'formik'
-import { useTranslations } from 'next-intl'
+import type { FormikErrors } from 'formik'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import MultiplierSelector from '../../activities/creation/MultiplierSelector'
 import SampleSolutionSetting from './options/SampleSolutionSetting'
-import { ElementFormTypes } from './types'
+import type { ElementFormTypes } from './types'
 
 function ElementformScoringSection({
   isTemplate,
@@ -26,6 +26,13 @@ function ElementformScoringSection({
   isSubmitting: boolean
 }) {
   const t = useTranslations()
+  const semanticFreeTextEnabled =
+    values.type === 'FREE_TEXT' && values.options.semanticEvaluation != null
+  const hasScoringSolution =
+    ('options' in values &&
+      'hasSampleSolution' in values.options &&
+      values.options.hasSampleSolution) ||
+    semanticFreeTextEnabled
 
   return (
     <div className="mt-4 border-y-4 pb-3 pt-2">
@@ -54,12 +61,7 @@ function ElementformScoringSection({
         </div>
 
         <SampleSolutionSetting
-          disabled={
-            isTemplate ||
-            disabled ||
-            (values.type === 'FREE_TEXT' &&
-              values.options.semanticEvaluation != null)
-          }
+          disabled={isTemplate || disabled || semanticFreeTextEnabled}
           type={values.type}
         />
       </div>
@@ -104,9 +106,7 @@ function ElementformScoringSection({
               label: 'my-0',
             }}
           />
-          {'options' in values &&
-          'hasSampleSolution' in values.options &&
-          values.options.hasSampleSolution ? (
+          {hasScoringSolution ? (
             <div className="flex flex-col items-center gap-1">
               <div className="text-sm">
                 {t('manage.elements.multiplierInformation')}
@@ -156,9 +156,7 @@ function ElementformScoringSection({
                 {t('shared.generic.additionalPoints')}:
               </div>
               <span>
-                {'options' in values &&
-                'hasSampleSolution' in values.options &&
-                values.options.hasSampleSolution
+                {hasScoringSolution
                   ? `${values.pointsMultiplier} * (${t('shared.generic.correctnessPoints')} + ${t('shared.generic.bonusPoints')})`
                   : t('manage.elements.zeroPoints')}
               </span>

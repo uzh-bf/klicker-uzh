@@ -26,6 +26,7 @@ const FT = {
   ],
   semanticExactAnswer: 'Semantic exact answer',
   semanticReferenceSolution: 'Semantic reference solution',
+  semanticTitle: 'Semantic Free Text Question Title',
 }
 
 test('CLEANUP', cleanupTest)
@@ -104,6 +105,33 @@ test.describe('Test creation and editing functionalities for Free Text elements'
     await expect(page.getByTestId('set-free-text-length')).toHaveValue(
       String(FT.maxLength)
     )
+
+    await page.getByTestId('close-element-modal').click()
+  })
+
+  test('Enabling semantic feedback enables sample-solution scoring', async ({
+    page,
+  }) => {
+    await page.getByTestId('create-question').click()
+    await page.getByTestId('select-question-type').click()
+    await page
+      .getByTestId(`select-question-type-${elementTypeLabels.freeText}`)
+      .click()
+    await page.getByTestId('insert-question-title').fill(FT.semanticTitle)
+
+    await expect(
+      page.getByTestId('configure-sample-solution')
+    ).not.toBeChecked()
+    await page.getByTestId('configure-semantic-free-text').click()
+
+    await expect(page.getByTestId('configure-sample-solution')).toBeChecked()
+    await expect(page.getByTestId('configure-sample-solution')).toBeDisabled()
+    await expect(page.getByTestId('select-multiplier')).toBeVisible()
+    await expect(
+      page.getByText(
+        'Multipliers only influence the scoring of a question if a sample solution is defined and correctness and bonus points (live quiz) are awarded.'
+      )
+    ).toHaveCount(0)
 
     await page.getByTestId('close-element-modal').click()
   })
@@ -206,6 +234,19 @@ test.describe('Test creation and editing functionalities for Free Text elements'
     )
 
     await page.getByTestId('configure-semantic-free-text').click()
+    for (let ix = 0; ix < FT.sampleSolution.length; ix++) {
+      await expect(page.getByTestId(`set-solution-ix-${ix}`)).toHaveValue(
+        FT.sampleSolution[ix]
+      )
+    }
+    await page.getByTestId('save-new-question').click({ force: true })
+    await page.waitForTimeout(1000)
+
+    await searchAndEdit(page, FT.titleEdited)
+    await expect(
+      page.getByTestId('configure-semantic-free-text')
+    ).not.toBeChecked()
+    await expect(page.getByTestId('semantic-editor')).toHaveCount(0)
     for (let ix = 0; ix < FT.sampleSolution.length; ix++) {
       await expect(page.getByTestId(`set-solution-ix-${ix}`)).toHaveValue(
         FT.sampleSolution[ix]
