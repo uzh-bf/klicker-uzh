@@ -227,11 +227,25 @@ const server = createServer((request, response) => {
   }
 
   let body = ''
+  let requestFailed = false
+  request.on('error', () => {
+    requestFailed = true
+    if (!response.headersSent) {
+      sendJson(response, 400, { error: 'request_error' })
+    } else if (!response.writableEnded) {
+      response.destroy()
+    }
+  })
+  response.on('error', () => {
+    // Client disconnects are expected during interrupted browser test runs.
+  })
   request.setEncoding('utf8')
   request.on('data', (chunk) => {
     body += chunk
   })
   request.on('end', () => {
+    if (requestFailed || response.writableEnded) return
+
     let value
     try {
       value = JSON.parse(body)

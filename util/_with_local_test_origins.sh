@@ -19,6 +19,13 @@ export APP_ORIGIN_CHAT='http://127.0.0.1:3004'
 export APP_ORIGIN_ASSESSMENT_API="$APP_ORIGIN_API"
 export APP_ORIGIN_ASSESSMENT_PWA="$APP_ORIGIN_PWA"
 
+# The API selects the lecturer or participant cookie from the request origin.
+# Override the routed hostnames from devcontainer.env for the host test runtime.
+export APP_MANAGE_SUBDOMAIN='127.0.0.1:3002'
+export APP_CONTROL_SUBDOMAIN='127.0.0.1:3003'
+export APP_STUDENT_SUBDOMAIN='127.0.0.1:3001'
+export APP_ASSESSMENT_SUBDOMAIN='127.0.0.1:3001'
+
 export NEXT_PUBLIC_API_URL="$APP_ORIGIN_API/api/graphql"
 export NEXT_PUBLIC_API_URL_SSR="$NEXT_PUBLIC_API_URL"
 export NEXT_PUBLIC_PWA_URL="$APP_ORIGIN_PWA"

@@ -233,6 +233,24 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
     await expect(page.getByTestId('semantic-practice-again')).toBeVisible()
   })
 
+  test('evaluates an accepted exact answer with rubric feedback', async ({
+    page,
+  }) => {
+    await openQuiz(page, 'testuser9')
+    await startQuiz(page, 'accept')
+    await submitInitialStack(page, data.exactAnswer)
+
+    const panel = page.getByTestId('semantic-free-text-retry-panel')
+    await expect(panel).toContainText(data.correctLabel)
+    await page.getByTestId('semantic-toggle-explanation').click()
+    await expect(page.getByTestId('semantic-rubric-summary')).toContainText(
+      '4 of 4 criteria fully met'
+    )
+    await expect(
+      page.getByTestId('semantic-rubric-ai-feedback-risk-reduction')
+    ).toContainText('AI feedback')
+  })
+
   test('retries an unavailable evaluation on the same answer attempt', async ({
     page,
   }) => {

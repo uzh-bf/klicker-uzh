@@ -23,6 +23,7 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
+import { createFreeTextSubmissionId } from './createFreeTextSubmissionId'
 import InstanceHeader from './InstanceHeader'
 import PracticeQuizElement from './PracticeQuizElement'
 
@@ -565,7 +566,7 @@ function ElementStack({
                           if (previous?.answer === answer) {
                             clientSubmissionId = previous.id
                           } else {
-                            clientSubmissionId = crypto.randomUUID()
+                            clientSubmissionId = createFreeTextSubmissionId()
                             semanticSubmissionIds.current.set(
                               parseInt(instanceId, 10),
                               { answer, id: clientSubmissionId }

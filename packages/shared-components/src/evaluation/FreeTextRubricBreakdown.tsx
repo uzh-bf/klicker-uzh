@@ -8,6 +8,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { FreeTextEvaluationFeedback } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 
 type RubricAssessment = {
   rubricId: string
@@ -99,6 +100,88 @@ function getRubricStatus(normalizedScore: number): RubricStatus {
   return 'OPEN'
 }
 
+function RubricDetail({
+  assessment,
+  index,
+}: {
+  assessment: RubricAssessment
+  index: number
+}) {
+  const t = useTranslations()
+  const [open, setOpen] = useState(index === 0)
+  const status = getRubricStatus(assessment.normalizedScore)
+  const style = STATUS_STYLES[status]
+
+  return (
+    <details
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+      className={`group overflow-hidden rounded-md border bg-white ${style.detailClassName}`}
+      data-cy={`semantic-rubric-result-${assessment.rubricId}`}
+    >
+      <summary
+        className="flex cursor-pointer list-none items-center gap-3 p-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-uzh-blue-100"
+        data-cy={`semantic-rubric-result-toggle-${assessment.rubricId}`}
+      >
+        <span
+          className={`flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${style.badgeClassName}`}
+          aria-hidden="true"
+        >
+          {index + 1}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block break-words font-semibold">
+            {assessment.rubricName}
+          </span>
+          <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <span className={`text-xs font-semibold ${style.iconClassName}`}>
+              {assessment.proposedLevel}
+            </span>
+            <span className="text-xs font-medium text-gray-600">
+              {t('pwa.practiceQuiz.semanticRubricScore', {
+                score: assessment.normalizedScore,
+              })}
+            </span>
+          </span>
+        </span>
+        <FontAwesomeIcon
+          icon={faChevronDown}
+          className="text-xs text-gray-500 transition-transform group-open:rotate-180"
+          aria-hidden="true"
+        />
+      </summary>
+      <div className="border-t border-gray-200 bg-gray-50 p-3">
+        <div
+          className="border-l-4 border-uzh-blue-100 bg-white p-3"
+          data-cy={`semantic-rubric-ai-feedback-${assessment.rubricId}`}
+        >
+          <div className="text-sm font-semibold text-uzh-blue-100">
+            {t('pwa.practiceQuiz.semanticAiFeedback')}
+          </div>
+          <div className="mt-2">
+            <div className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+              {t('pwa.practiceQuiz.semanticWhyThisScore')}
+            </div>
+            <p className="mt-1 break-words text-sm leading-relaxed text-gray-700">
+              {assessment.rationale}
+            </p>
+          </div>
+          {assessment.feedback && (
+            <div className="mt-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                {t('pwa.practiceQuiz.semanticHowToImprove')}
+              </div>
+              <p className="mt-1 break-words text-sm leading-relaxed text-gray-700">
+                {assessment.feedback}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </details>
+  )
+}
+
 function FreeTextRubricBreakdown({
   result,
 }: {
@@ -169,7 +252,7 @@ function FreeTextRubricBreakdown({
                   {assessment.rubricName}
                 </span>
                 <span
-                  className={`max-w-1/2 break-words rounded-full px-2 py-0.5 text-right text-xs font-semibold ${style.badgeClassName}`}
+                  className={`max-w-[50%] break-words rounded-full px-2 py-0.5 text-right text-xs font-semibold ${style.badgeClassName}`}
                 >
                   {assessment.proposedLevel}
                 </span>
@@ -190,81 +273,13 @@ function FreeTextRubricBreakdown({
         </div>
 
         <div className="mt-3 flex flex-col gap-2">
-          {assessments.map((assessment, index) => {
-            const status = getRubricStatus(assessment.normalizedScore)
-            const style = STATUS_STYLES[status]
-
-            return (
-              <details
-                key={assessment.rubricId}
-                open={index === 0}
-                className={`group overflow-hidden rounded-md border bg-white ${style.detailClassName}`}
-                data-cy={`semantic-rubric-result-${assessment.rubricId}`}
-              >
-                <summary
-                  className="flex cursor-pointer list-none items-center gap-3 p-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-uzh-blue-100"
-                  data-cy={`semantic-rubric-result-toggle-${assessment.rubricId}`}
-                >
-                  <span
-                    className={`flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${style.badgeClassName}`}
-                    aria-hidden="true"
-                  >
-                    {index + 1}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block break-words font-semibold">
-                      {assessment.rubricName}
-                    </span>
-                    <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                      <span
-                        className={`text-xs font-semibold ${style.iconClassName}`}
-                      >
-                        {assessment.proposedLevel}
-                      </span>
-                      <span className="text-xs font-medium text-gray-600">
-                        {t('pwa.practiceQuiz.semanticRubricScore', {
-                          score: assessment.normalizedScore,
-                        })}
-                      </span>
-                    </span>
-                  </span>
-                  <FontAwesomeIcon
-                    icon={faChevronDown}
-                    className="text-xs text-gray-500 transition-transform group-open:rotate-180"
-                    aria-hidden="true"
-                  />
-                </summary>
-                <div className="border-t border-gray-200 bg-gray-50 p-3">
-                  <div
-                    className="border-l-4 border-uzh-blue-100 bg-white p-3"
-                    data-cy={`semantic-rubric-ai-feedback-${assessment.rubricId}`}
-                  >
-                    <div className="text-sm font-semibold text-uzh-blue-100">
-                      {t('pwa.practiceQuiz.semanticAiFeedback')}
-                    </div>
-                    <div className="mt-2">
-                      <div className="text-xs font-semibold uppercase tracking-wide text-gray-600">
-                        {t('pwa.practiceQuiz.semanticWhyThisScore')}
-                      </div>
-                      <p className="mt-1 break-words text-sm leading-relaxed text-gray-700">
-                        {assessment.rationale}
-                      </p>
-                    </div>
-                    {assessment.feedback && (
-                      <div className="mt-3">
-                        <div className="text-xs font-semibold uppercase tracking-wide text-gray-600">
-                          {t('pwa.practiceQuiz.semanticHowToImprove')}
-                        </div>
-                        <p className="mt-1 break-words text-sm leading-relaxed text-gray-700">
-                          {assessment.feedback}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </details>
-            )
-          })}
+          {assessments.map((assessment, index) => (
+            <RubricDetail
+              key={assessment.rubricId}
+              assessment={assessment}
+              index={index}
+            />
+          ))}
         </div>
       </div>
     </section>

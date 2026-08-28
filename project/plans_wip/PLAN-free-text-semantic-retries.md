@@ -525,7 +525,7 @@ booleans.
 - [x] Keep legacy free-text rendering unchanged when `semanticState` is null.
 - [x] Add English and German participant copy and stable `data-cy` hooks.
 - [x] Run PWA/shared-components checks and builds; expect exit 0.
-- [ ] Verify pending, partial retry, correct explanation, unavailable retry, decline
+- [x] Verify pending, partial retry, correct explanation, unavailable retry, decline
       fallback, reveal, exhaustion, reload, and Practice again in a real PWA browser at
       desktop and mobile widths; save screenshots with the Manage evidence.
 - [x] Commit the layer with `feat(pwa): add semantic free-text retry flow`.
@@ -561,7 +561,7 @@ failure fixtures selected by synthetic marker text. Production has no fixture mo
       retry-to-correct, no neighboring unlock, reload recovery, detail gating, reveal,
       exhaustion, exact fallback, and no duplicate reward after a repeated request.
 - [x] Run `pnpm --filter @klicker-uzh/playwright check`; expect exit 0.
-- [ ] Run the focused Practice Quiz Playwright spec against the full local stack with
+- [x] Run the focused Practice Quiz Playwright spec against the full local stack with
       both Hatchet workers; expect all semantic and existing legacy workflows to pass.
 - [x] Run `pnpm run check:all`, `pnpm run build`, and
       `opengrep scan --config auto`; classify any unrelated existing failures explicitly.
@@ -772,3 +772,17 @@ exact `rubric_id`. Each detail card exposes
   grading suite passes 23/23, all 27 repository check tasks and all 7 lint tasks pass,
   and Chromium discovers all seven focused semantic Practice Quiz tests. A local
   application runtime was not active, so the executable browser run remains a CI gate.
+- **2026-08-28:** Completed the post-rebase production-readiness pass. Exact answers
+  now use exact matching only as the unavailable/declined fallback; accepted semantic
+  evaluation still returns the full rubric rationale and AI feedback. Hardened config
+  hashing, score validation, async state transitions, UUID fallback, polling stability,
+  disclosure state, and the deterministic evaluator stub. The focused GraphQL policy,
+  state-machine, and worker suites pass 34/34; shared-components, PWA, Playwright, and
+  both lower-layer `check:all` runs pass. A host-auth classifier fix makes the
+  documented local runner accept lecturer cookies on `127.0.0.1`.
+- **2026-08-28:** Ran the real host Chromium proof against disposable Postgres, Redis,
+  Hatchet, both workers, the GraphQL API, Manage, and PWA. All 16 focused tests pass:
+  seven lecturer free-text authoring cases and nine semantic Practice Quiz cases,
+  including an accepted exact answer with all four rubric criteria and AI feedback.
+  Real-browser desktop/mobile review also confirmed the integrated student view,
+  disclosure behavior, keyboard details, and no 390 px horizontal overflow.

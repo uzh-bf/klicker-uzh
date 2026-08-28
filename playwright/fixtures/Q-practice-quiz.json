@@ -53,7 +53,7 @@
     "partialAnswer": "[semantic:partial] Diversifikation verteilt Risiken.",
     "correctAnswer": "[semantic:correct] Diversifikation reduziert das unsystematische Risiko durch nicht perfekt korrelierte Anlagen.",
     "incorrectAnswer": "[semantic:incorrect] Renditen sind immer garantiert.",
-    "exactAnswer": "Diversifikation reduziert das unsystematische Risiko.",
+    "exactAnswer": "[semantic:correct] Diversifikation reduziert das unsystematische Risiko.",
     "partialLabel": "Teilweise erfüllt",
     "correctLabel": "Erfüllt",
     "incorrectLabel": "Noch nicht erfüllt",
@@ -63,7 +63,7 @@
       "attempt_limit": 2,
       "solution_reveal_enabled": true,
       "accepted_exact_answers": [
-        "Diversifikation reduziert das unsystematische Risiko."
+        "[semantic:correct] Diversifikation reduziert das unsystematische Risiko."
       ],
       "reference_solution": "Diversifikation reduziert das unsystematische Risiko durch die Kombination nicht perfekt korrelierter Anlagen.",
       "outcome_bands": [

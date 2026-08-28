@@ -129,19 +129,16 @@ function PracticeQuizElement({
     const valid = studentResponse[element.id]?.valid === true
     if (!valid || !answer.trim()) return
 
-    try {
-      await submitAnswer({
-        answer,
-        answerTime: (Date.now() - answerStartedAt.current) / 1000,
-      })
-    } finally {
-      setEditing(false)
-    }
+    await submitAnswer({
+      answer,
+      answerTime: (Date.now() - answerStartedAt.current) / 1000,
+    })
+    setEditing(false)
   }
 
   const practiceAgain = async () => {
-    setDetailsOpen(false)
     await startPracticeCycle()
+    setDetailsOpen(false)
   }
 
   const reviewConsent = async () => {

@@ -9,17 +9,10 @@ import {
   SubmitFreeTextAttemptDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createFreeTextSubmissionId } from './createFreeTextSubmissionId'
 import { preferLatestFreeTextPracticeState } from './freeTextPracticeStateOrder'
 
 type SemanticState = FreeTextPracticeStateDataFragment | null
-
-function createSubmissionId() {
-  if (typeof globalThis.crypto?.randomUUID !== 'function') {
-    throw new Error('This browser cannot create a secure submission ID')
-  }
-
-  return globalThis.crypto.randomUUID()
-}
 
 function useFreeTextPracticeState({
   instanceId,
@@ -34,6 +27,7 @@ function useFreeTextPracticeState({
     initialState?.instanceId === instanceId ? initialState : null
   )
   const submissionRef = useRef<{ answer: string; id: string } | null>(null)
+  const submissionInstanceIdRef = useRef(instanceId)
   const pending =
     state?.currentAttempt?.evaluationStatus === FreeTextEvaluationStatus.Pending
 
@@ -69,7 +63,10 @@ function useFreeTextPracticeState({
     StartFreeTextPracticeCycleDocument
   )
   useEffect(() => {
-    submissionRef.current = null
+    if (submissionInstanceIdRef.current !== instanceId) {
+      submissionRef.current = null
+      submissionInstanceIdRef.current = instanceId
+    }
   }, [instanceId])
 
   useEffect(() => {
@@ -91,7 +88,10 @@ function useFreeTextPracticeState({
   const submitAnswer = useCallback(
     async ({ answer, answerTime }: { answer: string; answerTime: number }) => {
       if (submissionRef.current?.answer !== answer) {
-        submissionRef.current = { answer, id: createSubmissionId() }
+        submissionRef.current = {
+          answer,
+          id: createFreeTextSubmissionId(),
+        }
       }
 
       const result = await submitMutation({
@@ -157,7 +157,7 @@ function useFreeTextPracticeState({
 
   return {
     state,
-    loading,
+    loading: loading && state === null,
     error,
     actionLoading:
       submitResult.loading ||

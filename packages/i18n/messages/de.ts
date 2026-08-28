@@ -1221,7 +1221,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       semanticRubricDetails: 'Detailliertes Feedback',
       semanticAiFeedback: 'KI-Feedback',
       semanticWhyThisScore: 'Warum diese Bewertung?',
-      semanticHowToImprove: 'So kannst du dich verbessern',
+      semanticHowToImprove: 'So können Sie sich verbessern',
       semanticConsentTitle: 'KI-gestütztes Feedback',
       semanticConsentIntro:
         'Dieses Übungs-Quiz kann einen externen KI-Bewertungsdienst verwenden, um Ihre Antworten mit den Rubriken der Lehrperson zu vergleichen und formatives Feedback zu geben.',
