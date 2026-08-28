@@ -110,23 +110,24 @@ describe('learning analytics V2 disclosure output', () => {
       cellSize: 6,
       expectedCells: [{ periodIndex: 1, effectiveN: 6 }],
     },
-  ])(
-    'protects the complement for a weekly $cellSize-of-$rootSize cell',
-    ({ rootSize, cellSize, expectedCells }) => {
-      const eligibleParticipantKeys = participantKeys(rootSize)
-      const analytics = buildCourseActivityAnalyticsV2({
-        eligibleParticipantKeys,
-        weeklyActivity: eligibleParticipantKeys
-          .slice(0, cellSize)
-          .map((participantKey) => ({
-            participantKey,
-            period: new Date('2026-01-05T00:00:00.000Z'),
-          })),
-      })
+  ])('protects the complement for a weekly $cellSize-of-$rootSize cell', ({
+    rootSize,
+    cellSize,
+    expectedCells,
+  }) => {
+    const eligibleParticipantKeys = participantKeys(rootSize)
+    const analytics = buildCourseActivityAnalyticsV2({
+      eligibleParticipantKeys,
+      weeklyActivity: eligibleParticipantKeys
+        .slice(0, cellSize)
+        .map((participantKey) => ({
+          participantKey,
+          period: new Date('2026-01-05T00:00:00.000Z'),
+        })),
+    })
 
-      expect(analytics.weeklyActivity).toEqual(expectedCells)
-    }
-  )
+    expect(analytics.weeklyActivity).toEqual(expectedCells)
+  })
 
   it('numbers only disclosed periods and activities', () => {
     const eligibleParticipantKeys = participantKeys(10)
@@ -180,36 +181,36 @@ describe('learning analytics V2 disclosure output', () => {
     { cohortSize: 6, expectedEffectiveNs: [] },
     { cohortSize: 8, expectedEffectiveNs: [] },
     { cohortSize: 10, expectedEffectiveNs: [5, 5] },
-  ])(
-    'protects activity complements within a safe cohort of $cohortSize',
-    ({ cohortSize, expectedEffectiveNs }) => {
-      const eligibleParticipantKeys = participantKeys(cohortSize)
-      const performance = buildCoursePerformanceAnalyticsV2({
-        eligibleParticipantKeys,
-        activities: [
-          {
-            activityType: ActivityType.PRACTICE_QUIZ,
-            participantCompletions: eligibleParticipantKeys
-              .slice(0, 5)
-              .map((participantKey) => ({ participantKey, completion: 1 })),
-          },
-          {
-            activityType: ActivityType.MICRO_LEARNING,
-            participantCompletions: eligibleParticipantKeys
-              .slice(5)
-              .map((participantKey) => ({ participantKey, completion: 1 })),
-          },
-        ],
-        nextRandomInt: (max) => max - 1,
-      })
+  ])('protects activity complements within a safe cohort of $cohortSize', ({
+    cohortSize,
+    expectedEffectiveNs,
+  }) => {
+    const eligibleParticipantKeys = participantKeys(cohortSize)
+    const performance = buildCoursePerformanceAnalyticsV2({
+      eligibleParticipantKeys,
+      activities: [
+        {
+          activityType: ActivityType.PRACTICE_QUIZ,
+          participantCompletions: eligibleParticipantKeys
+            .slice(0, 5)
+            .map((participantKey) => ({ participantKey, completion: 1 })),
+        },
+        {
+          activityType: ActivityType.MICRO_LEARNING,
+          participantCompletions: eligibleParticipantKeys
+            .slice(5)
+            .map((participantKey) => ({ participantKey, completion: 1 })),
+        },
+      ],
+      nextRandomInt: (max) => max - 1,
+    })
 
-      expect(performance.effectiveN).toBe(cohortSize)
-      expect(performance.studentReport.effectiveN).toBe(cohortSize)
-      expect(
-        performance.activitySummaries.map(({ effectiveN }) => effectiveN)
-      ).toEqual(expectedEffectiveNs)
-    }
-  )
+    expect(performance.effectiveN).toBe(cohortSize)
+    expect(performance.studentReport.effectiveN).toBe(cohortSize)
+    expect(
+      performance.activitySummaries.map(({ effectiveN }) => effectiveN)
+    ).toEqual(expectedEffectiveNs)
+  })
 
   it('releases an all-cohort activity cell', () => {
     const eligibleParticipantKeys = participantKeys(6)
@@ -231,8 +232,15 @@ describe('learning analytics V2 disclosure output', () => {
     ])
   })
 
-  it('counts only eligible participants with activity-performance rows', () => {
+  it('protects missing performance rows against the shared eligible cohort', () => {
     const eligibleParticipantKeys = participantKeys(6)
+    const activity = buildCourseActivityAnalyticsV2({
+      eligibleParticipantKeys,
+      weeklyActivity: eligibleParticipantKeys.map((participantKey) => ({
+        participantKey,
+        period: new Date('2026-01-05T00:00:00.000Z'),
+      })),
+    })
     const buildPerformance = (rowCount: number) =>
       buildCoursePerformanceAnalyticsV2({
         eligibleParticipantKeys,
@@ -247,15 +255,18 @@ describe('learning analytics V2 disclosure output', () => {
         nextRandomInt: (max) => max - 1,
       })
 
-    expect(buildPerformance(4)).toMatchObject({
-      isSuppressed: true,
-      effectiveN: null,
-      studentReport: { isSuppressed: true, effectiveN: null, students: [] },
-    })
-    expect(buildPerformance(5)).toMatchObject({
+    expect(activity.effectiveN).toBe(6)
+    for (const rowCount of [4, 5]) {
+      expect(buildPerformance(rowCount)).toMatchObject({
+        isSuppressed: true,
+        effectiveN: null,
+        studentReport: { isSuppressed: true, effectiveN: null, students: [] },
+      })
+    }
+    expect(buildPerformance(6)).toMatchObject({
       isSuppressed: false,
-      effectiveN: 5,
-      studentReport: { isSuppressed: false, effectiveN: 5 },
+      effectiveN: 6,
+      studentReport: { isSuppressed: false, effectiveN: 6 },
     })
 
     const report = buildLearningAnalyticsStudentReportV2(
@@ -268,8 +279,11 @@ describe('learning analytics V2 disclosure output', () => {
       ],
       (max) => max - 1
     )
-    expect(report.effectiveN).toBe(5)
-    expect(report.students).toHaveLength(5)
+    expect(report).toEqual({
+      isSuppressed: true,
+      effectiveN: null,
+      students: [],
+    })
   })
 
   it('releases only student tuple groups with at least five members', () => {
@@ -306,29 +320,29 @@ describe('learning analytics V2 disclosure output', () => {
     { candidateSize: 6, isSuppressed: true },
     { candidateSize: 8, isSuppressed: true },
     { candidateSize: 10, isSuppressed: false },
-  ])(
-    'protects the student-report complement for a released five-member tuple group with $candidateSize candidates',
-    ({ candidateSize, isSuppressed }) => {
-      const report = buildLearningAnalyticsStudentReportV2(
-        [
-          ...participantKeys(5).map((participantKey) => ({
-            participantKey,
-            completions: [1],
-          })),
-          ...Array.from({ length: candidateSize - 5 }, (_, index) => ({
-            participantKey: `candidate-${index + 1}`,
-            completions: [
-              candidateSize === 10 && index === candidateSize - 6 ? 0.1 : 0,
-            ],
-          })),
-        ],
-        (max) => max - 1
-      )
+  ])('protects the student-report complement for a released five-member tuple group with $candidateSize candidates', ({
+    candidateSize,
+    isSuppressed,
+  }) => {
+    const report = buildLearningAnalyticsStudentReportV2(
+      [
+        ...participantKeys(5).map((participantKey) => ({
+          participantKey,
+          completions: [1],
+        })),
+        ...Array.from({ length: candidateSize - 5 }, (_, index) => ({
+          participantKey: `candidate-${index + 1}`,
+          completions: [
+            candidateSize === 10 && index === candidateSize - 6 ? 0.1 : 0,
+          ],
+        })),
+      ],
+      (max) => max - 1
+    )
 
-      expect(report.isSuppressed).toBe(isSuppressed)
-      expect(report.effectiveN).toBe(isSuppressed ? null : 5)
-    }
-  )
+    expect(report.isSuppressed).toBe(isSuppressed)
+    expect(report.effectiveN).toBe(isSuppressed ? null : 5)
+  })
 
   it('derives performance summaries only from the released student cohort', () => {
     const eligibleParticipantKeys = participantKeys(10)

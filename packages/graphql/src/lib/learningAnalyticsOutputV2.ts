@@ -145,6 +145,7 @@ type NormalizedStudentReportRowV2 = {
 
 function buildSafeStudentReportCohortV2(
   rows: StudentReportInput[],
+  parentCohortSize: number,
   nextRandomInt: (max: number) => number = randomInt
 ): {
   participantKeys: Set<string>
@@ -183,7 +184,7 @@ function buildSafeStudentReportCohortV2(
   const safeRows = Array.from(tupleGroups.values()).flatMap((group) =>
     hasMinimumCellSize(group.length) ? group : []
   )
-  if (!hasSafeCellSize(safeRows.length, candidateRows.length)) {
+  if (!hasSafeCellSize(safeRows.length, parentCohortSize)) {
     return {
       participantKeys: new Set(),
       report: { isSuppressed: true, effectiveN: null, students: [] },
@@ -217,7 +218,10 @@ export function buildLearningAnalyticsStudentReportV2(
   rows: StudentReportInput[],
   nextRandomInt: (max: number) => number = randomInt
 ): LearningAnalyticsStudentReportV2 {
-  return buildSafeStudentReportCohortV2(rows, nextRandomInt).report
+  const parentCohortSize = new Set(rows.map((row) => row.participantKey)).size
+
+  return buildSafeStudentReportCohortV2(rows, parentCohortSize, nextRandomInt)
+    .report
 }
 
 export function buildCoursePerformanceAnalyticsV2({
@@ -276,6 +280,7 @@ export function buildCoursePerformanceAnalyticsV2({
       participantKey,
       completions,
     })),
+    eligibleParticipants.size,
     nextRandomInt
   )
   const studentReport = studentReportCohort.report

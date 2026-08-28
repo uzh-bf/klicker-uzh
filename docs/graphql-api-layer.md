@@ -144,10 +144,13 @@ as the complement between a released cell and its parent cohort. Weekly periods
 and activities receive ordinal indices only after suppressed cells have been
 removed. Percentages are rounded to ten-point steps. Student rows are released
 only when at least five candidates share the same normalized completed-activity
-count and mean-completion step; smaller tuple groups and their candidate counts
-are not returned. Each student report freshly randomizes report-local `Student
-N` labels, so a label is not stable between views or exports. The backend builds
-the JSON and CSV exports from the same released cohort and fixed whitelist:
+count and mean-completion step. The complete eligible course cohort is the
+student report's parent cohort, including participants without performance
+rows, so missing rows cannot form a disclosed complement from one through four.
+Smaller tuple groups and their candidate counts are not returned. Each student
+report freshly randomizes report-local `Student N` labels, so a label is not
+stable between views or exports. The backend builds the JSON and CSV exports
+from the same released cohort and fixed whitelist:
 schema version, effective participant count, student label, completed activity
 count, and mean completion percentage. V2 never
 returns identifiers, email addresses, free text, exact timestamps, stable
