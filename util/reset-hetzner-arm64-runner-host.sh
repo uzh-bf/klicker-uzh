@@ -21,7 +21,6 @@ MODE='plan'
 TARGET_PROFILE=''
 CURRENT_STAGE='initial validation'
 SOURCE_STATE_FILE=''
-MANAGED_RUNNER_NAME=''
 MANAGED_RUNNER_NAMES=''
 LEGACY_STATE_PRESENT='false'
 FIREWALL_STATUS='unknown'
@@ -195,7 +194,6 @@ validate_state_file() {
       die 'the reset marker does not describe local storage'
     [[ -z "$(state_value "$file" VOLUME_MOUNT)" ]] ||
       die 'the reset marker unexpectedly names an attached volume'
-    MANAGED_RUNNER_NAME=''
     MANAGED_RUNNER_NAMES=''
     return 0
   fi
@@ -206,14 +204,12 @@ validate_state_file() {
     runner_name=$(state_value "$file" RUNNER_NAME)
     [[ "$runner_name" =~ ^klicker-arm64-runner-0[1-5]$ ]] ||
       die 'managed state contains an unexpected runner name'
-    MANAGED_RUNNER_NAME=$runner_name
     MANAGED_RUNNER_NAMES=$runner_name
   elif [[ "$(basename "$file")" == 'bootstrap.env' ]]; then
     runner_name=$(state_value "$file" RUNNER_NAME)
     [[ "$runner_name" =~ ^public-pr-arm64-0[1-3]$ ||
       "$runner_name" =~ ^trusted-arm64-0[1-2]$ ]] ||
       die 'managed state contains an unexpected runner name'
-    MANAGED_RUNNER_NAME=$runner_name
     MANAGED_RUNNER_NAMES=$runner_name
   else
     runner_file_name=$(basename "$file" .env)
@@ -223,12 +219,11 @@ validate_state_file() {
     stored_name=$(state_value "$file" RUNNER_NAME)
     [[ "$stored_name" == "$runner_file_name" ]] ||
       die 'per-runner state name does not match its file'
-    MANAGED_RUNNER_NAME=$runner_file_name
     MANAGED_RUNNER_NAMES=$runner_file_name
   fi
   repository=$(state_value "$file" REPOSITORY)
   organization=$(state_value "$file" ORGANIZATION)
-  [[ "$repository" == "$REPOSITORY" ]] ||
+  [[ -z "$repository" || "$repository" == "$REPOSITORY" ]] ||
     die 'managed state belongs to another repository'
   [[ -z "$organization" || "$organization" == "$ORGANIZATION" ]] ||
     die 'managed state belongs to another organization'
@@ -296,18 +291,21 @@ discover_state() {
   validate_state_file "$SOURCE_STATE_FILE"
   if [[ -f "$REGISTRY_FILE" ]]; then
     local registry_names registry_name
+    [[ ! -L "$REGISTRY_FILE" &&
+      "$(stat -c '%U:%G:%a' "$REGISTRY_FILE")" == 'root:root:600' ]] ||
+      die 'host runner registry has unexpected ownership or mode'
     registry_names=$(sed -n 's/^RUNNERS=//p' "$REGISTRY_FILE")
     for registry_name in $(tr ',' ' ' <<<"$registry_names"); do
-      [[ "$registry_name" =~ ^[a-z0-9-]+$ ]] ||
+      [[ "$registry_name" =~ ^public-pr-arm64-0[1-8]$ ||
+        "$registry_name" =~ ^trusted-arm64-0[1-4]$ ||
+        "$registry_name" =~ ^klicker-arm64-runner-0[1-5]$ ]] ||
         die 'host registry contains an unexpected runner name'
       MANAGED_RUNNER_NAMES="${MANAGED_RUNNER_NAMES:+${MANAGED_RUNNER_NAMES} }${registry_name}"
     done
   fi
-  MANAGED_RUNNER_NAMES=$(printf '%s\n' $MANAGED_RUNNER_NAMES | sort -u)  # intentional word split over runner names
-  if [[ "$SOURCE_STATE_FILE" == "$CURRENT_STATE_FILE" ]] &&
-    [[ "$(state_value "$SOURCE_STATE_FILE" RESET_READY)" != 'true' ]]; then
-    die 'a generic runner cannot be reassigned with this one-time legacy reset; rebuild it'
-  fi
+  # Runner names are deliberately word-split, then normalized to one space-separated list.
+  # shellcheck disable=SC2086
+  MANAGED_RUNNER_NAMES=$(printf '%s\n' $MANAGED_RUNNER_NAMES | sort -u | paste -sd' ' -)
 }
 
 validate_admin_access() {
@@ -476,7 +474,7 @@ is_reset_ready() {
 }
 
 validate_reset_ready_state() {
-  local path
+  local path remaining_runner_state
 
   is_reset_ready || return 0
   ! id "$RUNNER_USER" >/dev/null 2>&1 || die "${RUNNER_USER} still exists after reset"
@@ -491,6 +489,12 @@ validate_reset_ready_state() {
     \( -name 'actions.runner.uzh-bf-klicker-uzh.*.service' -o \
     -name 'actions.runner.uzh-bf.*.service' \) -print -quit)" ]] ||
     die 'a runner unit still exists after reset'
+  [[ ! -e "$REGISTRY_FILE" && ! -L "$REGISTRY_FILE" ]] ||
+    die 'host runner registry remains after reset'
+  remaining_runner_state=$(find "$CURRENT_STATE_DIR" -maxdepth 1 \( \
+    -name 'public-pr-arm64-*.env' -o -name 'trusted-arm64-*.env' \) -print -quit)
+  [[ -z "$remaining_runner_state" ]] ||
+    die "per-runner state remains after reset: ${remaining_runner_state}"
   for path in \
     /usr/local/sbin/actions-runner-disk-cleanup \
     /usr/local/sbin/klicker-runner-disk-cleanup \
@@ -520,7 +524,7 @@ print_plan() {
   cat <<EOF
 Runner host cleanup plan (read-only):
   Source state: ${SOURCE_STATE_FILE}
-  Existing runner: ${MANAGED_RUNNER_NAME:-already reset}
+  Existing runners: ${MANAGED_RUNNER_NAMES:-already reset}
   Target profile: ${TARGET_PROFILE}
   Remove: runner service, ${RUNNER_USER}, ${RUNNER_DIR}, Docker packages and local Docker data
   Preserve: ${ADMIN_USER}, SSH keys and hardening, UFW, OpenSSH, sudo, OS updates
@@ -709,8 +713,14 @@ preserve_generic_hardening() {
 }
 
 write_reset_marker() {
+  local runner_state
   CURRENT_STAGE='reset-ready state recording'
   install -d -m 0700 -o root -g root "$CURRENT_STATE_DIR"
+  while IFS= read -r -d '' runner_state; do
+    rm -f -- "$runner_state"
+  done < <(find "$CURRENT_STATE_DIR" -maxdepth 1 -type f \( \
+    -name 'public-pr-arm64-*.env' -o -name 'trusted-arm64-*.env' \) -print0)
+  rm -f -- "$REGISTRY_FILE"
   write_file_from_stdin 0600 "$CURRENT_STATE_FILE" <<EOF
 RESET_READY=true
 TARGET_PROFILE=${TARGET_PROFILE}
@@ -748,7 +758,7 @@ apply_cleanup() {
   write_reset_marker
 
   SOURCE_STATE_FILE=$CURRENT_STATE_FILE
-  MANAGED_RUNNER_NAME=''
+  MANAGED_RUNNER_NAMES=''
   local_check
   log 'Runner host cleanup completed'
   info "The host is ready for provision-hetzner-arm64-runner.sh --apply --profile ${TARGET_PROFILE}."

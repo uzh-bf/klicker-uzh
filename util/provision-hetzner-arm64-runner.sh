@@ -304,7 +304,9 @@ state_value() {
 validate_existing_state() {
   local reset_ready stored_name stored_organization stored_profile stored_scope stored_group stored_storage stored_mount stored_service
   local expected_storage
-  local legacy_dir legacy_state legacy_name host_managed='false'
+  local legacy_dir legacy_state legacy_name legacy_reset_ready existing_host_state host_managed='false'
+  expected_storage='local'
+  [[ -n "$VOLUME_MOUNT" ]] && expected_storage='volume'
 
   if [[ ! -e "$STATE_FILE" ]]; then
     # Host-level assets are shared by every runner on this VM. They may already
@@ -312,6 +314,38 @@ validate_existing_state() {
     # runner owns only its own directory, state file, and service unit.
     legacy_dir="${RUNNER_BASE_DIR}"
     legacy_state="${STATE_DIR}/bootstrap.env"
+    legacy_reset_ready=$(state_file_value "$legacy_state" RESET_READY 2>/dev/null || true)
+    if [[ "$legacy_reset_ready" == 'true' ]]; then
+      [[ -f "$legacy_state" && ! -L "$legacy_state" ]] ||
+        die 'reset state file is invalid'
+      [[ "$(stat -c '%U:%G:%a' "$legacy_state")" == 'root:root:600' ]] ||
+        die 'reset state file has unsafe ownership or mode'
+      [[ "$(state_file_value "$legacy_state" TARGET_PROFILE)" == "$PROFILE" ]] ||
+        die 'this reset host was prepared for a different runner profile'
+      [[ "$(state_file_value "$legacy_state" ADMIN_USER)" == "$ADMIN_USER" ]] ||
+        die 'reset state contains an unexpected admin user'
+      [[ "$(state_file_value "$legacy_state" STORAGE_MODE)" == 'local' &&
+        -z "$(state_file_value "$legacy_state" VOLUME_MOUNT)" ]] ||
+        die 'reset state does not describe the local-disk configuration'
+      [[ -z "$VOLUME_MOUNT" ]] ||
+        die 'a reset local-disk host cannot adopt an attached volume'
+      id "$ADMIN_USER" >/dev/null 2>&1 ||
+        die 'reset state exists but the admin user is missing'
+      ! id "$RUNNER_USER" >/dev/null 2>&1 ||
+        die 'reset state exists but the runner service user remains'
+      [[ ! -e "$RUNNER_BASE_DIR" && ! -L "$RUNNER_BASE_DIR" ]] ||
+        die 'reset state exists but the runner base directory remains'
+      [[ -f "$SSH_HARDENING_FILE" && ! -L "$SSH_HARDENING_FILE" ]] ||
+        die 'reset state exists but generic SSH hardening is missing'
+      ! command -v docker >/dev/null 2>&1 ||
+        die 'reset state exists but Docker remains installed'
+      [[ ! -e /etc/docker && ! -e /var/lib/docker && ! -e /var/lib/containerd ]] ||
+        die 'reset state exists but Docker configuration or data remains'
+      ! compgen -G '/etc/systemd/system/actions.runner.uzh-bf*.service' >/dev/null ||
+        die 'reset state exists but a runner service remains'
+      validate_ssh_only_firewall
+      return
+    fi
     if [[ -d "$legacy_dir" && -f "${legacy_dir}/.runner" ]] &&
       [[ -f "$legacy_state" ]] &&
       legacy_name=$(state_file_value "$legacy_state" RUNNER_NAME) &&
@@ -325,6 +359,22 @@ validate_existing_state() {
       host_managed='true'
       [[ ! -e "$RUNNER_DIR" && ! -L "$RUNNER_DIR" ]] ||
         die 'this runner directory already exists without managed state'
+      if [[ -f "$legacy_state" ]]; then
+        existing_host_state=$legacy_state
+      else
+        existing_host_state=$(find "$STATE_DIR" -maxdepth 1 -type f \( \
+          -name 'public-pr-arm64-*.env' -o -name 'trusted-arm64-*.env' \) -print -quit)
+      fi
+      [[ -n "$existing_host_state" ]] ||
+        die 'managed host has no runner state file'
+      [[ "$(state_file_value "$existing_host_state" PROFILE)" == "$PROFILE" ]] ||
+        die 'runner profile is immutable for every runner on this host'
+      [[ "$(state_file_value "$existing_host_state" RUNNER_GROUP)" == "$RUNNER_GROUP" ]] ||
+        die 'runner group differs from the existing host pool'
+      [[ "$(state_file_value "$existing_host_state" STORAGE_MODE)" == "$expected_storage" ]] ||
+        die 'storage mode differs from the existing host configuration'
+      [[ "$(state_file_value "$existing_host_state" VOLUME_MOUNT)" == "$VOLUME_MOUNT" ]] ||
+        die 'volume mount differs from the existing host configuration'
     fi
     if [[ "$host_managed" != 'true' ]]; then
       if id "$ADMIN_USER" >/dev/null 2>&1 ||
@@ -345,7 +395,7 @@ validate_existing_state() {
         die 'an unmanaged Docker data directory already exists; use a fresh VM'
       fi
     fi
-    if [[ -n "$VOLUME_MOUNT" ]] &&
+    if [[ "$host_managed" != 'true' && -n "$VOLUME_MOUNT" ]] &&
       [[ -e "${VOLUME_MOUNT}/docker" || -e "${VOLUME_MOUNT}/runner-work" ]]; then
       die 'the attached Volume already contains runner-managed paths; refusing adoption'
     fi
@@ -400,8 +450,6 @@ validate_existing_state() {
   stored_storage=$(state_value STORAGE_MODE)
   stored_mount=$(state_value VOLUME_MOUNT)
   stored_service=$(state_value SERVICE_INSTALLED)
-  expected_storage='local'
-  [[ -n "$VOLUME_MOUNT" ]] && expected_storage='volume'
 
   [[ "$stored_name" == "$RUNNER_NAME" ]] || die 'existing managed runner name differs'
   [[ "$stored_organization" == "$ORGANIZATION" ]] || die 'existing managed organization differs'
@@ -877,7 +925,7 @@ EOF
 
 write_managed_state() {
   local service_installed=${1-}
-  local state_temp
+  local state_temp legacy_state legacy_name
   local storage_mode='local'
   [[ -n "$VOLUME_MOUNT" ]] && storage_mode='volume'
   if [[ -z "$service_installed" && -e "$STATE_FILE" ]]; then
@@ -906,6 +954,10 @@ write_managed_state() {
     die 'managed state could not be written'
   fi
   mv -Tf -- "$state_temp" "$STATE_FILE"
+  legacy_state="${STATE_DIR}/bootstrap.env"
+  if [[ "$(state_file_value "$legacy_state" RESET_READY 2>/dev/null || true)" == 'true' ]]; then
+    rm -f -- "$legacy_state"
+  fi
 
   CURRENT_STAGE='host runner registry recording'
   local registry_temp runner_list
@@ -915,6 +967,12 @@ write_managed_state() {
     grep -v '^RUNNERS=' "$REGISTRY_FILE" >"$registry_temp" || true
   fi
   runner_list=$(sed -n 's/^RUNNERS=//p' "$REGISTRY_FILE" 2>/dev/null || true)
+  if [[ -f "$legacy_state" ]]; then
+    legacy_name=$(state_file_value "$legacy_state" RUNNER_NAME)
+    if [[ -n "$legacy_name" ]]; then
+      runner_list="${runner_list:+${runner_list},}${legacy_name}"
+    fi
+  fi
   runner_list="${runner_list:+${runner_list},}${RUNNER_NAME}"
   printf 'RUNNERS=%s\n' "$runner_list" | tr ',' '\n' | sort -u |
     paste -sd, - | sed 's/^/RUNNERS=/' >>"$registry_temp"
