@@ -1275,7 +1275,7 @@ apply_bootstrap() {
   log 'Runner bootstrap completed'
   info "${RUNNER_NAME} is online with labels: ${RUNNER_LABELS}"
   info "Verify the timer with: systemctl status actions-runner-disk-cleanup.timer"
-  info 'Revoke the short-lived GitHub token after all five VMs are provisioned.'
+  info 'Revoke the short-lived GitHub token after all runners are provisioned.'
   info 'Do not close the original root session until runner-admin reconnection remains confirmed.'
 }
 
