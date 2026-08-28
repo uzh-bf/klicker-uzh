@@ -466,7 +466,7 @@ function Index() {
                     pageSize={pageSize}
                     setPageSize={setPageSize}
                     showAll
-                    className="flex-none"
+                    className="mb-20 flex-none md:mb-24"
                   />
                 )}
               </div>
