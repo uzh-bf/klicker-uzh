@@ -559,6 +559,30 @@ test.describe('Tests the availability of standard activity creation formats', ()
     })
     expectNoRawParticipantData(csvExportData)
 
+    await page.route('**/graphql', async (route) => {
+      const operation = parseGraphQLOperation(route.request())
+      if (
+        operation?.operationName === V2_EXPORT_OPERATION &&
+        operation.variables.format === 'JSON'
+      ) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ errors: [{ message: 'Export failed' }] }),
+        })
+        return
+      }
+
+      await route.continue()
+    })
+    const unexpectedDownload = page
+      .waitForEvent('download', { timeout: 1_000 })
+      .then(() => true)
+      .catch(() => false)
+    await page.getByTestId('analytics-export-json').click()
+    await expect(page.getByTestId('analytics-export-error')).toBeVisible()
+    expect(await unexpectedDownload).toBe(false)
+
     expectNoV1DisclosureOperations(recorder)
   })
 

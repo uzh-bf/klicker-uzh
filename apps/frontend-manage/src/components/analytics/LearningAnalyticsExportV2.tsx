@@ -27,8 +27,12 @@ function LearningAnalyticsExportV2({ courseId }: { courseId: string }) {
 
     try {
       const result = await loadExport({ variables: { courseId, format } })
+      if (result.error) throw result.error
+
       const exported = result.data?.getCourseLearningAnalyticsExportV2
-      if (!exported) throw new Error('Learning analytics export unavailable')
+      if (!exported || exported.format !== format) {
+        throw new Error('Learning analytics export unavailable')
+      }
 
       const url = URL.createObjectURL(
         new Blob([exported.content], { type: exported.mimeType })
