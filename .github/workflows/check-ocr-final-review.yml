@@ -402,6 +402,15 @@ jobs:
           STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
         run: |
           set -euo pipefail
+          echo '::group::Final review CLI failure output'
+          cat "${STDERR_PATH}" 2>/dev/null || echo 'stderr log was not created'
+          echo '::endgroup::'
+          if [[ -f "${RESULT_PATH}" ]]; then
+            echo '::group::Final review CLI result JSON'
+            cat "${RESULT_PATH}"
+            echo
+            echo '::endgroup::'
+          fi
           {
             echo '### Final review CLI failure'
             echo
@@ -862,6 +871,15 @@ jobs:
           STDERR_PATH: ${{ runner.temp }}/final-ai-stack-code-stderr.log
         run: |
           set -euo pipefail
+          echo '::group::Cumulative review CLI failure output'
+          cat "${STDERR_PATH}" 2>/dev/null || echo 'stderr log was not created'
+          echo '::endgroup::'
+          if [[ -f "${RESULT_PATH}" ]]; then
+            echo '::group::Cumulative review CLI result JSON'
+            cat "${RESULT_PATH}"
+            echo
+            echo '::endgroup::'
+          fi
           {
             echo '### Cumulative review CLI failure'
             echo
