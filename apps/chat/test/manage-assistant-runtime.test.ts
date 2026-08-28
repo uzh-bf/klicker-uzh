@@ -51,21 +51,23 @@ describe('Manage assistant runtime helpers', () => {
     const prompt = buildManageAssistantSystemPrompt(SAMPLE_CONTEXT)
 
     // Persistence intent -> mandatory tool call, naming the exact tool.
-    expect(prompt).toContain('is a persistence intent')
     expect(prompt).toContain(
-      'create, make, save, store, persist, or add a question'
+      'A request for a question draft is also a persistence intent'
     )
     expect(prompt).toContain('klicker_lecturer_element_create_draft_proposal')
     expect(prompt).toContain('always use the signed proposal tool')
+    expect(prompt).toContain(
+      'Do not build the draft with the scaffolding tools first'
+    )
 
     // Never print proposal/question JSON as message text.
     expect(prompt).toContain(
       'never print a proposal or question as JSON in the chat message text'
     )
 
-    // Draft-only scaffolding tools are brainstorming-only, prose output.
+    // Draft-only scaffolding tools are proposal helpers / no-save previews.
     expect(prompt).toContain(
-      'Draft-only scaffolding tools are for brainstorming and non-persisted previews only'
+      'Draft-only scaffolding tools are intermediate helpers'
     )
     expect(prompt).toContain('never as JSON')
 

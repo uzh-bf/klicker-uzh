@@ -10,8 +10,8 @@ export const DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE: ManageAssistantPanelSize = {
 
 const MIN_PANEL_HEIGHT = 448
 const MIN_PANEL_WIDTH = 360
-const MAX_PANEL_HEIGHT = 864
-const MAX_PANEL_WIDTH = 720
+const MAX_PANEL_HEIGHT = 1200
+const MAX_PANEL_WIDTH = 1024
 const VIEWPORT_MARGIN = 48
 
 function clamp(value: number, minimum: number, maximum: number) {

@@ -22,7 +22,7 @@ assert.deepEqual(
     { height: 2_000, width: 2_000 },
     { height: 800, width: 1_200 }
   ),
-  { height: 752, width: 720 }
+  { height: 752, width: 1_024 }
 )
 
 assert.deepEqual(
