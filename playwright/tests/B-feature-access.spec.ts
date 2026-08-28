@@ -379,17 +379,18 @@ test.describe('Tests the availability of standard activity creation formats', ()
       ).toBeVisible()
     }
 
-    expect(
-      recorder.operations.map((operation) => operation.operationName)
-    ).not.toEqual(
-      expect.arrayContaining([
-        'GetLearningAnalyticsCourses',
-        'GetCourseLearningAnalyticsControl',
-        V2_ACTIVITY_OPERATION,
-        V2_PERFORMANCE_OPERATION,
-        V2_EXPORT_OPERATION,
-      ])
+    const operationNames = recorder.operations.map(
+      (operation) => operation.operationName
     )
+    for (const protectedOperationName of [
+      'GetLearningAnalyticsCourses',
+      'GetCourseLearningAnalyticsControl',
+      V2_ACTIVITY_OPERATION,
+      V2_PERFORMANCE_OPERATION,
+      V2_EXPORT_OPERATION,
+    ]) {
+      expect(operationNames).not.toContain(protectedOperationName)
+    }
   })
 
   test('Show analytics to a non-manager without exposing course settings', async ({
