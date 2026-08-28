@@ -40,7 +40,7 @@
   pull-request creation and maintenance, and exact-head CI monitoring.
 - Upstream dependency: Klicker implementation may prepare locally in parallel,
   but the version pin, final provider matrix, push, and pull request require the
-  published devrouter `0.0.43` artifact. An unpublished package or host checkout
+  published devrouter `0.0.44` artifact. An unpublished package or host checkout
   is not final acceptance evidence.
 - Withheld authority: Klicker merge, deployment, machine provider-preference
   changes, Devsy installation/configuration, secret access, external model
@@ -49,7 +49,7 @@
 - Execution owner: The current main session is the cross-repository execution
   orchestrator because the upstream validator, release artifact, consumer pin,
   provider runtimes, and final evidence are one critical path.
-- Terminal: The pushed Klicker exact head pins published devrouter `0.0.43`;
+- Terminal: The pushed Klicker exact head pins published devrouter `0.0.44`;
   static checks, provider matrix, required reviews, and exact-head CI pass; its
   pull request is merge-ready; every task runtime is stopped with zero owned
   routes. Merge and destructive cleanup remain separate decisions.
@@ -73,7 +73,8 @@
 - Upstream plan: devrouter
   `docs/project/2026-08-28-managed-bootstrap-ordering-plan.md` on branch
   `rs/managed-bootstrap-ordering`.
-- Required release: published devrouter `0.0.43`.
+- Required release: published devrouter `0.0.44`, which includes the `0.0.43`
+  bootstrap-ordering validator and parallel-worktree TLS serialization.
 - Packaging: One ordinary consumer pull request after one upstream release.
   This is not a cross-repository GitHub stack.
 - Unrelated checkout: The primary checkout branch
@@ -108,8 +109,9 @@
   This is the provider-facing synchronization contract.
 - Keep the committed native `runServices`, lifecycle command, Compose files,
   mounts, ports, and workspace folder unchanged.
-- Pin published devrouter `0.0.43`, whose managed-adapter preflight rejects this
-  repository if the wait contract is removed or weakened.
+- Pin published devrouter `0.0.44`, whose managed-adapter preflight rejects this
+  repository if the wait contract is removed or weakened and whose TLS lock
+  preserves route coverage when provider worktrees start concurrently.
 
 ### Completion marker
 
@@ -211,7 +213,7 @@
 | --- | --- | --- | --- | --- |
 | K0 plan | main | approval | Both linked plans are approved and committed | planner complete via disclosed continuity route |
 | K1 bootstrap marker | executor | K0 | Marker operations, scripts, tests, and docs pass locally | simplifier + lifecycle slice-reviewer |
-| K2 released pin and static matrix | main | upstream `0.0.43` | Pin, config, profile tests, and generated-config proof pass | simplifier; main verifies |
+| K2 released pin and static matrix | main | upstream `0.0.44` | Pin, config, profile tests, and generated-config proof pass | simplifier; main verifies |
 | K3 provider matrix | main | K1-K2 | DevPod and Devsy cold/warm/browser/cleanup proof passes | main integration evidence |
 | K4 delivery | main | K3 | Final review, exact-head CI, PR body, and threads reach merge-ready | final-reviewer |
 
@@ -321,16 +323,16 @@
 
 - Route: `main`; execution-tier skip reason: exact published artifact identity
   and the cross-repository release gate are critically coupled.
-- Acceptance: Published `0.0.43` is read back, the pin and generated/source
+- Acceptance: Published `0.0.44` is read back, the pin and generated/source
   configs agree, and the complete static profile matrix passes.
-- After registry verification, pin exactly devrouter `0.0.43` in
+- After registry verification, pin exactly devrouter `0.0.44` in
   `.devrouter.yml` and matching guidance.
 - Run `test:dev-runtime`, `test:profile-resolver`, source/generated devcontainer
   inspection, Compose validation, changed-file formatting, relevant docs/skill
   checks, and focused package checks.
 - Confirm the profile table, native `runServices`, managed base, profile service
   registry, process registry, and route-free capability behavior are unchanged.
-- Commit: `chore(devcontainer): require devrouter 0.0.43`.
+- Commit: `chore(devcontainer): require devrouter 0.0.44`.
 
 ### K3: run the provider matrix
 
@@ -391,8 +393,12 @@
   findings, and the lifecycle reviewer correction pass returned `APPROVED`.
 - `2026-08-28`: Devrouter PR #41 merged at `118a8e4`; release workflow
   `33193690771` published `@devrouter/cli@0.0.43` with provenance. Registry
-  metadata and the installed CLI resolve to exact version `0.0.43`. K2 pins
-  that published artifact and synchronizes current consumer guidance.
+  metadata resolved to exact version `0.0.43`, establishing the bootstrap
+  validator baseline.
+- `2026-08-28`: Devrouter PR #42 merged at `9a56b55`; release workflow
+  `33203581483` published `@devrouter/cli@0.0.44` with provenance. Registry and
+  packaged CLI readback report `0.0.44`; K2 now pins that release so concurrent
+  provider worktrees also serialize shared TLS refresh.
 - Current state: `active`. Completed slices: K0-K1. Active: K2 static matrix.
   Remaining: K3-K4. Latest evidence: `bash util/test-dev-runtime.sh`, shell
   syntax for all four scripts, and `git diff --check` pass; no task provider
