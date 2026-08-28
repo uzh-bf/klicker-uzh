@@ -40,13 +40,13 @@ import {
   USER_ID_TEST6,
   USER_ID_TEST7,
 } from './util/constants.js'
+import { probeSemanticEvaluatorStub } from './util/semanticEvaluatorStubUrl.js'
 
 const SEMANTIC_EVALUATOR_STUB_URL =
   process.env.CATALYST_FORMATIVE_EVALUATOR_URL ??
   'http://127.0.0.1:7099/evaluate'
 
-async function waitForSemanticEvaluatorStub() {
-  const healthUrl = new URL('/healthz', SEMANTIC_EVALUATOR_STUB_URL)
+async function waitForSemanticEvaluatorStub(healthUrl: URL) {
   const deadline = Date.now() + 10_000
 
   while (Date.now() < deadline) {
@@ -69,23 +69,12 @@ async function startSemanticEvaluatorStub() {
     throw new Error('The semantic evaluator stub requires NODE_ENV=test')
   }
 
-  const healthUrl = new URL('/healthz', SEMANTIC_EVALUATOR_STUB_URL)
-  try {
-    const existing = await fetch(healthUrl)
-    if (existing.ok) {
-      console.log('[global-setup] Reusing semantic evaluator stub.')
-      return
-    }
-  } catch {
-    // No existing stub is listening, so this run owns one.
-  }
-
-  const evaluatorUrl = new URL(SEMANTIC_EVALUATOR_STUB_URL)
-  if (
-    evaluatorUrl.hostname !== '127.0.0.1' ||
-    evaluatorUrl.pathname !== '/evaluate'
-  ) {
-    throw new Error('Playwright evaluator stub must use 127.0.0.1/evaluate')
+  const { evaluatorUrl, healthUrl, running } = await probeSemanticEvaluatorStub(
+    SEMANTIC_EVALUATOR_STUB_URL
+  )
+  if (running) {
+    console.log('[global-setup] Reusing semantic evaluator stub.')
+    return
   }
 
   const child = spawn(
@@ -102,7 +91,7 @@ async function startSemanticEvaluatorStub() {
   )
   if (!child.pid) throw new Error('Could not start semantic evaluator stub')
   process.env.PLAYWRIGHT_SEMANTIC_EVALUATOR_PID = String(child.pid)
-  await waitForSemanticEvaluatorStub()
+  await waitForSemanticEvaluatorStub(healthUrl)
 }
 
 // ---------------------------------------------------------------------------
