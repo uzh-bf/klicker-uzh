@@ -53,7 +53,7 @@ Options:
   --runner-name NAME  public-pr-arm64-01 through -08, or
                       trusted-arm64-01 through -04 for the matching profile.
   --volume-mount PATH Use an already attached and mounted /mnt/HC_Volume_<id>.
-                      Omit this option to use the VM's 80 GB local NVMe disk.
+                      Omit this option to use the VM's local NVMe disk.
   -h, --help          Show this help.
 
 Apply prompts for one short-lived GitHub token with organization Self-hosted
@@ -1222,12 +1222,12 @@ apply_bootstrap() {
   configure_profile
 
   if [[ -z "$VOLUME_MOUNT" ]]; then
-    info 'Storage default: local 80 GB NVMe. Pass --volume-mount only for an attached Volume.'
+    info 'Storage default: local NVMe. Pass --volume-mount only for an attached Volume.'
   fi
   local_check
 
   provider_ack=$(prompt_line \
-    'Confirm CAX21/Ubuntu ARM64, spread group, SSH-only firewall, and protected optional Volume (yes/no)')
+    'Confirm Hetzner ARM64/Ubuntu, spread group, SSH-only firewall, and protected optional Volume (yes/no)')
   [[ "$provider_ack" == 'yes' ]] || die 'provider prerequisites were not acknowledged'
 
   if [[ "$PROFILE" == 'public-pr' ]]; then

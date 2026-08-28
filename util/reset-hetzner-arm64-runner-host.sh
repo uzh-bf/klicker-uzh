@@ -48,7 +48,7 @@ Options:
 Apply removes the GitHub runner service, runner credentials and work directory,
 the github-runner user, Docker packages and all local Docker data. It retains
 runner-admin, SSH hardening, root and admin SSH keys, UFW, OpenSSH, sudo, and
-unattended upgrades. It supports only the local 80 GB disk configuration.
+unattended upgrades. It supports only the local disk configuration.
 
 This is not compromise recovery and does not securely erase deleted disk
 blocks. Do not use it if untrusted code may have run or compromise is suspected.
@@ -529,7 +529,7 @@ Runner host cleanup plan (read-only):
   Remove: runner service, ${RUNNER_USER}, ${RUNNER_DIR}, Docker packages and local Docker data
   Preserve: ${ADMIN_USER}, SSH keys and hardening, UFW, OpenSSH, sudo, OS updates
   Firewall: ${FIREWALL_STATUS}
-  Storage: local 80 GB disk only
+  Storage: local disk only
 
 No changes were made. Cleanup does not securely erase disk blocks and cannot
 recover a compromised host. Run with --check first, then --apply only if the
