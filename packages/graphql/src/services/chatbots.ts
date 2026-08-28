@@ -6,6 +6,7 @@ import {
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
 import remarkParse from 'remark-parse'
 import { unified } from 'unified'
 import { z } from 'zod'
@@ -177,7 +178,10 @@ const BASIC_DISCLAIMER_MARKDOWN_NODES = new Set([
   'listItem',
   'break',
 ])
-const disclaimerMarkdownParser = unified().use(remarkParse).use(remarkGfm)
+const disclaimerMarkdownParser = unified()
+  .use(remarkParse)
+  .use(remarkGfm)
+  .use(remarkMath)
 
 const metadataAndModelEditableStatuses: DB.ChatbotStatus[] = [
   DB.ChatbotStatus.DRAFT,

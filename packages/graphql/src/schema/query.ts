@@ -137,7 +137,8 @@ export const Query = builder.queryType({
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
     const asChatbotAuthor = {
       ...asUser,
-      chatbotAuthoring: true,
+      catalyst: true,
+      scope: DB.UserLoginScope.FULL_ACCESS,
     }
 
     return {
