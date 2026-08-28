@@ -1,5 +1,6 @@
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import { withCitationContract } from '@/src/lib/server/citationInstructions'
+import { withCoursePolicyContract } from '@/src/lib/server/coursePolicyInstructions'
 import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
 
 /**
@@ -39,15 +40,15 @@ function resolveBaseSystemPrompt(
 
 /**
  * Compile the full system prompt actually sent to the model: the resolved base
- * prompt with the layered runtime contracts applied in fixed order — citation
- * (inner) then language style (outer), so the final text reads base, then
- * citation, then language.
+ * prompt with the layered runtime contracts applied in fixed order: course
+ * policy, conditional citations, then language. The final text therefore reads
+ * base persona, course policy, citation policy, language policy.
  *
  * The citation contract is appended only when a doc_query-style RAG tool is
  * available for the request (decided inside `withCitationContract` from
- * `toolNames`). The language-style contract is unconditional, because a stored
- * lecturer prompt replaces `DEFAULT_PROMPT` entirely and Swiss High German
- * orthography must still be enforced for every chatbot.
+ * `toolNames`). The course and language contracts are unconditional because a
+ * stored lecturer prompt replaces `DEFAULT_PROMPT` entirely and must not be
+ * able to remove platform scope, privacy, safety, or language policy.
  */
 export function compileSystemPrompt(
   systemPrompts: unknown,
@@ -55,5 +56,7 @@ export function compileSystemPrompt(
   toolNames: readonly string[]
 ): string {
   const base = resolveBaseSystemPrompt(systemPrompts, selectedMode)
-  return withLanguageStyleContract(withCitationContract(base, toolNames))
+  const coursePolicy = withCoursePolicyContract(base, toolNames)
+  const citations = withCitationContract(coursePolicy, toolNames)
+  return withLanguageStyleContract(citations)
 }
