@@ -314,18 +314,14 @@ fi
 # both probes inside one short deadline so devrouter retains startup ownership.
 # Only profiles that actually start Manage pay the warm-up cost.
 if [ "$PROFILE_WANTS_DEV" = yes ] && [[ "${READINESS_APPS}" == *frontend-manage* ]]; then
-  if [[ "${APP_ORIGIN_MANAGE}" == https://* ]] &&
-    [ -s /etc/devrouter/mkcert-rootCA.pem ]; then
-    MANAGE_CURL_CA=(--cacert /etc/devrouter/mkcert-rootCA.pem)
-  else
-    MANAGE_CURL_CA=()
-  fi
-
-
+  # Linked-worktree routes are published only after post-start completes, so
+  # warm the Next.js process directly instead of depending on its future route.
+  manage_warmup_origin=http://localhost:3002
   manage_probe_deadline=$((SECONDS + 60))
   manage_list_ready=false
   manage_course_ready=false
-  manage_course_path="${APP_ORIGIN_MANAGE}/courses/__devrouter_warmup"
+  manage_list_path="${manage_warmup_origin}/courses"
+  manage_course_path="${manage_warmup_origin}/courses/__devrouter_warmup"
   probe_manage_route() {
     local remaining_seconds=$((manage_probe_deadline - SECONDS))
     if (( remaining_seconds <= 0 )); then
@@ -346,14 +342,14 @@ if [ "$PROFILE_WANTS_DEV" = yes ] && [[ "${READINESS_APPS}" == *frontend-manage*
       --output /dev/null
       --write-out '%{http_code} %{size_download}'
     )
-    curl "${MANAGE_CURL_CA[@]}" "${probe_args[@]}" "$1" || true
+    curl "${probe_args[@]}" "$1" || true
   }
 
   manage_list_probe='000 0'
   manage_course_probe='000 0'
   while (( SECONDS < manage_probe_deadline )); do
     if [[ "$manage_list_ready" == false ]]; then
-      manage_list_probe=$(probe_manage_route "${APP_ORIGIN_MANAGE}/courses")
+      manage_list_probe=$(probe_manage_route "$manage_list_path")
       [[ "$manage_list_probe" =~ ^200\ [1-9][0-9]*$ ]] && manage_list_ready=true
     fi
     if [[ "$manage_course_ready" == false ]]; then
@@ -366,7 +362,7 @@ if [ "$PROFILE_WANTS_DEV" = yes ] && [[ "${READINESS_APPS}" == *frontend-manage*
   done
 
   if [[ "$manage_list_ready" == false || "$manage_course_ready" == false ]]; then
-    echo "[post-start] WARN: Manage course-route warm-up did not finish; list=${manage_list_probe} (${APP_ORIGIN_MANAGE}/courses), course=${manage_course_probe} (${manage_course_path}); leaving readiness to devrouter." >&2
+    echo "[post-start] WARN: Manage course-route warm-up did not finish; list=${manage_list_probe} (${manage_list_path}), course=${manage_course_probe} (${manage_course_path}); leaving readiness to devrouter." >&2
   fi
 fi
 
