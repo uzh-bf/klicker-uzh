@@ -437,6 +437,13 @@
   ordering persisted the colliding checkout token. A reviewed Devrouter
   follow-up now owns collision-safe allocation without migrating established
   workspaces.
+- `2026-08-29`: The packed Devrouter `0.0.45` candidate at PR #43 passed the
+  isolated collision acceptance test before publication. Two branches with the
+  same readable 32-character prefix received distinct persisted identities;
+  one ran through DevPod and one through Devsy at the same time. Their separate
+  HTTPS routes both returned the expected fixture response. Both exact runtimes
+  were then stopped, and workspace readback reported zero remaining routes.
+  Merge, publication, and installation remain separately approval-gated.
 - Current state: `active`. Completed: K0-K2 and the non-collision K3 provider,
   profile, capability, cold-bootstrap, and browser evidence. Active: upstream
   collision-safe Devrouter patch. Remaining: repin, fresh mixed-provider
