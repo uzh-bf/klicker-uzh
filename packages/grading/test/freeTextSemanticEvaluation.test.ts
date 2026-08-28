@@ -295,6 +295,15 @@ describe('semantic free-text evaluation', () => {
   it('maps default outcomes at the confirmed 50 and 75 boundaries', () => {
     const bands = getDefaultFreeTextOutcomeBands()
 
+    expect(bands.map((band) => band.label)).toEqual([
+      'Not yet correct',
+      'Partially correct',
+      'Correct',
+    ])
+    expect(
+      getDefaultFreeTextOutcomeBands('de').map((band) => band.label)
+    ).toEqual(['Noch nicht korrekt', 'Teilweise korrekt', 'Korrekt'])
+
     expect(
       mapFreeTextOutcome({ score: 49.99, outcomeBands: bands })
     ).toMatchObject({ id: 'not-yet-correct', category: 'INCORRECT' })

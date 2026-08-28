@@ -9,6 +9,7 @@ enum FreeTextPracticeCycleStatus {
   CORRECT
   SOLUTION_REVEALED
   EXHAUSTED
+  UNAVAILABLE
 }
 
 enum FreeTextEvaluationStatus {
@@ -175,6 +176,7 @@ model FreeTextPracticeCycle {
 
   @@unique([participantId, elementInstanceId, ordinal])
   @@index([participantId, practiceQuizId])
+  @@index([practiceQuizId, elementInstanceId])
   @@index([elementInstanceId, status])
 }
 

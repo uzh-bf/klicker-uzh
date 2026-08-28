@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "FreeTextPracticeCycleStatus" AS ENUM ('ACTIVE', 'CORRECT', 'SOLUTION_REVEALED', 'EXHAUSTED');
+CREATE TYPE "FreeTextPracticeCycleStatus" AS ENUM ('ACTIVE', 'CORRECT', 'SOLUTION_REVEALED', 'EXHAUSTED', 'UNAVAILABLE');
 
 -- CreateEnum
 CREATE TYPE "FreeTextEvaluationStatus" AS ENUM ('PENDING', 'EVALUATED', 'UNAVAILABLE');
@@ -84,6 +84,9 @@ CREATE INDEX "FreeTextConsentEvent_participantId_disclosu_idx" ON "FreeTextConse
 
 -- CreateIndex
 CREATE INDEX "FreeTextPracticeCycle_participantId_practiceQuizId_idx" ON "FreeTextPracticeCycle"("participantId", "practiceQuizId");
+
+-- CreateIndex
+CREATE INDEX "FreeTextPracticeCycle_practiceQuizId_elementInstanceId_idx" ON "FreeTextPracticeCycle"("practiceQuizId", "elementInstanceId");
 
 -- CreateIndex
 CREATE INDEX "FreeTextPracticeCycle_elementInstanceId_status_idx" ON "FreeTextPracticeCycle"("elementInstanceId", "status");

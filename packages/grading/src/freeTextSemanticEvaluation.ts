@@ -2,6 +2,7 @@ import type {
   FreeTextOutcomeBand,
   FreeTextRubricAssessment,
   FreeTextRubricSchema,
+  SemanticFreeTextConfig,
 } from '@klicker-uzh/types'
 
 const SCORE_MIN = 0
@@ -267,25 +268,40 @@ export function validateEvaluateFreeTextResponse({
   return errors
 }
 
-export function getDefaultFreeTextOutcomeBands(): FreeTextOutcomeBand[] {
+export function getDefaultFreeTextOutcomeBands(
+  language: SemanticFreeTextConfig['question_language'] = 'en'
+): FreeTextOutcomeBand[] {
+  const labels =
+    language === 'de'
+      ? {
+          incorrect: 'Noch nicht korrekt',
+          partial: 'Teilweise korrekt',
+          correct: 'Korrekt',
+        }
+      : {
+          incorrect: 'Not yet correct',
+          partial: 'Partially correct',
+          correct: 'Correct',
+        }
+
   return [
     {
       id: 'not-yet-correct',
-      label: 'notYetCorrect',
+      label: labels.incorrect,
       min_score: 0,
       max_score: 50,
       category: 'INCORRECT',
     },
     {
       id: 'partially-correct',
-      label: 'partiallyCorrect',
+      label: labels.partial,
       min_score: 50,
       max_score: 75,
       category: 'PARTIAL',
     },
     {
       id: 'correct',
-      label: 'correct',
+      label: labels.correct,
       min_score: 75,
       max_score: 100,
       category: 'CORRECT',
