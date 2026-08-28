@@ -104,6 +104,7 @@
     "syncpack:mismatches:fix": "syncpack fix-mismatches",
     "syncpack:update": "syncpack update",
     "test:dev-runtime": "bash ./util/test-dev-runtime.sh",
+    "test:profile-resolver": "bash ./util/test-profile-resolver.sh",
     "test:run": "turbo run test:run",
     "test:run:playwright": "pnpm playwright:host",
     "test:watch": "run-p --npm-path pnpm test dev:playwright"

@@ -141,14 +141,17 @@ The policy must survive stored lecturer prompts and apply to the existing Inform
 - Decision: Add a dedicated course-policy helper, broaden the language helper, and preserve the citation helper unchanged.
 - Risk: The text controls privacy and safety behavior but remains probabilistic model instruction, not deterministic enforcement.
 - Route: `main`.
-- Acceptance: the scoped diff contains only the plan, runtime policy, tests, and wiki update; focused and full checks pass; required reviews have no unresolved must-fix finding.
+- Acceptance: the scoped diff contains only the plan, runtime policy, tests,
+  and wiki update; focused and full checks pass; required reviews have no
+  unresolved must-fix finding.
 - Test obligation: consume every row of the test portfolio above; add no overlapping model-behavior suite.
 - Do:
   - Add `apps/chat/src/lib/server/coursePolicyInstructions.ts` with unconditional course/safety/privacy policy and conditional `doc_query` grounding.
   - Expand `apps/chat/src/lib/server/languageInstructions.ts` with the conversation-language lock while retaining Swiss High German rules.
   - Update `apps/chat/src/lib/server/systemPromptCompiler.ts` to compose base, course policy, citation policy, and language policy in the decided order.
   - Extend `apps/chat/test/system-prompt-compiler.test.ts` and the existing language helper tests when that is the narrowest stable seam.
-  - Update `docs/chat-platform.md` and bump its timestamp.
+  - Update `docs/chat-platform.md` and bump its timestamp. Keep the reserved
+    `docs/log/` path absent; Git history and this plan retain change evidence.
   - Do not edit route inputs, labels, defaults, seeds, schemas, tools, citation numbering, or AI Buddy files.
 - Check without starting a local runtime:
   - Run `git diff --check` and inspect the exact diff and staged content for unrelated changes, secrets, and personal data.
@@ -180,3 +183,9 @@ The policy must survive stored lecturer prompts and apply to the existing Inform
 - Runtime: an initial managed-runtime setup was stopped immediately after the user clarified that no runtime was wanted. Its post-start readiness failed before checks ran; provider `rs-chat-course-language-groundin` is `Stopped` and the exact worktree has zero routes.
 - Unresolved gates outside this terminal condition: hosted CI before ready marking or merge. Local toolchain and chatbot tests were deliberately not run. Integration, secrets, live evaluation, database, deployment, merge, and cleanup remain withheld.
 - Next action: none under the current authority. PR readiness, merge, deployment, live evaluation, and cleanup require separate direction.
+- 2026-08-28 integration correction: The merged package briefly restored
+  `docs/log/2026-08-27-course-chatbot-policy.md`, contradicting the repository's
+  established removed-artifact policy and blocking `check:removed-doc-artifacts`.
+  The redundant log was removed; its durable policy content remains in
+  `docs/chat-platform.md`, and delivery evidence remains in this plan and Git
+  history.

@@ -98,14 +98,20 @@ For authoring specifics, helper patterns, and failure triage, use the `klicker-p
 ## E2E environment dependencies
 
 - The local Chat model simulation includes LiteLLM's `auto-router` and
-  the GPT-5.6 Luna/Sol target aliases. After `devrouter ensure .`, verify the
+  the GPT-5.6 Luna/Sol target aliases. Start it with
+  `devrouter ensure . --profile chat,ai`; add `mcp` for the seeded synthetic
+  tool path. Then verify the
   LiteLLM liveness endpoint, direct embedding/model probes, expected Auto V2
   routing decisions in LiteLLM logs, and the chat credits response before
   browser testing the `Auto Mode`/`GPT-5.6 Luna` picker. A real
   `UPSTREAM_OPENAI_API_KEY` is required for these calls; service health alone is
   not classification or answer-stream evidence.
-- Tests that **publish, schedule, or end activities** need the Hatchet **general worker** running on top of the test stack — otherwise mutations fail with `workflow not found`. The worker needs `DATABASE_URL` pointed at the test DB ([Async & Workers](./async-and-workers.md)).
-- **Live-quiz response tests** additionally need `response-api` + the response processor with the same `APP_SECRET`/Redis/Postgres settings — otherwise the UI accepts answers that never reach cockpit/evaluation.
+- Tests that **publish, schedule, or end activities** need the Hatchet **general worker** running on top of the test stack — otherwise mutations fail with `workflow not found`. Use `live-quiz`, `manage,live-quiz`, or `full`; the worker needs `DATABASE_URL` pointed at the test DB ([Async & Workers](./async-and-workers.md)).
+- **Live-quiz response tests** use `devrouter ensure . --profile live-quiz`.
+  Startup proves Response API's `/healthz` contract plus live general and
+  response-processor worker descendants before reporting ready. Without those
+  processes and matching `APP_SECRET`/Redis/Postgres settings, the UI can
+  accept answers that never reach cockpit/evaluation.
 - Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, and the absence of horizontal overflow.
 
 ## CI matrix

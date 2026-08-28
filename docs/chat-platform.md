@@ -44,6 +44,10 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 - Local model proxy: the `litellm` compose service (port 4000).
 - Local MCP fixture: `scripts/local-mcp-server.mjs` exposes a deterministic,
   read-only `doc_query` tool on port 1417 for the seeded Benibot.
+- Local runtime profiles keep these capabilities independent: `chat` starts
+  the Chat/PWA/API/Auth app set, `ai` starts LiteLLM, and `mcp` starts the
+  fixture. Use `chat,ai,mcp` for the complete synthetic model/tool path; plain
+  `chat` intentionally starts neither optional capability.
 
 The chat route returns an AI SDK UI message stream and passes
 `consumeSseStream: consumeStream` to `toUIMessageStreamResponse`. Keep this
@@ -763,8 +767,9 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 
 ## Testing
 
-The self-contained devcontainer starts the seeded local MCP fixture through
-`post-start.sh`. Benibot's Tutor and Explainer configurations already point to
+Start the self-contained devcontainer with
+`devrouter ensure . --profile chat,ai,mcp`. `post-start.sh` then starts the
+seeded local MCP fixture. Benibot's Tutor and Explainer configurations point to
 `http://localhost:1417/mcp` and allow `doc_query`; the runtime namespaces the
 tool as `KB_doc_query`. Keep Auto Mode selected, then prompt Benibot with “Use
 the local MCP tool to test the integration. Search for
