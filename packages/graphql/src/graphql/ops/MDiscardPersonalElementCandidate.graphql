@@ -1,3 +1,9 @@
-mutation MDiscardPersonalElementCandidate($courseId: String!, $candidateId: String!) {
-  discardPersonalElementCandidate(courseId: $courseId, candidateId: $candidateId)
+mutation MDiscardPersonalElementCandidate(
+  $courseId: String!
+  $candidateId: String!
+) {
+  discardPersonalElementCandidate(
+    courseId: $courseId
+    candidateId: $candidateId
+  )
 }
