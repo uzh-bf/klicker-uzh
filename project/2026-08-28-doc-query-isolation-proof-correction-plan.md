@@ -121,26 +121,28 @@ branch integration, and final delivery are coupled on the critical path.
 
 ## Progress
 
-- Status: Source-reference-only correction implemented; local review gates are
-  next.
+- Status: Source-reference-only correction implemented; slice-review
+  corrections are verified locally.
 - Completed: False-positive classification, current-base worktree, continuity
   planning review, purpose-based naming, reviewed proof custody and lifecycle
   protections, asymmetric marker logic, regression coverage, and wiki
-  documentation.
+  documentation, transport retry refusal, canonical UUID cardinality checks,
+  strict legacy-manifest refusal, and the accepted simplifier reductions.
 - Current branch: Plan commit over the recorded `origin/v3-ai@edae58628`
   baseline. The remote target has since advanced by one deployment-annotation
   commit; no integration has occurred.
 - Fresh checks: Node syntax passed; Biome passed for the helper and test;
-  Prettier passed for the plan and wiki; focused Vitest passed 17/17 under
+  Prettier passed for the plan and wiki; focused Vitest passed 19/19 under
   pinned Node 24; `git diff --check` passed.
 - Environment gap: Exact-worktree `devrouter ensure` stopped before creating a
   runtime because the current target's devcontainer defines
   `postCreateCommand` without `waitFor`. The host fallback cannot build all
   internal workspaces, so Chat TypeScript and full-suite collection remain for
   exact-head CI rather than being claimed as local passes.
-- Remaining: Implementation commit, slice gates, final review, explicit push,
-  pull request, exact-head CI, target integration decision if still required,
-  and ready state.
+- Remaining: Correction commit, slice-review confirmation, final review,
+  explicit push, pull request, exact-head CI, target integration decision if
+  still required, and ready state.
 - Required delivery layer: Ready pull request. Achieved layer: Verified local
   correction.
-- Next action: Commit the implementation and run the two required slice gates.
+- Next action: Commit the review corrections and obtain the slice-review
+  confirmation.

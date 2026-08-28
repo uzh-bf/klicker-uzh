@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { exportPKCS8, generateKeyPair } from 'jose'
 import { afterEach, describe, expect, test } from 'vitest'
 import {
+  createMcpTransport,
   minimalChildEnvironment,
   runProofMatrix,
   superviseProof,
@@ -16,7 +17,6 @@ const temporaryDirectories: string[] = []
 type MockToolResult = {
   isError?: boolean
   content: Array<{ type: 'text'; text: string }>
-  toolResult: unknown
 }
 
 afterEach(async () => {
@@ -115,7 +115,7 @@ async function writeDummy(source: string) {
   temporaryDirectories.push(directory)
   const path = join(directory, 'child.mjs')
   await writeFile(path, source, { mode: 0o700 })
-  return { directory, path, lockPath: join(directory, 'proof.lock') }
+  return { path, lockPath: join(directory, 'proof.lock') }
 }
 
 describe('STG Doc Query proof manifest', () => {
@@ -133,8 +133,22 @@ describe('STG Doc Query proof manifest', () => {
 
   test('refuses duplicate target chatbots before any proof call', () => {
     const duplicate = manifest()
-    duplicate.cases[1].chatbotIds[0] = duplicate.cases[0].chatbotIds[0]
+    duplicate.cases[1].chatbotIds[0] =
+      duplicate.cases[0].chatbotIds[0].toUpperCase()
     expect(() => validateManifest(duplicate)).toThrow('manifest_refused')
+  })
+
+  test('canonicalizes UUIDs before every cardinality check', () => {
+    const duplicateKb = manifest()
+    duplicateKb.cases[1].kbId = duplicateKb.cases[0].kbId.toUpperCase()
+    expect(() => validateManifest(duplicateKb)).toThrow('manifest_refused')
+
+    const overlappingExclusion = manifest()
+    overlappingExclusion.excludedChatbotIds[0] =
+      overlappingExclusion.cases[0].chatbotIds[0].toUpperCase()
+    expect(() => validateManifest(overlappingExclusion)).toThrow(
+      'manifest_refused'
+    )
   })
 
   test('requires source-reference isolation markers', () => {
@@ -147,6 +161,37 @@ describe('STG Doc Query proof manifest', () => {
     foreign.forbidAny = foreign.forbidReferences
     delete foreign.forbidReferences
     expect(() => validateManifest(legacy)).toThrow('manifest_refused')
+
+    const mixed = manifest()
+    const mixedForeign = mixed.cases[0].foreign as {
+      question: string
+      forbidReferences: string[]
+      forbidAny?: string[]
+    }
+    mixedForeign.forbidAny = mixedForeign.forbidReferences
+    expect(() => validateManifest(mixed)).toThrow('manifest_refused')
+  })
+})
+
+describe('STG Doc Query proof transport', () => {
+  test('disables Streamable HTTP reconnection attempts', () => {
+    let capturedOptions: {
+      requestInit?: { headers?: Record<string, string>; redirect?: string }
+      reconnectionOptions?: { maxRetries?: number }
+    } = {}
+    class RecordingTransport {
+      constructor(_url: URL, options: typeof capturedOptions) {
+        capturedOptions = options
+      }
+    }
+
+    const headers = { authorization: 'Bearer dummy-transport-token' }
+    createMcpTransport(headers, RecordingTransport)
+
+    expect(capturedOptions).toMatchObject({
+      requestInit: { headers, redirect: 'error' },
+      reconnectionOptions: { maxRetries: 0 },
+    })
   })
 })
 
@@ -164,7 +209,7 @@ describe('STG Doc Query proof matrix', () => {
     }): Promise<MockToolResult> => {
       call += 1
       if ((call >= 3 && call <= 8) || override) {
-        return { isError: true, content: [], toolResult: undefined }
+        return { isError: true, content: [] }
       }
       const positive = question.startsWith('positive')
       const marker = question.replace(
@@ -193,7 +238,6 @@ describe('STG Doc Query proof matrix', () => {
             }),
           },
         ],
-        toolResult: undefined,
       }
     }
 

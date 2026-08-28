@@ -84,7 +84,7 @@ class ProofFailure extends Error {
   }
 }
 
-function requireString(value, _label, pattern) {
+function requireString(value, pattern) {
   if (typeof value !== 'string' || value.length === 0) {
     throw new ProofFailure('manifest_refused')
   }
@@ -92,6 +92,10 @@ function requireString(value, _label, pattern) {
     throw new ProofFailure('manifest_refused')
   }
   return value
+}
+
+function requireUuid(value) {
+  return requireString(value, UUID_PATTERN).toLocaleLowerCase('en')
 }
 
 function requireMarkerList(value) {
@@ -132,8 +136,8 @@ export function validateManifest(input) {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
       throw new ProofFailure('manifest_refused')
     }
-    const id = requireString(entry.id, 'case id', ID_PATTERN)
-    const kbId = requireString(entry.kbId, 'KB id', UUID_PATTERN)
+    const id = requireString(entry.id, ID_PATTERN)
+    const kbId = requireUuid(entry.kbId)
     if (caseIds.has(id) || kbIds.has(kbId)) {
       throw new ProofFailure('manifest_refused')
     }
@@ -143,7 +147,7 @@ export function validateManifest(input) {
       throw new ProofFailure('manifest_refused')
     }
     const entryChatbots = entry.chatbotIds.map((chatbotId) => {
-      const normalized = requireString(chatbotId, 'chatbot id', UUID_PATTERN)
+      const normalized = requireUuid(chatbotId)
       if (chatbotIds.has(normalized)) {
         throw new ProofFailure('manifest_refused')
       }
@@ -156,7 +160,8 @@ export function validateManifest(input) {
       !positive ||
       typeof positive !== 'object' ||
       !foreign ||
-      typeof foreign !== 'object'
+      typeof foreign !== 'object' ||
+      Object.hasOwn(foreign, 'forbidAny')
     ) {
       throw new ProofFailure('manifest_refused')
     }
@@ -169,12 +174,12 @@ export function validateManifest(input) {
       kbId,
       chatbotIds: entryChatbots,
       positive: {
-        question: requireString(positive.question, 'positive question'),
+        question: requireString(positive.question),
         expectAny: requireMarkerList(positive.expectAny),
         minSources,
       },
       foreign: {
-        question: requireString(foreign.question, 'foreign question'),
+        question: requireString(foreign.question),
         forbidReferences: requireMarkerList(foreign.forbidReferences),
       },
     }
@@ -183,20 +188,14 @@ export function validateManifest(input) {
   if (chatbotIds.size !== EXPECTED_CHATBOT_COUNT) {
     throw new ProofFailure('manifest_refused')
   }
-  const excludedChatbotIds = input.excludedChatbotIds.map((chatbotId) =>
-    requireString(chatbotId, 'excluded chatbot id', UUID_PATTERN)
-  )
+  const excludedChatbotIds = input.excludedChatbotIds.map(requireUuid)
   if (
     new Set(excludedChatbotIds).size !== EXPECTED_EXCLUDED_CHATBOT_COUNT ||
     excludedChatbotIds.some((chatbotId) => chatbotIds.has(chatbotId))
   ) {
     throw new ProofFailure('manifest_refused')
   }
-  const canaryCaseId = requireString(
-    input.singletonCanaryCaseId,
-    'canary case id',
-    ID_PATTERN
-  )
+  const canaryCaseId = requireString(input.singletonCanaryCaseId, ID_PATTERN)
   if (cases[0].id !== canaryCaseId || cases[0].chatbotIds.length !== 1) {
     throw new ProofFailure('manifest_refused')
   }
@@ -384,6 +383,21 @@ async function createScopeSigner(environment) {
   }
 }
 
+export function createMcpTransport(
+  headers,
+  Transport = StreamableHTTPClientTransport
+) {
+  return new Transport(new URL(STG_ENDPOINT), {
+    requestInit: { headers, redirect: 'error' },
+    reconnectionOptions: {
+      initialReconnectionDelay: 1_000,
+      maxReconnectionDelay: 30_000,
+      reconnectionDelayGrowFactor: 1.5,
+      maxRetries: 0,
+    },
+  })
+}
+
 async function invokeMcp({ bearer, scopeToken, question, override }) {
   const headers = { authorization: `Bearer ${bearer}` }
   if (scopeToken) headers[SCOPE_HEADER] = `Bearer ${scopeToken}`
@@ -391,9 +405,7 @@ async function invokeMcp({ bearer, scopeToken, question, override }) {
     name: 'klicker-stg-doc-query-proof',
     version: '1',
   })
-  const transport = new StreamableHTTPClientTransport(new URL(STG_ENDPOINT), {
-    requestInit: { headers, redirect: 'error' },
-  })
+  const transport = createMcpTransport(headers)
   try {
     await client.connect(transport)
     return await client.callTool({
