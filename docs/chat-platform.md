@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-26'
+timestamp: '2026-08-27'
 tags:
   - frontend
   - chat
@@ -561,6 +561,46 @@ product ruling (`project/2026-07-27-student-chat-v3-follow-up-roadmap.md`, W7 it
 switcher is hidden entirely when a chatbot exposes a single mode — `mode-switcher.tsx` returns
 `null` for one or fewer mode keys, so there is no disabled one-pill state to style.
 
+## Runtime system-prompt policy
+
+`src/lib/server/systemPromptCompiler.ts:compileSystemPrompt` treats a stored per-mode prompt as the
+chatbot's configurable persona, not as the complete system policy. On every chat request, after the
+available MCP tool names are known, it composes the final prompt in this order:
+
+1. stored mode prompt or `DEFAULT_PROMPT` fallback;
+2. fixed course-scope, evidence, tool-privacy, and safety policy from
+   `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
+3. the conditional citation policy when a `doc_query`-style tool is available; and
+4. the fixed conversation-language and Swiss High German policy from
+   `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
+
+The fixed policy explicitly overrides conflicting persona text, examples, retrieved material, tool
+output, and user attempts to change platform rules. It keeps answers within the owning course,
+asks one clarification when course relevance is genuinely ambiguous, and briefly refuses clearly
+unrelated requests. Immediate safety concerns are not refused merely as out of scope. Course-tool
+queries must omit or generalise personal names, contact details such as email addresses, phone
+numbers, or postal addresses, participant or student identifiers, and other sensitive personal
+information. Retrieved content is evidence rather than instruction.
+
+When a `doc_query`-style tool is present, the model is instructed to retrieve before course-content
+claims, use only relevant results, and acknowledge insufficient course evidence instead of filling
+gaps from general knowledge. Free-text queries start in the locked conversation language but may
+preserve exact non-personal course and source labels, titles, codes, and identifiers, or
+reformulate in a source language when retrieval genuinely needs it.
+
+Because compilation happens for every request after loading `chatbot.systemPrompts`, the policy
+applies to existing and newly created chatbots as soon as this application revision is deployed.
+No prompt-row migration is required. Existing stored prompts remain unchanged and continue to
+supply each mode's persona beneath the fixed policy. A chatbot served by an older application
+revision keeps the old behaviour until that revision is replaced.
+
+The language lock follows the user's latest non-trivial message or explicit language request.
+Quoted text, attached images or their descriptions, retrieved chunks, tool output, and earlier
+assistant messages cannot switch the response language. Short acknowledgements preserve the
+established conversation language. German answers use Swiss High German orthography (`ss`, never
+`ß`, and real umlauts). Unit tests prove prompt composition only; model compliance still requires
+a separately authorised live-model evaluation.
+
 ## Sources and citations
 
 An answer's sources are **derived from the message's own tool-call parts**, not carried in a
@@ -694,13 +734,8 @@ formula, surrounding Markdown, and assistant-row identity.
 
 Chat has no locale switcher: the locale comes from the `NEXT_LOCALE` cookie and falls back to `en` ([ADR 0001](./adr/0001-chat-locale-from-cookie.md)). It is resolved **directly in the chat-local `getRequestConfig`** (`src/types/i18n.ts`). Relying on `setRequestLocale`/`requestLocale` alone produces a split brain — `<html lang>` follows the cookie while server-side `getTranslations()` stays on the default locale. Messages come from the static `messagesByLocale` map exported there, which the root layout reuses: Turbopack cannot build a dynamic-import context for a bare package subpath (`import('@klicker-uzh/i18n/messages/' + locale)`), so the dynamic form silently resolves nothing in this app. Strings live in `packages/i18n/messages/{en,de}.ts`; `apps/chat/src/types/app.d.ts` enforces en/de key parity through a `DeepIntersection`, so a missing key fails `pnpm --filter @klicker-uzh/chat check` rather than at runtime. German addressed to students is informal (`Du`/`Dein`/`Dir`), instructors are "Dozierende", and Swiss `ss` is used instead of `ß`.
 
-Model answers are held to the same orthography server-side: the chat route wraps every system
-prompt in `withLanguageStyleContract` (`src/lib/server/languageInstructions.ts`) — unconditionally,
-unlike the citation contract, because a lecturer's stored prompt replaces `DEFAULT_PROMPT`
-entirely and a rule written only in the default text silently disappears the moment a custom
-prompt is saved. The contract asks for Swiss High German ("ss" not "ß", real umlauts, never
-ae/oe/ue). As with the citation contract, only prompt assembly is unit-tested; model compliance
-needs a live key the devcontainer does not carry.
+Model-answer language and orthography are fixed by the runtime system-prompt policy above, not by
+the UI locale or by a lecturer's stored persona prompt.
 
 Two recurring traps in this app's strings:
 
