@@ -16,6 +16,7 @@ export type CourseLearningAnalyticsControl = {
   exists: boolean
   courseEnabled: boolean
   analyticsValid: boolean
+  canQueryAnalytics: boolean
 }
 
 function useCourseLearningAnalyticsControl(
@@ -41,6 +42,10 @@ function useCourseLearningAnalyticsControl(
     }
   )
   const refetchInFlight = useRef(false)
+  const controlError = entitlementError ?? error
+  const courseEnabled = data?.course?.isLearningAnalyticsEnabled === true
+  const analyticsValid =
+    data?.course?.analyticsStatus.areAnalyticsValid === true
 
   useEffect(() => {
     if (!courseId || !hasAccess) return
@@ -75,10 +80,12 @@ function useCourseLearningAnalyticsControl(
     catalystEntitled,
     entitlementLoading,
     loading: loading || networkStatus === NetworkStatus.refetch,
-    error: entitlementError ?? error,
+    error: controlError,
     exists: Boolean(data?.course),
-    courseEnabled: data?.course?.isLearningAnalyticsEnabled === true,
-    analyticsValid: data?.course?.analyticsStatus.areAnalyticsValid === true,
+    courseEnabled,
+    analyticsValid,
+    canQueryAnalytics:
+      hasAccess && !controlError && courseEnabled && analyticsValid,
   }
 }
 

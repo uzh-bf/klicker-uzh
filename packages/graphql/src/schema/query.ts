@@ -339,8 +339,11 @@ export const Query = builder.queryType({
       userCourses: t.withAuth(asUser).field({
         nullable: true,
         type: [Course],
-        resolve: async (_, __, ctx) => {
-          return await CourseService.getUserCourses(ctx)
+        args: {
+          learningAnalyticsOnly: t.arg.boolean({ required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await CourseService.getUserCourses(args, ctx)
         },
       }),
 

@@ -1,0 +1,6 @@
+query GetLearningAnalyticsHeaderCourses {
+  userCourses(learningAnalyticsOnly: true) {
+    id
+    name
+  }
+}

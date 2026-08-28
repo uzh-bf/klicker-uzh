@@ -60,7 +60,11 @@ reachability test.
 
 The public coordinator and V2 course reads require both gates. Browser
 navigation and direct analytics routes also require both the GrowthBook flag and
-the cached Catalyst entitlement before issuing analytics queries. Course
+the cached Catalyst entitlement before issuing analytics queries. Mounted V2
+queries stop when either gate, the course control, or the control-query health
+becomes unavailable. The global Manage header uses a dedicated operation that
+filters eligible courses in the database and returns at most five menu entries;
+the analytics overview retains its complete course list. Course
 controls additionally require their existing full-access role and course
 permission. Enabling a course requires private-service availability, while
 disabling remains available during an outage so lecturers can hide individual

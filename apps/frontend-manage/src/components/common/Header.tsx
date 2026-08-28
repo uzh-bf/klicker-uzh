@@ -7,7 +7,7 @@ import { faBolt, faUser } from '@fortawesome/free-solid-svg-icons'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import {
   CountCatalogSharingRequestsDocument,
-  GetLearningAnalyticsCoursesDocument,
+  GetLearningAnalyticsHeaderCoursesDocument,
   GetUserRunningLiveQuizzesDocument,
   type UserProfileQuery,
   UserRole,
@@ -25,7 +25,6 @@ import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { isCourseLearningAnalyticsAvailable } from '../analytics/courseEligibility'
 import SupportModal from './SupportModal'
 
 type UserProfile = NonNullable<UserProfileQuery['userProfile']>
@@ -44,15 +43,16 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
   const { data: liveQuizData } = useQuery(GetUserRunningLiveQuizzesDocument, {
     fetchPolicy: 'cache-first',
   })
-  const { data: courseData } = useQuery(GetLearningAnalyticsCoursesDocument, {
-    fetchPolicy: 'network-only',
-    skip: !hasLearningAnalyticsAccess,
-  })
+  const { data: courseData } = useQuery(
+    GetLearningAnalyticsHeaderCoursesDocument,
+    {
+      fetchPolicy: 'network-only',
+      skip: !hasLearningAnalyticsAccess,
+    }
+  )
 
   const quizzes = liveQuizData?.userRunningLiveQuizzes
-  const courses = courseData?.userCourses?.filter(
-    isCourseLearningAnalyticsAvailable
-  )
+  const courses = courseData?.userCourses
 
   const resourceElements: NavigationMenuItemProps[] = [
     {
@@ -170,7 +170,7 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
   ]
 
   const analyticsElements: NavigationDropdownItemProps['elements'] = [
-    ...(courses?.slice(0, 5).map<NavigationSubmenuProps>((course) => ({
+    ...(courses?.map<NavigationSubmenuProps>((course) => ({
       key: `course-analytics-${course.id}`,
       type: 'submenu',
       label: course.name,

@@ -30,7 +30,7 @@ function ActivityDashboard() {
     GetCourseActivityAnalyticsV2Document,
     {
       variables: { courseId: courseId ?? '' },
-      skip: !courseId || !control.courseEnabled || !control.analyticsValid,
+      skip: !courseId || !control.canQueryAnalytics,
       fetchPolicy: 'network-only',
     }
   )

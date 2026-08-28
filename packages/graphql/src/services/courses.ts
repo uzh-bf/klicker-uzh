@@ -2951,12 +2951,25 @@ export async function updateCourseSettings(
   return updatedCourse
 }
 
-export async function getUserCourses(ctx: ContextWithUser) {
+export async function getUserCourses(
+  { learningAnalyticsOnly }: { learningAnalyticsOnly?: boolean | null },
+  ctx: ContextWithUser
+) {
   const userCourses = await ctx.prisma.user.findUnique({
     where: { id: ctx.user.sub },
     include: {
       objects: {
-        where: { courseId: { not: null } },
+        where: {
+          courseId: { not: null },
+          ...(learningAnalyticsOnly
+            ? {
+                course: {
+                  isLearningAnalyticsEnabled: true,
+                  areAnalyticsValid: true,
+                },
+              }
+            : {}),
+        },
         include: {
           directPermission: true,
           course: {
@@ -2969,7 +2982,10 @@ export async function getUserCourses(ctx: ContextWithUser) {
             },
           },
         },
-        orderBy: [{ course: { endDate: 'desc' } }],
+        orderBy: learningAnalyticsOnly
+          ? [{ course: { isArchived: 'asc' } }, { course: { endDate: 'desc' } }]
+          : [{ course: { endDate: 'desc' } }],
+        ...(learningAnalyticsOnly ? { take: 5 } : {}),
       },
     },
   })

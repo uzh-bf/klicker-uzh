@@ -328,6 +328,29 @@ test.describe('Tests the availability of standard activity creation formats', ()
       learningAnalytics: false,
       privatePreview: false,
     })
+
+    const recorder = recordGraphQLOperations(page)
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    for (const dashboard of ['activity', 'performance']) {
+      await page.goto(`${manageUrl}/analytics/${COURSE_ID_TEST}/${dashboard}`)
+      await expect(
+        page.getByText(
+          'Learning analytics are not available for your account yet.'
+        )
+      ).toBeVisible()
+    }
+
+    const operationNames = recorder.operations.map(
+      (operation) => operation.operationName
+    )
+    for (const protectedOperationName of [
+      'GetCourseLearningAnalyticsControl',
+      V2_ACTIVITY_OPERATION,
+      V2_PERFORMANCE_OPERATION,
+      V2_EXPORT_OPERATION,
+    ]) {
+      expect(operationNames).not.toContain(protectedOperationName)
+    }
   })
 
   test('Keep learning analytics affordances disabled without Catalyst access', async ({
@@ -676,10 +699,14 @@ test.describe('Tests the availability of standard activity creation formats', ()
     loginLecturer,
   }) => {
     await prepareSeededLearningAnalyticsV2({ eligibleParticipants: 5 })
+    const recorder = recordGraphQLOperations(page)
     await loginLecturer()
     const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
     await page.goto(`${manageUrl}/analytics/${COURSE_ID_TEST}/activity`)
     await expect(page.getByTestId('analytics-activity-v2')).toBeVisible()
+    const initialV2Requests = recorder.operations.filter(
+      ({ operationName }) => operationName === V2_ACTIVITY_OPERATION
+    ).length
 
     const secondTab = await context.newPage()
     try {
@@ -705,6 +732,26 @@ test.describe('Tests the availability of standard activity creation formats', ()
       await expect(
         page.getByText('Learning analytics is disabled for this course.')
       ).toBeVisible()
+
+      const controlResponsesBeforeRefresh = recorder.responses.filter(
+        ({ operationName }) =>
+          operationName === 'GetCourseLearningAnalyticsControl'
+      ).length
+      await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+      await expect
+        .poll(
+          () =>
+            recorder.responses.filter(
+              ({ operationName }) =>
+                operationName === 'GetCourseLearningAnalyticsControl'
+            ).length
+        )
+        .toBeGreaterThan(controlResponsesBeforeRefresh)
+      expect(
+        recorder.operations.filter(
+          ({ operationName }) => operationName === V2_ACTIVITY_OPERATION
+        )
+      ).toHaveLength(initialV2Requests)
     } finally {
       await secondTab.close()
     }
