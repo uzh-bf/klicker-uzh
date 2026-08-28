@@ -38,10 +38,12 @@
   commits, fresh synthetic DevPod and Devsy validation workspaces, exact runtime
   stops, browser proof with seeded local accounts, required reviews, push,
   pull-request creation and maintenance, and exact-head CI monitoring.
-- Upstream dependency: Klicker implementation may prepare locally in parallel,
-  but the version pin, final provider matrix, push, and pull request require the
-  published devrouter `0.0.44` artifact. An unpublished package or host checkout
-  is not final acceptance evidence.
+- Upstream dependency: Klicker implementation may prepare locally in parallel.
+  Devrouter `0.0.44` is the validated bootstrap/TLS baseline. Fresh parallel
+  provider validation exposed a separate long-prefix identity collision, so the
+  final pin, collision smoke, push, and pull request require the next published
+  Devrouter patch. An unpublished package or host checkout is not final
+  acceptance evidence.
 - Withheld authority: Klicker merge, deployment, machine provider-preference
   changes, Devsy installation/configuration, secret access, external model
   calls, real or personal data, force-push, destructive cleanup, branch or
@@ -49,7 +51,8 @@
 - Execution owner: The current main session is the cross-repository execution
   orchestrator because the upstream validator, release artifact, consumer pin,
   provider runtimes, and final evidence are one critical path.
-- Terminal: The pushed Klicker exact head pins published devrouter `0.0.44`;
+- Terminal: The pushed Klicker exact head pins the published collision-safe
+  Devrouter patch after `0.0.44`;
   static checks, provider matrix, required reviews, and exact-head CI pass; its
   pull request is merge-ready; every task runtime is stopped with zero owned
   routes. Merge and destructive cleanup remain separate decisions.
@@ -75,6 +78,9 @@
   `rs/managed-bootstrap-ordering`.
 - Required release: published devrouter `0.0.44`, which includes the `0.0.43`
   bootstrap-ordering validator and parallel-worktree TLS serialization.
+- Required follow-up: the collision-safe workspace-identity patch planned in
+  Devrouter at
+  `docs/project/2026-08-28-collision-safe-workspace-identities-plan.md`.
 - Packaging: One ordinary consumer pull request after one upstream release.
   This is not a cross-repository GitHub stack.
 - Unrelated checkout: The primary checkout branch
@@ -100,6 +106,10 @@
   services; native and omitted/`full` behavior remains all-on.
 - Devrouter `0.0.42` cannot reject the unsafe lifecycle configuration before
   provider mutation. The linked upstream plan adds that generic gate.
+- Distinct branches with the same first 32 sanitized characters currently
+  derive the same persisted workspace token. Devrouter fails ownership safely,
+  but the second checkout cannot start until a collision-safe first-claim patch
+  is published. Existing workspace identities must not migrate.
 
 ## Settled bootstrap contract
 
@@ -399,8 +409,37 @@
   `33203581483` published `@devrouter/cli@0.0.44` with provenance. Registry and
   packaged CLI readback report `0.0.44`; K2 now pins that release so concurrent
   provider worktrees also serialize shared TLS refresh.
-- Current state: `active`. Completed slices: K0-K1. Active: K2 static matrix.
-  Remaining: K3-K4. Latest evidence: `bash util/test-dev-runtime.sh`, shell
-  syntax for all four scripts, and `git diff --check` pass; no task provider
-  runtime is active. Required delivery: merge-ready Klicker PR; achieved
-  delivery: reviewed bootstrap contract plus published validator pin.
+- `2026-08-28`: K2 passed the complete static profile resolver/runtime suites,
+  source/generated Dev Container verification, full `pnpm run check:all`, and
+  full `pnpm run build` in the exact DevPod candidate. Analytics needed an
+  ignored Python 3.12 virtual environment because Python 3.14 could not install
+  the pinned pandas wheel; repository files were unchanged.
+- `2026-08-28`: Warm DevPod and Devsy matrices passed every single profile,
+  representative unions, `full`, and return-to-`manage`. Each transition kept
+  exact container identity, marker, selected routes/services/processes, zero
+  drift, and no bootstrap rerun. Capability health passed for LiteLLM, local
+  MCP, and MailHog without an external model request or message.
+- `2026-08-28`: Fresh DevPod `manage` completed install, build, reset, seed,
+  marker publication, managed startup, and exact ready state. Fresh Devsy
+  required the previously verified local Devsy 1.16.2 agent binary because the
+  execution environment blocks Devsy's own agent download; it then honored the
+  lifecycle hook, published the exact marker, reached ready `manage`, and passed
+  delegated local lecturer login to the authenticated library.
+- `2026-08-28`: Running five heavyweight validation app containers at once
+  OOM-killed the fresh Devsy Manage child during browser compilation. Stopping
+  the three completed older runtimes and warm-restarting the exact fresh Devsy
+  runtime cleared the pressure; repeated browser proof passed and the container
+  remained free of OOM state. This is local capacity evidence, not a branch
+  defect. Capability-only profiles remain route-free and substantially cheaper.
+- `2026-08-28`: Two fresh long validation branches reproduced a deterministic
+  32-character workspace-token collision across DevPod and Devsy. Ownership
+  failed closed before the second provider start, but the current first-claim
+  ordering persisted the colliding checkout token. A reviewed Devrouter
+  follow-up now owns collision-safe allocation without migrating established
+  workspaces.
+- Current state: `active`. Completed: K0-K2 and the non-collision K3 provider,
+  profile, capability, cold-bootstrap, and browser evidence. Active: upstream
+  collision-safe Devrouter patch. Remaining: repin, fresh mixed-provider
+  collision proof, K4 final review and delivery. All completed validation
+  runtimes are stopped with their exact routes freed; worktrees, registrations,
+  containers, and volumes are retained.

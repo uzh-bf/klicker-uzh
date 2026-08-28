@@ -93,6 +93,16 @@ container plus that base and start no Turbo process; switching profiles never
 recreates the container, reruns post-create, resets the database, or removes
 volumes.
 
+For parallel agents, create one linked worktree per independent task with
+`devrouter workspace up <branch>`, then select the smallest profile in that
+worktree. Keep `ai`, `mcp`, and `email` off unless the task exercises those
+capabilities; for example, a lecturer UI task normally uses `manage`, while an
+AI chat task uses `chat,ai` and adds `mcp` only for tool-calling work. This keeps
+CPU and memory proportional to each task while every worktree retains isolated
+app caches, database state, routes, and managed processes. Start several
+worktrees concurrently only after installing the collision-safe Devrouter
+release named by this repository's pin.
+
 Cold startup waits for `postCreateCommand` before devrouter invokes the managed
 adapter. Post-create invalidates a container-local completion marker before any
 bootstrap work and publishes it only after dependency installation, builds,

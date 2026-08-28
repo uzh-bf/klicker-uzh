@@ -68,6 +68,14 @@ profiles run no Turbo app process. Omitting `--profile` keeps the compatibility
 default `full`. Profile unions are additive and order-insensitive, and a warm
 transition does not recreate the app container or reset persistent data.
 
+Parallel task work should use one linked worktree per task and the smallest
+matching profile. A Manage-only task uses `manage`; Chat AI uses `chat,ai`;
+tool-calling work adds `mcp`; email work adds `email`. Independent worktrees
+keep separate app caches, database state, routes, and processes while sharing
+only the package-download cache. Do not default every parallel worktree to
+`full`, because that starts LiteLLM, MCP, MailHog, every routed app, and both
+workers in each environment.
+
 Playwright is the deliberate toolchain exception. Run
 `pnpm playwright:host -- <args>` from the host; the launcher calls
 `devrouter ensure`, resolves the exact worktree routes, and connects the host
