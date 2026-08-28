@@ -38,6 +38,19 @@ function AnalyticsAccessGuard<TData>({
     )
   }
 
+  if (control.entitlementLoading) {
+    return <AnalyticsLoadingView title={title} navigation={undefined} />
+  }
+
+  if (!control.catalystEntitled) {
+    return (
+      <AnalyticsUnavailableView
+        title={title}
+        message={t('manage.analytics.catalystRequired')}
+      />
+    )
+  }
+
   if (control.loading || !courseId) {
     return <AnalyticsLoadingView title={title} navigation={navigation} />
   }

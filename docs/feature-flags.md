@@ -58,10 +58,13 @@ empty, or any other value is unavailable. This is an explicit deployment
 configuration, not a GrowthBook flag, provider probe, health check, or URL
 reachability test.
 
-The public coordinator and V2 course reads require both gates. Course controls
-also require their existing full-access role and course permission. Enabling a
-course requires private-service availability, while disabling remains available
-during an outage so lecturers can hide individual analytics immediately. A
+The public coordinator and V2 course reads require both gates. Browser
+navigation and direct analytics routes also require both the GrowthBook flag and
+the cached Catalyst entitlement before issuing analytics queries. Course
+controls additionally require their existing full-access role and course
+permission. Enabling a course requires private-service availability, while
+disabling remains available during an outage so lecturers can hide individual
+analytics immediately. A
 missing availability setting otherwise fails closed with the stable
 `CATALYST_LEARNING_ANALYTICS_UNAVAILABLE` GraphQL error code before any
 analytics service call. The platform-admin batch keeps its existing admin-role

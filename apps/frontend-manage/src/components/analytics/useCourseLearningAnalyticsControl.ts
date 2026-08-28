@@ -1,11 +1,16 @@
 import { NetworkStatus, useQuery } from '@apollo/client'
 import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
-import { GetCourseLearningAnalyticsControlDocument } from '@klicker-uzh/graphql/dist/ops'
+import {
+  GetCourseLearningAnalyticsControlDocument,
+  UserProfileDocument,
+} from '@klicker-uzh/graphql/dist/ops'
 import type { ApolloError } from '@apollo/client'
 import { useEffect, useRef } from 'react'
 
 export type CourseLearningAnalyticsControl = {
   globallyEnabled: boolean
+  catalystEntitled: boolean
+  entitlementLoading: boolean
   loading: boolean
   error?: ApolloError
   exists: boolean
@@ -17,11 +22,19 @@ function useCourseLearningAnalyticsControl(
   courseId?: string
 ): CourseLearningAnalyticsControl {
   const globallyEnabled = useFeatureFlag('learning-analytics')
+  const { data: userData, loading: entitlementLoading } = useQuery(
+    UserProfileDocument,
+    {
+      fetchPolicy: 'cache-and-network',
+    }
+  )
+  const catalystEntitled = userData?.userProfile?.catalyst === true
+  const hasAccess = globallyEnabled && catalystEntitled
   const { data, loading, error, networkStatus, refetch } = useQuery(
     GetCourseLearningAnalyticsControlDocument,
     {
       variables: { courseId: courseId ?? '' },
-      skip: !courseId || !globallyEnabled,
+      skip: !courseId || !hasAccess,
       fetchPolicy: 'network-only',
       notifyOnNetworkStatusChange: true,
     }
@@ -29,7 +42,7 @@ function useCourseLearningAnalyticsControl(
   const refetchInFlight = useRef(false)
 
   useEffect(() => {
-    if (!courseId || !globallyEnabled) return
+    if (!courseId || !hasAccess) return
 
     const refresh = () => {
       if (document.visibilityState !== 'visible' || refetchInFlight.current) {
@@ -54,10 +67,12 @@ function useCourseLearningAnalyticsControl(
       window.removeEventListener('focus', refresh)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [courseId, globallyEnabled, refetch])
+  }, [courseId, hasAccess, refetch])
 
   return {
     globallyEnabled,
+    catalystEntitled,
+    entitlementLoading,
     loading: loading || networkStatus === NetworkStatus.refetch,
     error,
     exists: Boolean(data?.course),
