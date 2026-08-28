@@ -20,30 +20,28 @@ R='--filter=@klicker-uzh/response-api'
 W1='--filter=@klicker-uzh/hatchet-worker-general'
 W2='--filter=@klicker-uzh/hatchet-worker-response-processor'
 
-# selection|wants klicker-dev|wants klicker-local-mcp|turbo filters|readiness apps
+# selection|wants klicker-dev|wants klicker-local-mcp|wants klicker-workers|turbo filters|readiness apps
 CASES="
-full|yes|yes||auth chat frontend-control frontend-manage frontend-pwa response-api
-manage|yes|no|$B $A $M|auth frontend-manage
-pwa|yes|no|$B $A $P|auth frontend-pwa
-chat|yes|no|$B $A $C $P|auth chat frontend-pwa
-live-quiz|yes|no|$B $A $P $T $R $W1 $W2|auth frontend-control frontend-pwa response-api
-ai|no|no|||
-mcp|no|yes|||
-email|no|no|||
-chat,mcp|yes|yes|$B $A $C $P|auth chat frontend-pwa
-mcp,chat|yes|yes|$B $A $C $P|auth chat frontend-pwa
-chat,chat|yes|no|$B $A $C $P|auth chat frontend-pwa
-manage,email|yes|no|$B $A $M|auth frontend-manage
-ai,chat|yes|no|$B $A $C $P|auth chat frontend-pwa
-chat,pwa|yes|no|$B $A $C $P|auth chat frontend-pwa
-pwa,chat|yes|no|$B $A $C $P|auth chat frontend-pwa
+full|yes|yes|yes||auth chat frontend-control frontend-manage frontend-pwa response-api
+manage|yes|no|no|$B $A $M|auth frontend-manage
+pwa|yes|no|no|$B $A $P|auth frontend-pwa
+chat|yes|no|no|$B $A $C $P|auth chat frontend-pwa
+live-quiz|yes|no|yes|$B $A $P $T $R $W1 $W2|auth frontend-control frontend-pwa response-api
+ai|no|no|no|||
+mcp|no|yes|no|||
+email|no|no|no|||
+chat,mcp|yes|yes|no|$B $A $C $P|auth chat frontend-pwa
+mcp,chat|yes|yes|no|$B $A $C $P|auth chat frontend-pwa
+chat,chat|yes|no|no|$B $A $C $P|auth chat frontend-pwa
+manage,email|yes|no|no|$B $A $M|auth frontend-manage
+ai,chat|yes|no|no|$B $A $C $P|auth chat frontend-pwa
+chat,pwa|yes|no|no|$B $A $C $P|auth chat frontend-pwa
+pwa,chat|yes|no|no|$B $A $C $P|auth chat frontend-pwa
 "
 
-while IFS='|' read -r selection wants_dev wants_mcp want_filters want_readiness; do
+while IFS='|' read -r selection wants_dev wants_mcp wants_workers want_filters want_readiness; do
   [ -n "$selection" ] || continue
   export DEVROUTER_PROFILE="$selection"
-  eval "want_filters=\"$want_filters\""
-  eval "want_readiness=\"$want_readiness\""
 
   if profile_wants klicker-dev; then
     [ "$wants_dev" = yes ] || fail "$selection must not select klicker-dev"
@@ -51,6 +49,14 @@ while IFS='|' read -r selection wants_dev wants_mcp want_filters want_readiness;
     status=$?
     [ "$status" -eq 1 ] || fail "$selection: profile_wants failed unexpectedly ($status)"
     [ "$wants_dev" = no ] || fail "$selection must select klicker-dev"
+  fi
+
+  if profile_wants klicker-workers; then
+    [ "$wants_workers" = yes ] || fail "$selection must not select klicker-workers"
+  else
+    status=$?
+    [ "$status" -eq 1 ] || fail "$selection: worker selection failed unexpectedly ($status)"
+    [ "$wants_workers" = no ] || fail "$selection must select klicker-workers"
   fi
 
   if profile_wants klicker-local-mcp; then
@@ -66,6 +72,18 @@ while IFS='|' read -r selection wants_dev wants_mcp want_filters want_readiness;
   [ "$got_filters" = "$want_filters" ] || fail "$selection filters: got '$got_filters' want '$want_filters'"
   [ "$got_readiness" = "$want_readiness" ] || fail "$selection readiness: got '$got_readiness' want '$want_readiness'"
 done <<<"$CASES"
+
+# Shell word splitting already ignores separator-adjacent whitespace. Keep this
+# explicit because DEVROUTER_PROFILE may also be set manually during diagnosis.
+export DEVROUTER_PROFILE='manage, pwa'
+[ "$(profile_turbo_filters)" = "$B $A $P $M" ] ||
+  fail 'separator-adjacent whitespace changed the merged profile'
+[ "$(profile_readiness_apps)" = 'auth frontend-pwa frontend-manage' ] ||
+  fail 'separator-adjacent whitespace changed merged readiness'
+
+status=0
+profile_wants unsupported-marker || status=$?
+[ "$status" -eq 2 ] || fail "unknown marker must fail closed with exit 2 (got $status)"
 
 # Unknown components fail closed with exit 2 from every resolver entry point.
 export DEVROUTER_PROFILE="chat,does-not-exist"

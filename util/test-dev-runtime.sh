@@ -38,6 +38,7 @@ write_file() {
 ROOT="$TEST_ROOT/repo"
 FAKE_BIN="$TEST_ROOT/bin"
 INSTALL_LOG="$TEST_ROOT/install.log"
+CURL_LOG="$TEST_ROOT/curl.log"
 DOCKER_LOG="$TEST_ROOT/docker.log"
 DOCKER_VOLUME_STATE="$TEST_ROOT/docker-volume-state"
 NEXT_APPS=(auth chat frontend-control frontend-manage frontend-pwa)
@@ -64,6 +65,13 @@ fi
 printf "%s\n" "$*" >>"$KLICKER_TEST_INSTALL_LOG"'
 write_file "$FAKE_BIN/flock" '#!/usr/bin/env bash
 exit 0'
+write_file "$FAKE_BIN/curl" '#!/usr/bin/env bash
+url="${!#}"
+printf "%s\n" "$url" >>"$KLICKER_TEST_CURL_LOG"
+case "$url" in
+  */healthz) printf "200\tapplication/json" ;;
+  *) printf "307\ttext/html" ;;
+esac'
 write_file "$FAKE_BIN/mkcert" '#!/usr/bin/env bash
 [ "${1:-}" = "-CAROOT" ] || exit 1
 printf "%s\n" "$KLICKER_TEST_MKCERT_CAROOT"'
@@ -103,10 +111,11 @@ if [ "$volume_action" = "create" ]; then
   exit 0
 fi
 exit 2'
-chmod +x "$FAKE_BIN/pnpm" "$FAKE_BIN/flock" "$FAKE_BIN/mkcert" "$FAKE_BIN/docker"
+chmod +x "$FAKE_BIN/pnpm" "$FAKE_BIN/flock" "$FAKE_BIN/curl" "$FAKE_BIN/mkcert" "$FAKE_BIN/docker"
 
 export PATH="$FAKE_BIN:$PATH"
 export KLICKER_TEST_INSTALL_LOG="$INSTALL_LOG"
+export KLICKER_TEST_CURL_LOG="$CURL_LOG"
 export KLICKER_TEST_DOCKER_LOG="$DOCKER_LOG"
 export KLICKER_TEST_DOCKER_VOLUME_STATE="$DOCKER_VOLUME_STATE"
 export KLICKER_TEST_DOCKER_VOLUME_NAME="$VOLUME_NAME"
@@ -303,5 +312,13 @@ fi
 if bash "$RUNTIME_SCRIPT" probe-app unsupported >/dev/null 2>&1; then
   fail 'app without a probe contract was accepted'
 fi
+
+: >"$CURL_LOG"
+PORT=7171 READINESS_APPS=response-api bash "$RUNTIME_SCRIPT" doctor >/dev/null
+assert_equal "$(cat "$CURL_LOG")" 'http://localhost:7171/healthz'
+
+: >"$CURL_LOG"
+READINESS_APPS='' bash "$RUNTIME_SCRIPT" doctor >/dev/null
+[ ! -s "$CURL_LOG" ] || fail 'capability-only doctor probed an unselected app'
 
 echo '[test-dev-runtime] PASS'

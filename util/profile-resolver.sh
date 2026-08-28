@@ -18,6 +18,10 @@ KLICKER_PROFILE_WORKER_RESPONSE_ROOT='--filter=@klicker-uzh/hatchet-worker-respo
 # profile_wants <marker>: exit 0 when the selection selects the managed marker.
 profile_wants() {
   local marker="$1" component
+  case "$marker" in
+    klicker-dev|klicker-local-mcp|klicker-workers) ;;
+    *) return 2 ;;
+  esac
   for component in $(printf '%s' "${DEVROUTER_PROFILE}" | tr ',' '\n' | sort -u); do
     case "${component}" in
       full|manage|pwa|chat|live-quiz|mcp|ai|email) ;;
@@ -27,7 +31,12 @@ profile_wants() {
   for component in $(printf '%s' "${DEVROUTER_PROFILE}" | tr ',' '\n' | sort -u); do
     case "${component}" in
       full) return 0 ;;
-      manage|pwa|chat|live-quiz) [ "$marker" = klicker-dev ] && return 0 ;;
+      manage|pwa|chat) [ "$marker" = klicker-dev ] && return 0 ;;
+      live-quiz)
+        case "$marker" in
+          klicker-dev|klicker-workers) return 0 ;;
+        esac
+        ;;
       mcp) [ "$marker" = klicker-local-mcp ] && return 0 ;;
       ai|email) ;;
       *) return 2 ;;

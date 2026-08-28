@@ -154,7 +154,7 @@ probe_url() {
     frontend-control) echo 'http://localhost:3003/login' ;;
     frontend-manage) echo 'http://localhost:3002/login' ;;
     frontend-pwa) echo 'http://localhost:3001/login' ;;
-    response-api) echo 'http://localhost:7078/healthz' ;;
+    response-api) echo "http://localhost:${PORT:-7078}/healthz" ;;
     *) return 1 ;;
   esac
 }
@@ -365,8 +365,16 @@ wait_for_app() {
 doctor() {
   local app observation status=0 unhealthy=0
   local any_stale=false any_unexpected=false
+  local doctor_apps=("${RUNTIME_APPS[@]}")
 
-  for app in "${RUNTIME_APPS[@]}"; do
+  if [ "${READINESS_APPS+x}" = x ]; then
+    doctor_apps=()
+    if [ -n "$READINESS_APPS" ]; then
+      read -r -a doctor_apps <<<"$READINESS_APPS"
+    fi
+  fi
+
+  for app in "${doctor_apps[@]}"; do
     status=0
     observation="$(probe_app "$app")" || status=$?
     if [ "$status" -eq 0 ]; then

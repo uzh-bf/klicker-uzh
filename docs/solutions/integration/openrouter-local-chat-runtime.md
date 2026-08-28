@@ -51,16 +51,16 @@ must use seeded or synthetic content only.
    devrouter stop <checkout-path>
    ```
 
-4. Verify only key presence, with no stdout or derived fingerprint:
+4. Start the injected workspace with
+   `devrouter ensure <checkout-path> --profile chat,ai,mcp --json`. Use the
+   capability-only `ai` profile only for a LiteLLM health check.
+5. Verify only key presence, with no stdout or derived fingerprint:
 
    ```bash
    devrouter exec <checkout-path> -- sh -c 'test -n "$UPSTREAM_OPENAI_API_KEY"'
    ```
 
-5. Start the injected workspace with
-   `devrouter ensure <checkout-path> --profile chat,ai,mcp --json`. Use the
-   capability-only `ai` profile only for a LiteLLM health check. Keep Auto Mode
-   selected and run the seeded Benibot smoke from
+6. Keep Auto Mode selected and run the seeded Benibot smoke from
    [AGENTS.md:191](../../../AGENTS.md#L191). The successful synthetic path
    calls the local `KB_doc_query` tool, returns `KLICKER_LOCAL_MCP_OK`, and
    keeps the synthetic source card visible after reload. The deterministic

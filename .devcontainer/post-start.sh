@@ -104,12 +104,11 @@ fi
 DEV_TURBO_FILTERS="$(profile_turbo_filters)"
 READINESS_APPS="$(profile_readiness_apps)"
 export READINESS_APPS
-PROFILE_WANTS_WORKERS=no
-for profile_component in ${DEVROUTER_PROFILE//,/ }; do
-  case "$profile_component" in
-    full | live-quiz) PROFILE_WANTS_WORKERS=yes ;;
-  esac
-done
+if profile_wants klicker-workers; then
+  PROFILE_WANTS_WORKERS=yes
+else
+  PROFILE_WANTS_WORKERS=no
+fi
 
 # Hatchet can mint its token just after post-create's bounded capture window on
 # a cold workspace. Application profiles need it before any backend or worker
@@ -305,8 +304,8 @@ wait_for_worker_runtime() {
 }
 
 if [ "$PROFILE_WANTS_WORKERS" = yes ]; then
-  wait_for_worker_runtime hatchet-worker-general
-  wait_for_worker_runtime hatchet-worker-response-processor
+  wait_for_worker_runtime hatchet-worker-general || exit 1
+  wait_for_worker_runtime hatchet-worker-response-processor || exit 1
 fi
 
 # Next's development server compiles fallback dynamic routes on their first
@@ -363,7 +362,7 @@ if [ "$PROFILE_WANTS_DEV" = yes ] && [[ "${READINESS_APPS}" == *frontend-manage*
     fi
     [[ "$manage_list_ready" == true && "$manage_course_ready" == true ]] && break
     remaining_seconds=$((manage_probe_deadline - SECONDS))
-    (( remaining_seconds > 0 )) && sleep "$remaining_seconds"
+    (( remaining_seconds > 0 )) && sleep 1
   done
 
   if [[ "$manage_list_ready" == false || "$manage_course_ready" == false ]]; then

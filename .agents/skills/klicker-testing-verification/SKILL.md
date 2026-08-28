@@ -112,7 +112,8 @@ Without `UPSTREAM_OPENAI_API_KEY`, stop at picker/error-state verification and
 report the live-answer gap explicitly.
 
 For the seeded local MCP smoke test, verify
-`http://localhost:1417/health` after selecting `chat,ai,mcp`, keep `Auto Mode`
+`devrouter exec . -- curl --fail --silent http://localhost:1417/health` after
+selecting `chat,ai,mcp`, keep `Auto Mode`
 selected in Benibot, and send
 the prompt recorded in `AGENTS.md`. Require a completed
 `KB_doc_query` chip, the `KLICKER_LOCAL_MCP_OK` marker, and the synthetic source
