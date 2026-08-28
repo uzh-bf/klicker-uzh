@@ -32,10 +32,12 @@ const metadataEditableStatuses = [
 const disclaimerEditableStatuses = [ChatbotStatus.Draft, ChatbotStatus.Rejected]
 
 function DisclaimerIntroField({
+  disabled,
   editorId,
   errorId,
   labelId,
 }: {
+  disabled: boolean
   editorId: string
   errorId: string
   labelId: string
@@ -61,6 +63,7 @@ function DisclaimerIntroField({
         aria-required
         aria-invalid={Boolean(meta.error && meta.touched)}
         toolbarPreset="basic"
+        disabled={disabled}
         content={field.value}
         onChange={(value: string) => {
           helpers.setValue(value)
@@ -163,11 +166,13 @@ function ChatbotAuthoring({
               <Form className="space-y-3">
                 <FormikTextField
                   required
+                  disabled={isSubmitting}
                   name="name"
                   label={t('manage.resources.chatbotName')}
                   data={{ cy: 'chatbot-name' }}
                 />
                 <FormikTextareaField
+                  disabled={isSubmitting}
                   name="description"
                   label={t('manage.resources.chatbotDescription')}
                   data={{ cy: 'chatbot-description' }}
@@ -269,11 +274,13 @@ function ChatbotAuthoring({
               <Form className="space-y-4">
                 <FormikTextField
                   required
+                  disabled={isSubmitting}
                   name="title"
                   label={t('manage.resources.chatbotDisclaimerTitle')}
                   data={{ cy: 'chatbot-disclaimer-title' }}
                 />
                 <DisclaimerIntroField
+                  disabled={isSubmitting}
                   editorId={`chatbot-disclaimer-intro-${chatbot.id}`}
                   errorId={`chatbot-disclaimer-intro-error-${chatbot.id}`}
                   labelId={`chatbot-disclaimer-intro-label-${chatbot.id}`}

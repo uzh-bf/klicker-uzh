@@ -42,7 +42,7 @@ Participants continue to see only published chatbots. Publication remains a sepa
 | Disclaimer | The platform owns the fixed responsibility, data-protection, consent, and consequence sections. The lecturer can edit only the disclaimer title and introduction. |
 | Slate subset | The basic editor supports paragraphs, bold, italic, and ordered or unordered lists. It omits links, images, video, math, code, quotes, and raw HTML. The existing full editor remains the default everywhere else. |
 | Disclaimer identity | A changed disclaimer is saved as a new row and linked to the chatbot. The old row remains historical. A normalized no-op does not create a row. This makes participant re-acceptance follow the existing disclaimer-ID contract. |
-| Disclaimer validation | Normalize CRLF or CR to LF and trim surrounding whitespace. The normalized title must contain 1-160 characters; the normalized introduction must contain 1-10,000 characters. Both bounds are enforced in the GraphQL input and service. |
+| Disclaimer validation | Normalize CRLF or CR to LF and trim surrounding whitespace. The normalized title must contain 1-160 characters; the normalized introduction must contain 1-10,000 characters. Both bounds are enforced at the GraphQL service boundary after normalization. |
 | Publication completeness | Submission requires a linked, non-empty disclaimer in addition to the existing use case, expected student count, and proposed credit inputs. |
 | Rejection | The review comment is visible. A rejected chatbot becomes editable and can be resubmitted. |
 | Publication | Submission changes the chatbot to `PENDING_APPROVAL`; it never auto-publishes. |
@@ -94,7 +94,7 @@ The stack is sequential. Each layer is independently reviewable and leaves the a
 - Require the caller's expected current disclaimer ID and reject stale saves.
 - Create the replacement, compare the expected current ID, and link the chatbot in one transaction so a stale save cannot leave an orphan row.
 - Preserve non-editable disclaimer name, description, and media fields when replacing a row.
-- Normalize line endings and surrounding whitespace, enforce title length 1-160 and introduction length 1-10,000 in both schema and service, and treat normalized unchanged content as a no-op.
+- Normalize line endings and surrounding whitespace, enforce title length 1-160 and introduction length 1-10,000 at the GraphQL service boundary after normalization, and treat normalized unchanged content as a no-op.
 - Enforce the lifecycle matrix for metadata, model-policy, and disclaimer mutations.
 - Require a linked non-empty disclaimer before publication submission.
 - Make accepted-participant counts compare against the chatbot's current disclaimer ID instead of counting any historical acceptance.

@@ -10,6 +10,18 @@ const FIRST_CHATBOT = `${CHATBOT_PREFIX} One`
 const SECOND_CHATBOT = `${CHATBOT_PREFIX} Two`
 type PublicationChatbotStatus = 'DRAFT' | 'REJECTED'
 
+function createRequestGate() {
+  let releaseGate: (() => void) | undefined
+  const wait = new Promise<void>((resolve) => {
+    releaseGate = resolve
+  })
+
+  return {
+    wait,
+    release: () => releaseGate?.(),
+  }
+}
+
 async function cleanupAuthoringChatbots() {
   const prisma = await getPrisma()
   const chatbots = await prisma.chatbot.findMany({
@@ -132,12 +144,41 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
   test('creates, edits, previews, switches, and reloads draft chatbots', async ({
     page,
   }) => {
+    const metadataRequestGate = createRequestGate()
+    const disclaimerRequestGate = createRequestGate()
+
+    await page.route('**/api/graphql', async (route) => {
+      const request = route.request()
+      const postData = request.postData()
+      const operationName = postData
+        ? (JSON.parse(postData) as { operationName?: string }).operationName
+        : undefined
+      const requestGate =
+        operationName === 'UpdateChatbot'
+          ? metadataRequestGate
+          : operationName === 'SaveChatbotDisclaimer'
+            ? disclaimerRequestGate
+            : undefined
+
+      if (!requestGate) {
+        await route.continue()
+        return
+      }
+
+      const response = await route.fetch()
+      await requestGate.wait
+      await route.fulfill({ response })
+    })
+
     await createChatbot(page, FIRST_CHATBOT)
 
     await page
       .getByTestId('chatbot-description')
       .fill('Updated persisted description')
     await page.getByTestId('save-chatbot-metadata').click()
+    await expect(page.getByTestId('chatbot-name')).toBeDisabled()
+    await expect(page.getByTestId('chatbot-description')).toBeDisabled()
+    metadataRequestGate.release()
     await expect(
       page.getByRole('status').filter({ hasText: 'Chatbot metadata saved.' })
     ).toBeVisible()
@@ -183,6 +224,10 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     ).toContainText('Accept: You can use the chatbot')
 
     await page.getByTestId('save-chatbot-disclaimer').click()
+    await expect(page.getByTestId('chatbot-disclaimer-title')).toBeDisabled()
+    await expect(disclaimerEditor).toHaveAttribute('aria-disabled', 'true')
+    await expect(disclaimerEditor).toHaveAttribute('contenteditable', 'false')
+    disclaimerRequestGate.release()
     await expect(
       page.getByRole('status').filter({ hasText: 'Chatbot disclaimer saved.' })
     ).toBeVisible()

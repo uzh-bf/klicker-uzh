@@ -1,8 +1,8 @@
 import { prisma } from '@klicker-uzh/prisma'
 import {
+  type PrismaTypes,
   UserLoginScope,
   UserRole,
-  type PrismaTypes,
 } from '@klicker-uzh/prisma/client'
 import SchemaBuilder from '@pothos/core'
 import DirectivePlugin from '@pothos/plugin-directives'
@@ -28,12 +28,14 @@ const builder = new SchemaBuilder<{
     role: ContextWithUser
     scope: ContextWithUser
     catalyst: ContextWithUser
+    chatbotAuthoring: ContextWithUser
   }
   AuthScopes: {
     authenticated: boolean
     role?: UserRole
     scope?: UserLoginScope
     catalyst?: boolean
+    chatbotAuthoring?: boolean
   }
   PrismaTypes: PrismaTypes
   Scalars: {
@@ -110,6 +112,10 @@ const builder = new SchemaBuilder<{
         return false
       },
       catalyst: ctx.user?.catalystInstitutional || ctx.user?.catalystIndividual,
+      chatbotAuthoring:
+        ctx.user?.catalystInstitutional ||
+        ctx.user?.catalystIndividual ||
+        ctx.user?.scope === UserLoginScope.FULL_ACCESS,
     }),
   },
   zod: {

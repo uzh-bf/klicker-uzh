@@ -466,19 +466,23 @@ editable in `DRAFT`, `REJECTED`, and `PUBLISHED`; they are read-only in
 
 `saveChatbotDisclaimer` accepts the lecturer-editable title and introduction
 plus the disclaimer ID the client loaded. It normalizes line endings and outer
-whitespace, validates both fields, and uses transactional copy-on-write. The
-replacement retains the internal name, description, and media fields. A stale
-expected ID fails with `CHATBOT_DISCLAIMER_CONFLICT`, and a normalized no-op
-keeps the existing ID. This preserves the participant acceptance contract:
-acceptance and Manage's accepted count apply only when
+whitespace, validates both fields, and rejects introduction Markdown outside
+paragraphs, bold, italic, ordered or unordered lists, and line breaks. It then
+uses transactional copy-on-write. The replacement retains the internal name,
+description, and media fields. A stale expected ID fails with
+`CHATBOT_DISCLAIMER_CONFLICT`, and a normalized no-op keeps the existing ID.
+This preserves the participant acceptance contract: acceptance and Manage's
+accepted count apply only when
 `acceptedDisclaimerId` equals the chatbot's current disclaimer ID. See
 [ADR 0042](./adr/0042-version-chatbot-disclaimers-by-replacement.md).
 
 `requestChatbotPublication` still requires the live account capability from
 [ADR 0020](./adr/0020-two-tier-chatbot-approval.md). It additionally requires a
 linked, non-empty disclaimer before moving a `DRAFT` or `REJECTED` chatbot to
-`PENDING_APPROVAL`. Submission never publishes automatically; the existing
-administrator approval remains a separate transition.
+`PENDING_APPROVAL`. A dedicated Boolean query exposes only this live capability
+to Catalyst and full-access lecturers; it does not expose account budget data.
+Submission never publishes automatically; the existing administrator approval
+remains a separate transition.
 
 Manage exposes draft preparation through
 `apps/frontend-manage/src/components/resources/Chatbots.tsx`: creation is
