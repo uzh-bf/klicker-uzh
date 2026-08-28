@@ -26,6 +26,7 @@ type AnalyticsReadArgs = {
 function analyticsContext({
   course = { isLearningAnalyticsEnabled: false, areAnalyticsValid: true },
   activity = null,
+  eligibleParticipantIds = [],
 }: {
   course?: {
     isLearningAnalyticsEnabled: boolean
@@ -33,6 +34,7 @@ function analyticsContext({
     [key: string]: unknown
   }
   activity?: unknown
+  eligibleParticipantIds?: string[]
 } = {}) {
   const courseFindUnique = vi.fn(async (args?: AnalyticsReadArgs) => {
     if (
@@ -47,8 +49,10 @@ function analyticsContext({
     const result = { ...course }
     return result
   })
-  const queryRaw = vi.fn(
-    async (_query: unknown) => [] as { participantId: string }[]
+  const queryRaw = vi.fn(async (_query: unknown) =>
+    eligibleParticipantIds.map((eligibleParticipantId) => ({
+      participantId: eligibleParticipantId,
+    }))
   )
   const transactionClient = {
     $queryRaw: queryRaw,
@@ -182,6 +186,56 @@ describe('learning analytics read gate', () => {
         areAnalyticsValid: true,
       })
     }
+  })
+
+  it('uses the shared eligible membership cohort for V2 performance suppression', async () => {
+    const eligibleParticipantIds = Array.from(
+      { length: 6 },
+      (_, index) =>
+        `30000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`
+    )
+    const fixture = analyticsContext({
+      eligibleParticipantIds,
+      course: {
+        isArchived: false,
+        isLearningAnalyticsEnabled: true,
+        areAnalyticsValid: true,
+        practiceQuizzes: [
+          {
+            participantPerformances: eligibleParticipantIds
+              .slice(0, 5)
+              .map((performanceParticipantId) => ({
+                participantId: performanceParticipantId,
+                completion: 1,
+              })),
+          },
+        ],
+        microLearnings: [],
+      },
+    })
+
+    await expect(
+      getCoursePerformanceAnalyticsV2({ courseId }, fixture.ctx)
+    ).resolves.toEqual({
+      isSuppressed: true,
+      effectiveN: null,
+      activitySummaries: [],
+      studentReport: {
+        isSuppressed: true,
+        effectiveN: null,
+        students: [],
+      },
+    })
+
+    const eligibilityQuery = fixture.queryRaw.mock.calls[0]?.[0] as
+      | string[]
+      | { strings?: string[] }
+    const eligibilitySql = Array.isArray(eligibilityQuery)
+      ? eligibilityQuery.join(' ')
+      : (eligibilityQuery.strings?.join(' ') ?? '')
+    expect(eligibilitySql).toContain('FROM "Participation" AS membership')
+    expect(eligibilitySql).not.toContain('ParticipantPerformance')
+    expect(eligibilitySql).not.toContain('ParticipantActivityPerformance')
   })
 
   it('gates individual activity analytics by the owning course state', async () => {

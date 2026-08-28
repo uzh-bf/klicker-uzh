@@ -88,6 +88,29 @@ async function getEligibleParticipantIdsForPerformanceAnalytics(
   return rows.map(({ participantId }) => participantId)
 }
 
+async function getEligibleParticipantIdsForV2Analytics(
+  prisma: PrismaTransactionClient,
+  courseId: string
+) {
+  const rows = await prisma.$queryRaw<Array<{ participantId: string }>>`
+    SELECT membership."participantId" AS "participantId"
+    FROM "Participation" AS membership
+    JOIN "Participant" AS p ON p."id" = membership."participantId"
+    JOIN "Course" AS c ON c."id" = membership."courseId"
+    WHERE membership."courseId" = CAST(${courseId} AS uuid)
+      AND p."learningAnalyticsConsent" IS TRUE
+      AND p."learningAnalyticsChoiceAt" IS NOT NULL
+      AND NULLIF(btrim(p."learningAnalyticsDisclosureVersion"), '') IS NOT NULL
+      AND c."isLearningAnalyticsEnabled" IS TRUE
+      AND c."areAnalyticsValid" IS TRUE
+      AND c."isArchived" IS FALSE
+      AND c."analyticsLastComputedAt" IS NOT NULL
+      AND c."analyticsLastComputedAt" > p."learningAnalyticsChoiceAt"
+  `
+
+  return rows.map(({ participantId }) => participantId)
+}
+
 export async function getCourseActivityAnalytics(
   { courseId }: { courseId: string },
   ctx: ContextWithUser
@@ -177,7 +200,7 @@ export async function getCourseActivityAnalyticsV2(
   return ctx.prisma.$transaction(
     async (prisma) => {
       const eligibleParticipantIds =
-        await getEligibleParticipantIdsForCourseAnalytics(prisma, courseId)
+        await getEligibleParticipantIdsForV2Analytics(prisma, courseId)
       const course = await prisma.course.findUnique({
         where: {
           id: courseId,
@@ -745,8 +768,10 @@ async function getCoursePerformanceAnalyticsV2InTransaction(
   prisma: PrismaTransactionClient,
   courseId: string
 ) {
-  const eligibleParticipantIds =
-    await getEligibleParticipantIdsForPerformanceAnalytics(prisma, courseId)
+  const eligibleParticipantIds = await getEligibleParticipantIdsForV2Analytics(
+    prisma,
+    courseId
+  )
   const participantFilter = { participantId: { in: eligibleParticipantIds } }
   const participantPerformanceSelection = {
     where: participantFilter,
