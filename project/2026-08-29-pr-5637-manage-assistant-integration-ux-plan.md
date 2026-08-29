@@ -627,7 +627,7 @@ follow_up_stacks:
 
 ## Progress
 
-- Status: `active_a0_s1`
+- Status: `active_a1_s2`
 - Baseline: PR #5637 exact head `902af183d8018c79cadcefe46d4a7f17f395392a`;
   all branch-executable checks and eight Playwright shards passed at that head;
   one CodeRabbit thread is resolved. The `final-ai-review` status context is
@@ -734,6 +734,30 @@ follow_up_stacks:
   template creation, and invitation pagination. The branch now keeps the
   launcher in the same corner as a 48 px icon-only target and pins that compact
   geometry in the focused assistant regression before rerunning exact-head CI.
-- Next: Commit this integration receipt, push the integrated draft layer,
-  require its focused browser regression and exact-head CI, then initialize
-  Stack A and begin A1.
+- A0 completion: Corrected head `4e41ec1054cc` passed the hosted build and all
+  eight Playwright shards in run `33258434945`. OpenCodeReview reported zero
+  findings, the only CodeRabbit thread remains resolved and outdated, and all
+  applicable exact-head checks passed. The Final AI review workflow completed
+  successfully; its draft-only review jobs stayed skipped and its aggregate
+  status remains pending while the PR is draft.
+- Stack A: The approved stack now records `v3-ai` →
+  `rs/manage-assistant-feedback-fixes` →
+  `rs/manage-assistant-shell-recovery` without a second upstream integration.
+- A1 runtime preflight: Current devrouter rejected the target configuration
+  before mutation because native `runServices` included Azurite without a
+  managed-runtime classification. The app container declares Azurite as a
+  healthy startup dependency, so A1 adds it to the managed base-service
+  registry alongside Postgres and Hatchet.
+- A1 local runtime evidence: The first focused start exposed the documented
+  fixed Azurite graph-worker port colliding with another workspace. Retrying
+  with the supported free `KB_GRAPH_BLOB_HOST_PORT=10013` override cleared that
+  collision, but both starts terminated in Devsy's agent-injection phase with
+  `inject agent: [inject] open binary: agent binary not found`. The exact
+  worktree runtime was stopped through devrouter and now reports no active or
+  present managed services, processes, or routes. Local browser and lecturer
+  MCP health proof therefore remain blocked by host runtime tooling; A1's
+  focused hosted Playwright regression and exact-head CI remain required before
+  the layer can be accepted.
+- Next: Complete A1's recoverable iframe shell, honest standalone boundary,
+  focused lecturer-MCP runtime contract, independent reviews, and exact-head
+  draft-layer verification.

@@ -9,6 +9,9 @@ Azurite Blob Storage, Hatchet, install + build + seed, `turbo dev`);
 the primary checkout intentionally keeps fixed localhost ports and is
 one-at-a-time.
 
+Managed devrouter profiles keep Postgres, Azurite, and Hatchet as base services
+because the primary app container declares them as startup dependencies.
+
 > **Scope:** all runnable apps — **backend, auth, frontend-pwa, frontend-manage,
 > frontend-control, olat-api, response-api, lti-service, chat**, the **two
 > Hatchet workers**, and both internal MCP servers (`mcp-lecturer` and
@@ -247,7 +250,12 @@ readiness contract. Unauthenticated Chat must answer `401 application/json` on
 a nested API route, the committed shell pages of auth, PWA, manage, and control
 must answer `2xx` HTML or a redirect, and Response API must answer `200`
 JSON at `/healthz`. Profiles that include live-quiz workers also require one
-live runtime process for each worker below the exact managed Turbo root. Five
+live runtime process for each worker below the exact managed Turbo root. The
+focused combined `chat,manage` profile additionally starts
+`@klicker-uzh/mcp-lecturer` and requires `200 application/json` from its
+in-container `http://localhost:7081/healthz` endpoint. The separate `mcp`
+profile remains the deterministic read-only fixture, and the full profile's
+default readiness set is unchanged. Five
 consecutive `404 text/html` responses on a known-existing Next.js route after
 the startup grace period identify stale route state. Only that signature
 requests one managed restart with a full `.next` cleanup for exactly the

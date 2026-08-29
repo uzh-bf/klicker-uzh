@@ -1,6 +1,7 @@
 import { useApolloClient } from '@apollo/client'
 import {
   faArrowUpRightFromSquare,
+  faRotateRight,
   faSpinner,
   faUpRightAndDownLeftFromCenter,
   faWandMagicSparkles,
@@ -13,7 +14,7 @@ import {
   MANAGE_CONTEXT_MESSAGE_TYPE,
   MANAGE_CONTEXT_READY_MESSAGE_TYPE,
 } from '@klicker-uzh/types'
-import { toast } from '@uzh-bf/design-system'
+import { Tooltip, toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import {
@@ -23,6 +24,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
 } from 'react'
@@ -35,6 +37,11 @@ import {
   buildManageAssistantContext,
   type ManageAssistantContext,
 } from './manageAssistantContext'
+import {
+  createManageAssistantFrameState,
+  MANAGE_ASSISTANT_LOADING_DEADLINE_MS,
+  reduceManageAssistantFrameState,
+} from './manageAssistantFrameState'
 import {
   clampManageAssistantPanelSize,
   DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE,
@@ -69,7 +76,6 @@ export function ManageAssistantWidget() {
   } | null>(null)
   const [open, setOpen] = useState(false)
   const [hasOpened, setHasOpened] = useState(false)
-  const [frameReadyUrl, setFrameReadyUrl] = useState<string | null>(null)
   const [panelSize, setPanelSize] = useState(
     DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE
   )
@@ -89,7 +95,13 @@ export function ManageAssistantWidget() {
       }),
     [router.locale]
   )
-  const frameReady = frameReadyUrl === assistantUrl
+  const [frameState, dispatchFrameState] = useReducer(
+    reduceManageAssistantFrameState,
+    assistantUrl,
+    createManageAssistantFrameState
+  )
+  const frameReady =
+    frameState.phase === 'ready' && frameState.url === assistantUrl
   // A clean, non-embedded URL for the "open in new tab" link: the embedded
   // URL hides the assistant's login CTA and other affordances that only make
   // sense when Manage itself provides the surrounding chrome.
@@ -120,6 +132,38 @@ export function ManageAssistantWidget() {
   useEffect(() => {
     assistantContextRef.current = assistantContext
   }, [assistantContext])
+
+  useEffect(() => {
+    dispatchFrameState({ type: 'url-changed', url: assistantUrl })
+  }, [assistantUrl])
+
+  useEffect(() => {
+    if (
+      !open ||
+      !assistantUrl ||
+      frameState.url !== assistantUrl ||
+      (frameState.phase !== 'loading' && frameState.phase !== 'retrying')
+    ) {
+      return
+    }
+
+    const generation = frameState.generation
+    const deadline = window.setTimeout(() => {
+      dispatchFrameState({
+        generation,
+        type: 'deadline',
+        url: assistantUrl,
+      })
+    }, MANAGE_ASSISTANT_LOADING_DEADLINE_MS)
+
+    return () => window.clearTimeout(deadline)
+  }, [
+    assistantUrl,
+    frameState.generation,
+    frameState.phase,
+    frameState.url,
+    open,
+  ])
 
   // Post the current context to the iframe. The call site already sits
   // behind an assistantOrigin guard; the check here is for type safety only.
@@ -260,7 +304,9 @@ export function ManageAssistantWidget() {
   )
 
   useEffect(() => {
-    if (!assistantOrigin) return
+    if (!assistantOrigin || !assistantUrl) return
+    const readyUrl = assistantUrl
+    const readyGeneration = frameState.generation
 
     function handleMessage(event: MessageEvent) {
       if (event.origin !== assistantOrigin) return
@@ -277,7 +323,11 @@ export function ManageAssistantWidget() {
       // current context then: this handshake alone is enough to deliver the
       // context to a slow-hydrating iframe, without a timed retry burst.
       if (isManageContextReadyMessage(event.data)) {
-        setFrameReadyUrl(assistantUrl)
+        dispatchFrameState({
+          generation: readyGeneration,
+          type: 'ready',
+          url: readyUrl,
+        })
         sendCurrentContext()
         return
       }
@@ -307,6 +357,7 @@ export function ManageAssistantWidget() {
     assistantOrigin,
     assistantUrl,
     closeWidget,
+    frameState.generation,
     sendCurrentContext,
     t,
   ])
@@ -398,15 +449,26 @@ export function ManageAssistantWidget() {
                   </span>
                 </div>
               </div>
-              <a
-                href={assistantNewTabUrl ?? assistantUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-uzh-blue hover:text-uzh-blue-80 inline-flex size-11 shrink-0 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-                aria-label={t('manage.assistant.openInNewTab')}
+              <Tooltip
+                tooltip={t('manage.assistant.openInNewTab')}
+                delay={0}
+                className={{ tooltip: 'z-50 max-w-xs' }}
               >
-                <FontAwesomeIcon icon={faArrowUpRightFromSquare} aria-hidden />
-              </a>
+                <a
+                  href={assistantNewTabUrl ?? assistantUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-uzh-blue hover:text-uzh-blue-80 inline-flex size-11 shrink-0 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                  aria-label={t('manage.assistant.openInNewTab')}
+                  title={t('manage.assistant.openInNewTab')}
+                  data-cy="manage-assistant-new-tab"
+                >
+                  <FontAwesomeIcon
+                    icon={faArrowUpRightFromSquare}
+                    aria-hidden
+                  />
+                </a>
+              </Tooltip>
               <button
                 ref={closeButtonRef}
                 type="button"
@@ -421,20 +483,84 @@ export function ManageAssistantWidget() {
             <div className="relative min-h-0 flex-1 bg-white">
               {!frameReady ? (
                 <div
-                  role="status"
-                  className="absolute inset-0 z-10 flex items-center justify-center gap-3 bg-white text-sm text-gray-600"
-                  data-cy="manage-assistant-loading"
+                  role={frameState.phase === 'failed' ? 'alert' : 'status'}
+                  className="absolute inset-0 z-10 flex items-center justify-center bg-white px-6 text-sm text-gray-600"
+                  data-cy={
+                    frameState.phase === 'failed'
+                      ? 'manage-assistant-failed'
+                      : frameState.phase === 'delayed'
+                        ? 'manage-assistant-delayed'
+                        : 'manage-assistant-loading'
+                  }
                 >
-                  <FontAwesomeIcon
-                    icon={faSpinner}
-                    spin
-                    aria-hidden
-                    className="text-uzh-blue size-5"
-                  />
-                  <span>{t('manage.assistant.loading')}</span>
+                  {frameState.phase === 'loading' ||
+                  frameState.phase === 'retrying' ? (
+                    <div className="flex items-center gap-3">
+                      <FontAwesomeIcon
+                        icon={faSpinner}
+                        spin
+                        aria-hidden
+                        className="text-uzh-blue size-5"
+                      />
+                      <span>
+                        {t(
+                          frameState.phase === 'retrying'
+                            ? 'manage.assistant.retrying'
+                            : 'manage.assistant.loading'
+                        )}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="max-w-md text-center">
+                      <div className="font-semibold text-gray-900">
+                        {t(
+                          frameState.phase === 'failed'
+                            ? 'manage.assistant.failedTitle'
+                            : 'manage.assistant.delayedTitle'
+                        )}
+                      </div>
+                      <p className="mt-2">
+                        {t(
+                          frameState.phase === 'failed'
+                            ? 'manage.assistant.failedDescription'
+                            : 'manage.assistant.delayedDescription'
+                        )}
+                      </p>
+                      <div className="mt-4 flex flex-col items-stretch justify-center gap-2 sm:flex-row">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            dispatchFrameState({
+                              type: 'retry',
+                              url: assistantUrl,
+                            })
+                          }}
+                          className="bg-uzh-blue hover:bg-uzh-blue-80 inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                          data-cy="manage-assistant-retry"
+                        >
+                          <FontAwesomeIcon icon={faRotateRight} aria-hidden />
+                          {t('manage.assistant.retry')}
+                        </button>
+                        <a
+                          href={assistantNewTabUrl ?? assistantUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-uzh-blue inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-gray-300 px-4 py-2 font-medium hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                          data-cy="manage-assistant-fallback"
+                        >
+                          <FontAwesomeIcon
+                            icon={faArrowUpRightFromSquare}
+                            aria-hidden
+                          />
+                          {t('manage.assistant.openFreshConversation')}
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : null}
               <iframe
+                key={`${assistantUrl}:${frameState.generation}`}
                 ref={iframeRef}
                 src={assistantUrl}
                 title={t('manage.assistant.title')}
@@ -445,6 +571,13 @@ export function ManageAssistantWidget() {
                   frameReady ? 'opacity-100' : 'pointer-events-none opacity-0'
                 )}
                 data-cy="manage-assistant-frame"
+                onError={() => {
+                  dispatchFrameState({
+                    generation: frameState.generation,
+                    type: 'error',
+                    url: assistantUrl,
+                  })
+                }}
               />
             </div>
           </aside>,

@@ -15,6 +15,7 @@ A='--filter=@klicker-uzh/auth'
 M='--filter=@klicker-uzh/frontend-manage'
 P='--filter=@klicker-uzh/frontend-pwa'
 C='--filter=@klicker-uzh/chat'
+L='--filter=@klicker-uzh/mcp-lecturer'
 T='--filter=@klicker-uzh/frontend-control'
 R='--filter=@klicker-uzh/response-api'
 W1='--filter=@klicker-uzh/hatchet-worker-general'
@@ -37,6 +38,8 @@ manage,email|yes|no|no|$B $A $M|auth frontend-manage
 ai,chat|yes|no|no|$B $A $C $P|auth chat frontend-pwa
 chat,pwa|yes|no|no|$B $A $C $P|auth chat frontend-pwa
 pwa,chat|yes|no|no|$B $A $C $P|auth chat frontend-pwa
+chat,manage|yes|no|no|$B $A $C $P $M $L|auth chat frontend-pwa frontend-manage mcp-lecturer
+manage,chat|yes|no|no|$B $A $C $P $M $L|auth chat frontend-pwa frontend-manage mcp-lecturer
 "
 
 while IFS='|' read -r selection wants_dev wants_mcp wants_workers want_filters want_readiness; do

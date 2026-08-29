@@ -1,7 +1,12 @@
 import type { Page } from '@playwright/test'
 
 import { testImageUpload } from '../util/chat.js'
-import { COURSE_ID_TEST, LECTURER_ID, URL_MANAGE } from '../util/constants.js'
+import {
+  COURSE_ID_TEST,
+  LECTURER_ID,
+  URL_CHAT,
+  URL_MANAGE,
+} from '../util/constants.js'
 import { createQuestionSC } from '../util/fixtures/elements.js'
 import { expect, test } from '../util/fixtures.js'
 import {
@@ -787,6 +792,84 @@ test.describe('Manage Assistant — Slow hydration', () => {
     await expect(
       suggestions.getByText('Draft a question', { exact: true })
     ).toHaveCount(0)
+  })
+
+  test('A missing readiness handshake becomes a recoverable delayed state on compact screens', async ({
+    page,
+  }) => {
+    const chatOrigin = process.env.URL_CHAT ?? URL_CHAT
+    let servedBlankDocument = false
+
+    await page.context().route(`${chatOrigin}/manage**`, (route) => {
+      if (
+        route.request().resourceType() === 'document' &&
+        !servedBlankDocument
+      ) {
+        servedBlankDocument = true
+        return route.fulfill({
+          body: '<!doctype html><title>Delayed assistant</title>',
+          contentType: 'text/html',
+          status: 200,
+        })
+      }
+      return route.fallback()
+    })
+
+    await page.setViewportSize({ height: 844, width: 390 })
+    await page.goto(process.env.URL_MANAGE ?? URL_MANAGE)
+    await page.getByTestId('manage-assistant-open').click()
+
+    const delayed = page.getByTestId('manage-assistant-delayed')
+    await expect(delayed).toBeVisible({ timeout: 15_000 })
+    await expect(delayed).toContainText(
+      'The assistant is taking longer than expected'
+    )
+
+    const fallback = page.getByTestId('manage-assistant-fallback')
+    await expect(fallback).toContainText('Start a separate conversation')
+    const fallbackUrl = new URL((await fallback.getAttribute('href'))!)
+    expect(fallbackUrl.searchParams.has('embed')).toBe(false)
+    expect(fallbackUrl.searchParams.has('parentOrigin')).toBe(false)
+
+    await page.getByTestId('manage-assistant-retry').click()
+    await expect(page.getByTestId('manage-assistant-loading')).toContainText(
+      'Reloading assistant'
+    )
+    await page
+      .frameLocator('[data-cy="manage-assistant-frame"]')
+      .getByTestId('chat-composer')
+      .waitFor({ state: 'visible', timeout: 20_000 })
+    await expect(delayed).toBeHidden()
+  })
+
+  test('An iframe load error keeps close and the explicit fresh-conversation fallback available', async ({
+    page,
+  }) => {
+    const chatOrigin = process.env.URL_CHAT ?? URL_CHAT
+    let abortedDocument = false
+
+    await page.context().route(`${chatOrigin}/manage**`, (route) => {
+      if (route.request().resourceType() === 'document' && !abortedDocument) {
+        abortedDocument = true
+        return route.abort('failed')
+      }
+      return route.fallback()
+    })
+
+    await page.goto(process.env.URL_MANAGE ?? URL_MANAGE)
+    await page.getByTestId('manage-assistant-open').click()
+
+    await expect(page.getByTestId('manage-assistant-failed')).toBeVisible({
+      timeout: 5_000,
+    })
+    const newTab = page.getByTestId('manage-assistant-new-tab')
+    await expect(newTab).toHaveAccessibleName(
+      'Start a new conversation in a new tab without this page context'
+    )
+
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('manage-assistant-drawer')).toBeHidden()
+    await expect(page.getByTestId('manage-assistant-open')).toBeFocused()
   })
 })
 

@@ -1824,8 +1824,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       open: 'Assistent',
       title: 'KlickerUZH Assistant',
       subtitle: 'KI-Assistent für Ihre Kurse und Ihren Fragepool',
-      openInNewTab: 'Assistent in einem neuen Tab öffnen',
+      openInNewTab:
+        'Neue Unterhaltung in einem neuen Tab ohne Kontext dieser Seite starten',
+      openFreshConversation: 'Separate Unterhaltung starten',
       loading: 'Assistent wird geladen…',
+      retrying: 'Assistent wird neu geladen…',
+      retry: 'Assistent neu laden',
+      delayedTitle: 'Der Assistent benötigt länger als erwartet',
+      delayedDescription:
+        'Sie können weiter warten, den eingebetteten Assistenten neu laden oder eine separate Unterhaltung ohne Kontext dieser Seite starten.',
+      failedTitle: 'Der Assistent konnte nicht geladen werden',
+      failedDescription:
+        'Laden Sie den eingebetteten Assistenten neu oder starten Sie eine separate Unterhaltung ohne Kontext dieser Seite.',
       resize: 'Grösse des Assistenten ändern',
       resizeHint:
         'Ziehen Sie, um die Grösse zu ändern. Die Pfeiltasten ändern die Grösse ebenfalls.',

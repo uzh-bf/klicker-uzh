@@ -179,6 +179,7 @@ probe_url() {
     frontend-control) echo 'http://localhost:3003/login' ;;
     frontend-manage) echo 'http://localhost:3002/login' ;;
     frontend-pwa) echo 'http://localhost:3001/login' ;;
+    mcp-lecturer) echo 'http://localhost:7081/healthz' ;;
     response-api) echo 'http://localhost:7078/healthz' ;;
     *) return 1 ;;
   esac
@@ -194,7 +195,7 @@ probe_mode() {
     auth | frontend-control | frontend-manage | frontend-pwa)
       echo 'html-shell'
       ;;
-    response-api) echo 'health-json' ;;
+    mcp-lecturer | response-api) echo 'health-json' ;;
     *) return 1 ;;
   esac
 }

@@ -437,6 +437,10 @@ READINESS_APPS=response-api bash "$RUNTIME_SCRIPT" doctor >/dev/null
 assert_equal "$(cat "$CURL_LOG")" 'http://localhost:7078/healthz'
 
 : >"$CURL_LOG"
+READINESS_APPS='response-api mcp-lecturer' bash "$RUNTIME_SCRIPT" doctor >/dev/null
+assert_equal "$(cat "$CURL_LOG")" $'http://localhost:7078/healthz\nhttp://localhost:7081/healthz'
+
+: >"$CURL_LOG"
 READINESS_APPS='' bash "$RUNTIME_SCRIPT" doctor >/dev/null
 [ ! -s "$CURL_LOG" ] || fail 'capability-only doctor probed an unselected app'
 
