@@ -2249,22 +2249,30 @@ test('staging promotion retirement scopes ownership and fails closed', () => {
     gh,
     `#!/usr/bin/env bash
 set -euo pipefail
-if [ "\${1:-}" = api ]; then printf '%s\\n' false; exit 0; fi
-case "\${1:-}:\${2:-}" in
-  pr:list)
+if [ "\${1:-}" = api ]; then
+  if [[ "$*" == *actions/variables* ]]; then
+    printf '%s\\n' false
+    exit 0
+  fi
+  if [[ "$*" == *'/pulls?state=open&per_page=100'* ]]; then
+    [[ "$*" == *'--paginate --slurp'* ]] || exit 10
     count=0
     [ ! -f "$MOCK_LIST_COUNTER" ] || count=$(<"$MOCK_LIST_COUNTER")
     count=$((count + 1))
     printf '%s\\n' "$count" > "$MOCK_LIST_COUNTER"
     [ "\${MOCK_LIST_FAIL_CALL:-0}" != "$count" ] || exit 3
     if [ "$count" -eq 1 ]; then
-      printf '%s\\n' '[{"number":17,"baseRefName":"v3-ai","headRefName":"chore/promote-stg-aaaaaaaaaaaa","headRepository":{"nameWithOwner":"uzh-bf/klicker-uzh"},"headRepositoryOwner":{"login":"uzh-bf"},"isCrossRepository":false},{"number":19,"baseRefName":"v3-ai","headRefName":"chore/promote-stg-bbbbbbbbbbbb","headRepository":{"nameWithOwner":"contributor/klicker-uzh"},"headRepositoryOwner":{"login":"contributor"},"isCrossRepository":true},{"number":20,"baseRefName":"v3","headRefName":"chore/promote-stg-cccccccccccc","headRepository":{"nameWithOwner":"uzh-bf/klicker-uzh"},"headRepositoryOwner":{"login":"uzh-bf"},"isCrossRepository":false}]'
+      printf '%s\\n' '[[{"number":19,"base":{"ref":"v3-ai"},"head":{"ref":"chore/promote-stg-bbbbbbbbbbbb","repo":{"full_name":"contributor/klicker-uzh","owner":{"login":"contributor"}}}},{"number":20,"base":{"ref":"v3"},"head":{"ref":"chore/promote-stg-cccccccccccc","repo":{"full_name":"uzh-bf/klicker-uzh","owner":{"login":"uzh-bf"}}}}],[{"number":17,"base":{"ref":"v3-ai"},"head":{"ref":"chore/promote-stg-aaaaaaaaaaaa","repo":{"full_name":"uzh-bf/klicker-uzh","owner":{"login":"uzh-bf"}}}}]]'
     elif [ "\${MOCK_LEFTOVER:-0}" = 1 ]; then
-      printf '%s\\n' '[{"number":18,"baseRefName":"v3-ai","headRefName":"chore/promote-stg-dddddddddddd","headRepository":{"nameWithOwner":"uzh-bf/klicker-uzh"},"headRepositoryOwner":{"login":"uzh-bf"},"isCrossRepository":false}]'
+      printf '%s\\n' '[[{"number":18,"base":{"ref":"v3-ai"},"head":{"ref":"chore/promote-stg-dddddddddddd","repo":{"full_name":"uzh-bf/klicker-uzh","owner":{"login":"uzh-bf"}}}}]]'
     else
-      printf '%s\\n' '[{"number":19,"baseRefName":"v3-ai","headRefName":"chore/promote-stg-bbbbbbbbbbbb","headRepository":{"nameWithOwner":"contributor/klicker-uzh"},"headRepositoryOwner":{"login":"contributor"},"isCrossRepository":true}]'
+      printf '%s\\n' '[[{"number":19,"base":{"ref":"v3-ai"},"head":{"ref":"chore/promote-stg-bbbbbbbbbbbb","repo":{"full_name":"contributor/klicker-uzh","owner":{"login":"contributor"}}}}]]'
     fi
-    ;;
+    exit 0
+  fi
+  exit 8
+fi
+case "\${1:-}:\${2:-}" in
   pr:view) printf '%s\\n' true ;;
   pr:merge)
     [ "\${4:-}" = --disable-auto ] || exit 4

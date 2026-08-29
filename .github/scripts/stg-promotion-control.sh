@@ -48,19 +48,18 @@ list_workflow_promotions() {
   [[ "$expected_base" =~ ^[A-Za-z0-9_.-]+$ ]] \
     || fail 'expected promotion base must be a Docker-safe branch name'
 
-  gh pr list --state open --limit 1000 --base "$expected_base" \
-    --json number,baseRefName,headRefName,headRepository,headRepositoryOwner,isCrossRepository \
+  gh api --paginate --slurp \
+    "/repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
     | jq -r \
       --arg base "$expected_base" \
       --arg owner "$repository_owner" \
       --arg repository "$GITHUB_REPOSITORY" \
-      '.[] |
+      '.[][] |
        select(
-         .baseRefName == $base and
-         (.headRefName | startswith("chore/promote-stg-")) and
-         .isCrossRepository == false and
-         .headRepository.nameWithOwner == $repository and
-         .headRepositoryOwner.login == $owner
+         .base.ref == $base and
+         (.head.ref | startswith("chore/promote-stg-")) and
+         .head.repo.full_name == $repository and
+         .head.repo.owner.login == $owner
        ) |
        .number'
 }
