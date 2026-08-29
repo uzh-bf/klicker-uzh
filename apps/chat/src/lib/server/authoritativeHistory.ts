@@ -241,12 +241,6 @@ export async function prepareAuthoritativeConversation(
     }
 
     const sourceAttachments = await loadScopedSourceAttachments()
-    let currentAttachments = await tx.chatAttachment.findMany({
-      where: { messageId: input.trigger.id },
-      select: selectAttachment,
-      orderBy: [{ position: 'asc' }, { id: 'asc' }],
-    })
-
     if (created.count === 1) {
       let bindings: Array<{
         type: 'IMAGE'
@@ -290,13 +284,16 @@ export async function prepareAuthoritativeConversation(
 
       if (bindings.length > 0) {
         await tx.chatAttachment.createMany({ data: bindings })
-        currentAttachments = await tx.chatAttachment.findMany({
-          where: { messageId: input.trigger.id },
-          select: selectAttachment,
-          orderBy: [{ position: 'asc' }, { id: 'asc' }],
-        })
       }
-    } else if (!input.usedLegacyAdapter) {
+    }
+
+    const currentAttachments = await tx.chatAttachment.findMany({
+      where: { messageId: input.trigger.id },
+      select: selectAttachment,
+      orderBy: [{ position: 'asc' }, { id: 'asc' }],
+    })
+
+    if (created.count === 0 && !input.usedLegacyAdapter) {
       const requestedImages = input.trigger.attachments.map((attachment) =>
         attachment.type === 'new-image'
           ? attachment.imageBase64

@@ -627,38 +627,33 @@ export function useChatResponse(
               creditsUsed: messageMetadata?.creditsUsed ?? null,
             }
 
-            const updatedUserMessage = triggerMessage
-              ? {
-                  ...triggerMessage,
-                  chatMode:
-                    messageMetadata?.chatMode ?? triggerMessage.chatMode,
-                  modelId: messageMetadata?.modelId ?? triggerMessage.modelId,
-                  reasoningEffort:
-                    messageMetadata?.reasoningEffort ??
-                    triggerMessage.reasoningEffort,
-                  ...(messageMetadata?.imageAttachments
-                    ? {
-                        imageAttachments: messageMetadata.imageAttachments,
-                        attachmentSourceMessageId: null,
-                      }
-                    : {}),
-                }
-              : null
+            const updatedUserMessage = {
+              ...triggerMessage,
+              chatMode: messageMetadata?.chatMode ?? triggerMessage.chatMode,
+              modelId: messageMetadata?.modelId ?? triggerMessage.modelId,
+              reasoningEffort:
+                messageMetadata?.reasoningEffort ??
+                triggerMessage.reasoningEffort,
+              ...(messageMetadata?.imageAttachments
+                ? {
+                    imageAttachments: messageMetadata.imageAttachments,
+                    attachmentSourceMessageId: null,
+                  }
+                : {}),
+            }
 
-            const newCurrentPath = updatedUserMessage
-              ? [
-                  ...messagesToSend.slice(0, -1),
-                  updatedUserMessage,
-                  finalAssistantMessage,
-                ]
-              : [...messagesToSend, finalAssistantMessage]
+            const newCurrentPath = [
+              ...messagesToSend.slice(0, -1),
+              updatedUserMessage,
+              finalAssistantMessage,
+            ]
 
             // update both current message path and complete message history
             const { threads } = useChatStore.getState()
             const activeThread = threads.find((t) => t.id === threadId)
             const baseAllMessages = activeThread
               ? activeThread.allMessages.map((message) =>
-                  updatedUserMessage && message.id === updatedUserMessage.id
+                  message.id === updatedUserMessage.id
                     ? updatedUserMessage
                     : message
                 )

@@ -668,3 +668,28 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   The runtime lifecycle contract forbids bypassing that lock through raw Docker
   repair. No Infisical access, external model call, or browser proof occurred.
   S2 is ready for its scoped commit and immutable slice reviews.
+- 2026-08-29: S2 source, tests, and the evidence above are committed at
+  `cbe000086`. The native simplifier and slice-reviewer routes again failed
+  before launch because the task substituted the unsupported
+  `combo/glm-5.3-flash` / `max` route, so two independent trusted GPT-5.6 Sol
+  xhigh continuity reviews inspected the immutable `5c959a83b..cbe000086`
+  range. The simplifier approved with one minor and two optional reductions;
+  the risk review required one major correction and reported one minor and one
+  optional concern.
+- 2026-08-29: the accepted S2 adjustments let a retry conditionally fill a
+  still-null description on its own current binding without overwriting an
+  existing description, load the current binding set once after optional
+  creation, and remove unreachable null branches from the successful client
+  path. Strict source-UUID provenance for byte-identical retry inputs was
+  declined because W3 stores immutable current bindings rather than source
+  pointers: such an input cannot replace a binding or change provider-visible
+  content, while a new pointer would require the migration this plan excludes.
+  Optional fixture and bounded-projection churn was also declined.
+- 2026-08-29: the adjusted S2 checks pass 30 route/lifecycle tests, 31
+  client/parser/history tests, 17 authoritative-history PostgreSQL tests, Chat
+  TypeScript checking, and `git diff --check`. The full Chat suite passes 49
+  files and 446 tests, with two files and 31 tests explicitly skipped. The
+  production Chat build also passes without an upstream model key. Focused
+  OpenGrep reports only two pre-existing February logging-format warnings and
+  no new S2 finding. The adjustment is ready for its scoped local commit before
+  S3.

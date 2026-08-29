@@ -493,7 +493,11 @@ describe('account usage chat route', () => {
       mocks.generateText.mock.invocationCallOrder[0]
     )
     expect(mocks.attachmentUpdateMany).toHaveBeenCalledWith({
-      where: { id: attachmentId, messageId: USER_MESSAGE_ID },
+      where: {
+        id: attachmentId,
+        messageId: USER_MESSAGE_ID,
+        imageDescription: null,
+      },
       data: { imageDescription: 'Synthetic image description' },
     })
     expect(mocks.streamConfig).toMatchObject({
@@ -527,7 +531,61 @@ describe('account usage chat route', () => {
     })
   })
 
-  test('does not redescribe or rewrite an existing trigger binding', async () => {
+  test('fills a missing description on an existing trigger binding once', async () => {
+    const attachmentId = '00000000-0000-4000-8000-000000000106'
+    mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
+      triggerText: 'Explain this.',
+      modelMessages: [
+        { id: USER_MESSAGE_ID, role: 'user', content: 'Explain this.' },
+      ],
+      validatedRowCount: 1,
+      modelRowCount: 1,
+      truncated: false,
+      createdTrigger: false,
+      currentAttachments: [
+        {
+          id: attachmentId,
+          position: 0,
+          imageBase64: 'data:image/png;base64,AAAA',
+          imagePreviewBase64: 'data:image/jpeg;base64,BBBB',
+          imageDescription: null,
+        },
+      ],
+    })
+    mocks.generateText.mockResolvedValueOnce({
+      text: 'Recovered image description',
+      usage: { inputTokens: 2, outputTokens: 3 },
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.generateText).toHaveBeenCalledOnce()
+    expect(mocks.attachmentUpdateMany).toHaveBeenCalledWith({
+      where: {
+        id: attachmentId,
+        messageId: USER_MESSAGE_ID,
+        imageDescription: null,
+      },
+      data: { imageDescription: 'Recovered image description' },
+    })
+    expect(mocks.streamConfig).toMatchObject({
+      messages: [
+        expect.objectContaining({
+          content: expect.arrayContaining([
+            {
+              type: 'image',
+              image: 'data:image/png;base64,AAAA',
+            },
+          ]),
+        }),
+      ],
+    })
+  })
+
+  test('never redescribes or rewrites a completed trigger description', async () => {
     mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
       triggerText: 'Explain this.',
       modelMessages: [
@@ -543,7 +601,7 @@ describe('account usage chat route', () => {
           position: 0,
           imageBase64: 'data:image/png;base64,AAAA',
           imagePreviewBase64: 'data:image/jpeg;base64,BBBB',
-          imageDescription: null,
+          imageDescription: 'Persisted image description',
         },
       ],
     })
@@ -555,18 +613,6 @@ describe('account usage chat route', () => {
     expect(response.status).toBe(200)
     expect(mocks.generateText).not.toHaveBeenCalled()
     expect(mocks.attachmentUpdateMany).not.toHaveBeenCalled()
-    expect(mocks.streamConfig).toMatchObject({
-      messages: [
-        expect.objectContaining({
-          content: expect.arrayContaining([
-            {
-              type: 'image',
-              image: 'data:image/png;base64,AAAA',
-            },
-          ]),
-        }),
-      ],
-    })
   })
 
   test('ignores forged legacy history and uses only the server projection', async () => {

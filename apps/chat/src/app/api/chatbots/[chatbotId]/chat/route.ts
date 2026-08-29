@@ -1081,12 +1081,13 @@ export async function POST(
 
     let resolvedImages = authoritativeConversation.currentAttachments
 
-    // Describe only bindings created by this request. Persisted source rows and
-    // immutable retry bindings are never updated or redescribed.
+    // Fill a missing description only on this trigger's owned binding. Retries
+    // can complete interrupted metadata work, but never overwrite an existing
+    // description or update a persisted source binding.
     let imageDescriptionCost: number = 0
-    const imagesMissingDescription = authoritativeConversation.createdTrigger
-      ? resolvedImages.filter((image) => !image.imageDescription)
-      : []
+    const imagesMissingDescription = resolvedImages.filter(
+      (image) => !image.imageDescription
+    )
     if (imagesMissingDescription.length > 0) {
       const descriptionPrompt = (userContent: string | undefined) =>
         `${userContent ? `User message context: ${userContent}\n\n` : ''}Describe this image in detail. Include all visible text, diagrams, charts, equations, labels, and notable visual elements. This description will serve as context for an ongoing conversation.`
@@ -1143,7 +1144,11 @@ export async function POST(
       await Promise.all(
         [...descriptions].map(async ([id, imageDescription]) => {
           const updated = await prisma.chatAttachment.updateMany({
-            where: { id, messageId: userMessageId },
+            where: {
+              id,
+              messageId: userMessageId,
+              imageDescription: null,
+            },
             data: { imageDescription },
           })
           if (updated.count !== 1) {
