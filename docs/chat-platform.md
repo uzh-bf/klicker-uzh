@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-27'
+timestamp: '2026-08-29'
 tags:
   - frontend
   - chat
@@ -61,6 +61,56 @@ only conversation scroller. The standalone composer remains in the thread's
 flex layout so expanded text, attachments, and errors reduce the viewport
 instead of covering its final content; only embedded mode keeps the compact
 overlay treatment.
+
+## Authoritative conversation context
+
+**PostgreSQL owns every model-visible branch; the browser owns only branch
+navigation.** The canonical chat request built by
+`apps/chat/src/hooks/useChatResponse.ts:useChatResponse` carries one user
+trigger with its parent, text, and ordered image inputs. It never sends the
+browser's message path. `apps/chat/src/lib/server/chatRequest.ts:parseChatRequestBody`
+keeps one temporary compatibility adapter for already-open clients: it reads
+only the final user item and ignores every earlier browser-supplied message.
+See [ADR 0044](./adr/0044-postgresql-owned-chat-context.md).
+
+`apps/chat/src/lib/server/authoritativeHistory.ts:prepareAuthoritativeConversation`
+runs before assistant claim, MCP discovery, image description, or provider
+work. In one participant-scoped transaction it creates or exactly validates
+the immutable user trigger, resolves its current image bindings, walks its
+PostgreSQL parent chain, and validates at most 256 rows. A longer valid chain
+uses row 256 as an effective root and records truncation. Only the closest 64
+validated rows are projected to the model. The browser-side
+`apps/chat/src/lib/conversationBranch.ts:walkConversationBranch` shares
+cycle-safe path semantics for rendering but cannot authorize or compose model
+history.
+
+The model projection includes persisted user and assistant text and bounded
+descriptions from prior user images. Marker-only assistant rows still
+participate in structural validation but are omitted from model history. Only
+the current user message contributes raw image bytes; siblings, older rows,
+prior raw images, reasoning, client data markers, and generic persisted tool
+payloads remain outside the request. Tool payload replay needs a tool-specific
+projection that reconstructs a valid AI SDK tool exchange; rendering a stored
+payload does not make it safe model context.
+
+Image reuse is binding-based. A new raw image becomes a server-previewed
+binding on the trigger. A persisted attachment ID is copied only from a
+completed user message in the same participant, chatbot, owner, and thread
+scope. Edit omission removes the image only from the new binding set; source
+rows never change. A retry keeps its current binding IDs and bytes, may fill a
+still-null description through a conditional current-message update, and can
+never overwrite an existing description. The server returns authoritative
+binding IDs in finish metadata, while full-image hydration remains a display
+operation rather than a send prerequisite.
+
+Assistant lifecycle ownership follows the same boundary.
+`apps/chat/src/services/accountUsage.ts:claimChatTurn`, `failChatTurn`, and
+`finalizeChatTurn` fence every attempt to the participant-owned thread and the
+exact completed user parent; finalization never rewrites the parent. Future
+CodeAPI execution context must add its own newest-four bounded projection over
+this active path. Future general files and generated assets must add a
+current-first, maximum-20 bounded catalog and the same explicit rebinding rule.
+Neither projection exists in this change.
 
 The OpenAI-compatible `provider.chat(...)` path uses an aligned AI SDK 7 patch
 train: `ai@7.0.52`, `@ai-sdk/openai@4.0.30`, and `@ai-sdk/mcp@2.0.25`, which
@@ -281,18 +331,21 @@ The client-supplied assistant message ID is the turn lifecycle key.
 `apps/chat/src/services/accountUsage.ts:claimChatTurn` creates an
 `IN_PROGRESS` assistant placeholder with a per-attempt UUID before MCP, image,
 or provider work. Concurrent and completed claims return the same generic
-`409`; collision checks verify the assistant role, thread, chatbot, and owner
-without revealing foreign scope. Failed attempts may be reclaimed with a new
-UUID, while callbacks from an older attempt cannot complete or charge the
+`409`; collision checks verify the assistant role, participant-owned thread,
+chatbot, owner, and exact completed user parent without revealing foreign
+scope. Failed attempts may be reclaimed with a new UUID only for that same
+parent, while callbacks from an older attempt cannot complete or charge the
 turn. Claims have no timeout or automatic lease stealing.
 
 `apps/chat/src/services/accountUsage.ts:finalizeChatTurn` compares and sets the
 matching attempt to `COMPLETED`, stores the terminal assistant result,
 increments the owner/class/month counter by the same rounded six-decimal value,
-and updates the thread timestamp in one `ReadCommitted` transaction. A normal
-finish and an abort use this finalizer once, and a late `onEnd` after an abort
-is ignored. Missing reliable main-stream usage still closes the message key
-with `creditsUsed = null` and no account charge. History reads hide
+and updates the thread timestamp in one `ReadCommitted` transaction. It verifies
+the participant-owned thread and exact completed parent again, and never
+rewrites that parent. A normal finish and an abort use this finalizer once, and
+a late `onEnd` after an abort is ignored. Missing reliable main-stream usage
+still closes the message key with `creditsUsed = null` and no account charge.
+History reads hide
 `IN_PROGRESS` and `FAILED` placeholders. The availability check is not a
 reservation, so the bounded final-turn and concurrent overrun accepted by
 [ADR 0041](./adr/0041-chatbot-trusted-pilot-boundary.md) remains possible; the next
@@ -723,9 +776,9 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 
 - **Zustand async actions must set fallback state in `catch`**, not just log — otherwise the UI hangs in loading state on network errors.
 - **Cancel persistence lives in `onAbort`, not `onEnd`.** The chat route's `onEnd` returns early after an abort (ai@7 still flushes it when ≥1 step completed, and letting it run overwrote the partial answer and rewrote its credits). `onAbort` persists the streamed partial text/reasoning and charges the summed per-step cost; when nothing streamed (a pure tool-call first step), it persists the completed steps' tool calls instead — `partialContent` already contains completed steps' text, so the two content sources are mutually exclusive by design.
-- **Stopped turns carry a persisted `chat-stopped` data marker, not a string.** `buildAbortedAssistantContent` (`src/lib/server/persistedAssistantContent.ts`) always ends aborted content with `{ type: 'data', name: 'chat-stopped', data: {} }` (marker-only when nothing streamed), so a reloaded thread can tell a stopped turn from a completed one without any user-facing text in the database; the client renders it via `ChatStoppedPart` (localized notice plus a retry that uses the assistant-ui reload path, so retrying creates a sibling version instead of a duplicate turn), `isStoppedWithoutText` (`message-parts-state.ts`) switches marker-only turns to error-style chrome (no rating, no reload), and the history rail maps the marker to the `partial` status. On the client, the `AbortError` branch in `useChatResponse` writes the stopped turn into **both** `messages` and `allMessages` one macrotask after assistant-ui's `cancelRun` resync (which itself defers via `setTimeout(0)`) — an earlier write is clobbered by that resync. Empty-text assistant turns are filtered out of outgoing request bodies so a marker-only turn never reaches the model as an empty assistant message. Known edge: a zero-content abort can outrun server persistence entirely, so its in-session marker-only turn has no server row and disappears on reload.
+- **Stopped turns carry a persisted `chat-stopped` data marker, not a string.** `buildAbortedAssistantContent` (`src/lib/server/persistedAssistantContent.ts`) always ends aborted content with `{ type: 'data', name: 'chat-stopped', data: {} }` (marker-only when nothing streamed), so a reloaded thread can tell a stopped turn from a completed one without any user-facing text in the database; the client renders it via `ChatStoppedPart` (localized notice plus a retry that uses the assistant-ui reload path, so retrying creates a sibling version instead of a duplicate turn), `isStoppedWithoutText` (`message-parts-state.ts`) switches marker-only turns to error-style chrome (no rating, no reload), and the history rail maps the marker to the `partial` status. On the client, the `AbortError` branch in `useChatResponse` writes the stopped turn into **both** `messages` and `allMessages` one macrotask after assistant-ui's `cancelRun` resync (which itself defers via `setTimeout(0)`) — an earlier write is clobbered by that resync. The canonical request sends only the triggering user message, so marker-only assistant rows never travel from the browser to the model; the server projection omits their empty text. Known edge: a zero-content abort can outrun server persistence entirely, so its in-session marker-only turn has no server row and disappears on reload.
 - **Run-state announcements come from a dedicated sr-only live region** in `thread.tsx`, driven by a `lastRunOutcome` store field rather than `isRunning` alone — cancel clears `isRunning` before the abort settles, so without the outcome field a stop would announce as a completion. The thinking indicator deliberately carries no `role="status"` to avoid double announcements.
-- **Edited-message image hydration** needs the persisted source message id (`attachmentSourceMessageId`) distinct from the fresh local message id (`src/hooks/useThreadManagement.ts`, `src/stores/chatStore.ts`).
+- **Edited-message image hydration** keeps the persisted source message id (`attachmentSourceMessageId`) distinct from the fresh local message id (`src/hooks/useThreadManagement.ts`, `src/stores/chatStore.ts`) for participant-visible display and edit state. Sending uses persisted attachment IDs directly and never hydrates stored bytes merely to resend them.
 - **`ComposerPrimitive.AttachmentDropzone` must wrap both normal and edit composer roots** — it owns the drag/drop capture that prevents native browser file navigation (`src/components/thread.tsx`).
 - **Login redirects**: `src/app/noLogin/page.tsx` must pass an **absolute** chat URL as the PWA login `redirect_to`; a relative path makes the PWA redirect to its own domain and 404.
 - **Static assets need a middleware allowlist entry.** `src/middleware.ts` matches `/:path*` and passes through only `/noLogin`, `/KlickerLogo.png`, `/user-solid.svg`, `/_next…`, `/api…`, and `/favicon…`. Any other file added to `apps/chat/public/` is redirected to the login page for requests without a valid participant token (authenticated participants still get it served) — assets referenced from unauthenticated pages like `/noLogin` therefore break silently, so add new public files to that allowlist in the same change.
@@ -752,6 +805,14 @@ from the model/tool path. The fixture is synthetic wiring evidence only; it
 does not validate retrieval quality or a deployed MCP server.
 
 Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. The runner is `environment: 'node'` with no jsdom/testing-library, so component behavior is tested by extracting the decision logic into pure modules next to the component (`message-parts-state.ts`, `thread-list-state.ts`) — follow that pattern rather than adding a DOM environment. The whole suite shares **one fork** (`singleFork: true`), so a `vi.stubGlobal` is process-global: the config sets `unstubGlobals: true`, but that only restores before each _test_ — the next file's module **import** still sees whatever the previous file's last test left stubbed (a leaked `window`/`URL` once broke zustand-persist feature detection and `new URL` in unrelated files, order-dependently). Any file stubbing environment-shaped globals (`window`, `URL`, `document`) must also clean up itself with `afterEach(() => vi.unstubAllGlobals())`. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts`).
+
+`apps/chat/test/authoritative-history.integration.test.ts` is an opt-in,
+synthetic PostgreSQL suite. Set
+`CHAT_CONVERSATION_HISTORY_INTEGRATION=1` when running that file to exercise the
+real recursive query, concurrent create-or-validate behavior, participant and
+attachment scope failures, immutable rebinding, and the 256-row effective-root
+boundary. The default package suite skips it; a green mocked route test is not
+a substitute for this database evidence.
 
 `history-rail.test.ts` pins active-path order, adjacent user/assistant pairing, orphan messages, complete text, stable message anchors, exclusion of reasoning/tool/error part landmarks, and running/partial/error states. Browser verification must additionally exercise desktop tick activation, the mobile history-trigger/dialog flow, complete-text popovers, focus, current-entry highlighting, rapid navigation, and EN/DE rail labels; the seeded local app can prove the navigation and error states without an upstream model key.
 

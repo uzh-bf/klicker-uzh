@@ -693,3 +693,17 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   OpenGrep reports only two pre-existing February logging-format warnings and
   no new S2 finding. The adjustment is ready for its scoped local commit before
   S3.
+- 2026-08-29: the reviewed S2 adjustments are committed at `7e5034245`; S2 is
+  complete. A scan across all local refs found two separate `0042` ADR
+  reservations and an existing `0043` reservation, so S3 uses the next free
+  number, `0044`, for the PostgreSQL-owned chat-context decision.
+- 2026-08-29: ADR 0044 and `docs/chat-platform.md` now record the canonical
+  trigger, compatibility window, 256-row validation and 64-row projection,
+  immutable current image bindings, exact assistant-parent lifecycle,
+  generic-tool replay exclusion, and the deferred W4 execution and W5 asset
+  projections. Changed Markdown is formatted, direct links exist, cited source
+  symbols resolve, and `git diff --check` passes. The deterministic OKF core
+  validator remains blocked by 26 repository-wide conformance errors, including
+  its requirement for frontmatter on every existing ADR despite this
+  repository's established ADR format; no unrelated bundle rewrite was made.
+  S3 is ready for its documentation commit.
