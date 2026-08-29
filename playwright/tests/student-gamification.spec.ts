@@ -5,6 +5,8 @@ import { getPrisma } from '../global-setup.js'
 import { enMessages as messages } from '../util/messages.js'
 
 let testAchievementId: number | undefined
+let publicParticipantId: string | undefined
+let publicParticipantWasPublic: boolean | undefined
 let publicParticipantUsername: string | undefined
 
 test.beforeAll(async () => {
@@ -31,16 +33,22 @@ test.beforeAll(async () => {
       courseId: COURSE_ID_TEST,
       type: LeaderboardType.COURSE,
       participantId: { not: PARTICIPANT_IDS[48]! },
-      participant: { isProfilePublic: true },
       participation: { is: { isActive: true } },
     },
     orderBy: { score: 'desc' },
     select: {
       participantId: true,
-      participant: { select: { username: true } },
+      participant: { select: { isProfilePublic: true, username: true } },
     },
   })
+  publicParticipantId = publicParticipant.participantId
+  publicParticipantWasPublic = publicParticipant.participant.isProfilePublic
   publicParticipantUsername = publicParticipant.participant.username
+
+  await prisma.participant.update({
+    where: { id: publicParticipant.participantId },
+    data: { isProfilePublic: true },
+  })
 
   await prisma.participantAchievementInstance.createMany({
     data: [
@@ -63,6 +71,16 @@ test.afterAll(async () => {
 
   const prisma = await getPrisma()
   await prisma.achievement.delete({ where: { id: testAchievementId } })
+
+  if (
+    typeof publicParticipantId !== 'undefined' &&
+    typeof publicParticipantWasPublic !== 'undefined'
+  ) {
+    await prisma.participant.update({
+      where: { id: publicParticipantId },
+      data: { isProfilePublic: publicParticipantWasPublic },
+    })
+  }
 })
 
 test('acknowledges receipts only for self profiles and retries after failure', async ({
