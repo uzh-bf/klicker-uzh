@@ -2144,7 +2144,7 @@ test('staging promoter targets the selected source without fixed value counts', 
   )
   assert.match(
     workflow,
-    /github\.event_name == 'workflow_dispatch' &&[\s\S]*github\.ref_name == github\.event\.repository\.default_branch[\s\S]*github\.event\.workflow_run\.event == 'push'/
+    /github\.event_name == 'workflow_dispatch' &&[\s\S]*github\.ref_type == 'branch' &&[\s\S]*github\.ref_name == github\.event\.repository\.default_branch[\s\S]*github\.event\.workflow_run\.event == 'push'/
   )
   assert.ok(
     workflow.indexOf('Refuse promotion while paused') <
@@ -2161,8 +2161,11 @@ test('staging promoter targets the selected source without fixed value counts', 
     workflow.includes('stg-promotion-control.sh?ref=${TRUSTED_WORKFLOW_SHA}')
   )
   assert.ok(workflow.includes('persist-credentials: false'))
-  assert.ok(workflow.includes('--retire-open-promotions'))
-  assert.ok(workflow.includes('--merge-verified'))
+  assert.match(workflow, /--retire-open-promotions "\$SOURCE_BRANCH"/)
+  assert.match(
+    workflow,
+    /--merge-verified[\s\S]{0,100}"\$PR_NUMBER" "\$PROMOTION_HEAD" "\$SHORT" "\$SOURCE_BRANCH"/
+  )
   assert.ok(workflow.includes('PROMOTION_GIT_TOKEN="$GH_TOKEN"'))
   assert.doesNotMatch(workflow, /token: \$\{\{ secrets\.STG_PROMOTE_TOKEN \}\}/)
   assert.doesNotMatch(workflow, /gh pr close[\s\S]{0,200}\|\| true/)
@@ -2236,7 +2239,7 @@ test('live staging pause checks fail closed when GitHub cannot be read', () => {
   }
 })
 
-test('staging promotion retirement disables auto-merge and fails closed', () => {
+test('staging promotion retirement scopes ownership and fails closed', () => {
   const script = path.join(__dirname, 'stg-promotion-control.sh')
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-retire-'))
   const gh = path.join(directory, 'gh')
@@ -2255,9 +2258,11 @@ case "\${1:-}:\${2:-}" in
     printf '%s\\n' "$count" > "$MOCK_LIST_COUNTER"
     [ "\${MOCK_LIST_FAIL_CALL:-0}" != "$count" ] || exit 3
     if [ "$count" -eq 1 ]; then
-      printf '%s\\n' 17
+      printf '%s\\n' '[{"number":17,"baseRefName":"v3-ai","headRefName":"chore/promote-stg-aaaaaaaaaaaa","headRepository":{"nameWithOwner":"uzh-bf/klicker-uzh"},"headRepositoryOwner":{"login":"uzh-bf"},"isCrossRepository":false},{"number":19,"baseRefName":"v3-ai","headRefName":"chore/promote-stg-bbbbbbbbbbbb","headRepository":{"nameWithOwner":"contributor/klicker-uzh"},"headRepositoryOwner":{"login":"contributor"},"isCrossRepository":true},{"number":20,"baseRefName":"v3","headRefName":"chore/promote-stg-cccccccccccc","headRepository":{"nameWithOwner":"uzh-bf/klicker-uzh"},"headRepositoryOwner":{"login":"uzh-bf"},"isCrossRepository":false}]'
     elif [ "\${MOCK_LEFTOVER:-0}" = 1 ]; then
-      printf '%s\\n' 18
+      printf '%s\\n' '[{"number":18,"baseRefName":"v3-ai","headRefName":"chore/promote-stg-dddddddddddd","headRepository":{"nameWithOwner":"uzh-bf/klicker-uzh"},"headRepositoryOwner":{"login":"uzh-bf"},"isCrossRepository":false}]'
+    else
+      printf '%s\\n' '[{"number":19,"baseRefName":"v3-ai","headRefName":"chore/promote-stg-bbbbbbbbbbbb","headRepository":{"nameWithOwner":"contributor/klicker-uzh"},"headRepositoryOwner":{"login":"contributor"},"isCrossRepository":true}]'
     fi
     ;;
   pr:view) printf '%s\\n' true ;;
@@ -2279,7 +2284,7 @@ esac
   const run = (overrides = {}) => {
     fs.rmSync(counter, { force: true })
     fs.rmSync(log, { force: true })
-    return spawnSync('bash', [script, '--retire-open-promotions'], {
+    return spawnSync('bash', [script, '--retire-open-promotions', 'v3-ai'], {
       encoding: 'utf8',
       env: {
         ...process.env,
@@ -2311,13 +2316,13 @@ esac
 
     const leftover = run({ MOCK_LEFTOVER: '1' })
     assert.notEqual(leftover.status, 0)
-    assert.match(leftover.stderr, /open promotion PRs remain/)
+    assert.match(leftover.stderr, /open same-repository promotion PRs/)
   } finally {
     fs.rmSync(directory, { recursive: true, force: true })
   }
 })
 
-test('staging promotion merge is synchronous and bound to the verified head', () => {
+test('staging promotion merge is synchronous and bound to the verified contract', () => {
   const script = path.join(__dirname, 'stg-promotion-control.sh')
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-merge-'))
   const gh = path.join(directory, 'gh')
@@ -2332,16 +2337,27 @@ if [ "\${1:-}:\${2:-}" = pr:view ]; then
   exit 0
 fi
 if [ "\${1:-}" = api ]; then
-  case "$*" in
-    *actions/variables*) printf '%s\\n' false ;;
-    */pulls/42/merge*)
-      printf '%s\\n' "$*" >> "$MOCK_LOG"
-      [ "\${MOCK_MERGE_FAIL:-0}" = 0 ] || exit 7
-      printf '%s\\n' "$MOCK_MERGE_RESULT"
-      ;;
-    *) exit 8 ;;
-  esac
-  exit 0
+  if [[ "$*" == *actions/variables* ]]; then
+    printf '%s\\n' false
+    exit 0
+  fi
+  if [ "$2" = '/repos/uzh-bf/klicker-uzh' ] &&
+     [ "$4" = '.delete_branch_on_merge' ]; then
+    printf '%s\\n' "$MOCK_AUTO_DELETE"
+    exit 0
+  fi
+  if [[ "$2" == */commits/*/statuses ]]; then
+    printf '%s\\n' "$MOCK_VERIFICATION_STATUS"
+    exit 0
+  fi
+  if [ "$2" = --method ] && [ "$3" = PUT ] &&
+     [ "$4" = '/repos/uzh-bf/klicker-uzh/pulls/42/merge' ]; then
+    printf '%s\\n' "$*" >> "$MOCK_LOG"
+    [ "\${MOCK_MERGE_FAIL:-0}" = 0 ] || exit 7
+    printf '%s\\n' "$MOCK_MERGE_RESULT"
+    exit 0
+  fi
+  exit 8
 fi
 exit 9
 `,
@@ -2358,15 +2374,19 @@ exit 9
         '42',
         verifiedHead,
         verifiedHead.slice(0, 12),
+        'v3-ai',
       ],
       {
         encoding: 'utf8',
         env: {
           ...process.env,
           GITHUB_REPOSITORY: 'uzh-bf/klicker-uzh',
+          MOCK_AUTO_DELETE: 'true',
           MOCK_LOG: log,
           MOCK_MERGE_RESULT: JSON.stringify({ merged: true }),
           MOCK_PR_JSON: JSON.stringify(pr),
+          MOCK_VERIFICATION_STATUS:
+            'success\tVerified generated staging promotion',
           PATH: `${directory}:${process.env.PATH}`,
           STG_PROMOTION_MERGE_ATTEMPTS: '1',
           STG_PROMOTION_MERGE_DELAY_SECONDS: '0',
@@ -2376,58 +2396,76 @@ exit 9
     )
   }
 
+  const validPr = {
+    state: 'OPEN',
+    mergeable: 'MERGEABLE',
+    mergeStateStatus: 'CLEAN',
+    headRefOid: verifiedHead,
+    headRefName: `chore/promote-stg-${verifiedHead.slice(0, 12)}`,
+    baseRefName: 'v3-ai',
+    headRepository: { nameWithOwner: 'uzh-bf/klicker-uzh' },
+    headRepositoryOwner: { login: 'uzh-bf' },
+    isCrossRepository: false,
+  }
+
   try {
-    const clean = run({
-      state: 'OPEN',
-      mergeable: 'MERGEABLE',
-      mergeStateStatus: 'CLEAN',
-      headRefOid: verifiedHead,
-    })
+    const clean = run(validPr)
     assert.equal(clean.status, 0, clean.stderr)
     const mergeCall = fs.readFileSync(log, 'utf8')
-    assert.match(mergeCall, /\/pulls\/42\/merge/)
+    const mergeArgs = mergeCall.trim().split(/\s+/)
+    assert.equal(mergeArgs[3], '/repos/uzh-bf/klicker-uzh/pulls/42/merge')
+    assert.doesNotMatch(mergeCall, /merge-async|merge_action/)
     assert.ok(mergeCall.includes(`sha=${verifiedHead}`))
     assert.ok(mergeCall.includes('[skip ci]'))
 
     const replacedHead = run({
-      state: 'OPEN',
-      mergeable: 'MERGEABLE',
-      mergeStateStatus: 'CLEAN',
+      ...validPr,
       headRefOid: 'b'.repeat(40),
     })
     assert.notEqual(replacedHead.status, 0)
     assert.match(replacedHead.stderr, /head changed from verified/)
     assert.equal(fs.existsSync(log), false)
 
+    const retargeted = run({ ...validPr, baseRefName: 'v3' })
+    assert.notEqual(retargeted.status, 0)
+    assert.match(retargeted.stderr, /base changed from v3-ai to v3/)
+    assert.equal(fs.existsSync(log), false)
+
+    const forked = run({
+      ...validPr,
+      headRepository: { nameWithOwner: 'contributor/klicker-uzh' },
+      headRepositoryOwner: { login: 'contributor' },
+      isCrossRepository: true,
+    })
+    assert.notEqual(forked.status, 0)
+    assert.match(forked.stderr, /no longer owned/)
+    assert.equal(fs.existsSync(log), false)
+
+    const unverified = run(validPr, {
+      MOCK_VERIFICATION_STATUS: 'pending\tverification replaced',
+    })
+    assert.notEqual(unverified.status, 0)
+    assert.match(unverified.stderr, /no longer has its exact verification/)
+    assert.equal(fs.existsSync(log), false)
+
+    const cleanupDisabled = run(validPr, { MOCK_AUTO_DELETE: 'false' })
+    assert.notEqual(cleanupDisabled.status, 0)
+    assert.match(cleanupDisabled.stderr, /automatic head-branch deletion/)
+    assert.equal(fs.existsSync(log), false)
+
     const queued = run({
-      state: 'OPEN',
-      mergeable: 'MERGEABLE',
+      ...validPr,
       mergeStateStatus: 'UNSTABLE',
-      headRefOid: verifiedHead,
     })
     assert.notEqual(queued.status, 0)
     assert.equal(fs.existsSync(log), false)
 
-    const rejected = run(
-      {
-        state: 'OPEN',
-        mergeable: 'MERGEABLE',
-        mergeStateStatus: 'CLEAN',
-        headRefOid: verifiedHead,
-      },
-      { MOCK_MERGE_RESULT: JSON.stringify({ merged: false }) }
-    )
+    const rejected = run(validPr, {
+      MOCK_MERGE_RESULT: JSON.stringify({ merged: false }),
+    })
     assert.notEqual(rejected.status, 0)
 
-    const apiFailure = run(
-      {
-        state: 'OPEN',
-        mergeable: 'MERGEABLE',
-        mergeStateStatus: 'CLEAN',
-        headRefOid: verifiedHead,
-      },
-      { MOCK_MERGE_FAIL: '1' }
-    )
+    const apiFailure = run(validPr, { MOCK_MERGE_FAIL: '1' })
     assert.notEqual(apiFailure.status, 0)
   } finally {
     fs.rmSync(directory, { recursive: true, force: true })

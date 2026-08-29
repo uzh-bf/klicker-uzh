@@ -68,6 +68,7 @@ jobs:
     # builds, which do not push images at all.
     if: >-
       (github.event_name == 'workflow_dispatch' &&
+       github.ref_type == 'branch' &&
        github.ref_name == github.event.repository.default_branch) ||
       (github.event.workflow_run.event == 'push' &&
        (github.event.workflow_run.head_branch == vars.STG_SOURCE_BRANCH ||
@@ -325,10 +326,11 @@ jobs:
           # the repository variable at execution time before every external write.
           require_live_unpaused
 
-          # Retire every earlier workflow-owned PR, including a same-SHA retry.
-          # The trusted control disables armed auto-merge, closes each PR without
-          # suppressing errors, and proves that no competing writer remains.
-          bash "$PROMOTION_CONTROL" --retire-open-promotions
+          # Retire every earlier same-repository workflow PR targeting this source,
+          # including a same-SHA retry. Fork PRs with the predictable prefix are not
+          # workflow-owned and must remain untouched.
+          bash "$PROMOTION_CONTROL" \
+            --retire-open-promotions "$SOURCE_BRANCH"
           if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null; then
             echo "::error::workflow-owned branch ${BRANCH} exists without an open promotion PR"
             exit 1
@@ -390,8 +392,9 @@ jobs:
           [ "$VERIFIED" = 'true' ] \
             || { echo "::error::generated promotion verification did not succeed for ${PR_URL}"; exit 1; }
 
-          # The trusted control binds the PR head to the verified commit and uses
-          # GitHub's synchronous merge endpoint. It never requests a queue; a policy
-          # rejection fails closed instead of leaving an asynchronous merge armed.
+          # The trusted control rechecks the head, base, repository ownership,
+          # verification status, and automatic branch-cleanup policy immediately
+          # before GitHub's synchronous merge endpoint. It never requests a queue.
           bash "$PROMOTION_CONTROL" \
-            --merge-verified "$PR_NUMBER" "$PROMOTION_HEAD" "$SHORT"
+            --merge-verified \
+            "$PR_NUMBER" "$PROMOTION_HEAD" "$SHORT" "$SOURCE_BRANCH"

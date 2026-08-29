@@ -38,15 +38,42 @@ require_live_unpaused() {
   check_pause_value "$value"
 }
 
-retire_open_promotions() {
+list_workflow_promotions() {
+  [ "$#" -eq 1 ] || fail 'promotion listing requires the expected base branch'
   require_repository
+
+  local expected_base="$1"
+  local repository_owner="${GITHUB_REPOSITORY%%/*}"
+
+  [[ "$expected_base" =~ ^[A-Za-z0-9_.-]+$ ]] \
+    || fail 'expected promotion base must be a Docker-safe branch name'
+
+  gh pr list --state open --limit 1000 --base "$expected_base" \
+    --json number,baseRefName,headRefName,headRepository,headRepositoryOwner,isCrossRepository \
+    | jq -r \
+      --arg base "$expected_base" \
+      --arg owner "$repository_owner" \
+      --arg repository "$GITHUB_REPOSITORY" \
+      '.[] |
+       select(
+         .baseRefName == $base and
+         (.headRefName | startswith("chore/promote-stg-")) and
+         .isCrossRepository == false and
+         .headRepository.nameWithOwner == $repository and
+         .headRepositoryOwner.login == $owner
+       ) |
+       .number'
+}
+
+retire_open_promotions() {
+  [ "$#" -eq 1 ] \
+    || fail 'promotion retirement requires the expected base branch'
+  require_repository
+  local expected_base="$1"
   local auto_merge list_output number
   local -a leftovers=() numbers=()
 
-  list_output="$(
-    gh pr list --state open --limit 100 --json number,headRefName \
-      --jq '.[] | select(.headRefName | startswith("chore/promote-stg-")) | .number'
-  )"
+  list_output="$(list_workflow_promotions "$expected_base")"
   while IFS= read -r number; do
     [ -n "$number" ] && numbers+=("$number")
   done <<<"$list_output"
@@ -71,34 +98,37 @@ retire_open_promotions() {
       --comment 'Retired by the staging promotion single-writer guard.'
   done
 
-  list_output="$(
-    gh pr list --state open --limit 100 --json number,headRefName \
-      --jq '.[] | select(.headRefName | startswith("chore/promote-stg-")) | .number'
-  )"
+  list_output="$(list_workflow_promotions "$expected_base")"
   while IFS= read -r number; do
     [ -n "$number" ] && leftovers+=("$number")
   done <<<"$list_output"
   [ "${#leftovers[@]}" -eq 0 ] \
-    || fail "open promotion PRs remain after retirement: ${leftovers[*]}"
+    || fail "open same-repository promotion PRs targeting ${expected_base} remain after retirement: ${leftovers[*]}"
 }
 
 merge_verified_promotion() {
-  [ "$#" -eq 3 ] \
-    || fail 'merge-verified requires PR number, verified head SHA, and short release SHA'
+  [ "$#" -eq 4 ] \
+    || fail 'merge-verified requires PR number, verified head SHA, short release SHA, and expected base branch'
   require_repository
 
   local pr_number="$1"
   local verified_head="$2"
   local short_sha="$3"
+  local expected_base="$4"
+  local expected_head_ref="chore/promote-stg-${short_sha}"
+  local repository_owner="${GITHUB_REPOSITORY%%/*}"
   local attempts="${STG_PROMOTION_MERGE_ATTEMPTS:-12}"
   local delay="${STG_PROMOTION_MERGE_DELAY_SECONDS:-20}"
-  local attempt head merge_result merge_state mergeable pr_json state
+  local attempt auto_delete base cross_repository head head_owner head_ref
+  local head_repository merge_result merge_state mergeable pr_json state status
 
   [[ "$pr_number" =~ ^[0-9]+$ ]] || fail 'promotion PR number must be numeric'
   [[ "$verified_head" =~ ^[0-9a-f]{40}$ ]] \
     || fail 'verified promotion head must be a 40-character lowercase SHA'
   [[ "$short_sha" =~ ^[0-9a-f]{7,40}$ ]] \
     || fail 'short release SHA must contain 7 to 40 lowercase hexadecimal characters'
+  [[ "$expected_base" =~ ^[A-Za-z0-9_.-]+$ ]] \
+    || fail 'expected promotion base must be a Docker-safe branch name'
   [[ "$attempts" =~ ^[1-9][0-9]*$ ]] \
     || fail 'STG_PROMOTION_MERGE_ATTEMPTS must be a positive integer'
   [[ "$delay" =~ ^[0-9]+$ ]] \
@@ -107,15 +137,36 @@ merge_verified_promotion() {
   for ((attempt = 1; attempt <= attempts; attempt++)); do
     pr_json="$(
       gh pr view "$pr_number" \
-        --json state,mergeable,mergeStateStatus,headRefOid
+        --json state,mergeable,mergeStateStatus,headRefOid,headRefName,baseRefName,headRepository,headRepositoryOwner,isCrossRepository
     )"
     state="$(jq -r '.state' <<<"$pr_json")"
     head="$(jq -r '.headRefOid' <<<"$pr_json")"
+    head_ref="$(jq -r '.headRefName' <<<"$pr_json")"
+    base="$(jq -r '.baseRefName' <<<"$pr_json")"
+    head_repository="$(jq -r '.headRepository.nameWithOwner // ""' <<<"$pr_json")"
+    head_owner="$(jq -r '.headRepositoryOwner.login // ""' <<<"$pr_json")"
+    cross_repository="$(jq -r '.isCrossRepository' <<<"$pr_json")"
     mergeable="$(jq -r '.mergeable' <<<"$pr_json")"
     merge_state="$(jq -r '.mergeStateStatus' <<<"$pr_json")"
 
     [ "$head" = "$verified_head" ] \
       || fail "promotion PR #${pr_number} head changed from verified ${verified_head} to ${head}"
+    [ "$head_ref" = "$expected_head_ref" ] \
+      || fail "promotion PR #${pr_number} head branch changed from ${expected_head_ref} to ${head_ref}"
+    [ "$base" = "$expected_base" ] \
+      || fail "promotion PR #${pr_number} base changed from ${expected_base} to ${base}"
+    if [ "$cross_repository" != 'false' ] \
+      || [ "$head_repository" != "$GITHUB_REPOSITORY" ] \
+      || [ "$head_owner" != "$repository_owner" ]; then
+      fail "promotion PR #${pr_number} is no longer owned by ${GITHUB_REPOSITORY}"
+    fi
+
+    status="$(
+      gh api "/repos/${GITHUB_REPOSITORY}/commits/${verified_head}/statuses" \
+        --jq '[.[] | select(.context == "final-ai-review")] | first | [.state, .description] | @tsv'
+    )"
+    [ "$status" = $'success\tVerified generated staging promotion' ] \
+      || fail "promotion PR #${pr_number} no longer has its exact verification status"
 
     case "$state" in
       MERGED)
@@ -136,6 +187,11 @@ merge_verified_promotion() {
     fi
 
     if [ "$mergeable" = 'MERGEABLE' ] && [ "$merge_state" = 'CLEAN' ]; then
+      auto_delete="$(
+        gh api "/repos/${GITHUB_REPOSITORY}" --jq '.delete_branch_on_merge'
+      )"
+      [ "$auto_delete" = 'true' ] \
+        || fail 'repository must enable automatic head-branch deletion before staging promotion'
       require_live_unpaused
       merge_result="$(
         gh api --method PUT \
@@ -169,9 +225,8 @@ case "${1:-}" in
     require_live_unpaused
     ;;
   --retire-open-promotions)
-    [ "$#" -eq 1 ] \
-      || fail 'pause control --retire-open-promotions accepts no value'
-    retire_open_promotions
+    shift
+    retire_open_promotions "$@"
     ;;
   --merge-verified)
     shift
