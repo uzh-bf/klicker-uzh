@@ -3,7 +3,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { safeDecrypt } from '@klicker-uzh/util'
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import {
   MAX_TOOL_NAME_LENGTH,
   TOOL_NAME_SUFFIX_LENGTH,
@@ -346,21 +345,16 @@ export async function createMCPClient(
   try {
     const headers = await createAuthHeaders(server, context)
 
-    const httpTransport = new StreamableHTTPClientTransport(
-      new URL(server.url),
-      {
-        requestInit: {
-          headers,
-          redirect: 'error',
-          ...(options.requestTimeoutMs !== undefined
-            ? { signal: AbortSignal.timeout(options.requestTimeoutMs) }
-            : {}),
-        },
-      }
-    )
-
     const client = await createSDKMCPClient({
-      transport: httpTransport,
+      transport: {
+        type: 'http',
+        url: server.url,
+        headers,
+        redirect: 'error',
+      },
+      ...(options.requestTimeoutMs !== undefined
+        ? { initializationOptions: { timeout: options.requestTimeoutMs } }
+        : {}),
     })
 
     console.log(`MCP Client for ${server.name} initialized successfully`)

@@ -10,15 +10,6 @@ vi.mock('@klicker-uzh/util', () => ({
   safeDecrypt: (value: string) => value,
 }))
 
-vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
-  StreamableHTTPClientTransport: class {
-    constructor(
-      readonly url: URL,
-      readonly options: { requestInit: { headers: Record<string, string> } }
-    ) {}
-  },
-}))
-
 import {
   parseMCPRuntimePolicy,
   REQUIRED_MCP_UNAVAILABLE_CODE,
@@ -63,6 +54,26 @@ describe('MCP runtime policy', () => {
   test('keeps configs without reserved policy keys optional', () => {
     expect(parseMCPRuntimePolicy({ timeoutMs: 1000 })).toEqual({
       required: false,
+    })
+  })
+
+  test('uses the AI SDK HTTP transport configuration', async () => {
+    setTools({ search_docs: { description: 'search' } })
+
+    await getAggregatedMCPTools(
+      [createServer()],
+      { chatbotId: 'chatbot-1', authMode: 'account' },
+      { requestTimeoutMs: 1_000 }
+    )
+
+    expect(createSDKMCPClientMock).toHaveBeenCalledWith({
+      transport: {
+        type: 'http',
+        url: 'https://mcp.example.test',
+        headers: { 'Content-Type': 'application/json' },
+        redirect: 'error',
+      },
+      initializationOptions: { timeout: 1_000 },
     })
   })
 
