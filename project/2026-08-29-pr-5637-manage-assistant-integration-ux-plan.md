@@ -646,7 +646,8 @@ follow_up_stacks:
   clearance. Frontend and Playwright typechecks, focused formatting, and test
   discovery pass under the pinned Volta toolchain. The repository wiki
   validator reports 35 pre-existing core errors and none in the changed page or
-  new receipt.
+  new receipt. Commit `cb188b3a2` contains the complete slice. The independent
+  simplifier found no clear behavior-preserving net reduction.
 - Runtime evidence: Exact-worktree startup first exposed the fixed Azurite
   port collision, then cleared it with free task port `11003`. Startup still
   failed before the app ran because installed devrouter `0.0.45` and the
@@ -655,14 +656,27 @@ follow_up_stacks:
   compatibility patch was restored. The exact DevPod is absent and devrouter
   reports zero exact routes. Local browser proof is therefore blocked by host
   tooling; the focused browser regression remains required in exact-head CI.
+  After target integration upgraded the repository pin to `0.0.42`, the host
+  Playwright launcher reached the managed-runtime preflight but stopped before
+  mutation because `.devcontainer/devcontainer.json` still declares
+  `postCreateCommand` without `waitFor`. The exact non-destructive stop
+  completed. This configuration seam is necessary for A1's focused runtime
+  proof and will be handled there rather than widening A0.
 - Research: Context7 confirmed the 0.15 state API, and installed package source
   confirmed the stable dynamic-transport proxy. The plan now reuses that seam;
   its message-continuity behavior remains a regression-test obligation.
 - Drift disposition: The latest target changes the local-runtime profile seam
   and overlaps A1. The single integration pass now occurs immediately after A0
   passes, before upper layers exist, so A1 extends the current resolver and
-  readiness architecture directly. The unrelated primary checkout stays
-  untouched.
+  readiness architecture directly. The remote-tracking ref advanced from the
+  approved `84eebeb483f1` to `bedc6a8556b0` before the local merge. The added
+  commit changes only staging deployment image references. The user explicitly
+  approved retaining that newer target in the single integration pass; merge
+  commit `59661f091` records it. The unrelated primary checkout stays untouched.
+- A0 integration verification: `@klicker-uzh/frontend-manage` and Playwright
+  typechecks pass on the merged tree, as does focused Prettier validation. The
+  local browser gate remains blocked at the fail-closed `waitFor` preflight, so
+  exact-head CI must execute the focused regression before A1 starts.
 - A0 preflight: `twMerge` resolves Layout's new `pb-24` plus the question-pool
   `pb-2` override to `pb-2`, so the audit's two named vertical utilities do not
   literally stack on that page. The visual finding still stands, but its safe
@@ -713,6 +727,6 @@ follow_up_stacks:
   the TypeScript AST without executing JSX. B1 composes a reserved local search
   tool with MCP tools and fences its bounded text through the existing request
   sentinel.
-- Next: Commit and push S1, require the focused browser regression and exact
-  A0 CI, then perform the one approved exact target integration and A0
-  reverification before initializing Stack A and beginning A1.
+- Next: Commit this integration receipt, push the integrated draft layer,
+  require its focused browser regression and exact-head CI, then initialize
+  Stack A and begin A1.
