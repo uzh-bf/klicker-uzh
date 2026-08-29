@@ -273,6 +273,15 @@ export function useProductTour({
     }
 
     return deferToNextFrame(() => {
+      // A tour is already on screen: someone asked for a replay before the
+      // stored eligibility arrived, and the answer turned out to be "never
+      // seen it". Starting now would tear that running tour down and reopen it
+      // at step one, in the middle of the walk the actor is already taking.
+      if (activeDriver.current) {
+        setAutoStartSettled(true)
+        return
+      }
+
       autoStarted.current = true
 
       // The slot is only spent on a tour that opened. A tour whose targets are
