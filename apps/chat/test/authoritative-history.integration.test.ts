@@ -621,7 +621,7 @@ describePostgres('authoritative history PostgreSQL integration', () => {
         id,
         threadId: THREAD_ONE_ID,
         parentId: index === 0 ? ids[1] : ids[index - 1],
-        role: index % 2 === 0 ? 'user' : 'assistant',
+        role: index % 2 === 0 ? 'assistant' : 'user',
         content: [{ type: 'text', text: `Boundary cycle ${index}` }],
       })),
     })
