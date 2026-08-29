@@ -245,11 +245,11 @@ Stage 2 is a future package, not an unimplemented slice of the Stage 1 pull requ
 
 ## Progress
 
-- Status: Stage 1 approved; S1 and S2 are implemented and reviewed, with accepted S2 corrections in progress.
-- Completed: remote-state gate, isolated worktree and branch, current Klicker prompt and mode review, AI Buddy policy comparison, `v3-ai` structured-practice review, open personal-practice stack review, product-primitive pass, stack-boundary review, native planning review, approved plan commit, reviewed and corrected S1, S2 prompt and presentation implementation, focused test updates for exact-head CI, ADR amendment, Chat wiki update, and parallel S2 simplifier and risk review.
-- Active slice: enforce request-time Quizzer retrieval, restore legacy citation precedence, apply accepted simplifications, and commit the reviewed corrections after static checks.
-- Remaining: integrated static verification, final review, push, draft pull request, and exact-head CI report.
+- Status: Stage 1 is source-complete; integrated final review found no P0/P1 issue, and its accepted consistency corrections are in progress.
+- Completed: remote-state gate, isolated worktree and branch, current Klicker prompt and mode review, AI Buddy policy comparison, `v3-ai` structured-practice review, open personal-practice stack review, product-primitive pass, stack-boundary review, native planning review, approved plan commit, reviewed and corrected S1, S2 prompt and presentation implementation, focused test updates for exact-head CI, ADR amendment, Chat wiki update, parallel S2 simplifier and risk review, request-time Quizzer retrieval enforcement, legacy citation precedence, and integrated generic-continuity final review.
+- Active slice: prevent sends with no effective mode, enforce required `doc_query` alias semantics, refresh stale creation wording and documentation, and commit the final-review corrections after static checks.
+- Remaining: correction-delta review, push, draft pull request, and exact-head CI report.
 - Required delivery layer: source-complete draft pull request against `v3`.
 - Runtime: not started and excluded from this plan.
 - Withheld beyond terminal: browser evidence, ready marking, merge, deployment, live evaluation, database work, upstream integration, practice-stack mutation, and cleanup.
-- Next action: run static and staged data-hygiene checks, commit the S2 review corrections, then run the integrated final review.
+- Next action: commit the final-review corrections after static and staged data-hygiene checks, then review the correction delta before publication.

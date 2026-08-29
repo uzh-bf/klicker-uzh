@@ -143,6 +143,24 @@ describe('effective chatbot modes', () => {
     ])
   })
 
+  test('does not inherit a required document-query tool under another alias', () => {
+    const configurations = [
+      config({
+        allowedTools: ['doc_query'],
+        chatMode: 'tutor',
+        parameters: { required: true, toolAlias: 'course_search' },
+        serverId: 'course',
+      }),
+    ]
+
+    expect(
+      resolveEffectiveMCPConfigurations(configurations, 'quizzer')
+    ).toEqual([])
+    expect(
+      resolveEffectiveChatModeOptions(null, configurations)
+    ).not.toHaveProperty('quizzer')
+  })
+
   test('resolves exact Quizzer precedence per server', () => {
     const configurations = [
       config({

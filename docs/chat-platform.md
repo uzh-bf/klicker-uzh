@@ -340,7 +340,8 @@ MCP server, including disabled exact rows; inherited optional bindings are narro
 `doc_query`, while required single-tool aliases preserve their raw tool restriction and remain
 fail-closed. The layout, participant settings endpoint, chat request validation, and request-time
 MCP selection all use this resolver. The browser receives resolved mode descriptions but never
-MCP server configuration.
+MCP server configuration. If explicit opt-outs leave no effective mode, the client replaces the
+composer with a localized unavailable notice instead of allowing a request the server would reject.
 
 Standard prompt changes apply automatically to chatbots that do not store an override for that
 mode. Stage 1 Quizzer generates one practice question at a time from retrieved course material; it
@@ -551,10 +552,12 @@ chatbot's configurable persona, not as the complete system policy. On every chat
 available MCP tool names are known, it composes the final prompt in this order:
 
 1. stored mode prompt or `DEFAULT_PROMPT` fallback;
-2. fixed course-scope, evidence, tool-privacy, and safety policy from
+2. fixed image-attachment description handling from
+   `src/lib/server/inputContextInstructions.ts:withInputContextContract`;
+3. fixed course-scope, evidence, tool-privacy, and safety policy from
    `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
-3. the conditional citation policy when a `doc_query`-style tool is available; and
-4. the fixed conversation-language and Swiss High German policy from
+4. the conditional citation policy when a `doc_query`-style tool is available; and
+5. the fixed conversation-language and Swiss High German policy from
    `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
 
 The fixed policy explicitly overrides conflicting persona text, examples, retrieved material, tool

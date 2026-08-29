@@ -222,6 +222,8 @@ export default {
     },
     composer: {
       placeholder: 'Nachricht schreiben...',
+      modeUnavailable:
+        'Für diesen Chatbot ist derzeit kein Chatmodus verfügbar. Wende Dich bitte an Deine Dozierenden.',
       send: 'Nachricht senden',
       stop: 'Antwort stoppen',
       disclaimerHint:

@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'vitest'
-import { formatModeLabel, isKnownMode } from '../src/lib/config/modes'
+import {
+  formatModeLabel,
+  hasAvailableChatMode,
+  isKnownMode,
+} from '../src/lib/config/modes'
 
 // Stands in for next-intl's `t`, using the same shape the real English
 // messages produce for the `chat.modes.*` keys this module reads.
@@ -28,5 +32,10 @@ describe('formatModeLabel', () => {
   test('does not treat inherited object keys as known modes', () => {
     expect(isKnownMode('toString')).toBe(false)
     expect(formatModeLabel(t, 'toString')).toBe('ToString')
+  })
+
+  test('reports whether the chatbot exposes a usable mode', () => {
+    expect(hasAvailableChatMode({})).toBe(false)
+    expect(hasAvailableChatMode({ tutor: '' })).toBe(true)
   })
 })
