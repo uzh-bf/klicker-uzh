@@ -461,9 +461,6 @@ function buildOCRPolicy() {
       model: FINAL_REVIEW_MODEL,
       protocol: 'openai',
       extra_body: {
-        provider: {
-          require_parameters: true,
-        },
         reasoning: {
           effort: 'high',
         },
