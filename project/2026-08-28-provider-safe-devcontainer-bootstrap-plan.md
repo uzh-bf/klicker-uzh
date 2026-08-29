@@ -82,7 +82,7 @@
 - Packaging: One ordinary consumer pull request after one upstream release.
   This is not a cross-repository GitHub stack.
 - Unrelated checkout: The primary checkout branch
-  `docs/chatbot-hitl-config-roadmap` is 1 commit ahead and 113 behind
+  `docs/chatbot-hitl-config-roadmap` is 1 commit ahead and 122 behind
   `origin/v3`, with a dirty and untracked working tree. This plan neither reads
   it as authoritative nor integrates, rebases, moves, cleans, or commits it.
 
@@ -472,11 +472,31 @@
   would free one subnet without removing its containers, volumes, worktree, or
   registration, but destructive cleanup remains withheld pending explicit
   approval.
-- Current state: `delivery_pending`. Completed: K0-K2, the non-collision K3
-  provider/profile/capability/cold-bootstrap/browser evidence, the upstream
-  collision-safe Devrouter release, the released consumer pin, and the Devsy
-  half of fresh mixed-provider proof. Remaining: restore one Docker subnet,
-  complete the exact-head DevPod and simultaneous routed proof, then run K4
-  final review and delivery. Every touched task runtime is stopped with zero
-  routes; worktrees, registrations, containers, volumes, and networks are
-  retained.
+- `2026-08-29`: The user approved removing only the empty task-owned network
+  `default-rs-d9c0c_default`. Docker removed that network and retained its six
+  stopped containers, provider registration, volumes, and worktree. Network
+  inspection now reports it absent and no other cleanup was performed.
+- `2026-08-29`: Fresh exact-head DevPod and Devsy runtimes at `1ca962396` started
+  concurrently from the two colliding-prefix checkouts under released Devrouter
+  `0.0.45`. Both first passed the route-free `mcp` profile with the exact
+  `klicker-devcontainer-bootstrap-v1` marker, local MCP health, and zero drift.
+  DevPod performed the complete cold install, 13-package build, Prisma reset,
+  seed, Hatchet bootstrap, and final marker publication without a manual step.
+- `2026-08-29`: Both live providers then switched concurrently to `manage`
+  without recreating the app container or changing the marker. Each owned only
+  API, Auth, and Manage plus the three Redis services and `klicker-dev`; the two
+  distinct namespaced Manage routes returned HTTP 200 at the same time.
+  Devrouter registry readback reported three distinct routes per exact checkout.
+- `2026-08-29`: The current exact head passes `pnpm run check:all` inside the
+  fresh DevPod runtime with 25 type-check tasks, 7 lint tasks, formatting,
+  syncpack, Prisma sync, AGENTS checks, and all 9 Playwright host-contract tests.
+  The ignored analytics validation venv used Python 3.12; tracked files stayed
+  unchanged. DevPod and Devsy both report `Stopped`, and Devrouter reports zero
+  routes for both exact paths.
+- Current state: `delivery_pending`. Completed: K0-K3, including released
+  Devrouter `0.0.45`, the consumer pin, every profile and representative union,
+  both providers' cold/warm/browser/capability proof, and the fresh simultaneous
+  collision-safe exact-head proof. K4 is active: commit this evidence, run the
+  integrated final review, push the branch, open the PR, and reach exact-head
+  merge-ready status without merging. Worktrees, registrations, containers,
+  volumes, and remaining networks are retained.
