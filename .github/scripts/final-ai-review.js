@@ -461,6 +461,10 @@ function buildOCRPolicy() {
       model: FINAL_REVIEW_MODEL,
       protocol: 'openai',
       extra_body: {
+        provider: {
+          order: ['deepinfra', 'fireworks'],
+          allow_fallbacks: true,
+        },
         reasoning: {
           effort: 'high',
         },
