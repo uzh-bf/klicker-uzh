@@ -341,7 +341,8 @@ MCP server, including disabled exact rows; inherited optional bindings are narro
 fail-closed. The layout, participant settings endpoint, chat request validation, and request-time
 MCP selection all use this resolver. The browser receives resolved mode descriptions but never
 MCP server configuration. If explicit opt-outs leave no effective mode, the client replaces the
-composer with a localized unavailable notice instead of allowing a request the server would reject.
+composer with a localized unavailable notice and suppresses edit and retry generation actions
+instead of allowing requests the server would reject.
 
 Standard prompt changes apply automatically to chatbots that do not store an override for that
 mode. Stage 1 Quizzer generates one practice question at a time from retrieved course material; it
