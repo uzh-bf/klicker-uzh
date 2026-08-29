@@ -229,6 +229,12 @@ pnpm checks and browser/model evidence remain outstanding.
    changed path in common with this adapter, so downstream integration can
    apply both lines on a fresh stable head without importing one into the
    other here.
+8. Before final review that branch advanced again to
+   `de0fccc9e3ab45fb28266a449a4593dd28363255`. Its two additional source-
+   identity sanitization commits remain descendants of the frozen input and
+   still have zero changed-path overlap with this adapter. The published
+   student ref remains `cce6e445`; neither local nor remote ref was moved by
+   this worktree.
 
 ## Review gates
 
@@ -278,5 +284,17 @@ pnpm checks and browser/model evidence remain outstanding.
   structured practice card still contains English loading, error, and
   navigation strings. A separate i18n change with browser verification is
   required for a fully German structured-practice experience.
-- Status: S1-S3 source work complete; static verification and read-only review
-  gates pending.
+- 2026-08-29: Before final review the parallel student branch advanced again
+  from `ae99c0b7e` to `de0fccc9e`. The two new source-identity sanitization
+  commits remain path-disjoint from the adapter. Current target snapshots are
+  `origin/v3` `bb495a1b2` and `origin/v3-ai` `4b85e616b`; no integration was
+  performed. The adapter is 180 commits ahead and 23 behind current
+  `origin/v3` because it deliberately retains the pinned synthetic base.
+- 2026-08-29: Exact-head static verification passed at `d8f02bdb6`: clean
+  worktree, exact `9fc0d52` merge base, no merge commits, no upstream, no
+  conflict markers, clean diff check, allowed paths only, and no adapter delta
+  in GraphQL, Prisma, or personal-card generation. The staged gitleaks scan
+  reported no leaks. Pnpm, browser, model, database, and MCP checks remain
+  skipped under the approved no-runtime boundary.
+- Status: S1-S3 and static verification complete; integrated final review
+  pending.
