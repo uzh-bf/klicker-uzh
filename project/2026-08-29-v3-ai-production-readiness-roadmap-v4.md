@@ -44,6 +44,43 @@ What v4 changes, from the grill rulings:
 6. Roles are replaced by the two-person reality; conservative-fallback spikes
    are cancelled (nothing is parked); dates hold with gates-over-calendar.
 
+## Progress
+
+Current status (2026-08-30): the release-governance custody package and its
+companion staging-promotion safeguard are published as draft PRs. Their exact
+heads remain stable and match their remote feature branches.
+
+- Active package: finish PR readiness for
+  [#5662](https://github.com/uzh-bf/klicker-uzh/pull/5662) against `v3` and
+  [#5663](https://github.com/uzh-bf/klicker-uzh/pull/5663) against `v3-ai`.
+- Completed: roadmap and ADR custody, `3.4.0` RC correction, staging-pause
+  safeguard implementation, focused local verification, dedicated safeguard
+  reviews, initial upstream integration, draft PR publication, and current
+  parallel-owner inventory.
+- Latest verified heads: `967d7b067` for the safeguard and `e9875c633` for
+  roadmap custody. Both local heads equal their remote feature-branch heads.
+- Exact-head CI: ordinary checks pass on both PRs. PR #5662's OpenCodeReview
+  job failed because both selected file reviews exceeded the provider's
+  10-minute limit; it produced no code finding. PR #5663's OpenCodeReview job
+  passed. Both final-AI-review contexts remain pending.
+- Target drift: `v3` advanced by one non-overlapping commit to `aaf7cdf34`;
+  `v3-ai` advanced by four non-overlapping commits to `54fbfc921`. Neither
+  target has been integrated after this receipt.
+- Required delivery layer: `pr_ready` for both initial packages. Achieved
+  layer: draft PRs with exact-head CI evidence; review acceptance and current
+  target integration remain open.
+- Remaining package gates: approve and perform one exact upstream integration
+  pass per branch, restore working Git transport, obtain fresh exact-head CI
+  and required reviews, then separately authorize each merge. Repository
+  controls, staging operations, tags, deployment, and live proof remain
+  withheld.
+- Parallel-work rule: keep N2, N3, and N5 read-only until their existing
+  owners publish exact-head receipts; reconcile their work instead of
+  recreating it.
+- Next action: after explicit integration approval and restored Git transport,
+  merge exact `v3@aaf7cdf34` into the safeguard branch and exact
+  `v3-ai@54fbfc921` into the custody branch, then rerun affected checks.
+
 ## 1. Verified repository constraints (refreshed 2026-08-29)
 
 - At execution-custody start, `v3` head was `c942cd246` and `v3-ai` head
@@ -740,3 +777,28 @@ these three conditions decide.
   remain unproven.
 - Both heads remain local and unpushed. No PR, repository control, deployment,
   remote merge, tag, staging reset, or other task was changed.
+
+### 2026-08-30 delivery and drift receipt
+
+- The 2026-08-29 local-only statement above is retained as historical
+  evidence. The safeguard is now published as draft PR
+  [#5662](https://github.com/uzh-bf/klicker-uzh/pull/5662), and roadmap custody
+  is published as draft PR
+  [#5663](https://github.com/uzh-bf/klicker-uzh/pull/5663).
+- The exact remote feature heads still equal `967d7b067` and `e9875c633`.
+  GitHub reports `v3@aaf7cdf34` and `v3-ai@54fbfc921` as the current targets.
+- The one new `v3` commit changes frontend video-embed dependencies, styles,
+  tests, and documentation; none overlaps the five safeguard files. The four
+  new `v3-ai` commits change the staging Doc Query proof, staging values,
+  feature-access Playwright coverage, supporting documentation, and lockfile;
+  none overlaps the seven custody files.
+- Ordinary exact-head checks pass on both PRs. PR #5662's OpenCodeReview run
+  timed out on both selected files after ten minutes and emitted no finding;
+  PR #5663's OpenCodeReview run passed. Final-AI-review remains pending on
+  both drafts.
+- Remote refresh through Git transport is currently blocked: the configured
+  fetch hung without output, and the bounded HTTPS fallback could not resolve
+  `github.com`. GitHub API comparisons supplied this receipt, but no local
+  integration was attempted.
+- No reviewer, parallel Codex task, repository control, deployment, tag,
+  staging reset, or remote branch was changed while producing this receipt.
