@@ -183,11 +183,13 @@ preview and the later examples-excluded baseline.
 
 - Status: K6.1 through K6.4 are source-complete and published as open,
   non-draft PR #5650 against `v3-ai`. The integrated final review and its
-  correction passes returned `DONE` with no remaining findings. The first
-  exact-head `check` job found one branch-caused Biome formatting mismatch in
-  `packages/util/src/citations.ts`; the correction is prepared for the next
-  published head. Remaining exact-head GitHub checks are pending; merge,
-  deployment, and live model use remain withheld.
+  correction passes returned `DONE` with no remaining findings. Exact-head CI
+  confirmed the formatting correction and all application, security, and
+  seven of eight hosted Playwright shards. The final shard exposed a
+  branch-caused fixture gap: the seeded response examples had no current KB
+  resource under the new eligibility contract. The fixture correction is
+  prepared for the next published head. Merge, deployment, and live model use
+  remain withheld.
 - Completed: remote-state gate, clean purpose-based worktree, approved program
   plan transfer, current source seam mapping, package-plan narrowing, shared
   current-evidence validation, owner-service reconciliation, and focused util,
@@ -230,10 +232,13 @@ preview and the later examples-excluded baseline.
   A later CI-correction attempt to resume the same runtime failed before checks
   because the branch baseline does not yet satisfy the managed DevPod config
   validation and an existing process holds the Azurite host port. The managed
-  stop freed zero routes; zero exact routes are verified while provider status
-  reconciliation remains pending.
+  stop freed zero routes. The exact workspace currently reports provider state
+  `Busy`; devrouter route readback is blocked by a host-route lock identity
+  error. No raw DevPod stop or cleanup bypass was attempted.
 - Delivery: branch `feat/chatbot-response-example-runtime` is published at PR
-  #5650. The PR is mergeable and initially `UNSTABLE` only because exact-head
-  checks are pending.
-- Next: keep PR #5650 at its exact published head until required checks and
-  forge review settle. Merge remains separately withheld.
+  #5650. The PR is mergeable and `UNSTABLE`. The final-review policy rejects a
+  standalone PR targeting non-default branch `v3-ai`; it requires the default
+  branch or verified GitHub native-stack membership. `v3-ai` also advanced by
+  one commit after publication, while upstream integration remains withheld.
+- Next: publish and verify the synthetic-source correction. Then resolve the
+  separate upstream-integration and PR-topology boundaries before merge.
