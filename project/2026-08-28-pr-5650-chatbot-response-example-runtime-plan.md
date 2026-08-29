@@ -1,14 +1,14 @@
-# Response-example runtime skill plan
+# PR #5650 response-example runtime skill plan
 
 ## Plan identity
 
 - Date: 2026-08-28
 - Ceremony: full path
-- Status: approved for local execution
+- Status: published for review
 - Branch: `feat/chatbot-response-example-runtime`
 - Target: `v3-ai`
 - Baseline: `609000ea9626e3fef2e713768ca2a796cac2f9a4`
-- PR: none yet
+- PR: [#5650](https://github.com/uzh-bf/klicker-uzh/pull/5650)
 - Program plan: [Chatbot Test & Teach ground-truth plan](./2026-08-28-chatbot-test-and-teach-ground-truth-plan.md)
 
 ## Goal
@@ -25,21 +25,21 @@ preview and the later examples-excluded baseline.
 - Do not implement baseline runs, evaluation export, or DeepEval.
 - Do not add a vector provider, schema migration, source copies, or a second
   canonical set.
-- Do not push, publish a PR, merge, deploy, invoke a model, or inspect live
-  course data.
+- Do not merge, deploy, invoke a model, or inspect live course data.
 
 ## Execution contract
 
 - Execution owner: current main session as execution orchestrator.
 - Boundary owner: self.
 - Authority: local source and documentation edits, repository-native checks,
-  browser proof only if a visible UI changes, required read-only reviews, and
-  local commits.
-- Withheld: upstream integration, push, PR publication, merge, release,
-  deployment, runtime activation, live model calls, secret access, and
-  staging or production data.
+  browser proof only if a visible UI changes, required read-only reviews,
+  local commits, the separately authorized exact branch push and PR
+  publication, and branch-caused exact-head CI or review corrections.
+- Withheld: upstream integration, merge, release, deployment, runtime
+  activation, live model calls, secret access, and staging or production data.
 - Terminal: the complete K6 package is committed, locally verified, reviewed,
-  and ready for a separately authorized push and PR.
+  published at PR #5650, and its exact-head checks and forge review are
+  dispositioned. Stop before merge.
 - Pause: current evidence cannot be resolved from the enabled KB; the change
   needs a vector provider or unbounded prompt content; or participant auth,
   persistence, credits, or source-retrieval behavior must change.
@@ -183,9 +183,11 @@ preview and the later examples-excluded baseline.
 
 - Status: K6.1 through K6.4 are source-complete and published as open,
   non-draft PR #5650 against `v3-ai`. The integrated final review and its
-  correction passes returned `DONE` with no remaining findings. Exact-head
-  GitHub checks are pending; merge, deployment, and live model use remain
-  withheld.
+  correction passes returned `DONE` with no remaining findings. The first
+  exact-head `check` job found one branch-caused Biome formatting mismatch in
+  `packages/util/src/citations.ts`; the correction is prepared for the next
+  published head. Remaining exact-head GitHub checks are pending; merge,
+  deployment, and live model use remain withheld.
 - Completed: remote-state gate, clean purpose-based worktree, approved program
   plan transfer, current source seam mapping, package-plan narrowing, shared
   current-evidence validation, owner-service reconciliation, and focused util,
@@ -225,6 +227,11 @@ preview and the later examples-excluded baseline.
 - Runtime note: the exact task DevPod `feat-chatbot-response-example-ru` was
   stopped after its final PostgreSQL-producing run. Provider state is `Stopped`
   and the checkout has zero exact devrouter routes; no runtime data was deleted.
+  A later CI-correction attempt to resume the same runtime failed before checks
+  because the branch baseline does not yet satisfy the managed DevPod config
+  validation and an existing process holds the Azurite host port. The managed
+  stop freed zero routes; zero exact routes are verified while provider status
+  reconciliation remains pending.
 - Delivery: branch `feat/chatbot-response-example-runtime` is published at PR
   #5650. The PR is mergeable and initially `UNSTABLE` only because exact-head
   checks are pending.
