@@ -11,10 +11,7 @@
  * permanent once released. A tour whose steps change materially gets a new
  * `-vN` id instead, which makes every actor eligible for the new version.
  */
-export const TOUR_IDS = [
-  'manage-onboarding-v1',
-  'pwa-onboarding-v1',
-] as const
+export const TOUR_IDS = ['manage-onboarding-v1', 'pwa-onboarding-v1'] as const
 
 export type TourId = (typeof TOUR_IDS)[number]
 
