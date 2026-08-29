@@ -374,6 +374,19 @@ jobs:
             node .github/scripts/final-ai-review.js configure-ocr
           test -s "${OCR_CONFIG_PATH}"
 
+      - name: Verify OpenRouter review access
+        if: needs.start.outputs.run_review == 'true'
+        env:
+          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-review-ocr-config.json
+        run: |
+          set -euo pipefail
+          if ocr llm test >/dev/null; then
+            echo 'OpenRouter review preflight passed'
+            exit 0
+          fi
+          echo '::error::OpenRouter review preflight failed'
+          exit 1
+
       - name: Run final review
         id: run_review
         if: needs.start.outputs.run_review == 'true'
@@ -825,6 +838,19 @@ jobs:
           printf '%s' "${OPENROUTER_API_KEY}" |
             node .github/scripts/final-ai-review.js configure-ocr
           test -s "${OCR_CONFIG_PATH}"
+
+      - name: Verify OpenRouter review access
+        if: needs.start_stack.outputs.run_review == 'true'
+        env:
+          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-stack-ocr-config.json
+        run: |
+          set -euo pipefail
+          if ocr llm test >/dev/null; then
+            echo 'OpenRouter review preflight passed'
+            exit 0
+          fi
+          echo '::error::OpenRouter review preflight failed'
+          exit 1
 
       - name: Run cumulative code review
         id: code_review

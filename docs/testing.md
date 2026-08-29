@@ -143,8 +143,9 @@ uses a path-scoped filter and compiles once before running the 8 shards.
 Eligible same-repository public PRs (non-draft, non-bot, rollout enabled or
 canary) run the changed-path prepare and build in the Playwright container on
 the `public-pr-arm64` runner group through the reusable
-`public-pr-playwright-shards.yml` workflow, which gives at most three
-concurrent shards; pushes, fork PRs, drafts, bots, private repositories, and
+`public-pr-playwright-shards.yml` workflow, which runs eight concurrent shards
+across the two-host public pool; pushes, fork PRs, drafts, bots, private
+repositories, and
 disabled rollouts keep all eight shards on GitHub-hosted runners. Both paths
 preserve the same artifact names and feed the route-aware
 `test-playwright-status` gate, which requires exactly one of the hosted or
@@ -160,6 +161,15 @@ public route. The required status gate deliberately has no concurrency group,
 so a stale reporter waiting for GitHub-hosted capacity cannot block current
 filtering, builds, or shards. Public container jobs also trust the exact mounted
 `GITHUB_WORKSPACE` after checkout because its host and container owners differ.
+
+The timing-aware sharder assigns whole spec files; it cannot divide one serial
+spec across runners. Long workflows must therefore split only where each new
+file can establish its own database and browser state. The live-quiz suite uses
+`O1-live-quiz-core.spec.ts` for management, execution, and content, and
+`O2-live-quiz-collaboration.spec.ts` for sharing, access, PIN, and word-cloud
+flows. The second file deliberately repeats cleanup and common-question setup
+because it may run in a different disposable shard. Do not remove that setup or
+introduce cross-file ordering assumptions.
 
 **Hatchet tokens differ per workflow, because `test-playwright` is the only one that runs inside a `container:`.** `test-graphql` runs straight on the runner, so it reaches Hatchet at `localhost` and reads its boot-minted token with `docker exec`. Inside a container job neither works: service containers resolve by service **name** (`hatchet:8888` / `hatchet:7077`, exactly like the `postgres:5432` the same job already uses), and the Playwright image ships no Docker CLI. So `test-playwright` shares `/config` with the Hatchet service through the `hatchet_lite_config` volume and reads `/config/authdisabled-token` directly. Do not "simplify" those hostnames to `localhost` — every shard then fails in `Prepare .env files` before a single test runs. The HTTP token API is not a fallback: `hatchet-lite-dev` disables auth and answers `POST /api/v1/tenants/{id}/api-tokens` with 401 for every caller. The token's own claims always say `localhost`, which is harmless — `packages/hatchet/src/client.ts` passes `host_port`/`api_url` explicitly, and process env beats the `.env` templates for both `node --env-file` and `dotenv`.
 
