@@ -175,7 +175,7 @@ workflow and current OpenRouter provider route work together.
 ## Progress
 
 - Status: implementation is rebased onto current `v3`; full verification and
-  immutable reviews are being repeated for the new exact head.
+  both immutable slice reviews pass on the rebased exact head.
 - Completed: fresh authoritative baseline, hosted failure reconciliation,
   upstream release/source qualification, OpenRouter endpoint inspection,
   local credential-boundary check, baseline tests, native planning review, the
@@ -186,18 +186,21 @@ workflow and current OpenRouter provider route work together.
 - Rebase evidence: branch `rs/final-review-tool-canary` is zero commits behind
   current baseline `bb495a1b2`. The four expected conflicts preserve the exact
   canary implementation while deliberately restoring GLM for stack review.
-- Verification after rebase: 86 individual and stack helper tests pass; both
+- Verification after rebase: 107 individual, stack, and offline qualification
+  tests pass; the qualification evaluator matches all 8 fixtures; both
   workflow files parse; locked Biome 2.5.2 and Prettier 3.3.3 checks pass;
-  `git diff --check` passes; model-source checks confirm GLM for both final
-  paths and DeepSeek V4 Flash 0731 for drafts.
-- Review: the pre-rebase simplifier and slice-review receipts covered superseded
-  commit `347a07918` and are no longer completion evidence. Both gates will run
-  again on immutable rebased commit `9901974c3` and any follow-up plan commit.
+  `git diff --check` and a five-commit gitleaks scan pass; model-source checks
+  confirm GLM for both final paths and DeepSeek V4 Flash 0731 for drafts. The
+  exact OCR 1.11.0 fake-endpoint probe also passes on the rebased head.
+- Review: the pre-rebase receipts remain superseded. A fresh simplifier and
+  slice review both returned `DONE` with no findings over immutable range
+  `bb495a1b2..360d6e6a0`; local receipts are stored under
+  `project/_local/reviews/`.
 - Limitations: trusted advisor unavailable due expired OAuth; local live
   OpenRouter request unavailable without changing the approved secret setup.
   The managed devcontainer could not start because this checkout requires
   devrouter 0.0.45 while the host has 0.0.36; formatting used the exact locked
   binaries already installed in the clean control checkout.
-- Remaining: run fresh integrated verification and final review, publish the
+- Remaining: record this evidence, run the integrated final review, publish the
   draft PR, and account for exact-head CI. Both post-merge commands remain
   pending.
