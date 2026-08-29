@@ -152,7 +152,6 @@ export function ManageAssistantWidget() {
       dispatchFrameState({
         generation,
         type: 'deadline',
-        url: assistantUrl,
       })
     }, MANAGE_ASSISTANT_LOADING_DEADLINE_MS)
 
@@ -305,7 +304,6 @@ export function ManageAssistantWidget() {
 
   useEffect(() => {
     if (!assistantOrigin || !assistantUrl) return
-    const readyUrl = assistantUrl
     const readyGeneration = frameState.generation
 
     function handleMessage(event: MessageEvent) {
@@ -326,7 +324,6 @@ export function ManageAssistantWidget() {
         dispatchFrameState({
           generation: readyGeneration,
           type: 'ready',
-          url: readyUrl,
         })
         sendCurrentContext()
         return
@@ -532,7 +529,6 @@ export function ManageAssistantWidget() {
                           onClick={() => {
                             dispatchFrameState({
                               type: 'retry',
-                              url: assistantUrl,
                             })
                           }}
                           className="bg-uzh-blue hover:bg-uzh-blue-80 inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 font-medium text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
@@ -575,7 +571,6 @@ export function ManageAssistantWidget() {
                   dispatchFrameState({
                     generation: frameState.generation,
                     type: 'error',
-                    url: assistantUrl,
                   })
                 }}
               />

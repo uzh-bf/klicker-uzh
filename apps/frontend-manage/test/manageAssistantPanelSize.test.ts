@@ -4,7 +4,7 @@ import {
   getManageAssistantKeyboardResizeDelta,
   parseManageAssistantPanelSize,
   resizeManageAssistantPanelFromTopLeft,
-} from '../src/components/assistant/manageAssistantPanelSize'
+} from '../src/components/assistant/manageAssistantPanelSize.ts'
 
 assert.deepEqual(parseManageAssistantPanelSize('{"height":600,"width":500}'), {
   height: 600,

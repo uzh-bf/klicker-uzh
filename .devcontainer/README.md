@@ -252,7 +252,7 @@ must answer `2xx` HTML or a redirect, and Response API must answer `200`
 JSON at `/healthz`. Profiles that include live-quiz workers also require one
 live runtime process for each worker below the exact managed Turbo root. The
 focused combined `chat,manage` profile additionally starts
-`@klicker-uzh/mcp-lecturer` and requires `200 application/json` from its
+`@klicker-uzh/mcp-lecturer` and requires `200 text/plain` from its
 in-container `http://localhost:7081/healthz` endpoint. The separate `mcp`
 profile remains the deterministic read-only fixture, and the full profile's
 default readiness set is unchanged. Five

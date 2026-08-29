@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { buildManageAssistantUrl } from '../src/components/assistant/manageAssistantConfig'
+import { buildManageAssistantUrl } from '../src/components/assistant/manageAssistantConfig.ts'
 
 assert.equal(
   buildManageAssistantUrl({

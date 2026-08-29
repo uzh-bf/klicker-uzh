@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import {
   buildManageAssistantContext,
   inferManageSurface,
-} from '../src/components/assistant/manageAssistantContext'
+} from '../src/components/assistant/manageAssistantContext.ts'
 
 // The manage index page is the question library.
 assert.equal(inferManageSurface('/'), 'question-pool')

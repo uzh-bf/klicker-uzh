@@ -758,6 +758,21 @@ follow_up_stacks:
   MCP health proof therefore remain blocked by host runtime tooling; A1's
   focused hosted Playwright regression and exact-head CI remain required before
   the layer can be accepted.
+- A1 static runtime verification: `devrouter repo devcontainer verify --json`
+  reports five checks OK, no warnings, and no errors for the changed
+  devcontainer/devrouter configuration.
+- A1 review: Both configured specialist routes failed before launch because
+  the runtime applied unsupported `max` effort to `combo/glm-5.3-flash`.
+  Generic-continuity reviewers therefore covered both required gates: Luna at
+  medium effort for simplification and Sol at xhigh effort for the runtime,
+  iframe, and accessibility risk review. The simplifier's actionable test
+  finding is accepted by wiring all existing Manage assistant pure tests into
+  the package `test:run`. Its proposed removal of URL identity is accepted only
+  for redundant transition payloads: reducer state retains the current URL so
+  a ready phase cannot leak across locale/navigation changes. The risk review
+  correctly found that FastMCP 4.13.1 serves `/healthz` as `200 text/plain`,
+  while the first probe and fixture required JSON; the corrected dedicated
+  text-health contract now matches installed package documentation.
 - Next: Complete A1's recoverable iframe shell, honest standalone boundary,
   focused lecturer-MCP runtime contract, independent reviews, and exact-head
   draft-layer verification.

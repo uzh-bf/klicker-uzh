@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import {
   createManageAssistantFrameState,
   reduceManageAssistantFrameState,
-} from '../src/components/assistant/manageAssistantFrameState'
+} from '../src/components/assistant/manageAssistantFrameState.ts'
 
 const assistantUrl = 'https://chat.example.test/manage?embed=1'
 
@@ -16,20 +16,17 @@ assert.deepEqual(loading, {
 const delayed = reduceManageAssistantFrameState(loading, {
   generation: 0,
   type: 'deadline',
-  url: assistantUrl,
 })
 assert.equal(delayed.phase, 'delayed')
 
 const recoveredLate = reduceManageAssistantFrameState(delayed, {
   generation: 0,
   type: 'ready',
-  url: assistantUrl,
 })
 assert.equal(recoveredLate.phase, 'ready')
 
 const retrying = reduceManageAssistantFrameState(delayed, {
   type: 'retry',
-  url: assistantUrl,
 })
 assert.deepEqual(retrying, {
   generation: 1,
@@ -40,21 +37,18 @@ assert.deepEqual(retrying, {
 const ignoredStaleError = reduceManageAssistantFrameState(retrying, {
   generation: 0,
   type: 'error',
-  url: assistantUrl,
 })
 assert.equal(ignoredStaleError, retrying)
 
 const ignoredStaleReady = reduceManageAssistantFrameState(retrying, {
   generation: 0,
   type: 'ready',
-  url: assistantUrl,
 })
 assert.equal(ignoredStaleReady, retrying)
 
 const failed = reduceManageAssistantFrameState(retrying, {
   generation: 1,
   type: 'error',
-  url: assistantUrl,
 })
 assert.equal(failed.phase, 'failed')
 
@@ -69,8 +63,13 @@ assert.deepEqual(changedUrl, {
 })
 
 const ignoredOldReady = reduceManageAssistantFrameState(changedUrl, {
-  generation: 2,
+  generation: 1,
   type: 'ready',
-  url: assistantUrl,
 })
 assert.equal(ignoredOldReady, changedUrl)
+
+const changedUrlReady = reduceManageAssistantFrameState(changedUrl, {
+  generation: 2,
+  type: 'ready',
+})
+assert.equal(changedUrlReady.phase, 'ready')

@@ -195,7 +195,8 @@ probe_mode() {
     auth | frontend-control | frontend-manage | frontend-pwa)
       echo 'html-shell'
       ;;
-    mcp-lecturer | response-api) echo 'health-json' ;;
+    mcp-lecturer) echo 'health-text' ;;
+    response-api) echo 'health-json' ;;
     *) return 1 ;;
   esac
 }
@@ -304,11 +305,17 @@ classify_response() {
       echo "ready: HTTP $status $content_type"
       return 0
     fi
+  elif [ "$mode" = 'health-text' ]; then
+    if [ "$status" = '200' ] && [[ "$content_type" == text/plain* ]]; then
+      echo "ready: HTTP $status $content_type"
+      return 0
+    fi
   else
     die "Unknown probe mode: $mode."
   fi
 
-  if [ "$mode" != 'health-json' ] && [ "$status" = '404' ] &&
+  if [ "$mode" != 'health-json' ] && [ "$mode" != 'health-text' ] &&
+    [ "$status" = '404' ] &&
     [[ "$content_type" == text/html* ]]; then
     echo "stale: HTTP $status $content_type"
     return "$STALE_STATUS"

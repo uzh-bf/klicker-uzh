@@ -15,10 +15,10 @@ export type ManageAssistantFrameState = {
 
 export type ManageAssistantFrameAction =
   | { type: 'url-changed'; url: string | null }
-  | { type: 'ready'; generation: number; url: string }
-  | { type: 'retry'; url: string }
-  | { type: 'deadline'; generation: number; url: string }
-  | { type: 'error'; generation: number; url: string }
+  | { type: 'ready'; generation: number }
+  | { type: 'retry' }
+  | { type: 'deadline'; generation: number }
+  | { type: 'error'; generation: number }
 
 export function createManageAssistantFrameState(
   url: string | null
@@ -39,8 +39,6 @@ export function reduceManageAssistantFrameState(
       url: action.url,
     }
   }
-
-  if (action.url !== state.url) return state
 
   if (action.type === 'ready') {
     if (action.generation !== state.generation) return state

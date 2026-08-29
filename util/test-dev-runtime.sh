@@ -73,6 +73,7 @@ url="${!#}"
 printf "%s\n" "$url" >>"$KLICKER_TEST_CURL_LOG"
 case "$url" in
   */api/chatbots/*) printf "401\tapplication/json" ;;
+  http://localhost:7081/healthz) printf "200\ttext/plain; charset=utf-8" ;;
   */healthz) printf "200\tapplication/json" ;;
   *) printf "307\ttext/html" ;;
 esac'
