@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import { faPencil } from '@fortawesome/free-solid-svg-icons'
+import { faPencil, faRoute } from '@fortawesome/free-solid-svg-icons'
 import { SelfWithAchievementsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import Layout from '../components/Layout'
+import { TOUR_REPLAY_HREF } from '../components/onboarding/PwaOnboardingTour'
 import ProfileData from '../components/participant/ProfileData'
 
 const Profile = () => {
@@ -33,15 +34,28 @@ const Profile = () => {
       displayName={t('pwa.profile.myProfile')}
     >
       <div className="flex flex-col items-center gap-2 rounded border p-2 md:mx-auto md:w-max md:p-4">
-        <Button
-          basic
-          onClick={() => router.push('/editProfile')}
-          className={{ root: 'self-end hover:bg-white hover:underline' }}
-          data={{ cy: 'edit-profile' }}
-        >
-          <Button.Icon icon={faPencil} />
-          <Button.Label>{t('pwa.profile.editProfile')}</Button.Label>
-        </Button>
+        <div className="flex flex-row gap-2 self-end">
+          <Button
+            basic
+            // The tour describes the overview page, so a replay goes there
+            // instead of showing only the steps this page happens to carry.
+            onClick={() => router.push(TOUR_REPLAY_HREF)}
+            className={{ root: 'hover:bg-white hover:underline' }}
+            data={{ cy: 'replay-onboarding-tour' }}
+          >
+            <Button.Icon icon={faRoute} />
+            <Button.Label>{t('pwa.productTours.replayTitle')}</Button.Label>
+          </Button>
+          <Button
+            basic
+            onClick={() => router.push('/editProfile')}
+            className={{ root: 'hover:bg-white hover:underline' }}
+            data={{ cy: 'edit-profile' }}
+          >
+            <Button.Icon icon={faPencil} />
+            <Button.Label>{t('pwa.profile.editProfile')}</Button.Label>
+          </Button>
+        </div>
         <ProfileData
           isSelf={true}
           username={participant.username}

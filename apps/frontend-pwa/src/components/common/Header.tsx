@@ -37,6 +37,7 @@ import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
+import { featureTargetProps } from '../onboarding/featureTargets'
 import AvatarWithLevel from './AvatarWithLevel'
 
 const FEEDBACK_URL = 'https://klicker-uzh.feedback.df-app.ch/'
@@ -188,271 +189,299 @@ function Header({
         )}
 
         {onOpenProductUpdates && (
-          <NotificationBadgeWrapper
-            showBadge={unreadProductUpdates > 0}
-            size="sm"
-            // The default badge is large enough to sit over the middle of an
-            // icon-sized button and swallow the click, so it is shrunk to a dot
-            // in the corner, matching the design system's own navigation dot.
-            className={{
-              root: 'flex items-center',
-              badge: '-top-0.5 -right-0.5 h-2.5 w-2.5',
-            }}
-            data={{ cy: 'product-updates-badge' }}
+          // The wrapper carries the overlay target: the badge wrapper does not
+          // forward unknown attributes to the element it renders.
+          <div
+            className="flex"
+            {...featureTargetProps('pwa-header-product-updates')}
           >
-            <Button
-              basic
-              onClick={onOpenProductUpdates}
+            <NotificationBadgeWrapper
+              showBadge={unreadProductUpdates > 0}
+              size="sm"
+              // The default badge is large enough to sit over the middle of an
+              // icon-sized button and swallow the click, so it is shrunk to a dot
+              // in the corner, matching the design system's own navigation dot.
               className={{
-                root: 'flex h-8 w-8 items-center justify-center rounded-md text-white hover:bg-slate-800',
+                root: 'flex items-center',
+                badge: '-top-0.5 -right-0.5 h-2.5 w-2.5',
               }}
-              data={{ cy: 'product-updates-button' }}
+              data={{ cy: 'product-updates-badge' }}
             >
-              <FontAwesomeIcon
-                icon={faBullhorn}
-                title={t('pwa.productUpdates.feedTitle')}
-              />
-            </Button>
-          </NotificationBadgeWrapper>
+              <Button
+                basic
+                onClick={onOpenProductUpdates}
+                className={{
+                  root: 'flex h-8 w-8 items-center justify-center rounded-md text-white hover:bg-slate-800',
+                }}
+                data={{ cy: 'product-updates-button' }}
+              >
+                <FontAwesomeIcon
+                  icon={faBullhorn}
+                  title={t('pwa.productUpdates.feedTitle')}
+                />
+              </Button>
+            </NotificationBadgeWrapper>
+          </div>
         )}
 
-        <Dropdown
-          trigger={
-            <>
-              <AvatarWithLevel
-                avatar={participant?.avatar}
-                level={
-                  process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true'
-                    ? participant?.level
-                    : undefined
-                }
-              />
-              {showProfileSetup && (
-                <FontAwesomeIcon
-                  icon={faExclamationCircle}
-                  className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-white text-orange-500"
-                />
-              )}
-            </>
-          }
-          items={[
-            ...(participant
-              ? [
-                  {
-                    id: 'loggedInAs',
-                    type: 'label' as 'label',
-                    label: (
-                      <div className="font-bold">
-                        <div>{t('pwa.profile.loggedInAs')}</div>
-                        <div className="font-normal">
-                          {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
-                            ? (participant.institutionalEmail ??
-                              participant.email)
-                            : `${participant?.username}${participant.role === UserRole.TemporaryParticipant ? ` (${t('pwa.profile.temporaryPseudonym')})` : ''}`}
-                        </div>
-                      </div>
-                    ),
-                    className: { item: 'h-max! py-0.5' },
-                    data: { cy: 'header-logged-in-as' },
-                  },
-                  {
-                    id: 'separator',
-                    type: 'separator' as 'separator',
-                    className: { item: 'h-1.5!' },
-                  },
-                ]
-              : []),
-            ...(showProfileSetup
-              ? [
-                  {
-                    id: 'setupProfile',
-                    type: 'standard' as 'standard',
-                    label: (
-                      <div>
-                        <FontAwesomeIcon
-                          icon={faExclamationCircle}
-                          className="mr-2 w-4 text-orange-500"
-                        />
-                        <span className="text-orange-500">
-                          {t('pwa.general.setupProfile')}
-                        </span>
-                      </div>
-                    ),
-                    onClick: () => router.push('/editProfile'),
-                    data: { cy: 'header-setup-profile' },
-                  },
-                ]
-              : []),
-            ...((!router.pathname.includes('/session') ||
-              participant?.role !== UserRole.TemporaryParticipant) &&
-            process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
-            (participant || !pageInFrame)
-              ? [
-                  {
-                    id: 'profileOrLogin',
-                    type: 'standard' as 'standard',
-                    label: (
-                      <div>
-                        <FontAwesomeIcon icon={faUser} className="mr-2 w-4" />
-                        <span>
-                          {participant
-                            ? t('shared.generic.profile')
-                            : t('shared.generic.login')}
-                        </span>
-                      </div>
-                    ),
-                    onClick: () => {
-                      if (participant) {
-                        router.push('/profile')
-                      } else {
-                        router.push('/login')
-                      }
-                    },
-                    data: { cy: 'participant-profile-login' },
-                  },
-                ]
-              : []),
-            {
-              id: 'docs',
-              type: 'standard' as 'standard',
-              label: (
-                <div>
-                  <FontAwesomeIcon
-                    icon={faCircleQuestion}
-                    className="mr-2 w-4"
-                  />
-                  <span>{t('shared.generic.documentation')}</span>
-                </div>
-              ),
-              onClick: () => router.push(`/docs`),
-              data: { cy: 'course-docs' },
-            },
-            ...(process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' && !pageInFrame
-              ? [
-                  {
-                    id: 'feedback',
-                    type: 'standard' as 'standard',
-                    label: (
-                      <div>
-                        <FontAwesomeIcon
-                          icon={faComment}
-                          className="mr-2 w-4"
-                        />
-                        <span>{t('shared.generic.feedback')}</span>
-                      </div>
-                    ),
-                    onClick: () => {
-                      window.open(FEEDBACK_URL, '_blank', 'noopener,noreferrer')
-                    },
-                    data: { cy: 'student-feedback-link' },
-                  },
-                ]
-              : []),
-            {
-              id: 'languageSwitch',
-              label: (
-                <div>
-                  <FontAwesomeIcon icon={faLanguage} className="mr-2 w-4" />
-                  <span>{t('shared.generic.language')}</span>
-                </div>
-              ),
-              type: 'submenu',
-              data: { cy: 'language-switch' },
-              items: [
-                {
-                  id: 'languageDE',
-                  value: LocaleType.De,
-                  flag: '🇩🇪',
-                  label: t('shared.generic.de'),
-                },
-                {
-                  id: 'languageEN',
-                  value: LocaleType.En,
-                  flag: '🇬🇧',
-                  label: t('shared.generic.en'),
-                },
-              ].map((language) => ({
-                id: language.id,
-                disabled: changingLocale,
-                label: (
-                  <>
-                    <span className="mr-1 md:mr-2">{language.flag}</span>
-                    <span>{language.label}</span>
-                  </>
-                ),
-                type: 'checkbox',
-                onClick: async () => {
-                  if (
-                    participant &&
-                    participant.role === UserRole.Participant
-                  ) {
-                    await changeParticipantLocale({
-                      variables: { locale: language.value },
-                    })
+        <div className="flex" {...featureTargetProps('pwa-header-account')}>
+          <Dropdown
+            trigger={
+              <>
+                <AvatarWithLevel
+                  avatar={participant?.avatar}
+                  level={
+                    process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true'
+                      ? participant?.level
+                      : undefined
                   }
-
-                  router.push({ pathname, query }, asPath, {
-                    locale: language.value,
-                  })
-                },
-                selected: router.locale === language.value,
-              })),
-            },
-            ...(participant?.role === UserRole.Participant && !pageInFrame
-              ? [
-                  {
-                    id: 'logout',
-                    type: 'standard' as 'standard',
-                    disabled: loggingOut,
-                    label: (
-                      <div className="text-red-600">
-                        <FontAwesomeIcon
-                          icon={faRightFromBracket}
-                          className="mr-2 w-4"
-                        />
-                        <span>{t('shared.generic.logout')}</span>
-                      </div>
-                    ),
-                    onClick: async () => {
-                      await logoutParticipant()
-                      router.push('/login')
+                />
+                {showProfileSetup && (
+                  <FontAwesomeIcon
+                    icon={faExclamationCircle}
+                    className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-white text-orange-500"
+                  />
+                )}
+              </>
+            }
+            items={[
+              ...(participant
+                ? [
+                    {
+                      id: 'loggedInAs',
+                      type: 'label' as 'label',
+                      label: (
+                        <div className="font-bold">
+                          <div>{t('pwa.profile.loggedInAs')}</div>
+                          <div className="font-normal">
+                            {process.env.NEXT_PUBLIC_IS_ASSESSMENT === 'true'
+                              ? (participant.institutionalEmail ??
+                                participant.email)
+                              : `${participant?.username}${participant.role === UserRole.TemporaryParticipant ? ` (${t('pwa.profile.temporaryPseudonym')})` : ''}`}
+                          </div>
+                        </div>
+                      ),
+                      className: { item: 'h-max! py-0.5' },
+                      data: { cy: 'header-logged-in-as' },
                     },
-                    data: { cy: 'logout' },
-                  },
-                ]
-              : []),
-            ...(participant?.role === UserRole.TemporaryParticipant &&
-            liveQuizId
-              ? [
-                  {
-                    id: 'logout',
-                    type: 'standard' as 'standard',
-                    disabled: loggingOutTemporary,
-                    label: (
-                      <div className="text-red-600">
-                        <FontAwesomeIcon
-                          icon={faRightFromBracket}
-                          className="mr-2 w-4"
-                        />
-                        <span>{t('shared.generic.logout')}</span>
-                      </div>
-                    ),
-                    onClick: async () => {
-                      try {
-                        // log out temporary participant for this live quiz
-                        const { data } = await logoutTemporaryParticipant({
-                          variables: { liveQuizId },
-                          refetchQueries: [
-                            { query: SelfDocument, variables: { liveQuizId } },
-                          ],
-                        })
-
-                        if (data?.logoutTemporaryParticipant) {
-                          // remove local storage entry for temporary participant
-                          localStorage.removeItem(`login-state-${liveQuizId}`)
-
-                          router.reload()
+                    {
+                      id: 'separator',
+                      type: 'separator' as 'separator',
+                      className: { item: 'h-1.5!' },
+                    },
+                  ]
+                : []),
+              ...(showProfileSetup
+                ? [
+                    {
+                      id: 'setupProfile',
+                      type: 'standard' as 'standard',
+                      label: (
+                        <div>
+                          <FontAwesomeIcon
+                            icon={faExclamationCircle}
+                            className="mr-2 w-4 text-orange-500"
+                          />
+                          <span className="text-orange-500">
+                            {t('pwa.general.setupProfile')}
+                          </span>
+                        </div>
+                      ),
+                      onClick: () => router.push('/editProfile'),
+                      data: { cy: 'header-setup-profile' },
+                    },
+                  ]
+                : []),
+              ...((!router.pathname.includes('/session') ||
+                participant?.role !== UserRole.TemporaryParticipant) &&
+              process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
+              (participant || !pageInFrame)
+                ? [
+                    {
+                      id: 'profileOrLogin',
+                      type: 'standard' as 'standard',
+                      label: (
+                        <div>
+                          <FontAwesomeIcon icon={faUser} className="mr-2 w-4" />
+                          <span>
+                            {participant
+                              ? t('shared.generic.profile')
+                              : t('shared.generic.login')}
+                          </span>
+                        </div>
+                      ),
+                      onClick: () => {
+                        if (participant) {
+                          router.push('/profile')
                         } else {
+                          router.push('/login')
+                        }
+                      },
+                      data: { cy: 'participant-profile-login' },
+                    },
+                  ]
+                : []),
+              {
+                id: 'docs',
+                type: 'standard' as 'standard',
+                label: (
+                  <div>
+                    <FontAwesomeIcon
+                      icon={faCircleQuestion}
+                      className="mr-2 w-4"
+                    />
+                    <span>{t('shared.generic.documentation')}</span>
+                  </div>
+                ),
+                onClick: () => router.push(`/docs`),
+                data: { cy: 'course-docs' },
+              },
+              ...(process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' &&
+              !pageInFrame
+                ? [
+                    {
+                      id: 'feedback',
+                      type: 'standard' as 'standard',
+                      label: (
+                        <div>
+                          <FontAwesomeIcon
+                            icon={faComment}
+                            className="mr-2 w-4"
+                          />
+                          <span>{t('shared.generic.feedback')}</span>
+                        </div>
+                      ),
+                      onClick: () => {
+                        window.open(
+                          FEEDBACK_URL,
+                          '_blank',
+                          'noopener,noreferrer'
+                        )
+                      },
+                      data: { cy: 'student-feedback-link' },
+                    },
+                  ]
+                : []),
+              {
+                id: 'languageSwitch',
+                label: (
+                  <div>
+                    <FontAwesomeIcon icon={faLanguage} className="mr-2 w-4" />
+                    <span>{t('shared.generic.language')}</span>
+                  </div>
+                ),
+                type: 'submenu',
+                data: { cy: 'language-switch' },
+                items: [
+                  {
+                    id: 'languageDE',
+                    value: LocaleType.De,
+                    flag: '🇩🇪',
+                    label: t('shared.generic.de'),
+                  },
+                  {
+                    id: 'languageEN',
+                    value: LocaleType.En,
+                    flag: '🇬🇧',
+                    label: t('shared.generic.en'),
+                  },
+                ].map((language) => ({
+                  id: language.id,
+                  disabled: changingLocale,
+                  label: (
+                    <>
+                      <span className="mr-1 md:mr-2">{language.flag}</span>
+                      <span>{language.label}</span>
+                    </>
+                  ),
+                  type: 'checkbox',
+                  onClick: async () => {
+                    if (
+                      participant &&
+                      participant.role === UserRole.Participant
+                    ) {
+                      await changeParticipantLocale({
+                        variables: { locale: language.value },
+                      })
+                    }
+
+                    router.push({ pathname, query }, asPath, {
+                      locale: language.value,
+                    })
+                  },
+                  selected: router.locale === language.value,
+                })),
+              },
+              ...(participant?.role === UserRole.Participant && !pageInFrame
+                ? [
+                    {
+                      id: 'logout',
+                      type: 'standard' as 'standard',
+                      disabled: loggingOut,
+                      label: (
+                        <div className="text-red-600">
+                          <FontAwesomeIcon
+                            icon={faRightFromBracket}
+                            className="mr-2 w-4"
+                          />
+                          <span>{t('shared.generic.logout')}</span>
+                        </div>
+                      ),
+                      onClick: async () => {
+                        await logoutParticipant()
+                        router.push('/login')
+                      },
+                      data: { cy: 'logout' },
+                    },
+                  ]
+                : []),
+              ...(participant?.role === UserRole.TemporaryParticipant &&
+              liveQuizId
+                ? [
+                    {
+                      id: 'logout',
+                      type: 'standard' as 'standard',
+                      disabled: loggingOutTemporary,
+                      label: (
+                        <div className="text-red-600">
+                          <FontAwesomeIcon
+                            icon={faRightFromBracket}
+                            className="mr-2 w-4"
+                          />
+                          <span>{t('shared.generic.logout')}</span>
+                        </div>
+                      ),
+                      onClick: async () => {
+                        try {
+                          // log out temporary participant for this live quiz
+                          const { data } = await logoutTemporaryParticipant({
+                            variables: { liveQuizId },
+                            refetchQueries: [
+                              {
+                                query: SelfDocument,
+                                variables: { liveQuizId },
+                              },
+                            ],
+                          })
+
+                          if (data?.logoutTemporaryParticipant) {
+                            // remove local storage entry for temporary participant
+                            localStorage.removeItem(`login-state-${liveQuizId}`)
+
+                            router.reload()
+                          } else {
+                            toast({
+                              type: 'error',
+                              message: t(
+                                'pwa.profile.errorLogoutTemporaryParticipant'
+                              ),
+                            })
+                          }
+                        } catch (e) {
+                          console.error(
+                            'Error logging out temporary participant:',
+                            e
+                          )
                           toast({
                             type: 'error',
                             message: t(
@@ -460,31 +489,20 @@ function Header({
                             ),
                           })
                         }
-                      } catch (e) {
-                        console.error(
-                          'Error logging out temporary participant:',
-                          e
-                        )
-                        toast({
-                          type: 'error',
-                          message: t(
-                            'pwa.profile.errorLogoutTemporaryParticipant'
-                          ),
-                        })
-                      }
+                      },
+                      data: { cy: 'logout' },
                     },
-                    data: { cy: 'logout' },
-                  },
-                ]
-              : []),
-          ]}
-          className={{
-            item: 'h-8 text-sm md:h-8 md:text-base',
-            trigger:
-              'p-0! relative my-1 border-none bg-transparent hover:bg-transparent',
-          }}
-          data={{ cy: 'header-avatar' }}
-        />
+                  ]
+                : []),
+            ]}
+            className={{
+              item: 'h-8 text-sm md:h-8 md:text-base',
+              trigger:
+                'p-0! relative my-1 border-none bg-transparent hover:bg-transparent',
+            }}
+            data={{ cy: 'header-avatar' }}
+          />
+        </div>
       </div>
     </div>
   )

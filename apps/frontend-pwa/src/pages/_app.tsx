@@ -19,6 +19,10 @@ import { useRouter } from 'next/router'
 import { Locale, NextIntlClientProvider } from 'next-intl'
 import { useEffect } from 'react'
 
+// The onboarding tour is opened from the layout rather than from a page, and a
+// tsc-built package cannot ship CSS, so the driver.js stylesheet is imported
+// once for the whole app.
+import 'driver.js/dist/driver.css'
 import '../globals.css'
 
 config.autoAddCss = false

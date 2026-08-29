@@ -14,6 +14,7 @@ import React, { Dispatch, SetStateAction, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import Header from './common/Header'
 import MobileMenuBar from './common/MobileMenuBar'
+import PwaOnboardingTour from './onboarding/PwaOnboardingTour'
 import ProductUpdateFeedModal from './productUpdates/ProductUpdateFeedModal'
 import { useProductUpdates } from './productUpdates/useProductUpdates'
 
@@ -43,6 +44,9 @@ interface LayoutProps {
   // answering has no such marker, and interrupting an answer with a product
   // announcement is exactly what the subsystem must not do.
   activelyAnswering?: boolean
+  // Set by the overview page once it has its data. The onboarding tour walks
+  // over that page's sections, so it is hosted there and nowhere else.
+  withOnboardingTour?: boolean
   className?: { header?: string; body?: string }
 }
 
@@ -55,6 +59,7 @@ function Layout({
   setActiveMobilePage,
   liveQuizId,
   activelyAnswering = false,
+  withOnboardingTour = false,
   className,
 }: LayoutProps) {
   const t = useTranslations()
@@ -88,6 +93,14 @@ function Layout({
   const { unreadCount } = useProductUpdates({
     enabled: productUpdatesEnabled,
   })
+
+  // The onboarding tour reaches exactly the actors the feed reaches, for the
+  // same reasons and through the same decision — it is unsolicited and it
+  // blocks pointer events on the whole document while it runs — plus the page
+  // its steps describe. Mounting is the whole gate: a surface that must stay
+  // free of the tour never mounts it and therefore never asks the backend
+  // whether this actor has already seen it.
+  const onboardingTourEnabled = productUpdatesEnabled && withOnboardingTour
 
   const productUpdatesMenuItem = {
     label: t('pwa.productUpdates.menuLabel'),
@@ -171,6 +184,8 @@ function Layout({
       {showProductUpdates && (
         <ProductUpdateFeedModal onClose={() => setShowProductUpdates(false)} />
       )}
+
+      {onboardingTourEnabled && <PwaOnboardingTour />}
     </>
   )
 }
