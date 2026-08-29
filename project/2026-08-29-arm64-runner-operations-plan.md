@@ -436,7 +436,8 @@ entry and any separately approved host apply.
       API readback.
 - [x] S1 adds a trusted GitHub-hosted ARM64 cache warmer and proves the public
       workflow remains restore-only with matching cache keys.
-- [ ] S2 delivers the idempotent two-host reconciliation command.
+- [x] S2 delivers checksum-pinned, idempotent host and two-host reconcilers;
+      host `--apply` remains intentionally unexecuted.
 - [ ] S3 records cache and host performance evidence.
 - [ ] S4 creates and evaluates the shared onboarding skill.
 - [ ] S5 publishes and verifies the Klicker PR; merge remains separate.
