@@ -1,0 +1,48 @@
+// ----- ONBOARDING TOURS -----
+// Per-actor completion state for the guided tours defined in
+// `@klicker-uzh/product-tours`. A tour is a sequence of steps over concrete UI
+// elements, so it only ever exists in a deployed frontend: `tourId`
+// deliberately has no foreign key, and every writer validates it against the
+// code-defined tour ids before storing a row.
+//
+// Lecturers and participants are separate models, so they get separate state
+// tables rather than one table with a polymorphic actor column, mirroring the
+// product-update read state next door.
+//
+// `completedAt` records the first time the actor ended the tour by any means —
+// finishing it, skipping it, or closing it — and never moves afterwards: it is
+// what makes the unsolicited run happen at most once per account. A replay the
+// actor explicitly asked for leaves it alone. Rows can exist without it so that
+// a future writer may record a started-but-unfinished tour.
+
+model UserTourState {
+  id Int @id @default(autoincrement())
+
+  tourId String
+
+  completedAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  userId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, tourId])
+}
+
+model ParticipantTourState {
+  id Int @id @default(autoincrement())
+
+  tourId String
+
+  completedAt DateTime?
+
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participantId String      @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, tourId])
+}

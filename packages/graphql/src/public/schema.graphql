@@ -2092,6 +2092,7 @@ type Mutation {
   manualRandomGroupAssignments(courseId: String!): [ParticipantGroup!]
   markMicroLearningCompleted(courseId: String!, id: String!): Participation
   markProductUpdateRead(updateId: String!): ProductUpdateState!
+  markTourCompleted(tourId: String!): TourState!
   modifyAnswerCollection(description: String, id: Int!, name: String): AnswerCollection
   openGroupActivity(id: String!): GroupActivity
   pinFeedback(id: Int!, isPinned: Boolean!, liveQuizId: String!): Feedback
@@ -2701,6 +2702,7 @@ type Query {
   studentAssessmentResults(courseId: String!): StudentAssessmentResults
   studentCourseResults(courseId: String!, participantId: String!): [ActivityStudentPerformance!]
   studentLiveQuiz(id: String!): LiveQuiz
+  tourStates(tourIds: [String!]!): [TourState!]!
   unassignedLiveQuizzes: [LiveQuiz!]
   userActivities(activityTypeFilter: ActivityType, courseId: String, isAssessmentEnabled: Boolean, isGamificationEnabled: Boolean, isPinProtected: Boolean, multiplier: Int, numEntries: Int, offset: Int, reviewStatus: ReviewStatus, searchString: String, showDependencies: Boolean, showOwned: Boolean, showShared: Boolean, sortByAsc: Boolean!, sortByType: SortByType!, statusFilter: [PublicationStatus!], withoutCourse: Boolean): UserActivityList
   userCourses: [Course!]
@@ -3127,6 +3129,12 @@ input TemplateElementManipulationInput {
 
 type Title {
   id: Int!
+}
+
+type TourState {
+  completedAt: Date
+  id: Int!
+  tourId: String!
 }
 
 type User {

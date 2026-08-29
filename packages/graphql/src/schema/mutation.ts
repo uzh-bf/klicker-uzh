@@ -23,6 +23,7 @@ import * as SharingService from '../services/sharing.js'
 import * as StacksService from '../services/stacks.js'
 import * as SupportService from '../services/support.js'
 import * as TemplateService from '../services/templates.js'
+import * as ToursService from '../services/tours.js'
 import { ActivityInfo } from './activities.js'
 import { ActivityType, ElementFeedback } from './analytics.js'
 import { PointCorrection, PointCorrectionType } from './assessment.js'
@@ -99,6 +100,7 @@ import {
   UserGroup,
   UserGroupMembersInput,
 } from './sharing.js'
+import { TourState } from './tours.js'
 import {
   FileUploadSAS,
   LocaleType,
@@ -3786,6 +3788,14 @@ export const Mutation = builder.mutationType({
             args,
             ctx
           )
+        },
+      }),
+
+      markTourCompleted: t.withAuth(asAnyActor).field({
+        type: TourState,
+        args: { tourId: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await ToursService.markTourCompleted(args, ctx)
         },
       }),
 
