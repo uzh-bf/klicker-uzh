@@ -48,6 +48,10 @@ main() {
   render_hook started >"$started_hook"
   render_hook completed >"$completed_hook"
   shellcheck "$telemetry_hook" "$started_hook" "$completed_hook"
+  [[ "$START_HOOK" == *.sh && "$COMPLETE_HOOK" == *.sh ]] ||
+    fail 'job hooks must use a runner-recognized script extension'
+  grep -Fq 'job-started.sh' <<<"$START_HOOK" || fail 'started hook path differs'
+  grep -Fq 'job-completed.sh' <<<"$COMPLETE_HOOK" || fail 'completed hook path differs'
   grep -Fq '/usr/bin/timeout --signal=KILL 5s' "$started_hook" ||
     fail 'started hook is not bounded'
   grep -Fq "'started'" "$started_hook" || fail 'started hook event differs'

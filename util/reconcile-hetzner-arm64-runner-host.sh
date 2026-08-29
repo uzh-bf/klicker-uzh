@@ -9,8 +9,12 @@ readonly STATE_DIR='/etc/actions-runner-bootstrap'
 readonly LOCK_FILE='/run/lock/actions-runner-reconcile.lock'
 readonly HOOK_DIR='/usr/local/libexec/actions-runner'
 readonly TELEMETRY_SCRIPT="${HOOK_DIR}/telemetry"
-readonly START_HOOK="${HOOK_DIR}/job-started"
-readonly COMPLETE_HOOK="${HOOK_DIR}/job-completed"
+readonly START_HOOK="${HOOK_DIR}/job-started.sh"
+readonly COMPLETE_HOOK="${HOOK_DIR}/job-completed.sh"
+readonly -a LEGACY_HOOKS=(
+  "${HOOK_DIR}/job-started"
+  "${HOOK_DIR}/job-completed"
+)
 readonly CONFIRMATION='RECONCILE PUBLIC PR RUNNER HOST'
 readonly -a PREPULL_IMAGES=(
   'mcr.microsoft.com/playwright:v1.58.2-noble'
@@ -318,6 +322,12 @@ acquire_lock() {
 
 install_hooks() {
   install -d -m 0755 -o root -g root "$HOOK_DIR"
+  local legacy_hook
+  for legacy_hook in "${LEGACY_HOOKS[@]}"; do
+    if [[ -e "$legacy_hook" || -L "$legacy_hook" ]]; then
+      rm -f -- "$legacy_hook"
+    fi
+  done
   render_telemetry_script | write_file_from_stdin 0755 root root "$TELEMETRY_SCRIPT"
   render_hook started | write_file_from_stdin 0755 root root "$START_HOOK"
   render_hook completed | write_file_from_stdin 0755 root root "$COMPLETE_HOOK"
