@@ -114,27 +114,40 @@ function isNonPublicIpv6(hostname: string) {
   }
 
   const isGlobalUnicast = (first & 0xe000) === 0x2000
+  const isSpecialAssignment = first === 0x2001 && second <= 0x01ff
   const isDocumentation = first === 0x2001 && second === 0x0db8
-  const isBenchmark = first === 0x2001 && second === 0x0002
-  return !isGlobalUnicast || isDocumentation || isBenchmark
+  const isSixToFour = first === 0x2002
+  const isFormerSixBone = first === 0x3ffe
+  const isDocumentationV2 = first === 0x3fff
+  return (
+    !isGlobalUnicast ||
+    isSpecialAssignment ||
+    isDocumentation ||
+    isSixToFour ||
+    isFormerSixBone ||
+    isDocumentationV2
+  )
 }
 
 function hasSensitiveFragmentParameter(hash: string) {
   if (!hash) return false
-  return hash
-    .slice(1)
-    .split(/[?&;]/u)
-    .some((part) => {
-      const equalsIndex = part.indexOf('=')
-      if (equalsIndex < 1) return false
-      try {
-        return isSensitiveQueryParameter(
-          decodeURIComponent(part.slice(0, equalsIndex))
-        )
-      } catch {
-        return true
-      }
-    })
+  if (hash.length > 2_049) return true
+
+  let decoded = hash.slice(1)
+  for (let pass = 0; pass < 3; pass += 1) {
+    try {
+      const next = decodeURIComponent(decoded)
+      if (next === decoded) break
+      decoded = next
+    } catch {
+      return true
+    }
+  }
+  return decoded.split(/[?&;]/u).some((part) => {
+    const equalsIndex = part.indexOf('=')
+    if (equalsIndex < 1) return false
+    return isSensitiveQueryParameter(part.slice(0, equalsIndex))
+  })
 }
 
 /**

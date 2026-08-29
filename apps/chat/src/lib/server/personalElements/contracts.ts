@@ -1,4 +1,5 @@
 import {
+  type ElementSourceLocator,
   type ElementSourcePageLocator,
   type ElementSourceReference,
   isSafeElementSourceUrl,
@@ -173,12 +174,19 @@ export type GeneratedCardCandidate = z.infer<
   typeof generatedCardCandidateSchema
 >
 
+const storedHttpUrlSchema = z
+  .string()
+  .trim()
+  .url()
+  .max(2_048)
+  .refine((value) => ['http:', 'https:'].includes(new URL(value).protocol))
+
 const storedFlatSourceSchema = z
   .object({
     sourceId: z.string().trim().min(1).max(128),
     chunkId: z.string().trim().min(1).max(128),
     title: z.string().trim().min(1).max(256).optional(),
-    url: z.string().trim().url().max(2_048).optional(),
+    url: storedHttpUrlSchema.optional(),
     page: z.number().finite().optional(),
     metadata: z.record(z.string(), z.unknown()).optional(),
   })
@@ -186,6 +194,42 @@ const storedFlatSourceSchema = z
 
 const storedFlatCandidateSchema = generatedCardCandidateSchema.extend({
   sources: z.array(storedFlatSourceSchema).min(1).max(MAX_CHUNKS),
+})
+
+const storedGroupedSourceSchema = z
+  .object({
+    sourceId: z.string().trim().min(1).max(128),
+    kind: z.enum(['DOCUMENT', 'WEB']),
+    title: z.string().trim().min(1).max(256),
+    canonicalUrl: storedHttpUrlSchema.optional(),
+    chunkIds: z.array(z.string().trim().min(1).max(128)).min(1).max(MAX_CHUNKS),
+    locators: z
+      .array(
+        z.union([
+          z
+            .object({
+              type: z.literal('PAGE_RANGE'),
+              pageFrom: z.number().finite(),
+              pageTo: z.number().finite(),
+              labelFrom: z.string().trim().min(1).max(256).optional(),
+              labelTo: z.string().trim().min(1).max(256).optional(),
+            })
+            .strict(),
+          z
+            .object({
+              type: z.literal('WEB_ANCHOR'),
+              url: storedHttpUrlSchema,
+              label: z.string().trim().min(1).max(256).optional(),
+            })
+            .strict(),
+        ])
+      )
+      .max(16),
+  })
+  .strict()
+
+const storedGroupedCandidateSchema = generatedCardCandidateSchema.extend({
+  sources: z.array(storedGroupedSourceSchema).min(1).max(MAX_CHUNKS),
 })
 
 function storedSourceIsPdf(url: string | undefined) {
@@ -206,6 +250,42 @@ export function parseStoredGeneratedCardCandidate(
 ): GeneratedCardCandidate | null {
   const current = generatedCardCandidateSchema.safeParse(input)
   if (current.success) return current.data
+
+  const groupedCandidate = storedGroupedCandidateSchema.safeParse(input)
+  if (groupedCandidate.success) {
+    return {
+      ...groupedCandidate.data,
+      sources: groupedCandidate.data.sources.map((source) => ({
+        sourceId: source.sourceId,
+        kind: source.kind,
+        title: source.title,
+        ...(source.canonicalUrl && isSafeElementSourceUrl(source.canonicalUrl)
+          ? { canonicalUrl: source.canonicalUrl }
+          : {}),
+        chunkIds: [...new Set(source.chunkIds)],
+        locators: source.locators.flatMap<ElementSourceLocator>((locator) => {
+          if (
+            source.kind === 'DOCUMENT' &&
+            locator.type === 'PAGE_RANGE' &&
+            Number.isInteger(locator.pageFrom) &&
+            Number.isInteger(locator.pageTo) &&
+            locator.pageFrom >= 1 &&
+            locator.pageTo >= locator.pageFrom
+          ) {
+            return [locator]
+          }
+          if (
+            source.kind === 'WEB' &&
+            locator.type === 'WEB_ANCHOR' &&
+            isSafeElementSourceUrl(locator.url)
+          ) {
+            return [locator]
+          }
+          return []
+        }),
+      })),
+    }
+  }
 
   const legacy = storedFlatCandidateSchema.safeParse(input)
   if (!legacy.success) return null

@@ -66,6 +66,41 @@ describe('unsaved candidate extraction', () => {
     })
   })
 
+  test('keeps grouped stored candidates when hardened links are removed', () => {
+    expect(
+      parseStoredGeneratedCardCandidate({
+        ...candidate,
+        candidateId: 'grouped-candidate',
+        sources: [
+          {
+            sourceId: 'source-1',
+            kind: 'WEB',
+            title: 'Course page',
+            canonicalUrl:
+              'https://example.org/chapter#access_token%3Dtemporary',
+            chunkIds: ['chunk-1'],
+            locators: [
+              {
+                type: 'WEB_ANCHOR',
+                url: 'https://example.org/chapter#access_token%3Dtemporary',
+              },
+            ],
+          },
+        ],
+      })
+    ).toMatchObject({
+      sources: [
+        {
+          sourceId: 'source-1',
+          kind: 'WEB',
+          title: 'Course page',
+          chunkIds: ['chunk-1'],
+          locators: [],
+        },
+      ],
+    })
+  })
+
   test('excludes candidates that already have saved linkage', () => {
     const messages = [
       message('saved-generation', {
