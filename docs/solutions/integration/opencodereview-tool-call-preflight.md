@@ -77,6 +77,12 @@ release. Use `--effort low` for one OCR review round while leaving the model's
 reasoning setting at `high`; those controls affect different layers
 ([check-ocr-final-review.yml](../../../.github/workflows/check-ocr-final-review.yml#L384)).
 
+Every job that writes a final-review status shares one status-lock concurrency
+group. Set `cancel-in-progress: false` and `queue: max` on those jobs. Without
+the explicit queue, GitHub retains only one pending job per group and cancels an
+older pending writer when another PR event queues one, which can leave the
+exact-head check rollup failed even though no job step ran.
+
 ## Why This Works
 
 The canary tests the request capability the real review needs, not merely model

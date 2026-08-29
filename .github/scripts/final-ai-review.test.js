@@ -157,7 +157,7 @@ test('pins trusted review code to the event workflow commit when the default bra
   }
 })
 
-test('serializes every final-review status writer without canceling it', () => {
+test('queues and serializes every final-review status writer', () => {
   const job = (source, name) =>
     source.match(
       new RegExp(`\\n {2}${name}:\\n([\\s\\S]*?)(?=\\n {2}[a-z][\\w-]*:\\n|$)`)
@@ -168,16 +168,26 @@ test('serializes every final-review status writer without canceling it', () => {
       path.join(__dirname, `../workflows/${workflowName}`),
       'utf8'
     )
-    for (const jobName of ['initialize', 'start', 'finalize']) {
+    const statusWriters = [
+      ['initialize', 'resolve_lock'],
+      ['initialize_stack', 'resolve_lock'],
+      ['start', 'authorize'],
+      ['finalize', 'authorize'],
+      ['start_stack', 'authorize_stack'],
+      ['finalize_stack', 'authorize_stack'],
+    ]
+    for (const [jobName, dependency] of statusWriters) {
       const block = job(source, jobName)
       assert.match(
         block,
-        jobName === 'initialize'
+        dependency === 'resolve_lock'
           ? /group: final-ai-status-lock-\$\{\{ needs\.resolve_lock\.outputs\.lock_key \}\}\n/
-          : /group: final-ai-status-lock-\$\{\{ needs\.authorize\.outputs\.status_lock_key \}\}\n/
+          : new RegExp(
+              `group: final-ai-status-lock-\\$\\{\\{ needs\\.${dependency}\\.outputs\\.status_lock_key \\}\\}\\n`
+            )
       )
       assert.match(block, /cancel-in-progress: false\n/)
-      assert.doesNotMatch(block, /queue:/)
+      assert.match(block, /queue: max\n/)
     }
     assert.match(source, /resolve_lock:\n/)
     assert.match(source, /needs: \[trusted_policy, resolve_lock\]/)

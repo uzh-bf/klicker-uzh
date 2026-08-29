@@ -95,6 +95,7 @@ jobs:
     concurrency:
       group: final-ai-status-lock-${{ needs.resolve_lock.outputs.lock_key }}
       cancel-in-progress: false
+      queue: max
     permissions:
       actions: read
       checks: read
@@ -137,6 +138,7 @@ jobs:
     concurrency:
       group: final-ai-status-lock-${{ needs.resolve_lock.outputs.lock_key }}
       cancel-in-progress: false
+      queue: max
     permissions:
       actions: read
       checks: read
@@ -232,6 +234,7 @@ jobs:
     concurrency:
       group: final-ai-status-lock-${{ needs.authorize.outputs.status_lock_key }}
       cancel-in-progress: false
+      queue: max
     permissions:
       contents: read
       checks: read
@@ -507,6 +510,7 @@ jobs:
     concurrency:
       group: final-ai-status-lock-${{ needs.authorize.outputs.status_lock_key }}
       cancel-in-progress: false
+      queue: max
     permissions:
       checks: write
       contents: read
@@ -652,6 +656,7 @@ jobs:
     concurrency:
       group: final-ai-status-lock-${{ needs.authorize_stack.outputs.status_lock_key }}
       cancel-in-progress: false
+      queue: max
     permissions:
       actions: read
       checks: read
@@ -1008,6 +1013,7 @@ jobs:
     concurrency:
       group: final-ai-status-lock-${{ needs.authorize_stack.outputs.status_lock_key }}
       cancel-in-progress: false
+      queue: max
     permissions:
       actions: read
       checks: write

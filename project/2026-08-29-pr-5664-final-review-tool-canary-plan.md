@@ -202,6 +202,13 @@ workflow and current OpenRouter provider route work together.
   devrouter 0.0.45 while the host has 0.0.36; formatting used the exact locked
   binaries already installed in the clean control checkout.
 - Integrated review: the final reviewer returned `DONE` with no findings over
-  exact range `bb495a1b2..17f1bdcb2` after full local verification.
-- Remaining: account for exact-head CI and feedback on draft PR #5664. Both
-  post-merge commands remain pending.
+  exact range `bb495a1b2..5e0baeaba` after full local verification.
+- Hosted feedback: the draft reviewer incorrectly conflated OCR's review-round
+  effort with model reasoning. OCR 1.11.0 source confirms `--effort low` only
+  sets `MaxReviewRounds` to one, so the finding was rejected and resolved.
+- Exact-head CI exposed a separate status-lock issue: rapid PR events queued
+  more than one writer, and GitHub cancelled an older pending job because the
+  concurrency group did not opt into `queue: max`. The minimal fix adds that
+  queue to all six status writers and extends the source-level regression test.
+- Remaining: verify and review the status-writer queue fix, publish it, and
+  account for the new exact-head CI. Both post-merge commands remain pending.
