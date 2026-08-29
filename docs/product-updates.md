@@ -171,11 +171,24 @@ flags are evaluated here, so an entry carrying `requiredFeatureFlags` never
 becomes eligible in chat — the fail-closed direction, consistent with the
 selection rule above.
 
-The feed renders in the sidebar footer (`ProductUpdatesPanel` in
-`app-sidebar.tsx`), which the embedded chatbot mode hides entirely, so an
-embedded conversation neither shows nor requests product updates. Locale comes
-from the `NEXT_LOCALE` cookie; the panel chrome lives in
-`packages/i18n/messages/{de,en}.ts` under `chat.productUpdates`.
+The sidebar footer carries only an entry point: a "What's new" item with an
+unread badge (`ProductUpdatesMenuItem`), which opens the feed as a design-system
+`Modal` (`ProductUpdatesModal`). The entry renders nothing while the feed is
+empty, and the embedded chatbot mode hides the whole sidebar, so an embedded
+conversation neither shows nor requests product updates. Locale comes from the
+`NEXT_LOCALE` cookie; the chrome lives in `packages/i18n/messages/{de,en}.ts`
+under `chat.productUpdates`.
+
+Loading the feed records nothing. A card counts as presented — and is marked
+read — only once it is actually visible inside the open modal, observed per card
+with an `IntersectionObserver`; otherwise every sidebar mount would inflate
+`presentationCount` for entries nobody looked at. Reopening the feed counts
+again, which is what `lastPresentedAt` and the increment are for. Because the
+mandated card shows its whole body at once, there is no separate "opened the
+entry" gesture, so the read timestamp coincides with that first visibility.
+The modal also focuses its own content on open and returns focus to the sidebar
+entry on close, since the design-system `Modal` suppresses Radix's automatic
+focus handling.
 
 ## Other consumers
 
