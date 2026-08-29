@@ -62,7 +62,7 @@ function SemanticFreeTextOptions({
     entitled &&
     !invalidStoredConfig
   const canRemoveInvalidConfig =
-    !inputsDisabled && !loading && !capabilityUnknown
+    !inputsDisabled && !loading && !capabilityUnknown && entitled
   const advancedMetadata = config
     ? getSemanticFreeTextAdvancedMetadata(config.rubric_schema)
     : null
@@ -194,7 +194,7 @@ function SemanticFreeTextOptions({
           type="info"
           className={{ root: 'mt-3' }}
           message={
-            config
+            config || invalidStoredConfig
               ? t('manage.elements.semanticReadOnlyWithoutEntitlement')
               : t('manage.elements.semanticCatalystRequired')
           }
