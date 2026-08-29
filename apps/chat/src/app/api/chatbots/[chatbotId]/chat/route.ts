@@ -1140,11 +1140,13 @@ export async function POST(
           { requestId, chatbotId }
         )
       } else {
+        const responseExampleTool =
+          createResponseExampleSearchTool(responseExampleSkill)
+        responseExampleTools[RESPONSE_EXAMPLE_SEARCH_TOOL_NAME] =
+          responseExampleTool
         responseExampleSummary = responseExampleSkill.summary
         responseExampleSetDigest = responseExampleSkill.setDigest
         responseExampleProjectionDigest = responseExampleSkill.projectionDigest
-        responseExampleTools[RESPONSE_EXAMPLE_SEARCH_TOOL_NAME] =
-          createResponseExampleSearchTool(responseExampleSkill)
       }
     } catch (error) {
       console.warn(

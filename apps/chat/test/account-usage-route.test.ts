@@ -316,6 +316,9 @@ describe('account usage chat route', () => {
 
     expect(response.status).toBe(200)
     expect(mocks.getAggregatedMCPTools).toHaveBeenCalledOnce()
+    expect(mocks.claimChatTurn.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.getAggregatedMCPTools.mock.invocationCallOrder[0]
+    )
     expect(
       mocks.getAggregatedMCPTools.mock.invocationCallOrder[0]
     ).toBeLessThan(
@@ -372,9 +375,20 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).toHaveBeenCalledOnce()
     expect(mocks.buildPromptCacheRequest).toHaveBeenCalledWith(
       expect.objectContaining({
+        instructions: expect.not.stringContaining('Response-example skill'),
         tools: expect.not.objectContaining({
           search_response_examples: expect.anything(),
         }),
+      })
+    )
+    expect(mocks.streamText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runtimeContext: {
+          responseExampleRole: 'included',
+          responseExampleSkillAvailable: false,
+          responseExampleSetDigest: 'unavailable',
+          responseExampleProjectionDigest: 'unavailable',
+        },
       })
     )
     expect(streamCallbacks()).not.toHaveProperty(
@@ -382,6 +396,87 @@ describe('account usage chat route', () => {
     )
     expect(console.warn).toHaveBeenCalledWith(
       'Response-example skill loading failed; continuing without response examples',
+      expect.objectContaining({ chatbotId: 'chatbot-1' })
+    )
+  })
+
+  test('omits the whole skill when response-example tool construction fails', async () => {
+    mocks.loadResponseExampleRuntimeSkill.mockResolvedValueOnce({
+      summary: 'Response-example skill\nSynthetic lecturer guidance.',
+      setDigest: 'synthetic-set-digest',
+      projectionDigest: 'synthetic-projection-digest',
+      search: vi.fn(),
+    })
+    mocks.createResponseExampleSearchTool.mockImplementationOnce(() => {
+      throw new Error('synthetic response-example tool failure')
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.buildPromptCacheRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instructions: expect.not.stringContaining(
+          'Synthetic lecturer guidance.'
+        ),
+        tools: expect.not.objectContaining({
+          search_response_examples: expect.anything(),
+        }),
+      })
+    )
+    expect(mocks.streamText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runtimeContext: {
+          responseExampleRole: 'included',
+          responseExampleSkillAvailable: false,
+          responseExampleSetDigest: 'unavailable',
+          responseExampleProjectionDigest: 'unavailable',
+        },
+      })
+    )
+  })
+
+  test('preserves an MCP tool collision and omits the response-example skill', async () => {
+    const mcpTool = { description: 'Synthetic MCP-owned tool' }
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({
+      search_response_examples: mcpTool,
+    })
+    mocks.loadResponseExampleRuntimeSkill.mockResolvedValueOnce({
+      summary: 'Response-example skill\nSynthetic lecturer guidance.',
+      setDigest: 'synthetic-set-digest',
+      projectionDigest: 'synthetic-projection-digest',
+      search: vi.fn(),
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.createResponseExampleSearchTool).not.toHaveBeenCalled()
+    expect(mocks.buildPromptCacheRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instructions: expect.not.stringContaining(
+          'Synthetic lecturer guidance.'
+        ),
+        tools: expect.objectContaining({ search_response_examples: mcpTool }),
+      })
+    )
+    expect(mocks.streamText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tools: expect.objectContaining({ search_response_examples: mcpTool }),
+        runtimeContext: {
+          responseExampleRole: 'included',
+          responseExampleSkillAvailable: false,
+          responseExampleSetDigest: 'unavailable',
+          responseExampleProjectionDigest: 'unavailable',
+        },
+      })
+    )
+    expect(console.warn).toHaveBeenCalledWith(
+      'Response-example skill name conflicts with an existing tool; continuing without response examples',
       expect.objectContaining({ chatbotId: 'chatbot-1' })
     )
   })
