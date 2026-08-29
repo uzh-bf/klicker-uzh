@@ -15,6 +15,9 @@ const mocks = vi.hoisted(() => ({
   threadUpdate: vi.fn(),
   transaction: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
+  loadResponseExampleRuntimeSkill: vi.fn(),
+  createResponseExampleSearchTool: vi.fn(),
+  buildPromptCacheRequest: vi.fn(),
   createThread: vi.fn(),
   findFailedTurnThreadId: vi.fn(),
   deleteThread: vi.fn(),
@@ -70,6 +73,12 @@ vi.mock('@/src/services/mcpClients', () => ({
   getAggregatedMCPTools: mocks.getAggregatedMCPTools,
 }))
 
+vi.mock('@/src/lib/server/responseExampleRuntime', () => ({
+  RESPONSE_EXAMPLE_SEARCH_TOOL_NAME: 'search_response_examples',
+  loadResponseExampleRuntimeSkill: mocks.loadResponseExampleRuntimeSkill,
+  createResponseExampleSearchTool: mocks.createResponseExampleSearchTool,
+}))
+
 vi.mock('@/src/services/threads', () => ({
   ThreadService: {
     createThread: mocks.createThread,
@@ -105,7 +114,7 @@ vi.mock('@/src/lib/server/imagePreview', () => ({
 }))
 
 vi.mock('@/src/lib/server/promptCacheIdentity', () => ({
-  buildPromptCacheRequest: vi.fn().mockResolvedValue(null),
+  buildPromptCacheRequest: mocks.buildPromptCacheRequest,
 }))
 
 vi.mock('@/src/lib/server/langfuseTracing', () => ({
@@ -235,6 +244,16 @@ describe('account usage chat route', () => {
     })
     mocks.chatbotFindUnique.mockResolvedValue(chatbot())
     mocks.getAggregatedMCPTools.mockResolvedValue({})
+    mocks.loadResponseExampleRuntimeSkill.mockResolvedValue({
+      summary: '',
+      setDigest: 'synthetic-set-digest',
+      projectionDigest: 'synthetic-projection-digest',
+      search: vi.fn(),
+    })
+    mocks.createResponseExampleSearchTool.mockReturnValue({
+      description: 'Synthetic response-example search tool',
+    })
+    mocks.buildPromptCacheRequest.mockResolvedValue(null)
     mocks.claimChatTurn.mockResolvedValue({
       outcome: 'claimed',
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
@@ -275,6 +294,96 @@ describe('account usage chat route', () => {
         },
       }
     })
+  })
+
+  test('adds the response-example summary and tool to the final cache identity', async () => {
+    mocks.loadResponseExampleRuntimeSkill.mockResolvedValueOnce({
+      summary: 'Response-example skill\nSynthetic lecturer guidance.',
+      setDigest: 'synthetic-set-digest',
+      projectionDigest: 'synthetic-projection-digest',
+      search: vi.fn(),
+    })
+    const responseExampleTool = {
+      description: 'Synthetic response-example search tool',
+    }
+    mocks.createResponseExampleSearchTool.mockReturnValueOnce(
+      responseExampleTool
+    )
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledOnce()
+    expect(
+      mocks.getAggregatedMCPTools.mock.invocationCallOrder[0]
+    ).toBeLessThan(
+      mocks.loadResponseExampleRuntimeSkill.mock.invocationCallOrder[0]
+    )
+    expect(mocks.loadResponseExampleRuntimeSkill).toHaveBeenCalledWith({
+      prisma: expect.anything(),
+      chatbotId: 'chatbot-1',
+      chatMode: 'tutor',
+      role: 'included',
+    })
+    expect(mocks.buildPromptCacheRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instructions: expect.stringContaining('Synthetic lecturer guidance.'),
+        tools: expect.objectContaining({
+          search_response_examples: responseExampleTool,
+        }),
+      })
+    )
+    expect(mocks.streamText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instructions: expect.stringContaining('Synthetic lecturer guidance.'),
+        tools: expect.objectContaining({
+          search_response_examples: responseExampleTool,
+        }),
+        runtimeContext: {
+          responseExampleRole: 'included',
+          responseExampleSkillAvailable: true,
+          responseExampleSetDigest: 'synthetic-set-digest',
+          responseExampleProjectionDigest: 'synthetic-projection-digest',
+        },
+        telemetry: expect.objectContaining({
+          includeRuntimeContext: {
+            responseExampleRole: true,
+            responseExampleSkillAvailable: true,
+            responseExampleSetDigest: true,
+            responseExampleProjectionDigest: true,
+          },
+        }),
+      })
+    )
+  })
+
+  test('continues the claimed turn when response-example loading fails', async () => {
+    mocks.loadResponseExampleRuntimeSkill.mockRejectedValueOnce(
+      new Error('synthetic response-example loader failure')
+    )
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.streamText).toHaveBeenCalledOnce()
+    expect(mocks.buildPromptCacheRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tools: expect.not.objectContaining({
+          search_response_examples: expect.anything(),
+        }),
+      })
+    )
+    expect(streamCallbacks()).not.toHaveProperty(
+      'tools.search_response_examples'
+    )
+    expect(console.warn).toHaveBeenCalledWith(
+      'Response-example skill loading failed; continuing without response examples',
+      expect.objectContaining({ chatbotId: 'chatbot-1' })
+    )
   })
 
   test('rejects a completed assistant key before MCP or provider work', async () => {
