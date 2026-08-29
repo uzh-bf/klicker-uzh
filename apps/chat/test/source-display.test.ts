@@ -342,6 +342,12 @@ describe('getElementSourceLocatorTarget', () => {
     expect(
       getElementSourceLocatorTarget(source, {
         type: 'WEB_ANCHOR',
+        url: 'https://example.org/chapter#access_token%2525253Dtemporary',
+      })
+    ).toBeUndefined()
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
         url: 'https://100.64.0.1/chapter',
       })
     ).toBeUndefined()

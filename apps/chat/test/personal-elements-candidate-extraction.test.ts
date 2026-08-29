@@ -101,6 +101,61 @@ describe('unsaved candidate extraction', () => {
     })
   })
 
+  test('canonicalizes grouped stored locators before save', () => {
+    expect(
+      parseStoredGeneratedCardCandidate({
+        ...candidate,
+        candidateId: 'grouped-candidate',
+        sources: [
+          {
+            sourceId: 'source-1',
+            kind: 'DOCUMENT',
+            title: 'Course script',
+            chunkIds: ['chunk-2', 'chunk-1', 'chunk-2'],
+            locators: [
+              { type: 'PAGE_RANGE', pageFrom: 7, pageTo: 9 },
+              { type: 'PAGE_RANGE', pageFrom: 3, pageTo: 4 },
+              { type: 'PAGE_RANGE', pageFrom: 4, pageTo: 8 },
+            ],
+          },
+          {
+            sourceId: 'source-2',
+            kind: 'WEB',
+            title: 'Course page',
+            chunkIds: ['chunk-3'],
+            locators: [
+              {
+                type: 'WEB_ANCHOR',
+                url: 'https://example.org/chapter#section-2',
+              },
+              {
+                type: 'WEB_ANCHOR',
+                url: 'https://example.org/chapter#section-2',
+              },
+            ],
+          },
+        ],
+      })
+    ).toMatchObject({
+      sources: [
+        {
+          sourceId: 'source-1',
+          chunkIds: ['chunk-2', 'chunk-1'],
+          locators: [{ type: 'PAGE_RANGE', pageFrom: 3, pageTo: 9 }],
+        },
+        {
+          sourceId: 'source-2',
+          locators: [
+            {
+              type: 'WEB_ANCHOR',
+              url: 'https://example.org/chapter#section-2',
+            },
+          ],
+        },
+      ],
+    })
+  })
+
   test('excludes candidates that already have saved linkage', () => {
     const messages = [
       message('saved-generation', {

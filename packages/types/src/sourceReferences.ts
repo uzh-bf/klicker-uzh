@@ -134,20 +134,23 @@ function hasSensitiveFragmentParameter(hash: string) {
   if (hash.length > 2_049) return true
 
   let decoded = hash.slice(1)
-  for (let pass = 0; pass < 3; pass += 1) {
+  for (let pass = 0; pass <= 3; pass += 1) {
     try {
       const next = decodeURIComponent(decoded)
-      if (next === decoded) break
+      if (next === decoded) {
+        return decoded.split(/[?&;]/u).some((part) => {
+          const equalsIndex = part.indexOf('=')
+          if (equalsIndex < 1) return false
+          return isSensitiveQueryParameter(part.slice(0, equalsIndex))
+        })
+      }
+      if (pass === 3) return true
       decoded = next
     } catch {
       return true
     }
   }
-  return decoded.split(/[?&;]/u).some((part) => {
-    const equalsIndex = part.indexOf('=')
-    if (equalsIndex < 1) return false
-    return isSensitiveQueryParameter(part.slice(0, equalsIndex))
-  })
+  return true
 }
 
 /**

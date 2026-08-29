@@ -2,6 +2,7 @@ import {
   type ElementSourceLocator,
   type ElementSourcePageLocator,
   type ElementSourceReference,
+  type ElementSourceWebLocator,
   isSafeElementSourceUrl,
 } from '@klicker-uzh/types'
 import { z } from 'zod'
@@ -248,9 +249,6 @@ function storedSourceIsPdf(url: string | undefined) {
 export function parseStoredGeneratedCardCandidate(
   input: unknown
 ): GeneratedCardCandidate | null {
-  const current = generatedCardCandidateSchema.safeParse(input)
-  if (current.success) return current.data
-
   const groupedCandidate = storedGroupedCandidateSchema.safeParse(input)
   if (groupedCandidate.success) {
     return {
@@ -263,26 +261,7 @@ export function parseStoredGeneratedCardCandidate(
           ? { canonicalUrl: source.canonicalUrl }
           : {}),
         chunkIds: [...new Set(source.chunkIds)],
-        locators: source.locators.flatMap<ElementSourceLocator>((locator) => {
-          if (
-            source.kind === 'DOCUMENT' &&
-            locator.type === 'PAGE_RANGE' &&
-            Number.isInteger(locator.pageFrom) &&
-            Number.isInteger(locator.pageTo) &&
-            locator.pageFrom >= 1 &&
-            locator.pageTo >= locator.pageFrom
-          ) {
-            return [locator]
-          }
-          if (
-            source.kind === 'WEB' &&
-            locator.type === 'WEB_ANCHOR' &&
-            isSafeElementSourceUrl(locator.url)
-          ) {
-            return [locator]
-          }
-          return []
-        }),
+        locators: canonicalizeStoredLocators(source),
       })),
     }
   }
@@ -373,6 +352,52 @@ export function parseStoredGeneratedCardCandidate(
   }
 
   return { ...legacy.data, sources: [...grouped.values()] }
+}
+
+function canonicalizeStoredLocators(
+  source: z.infer<typeof storedGroupedSourceSchema>
+): ElementSourceLocator[] {
+  if (source.kind === 'WEB') {
+    return source.locators
+      .filter(
+        (locator): locator is ElementSourceWebLocator =>
+          locator.type === 'WEB_ANCHOR' && isSafeElementSourceUrl(locator.url)
+      )
+      .filter(
+        (locator, index, all) =>
+          all.findIndex(
+            (candidate) =>
+              candidate.type === 'WEB_ANCHOR' && candidate.url === locator.url
+          ) === index
+      )
+  }
+
+  const validPages = source.locators
+    .filter(
+      (locator): locator is ElementSourcePageLocator =>
+        locator.type === 'PAGE_RANGE' &&
+        Number.isInteger(locator.pageFrom) &&
+        Number.isInteger(locator.pageTo) &&
+        locator.pageFrom >= 1 &&
+        locator.pageTo >= locator.pageFrom
+    )
+    .sort(
+      (left, right) =>
+        left.pageFrom - right.pageFrom || left.pageTo - right.pageTo
+    )
+
+  return validPages.reduce<ElementSourcePageLocator[]>((locators, locator) => {
+    const previous = locators.at(-1)
+    if (!previous || locator.pageFrom > previous.pageTo + 1) {
+      locators.push({ ...locator })
+      return locators
+    }
+    if (locator.pageTo > previous.pageTo) {
+      previous.pageTo = locator.pageTo
+      previous.labelTo = locator.labelTo ?? locator.labelFrom
+    }
+    return locators
+  }, [])
 }
 
 export type RetrievedChunk = {
