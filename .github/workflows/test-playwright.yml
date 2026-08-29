@@ -423,7 +423,7 @@ jobs:
         test-playwright-public-pr,
       ]
     if: always()
-    runs-on: ${{ needs.test-playwright-public-pr.result != 'skipped' && 'public-pr-arm64' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     steps:
       - name: Check result
         run: |
