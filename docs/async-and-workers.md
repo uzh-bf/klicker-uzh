@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-08-27'
+timestamp: '2026-08-29'
 tags:
   - backend
   - hatchet
@@ -78,6 +78,8 @@ The separate `KB_GRAPH_DISABLED=true` switch refuses graph opt-in and rebuild mu
 With `KB_INGESTION_WORKER_DISABLED=false`, or with any of the three required ingestion connection settings present while the gate is unset, the general worker requires `KB_INGESTION_API_URL`, `KB_INGESTION_API_KEY`, and `KB_SOURCE_GATEWAY_URL`; `KB_INGESTION_PROJECT_ID` defaults to `klicker-course-materials`. A legacy environment with the gate and all three required settings absent is treated as disabled instead of registering unusable workflows. The backend requires `KB_SOURCE_GATEWAY_KEY` and `KB_WEBHOOK_SECRET`, with optional `KB_WEBHOOK_PREVIOUS_SECRET` during webhook-key rotation. The API key, gateway key, and webhook keys are secrets and must stay outside chart ConfigMaps.
 
 KB graph builds use the separate `KB_GRAPH_HATCHET_*` connection and workflow settings plus `KB_GRAPH_TIMEOUT_SECONDS` and the named standard/high model pairs. The worker validates a partially configured graph integration at startup, then dispatches only a pinned build manifest and reconciles its external run. The GraphQL backend owns quota reservation and exposes `settleKbKnowledgeGraphResult` for the W1 terminal-result handoff; `prepareHatchetTasks` accepts the result-fetch and settlement callbacks so the worker never treats provider status as a publication contract. The production backend and general worker explicitly pass `getKBGraphTerminalResult` (the external Hatchet run output) and `settleKbKnowledgeGraphResult` into `prepareHatchetTasks`; omitting either adapter is not a supported runtime composition. `KB_GRAPH_HATCHET_CLIENT_TOKEN` remains in the general-worker secret; the non-secret settings belong under `hatchet.kbGraph` in the chart values. The startup gate is armed only by the ConfigMap-owned `KB_GRAPH_*` names, deliberately excluding that token: a secret rollout on its own must never fail the general worker's startup and stop every unrelated job. Once the gate is armed the token is still required, so the secret must carry it before `hatchet.kbGraph.workflowName` is set. Graph build input URLs and generated Blob SAS values must never be logged or placed in ConfigMaps.
+
+Native graph builds canonicalize every source artifact to `${resourceId}.md`, regardless of whether the original resource was an uploaded document or a URL. `packages/graphql/src/services/questionGenerationGraph.ts:questionGenerationSourceSnapshot` must preserve that filename when preparing question-generation evidence. Artifact validation remains extension-aware and rejects the original upload or URL basename when it does not identify the graph artifact.
 
 ## Course duplication operations
 
