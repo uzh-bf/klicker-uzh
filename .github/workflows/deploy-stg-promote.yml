@@ -67,7 +67,8 @@ jobs:
     # promote unless selected by STG_SOURCE_BRANCH. `event == 'push'` excludes PR
     # builds, which do not push images at all.
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_dispatch' &&
+       github.ref_name == github.event.repository.default_branch) ||
       (github.event.workflow_run.event == 'push' &&
        (github.event.workflow_run.head_branch == vars.STG_SOURCE_BRANCH ||
         (vars.STG_SOURCE_BRANCH == '' && github.event.workflow_run.head_branch == 'v3')) &&
@@ -84,20 +85,6 @@ jobs:
       contents: read
       actions: read
     steps:
-      - name: Require the promotion token
-        env:
-          TOKEN: ${{ secrets.STG_PROMOTE_TOKEN }}
-        run: |
-          set -euo pipefail
-          # A PR opened with the default GITHUB_TOKEN does not trigger workflows, so
-          # its required checks would never report and the controlled merge would
-          # never become eligible.
-          # The promotion therefore needs a token that acts as a real user/app.
-          if [ -z "${TOKEN}" ]; then
-            echo "::error::secrets.STG_PROMOTE_TOKEN is not set - see docs/ci-and-deployment.md"
-            exit 1
-          fi
-
       - name: Resolve target commit
         id: target
         env:
@@ -124,12 +111,42 @@ jobs:
           # values on that same branch.
           ref: ${{ steps.target.outputs.source_branch }}
           fetch-depth: 0 # merge-base needs full history
-          token: ${{ secrets.STG_PROMOTE_TOKEN }}
+          persist-credentials: false
+
+      - name: Install trusted staging promotion control
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TRUSTED_WORKFLOW_SHA: ${{ github.workflow_sha }}
+          PROMOTION_CONTROL: ${{ runner.temp }}/stg-promotion-control.sh
+        run: |
+          set -euo pipefail
+          [[ "$TRUSTED_WORKFLOW_SHA" =~ ^[0-9a-f]{40}$ ]] \
+            || { echo "::error::trusted workflow SHA is invalid"; exit 1; }
+          gh api \
+            -H 'Accept: application/vnd.github.raw+json' \
+            "/repos/${GITHUB_REPOSITORY}/contents/.github/scripts/stg-promotion-control.sh?ref=${TRUSTED_WORKFLOW_SHA}" \
+            > "$PROMOTION_CONTROL"
+          bash -n "$PROMOTION_CONTROL"
 
       - name: Refuse promotion while paused
         env:
           PROMOTION_PAUSED: ${{ vars.STG_PROMOTION_PAUSED }}
-        run: bash .github/scripts/check-stg-promotion-pause.sh --value "$PROMOTION_PAUSED"
+          PROMOTION_CONTROL: ${{ runner.temp }}/stg-promotion-control.sh
+        run: bash "$PROMOTION_CONTROL" --value "$PROMOTION_PAUSED"
+
+      - name: Require the promotion token
+        env:
+          TOKEN: ${{ secrets.STG_PROMOTE_TOKEN }}
+        run: |
+          set -euo pipefail
+          # A PR opened with the default GITHUB_TOKEN does not trigger workflows, so
+          # its required checks would never report and the controlled merge would
+          # never become eligible.
+          # The promotion therefore needs a token that acts as a real user/app.
+          if [ -z "${TOKEN}" ]; then
+            echo "::error::secrets.STG_PROMOTE_TOKEN is not set - see docs/ci-and-deployment.md"
+            exit 1
+          fi
 
       - name: Require every stg image for this commit
         id: gate
@@ -204,11 +221,9 @@ jobs:
             echo "go=true" >>"$GITHUB_OUTPUT"; exit 0
           fi
 
-          # Never promote a promotion. The `[skip ci]` marker in the PR title normally
-          # stops the squash-merge from rebuilding and re-firing this workflow, but that
-          # depends on the repository's `squash_merge_commit_title` setting, which lives
-          # outside this repo and is not recorded anywhere as load-bearing. This check
-          # does not depend on it, and without it a flipped setting yields a runaway loop
+          # Never promote a promotion. The synchronous merge request supplies an
+          # explicit `[skip ci]` commit title, while this independent guard ensures
+          # an unexpected title-policy or API regression cannot create a runaway loop
           # that burns every image build and a full stg rollout per iteration.
           if git log -1 --format='%s' "$SHA" | grep -q '^chore(deploy): promote '; then
             echo "::notice::${SHA} is itself a promotion commit"
@@ -283,32 +298,45 @@ jobs:
         if: steps.write.outcome == 'success' && github.event.inputs.dry_run != 'true'
         env:
           GH_TOKEN: ${{ secrets.STG_PROMOTE_TOKEN }}
+          PROMOTION_CONTROL: ${{ runner.temp }}/stg-promotion-control.sh
           SHA: ${{ steps.target.outputs.sha }}
           SHORT: ${{ steps.write.outputs.short }}
           SOURCE_BRANCH: ${{ steps.target.outputs.source_branch }}
         run: |
           set -euo pipefail
           BRANCH="chore/promote-stg-${SHORT}"
+          ASKPASS="$RUNNER_TEMP/stg-promotion-askpass.sh"
           require_live_unpaused() {
-            bash .github/scripts/check-stg-promotion-pause.sh --live
+            bash "$PROMOTION_CONTROL" --live
           }
+
+          cat > "$ASKPASS" <<'EOF'
+          #!/usr/bin/env bash
+          case "$1" in
+            *Username*) printf '%s\n' 'x-access-token' ;;
+            *Password*) printf '%s\n' "${PROMOTION_GIT_TOKEN:?}" ;;
+            *) exit 1 ;;
+          esac
+          EOF
+          chmod 700 "$ASKPASS"
+          trap 'rm -f "$ASKPASS"' EXIT
 
           # The context check happened before the image and verifier waits. Re-read
           # the repository variable at execution time before every external write.
           require_live_unpaused
 
-          # Supersede any promotion still open: with `strict: true` an older one can
-          # sit un-mergeable behind a newer commit and would otherwise roll stg back.
-          # Exclude the branch we are about to create, so a re-run of a flaky build
-          # within the promotion window cannot close this SHA's own open PR.
-          for n in $(gh pr list --state open --limit 100 --json number,headRefName \
-                       | jq -r --arg b "$BRANCH" \
-                         '.[] | select(.headRefName | startswith("chore/promote-stg-"))
-                              | select(.headRefName != $b) | .number'); do
-            require_live_unpaused
-            gh pr close "$n" --delete-branch \
-              --comment "Superseded by the promotion of ${SHORT}." || true
-          done
+          # Retire every earlier workflow-owned PR, including a same-SHA retry.
+          # The trusted control disables armed auto-merge, closes each PR without
+          # suppressing errors, and proves that no competing writer remains.
+          bash "$PROMOTION_CONTROL" --retire-open-promotions
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null; then
+            echo "::error::workflow-owned branch ${BRANCH} exists without an open promotion PR"
+            exit 1
+          else
+            REMOTE_BRANCH_STATUS=$?
+            [ "$REMOTE_BRANCH_STATUS" -eq 2 ] \
+              || { echo "::error::could not verify absence of remote branch ${BRANCH}"; exit 1; }
+          fi
 
           git config user.name  'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -316,10 +344,13 @@ jobs:
           git add deploy/env-uzh-stg/values.yaml
           git commit -m "chore(deploy): promote ${SHORT} to stg"
           require_live_unpaused
-          git push origin "$BRANCH"
+          GIT_ASKPASS="$ASKPASS" \
+            GIT_TERMINAL_PROMPT=0 \
+            PROMOTION_GIT_TOKEN="$GH_TOKEN" \
+            git push origin "$BRANCH"
 
-          # `[skip ci]` in the title becomes the squash commit message, which stops the
-          # merge from re-running every image build and re-firing this workflow. The PR
+          # The synchronous merge API repeats this `[skip ci]` title as the squash
+          # commit title, which stops every image build from firing again. The PR
           # touches only `deploy/**`, so `Build Fallback` supplies build-amd/build-arm.
           # The YAML block scalar strips this common indentation, so the heredoc body
           # and its EOF terminator both land at column 0 in the generated script.
@@ -337,6 +368,7 @@ jobs:
             --base "$SOURCE_BRANCH" --head "$BRANCH" \
             --title "chore(deploy): promote ${SHORT} to stg [skip ci]" \
             --body-file /tmp/pr-body.md)
+          PR_NUMBER=$(gh pr view "$PR_URL" --json number --jq '.number')
 
           # The selected source branch may not require the generated-promotion
           # verifier. Wait for its exact success status before allowing an immediate
@@ -358,28 +390,8 @@ jobs:
           [ "$VERIFIED" = 'true' ] \
             || { echo "::error::generated promotion verification did not succeed for ${PR_URL}"; exit 1; }
 
-          # Never leave auto-merge armed: a later pause cannot revoke a successful
-          # status on an already-open PR. Wait for an immediately mergeable state,
-          # re-read the live pause variable, and merge in the same bounded step.
-          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
-            STATE=$(gh pr view "$BRANCH" --json state,mergeable,mergeStateStatus \
-                      --jq '[.state, .mergeable, .mergeStateStatus] | @tsv')
-            case "$STATE" in
-              $'MERGED\t'*)
-                echo "::notice::promotion of ${SHORT} merged"; exit 0 ;;
-              $'OPEN\tMERGEABLE\tCLEAN' | $'OPEN\tMERGEABLE\tHAS_HOOKS' | $'OPEN\tMERGEABLE\tUNSTABLE')
-                require_live_unpaused
-                gh pr merge "$BRANCH" --squash --delete-branch
-                echo "::notice::promotion of ${SHORT} merged"; exit 0 ;;
-              $'OPEN\tCONFLICTING\t'* | $'OPEN\tMERGEABLE\tDIRTY' | $'OPEN\tMERGEABLE\tBEHIND')
-                echo "::error::promotion PR for ${SHORT} is ${STATE} and requires a new promotion run"
-                exit 1 ;;
-              $'CLOSED\t'*)
-                echo "::error::promotion PR for ${SHORT} was closed before merge"
-                exit 1 ;;
-            esac
-            echo "attempt ${attempt}: waiting for mergeable promotion PR ${PR_URL} (${STATE})"
-            [ "$attempt" -eq 12 ] || sleep 20
-          done
-          echo "::error::promotion PR for ${SHORT} did not become mergeable (${STATE})"
-          exit 1
+          # The trusted control binds the PR head to the verified commit and uses
+          # GitHub's synchronous merge endpoint. It never requests a queue; a policy
+          # rejection fails closed instead of leaving an asynchronous merge armed.
+          bash "$PROMOTION_CONTROL" \
+            --merge-verified "$PR_NUMBER" "$PROMOTION_HEAD" "$SHORT"

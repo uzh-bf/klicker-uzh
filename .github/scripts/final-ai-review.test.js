@@ -2144,18 +2144,34 @@ test('staging promoter targets the selected source without fixed value counts', 
   )
   assert.match(
     workflow,
-    /github\.event_name == 'workflow_dispatch' \|\|[\s\S]*github\.event\.workflow_run\.event == 'push'/
+    /github\.event_name == 'workflow_dispatch' &&[\s\S]*github\.ref_name == github\.event\.repository\.default_branch[\s\S]*github\.event\.workflow_run\.event == 'push'/
   )
   assert.ok(
     workflow.indexOf('Refuse promotion while paused') <
       workflow.indexOf('Require every stg image for this commit')
   )
-  assert.ok(workflow.includes('check-stg-promotion-pause.sh --live'))
+  assert.ok(
+    workflow.indexOf('Refuse promotion while paused') <
+      workflow.indexOf('Require the promotion token')
+  )
+  assert.ok(
+    workflow.includes('TRUSTED_WORKFLOW_SHA: ${{ github.workflow_sha }}')
+  )
+  assert.ok(
+    workflow.includes('stg-promotion-control.sh?ref=${TRUSTED_WORKFLOW_SHA}')
+  )
+  assert.ok(workflow.includes('persist-credentials: false'))
+  assert.ok(workflow.includes('--retire-open-promotions'))
+  assert.ok(workflow.includes('--merge-verified'))
+  assert.ok(workflow.includes('PROMOTION_GIT_TOKEN="$GH_TOKEN"'))
+  assert.doesNotMatch(workflow, /token: \$\{\{ secrets\.STG_PROMOTE_TOKEN \}\}/)
+  assert.doesNotMatch(workflow, /gh pr close[\s\S]{0,200}\|\| true/)
+  assert.doesNotMatch(workflow, /gh pr merge "\$BRANCH"/)
   assert.doesNotMatch(workflow, /gh pr merge .*--auto/)
 })
 
 test('staging pause guard accepts only strict values', () => {
-  const script = path.join(__dirname, 'check-stg-promotion-pause.sh')
+  const script = path.join(__dirname, 'stg-promotion-control.sh')
   const cases = [
     { value: '', status: 0 },
     { value: 'false', status: 0 },
@@ -2177,7 +2193,7 @@ test('staging pause guard accepts only strict values', () => {
 })
 
 test('live staging pause checks fail closed when GitHub cannot be read', () => {
-  const script = path.join(__dirname, 'check-stg-promotion-pause.sh')
+  const script = path.join(__dirname, 'stg-promotion-control.sh')
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-pause-'))
   const gh = path.join(directory, 'gh')
   fs.writeFileSync(
@@ -2215,6 +2231,204 @@ test('live staging pause checks fail closed when GitHub cannot be read', () => {
       },
     })
     assert.notEqual(unreadable.status, 0)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('staging promotion retirement disables auto-merge and fails closed', () => {
+  const script = path.join(__dirname, 'stg-promotion-control.sh')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-retire-'))
+  const gh = path.join(directory, 'gh')
+  const counter = path.join(directory, 'list-count')
+  const log = path.join(directory, 'calls.log')
+  fs.writeFileSync(
+    gh,
+    `#!/usr/bin/env bash
+set -euo pipefail
+if [ "\${1:-}" = api ]; then printf '%s\\n' false; exit 0; fi
+case "\${1:-}:\${2:-}" in
+  pr:list)
+    count=0
+    [ ! -f "$MOCK_LIST_COUNTER" ] || count=$(<"$MOCK_LIST_COUNTER")
+    count=$((count + 1))
+    printf '%s\\n' "$count" > "$MOCK_LIST_COUNTER"
+    [ "\${MOCK_LIST_FAIL_CALL:-0}" != "$count" ] || exit 3
+    if [ "$count" -eq 1 ]; then
+      printf '%s\\n' 17
+    elif [ "\${MOCK_LEFTOVER:-0}" = 1 ]; then
+      printf '%s\\n' 18
+    fi
+    ;;
+  pr:view) printf '%s\\n' true ;;
+  pr:merge)
+    [ "\${4:-}" = --disable-auto ] || exit 4
+    [ "\${MOCK_DISABLE_FAIL:-0}" = 0 ] || exit 7
+    printf 'disable %s\\n' "$3" >> "$MOCK_LOG"
+    ;;
+  pr:close)
+    [ "\${MOCK_CLOSE_FAIL:-0}" = 0 ] || exit 5
+    printf 'close %s\\n' "$3" >> "$MOCK_LOG"
+    ;;
+  *) exit 6 ;;
+esac
+`,
+    { mode: 0o700 }
+  )
+
+  const run = (overrides = {}) => {
+    fs.rmSync(counter, { force: true })
+    fs.rmSync(log, { force: true })
+    return spawnSync('bash', [script, '--retire-open-promotions'], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        GITHUB_REPOSITORY: 'uzh-bf/klicker-uzh',
+        MOCK_LIST_COUNTER: counter,
+        MOCK_LOG: log,
+        PATH: `${directory}:${process.env.PATH}`,
+        ...overrides,
+      },
+    })
+  }
+
+  try {
+    const success = run()
+    assert.equal(success.status, 0, success.stderr)
+    assert.equal(fs.readFileSync(log, 'utf8'), 'disable 17\nclose 17\n')
+
+    const closeFailure = run({ MOCK_CLOSE_FAIL: '1' })
+    assert.notEqual(closeFailure.status, 0)
+
+    const disableFailure = run({ MOCK_DISABLE_FAIL: '1' })
+    assert.notEqual(disableFailure.status, 0)
+
+    const initialListFailure = run({ MOCK_LIST_FAIL_CALL: '1' })
+    assert.notEqual(initialListFailure.status, 0)
+
+    const proofListFailure = run({ MOCK_LIST_FAIL_CALL: '2' })
+    assert.notEqual(proofListFailure.status, 0)
+
+    const leftover = run({ MOCK_LEFTOVER: '1' })
+    assert.notEqual(leftover.status, 0)
+    assert.match(leftover.stderr, /open promotion PRs remain/)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('staging promotion merge is synchronous and bound to the verified head', () => {
+  const script = path.join(__dirname, 'stg-promotion-control.sh')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-merge-'))
+  const gh = path.join(directory, 'gh')
+  const log = path.join(directory, 'calls.log')
+  const verifiedHead = 'a'.repeat(40)
+  fs.writeFileSync(
+    gh,
+    `#!/usr/bin/env bash
+set -euo pipefail
+if [ "\${1:-}:\${2:-}" = pr:view ]; then
+  printf '%s\\n' "$MOCK_PR_JSON"
+  exit 0
+fi
+if [ "\${1:-}" = api ]; then
+  case "$*" in
+    *actions/variables*) printf '%s\\n' false ;;
+    */pulls/42/merge*)
+      printf '%s\\n' "$*" >> "$MOCK_LOG"
+      [ "\${MOCK_MERGE_FAIL:-0}" = 0 ] || exit 7
+      printf '%s\\n' "$MOCK_MERGE_RESULT"
+      ;;
+    *) exit 8 ;;
+  esac
+  exit 0
+fi
+exit 9
+`,
+    { mode: 0o700 }
+  )
+
+  const run = (pr, overrides = {}) => {
+    fs.rmSync(log, { force: true })
+    return spawnSync(
+      'bash',
+      [
+        script,
+        '--merge-verified',
+        '42',
+        verifiedHead,
+        verifiedHead.slice(0, 12),
+      ],
+      {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          GITHUB_REPOSITORY: 'uzh-bf/klicker-uzh',
+          MOCK_LOG: log,
+          MOCK_MERGE_RESULT: JSON.stringify({ merged: true }),
+          MOCK_PR_JSON: JSON.stringify(pr),
+          PATH: `${directory}:${process.env.PATH}`,
+          STG_PROMOTION_MERGE_ATTEMPTS: '1',
+          STG_PROMOTION_MERGE_DELAY_SECONDS: '0',
+          ...overrides,
+        },
+      }
+    )
+  }
+
+  try {
+    const clean = run({
+      state: 'OPEN',
+      mergeable: 'MERGEABLE',
+      mergeStateStatus: 'CLEAN',
+      headRefOid: verifiedHead,
+    })
+    assert.equal(clean.status, 0, clean.stderr)
+    const mergeCall = fs.readFileSync(log, 'utf8')
+    assert.match(mergeCall, /\/pulls\/42\/merge/)
+    assert.ok(mergeCall.includes(`sha=${verifiedHead}`))
+    assert.ok(mergeCall.includes('[skip ci]'))
+
+    const replacedHead = run({
+      state: 'OPEN',
+      mergeable: 'MERGEABLE',
+      mergeStateStatus: 'CLEAN',
+      headRefOid: 'b'.repeat(40),
+    })
+    assert.notEqual(replacedHead.status, 0)
+    assert.match(replacedHead.stderr, /head changed from verified/)
+    assert.equal(fs.existsSync(log), false)
+
+    const queued = run({
+      state: 'OPEN',
+      mergeable: 'MERGEABLE',
+      mergeStateStatus: 'UNSTABLE',
+      headRefOid: verifiedHead,
+    })
+    assert.notEqual(queued.status, 0)
+    assert.equal(fs.existsSync(log), false)
+
+    const rejected = run(
+      {
+        state: 'OPEN',
+        mergeable: 'MERGEABLE',
+        mergeStateStatus: 'CLEAN',
+        headRefOid: verifiedHead,
+      },
+      { MOCK_MERGE_RESULT: JSON.stringify({ merged: false }) }
+    )
+    assert.notEqual(rejected.status, 0)
+
+    const apiFailure = run(
+      {
+        state: 'OPEN',
+        mergeable: 'MERGEABLE',
+        mergeStateStatus: 'CLEAN',
+        headRefOid: verifiedHead,
+      },
+      { MOCK_MERGE_FAIL: '1' }
+    )
+    assert.notEqual(apiFailure.status, 0)
   } finally {
     fs.rmSync(directory, { recursive: true, force: true })
   }
