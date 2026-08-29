@@ -50,16 +50,23 @@ export async function POST(req: NextRequest) {
   }
   const { participantId } = authResult
 
+  // `req.json()` throws on a body that is not JSON at all, so it is read in its
+  // own guarded step: inside the write `try` below the same client mistake would
+  // surface as a 500 instead of the deliberate 400 that follows it.
+  let body: unknown
   try {
-    const parsed = bodySchema.safeParse(await req.json())
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: 'Invalid request body' },
-        { status: 400 }
-      )
-    }
-    const { updateId, action } = parsed.data
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
 
+  const parsed = bodySchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
+  const { updateId, action } = parsed.data
+
+  try {
     // `updateId` has no foreign key because the catalog lives in code, so an
     // unknown id would otherwise create an orphaned row that no surface can
     // ever display or clean up. The read path filters unknown ids silently for
