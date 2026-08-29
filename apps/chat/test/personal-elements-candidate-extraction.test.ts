@@ -175,6 +175,36 @@ describe('unsaved candidate extraction', () => {
     })
   })
 
+  test('keeps grouped sources readable when sanitized identities collide', () => {
+    expect(
+      parseStoredGeneratedCardCandidate({
+        ...candidate,
+        candidateId: 'colliding-sources',
+        sources: [
+          {
+            sourceId: 's3://first:secret@bucket/script',
+            kind: 'DOCUMENT',
+            title: 'Course script',
+            chunkIds: ['s3://first:secret@bucket/chunk-1'],
+            locators: [{ type: 'PAGE_RANGE', pageFrom: 1, pageTo: 1 }],
+          },
+          {
+            sourceId: 's3://second:secret@bucket/script',
+            kind: 'DOCUMENT',
+            title: 'Course script',
+            chunkIds: ['s3://second:secret@bucket/chunk-1'],
+            locators: [{ type: 'PAGE_RANGE', pageFrom: 2, pageTo: 2 }],
+          },
+        ],
+      })
+    ).toMatchObject({
+      sources: [
+        { sourceId: 's3://bucket/script', chunkIds: ['s3://bucket/chunk-1'] },
+        { sourceId: 'stored-source-2', chunkIds: ['stored-chunk-2'] },
+      ],
+    })
+  })
+
   test('excludes candidates that already have saved linkage', () => {
     const messages = [
       message('saved-generation', {

@@ -6,6 +6,8 @@ import {
   isSafeElementSourceUrl,
   sanitizeElementSourceIdentity,
   sanitizeElementSourceLabel,
+  sanitizeElementSourceLocatorLabels,
+  sanitizeElementSourceReferenceIdentities,
 } from '@klicker-uzh/types'
 import { z } from 'zod'
 import { parseDocQueryPayload } from '@/src/lib/sources/normalizeSources'
@@ -253,31 +255,32 @@ export function parseStoredGeneratedCardCandidate(
 ): GeneratedCardCandidate | null {
   const groupedCandidate = storedGroupedCandidateSchema.safeParse(input)
   if (groupedCandidate.success) {
+    const sources = groupedCandidate.data.sources.map((source, index) => {
+      const sourceId =
+        sanitizeElementSourceIdentity(source.sourceId) ??
+        `stored-source-${index + 1}`
+      return {
+        sourceId,
+        kind: source.kind,
+        title: sanitizeElementSourceLabel(source.title) ?? sourceId,
+        ...(source.canonicalUrl && isSafeElementSourceUrl(source.canonicalUrl)
+          ? { canonicalUrl: source.canonicalUrl }
+          : {}),
+        chunkIds: [
+          ...new Set(
+            source.chunkIds.map(
+              (chunkId, chunkIndex) =>
+                sanitizeElementSourceIdentity(chunkId) ??
+                `stored-chunk-${index + 1}-${chunkIndex + 1}`
+            )
+          ),
+        ],
+        locators: canonicalizeStoredLocators(source),
+      }
+    })
     return {
       ...groupedCandidate.data,
-      sources: groupedCandidate.data.sources.map((source, index) => {
-        const sourceId =
-          sanitizeElementSourceIdentity(source.sourceId) ??
-          `stored-source-${index + 1}`
-        return {
-          sourceId,
-          kind: source.kind,
-          title: sanitizeElementSourceLabel(source.title) ?? sourceId,
-          ...(source.canonicalUrl && isSafeElementSourceUrl(source.canonicalUrl)
-            ? { canonicalUrl: source.canonicalUrl }
-            : {}),
-          chunkIds: [
-            ...new Set(
-              source.chunkIds.map(
-                (chunkId, chunkIndex) =>
-                  sanitizeElementSourceIdentity(chunkId) ??
-                  `stored-chunk-${index + 1}-${chunkIndex + 1}`
-              )
-            ),
-          ],
-          locators: canonicalizeStoredLocators(source),
-        }
-      }),
+      sources: sanitizeElementSourceReferenceIdentities(sources),
     }
   }
 
@@ -299,7 +302,7 @@ export function parseStoredGeneratedCardCandidate(
       source.page !== undefined || storedSourceIsPdf(source.url)
         ? 'DOCUMENT'
         : 'WEB'
-    const existing = grouped.get(sourceId)
+    const existing = grouped.get(source.sourceId)
     if (existing && existing.kind !== kind) return null
 
     const reference = existing ?? {
@@ -334,7 +337,7 @@ export function parseStoredGeneratedCardCandidate(
     } else if (kind === 'WEB' && stableUrl) {
       reference.locators.push({ type: 'WEB_ANCHOR', url: stableUrl })
     }
-    grouped.set(sourceId, reference)
+    grouped.set(source.sourceId, reference)
   }
 
   for (const source of grouped.values()) {
@@ -342,7 +345,10 @@ export function parseStoredGeneratedCardCandidate(
     if (source.locators.length > 16) return null
   }
 
-  return { ...legacy.data, sources: [...grouped.values()] }
+  return {
+    ...legacy.data,
+    sources: sanitizeElementSourceReferenceIdentities([...grouped.values()]),
+  }
 }
 
 function canonicalizeStoredLocators(
@@ -361,16 +367,7 @@ function canonicalizeStoredLocators(
               candidate.type === 'WEB_ANCHOR' && candidate.url === locator.url
           ) === index
       )
-      .map((locator) => {
-        const label = locator.label
-          ? sanitizeElementSourceLabel(locator.label)
-          : undefined
-        return {
-          type: 'WEB_ANCHOR' as const,
-          url: locator.url,
-          ...(label ? { label } : {}),
-        }
-      })
+      .map((locator) => sanitizeElementSourceLocatorLabels(locator))
   }
 
   const validPages = source.locators
@@ -382,21 +379,7 @@ function canonicalizeStoredLocators(
         locator.pageFrom >= 1 &&
         locator.pageTo >= locator.pageFrom
     )
-    .map((locator) => {
-      const labelFrom = locator.labelFrom
-        ? sanitizeElementSourceLabel(locator.labelFrom)
-        : undefined
-      const labelTo = locator.labelTo
-        ? sanitizeElementSourceLabel(locator.labelTo)
-        : undefined
-      return {
-        type: 'PAGE_RANGE' as const,
-        pageFrom: locator.pageFrom,
-        pageTo: locator.pageTo,
-        ...(labelFrom ? { labelFrom } : {}),
-        ...(labelTo ? { labelTo } : {}),
-      }
-    })
+    .map((locator) => sanitizeElementSourceLocatorLabels(locator))
     .sort(
       (left, right) =>
         left.pageFrom - right.pageFrom || left.pageTo - right.pageTo

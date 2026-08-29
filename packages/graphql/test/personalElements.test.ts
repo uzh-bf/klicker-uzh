@@ -314,6 +314,30 @@ describe('personal elements service', () => {
     ])
   })
 
+  it('keeps grouped stored references readable after sanitization collisions', () => {
+    expect(
+      readElementSourceReferences([
+        {
+          sourceId: 's3://first:secret@bucket/script',
+          kind: 'DOCUMENT',
+          title: 'Course script',
+          chunkIds: ['s3://first:secret@bucket/chunk-1'],
+          locators: [{ type: 'PAGE_RANGE', pageFrom: 1, pageTo: 1 }],
+        },
+        {
+          sourceId: 's3://second:secret@bucket/script',
+          kind: 'DOCUMENT',
+          title: 'Course script',
+          chunkIds: ['s3://second:secret@bucket/chunk-1'],
+          locators: [{ type: 'PAGE_RANGE', pageFrom: 2, pageTo: 2 }],
+        },
+      ])
+    ).toMatchObject([
+      { sourceId: 's3://bucket/script', chunkIds: ['s3://bucket/chunk-1'] },
+      { sourceId: 'stored-source-2', chunkIds: ['stored-chunk-2'] },
+    ])
+  })
+
   it('rejects repeated candidate IDs within one batch', async () => {
     const { course, participant } = await createFixture()
     const input = candidate()

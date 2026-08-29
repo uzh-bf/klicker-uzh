@@ -53,6 +53,58 @@ export function sanitizeElementSourceIdentity(value: string) {
   return sanitizedResourceUri(value)
 }
 
+function sanitizeUniqueElementSourceIdentities(
+  values: readonly string[],
+  fallbackPrefix: string
+) {
+  const used = new Set<string>()
+  return values.map((value, index) => {
+    const sanitized = sanitizeElementSourceIdentity(value)
+    if (sanitized && !used.has(sanitized)) {
+      used.add(sanitized)
+      return sanitized
+    }
+
+    const base = `${fallbackPrefix}-${index + 1}`
+    let fallback = base
+    let suffix = 2
+    while (used.has(fallback)) {
+      fallback = `${base}-${suffix}`
+      suffix += 1
+    }
+    used.add(fallback)
+    return fallback
+  })
+}
+
+/** Sanitizes durable identifiers and resolves credential-removal collisions. */
+export function sanitizeElementSourceReferenceIdentities(
+  references: readonly ElementSourceReference[]
+): ElementSourceReference[] {
+  const sourceIds = sanitizeUniqueElementSourceIdentities(
+    references.map((reference) => reference.sourceId),
+    'stored-source'
+  )
+  const chunkIds = sanitizeUniqueElementSourceIdentities(
+    references.flatMap((reference) => reference.chunkIds),
+    'stored-chunk'
+  )
+  let chunkIndex = 0
+
+  return references.map((reference, sourceIndex) => {
+    const referenceChunkIds = chunkIds.slice(
+      chunkIndex,
+      chunkIndex + reference.chunkIds.length
+    )
+    chunkIndex += reference.chunkIds.length
+    return {
+      ...reference,
+      sourceId: sourceIds[sourceIndex]!,
+      chunkIds: referenceChunkIds,
+    }
+  })
+}
+
 /** Turns a URI-shaped source label into a query-free material name. */
 export function sanitizeElementSourceLabel(value: string) {
   const sanitized = sanitizedResourceUri(value)
@@ -75,6 +127,42 @@ export function sanitizeElementSourceLabel(value: string) {
     }
   }
   return uri.hostname || uri.protocol.slice(0, -1)
+}
+
+/** Removes credential-bearing URI channels from optional locator labels. */
+export function sanitizeElementSourceLocatorLabels(
+  locator: ElementSourcePageLocator
+): ElementSourcePageLocator
+export function sanitizeElementSourceLocatorLabels(
+  locator: ElementSourceWebLocator
+): ElementSourceWebLocator
+export function sanitizeElementSourceLocatorLabels(
+  locator: ElementSourceLocator
+): ElementSourceLocator {
+  if (locator.type === 'WEB_ANCHOR') {
+    const label = locator.label
+      ? sanitizeElementSourceLabel(locator.label)
+      : undefined
+    return {
+      type: 'WEB_ANCHOR',
+      url: locator.url,
+      ...(label ? { label } : {}),
+    }
+  }
+
+  const labelFrom = locator.labelFrom
+    ? sanitizeElementSourceLabel(locator.labelFrom)
+    : undefined
+  const labelTo = locator.labelTo
+    ? sanitizeElementSourceLabel(locator.labelTo)
+    : undefined
+  return {
+    type: 'PAGE_RANGE',
+    pageFrom: locator.pageFrom,
+    pageTo: locator.pageTo,
+    ...(labelFrom ? { labelFrom } : {}),
+    ...(labelTo ? { labelTo } : {}),
+  }
 }
 
 const SENSITIVE_QUERY_PARAMETER =

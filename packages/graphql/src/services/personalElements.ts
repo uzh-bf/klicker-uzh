@@ -9,6 +9,8 @@ import {
   isSafeElementSourceUrl,
   sanitizeElementSourceIdentity,
   sanitizeElementSourceLabel,
+  sanitizeElementSourceLocatorLabels,
+  sanitizeElementSourceReferenceIdentities,
 } from '@klicker-uzh/types'
 import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
@@ -637,36 +639,13 @@ function canonicalizeReference(
             (locator): locator is ElementSourcePageLocator =>
               locator.type === 'PAGE_RANGE'
           )
-        ).map((locator) => {
-          const labelFrom = locator.labelFrom
-            ? sanitizeElementSourceLabel(locator.labelFrom)
-            : undefined
-          const labelTo = locator.labelTo
-            ? sanitizeElementSourceLabel(locator.labelTo)
-            : undefined
-          return {
-            type: 'PAGE_RANGE' as const,
-            pageFrom: locator.pageFrom,
-            pageTo: locator.pageTo,
-            ...(labelFrom ? { labelFrom } : {}),
-            ...(labelTo ? { labelTo } : {}),
-          }
-        })
+        ).map((locator) => sanitizeElementSourceLocatorLabels(locator))
       : source.locators
           .filter(
             (locator): locator is ElementSourceWebLocator =>
               locator.type === 'WEB_ANCHOR'
           )
-          .map((locator) => {
-            const label = locator.label
-              ? sanitizeElementSourceLabel(locator.label)
-              : undefined
-            return {
-              type: 'WEB_ANCHOR' as const,
-              url: locator.url,
-              ...(label ? { label } : {}),
-            }
-          })
+          .map((locator) => sanitizeElementSourceLocatorLabels(locator))
 
   return {
     sourceId,
@@ -751,7 +730,7 @@ function normalizeElementSourceReferencesWithSchema(
         : 'WEB'
     const title =
       sanitizeElementSourceLabel(source.title ?? source.sourceId) ?? sourceId
-    const existing = legacyBySourceId.get(sourceId)
+    const existing = legacyBySourceId.get(source.sourceId)
     if (
       existing &&
       (existing.kind !== kind ||
@@ -786,7 +765,7 @@ function normalizeElementSourceReferencesWithSchema(
     } else if (kind === 'WEB' && stableUrl) {
       reference.webLocators.push({ type: 'WEB_ANCHOR', url: stableUrl })
     }
-    legacyBySourceId.set(sourceId, reference)
+    legacyBySourceId.set(source.sourceId, reference)
   }
 
   for (const source of legacyBySourceId.values()) {
@@ -813,7 +792,14 @@ function normalizeElementSourceReferencesWithSchema(
     })
   }
 
-  return parsePersonalElementInput(elementSourceReferencesSchema, references)
+  const canonicalReferences =
+    inputSchema === storedSourceInputsSchema
+      ? sanitizeElementSourceReferenceIdentities(references)
+      : references
+  return parsePersonalElementInput(
+    elementSourceReferencesSchema,
+    canonicalReferences
+  )
 }
 
 export function normalizeElementSourceReferences(
