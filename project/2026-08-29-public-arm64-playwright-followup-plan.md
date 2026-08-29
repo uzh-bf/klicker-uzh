@@ -108,8 +108,10 @@ and timing evidence, and squash-merge after non-review checks pass.
 - [x] Fresh branch and isolated worktree created from the merged `origin/v3`.
 - [x] S0 telemetry published and first eight-shard benchmark recorded; all
       eight runners started immediately and runner capacity is proven.
-- [ ] S1 live-quiz critical path split locally into independent 39-test and
-      44-test files; exact-head runtime proof remains.
+- [x] S1 live-quiz critical path split into independent 39-test and 44-test
+      files. Run `33248686298` proved seven shards and exposed an existing
+      activity-count mismatch on shard 7; a focused service regression test
+      now covers the correction before the replacement exact-head run.
 - [x] S2 setup changes limited to measured bottlenecks. Restore-only caches and
       disposable per-shard databases remain; runner and route summaries were
       added instead of adding unproven setup complexity.
