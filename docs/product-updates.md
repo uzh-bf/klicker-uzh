@@ -224,15 +224,16 @@ the subsystem has, so everything below exists to keep it rare.
 
 ### Targets are registry keys, not selectors
 
-`apps/frontend-manage/src/components/productUpdates/spotlightTargets.ts` maps
-every legal `spotlightTarget` key to one element carrying
-`data-product-feature="<key>"`. The catalog never contains a CSS selector, and it
-must not: the catalog is editorial content in a package that knows nothing about
-any application's markup, and a selector written there would break silently the
-next time a component moves.
+`apps/frontend-manage/src/components/onboarding/featureTargets.ts` maps every
+legal `spotlightTarget` key to one element carrying
+`data-product-feature="<key>"`. The same registry serves the onboarding tour
+described below, which is why it lives outside the product-update folder. The
+catalog never contains a CSS selector, and it must not: the catalog is editorial
+content in a package that knows nothing about any application's markup, and a
+selector written there would break silently the next time a component moves.
 
 Adding a target therefore means two edits in the same pull request — a key in the
-registry, and `spotlightTargetProps` spread onto exactly one element. Design
+registry, and `featureTargetProps` spread onto exactly one element. Design
 system components do not forward unknown attributes, so a wrapper element is
 often the right place; the first registered target,
 `manage-header-analytics`, wraps the header's analytics menu for that reason.
@@ -248,12 +249,12 @@ belongs to — so a spotlight that cannot find its element simply does not appea
 that may present unsolicited, because it renders on every page; every other
 caller receives a replay-only instance. Four rules bound the unsolicited case:
 
-| Rule                                              | Mechanism                                                 |
-| ------------------------------------------------- | --------------------------------------------------------- |
-| At most one per browser session                   | A `sessionStorage` flag, claimed before the overlay opens |
-| Never for an entry the lecturer dismissed         | `dismissedAt` from the stored read state                  |
-| Never after two recorded presentations            | `presentationCount >= 2` from the same state              |
-| Never where it would interrupt time-critical work | A route pattern match against `router.pathname`           |
+| Rule                                                | Mechanism                                                          |
+| --------------------------------------------------- | ------------------------------------------------------------------ |
+| At most one unsolicited overlay per browser session | The shared `sessionStorage` slot, claimed before the overlay opens |
+| Never for an entry the lecturer dismissed           | `dismissedAt` from the stored read state                           |
+| Never after two recorded presentations              | `presentationCount >= 2` from the same state                       |
+| Never where it would interrupt time-critical work   | A route pattern match against `router.pathname`                    |
 
 The route rule exists because Driver.js blocks pointer events on the whole
 document while the overlay is open, which is unacceptable wherever a lecturer is
@@ -275,7 +276,9 @@ it.
 A browser session is one tab, because `sessionStorage` is per tab and clears when
 it closes. A second tab can therefore cost one more appearance; the presentation
 counter is what bounds the total. When storage is unavailable the guard cannot be
-honoured, so nothing is presented at all rather than repeatedly.
+honoured, so nothing is presented at all rather than repeatedly. The slot is
+shared with the onboarding tour, and the spotlight waits for the tour's decision
+before claiming it — see below.
 
 The unsolicited overlay opens one animation frame after the runner decides to
 show it. A mount that is undone immediately — React's development double
@@ -312,3 +315,87 @@ offering a replay that would silently do nothing.
 The header owns the runner, so a feed replay closes the modal first and opens the
 overlay one animation frame later; the modal's focus trap and the popover would
 otherwise fight over the page.
+
+## Onboarding tours
+
+A spotlight announces one feature. A tour orients someone who has just arrived:
+several steps over the parts of an interface that are always on screen. Manage
+has one today (`manage-onboarding-v1`); the student app and the chat app are
+meant to follow, which is why the mechanics live in a package instead of next to
+the manage header.
+
+### The shared package
+
+`packages/product-tours` has two entry points, and the split is load-bearing.
+The default one is pure TypeScript with no React, no driver.js and no browser
+APIs: it holds `TOUR_IDS`, `isKnownTourId` and `escapeHtml`, and it is what the
+GraphQL backend imports to validate what a client claims to have finished. The
+backend images therefore carry the package's build output, like the catalog
+package. `./react` holds everything else — the tour hook, the shared session
+slot, the deferred open, and the attribute-based target lookup each app builds
+its own registry on.
+
+Tours are defined in code, never in the catalog and never in the database. A
+tour id is permanent once released, because it is the stored value of the
+completion state; a tour whose steps change materially gets a new `-vN` id,
+which makes every actor eligible again. `driver.js/dist/driver.css` stays an
+application import: a tsc-built package cannot ship CSS and pnpm does not hoist
+the dependency, so every consuming app keeps its own identical pin.
+
+### Completion state
+
+`UserTourState` and `ParticipantTourState` mirror the read-state tables next
+door: surrogate id, `tourId` without a foreign key, cascade FK to the actor, and
+one row per actor and tour. `completedAt` records the first ending and never
+moves. Finishing, skipping and closing all set it, because the promise the tour
+makes is "you will not be walked through this again", not "you finished it".
+
+`tourStates(tourIds)` reads the rows for the caller — unknown ids are ignored so
+that a newer frontend does not blank the answer on an older backend — and
+`markTourCompleted(tourId)` writes one. The actor comes from the session, the
+tour id is validated against `TOUR_IDS`, and lecturer writes obey the same scope
+floor as the read-state mutations. The upsert keeps a non-empty `update` branch
+so Prisma emits a native upsert; an empty one becomes a read-then-insert that
+two tabs can race into a unique-constraint error.
+
+**Two writers, one set of rules.** The chat app is Prisma-direct and will write
+`ParticipantTourState` from its own API route rather than through GraphQL. The
+per-surface tour ids keep the rows disjoint, but the semantics above — validated
+id, non-empty-update upsert, first write wins on `completedAt` — must stay
+identical in both writers. Changing them in one place only is the failure mode
+to watch for.
+
+### When a tour starts by itself
+
+Two conditions, and both are needed: the account has no `completedAt` for the
+tour, and this browser tab has not yet shown an unsolicited overlay. The second
+condition is the same `sessionStorage` slot the spotlight uses, so a lecturer
+never gets a tour and a spotlight in a row.
+
+The order between them is decided rather than raced. The tour reports when its
+eligibility has settled, and the spotlight's unsolicited path waits for that
+signal before it looks at the slot. On a fresh account the tour therefore wins;
+once it is completed, or once it turns out to be ineligible, the spotlight
+proceeds as before. Eligibility stays unknown while the state query is loading
+or failed, which keeps a failed query from looking like an account that has
+never seen the tour.
+
+Auto-start is suppressed on the same routes as the spotlight, for the same
+reason — driver.js blocks pointer events on the whole document — and the route
+set lives in one place now
+(`apps/frontend-manage/src/components/onboarding/suppressedRoutes.ts`).
+
+A tour whose targets are all missing from the current page opens nothing and
+leaves the slot alone, so a page without the header cannot silently spend the
+session's single overlay.
+
+### Replays
+
+"Take the tour" in the support modal starts it on request. Replays ignore both
+caps, and because the server never rewrites `completedAt`, replaying does not
+change what the account has already recorded. The support entry renders as a
+button rather than a link, since it acts on the current page.
+
+Step copy lives under `manage.productTours` in the shared message files, in both
+locales, and is escaped before it reaches a popover for the reason described in
+the spotlight section.
