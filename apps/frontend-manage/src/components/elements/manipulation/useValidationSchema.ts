@@ -6,7 +6,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import * as yup from 'yup'
-import { ElementFormTypesCaseStudy } from './types'
+import type { ElementFormTypesCaseStudy } from './types'
 
 function useSharedValidationSchema() {
   const t = useTranslations()
@@ -410,6 +410,11 @@ function useOptionsSchemaFreeText() {
         test: (value) =>
           value == null || validateSemanticFreeTextConfig(value).length === 0,
       }),
+    semanticEvaluationLoadError: yup.boolean().test({
+      message: t('manage.formErrors.semanticFreeTextInvalid'),
+      test: (value) => value !== true,
+    }),
+    preservedSemanticEvaluation: yup.mixed(),
   }
 }
 

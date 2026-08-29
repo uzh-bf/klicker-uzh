@@ -119,11 +119,12 @@ function useElementFormInitialValues({
       }
     } else if (question.__typename === 'FreeTextElement') {
       const options = question.options
-      const semanticEvaluation =
+      const semanticEvaluationLoadError =
         options.semanticEvaluation != null &&
-        validateSemanticFreeTextConfig(options.semanticEvaluation).length === 0
-          ? (options.semanticEvaluation as SemanticFreeTextConfig)
-          : undefined
+        validateSemanticFreeTextConfig(options.semanticEvaluation).length > 0
+      const semanticEvaluation = semanticEvaluationLoadError
+        ? undefined
+        : (options.semanticEvaluation as SemanticFreeTextConfig | null)
 
       return {
         ...sharedAttributes,
@@ -137,6 +138,10 @@ function useElementFormInitialValues({
             : undefined,
           solutions: options.solutions,
           semanticEvaluation,
+          semanticEvaluationLoadError,
+          preservedSemanticEvaluation: semanticEvaluationLoadError
+            ? options.semanticEvaluation
+            : undefined,
         },
       }
     } else if (question.__typename === 'SelectionElement') {

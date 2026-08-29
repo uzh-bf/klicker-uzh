@@ -1,4 +1,4 @@
-import {
+import type {
   ElementDisplayMode,
   ElementStatus,
   ElementType,
@@ -65,6 +65,8 @@ export interface ElementFormTypesFreeText extends SharedQuestionFormProps {
     } | null
     solutions?: string[] | null
     semanticEvaluation?: SemanticFreeTextConfig | null
+    semanticEvaluationLoadError?: boolean
+    preservedSemanticEvaluation?: unknown
   }
 }
 

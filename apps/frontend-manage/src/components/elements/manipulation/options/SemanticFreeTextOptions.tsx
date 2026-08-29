@@ -51,9 +51,18 @@ function SemanticFreeTextOptions({
   )
   const capability = data?.semanticFreeTextCapability
   const config = values.options.semanticEvaluation
+  const invalidStoredConfig =
+    values.options.semanticEvaluationLoadError === true
   const entitled = capability?.entitled ?? false
-  const capabilityUnknown = error != null && capability == null
-  const canEdit = !inputsDisabled && !loading && !capabilityUnknown && entitled
+  const capabilityUnknown = error != null
+  const canEdit =
+    !inputsDisabled &&
+    !loading &&
+    !capabilityUnknown &&
+    entitled &&
+    !invalidStoredConfig
+  const canRemoveInvalidConfig =
+    !inputsDisabled && !loading && !capabilityUnknown
   const advancedMetadata = config
     ? getSemanticFreeTextAdvancedMetadata(config.rubric_schema)
     : null
@@ -73,6 +82,8 @@ function SemanticFreeTextOptions({
       setExactAnswerKeys(newConfig.accepted_exact_answers.map(() => nanoid()))
       setFieldValue('options.hasSampleSolution', true)
       setFieldValue('options.semanticEvaluation', newConfig)
+      setFieldValue('options.semanticEvaluationLoadError', false)
+      setFieldValue('options.preservedSemanticEvaluation', undefined)
     } else {
       setExactAnswerKeys([])
       setFieldValue(
@@ -82,7 +93,23 @@ function SemanticFreeTextOptions({
         ) ?? false
       )
       setFieldValue('options.semanticEvaluation', undefined)
+      setFieldValue('options.semanticEvaluationLoadError', false)
+      setFieldValue('options.preservedSemanticEvaluation', undefined)
     }
+  }
+
+  const removeInvalidStoredConfig = () => {
+    if (!canRemoveInvalidConfig) return
+
+    setFieldValue(
+      'options.hasSampleSolution',
+      values.options.solutions?.some(
+        (solution) => solution.trim().length > 0
+      ) ?? false
+    )
+    setFieldValue('options.semanticEvaluation', undefined)
+    setFieldValue('options.semanticEvaluationLoadError', false)
+    setFieldValue('options.preservedSemanticEvaluation', undefined)
   }
 
   const availability = capability?.availability
@@ -145,6 +172,22 @@ function SemanticFreeTextOptions({
           {error ? t('shared.generic.systemError') : availabilityMessage}
         </div>
       </div>
+
+      {invalidStoredConfig && (
+        <UserNotification type="error" className={{ root: 'mt-3' }}>
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <span>{t('manage.elements.semanticStoredConfigInvalid')}</span>
+            <Button
+              destructive
+              disabled={!canRemoveInvalidConfig}
+              onClick={removeInvalidStoredConfig}
+              data={{ cy: 'remove-invalid-semantic-config' }}
+            >
+              {t('shared.generic.delete')}
+            </Button>
+          </div>
+        </UserNotification>
+      )}
 
       {!loading && !capabilityUnknown && !entitled && (
         <UserNotification

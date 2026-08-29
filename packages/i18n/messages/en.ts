@@ -2843,6 +2843,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Catalyst access is required to configure semantic feedback.',
       semanticReadOnlyWithoutEntitlement:
         'This existing configuration is read-only because Catalyst access is not currently available for your account.',
+      semanticStoredConfigInvalid:
+        'The stored semantic feedback configuration is invalid and cannot be edited safely. Delete it explicitly before saving this question.',
       semanticAvailabilityWarning:
         'You can configure the question, but semantic evaluations are currently unavailable. Exact matching remains available.',
       semanticQuestionLanguage: 'Question language',

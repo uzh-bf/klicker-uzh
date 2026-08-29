@@ -212,7 +212,9 @@ export function prepareFreeTextArgs({
             : parseInt(String(values.options.restrictions.maxLength)),
       },
       solutions: values.options.solutions,
-      semanticEvaluation: values.options.semanticEvaluation ?? null,
+      semanticEvaluation: values.options.semanticEvaluationLoadError
+        ? (values.options.preservedSemanticEvaluation ?? null)
+        : (values.options.semanticEvaluation ?? null),
     },
 
     tags: values.tags,

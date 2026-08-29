@@ -2882,6 +2882,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Für die Konfiguration des semantischen Feedbacks ist Catalyst-Zugriff erforderlich.',
       semanticReadOnlyWithoutEntitlement:
         'Diese bestehende Konfiguration ist schreibgeschützt, weil für Ihr Konto derzeit kein Catalyst-Zugriff verfügbar ist.',
+      semanticStoredConfigInvalid:
+        'Die gespeicherte Konfiguration für semantisches Feedback ist ungültig und kann nicht sicher bearbeitet werden. Löschen Sie sie ausdrücklich, bevor Sie diese Frage speichern.',
       semanticAvailabilityWarning:
         'Sie können die Frage konfigurieren, semantische Bewertungen sind jedoch derzeit nicht verfügbar. Der exakte Abgleich bleibt verfügbar.',
       semanticQuestionLanguage: 'Sprache der Frage',
