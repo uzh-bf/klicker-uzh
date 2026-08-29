@@ -4,9 +4,9 @@ date: 2026-08-29
 problem_type: runtime_error
 severity: low
 symptoms:
-  - "bash: line 427: BASH_SOURCE[0]: unbound variable"
-  - "A script that works via direct invocation fails when streamed over SSH with bash -s"
-root_cause: "With set -u, ${BASH_SOURCE[0]} is unset when Bash reads the script from stdin, so the standard main-entrypoint guard crashes instead of comparing against $0."
+  - 'bash: line 427: BASH_SOURCE[0]: unbound variable'
+  - 'A script that works via direct invocation fails when streamed over SSH with bash -s'
+root_cause: 'With set -u, ${BASH_SOURCE[0]} is unset when Bash reads the script from stdin, so the standard main-entrypoint guard crashes instead of comparing against $0.'
 tags:
   - bash
   - set-u
