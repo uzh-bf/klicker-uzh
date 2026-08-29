@@ -288,7 +288,12 @@ revalidates branch ancestry and the source digest before persistence.
   plan ships with its first implementation package instead of remaining an
   untracked planning artifact.
 - 2026-08-30: the branch is one non-overlapping commit behind current
-  `origin/v3`; upstream integration remains separately gated. Managed runtime
-  provisioning is active for the required browser smoke. Draft PR publication
-  follows the package evidence and metadata update; merge and activation remain
-  withheld.
+  `origin/v3`; upstream integration remains separately gated. Browser proof is
+  blocked by host-wide Devsy serialization and a failed workspace mount. The
+  exact checkout has zero routes; no raw runtime repair or cleanup was
+  attempted.
+- 2026-08-30: the public package and Catalyst roadmap updates are locally
+  committed. Two direct push attempts and four bounded connectivity checks
+  failed because the host could not resolve `github.com`, so draft PR
+  publication and
+  exact-head CI remain pending. Merge and activation remain withheld.

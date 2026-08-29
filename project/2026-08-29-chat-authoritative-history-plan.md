@@ -762,3 +762,14 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   history consumer. Both documentation corrections are applied; browser
   verification remains the active gate while the exact managed workspace is
   restored.
+- 2026-08-30: the managed runtime retry did not reach readiness. Repeated
+  host-wide Devsy transitions serialized this checkout; a direct managed exec
+  then failed because the container lacked its expected workspace mount. The
+  exact checkout now has owner metadata, an owned DevPod, and zero routes.
+  Canonical stop was also serialized by another workspace owner; no raw Docker
+  repair, deletion, or cleanup was attempted.
+- 2026-08-30: two direct public push attempts and four bounded connectivity
+  checks failed because the host could not resolve `github.com`. GitHub's API
+  remained
+  reachable, but no public branch or PR state changed. The next push and draft
+  PR creation remain authorized once Git transport recovers.
