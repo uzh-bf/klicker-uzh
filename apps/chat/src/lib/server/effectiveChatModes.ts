@@ -66,7 +66,9 @@ function hasExplicitDocQueryTool(
 export function isSafeDocQueryBinding(
   config: ChatModeMCPConfiguration
 ): boolean {
-  return hasRequiredDocQueryAlias(config) || hasExplicitDocQueryTool(config)
+  return isRequired(config)
+    ? hasRequiredDocQueryAlias(config)
+    : hasExplicitDocQueryTool(config)
 }
 
 function narrowInheritedBinding<T extends ChatModeMCPConfiguration>(

@@ -221,6 +221,8 @@ export default {
     },
     composer: {
       placeholder: 'Write a message...',
+      modeUnavailable:
+        'No chat mode is currently available. Please contact your lecturer.',
       send: 'Send message',
       stop: 'Stop response',
       disclaimerHint:

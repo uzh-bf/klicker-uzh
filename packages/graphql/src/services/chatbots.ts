@@ -691,9 +691,9 @@ export async function createChatbot(
       },
       owner: { connect: { id: ctx.user.sub } },
       course: { connect: { id: args.courseId } },
-      // systemPrompts intentionally left unset (null): when no modes are
-      // configured, the chat runtime derives a tutor-only default from
-      // DEFAULT_PROMPT (getSupportedChatModes). Custom modes are added and
+      // systemPrompts intentionally left unset (null): the chat runtime
+      // composes its Tutor and Explainer platform defaults and exposes Quizzer
+      // only when course retrieval is available. Custom modes are added and
       // reviewed post-approval — see docs/adr/0021.
     },
     select: {

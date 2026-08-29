@@ -46,7 +46,7 @@ describe('Integration tests for lecturer chatbot create/update', () => {
   afterEach(async () => await testCleanup(prisma))
 
   describe('createChatbot', () => {
-    it('creates a DRAFT tutor-only chatbot owned by the caller', async () => {
+    it('creates a DRAFT chatbot with platform modes owned by the caller', async () => {
       const course = await seedCourse({}, userOneCtx)
 
       const chatbot = await createChatbot(
@@ -66,8 +66,8 @@ describe('Integration tests for lecturer chatbot create/update', () => {
         courses: [{ id: course.id }],
       })
 
-      // Row is persisted with the caller as owner, DRAFT, no custom modes
-      // (systemPrompts null -> tutor-only default at runtime).
+      // Row is persisted with the caller as owner, DRAFT, and no custom mode
+      // overrides (systemPrompts null -> platform defaults at runtime).
       const row = await prisma.chatbot.findUniqueOrThrow({
         where: { id: chatbot.id },
         select: {

@@ -47,6 +47,12 @@ export function resolveSelectedMode(
     : firstMode
 }
 
+export function hasAvailableChatMode(
+  modeOptions: Record<string, string>
+): boolean {
+  return Object.keys(modeOptions).length > 0
+}
+
 export function getModeDescription(
   t: ReturnType<typeof useTranslations<never>>,
   mode: string,

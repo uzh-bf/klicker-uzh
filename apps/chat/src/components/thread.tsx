@@ -66,6 +66,7 @@ import { useSettingsStore } from '@/src/stores/settingsStore'
 import {
   formatModeLabel,
   getModeDescription,
+  hasAvailableChatMode,
   isKnownMode,
   resolveSelectedMode,
 } from '../lib/config/modes'
@@ -319,6 +320,8 @@ export const Thread: FC<ThreadProps> = ({
     [activeThread?.messages]
   )
   const showHistoryRail = !embedded && historyEntries.length > 0
+  const modeOptions = useWelcomeModeOptions(initialModeOptions)
+  const hasAvailableMode = hasAvailableChatMode(modeOptions)
 
   return (
     <ThreadPrimitive.Root
@@ -392,11 +395,21 @@ export const Thread: FC<ThreadProps> = ({
       >
         <div className="from-background bg-linear-to-t pointer-events-none absolute inset-x-0 bottom-full h-12 to-transparent" />
         {!embedded && <ThreadScrollToBottom />}
-        <Composer maxImageAttachments={maxImageAttachments} />
+        {hasAvailableMode ? (
+          <Composer maxImageAttachments={maxImageAttachments} />
+        ) : (
+          <p
+            role="status"
+            data-cy="chat-mode-unavailable"
+            className="border-border bg-muted text-foreground w-full max-w-3xl rounded-xl border px-4 py-3 text-center text-sm"
+          >
+            {t('chat.composer.modeUnavailable')}
+          </p>
+        )}
         {/* S6: standalone-only, same as ThreadScrollToBottom above — an
             embedded widget has little vertical room and the embedding page
             already carries the disclaimer context. */}
-        {!embedded && <ComposerHint />}
+        {!embedded && hasAvailableMode && <ComposerHint />}
       </div>
     </ThreadPrimitive.Root>
   )
