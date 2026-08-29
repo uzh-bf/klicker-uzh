@@ -1,4 +1,3 @@
-import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import { type ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
@@ -10,6 +9,10 @@ import {
   type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
+import {
+  resolveEffectiveChatModeOptions,
+  resolveEffectiveMCPConfigurations,
+} from '@/src/lib/server/effectiveChatModes'
 import {
   getParentSpanContext,
   getTraceIdForMessage,
@@ -232,12 +235,6 @@ function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object') return null
   return value as Record<string, unknown>
-}
-
-function getSupportedChatModes(systemPrompts: unknown): Set<string> {
-  const configuredModes = asObject(systemPrompts)
-  const modeKeys = configuredModes ? Object.keys(configuredModes) : []
-  return new Set(modeKeys.length > 0 ? modeKeys : Object.keys(DEFAULT_PROMPT))
 }
 
 function truncateString(
@@ -773,8 +770,9 @@ export async function POST(
   let currentThreadId = threadId
   let userMessageId: string | null = null
 
-  // fetch the chatbot with its enabled MCP configurations (its stored
-  // systemPrompts feed compileSystemPrompt once the tool set is known below)
+  // Fetch every MCP configuration so an explicitly disabled Quizzer row can
+  // block inheritance from the matching Tutor server. Only effective enabled
+  // configurations reach tool setup below.
   let mcpServersWithConfigs: MCPServerWithConfig[] = []
   let chatbot = null
   let enabledKnowledgeBaseId: string | undefined
@@ -784,9 +782,6 @@ export async function POST(
       where: { id: chatbotId },
       include: {
         mcpConfigurations: {
-          where: {
-            isEnabled: true,
-          },
           include: {
             mcpServer: true,
           },
@@ -811,7 +806,11 @@ export async function POST(
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
   }
 
-  if (!getSupportedChatModes(chatbot.systemPrompts).has(selectedMode)) {
+  const modeOptions = resolveEffectiveChatModeOptions(
+    chatbot.systemPrompts,
+    chatbot.mcpConfigurations
+  )
+  if (!Object.hasOwn(modeOptions, selectedMode)) {
     return NextResponse.json(
       { error: `Unsupported chat mode: ${selectedMode}` },
       { status: 400 }
@@ -888,9 +887,12 @@ export async function POST(
     }
   }
 
-  const enabledMCPConfigurations = chatbot.mcpConfigurations ?? []
-  const selectedMCPConfigurations = enabledMCPConfigurations.filter(
-    (config) => config.chatMode === selectedMode
+  const enabledMCPConfigurations = (chatbot.mcpConfigurations ?? []).filter(
+    (config) => config.isEnabled !== false
+  )
+  const selectedMCPConfigurations = resolveEffectiveMCPConfigurations(
+    chatbot.mcpConfigurations ?? [],
+    selectedMode
   )
   const chatbotHasRequiredMCP = enabledMCPConfigurations.some(
     (config) => asObject(config.parameters)?.required === true

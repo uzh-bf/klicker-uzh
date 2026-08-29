@@ -119,7 +119,6 @@ type ThreadProps = {
   limitsNote?: string
   maxImageAttachments?: number
   initialModeOptions?: Record<string, string>
-  initialModeOptionsAreFallback?: boolean
 }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
@@ -305,7 +304,6 @@ export const Thread: FC<ThreadProps> = ({
   limitsNote,
   maxImageAttachments = MAX_IMAGE_ATTACHMENTS,
   initialModeOptions = {},
-  initialModeOptionsAreFallback = false,
 }) => {
   const t = useTranslations()
   const { embedded } = useChatUi()
@@ -362,7 +360,6 @@ export const Thread: FC<ThreadProps> = ({
           capabilities={capabilities}
           limitsNote={limitsNote}
           initialModeOptions={initialModeOptions}
-          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
         />
 
         <ChatbotAvatarContext.Provider value={chatbotAvatar}>
@@ -527,30 +524,15 @@ const ThinkingDots: FC = () => {
   )
 }
 
-const useWelcomeModeOptions = (
-  initialModeOptions: Record<string, string>,
-  initialModeOptionsAreFallback = false
-) => {
+const useWelcomeModeOptions = (initialModeOptions: Record<string, string>) => {
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const modeOptions = useSettingsStore((state) => state.modeOptions)
   const modeOptionsChatbotId = useSettingsStore(
     (state) => state.modeOptionsChatbotId
   )
-  const modeOptionsAreFallback = useSettingsStore(
-    (state) => state.modeOptionsAreFallback
-  )
+  const hasCurrentChatbotModeOptions = modeOptionsChatbotId === chatbotId
 
-  const hasCurrentChatbotModeOptions =
-    modeOptionsChatbotId === chatbotId && Object.keys(modeOptions).length > 0
-
-  return {
-    modeOptions: hasCurrentChatbotModeOptions
-      ? modeOptions
-      : initialModeOptions,
-    modeOptionsAreFallback: hasCurrentChatbotModeOptions
-      ? modeOptionsAreFallback
-      : initialModeOptionsAreFallback,
-  }
+  return hasCurrentChatbotModeOptions ? modeOptions : initialModeOptions
 }
 
 const ThreadWelcome: FC<{
@@ -563,7 +545,6 @@ const ThreadWelcome: FC<{
   capabilities?: ThreadWelcomeCapability[]
   limitsNote?: string
   initialModeOptions?: Record<string, string>
-  initialModeOptionsAreFallback?: boolean
 }> = ({
   chatbotAvatar,
   chatbotFallbackIcon,
@@ -574,21 +555,15 @@ const ThreadWelcome: FC<{
   capabilities,
   limitsNote,
   initialModeOptions = {},
-  initialModeOptionsAreFallback = false,
 }) => {
   const t = useTranslations()
   const { embedded } = useChatUi()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
-  const { modeOptions, modeOptionsAreFallback } = useWelcomeModeOptions(
-    initialModeOptions,
-    initialModeOptionsAreFallback
-  )
+  const modeOptions = useWelcomeModeOptions(initialModeOptions)
   const activeMode = resolveSelectedMode(modeOptions, selectedMode)
   const modeLabel = activeMode ? formatModeLabel(t, activeMode) : null
   const modeDescription = activeMode
-    ? !modeOptionsAreFallback && Object.hasOwn(modeOptions, activeMode)
-      ? (modeOptions[activeMode]?.trim() ?? '')
-      : getModeDescription(t, activeMode, modeOptions)
+    ? getModeDescription(t, activeMode, modeOptions)
     : null
   return (
     <AuiIf condition={(s) => s.thread.isEmpty}>
@@ -683,7 +658,6 @@ const ThreadWelcome: FC<{
         <ThreadWelcomeSuggestions
           suggestions={suggestions}
           initialModeOptions={initialModeOptions}
-          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
         />
       </div>
     </AuiIf>
@@ -695,18 +669,13 @@ const SUGGESTION_DELAY_CLASSNAMES = ['delay-150', 'delay-200']
 const ThreadWelcomeSuggestions: FC<{
   suggestions?: ThreadSuggestion[]
   initialModeOptions: Record<string, string>
-  initialModeOptionsAreFallback?: boolean
 }> = ({
   suggestions: customSuggestions,
   initialModeOptions,
-  initialModeOptionsAreFallback,
 }) => {
   const t = useTranslations()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
-  const { modeOptions } = useWelcomeModeOptions(
-    initialModeOptions,
-    initialModeOptionsAreFallback
-  )
+  const modeOptions = useWelcomeModeOptions(initialModeOptions)
 
   if (!customSuggestions && Object.keys(modeOptions).length === 0) return null
 

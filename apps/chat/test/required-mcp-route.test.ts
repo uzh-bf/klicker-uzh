@@ -132,6 +132,7 @@ describe('required MCP chat preflight', () => {
       mcpConfigurations: [
         {
           chatMode: 'tutor',
+          isEnabled: true,
           priority: 0,
           allowedTools: ['informatik_und_wirtschaft_video_expert'],
           parameters: { required: true, toolAlias: 'doc_query' },
@@ -289,7 +290,7 @@ describe('required MCP chat preflight', () => {
     expect(mocks.createThread).not.toHaveBeenCalled()
   })
 
-  test('rejects a mode without its required MCP binding', async () => {
+  test('hides a mode without its required MCP binding', async () => {
     mocks.findUnique.mockResolvedValueOnce({
       id: 'chatbot-1',
       ownerId: 'owner-1',
@@ -303,6 +304,7 @@ describe('required MCP chat preflight', () => {
       mcpConfigurations: [
         {
           chatMode: 'explainer',
+          isEnabled: true,
           parameters: { required: true, toolAlias: 'doc_query' },
         },
       ],
@@ -312,10 +314,93 @@ describe('required MCP chat preflight', () => {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
 
-    expect(response.status).toBe(503)
+    expect(response.status).toBe(400)
     await expect(response.json()).resolves.toEqual({
-      error: 'Required MCP tool unavailable',
-      code: REQUIRED_MCP_UNAVAILABLE_CODE,
+      error: 'Unsupported chat mode: tutor',
+    })
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.createThread).not.toHaveBeenCalled()
+  })
+
+  test('forwards an inherited required document-query binding for Quizzer', async () => {
+    mocks.findUnique.mockResolvedValueOnce({
+      id: 'chatbot-1',
+      ownerId: 'owner-1',
+      allowedModelIds: ['gpt-4.1'],
+      modelSelection: true,
+      systemPrompts: {
+        tutor: { prompt: 'Use course material.' },
+        quizzer: { prompt: 'Ask course questions.' },
+      },
+      mcpConfigurations: [
+        {
+          chatMode: 'tutor',
+          isEnabled: true,
+          priority: 0,
+          allowedTools: ['informatik_und_wirtschaft_video_expert'],
+          parameters: { required: true, toolAlias: 'doc_query' },
+          mcpServer: {
+            id: 'server-1',
+            name: 'IW',
+            url: 'https://mcp.example.test',
+            authType: 'none',
+            authSecret: null,
+            parameters: null,
+            isActive: false,
+            passChatbotId: false,
+            chatbotIdHeader: null,
+          },
+        },
+      ],
+    })
+
+    const response = await POST(createRequest('quizzer'), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(503)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          config: expect.objectContaining({
+            allowedTools: ['informatik_und_wirtschaft_video_expert'],
+            parameters: { required: true, toolAlias: 'doc_query' },
+          }),
+        }),
+      ],
+      'chatbot-1'
+    )
+  })
+
+  test('rejects Quizzer when Tutor only has a wildcard tool binding', async () => {
+    mocks.findUnique.mockResolvedValueOnce({
+      id: 'chatbot-1',
+      ownerId: 'owner-1',
+      allowedModelIds: ['gpt-4.1'],
+      modelSelection: true,
+      systemPrompts: {
+        tutor: { prompt: 'Use course material.' },
+        quizzer: { prompt: 'Ask course questions.' },
+      },
+      mcpConfigurations: [
+        {
+          chatMode: 'tutor',
+          isEnabled: true,
+          priority: 0,
+          allowedTools: ['*'],
+          parameters: null,
+          mcpServer: { id: 'server-1' },
+        },
+      ],
+    })
+
+    const response = await POST(createRequest('quizzer'), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Unsupported chat mode: quizzer',
     })
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.createThread).not.toHaveBeenCalled()

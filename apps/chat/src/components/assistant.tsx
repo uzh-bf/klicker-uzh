@@ -53,7 +53,6 @@ interface DisclaimerStatus {
 interface AssistantProps {
   readonly chatbot: { id: string; name: string; avatar?: string }
   readonly initialModeOptions: Record<string, string>
-  readonly initialModeOptionsAreFallback: boolean
 }
 
 interface ParticipationRequiredProps {
@@ -74,7 +73,6 @@ interface DisclaimerDeclinedProps {
 export function Assistant({
   chatbot,
   initialModeOptions,
-  initialModeOptionsAreFallback,
 }: AssistantProps) {
   // Stuff `?_t=<token>` (CHIPS-unsupported-browser fallback) into
   // sessionStorage and strip it from the URL on first render.
@@ -138,12 +136,10 @@ export function Assistant({
         <RuntimeProvider
           chatbotId={chatbot.id}
           initialModeOptions={initialModeOptions}
-          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
         >
           <AssistantLayout
             chatbot={chatbot}
             initialModeOptions={initialModeOptions}
-            initialModeOptionsAreFallback={initialModeOptionsAreFallback}
           />
         </RuntimeProvider>
       </ChatUiProvider>
@@ -495,12 +491,10 @@ function SidebarMain({
   chatbot,
   graphMode,
   initialModeOptions,
-  initialModeOptionsAreFallback,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
   graphMode: boolean
   initialModeOptions: Record<string, string>
-  initialModeOptionsAreFallback: boolean
 }) {
   const t = useTranslations()
   const { open } = useSidebar()
@@ -597,7 +591,6 @@ function SidebarMain({
               chatbotAvatar={chatbot.avatar ?? ''}
               chatbotName={chatbot.name}
               initialModeOptions={initialModeOptions}
-              initialModeOptionsAreFallback={initialModeOptionsAreFallback}
             />
           )}
         </div>
@@ -609,11 +602,9 @@ function SidebarMain({
 function AssistantLayout({
   chatbot,
   initialModeOptions,
-  initialModeOptionsAreFallback,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
   initialModeOptions: Record<string, string>
-  initialModeOptionsAreFallback: boolean
 }) {
   const { showSidebar } = useChatUi()
   const isLoading = useChatStore((state) => state.isLoading)
@@ -632,7 +623,6 @@ function AssistantLayout({
           chatbot={chatbot}
           graphMode={graphMode}
           initialModeOptions={initialModeOptions}
-          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
         />
       </SidebarProvider>
     )
@@ -669,7 +659,6 @@ function AssistantLayout({
               contextLabel={contextLabel}
               contextualSuggestions={hasQuestionContext}
               initialModeOptions={initialModeOptions}
-              initialModeOptionsAreFallback={initialModeOptionsAreFallback}
             />
           )}
         </div>
