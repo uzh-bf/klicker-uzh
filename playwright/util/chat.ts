@@ -102,7 +102,7 @@ export async function ensureChatbotSeeded() {
       },
     })
 
-    // Catalog rows in the same transaction (ADR 0037); idempotent on reseed.
+    // Catalog rows in the same transaction (ADR 0043); idempotent on reseed.
     await ensureChatbotPromptCatalog(tx, CHATBOT_ID, [
       {
         key: 'tutor',

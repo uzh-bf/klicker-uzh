@@ -187,6 +187,8 @@ operator boundary.
 
 `20260823180000_chatbot_prompt_catalog` is a pure expand migration ([ADR 0043](./adr/0043-chat-system-prompt-two-layer-provenance.md)): it creates the mode/version/effective-prompt tables, immutability and deletion triggers, a deferred composite same-mode guard, and materializes legacy `systemPrompts` (or the tutor fallback when empty/null) as version 1. Malformed JSON aborts the transaction. It leaves historical messages’ provenance null and never rewrites legacy JSON.
 
+Prompt catalog writes use the caller-supplied Prisma transaction in `packages/prisma/src/chatbotPromptCatalog.ts`. Initialization succeeds only when the complete legacy projection is semantically identical. Accepted authored changes append a dense version and update the active pointer plus only that mode's JSON prompt under chatbot-then-mode row locks. Status and presentation helpers never create prompt versions.
+
 ## Typed Json fields
 
 Json columns are typed via `prisma-json-types-generator`: a `/// [TypeName]` doc comment on the field (e.g. `[PrismaElementOptions]` in `element.prisma`) maps to declarations in `packages/graphql/src/types/app.ts` (`declare global { namespace PrismaJson { … } }`), which import shapes from `@klicker-uzh/types`. Add the comment AND the declaration when introducing a typed Json field.

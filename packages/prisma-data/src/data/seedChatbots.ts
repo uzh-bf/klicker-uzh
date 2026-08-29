@@ -86,7 +86,7 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
       },
     })
 
-    // Catalog rows in the same transaction (ADR 0037): the seed text is the
+    // Catalog rows in the same transaction (ADR 0043): the seed text is the
     // same authored content the JSON projection carries, so initialization is
     // an idempotent no-op on reseed and fails loudly if the texts ever drift.
     await ensureChatbotPromptCatalog(tx, CHATBOT_ID_TEST, [

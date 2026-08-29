@@ -1,5 +1,12 @@
 import { readFileSync } from 'node:fs'
-import { prisma } from '@klicker-uzh/prisma'
+import {
+  appendChatbotModePromptVersion,
+  ensureChatbotPromptCatalog,
+  prisma,
+  projectLegacySystemPrompts,
+  updateChatbotModePresentation,
+} from '@klicker-uzh/prisma'
+import type { PromptCatalogModeInput } from '@klicker-uzh/prisma'
 import { Prisma } from '@klicker-uzh/prisma/client'
 
 const APPLY_FLAG = '--apply'
@@ -109,6 +116,30 @@ function findConflicts(
   )
 }
 
+function configuredModes(
+  systemPrompts: Record<string, ModePrompt>
+): PromptCatalogModeInput[] {
+  return Object.entries(systemPrompts).map(([key, value]) => ({
+    key,
+    prompt: value.prompt,
+    description: value.description,
+  }))
+}
+
+function requireSameModeKeys(
+  current: readonly { key: string }[],
+  desired: readonly { key: string }[]
+): void {
+  const currentKeys = current.map((mode) => mode.key).sort()
+  const desiredKeys = desired.map((mode) => mode.key).sort()
+  if (
+    currentKeys.length !== desiredKeys.length ||
+    currentKeys.some((key, index) => key !== desiredKeys[index])
+  ) {
+    throw new Error('FAIL: prompt_mode_set_mismatch')
+  }
+}
+
 async function main() {
   let args
   let config
@@ -208,7 +239,11 @@ async function main() {
 
       const existing = await tx.chatbot.findFirst({
         where: { courseId: args.courseId, name: config.chatbotName },
-        select: { id: true, disclaimerId: true },
+        select: {
+          id: true,
+          disclaimerId: true,
+          systemPrompts: true,
+        },
       })
 
       let disclaimerId = existing?.disclaimerId
@@ -230,28 +265,82 @@ async function main() {
         disclaimerId = disclaimer.id
       }
 
-      const data = {
-        systemPrompts: config.systemPrompts,
+      const sharedData = {
         modelSelection: false,
         allowedModelIds: [],
         disclaimerId,
       }
 
-      const chatbot = existing
-        ? await tx.chatbot.update({ where: { id: existing.id }, data })
-        : await tx.chatbot.create({
-            data: {
-              ...data,
-              name: config.chatbotName,
-              description: config.chatbotDescription,
-              ownerId: args.ownerId,
-              courseId: args.courseId,
-              creditInitialCredits: 100,
-              creditResetPeriod: 'WEEKLY',
-              creditResetAmount: 100,
-              creditMaxCredits: 100,
-            },
-          })
+      const desiredModes = configuredModes(config.systemPrompts)
+
+      if (existing) {
+        const projection = projectLegacySystemPrompts(existing.systemPrompts)
+        if (!projection.isValid) {
+          throw new Error('FAIL: prompt_projection_invalid')
+        }
+
+        // Establish a version-1 baseline for a pre-catalog bot before applying
+        // configured changes. Existing catalog state must match the legacy
+        // projection exactly or the writer fails closed.
+        await ensureChatbotPromptCatalog(tx, existing.id, projection.modes)
+        const currentModes = await tx.chatbotMode.findMany({
+          where: { chatbotId: existing.id },
+          select: {
+            key: true,
+            description: true,
+            status: true,
+            activePromptVersion: { select: { authoredPrompt: true } },
+          },
+        })
+        requireSameModeKeys(currentModes, desiredModes)
+
+        for (const desired of desiredModes) {
+          const current = currentModes.find((mode) => mode.key === desired.key)!
+          if (current.status === 'RETIRED') {
+            throw new Error(`FAIL: prompt_mode_retired mode=${desired.key}`)
+          }
+          if (!current.activePromptVersion) {
+            throw new Error(
+              `FAIL: prompt_mode_missing_active_version mode=${desired.key}`
+            )
+          }
+          if (current.activePromptVersion.authoredPrompt !== desired.prompt) {
+            await appendChatbotModePromptVersion(
+              tx,
+              existing.id,
+              desired.key,
+              desired.prompt
+            )
+          }
+          if (current.description !== (desired.description ?? null)) {
+            await updateChatbotModePresentation(tx, existing.id, desired.key, {
+              description: desired.description ?? null,
+            })
+          }
+        }
+
+        const chatbot = await tx.chatbot.update({
+          where: { id: existing.id },
+          data: sharedData,
+        })
+        return { chatbotId: chatbot.id }
+      }
+
+      const chatbot = await tx.chatbot.create({
+        data: {
+          ...sharedData,
+          systemPrompts: config.systemPrompts,
+          name: config.chatbotName,
+          description: config.chatbotDescription,
+          ownerId: args.ownerId,
+          courseId: args.courseId,
+          creditInitialCredits: 100,
+          creditResetPeriod: 'WEEKLY',
+          creditResetAmount: 100,
+          creditMaxCredits: 100,
+        },
+      })
+      await ensureChatbotPromptCatalog(tx, chatbot.id, desiredModes)
 
       return { chatbotId: chatbot.id }
     },

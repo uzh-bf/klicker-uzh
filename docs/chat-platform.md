@@ -361,7 +361,7 @@ Assistant turns carry two-layer provenance ([ADR 0043](./adr/0043-chat-system-pr
 - **Effective layer**: `ChatbotEffectiveSystemPrompt` stores the exact final instruction text (authored text plus runtime contracts) keyed by SHA-256. Identical texts share one row.
 - **Messages**: assistant messages record `effectiveSystemPromptId`. Null means unknown (historical messages); it is never inferred. New turns resolve and persist the reference before generation and fail closed when it cannot be resolved.
 
-The legacy `Chatbot.systemPrompts` JSON remains the compatibility projection during mixed-version releases; accepted authored changes update catalog rows and that JSON atomically.
+The legacy `Chatbot.systemPrompts` JSON remains the compatibility projection during mixed-version releases. Internal callers record accepted text through `appendChatbotModePromptVersion`, which locks the chatbot and mode, always appends a version (including identical text), moves the active pointer, and updates only that mode's JSON prompt in the caller's transaction. `updateChatbotModeStatus` and `updateChatbotModePresentation` change lifecycle or display metadata without creating prompt history; the presentation helper mirrors descriptions into the JSON projection while preserving unrelated fields.
 
 ## Theming and design tokens
 
