@@ -316,38 +316,7 @@ export function parseStoredGeneratedCardCandidate(
   }
 
   for (const source of grouped.values()) {
-    if (source.kind === 'DOCUMENT') {
-      const pages = [
-        ...new Set(
-          source.locators.flatMap((locator) =>
-            locator.type === 'PAGE_RANGE' ? [locator.pageFrom] : []
-          )
-        ),
-      ].sort((left, right) => left - right)
-      source.locators = pages.reduce<ElementSourcePageLocator[]>(
-        (locators, page) => {
-          const previous = locators.at(-1)
-          if (previous && page === previous.pageTo + 1) previous.pageTo = page
-          else
-            locators.push({
-              type: 'PAGE_RANGE',
-              pageFrom: page,
-              pageTo: page,
-            })
-          return locators
-        },
-        []
-      )
-    } else {
-      source.locators = source.locators.filter(
-        (locator, index, all) =>
-          locator.type === 'WEB_ANCHOR' &&
-          all.findIndex(
-            (candidate) =>
-              candidate.type === 'WEB_ANCHOR' && candidate.url === locator.url
-          ) === index
-      )
-    }
+    source.locators = canonicalizeStoredLocators(source)
     if (source.locators.length > 16) return null
   }
 
@@ -355,7 +324,7 @@ export function parseStoredGeneratedCardCandidate(
 }
 
 function canonicalizeStoredLocators(
-  source: z.infer<typeof storedGroupedSourceSchema>
+  source: Pick<ElementSourceReference, 'kind' | 'locators'>
 ): ElementSourceLocator[] {
   if (source.kind === 'WEB') {
     return source.locators
@@ -449,13 +418,31 @@ function httpUrl(value: unknown): string | undefined {
   return isSafeElementSourceUrl(candidate) ? candidate : undefined
 }
 
+function nonUrlIdentifier(value: unknown) {
+  const candidate = stringValue(value)
+  return candidate && !/^https?:\/\//iu.test(candidate) ? candidate : undefined
+}
+
+function sourceLabel(value: unknown) {
+  const candidate = stringValue(value)
+  if (!candidate || !/^https?:\/\//iu.test(candidate)) return candidate
+
+  try {
+    const url = new URL(candidate)
+    const last = url.pathname.split('/').filter(Boolean).at(-1)
+    return last ? decodeURIComponent(last) : url.hostname
+  } catch {
+    return undefined
+  }
+}
+
 function sourceIdFor(source: Record<string, unknown>, index: number) {
   return (
-    stringValue(source.source_id) ??
-    stringValue(source.resource_id) ??
-    stringValue(source.file_name) ??
-    stringValue(source.reference) ??
-    stringValue(source.source_url) ??
+    nonUrlIdentifier(source.source_id) ??
+    nonUrlIdentifier(source.resource_id) ??
+    nonUrlIdentifier(source.file_name) ??
+    nonUrlIdentifier(source.reference) ??
+    nonUrlIdentifier(source.source_url) ??
     `retrieval-source-${index + 1}`
   )
 }
@@ -474,26 +461,13 @@ function sourceTitleFor(
   sourceId: string,
   canonicalUrl?: string
 ) {
-  const reference = stringValue(source.reference)
-  const referenceTitle =
-    reference && !/^https?:\/\//iu.test(reference) ? reference : undefined
-  let urlTitle: string | undefined
-  if (canonicalUrl) {
-    try {
-      const path = new URL(canonicalUrl).pathname
-      const last = path.split('/').filter(Boolean).at(-1)
-      urlTitle = last ? decodeURIComponent(last) : undefined
-    } catch {
-      urlTitle = undefined
-    }
-  }
-
   return (
-    stringValue(source.title) ??
-    stringValue(source.file_name) ??
-    referenceTitle ??
-    urlTitle ??
-    stringValue(source.expert) ??
+    sourceLabel(source.title) ??
+    sourceLabel(source.file_name) ??
+    sourceLabel(source.reference) ??
+    sourceLabel(canonicalUrl) ??
+    sourceLabel(source.source_url) ??
+    sourceLabel(source.expert) ??
     sourceId
   )
 }
@@ -512,7 +486,8 @@ function webAnchorFor(
   if (canonicalUrl && fragment?.startsWith('#')) {
     const target = new URL(canonicalUrl)
     target.hash = fragment.slice(1)
-    return target.toString()
+    const exactTarget = target.toString()
+    return isSafeElementSourceUrl(exactTarget) ? exactTarget : undefined
   }
 
   return httpUrl(source.source_url ?? source.reference)

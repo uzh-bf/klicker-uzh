@@ -331,6 +331,56 @@ describe('personal-element chat tools', () => {
     ])
   })
 
+  test('drops unsafe provider fragments after assembling the exact web target', () => {
+    const normalized = normalizeRetrievedChunks({
+      sources: [
+        {
+          source_id: 'course-page',
+          source_type: 'web',
+          source_url: 'https://example.org/chapter',
+          chunks: [
+            {
+              chunk_id: 'chunk-1',
+              content: 'Synthetic course evidence.',
+              fragment: '#access_token=temporary',
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(normalized.chunks[0]).not.toHaveProperty('webAnchor')
+    expect(() =>
+      buildElementSourceReferences(['chunk-1'], normalized.chunks)
+    ).toThrow('Cited web chunk has no provider-supplied anchor')
+  })
+
+  test('does not retain credential-bearing URLs as source identity or title', () => {
+    const normalized = normalizeRetrievedChunks({
+      sources: [
+        {
+          title: 'https://example.org/chapter?sig=temporary',
+          source_type: 'web',
+          source_url: 'https://example.org/chapter?sig=temporary',
+          chunks: [
+            {
+              chunk_id: 'chunk-1',
+              content: 'Synthetic course evidence.',
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(normalized.chunks).toMatchObject([
+      {
+        sourceId: 'retrieval-source-1',
+        title: 'chapter',
+      },
+    ])
+    expect(JSON.stringify(normalized)).not.toContain('sig=temporary')
+  })
+
   test('groups cited pages into ordered disjoint ranges without source bodies', () => {
     const chunks = [1, 2, 3, 4, 7, 8, 9].map((page) => ({
       chunkId: `chunk-${page}`,
