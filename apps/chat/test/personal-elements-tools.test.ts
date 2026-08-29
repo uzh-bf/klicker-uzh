@@ -386,6 +386,41 @@ describe('personal-element chat tools', () => {
     expect(JSON.stringify(normalized)).not.toContain('sig=temporary')
   })
 
+  test('sanitizes protocol-relative identities, chunk IDs, and page labels', () => {
+    const normalized = normalizeRetrievedChunks({
+      sources: [
+        {
+          source_id:
+            '//user:password@example.org/course?token=temporary#section',
+          title:
+            '//user:password@example.org/course-script.pdf?token=temporary',
+          source_type: 'document',
+          chunks: [
+            {
+              chunk_id:
+                's3://user:password@bucket/chunk-1?token=temporary#part',
+              content: 'Synthetic course evidence.',
+              page_number: 4,
+              labeled_page_number:
+                'ftp://user:password@example.org/page-iv?token=temporary',
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(normalized.chunks).toMatchObject([
+      {
+        sourceId: '//example.org/course',
+        title: 'course-script.pdf',
+        chunkId: 's3://bucket/chunk-1',
+        labeledPage: 'page-iv',
+      },
+    ])
+    expect(JSON.stringify(normalized)).not.toContain('password')
+    expect(JSON.stringify(normalized)).not.toContain('token=temporary')
+  })
+
   test('does not replace an unsafe exact chunk anchor with a source-level URL', () => {
     const normalized = normalizeRetrievedChunks({
       sources: [

@@ -28,19 +28,21 @@ export type ElementSourceReference = {
 }
 
 const RESOURCE_URI_SCHEME = /^[a-z][a-z0-9+.-]*:/iu
+const PROTOCOL_RELATIVE_RESOURCE_URI = /^\/\//u
 
 function sanitizedResourceUri(value: string) {
   const trimmed = value.trim()
   if (!trimmed) return undefined
-  if (!RESOURCE_URI_SCHEME.test(trimmed)) return trimmed
+  const isProtocolRelative = PROTOCOL_RELATIVE_RESOURCE_URI.test(trimmed)
+  if (!RESOURCE_URI_SCHEME.test(trimmed) && !isProtocolRelative) return trimmed
 
   try {
-    const uri = new URL(trimmed)
+    const uri = new URL(isProtocolRelative ? `https:${trimmed}` : trimmed)
     uri.username = ''
     uri.password = ''
     uri.search = ''
     uri.hash = ''
-    return uri.toString()
+    return isProtocolRelative ? `//${uri.host}${uri.pathname}` : uri.toString()
   } catch {
     return undefined
   }
@@ -54,9 +56,16 @@ export function sanitizeElementSourceIdentity(value: string) {
 /** Turns a URI-shaped source label into a query-free material name. */
 export function sanitizeElementSourceLabel(value: string) {
   const sanitized = sanitizedResourceUri(value)
-  if (!sanitized || !RESOURCE_URI_SCHEME.test(value.trim())) return sanitized
+  const trimmed = value.trim()
+  const isProtocolRelative = PROTOCOL_RELATIVE_RESOURCE_URI.test(trimmed)
+  if (
+    !sanitized ||
+    (!RESOURCE_URI_SCHEME.test(trimmed) && !isProtocolRelative)
+  ) {
+    return sanitized
+  }
 
-  const uri = new URL(sanitized)
+  const uri = new URL(isProtocolRelative ? `https:${sanitized}` : sanitized)
   const last = uri.pathname.split('/').filter(Boolean).at(-1)
   if (last) {
     try {

@@ -4,6 +4,7 @@ import {
   type ElementSourceLocator,
   type ElementSourcePageLocator,
   type ElementSourceReference,
+  type ElementSourceWebLocator,
   FlashcardCorrectness,
   isSafeElementSourceUrl,
   sanitizeElementSourceIdentity,
@@ -636,15 +637,47 @@ function canonicalizeReference(
             (locator): locator is ElementSourcePageLocator =>
               locator.type === 'PAGE_RANGE'
           )
-        )
+        ).map((locator) => {
+          const labelFrom = locator.labelFrom
+            ? sanitizeElementSourceLabel(locator.labelFrom)
+            : undefined
+          const labelTo = locator.labelTo
+            ? sanitizeElementSourceLabel(locator.labelTo)
+            : undefined
+          return {
+            type: 'PAGE_RANGE' as const,
+            pageFrom: locator.pageFrom,
+            pageTo: locator.pageTo,
+            ...(labelFrom ? { labelFrom } : {}),
+            ...(labelTo ? { labelTo } : {}),
+          }
+        })
       : source.locators
+          .filter(
+            (locator): locator is ElementSourceWebLocator =>
+              locator.type === 'WEB_ANCHOR'
+          )
+          .map((locator) => {
+            const label = locator.label
+              ? sanitizeElementSourceLabel(locator.label)
+              : undefined
+            return {
+              type: 'WEB_ANCHOR' as const,
+              url: locator.url,
+              ...(label ? { label } : {}),
+            }
+          })
 
   return {
     sourceId,
     kind: source.kind,
     title: sanitizeElementSourceLabel(source.title) ?? sourceId,
     ...(source.canonicalUrl ? { canonicalUrl: source.canonicalUrl } : {}),
-    chunkIds: [...source.chunkIds],
+    chunkIds: source.chunkIds.map(
+      (chunkId, chunkIndex) =>
+        sanitizeElementSourceIdentity(chunkId) ??
+        `stored-chunk-${index + 1}-${chunkIndex + 1}`
+    ),
     locators,
   }
 }
@@ -740,7 +773,10 @@ function normalizeElementSourceReferencesWithSchema(
       pageLocators: [],
       webLocators: [],
     }
-    reference.chunkIds.push(source.chunkId)
+    reference.chunkIds.push(
+      sanitizeElementSourceIdentity(source.chunkId) ??
+        `stored-chunk-${sourceIndex + 1}`
+    )
     if (validPage !== undefined) {
       reference.pageLocators.push({
         type: 'PAGE_RANGE',

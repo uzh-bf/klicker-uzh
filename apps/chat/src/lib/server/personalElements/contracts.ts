@@ -266,7 +266,15 @@ export function parseStoredGeneratedCardCandidate(
           ...(source.canonicalUrl && isSafeElementSourceUrl(source.canonicalUrl)
             ? { canonicalUrl: source.canonicalUrl }
             : {}),
-          chunkIds: [...new Set(source.chunkIds)],
+          chunkIds: [
+            ...new Set(
+              source.chunkIds.map(
+                (chunkId, chunkIndex) =>
+                  sanitizeElementSourceIdentity(chunkId) ??
+                  `stored-chunk-${index + 1}-${chunkIndex + 1}`
+              )
+            ),
+          ],
           locators: canonicalizeStoredLocators(source),
         }
       }),
@@ -311,8 +319,11 @@ export function parseStoredGeneratedCardCandidate(
     ) {
       return null
     }
-    if (!reference.chunkIds.includes(source.chunkId)) {
-      reference.chunkIds.push(source.chunkId)
+    const chunkId =
+      sanitizeElementSourceIdentity(source.chunkId) ??
+      `stored-chunk-${sourceIndex + 1}`
+    if (!reference.chunkIds.includes(chunkId)) {
+      reference.chunkIds.push(chunkId)
     }
     if (kind === 'DOCUMENT' && validPage !== undefined) {
       reference.locators.push({
@@ -350,6 +361,16 @@ function canonicalizeStoredLocators(
               candidate.type === 'WEB_ANCHOR' && candidate.url === locator.url
           ) === index
       )
+      .map((locator) => {
+        const label = locator.label
+          ? sanitizeElementSourceLabel(locator.label)
+          : undefined
+        return {
+          type: 'WEB_ANCHOR' as const,
+          url: locator.url,
+          ...(label ? { label } : {}),
+        }
+      })
   }
 
   const validPages = source.locators
@@ -361,6 +382,21 @@ function canonicalizeStoredLocators(
         locator.pageFrom >= 1 &&
         locator.pageTo >= locator.pageFrom
     )
+    .map((locator) => {
+      const labelFrom = locator.labelFrom
+        ? sanitizeElementSourceLabel(locator.labelFrom)
+        : undefined
+      const labelTo = locator.labelTo
+        ? sanitizeElementSourceLabel(locator.labelTo)
+        : undefined
+      return {
+        type: 'PAGE_RANGE' as const,
+        pageFrom: locator.pageFrom,
+        pageTo: locator.pageTo,
+        ...(labelFrom ? { labelFrom } : {}),
+        ...(labelTo ? { labelTo } : {}),
+      }
+    })
     .sort(
       (left, right) =>
         left.pageFrom - right.pageFrom || left.pageTo - right.pageTo
@@ -546,10 +582,9 @@ export function normalizeRetrievedChunks(raw: unknown): {
         stringValue(chunk.excerpt)
       if (!text) throw new Error('Retrieved chunk has no text')
 
-      const chunkId =
-        stringValue(chunk.chunk_id) ??
-        stringValue(chunk.chunkId) ??
-        stringValue(chunk.id)
+      const chunkId = sourceIdentity(
+        chunk.chunk_id ?? chunk.chunkId ?? chunk.id
+      )
       if (!chunkId) throw new Error('Retrieved chunk has no stable ID')
       if (chunkId.length > 128) {
         throw new Error('Retrieved chunk ID exceeds the 128 character limit')
@@ -562,7 +597,9 @@ export function normalizeRetrievedChunks(raw: unknown): {
       }
       seen.add(chunkId)
       const page = pageValue(chunk.page_number) ?? parentPage
-      const labeledPage = stringValue(chunk.labeled_page_number) ?? parentLabel
+      const labeledPage =
+        sourceLabel(chunk.labeled_page_number) ??
+        (parentLabel ? sourceLabel(parentLabel) : undefined)
       const webAnchor =
         kind === 'WEB' ? webAnchorFor(source, chunk, canonicalUrl) : undefined
       chunks.push({

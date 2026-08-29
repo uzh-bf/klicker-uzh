@@ -113,9 +113,19 @@ describe('unsaved candidate extraction', () => {
             sourceId: 'source-1',
             kind: 'DOCUMENT',
             title: 'Course script',
-            chunkIds: ['chunk-2', 'chunk-1', 'chunk-2'],
+            chunkIds: [
+              '//user:password@example.org/chunk-2?token=temporary',
+              'chunk-1',
+              '//user:password@example.org/chunk-2?token=temporary',
+            ],
             locators: [
-              { type: 'PAGE_RANGE', pageFrom: 7, pageTo: 9 },
+              {
+                type: 'PAGE_RANGE',
+                pageFrom: 7,
+                pageTo: 9,
+                labelFrom:
+                  'ftp://user:password@example.org/page-vii?token=temporary',
+              },
               { type: 'PAGE_RANGE', pageFrom: 3, pageTo: 4 },
               { type: 'PAGE_RANGE', pageFrom: 4, pageTo: 8 },
             ],
@@ -142,8 +152,15 @@ describe('unsaved candidate extraction', () => {
       sources: [
         {
           sourceId: 'source-1',
-          chunkIds: ['chunk-2', 'chunk-1'],
-          locators: [{ type: 'PAGE_RANGE', pageFrom: 3, pageTo: 9 }],
+          chunkIds: ['//example.org/chunk-2', 'chunk-1'],
+          locators: [
+            {
+              type: 'PAGE_RANGE',
+              pageFrom: 3,
+              pageTo: 9,
+              labelTo: 'page-vii',
+            },
+          ],
         },
         {
           sourceId: 'source-2',

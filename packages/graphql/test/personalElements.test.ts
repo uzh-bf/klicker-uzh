@@ -295,7 +295,7 @@ describe('personal elements service', () => {
         {
           sourceId:
             's3://user:password@bucket/legacy-script?token=temporary#section',
-          chunkId: 'chunk-1',
+          chunkId: '//user:password@example.org/chunk-1?token=temporary#part',
           title:
             'ftp://user:password@example.org/legacy-script?token=temporary#section',
           url: 'https://example.org/script.pdf?sig=expired',
@@ -308,7 +308,7 @@ describe('personal elements service', () => {
         sourceId: 's3://bucket/legacy-script',
         kind: 'DOCUMENT',
         title: 'legacy-script',
-        chunkIds: ['chunk-1'],
+        chunkIds: ['//example.org/chunk-1'],
         locators: [],
       },
     ])
