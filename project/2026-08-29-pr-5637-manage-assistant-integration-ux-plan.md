@@ -584,8 +584,9 @@ follow_up_stacks:
 - Update `docs/chat-platform.md`, `docs/frontend-conventions.md`,
   `docs/getting-started.md`, and `docs/testing.md` where their described
   behavior changes.
-- Add a dated `docs/log/` receipt covering the final user-visible behavior,
-  local/CI evidence, and remaining R3 boundary.
+- Keep the final user-visible behavior, local/CI evidence, and remaining R3
+  boundary in the authoritative wiki pages and this plan's dated `Progress`;
+  the repository's reserved `docs/log/` path must remain absent.
 - Keep this audit and plan current in the implementing stack. Later Stack B
   branches update this same plan's `Progress` rather than creating a second
   epic plan.
