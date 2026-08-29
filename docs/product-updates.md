@@ -318,10 +318,13 @@ otherwise fight over the page.
 ## Onboarding tours
 
 A spotlight announces one feature. A tour orients someone who has just arrived:
-several steps over the parts of an interface that are always on screen. Manage
-has one today (`manage-onboarding-v1`); the student app and the chat app are
-meant to follow, which is why the mechanics live in a package instead of next to
-the manage header.
+several steps over the parts of an interface a newcomer needs to find. Manage
+has `manage-onboarding-v1` and the student app has `pwa-onboarding-v1`; the chat
+app is meant to follow, which is why the mechanics live in a package instead of
+next to the manage header. The two tours differ in where they may run: the
+lecturer tour points at header elements that every manage page carries, while
+the student tour points at the sections of one page and is therefore hosted by
+that page alone.
 
 ### The shared package
 
@@ -454,3 +457,56 @@ together. Both writes create the state row when an entry is seen for the first
 time, and the backend cannot absorb two concurrent inserts of the same row — the
 second one fails on the unique constraint and its timestamp is lost, which for a
 participant meant the entry stayed unread forever.
+
+## The student tour
+
+`pwa-onboarding-v1` walks over the overview page: a centered welcome card, the
+self-paced practice entries, the course list, the learning insights, the header
+bullhorn and the avatar with the level ring. Its copy lives under
+`pwa.productTours` in both locales, and it uses the same shared hook, session
+slot and completion semantics as the lecturer tour.
+
+**The mount is the whole gate.** The layout renders
+`apps/frontend-pwa/src/components/onboarding/PwaOnboardingTour.tsx` only when
+the product-update exclusion table above allows an unsolicited surface **and**
+the page declares itself the tour's host through `withOnboardingTour`. Only the
+overview page declares that, and only from the branch that has its data — the
+loading branch would offer a page whose sections do not exist yet. Everything
+else follows: an assessment build, an embedded page, a live quiz, a page where
+questions are being answered and a temporary participant never mount the
+component, so they never send a `TourStates` query. That matters more here than
+in manage, because the backend refuses tour state for a temporary participant,
+and an ungated query would fail on every page view.
+
+Hosting the tour on one page is a deliberate difference from the lecturer tour.
+Four of its six steps point at sections that only the overview page renders, and
+the shared hook silently drops a step whose element is missing. A tour that
+started wherever a student happened to land would therefore run two or three
+steps, record completion, and never offer the rest again.
+
+The student app keeps its own target registry
+(`apps/frontend-pwa/src/components/onboarding/featureTargets.ts`). It uses the
+same `data-product-feature` attribute as manage but its own key set: the two
+applications never render each other's markup, and the same key would mean
+different things on a lecturer and a student screen.
+
+**Replays navigate.** "Take the tour" on the profile page pushes `/?tour=1`
+rather than starting a tour on the profile page, for the reason above. The host
+component consumes the parameter once, starts the tour, and strips the parameter
+with a shallow replace so that a reload or a back navigation does not restart
+it. As in manage, a replay ignores both caps and does not change the stored
+`completedAt`.
+
+**Phones.** Driver.js positions a popover purely from the target's bounding
+rectangle, so a step near the bottom of the viewport can end up under the mobile
+menu bar. The insights step therefore asks for `side: 'top'`, and both header
+steps ask for `align: 'end'` because their targets sit at the right edge, where
+a centered popover would hang off a narrow screen. Targets that exist at one
+breakpoint only — the mobile menu bar is `md:hidden` — are not used at all: they
+are in the DOM with an empty rectangle on the other breakpoint, which driver.js
+would happily highlight.
+
+Seeded participants carry a completed `pwa-onboarding-v1` row for the same
+reason the seeded lecturers carry the manage one: they represent established
+students, and an overlay that blocks pointer events on the whole document would
+break every PWA end-to-end spec that logs in and interacts right away.
