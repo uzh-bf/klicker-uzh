@@ -2533,7 +2533,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         title: 'Generierte Elemente prüfen',
         editTitle: 'Generiertes Element prüfen',
         countSummary:
-          '{all} insgesamt · {open} zu prüfen · {attention} benötigen Aufmerksamkeit · {kept} behalten · {discarded} verworfen',
+          '{all} insgesamt · {open} zu prüfen · {attention, plural, one {# benötigt Aufmerksamkeit} other {# benötigen Aufmerksamkeit}} · {kept} behalten · {discarded} verworfen',
         filterLabel: 'Generierte Elemente filtern',
         filters: {
           all: 'Alle ({count})',

@@ -140,7 +140,7 @@ test.describe('Generated element review inbox', () => {
         .click()
       const discardEditor = page.getByRole('dialog')
       await discardEditor
-        .getByTestId(`element-generation-discard-${discardDraftId}`)
+        .getByTestId(`generated-element-discard-${discardDraftId}`)
         .click()
       await expect(discardEditor).toBeHidden()
       await expect(discardRow).toContainText('Discarded')

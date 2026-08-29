@@ -2504,7 +2504,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         title: 'Review generated elements',
         editTitle: 'Review generated element',
         countSummary:
-          '{all} total · {open} to review · {attention} need attention · {kept} kept · {discarded} discarded',
+          '{all} total · {open} to review · {attention, plural, one {# needs attention} other {# need attention}} · {kept} kept · {discarded} discarded',
         filterLabel: 'Filter generated elements',
         filters: {
           all: 'All ({count})',

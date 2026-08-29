@@ -80,22 +80,37 @@ function draftToFormValues(draft: GeneratedElementDraftData): ElementFormTypes {
 function sourceLabel(
   build: ElementGenerationBuildData,
   draft: GeneratedElementDraftData,
-  formatPages: (pageFrom: number, pageTo: number | null) => string
+  formatPage: (page: number) => string,
+  formatPages: (pageFrom: number, pageTo: number) => string
 ) {
   const labels = draft.citations.flatMap((citation) => {
-    const source = build.sources.find(
-      (item) => item.resourceId === citation.resourceId
-    )
+    const source = sourceForCitation(build, citation.resourceId)
     const label = source?.title
     if (!label) return []
-    const pageFrom = citation.pageFrom
-    const pages =
-      pageFrom === null || pageFrom === undefined
-        ? ''
-        : `, ${formatPages(pageFrom, citation.pageTo ?? null)}`
-    return [`${label}${pages}`]
+    const pages = citationPages(citation, formatPage, formatPages)
+    return [`${label}${pages ? `, ${pages}` : ''}`]
   })
   return [...new Set(labels)].join('; ') || undefined
+}
+
+function sourceForCitation(
+  build: ElementGenerationBuildData,
+  resourceId: string
+) {
+  return build.sources.find((item) => item.resourceId === resourceId)
+}
+
+function citationPages(
+  citation: GeneratedElementDraftData['citations'][number],
+  formatPage: (page: number) => string,
+  formatPages: (pageFrom: number, pageTo: number) => string
+) {
+  const pageFrom = citation.pageFrom
+  if (pageFrom === null || pageFrom === undefined) return undefined
+  const pageTo = citation.pageTo
+  return pageTo !== null && pageTo !== undefined && pageTo !== pageFrom
+    ? formatPages(pageFrom, pageTo)
+    : formatPage(pageFrom)
 }
 
 function GeneratedDraftSources({
@@ -107,9 +122,7 @@ function GeneratedDraftSources({
 }) {
   const t = useTranslations('manage.elementGeneration')
   const sources = draft.citations.flatMap((citation) => {
-    const source = build.sources.find(
-      (item) => item.resourceId === citation.resourceId
-    )
+    const source = sourceForCitation(build, citation.resourceId)
     if (!source) return []
     return [{ ...source, citation }]
   })
@@ -129,17 +142,11 @@ function GeneratedDraftSources({
       ) : (
         <ul className="mt-2 space-y-2">
           {sources.map(({ citation, resourceId, sourceUrl, title, type }) => {
-            const pageFrom = citation.pageFrom
-            const pageTo = citation.pageTo ?? null
-            const pages =
-              pageFrom === null || pageFrom === undefined
-                ? undefined
-                : pageTo !== null && pageTo !== pageFrom
-                  ? t('review.sourcePages', {
-                      from: pageFrom,
-                      to: pageTo,
-                    })
-                  : t('review.sourcePage', { page: pageFrom })
+            const pages = citationPages(
+              citation,
+              (page) => t('review.sourcePage', { page }),
+              (from, to) => t('review.sourcePages', { from, to })
+            )
             return (
               <li key={`${resourceId}-${citation.pageFrom}-${citation.pageTo}`}>
                 {sourceUrl ? (
@@ -190,6 +197,7 @@ function GeneratedDraftEditor({
       initialValues={initialValues}
       titleOverride={t('review.editTitle')}
       submitLabel={t('review.keep')}
+      submitErrorMessage={t('review.actionError')}
       submitDataCy={`generated-element-keep-${draft.id}`}
       secondaryAction={{
         label: t('review.discard'),
@@ -441,9 +449,7 @@ export default function GeneratedElementReview({
               const sourceTypes = [
                 ...new Set(
                   draft.citations.flatMap((citation) => {
-                    const source = build.sources.find(
-                      (item) => item.resourceId === citation.resourceId
-                    )
+                    const source = sourceForCitation(build, citation.resourceId)
                     return source ? [source.type] : []
                   })
                 ),
@@ -465,13 +471,11 @@ export default function GeneratedElementReview({
                     {t(`elementTypes.${draft.elementType}.label`)}
                   </td>
                   <td className="px-4 py-3 text-slate-600">
-                    {sourceLabel(build, draft, (pageFrom, pageTo) =>
-                      pageTo !== null && pageTo !== pageFrom
-                        ? t('review.sourcePages', {
-                            from: pageFrom,
-                            to: pageTo,
-                          })
-                        : t('review.sourcePage', { page: pageFrom })
+                    {sourceLabel(
+                      build,
+                      draft,
+                      (page) => t('review.sourcePage', { page }),
+                      (from, to) => t('review.sourcePages', { from, to })
                     ) ?? t('review.sourceUnavailable')}
                     {sourceTypes.length > 0 ? (
                       <div className="mt-1 text-xs text-slate-500">

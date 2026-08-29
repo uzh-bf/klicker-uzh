@@ -82,6 +82,7 @@ function ElementEditForm({
   setIncludeTemplateUpdates,
   titleOverride,
   submitLabel,
+  submitErrorMessage,
   submitDataCy,
   secondaryAction,
   supplementaryContent,
@@ -113,6 +114,7 @@ function ElementEditForm({
   setIncludeTemplateUpdates: Dispatch<SetStateAction<boolean>>
   titleOverride?: string
   submitLabel?: string
+  submitErrorMessage?: string
   submitDataCy?: string
   secondaryAction?: { label: string; onClick: () => void; dataCy: string }
   supplementaryContent?: ReactNode
@@ -190,7 +192,9 @@ function ElementEditForm({
               if (!success) {
                 toast({
                   type: 'error',
-                  message: t('manage.elements.questionSavedFailed'),
+                  message:
+                    submitErrorMessage ??
+                    t('manage.elements.questionSavedFailed'),
                   options: { duration: 6000 },
                 })
               } else {

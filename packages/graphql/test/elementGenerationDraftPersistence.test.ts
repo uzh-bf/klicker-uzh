@@ -223,6 +223,26 @@ describe('atomic generated-element keep', () => {
     expect(transaction.generatedElementDraft.updateMany).not.toHaveBeenCalled()
   })
 
+  it('links a legacy accepted draft that has not created an element yet', async () => {
+    const { ctx, transaction } = context(
+      draft({ decision: DB.GeneratedElementDecision.ACCEPTED })
+    )
+    vi.mocked(manipulateElement).mockResolvedValue(savedElement() as never)
+
+    await expect(
+      keepGeneratedElementDraft(input, ctx as never)
+    ).resolves.toMatchObject({ savedElementId: 91 })
+
+    expect(manipulateElement).toHaveBeenCalledOnce()
+    expect(transaction.generatedElementDraft.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          decision: DB.GeneratedElementDecision.ACCEPTED,
+        }),
+      })
+    )
+  })
+
   it('keeps a Flashcard with its generation card type and selected status', async () => {
     const flashcard = {
       name: 'Definition',
@@ -403,6 +423,21 @@ describe('atomic generated-element keep', () => {
         { ...input, type: DB.ElementType.MC },
         ctx as never
       )
+    ).rejects.toMatchObject({ code: 'DRAFT_INVALID' })
+    expect(manipulateElement).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { label: 'missing options', options: undefined },
+    {
+      label: 'missing choices',
+      options: { ...input.options, choices: undefined },
+    },
+  ])('rejects assessment options with $label', async ({ options }) => {
+    const { ctx } = context(draft())
+
+    await expect(
+      keepGeneratedElementDraft({ ...input, options } as never, ctx as never)
     ).rejects.toMatchObject({ code: 'DRAFT_INVALID' })
     expect(manipulateElement).not.toHaveBeenCalled()
   })

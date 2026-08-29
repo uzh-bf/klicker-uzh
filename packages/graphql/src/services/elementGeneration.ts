@@ -271,6 +271,7 @@ function normalizedKeepPayload(
       name: current.name,
       content: current.front,
       explanation: current.back,
+      // Flashcards never award points; the shared keep input still carries it.
       basePoints: false,
       pointsMultiplier: input.pointsMultiplier,
       tags: current.tags,
@@ -403,10 +404,13 @@ export async function keepGeneratedElementDraft(
         'A saved generated element is immutable'
       )
     }
-    if (draft.decision !== DB.GeneratedElementDecision.OPEN) {
+    const canKeep =
+      draft.decision === DB.GeneratedElementDecision.OPEN ||
+      draft.decision === DB.GeneratedElementDecision.ACCEPTED
+    if (!canKeep) {
       throw questionGenerationServiceError(
         'DRAFT_INVALID',
-        'Only an open generated element can be kept'
+        'Only an open or accepted unsaved generated element can be kept'
       )
     }
     if (draft.revision !== input.expectedRevision) {
@@ -431,7 +435,7 @@ export async function keepGeneratedElementDraft(
       where: {
         id: draft.id,
         revision: input.expectedRevision,
-        decision: DB.GeneratedElementDecision.OPEN,
+        decision: draft.decision,
         savedElementId: null,
       },
       data: {
