@@ -468,7 +468,7 @@ Usage:
   util/dev-runtime.sh ensure-dependencies
   util/dev-runtime.sh request-repair <next-app>
   util/dev-runtime.sh start <fingerprint> <generation> -- <command> [args...]
-  util/dev-runtime.sh classify-response <auth-json|html-shell|health-json> <status> <content-type>
+  util/dev-runtime.sh classify-response <auth-json|html-shell|health-json|health-text> <status> <content-type>
   util/dev-runtime.sh probe-app <runtime-app>
   util/dev-runtime.sh wait-app <runtime-app>
   util/dev-runtime.sh doctor

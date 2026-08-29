@@ -59,15 +59,55 @@ import {
 const MANAGE_ASSISTANT_PANEL_ID = 'manage-assistant-panel'
 const MANAGE_ASSISTANT_PANEL_SIZE_STORAGE_KEY =
   'klicker-manage-assistant-panel-size-v1'
-const MANAGE_ASSISTANT_OVERLAY_DATA_CY: Record<
+type ManageAssistantOverlayContent =
+  | {
+      kind: 'spinner'
+      dataCy: string
+      labelKey: 'manage.assistant.loading' | 'manage.assistant.retrying'
+    }
+  | {
+      kind: 'error'
+      dataCy: string
+      titleKey: 'manage.assistant.delayedTitle' | 'manage.assistant.failedTitle'
+      descriptionKey:
+        | 'manage.assistant.delayedDescription'
+        | 'manage.assistant.failedDescription'
+    }
+
+const MANAGE_ASSISTANT_OVERLAY_CONTENT: Record<
   ManageAssistantFramePhase,
-  string | undefined
+  ManageAssistantOverlayContent
 > = {
-  ready: undefined,
-  loading: 'manage-assistant-loading',
-  retrying: 'manage-assistant-loading',
-  delayed: 'manage-assistant-delayed',
-  failed: 'manage-assistant-failed',
+  // `ready` never renders an error panel directly: the widget remaps it to
+  // the loading state below, which also covers the post-paint window while
+  // a URL switch to the next frame generation is in flight.
+  ready: {
+    kind: 'spinner',
+    dataCy: 'manage-assistant-loading',
+    labelKey: 'manage.assistant.loading',
+  },
+  loading: {
+    kind: 'spinner',
+    dataCy: 'manage-assistant-loading',
+    labelKey: 'manage.assistant.loading',
+  },
+  retrying: {
+    kind: 'spinner',
+    dataCy: 'manage-assistant-loading',
+    labelKey: 'manage.assistant.retrying',
+  },
+  delayed: {
+    kind: 'error',
+    dataCy: 'manage-assistant-delayed',
+    titleKey: 'manage.assistant.delayedTitle',
+    descriptionKey: 'manage.assistant.delayedDescription',
+  },
+  failed: {
+    kind: 'error',
+    dataCy: 'manage-assistant-failed',
+    titleKey: 'manage.assistant.failedTitle',
+    descriptionKey: 'manage.assistant.failedDescription',
+  },
 }
 const DESKTOP_PANEL_MEDIA_QUERY = '(min-width: 768px)'
 
@@ -113,6 +153,14 @@ export function ManageAssistantWidget() {
   )
   const frameReady =
     frameState.phase === 'ready' && frameState.url === assistantUrl
+  // The url-changed effect only runs after paint. Deriving the overlay
+  // phase from the URL keeps a navigation on the loading state instead of
+  // briefly painting the previous phase's error panel with retry actions.
+  const overlayPhase: ManageAssistantFramePhase =
+    frameState.url === assistantUrl ? frameState.phase : 'loading'
+  const overlay = frameReady
+    ? null
+    : MANAGE_ASSISTANT_OVERLAY_CONTENT[overlayPhase]
   // A clean, non-embedded URL for the "open in new tab" link: the embedded
   // URL hides the assistant's login CTA and other affordances that only make
   // sense when Manage itself provides the surrounding chrome.
@@ -468,7 +516,6 @@ export function ManageAssistantWidget() {
                   rel="noreferrer"
                   className="text-uzh-blue hover:text-uzh-blue-80 inline-flex size-11 shrink-0 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                   aria-label={t('manage.assistant.openInNewTab')}
-                  title={t('manage.assistant.openInNewTab')}
                   data-cy="manage-assistant-new-tab"
                 >
                   <FontAwesomeIcon
@@ -489,17 +536,13 @@ export function ManageAssistantWidget() {
             </div>
 
             <div className="relative min-h-0 flex-1 bg-white">
-              {!frameReady ? (
+              {overlay ? (
                 <div
-                  role={frameState.phase === 'failed' ? 'alert' : 'status'}
+                  role={overlay.kind === 'error' ? 'alert' : 'status'}
                   className="absolute inset-0 z-10 flex items-center justify-center bg-white px-6 text-sm text-gray-600"
-                  data-cy={
-                    MANAGE_ASSISTANT_OVERLAY_DATA_CY[frameState.phase] ??
-                    'manage-assistant-loading'
-                  }
+                  data-cy={overlay.dataCy}
                 >
-                  {frameState.phase === 'loading' ||
-                  frameState.phase === 'retrying' ? (
+                  {overlay.kind === 'spinner' ? (
                     <div className="flex items-center gap-3">
                       <FontAwesomeIcon
                         icon={faSpinner}
@@ -507,30 +550,14 @@ export function ManageAssistantWidget() {
                         aria-hidden
                         className="text-uzh-blue size-5"
                       />
-                      <span>
-                        {t(
-                          frameState.phase === 'retrying'
-                            ? 'manage.assistant.retrying'
-                            : 'manage.assistant.loading'
-                        )}
-                      </span>
+                      <span>{t(overlay.labelKey)}</span>
                     </div>
                   ) : (
                     <div className="max-w-md text-center">
                       <div className="font-semibold text-gray-900">
-                        {t(
-                          frameState.phase === 'failed'
-                            ? 'manage.assistant.failedTitle'
-                            : 'manage.assistant.delayedTitle'
-                        )}
+                        {t(overlay.titleKey)}
                       </div>
-                      <p className="mt-2">
-                        {t(
-                          frameState.phase === 'failed'
-                            ? 'manage.assistant.failedDescription'
-                            : 'manage.assistant.delayedDescription'
-                        )}
-                      </p>
+                      <p className="mt-2">{t(overlay.descriptionKey)}</p>
                       <div className="mt-4 flex flex-col items-stretch justify-center gap-2 sm:flex-row">
                         <button
                           type="button"
@@ -576,6 +603,10 @@ export function ManageAssistantWidget() {
                 )}
                 data-cy="manage-assistant-frame"
                 onError={() => {
+                  // Browsers fire `error` on the frame element unreliably,
+                  // especially cross-origin; this is a best-effort early
+                  // signal and the loading deadline remains the
+                  // authoritative path to the failed state.
                   dispatchFrameState({
                     generation: frameState.generation,
                     type: 'error',
