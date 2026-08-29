@@ -205,6 +205,50 @@ describe('unsaved candidate extraction', () => {
     })
   })
 
+  test('keeps distinct same-source chunk IDs when sanitization collides', () => {
+    const grouped = parseStoredGeneratedCardCandidate({
+      ...candidate,
+      candidateId: 'colliding-grouped-chunks',
+      sources: [
+        {
+          sourceId: 'script',
+          kind: 'DOCUMENT',
+          title: 'Course script',
+          chunkIds: [
+            's3://first:secret@bucket/chunk-1',
+            's3://second:secret@bucket/chunk-1',
+          ],
+          locators: [{ type: 'PAGE_RANGE', pageFrom: 1, pageTo: 1 }],
+        },
+      ],
+    })
+    const flat = parseStoredGeneratedCardCandidate({
+      ...candidate,
+      candidateId: 'colliding-flat-chunks',
+      sources: [
+        {
+          sourceId: 'script',
+          chunkId: 's3://first:secret@bucket/chunk-1',
+          page: 1,
+        },
+        {
+          sourceId: 'script',
+          chunkId: 's3://second:secret@bucket/chunk-1',
+          page: 2,
+        },
+      ],
+    })
+
+    expect(grouped?.sources[0]?.chunkIds).toEqual([
+      's3://bucket/chunk-1',
+      'stored-chunk-2',
+    ])
+    expect(flat?.sources[0]?.chunkIds).toEqual([
+      's3://bucket/chunk-1',
+      'stored-chunk-2',
+    ])
+  })
+
   test('excludes candidates that already have saved linkage', () => {
     const messages = [
       message('saved-generation', {

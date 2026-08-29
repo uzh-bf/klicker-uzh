@@ -266,15 +266,7 @@ export function parseStoredGeneratedCardCandidate(
         ...(source.canonicalUrl && isSafeElementSourceUrl(source.canonicalUrl)
           ? { canonicalUrl: source.canonicalUrl }
           : {}),
-        chunkIds: [
-          ...new Set(
-            source.chunkIds.map(
-              (chunkId, chunkIndex) =>
-                sanitizeElementSourceIdentity(chunkId) ??
-                `stored-chunk-${index + 1}-${chunkIndex + 1}`
-            )
-          ),
-        ],
+        chunkIds: [...new Set(source.chunkIds)],
         locators: canonicalizeStoredLocators(source),
       }
     })
@@ -322,11 +314,8 @@ export function parseStoredGeneratedCardCandidate(
     ) {
       return null
     }
-    const chunkId =
-      sanitizeElementSourceIdentity(source.chunkId) ??
-      `stored-chunk-${sourceIndex + 1}`
-    if (!reference.chunkIds.includes(chunkId)) {
-      reference.chunkIds.push(chunkId)
+    if (!reference.chunkIds.includes(source.chunkId)) {
+      reference.chunkIds.push(source.chunkId)
     }
     if (kind === 'DOCUMENT' && validPage !== undefined) {
       reference.locators.push({
