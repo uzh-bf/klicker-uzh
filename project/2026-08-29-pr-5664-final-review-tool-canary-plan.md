@@ -32,8 +32,8 @@
 
 ## Identity and baseline
 
-- Plan: `project/2026-08-29-final-review-tool-canary-plan.md` until the draft PR
-  supplies its number.
+- Plan: `project/2026-08-29-pr-5664-final-review-tool-canary-plan.md`.
+- Pull request: [#5664](https://github.com/uzh-bf/klicker-uzh/pull/5664).
 - Branch: `rs/final-review-tool-canary`.
 - Worktree: `trees/rs-final-review-tool-canary`.
 - Target: `origin/v3`.
@@ -174,8 +174,8 @@ workflow and current OpenRouter provider route work together.
 
 ## Progress
 
-- Status: implementation is rebased onto current `v3`; full verification and
-  both immutable slice reviews pass on the rebased exact head.
+- Status: draft PR #5664 is open; full verification and all local review gates
+  pass, and exact-head GitHub checks are pending.
 - Completed: fresh authoritative baseline, hosted failure reconciliation,
   upstream release/source qualification, OpenRouter endpoint inspection,
   local credential-boundary check, baseline tests, native planning review, the
@@ -201,6 +201,7 @@ workflow and current OpenRouter provider route work together.
   The managed devcontainer could not start because this checkout requires
   devrouter 0.0.45 while the host has 0.0.36; formatting used the exact locked
   binaries already installed in the clean control checkout.
-- Remaining: record this evidence, run the integrated final review, publish the
-  draft PR, and account for exact-head CI. Both post-merge commands remain
-  pending.
+- Integrated review: the final reviewer returned `DONE` with no findings over
+  exact range `bb495a1b2..17f1bdcb2` after full local verification.
+- Remaining: account for exact-head CI and feedback on draft PR #5664. Both
+  post-merge commands remain pending.
