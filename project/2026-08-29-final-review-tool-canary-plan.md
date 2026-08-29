@@ -59,6 +59,11 @@
   stored under `project/_local/reviews/`.
 - The trusted advisor checkpoint was unavailable because its OAuth token had
   expired. No weaker route substitutes for it.
+- The exact 1.11.0 binary probe showed that `review` deliberately reads only
+  OCR's current-user default config path; `OCR_CONFIG_PATH` applies to the
+  read-only LLM test command, not review execution. A supplemental planner pass
+  accepted using the default path on fresh GitHub-hosted runners and retaining
+  the existing always-run cleanup.
 - Product primitives are unaffected. The ADR gate remains closed because this
   reuses the existing provider, credential, trigger, status, and data boundary.
 
@@ -77,6 +82,10 @@
   and never prints the key, prompt, choices, tool arguments, raw metadata, or
   model content. Failure output is limited to bounded allowlisted status,
   provider, and error fields.
+- Configuration also receives the key through standard input and writes a
+  mode-0600 file at OCR's current-user default path. The review reads that exact
+  file, and the always-run cleanup removes it before publication. This contract
+  depends on the jobs remaining fresh GitHub-hosted runners.
 - Both manual jobs run the same canary after creating the mode-0600 ephemeral
   config and before any review fan-out.
 - Final review publication, clean-evidence handling, status behavior, stack
@@ -155,12 +164,22 @@ workflow and current OpenRouter provider route work together.
 
 ## Progress
 
-- Status: planner-reviewed plan prepared; implementation pending.
+- Status: S1 implementation and focused verification pass; immutable slice
+  review is pending.
 - Completed: fresh authoritative baseline, hosted failure reconciliation,
   upstream release/source qualification, OpenRouter endpoint inspection,
-  local credential-boundary check, baseline tests, and native planning review.
+  local credential-boundary check, baseline tests, native planning review, the
+  supplemental config-path review, and an exact OCR 1.11.0 fake-endpoint probe.
+- Probe evidence: one synthetic file completed with one tool request using GLM
+  5.3 Flash, high reasoning, `max_completion_tokens: 16384`, and no provider
+  order.
+- Verification: 105 helper and qualification tests pass; all 8 offline fixtures
+  match; workflow YAML parses; locked Biome 2.5.2 and Prettier 3.3.3 checks pass;
+  `git diff --check` passes; the low-cost draft workflow is unchanged.
 - Limitations: trusted advisor unavailable due expired OAuth; local live
   OpenRouter request unavailable without changing the approved secret setup.
-- Remaining: commit this plan, run the fake-endpoint probe, implement and
-  verify S1, complete required reviews, publish the draft PR, and account for
-  exact-head CI. Both post-merge commands remain pending.
+  The managed devcontainer could not start because this checkout requires
+  devrouter 0.0.45 while the host has 0.0.36; formatting used the exact locked
+  binaries already installed in the clean control checkout.
+- Remaining: commit S1, complete required reviews, publish the draft PR, and
+  account for exact-head CI. Both post-merge commands remain pending.

@@ -359,7 +359,7 @@ jobs:
       - name: Install pinned OpenCodeReview CLI
         if: needs.start.outputs.run_review == 'true'
         run: |
-          npm install -g @alibaba-group/open-code-review@1.9.10
+          npm install -g @alibaba-group/open-code-review@1.11.0
           ocr version
 
       - name: Configure ephemeral OpenRouter access
@@ -367,25 +367,19 @@ jobs:
         if: needs.start.outputs.run_review == 'true'
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-review-ocr-config.json
         run: |
           set -euo pipefail
           printf '%s' "${OPENROUTER_API_KEY}" |
             node .github/scripts/final-ai-review.js configure-ocr
-          test -s "${OCR_CONFIG_PATH}"
 
-      - name: Verify OpenRouter review access
+      - name: Verify OpenRouter tool access
         if: needs.start.outputs.run_review == 'true'
         env:
-          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-review-ocr-config.json
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           set -euo pipefail
-          if ocr llm test >/dev/null; then
-            echo 'OpenRouter review preflight passed'
-            exit 0
-          fi
-          echo '::error::OpenRouter review preflight failed'
-          exit 1
+          printf '%s' "${OPENROUTER_API_KEY}" |
+            node .github/scripts/final-ai-review.js verify-openrouter-tools
 
       - name: Run final review
         id: run_review
@@ -393,10 +387,6 @@ jobs:
         env:
           BACKGROUND: ${{ needs.start.outputs.background }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
-          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-review-ocr-config.json
-          OCR_LLM_URL: https://openrouter.ai/api/v1/chat/completions
-          OCR_LLM_TOKEN: ${{ secrets.OPENROUTER_API_KEY }}
-          OCR_LLM_MODEL: z-ai/glm-5.3-flash
           REVIEW_FROM: ${{ steps.range.outputs.review_from }}
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
           STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
@@ -406,6 +396,7 @@ jobs:
             --from "${REVIEW_FROM}" \
             --to "${HEAD_SHA}" \
             --audience agent \
+            --effort low \
             --format json \
             --background "${BACKGROUND}" \
             --rule .github/open-code-review/final-review-rules.json \
@@ -449,8 +440,6 @@ jobs:
       - name: Remove ephemeral OpenRouter access
         id: cleanup
         if: always() && needs.start.outputs.run_review == 'true'
-        env:
-          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-review-ocr-config.json
         run: node .github/scripts/final-ai-review.js cleanup-ocr
 
       - name: Publish consolidated final review
@@ -824,7 +813,7 @@ jobs:
       - name: Install pinned OpenCodeReview CLI
         if: needs.start_stack.outputs.run_review == 'true'
         run: |
-          npm install -g @alibaba-group/open-code-review@1.9.10
+          npm install -g @alibaba-group/open-code-review@1.11.0
           ocr version
 
       - name: Configure ephemeral OpenRouter access
@@ -832,26 +821,19 @@ jobs:
         if: needs.start_stack.outputs.run_review == 'true'
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-stack-ocr-config.json
-          OCR_LLM_MODEL: anthropic/claude-opus-4.6
         run: |
           set -euo pipefail
           printf '%s' "${OPENROUTER_API_KEY}" |
             node .github/scripts/final-ai-review.js configure-ocr
-          test -s "${OCR_CONFIG_PATH}"
 
-      - name: Verify OpenRouter review access
+      - name: Verify OpenRouter tool access
         if: needs.start_stack.outputs.run_review == 'true'
         env:
-          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-stack-ocr-config.json
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           set -euo pipefail
-          if ocr llm test >/dev/null; then
-            echo 'OpenRouter review preflight passed'
-            exit 0
-          fi
-          echo '::error::OpenRouter review preflight failed'
-          exit 1
+          printf '%s' "${OPENROUTER_API_KEY}" |
+            node .github/scripts/final-ai-review.js verify-openrouter-tools
 
       - name: Run cumulative code review
         id: code_review
@@ -865,10 +847,6 @@ jobs:
           RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
           RANGE_DIR: ${{ runner.temp }}/final-ai-stack-code-ranges
           STDERR_PATH: ${{ runner.temp }}/final-ai-stack-code-stderr.log
-          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-stack-ocr-config.json
-          OCR_LLM_URL: https://openrouter.ai/api/v1/chat/completions
-          OCR_LLM_TOKEN: ${{ secrets.OPENROUTER_API_KEY }}
-          OCR_LLM_MODEL: anthropic/claude-opus-4.6
         run: |
           set -euo pipefail
           if [[ "${REVIEW_MODE}" == "incremental" ]]; then
@@ -878,6 +856,7 @@ jobs:
                 --from "${BASE}" \
                 --to "${HEAD}" \
                 --audience agent \
+                --effort low \
                 --format json \
                 --background "${BACKGROUND}" \
                 --rule .github/open-code-review/final-review-rules.json \
@@ -891,6 +870,7 @@ jobs:
               --from "${REVIEW_FROM}" \
               --to "${HEAD_SHA}" \
               --audience agent \
+              --effort low \
               --format json \
               --background "${BACKGROUND}" \
               --rule .github/open-code-review/final-review-rules.json \
@@ -935,8 +915,6 @@ jobs:
       - name: Remove ephemeral OpenRouter access after code review
         id: cleanup
         if: always() && needs.start_stack.outputs.run_review == 'true'
-        env:
-          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-stack-ocr-config.json
         run: node .github/scripts/final-ai-review.js cleanup-ocr
 
       - name: Run strict topology review
