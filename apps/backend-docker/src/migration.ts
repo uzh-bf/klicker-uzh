@@ -13,8 +13,31 @@ interface Migration {
 
 const MIGRATION_RETRY_ATTEMPTS = 3
 const MIGRATION_RETRY_BASE_DELAY_MS = 2000
+const TRANSIENT_DATABASE_ERROR_CODES = new Set([
+  'P1001',
+  'P1002',
+  'P1017',
+  'P2024',
+])
 
-function isTransientDatabaseError(error: unknown): boolean {
+export function isTransientDatabaseError(error: unknown): boolean {
+  if (typeof error === 'object' && error !== null) {
+    const { code, errorCode } = error as {
+      code?: unknown
+      errorCode?: unknown
+    }
+    const prismaCode =
+      typeof code === 'string'
+        ? code
+        : typeof errorCode === 'string'
+          ? errorCode
+          : undefined
+
+    if (prismaCode !== undefined && /^P\d{4}$/.test(prismaCode)) {
+      return TRANSIENT_DATABASE_ERROR_CODES.has(prismaCode)
+    }
+  }
+
   if (!(error instanceof Error)) return false
   const message = error.message.toLowerCase()
   return (

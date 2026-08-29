@@ -86,7 +86,9 @@ committed locally on `rs/gamification-achievement-receipts`. S1 nearby
 leaderboard context, S2 private Study streaks, S3 achievement changes, S4 PWA
 presentation, follow-up streak corrections, and W6 receipt closure are present
 in the branch. The final integrated checks and review passed; the package is
-locally `pr_ready`.
+at a historical local `pr_ready` checkpoint. W6 currently remains
+`delivery_pending` until the latest published head passes exact-head checks and
+review.
 
 ## Settled product contract
 
@@ -381,17 +383,16 @@ component, focused tests, i18n if needed, and the domain/testing wiki.
    repairs itself. Never consume a freeze for a weekend, after course end,
    while current is zero, or twice for the same missed weekday.
 6. Commit the existing response transaction first. Then run streak
-   reconciliation in a separate fail-open transaction that locks the
-   Participation row with PostgreSQL `FOR UPDATE`, rechecks every eligibility
-   boundary, and applies each Zurich date at most once. If that second
-   transaction fails, log the operational error without participant data and
-   return the accepted response normally.
+   reconciliation in a separate fail-open Prisma `Serializable` transaction,
+   retry `P2034` write conflicts, recheck every eligibility boundary, and apply
+   each Zurich date at most once. If that second transaction fails, log the
+   operational error without participant data and return the accepted response
+   normally.
 7. For today, count eligible, non-content aggregate rows after the durable
    PracticeQuiz or MicroLearning `QuestionResponse` upsert. For overdue dates,
    use the bounded non-content detail-row repair path. Both response-triggered
-   and self-status
-   reconciliation use the same locked service, so the next response or status
-   read repairs an interrupted update.
+   and self-status reconciliation use the same serializable service, so the
+   next response or status read repairs an interrupted update.
 8. Maintain the tracking boundary in leaderboard join/leave and existing course
    gamification mutations. Enforce active Participation, course dates,
    gamification enabled, and assessment disabled on the server.
@@ -605,9 +606,10 @@ the layer changes UI. S2 additionally records the inspected current-day and
 overdue query plans plus forced-failure repair proof. S3 records one integrated
 English and German mobile/desktop flow and the final review result.
 
-The implementation branch is locally verified through the W6 final review and
-is locally `pr_ready`. Source push, merge, release, deployment, and live
-behavior are later states.
+The implementation branch reached a historical local `pr_ready` checkpoint
+through the W6 final review. Its current delivery state is `delivery_pending`
+until the latest published head passes exact-head checks and review. Merge,
+release, deployment, and live behavior are later states.
 
 ## Backlog reconciliation proposal
 

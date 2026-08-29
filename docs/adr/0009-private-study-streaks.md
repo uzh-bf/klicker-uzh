@@ -50,8 +50,10 @@ balance; rejoining after a leave restarts tracking from zero without backfill.
 
 - Streak state is denormalized but bounded (seven columns) and repairable by
   replaying qualifying dates, so crashes between response commit and streak
-  update self-heal on the next submission.
-- Fail-open means a streak can lag behind reality until the next qualifying
-  response reconciles it; this is acceptable for motivational feedback.
+  update self-heal on the next qualifying submission, course overview, or
+  participation read.
+- Fail-open means a streak can remain stale until the next qualifying response
+  or streak-bearing read reconciles it; this is acceptable for motivational
+  feedback.
 - Because tracking begins at join (or rollout), historical responses never
   backfill a streak; students start fresh, matching the roadmap contract.

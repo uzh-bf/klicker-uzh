@@ -483,6 +483,6 @@ finish gate for the complete package.
 ## Next step
 
 W6 remains `delivery_pending` until the reviewed exact head is published and
-its CI is dispositioned. Commit this review receipt, push the branch, update PR
-#5515, and monitor exact-head CI under the user's explicit approval. Do not
+its CI is dispositioned. Commit this review receipt, push the branch, update
+PR #5515, and monitor exact-head CI under the user's explicit approval. Do not
 merge the PR, deploy, or clean up the retained worktree or runtime records.
