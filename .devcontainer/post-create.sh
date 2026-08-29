@@ -2,11 +2,13 @@
 # Runs once when the dev container is created. Installs deps, builds the
 # workspace packages the apps import, prepares the DB, and picks up the Hatchet
 # token. Every routed app plus the two Hatchet workers.
-ROOT="${KLICKER_DEVCONTAINER_ROOT:-/workspaces/klicker-uzh}"
-ROOT="$(cd "$ROOT" && pwd)" || exit 1
-HATCHET_TOKEN_FILE="${KLICKER_HATCHET_TOKEN_FILE:-/config/authdisabled-token}"
 set -euo pipefail
-bash "$ROOT/util/dev-runtime.sh" begin-bootstrap
+SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+bash "$SCRIPT_ROOT/util/dev-runtime.sh" begin-bootstrap
+
+ROOT="${KLICKER_DEVCONTAINER_ROOT:-/workspaces/klicker-uzh}"
+ROOT="$(cd "$ROOT" && pwd)"
+HATCHET_TOKEN_FILE="${KLICKER_HATCHET_TOKEN_FILE:-/config/authdisabled-token}"
 cd "$ROOT"
 
 # DevPod truncates env_file values at '=' (a URL ...?schema=public arrives as

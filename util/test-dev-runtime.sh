@@ -162,26 +162,35 @@ bash "$RUNTIME_SCRIPT" begin-bootstrap >/dev/null
 bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
 bash "$RUNTIME_SCRIPT" require-bootstrap
 
-first_after_strict_mode() {
-  awk '
-    /^set -euo pipefail$/ { strict = 1; next }
-    strict && $0 !~ /^[[:space:]]*($|#)/ { print; exit }
-  ' "$1"
+assert_before() {
+  local file="$1" earlier="$2" later="$3" earlier_line later_line
+
+  earlier_line="$(grep -nF -m1 "$earlier" "$file" | cut -d: -f1 || true)"
+  later_line="$(grep -nF -m1 "$later" "$file" | cut -d: -f1 || true)"
+  [ -n "$earlier_line" ] || fail "expected line in $file: $earlier"
+  [ -n "$later_line" ] || fail "expected line in $file: $later"
+  [ "$earlier_line" -lt "$later_line" ] || \
+    fail "expected '$earlier' before '$later' in $file"
 }
 
 last_semantic_line() {
   awk '$0 !~ /^[[:space:]]*($|#)/ { line = $0 } END { print line }' "$1"
 }
 
-assert_equal \
-  "$(first_after_strict_mode "$REPO_ROOT/.devcontainer/post-create.sh")" \
-  'bash "$ROOT/util/dev-runtime.sh" begin-bootstrap'
+assert_before \
+  "$REPO_ROOT/.devcontainer/post-create.sh" \
+  'bash "$SCRIPT_ROOT/util/dev-runtime.sh" begin-bootstrap' \
+  'ROOT="$(cd "$ROOT" && pwd)"'
 assert_equal \
   "$(last_semantic_line "$REPO_ROOT/.devcontainer/post-create.sh")" \
   'bash "$ROOT/util/dev-runtime.sh" complete-bootstrap'
+assert_before \
+  "$REPO_ROOT/.devcontainer/post-start.sh" \
+  'ROOT="$(cd "$ROOT" && pwd)"' \
+  'bash "$ROOT/util/dev-runtime.sh" require-bootstrap'
 assert_equal \
-  "$(first_after_strict_mode "$REPO_ROOT/.devcontainer/post-start.sh")" \
-  'bash /workspaces/klicker-uzh/util/dev-runtime.sh require-bootstrap'
+  "$(grep -Fc '/workspaces/klicker-uzh' "$REPO_ROOT/.devcontainer/post-start.sh")" \
+  '1'
 grep -Fq '"waitFor": "postCreateCommand"' \
   "$REPO_ROOT/.devcontainer/devcontainer.json" || \
   fail 'devcontainer does not wait for postCreateCommand'
@@ -195,6 +204,13 @@ mkdir -p \
   "$ROOT/util"
 write_file "$ROOT/.devcontainer/devcontainer.env" ''
 cp "$RUNTIME_SCRIPT" "$ROOT/util/dev-runtime.sh"
+bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
+if KLICKER_DEVCONTAINER_ROOT="$TEST_ROOT/missing-root" \
+  bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null 2>&1; then
+  fail 'post-create accepted a missing configured root'
+fi
+assert_absent "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete"
+
 bash "$RUNTIME_SCRIPT" complete-bootstrap >/dev/null
 if KLICKER_DEVCONTAINER_ROOT="$ROOT" \
   KLICKER_HATCHET_TOKEN_FILE="$TEST_ROOT/missing-hatchet-token" \
@@ -220,6 +236,17 @@ grep -Fq 'HATCHET_CLIENT_TOKEN=synthetic-test-token' \
 bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null
 : > "$INSTALL_LOG"
 rm -f "$ROOT/node_modules/.klicker-dependency-fingerprint"
+
+post_start_status=0
+post_start_output="$(
+  cd "$TEST_ROOT"
+  KLICKER_DEVCONTAINER_ROOT='repo' \
+    bash "$REPO_ROOT/.devcontainer/post-start.sh" 2>&1
+)" || post_start_status=$?
+[ "$post_start_status" -ne 0 ] || fail 'post-start bypassed the process-helper gate'
+process_helper_error='Run devrouter ensure to start this managed application process.'
+[[ "$post_start_output" == *"$process_helper_error"* ]] || \
+  fail 'post-start did not use the configured root before its process-helper gate'
 
 bash "$INIT_ROOT/initialize.sh"
 bash "$INIT_ROOT/initialize.sh"
