@@ -1002,7 +1002,7 @@ export async function runProof(
   } catch {
     return result
   } finally {
-    for (const handle of handles.reverse()) {
+    for (const handle of handles.toReversed()) {
       await suppressOutput(() => handle.close())
     }
   }
