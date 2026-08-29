@@ -208,9 +208,9 @@ Marker-only assistant rows remain part of structural validation but are omitted
 from the model request, preserving current provider compatibility. The current
 user row receives its own server-resolved images as multimodal input.
 
-The provider request, prior-image context, language history, and telemetry all
-use this projection. Prompt telemetry hashes only the persisted current trigger
-text and records bounded counts/truncation booleans; it does not hash the full
+The provider request, prior-image context, and telemetry all use this
+projection. Prompt telemetry hashes only the persisted current trigger text and
+records bounded counts/truncation booleans; it does not hash the full
 conversation or log message and attachment IDs.
 
 ### D4 — exact assistant ownership across every lifecycle transition
@@ -250,11 +250,12 @@ The ordered request attachment list is resolved before model work:
   replaces, copies, or redescribes the source bindings.
 
 The route loads current raw bytes from PostgreSQL after the transaction. It
-generates or updates a description only on a new current binding whose
-description is missing. It never updates the source attachment selected for an
-edit. Prior branch rows contribute descriptions only. Foreign, duplicate,
-assistant-owned, removed, missing, or cross-thread attachment IDs fail before
-assistant claim or provider work.
+generates a description for a new current binding and may fill a null-or-empty
+description on the same trigger's existing current binding during retry. It
+never overwrites an existing description or updates the source attachment
+selected for an edit. Prior branch rows contribute descriptions only. Foreign,
+duplicate, assistant-owned, removed, missing, or cross-thread attachment IDs
+fail before assistant claim or provider work.
 
 This retains the existing per-message image-copy storage pattern while moving
 the copy boundary from browser-provided bytes to an ownership-checked server
@@ -753,3 +754,11 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   carries no route for this checkout. The `browser smoke blocked` and
   `check:all blocked` evidence gaps above remain as recorded. Roadmap receipt
   added to the local CodeAPI roadmap.
+- 2026-08-30: the configured integrated `final-reviewer` completed over the
+  exact committed package and found no remaining source-level correctness,
+  authorization, data-minimisation, security, or architecture defect. It
+  required the browser smoke and identified two documentation mismatches:
+  null-or-empty description recovery on retry and an overstated language
+  history consumer. Both documentation corrections are applied; browser
+  verification remains the active gate while the exact managed workspace is
+  restored.

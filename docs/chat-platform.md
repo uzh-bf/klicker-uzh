@@ -98,8 +98,8 @@ binding on the trigger. A persisted attachment ID is copied only from a
 completed user message in the same participant, chatbot, owner, and thread
 scope. Edit omission removes the image only from the new binding set; source
 rows never change. A retry keeps its current binding IDs and bytes, may fill a
-still-null description through a conditional current-message update, and can
-never overwrite an existing description. The server returns authoritative
+null-or-empty description through a conditional current-message update, and
+can never overwrite an existing description. The server returns authoritative
 binding IDs in finish metadata, while full-image hydration remains a display
 operation rather than a send prerequisite.
 
