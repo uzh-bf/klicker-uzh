@@ -626,7 +626,7 @@ follow_up_stacks:
 
 ## Progress
 
-- Status: `active_a0_s0`
+- Status: `active_a0_s1`
 - Baseline: PR #5637 exact head `902af183d8018c79cadcefe46d4a7f17f395392a`;
   all branch-executable checks and eight Playwright shards passed at that head;
   one CodeRabbit thread is resolved. The `final-ai-review` status context is
@@ -639,8 +639,22 @@ follow_up_stacks:
   the single exact target integration, draft stack publication, and focused
   runtime verification through Stack A Gate 3; withheld actions remain
   unchanged.
-- Working tree: Only this uncommitted plan and copied audit are expected for S0.
-  No source, PR-state, stack, or runtime mutation has begun.
+- S0: Commit `2d38a700b` added the reviewed plan and audit with no source
+  changes. PR #5637 is draft again.
+- S1: Layout uses normal page padding. Question-pool and Activities pagination
+  reserve horizontal launcher space on desktop and only compact bottom
+  clearance. Frontend and Playwright typechecks, focused formatting, and test
+  discovery pass under the pinned Volta toolchain. The repository wiki
+  validator reports 35 pre-existing core errors and none in the changed page or
+  new receipt.
+- Runtime evidence: Exact-worktree startup first exposed the fixed Azurite
+  port collision, then cleared it with free task port `11003`. Startup still
+  failed before the app ran because installed devrouter `0.0.45` and the
+  repository pin `0.0.36` led DevPod `0.6.15` to report
+  `inject agent: agent binary not found`. The temporary uncommitted `waitFor`
+  compatibility patch was restored. The exact DevPod is absent and devrouter
+  reports zero exact routes. Local browser proof is therefore blocked by host
+  tooling; the focused browser regression remains required in exact-head CI.
 - Research: Context7 confirmed the 0.15 state API, and installed package source
   confirmed the stable dynamic-transport proxy. The plan now reuses that seam;
   its message-continuity behavior remains a regression-test obligation.
@@ -699,6 +713,6 @@ follow_up_stacks:
   the TypeScript AST without executing JSX. B1 composes a reserved local search
   tool with MCP tools and fences its bounded text through the existing request
   sentinel.
-- Next: Commit S0, return #5637 to draft, complete and verify S1/A0 on its
-  current base, then perform the one approved exact target integration and A0
+- Next: Commit and push S1, require the focused browser regression and exact
+  A0 CI, then perform the one approved exact target integration and A0
   reverification before initializing Stack A and beginning A1.

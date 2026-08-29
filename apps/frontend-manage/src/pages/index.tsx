@@ -466,7 +466,7 @@ function Index() {
                     pageSize={pageSize}
                     setPageSize={setPageSize}
                     showAll
-                    className="mb-20 flex-none md:mb-24"
+                    className="flex-none pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0 md:pr-56"
                   />
                 )}
               </div>

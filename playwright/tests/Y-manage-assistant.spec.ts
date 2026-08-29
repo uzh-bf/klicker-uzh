@@ -1,5 +1,8 @@
+import type { Page } from '@playwright/test'
+
 import { testImageUpload } from '../util/chat.js'
-import { COURSE_ID_TEST, URL_MANAGE } from '../util/constants.js'
+import { COURSE_ID_TEST, LECTURER_ID, URL_MANAGE } from '../util/constants.js'
+import { createQuestionSC } from '../util/fixtures/elements.js'
 import { expect, test } from '../util/fixtures.js'
 import {
   collectWindowMessages,
@@ -13,6 +16,39 @@ import {
   sendManageAssistantMessage,
   trackProposalConfirmRequests,
 } from '../util/manageAssistant.js'
+
+async function expectLauncherClearOfListEnd(
+  page: Page,
+  pageRootTestId: string
+) {
+  const launcher = page.getByTestId('manage-assistant-open')
+  const pageSize = page.getByTestId('pagination-page-size')
+  await expect(launcher).toBeVisible()
+  await expect(pageSize).toBeVisible()
+  await pageSize.scrollIntoViewIfNeeded()
+
+  const rootPaddingBottom = await page
+    .getByTestId(pageRootTestId)
+    .evaluate((element) =>
+      Number.parseFloat(window.getComputedStyle(element).paddingBottom)
+    )
+  expect(rootPaddingBottom).toBeLessThanOrEqual(8)
+
+  const launcherBox = await launcher.boundingBox()
+  const pageSizeBox = await pageSize.boundingBox()
+  expect(launcherBox).not.toBeNull()
+  expect(pageSizeBox).not.toBeNull()
+
+  if ((page.viewportSize()?.width ?? 0) >= 768) {
+    expect(
+      (pageSizeBox?.x ?? 0) + (pageSizeBox?.width ?? 0)
+    ).toBeLessThanOrEqual((launcherBox?.x ?? 0) - 8)
+  } else {
+    expect(
+      (pageSizeBox?.y ?? 0) + (pageSizeBox?.height ?? 0)
+    ).toBeLessThanOrEqual((launcherBox?.y ?? 0) - 8)
+  }
+}
 
 /**
  * Manage assistant (apps/chat `/manage`, embedded via
@@ -431,6 +467,42 @@ test.describe('Manage Assistant — Messaging', () => {
       await panel.evaluate((element) => (element as HTMLElement).inert)
     ).toBe(true)
     await expect(trigger).toBeFocused()
+  })
+
+  test('Closed launcher clears list-ending controls without global page padding', async ({
+    createLiveQuiz,
+    page,
+  }, testInfo) => {
+    testInfo.setTimeout(120_000)
+    const questionTitle = `Assistant clearance question ${testInfo.retry}`
+    await createQuestionSC({
+      name: questionTitle,
+      content: 'Synthetic assistant launcher clearance content.',
+      choices: [{ value: 'Correct' }, { value: 'Incorrect' }],
+      userId: LECTURER_ID,
+    })
+    await page.reload()
+    await createLiveQuiz(page, {
+      name: `Assistant clearance quiz ${testInfo.retry}`,
+      displayName: 'Assistant clearance quiz',
+      questionTitle,
+    })
+
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    for (const viewport of [
+      { height: 800, width: 1280 },
+      { height: 700, width: 320 },
+    ]) {
+      await page.setViewportSize(viewport)
+
+      await page.goto(manageUrl)
+      await expect(page.getByTestId('homepage')).toBeVisible()
+      await expectLauncherClearOfListEnd(page, 'homepage')
+
+      await page.goto(`${manageUrl}/activities`)
+      await expect(page.getByTestId('activities-overview')).toBeVisible()
+      await expectLauncherClearOfListEnd(page, 'activities-overview')
+    }
   })
 
   test('Keyboard focus enters the dock and Escape closes it from inside the iframe', async ({

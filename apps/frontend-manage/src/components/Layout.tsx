@@ -84,10 +84,7 @@ function Layout({
 
       <div
         className={twMerge(
-          // Reserve bottom clearance so scrolled-to-end content (pagination,
-          // primary submit rows) stays clear of the floating assistant
-          // launcher in the bottom-right corner.
-          'flex flex-1 flex-col p-4 pb-24 md:overflow-y-auto',
+          'flex flex-1 flex-col p-4 md:overflow-y-auto',
           className?.children
         )}
         data-cy={data?.cy}
