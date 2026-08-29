@@ -125,6 +125,7 @@ jobs:
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
       - name: Restore pnpm cache
+        id: pnpm-cache
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -134,6 +135,7 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-pnpm-store-
 
       - name: Restore turbo build artifacts
+        id: turbo-cache
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -144,10 +146,21 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-turbo-
 
       - name: Install dependencies
-        run: pnpm install
+        id: install
+        shell: bash
+        run: |
+          started_at=$(date +%s)
+          pnpm install --frozen-lockfile
+          echo "duration_seconds=$(($(date +%s) - started_at))" >> "$GITHUB_OUTPUT"
 
       - name: Build all packages and apps
-        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test --concurrency=4
+        id: build
+        shell: bash
+        run: |
+          started_at=$(date +%s)
+          pnpm run --filter @klicker-uzh/prisma build:test
+          pnpm run build:test --concurrency=4
+          echo "duration_seconds=$(($(date +%s) - started_at))" >> "$GITHUB_OUTPUT"
         env:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
@@ -168,6 +181,26 @@ jobs:
           APP_ORIGIN_CONTROL: http://127.0.0.1:3003
           APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
           APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
+
+      - name: Report build performance
+        if: always()
+        shell: bash
+        env:
+          PNPM_CACHE_HIT: ${{ steps.pnpm-cache.outputs.cache-hit }}
+          TURBO_CACHE_HIT: ${{ steps.turbo-cache.outputs.cache-hit }}
+          INSTALL_SECONDS: ${{ steps.install.outputs.duration_seconds }}
+          BUILD_SECONDS: ${{ steps.build.outputs.duration_seconds }}
+        run: |
+          {
+            echo '### Public ARM64 Playwright build performance'
+            echo
+            echo "- Runner: \`${RUNNER_NAME}\`"
+            echo "- pnpm exact cache hit: \`${PNPM_CACHE_HIT:-false}\`"
+            echo "- Turbo exact cache hit: \`${TURBO_CACHE_HIT:-false}\`"
+            echo "- Install: \`${INSTALL_SECONDS:-incomplete}s\`"
+            echo "- Build: \`${BUILD_SECONDS:-incomplete}s\`"
+            echo '- Turbo task and cache counts remain in the build log.'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Archive Next build outputs
         run: |

@@ -438,6 +438,9 @@ entry and any separately approved host apply.
       workflow remains restore-only with matching cache keys.
 - [x] S2 delivers checksum-pinned, idempotent host and two-host reconcilers;
       host `--apply` remains intentionally unexecuted.
-- [ ] S3 records cache and host performance evidence.
-- [ ] S4 creates and evaluates the shared onboarding skill.
+- [x] S3 records cache, phase, runner-name, and bounded host-pressure evidence
+      without changing route, shard, artifact, or required-status semantics.
+- [x] S4 created and sequentially evaluated the shared
+      `rs-github-runner-onboarding` skill; dotfiles commit `8d0f98b` remains
+      local and unpushed.
 - [ ] S5 publishes and verifies the Klicker PR; merge remains separate.
