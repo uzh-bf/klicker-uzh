@@ -405,4 +405,50 @@ describe('required MCP chat preflight', () => {
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.createThread).not.toHaveBeenCalled()
   })
+
+  test('preserves the exact key for a mixed-case custom mode', async () => {
+    mocks.findUnique.mockResolvedValueOnce({
+      id: 'chatbot-1',
+      ownerId: 'owner-1',
+      allowedModelIds: ['gpt-4.1'],
+      modelSelection: true,
+      systemPrompts: {
+        QuickCheck: { prompt: 'Ask one brief question.' },
+      },
+      mcpConfigurations: [
+        {
+          chatMode: 'QuickCheck',
+          isEnabled: true,
+          priority: 0,
+          allowedTools: ['course_search'],
+          parameters: { required: true, toolAlias: 'doc_query' },
+          mcpServer: {
+            id: 'server-1',
+            name: 'Course',
+            url: 'https://mcp.example.test',
+            authType: 'none',
+            authSecret: null,
+            parameters: null,
+            isActive: false,
+            passChatbotId: false,
+            chatbotIdHeader: null,
+          },
+        },
+      ],
+    })
+
+    const response = await POST(createRequest('QuickCheck'), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(503)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          server: expect.objectContaining({ id: 'server-1' }),
+        }),
+      ],
+      'chatbot-1'
+    )
+  })
 })

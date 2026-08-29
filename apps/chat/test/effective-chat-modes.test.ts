@@ -45,7 +45,7 @@ describe('effective chatbot modes', () => {
       )
     ).toEqual({
       tutor: 'Acts as a patient and knowledgeable tutor.',
-      explainer: 'Stored Explainer description',
+      explainer: 'Get clear explanations of difficult concepts.',
       custom: 'Custom mode description',
     })
   })
