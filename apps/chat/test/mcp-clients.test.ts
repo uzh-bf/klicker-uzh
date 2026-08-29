@@ -23,6 +23,7 @@ import {
 import { isDocQueryToolName } from '../src/lib/sources/normalizeSources'
 import {
   getAggregatedMCPTools as getAggregatedMCPToolsHandle,
+  getMCPTools,
   type MCPServerWithConfig,
 } from '../src/services/mcpClients'
 
@@ -73,12 +74,22 @@ describe('MCP runtime policy', () => {
 
   afterEach(async () => {
     await Promise.all(openHandles.splice(0).map((handle) => handle.close()))
+    vi.unstubAllEnvs()
   })
 
   test('keeps configs without reserved policy keys optional', () => {
     expect(parseMCPRuntimePolicy({ timeoutMs: 1000 })).toEqual({
       required: false,
     })
+  })
+
+  test('returns an empty cleanup handle when legacy MCP is not configured', async () => {
+    vi.stubEnv('MCP_URL', '')
+
+    const handle = await getMCPTools('chatbot-1', 'participant-1', 'account')
+
+    expect(handle.tools).toEqual({})
+    await expect(handle.close()).resolves.toBeUndefined()
   })
 
   test('uses the AI SDK HTTP transport configuration', async () => {

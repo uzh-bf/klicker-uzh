@@ -586,7 +586,7 @@ export async function getMCPTools(
   chatbotId: string,
   participantId: string,
   authMode: AuthMode
-) {
+): Promise<MCPToolsHandle> {
   console.log(' Using legacy MCP configuration from environment variables')
 
   const mcpKey = process.env.MCP_KEY
@@ -594,7 +594,7 @@ export async function getMCPTools(
 
   if (!mcpUrl) {
     console.log('No MCP_URL environment variable found, returning empty tools')
-    return {}
+    return { tools: {}, close: async () => {} }
   }
 
   // Create a legacy server configuration
