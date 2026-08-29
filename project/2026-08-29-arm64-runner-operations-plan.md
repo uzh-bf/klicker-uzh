@@ -1,6 +1,6 @@
 # Public ARM64 runner hardening and optimization
 
-Status: proposed; not yet approved
+Status: approved; implementation in progress
 
 ## Goal
 
@@ -430,7 +430,10 @@ entry and any separately approved host apply.
 - [x] Exact runner-group contract confirmed against current GitHub documentation.
 - [x] Clean task branch and worktree created from `origin/v3`.
 - [x] User approved this plan and its named external policy boundary.
-- [ ] S0 locks and proves the live runner-group policy.
+- [x] S0 policy reconciler is fixture-tested against exact, drifted, inherited,
+      read-only, and incomplete runner-group states.
+- [ ] S0 live runner-group policy is applied and proved with an authenticated
+      API readback.
 - [ ] S1 adds and proves trusted ARM64 cache warming.
 - [ ] S2 delivers the idempotent two-host reconciliation command.
 - [ ] S3 records cache and host performance evidence.
