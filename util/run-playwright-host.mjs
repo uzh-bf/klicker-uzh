@@ -86,6 +86,7 @@ export function resolvePlaywrightEnvironment({
   const namespace = workspace ? `.${workspace}` : ''
   const appUrl = (app) => `https://${app}.klicker${namespace}.localhost`
   const databaseUrl = new URL(databaseTemplate)
+  const semanticEvaluatorPort = '7099'
 
   databaseUrl.hostname = '127.0.0.1'
   databaseUrl.port = String(databasePort)
@@ -95,12 +96,16 @@ export function resolvePlaywrightEnvironment({
   return {
     APP_ORIGIN_AUTH: appUrl('auth'),
     APP_SECRET: appSecret,
+    CATALYST_FORMATIVE_EVALUATOR_URL: `http://127.0.0.1:${semanticEvaluatorPort}/evaluate`,
     CATALYST_FORMATIVE_EVALUATOR_TOKEN: semanticEvaluatorToken,
     COOKIE_DOMAIN: `klicker${namespace}.localhost`,
     DATABASE_URL: databaseUrl.toString(),
     [HOST_RUNNER_ENV]: '1',
+    NODE_ENV: 'test',
     PLAYWRIGHT_BASE_URL: studentUrl,
     PLAYWRIGHT_SEMANTIC_EVALUATOR_HOST: '0.0.0.0',
+    PLAYWRIGHT_SEMANTIC_EVALUATOR_PORT: semanticEvaluatorPort,
+    PLAYWRIGHT_SEMANTIC_EVALUATOR_STUB: 'true',
     URL_AUTH: appUrl('auth'),
     URL_CHAT: appUrl('chat'),
     URL_CONTROL: appUrl('control'),

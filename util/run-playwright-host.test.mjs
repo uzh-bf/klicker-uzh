@@ -94,6 +94,13 @@ test('workspace URLs and the loopback database port resolve together', () => {
     'postgres://user:password@127.0.0.1:49153/database'
   )
   assert.equal(environment.PLAYWRIGHT_SEMANTIC_EVALUATOR_HOST, '0.0.0.0')
+  assert.equal(environment.NODE_ENV, 'test')
+  assert.equal(environment.PLAYWRIGHT_SEMANTIC_EVALUATOR_STUB, 'true')
+  assert.equal(environment.PLAYWRIGHT_SEMANTIC_EVALUATOR_PORT, '7099')
+  assert.equal(
+    environment.CATALYST_FORMATIVE_EVALUATOR_URL,
+    'http://127.0.0.1:7099/evaluate'
+  )
   assert.equal(
     environment.CATALYST_FORMATIVE_EVALUATOR_TOKEN,
     'synthetic-evaluator-token'
