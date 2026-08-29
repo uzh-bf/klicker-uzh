@@ -137,8 +137,11 @@ export function ProductUpdatesModal({
   // e.preventDefault()}` with no prop to override it, so Radix never moves
   // focus into the dialog — the same workaround `disclaimer-modal.tsx` applies.
   // The feed opens with no single obvious action, so focus goes to the list
-  // container rather than to one card's dismiss button. Radix restores focus to
-  // the sidebar entry on close by itself.
+  // container rather than to one card's dismiss button. Restoring focus on
+  // close is not handled here and not handled by Radix either — measured in the
+  // browser, focus lands on `<body>`. `product-updates-menu-item.tsx` refocuses
+  // deliberately once the dialog is gone; that code is load-bearing, not a
+  // redundant duplicate of a Radix behaviour.
   //
   // Focusing from an effect keyed on `isOpen` is too early: Radix mounts the
   // dialog content through its presence machinery in a later commit, so the ref

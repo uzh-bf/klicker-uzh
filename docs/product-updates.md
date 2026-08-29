@@ -186,9 +186,12 @@ with an `IntersectionObserver`; otherwise every sidebar mount would inflate
 again, which is what `lastPresentedAt` and the increment are for. Because the
 mandated card shows its whole body at once, there is no separate "opened the
 entry" gesture, so the read timestamp coincides with that first visibility.
-The modal also focuses its own content on open and returns focus to the sidebar
-entry on close, since the design-system `Modal` suppresses Radix's automatic
-focus handling.
+The design-system `Modal` suppresses Radix's automatic focus handling in both
+directions, so the surface does it itself: the modal focuses its own content on
+open, and `ProductUpdatesMenuItem` — not the modal, and not Radix — returns
+focus to the sidebar entry on close. Dismissing the last card is the exception,
+because the emptied feed unmounts that entry; focus then goes to
+`#main-content`, the target of the application's skip link.
 
 ## Other consumers
 
