@@ -807,3 +807,19 @@ follow_up_stacks:
 - Next: Push PR #5670, reply to and resolve the verified OpenCodeReview thread,
   refresh the whole-branch PR body, and require clean exact-head hosted CI
   before A1 is accepted.
+- A1 native iframe-error correction: Exact-head run `33278326505` passed the
+  hosted build and seven Playwright shards, but shard 2 reproduced the failed
+  recovery journey on both attempts. Its trace proved that Playwright
+  dispatched `error` on the current iframe while React left the loading state
+  unchanged. Installed React 19 source wires a non-delegated `load` listener
+  for iframes, but not `error`; commit `f8b86fd59` therefore replaces the JSX
+  handler with a callback-ref-owned native listener while keeping the timeout
+  as Chromium's authoritative recovery path.
+- A1 native-listener verification: All five Frontend Manage pure test files,
+  the affected Frontend Manage and Playwright TypeScript checks, focused Biome
+  and ESLint, the complete commit hook, and the 26-task pre-push build pass.
+  The post-commit slice review found no actionable issue in listener cleanup,
+  retry-generation identity, stale-event protection, or accessibility. Exact-
+  head hosted shard 2 remains the final browser proof.
+- Next: Refresh PR #5670 for head `f8b86fd59`, then require a clean exact-head
+  hosted browser run before A1 is accepted.
