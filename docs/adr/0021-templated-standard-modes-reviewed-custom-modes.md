@@ -31,7 +31,10 @@ replacing:
   precedence per server. Otherwise Quizzer may inherit only a Tutor binding
   that exposes an exact `doc_query` tool or a required single-tool alias named
   `doc_query`; unrestricted and wildcard configurations are never inherited.
-  A disabled exact Quizzer row blocks inheritance from that server.
+  A disabled exact Quizzer row blocks inheritance from that server. After MCP
+  discovery, a Quizzer request fails closed with the existing required-tool
+  response if no `doc_query` tool is available; optional retrieval outages keep
+  their existing graceful-degradation behavior in Tutor and Explainer.
 - The server may hide any mode that cannot satisfy the chatbot's required-MCP
   policy. The same effective-mode resolver drives participant presentation,
   settings data, request validation, and request-time MCP selection, so a

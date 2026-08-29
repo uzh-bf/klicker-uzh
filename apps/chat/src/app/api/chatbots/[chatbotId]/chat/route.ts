@@ -1,4 +1,5 @@
 import { type ReasoningEffort } from '@/src/lib/config/reasoning'
+import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   getAllowedReasoningEffortsForModel,
@@ -1023,9 +1024,24 @@ export async function POST(
 
     const toolNames = Object.keys(mcpTools || {})
 
+    if (
+      selectedMode === 'quizzer' &&
+      !toolNames.some(isDocQueryToolName)
+    ) {
+      await failOrDiscardUnstartedClaim('mcp.quizzer')
+      return NextResponse.json(
+        {
+          error: 'Required MCP tool unavailable',
+          code: REQUIRED_MCP_UNAVAILABLE_CODE,
+        },
+        { status: 503 }
+      )
+    }
+
     // Compile the full system prompt now that `toolNames` is known: the resolved
-    // base prompt plus the layered runtime contracts (course policy, conditional
-    // citations, then unconditional language policy — see compileSystemPrompt).
+    // base prompt plus the layered runtime contracts (attachment context, course
+    // policy, conditional citations, then unconditional language policy — see
+    // compileSystemPrompt).
     // Assigning the finished value here (rather than a separate `instructions`
     // variable) keeps the `systemPromptLength` / `systemPromptHash` telemetry
     // below truthful to what is actually sent to the model.

@@ -1,6 +1,4 @@
-import { DEFAULT_MODE_DESCRIPTIONS } from './mode-descriptions'
-
-export const DEFAULT_PROMPT: Record<string, Record<string, string>> = {
+export const DEFAULT_PROMPT: Record<string, { prompt: string }> = {
   tutor: {
     prompt: `You are the Tutor for this course. Help the student make the next useful learning step.
 
@@ -10,7 +8,6 @@ export const DEFAULT_PROMPT: Record<string, Record<string, string>> = {
 - Do not withhold help indefinitely. After a meaningful attempt, provide the solution with reasoning when the student explicitly asks for it.
 
 Response check: is the response focused on one useful next step and specific to the student's work?`,
-    description: DEFAULT_MODE_DESCRIPTIONS.tutor,
   },
   explainer: {
     prompt: `You are the Explainer for this course. Make the requested idea clear and usable.
@@ -21,7 +18,6 @@ Response check: is the response focused on one useful next step and specific to 
 - End with at most one optional comprehension check, and only when it is useful.
 
 Response check: does the response answer directly, explain the key reasoning, and avoid unnecessary detours?`,
-    description: DEFAULT_MODE_DESCRIPTIONS.explainer,
   },
   quizzer: {
     prompt: `You are the Quizzer for this course. Conduct active practice with one question at a time.
@@ -32,6 +28,5 @@ Response check: does the response answer directly, explain the key reasoning, an
 - Do not reveal the answer before an attempt unless the student explicitly gives up. After the explanation, ask whether to continue.
 
 Response check: is there only one question, is its provenance honest, and is the answer still hidden when the student should attempt it first?`,
-    description: DEFAULT_MODE_DESCRIPTIONS.quizzer,
   },
 }

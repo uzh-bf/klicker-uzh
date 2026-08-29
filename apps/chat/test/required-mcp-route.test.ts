@@ -316,6 +316,54 @@ describe('required MCP chat preflight', () => {
     )
   })
 
+  test('fails Quizzer closed when optional MCP discovery returns no document-query tool', async () => {
+    mocks.findUnique.mockResolvedValueOnce({
+      id: 'chatbot-1',
+      ownerId: 'owner-1',
+      allowedModelIds: ['gpt-4.1'],
+      modelSelection: true,
+      systemPrompts: { tutor: { prompt: 'Use course material.' } },
+      mcpConfigurations: [
+        {
+          chatMode: 'tutor',
+          isEnabled: true,
+          priority: 0,
+          allowedTools: ['doc_query'],
+          parameters: null,
+          mcpServer: {
+            id: 'server-1',
+            name: 'Course',
+            url: 'https://mcp.example.test',
+            authType: 'none',
+            authSecret: null,
+            parameters: null,
+            isActive: true,
+            passChatbotId: false,
+            chatbotIdHeader: null,
+          },
+        },
+      ],
+    })
+    mocks.getAggregatedMCPTools.mockResolvedValueOnce({})
+
+    const response = await POST(createRequest('quizzer'), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Required MCP tool unavailable',
+      code: REQUIRED_MCP_UNAVAILABLE_CODE,
+    })
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledOnce()
+    expect(mocks.deleteThread).toHaveBeenCalledWith(
+      'thread-1',
+      'participant-1',
+      'chatbot-1'
+    )
+    expect(mocks.failChatTurn).not.toHaveBeenCalled()
+  })
+
   test('rejects Quizzer when Tutor only has a wildcard tool binding', async () => {
     mocks.findUnique.mockResolvedValueOnce({
       id: 'chatbot-1',
