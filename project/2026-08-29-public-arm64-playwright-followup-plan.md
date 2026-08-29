@@ -44,6 +44,13 @@ a deterministic Slate-editor clear failure in `G-elements-mc.spec.ts`; the
 other seven shards passed, so this is application-test debt rather than a
 runner-capacity failure.
 
+Run `33247245177` confirmed the editor fix was initially too broad. Five
+element specs failed because the replacement helper treated Slate placeholder
+text as editor content. The final implementation keeps keyboard deletion only
+for the feedback validation assertions and restores the established replacement
+path elsewhere. Its green live-quiz shard measured 796 seconds; splitting that
+inventory produces estimated 394-second and 437-second files.
+
 ## Slices
 
 ### S0: Establish the eight-shard benchmark
@@ -99,9 +106,11 @@ and timing evidence, and squash-merge after non-review checks pass.
 
 - [x] PR #5620 passed exact-head CI and merged as `c7bc6b5d5`.
 - [x] Fresh branch and isolated worktree created from the merged `origin/v3`.
-- [ ] S0 telemetry published and first eight-shard benchmark recorded; runner
-      capacity is proven and the deterministic editor-clear failure is being
-      repaired before the green baseline is accepted.
-- [ ] S1 live-quiz critical path reduced without changing test coverage.
-- [ ] S2 setup changes limited to measured bottlenecks.
+- [x] S0 telemetry published and first eight-shard benchmark recorded; all
+      eight runners started immediately and runner capacity is proven.
+- [ ] S1 live-quiz critical path split locally into independent 39-test and
+      44-test files; exact-head runtime proof remains.
+- [x] S2 setup changes limited to measured bottlenecks. Restore-only caches and
+      disposable per-shard databases remain; runner and route summaries were
+      added instead of adding unproven setup complexity.
 - [ ] S3 exact-head checks pass and the follow-up PR is merged.

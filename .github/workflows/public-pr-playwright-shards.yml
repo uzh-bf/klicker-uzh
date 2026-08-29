@@ -58,6 +58,16 @@ jobs:
             exit 1
           fi
 
+      - name: Report prepare runner
+        shell: bash
+        run: |
+          {
+            echo '### Public ARM64 Playwright prepare'
+            echo
+            echo "- Runner: \`${RUNNER_NAME}\`"
+            echo "- Platform: \`${RUNNER_OS}/${RUNNER_ARCH}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
@@ -81,6 +91,16 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble
     steps:
+      - name: Report build runner
+        shell: bash
+        run: |
+          {
+            echo '### Public ARM64 Playwright build'
+            echo
+            echo "- Runner: \`${RUNNER_NAME}\`"
+            echo "- Platform: \`${RUNNER_OS}/${RUNNER_ARCH}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
@@ -282,7 +302,19 @@ jobs:
           - hatchet_lite_config_${{ github.run_id }}_${{ github.run_attempt }}_${{ matrix.shardIndex }}:/config
 
     steps:
-      - run: echo "Running Playwright tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})"
+      - name: Report shard runner
+        shell: bash
+        env:
+          SHARD_INDEX: ${{ matrix.shardIndex }}
+          SHARD_TOTAL: ${{ matrix.shardTotal }}
+        run: |
+          echo "Running Playwright tests (shard ${SHARD_INDEX}/${SHARD_TOTAL})"
+          {
+            echo "### Playwright shard ${SHARD_INDEX}/${SHARD_TOTAL}"
+            echo
+            echo "- Runner: \`${RUNNER_NAME}\`"
+            echo "- Platform: \`${RUNNER_OS}/${RUNNER_ARCH}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Check out repository code
         uses: actions/checkout@v4

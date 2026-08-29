@@ -154,6 +154,15 @@ so a stale reporter waiting for GitHub-hosted capacity cannot block current
 filtering, builds, or shards. Public container jobs also trust the exact mounted
 `GITHUB_WORKSPACE` after checkout because its host and container owners differ.
 
+The timing-aware sharder assigns whole spec files; it cannot divide one serial
+spec across runners. Long workflows must therefore split only where each new
+file can establish its own database and browser state. The live-quiz suite uses
+`O1-live-quiz-core.spec.ts` for management, execution, and content, and
+`O2-live-quiz-collaboration.spec.ts` for sharing, access, PIN, and word-cloud
+flows. The second file deliberately repeats cleanup and common-question setup
+because it may run in a different disposable shard. Do not remove that setup or
+introduce cross-file ordering assumptions.
+
 **Hatchet tokens differ per workflow, because `test-playwright` is the only one that runs inside a `container:`.** `test-graphql` runs straight on the runner, so it reaches Hatchet at `localhost` and reads its boot-minted token with `docker exec`. Inside a container job neither works: service containers resolve by service **name** (`hatchet:8888` / `hatchet:7077`, exactly like the `postgres:5432` the same job already uses), and the Playwright image ships no Docker CLI. So `test-playwright` shares `/config` with the Hatchet service through the `hatchet_lite_config` volume and reads `/config/authdisabled-token` directly. Do not "simplify" those hostnames to `localhost` — every shard then fails in `Prepare .env files` before a single test runs. The HTTP token API is not a fallback: `hatchet-lite-dev` disables auth and answers `POST /api/v1/tenants/{id}/api-tokens` with 401 for every caller. The token's own claims always say `localhost`, which is harmless — `packages/hatchet/src/client.ts` passes `host_port`/`api_url` explicitly, and process env beats the `.env` templates for both `node --env-file` and `dotenv`.
 
 **Git hooks run no application test suites** (pre-commit = `check:all`, pre-push = `build`). The Prisma package check regenerates the raw Prisma 7 client before typechecking; no generated-source patch remains. Clean CI jobs therefore do not depend on generated files left by an earlier build or cache restore. The Auth adapter round-trip is intentionally separate because it writes and removes disposable local rows. The expectation before a PR: `check:all` + build + targeted tests for touched logic + browser evidence for UI changes; CI is the real e2e gate.

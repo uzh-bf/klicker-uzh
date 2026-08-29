@@ -443,7 +443,23 @@ jobs:
             route='invalid'
           fi
 
-          printf 'should_run=%s\n' "$should_run" > playwright-run-metadata.txt
+          {
+            printf 'route=%s\n' "$route"
+            printf 'should_run=%s\n' "$should_run"
+            printf 'hosted_filter_result=%s\n' "$hosted_filter_result"
+            printf 'hosted_build_result=%s\n' "$hosted_build_result"
+            printf 'hosted_test_result=%s\n' "$hosted_test_result"
+            printf 'public_pr_result=%s\n' "$public_pr_result"
+          } > playwright-run-metadata.txt
+
+          {
+            echo '### Playwright route status'
+            echo
+            echo "- Route: \`$route\`"
+            echo "- Relevant changes: \`${should_run:-unknown}\`"
+            echo "- Hosted filter/build/tests: \`$hosted_filter_result/$hosted_build_result/$hosted_test_result\`"
+            echo "- Public PR workflow: \`$public_pr_result\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
           # A run cancelled by concurrency (duplicate push, quick re-push) must not
           # leave a red required check behind: the surviving run is the real signal.

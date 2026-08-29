@@ -98,7 +98,6 @@ export async function clearEditorField(page: Page, testId: string) {
   await editor.click()
   await editor.press('ControlOrMeta+A')
   await editor.press('Backspace')
-  await expect(editor).toHaveText('')
 }
 
 // ---------------------------------------------------------------------------
@@ -114,7 +113,7 @@ export async function fillEditorField(
   const editor = page.getByTestId(testId)
   await editor.scrollIntoViewIfNeeded()
   await editor.click()
-  if (clear) await clearEditorField(page, testId)
+  if (clear) await editor.clear()
   await editor.pressSequentially(text)
   await expect(editor).toContainText(text)
 }
@@ -153,7 +152,7 @@ export async function fillAnswerField(
   const field = page.getByTestId(`insert-answer-field-${index}`)
   await field.scrollIntoViewIfNeeded()
   await field.click()
-  if (clear) await clearEditorField(page, `insert-answer-field-${index}`)
+  if (clear) await field.clear()
   await field.pressSequentially(text)
   await expect(field).toContainText(text)
 }
@@ -170,7 +169,7 @@ export async function fillFeedbackField(
   const field = page.getByTestId(`insert-answer-feedback-${index}`)
   await field.scrollIntoViewIfNeeded()
   await field.click()
-  if (clear) await clearEditorField(page, `insert-answer-feedback-${index}`)
+  if (clear) await field.clear()
   await field.pressSequentially(text)
   await expect(field).toContainText(text)
 }
