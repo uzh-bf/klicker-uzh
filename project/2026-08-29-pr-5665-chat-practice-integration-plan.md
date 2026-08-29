@@ -1,4 +1,4 @@
-# Chat practice capability integration adapter
+# PR #5665 — Chat practice capability integration adapter
 
 ## Goal
 
@@ -260,6 +260,15 @@ pnpm checks and browser/model evidence remain outstanding.
 
 ## Progress
 
+- 2026-08-29 delivery amendment: the user approved one upstream-integration
+  pass, push, and pull-request preparation. The synthetic adapter was replayed
+  without conflicts from frozen base `9fc0d52` onto the current committed
+  student-generation head `c48103c0c`; only the 17 adapter commits were
+  rewritten. The student-generation and Quizzer source branches remain
+  untouched. Draft PR #5665 is a new top layer based on
+  `rs/student-generated-practice-elements-plan`. Local application runtime,
+  browser, model, database, and MCP checks remain withheld.
+
 - 2026-08-29: User approved the isolated local adapter goal. Runtime, push, PR,
   upstream integration, source-branch mutation, and cleanup remain withheld.
 - 2026-08-29: Remote refs refreshed. The unrelated primary checkout remains
@@ -336,6 +345,9 @@ pnpm checks and browser/model evidence remain outstanding.
   `c48103c0c`; its published ref remained `cce6e445`. The adapter was 184
   commits ahead and 23 behind current `origin/v3`; no integration was
   performed.
-- Status: COMPLETE for the approved static-only, unpublished adapter scope.
-  Pnpm tests, browser/model checks, runtime E2E replay, push, pull request,
-  upstream integration, source-branch mutation, and cleanup remain withheld.
+- Historical status: COMPLETE for the approved static-only, unpublished
+  adapter scope at `4290dc3fd`.
+- Current delivery status: DRAFT PR #5665 OPEN at adapter head `30c3c5b72`.
+  Pnpm tests, browser/model checks, runtime E2E replay, source-branch mutation,
+  merge, deployment, and cleanup remain withheld. The published PR base still
+  trails the committed dependency head and must advance before review.
