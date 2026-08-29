@@ -434,7 +434,8 @@ entry and any separately approved host apply.
       read-only, and incomplete runner-group states.
 - [ ] S0 live runner-group policy is applied and proved with an authenticated
       API readback.
-- [ ] S1 adds and proves trusted ARM64 cache warming.
+- [x] S1 adds a trusted GitHub-hosted ARM64 cache warmer and proves the public
+      workflow remains restore-only with matching cache keys.
 - [ ] S2 delivers the idempotent two-host reconciliation command.
 - [ ] S3 records cache and host performance evidence.
 - [ ] S4 creates and evaluates the shared onboarding skill.
