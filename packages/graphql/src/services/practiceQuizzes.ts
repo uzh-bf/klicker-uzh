@@ -1,15 +1,14 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  type ElementData,
-  HatchetHandlers,
   type ElementStackInput,
+  type HatchetHandlers,
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  type PrismaTransactionClient,
   propagateActivityToElements,
   recomputeDerivedPermissions,
-  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
@@ -21,28 +20,10 @@ import {
   persistActivityWithPermissions,
   UNPUBLISHED_ACTIVITY_STATUSES,
 } from './activities.js'
+import { hideSemanticFreeTextAuthoringData } from './freeTextEvaluationVisibility.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
-
-function hideSemanticAuthoringData(elementData: ElementData): ElementData {
-  if (
-    elementData.type !== DB.ElementType.FREE_TEXT ||
-    !elementData.options.semanticEvaluation
-  ) {
-    return elementData
-  }
-
-  return {
-    ...elementData,
-    explanation: null,
-    options: {
-      ...elementData.options,
-      solutions: null,
-      semanticEvaluation: undefined,
-    },
-  }
-}
 
 export async function getPracticeQuizData(
   { id }: { id: string },
@@ -98,7 +79,9 @@ export async function getPracticeQuizData(
             ...stack,
             elements: stack.elements.map((element) => ({
               ...element,
-              elementData: hideSemanticAuthoringData(element.elementData),
+              elementData: hideSemanticFreeTextAuthoringData(
+                element.elementData
+              ),
             })),
           })),
         }

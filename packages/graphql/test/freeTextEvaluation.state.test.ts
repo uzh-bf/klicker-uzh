@@ -123,7 +123,7 @@ describe('semantic free-text practice state', () => {
     expect(schedule).toHaveBeenCalledTimes(1)
   })
 
-  it('uses exact matching after a scheduling failure and accepts a new answer', async () => {
+  it('keeps a scheduling-failure non-match unavailable and accepts a new answer', async () => {
     const clientSubmissionId = randomUUID()
     const failedSchedule = vi.fn().mockRejectedValue(new Error('offline'))
     const failedCtx = participantContext(fixture.participant.id, failedSchedule)
@@ -143,11 +143,11 @@ describe('semantic free-text practice state', () => {
       { disclosureVersion: '2026-08-18' }
     )
     expect(fallback.currentAttempt).toMatchObject({
-      evaluationStatus: 'EVALUATED',
-      evaluationSource: 'EXACT_MATCH',
-      correctness: 'INCORRECT',
+      evaluationStatus: 'UNAVAILABLE',
+      evaluationSource: null,
+      correctness: null,
       availabilityReason: 'SCHEDULING_FAILED',
-      retryable: false,
+      retryable: true,
     })
     expect(fallback.attemptsUsed).toBe(1)
     expect(fallback.canSubmitAnswer).toBe(true)
@@ -354,7 +354,7 @@ describe('semantic free-text practice state', () => {
     expect(schedule).not.toHaveBeenCalled()
   })
 
-  it('uses exact matching for a non-match after consent is declined', async () => {
+  it('keeps a non-match unavailable after consent is declined', async () => {
     const ctx = participantContext(fixture.participant.id)
     await decideSemanticEvaluationConsent(
       { disclosureVersion: '2026-08-18', accepted: false },
@@ -373,15 +373,59 @@ describe('semantic free-text practice state', () => {
     )
 
     expect(state.currentAttempt).toMatchObject({
-      evaluationStatus: 'EVALUATED',
-      evaluationSource: 'EXACT_MATCH',
-      correctness: 'INCORRECT',
+      evaluationStatus: 'UNAVAILABLE',
+      evaluationSource: null,
+      correctness: null,
       retryable: false,
       availabilityReason: 'CONSENT_DECLINED',
     })
     expect(state.attemptsUsed).toBe(1)
     expect(state.attemptsRemaining).toBe(1)
     expect(state.canSubmitAnswer).toBe(true)
+  })
+
+  it('ends honestly as unavailable when non-matches reach the answer limit', async () => {
+    const ctx = participantContext(fixture.participant.id)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: false },
+      ctx
+    )
+
+    await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'First inconclusive answer.',
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+    const terminal = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'Second inconclusive answer.',
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+
+    expect(terminal).toMatchObject({
+      cycleStatus: 'UNAVAILABLE',
+      attemptsUsed: 2,
+      attemptsRemaining: 0,
+      canSubmitAnswer: false,
+      canPracticeAgain: true,
+      solutionAuthorized: false,
+      currentAttempt: {
+        evaluationStatus: 'UNAVAILABLE',
+        evaluationSource: null,
+        aggregateScore: null,
+        correctness: null,
+      },
+    })
   })
 
   it('uses exact matching when semantic evaluation is declined', async () => {
@@ -415,7 +459,7 @@ describe('semantic free-text practice state', () => {
     expect(schedule).not.toHaveBeenCalled()
   })
 
-  it('uses exact matching while semantic consent is still required', async () => {
+  it('keeps a non-match unavailable while semantic consent is still required', async () => {
     const ctx = participantContext(fixture.participant.id)
     vi.stubEnv('CATALYST_FORMATIVE_EVALUATOR_URL', '')
     const awaitingConsent = await createFreeTextAttempt(
@@ -430,9 +474,9 @@ describe('semantic free-text practice state', () => {
     )
 
     expect(awaitingConsent.currentAttempt).toMatchObject({
-      evaluationStatus: 'EVALUATED',
-      evaluationSource: 'EXACT_MATCH',
-      correctness: 'INCORRECT',
+      evaluationStatus: 'UNAVAILABLE',
+      evaluationSource: null,
+      correctness: null,
       availabilityReason: 'CONSENT_REQUIRED',
     })
     expect(awaitingConsent.stateVersion).toBe(2)
@@ -522,8 +566,8 @@ describe('semantic free-text practice state', () => {
     expect(fallback).toMatchObject({
       stateVersion: 2,
       currentAttempt: {
-        evaluationStatus: 'EVALUATED',
-        evaluationSource: 'EXACT_MATCH',
+        evaluationStatus: 'UNAVAILABLE',
+        evaluationSource: null,
         availabilityReason: 'CONSENT_DECLINED',
       },
     })
@@ -549,7 +593,7 @@ describe('semantic free-text practice state', () => {
       evaluationStatus: 'PENDING',
     })
     expect(retried.stateVersion).toBe(3)
-    expect(retried.attemptsUsed).toBe(1)
+    expect(retried.attemptsUsed).toBe(2)
     expect(schedule).toHaveBeenCalledTimes(1)
   })
 
@@ -598,6 +642,60 @@ describe('semantic free-text practice state', () => {
     expect(
       retries.map((state) => state.currentAttempt?.evaluationStatus)
     ).toEqual(['PENDING', 'PENDING', 'PENDING', 'PENDING'])
+  })
+
+  it('serializes evaluation retry against a changed answer submission', async () => {
+    const schedule = vi.fn().mockResolvedValue(workflowRunRef())
+    const ctx = participantContext(fixture.participant.id, schedule)
+    await decideSemanticEvaluationConsent(
+      { disclosureVersion: '2026-08-18', accepted: true },
+      ctx
+    )
+    const first = await createFreeTextAttempt(
+      {
+        instanceId: fixture.instance.id,
+        answer: 'It makes a portfolio safer.',
+        answerTime: 3,
+        clientSubmissionId: randomUUID(),
+      },
+      ctx,
+      { disclosureVersion: '2026-08-18' }
+    )
+    await markFreeTextAttemptUnavailable(
+      {
+        attemptId: first.currentAttempt!.id,
+        evaluationRevision: 0,
+        reason: 'EVALUATOR_UNAVAILABLE',
+        retryable: true,
+      },
+      prisma
+    )
+    schedule.mockClear()
+
+    await Promise.allSettled([
+      retryFreeTextEvaluation({ attemptId: first.currentAttempt!.id }, ctx, {
+        disclosureVersion: '2026-08-18',
+      }),
+      createFreeTextAttempt(
+        {
+          instanceId: fixture.instance.id,
+          answer: 'It spreads risk across investments.',
+          answerTime: 3,
+          clientSubmissionId: randomUUID(),
+        },
+        ctx,
+        { disclosureVersion: '2026-08-18' }
+      ),
+    ])
+
+    expect(
+      await prisma.freeTextAttempt.count({
+        where: {
+          cycleId: first.cycleId,
+          evaluationStatus: 'PENDING',
+        },
+      })
+    ).toBe(1)
   })
 
   it('keeps retry and solution reveal as mutually exclusive transitions', async () => {
@@ -827,7 +925,7 @@ describe('semantic free-text practice state', () => {
     expect(state?.explanation).toBeNull()
   })
 
-  it('ends a non-retryable unavailable evaluation without revealing solution details', async () => {
+  it('allows another answer after a non-retryable unavailable evaluation', async () => {
     await prisma.elementInstance.update({
       where: { id: fixture.instance.id },
       data: {
@@ -874,8 +972,9 @@ describe('semantic free-text practice state', () => {
     )
 
     expect(state).toMatchObject({
-      cycleStatus: 'UNAVAILABLE',
-      canPracticeAgain: true,
+      cycleStatus: 'ACTIVE',
+      canPracticeAgain: false,
+      canSubmitAnswer: true,
       canRetryEvaluation: false,
       canRevealSolution: false,
       solutionAuthorized: false,

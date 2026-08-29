@@ -529,7 +529,7 @@ describe('semantic free-text evaluation worker', () => {
     }
   })
 
-  it('uses exact matching when an uncertain output is not an exact match', async () => {
+  it('keeps an uncertain non-match unavailable', async () => {
     const ctx = participantContext(fixture.participant.id)
     await decideSemanticEvaluationConsent(
       { disclosureVersion: '2026-08-18', accepted: true },
@@ -578,11 +578,11 @@ describe('semantic free-text evaluation worker', () => {
       attemptsRemaining: 1,
       canSubmitAnswer: true,
       currentAttempt: {
-        evaluationStatus: 'EVALUATED',
-        evaluationSource: 'EXACT_MATCH',
-        correctness: 'INCORRECT',
+        evaluationStatus: 'UNAVAILABLE',
+        evaluationSource: null,
+        correctness: null,
         availabilityReason: 'EVALUATOR_RESULT_UNAVAILABLE',
-        retryable: false,
+        retryable: true,
       },
     })
   })
@@ -743,7 +743,7 @@ describe('semantic free-text evaluation worker', () => {
       ctx
     )
 
-    for (const score of [20, 30]) {
+    for (const score of [0, 0]) {
       const pending = await createFreeTextAttempt(
         {
           instanceId: fixture.instance.id,
@@ -839,11 +839,11 @@ describe('semantic free-text evaluation worker', () => {
       ctx
     )
     expect(state?.currentAttempt).toMatchObject({
-      evaluationStatus: 'EVALUATED',
-      evaluationSource: 'EXACT_MATCH',
-      correctness: 'INCORRECT',
+      evaluationStatus: 'UNAVAILABLE',
+      evaluationSource: null,
+      correctness: null,
       availabilityReason: 'LECTURER_ENTITLEMENT_UNAVAILABLE',
-      retryable: false,
+      retryable: true,
     })
     expect(state?.canSubmitAnswer).toBe(true)
     expect(fetchMock).not.toHaveBeenCalled()
@@ -871,7 +871,7 @@ describe('semantic free-text evaluation worker', () => {
       ctx
     )
 
-    for (const score of [20, 30]) {
+    for (const score of [0, 0]) {
       const pending = await createFreeTextAttempt(
         {
           instanceId: fixture.instance.id,

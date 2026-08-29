@@ -1,5 +1,11 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { ElementType, UserRole } from '@klicker-uzh/prisma/client'
+import {
+  ElementInstanceType,
+  ElementStackType,
+  ElementType,
+  PublicationStatus,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
 import type { ElementOptionsFreeText } from '@klicker-uzh/types'
 import {
   afterAll,
@@ -16,6 +22,7 @@ import {
   semanticEvaluationForViewer,
 } from '../src/schema/elementData.js'
 import { manipulateElement } from '../src/services/elements.js'
+import { getMicroLearningData } from '../src/services/microLearning.js'
 import { getPracticeQuizData } from '../src/services/practiceQuizzes.js'
 import {
   cleanupFixtures,
@@ -273,5 +280,64 @@ describe('semantic free-text authoring', () => {
     expect(ownerData.options.solutions).toEqual([
       'Diversification reduces idiosyncratic risk.',
     ])
+  })
+
+  it('withholds semantic authoring data from unrelated lecturers in microlearning', async () => {
+    const unrelated = await createFixture(`${TEST_PREFIX}-micro-unrelated`)
+    const microLearning = await prisma.microLearning.create({
+      data: {
+        name: `${TEST_PREFIX}-microlearning`,
+        displayName: 'Semantic microlearning',
+        status: PublicationStatus.PUBLISHED,
+        scheduledStartAt: new Date(Date.now() - 60_000),
+        scheduledEndAt: new Date(Date.now() + 60_000),
+        courseId: fixture.course.id,
+        ownerId: fixture.lecturer.id,
+        stacks: {
+          create: {
+            order: 0,
+            type: ElementStackType.MICROLEARNING,
+            elements: {
+              create: {
+                order: 0,
+                type: ElementInstanceType.MICROLEARNING,
+                elementType: ElementType.FREE_TEXT,
+                elementId: fixture.instance.elementId,
+                ownerId: fixture.lecturer.id,
+                options: fixture.instance.options,
+                elementData: fixture.instance.elementData,
+                results: fixture.instance.results,
+                anonymousResults: fixture.instance.anonymousResults,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    const unauthorizedView = await getMicroLearningData(
+      { id: microLearning.id },
+      lecturerContext(unrelated.lecturer.id)
+    )
+    const unauthorizedData =
+      unauthorizedView?.stacks[0]?.elements[0]?.elementData
+    expect(unauthorizedData?.type).toBe(ElementType.FREE_TEXT)
+    if (unauthorizedData?.type !== ElementType.FREE_TEXT) {
+      throw new Error('Expected a free-text element instance')
+    }
+    expect(unauthorizedData.options.semanticEvaluation).toBeUndefined()
+    expect(unauthorizedData.options.solutions).toBeNull()
+    expect(unauthorizedData.explanation).toBeNull()
+
+    const ownerView = await getMicroLearningData(
+      { id: microLearning.id },
+      lecturerContext(fixture.lecturer.id)
+    )
+    const ownerData = ownerView?.stacks[0]?.elements[0]?.elementData
+    expect(ownerData?.type).toBe(ElementType.FREE_TEXT)
+    if (ownerData?.type !== ElementType.FREE_TEXT) {
+      throw new Error('Expected a free-text element instance')
+    }
+    expect(ownerData.options.semanticEvaluation).toEqual(semanticConfig)
   })
 })

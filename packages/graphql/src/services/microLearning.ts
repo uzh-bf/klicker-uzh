@@ -1,14 +1,14 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
-  HatchetHandlers,
   type ElementStackInput,
+  type HatchetHandlers,
 } from '@klicker-uzh/types'
 import {
   getActivityInstanceConnectOrCreate,
+  type PrismaTransactionClient,
   propagateActivityToElements,
   recomputeDerivedPermissions,
-  type PrismaTransactionClient,
 } from '@klicker-uzh/util'
 import dayjs from 'dayjs'
 import { GraphQLError } from 'graphql'
@@ -19,6 +19,7 @@ import {
   persistActivityWithPermissions,
   UNPUBLISHED_ACTIVITY_STATUSES,
 } from './activities.js'
+import { hideSemanticFreeTextAuthoringData } from './freeTextEvaluationVisibility.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
@@ -40,6 +41,10 @@ export async function getMicroLearningData(
     },
     include: {
       course: true,
+      permissions: {
+        where: { userId: ctx.user?.sub ?? '' },
+        select: { id: true },
+      },
       stacks: {
         include: {
           elements: {
@@ -55,17 +60,33 @@ export async function getMicroLearningData(
     },
   })
 
-  return microLearning
-    ? {
-        ...microLearning,
-        isOwner:
-          ctx.user?.sub &&
-          (ctx.user.role === DB.UserRole.USER ||
-            ctx.user.role === DB.UserRole.ADMIN)
-            ? ctx.user.sub === microLearning.ownerId
-            : false,
-      }
-    : null
+  if (!microLearning) return null
+
+  const isOwner =
+    ctx.user?.sub &&
+    (ctx.user.role === DB.UserRole.USER || ctx.user.role === DB.UserRole.ADMIN)
+      ? ctx.user.sub === microLearning.ownerId
+      : false
+  const isAuthoringUser =
+    ctx.user?.role === DB.UserRole.USER || ctx.user?.role === DB.UserRole.ADMIN
+  const canViewAuthoringData = isOwner || microLearning.permissions.length > 0
+
+  return {
+    ...microLearning,
+    isOwner,
+    stacks:
+      isAuthoringUser && !canViewAuthoringData
+        ? microLearning.stacks.map((stack) => ({
+            ...stack,
+            elements: stack.elements.map((element) => ({
+              ...element,
+              elementData: hideSemanticFreeTextAuthoringData(
+                element.elementData
+              ),
+            })),
+          }))
+        : microLearning.stacks,
+  }
 }
 
 export async function getMicroLearningEvaluation(

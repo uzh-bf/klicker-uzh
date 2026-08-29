@@ -70,15 +70,11 @@ export async function completeFreeTextAttemptEvaluationInTransaction(
     throw new Error('Validated evaluator result could not be mapped')
   }
 
-  const evaluatedCount = await prisma.freeTextAttempt.count({
-    where: {
-      cycleId: attempt.cycleId,
-      evaluationStatus: DB.FreeTextEvaluationStatus.EVALUATED,
-    },
+  const attemptCount = await prisma.freeTextAttempt.count({
+    where: { cycleId: attempt.cycleId },
   })
   const isCorrect = outcomeBand.category === 'CORRECT'
-  const isExhausted =
-    !isCorrect && evaluatedCount + 1 >= attempt.cycle.attemptLimit
+  const isExhausted = !isCorrect && attemptCount >= attempt.cycle.attemptLimit
   const completedAt = new Date()
   const transitioned = await prisma.freeTextAttempt.updateMany({
     where: {
@@ -184,7 +180,9 @@ export async function completeFreeTextAttemptExactFallbackInTransaction(
     response: attempt.answer,
     acceptedExactAnswers: config.accepted_exact_answers,
   })
-  const aggregateScore = exactMatch ? 100 : 0
+  if (!exactMatch) return false
+
+  const aggregateScore = 100
   const outcomeBand = mapFreeTextOutcome({
     score: aggregateScore,
     outcomeBands:
@@ -195,14 +193,6 @@ export async function completeFreeTextAttemptExactFallbackInTransaction(
     throw new Error('Exact fallback could not be mapped')
   }
 
-  const evaluatedCount = await prisma.freeTextAttempt.count({
-    where: {
-      cycleId: attempt.cycleId,
-      evaluationStatus: DB.FreeTextEvaluationStatus.EVALUATED,
-    },
-  })
-  const exhausted =
-    !exactMatch && evaluatedCount + 1 >= attempt.cycle.attemptLimit
   const completedAt = new Date()
   const transitioned = await prisma.freeTextAttempt.updateMany({
     where: {
@@ -235,14 +225,8 @@ export async function completeFreeTextAttemptExactFallbackInTransaction(
     },
     data: {
       bestScore: Math.max(attempt.cycle.bestScore, aggregateScore),
-      status: exactMatch
-        ? DB.FreeTextPracticeCycleStatus.CORRECT
-        : exhausted
-          ? DB.FreeTextPracticeCycleStatus.EXHAUSTED
-          : DB.FreeTextPracticeCycleStatus.ACTIVE,
-      endedAt: exactMatch || exhausted ? completedAt : null,
-      solutionRevealedAt:
-        exhausted && config.solution_reveal_enabled ? completedAt : null,
+      status: DB.FreeTextPracticeCycleStatus.CORRECT,
+      endedAt: completedAt,
       stateVersion: { increment: 1 },
     },
   })
@@ -278,6 +262,16 @@ export async function markFreeTextAttemptUnavailable(
     const cycleId = lockedCycles[0]?.id
     if (!cycleId) return false
 
+    const cycle = await tx.freeTextPracticeCycle.findUnique({
+      where: { id: cycleId },
+      select: {
+        attemptLimit: true,
+        _count: { select: { attempts: true } },
+      },
+    })
+    if (!cycle) return false
+    const unavailableAtLimit = cycle._count.attempts >= cycle.attemptLimit
+
     const completedAt = new Date()
     const result = await tx.freeTextAttempt.updateMany({
       where: {
@@ -290,7 +284,7 @@ export async function markFreeTextAttemptUnavailable(
         evaluationStatus: DB.FreeTextEvaluationStatus.UNAVAILABLE,
         evaluationSource: null,
         availabilityReason: reason,
-        retryable,
+        retryable: retryable && !unavailableAtLimit,
         completedAt,
       },
     })
@@ -302,12 +296,12 @@ export async function markFreeTextAttemptUnavailable(
         status: DB.FreeTextPracticeCycleStatus.ACTIVE,
       },
       data: {
-        ...(retryable
-          ? {}
-          : {
+        ...(unavailableAtLimit
+          ? {
               status: DB.FreeTextPracticeCycleStatus.UNAVAILABLE,
               endedAt: completedAt,
-            }),
+            }
+          : {}),
         stateVersion: { increment: 1 },
       },
     })
@@ -335,6 +329,13 @@ export async function retryFreeTextAttemptInTransaction(
     WHERE "id" = ${cycleId}
     FOR UPDATE
   `
+  const currentAttempt = await prisma.freeTextAttempt.findFirst({
+    where: { cycleId },
+    orderBy: { ordinal: 'desc' },
+    select: { id: true },
+  })
+  if (currentAttempt?.id !== attemptId) return false
+
   const transitioned = await prisma.freeTextAttempt.updateMany({
     where: {
       id: attemptId,

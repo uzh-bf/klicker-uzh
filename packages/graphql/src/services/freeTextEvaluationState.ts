@@ -232,10 +232,7 @@ async function stateFromCycle(
   options?: FreeTextEvaluationServiceOptions
 ): Promise<FreeTextPracticeState> {
   const attempts = [...cycle.attempts].sort((a, b) => a.ordinal - b.ordinal)
-  const attemptsUsed = attempts.filter(
-    (attempt) =>
-      attempt.evaluationStatus === DB.FreeTextEvaluationStatus.EVALUATED
-  ).length
+  const attemptsUsed = attempts.length
   const current = attempts.at(-1) ?? null
   const solutionAuthorized = isSolutionAuthorized(cycle.status, config)
   const consent = await getConsentDecision(
@@ -279,7 +276,7 @@ async function stateFromCycle(
       cycle.status === DB.FreeTextPracticeCycleStatus.ACTIVE &&
       attemptsUsed < cycle.attemptLimit &&
       (!current ||
-        current.evaluationStatus === DB.FreeTextEvaluationStatus.EVALUATED),
+        current.evaluationStatus !== DB.FreeTextEvaluationStatus.PENDING),
     canRetryEvaluation,
     canRevealSolution:
       (cycle.status === DB.FreeTextPracticeCycleStatus.ACTIVE ||

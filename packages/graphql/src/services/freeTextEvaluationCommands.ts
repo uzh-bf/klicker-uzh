@@ -200,39 +200,6 @@ export async function createFreeTextAttempt(
     return await loadCycleState(cycle.id, ctx, options)
   }
 
-  const currentAttempt = await ctx.prisma.freeTextAttempt.findFirst({
-    where: { cycleId: cycle.id },
-    orderBy: { ordinal: 'desc' },
-  })
-  if (currentAttempt?.clientSubmissionId === clientSubmissionId) {
-    await resumeAttemptIfNeeded(currentAttempt, ctx)
-    return await loadCycleState(cycle.id, ctx, options)
-  }
-  if (
-    currentAttempt &&
-    currentAttempt.evaluationStatus !== DB.FreeTextEvaluationStatus.EVALUATED
-  ) {
-    throw freeTextEvaluationError(
-      'Retry the current free-text evaluation before answering',
-      'FREE_TEXT_EVALUATION_INVALID_STATE'
-    )
-  }
-
-  const evaluatedCount = await ctx.prisma.freeTextAttempt.count({
-    where: {
-      cycleId: cycle.id,
-      evaluationStatus: DB.FreeTextEvaluationStatus.EVALUATED,
-    },
-  })
-  if (evaluatedCount >= cycle.attemptLimit) {
-    throw freeTextEvaluationError(
-      'Free-text attempt limit reached',
-      'FREE_TEXT_ATTEMPT_LIMIT_REACHED'
-    )
-  }
-  const submissionCount = await ctx.prisma.freeTextAttempt.count({
-    where: { cycleId: cycle.id },
-  })
   const config = semanticInstance.config
   const rubricHash = getSemanticFreeTextConfigHash(config)
   const exactMatch = matchesAcceptedExactAnswer({
@@ -245,48 +212,109 @@ export async function createFreeTextAttempt(
     ownerEntitled: ownerHasCatalyst(semanticInstance.practiceQuiz),
     consent: consent?.decision ?? null,
   })
-  const exactMatchFallback = unavailableReason !== null
-  const fallbackScore = exactMatch ? 100 : 0
+  const exactMatchFallback = unavailableReason !== null && exactMatch
+  const fallbackScore = 100
   const bands =
     config.outcome_bands ??
     getDefaultFreeTextOutcomeBands(config.question_language)
   const exactBand = exactMatchFallback
     ? mapFreeTextOutcome({ score: fallbackScore, outcomeBands: bands })
     : null
-  const fallbackExhausted =
-    exactMatchFallback &&
-    !exactMatch &&
-    evaluatedCount + 1 >= cycle.attemptLimit
-  const fallbackCompletedAt = exactMatchFallback ? new Date() : null
-
-  const attemptData = {
-    cycleId: cycle.id,
-    ordinal: submissionCount + 1,
-    clientSubmissionId,
-    answer,
-    answerTime,
-    rubricSchemaVersion: config.rubric_schema.schema_version,
-    rubricSchemaHash: rubricHash,
-    evaluationStatus: exactMatchFallback
-      ? DB.FreeTextEvaluationStatus.EVALUATED
-      : unavailableReason
-        ? DB.FreeTextEvaluationStatus.UNAVAILABLE
-        : DB.FreeTextEvaluationStatus.PENDING,
-    evaluationSource: exactMatchFallback
-      ? DB.FreeTextEvaluationSource.EXACT_MATCH
-      : null,
-    retryable: false,
-    availabilityReason: unavailableReason,
-    completedAt: fallbackCompletedAt,
-    aggregateScore: exactMatchFallback ? fallbackScore : null,
-    outcomeBandId: exactBand?.id,
-    outcomeBandLabel: exactBand?.label,
-    correctness: exactBand?.category ?? null,
-  }
+  const fallbackCompletedAt = unavailableReason ? new Date() : null
   let attempt: DB.FreeTextAttempt
+  let createdAttempt = false
   try {
-    attempt = await ctx.prisma.$transaction(async (tx) => {
-      const created = await tx.freeTextAttempt.create({ data: attemptData })
+    const result = await ctx.prisma.$transaction(async (tx) => {
+      const lockedCycles = await tx.$queryRaw<{ id: string }[]>`
+        SELECT "id"
+        FROM "FreeTextPracticeCycle"
+        WHERE "id" = ${cycle.id}
+        FOR UPDATE
+      `
+      if (!lockedCycles[0]) {
+        throw freeTextEvaluationError(
+          'Free-text practice cycle not found',
+          'NOT_FOUND'
+        )
+      }
+
+      const racedDuplicate = await tx.freeTextAttempt.findUnique({
+        where: {
+          cycleId_clientSubmissionId: {
+            cycleId: cycle.id,
+            clientSubmissionId,
+          },
+        },
+      })
+      if (racedDuplicate) {
+        return { attempt: racedDuplicate, created: false }
+      }
+
+      const [lockedCycle, currentAttempt, submissionCount] = await Promise.all([
+        tx.freeTextPracticeCycle.findUnique({ where: { id: cycle.id } }),
+        tx.freeTextAttempt.findFirst({
+          where: { cycleId: cycle.id },
+          orderBy: { ordinal: 'desc' },
+        }),
+        tx.freeTextAttempt.count({ where: { cycleId: cycle.id } }),
+      ])
+      if (
+        !lockedCycle ||
+        lockedCycle.status !== DB.FreeTextPracticeCycleStatus.ACTIVE
+      ) {
+        throw freeTextEvaluationError(
+          'Free-text practice cycle is no longer active',
+          'FREE_TEXT_EVALUATION_INVALID_STATE'
+        )
+      }
+      if (
+        currentAttempt?.evaluationStatus === DB.FreeTextEvaluationStatus.PENDING
+      ) {
+        throw freeTextEvaluationError(
+          'Retry the current free-text evaluation before answering',
+          'FREE_TEXT_EVALUATION_INVALID_STATE'
+        )
+      }
+      if (submissionCount >= lockedCycle.attemptLimit) {
+        throw freeTextEvaluationError(
+          'Free-text attempt limit reached',
+          'FREE_TEXT_ATTEMPT_LIMIT_REACHED'
+        )
+      }
+
+      const unavailableAtLimit =
+        unavailableReason !== null &&
+        !exactMatchFallback &&
+        submissionCount + 1 >= lockedCycle.attemptLimit
+      const created = await tx.freeTextAttempt.create({
+        data: {
+          cycleId: cycle.id,
+          ordinal: submissionCount + 1,
+          clientSubmissionId,
+          answer,
+          answerTime,
+          rubricSchemaVersion: config.rubric_schema.schema_version,
+          rubricSchemaHash: rubricHash,
+          evaluationStatus: exactMatchFallback
+            ? DB.FreeTextEvaluationStatus.EVALUATED
+            : unavailableReason
+              ? DB.FreeTextEvaluationStatus.UNAVAILABLE
+              : DB.FreeTextEvaluationStatus.PENDING,
+          evaluationSource: exactMatchFallback
+            ? DB.FreeTextEvaluationSource.EXACT_MATCH
+            : null,
+          retryable:
+            !unavailableAtLimit &&
+            !exactMatchFallback &&
+            unavailableReason === 'EVALUATOR_UNAVAILABLE',
+          availabilityReason: unavailableReason,
+          completedAt: fallbackCompletedAt,
+          aggregateScore: exactMatchFallback ? fallbackScore : null,
+          outcomeBandId: exactBand?.id,
+          outcomeBandLabel: exactBand?.label,
+          correctness: exactBand?.category ?? null,
+        },
+      })
       const transitioned = await tx.freeTextPracticeCycle.updateMany({
         where: {
           id: cycle.id,
@@ -294,21 +322,18 @@ export async function createFreeTextAttempt(
         },
         data: exactMatchFallback
           ? {
-              status: exactMatch
-                ? DB.FreeTextPracticeCycleStatus.CORRECT
-                : fallbackExhausted
-                  ? DB.FreeTextPracticeCycleStatus.EXHAUSTED
-                  : DB.FreeTextPracticeCycleStatus.ACTIVE,
-              endedAt:
-                exactMatch || fallbackExhausted ? fallbackCompletedAt : null,
-              solutionRevealedAt:
-                fallbackExhausted && config.solution_reveal_enabled
-                  ? fallbackCompletedAt
-                  : null,
-              bestScore: Math.max(cycle.bestScore, fallbackScore),
+              status: DB.FreeTextPracticeCycleStatus.CORRECT,
+              endedAt: fallbackCompletedAt,
+              bestScore: Math.max(lockedCycle.bestScore, fallbackScore),
               stateVersion: { increment: 1 },
             }
-          : { stateVersion: { increment: 1 } },
+          : unavailableAtLimit
+            ? {
+                status: DB.FreeTextPracticeCycleStatus.UNAVAILABLE,
+                endedAt: new Date(),
+                stateVersion: { increment: 1 },
+              }
+            : { stateVersion: { increment: 1 } },
       })
       if (transitioned.count !== 1) {
         throw freeTextEvaluationError(
@@ -328,8 +353,10 @@ export async function createFreeTextAttempt(
           )
         }
       }
-      return created
+      return { attempt: created, created: true }
     })
+    attempt = result.attempt
+    createdAttempt = result.created
   } catch (error) {
     if (!isUniqueConstraintError(error)) throw error
     const racedDuplicate = await ctx.prisma.freeTextAttempt.findUnique({
@@ -346,7 +373,9 @@ export async function createFreeTextAttempt(
     throw error
   }
 
-  if (!unavailableReason) {
+  if (!createdAttempt) {
+    await resumeAttemptIfNeeded(attempt, ctx)
+  } else if (!unavailableReason) {
     await schedulePendingAttempt(attempt, ctx)
   }
 
