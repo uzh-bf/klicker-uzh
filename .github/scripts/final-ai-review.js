@@ -461,9 +461,6 @@ function buildOCRPolicy() {
       model: FINAL_REVIEW_MODEL,
       protocol: 'openai',
       extra_body: {
-        provider: {
-          require_parameters: true,
-        },
         reasoning: {
           effort: 'high',
         },
@@ -671,7 +668,6 @@ function validatePromotionContract(input) {
     pull,
     permission,
     repository,
-    defaultBranch,
     sourceBranch,
     commits,
     files,
@@ -685,7 +681,7 @@ function validatePromotionContract(input) {
     return invalidPromotion('promotion PR must be open and ready')
   }
   if (
-    pull.baseRef !== defaultBranch ||
+    pull.baseRef !== sourceBranch ||
     pull.baseRepo !== repository ||
     pull.headRepo !== repository
   ) {
@@ -752,7 +748,7 @@ function validatePromotionContract(input) {
     shortSha,
     sourceBranch
   )
-  if (expected.releaseCount !== 15 || expected.tagCount !== 15) {
+  if (expected.releaseCount === 0 || expected.tagCount === 0) {
     return invalidPromotion('base promotion file has unexpected structure')
   }
   if (headContent !== expected.content) {
@@ -1275,7 +1271,6 @@ async function inspectPromotion({
     },
     permission,
     repository: `${context.repo.owner}/${context.repo.repo}`,
-    defaultBranch: context.payload.repository.default_branch,
     sourceBranch,
     commits: commits.map((commit) => ({
       message: commit.commit.message,
@@ -3140,12 +3135,15 @@ async function verifyCurrentIndividualFinalReview({ repository, prNumber }) {
 function runCli() {
   const command = process.argv[2]
   if (command === 'configure-ocr') {
-    writeOCRConfig({ token: fs.readFileSync(0, 'utf8') })
+    writeOCRConfig({
+      token: fs.readFileSync(0, 'utf8'),
+      configPath: process.env.OCR_CONFIG_PATH || undefined,
+    })
     console.log('Ephemeral OCR configuration created')
     return
   }
   if (command === 'cleanup-ocr') {
-    removeOCRConfig()
+    removeOCRConfig(process.env.OCR_CONFIG_PATH || undefined)
     console.log('Ephemeral OCR configuration removed')
     return
   }

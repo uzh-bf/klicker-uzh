@@ -204,6 +204,8 @@ export async function getUserActivities(
   ctx: ContextWithUser
 ) {
   const whereClause = {
+    // filter out deleted activities where the user only has derived access
+    NOT: { derived: true, isDeleted: true },
     userId: ctx.user.sub,
     // depending on the shared access flags, determine the required access levels
     permissionLevel:
@@ -392,7 +394,6 @@ export async function getUserActivities(
   //   ),
   // }
 
-  // TODO: correctly get number of activities instead of using length here!!!
   return { numOfActivities: totalCount, activities }
 }
 

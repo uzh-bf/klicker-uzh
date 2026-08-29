@@ -82,17 +82,25 @@ For Next framework or bundler changes, verify both repository-supported paths. `
 
 The Playwright build job must tar the five `.next` trees before artifact upload and extract them in each shard. Direct artifact upload dereferences Turbopack's `.next/node_modules` symlinks and can omit transitive runtime links, producing HTTP 500 before the suite starts. Each shard restores the generated GraphQL client map from `packages/graphql/dist/client.json` before tests because Turbo cache hits do not restore generated source files.
 
+Public PR ARM64 jobs may restore GitHub caches but must use the restore-only
+cache action. They must not spend post-job time uploading pnpm or Turbo caches
+from public PR code. Keep the build at four concurrent Turbo tasks for the
+four-runner, 16-vCPU host layout, and keep service health polling at five
+seconds so container readiness is detected promptly.
+
 ## Decide whether e2e is warranted locally
 
 CI runs Playwright (8-way shard) on almost every code PR — CI is the real e2e gate. Run e2e locally only when your change plausibly breaks a flow (new UI, changed selectors/`data-cy`, auth/redirect changes, activity lifecycle). If you do:
 
-- You are **authorized to start the required servers for this purpose** — test stack via the e2e skills' setup instructions, plus the Hatchet general worker for publish/schedule/end flows and response-api + response processor for live-answer flows (exact triage in the e2e skills).
-- Tear down afterwards (`./_down.sh`); leave the machine as you found it.
+- Run `pnpm playwright:host -- <args>` from the host. Never invoke Playwright or install browsers through `devrouter exec`, a DevPod shell, or another local container.
+- You are **authorized to start the required servers for this purpose** through the host launcher. It reconciles the full devrouter profile, including the Hatchet workers, response-api, and response processor.
+- If the launcher started a runtime for your task, tear it down afterwards with `devrouter stop .`; leave the machine as you found it.
 - On environment failure, switch to `klicker-environment-doctor` before blaming the test.
 
 For Chat model-picker or LiteLLM routing changes, treat the local proxy as a
-separate proof gate: after `devrouter ensure .`, check LiteLLM liveness and the
-chat credits payload before browser interaction. The local Auto Mode maps to
+separate proof gate: start `devrouter ensure . --profile chat,ai`, adding `mcp`
+only for the seeded tool path. Check LiteLLM liveness and the chat credits
+payload before browser interaction. The local Auto Mode maps to
 LiteLLM's Auto V2 `complexity-router`: require direct embedding and target-model
 probes, then inspect logs for the expected `semantic_keyword_match` or
 `llm_classifier` cause and routed model. A successful answer after a classifier
@@ -110,7 +118,9 @@ Without `UPSTREAM_OPENAI_API_KEY`, stop at picker/error-state verification and
 report the live-answer gap explicitly.
 
 For the seeded local MCP smoke test, verify
-`http://localhost:1417/health`, keep `Auto Mode` selected in Benibot, and send
+`devrouter exec . -- curl --fail --silent http://localhost:1417/health` after
+selecting `chat,ai,mcp`, keep `Auto Mode`
+selected in Benibot, and send
 the prompt recorded in `AGENTS.md`. Require a completed
 `KB_doc_query` chip, the `KLICKER_LOCAL_MCP_OK` marker, and the synthetic source
 card in a non-empty final answer both before and after reloading the thread.

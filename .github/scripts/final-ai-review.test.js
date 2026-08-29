@@ -87,23 +87,71 @@ test('grants clean evidence check access only to the required workflow jobs', ()
   assert.doesNotMatch(permissionsFor('review'), / {6}checks:/)
 })
 
-test('pins trusted review code to the event workflow commit when the default branch moves', () => {
+test('pins trusted review code to the event workflow commit when the default branch moves', async () => {
   for (const workflow of ['../workflows/check-ocr-final-review.yml']) {
     const source = fs.readFileSync(path.join(__dirname, workflow), 'utf8')
+    assert.match(source, /^  pull_request_target:/m)
+    assert.match(source, /^  issue_comment:/m)
     assert.match(
       source,
       /GITHUB_WORKFLOW_SHA: \$\{\{ github\.workflow_sha \}\}/
     )
     assert.match(
       source,
+      /- name: Resolve trusted default-branch commit\n        id: resolve\n        uses: actions\/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9\.0\.0/
+    )
+    assert.match(
+      source,
       /const workflowSha = process\.env\.GITHUB_WORKFLOW_SHA/
     )
     assert.match(source, /github\.rest\.repos\.getCommit/)
+    assert.match(source, /ref: workflowSha/)
+    assert.doesNotMatch(source, /commit_sha: workflowSha/)
     assert.match(source, /core\.setOutput\('trusted_sha', workflowSha\)/)
     assert.doesNotMatch(
       source,
       /const branch = context\.payload\.repository\.default_branch/
     )
+
+    const script = source.match(
+      /- name: Resolve trusted default-branch commit[\s\S]*?\n          script: \|\n((?: {12}.*\n)+)/
+    )?.[1]
+    assert.ok(script)
+    const resolveTrustedPolicy = new Function(
+      'github',
+      'context',
+      'core',
+      'process',
+      `return (async () => {\n${script.replace(/^ {12}/gm, '')}\n})()`
+    )
+    const workflowSha = '86e8ac2e13c77e90a9bcd45d0f6b5f03fff18eed'
+    const getCommit = async (parameters) => {
+      assert.deepEqual(parameters, {
+        owner: 'uzh-bf',
+        repo: 'klicker-uzh',
+        ref: workflowSha,
+      })
+      return { data: { sha: workflowSha } }
+    }
+
+    for (const eventName of ['pull_request_target', 'issue_comment']) {
+      const outputs = new Map()
+      await resolveTrustedPolicy(
+        {
+          rest: { repos: { getCommit } },
+        },
+        {
+          eventName,
+          repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
+        },
+        {
+          setFailed: assert.fail,
+          setOutput: (name, value) => outputs.set(name, value),
+        },
+        { env: { GITHUB_WORKFLOW_SHA: workflowSha } }
+      )
+      assert.equal(outputs.get('trusted_sha'), workflowSha)
+    }
   }
 })
 
@@ -340,7 +388,6 @@ test('writes an exact high-reasoning OCR config with mode 0600', () => {
   assert.deepEqual(config, buildOCRConfig({ token }))
   assert.equal(config.llm.model, FINAL_REVIEW_MODEL)
   assert.deepEqual(config.llm.extra_body, {
-    provider: { require_parameters: true },
     reasoning: { effort: 'high' },
   })
   assert.equal(fs.statSync(configPath).mode & 0o777, 0o600)
@@ -1987,15 +2034,20 @@ test('rejects duplicate disposition markers as ambiguous', () => {
   assert.equal(parseDispositionRecord(`${marker}\n${marker}`), null)
 })
 
-function promotionFile(release, tag = 'v3') {
-  return Array.from(
-    { length: 15 },
+function promotionFile(release, tag = 'v3-ai') {
+  const tags = Array.from(
+    { length: 17 },
+    (_, index) => `service${index}:\n  tag: ${tag}`
+  )
+  const annotations = Array.from(
+    { length: 16 },
     (_, index) =>
-      `service${index}:\n  tag: ${tag}\n  podAnnotations:\n    rollout.klicker.uzh.ch/release: '${release}'`
-  ).join('\n')
+      `rollout${index}:\n  podAnnotations:\n    rollout.klicker.uzh.ch/release: '${release}'`
+  )
+  return [...tags, ...annotations].join('\n')
 }
 
-function validPromotionInput(sourceBranch = 'v3') {
+function validPromotionInput(sourceBranch = 'v3-ai') {
   const targetSha = '123456789abc'.padEnd(40, 'd')
   const shortSha = targetSha.slice(0, 12)
   const baseContent = promotionFile('aaaaaaaaaaaa')
@@ -2009,7 +2061,7 @@ function validPromotionInput(sourceBranch = 'v3') {
     pull: {
       state: 'open',
       draft: false,
-      baseRef: 'v3',
+      baseRef: sourceBranch,
       baseSha: 'b'.repeat(40),
       baseRepo: 'uzh-bf/klicker-uzh',
       headRef: `chore/promote-stg-${shortSha}`,
@@ -2045,6 +2097,46 @@ test('accepts current and source-switch generated promotions', () => {
     validatePromotionContract(validPromotionInput('release-candidate')).valid,
     true
   )
+})
+
+test('requires non-empty dynamic promotion inventories', () => {
+  const noTags = validPromotionInput()
+  noTags.baseContent = noTags.baseContent.replace(/^([ \t]+tag: ).*$/gm, '')
+  noTags.headContent = buildExpectedPromotionContent(
+    noTags.baseContent,
+    noTags.buildEvidence.targetSha.slice(0, 12),
+    noTags.sourceBranch
+  ).content
+  assert.equal(validatePromotionContract(noTags).valid, false)
+
+  const noAnnotations = validPromotionInput()
+  noAnnotations.baseContent = noAnnotations.baseContent.replace(
+    /^([ \t]*rollout\.klicker\.uzh\.ch\/release: ).*$/gm,
+    ''
+  )
+  noAnnotations.headContent = buildExpectedPromotionContent(
+    noAnnotations.baseContent,
+    noAnnotations.buildEvidence.targetSha.slice(0, 12),
+    noAnnotations.sourceBranch
+  ).content
+  assert.equal(validatePromotionContract(noAnnotations).valid, false)
+})
+
+test('staging promoter targets the selected source without fixed value counts', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/deploy-stg-promote.yml'),
+    'utf8'
+  )
+
+  assert.match(workflow, /Build Docker image for mcp-lecturer \(stg\)/)
+  assert.match(workflow, /Build Docker image for mcp-student \(stg\)/)
+  assert.match(
+    workflow,
+    /ref: \$\{\{ steps\.target\.outputs\.source_branch \}\}/
+  )
+  assert.ok(workflow.includes('--base "$SOURCE_BRANCH"'))
+  assert.ok(workflow.includes('Verified generated staging promotion'))
+  assert.doesNotMatch(workflow, /expected 15/)
 })
 
 test('requires every trusted exact-SHA staging build run for a promotion', async () => {
@@ -2230,7 +2322,7 @@ test('verifies the generated-promotion no-report status through the repository v
   const workflow = {
     conclusion: 'success',
     event: 'push',
-    head_branch: 'v3',
+    head_branch: input.sourceBranch,
     head_sha: input.buildEvidence.targetSha,
     path: workflowPath,
     repository: { full_name: input.repository },
@@ -2331,7 +2423,7 @@ test('verifies the generated-promotion no-report status through the repository v
       github,
       context: reviewContext(),
       pull,
-      sourceBranch: 'v3',
+      sourceBranch: input.sourceBranch,
       trustedSha,
     }),
     true
@@ -2348,6 +2440,9 @@ test('rejects every material promotion-contract deviation', () => {
     },
     (input) => {
       input.pull.headRepo = 'attacker/fork'
+    },
+    (input) => {
+      input.pull.baseRef = 'v3'
     },
     (input) => {
       input.pull.title = 'chore(deploy): bypass review'
