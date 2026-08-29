@@ -732,6 +732,21 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   `git diff --check` clean. Final status: correction-range recheck pending
   (both reviewer routes returned transient provider 429s); tracked as the
   only open review gate.
+- 2026-08-29: the correction-range recheck is a capability blocker, not a
+  content failure. Seven dispatches across the three reviewer threads
+  (including backoff retries) failed within seconds with account-level 429s
+  or stream disconnects. Per the plan's routing contract, the required
+  independent gate is recorded BLOCKED rather than passed; main-session
+  verification of both corrections is documented in the gitignored final
+  review report. Remaining user ruling: retry after a capacity window (the
+  assigned final-reviewer thread resumes with the standing recheck request),
+  accept the main-session verification and close the gate, or redeem a usage
+  reset to restore reviewer capacity now.
+- 2026-08-29: host-environment warning recorded during the recheck attempt:
+  the shared Docker filesystem reached 100% capacity (225G), which stopped a
+  rerun of the PostgreSQL suite and blocks any container-based verification
+  until space is reclaimed. The runtime was stopped and verified afterward;
+  workspace data is preserved. No cleanup was performed without approval.
 - 2026-08-29: runtime lifecycle closed. The exact workspace
   `rs-chat-authoritative-history` is stopped with fresh provider-state
   verification after the last container check; the devrouter route listing
