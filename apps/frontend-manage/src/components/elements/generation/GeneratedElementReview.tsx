@@ -9,7 +9,7 @@ import {
   SetGeneratedElementDecisionDocument,
 } from '@klicker-uzh/graphql/dist/ops'
 import { Button, toast, UserNotification } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
+import { useFormatter, useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 import ElementEditForm from '../manipulation/ElementEditForm'
 import { ElementEditMode } from '../manipulation/ElementEditModal'
@@ -24,6 +24,32 @@ import type {
 } from './elementGenerationTypes'
 
 type ReviewFilter = 'all' | 'open' | 'attention' | 'kept' | 'discarded'
+
+function draftNeedsAttention(draft: GeneratedElementDraftData) {
+  return (
+    draft.savedElementId === null &&
+    (draft.decision === GeneratedElementDecision.Accepted ||
+      (draft.decision === GeneratedElementDecision.Open &&
+        draft.qualityFlags.length > 0))
+  )
+}
+
+function difficultyLabelKey(level: number | null | undefined) {
+  switch (level) {
+    case 1:
+      return 'difficulty.D1.label' as const
+    case 2:
+      return 'difficulty.D2.label' as const
+    case 3:
+      return 'difficulty.D3.label' as const
+    case 4:
+      return 'difficulty.D4.label' as const
+    case 5:
+      return 'difficulty.D5.label' as const
+    default:
+      return undefined
+  }
+}
 
 function formElementType(type: GeneratedElementDraftData['elementType']) {
   switch (type) {
@@ -141,33 +167,38 @@ function GeneratedDraftSources({
         </p>
       ) : (
         <ul className="mt-2 space-y-2">
-          {sources.map(({ citation, resourceId, sourceUrl, title, type }) => {
-            const pages = citationPages(
-              citation,
-              (page) => t('review.sourcePage', { page }),
-              (from, to) => t('review.sourcePages', { from, to })
-            )
-            return (
-              <li key={`${resourceId}-${citation.pageFrom}-${citation.pageTo}`}>
-                {sourceUrl ? (
-                  <a
-                    className="font-medium text-blue-700 underline"
-                    href={sourceUrl}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    {title}
-                  </a>
-                ) : (
-                  <span className="font-medium text-slate-900">{title}</span>
-                )}
-                <span className="ml-2 text-sm text-slate-600">
-                  {t(`review.sourceTypes.${type}`)}
-                  {pages ? ` · ${pages}` : ''}
-                </span>
-              </li>
-            )
-          })}
+          {sources.map(
+            ({ citation, resourceId, sourceUrl, title, type }, ix) => {
+              const pages = citationPages(
+                citation,
+                (page) => t('review.sourcePage', { page }),
+                (from, to) => t('review.sourcePages', { from, to })
+              )
+              return (
+                <li
+                  key={`${resourceId}-${citation.pageFrom}-${citation.pageTo}`}
+                >
+                  {sourceUrl ? (
+                    <a
+                      className="font-medium text-blue-700 underline"
+                      data-cy={`generated-element-source-${ix}`}
+                      href={sourceUrl}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {title}
+                    </a>
+                  ) : (
+                    <span className="font-medium text-slate-900">{title}</span>
+                  )}
+                  <span className="ml-2 text-sm text-slate-600">
+                    {t(`review.sourceTypes.${type}`)}
+                    {pages ? ` · ${pages}` : ''}
+                  </span>
+                </li>
+              )
+            }
+          )}
         </ul>
       )}
     </section>
@@ -299,6 +330,7 @@ export default function GeneratedElementReview({
   onChanged: () => Promise<void>
 }) {
   const t = useTranslations('manage.elementGeneration')
+  const format = useFormatter()
   const [filter, setFilter] = useState<ReviewFilter>('all')
   const [selectedDraft, setSelectedDraft] =
     useState<GeneratedElementDraftData>()
@@ -310,13 +342,11 @@ export default function GeneratedElementReview({
   const counts = {
     all: build.drafts.length,
     open: build.drafts.filter(
-      (draft) => draft.decision === GeneratedElementDecision.Open
-    ).length,
-    attention: build.drafts.filter(
       (draft) =>
-        draft.decision === GeneratedElementDecision.Accepted &&
-        draft.savedElementId === null
+        draft.decision === GeneratedElementDecision.Open &&
+        !draftNeedsAttention(draft)
     ).length,
+    attention: build.drafts.filter(draftNeedsAttention).length,
     kept: build.drafts.filter(
       (draft) =>
         draft.decision === GeneratedElementDecision.Accepted &&
@@ -330,10 +360,10 @@ export default function GeneratedElementReview({
     filter === 'all'
       ? true
       : filter === 'open'
-        ? draft.decision === GeneratedElementDecision.Open
+        ? draft.decision === GeneratedElementDecision.Open &&
+          !draftNeedsAttention(draft)
         : filter === 'attention'
-          ? draft.decision === GeneratedElementDecision.Accepted &&
-            draft.savedElementId === null
+          ? draftNeedsAttention(draft)
           : filter === 'kept'
             ? draft.decision === GeneratedElementDecision.Accepted &&
               draft.savedElementId !== null
@@ -418,7 +448,7 @@ export default function GeneratedElementReview({
         />
       ) : null}
       <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        <table className="w-full min-w-[760px] text-left text-sm">
+        <table className="w-full min-w-[1100px] text-left text-sm">
           <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
             <tr>
               <th className="px-4 py-3" scope="col">
@@ -431,7 +461,13 @@ export default function GeneratedElementReview({
                 {t('review.columns.source')}
               </th>
               <th className="px-4 py-3" scope="col">
+                {t('review.columns.learningDesign')}
+              </th>
+              <th className="px-4 py-3" scope="col">
                 {t('review.columns.status')}
+              </th>
+              <th className="px-4 py-3" scope="col">
+                {t('review.columns.updated')}
               </th>
               <th className="px-4 py-3" scope="col">
                 {t('review.columns.actions')}
@@ -440,9 +476,8 @@ export default function GeneratedElementReview({
           </thead>
           <tbody className="divide-y divide-slate-100">
             {drafts.map((draft) => {
-              const needsAttention =
-                draft.decision === GeneratedElementDecision.Accepted &&
-                !draft.savedElementId
+              const needsAttention = draftNeedsAttention(draft)
+              const difficultyKey = difficultyLabelKey(draft.targetDifficulty)
               const editable =
                 draft.decision === GeneratedElementDecision.Open ||
                 needsAttention
@@ -485,6 +520,27 @@ export default function GeneratedElementReview({
                       </div>
                     ) : null}
                   </td>
+                  <td className="px-4 py-3 text-slate-600">
+                    <div>
+                      {draft.bloomLevel
+                        ? t('review.bloomLevel', {
+                            level: t(`bloom.${draft.bloomLevel}`),
+                          })
+                        : t('review.notApplicable')}
+                    </div>
+                    <div className="mt-1 text-xs text-slate-500">
+                      {difficultyKey
+                        ? t('review.difficultyLevel', {
+                            level: t(difficultyKey),
+                          })
+                        : t('review.notApplicable')}
+                    </div>
+                    {draft.qualityFlags.length > 0 ? (
+                      <div className="mt-1 text-xs font-medium text-amber-800">
+                        {t('review.qualityAttention')}
+                      </div>
+                    ) : null}
+                  </td>
                   <td className="px-4 py-3">
                     <span
                       className={
@@ -500,6 +556,12 @@ export default function GeneratedElementReview({
                         ? t('review.states.ATTENTION')
                         : t(`review.states.${draft.decision}`)}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {format.dateTime(new Date(draft.updatedAt), {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-2">
@@ -566,7 +628,7 @@ export default function GeneratedElementReview({
               <tr>
                 <td
                   className="px-4 py-8 text-center text-slate-600"
-                  colSpan={5}
+                  colSpan={7}
                 >
                   {t('review.emptyFilter')}
                 </td>

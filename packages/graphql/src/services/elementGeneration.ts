@@ -5,7 +5,9 @@ import type {
   GeneratedQuestionEditable,
 } from '@klicker-uzh/types'
 import { ELEMENT_GENERATION_CAPABILITIES } from '@klicker-uzh/types'
+import { isDeepStrictEqual } from 'node:util'
 import type { ContextWithUser } from '../lib/context.js'
+import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import { isElementGenerationCostConfigured } from './elementGenerationAccounting.js'
 import { manipulateElement } from './elements.js'
 import {
@@ -335,6 +337,54 @@ function normalizedKeepPayload(
   return { current, elementInput }
 }
 
+type SavedElementForRetry = {
+  ownerId: string
+  status: DB.ElementStatus
+  type: DB.ElementType
+  name: string
+  content: string
+  explanation: string | null
+  basePoints: boolean
+  pointsMultiplier: number
+  difficultyLevel: number | null
+  options: unknown
+  tags: Array<{ name: string }>
+}
+
+function normalizedTagNames(tags: string[] | null | undefined) {
+  return [...new Set(tags ?? [])].sort()
+}
+
+function savedElementMatchesKeepRequest(
+  savedElement: SavedElementForRetry,
+  elementInput: ElementManipulationInput,
+  ownerId: string
+) {
+  const options = validateAndProcessElementOptions(
+    elementInput.type,
+    elementInput.options
+  )
+  if (options === null) return false
+
+  const persistedOptions = JSON.parse(JSON.stringify(options))
+  return (
+    savedElement.ownerId === ownerId &&
+    savedElement.status === elementInput.status &&
+    savedElement.type === elementInput.type &&
+    savedElement.name === elementInput.name &&
+    savedElement.content === elementInput.content &&
+    savedElement.explanation === (elementInput.explanation ?? null) &&
+    savedElement.basePoints === elementInput.basePoints &&
+    savedElement.pointsMultiplier === elementInput.pointsMultiplier &&
+    savedElement.difficultyLevel === (elementInput.difficultyLevel ?? null) &&
+    isDeepStrictEqual(savedElement.options, persistedOptions) &&
+    isDeepStrictEqual(
+      savedElement.tags.map((tag) => tag.name).sort(),
+      normalizedTagNames(elementInput.tags)
+    )
+  )
+}
+
 export async function keepGeneratedElementDraft(
   input: KeepGeneratedElementDraftInput,
   ctx: ContextWithUser
@@ -372,7 +422,24 @@ export async function keepGeneratedElementDraft(
         id: input.draftId,
         build: { is: { ownerId: ctx.user.sub } },
       },
-      include: { build: { select: { status: true } } },
+      include: {
+        build: { select: { status: true } },
+        savedElement: {
+          select: {
+            ownerId: true,
+            status: true,
+            type: true,
+            name: true,
+            content: true,
+            explanation: true,
+            basePoints: true,
+            pointsMultiplier: true,
+            difficultyLevel: true,
+            options: true,
+            tags: { select: { name: true } },
+          },
+        },
+      },
     })
     if (!draft) {
       throw questionGenerationServiceError(
@@ -395,9 +462,21 @@ export async function keepGeneratedElementDraft(
     if (draft.savedElementId !== null) {
       if (
         draft.decision === DB.GeneratedElementDecision.ACCEPTED &&
-        draft.revision === input.expectedRevision + 1
+        draft.revision === input.expectedRevision + 1 &&
+        draft.savedElement !== null &&
+        savedElementMatchesKeepRequest(
+          draft.savedElement,
+          elementInput,
+          ctx.user.sub
+        )
       ) {
         return draft
+      }
+      if (draft.revision === input.expectedRevision + 1) {
+        throw questionGenerationServiceError(
+          'CONCURRENT_MODIFICATION',
+          'The saved element does not match this retry request'
+        )
       }
       throw questionGenerationServiceError(
         'DRAFT_INVALID',

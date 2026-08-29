@@ -98,6 +98,7 @@ function draft(overrides: Record<string, unknown> = {}) {
     citations: [],
     provenance: null,
     savedElementId: null,
+    savedElement: null,
     savedAt: null,
     createdAt: savedAt,
     updatedAt: savedAt,
@@ -109,6 +110,7 @@ function draft(overrides: Record<string, unknown> = {}) {
 function savedElement() {
   return {
     id: 91,
+    ownerId,
     type: DB.ElementType.SC,
     status: DB.ElementStatus.REVIEW,
     name: current.name,
@@ -212,6 +214,7 @@ describe('atomic generated-element keep', () => {
       revision: 3,
       decision: DB.GeneratedElementDecision.ACCEPTED,
       savedElementId: 91,
+      savedElement: savedElement(),
       savedAt,
     })
     const { ctx, transaction } = context(existing)
@@ -361,11 +364,12 @@ describe('atomic generated-element keep', () => {
     )
   })
 
-  it('returns the linked element for a network retry after the draft was saved', async () => {
+  it('rejects a changed payload after the draft was saved', async () => {
     const existing = draft({
       revision: 3,
       decision: DB.GeneratedElementDecision.ACCEPTED,
       savedElementId: 91,
+      savedElement: savedElement(),
       savedAt,
     })
     const { ctx } = context(existing)
@@ -375,7 +379,7 @@ describe('atomic generated-element keep', () => {
         { ...input, name: 'Payload is ignored after persistence' },
         ctx as never
       )
-    ).resolves.toMatchObject({ savedElementId: 91 })
+    ).rejects.toMatchObject({ code: 'CONCURRENT_MODIFICATION' })
     expect(manipulateElement).not.toHaveBeenCalled()
   })
 

@@ -236,6 +236,7 @@ export async function seedQuestionGenerationReviewFixture(): Promise<QuestionGen
             ],
             targetDifficulty: type === 'FLASHCARD' ? null : 3,
             predictedDifficulty: type === 'FLASHCARD' ? null : 3.1,
+            qualityFlags: index === 4 ? ['manual_review_required'] : undefined,
           }
         }),
       },

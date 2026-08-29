@@ -34,16 +34,25 @@ test.describe('Generated element review inbox', () => {
       ]) {
         await expect(review).toContainText(type)
       }
-      await expect(review).toContainText('Single choice')
       await expect(review).toContainText('Synthetic course website')
       await expect(review).toContainText('Synthetic course handout.pdf')
       await expect(review).toContainText('Website')
       await expect(review).toContainText('Document')
       await expect(review).toContainText('Page 7')
       await expect(review).toContainText('Page 12')
+      await expect(review).toContainText('Learning design')
+      await expect(review).toContainText('Bloom: Understand')
+      await expect(review).toContainText('Difficulty: Medium')
+      await expect(review).toContainText('Quality review recommended')
+      await expect(review).toContainText('Updated')
       await expect(review).not.toContainText('.md')
 
-      for (const type of ['SC', 'MC', 'KPRIM', 'FLASHCARD'] as const) {
+      for (const [type, choiceCount] of [
+        ['SC', 2],
+        ['MC', 5],
+        ['KPRIM', 4],
+        ['FLASHCARD', 0],
+      ] as const) {
         const draftId = fixture.draftIdsByType[type]
         await review.getByTestId(`element-generation-open-${draftId}`).click()
         const typeEditor = page.getByRole('dialog')
@@ -53,6 +62,9 @@ test.describe('Generated element review inbox', () => {
         await expect(
           typeEditor.getByTestId('insert-question-text')
         ).toBeVisible()
+        await expect(
+          typeEditor.getByTestId(/^insert-answer-field-/)
+        ).toHaveCount(choiceCount)
         await typeEditor.getByTestId('close-element-modal').click()
         await expect(typeEditor).toBeHidden()
       }
@@ -62,10 +74,10 @@ test.describe('Generated element review inbox', () => {
       ).toHaveText('All (20)')
       await expect(
         review.getByTestId('element-generation-filter-open')
-      ).toHaveText('Needs review (20)')
+      ).toHaveText('Needs review (19)')
       await expect(
         review.getByTestId('element-generation-filter-attention')
-      ).toHaveText('Needs attention (0)')
+      ).toHaveText('Needs attention (1)')
       await expect(
         review.getByTestId('element-generation-filter-kept')
       ).toHaveText('Kept (0)')
@@ -94,7 +106,7 @@ test.describe('Generated element review inbox', () => {
         editor.getByTestId('generated-element-sources')
       ).toContainText('Page 12')
       await expect(
-        editor.getByTestId('generated-element-sources').locator('a')
+        editor.getByTestId('generated-element-source-0')
       ).toHaveAttribute('href', 'https://example.invalid/synthetic-course')
       await expect(
         editor.getByTestId('generated-element-sources')
@@ -156,6 +168,58 @@ test.describe('Generated element review inbox', () => {
       await expect(review.locator('tbody tr')).toHaveCount(20)
       await expect(discardRow).toContainText('Needs review')
 
+      const roundTripTypes = ['MC', 'KPRIM', 'FLASHCARD'] as const
+      for (const type of roundTripTypes) {
+        const draftId = fixture.draftIdsByType[type]
+        await review.getByTestId(`element-generation-open-${draftId}`).click()
+        const roundTripEditor = page.getByRole('dialog')
+        await roundTripEditor
+          .getByTestId(`generated-element-keep-${draftId}`)
+          .click()
+        await expect(roundTripEditor).toBeHidden()
+      }
+
+      const roundTripDrafts = await prisma.generatedElementDraft.findMany({
+        where: {
+          id: {
+            in: roundTripTypes.map((type) => fixture.draftIdsByType[type]),
+          },
+        },
+        select: {
+          elementType: true,
+          savedElement: {
+            select: {
+              type: true,
+              status: true,
+              content: true,
+              basePoints: true,
+              options: true,
+            },
+          },
+        },
+      })
+      for (const draft of roundTripDrafts) {
+        expect(draft.savedElement).not.toBeNull()
+        if (!draft.savedElement) {
+          throw new Error(`${draft.elementType} was not persisted`)
+        }
+        expect(draft.savedElement).toMatchObject({
+          type: draft.elementType,
+          status: 'REVIEW',
+        })
+        if (draft.elementType === 'FLASHCARD') {
+          expect(draft.savedElement.basePoints).toBe(false)
+          expect(draft.savedElement.options).toEqual({})
+        } else {
+          const options = draft.savedElement.options as {
+            choices: unknown[]
+          }
+          expect(options.choices).toHaveLength(
+            draft.elementType === 'MC' ? 5 : 4
+          )
+        }
+      }
+
       await page.reload()
       const reloadedReview = page.getByTestId('generated-element-review')
       await expect(reloadedReview).toBeVisible()
@@ -165,11 +229,21 @@ test.describe('Generated element review inbox', () => {
       await expect(
         reloadedReview.getByTestId(`generated-element-row-${discardDraftId}`)
       ).toContainText('Needs review')
+      const openSaved = reloadedReview
+        .getByTestId(`generated-element-row-${keepDraftId}`)
+        .getByTestId(`element-generation-open-saved-${keepDraftId}`)
+      await expect(openSaved).toHaveAttribute(
+        'href',
+        `/?editElementId=${savedElementId}`
+      )
+      await openSaved.click()
+      await expect(page).toHaveURL(
+        new RegExp(`[?&]editElementId=${savedElementId}(?:&|$)`)
+      )
+      const savedEditor = page.getByRole('dialog')
       await expect(
-        reloadedReview
-          .getByTestId(`generated-element-row-${keepDraftId}`)
-          .getByTestId(`element-generation-open-saved-${keepDraftId}`)
-      ).toHaveAttribute('href', `/?editElementId=${savedElementId}`)
+        savedEditor.getByTestId('insert-question-title')
+      ).toHaveValue(editedTitle)
     } finally {
       await cleanupQuestionGenerationReviewFixture()
     }
