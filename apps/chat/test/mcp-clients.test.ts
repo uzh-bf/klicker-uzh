@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const createSDKMCPClientMock = vi.hoisted(() => vi.fn())
+const signDocQueryScopeTokenMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@ai-sdk/mcp', () => ({
   experimental_createMCPClient: createSDKMCPClientMock,
+}))
+
+vi.mock('@/src/lib/server/docQueryScopeToken', () => ({
+  signDocQueryScopeToken: signDocQueryScopeTokenMock,
 }))
 
 vi.mock('@klicker-uzh/util', () => ({
@@ -49,6 +54,7 @@ function setTools(rawTools: Record<string, unknown>) {
 describe('MCP runtime policy', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    signDocQueryScopeTokenMock.mockResolvedValue('scope-token')
   })
 
   test('keeps configs without reserved policy keys optional', () => {
@@ -74,6 +80,81 @@ describe('MCP runtime policy', () => {
         redirect: 'error',
       },
       initializationOptions: { timeout: 1_000 },
+    })
+  })
+
+  test('passes authentication headers through the AI SDK transport', async () => {
+    setTools({ search_docs: { description: 'search' } })
+
+    await getAggregatedMCPTools(
+      [
+        createServer({
+          authType: 'bearer',
+          authSecret: 'transport-token',
+        }),
+      ],
+      { chatbotId: 'chatbot-1', authMode: 'account' }
+    )
+    await getAggregatedMCPTools(
+      [
+        createServer({
+          authType: 'custom',
+          authSecret: JSON.stringify({
+            headers: { 'X-Custom-Auth': 'custom-token' },
+          }),
+        }),
+      ],
+      { chatbotId: 'chatbot-1', authMode: 'account' }
+    )
+    await getAggregatedMCPTools(
+      [
+        createServer({
+          name: 'KB',
+          authType: 'scope_token',
+          authSecret: 'transport-token',
+        }),
+      ],
+      {
+        chatbotId: 'chatbot-1',
+        authMode: 'account',
+        kbId: 'kb-1',
+        sessionId: 'session-1',
+      }
+    )
+
+    expect(createSDKMCPClientMock).toHaveBeenNthCalledWith(1, {
+      transport: {
+        type: 'http',
+        url: 'https://mcp.example.test',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer transport-token',
+        },
+        redirect: 'error',
+      },
+    })
+    expect(createSDKMCPClientMock).toHaveBeenNthCalledWith(2, {
+      transport: {
+        type: 'http',
+        url: 'https://mcp.example.test',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Custom-Auth': 'custom-token',
+        },
+        redirect: 'error',
+      },
+    })
+    expect(createSDKMCPClientMock).toHaveBeenNthCalledWith(3, {
+      transport: {
+        type: 'http',
+        url: 'https://mcp.example.test',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer transport-token',
+          'X-Doc-Query-Scope-Token': 'Bearer scope-token',
+        },
+        redirect: 'error',
+      },
     })
   })
 
