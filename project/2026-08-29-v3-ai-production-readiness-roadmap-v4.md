@@ -723,3 +723,20 @@ these three conditions decide.
   `v3.4.0-rc.N` is the published release tag sequence.
 - The release mechanism, scope, gates, and `v3-ai` integration target are
   unchanged. Earlier review artifacts remain unedited for provenance.
+
+### 2026-08-29 upstream integration receipt
+
+- After an explicit one-time integration approval, custody merged exact
+  `origin/v3-ai` commit `4b85e616b` as the second parent of local commit
+  `3fd9daefa`. This incorporates PR #5658 without replacement work;
+  `apps/chat` at custody is identical to `origin/v3-ai`.
+- The separately scoped default-branch pause safeguard merged exact
+  `origin/v3` commit `bb495a1b2` as the second parent of local commit
+  `967d7b067`. The overlapping policy test and deployment guide merged without
+  conflict or a material change to the reviewed pause behavior.
+- Post-merge safeguard verification passed 38 policy tests under pinned Node
+  24.16.0, YAML parsing, focused Bash syntax and ShellCheck, formatting, diff,
+  and redacted range-scoped Gitleaks checks. CI and live workflow dispatch
+  remain unproven.
+- Both heads remain local and unpushed. No PR, repository control, deployment,
+  remote merge, tag, staging reset, or other task was changed.
