@@ -35,17 +35,21 @@ const Profile = () => {
     >
       <div className="flex flex-col items-center gap-2 rounded border p-2 md:mx-auto md:w-max md:p-4">
         <div className="flex flex-row gap-2 self-end">
-          <Button
-            basic
-            // The tour describes the overview page, so a replay goes there
-            // instead of showing only the steps this page happens to carry.
-            onClick={() => router.push(TOUR_REPLAY_HREF)}
-            className={{ root: 'hover:bg-white hover:underline' }}
-            data={{ cy: 'replay-onboarding-tour' }}
-          >
-            <Button.Icon icon={faRoute} />
-            <Button.Label>{t('pwa.productTours.replayTitle')}</Button.Label>
-          </Button>
+          {/* The assessment build never mounts the tour, so the replay would
+              navigate to an overview page that shows nothing. */}
+          {process.env.NEXT_PUBLIC_IS_ASSESSMENT !== 'true' && (
+            <Button
+              basic
+              // The tour describes the overview page, so a replay goes there
+              // instead of showing only the steps this page happens to carry.
+              onClick={() => router.push(TOUR_REPLAY_HREF)}
+              className={{ root: 'hover:bg-white hover:underline' }}
+              data={{ cy: 'replay-onboarding-tour' }}
+            >
+              <Button.Icon icon={faRoute} />
+              <Button.Label>{t('pwa.productTours.replayTitle')}</Button.Label>
+            </Button>
+          )}
           <Button
             basic
             onClick={() => router.push('/editProfile')}
