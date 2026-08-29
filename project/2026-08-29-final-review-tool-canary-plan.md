@@ -99,6 +99,7 @@
 | `.github/scripts/final-ai-review.js` | Shared canary request, validation, sanitized diagnostics, and CLI command |
 | `.github/scripts/final-ai-review.test.js` | Canary, configuration, and workflow-source regression tests |
 | `docs/ci-and-deployment.md` | Operator behavior and hosted-proof boundary |
+| `docs/solutions/integration/opencodereview-tool-call-preflight.md` | Non-obvious failure mechanism and prevention |
 | This plan | Durable execution and evidence record |
 
 `final-ai-stack-review.js`, its test, and
@@ -164,8 +165,8 @@ workflow and current OpenRouter provider route work together.
 
 ## Progress
 
-- Status: S1 implementation and focused verification pass; immutable slice
-  review is pending.
+- Status: S1 implementation, focused verification, and immutable slice review
+  pass; integrated final review and publication remain.
 - Completed: fresh authoritative baseline, hosted failure reconciliation,
   upstream release/source qualification, OpenRouter endpoint inspection,
   local credential-boundary check, baseline tests, native planning review, the
@@ -176,10 +177,14 @@ workflow and current OpenRouter provider route work together.
 - Verification: 105 helper and qualification tests pass; all 8 offline fixtures
   match; workflow YAML parses; locked Biome 2.5.2 and Prettier 3.3.3 checks pass;
   `git diff --check` passes; the low-cost draft workflow is unchanged.
+- Review: the simplifier and risk-selected slice reviewer returned `DONE` with
+  no findings for immutable commit `347a07918`. The incident lesson is captured
+  in a separate `docs(solutions)` commit.
 - Limitations: trusted advisor unavailable due expired OAuth; local live
   OpenRouter request unavailable without changing the approved secret setup.
   The managed devcontainer could not start because this checkout requires
   devrouter 0.0.45 while the host has 0.0.36; formatting used the exact locked
   binaries already installed in the clean control checkout.
-- Remaining: commit S1, complete required reviews, publish the draft PR, and
-  account for exact-head CI. Both post-merge commands remain pending.
+- Remaining: run fresh integrated verification and final review, publish the
+  draft PR, and account for exact-head CI. Both post-merge commands remain
+  pending.
