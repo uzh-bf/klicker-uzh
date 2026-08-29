@@ -57,7 +57,7 @@ export default {
     },
     productUpdates: {
       title: "What's new",
-      unread: 'Unread',
+      unreadCount: '{count} unread',
       dismiss: 'Dismiss update',
       details: 'Read more',
     },

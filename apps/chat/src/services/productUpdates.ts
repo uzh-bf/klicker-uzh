@@ -23,6 +23,7 @@ export interface ChatProductUpdate {
   publishedAt: string
   title: string
   summary: string
+  bodyMarkdown?: string
   detailsUrl?: string
   readAt: string | null
   dismissedAt: string | null
@@ -83,6 +84,9 @@ export async function getChatProductUpdates(
         publishedAt: update.publishedAt,
         title: localized(update.title, locale),
         summary: localized(update.summary, locale),
+        bodyMarkdown: update.bodyMarkdown
+          ? localized(update.bodyMarkdown, locale)
+          : undefined,
         detailsUrl: update.detailsUrl,
         readAt: state?.readAt?.toISOString() ?? null,
         dismissedAt: state?.dismissedAt?.toISOString() ?? null,

@@ -59,7 +59,7 @@ export default {
     },
     productUpdates: {
       title: 'Neuigkeiten',
-      unread: 'Ungelesen',
+      unreadCount: '{count} ungelesen',
       dismiss: 'Neuigkeit ausblenden',
       details: 'Mehr erfahren',
     },
