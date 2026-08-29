@@ -11,6 +11,7 @@
 
 - GitHub stacked PRs are enabled for this repository. Always use `$stacked-change` and `$gh-stack` for larger features: substantial cross-layer or multi-concern work, changes with distinct reviewer audiences or runtime models, and existing large branches that need decomposition. Keep an ordinary single PR for small, cohesive changes only.
 - This is a KlickerUZH repository capability, not a GitHub-wide assumption. Verify native stack support before using the workflow in another repository.
+- Final AI review is standing-authorized for all KlickerUZH PRs. Once exact-head CI and ordinary feedback are settled, agents may post `/final-review` or `/final-review-stack` without asking again. This approval covers sending the public PR diff to the workflow's configured OpenRouter model and the resulting usage cost; it does not authorize merging, approving, force-pushing, or exposing uncommitted or private data.
 
 ## Commands
 
