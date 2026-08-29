@@ -122,7 +122,9 @@ branch integration, and final delivery are coupled on the critical path.
 ## Progress
 
 - Status: Source-reference-only correction implemented, reviewed, and
-  published as draft PR #5645; exact-head CI is pending.
+  published as ready PR #5645. The ready-state Sonar analysis exposed one
+  branch-owned unsafe-public-temporary-directory finding in the default lock
+  path; the lock now lives in the operator's home directory.
 - Completed: False-positive classification, current-base worktree, continuity
   planning review, purpose-based naming, reviewed proof custody and lifecycle
   protections, asymmetric marker logic, regression coverage, and wiki
@@ -150,12 +152,23 @@ branch integration, and final delivery are coupled on the critical path.
 - Fresh checks after the final-review correction: Focused Vitest passed 23/23
   under pinned Node 24; Node syntax, Biome, Prettier, and `git diff --check`
   passed.
+- Ready-state correction: The public `/private/tmp` lock location moved to the
+  operator-private home directory. Focused Vitest passed 23/23 on the host;
+  Node syntax, Biome, and `git diff --check` passed. Exact-head Node 24 CI and
+  Sonar re-analysis remain pending.
 - Integration: The one-time rebase onto `v3-ai@609000ea` preserved the complete
   reviewed source tree; the only upstream change was the known staging
   deployment annotation.
-- Published: Draft PR #5645 at exact head `d2b9fe6d7`.
-- Remaining: Exact-head CI and ready state.
-- Required delivery layer: Ready pull request. Achieved layer: Verified local
-  correction.
-- Next action: Commit the PR metadata, push it, monitor exact-head CI, and mark
-  the unchanged passing PR ready.
+- Published: Ready PR #5645 at exact pre-correction head `ce92d35f3`.
+- Review-policy limitation: The repository `/final-review` workflow accepts an
+  open ready PR only when it targets the default branch or belongs to a
+  verified native stack. PR #5645 targets `v3-ai`, so the approved trigger was
+  authorized but produced no review job. The prior native integrated review
+  remains the applicable full-branch evidence; the lock-path correction needs
+  its bounded correction review before publication.
+- Remaining: Commit and push the lock-path correction, obtain its bounded
+  review, then verify exact-head CI and Sonar re-analysis.
+- Required delivery layer: Ready pull request. Achieved layer: Ready pull
+  request with one locally corrected, not-yet-published Sonar finding.
+- Next action: Commit and review the lock-path correction, push it, and monitor
+  exact-head CI without merging.

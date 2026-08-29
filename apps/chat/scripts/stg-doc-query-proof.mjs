@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { open, readFile, unlink } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { isAbsolute, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -21,7 +22,10 @@ const SCOPE_HEADER = 'X-Doc-Query-Scope-Token'
 const DEFAULT_DEADLINE_MS = 30 * 60 * 1000
 const TERMINATION_GRACE_MS = 2_000
 const WORKER_PATH = fileURLToPath(import.meta.url)
-const DEFAULT_LOCK_PATH = '/private/tmp/klicker-stg-doc-query-proof.lock'
+const DEFAULT_LOCK_PATH = resolve(
+  homedir(),
+  '.klicker-stg-doc-query-proof.lock'
+)
 const ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
