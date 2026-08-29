@@ -26,8 +26,8 @@ import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { featureTargetProps } from '../onboarding/featureTargets'
 import ProductUpdateFeedModal from '../productUpdates/ProductUpdateFeedModal'
-import { spotlightTargetProps } from '../productUpdates/spotlightTargets'
 import { useProductUpdateSpotlight } from '../productUpdates/useProductUpdateSpotlight'
 import { useProductUpdates } from '../productUpdates/useProductUpdates'
 import SupportModal from './SupportModal'
@@ -350,7 +350,7 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
               unknown attributes, and the menu itself renders in two branches. */}
           <div
             className="flex"
-            {...spotlightTargetProps('manage-header-analytics')}
+            {...featureTargetProps('manage-header-analytics')}
           >
             {learningAnalyticsEnabled ? (
               analyticsMenu

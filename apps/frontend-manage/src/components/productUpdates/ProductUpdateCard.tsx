@@ -9,8 +9,8 @@ import { useRouter } from 'next/router'
 import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { resolveFeatureTarget } from '../onboarding/featureTargets'
 import { openProductUpdateCta } from './openCta'
-import { resolveSpotlightTarget } from './spotlightTargets'
 import { trackProductUpdate } from './tracking'
 
 function useLocalized() {
@@ -95,9 +95,7 @@ function ProductUpdateCard({
   const [spotlightReachable, setSpotlightReachable] = useState(false)
 
   useEffect(() => {
-    setSpotlightReachable(
-      resolveSpotlightTarget(update.spotlightTarget) !== null
-    )
+    setSpotlightReachable(resolveFeatureTarget(update.spotlightTarget) !== null)
   }, [update.spotlightTarget])
 
   const body = update.bodyMarkdown ? localized(update.bodyMarkdown) : undefined
