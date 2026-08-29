@@ -114,11 +114,7 @@ export function transformCitationMarkers<T extends MarkdownAstNode>(
           | { start?: { offset?: number } }
           | undefined
         nextChildren.push(
-          ...splitCitationMarkers(
-            child.value,
-            scope,
-            position?.start?.offset
-          )
+          ...splitCitationMarkers(child.value, scope, position?.start?.offset)
         )
         continue
       }
