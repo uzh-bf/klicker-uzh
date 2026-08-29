@@ -773,3 +773,36 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   remained
   reachable, but no public branch or PR state changed. The next push and draft
   PR creation remain authorized once Git transport recovers.
+
+## Progress addendum 2026-08-30 (final gate closure)
+
+- 2026-08-30: the correction-range recheck completed on the Lorentz reviewer
+  route after account capacity recovered. First verdict on
+  `fa414beb6..16ff69e92`: CHANGES_REQUIRED — the new PostgreSQL
+  boundary-cycle test made index 255 an assistant while reusing it as the
+  user-role trigger, so the exact-trigger validation rejected before the
+  recursive walker reached the boundary cycle condition; the test did not
+  pin the CTE boundary check. Finding verified against the code.
+- 2026-08-30: the reviewer's requested correction is committed as
+  `d72d598ee` (role parity inverted to assistant-even/user-odd, alternation
+  preserved, cycle edge from ids[0] to ids[1] retained). Test-file change
+  only; production logic unchanged.
+- 2026-08-30: the recheck of `d72d598ee` returned APPROVED with static
+  reasoning that the corrected fixture now reaches the depth-256 walk and
+  `assertValidHeaders` rejects via the truncated-branch check on
+  `oldest.parentId`. The final-gate recheck is CLOSED; no open review gate
+  remains for the package.
+- 2026-08-30: the corrected test file could not be rerun against a live
+  PostgreSQL in a container. The managed workspace stayed at zero routes
+  because host-wide Devsy lifecycle transitions held by other concurrent
+  sessions serialized every ensure attempt (twelve bounded retries plus
+  several direct attempts, all rejected before side effects). No raw Docker
+  repair or cleanup was attempted. The static verdict plus the earlier
+  passing suite on the production logic stand as the evidence; the
+  container rerun of the boundary-cycle test is recorded as a remaining
+  evidence gap to close at the next available runtime window. The browser
+  smoke and repository-wide `check:all` gaps above are unchanged.
+- 2026-08-30: delivery state — locally committed and reviewed through
+  `d72d598ee`. Push and draft PR remain separately authorized actions and
+  additionally blocked by host DNS failure for `github.com` Git transport
+  as recorded above.
