@@ -96,6 +96,9 @@ CREATE INDEX "FreeTextPracticeCycle_elementInstanceId_status_idx" ON "FreeTextPr
 CREATE UNIQUE INDEX "FreeTextPracticeCycle_participantId_elementInstanceId_ordin_key" ON "FreeTextPracticeCycle"("participantId", "elementInstanceId", "ordinal");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Participation_id_participantId_key" ON "Participation"("id", "participantId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "FreeTextAttempt_questionResponseDetailId_key" ON "FreeTextAttempt"("questionResponseDetailId");
 
 -- CreateIndex
@@ -108,10 +111,7 @@ CREATE UNIQUE INDEX "FreeTextAttempt_cycleId_ordinal_key" ON "FreeTextAttempt"("
 CREATE UNIQUE INDEX "FreeTextAttempt_cycleId_clientSubmissionId_key" ON "FreeTextAttempt"("cycleId", "clientSubmissionId");
 
 -- AddForeignKey
-ALTER TABLE "FreeTextPracticeCycle" ADD CONSTRAINT "FreeTextPracticeCycle_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "Participant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "FreeTextPracticeCycle" ADD CONSTRAINT "FreeTextPracticeCycle_participationId_fkey" FOREIGN KEY ("participationId") REFERENCES "Participation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "FreeTextPracticeCycle" ADD CONSTRAINT "FreeTextPracticeCycle_participationId_participantId_fkey" FOREIGN KEY ("participationId", "participantId") REFERENCES "Participation"("id", "participantId") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "FreeTextPracticeCycle" ADD CONSTRAINT "FreeTextPracticeCycle_elementInstanceId_fkey" FOREIGN KEY ("elementInstanceId") REFERENCES "ElementInstance"("id") ON DELETE CASCADE ON UPDATE CASCADE;

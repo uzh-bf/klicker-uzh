@@ -158,10 +158,9 @@ model FreeTextPracticeCycle {
   solutionRevealedAt DateTime?
   endedAt            DateTime?
 
-  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  participantId String      @db.Uuid
+  participantId String @db.Uuid
 
-  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  participation   Participation @relation(fields: [participationId, participantId], references: [id, participantId], onDelete: Cascade, onUpdate: Cascade)
   participationId Int
 
   elementInstance   ElementInstance @relation(fields: [elementInstanceId], references: [id], onDelete: Cascade, onUpdate: Cascade)

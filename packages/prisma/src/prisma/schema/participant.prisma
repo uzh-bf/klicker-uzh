@@ -74,7 +74,6 @@ model Participant {
   participations                  Participation[]
   questionResponses               QuestionResponse[]
   detailQuestionResponses         QuestionResponseDetail[]
-  freeTextPracticeCycles          FreeTextPracticeCycle[]
   liveQuizResponses               LiveQuizResponse[]
   feedbacks                       Feedback[]
   elementFeedbacks                ElementFeedback[]
@@ -179,6 +178,7 @@ model Participation {
   updatedAt DateTime @updatedAt
 
   @@unique([courseId, participantId])
+  @@unique([id, participantId])
 }
 
 model GroupAssignmentPoolEntry {

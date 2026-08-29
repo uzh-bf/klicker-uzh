@@ -277,6 +277,27 @@ describe('semantic free-text evaluation', () => {
     ).toEqual([])
   })
 
+  it('rejects a score that does not belong to the proposed rubric level', () => {
+    expect(
+      validateEvaluateFreeTextResponse({
+        value: {
+          ...validResponse,
+          rubric_assessments: [
+            {
+              ...validResponse.rubric_assessments[0],
+              normalized_score: 50,
+            },
+            ...validResponse.rubric_assessments.slice(1),
+          ],
+        },
+        taskBundleId: 'attempt-1',
+        rubricSchema: validSchema,
+      })
+    ).toContain(
+      'rubric assessment 1 normalized_score does not match proposed_level'
+    )
+  })
+
   it('rejects mismatched, uncertain, and out-of-range evaluator output', () => {
     const invalidResponse = {
       ...validResponse,

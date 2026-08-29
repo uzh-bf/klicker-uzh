@@ -81,15 +81,19 @@ export type FreeTextRubricAssessment = {
   rubric_name: string
   proposed_level: string
   normalized_score: number
+  // Contract-facing explanation used for evaluator audit and validation.
   justification: string
+  // Evidence identifiers supplied to the evaluator for this assessment.
   evidence_ids: string[]
   confidence: number
   needs_review: boolean
   review_flags: string[]
+  // Subset of evidence identifiers the evaluator actually relied on.
   used_evidence_ids: string[]
   unsupported_claims: string[]
   evidence_sufficiency?: string | null
   uncertainty_reason?: string | null
+  // Participant-facing explanation shown in the formative feedback UI.
   rationale: string
 }
 

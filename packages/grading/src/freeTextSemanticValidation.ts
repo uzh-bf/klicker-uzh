@@ -173,13 +173,23 @@ export function validateEvaluateFreeTextResponse({
         if (assessment.rubric_name !== configuredRubric.name) {
           errors.push(`${prefix} rubric_name does not match the rubric`)
         }
-        if (
-          !isNonEmptyString(assessment.proposed_level) ||
-          !configuredRubric.achievement_levels.some(
-            (level) => level.name === assessment.proposed_level
+        const configuredLevel = isNonEmptyString(assessment.proposed_level)
+          ? configuredRubric.achievement_levels.find(
+              (level) => level.name === assessment.proposed_level
+            )
+          : undefined
+        if (!configuredLevel) {
+          errors.push(`${prefix} proposed_level is not configured`)
+        } else if (
+          isFiniteNumber(assessment.normalized_score) &&
+          !approximatelyEqual(
+            assessment.normalized_score,
+            configuredLevel.normalized_score
           )
         ) {
-          errors.push(`${prefix} proposed_level is not configured`)
+          errors.push(
+            `${prefix} normalized_score does not match proposed_level`
+          )
         }
       }
     }
