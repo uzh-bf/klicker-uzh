@@ -87,6 +87,7 @@ export function CourseDuplicationProgress({
 export type CourseDuplicationErrorType =
   | 'access'
   | 'generic'
+  | 'invalidDates'
   | 'inProgress'
   | 'partial'
 
@@ -98,6 +99,7 @@ type CourseDuplicationTranslationKey =
   | 'manage.courseList.courseDisplayNameReq'
   | 'manage.courseList.courseDuplicationAlreadyInProgress'
   | 'manage.courseList.courseDuplicationEndDateInPast'
+  | 'manage.courseList.courseDuplicationDatesRequired'
   | 'manage.courseList.courseDuplicationFailed'
   | 'manage.courseList.courseDuplicationBackgroundInfo'
   | 'manage.courseList.courseDuplicationNoAccess'
@@ -161,15 +163,13 @@ function getCourseDuplicationDateDefaults(initialValues?: Course) {
 }
 
 function getCourseDuplicationDurationParts(startDate: Date, endDate: Date) {
-  const years = dayjs(endDate).diff(dayjs(startDate), 'year')
-  const months = dayjs(endDate).diff(
-    dayjs(startDate).add(years, 'year'),
-    'month'
-  )
-  const days = dayjs(endDate).diff(
-    dayjs(startDate).add(years, 'year').add(months, 'month'),
-    'day'
-  )
+  const start = dayjs(startDate).startOf('day')
+  const end = dayjs(endDate).startOf('day')
+  const years = end.diff(start, 'year')
+  const afterYears = start.add(years, 'year')
+  const months = end.diff(afterYears, 'month')
+  const afterMonths = afterYears.add(months, 'month')
+  const days = getCalendarDayDelta(end.toDate(), afterMonths.toDate())
 
   return { years, months, days }
 }
@@ -190,6 +190,21 @@ function getNativeDateInputDate(value: string) {
   const parsedDate = dayjs(value, 'YYYY-MM-DD')
 
   return parsedDate.isValid() ? parsedDate.toDate() : undefined
+}
+
+function getCalendarDayDelta(laterDate: Date, earlierDate: Date) {
+  const laterDateUTC = Date.UTC(
+    laterDate.getFullYear(),
+    laterDate.getMonth(),
+    laterDate.getDate()
+  )
+  const earlierDateUTC = Date.UTC(
+    earlierDate.getFullYear(),
+    earlierDate.getMonth(),
+    earlierDate.getDate()
+  )
+
+  return Math.round((laterDateUTC - earlierDateUTC) / (24 * 60 * 60 * 1000))
 }
 
 function isValidHexColor(value?: string) {
@@ -311,6 +326,10 @@ export function getCourseDuplicationErrorMessage(
 
   if (errorType === 'inProgress') {
     return t('manage.courseList.courseDuplicationAlreadyInProgress')
+  }
+
+  if (errorType === 'invalidDates') {
+    return t('manage.courseList.courseDuplicationDatesRequired')
   }
 
   return t('manage.courseList.courseDuplicationFailed')
@@ -654,18 +673,15 @@ function CourseDuplicationModal({
 
   const [groupDeadlineDateInit] = useState(groupDeadlineDateDefault)
 
-  const deltaCourseDates = dayjs(sourceEndDate).diff(
-    dayjs(sourceStartDate),
-    'day'
-  )
+  const deltaCourseDates = getCalendarDayDelta(sourceEndDate, sourceStartDate)
   const courseDuration = getCourseDuplicationDurationParts(
     sourceStartDate,
     sourceEndDate
   )
 
-  const deltaGroupCreationDeadline = dayjs(groupDeadlineDateInit).diff(
-    dayjs(sourceStartDate),
-    'day'
+  const deltaGroupCreationDeadline = getCalendarDayDelta(
+    groupDeadlineDateInit,
+    sourceStartDate
   )
 
   const nameCopy = getCourseDuplicationCopyName(t, initialValues?.name)
@@ -797,11 +813,13 @@ function CourseDuplicationModal({
             )
           }
 
-          const submitDisabled = isSubmitting || isDuplicating
+          const formDisabled = isSubmitting || isDuplicating
+          const submitDisabled =
+            formDisabled || !values.startDate || !values.endDate
 
           return (
             <Form className="relative">
-              {submitDisabled && (
+              {formDisabled && (
                 <div
                   aria-live="polite"
                   className="absolute inset-0 z-10 flex items-center justify-center bg-white/90 px-4 text-center"
@@ -811,7 +829,7 @@ function CourseDuplicationModal({
                   <CourseDuplicationProgress />
                 </div>
               )}
-              <fieldset disabled={submitDisabled}>
+              <fieldset disabled={formDisabled}>
                 <div className="flex flex-col gap-2">
                   <CourseInformationFields />
                   <div className="mt-2 flex flex-col gap-6">
@@ -1023,10 +1041,10 @@ function CourseDuplicationModal({
                   className={{ root: 'float-right mt-3' }}
                   data={{ cy: 'manipulate-course-submit' }}
                   disabled={!isValid || submitDisabled}
-                  loading={submitDisabled}
+                  loading={formDisabled}
                   type="submit"
                 >
-                  <Button.Icon icon={faCopy} loading={submitDisabled} />
+                  <Button.Icon icon={faCopy} loading={formDisabled} />
                   <Button.Label>{t('shared.generic.duplicate')}</Button.Label>
                 </Button>
               </fieldset>

@@ -3223,6 +3223,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       courseCopySuffix: 'Copy',
       courseDuplicationEndDateInPast:
         'The selected end date lies in the past. The duplicated course will already have ended when it is created - shift the start date if students should be able to access it.',
+      courseDuplicationDatesRequired:
+        'Select a start date before duplicating the course.',
       courseDuplicationFailed: 'Failed to duplicate course.',
       courseDuplicationAlreadyInProgress:
         'This course is already being duplicated.',

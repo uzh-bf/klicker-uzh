@@ -321,6 +321,21 @@ function getNativeDateInputValue(date: Date) {
   return `${year}-${month}-${day}`
 }
 
+function getCalendarDayDelta(laterDate: Date, earlierDate: Date) {
+  const laterDateUTC = Date.UTC(
+    laterDate.getFullYear(),
+    laterDate.getMonth(),
+    laterDate.getDate()
+  )
+  const earlierDateUTC = Date.UTC(
+    earlierDate.getFullYear(),
+    earlierDate.getMonth(),
+    earlierDate.getDate()
+  )
+
+  return Math.round((laterDateUTC - earlierDateUTC) / (24 * 60 * 60 * 1000))
+}
+
 const permissionTestIds: Record<string, string> = {
   [PERM_READ]: 'READ',
   [PERM_EXECUTE]: 'EXECUTE',
@@ -995,7 +1010,7 @@ async function selectCourseDuplicationStartDate(
     expectInitialEmpty = false,
     durationDays,
   }: { expectInitialEmpty?: boolean; durationDays?: number } = {}
-) {
+): Promise<Date | undefined> {
   const startDateInput = page.getByTestId('course-start-date')
   const endDateInput = page.getByTestId('course-end-date')
 
@@ -1023,6 +1038,8 @@ async function selectCourseDuplicationStartDate(
       getNativeDateInputValue(expectedEndDate)
     )
   }
+
+  return startDate
 }
 
 function courseDuplicationStatusTrigger(page: Page) {
@@ -1321,8 +1338,17 @@ async function expectDuplicatedCourseSummary({
   return summary!
 }
 
-async function verifyCourseDuplicationModalUi(page: Page) {
-  await selectCourseDuplicationStartDate(page, { expectInitialEmpty: true })
+async function verifyCourseDuplicationModalUi(
+  page: Page,
+  {
+    durationDays,
+    groupDeadlineOffsetDays,
+  }: { durationDays?: number; groupDeadlineOffsetDays?: number } = {}
+) {
+  const selectedStartDate = await selectCourseDuplicationStartDate(page, {
+    durationDays,
+    expectInitialEmpty: true,
+  })
   await expect(page.getByTestId('course-name')).toHaveValue(
     `${SHARING.course} Copy`
   )
@@ -1341,6 +1367,15 @@ async function verifyCourseDuplicationModalUi(page: Page) {
   )
   const groupDeadlineInput = page.getByTestId('group-creation-deadline')
   await expect(groupDeadlineInput).toHaveAttribute('type', 'date')
+  if (selectedStartDate && groupDeadlineOffsetDays !== undefined) {
+    const expectedGroupDeadline = new Date(selectedStartDate)
+    expectedGroupDeadline.setDate(
+      expectedGroupDeadline.getDate() + groupDeadlineOffsetDays
+    )
+    await expect(groupDeadlineInput).toHaveValue(
+      getNativeDateInputValue(expectedGroupDeadline)
+    )
+  }
   await groupDeadlineInput.fill(adjustedGroupDeadlineValue)
   await expect(groupDeadlineInput).toHaveValue(adjustedGroupDeadlineValue)
   await expect(page.getByTestId('manipulate-course-submit')).toBeEnabled()
@@ -2985,11 +3020,25 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       ownerId: LECTURER_ID,
       treeName: competencyTreeName,
     })
+    const sourceCourseSummary = await getCourseDuplicationSummary({
+      courseName: SHARING.course,
+      ownerId: LECTURER_ID,
+    })
+    expect(sourceCourseSummary).not.toBeNull()
 
     await loginLecturer()
     await openCourseInManage(page, SHARING.course)
     await chooseCourseAction(page, 'course-duplicate-button')
-    const adjustedGroupDeadline = await verifyCourseDuplicationModalUi(page)
+    const adjustedGroupDeadline = await verifyCourseDuplicationModalUi(page, {
+      durationDays: getCalendarDayDelta(
+        sourceCourseSummary!.endDate,
+        sourceCourseSummary!.startDate
+      ),
+      groupDeadlineOffsetDays: getCalendarDayDelta(
+        sourceCourseSummary!.groupDeadlineDate,
+        sourceCourseSummary!.startDate
+      ),
+    })
     const sourceCourseUrl = page.url()
     await submitCourseFormAndWaitForDuplication(page)
 

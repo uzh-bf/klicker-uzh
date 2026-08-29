@@ -3273,6 +3273,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       courseCopySuffix: 'Kopie',
       courseDuplicationEndDateInPast:
         'Das gewählte Enddatum liegt in der Vergangenheit. Der duplizierte Kurs ist bereits beendet, sobald er erstellt wird - verschieben Sie das Startdatum, falls Studierende auf den Kurs zugreifen sollen.',
+      courseDuplicationDatesRequired:
+        'Wählen Sie vor dem Duplizieren des Kurses ein Startdatum aus.',
       courseDuplicationFailed: 'Duplizieren des Kurses fehlgeschlagen.',
       courseDuplicationAlreadyInProgress:
         'Dieser Kurs wird bereits dupliziert.',

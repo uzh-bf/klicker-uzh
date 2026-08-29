@@ -137,6 +137,9 @@ function getCourseDuplicationErrorType(
   if (code === COURSE_DUPLICATION_PARTIAL_FAILURE_CODE) {
     return 'partial'
   }
+  if (code === 'FORBIDDEN') {
+    return 'access'
+  }
 
   const message = getErrorMessage(error)
   const normalizedMessage = message.toLowerCase()
@@ -197,8 +200,12 @@ function readStoredCourseDuplicationJobIds() {
     const parsedValue = storedValue ? JSON.parse(storedValue) : []
 
     return Array.isArray(parsedValue)
-      ? parsedValue.filter(
-          (value): value is string => typeof value === 'string'
+      ? Array.from(
+          new Set(
+            parsedValue.filter(
+              (value): value is string => typeof value === 'string'
+            )
+          )
         )
       : []
   } catch (error) {
@@ -322,7 +329,10 @@ export function CourseDuplicationProvider({
   const jobIdsRef = useRef<string[]>([])
 
   useEffect(() => {
-    setJobIds(readStoredCourseDuplicationJobIds())
+    const storedJobIds = readStoredCourseDuplicationJobIds()
+    setJobIds((currentIds) =>
+      Array.from(new Set([...storedJobIds, ...currentIds]))
+    )
     setStorageInitialized(true)
   }, [])
 
@@ -534,7 +544,7 @@ export function CourseDuplicationProvider({
 
       try {
         if (!values.startDate || !values.endDate) {
-          onError()
+          onError('invalidDates')
           return false
         }
 
@@ -590,7 +600,7 @@ export function CourseDuplicationProvider({
         onError(
           result.errors?.[0]
             ? getCourseDuplicationErrorType(result.errors[0])
-            : 'generic'
+            : 'access'
         )
       } catch (error) {
         onError(getCourseDuplicationErrorType(error))
