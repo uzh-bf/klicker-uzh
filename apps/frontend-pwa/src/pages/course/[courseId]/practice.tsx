@@ -33,16 +33,20 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
     variables: { courseId },
   })
 
+  // Every branch of this route marks itself as an answering surface, including
+  // the ones rendered before the pool has loaded: the layout decides on its
+  // first render whether a product update may appear, and a later branch cannot
+  // recall a request that the earlier one already sent.
   if (loading)
     return (
-      <Layout>
+      <Layout activelyAnswering>
         <Loader />
       </Layout>
     )
 
   if (!data?.coursePracticeQuiz) {
     return (
-      <Layout>
+      <Layout activelyAnswering>
         <UserNotification
           type="error"
           message={t('pwa.practiceQuiz.notFound')}
@@ -51,7 +55,7 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
     )
   }
   if (error) {
-    return <Layout>{t('shared.generic.systemError')}</Layout>
+    return <Layout activelyAnswering>{t('shared.generic.systemError')}</Layout>
   }
 
   const handleNextQuestion = () => {
@@ -61,6 +65,7 @@ function PracticePool({ courseId, participantToken, cookiesAvailable }: Props) {
 
   return (
     <Layout
+      activelyAnswering
       displayName={t('shared.generic.practiceTitle')}
       course={data.coursePracticeQuiz.course ?? undefined}
     >

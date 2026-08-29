@@ -4,6 +4,7 @@ import {
   faComment,
 } from '@fortawesome/free-regular-svg-icons'
 import {
+  faBullhorn,
   faExclamationCircle,
   faLanguage,
   faRightFromBracket,
@@ -22,11 +23,18 @@ import {
   StudentCourse,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, Dropdown, H1, H2, toast } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
+import {
+  Button,
+  Dropdown,
+  H1,
+  H2,
+  NotificationBadgeWrapper,
+  toast,
+} from '@uzh-bf/design-system'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import AvatarWithLevel from './AvatarWithLevel'
@@ -40,6 +48,10 @@ interface HeaderProps {
     | Partial<Course>
     | (Omit<StudentCourse, 'owner'> & { owner: { shortname: string } })
   liveQuizId?: string
+  // Only passed where product updates may be shown at all. The layout owns that
+  // decision, so the absence of the callback is what hides the bullhorn.
+  onOpenProductUpdates?: () => void
+  unreadProductUpdates?: number
 }
 
 function Header({
@@ -47,6 +59,8 @@ function Header({
   title,
   course,
   liveQuizId,
+  onOpenProductUpdates,
+  unreadProductUpdates = 0,
 }: HeaderProps): React.ReactElement {
   const router = useRouter()
   const { pathname, asPath, query } = router
@@ -171,6 +185,35 @@ function Header({
               <Button.Label>{t('pwa.chatbot.openCourseChat')}</Button.Label>
             </Button>
           </Link>
+        )}
+
+        {onOpenProductUpdates && (
+          <NotificationBadgeWrapper
+            showBadge={unreadProductUpdates > 0}
+            size="sm"
+            // The default badge is large enough to sit over the middle of an
+            // icon-sized button and swallow the click, so it is shrunk to a dot
+            // in the corner, matching the design system's own navigation dot.
+            className={{
+              root: 'flex items-center',
+              badge: '-top-0.5 -right-0.5 h-2.5 w-2.5',
+            }}
+            data={{ cy: 'product-updates-badge' }}
+          >
+            <Button
+              basic
+              onClick={onOpenProductUpdates}
+              className={{
+                root: 'flex h-8 w-8 items-center justify-center rounded-md text-white hover:bg-slate-800',
+              }}
+              data={{ cy: 'product-updates-button' }}
+            >
+              <FontAwesomeIcon
+                icon={faBullhorn}
+                title={t('pwa.productUpdates.feedTitle')}
+              />
+            </Button>
+          </NotificationBadgeWrapper>
         )}
 
         <Dropdown
