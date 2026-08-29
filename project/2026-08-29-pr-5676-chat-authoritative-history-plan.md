@@ -810,6 +810,15 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   container rerun of the boundary-cycle test is recorded as a remaining
   evidence gap to close at the next available runtime window. The browser
   smoke and repository-wide `check:all` gaps above are unchanged.
+- 2026-08-30: bounded `devrouter ensure` reruns for this checkout later
+  failed at the provider transition layer ("tunnel to container: context
+  canceled", then "devsy workspace up failed") after the earlier machine-wide
+  lifecycle contention cleared; host disk is healthy (volume ~85% used,
+  normal image store), so space is no longer the blocker. No raw Docker
+  repair or cleanup was attempted. Draft PR #5676's `test-unit` job is
+  skipped by its path filter, so CI carries no unit coverage of the corrected
+  fixture; the in-container rerun stays the open follow-up for the next
+  runtime window.
 - 2026-08-30: delivery state — locally committed and reviewed through
   `d72d598ee`. Push and draft PR remain separately authorized actions and
   additionally blocked by host DNS failure for `github.com` Git transport
