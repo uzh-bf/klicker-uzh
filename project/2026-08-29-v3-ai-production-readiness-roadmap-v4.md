@@ -67,11 +67,13 @@ What v4 changes, from the grill rulings:
   must move together. Per `docs/ci-and-deployment.md`: render the staging
   chart from the branch ArgoCD will track before flipping, and require both
   `Synced` and `Healthy` after; hook-only changes never trigger a sync.
-- Promotion PRs carry `[skip ci]` and gate auto-merge on the single status
-  `Verified generated staging promotion`. Under the new ruleset the promoter
-  identity (`STG_PROMOTE_TOKEN` user) is a named bypass actor; the path is
-  proven with one real promote PR on the RC before qualification depends on
-  staging.
+- Promotion PRs carry `[skip ci]`. The promoter waits for the single status
+  `Verified generated staging promotion`, requires an immediately mergeable
+  PR, rechecks the live pause variable, and merges synchronously without
+  leaving auto-merge or a merge-queue entry armed. Under the new ruleset the
+  promoter identity (`STG_PROMOTE_TOKEN` user) is a named bypass actor; the
+  controlled path is proven with one real promote PR on the RC before
+  qualification depends on staging.
 - `.github/CODEOWNERS` names a single owner; GitHub forbids self-approval, so
   required approvals stay at 0 and always-reporting checks carry the gate.
 - Active rulesets today are tag-only; verify at G0 that the release captain
@@ -209,7 +211,9 @@ Covers `v3`, `v3-ai`, `v3.4.0-ai-rc`:
 
 - Require pull requests; block force-push and deletion; preserve merge
   commits (no linear-history requirement).
-- Require branch current before merge, or use the merge queue.
+- Require the branch to be current before merge. Do not use a merge queue on
+  these branches while generated staging promotion is active: an asynchronous
+  queue entry would escape the live pause fence.
 - **Required approvals: 0.** With a single code owner, any approval
   requirement deadlocks self-authored PRs; always-reporting status checks
   carry the entire gate. Code-owner review is not enabled as decoration.
@@ -217,10 +221,11 @@ Covers `v3`, `v3-ai`, `v3.4.0-ai-rc`:
   GraphQL tests, Playwright, build/container, Gitleaks, CodeQL, Final AI
   review, schema gate when relevant) — never path-filtered jobs that can
   disappear. `Verified generated staging promotion` reports only on promote
-  PRs and gates their auto-merge there; it is never a branch-wide required
-  check (as one it would deadlock every ordinary PR).
-- Bypass actors: the promoter identity only. Prove promote-PR auto-merge with
-  one real promote PR on the RC before staging-dependent qualification.
+  PRs and gates their controlled merge there; it is never a branch-wide
+  required check (as one it would deadlock every ordinary PR).
+- Bypass actors: the promoter identity only. Prove the controlled promote-PR
+  merge with one real promote PR on the RC before staging-dependent
+  qualification.
 - Direct pushes to `v3-ai` end at G0; every change goes through a PR.
 
 **Merge mechanics under the ruleset:** `v3`→`v3-ai` (and any conflicted sync)
@@ -241,8 +246,12 @@ separate PR. Incubation work cannot target the RC.
 ### 5.3 Staging promotion pause
 
 `STG_PROMOTION_PAUSED=true` checked by the default-branch promoter; the
-promoter fails closed while paused. The guard lands on `v3` first. Pause and
-unpause events are recorded in the release evidence manifest.
+promoter fails closed while paused. It reads the variable again through the
+repository API before every external write and never leaves auto-merge armed.
+The guard lands on `v3` first. A pause is effective only after queued and
+running promoter jobs are canceled, auto-merge is disabled if armed, every
+open promotion PR is closed, and the unchanged staging revision is recorded.
+Pause and unpause events are recorded in the release evidence manifest.
 
 ## 6. G1 release-schema manifest
 
@@ -440,8 +449,10 @@ count and scaling policy are recorded in the evidence manifest.
 
 ### 10.1 Before the first G2 merge
 
-Land the pause guard on `v3`; set `STG_PROMOTION_PAUSED=true`; confirm no
-promotion PR can open while paused; keep the last known-good staging
+Land the pause guard on `v3`; set `STG_PROMOTION_PAUSED=true`; cancel every
+queued or running promoter job, disable auto-merge if armed, close every open
+promotion PR, and verify that none remains. Record the unchanged staging
+revision before declaring the pause effective. Keep that last known-good
 deployment running unchanged; use DevPods, tests, and isolated databases for
 G2/G3 until the cut. (The `v3`→`v3-ai` merge and trusted-policy proof are
 already done.)
@@ -470,8 +481,8 @@ announced.
    signed callback against the reset environment is harmless.
 6. Set `STG_PROMOTION_PAUSED=false`; manually dispatch promotion for the
    exact RC SHA; verify every staging image workflow ran for the RC branch
-   and every rendered tag uses it. Prove the promote-PR auto-merge path here
-   (first real promote PR under the ruleset).
+   and every rendered tag uses it. Prove the controlled synchronous
+   promote-PR merge path here (first real promote PR under the ruleset).
 7. Re-enable integrations in order: ingestion, retrieval, graph canary,
    generation canary, student-generation canary.
 8. Only after this proof, reopen S1/S2 merges on `v3-ai`. At RC retirement,
