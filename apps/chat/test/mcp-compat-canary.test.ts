@@ -509,6 +509,7 @@ function closeServer(server: ReturnType<typeof createServer>): Promise<void> {
 describe('direct Prisma-shaped Chat MCP consumer', () => {
   let server: ReturnType<typeof createServer>
   let candidateUrl: string
+  let deleteRequestCount = 0
 
   beforeAll(async () => {
     process.env.APP_SECRET = APP_SECRET
@@ -526,6 +527,11 @@ describe('direct Prisma-shaped Chat MCP consumer', () => {
           return
         }
 
+        if (request.method === 'DELETE') {
+          deleteRequestCount += 1
+          response.writeHead(405).end()
+          return
+        }
         if (request.method === 'GET') {
           response.writeHead(405).end()
           return
@@ -620,23 +626,28 @@ describe('direct Prisma-shaped Chat MCP consumer', () => {
       },
     }
 
-    const tools = await getAggregatedMCPTools([directConfig], CHATBOT_ID)
-    expect(Object.keys(tools)).toEqual(['Klicker-compat_doc_query'])
-    const tool = tools['Klicker-compat_doc_query'] as {
-      execute?: (input: { query: string }) => Promise<unknown>
+    const handle = await getAggregatedMCPTools([directConfig], CHATBOT_ID)
+    try {
+      expect(Object.keys(handle.tools)).toEqual(['Klicker-compat_doc_query'])
+      const tool = handle.tools['Klicker-compat_doc_query'] as {
+        execute?: (input: { query: string }) => Promise<unknown>
+      }
+      await expect(
+        tool.execute?.({ query: 'synthetic query' })
+      ).resolves.toMatchObject({
+        content: [
+          {
+            type: 'text',
+            text: expect.stringContaining('Synthetic canary source'),
+          },
+        ],
+      })
+    } finally {
+      await handle.close()
     }
-    await expect(
-      tool.execute?.({ query: 'synthetic query' })
-    ).resolves.toMatchObject({
-      content: [
-        {
-          type: 'text',
-          text: expect.stringContaining('Synthetic canary source'),
-        },
-      ],
-    })
+    expect(deleteRequestCount).toBe(1)
 
-    const wrongBearer = await getAggregatedMCPTools(
+    const wrongBearerHandle = await getAggregatedMCPTools(
       [
         {
           ...directConfig,
@@ -648,9 +659,10 @@ describe('direct Prisma-shaped Chat MCP consumer', () => {
       ],
       CHATBOT_ID
     )
-    expect(wrongBearer).toEqual({})
+    expect(wrongBearerHandle.tools).toEqual({})
+    await wrongBearerHandle.close()
 
-    const missingBearer = await getAggregatedMCPTools(
+    const missingBearerHandle = await getAggregatedMCPTools(
       [
         {
           ...directConfig,
@@ -659,12 +671,14 @@ describe('direct Prisma-shaped Chat MCP consumer', () => {
       ],
       CHATBOT_ID
     )
-    expect(missingBearer).toEqual({})
+    expect(missingBearerHandle.tools).toEqual({})
+    await missingBearerHandle.close()
 
-    const wrongTenant = await getAggregatedMCPTools(
+    const wrongTenantHandle = await getAggregatedMCPTools(
       [directConfig],
       'wrong-chatbot'
     )
-    expect(wrongTenant).toEqual({})
+    expect(wrongTenantHandle.tools).toEqual({})
+    await wrongTenantHandle.close()
   })
 })

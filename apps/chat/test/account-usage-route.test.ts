@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   threadUpdate: vi.fn(),
   transaction: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
+  closeMCPTools: vi.fn(),
   loadResponseExampleRuntimeSkill: vi.fn(),
   createResponseExampleSearchTool: vi.fn(),
   buildPromptCacheRequest: vi.fn(),
@@ -243,7 +244,10 @@ describe('account usage chat route', () => {
       accepted: true,
     })
     mocks.chatbotFindUnique.mockResolvedValue(chatbot())
-    mocks.getAggregatedMCPTools.mockResolvedValue({})
+    mocks.getAggregatedMCPTools.mockResolvedValue({
+      tools: {},
+      close: mocks.closeMCPTools,
+    })
     mocks.loadResponseExampleRuntimeSkill.mockResolvedValue({
       summary: '',
       setDigest: 'synthetic-set-digest',
@@ -441,7 +445,8 @@ describe('account usage chat route', () => {
   test('preserves an MCP tool collision and omits the response-example skill', async () => {
     const mcpTool = { description: 'Synthetic MCP-owned tool' }
     mocks.getAggregatedMCPTools.mockResolvedValueOnce({
-      search_response_examples: mcpTool,
+      tools: { search_response_examples: mcpTool },
+      close: mocks.closeMCPTools,
     })
     mocks.loadResponseExampleRuntimeSkill.mockResolvedValueOnce({
       summary: 'Response-example skill\nSynthetic lecturer guidance.',
@@ -727,6 +732,7 @@ describe('account usage chat route', () => {
     }
     await streamCallbacks().onEnd(result)
 
+    expect(mocks.closeMCPTools).toHaveBeenCalledOnce()
     expect(mocks.finalizeChatTurn).toHaveBeenCalledOnce()
     expect(mocks.finalizeChatTurn).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -861,6 +867,7 @@ describe('account usage chat route', () => {
       })
     ).resolves.toBeUndefined()
 
+    expect(mocks.closeMCPTools).toHaveBeenCalledOnce()
     expect(mocks.finalizeChatTurn).toHaveBeenCalledWith(
       expect.objectContaining({ rawCreditsUsed: null })
     )
@@ -944,6 +951,7 @@ describe('account usage chat route', () => {
       steps,
     })
 
+    expect(mocks.closeMCPTools).toHaveBeenCalledOnce()
     expect(mocks.finalizeChatTurn).toHaveBeenCalledOnce()
     expect(mocks.finalizeChatTurn).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -964,6 +972,7 @@ describe('account usage chat route', () => {
 
     await streamCallbacks().onError(new Error('synthetic provider failure'))
 
+    expect(mocks.closeMCPTools).toHaveBeenCalledOnce()
     expect(mocks.failChatTurn).toHaveBeenCalledWith({
       assistantMessageId: 'assistant-1',
       threadId: 'thread-1',

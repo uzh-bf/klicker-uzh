@@ -51,6 +51,7 @@ import { DisclaimersService } from '@/src/services/disclaimers'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
+  type MCPToolsHandle,
 } from '@/src/services/mcpClients'
 import { resolveMcpScopeSessionId } from '@/src/services/mcpScope'
 import {
@@ -1083,6 +1084,13 @@ export async function POST(
   }
 
   let providerStreamStarted = false
+  let mcpToolsHandle: MCPToolsHandle | undefined
+  const closeMcpTools = async () => {
+    const activeHandle = mcpToolsHandle
+    mcpToolsHandle = undefined
+    await activeHandle?.close()
+  }
+
   try {
     // Discover MCP tools only after read-only participant authorization.
     const mcpScopeSessionId = resolveMcpScopeSessionId({
@@ -1097,13 +1105,14 @@ export async function POST(
 
     let mcpTools: ToolSet
     try {
-      mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, {
+      mcpToolsHandle = await getAggregatedMCPTools(mcpServersWithConfigs, {
         chatbotId,
         participantId,
         authMode,
         kbId: enabledKnowledgeBaseId,
         sessionId: mcpScopeSessionId,
       })
+      mcpTools = mcpToolsHandle.tools
     } catch (error) {
       if (error instanceof RequiredMCPUnavailableError) {
         await failOrDiscardUnstartedClaim('mcp.discovery')
@@ -1791,6 +1800,7 @@ export async function POST(
         },
 
         onEnd: async (result) => {
+          await closeMcpTools()
           sawFinish = true
           // ai@7 still flushes onEnd after an abort once at least one step
           // completed. onAbort already persisted the partial answer and charged
@@ -1881,6 +1891,7 @@ export async function POST(
         },
 
         onAbort: async (steps) => {
+          await closeMcpTools()
           sawAbort = true
           let rawCreditsUsed: number | null = null
           if (steps && Array.isArray(steps.steps)) {
@@ -1974,6 +1985,7 @@ export async function POST(
         },
 
         onError: async (error) => {
+          await closeMcpTools()
           const serializedError = serializeStreamError(error)
           firstError = firstError ?? serializedError
           const classification = classifyStreamError(serializedError)
@@ -2022,6 +2034,7 @@ export async function POST(
       sendReasoning: true,
       consumeSseStream: consumeStream,
       onError: (error) => {
+        void closeMcpTools()
         const serializedError = serializeStreamError(error)
         const classification = classifyStreamError(serializedError)
 
@@ -2064,6 +2077,7 @@ export async function POST(
       },
     })
   } catch (error) {
+    await closeMcpTools()
     if (providerStreamStarted) await failAssistantClaim('request')
     else await failOrDiscardUnstartedClaim('request')
     throw error

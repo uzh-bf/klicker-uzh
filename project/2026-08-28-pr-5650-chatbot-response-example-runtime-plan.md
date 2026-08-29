@@ -196,11 +196,13 @@ preview and the later examples-excluded baseline.
 - Status: K6.1 through K6.4 are source-complete and published as open,
   non-draft PR #5650 against `v3-ai`. The deterministic current-source seed
   correction is committed, reviewed, and passed every hosted Playwright shard
-  on its published head. The separately approved integration of
-  `origin/v3-ai@bedc6a855` is complete without conflicts or overlapping product
-  changes. PR #5650 remains a standalone PR into the long-lived `v3-ai`
-  consolidation branch. The user removed the invalid native stack registration
-  with PR #5092. Merge, deployment, and live model use remain withheld.
+  on its published head. The separately approved integrations through
+  `origin/v3-ai@4b85e616b` are complete. The latest target update caused one
+  test-fixture conflict; its resolution preserves the closable MCP handle and
+  the response-example skill coverage. PR #5650 remains a standalone PR into
+  the long-lived `v3-ai` consolidation branch. The user removed the invalid
+  native stack registration with PR #5092. Merge, deployment, and live model
+  use remain withheld.
 - Completed: remote-state gate, clean purpose-based worktree, approved program
   plan transfer, current source seam mapping, package-plan narrowing, shared
   current-evidence validation, owner-service reconciliation, and focused util,
@@ -247,11 +249,13 @@ preview and the later examples-excluded baseline.
   `Busy`; devrouter route readback is blocked by a host-route lock identity
   error. No raw DevPod stop or cleanup bypass was attempted.
 - Delivery: branch `feat/chatbot-response-example-runtime` is published at PR
-  #5650 as a standalone PR into `v3-ai`. Exact-head CodeQL and GitGuardian pass.
-  The final-review policy rejects a standalone PR targeting a non-default
-  branch; no stack workaround applies to a consolidation branch. The one-time
-  approved upstream integration is complete. Any further upstream integration,
-  review-policy change, and merge remain separately withheld.
-- Next: keep the integrated PR head stable. Resolve support for final review on
-  consolidation-branch PRs as a separate repository-policy package before
-  merge; do not involve the eventual `v3-ai` to `v3` promotion PR.
+  #5650 as a standalone PR into `v3-ai`. The current merge candidate includes
+  `origin/v3-ai@4b85e616b`; the combined chat unit suite passes with 721 tests
+  and 14 explicit skips. The final-review policy rejects a standalone PR
+  targeting a non-default branch; no stack workaround applies to a
+  consolidation branch. Any further upstream integration, review-policy
+  change, and merge remain separately withheld.
+- Next: publish the integrated head and settle its exact-head checks. Resolve
+  support for final review on consolidation-branch PRs as a separate
+  repository-policy package before merge; do not involve the eventual
+  `v3-ai` to `v3` promotion PR.
