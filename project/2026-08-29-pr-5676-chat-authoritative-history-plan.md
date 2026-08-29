@@ -1,4 +1,4 @@
-# W3 — authoritative chat history and turn ownership (execution plan)
+# PR #5676 — W3 authoritative chat history and turn ownership
 
 Source roadmap: `rs/chat-codeapi-roadmap`,
 `project/2026-08-23-klicker-chat-codeapi-roadmap.md`, W3. That roadmap was
@@ -38,8 +38,9 @@ and ownership seam without introducing their storage models early.
   fields, and `ChatAttachment` remain the existing models.
 - No GraphQL, Hatchet, model-registry, prompt-policy, credit-policy,
   gamification, visible UI, copy, or i18n change.
-- No secret access, external model call, production data read, push, PR, merge,
-  rebase, deployment, live proof, cleanup, worktree removal, or branch deletion.
+- No secret access, external model call, production data read, ready marking,
+  merge, rebase, deployment, live proof, cleanup, worktree removal, or branch
+  deletion.
 
 ## Execution contract
 
@@ -51,18 +52,23 @@ and ownership seam without introducing their storage models early.
   lifecycle, repository-native checks, host browser smoke with synthetic data,
   required read-only reviews, scoped local commits, plan `Progress`, and a
   dated local reconciliation receipt in the CodeAPI roadmap worktree.
-- **Withheld**: push, PR creation or update, ready marking, merge, upstream
-  integration beyond the accepted base, migration, secret access, external
-  model use, deployment, live traffic, cleanup, and deletion.
+- **Later delivery approval**: the subsequent package approval also authorizes
+  push and work-in-progress draft PR creation or update through the package
+  draft delivery boundary.
+- **Withheld**: ready marking, merge, upstream integration beyond the accepted
+  base, migration, secret access, external model use, deployment, live traffic,
+  cleanup, and deletion.
 - **Boundary owner**: this main session owns implementation, review
   disposition, verification, and roadmap reconciliation. Reviewers are
   read-only and cannot broaden the package.
 - **Terminal**: the plan and all implementation slices are locally committed;
   focused and integrated checks pass; the exact committed range has passed its
   required slice and final reviews; runtime state is restored; and the roadmap
-  has a dated superseding receipt. Achieved layer: `locally_committed`.
-  Formal `pr_ready` remains `delivery_pending` until push and PR creation are
-  separately authorized.
+  has a dated superseding receipt. Achieved layer: work-in-progress
+  [draft PR #5676](https://github.com/uzh-bf/klicker-uzh/pull/5676). Formal
+  `pr_ready` remains `delivery_pending` until current-head checks, browser
+  proof, runtime release, and separately approved upstream integration are
+  complete.
 - **Pause**: stop for a required schema or migration, a new participant-visible
   behavior, evidence that existing valid branches cannot satisfy the proposed
   edge contract, an attachment rule that would expose another participant's
@@ -70,14 +76,16 @@ and ownership seam without introducing their storage models early.
 
 ## Plan identity
 
-- Plan: `project/2026-08-29-chat-authoritative-history-plan.md`
+- Plan:
+  `project/2026-08-29-pr-5676-chat-authoritative-history-plan.md`
 - Branch: `rs/chat-authoritative-history`
 - Worktree: `trees/chat-authoritative-history`
+- PR: [#5676](https://github.com/uzh-bf/klicker-uzh/pull/5676) (draft)
 - Accepted base: `f0659e1301254320b2f67a0a4be752ebf6a41c0f`
 - Upstream at planning: `origin/v3` at the same commit, 0 ahead and 0 behind
 - Roadmap item: W3, “Make conversation branches and assistant ownership
   authoritative”
-- Delivery layer granted after plan approval: local commits only
+- Current delivery layer: published draft PR; ready marking remains withheld
 
 ## Grounding facts verified at the accepted base
 
@@ -806,3 +814,17 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   `d72d598ee`. Push and draft PR remain separately authorized actions and
   additionally blocked by host DNS failure for `github.com` Git transport
   as recorded above.
+
+- 2026-08-30: the exact 12-commit branch through `d72d598ee` was published
+  using a one-command `http.curloptResolve` override after a direct DNS lookup
+  and TLS-validated GitHub probe. No host or persistent Git configuration
+  changed. [Draft PR #5676](https://github.com/uzh-bf/klicker-uzh/pull/5676)
+  is open against `v3`; current-head CI, browser proof, and upstream
+  integration remain blocking gates.
+- 2026-08-30: the next canonical `devrouter ensure . --json` attempt reached
+  Devsy agent injection and then failed terminally with
+  `agent binary not found`. Static doctor evidence reports Devsy v1.16.2 and
+  devrouter 0.0.45 as configured, the owner for this checkout remains
+  present, and it exposes zero routes. Another workspace currently owns the
+  machine-wide lifecycle transition, so no retry, raw Docker repair, deletion,
+  or cleanup was attempted.
