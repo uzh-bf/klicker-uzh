@@ -338,13 +338,10 @@ export function ManageAssistantWidget() {
             setHasOpened(true)
             setOpen(true)
           }}
-          className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex h-14 min-w-14 items-center justify-center gap-3 rounded-full px-3 text-white shadow-lg transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 md:bottom-6 md:right-6 md:px-4"
+          className="bg-uzh-blue hover:bg-uzh-blue-80 focus-visible:outline-uzh-blue-40 fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex size-12 items-center justify-center rounded-full p-1 text-white shadow-lg transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 md:bottom-6 md:right-6"
           data-cy="manage-assistant-open"
         >
           <AssistantAvatar className="text-uzh-blue size-10 border border-white/40 bg-white" />
-          <span className="hidden pr-1 text-sm font-semibold sm:inline">
-            {t('manage.assistant.open')}
-          </span>
         </button>
       )}
 

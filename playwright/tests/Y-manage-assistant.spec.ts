@@ -438,6 +438,8 @@ test.describe('Manage Assistant — Messaging', () => {
       (viewport?.width ?? 0) - ((triggerBox?.x ?? 0) + (triggerBox?.width ?? 0))
     ).toBeLessThanOrEqual(32)
     expect(triggerBox?.y ?? 0).toBeGreaterThan((viewport?.height ?? 0) / 2)
+    expect(triggerBox?.width ?? 0).toBeLessThanOrEqual(48)
+    expect(triggerBox?.height ?? 0).toBeLessThanOrEqual(48)
 
     await openManageAssistantWidget(page)
 

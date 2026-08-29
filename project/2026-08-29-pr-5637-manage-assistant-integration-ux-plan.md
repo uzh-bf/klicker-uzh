@@ -728,6 +728,12 @@ follow_up_stacks:
   the TypeScript AST without executing JSX. B1 composes a reserved local search
   tool with MCP tools and fences its bounded text through the existing request
   sentinel.
+- A0 exact-head CI correction: Hosted build and shards 1, 2, 4, 5, and 6
+  passed. Shards 3, 7, and 8 independently showed the closed launcher's wide
+  text pill intercepting unrelated bottom-right controls in group grading,
+  template creation, and invitation pagination. The branch now keeps the
+  launcher in the same corner as a 48 px icon-only target and pins that compact
+  geometry in the focused assistant regression before rerunning exact-head CI.
 - Next: Commit this integration receipt, push the integrated draft layer,
   require its focused browser regression and exact-head CI, then initialize
   Stack A and begin A1.
