@@ -804,7 +804,7 @@ function CourseDuplicationModal({
                 ? currentValues.startDate
                   ? getGroupCreationDeadline(currentValues.startDate)
                   : currentValues.groupCreationDeadline
-                : currentValues.endDate ?? groupDeadlineDateInit,
+                : (currentValues.endDate ?? groupDeadlineDateInit),
               maxGroupSize: currentValues.maxGroupSize ?? 5,
               preferredGroupSize: currentValues.preferredGroupSize ?? 3,
             }))
