@@ -74,8 +74,12 @@
       "duration": 241.131
     },
     {
-      "spec": "tests/O-live-quiz.spec.ts",
-      "duration": 601.686
+      "spec": "tests/O1-live-quiz-core.spec.ts",
+      "duration": 393.653
+    },
+    {
+      "spec": "tests/O2-live-quiz-collaboration.spec.ts",
+      "duration": 437.223
     },
     {
       "spec": "tests/P-microlearning.spec.ts",

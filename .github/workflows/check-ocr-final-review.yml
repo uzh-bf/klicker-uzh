@@ -367,10 +367,25 @@ jobs:
         if: needs.start.outputs.run_review == 'true'
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-review-ocr-config.json
         run: |
           set -euo pipefail
           printf '%s' "${OPENROUTER_API_KEY}" |
             node .github/scripts/final-ai-review.js configure-ocr
+          test -s "${OCR_CONFIG_PATH}"
+
+      - name: Verify OpenRouter review access
+        if: needs.start.outputs.run_review == 'true'
+        env:
+          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-review-ocr-config.json
+        run: |
+          set -euo pipefail
+          if ocr llm test >/dev/null; then
+            echo 'OpenRouter review preflight passed'
+            exit 0
+          fi
+          echo '::error::OpenRouter review preflight failed'
+          exit 1
 
       - name: Run final review
         id: run_review
@@ -378,6 +393,10 @@ jobs:
         env:
           BACKGROUND: ${{ needs.start.outputs.background }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
+          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-review-ocr-config.json
+          OCR_LLM_URL: https://openrouter.ai/api/v1/chat/completions
+          OCR_LLM_TOKEN: ${{ secrets.OPENROUTER_API_KEY }}
+          OCR_LLM_MODEL: z-ai/glm-5.3-flash
           REVIEW_FROM: ${{ steps.range.outputs.review_from }}
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
           STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
@@ -392,9 +411,46 @@ jobs:
             --rule .github/open-code-review/final-review-rules.json \
             >"${RESULT_PATH}" 2>"${STDERR_PATH}"
 
+      - name: Summarize final review failure output
+        if: failure() && steps.run_review.outcome == 'failure'
+        env:
+          RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
+          STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
+        run: |
+          set -euo pipefail
+          echo '::group::Final review CLI failure output'
+          cat "${STDERR_PATH}" 2>/dev/null || echo 'stderr log was not created'
+          echo '::endgroup::'
+          if [[ -f "${RESULT_PATH}" ]]; then
+            echo '::group::Final review CLI result JSON'
+            cat "${RESULT_PATH}"
+            echo
+            echo '::endgroup::'
+          fi
+          {
+            echo '### Final review CLI failure'
+            echo
+            echo '```text'
+            if [[ -f "${STDERR_PATH}" ]]; then
+              tail -c 8000 "${STDERR_PATH}"
+            else
+              echo 'stderr log was not created'
+            fi
+            echo '```'
+            if [[ -f "${RESULT_PATH}" ]]; then
+              echo
+              echo '```json'
+              tail -c 8000 "${RESULT_PATH}"
+              echo
+              echo '```'
+            fi
+          } >>"${GITHUB_STEP_SUMMARY}"
+
       - name: Remove ephemeral OpenRouter access
         id: cleanup
         if: always() && needs.start.outputs.run_review == 'true'
+        env:
+          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-review-ocr-config.json
         run: node .github/scripts/final-ai-review.js cleanup-ocr
 
       - name: Publish consolidated final review
@@ -776,10 +832,25 @@ jobs:
         if: needs.start_stack.outputs.run_review == 'true'
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-stack-ocr-config.json
         run: |
           set -euo pipefail
           printf '%s' "${OPENROUTER_API_KEY}" |
             node .github/scripts/final-ai-review.js configure-ocr
+          test -s "${OCR_CONFIG_PATH}"
+
+      - name: Verify OpenRouter review access
+        if: needs.start_stack.outputs.run_review == 'true'
+        env:
+          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-stack-ocr-config.json
+        run: |
+          set -euo pipefail
+          if ocr llm test >/dev/null; then
+            echo 'OpenRouter review preflight passed'
+            exit 0
+          fi
+          echo '::error::OpenRouter review preflight failed'
+          exit 1
 
       - name: Run cumulative code review
         id: code_review
@@ -793,6 +864,10 @@ jobs:
           RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
           RANGE_DIR: ${{ runner.temp }}/final-ai-stack-code-ranges
           STDERR_PATH: ${{ runner.temp }}/final-ai-stack-code-stderr.log
+          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-stack-ocr-config.json
+          OCR_LLM_URL: https://openrouter.ai/api/v1/chat/completions
+          OCR_LLM_TOKEN: ${{ secrets.OPENROUTER_API_KEY }}
+          OCR_LLM_MODEL: z-ai/glm-5.3-flash
         run: |
           set -euo pipefail
           if [[ "${REVIEW_MODE}" == "incremental" ]]; then
@@ -821,9 +896,46 @@ jobs:
               >"${RESULT_PATH}" 2>"${STDERR_PATH}"
           fi
 
+      - name: Summarize cumulative review failure output
+        if: failure() && steps.code_review.outcome == 'failure'
+        env:
+          RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
+          STDERR_PATH: ${{ runner.temp }}/final-ai-stack-code-stderr.log
+        run: |
+          set -euo pipefail
+          echo '::group::Cumulative review CLI failure output'
+          cat "${STDERR_PATH}" 2>/dev/null || echo 'stderr log was not created'
+          echo '::endgroup::'
+          if [[ -f "${RESULT_PATH}" ]]; then
+            echo '::group::Cumulative review CLI result JSON'
+            cat "${RESULT_PATH}"
+            echo
+            echo '::endgroup::'
+          fi
+          {
+            echo '### Cumulative review CLI failure'
+            echo
+            echo '```text'
+            if [[ -f "${STDERR_PATH}" ]]; then
+              tail -c 8000 "${STDERR_PATH}"
+            else
+              echo 'stderr log was not created'
+            fi
+            echo '```'
+            if [[ -f "${RESULT_PATH}" ]]; then
+              echo
+              echo '```json'
+              tail -c 8000 "${RESULT_PATH}"
+              echo
+              echo '```'
+            fi
+          } >>"${GITHUB_STEP_SUMMARY}"
+
       - name: Remove ephemeral OpenRouter access after code review
         id: cleanup
         if: always() && needs.start_stack.outputs.run_review == 'true'
+        env:
+          OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-stack-ocr-config.json
         run: node .github/scripts/final-ai-review.js cleanup-ocr
 
       - name: Run strict topology review
