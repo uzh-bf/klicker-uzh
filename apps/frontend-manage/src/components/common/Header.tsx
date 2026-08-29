@@ -27,6 +27,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { featureTargetProps } from '../onboarding/featureTargets'
+import { useManageOnboardingTour } from '../onboarding/useManageOnboardingTour'
 import ProductUpdateFeedModal from '../productUpdates/ProductUpdateFeedModal'
 import { useProductUpdateSpotlight } from '../productUpdates/useProductUpdateSpotlight'
 import { useProductUpdates } from '../productUpdates/useProductUpdates'
@@ -44,9 +45,14 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
   const unreadCount = productUpdates.unreadCount
   // The header is the one place that auto-presents: it renders on every manage
   // page, so the once-per-session cap belongs to exactly this mount.
+  const tour = useManageOnboardingTour()
   const { replaySpotlight } = useProductUpdateSpotlight({
     updates: productUpdates,
     autoPresent: true,
+    // The tour and the spotlight share one slot per tab. The spotlight waits
+    // for the tour's decision so that a lecturer who has never been onboarded
+    // gets the tour rather than whichever query answered first.
+    autoPresentReady: tour.autoStartSettled,
   })
 
   const { data: pendingRequestData } = useQuery(
@@ -341,10 +347,18 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
             onClick={() => router.push('/')}
             className="hover:cursor-pointer"
           />
-          <Navigation
-            items={leftNavigation}
-            className={{ root: 'shadow-none' }}
-          />
+          {/* The wrapper exists so an onboarding overlay can find the main
+              navigation: the design-system navigation does not forward unknown
+              attributes. */}
+          <div
+            className="flex"
+            {...featureTargetProps('manage-header-main-nav')}
+          >
+            <Navigation
+              items={leftNavigation}
+              className={{ root: 'shadow-none' }}
+            />
+          </div>
           {/* The wrapper exists so a product update spotlight can find the
               analytics menu: the design-system navigation does not forward
               unknown attributes, and the menu itself renders in two branches. */}
@@ -367,25 +381,45 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
           </div>
         </div>
         <div className="flex flex-row items-center">
-          <NotificationBadgeWrapper
-            showBadge={unreadCount > 0}
-            size="sm"
-            className={{ root: 'flex items-center', badge: 'top-0.5 right-0' }}
-            data={{ cy: 'product-updates-badge' }}
+          <div
+            className="flex"
+            {...featureTargetProps('manage-header-product-updates')}
+          >
+            <NotificationBadgeWrapper
+              showBadge={unreadCount > 0}
+              size="sm"
+              className={{
+                root: 'flex items-center',
+                badge: 'top-0.5 right-0',
+              }}
+              data={{ cy: 'product-updates-badge' }}
+            >
+              <Navigation
+                items={productUpdatesNavigation}
+                className={{ root: 'shadow-none' }}
+              />
+            </NotificationBadgeWrapper>
+          </div>
+          <div
+            className="flex"
+            {...featureTargetProps('manage-header-account')}
           >
             <Navigation
-              items={productUpdatesNavigation}
-              className={{ root: 'shadow-none' }}
+              items={rightNavigation}
+              className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
             />
-          </NotificationBadgeWrapper>
-          <Navigation
-            items={rightNavigation}
-            className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
-          />
+          </div>
         </div>
       </div>
       {showSupportModal && (
-        <SupportModal onClose={() => setShowSupportModal(false)} user={user} />
+        <SupportModal
+          onClose={() => setShowSupportModal(false)}
+          onStartTour={() => {
+            setShowSupportModal(false)
+            tour.startTour()
+          }}
+          user={user}
+        />
       )}
       {showProductUpdates && (
         <ProductUpdateFeedModal

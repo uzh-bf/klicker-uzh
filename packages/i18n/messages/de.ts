@@ -1842,6 +1842,33 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Der Berichtsstatus hat sich geändert, aber die sichtbare Liste konnte nicht aktualisiert werden. Schliessen und öffnen Sie den Dialog erneut, um den aktuellen Status zu laden.',
       reportTimeZone: 'Europe/Zurich',
     },
+    productTours: {
+      // Platzhaltertexte: die Formulierungen des Onboardings warten noch auf
+      // die redaktionelle Überprüfung, die Mechanik dahinter nicht.
+      next: 'Weiter',
+      previous: 'Zurück',
+      done: 'Fertig',
+      progress: 'Schritt {current} von {total}',
+      replayTitle: 'Tour starten',
+      replayDesc: 'Ein kurzer Rundgang durch die KlickerUZH-Oberfläche',
+      onboarding: {
+        welcomeTitle: 'Willkommen bei KlickerUZH',
+        welcomeBody:
+          'Eine kurze Tour zeigt Ihnen, wo Sie was finden. Sie können sie jederzeit beenden und im Support-Menü erneut starten.',
+        navigationTitle: 'Bibliothek, Aktivitäten und Kurse',
+        navigationBody:
+          'Ihre Fragen liegen in der Bibliothek, Aktivitäten bearbeiten die Studierenden, und Kurse führen beides zusammen.',
+        analyticsTitle: 'Learning Analytics',
+        analyticsBody:
+          'Sobald ein Kurs läuft, zeigt dieses Menü, wie es Ihren Studierenden geht.',
+        updatesTitle: 'Produkt-Updates',
+        updatesBody:
+          'Hier kündigen wir neue Funktionen an. Der Punkt bedeutet, dass etwas Ungelesenes vorliegt.',
+        supportTitle: 'Hilfe und Konto',
+        supportBody:
+          'Dokumentation, Feedback und Ihre Kontoeinstellungen finden Sie in dieser Ecke. Dort starten Sie auch diese Tour erneut.',
+      },
+    },
     productUpdates: {
       feedTitle: 'Neu in KlickerUZH',
       pageTitle: 'Produkt-Updates',

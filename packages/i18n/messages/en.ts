@@ -1830,6 +1830,33 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The report status changed, but the visible list could not be refreshed. Close and reopen the dialog to load the current status.',
       reportTimeZone: 'Europe/Zurich',
     },
+    productTours: {
+      // Placeholder copy: the onboarding wording is still awaiting editorial
+      // review, the mechanics around it are not.
+      next: 'Next',
+      previous: 'Back',
+      done: 'Done',
+      progress: 'Step {current} of {total}',
+      replayTitle: 'Take the tour',
+      replayDesc: 'A short walk through the KlickerUZH interface',
+      onboarding: {
+        welcomeTitle: 'Welcome to KlickerUZH',
+        welcomeBody:
+          'A short tour shows you where everything lives. You can leave it at any time and start it again from the support menu.',
+        navigationTitle: 'Library, activities and courses',
+        navigationBody:
+          'Your questions live in the library, activities are what students work on, and courses bring both together.',
+        analyticsTitle: 'Learning analytics',
+        analyticsBody:
+          'Once a course is running, this menu shows how your students are doing.',
+        updatesTitle: 'Product updates',
+        updatesBody:
+          'New features are announced here. The dot means something is waiting to be read.',
+        supportTitle: 'Help and account',
+        supportBody:
+          'Documentation, feedback and your account settings are in this corner, including this tour if you want to see it again.',
+      },
+    },
     productUpdates: {
       feedTitle: 'New in KlickerUZH',
       pageTitle: 'Product Updates',
