@@ -47,6 +47,9 @@ function FreeTextRetryPanel({
       attempt?.availabilityReason === 'CONSENT_DECLINED')
   const evaluated =
     attempt?.evaluationStatus === FreeTextEvaluationStatus.Evaluated
+  const rubricAttempt = [...state.attempts]
+    .reverse()
+    .find((historyAttempt) => historyAttempt.structuredResult)
   const explanationId = `semantic-solution-feedback-${state.cycleId}`
 
   let defaultOutcome = t('pwa.practiceQuiz.semanticIncorrect')
@@ -196,7 +199,7 @@ function FreeTextRetryPanel({
 
       {state.solutionAuthorized && detailsOpen && (
         <div id={explanationId} className="mt-4">
-          <FreeTextRubricBreakdown result={attempt?.structuredResult} />
+          <FreeTextRubricBreakdown result={rubricAttempt?.structuredResult} />
         </div>
       )}
 

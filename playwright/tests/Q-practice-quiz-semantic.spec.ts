@@ -282,6 +282,34 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
     ).toHaveCount(1)
   })
 
+  test('keeps prior rubric feedback when a later attempt is unavailable', async ({
+    page,
+  }) => {
+    await openQuiz(page, 'testuser10')
+    await startQuiz(page, 'accept')
+    await submitInitialStack(page, data.partialAnswer)
+
+    const panel = page.getByTestId('semantic-free-text-retry-panel')
+    await expect(panel).toContainText(data.partialLabel)
+    await page.getByTestId('semantic-try-again').click()
+    await page
+      .getByTestId('free-text-input-0')
+      .fill(`${data.incorrectAnswer} [semantic:failure]`)
+    await page.getByTestId('semantic-submit-improved-answer').click()
+
+    await expect(panel).toContainText(
+      'Semantic feedback is currently unavailable.'
+    )
+    await page.getByTestId('semantic-show-solution').click()
+    await page.getByTestId('semantic-toggle-explanation').click()
+    await expect(page.getByTestId('semantic-rubric-summary')).toContainText(
+      '2 of 4 criteria fully met'
+    )
+    await expect(
+      page.getByTestId('semantic-rubric-ai-feedback-risk-reduction')
+    ).toContainText('Why this score')
+  })
+
   test('deduplicates a replayed stack submission and its rewards', async ({
     page,
   }) => {
