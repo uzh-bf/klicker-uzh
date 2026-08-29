@@ -78,6 +78,9 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
   // of them. Without this, the tour would auto-start unsolicited on every
   // seeded account and its document-wide pointer-blocking overlay would
   // break every manage E2E spec that logs in and interacts right away.
+  // The tour id literal is owned by packages/product-tours/src/index.ts
+  // (TOUR_IDS); it stays a plain string here so the seed paths gain no
+  // runtime dependency — update both places when a tour is renamed.
   for (const userId of [
     USER_ID_TEST,
     USER_ID_TEST2,
