@@ -366,6 +366,14 @@ export function CandidateCards({ part }: { part: CandidatePart }) {
                 : 'rounded-lg border p-3'
             }
           >
+            <p
+              className="text-muted-foreground mb-2 text-xs font-medium"
+              data-cy="personal-element-candidate-provenance"
+            >
+              {t('personalElements.aiGenerated')} ·{' '}
+              {t('personalElements.sourceLinked')} ·{' '}
+              {t('personalElements.notReviewed')}
+            </p>
             <strong className="block">{candidate.name}</strong>
             <Markdown
               content={candidate.content}

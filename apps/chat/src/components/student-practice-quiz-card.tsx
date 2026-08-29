@@ -20,6 +20,7 @@ import {
   XCircleIcon,
 } from 'lucide-react'
 import { useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type {
   GetPracticeStackForQuizOutput,
@@ -201,6 +202,7 @@ export function StudentPracticeQuizCard({
   status: { type: string }
 }) {
   const params = useParams<{ chatbotId?: string }>()
+  const t = useTranslations()
   const quiz = asQuizResult(result)
   const stack = useMemo(
     () => (quiz ? toElementStack(quiz) : EMPTY_STACK),
@@ -362,7 +364,7 @@ export function StudentPracticeQuizCard({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="text-xs font-medium uppercase text-slate-500">
-              Archived practice question
+              {t('chat.practice.archivedCourseTeamQuestion')}
             </div>
             <h3 className="mt-1 text-base font-semibold leading-6">
               {activeQuiz.stack.stackTitle}
@@ -389,7 +391,7 @@ export function StudentPracticeQuizCard({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase text-slate-500">
-            <span>Practice question</span>
+            <span>{t('chat.practice.courseTeamQuestion')}</span>
             {elementCount > 1 ? (
               <span>
                 {displayedElementIx + 1}/{elementCount}

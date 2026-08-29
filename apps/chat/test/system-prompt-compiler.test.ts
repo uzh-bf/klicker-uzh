@@ -116,6 +116,29 @@ describe('compileSystemPrompt', () => {
     expect(quizzer).not.toContain(DEFAULT_EXPLAINER_MARK)
   })
 
+  test('keeps standard personas pedagogically distinct and provenance-safe', () => {
+    const tutor = compileSystemPrompt(null, 'tutor', [])
+    const explainer = compileSystemPrompt(null, 'explainer', [])
+    const quizzer = compileSystemPrompt(null, 'quizzer', [DOC_TOOL])
+
+    expect(tutor).toContain(
+      'do not turn a direct request for an explanation into an interrogation'
+    )
+    expect(tutor).toContain('do not imply a grade, exam likelihood')
+    expect(explainer).toContain('State the limits of an analogy')
+    expect(explainer).toContain(
+      'never bury the requested answer behind it'
+    )
+    expect(quizzer).toContain('structured course-team practice question')
+    expect(quizzer).toContain('label questions you create as AI-generated')
+    expect(quizzer).toContain(
+      'Never claim that either is an exam question or predicts the exam'
+    )
+    expect(quizzer).toContain(
+      'AI-generated, source-linked, and not reviewed by the course team'
+    )
+  })
+
   test('keeps fixed platform contracts out of the mode personas', () => {
     for (const { prompt } of Object.values(DEFAULT_PROMPT)) {
       expect(prompt).not.toContain('Platform course policy:')

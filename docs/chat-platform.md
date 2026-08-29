@@ -232,9 +232,10 @@ Participant practice questions reach the chat through a second FastMCP server, n
 
 `pnpm --filter @klicker-uzh/mcp-student smoke:negative` exercises those rejections against a running service (the lecturer service has a matching `smoke:negative`). Answers are addressed by short-lived signed `questionRef` values (`MCP_STUDENT_QUESTION_REF_TTL_SECONDS`, default 20 min), so the chat never handles raw element ids or answer keys.
 
-Three properties matter when debugging it:
+Four properties matter when debugging it:
 
-- The lookup runs **only in `tutor` mode** (`src/app/api/chatbots/[chatbotId]/chat/route.ts`); other modes never register `start_student_practice_quiz`.
+- The lookup runs only in **Tutor and Quizzer** (`src/app/api/chatbots/[chatbotId]/chat/route.ts`). Explainer and custom modes never register `start_student_practice_quiz`.
+- Quizzer proves that MCP discovery returned a `doc_query`-style tool before candidate lookup. A missing retrieval tool therefore cannot trigger a course-team lookup or personal-card generation setup.
 - Student practice authorization requires a matching chatbot/course pair and an
   existing `Participation` row for the participant. `Participation.isActive`
   is only the course-leaderboard opt-in and must not gate MCP practice access.
@@ -468,12 +469,27 @@ composer with a localized unavailable notice and suppresses edit and retry gener
 instead of allowing requests the server would reject.
 
 Standard prompt changes apply automatically to chatbots that do not store an override for that
-mode. Stage 1 Quizzer generates one practice question at a time from retrieved course material; it
-does not present questions as lecturer-authored or exam-equivalent. Chatbots without a safe course
-retrieval binding do not expose Quizzer. If an optional binding produces no `doc_query` tool during
-request-time discovery, Quizzer returns the required-tool-unavailable response instead of generating
-an ungrounded question; optional retrieval outages can still degrade gracefully in Tutor and
+mode. Quizzer conducts one grounded question at a time. It may select an answer-safe question from
+a course-team activity through `start_student_practice_quiz`, or create a clearly labelled
+AI-generated question from retrieved course material. Neither source is presented as an exam
+question or an exam prediction. Chatbots without a safe course retrieval binding do not expose
+Quizzer. The request-time `doc_query` gate runs before course-team candidate lookup or personal-card
+setup, so an optional binding that discovers no retrieval tool fails closed without starting those
+downstream workflows. Optional retrieval outages can still degrade gracefully in Tutor and
 Explainer. No stored prompt or database migration is required.
+
+Question and card capabilities compose independently of the visible mode persona:
+
+| Mode | Model-authored practice question | Course-team structured question | Personal-card plan and generation |
+| --- | --- | --- | --- |
+| Tutor | A focused tutoring question when useful | Available when answer-safe candidates exist | Available when retrieval, feature flag, and credits permit |
+| Explainer | Not a practice-loop default | Not registered | Available when retrieval, feature flag, and credits permit |
+| Quizzer | One clearly labelled AI-generated question at a time | Preferred when a relevant candidate exists | Available on an explicit student request when retrieval, feature flag, and credits permit |
+| Custom | Defined by the reviewed persona | Not registered | Available when retrieval, feature flag, and credits permit |
+
+The mode never changes card ownership or review status. Personal-card generation remains the
+plan-first, per-card retrieval-backed capability from [ADR 0027](./adr/0027-plan-first-retrieval-backed-card-generation.md),
+and saved cards retain source snapshots under [ADR 0042](./adr/0042-generated-elements-own-source-reference-snapshots.md).
 
 In the sidebar layout, `src/components/credits-footer.tsx:MobileCreditsBar` keeps the legacy
 participant usage-credit balance visible below the header at mobile widths, even while the
@@ -713,6 +729,13 @@ established conversation language. German answers use Swiss High German orthogra
 a separately authorised live-model evaluation.
 
 ## Sources and citations
+
+Student-facing provenance is explicit at the rendering seam. A model-authored Quizzer item is
+introduced as an AI-generated practice question. A structured question card is labelled as a
+course-team practice question and owns its own answer and feedback flow; the model must not
+reproduce or answer it in prose. A generated personal-card candidate is labelled AI-generated,
+source-linked, and not reviewed by the course team. Source linkage records the material used; it
+does not assert correctness, lecturer approval, or exam relevance.
 
 ### Student-generated card plans
 

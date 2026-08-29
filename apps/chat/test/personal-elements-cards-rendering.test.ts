@@ -235,6 +235,10 @@ describe('personal-element cards', () => {
     expect(html).toContain('data-cy="personal-element-references"')
     expect(html).toContain('Course reader')
     expect(html).toContain('[1]')
+    expect(html).toContain('data-cy="personal-element-candidate-provenance"')
+    expect(html).toContain('personalElements.aiGenerated')
+    expect(html).toContain('personalElements.sourceLinked')
+    expect(html).toContain('personalElements.notReviewed')
   })
 
   test('renders the final accepted plan without another approval control', () => {

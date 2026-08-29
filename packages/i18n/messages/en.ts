@@ -16,7 +16,7 @@ export default {
         'Get direct explanations with definitions and course-based examples.',
       quizzer: 'Quizzer',
       quizzerDescription:
-        'Practise one AI-generated question at a time, based on course material.',
+        'Practise one grounded question at a time, using course-team questions when available or clearly labelled AI-generated questions.',
     },
     settingsPanel: {
       title: 'Settings',
@@ -199,7 +199,7 @@ export default {
         'Start a practice quiz based on the course materials. Choose a suitable topic and ask me one question at a time.',
       practiceWeakSpot: 'Practise a weak spot',
       practiceWeakSpotPrompt:
-        'Help me practise a topic I find difficult. First ask which topic, then give me one AI-generated question at a time based on the course materials.',
+        'Help me practise a topic I find difficult. First ask which topic, then use one relevant course-team practice question when available or one clearly labelled AI-generated question based on the course materials.',
     },
     message: {
       creditsUsed:
@@ -257,6 +257,10 @@ export default {
       courseMaterialUnavailable:
         'I could not find usable evidence in the course materials for this request. Please try a more specific question.',
       imageAnalyzed: 'Image analyzed',
+    },
+    practice: {
+      courseTeamQuestion: 'Course-team practice question',
+      archivedCourseTeamQuestion: 'Archived course-team practice question',
     },
     personalElements: {
       planTitle: 'Card plan',

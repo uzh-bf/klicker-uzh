@@ -64,3 +64,29 @@ replacing:
   Quizzer asks AI-generated questions grounded in course material; it does not
   imply access to lecturer-authored questions, personal practice cards, or an
   exam-equivalent question bank.
+
+## Amendment — 2026-08-29
+
+Quizzer now composes two answer-safe question sources. It prefers a relevant
+structured question from a course-team activity when the participant practice
+adapter returns one; otherwise it may create one clearly labelled AI-generated
+question from retrieved course material. The structured card, not the model,
+owns answer submission and feedback, so the model neither reproduces the
+question nor reveals its answer in prose. Neither source is described as an
+exam question or an exam prediction.
+
+This does not make personal-card generation mode-specific. Plan-first card
+generation remains available in any effective mode that has retrieval, an
+enabled generation flag, and participant credits, as defined by
+[ADR 0027](./0027-plan-first-retrieval-backed-card-generation.md). Generated
+candidates are labelled AI-generated, source-linked, and not reviewed by the
+course team; their durable source snapshots retain evidence lineage without
+asserting correctness or review, as defined by
+[ADR 0042](./0042-generated-elements-own-source-reference-snapshots.md).
+
+The Quizzer retrieval gate runs before either downstream capability is set up.
+Tutor and Quizzer may register the course-team practice adapter; Explainer and
+custom modes do not. Existing chatbot prompt rows still require no migration:
+platform persona updates apply automatically wherever a stored mode prompt does
+not override them, while fixed language, scope, grounding, and safety layers
+continue to compile for every mode.

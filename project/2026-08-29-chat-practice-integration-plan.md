@@ -245,5 +245,12 @@ pnpm checks and browser/model evidence remain outstanding.
   by the approved no-runtime boundary and will be reported as skipped.
 - 2026-08-29: S0 worktree and branch created from exact `9fc0d52`; no upstream
   is configured.
-- Status: S0 in progress; plan commit pending.
-
+- 2026-08-29: S0 completed and the plan was committed. The frozen policy and
+  Quizzer commits were replayed without moving either source ref; conflicts
+  preserved graph/context, personal-card, and unavailable-mode behavior.
+- 2026-08-29: S1-S3 implementation composed Tutor and Quizzer course-team
+  practice, fixed the Quizzer pre-lookup retrieval gate, retained capability-
+  based personal cards, improved all three personas, and added explicit
+  localized provenance plus ADR/wiki updates.
+- Status: S1-S3 source work complete; static verification and read-only review
+  gates pending.

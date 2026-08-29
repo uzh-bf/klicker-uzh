@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   isChatAccountUsageAvailable: vi.fn(),
   claimChatTurn: vi.fn(),
   failChatTurn: vi.fn(),
+  lookupRelevantPracticeStacks: vi.fn(),
 }))
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
@@ -46,6 +47,16 @@ vi.mock('@klicker-uzh/prisma', () => ({
 vi.mock('@/src/services/mcpClients', () => ({
   getAggregatedMCPTools: mocks.getAggregatedMCPTools,
 }))
+
+vi.mock('@/src/services/studentPracticeMcp', async () => {
+  const actual = await vi.importActual<
+    typeof import('@/src/services/studentPracticeMcp')
+  >('@/src/services/studentPracticeMcp')
+  return {
+    ...actual,
+    lookupRelevantPracticeStacks: mocks.lookupRelevantPracticeStacks,
+  }
+})
 
 vi.mock('@/src/services/threads', () => ({
   ThreadService: {
@@ -122,6 +133,7 @@ describe('required MCP chat preflight', () => {
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
     })
     mocks.failChatTurn.mockResolvedValue(undefined)
+    mocks.lookupRelevantPracticeStacks.mockResolvedValue({ candidates: [] })
     mocks.findUnique.mockResolvedValue({
       id: 'chatbot-1',
       ownerId: 'owner-1',
@@ -368,7 +380,12 @@ describe('required MCP chat preflight', () => {
           }),
         }),
       ],
-      'chatbot-1'
+      expect.objectContaining({
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+        authMode: 'account',
+        sessionId: 'thread-1',
+      })
     )
   })
 
@@ -412,6 +429,7 @@ describe('required MCP chat preflight', () => {
       code: REQUIRED_MCP_UNAVAILABLE_CODE,
     })
     expect(mocks.getAggregatedMCPTools).toHaveBeenCalledOnce()
+    expect(mocks.lookupRelevantPracticeStacks).not.toHaveBeenCalled()
     expect(mocks.deleteThread).toHaveBeenCalledWith(
       'thread-1',
       'participant-1',
@@ -496,7 +514,12 @@ describe('required MCP chat preflight', () => {
           server: expect.objectContaining({ id: 'server-1' }),
         }),
       ],
-      'chatbot-1'
+      expect.objectContaining({
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+        authMode: 'account',
+        sessionId: 'thread-1',
+      })
     )
   })
 })

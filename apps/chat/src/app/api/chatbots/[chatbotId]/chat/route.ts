@@ -1132,11 +1132,26 @@ export async function POST(
       throw error
     }
 
+    const mcpToolNames = Object.keys(mcpTools || {})
+    if (
+      selectedMode === 'quizzer' &&
+      !mcpToolNames.some(isDocQueryToolName)
+    ) {
+      await failOrDiscardUnstartedClaim('mcp.quizzer')
+      return NextResponse.json(
+        {
+          error: 'Required MCP tool unavailable',
+          code: REQUIRED_MCP_UNAVAILABLE_CODE,
+        },
+        { status: 503 }
+      )
+    }
+
     let practiceCandidatePrompt = ''
     let practiceCandidateCount = 0
     const practiceCandidateRefs = new Map<string, string>()
 
-    if (selectedMode === 'tutor') {
+    if (selectedMode === 'tutor' || selectedMode === 'quizzer') {
       try {
         const lookupResult = await lookupRelevantPracticeStacks({
           authMode,
@@ -1220,20 +1235,6 @@ export async function POST(
       ...studentPracticeTools,
     }
     const baseToolNames = Object.keys(chatTools)
-
-    if (
-      selectedMode === 'quizzer' &&
-      !toolNames.some(isDocQueryToolName)
-    ) {
-      await failOrDiscardUnstartedClaim('mcp.quizzer')
-      return NextResponse.json(
-        {
-          error: 'Required MCP tool unavailable',
-          code: REQUIRED_MCP_UNAVAILABLE_CODE,
-        },
-        { status: 503 }
-      )
-    }
 
     // Compile the full system prompt now that `toolNames` is known: the resolved
     // base prompt plus the layered runtime contracts (attachment context, course

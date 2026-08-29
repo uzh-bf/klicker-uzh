@@ -16,7 +16,7 @@ export default {
         'Erhalte direkte Erklärungen mit Definitionen und Beispielen aus den Kursunterlagen.',
       quizzer: 'Quiz',
       quizzerDescription:
-        'Übe mit jeweils einer KI-generierten Frage auf Basis der Kursunterlagen.',
+        'Übe jeweils eine fundierte Frage, wenn möglich aus dem Kursteam oder sonst klar als KI-generiert gekennzeichnet.',
     },
     settingsPanel: {
       title: 'Einstellungen',
@@ -200,7 +200,7 @@ export default {
         'Starte ein Übungsquiz auf Basis der Kursunterlagen. Wähle ein passendes Thema und stelle mir jeweils eine Frage.',
       practiceWeakSpot: 'Unsicheres Thema üben',
       practiceWeakSpotPrompt:
-        'Hilf mir, ein Thema zu üben, bei dem ich noch unsicher bin. Frage zuerst nach dem Thema und stelle mir danach jeweils eine KI-generierte Frage auf Basis der Kursunterlagen.',
+        'Hilf mir, ein Thema zu üben, bei dem ich noch unsicher bin. Frage zuerst nach dem Thema und verwende danach wenn möglich eine passende Übungsfrage des Kursteams oder sonst eine klar als KI-generiert gekennzeichnete Frage auf Basis der Kursunterlagen.',
     },
     message: {
       creditsUsed:
@@ -259,6 +259,10 @@ export default {
       courseMaterialUnavailable:
         'Ich konnte in den Kursmaterialien keine passenden Belege für diese Anfrage finden. Bitte stelle eine spezifischere Frage.',
       imageAnalyzed: 'Bild analysiert',
+    },
+    practice: {
+      courseTeamQuestion: 'Übungsfrage des Kursteams',
+      archivedCourseTeamQuestion: 'Archivierte Übungsfrage des Kursteams',
     },
     personalElements: {
       planTitle: 'Kartenplan',
