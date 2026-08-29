@@ -608,3 +608,25 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   the stated terminal condition. The standalone plan checkpoint is active. No
   implementation, devcontainer runtime, test, browser session, ADR, roadmap
   receipt, push, PR, migration, deployment, or live call has occurred.
+- 2026-08-29: plan checkpoint `b82396a95` is committed. S1 is active. The next
+  step is the authoritative text-history transaction, exact assistant-parent
+  lifecycle fencing, shared cycle-safe branch walking, and focused tests.
+- 2026-08-29: S1 now creates or exactly validates the immutable user trigger,
+  validates one parent branch through a bounded recursive PostgreSQL query,
+  projects only persisted history, and fences every assistant lifecycle change
+  to the participant, thread, and exact parent. The compatibility adapter
+  ignores browser-supplied history; S2 still owns transactional image bindings.
+- 2026-08-29: the focused S1 portfolio passes: 20 pure/history/request tests,
+  33 route and lifecycle tests, 9 synthetic PostgreSQL history tests, and 14
+  synthetic PostgreSQL account-lifecycle tests. Chat TypeScript checking,
+  focused Biome checks, and `git diff --check` also pass. The temporary
+  devcontainer provisioning shim was removed after the synthetic database was
+  prepared; full app readiness remained unavailable because auth did not become
+  ready within the two managed 90-second attempts.
+- 2026-08-29: the container dependency volume was repaired from the unchanged
+  lockfile after an interrupted check exposed missing installed modules. The
+  rerun passed all 25 repository typecheck tasks, syncpack, Prisma sync, staged
+  formatting, the host-launcher tests, and focused S1 ESLint. The aggregate
+  `check:all` remains blocked outside W3 because analytics lint attempts to
+  build pandas without a C compiler in this devcontainer; the already-failed
+  run was stopped after its independent evidence completed.

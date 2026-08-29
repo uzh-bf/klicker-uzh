@@ -1,4 +1,5 @@
-import { ExtendedThreadMessageLike } from '../../stores/chatStore'
+import type { ExtendedThreadMessageLike } from '../../stores/chatStore'
+import { walkConversationBranch } from '../conversationBranch'
 
 /**
  * Builds path from leaf message to the root of the conversation tree
@@ -11,26 +12,7 @@ import { ExtendedThreadMessageLike } from '../../stores/chatStore'
 export const getPathToLeaf = (
   messages: ExtendedThreadMessageLike[],
   leafId: string
-): ExtendedThreadMessageLike[] => {
-  const messageMap = new Map(messages.map((m) => [m.id, m]))
-  const path: ExtendedThreadMessageLike[] = []
-
-  let current = messageMap.get(leafId)
-
-  // build path from leaf to root by following parentId chain
-  while (current) {
-    path.unshift(current)
-
-    if (current.parentId) {
-      const parent = messageMap.get(current.parentId)
-      current = parent
-    } else {
-      current = undefined
-    }
-  }
-
-  return path
-}
+): ExtendedThreadMessageLike[] => walkConversationBranch(messages, leafId).path
 
 /**
  * Finds all sibling messages for a given message
@@ -102,6 +84,7 @@ export const findBranchLeaf = (
 ): ExtendedThreadMessageLike | null => {
   const messageMap = new Map(messages.map((m) => [m.id, m]))
   let current = messageMap.get(startMessageId)
+  const visited = new Set<string>()
 
   if (!current) return null
 
@@ -118,6 +101,8 @@ export const findBranchLeaf = (
   // traverse down the tree using children map
   while (current) {
     const id = typeof current.id === 'string' ? current.id : undefined
+    if (!id || visited.has(id)) return null
+    visited.add(id)
     const children: ExtendedThreadMessageLike[] = id
       ? childrenMap.get(id) || []
       : []

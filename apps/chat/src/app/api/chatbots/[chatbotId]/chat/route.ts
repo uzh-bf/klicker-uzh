@@ -2,6 +2,10 @@ import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import { type ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
+  AuthoritativeConversationError,
+  prepareAuthoritativeConversation,
+} from '@/src/lib/server/authoritativeHistory'
+import {
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
@@ -26,6 +30,7 @@ import {
   buildAbortedAssistantContent,
   mapAssistantStepContent,
 } from '@/src/lib/server/persistedAssistantContent'
+import { parseChatRequestBody } from '@/src/lib/server/chatRequest'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
@@ -59,7 +64,6 @@ import {
 } from 'ai'
 import { createHash, randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 
 export const runtime = 'nodejs'
 
@@ -635,75 +639,32 @@ export async function POST(
     )
   }
 
-  const imageDataUrlSchema = z
-    .string()
-    .max(7_000_000)
-    .refine((value) => /^data:image\/(jpeg|png|gif|webp);base64,/.test(value), {
-      message: 'Must be a base64 data URL for jpeg, png, gif, or webp',
-    })
-
-  const bodySchema = z.object({
-    messages: z.array(
-      z.object({
-        id: z.string().min(1),
-        role: z.enum(['user', 'assistant']),
-        content: z.string(),
-      })
-    ),
-    threadId: z.string().min(1).nullable().optional(),
-    selectedModel: z.string().min(1),
-    selectedMode: z
-      .string()
-      .optional()
-      .transform((val) => val?.toLowerCase())
-      .default('tutor'),
-    reasoningEffort: z.string().min(1).optional().default('none'),
-    parentId: z.string().min(1).nullable().optional(),
-    assistantMessageId: z.string().min(1),
-    images: z
-      .array(
-        z.union([
-          imageDataUrlSchema,
-          z.object({
-            imageBase64: imageDataUrlSchema,
-            imagePreviewBase64: imageDataUrlSchema.nullable(),
-          }),
-        ])
-      )
-      .max(3)
-      .optional()
-      .default([]),
-  })
-  let parsed: z.infer<typeof bodySchema>
+  let parsed: ReturnType<typeof parseChatRequestBody>
   try {
-    parsed = bodySchema.parse(await req.json())
+    parsed = parseChatRequestBody(await req.json())
   } catch (e) {
     console.error('Invalid request body:', { requestId, error: e })
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
   const {
-    messages,
     threadId,
     selectedMode,
     reasoningEffort: requestedReasoningEffort,
-    parentId,
     assistantMessageId,
-    images,
+    trigger,
+    legacyImages,
+    usedLegacyAdapter,
   } = parsed
 
-  const normalizedImages: IncomingImageAttachment[] = images.map((image) =>
-    typeof image === 'string'
-      ? {
-          imageBase64: image,
-          imagePreviewBase64: null,
-        }
-      : image
+  const normalizedImages: IncomingImageAttachment[] = legacyImages.map(
+    (image) =>
+      typeof image === 'string'
+        ? {
+            imageBase64: image,
+            imagePreviewBase64: null,
+          }
+        : image
   )
-
-  const userPrompt = messages
-    .filter((message) => message.role === 'user')
-    .map((message) => message.content)
-    .join('\n')
 
   logChatDev('request.received', {
     requestId,
@@ -713,13 +674,14 @@ export async function POST(
     assistantMessageId,
     selectedModel: parsed.selectedModel,
     selectedMode,
-    messageCount: messages.length,
+    messageCount: 1,
+    usedLegacyAdapter,
   })
 
   let selectedModel = parsed.selectedModel
 
   let currentThreadId = threadId
-  let userMessageId: string | null = null
+  const userMessageId = trigger.id
 
   // fetch the chatbot with its enabled MCP configurations (its stored
   // systemPrompts feed compileSystemPrompt once the tool set is known below)
@@ -888,11 +850,27 @@ export async function POST(
     }
   }
 
+  const allowedReasoningEfforts = getAllowedReasoningEffortsForModel(
+    selectedModelConfig,
+    chatbot.allowedReasoningEffortsByModel
+  )
+  const appliedReasoningEffort: ReasoningEffort | null =
+    allowedReasoningEfforts.length > 0
+      ? allowedReasoningEfforts.includes(requestedReasoningEffort)
+        ? requestedReasoningEffort
+        : getDefaultReasoningEffort(allowedReasoningEfforts)
+      : null
+
+  const providerReasoningEffort =
+    appliedReasoningEffort && appliedReasoningEffort !== 'none'
+      ? appliedReasoningEffort
+      : undefined
+
   // Resolve the participant-owned thread before acquiring the provider-work
   // claim. The claim must exist before MCP discovery, image description, or
   // model streaming can begin.
   let createdThreadId: string | null = null
-  if (!currentThreadId && messages.length > 0) {
+  if (!currentThreadId) {
     try {
       currentThreadId = await ThreadService.findFailedTurnThreadId(
         participantId,
@@ -943,7 +921,7 @@ export async function POST(
     }
   }
 
-  let owningThread
+  let owningThread: { id: string } | null
   try {
     owningThread = await prisma.chatThread.findFirst({
       where: {
@@ -965,16 +943,45 @@ export async function POST(
     )
   }
 
-  const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null
-  if (lastMessage?.role === 'user') {
-    userMessageId = lastMessage.id
+  let authoritativeConversation: Awaited<
+    ReturnType<typeof prepareAuthoritativeConversation>
+  >
+  try {
+    authoritativeConversation = await prepareAuthoritativeConversation({
+      participantId,
+      ownerId: chatbot.ownerId,
+      chatbotId,
+      threadId: owningThread.id,
+      trigger: {
+        id: trigger.id,
+        parentId: trigger.parentId,
+        text: trigger.text,
+        hasAttachments: normalizedImages.length > 0,
+      },
+      metadata: {
+        chatMode: selectedMode,
+        modelId: selectedModelConfig.id,
+        reasoningEffort: appliedReasoningEffort,
+      },
+    })
+  } catch (error) {
+    if (error instanceof AuthoritativeConversationError) {
+      await discardCreatedThread('history.conflict')
+      return NextResponse.json(
+        { error: 'Chat conversation conflict' },
+        { status: 409 }
+      )
+    }
+    await discardCreatedThread('history.error')
+    throw error
   }
 
-  let turnClaim
+  let turnClaim: Awaited<ReturnType<typeof claimChatTurn>>
   try {
     turnClaim = await claimChatTurn({
       ownerId: chatbot.ownerId,
       chatbotId,
+      participantId,
       threadId: owningThread.id,
       assistantMessageId,
       parentId: userMessageId,
@@ -1000,8 +1007,12 @@ export async function POST(
   const failAssistantClaim = async (phase: string) => {
     try {
       await failChatTurn({
+        ownerId: chatbot.ownerId,
+        chatbotId,
+        participantId,
         assistantMessageId,
         threadId: owningThread.id,
+        parentId: userMessageId,
         lifecycleAttemptId,
       })
     } catch (error) {
@@ -1063,28 +1074,13 @@ export async function POST(
     > = []
     let assistantReasoningContent: string | null = null
 
-    const modelMessages: ChatRouteModelMessage[] = messages.map((msg) => ({
-      role: msg.role,
-      content: msg.content,
-    }))
+    const modelMessages: ChatRouteModelMessage[] =
+      authoritativeConversation.modelMessages.map((message) => ({
+        role: message.role,
+        content: message.content,
+      }))
 
     const maxOutputTokens = selectedModelConfig.maxOutputTokens
-
-    const allowedReasoningEfforts = getAllowedReasoningEffortsForModel(
-      selectedModelConfig,
-      chatbot.allowedReasoningEffortsByModel
-    )
-    const appliedReasoningEffort: ReasoningEffort | null =
-      allowedReasoningEfforts.length > 0
-        ? allowedReasoningEfforts.includes(requestedReasoningEffort)
-          ? requestedReasoningEffort
-          : getDefaultReasoningEffort(allowedReasoningEfforts)
-        : null
-
-    const providerReasoningEffort =
-      appliedReasoningEffort && appliedReasoningEffort !== 'none'
-        ? appliedReasoningEffort
-        : undefined
 
     const { model, routing } = getModel(chatbot, selectedModelConfig)
     const promptCacheRequest =
@@ -1110,7 +1106,7 @@ export async function POST(
       imagePreviewBase64: string | null
       imageDescription: string | null
     }[] = []
-    if (normalizedImages.length > 0 && lastMessage?.role === 'user') {
+    if (normalizedImages.length > 0) {
       const descriptionPrompt = (userContent: string | undefined) =>
         `${userContent ? `User message context: ${userContent}\n\n` : ''}Describe this image in detail. Include all visible text, diagrams, charts, equations, labels, and notable visual elements. This description will serve as context for an ongoing conversation.`
 
@@ -1125,7 +1121,9 @@ export async function POST(
                   { type: 'image', image: image.imageBase64 },
                   {
                     type: 'text',
-                    text: descriptionPrompt(lastMessage?.content),
+                    text: descriptionPrompt(
+                      authoritativeConversation.triggerText
+                    ),
                   },
                 ],
               },
@@ -1167,12 +1165,15 @@ export async function POST(
         }
       }
 
-      const lastMessageIndex = messages.length - 1
-      if (lastMessageIndex >= 0) {
-        const messageText = messages[lastMessageIndex]?.content
+      const triggerMessageIndex =
+        authoritativeConversation.modelMessages.findIndex(
+          (message) => message.id === userMessageId
+        )
+      if (triggerMessageIndex >= 0) {
+        const messageText = authoritativeConversation.triggerText
 
-        modelMessages[lastMessageIndex] = {
-          ...modelMessages[lastMessageIndex],
+        modelMessages[triggerMessageIndex] = {
+          ...modelMessages[triggerMessageIndex],
           content: [
             ...(messageText
               ? [{ type: 'text' as const, text: messageText }]
@@ -1209,9 +1210,14 @@ export async function POST(
       toolNames,
       systemPromptLength: systemPrompt.length,
       systemPromptHash: systemPrompt ? hashSnippet(systemPrompt) : null,
-      userPromptLengthTotal: userPrompt.length,
-      userPromptHash: userPrompt ? hashSnippet(userPrompt) : null,
-      imageAttachmentCount: images.length,
+      userPromptLengthTotal: authoritativeConversation.triggerText.length,
+      userPromptHash: authoritativeConversation.triggerText
+        ? hashSnippet(authoritativeConversation.triggerText)
+        : null,
+      validatedHistoryRowCount: authoritativeConversation.validatedRowCount,
+      modelHistoryRowCount: authoritativeConversation.modelRowCount,
+      historyTruncated: authoritativeConversation.truncated,
+      imageAttachmentCount: normalizedImages.length,
       imageAttachmentSizes: resolvedImages.map((image) =>
         Buffer.byteLength(image.imageBase64, 'utf8')
       ),
@@ -1223,150 +1229,31 @@ export async function POST(
       elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
     })
 
-    // inject image descriptions from prior messages into model context; fetch from DB
-    const priorMessageIds = messages
-      .filter(
-        (m) =>
-          m.role === 'user' &&
-          !(imageAttachments.length > 0 && m.id === lastMessage?.id) // skip current
-      )
-      .map((m) => m.id)
-    if (owningThread && priorMessageIds.length > 0) {
-      try {
-        const priorAttachments = await prisma.chatAttachment.findMany({
-          where: {
-            messageId: { in: priorMessageIds },
-            imageDescription: { not: null },
-            message: { threadId: owningThread.id },
-          },
-          select: { messageId: true, imageDescription: true },
-          orderBy: [{ messageId: 'asc' }, { position: 'asc' }],
-        })
-        const descriptionsByMsgId = new Map<string, string[]>()
-        for (const a of priorAttachments) {
-          // get existing descriptions for this message, append if exist, or create new array
-          const existing = descriptionsByMsgId.get(a.messageId) ?? []
-          existing.push(a.imageDescription!)
-          descriptionsByMsgId.set(a.messageId, existing)
-        }
-        for (let i = 0; i < messages.length; i++) {
-          const descs = descriptionsByMsgId.get(messages[i].id)
-          if (descs && descs.length > 0) {
-            // append all descriptions for this message into the content
-            const suffix =
-              descs.length === 1
-                ? `\n\n[Attached image description: ${descs[0]}]`
-                : '\n\n' +
-                  descs
-                    .map(
-                      (d, idx) =>
-                        `[Attached image ${idx + 1} description: ${d}]`
-                    )
-                    .join('\n\n')
-            modelMessages[i] = {
-              ...modelMessages[i],
-              content: `${modelMessages[i].content}${suffix}`,
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch prior image descriptions:', {
-          requestId,
-          error,
-        })
-      }
-    }
-
-    // save user message to database (after effective model selection)
+    // S2 moves image binding creation into the authoritative transaction. Until
+    // then, only a newly created legacy trigger may receive these bindings;
+    // retries never replace an existing trigger's attachments.
     if (
-      currentThreadId &&
-      owningThread &&
-      lastMessage?.role === 'user' &&
-      userMessageId
+      imageAttachments.length > 0 &&
+      authoritativeConversation.createdTrigger
     ) {
       try {
-        const metadata = {
-          chatMode: selectedMode,
-          modelId: selectedModelConfig.id,
-          reasoningEffort: appliedReasoningEffort,
-        }
-
-        const persistAttachments = async (messageId: string) => {
-          if (imageAttachments.length === 0) return
-
-          // delete existing attachments for this message, then create new ones
-          await prisma.$transaction([
-            prisma.chatAttachment.deleteMany({ where: { messageId } }),
-            prisma.chatAttachment.createMany({
-              data: imageAttachments.map((att, position) => ({
-                type: 'IMAGE' as const,
-                messageId,
-                position,
-                imageBase64: att.imageBase64 ?? null,
-                imagePreviewBase64: att.imagePreviewBase64 ?? null,
-                imageDescription: att.imageDescription ?? null,
-              })),
-            }),
-          ])
-        }
-
-        const updated = await prisma.chatMessage.updateMany({
-          where: { id: userMessageId, threadId: currentThreadId },
-          data: metadata,
-        })
-
-        if (updated.count === 0) {
-          const existingMessage = await prisma.chatMessage.findUnique({
-            where: { id: userMessageId },
-            select: { id: true },
-          })
-          if (existingMessage) {
-            console.warn(
-              'Skipping user message update: message exists outside current thread',
-              {
-                requestId,
-                phase: 'persist.userMessage',
-                messageId: userMessageId,
-                threadId: currentThreadId,
-              }
-            )
-          } else {
-            await prisma.chatMessage.create({
-              data: {
-                id: lastMessage.id,
-                threadId: currentThreadId,
-                parentId: parentId || null,
-                role: lastMessage.role,
-                content: [{ type: 'text', text: lastMessage.content }],
-                ...metadata,
-              },
-            })
-
-            await persistAttachments(lastMessage.id)
-          }
-        } else {
-          await persistAttachments(userMessageId)
-        }
-
-        // update thread's timestamp
-        await prisma.chatThread.update({
-          where: { id: currentThreadId },
-          data: { updatedAt: new Date() },
+        await prisma.chatAttachment.createMany({
+          data: imageAttachments.map((attachment, position) => ({
+            type: 'IMAGE' as const,
+            messageId: userMessageId,
+            position,
+            imageBase64: attachment.imageBase64,
+            imagePreviewBase64: attachment.imagePreviewBase64,
+            imageDescription: attachment.imageDescription,
+          })),
         })
       } catch (error) {
-        console.error('Failed to save user message:', {
+        console.error('Failed to save user message attachments:', {
           requestId,
-          phase: 'persist.userMessage',
+          phase: 'persist.userAttachments',
           error,
         })
       }
-    } else if (currentThreadId && !owningThread && userMessageId) {
-      console.warn('Skipping user message save: thread ownership mismatch', {
-        requestId,
-        phase: 'persist.userMessage',
-        messageId: userMessageId,
-        threadId: currentThreadId,
-      })
     }
 
     const normalizeCredits = (
@@ -1417,6 +1304,7 @@ export async function POST(
         const result = await finalizeChatTurn({
           ownerId: chatbot.ownerId,
           chatbotId,
+          participantId,
           usageClass: selectedModelConfig.usageClass,
           threadId: owningThread.id,
           assistantMessageId,

@@ -8,7 +8,11 @@ const mocks = vi.hoisted(() => ({
   },
   transaction: {
     chatAccountUsage: { upsert: vi.fn() },
-    chatMessage: { updateMany: vi.fn(), findUnique: vi.fn() },
+    chatMessage: {
+      updateMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+    },
     chatThread: {
       findFirst: vi.fn(),
       update: vi.fn(),
@@ -59,6 +63,9 @@ describe('account usage finalization errors', () => {
       operation(mocks.transaction)
     )
     mocks.transaction.chatThread.findFirst.mockResolvedValue({ id: 'thread-1' })
+    mocks.transaction.chatMessage.findFirst.mockResolvedValue({
+      id: 'parent-1',
+    })
     mocks.transaction.chatMessage.updateMany.mockResolvedValue({ count: 1 })
     mocks.getEffectiveChatAccountUsage.mockResolvedValue({
       budgetCredits: new Prisma.Decimal('10'),
@@ -69,11 +76,12 @@ describe('account usage finalization errors', () => {
       finalizeChatTurn({
         ownerId: 'owner-1',
         chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
         usageClass: 'BASE',
         threadId: 'thread-1',
         assistantMessageId: 'message-1',
         lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
-        parentId: null,
+        parentId: 'parent-1',
         content: [],
         chatMode: 'tutor',
         modelId: 'model-1',

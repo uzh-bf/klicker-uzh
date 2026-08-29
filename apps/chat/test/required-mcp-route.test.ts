@@ -16,10 +16,16 @@ const mocks = vi.hoisted(() => ({
   isChatAccountUsageAvailable: vi.fn(),
   claimChatTurn: vi.fn(),
   failChatTurn: vi.fn(),
+  prepareAuthoritativeConversation: vi.fn(),
 }))
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
   withChatbotAuth: mocks.withChatbotAuth,
+}))
+
+vi.mock('@/src/lib/server/authoritativeHistory', () => ({
+  AuthoritativeConversationError: class AuthoritativeConversationError extends Error {},
+  prepareAuthoritativeConversation: mocks.prepareAuthoritativeConversation,
 }))
 
 vi.mock('@/src/services/disclaimers', () => ({
@@ -76,17 +82,24 @@ import {
   RequiredMCPUnavailableError,
 } from '../src/lib/server/mcpRuntimePolicy'
 
+const USER_MESSAGE_ID = '00000000-0000-4000-8000-000000000201'
+const ASSISTANT_MESSAGE_ID = '00000000-0000-4000-8000-000000000202'
+
 function createRequest(selectedMode?: string) {
   return new NextRequest('http://localhost/api/chatbots/chatbot-1/chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       messages: [
-        { id: 'message-1', role: 'user', content: 'Find the relevant video.' },
+        {
+          id: USER_MESSAGE_ID,
+          role: 'user',
+          content: 'Find the relevant video.',
+        },
       ],
       selectedModel: 'gpt-4.1',
       ...(selectedMode ? { selectedMode } : {}),
-      assistantMessageId: 'assistant-1',
+      assistantMessageId: ASSISTANT_MESSAGE_ID,
     }),
   })
 }
@@ -107,6 +120,21 @@ describe('required MCP chat preflight', () => {
     mocks.findFailedTurnThreadId.mockResolvedValue(null)
     mocks.deleteThread.mockResolvedValue(true)
     mocks.findThread.mockResolvedValue({ id: 'thread-1' })
+    mocks.prepareAuthoritativeConversation.mockResolvedValue({
+      triggerId: USER_MESSAGE_ID,
+      triggerText: 'Find the relevant video.',
+      modelMessages: [
+        {
+          id: USER_MESSAGE_ID,
+          role: 'user',
+          content: 'Find the relevant video.',
+        },
+      ],
+      validatedRowCount: 1,
+      modelRowCount: 1,
+      truncated: false,
+      createdTrigger: true,
+    })
     mocks.claimChatTurn.mockResolvedValue({
       outcome: 'claimed',
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
@@ -181,9 +209,10 @@ describe('required MCP chat preflight', () => {
     expect(mocks.claimChatTurn).toHaveBeenCalledWith({
       ownerId: 'owner-1',
       chatbotId: 'chatbot-1',
+      participantId: 'participant-1',
       threadId: 'thread-1',
-      assistantMessageId: 'assistant-1',
-      parentId: 'message-1',
+      assistantMessageId: ASSISTANT_MESSAGE_ID,
+      parentId: USER_MESSAGE_ID,
     })
     expect(mocks.failChatTurn).not.toHaveBeenCalled()
     expect(mocks.deleteThread).toHaveBeenCalledWith(
@@ -212,8 +241,12 @@ describe('required MCP chat preflight', () => {
     const response = await responsePromise
     expect(response.status).toBe(503)
     expect(mocks.failChatTurn).toHaveBeenCalledWith({
-      assistantMessageId: 'assistant-1',
+      ownerId: 'owner-1',
+      chatbotId: 'chatbot-1',
+      participantId: 'participant-1',
+      assistantMessageId: ASSISTANT_MESSAGE_ID,
       threadId: 'thread-1',
+      parentId: USER_MESSAGE_ID,
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
     })
     expect(mocks.deleteThread.mock.invocationCallOrder[0]).toBeLessThan(
