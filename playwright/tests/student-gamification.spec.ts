@@ -10,6 +10,8 @@ let publicParticipantWasPublic: boolean | undefined
 let publicParticipantWasActive: boolean | undefined
 let publicLeaderboardEntryId: number | undefined
 let publicParticipantUsername: string | undefined
+let receiptParticipantWasPublic: boolean | undefined
+let receiptParticipantWasActive: boolean | undefined
 
 test.beforeAll(async () => {
   const prisma = await getPrisma()
@@ -31,7 +33,13 @@ test.beforeAll(async () => {
   testAchievementId = achievement.id
 
   const publicParticipantIdForTest = PARTICIPANT_IDS[0]!
-  const [publicParticipant, publicParticipation] = await Promise.all([
+  const receiptParticipantId = PARTICIPANT_IDS[48]!
+  const [
+    publicParticipant,
+    publicParticipation,
+    receiptParticipant,
+    receiptParticipation,
+  ] = await Promise.all([
     prisma.participant.findUniqueOrThrow({
       where: { id: publicParticipantIdForTest },
       select: { isProfilePublic: true, username: true },
@@ -41,6 +49,19 @@ test.beforeAll(async () => {
         courseId_participantId: {
           courseId: COURSE_ID_TEST,
           participantId: publicParticipantIdForTest,
+        },
+      },
+      select: { isActive: true },
+    }),
+    prisma.participant.findUniqueOrThrow({
+      where: { id: receiptParticipantId },
+      select: { isProfilePublic: true },
+    }),
+    prisma.participation.findUniqueOrThrow({
+      where: {
+        courseId_participantId: {
+          courseId: COURSE_ID_TEST,
+          participantId: receiptParticipantId,
         },
       },
       select: { isActive: true },
@@ -67,6 +88,8 @@ test.beforeAll(async () => {
   publicParticipantWasActive = publicParticipation.isActive
   publicLeaderboardEntryId = publicLeaderboardEntry.id
   publicParticipantUsername = publicParticipant.username
+  receiptParticipantWasPublic = receiptParticipant.isProfilePublic
+  receiptParticipantWasActive = receiptParticipation.isActive
 
   await Promise.all([
     prisma.participant.update({
@@ -78,6 +101,19 @@ test.beforeAll(async () => {
         courseId_participantId: {
           courseId: COURSE_ID_TEST,
           participantId: publicParticipantIdForTest,
+        },
+      },
+      data: { isActive: true },
+    }),
+    prisma.participant.update({
+      where: { id: receiptParticipantId },
+      data: { isProfilePublic: true },
+    }),
+    prisma.participation.update({
+      where: {
+        courseId_participantId: {
+          courseId: COURSE_ID_TEST,
+          participantId: receiptParticipantId,
         },
       },
       data: { isActive: true },
@@ -135,6 +171,27 @@ test.afterAll(async () => {
       where: { id: publicParticipantId },
       data: { isProfilePublic: publicParticipantWasPublic },
     })
+  }
+
+  if (
+    typeof receiptParticipantWasPublic !== 'undefined' &&
+    typeof receiptParticipantWasActive !== 'undefined'
+  ) {
+    await Promise.all([
+      prisma.participant.update({
+        where: { id: PARTICIPANT_IDS[48]! },
+        data: { isProfilePublic: receiptParticipantWasPublic },
+      }),
+      prisma.participation.update({
+        where: {
+          courseId_participantId: {
+            courseId: COURSE_ID_TEST,
+            participantId: PARTICIPANT_IDS[48]!,
+          },
+        },
+        data: { isActive: receiptParticipantWasActive },
+      }),
+    ])
   }
 })
 
