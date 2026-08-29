@@ -17,6 +17,9 @@ import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
  * would emit a marker beyond N, which renders as literal text instead of a
  * chip.
  *
+ * Legacy stored personas may still forbid square brackets for formulas. The
+ * closing precedence sentence keeps those instructions from suppressing
+ * citation markers.
  */
 const CITATION_CONTRACT =
   'Course-grounding policy: for every substantive student request, call the ' +
@@ -33,7 +36,9 @@ const CITATION_CONTRACT =
   'number you gave it the first time instead of assigning a new one. Only ' +
   'use numbers that a search actually returned - never invent a ' +
   'citation. Do not add a citation when you are not drawing on retrieved ' +
-  'material.'
+  'material. These bracketed numbers are citation markers, not formula ' +
+  'delimiters. This citation format overrides conflicting bracket or formula ' +
+  'instructions in the base persona.'
 
 /**
  * Appends the citation contract to `systemPrompt` when `toolNames` includes

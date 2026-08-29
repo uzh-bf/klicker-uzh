@@ -468,7 +468,10 @@ MCP server configuration.
 Standard prompt changes apply automatically to chatbots that do not store an override for that
 mode. Stage 1 Quizzer generates one practice question at a time from retrieved course material; it
 does not present questions as lecturer-authored or exam-equivalent. Chatbots without a safe course
-retrieval binding do not expose Quizzer, and no stored prompt or database migration is required.
+retrieval binding do not expose Quizzer. If an optional binding produces no `doc_query` tool during
+request-time discovery, Quizzer returns the required-tool-unavailable response instead of generating
+an ungrounded question; optional retrieval outages can still degrade gracefully in Tutor and
+Explainer. No stored prompt or database migration is required.
 
 In the sidebar layout, `src/components/credits-footer.tsx:MobileCreditsBar` keeps the legacy
 participant usage-credit balance visible below the header at mobile widths, even while the
@@ -943,7 +946,9 @@ The self-contained devcontainer starts the seeded local MCP fixture through
 `post-start.sh`. Benibot's Tutor and Explainer configurations already point to
 `http://localhost:1417/mcp` and allow `doc_query`; Quizzer therefore inherits
 the restricted Tutor binding automatically. The runtime namespaces the tool
-as `KB_doc_query`. Keep Auto Mode selected, then prompt Benibot with “Use
+as `KB_doc_query`; if discovery does not return that tool, Quizzer fails closed
+while Tutor and Explainer retain their optional-retrieval behavior. Keep Auto
+Mode selected, then prompt Benibot with “Use
 the local MCP tool to test the integration. Search for
 `portfolio diversification` and tell me the exact marker it returns.” The
 end-to-end pass requires a completed tool call, `KLICKER_LOCAL_MCP_OK` in the

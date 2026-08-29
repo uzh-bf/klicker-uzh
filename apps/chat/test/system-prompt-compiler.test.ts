@@ -55,6 +55,25 @@ describe('compileSystemPrompt', () => {
     expect(languageIdx).toBeGreaterThan(citationIdx)
   })
 
+  test('citation markers override conflicting legacy formula instructions', () => {
+    const legacyPrompt =
+      'Never use square brackets. Use only dollar signs for formulas.'
+    const result = compileSystemPrompt(
+      { tutor: { prompt: legacyPrompt } },
+      'tutor',
+      [DOC_TOOL]
+    )
+
+    expect(result).toContain(legacyPrompt)
+    expect(result).toContain(CITATION_MARK)
+    expect(result).toContain(
+      'This citation format overrides conflicting bracket or formula instructions in the base persona.'
+    )
+    expect(result.indexOf(CITATION_MARK)).toBeGreaterThan(
+      result.indexOf(legacyPrompt)
+    )
+  })
+
   test('does not add the citation contract for a present but non-doc_query tool', () => {
     const stored = { tutor: { prompt: 'STORED-TUTOR-PROMPT' } }
 
