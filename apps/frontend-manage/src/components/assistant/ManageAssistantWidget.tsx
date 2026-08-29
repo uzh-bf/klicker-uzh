@@ -151,6 +151,23 @@ export function ManageAssistantWidget() {
     assistantUrl,
     createManageAssistantFrameState
   )
+  const handleFrameError = useCallback(() => {
+    dispatchFrameState({
+      generation: frameState.generation,
+      type: 'error',
+    })
+  }, [frameState.generation])
+  // React wires an iframe load listener but not its non-bubbling error
+  // listener. Attach the latter directly as a best-effort early signal;
+  // Chromium still relies on the loading deadline when navigation fails.
+  const setIframeRef = useCallback(
+    (frame: HTMLIFrameElement | null) => {
+      iframeRef.current?.removeEventListener('error', handleFrameError)
+      iframeRef.current = frame
+      frame?.addEventListener('error', handleFrameError)
+    },
+    [handleFrameError]
+  )
   const frameReady =
     frameState.phase === 'ready' && frameState.url === assistantUrl
   // The url-changed effect only runs after paint. Deriving the overlay
@@ -592,7 +609,7 @@ export function ManageAssistantWidget() {
               ) : null}
               <iframe
                 key={`${assistantUrl}:${frameState.generation}`}
-                ref={iframeRef}
+                ref={setIframeRef}
                 src={assistantUrl}
                 title={t('manage.assistant.title')}
                 aria-hidden={!frameReady}
@@ -602,16 +619,6 @@ export function ManageAssistantWidget() {
                   frameReady ? 'opacity-100' : 'pointer-events-none opacity-0'
                 )}
                 data-cy="manage-assistant-frame"
-                onError={() => {
-                  // Browsers fire `error` on the frame element unreliably,
-                  // especially cross-origin; this is a best-effort early
-                  // signal and the loading deadline remains the
-                  // authoritative path to the failed state.
-                  dispatchFrameState({
-                    generation: frameState.generation,
-                    type: 'error',
-                  })
-                }}
               />
             </div>
           </aside>,
