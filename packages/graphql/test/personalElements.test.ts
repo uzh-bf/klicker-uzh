@@ -17,6 +17,7 @@ import {
   listPersonalElements,
   normalizeElementSourceReferences,
   prepareCardPlan,
+  readElementSourceReferences,
   respondToPersonalElement,
   updatePersonalElement,
   validateCardCandidate,
@@ -286,6 +287,29 @@ describe('personal elements service', () => {
         },
       ])
     ).toThrowError(/Source text must not be persisted/u)
+  })
+
+  it('keeps legacy source identity readable while dropping unsafe locators', () => {
+    expect(
+      readElementSourceReferences([
+        {
+          sourceId: 'legacy-script',
+          chunkId: 'chunk-1',
+          title: 'Legacy script',
+          url: 'https://example.org/script.pdf?sig=expired',
+          page: 0.5,
+          metadata: { excerpt: 'Old source text is not retained' },
+        },
+      ])
+    ).toEqual([
+      {
+        sourceId: 'legacy-script',
+        kind: 'DOCUMENT',
+        title: 'Legacy script',
+        chunkIds: ['chunk-1'],
+        locators: [],
+      },
+    ])
   })
 
   it('rejects repeated candidate IDs within one batch', async () => {

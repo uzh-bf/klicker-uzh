@@ -6,9 +6,9 @@ import type {
 import builder from '../builder.js'
 import {
   type DiscardedDuplicateCard as DiscardedDuplicateCardValue,
-  normalizeElementSourceReferences,
   type PreparedCardPlanEntry as PreparedCardPlanEntryValue,
   type PreparedCardPlan as PreparedCardPlanValue,
+  readElementSourceReferences,
 } from '../services/personalElements.js'
 import { ElementType } from './elementData.js'
 import { ResponseCorrectness } from './evaluation.js'
@@ -277,9 +277,7 @@ export const PersonalElement = builder.objectType(PersonalElementRef, {
       type: [ElementSourceReference],
       nullable: true,
       resolve: (element) =>
-        element.sources
-          ? normalizeElementSourceReferences(element.sources)
-          : null,
+        element.sources ? readElementSourceReferences(element.sources) : null,
     }),
     origin: t.expose('origin', { type: PersonalElementOrigin }),
     sourceMessageId: t.exposeString('sourceMessageId', { nullable: true }),

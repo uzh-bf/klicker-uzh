@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { parseStoredGeneratedCardCandidate } from '../src/lib/server/personalElements/contracts'
 import {
   extractUnsavedCandidates,
   isFailedGenerationContent,
@@ -38,6 +39,33 @@ function message(
 }
 
 describe('unsaved candidate extraction', () => {
+  test('drops unsafe locators and source bodies from flat stored candidates', () => {
+    expect(
+      parseStoredGeneratedCardCandidate({
+        ...candidate,
+        candidateId: 'legacy-candidate',
+        sources: [
+          {
+            sourceId: 'source-1',
+            chunkId: 'chunk-1',
+            url: 'https://example.org/script.pdf?sig=expired',
+            page: 0.5,
+            metadata: { excerpt: 'Old source text' },
+          },
+        ],
+      })
+    ).toMatchObject({
+      sources: [
+        {
+          sourceId: 'source-1',
+          kind: 'DOCUMENT',
+          chunkIds: ['chunk-1'],
+          locators: [],
+        },
+      ],
+    })
+  })
+
   test('excludes candidates that already have saved linkage', () => {
     const messages = [
       message('saved-generation', {

@@ -324,6 +324,30 @@ describe('getElementSourceLocatorTarget', () => {
     expect(
       getElementSourceLocatorTarget(source, {
         type: 'WEB_ANCHOR',
+        url: 'https://example.org/chapter#access_token=temporary',
+      })
+    ).toBeUndefined()
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
+        url: 'https://100.64.0.1/chapter',
+      })
+    ).toBeUndefined()
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
+        url: 'https://[fe90::1]/chapter',
+      })
+    ).toBeUndefined()
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
+        url: 'https://[::ffff:127.0.0.1]/chapter',
+      })
+    ).toBeUndefined()
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
         url: 'https://fcc.gov/document#section-2',
       })
     ).toBe('https://fcc.gov/document#section-2')

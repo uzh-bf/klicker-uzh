@@ -14,6 +14,7 @@ import {
   generationCandidateSchema,
   MAX_CARDS,
   normalizeRetrievedChunks,
+  type RetrievedChunk,
 } from './contracts'
 import { listPersonalElements, updatePersonalElement } from './graphqlClient'
 import { discardPotentialDuplicateCards } from './titleSimilarity'
@@ -122,6 +123,42 @@ function assertNoProtocolLeak(
     )
   ) {
     throw new Error('Generated card leaked internal retrieval protocol')
+  }
+}
+
+async function generateGroundedCard(input: {
+  model: Parameters<typeof generateObject>[0]['model']
+  chunks: RetrievedChunk[]
+  system: string
+  prompt: string
+  onUsage: (usage: { inputTokens?: number; outputTokens?: number }) => void
+  abortSignal?: AbortSignal
+}) {
+  const generated = await generateObject({
+    model: input.model,
+    schema: generationResultSchema,
+    system: input.system,
+    prompt: input.prompt,
+    maxOutputTokens: 700,
+    maxRetries: 1,
+    abortSignal: input.abortSignal,
+  })
+  if (generated.usage) input.onUsage(generated.usage)
+  if (generated.object.status === 'insufficient_evidence') {
+    return { status: 'insufficient_evidence' as const }
+  }
+
+  const card = generated.object.card
+  const citedChunkIds = assertCitedChunks(card.citedChunkIds, input.chunks)
+  assertNoProtocolLeak(card, citedChunkIds)
+  try {
+    return {
+      status: 'ready' as const,
+      card,
+      sources: buildElementSourceReferences(citedChunkIds, input.chunks),
+    }
+  } catch {
+    return { status: 'insufficient_evidence' as const }
   }
 }
 
@@ -257,9 +294,9 @@ async function generateRevision(
     return { status: 'insufficient_evidence' as const }
   }
 
-  const generated = await generateObject({
+  const generated = await generateGroundedCard({
     model: options.model,
-    schema: generationResultSchema,
+    chunks,
     system: `${GROUNDED_CARD_SYSTEM} Follow the student revision instruction and preserve supported factual meaning.`,
     prompt: groundedCardPrompt({
       language: options.courseLanguage,
@@ -271,29 +308,18 @@ async function generateRevision(
       },
       chunks: chunks.map(({ chunkId, text }) => ({ chunkId, text })),
     }),
-    maxOutputTokens: 700,
-    maxRetries: 1,
+    onUsage: options.onNestedUsage,
     abortSignal,
   })
-  if (generated.usage) options.onNestedUsage(generated.usage)
-  if (generated.object.status === 'insufficient_evidence') {
-    return { status: 'insufficient_evidence' as const }
-  }
-  const card = generated.object.card
-  const citedChunkIds = assertCitedChunks(card.citedChunkIds, chunks)
-  assertNoProtocolLeak(card, citedChunkIds)
-  let sources: GeneratedCardCandidate['sources']
-  try {
-    sources = buildElementSourceReferences(citedChunkIds, chunks)
-  } catch {
+  if (generated.status === 'insufficient_evidence') {
     return { status: 'insufficient_evidence' as const }
   }
   return {
     status: 'ready' as const,
-    name: card.title,
-    content: card.front,
-    explanation: card.back,
-    sources,
+    name: generated.card.title,
+    content: generated.card.front,
+    explanation: generated.card.back,
+    sources: generated.sources,
   }
 }
 
@@ -446,17 +472,11 @@ async function generateCard(
     throw new CardGenerationFailure('insufficient_evidence')
   }
 
-  let generated: {
-    object: z.infer<typeof generationResultSchema>
-    usage?: {
-      inputTokens?: number
-      outputTokens?: number
-    }
-  }
+  let generated: Awaited<ReturnType<typeof generateGroundedCard>>
   try {
-    generated = await generateObject({
+    generated = await generateGroundedCard({
       model: options.model,
-      schema: generationResultSchema,
+      chunks,
       system: GROUNDED_CARD_SYSTEM,
       prompt: groundedCardPrompt({
         language: options.courseLanguage,
@@ -464,46 +484,25 @@ async function generateCard(
         intent: entry.intent,
         chunks: chunks.map(({ chunkId, text }) => ({ chunkId, text })),
       }),
-      maxOutputTokens: 700,
-      maxRetries: 1,
+      onUsage: options.onNestedUsage,
       abortSignal: options.abortSignal,
     })
   } catch {
     throw new CardGenerationFailure('generation_failed')
   }
-  if (generated.usage) {
-    options.onNestedUsage(generated.usage)
-  }
-  if (generated.object.status === 'insufficient_evidence') {
-    throw new CardGenerationFailure('insufficient_evidence')
-  }
-
-  let citedChunkIds: string[]
-  let selectedSources: GeneratedCardCandidate['sources']
-  try {
-    citedChunkIds = assertCitedChunks(
-      generated.object.card.citedChunkIds,
-      chunks
-    )
-    assertNoProtocolLeak(generated.object.card, citedChunkIds)
-  } catch {
-    throw new CardGenerationFailure('generation_failed')
-  }
-  try {
-    selectedSources = buildElementSourceReferences(citedChunkIds, chunks)
-  } catch {
+  if (generated.status === 'insufficient_evidence') {
     throw new CardGenerationFailure('insufficient_evidence')
   }
   return {
-    type: generated.object.card.type,
+    type: generated.card.type,
     candidateId: entry.candidateId,
     // Keep the persisted title equal to the accepted plan entry. The model
     // generates the card body, but must not silently change the deduplication
     // key after acceptance.
     name: entry.title,
-    content: generated.object.card.front,
-    explanation: generated.object.card.back,
-    sources: selectedSources,
+    content: generated.card.front,
+    explanation: generated.card.back,
+    sources: generated.sources,
     sourceMessageId: options.sourceMessageId,
     sourceToolCallId: toolCallId,
     origin: 'AI_GENERATED',

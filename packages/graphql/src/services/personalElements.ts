@@ -187,6 +187,15 @@ const safeSourceUrlSchema = z
     message: 'Source URLs must be stable http(s) addresses without credentials',
   })
 
+const storedLegacySourceUrlSchema = z
+  .string()
+  .trim()
+  .url()
+  .max(MAX_URL_LENGTH)
+  .refine((value) => ['http:', 'https:'].includes(new URL(value).protocol), {
+    message: 'Source URLs must use http(s)',
+  })
+
 const pageLocatorSchema = z
   .object({
     type: z.literal('PAGE_RANGE'),
@@ -305,6 +314,19 @@ const legacySourceSchema = z
     }
   })
 
+const storedLegacySourceSchema = z
+  .object({
+    sourceId: z.string().trim().min(1).max(MAX_ID_LENGTH),
+    chunkId: z.string().trim().min(1).max(MAX_ID_LENGTH),
+    title: z.string().trim().min(1).max(MAX_TITLE_LENGTH).optional(),
+    url: storedLegacySourceUrlSchema.optional(),
+    page: z.number().finite().optional(),
+    metadata: z
+      .record(z.string().max(MAX_ID_LENGTH), legacySourceMetadataValueSchema)
+      .optional(),
+  })
+  .strict()
+
 const sourceInputSchema = z.union([
   elementSourceReferenceSchema,
   legacySourceSchema,
@@ -312,6 +334,11 @@ const sourceInputSchema = z.union([
 
 const sourceInputsSchema = z
   .array(sourceInputSchema)
+  .min(1)
+  .max(MAX_SOURCE_COUNT)
+
+const storedSourceInputsSchema = z
+  .array(z.union([elementSourceReferenceSchema, storedLegacySourceSchema]))
   .min(1)
   .max(MAX_SOURCE_COUNT)
 
@@ -362,7 +389,6 @@ const candidateSchema = z
     name: z.string().trim().min(1).max(MAX_TITLE_LENGTH),
     content: z.string().trim().min(1).max(8_192),
     explanation: cardExplanationSchema,
-    sources: elementSourceReferencesSchema,
     sourceMessageId: z.string().trim().min(1).max(MAX_ID_LENGTH),
     sourceToolCallId: z.string().trim().min(1).max(MAX_ID_LENGTH),
     origin: z.enum(['AI_GENERATED', 'AUTHORED']).nullish(),
@@ -393,7 +419,6 @@ const validateCardCandidateInputSchema = z
     title: z.string().trim().min(1).max(MAX_TITLE_LENGTH),
     front: z.string().trim().min(1).max(8_192),
     back: cardExplanationSchema,
-    sources: elementSourceReferencesSchema,
     sourceMessageId: z.string().trim().min(1).max(MAX_ID_LENGTH),
     sourceToolCallId: z.string().trim().min(1).max(MAX_ID_LENGTH),
   })
@@ -414,7 +439,9 @@ const leaseSettlementSchema = z.object({
 
 export type PersonalElementSource = ElementSourceReference
 
-export type PersonalElementCandidate = z.infer<typeof candidateSchema>
+export type PersonalElementCandidate = z.infer<typeof candidateSchema> & {
+  sources: ElementSourceReference[]
+}
 
 export type PersonalElementCandidateInput = {
   candidateId: string
@@ -630,8 +657,9 @@ function isPdfSourceUrl(url: string | undefined) {
  * It reads the unreleased flat prototype and the grouped shape, but always
  * returns the grouped, source-body-free domain value used for persistence.
  */
-export function normalizeElementSourceReferences(
-  input: readonly PersonalElementSourceInput[] | unknown
+function normalizeElementSourceReferencesWithSchema(
+  input: readonly PersonalElementSourceInput[] | unknown,
+  inputSchema: typeof sourceInputsSchema | typeof storedSourceInputsSchema
 ): ElementSourceReference[] {
   if (Buffer.byteLength(JSON.stringify(input), 'utf8') > MAX_METADATA_BYTES) {
     throw personalElementError(
@@ -647,7 +675,7 @@ export function normalizeElementSourceReferences(
           : source
       )
     : input
-  const parsed = parsePersonalElementInput(sourceInputsSchema, normalizedInput)
+  const parsed = parsePersonalElementInput(inputSchema, normalizedInput)
   const references: ElementSourceReference[] = []
   const legacyBySourceId = new Map<
     string,
@@ -668,6 +696,13 @@ export function normalizeElementSourceReferences(
       continue
     }
 
+    const stableUrl =
+      source.url && isSafeElementSourceUrl(source.url) ? source.url : undefined
+    const page = source.page
+    const validPage =
+      typeof page === 'number' && Number.isInteger(page) && page >= 1
+        ? page
+        : undefined
     const kind =
       source.page !== undefined || isPdfSourceUrl(source.url)
         ? 'DOCUMENT'
@@ -678,7 +713,7 @@ export function normalizeElementSourceReferences(
       existing &&
       (existing.kind !== kind ||
         existing.title !== title ||
-        existing.canonicalUrl !== source.url)
+        existing.canonicalUrl !== stableUrl)
     ) {
       throw personalElementError(
         'PERSONAL_ELEMENTS_INVALID_INPUT',
@@ -690,20 +725,20 @@ export function normalizeElementSourceReferences(
       sourceId: source.sourceId,
       kind,
       title,
-      ...(source.url ? { canonicalUrl: source.url } : {}),
+      ...(stableUrl ? { canonicalUrl: stableUrl } : {}),
       chunkIds: [],
       pageLocators: [],
       webLocators: [],
     }
     reference.chunkIds.push(source.chunkId)
-    if (source.page !== undefined) {
+    if (validPage !== undefined) {
       reference.pageLocators.push({
         type: 'PAGE_RANGE',
-        pageFrom: source.page,
-        pageTo: source.page,
+        pageFrom: validPage,
+        pageTo: validPage,
       })
-    } else if (kind === 'WEB' && source.url) {
-      reference.webLocators.push({ type: 'WEB_ANCHOR', url: source.url })
+    } else if (kind === 'WEB' && stableUrl) {
+      reference.webLocators.push({ type: 'WEB_ANCHOR', url: stableUrl })
     }
     legacyBySourceId.set(source.sourceId, reference)
   }
@@ -733,6 +768,23 @@ export function normalizeElementSourceReferences(
   }
 
   return parsePersonalElementInput(elementSourceReferencesSchema, references)
+}
+
+export function normalizeElementSourceReferences(
+  input: readonly PersonalElementSourceInput[] | unknown
+) {
+  return normalizeElementSourceReferencesWithSchema(input, sourceInputsSchema)
+}
+
+/**
+ * Reads rows written by the earlier flat-source prototype without making old
+ * expiring links actionable. Invalid page locators and unsafe URLs are omitted.
+ */
+export function readElementSourceReferences(input: unknown) {
+  return normalizeElementSourceReferencesWithSchema(
+    input,
+    storedSourceInputsSchema
+  )
 }
 
 function assertParticipantContext(context: PersonalElementServiceContext) {
@@ -877,10 +929,12 @@ export async function validateCardCandidate(
   context: PersonalElementServiceContext
 ): Promise<true> {
   assertParticipantContext(context)
-  const parsed = parsePersonalElementInput(validateCardCandidateInputSchema, {
-    ...input,
-    sources: normalizeElementSourceReferences(input.sources),
-  })
+  const { sources, ...candidateInput } = input
+  normalizeElementSourceReferences(sources)
+  const parsed = parsePersonalElementInput(
+    validateCardCandidateInputSchema,
+    candidateInput
+  )
 
   await assertCourseParticipation(
     context.prisma,
@@ -928,12 +982,13 @@ function normalizeCandidates(
     )
   }
 
-  const parsed = candidates.map((candidate) =>
-    parsePersonalElementInput(candidateSchema, {
-      ...candidate,
-      sources: toPersistedSources(candidate.sources),
-    })
-  )
+  const parsed = candidates.map((candidate) => {
+    const { sources, ...candidateInput } = candidate
+    return {
+      ...parsePersonalElementInput(candidateSchema, candidateInput),
+      sources: toPersistedSources(sources),
+    }
+  })
   const candidateIds = parsed.map((candidate) => candidate.candidateId)
   if (new Set(candidateIds).size !== candidateIds.length) {
     throw personalElementError(
@@ -1451,23 +1506,28 @@ export async function updatePersonalElement(
     )
   }
 
+  const normalizedSources = input.sources
+    ? toPersistedSources(input.sources)
+    : undefined
   const updateData = {
     name: input.name?.trim(),
     content: input.content?.trim(),
     explanation: input.explanation?.trim(),
-    sources: input.sources ? toPersistedSources(input.sources) : undefined,
   }
-  const parsedUpdate = parsePersonalElementInput(
+  const parsedFields = parsePersonalElementInput(
     z
       .object({
         name: z.string().min(1).max(MAX_TITLE_LENGTH).optional(),
         content: z.string().min(1).max(8_192).optional(),
         explanation: cardExplanationSchema.optional(),
-        sources: elementSourceReferencesSchema.optional(),
       })
       .strict(),
     updateData
   )
+  const parsedUpdate = {
+    ...parsedFields,
+    ...(normalizedSources ? { sources: normalizedSources } : {}),
+  }
   if (Object.values(parsedUpdate).every((value) => value === undefined)) {
     throw personalElementError(
       'PERSONAL_ELEMENT_INVALID_INPUT',

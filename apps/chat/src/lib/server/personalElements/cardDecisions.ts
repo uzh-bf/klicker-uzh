@@ -7,7 +7,7 @@ import {
   isSettledTerminalPartialPersonalElementPart,
   isTerminalPartialPersonalElementPart,
 } from '@/src/lib/personalElements/failure'
-import { generatedCardCandidateSchema, MAX_CARDS } from './contracts'
+import { MAX_CARDS, parseStoredGeneratedCardCandidate } from './contracts'
 import {
   createPersonalElements,
   discardPersonalElementCandidate,
@@ -167,15 +167,15 @@ function findWritableCandidate(
       typeof value === 'object' &&
       (value as { candidateId?: unknown }).candidateId === input.candidateId
   )
-  const parsed = generatedCardCandidateSchema.safeParse(candidate)
-  if (!parsed.success) return null
+  const parsed = parseStoredGeneratedCardCandidate(candidate)
+  if (!parsed) return null
   if (
-    parsed.data.sourceMessageId !== input.messageId ||
-    parsed.data.sourceToolCallId !== input.toolCallId
+    parsed.sourceMessageId !== input.messageId ||
+    parsed.sourceToolCallId !== input.toolCallId
   ) {
     return 'linkage-mismatch' as const
   }
-  return parsed.data
+  return parsed
 }
 
 function stableCandidateIds(

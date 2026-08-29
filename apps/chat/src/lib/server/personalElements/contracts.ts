@@ -173,6 +173,128 @@ export type GeneratedCardCandidate = z.infer<
   typeof generatedCardCandidateSchema
 >
 
+const storedFlatSourceSchema = z
+  .object({
+    sourceId: z.string().trim().min(1).max(128),
+    chunkId: z.string().trim().min(1).max(128),
+    title: z.string().trim().min(1).max(256).optional(),
+    url: z.string().trim().url().max(2_048).optional(),
+    page: z.number().finite().optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
+  })
+  .strict()
+
+const storedFlatCandidateSchema = generatedCardCandidateSchema.extend({
+  sources: z.array(storedFlatSourceSchema).min(1).max(MAX_CHUNKS),
+})
+
+function storedSourceIsPdf(url: string | undefined) {
+  if (!url) return false
+  try {
+    return new URL(url).pathname.toLowerCase().endsWith('.pdf')
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Reads candidate messages written by the flat-source prototype. It keeps the
+ * source identity but drops old source bodies, unsafe links, and invalid pages.
+ */
+export function parseStoredGeneratedCardCandidate(
+  input: unknown
+): GeneratedCardCandidate | null {
+  const current = generatedCardCandidateSchema.safeParse(input)
+  if (current.success) return current.data
+
+  const legacy = storedFlatCandidateSchema.safeParse(input)
+  if (!legacy.success) return null
+
+  const grouped = new Map<string, ElementSourceReference>()
+  for (const source of legacy.data.sources) {
+    const stableUrl =
+      source.url && isSafeElementSourceUrl(source.url) ? source.url : undefined
+    const validPage =
+      Number.isInteger(source.page) && (source.page ?? 0) >= 1
+        ? source.page
+        : undefined
+    const kind =
+      source.page !== undefined || storedSourceIsPdf(source.url)
+        ? 'DOCUMENT'
+        : 'WEB'
+    const existing = grouped.get(source.sourceId)
+    if (existing && existing.kind !== kind) return null
+
+    const reference = existing ?? {
+      sourceId: source.sourceId,
+      kind,
+      title: source.title ?? source.sourceId,
+      chunkIds: [],
+      locators: [],
+    }
+    if (!reference.canonicalUrl && stableUrl) {
+      reference.canonicalUrl = stableUrl
+    } else if (
+      stableUrl &&
+      reference.canonicalUrl &&
+      reference.canonicalUrl !== stableUrl
+    ) {
+      return null
+    }
+    if (!reference.chunkIds.includes(source.chunkId)) {
+      reference.chunkIds.push(source.chunkId)
+    }
+    if (kind === 'DOCUMENT' && validPage !== undefined) {
+      reference.locators.push({
+        type: 'PAGE_RANGE',
+        pageFrom: validPage,
+        pageTo: validPage,
+      })
+    } else if (kind === 'WEB' && stableUrl) {
+      reference.locators.push({ type: 'WEB_ANCHOR', url: stableUrl })
+    }
+    grouped.set(source.sourceId, reference)
+  }
+
+  for (const source of grouped.values()) {
+    if (source.kind === 'DOCUMENT') {
+      const pages = [
+        ...new Set(
+          source.locators.flatMap((locator) =>
+            locator.type === 'PAGE_RANGE' ? [locator.pageFrom] : []
+          )
+        ),
+      ].sort((left, right) => left - right)
+      source.locators = pages.reduce<ElementSourcePageLocator[]>(
+        (locators, page) => {
+          const previous = locators.at(-1)
+          if (previous && page === previous.pageTo + 1) previous.pageTo = page
+          else
+            locators.push({
+              type: 'PAGE_RANGE',
+              pageFrom: page,
+              pageTo: page,
+            })
+          return locators
+        },
+        []
+      )
+    } else {
+      source.locators = source.locators.filter(
+        (locator, index, all) =>
+          locator.type === 'WEB_ANCHOR' &&
+          all.findIndex(
+            (candidate) =>
+              candidate.type === 'WEB_ANCHOR' && candidate.url === locator.url
+          ) === index
+      )
+    }
+    if (source.locators.length > 16) return null
+  }
+
+  return { ...legacy.data, sources: [...grouped.values()] }
+}
+
 export type RetrievedChunk = {
   chunkId: string
   sourceId: string
