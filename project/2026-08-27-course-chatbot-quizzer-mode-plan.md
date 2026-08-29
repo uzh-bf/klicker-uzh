@@ -245,11 +245,11 @@ Stage 2 is a future package, not an unimplemented slice of the Stage 1 pull requ
 
 ## Progress
 
-- Status: Stage 1 approved; S1 review is complete and verified corrections are implemented.
-- Completed: remote-state gate, isolated worktree and branch, current Klicker prompt and mode review, AI Buddy policy comparison, `v3-ai` structured-practice review, open personal-practice stack review, product-primitive pass, stack-boundary review, native planning review, approved plan commit, S1 implementation and immutable commit, static checks, focused test updates for exact-head CI, simplifier review, slice review, and verified S1 corrections.
-- Active slice: S1 correction commit and hand-off to S2.
-- Remaining: S2, integrated final review, push, draft pull request, and exact-head CI report.
+- Status: Stage 1 approved; S1 is reviewed and S2 implementation is source-complete pending immutable-slice review.
+- Completed: remote-state gate, isolated worktree and branch, current Klicker prompt and mode review, AI Buddy policy comparison, `v3-ai` structured-practice review, open personal-practice stack review, product-primitive pass, stack-boundary review, native planning review, approved plan commit, reviewed and corrected S1, S2 prompt and presentation implementation, focused test updates for exact-head CI, ADR amendment, and Chat wiki update.
+- Active slice: S2 static checks, immutable commit, simplifier review, and slice review.
+- Remaining: S2 review disposition, integrated final review, push, draft pull request, and exact-head CI report.
 - Required delivery layer: source-complete draft pull request against `v3`.
 - Runtime: not started and excluded from this plan.
 - Withheld beyond terminal: browser evidence, ready marking, merge, deployment, live evaluation, database work, upstream integration, practice-stack mutation, and cleanup.
-- Next action: commit the reviewed S1 corrections, then implement S2.
+- Next action: commit S2 after staged data-hygiene checks, then run its required parallel reviews.

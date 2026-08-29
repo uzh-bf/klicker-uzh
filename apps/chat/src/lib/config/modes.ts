@@ -1,6 +1,7 @@
 import {
   GraduationCap,
   Lightbulb,
+  ListChecks,
   Sparkles,
   type LucideIcon,
 } from 'lucide-react'
@@ -13,6 +14,7 @@ import type { useTranslations } from 'next-intl'
 const MODE_ICONS = {
   tutor: GraduationCap,
   explainer: Lightbulb,
+  quizzer: ListChecks,
 } as const
 
 export type KnownMode = keyof typeof MODE_ICONS

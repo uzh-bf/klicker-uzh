@@ -15,12 +15,17 @@ describe('thread suggestions', () => {
       { id: 'explainConcept' },
       { id: 'compareConcepts' },
     ])
+    expect(getThreadSuggestions('quizzer')).toEqual([
+      { id: 'startPracticeQuiz' },
+      { id: 'practiceWeakSpot' },
+    ])
   })
 
   test('does not offer the broad whole-course study-plan starter', () => {
     const suggestionIds = [
       ...getThreadSuggestions('tutor'),
       ...getThreadSuggestions('explainer'),
+      ...getThreadSuggestions('quizzer'),
     ].map(({ id }) => id)
 
     expect(suggestionIds).not.toContain('examPrep')

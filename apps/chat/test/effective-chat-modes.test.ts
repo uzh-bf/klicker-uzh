@@ -44,8 +44,9 @@ describe('effective chatbot modes', () => {
         []
       )
     ).toEqual({
-      tutor: 'Acts as a patient and knowledgeable tutor.',
-      explainer: 'Get clear explanations of difficult concepts.',
+      tutor: 'Guides students with focused questions, hints, and feedback.',
+      explainer:
+        'Explains course concepts directly with definitions and grounded examples.',
       custom: 'Custom mode description',
     })
   })
@@ -55,6 +56,8 @@ describe('effective chatbot modes', () => {
       resolveEffectiveChatModeOptions(
         {
           tutor: { enabled: false },
+          explainer: { enabled: false },
+          quizzer: { enabled: false },
           custom: { description: 'Disabled', enabled: false },
         },
         []
@@ -67,7 +70,7 @@ describe('effective chatbot modes', () => {
       config({
         allowedTools: ['course_search'],
         chatMode: 'tutor',
-        parameters: { required: true, toolAlias: 'doc_query' },
+        parameters: { required: true, toolAlias: 'course_search' },
         serverId: 'course',
       }),
     ]
@@ -82,7 +85,7 @@ describe('effective chatbot modes', () => {
         configurations
       )
     ).toEqual({
-      tutor: 'Acts as a patient and knowledgeable tutor.',
+      tutor: 'Guides students with focused questions, hints, and feedback.',
     })
   })
 
@@ -112,11 +115,11 @@ describe('effective chatbot modes', () => {
       }),
     ])
     expect(
-      resolveEffectiveChatModeOptions(
-        { quizzer: { description: 'Quizzer' } },
-        configurations
-      )
-    ).toHaveProperty('quizzer', 'Quizzer')
+      resolveEffectiveChatModeOptions(null, configurations)
+    ).toHaveProperty(
+      'quizzer',
+      'Practises one AI-generated question at a time, based on course material.'
+    )
   })
 
   test('preserves a required aliased binding and its raw tool restriction', () => {
