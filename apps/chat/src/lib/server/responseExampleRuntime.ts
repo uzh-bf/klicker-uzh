@@ -43,7 +43,7 @@ type ResponseExampleRuntimeSet = Prisma.ResponseExampleSetGetPayload<{
 type RankedResponseExampleRow = { id: string }
 type ResponseExampleRuntimePrisma = Pick<
   PrismaClient,
-  '$queryRaw' | 'kBChatbot' | 'kBResource' | 'responseExampleSet'
+  '$queryRaw' | 'responseExampleSet'
 >
 type ResponseExampleRuntimeReconciler = (
   prisma: PrismaClient,
@@ -62,22 +62,52 @@ const RESPONSE_EXAMPLE_SEARCH_CANDIDATE_LIMIT = 12
 
 const responseExampleIdSchema = z.string().uuid()
 
+type CurrentResponseExampleResource = {
+  id: string
+  activeContentSha256: string | null
+  deletedAt: Date | null
+}
+
+async function loadCurrentResponseExampleResources(
+  prisma: ResponseExampleRuntimePrisma,
+  chatbotId: string,
+  sourceIds: readonly string[]
+) {
+  if (sourceIds.length === 0) return []
+
+  return await prisma.$queryRaw<CurrentResponseExampleResource[]>(
+    PrismaRuntime.sql`
+      WITH enabled_kb AS (
+        SELECT binding."kbId"
+        FROM "public"."KBChatbot" AS binding
+        INNER JOIN "public"."KB" AS kb ON kb."id" = binding."kbId"
+        WHERE binding."chatbotId" = ${chatbotId}::uuid
+          AND binding."isEnabled" = true
+          AND kb."deletedAt" IS NULL
+        ORDER BY binding."id" ASC
+        LIMIT 2
+      ), exact_kb AS (
+        SELECT "kbId"
+        FROM enabled_kb
+        WHERE (SELECT COUNT(*) FROM enabled_kb) = 1
+      )
+      SELECT
+        resource."id",
+        resource."activeContentSha256",
+        resource."deletedAt"
+      FROM exact_kb
+      INNER JOIN "public"."KBResource" AS resource
+        ON resource."kbId" = exact_kb."kbId"
+      WHERE resource."id" IN (${PrismaRuntime.join(sourceIds)})
+    `
+  )
+}
+
 async function loadCurrentEligibility(
   prisma: ResponseExampleRuntimePrisma,
   chatbotId: string,
   set: ResponseExampleRuntimeSet
 ) {
-  const bindings = await prisma.kBChatbot.findMany({
-    where: {
-      chatbotId,
-      isEnabled: true,
-      kb: { deletedAt: null },
-    },
-    select: { kbId: true },
-    orderBy: { id: 'asc' },
-    take: 2,
-  })
-  const kbId = bindings.length === 1 ? bindings[0]!.kbId : null
   const sourceIds = [
     ...new Set(
       set.examples.flatMap((example) =>
@@ -89,12 +119,11 @@ async function loadCurrentEligibility(
       )
     ),
   ]
-  const resources = kbId
-    ? await prisma.kBResource.findMany({
-        where: { kbId, id: { in: sourceIds } },
-        select: { id: true, activeContentSha256: true, deletedAt: true },
-      })
-    : []
+  const resources = await loadCurrentResponseExampleResources(
+    prisma,
+    chatbotId,
+    sourceIds
+  )
 
   return new Map(
     set.examples.map((example) => [

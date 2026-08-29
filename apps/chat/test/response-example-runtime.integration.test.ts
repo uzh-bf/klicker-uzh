@@ -217,5 +217,54 @@ describePostgres('response-example PostgreSQL runtime', () => {
         .sort()
         .slice(0, 3)
     )
+
+    const changedEvidence =
+      await prisma.responseExampleEvidenceReference.findFirstOrThrow({
+        where: { responseExampleId: questionMatch.id },
+        select: { sourceId: true },
+      })
+    await prisma.kBResource.update({
+      where: { id: changedEvidence.sourceId },
+      data: { activeContentSha256: `changed-${randomUUID()}` },
+    })
+
+    const afterHashChange = await loadResponseExampleRuntimeSkill({
+      prisma,
+      chatbotId: CHATBOT_ID,
+      chatMode: 'tutor',
+      role: 'included',
+    })
+    const afterHashChangeResult = await afterHashChange.search(
+      'portfolio diversification'
+    )
+    expect(afterHashChangeResult.examples.map(({ id }) => id)).toEqual([
+      answerMatch.id,
+    ])
+    await expect(
+      prisma.responseExample.findUniqueOrThrow({
+        where: { id: questionMatch.id },
+        select: { status: true },
+      })
+    ).resolves.toEqual({ status: ResponseExampleStatus.NEEDS_REVIEW })
+
+    await prisma.kBChatbot.update({
+      where: {
+        kbId_chatbotId: { kbId: KB_ID, chatbotId: CHATBOT_ID },
+      },
+      data: { isEnabled: false },
+    })
+
+    const unboundSkill = await loadResponseExampleRuntimeSkill({
+      prisma,
+      chatbotId: CHATBOT_ID,
+      chatMode: 'tutor',
+      role: 'included',
+    })
+    expect(unboundSkill.summary).toContain(
+      'No lecturer-approved response examples'
+    )
+    await expect(
+      unboundSkill.search('portfolio diversification')
+    ).resolves.toEqual({ degraded: false, examples: [] })
   })
 })
