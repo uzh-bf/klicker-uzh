@@ -133,6 +133,14 @@ test.describe('Test creation and editing functionalities for Free Text elements'
       )
     ).toHaveCount(0)
 
+    await page.getByTestId('configure-semantic-free-text').click()
+    await expect(
+      page.getByTestId('configure-sample-solution')
+    ).not.toBeChecked()
+    await expect(
+      page.getByTestId('configure-sample-solution')
+    ).not.toBeDisabled()
+
     await page.getByTestId('close-element-modal').click()
   })
 

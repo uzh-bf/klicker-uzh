@@ -52,7 +52,8 @@ function SemanticFreeTextOptions({
   const capability = data?.semanticFreeTextCapability
   const config = values.options.semanticEvaluation
   const entitled = capability?.entitled ?? false
-  const canEdit = !inputsDisabled && !loading && entitled
+  const capabilityUnknown = error != null && capability == null
+  const canEdit = !inputsDisabled && !loading && !capabilityUnknown && entitled
   const advancedMetadata = config
     ? getSemanticFreeTextAdvancedMetadata(config.rubric_schema)
     : null
@@ -74,6 +75,12 @@ function SemanticFreeTextOptions({
       setFieldValue('options.semanticEvaluation', newConfig)
     } else {
       setExactAnswerKeys([])
+      setFieldValue(
+        'options.hasSampleSolution',
+        values.options.solutions?.some(
+          (solution) => solution.trim().length > 0
+        ) ?? false
+      )
       setFieldValue('options.semanticEvaluation', undefined)
     }
   }
@@ -89,6 +96,8 @@ function SemanticFreeTextOptions({
   let entitlementMessage = t('manage.elements.semanticNotEntitled')
   if (loading) {
     entitlementMessage = t('shared.generic.loading')
+  } else if (capabilityUnknown) {
+    entitlementMessage = t('shared.generic.systemError')
   } else if (entitled) {
     entitlementMessage = t('manage.elements.semanticEntitled')
   }
@@ -137,7 +146,7 @@ function SemanticFreeTextOptions({
         </div>
       </div>
 
-      {!loading && !entitled && (
+      {!loading && !capabilityUnknown && !entitled && (
         <UserNotification
           type="info"
           className={{ root: 'mt-3' }}
@@ -148,7 +157,8 @@ function SemanticFreeTextOptions({
           }
         />
       )}
-      {entitled &&
+      {!capabilityUnknown &&
+        entitled &&
         availability !== SemanticFreeTextCapabilityAvailability.Available && (
           <UserNotification
             type="warning"
