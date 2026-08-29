@@ -1,394 +1,352 @@
 import { useMutation } from '@apollo/client'
 import {
-  DuplicateGeneratedElementDraftDocument,
-  GeneratableElementType,
-  GeneratedElementCardType,
+  ElementDisplayMode,
+  ElementStatus,
+  ElementType,
   GeneratedElementDecision,
+  KeepGeneratedElementDraftDocument,
   SaveGeneratedElementsDocument,
   SetGeneratedElementDecisionDocument,
-  UpdateGeneratedElementDraftDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { Button, UserNotification } from '@uzh-bf/design-system'
+import { Button, toast, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
+import ElementEditForm from '../manipulation/ElementEditForm'
+import { ElementEditMode } from '../manipulation/ElementEditModal'
+import {
+  prepareChoicesArgs,
+  prepareFlashcardArgs,
+} from '../manipulation/helpers'
+import type { ElementFormTypes } from '../manipulation/types'
 import type {
   ElementGenerationBuildData,
   GeneratedElementDraftData,
 } from './elementGenerationTypes'
 
-interface GeneratedElementCardProps {
-  draft: GeneratedElementDraftData
-  onChanged: () => Promise<void>
+type ReviewFilter = 'all' | 'open' | 'attention' | 'kept' | 'discarded'
+
+function formElementType(type: GeneratedElementDraftData['elementType']) {
+  switch (type) {
+    case 'SC':
+      return ElementType.Sc
+    case 'MC':
+      return ElementType.Mc
+    case 'KPRIM':
+      return ElementType.Kprim
+    case 'FLASHCARD':
+      return ElementType.Flashcard
+    default:
+      throw new Error('Unsupported generated element type')
+  }
 }
 
-function GeneratedElementCard({ draft, onChanged }: GeneratedElementCardProps) {
+function draftToFormValues(draft: GeneratedElementDraftData): ElementFormTypes {
+  const current = draft.current
+  const type = formElementType(draft.elementType)
+  const shared = {
+    name: current.name,
+    status: ElementStatus.Review,
+    content: [current.context, current.prompt].filter(Boolean).join('\n\n'),
+    explanation: current.explanation ?? '',
+    tags: current.tags,
+    basePoints: draft.elementType !== 'FLASHCARD',
+    pointsMultiplier: '1',
+  }
+
+  if (type === ElementType.Flashcard) {
+    return { ...shared, type }
+  }
+
+  return {
+    ...shared,
+    type,
+    options: {
+      hasSampleSolution: true,
+      hasAnswerFeedbacks: current.choices.some((choice) =>
+        Boolean(choice.feedback)
+      ),
+      displayMode: ElementDisplayMode.List,
+      choices: current.choices.map((choice, ix) => ({
+        id: choice.id,
+        ix,
+        value: choice.text,
+        correct: choice.correct,
+        feedback: choice.feedback ?? '',
+      })),
+    },
+  }
+}
+
+function sourceLabel(
+  build: ElementGenerationBuildData,
+  draft: GeneratedElementDraftData,
+  formatPages: (pageFrom: number, pageTo: number | null) => string
+) {
+  const labels = draft.citations.flatMap((citation) => {
+    const source = build.sources.find(
+      (item) => item.resourceId === citation.resourceId
+    )
+    const label = source?.title
+    if (!label) return []
+    const pageFrom = citation.pageFrom
+    const pages =
+      pageFrom === null || pageFrom === undefined
+        ? ''
+        : `, ${formatPages(pageFrom, citation.pageTo ?? null)}`
+    return [`${label}${pages}`]
+  })
+  return [...new Set(labels)].join('; ') || undefined
+}
+
+function GeneratedDraftSources({
+  build,
+  draft,
+}: {
+  build: ElementGenerationBuildData
+  draft: GeneratedElementDraftData
+}) {
   const t = useTranslations('manage.elementGeneration')
-  const [name, setName] = useState(draft.current.name)
-  const [prompt, setPrompt] = useState(draft.current.prompt)
-  const [context, setContext] = useState(draft.current.context ?? '')
-  const [explanation, setExplanation] = useState(
-    draft.current.explanation ?? ''
-  )
-  const [cardType, setCardType] = useState(
-    draft.current.cardType ?? GeneratedElementCardType.Definition
-  )
-  const [tags, setTags] = useState(draft.current.tags.join(', '))
-  const [choices, setChoices] = useState(draft.current.choices)
-  const [error, setError] = useState<string>()
-  const [updateDraft, updateState] = useMutation(
-    UpdateGeneratedElementDraftDocument
-  )
-  const [duplicateDraft, duplicateState] = useMutation(
-    DuplicateGeneratedElementDraftDocument
-  )
-  const [setDecision, decisionState] = useMutation(
-    SetGeneratedElementDecisionDocument
-  )
-  const isFlashcard = draft.elementType === GeneratableElementType.Flashcard
-
-  useEffect(() => {
-    setName(draft.current.name)
-    setPrompt(draft.current.prompt)
-    setContext(draft.current.context ?? '')
-    setExplanation(draft.current.explanation ?? '')
-    setCardType(draft.current.cardType ?? GeneratedElementCardType.Definition)
-    setTags(draft.current.tags.join(', '))
-    setChoices(draft.current.choices)
-  }, [draft])
-
-  async function run(action: () => Promise<unknown>) {
-    setError(undefined)
-    try {
-      await action()
-      await onChanged()
-    } catch {
-      setError(t('review.actionError'))
-    }
-  }
-
-  async function saveDraft() {
-    await run(async () => {
-      await updateDraft({
-        variables: {
-          input: {
-            draftId: draft.id,
-            expectedRevision: draft.revision,
-            current: isFlashcard
-              ? {
-                  name: name.trim(),
-                  prompt: prompt.trim(),
-                  explanation: explanation.trim(),
-                  cardType,
-                  tags: tags
-                    .split(',')
-                    .map((tag) => tag.trim())
-                    .filter(Boolean),
-                }
-              : {
-                  name: name.trim(),
-                  prompt: prompt.trim(),
-                  context: context.trim() || null,
-                  explanation: explanation.trim() || null,
-                  choices: choices.map((choice) => ({
-                    id: choice.id,
-                    label: choice.label,
-                    text: choice.text.trim(),
-                    correct: choice.correct,
-                    feedback: choice.feedback?.trim() || null,
-                  })),
-                },
-          },
-        },
-      })
-    })
-  }
-
-  const busy =
-    updateState.loading || duplicateState.loading || decisionState.loading
+  const sources = draft.citations.flatMap((citation) => {
+    const source = build.sources.find(
+      (item) => item.resourceId === citation.resourceId
+    )
+    if (!source) return []
+    return [{ ...source, citation }]
+  })
 
   return (
-    <article
-      className={`rounded-xl border bg-white p-5 shadow-sm ${
-        draft.decision === GeneratedElementDecision.Accepted
-          ? 'border-green-300'
-          : draft.decision === GeneratedElementDecision.Rejected
-            ? 'border-red-200 opacity-75'
-            : 'border-slate-200'
-      }`}
-      data-cy={`generated-element-${draft.id}`}
+    <section
+      className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4"
+      data-cy="generated-element-sources"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="rounded bg-cyan-700 px-2 py-1 text-xs font-bold text-white">
-            {draft.elementType}
-          </span>
-          <span className="text-xs text-slate-500">
-            {t('review.elementNumber', { number: draft.order + 1 })}
-          </span>
-          {draft.duplicationIndex > 0 ? (
-            <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">
-              {t('review.copy', { number: draft.duplicationIndex })}
-            </span>
-          ) : null}
-        </div>
-        <span className="text-xs font-semibold text-slate-500">
-          {t(`decisions.${draft.decision}`)}
-        </span>
-      </div>
-
-      <div className="mt-4 grid gap-4">
-        <label className="text-sm font-semibold text-slate-700">
-          {t('review.name')}
-          <input
-            type="text"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
-            data-cy={`generated-element-name-${draft.id}`}
-          />
-        </label>
-        <label className="text-sm font-semibold text-slate-700">
-          {isFlashcard ? t('review.front') : t('review.prompt')}
-          <textarea
-            value={prompt}
-            onChange={(event) => setPrompt(event.target.value)}
-            rows={3}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
-            data-cy={`generated-element-prompt-${draft.id}`}
-          />
-        </label>
-
-        {isFlashcard ? (
-          <>
-            <label className="text-sm font-semibold text-slate-700">
-              {t('review.back')}
-              <textarea
-                value={explanation}
-                onChange={(event) => setExplanation(event.target.value)}
-                rows={4}
-                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
-                data-cy={`generated-element-back-${draft.id}`}
-              />
-            </label>
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="text-sm font-semibold text-slate-700">
-                {t('review.cardType')}
-                <select
-                  value={cardType}
-                  onChange={(event) =>
-                    setCardType(event.target.value as GeneratedElementCardType)
-                  }
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
-                >
-                  {Object.values(GeneratedElementCardType).map((value) => (
-                    <option key={value} value={value}>
-                      {t(`cardTypes.${value}`)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="text-sm font-semibold text-slate-700">
-                {t('review.tags')}
-                <input
-                  type="text"
-                  value={tags}
-                  onChange={(event) => setTags(event.target.value)}
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
-                  placeholder={t('review.tagsPlaceholder')}
-                />
-              </label>
-            </div>
-          </>
-        ) : (
-          <>
-            <label className="text-sm font-semibold text-slate-700">
-              {t('review.context')}
-              <textarea
-                value={context}
-                onChange={(event) => setContext(event.target.value)}
-                rows={2}
-                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
-              />
-            </label>
-            <fieldset>
-              <legend className="text-sm font-semibold text-slate-700">
-                {t('review.choices')}
-              </legend>
-              <div className="mt-2 space-y-2">
-                {choices.map((choice, index) => (
-                  <div
-                    key={choice.id}
-                    className="grid items-center gap-2 rounded-md border border-slate-200 p-3 sm:grid-cols-[2rem_2.5rem_minmax(0,1fr)]"
+      <h3 className="font-semibold text-slate-900">
+        {t('review.sourcesTitle')}
+      </h3>
+      {sources.length === 0 ? (
+        <p className="mt-1 text-sm text-slate-600">
+          {t('review.sourceUnavailable')}
+        </p>
+      ) : (
+        <ul className="mt-2 space-y-2">
+          {sources.map(({ citation, resourceId, sourceUrl, title, type }) => {
+            const pageFrom = citation.pageFrom
+            const pageTo = citation.pageTo ?? null
+            const pages =
+              pageFrom === null || pageFrom === undefined
+                ? undefined
+                : pageTo !== null && pageTo !== pageFrom
+                  ? t('review.sourcePages', {
+                      from: pageFrom,
+                      to: pageTo,
+                    })
+                  : t('review.sourcePage', { page: pageFrom })
+            return (
+              <li key={`${resourceId}-${citation.pageFrom}-${citation.pageTo}`}>
+                {sourceUrl ? (
+                  <a
+                    className="font-medium text-blue-700 underline"
+                    href={sourceUrl}
+                    rel="noreferrer"
+                    target="_blank"
                   >
-                    <input
-                      type="checkbox"
-                      checked={choice.correct}
-                      onChange={(event) =>
-                        setChoices((current) =>
-                          current.map((item, itemIndex) =>
-                            itemIndex === index
-                              ? { ...item, correct: event.target.checked }
-                              : item
-                          )
-                        )
-                      }
-                      aria-label={t('review.correctChoice', {
-                        label: choice.label,
-                      })}
-                    />
-                    <span className="font-semibold text-slate-700">
-                      {choice.label}
-                    </span>
-                    <input
-                      type="text"
-                      value={choice.text}
-                      onChange={(event) =>
-                        setChoices((current) =>
-                          current.map((item, itemIndex) =>
-                            itemIndex === index
-                              ? { ...item, text: event.target.value }
-                              : item
-                          )
-                        )
-                      }
-                      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-                      data-cy={`generated-element-choice-${draft.id}-${index}`}
-                    />
-                  </div>
-                ))}
-              </div>
-            </fieldset>
-            <label className="text-sm font-semibold text-slate-700">
-              {t('review.explanation')}
-              <textarea
-                value={explanation}
-                onChange={(event) => setExplanation(event.target.value)}
-                rows={3}
-                className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 font-normal"
-              />
-            </label>
-          </>
-        )}
-      </div>
-
-      {draft.qualityFlags.length > 0 ? (
-        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-          {t('review.qualityFlags', { count: draft.qualityFlags.length })}:{' '}
-          {draft.qualityFlags.join(', ')}
-        </div>
-      ) : null}
-      {draft.citations.length > 0 ? (
-        <p className="mt-3 text-xs text-slate-500">
-          {t('review.citations', { count: draft.citations.length })}
-        </p>
-      ) : null}
-      {error ? (
-        <p className="mt-3 text-sm text-red-700" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            disabled={busy}
-            onClick={() =>
-              run(() =>
-                setDecision({
-                  variables: {
-                    input: {
-                      draftId: draft.id,
-                      decision: GeneratedElementDecision.Accepted,
-                    },
-                  },
-                })
-              )
-            }
-            data={{ cy: `generated-element-accept-${draft.id}` }}
-          >
-            <Button.Label>{t('review.accept')}</Button.Label>
-          </Button>
-          <Button
-            type="button"
-            disabled={busy}
-            onClick={() =>
-              run(() =>
-                setDecision({
-                  variables: {
-                    input: {
-                      draftId: draft.id,
-                      decision: GeneratedElementDecision.Rejected,
-                    },
-                  },
-                })
-              )
-            }
-            data={{ cy: `generated-element-reject-${draft.id}` }}
-          >
-            <Button.Label>{t('review.reject')}</Button.Label>
-          </Button>
-          <Button
-            type="button"
-            disabled={busy}
-            onClick={() =>
-              run(() =>
-                duplicateDraft({ variables: { input: { draftId: draft.id } } })
-              )
-            }
-            data={{ cy: `generated-element-duplicate-${draft.id}` }}
-          >
-            <Button.Label>{t('review.duplicate')}</Button.Label>
-          </Button>
-        </div>
-        <Button
-          primary
-          type="button"
-          disabled={busy || !name.trim() || !prompt.trim()}
-          onClick={saveDraft}
-          data={{ cy: `generated-element-save-draft-${draft.id}` }}
-        >
-          <Button.Label>
-            {updateState.loading
-              ? t('review.savingDraft')
-              : t('review.saveDraft')}
-          </Button.Label>
-        </Button>
-      </div>
-    </article>
+                    {title}
+                  </a>
+                ) : (
+                  <span className="font-medium text-slate-900">{title}</span>
+                )}
+                <span className="ml-2 text-sm text-slate-600">
+                  {t(`review.sourceTypes.${type}`)}
+                  {pages ? ` · ${pages}` : ''}
+                </span>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </section>
   )
 }
 
-interface GeneratedElementReviewProps {
+function GeneratedDraftEditor({
+  draft,
+  build,
+  onClose,
+  onChanged,
+}: {
+  draft: GeneratedElementDraftData
   build: ElementGenerationBuildData
+  onClose: () => void
   onChanged: () => Promise<void>
+}) {
+  const t = useTranslations('manage.elementGeneration')
+  const initialValues = useMemo(() => draftToFormValues(draft), [draft])
+  const [keepDraft] = useMutation(KeepGeneratedElementDraftDocument)
+  const [setDecision] = useMutation(SetGeneratedElementDecisionDocument)
+
+  return (
+    <ElementEditForm
+      mode={ElementEditMode.EDIT}
+      loading={false}
+      initialValues={initialValues}
+      titleOverride={t('review.editTitle')}
+      submitLabel={t('review.keep')}
+      submitDataCy={`generated-element-keep-${draft.id}`}
+      secondaryAction={{
+        label: t('review.discard'),
+        dataCy: `generated-element-discard-${draft.id}`,
+        onClick: async () => {
+          try {
+            const result = await setDecision({
+              variables: {
+                input: {
+                  draftId: draft.id,
+                  decision: GeneratedElementDecision.Rejected,
+                },
+              },
+            })
+            if (
+              result.data?.setGeneratedElementDecision.decision !==
+              GeneratedElementDecision.Rejected
+            ) {
+              throw new Error('Generated element was not discarded')
+            }
+            await onChanged()
+            onClose()
+          } catch {
+            toast({ type: 'error', message: t('review.actionError') })
+          }
+        },
+      }}
+      supplementaryContent={
+        <GeneratedDraftSources build={build} draft={draft} />
+      }
+      discardChangesPrompt={{
+        title: t('review.discardChangesTitle'),
+        message: t('review.discardChangesMessage'),
+        confirmLabel: t('review.discardChangesConfirm'),
+      }}
+      onClose={onClose}
+      onSuccess={onClose}
+      setAutoSavedElement={(_value) => undefined}
+      updateInstances={false}
+      setUpdateInstances={(_value) => undefined}
+      includeTemplateUpdates={false}
+      setIncludeTemplateUpdates={(_value) => undefined}
+      onSubmitElement={async (values) => {
+        try {
+          const variables = (() => {
+            if (values.type === ElementType.Flashcard) {
+              return prepareFlashcardArgs({
+                elementId: undefined,
+                isDuplication: true,
+                values,
+              })
+            }
+            if (
+              values.type === ElementType.Sc ||
+              values.type === ElementType.Mc ||
+              values.type === ElementType.Kprim
+            ) {
+              return prepareChoicesArgs({
+                elementId: undefined,
+                isDuplication: true,
+                values,
+              })
+            }
+            return undefined
+          })()
+          if (!variables) return false
+          const result = await keepDraft({
+            variables: {
+              draftId: draft.id,
+              expectedRevision: draft.revision,
+              status: values.status,
+              type: values.type,
+              name: variables.name,
+              content: variables.content,
+              explanation: variables.explanation,
+              options: 'options' in variables ? variables.options : undefined,
+              basePoints: variables.basePoints,
+              pointsMultiplier: variables.pointsMultiplier,
+              tags: variables.tags,
+            },
+          })
+          if (!result.data?.keepGeneratedElementDraft.savedElementId)
+            return false
+          await onChanged()
+          return true
+        } catch {
+          return false
+        }
+      }}
+    />
+  )
 }
 
 export default function GeneratedElementReview({
   build,
   onChanged,
-}: GeneratedElementReviewProps) {
+}: {
+  build: ElementGenerationBuildData
+  onChanged: () => Promise<void>
+}) {
   const t = useTranslations('manage.elementGeneration')
+  const [filter, setFilter] = useState<ReviewFilter>('all')
+  const [selectedDraft, setSelectedDraft] =
+    useState<GeneratedElementDraftData>()
   const [saveElements, saveState] = useMutation(SaveGeneratedElementsDocument)
-  const [saveError, setSaveError] = useState(false)
+  const [setDecision] = useMutation(SetGeneratedElementDecisionDocument)
   const [savedCount, setSavedCount] = useState<number>()
-  const acceptedCount = build.drafts.filter(
-    (draft) => draft.decision === GeneratedElementDecision.Accepted
-  ).length
-  const openCount = build.drafts.filter(
-    (draft) => draft.decision === GeneratedElementDecision.Open
-  ).length
+  const [saveError, setSaveError] = useState(false)
 
-  async function handleSaveElements() {
+  const counts = {
+    all: build.drafts.length,
+    open: build.drafts.filter(
+      (draft) => draft.decision === GeneratedElementDecision.Open
+    ).length,
+    attention: build.drafts.filter(
+      (draft) =>
+        draft.decision === GeneratedElementDecision.Accepted &&
+        draft.savedElementId === null
+    ).length,
+    kept: build.drafts.filter(
+      (draft) =>
+        draft.decision === GeneratedElementDecision.Accepted &&
+        draft.savedElementId !== null
+    ).length,
+    discarded: build.drafts.filter(
+      (draft) => draft.decision === GeneratedElementDecision.Rejected
+    ).length,
+  }
+  const drafts = build.drafts.filter((draft) =>
+    filter === 'all'
+      ? true
+      : filter === 'open'
+        ? draft.decision === GeneratedElementDecision.Open
+        : filter === 'attention'
+          ? draft.decision === GeneratedElementDecision.Accepted &&
+            draft.savedElementId === null
+          : filter === 'kept'
+            ? draft.decision === GeneratedElementDecision.Accepted &&
+              draft.savedElementId !== null
+            : draft.decision === GeneratedElementDecision.Rejected
+  )
+  const legacyAccepted = build.drafts.filter(
+    (draft) =>
+      draft.decision === GeneratedElementDecision.Accepted &&
+      draft.savedElementId === null
+  )
+
+  async function recoverLegacy() {
     setSaveError(false)
     try {
       const result = await saveElements({
         variables: { input: { buildId: build.id } },
       })
-      const saveResult = result.data?.saveGeneratedElements
+      const saved = result.data?.saveGeneratedElements
       setSavedCount(
-        (saveResult?.createdElementIds.length ?? 0) +
-          (saveResult?.alreadySavedElementIds.length ?? 0)
+        (saved?.createdElementIds.length ?? 0) +
+          (saved?.alreadySavedElementIds.length ?? 0)
       )
       await onChanged()
     } catch {
@@ -398,69 +356,229 @@ export default function GeneratedElementReview({
 
   return (
     <section data-cy="generated-element-review">
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 shadow-sm md:flex md:items-center md:justify-between md:gap-6">
-        <div>
-          <h2 className="text-2xl font-semibold text-slate-900">
-            {t('review.title')}
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            {t('review.summary', {
-              total: build.drafts.length,
-              accepted: acceptedCount,
-              open: openCount,
-            })}
-          </p>
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-semibold text-slate-900">
+              {t('review.title')}
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              {t('review.countSummary', counts)}
+            </p>
+          </div>
+          {legacyAccepted.length > 0 ? (
+            <Button
+              primary
+              type="button"
+              disabled={saveState.loading}
+              onClick={recoverLegacy}
+              data={{ cy: 'element-generation-recover-legacy' }}
+            >
+              <Button.Label>{t('review.recoverLegacy')}</Button.Label>
+            </Button>
+          ) : null}
         </div>
-        <Button
-          primary
-          type="button"
-          disabled={saveState.loading || acceptedCount === 0}
-          onClick={handleSaveElements}
-          data={{ cy: 'element-generation-save-elements' }}
-          className={{ root: 'mt-4 md:mt-0' }}
-        >
-          <Button.Label>
-            {saveState.loading
-              ? t('review.savingElements')
-              : t('review.saveElements', { count: acceptedCount })}
-          </Button.Label>
-        </Button>
+        <fieldset className="mt-4 flex flex-wrap gap-2">
+          <legend className="sr-only">{t('review.filterLabel')}</legend>
+          {(
+            ['all', 'open', 'attention', 'kept', 'discarded'] as ReviewFilter[]
+          ).map((value) => (
+            <Button
+              key={value}
+              type="button"
+              primary={filter === value}
+              onClick={() => setFilter(value)}
+              data={{ cy: `element-generation-filter-${value}` }}
+            >
+              <Button.Label>
+                {t(`review.filters.${value}`, { count: counts[value] })}
+              </Button.Label>
+            </Button>
+          ))}
+        </fieldset>
       </div>
-
       {typeof savedCount === 'number' ? (
-        <div className="mt-4">
-          <UserNotification
-            type="success"
-            message={t('review.savedElements', { count: savedCount })}
-            data={{ cy: 'element-generation-save-success' }}
-          />
-        </div>
+        <UserNotification
+          type="success"
+          message={t('review.savedElements', { count: savedCount })}
+        />
       ) : null}
       {saveError ? (
-        <div className="mt-4">
-          <UserNotification
-            type="error"
-            message={t('review.saveElementsError')}
-            data={{ cy: 'element-generation-save-error' }}
-          />
-        </div>
+        <UserNotification
+          type="error"
+          message={t('review.saveElementsError')}
+        />
       ) : null}
-
-      <div className="mt-5 space-y-5">
-        {[...build.drafts]
-          .sort((left, right) =>
-            left.order === right.order
-              ? left.duplicationIndex - right.duplicationIndex
-              : left.order - right.order
-          )
-          .map((draft) => (
-            <GeneratedElementCard
-              key={draft.id}
-              draft={draft}
-              onChanged={onChanged}
-            />
-          ))}
+      <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+        <table className="w-full min-w-[760px] text-left text-sm">
+          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
+            <tr>
+              <th className="px-4 py-3" scope="col">
+                {t('review.columns.element')}
+              </th>
+              <th className="px-4 py-3" scope="col">
+                {t('review.columns.type')}
+              </th>
+              <th className="px-4 py-3" scope="col">
+                {t('review.columns.source')}
+              </th>
+              <th className="px-4 py-3" scope="col">
+                {t('review.columns.status')}
+              </th>
+              <th className="px-4 py-3" scope="col">
+                {t('review.columns.actions')}
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {drafts.map((draft) => {
+              const needsAttention =
+                draft.decision === GeneratedElementDecision.Accepted &&
+                !draft.savedElementId
+              const editable =
+                draft.decision === GeneratedElementDecision.Open ||
+                needsAttention
+              const sourceTypes = [
+                ...new Set(
+                  draft.citations.flatMap((citation) => {
+                    const source = build.sources.find(
+                      (item) => item.resourceId === citation.resourceId
+                    )
+                    return source ? [source.type] : []
+                  })
+                ),
+              ]
+              return (
+                <tr
+                  key={draft.id}
+                  data-cy={`generated-element-row-${draft.id}`}
+                >
+                  <td className="max-w-sm px-4 py-3">
+                    <div className="font-medium text-slate-900">
+                      {draft.current.name}
+                    </div>
+                    <div className="mt-1 line-clamp-2 text-xs text-slate-600">
+                      {draft.current.prompt}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {t(`elementTypes.${draft.elementType}.label`)}
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {sourceLabel(build, draft, (pageFrom, pageTo) =>
+                      pageTo !== null && pageTo !== pageFrom
+                        ? t('review.sourcePages', {
+                            from: pageFrom,
+                            to: pageTo,
+                          })
+                        : t('review.sourcePage', { page: pageFrom })
+                    ) ?? t('review.sourceUnavailable')}
+                    {sourceTypes.length > 0 ? (
+                      <div className="mt-1 text-xs text-slate-500">
+                        {sourceTypes
+                          .map((type) => t(`review.sourceTypes.${type}`))
+                          .join(', ')}
+                      </div>
+                    ) : null}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={
+                        draft.decision === GeneratedElementDecision.Accepted &&
+                        !needsAttention
+                          ? 'rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800'
+                          : draft.decision === GeneratedElementDecision.Rejected
+                            ? 'rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700'
+                            : 'rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900'
+                      }
+                    >
+                      {needsAttention
+                        ? t('review.states.ATTENTION')
+                        : t(`review.states.${draft.decision}`)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-2">
+                      {editable ? (
+                        <Button
+                          type="button"
+                          onClick={() => setSelectedDraft(draft)}
+                          data={{ cy: `element-generation-open-${draft.id}` }}
+                        >
+                          <Button.Label>{t('review.open')}</Button.Label>
+                        </Button>
+                      ) : null}
+                      {draft.savedElementId ? (
+                        <a
+                          data-cy={`element-generation-open-saved-${draft.id}`}
+                          className="inline-flex items-center rounded-md border border-slate-300 px-3 py-2"
+                          href={`/?editElementId=${draft.savedElementId}`}
+                        >
+                          {t('review.openSaved')}
+                        </a>
+                      ) : null}
+                      {draft.decision === GeneratedElementDecision.Rejected ? (
+                        <Button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const result = await setDecision({
+                                variables: {
+                                  input: {
+                                    draftId: draft.id,
+                                    decision: GeneratedElementDecision.Open,
+                                  },
+                                },
+                              })
+                              if (
+                                result.data?.setGeneratedElementDecision
+                                  .decision !== GeneratedElementDecision.Open
+                              ) {
+                                throw new Error(
+                                  'Generated element was not restored'
+                                )
+                              }
+                              await onChanged()
+                            } catch {
+                              toast({
+                                type: 'error',
+                                message: t('review.actionError'),
+                              })
+                            }
+                          }}
+                          data={{
+                            cy: `element-generation-restore-${draft.id}`,
+                          }}
+                        >
+                          <Button.Label>{t('review.restore')}</Button.Label>
+                        </Button>
+                      ) : null}
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+            {drafts.length === 0 ? (
+              <tr>
+                <td
+                  className="px-4 py-8 text-center text-slate-600"
+                  colSpan={5}
+                >
+                  {t('review.emptyFilter')}
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
       </div>
+      {selectedDraft ? (
+        <GeneratedDraftEditor
+          build={build}
+          draft={selectedDraft}
+          onClose={() => setSelectedDraft(undefined)}
+          onChanged={onChanged}
+        />
+      ) : null}
     </section>
   )
 }
