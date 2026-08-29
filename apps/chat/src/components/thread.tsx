@@ -1392,12 +1392,15 @@ const UserActionBar: FC = () => {
   const { showMessageActions } = useChatUi()
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const supportsImages = useSupportsImageAttachments()
+  const hasAvailableMode = useSettingsStore((state) =>
+    hasAvailableChatMode(state.modeOptions)
+  )
 
   if (!showMessageActions) return null
 
   const attachments = getMessageAttachments(message)
   const hasImages = hasAnyImageAttachmentData(attachments)
-  const editDisabled = hasImages && !supportsImages
+  const editDisabled = !hasAvailableMode || (hasImages && !supportsImages)
 
   return (
     <ActionBarPrimitive.Root
@@ -1433,7 +1436,9 @@ const UserActionBar: FC = () => {
           )}
         </TooltipTrigger>
         <TooltipContent>
-          {editDisabled
+          {!hasAvailableMode
+            ? t('chat.composer.modeUnavailable')
+            : editDisabled
             ? t('chat.message.editDisabledTooltip')
             : t('chat.message.edit')}
         </TooltipContent>
@@ -1486,6 +1491,9 @@ const EditComposer: FC<{ maxImageAttachments: number }> = ({
   const composerText = useAuiState((s) => s.message.composer.text)
   const originalText = extractMessageText(message)
   const aui = useAui()
+  const hasAvailableMode = useSettingsStore((state) =>
+    hasAvailableChatMode(state.modeOptions)
+  )
 
   useEffect(() => {
     return () => {
@@ -1512,6 +1520,7 @@ const EditComposer: FC<{ maxImageAttachments: number }> = ({
     pendingAttachmentCount > 0 ||
     attachmentEntries.length !== visibleAttachmentEntries.length
   const canSubmit =
+    hasAvailableMode &&
     composerText.trim().length + totalAttachmentCount > 0 &&
     (textChanged || attachmentsChanged)
 
@@ -1807,6 +1816,9 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   const t = useTranslations()
   const { showMessageActions } = useChatUi()
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
+  const hasAvailableMode = useSettingsStore((state) =>
+    hasAvailableChatMode(state.modeOptions)
+  )
   if (!showMessageActions) return null
   // Failed and stopped-without-text callouts carry their own retry action,
   // and an incomplete turn has no answer to rate.
@@ -1843,7 +1855,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
           </TooltipTrigger>
           <TooltipContent>{t('chat.message.copy')}</TooltipContent>
         </Tooltip>
-        {!hideAnswerActions && (
+        {!hideAnswerActions && hasAvailableMode && (
           <Tooltip>
             <TooltipTrigger asChild>
               <ActionBarPrimitive.Reload asChild>

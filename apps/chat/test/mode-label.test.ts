@@ -34,7 +34,7 @@ describe('formatModeLabel', () => {
     expect(formatModeLabel(t, 'toString')).toBe('ToString')
   })
 
-  test('reports whether the chatbot exposes a usable mode', () => {
+  test('gates generation actions when no chat mode is available', () => {
     expect(hasAvailableChatMode({})).toBe(false)
     expect(hasAvailableChatMode({ tutor: '' })).toBe(true)
   })
