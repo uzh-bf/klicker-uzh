@@ -118,7 +118,7 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
     )
     await expect(page.getByTestId('semantic-evaluation-consent')).toHaveCount(0)
     await expect(page.getByTestId('semantic-attempts-used')).toContainText(
-      '0 of 2'
+      '1 of 2'
     )
     await page.getByTestId('semantic-show-solution').click()
     await page.getByTestId('semantic-toggle-explanation').click()
@@ -251,7 +251,7 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
     ).toContainText('AI feedback')
   })
 
-  test('falls back to exact matching when evaluation fails', async ({
+  test('keeps a non-match unavailable and retries the same evaluation', async ({
     page,
   }) => {
     await openQuiz(page, 'testuser6')
@@ -262,14 +262,23 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
     )
 
     const panel = page.getByTestId('semantic-free-text-retry-panel')
-    await expect(panel).toContainText(data.incorrectLabel)
+    await expect(panel).toContainText(
+      'Semantic feedback is currently unavailable.'
+    )
     await expect(page.getByTestId('semantic-attempts-used')).toContainText(
       '1 of 2'
     )
     await expect(
       page.getByTestId('semantic-attempt-history').locator('li')
     ).toHaveCount(1)
-    await expect(page.getByTestId('semantic-retry-evaluation')).toHaveCount(0)
+    await page.getByTestId('semantic-retry-evaluation').click()
+    await expect(panel).toContainText(data.partialLabel)
+    await expect(page.getByTestId('semantic-attempts-used')).toContainText(
+      '1 of 2'
+    )
+    await expect(
+      page.getByTestId('semantic-attempt-history').locator('li')
+    ).toHaveCount(1)
 
     await page.getByTestId('semantic-try-again').click()
     await page.getByTestId('free-text-input-0').fill(data.correctAnswer)
@@ -283,7 +292,7 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
     ).toHaveCount(2)
   })
 
-  test('does not attribute prior rubric feedback to a later exact fallback', async ({
+  test('attributes prior rubric feedback after a later unavailable result', async ({
     page,
   }) => {
     await openQuiz(page, 'testuser10')
@@ -298,12 +307,20 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
       .fill('[semantic:retry-once] Synthetic unavailable evaluation.')
     await page.getByTestId('semantic-submit-improved-answer').click()
 
-    await expect(panel).toContainText(data.incorrectLabel)
+    await expect(panel).toContainText(
+      'Semantic feedback is currently unavailable.'
+    )
+    await expect(page.getByTestId('semantic-attempts-used')).toContainText(
+      '2 of 2'
+    )
+    await page.getByTestId('semantic-show-solution').click()
     await page.getByTestId('semantic-toggle-explanation').click()
-    await expect(page.getByTestId('semantic-rubric-summary')).toHaveCount(0)
     await expect(
       page.getByTestId('semantic-rubric-feedback-source')
-    ).toHaveCount(0)
+    ).toContainText('attempt 1')
+    await expect(page.getByTestId('semantic-rubric-summary')).toContainText(
+      '2 of 4 criteria fully met'
+    )
   })
 
   test('deduplicates a replayed stack submission and its rewards', async ({

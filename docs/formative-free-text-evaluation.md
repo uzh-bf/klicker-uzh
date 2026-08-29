@@ -86,12 +86,14 @@ semantic-retry element then has its own server-owned practice cycle:
    in history.
 4. Re-evaluating unchanged text after an evaluator failure updates the same attempt
    and consumes no additional answer attempt.
-5. Correct, solution revealed, or attempts exhausted makes the cycle terminal.
-   **Practice again** creates a new cycle; points and XP eligibility remains governed
-   independently by the existing reset windows.
+5. Correct, solution revealed, evaluated attempts exhausted, or an unavailable
+   result at the answer limit makes the cycle terminal. **Practice again** creates
+   a new cycle; points and XP eligibility remains governed independently by the
+   existing reset windows.
 
-The attempt limit applies per participant, element, and practice cycle. A value of 1
-disables answer retry without disabling semantic feedback.
+The attempt limit applies per participant, element, and practice cycle. Distinct
+submitted answers consume attempts; re-evaluating unchanged text does not. A value
+of 1 disables answer retry without disabling semantic feedback.
 
 The PWA restores this state from the server after reload and polls only while the
 current evaluation is pending. Neighboring elements stay locked after the initial
@@ -165,11 +167,11 @@ Local HTTP is accepted only outside production for loopback or
 `CATALYST_FORMATIVE_EVALUATOR_ALLOW_INSECURE_LOCAL=true` (or under
 `NODE_ENV=test`).
 
-Absent or invalid evaluator configuration selects the deterministic
-unavailable/exact-match fallback: accepted exact answers are correct, while
-non-matches remain honestly unavailable rather than being labelled incorrect.
-Non-matches consume an answer attempt and remain answerable until the
-lecturer-configured limit is exhausted.
+When advanced evaluation is unavailable, the deterministic exact matcher can
+only confirm accepted answers as correct. Non-matches remain unavailable,
+consume a distinct-answer attempt, and allow another answer until the
+lecturer-configured limit is exhausted. A retryable evaluator failure can
+instead re-evaluate the same attempt without consuming another answer attempt.
 
 ## Feedback and solution boundary
 
