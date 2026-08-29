@@ -1,4 +1,4 @@
-# Provider-safe devcontainer bootstrap plan
+# PR #5646: Provider-safe devcontainer bootstrap plan
 
 ## Goal
 
@@ -62,14 +62,15 @@
 
 ## Plan identity and dependency
 
-- Plan: `project/2026-08-28-provider-safe-devcontainer-bootstrap-plan.md`
+- Plan:
+  `project/2026-08-28-pr-5646-provider-safe-devcontainer-bootstrap-plan.md`
 - Repository: `uzh-bf/klicker-uzh`
 - Branch: `rs/provider-safe-devcontainer-bootstrap`
 - Worktree: `trees/provider-safe-devcontainer-bootstrap`
 - Target: `v3`
 - Fresh base: `origin/v3` at `0892b61dc5c35694faa4e7ed90d36cddffadb8aa`,
   0 ahead and 0 behind when the worktree was created.
-- Pull request: not created.
+- Pull request: [#5646](https://github.com/uzh-bf/klicker-uzh/pull/5646).
 - Upstream plan: devrouter
   `docs/project/2026-08-28-managed-bootstrap-ordering-plan.md` on branch
   `rs/managed-bootstrap-ordering`.
