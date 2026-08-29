@@ -1200,6 +1200,35 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       feedbackSubmitted:
         'Your feedback / question has been successfully submitted.',
     },
+    productTours: {
+      // Placeholder copy: the onboarding wording is still awaiting editorial
+      // review, the mechanics around it are not.
+      next: 'Next',
+      previous: 'Back',
+      done: 'Done',
+      progress: 'Step {current} of {total}',
+      replayTitle: 'Take the tour',
+      onboarding: {
+        welcomeTitle: 'Welcome to KlickerUZH',
+        welcomeBody:
+          'A short tour shows you where everything is. You can leave it at any time and start it again from your profile.',
+        coursesTitle: 'Your courses',
+        coursesBody:
+          'Every course you have joined is listed here, together with its leaderboard, its activities and its materials.',
+        practiceTitle: 'Practice on your own',
+        practiceBody:
+          'The practice pool, the practice quizzes and your bookmarks stay available independently of a course.',
+        insightsTitle: 'Your progress',
+        insightsBody:
+          'The timeline collects the points and the activity you have gathered across your courses.',
+        updatesTitle: 'News',
+        updatesBody:
+          'New features are announced here. The dot means something is waiting to be read.',
+        profileTitle: 'Your profile',
+        profileBody:
+          'Your avatar shows your level and your experience points. Behind it are your profile, the language switch and the logout.',
+      },
+    },
     productUpdates: {
       feedTitle: 'New in KlickerUZH',
       menuLabel: 'News',

@@ -1207,6 +1207,35 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       feedbackSubmitted:
         'Ihr Feedback / ihre Frage wurde erfolgreich übermittelt.',
     },
+    productTours: {
+      // Platzhaltertexte: die Formulierungen des Onboardings warten noch auf
+      // die redaktionelle Überprüfung, die Mechanik dahinter nicht.
+      next: 'Weiter',
+      previous: 'Zurück',
+      done: 'Fertig',
+      progress: 'Schritt {current} von {total}',
+      replayTitle: 'Tour starten',
+      onboarding: {
+        welcomeTitle: 'Willkommen bei KlickerUZH',
+        welcomeBody:
+          'Eine kurze Tour zeigt Dir, wo Du was findest. Du kannst sie jederzeit beenden und in Deinem Profil erneut starten.',
+        coursesTitle: 'Deine Kurse',
+        coursesBody:
+          'Hier stehen alle Kurse, denen Du beigetreten bist, mit ihrem Leaderboard, ihren Aktivitäten und ihren Materialien.',
+        practiceTitle: 'Selbstständig üben',
+        practiceBody:
+          'Übungspool, Übungs-Quiz und Deine Lesezeichen bleiben unabhängig von einem Kurs verfügbar.',
+        insightsTitle: 'Dein Fortschritt',
+        insightsBody:
+          'Die Timeline sammelt die Punkte und die Aktivität, die Du in Deinen Kursen erreicht hast.',
+        updatesTitle: 'Neuigkeiten',
+        updatesBody:
+          'Hier kündigen wir neue Funktionen an. Der Punkt bedeutet, dass etwas Ungelesenes vorliegt.',
+        profileTitle: 'Dein Profil',
+        profileBody:
+          'Dein Avatar zeigt Dein Level und Deine Erfahrungspunkte. Dahinter liegen Dein Profil, die Sprachwahl und der Logout.',
+      },
+    },
     productUpdates: {
       feedTitle: 'Neu in KlickerUZH',
       menuLabel: 'Neuigkeiten',
