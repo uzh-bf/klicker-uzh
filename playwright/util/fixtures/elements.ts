@@ -90,6 +90,18 @@ export async function setElementStatus(page: Page, statusLabel: string) {
 }
 
 // ---------------------------------------------------------------------------
+// Clear a rich-text editor through keyboard input so Slate emits onChange.
+// ---------------------------------------------------------------------------
+export async function clearEditorField(page: Page, testId: string) {
+  const editor = page.getByTestId(testId)
+  await editor.scrollIntoViewIfNeeded()
+  await editor.click()
+  await editor.press('ControlOrMeta+A')
+  await editor.press('Backspace')
+  await expect(editor).toHaveText('')
+}
+
+// ---------------------------------------------------------------------------
 // Fill a rich-text editor field (click → pressSequentially).
 // Optionally clears the field first.
 // ---------------------------------------------------------------------------
@@ -102,7 +114,7 @@ export async function fillEditorField(
   const editor = page.getByTestId(testId)
   await editor.scrollIntoViewIfNeeded()
   await editor.click()
-  if (clear) await editor.clear()
+  if (clear) await clearEditorField(page, testId)
   await editor.pressSequentially(text)
   await expect(editor).toContainText(text)
 }
@@ -141,7 +153,7 @@ export async function fillAnswerField(
   const field = page.getByTestId(`insert-answer-field-${index}`)
   await field.scrollIntoViewIfNeeded()
   await field.click()
-  if (clear) await field.clear()
+  if (clear) await clearEditorField(page, `insert-answer-field-${index}`)
   await field.pressSequentially(text)
   await expect(field).toContainText(text)
 }
@@ -158,7 +170,7 @@ export async function fillFeedbackField(
   const field = page.getByTestId(`insert-answer-feedback-${index}`)
   await field.scrollIntoViewIfNeeded()
   await field.click()
-  if (clear) await field.clear()
+  if (clear) await clearEditorField(page, `insert-answer-feedback-${index}`)
   await field.pressSequentially(text)
   await expect(field).toContainText(text)
 }

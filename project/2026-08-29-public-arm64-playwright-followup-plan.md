@@ -35,6 +35,15 @@ seconds (`S-group-activity.spec.ts`). The merged workflow uses eight shards and
 restore-only caches, so the first eligible PR run is the required clean
 benchmark before changing test boundaries.
 
+Run `33246023106` supplied the first eight-shard benchmark. All eight shards
+started at 09:44:22 UTC on distinct runners `public-pr-arm64-01` through `-08`
+with no queue delay. The restore-only build took 3m59s, down from 7m43s. Shard
+jobs ranged from 14m30s to 21m24s, and the full workflow took about 25m54s.
+`O-live-quiz.spec.ts` remained the largest spec at 846 seconds. Shard 4 exposed
+a deterministic Slate-editor clear failure in `G-elements-mc.spec.ts`; the
+other seven shards passed, so this is application-test debt rather than a
+runner-capacity failure.
+
 ## Slices
 
 ### S0: Establish the eight-shard benchmark
@@ -90,7 +99,9 @@ and timing evidence, and squash-merge after non-review checks pass.
 
 - [x] PR #5620 passed exact-head CI and merged as `c7bc6b5d5`.
 - [x] Fresh branch and isolated worktree created from the merged `origin/v3`.
-- [ ] S0 telemetry published and first eight-shard benchmark recorded.
+- [ ] S0 telemetry published and first eight-shard benchmark recorded; runner
+      capacity is proven and the deterministic editor-clear failure is being
+      repaired before the green baseline is accepted.
 - [ ] S1 live-quiz critical path reduced without changing test coverage.
 - [ ] S2 setup changes limited to measured bottlenecks.
 - [ ] S3 exact-head checks pass and the follow-up PR is merged.
