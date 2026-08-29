@@ -241,6 +241,12 @@ pnpm checks and browser/model evidence remain outstanding.
    changed-path overlap with this adapter. The published ref remains
    `cce6e445`; downstream integration must still reconcile the latest stable
    student head rather than treating this synthetic adapter as current.
+10. By final static verification the local branch had advanced through
+    `c48103c0cafeec5646cad89e114a77bace44afa3`. Its later source-identity and
+    chunk-reference hardening commits remain descendants of the frozen input
+    and have zero changed-path overlap with this adapter. The published ref
+    remains `cce6e445`; this moving local ref is evidence that downstream work
+    should integrate only after that parallel package reaches a stable head.
 
 ## Review gates
 
@@ -313,5 +319,23 @@ pnpm checks and browser/model evidence remain outstanding.
 - 2026-08-29: During final review the parallel student branch advanced again
   to `de9012814`. Its additional source-metadata closure commit remains path-
   disjoint from the adapter. No ref was moved or integrated here.
-- Status: S1-S3 source work and initial static verification complete; final-
-  review corrections implemented and pending exact-head static verification.
+- 2026-08-29: Focused integrated re-review passed at `274500026`; all three
+  prompt-privilege findings are resolved. The unchanged personal-generation
+  service now receives the composed persona/runtime base, while the route
+  applies the fixed platform contracts to its returned flow instructions at
+  the final model-input boundary.
+- 2026-08-29: A focused simplifier pass found one P3 optional-object cleanup in
+  the page-context encoder. Accepted in `fb6acc2b6`; `JSON.stringify` omits the
+  equivalent `undefined` fields, preserving key order, data fencing, and prompt
+  behavior with fewer conditional branches.
+- 2026-08-29: Final source verification passed at `fb6acc2b6`: clean worktree,
+  exact `9fc0d52` merge base, no merges, no upstream, no conflict markers,
+  clean diff check, allowed paths only, no GraphQL, Prisma, or
+  `cardGeneration.ts` delta, and no changed-path overlap with the independently
+  advancing student branch. At that snapshot the student branch was
+  `c48103c0c`; its published ref remained `cce6e445`. The adapter was 184
+  commits ahead and 23 behind current `origin/v3`; no integration was
+  performed.
+- Status: COMPLETE for the approved static-only, unpublished adapter scope.
+  Pnpm tests, browser/model checks, runtime E2E replay, push, pull request,
+  upstream integration, source-branch mutation, and cleanup remain withheld.
