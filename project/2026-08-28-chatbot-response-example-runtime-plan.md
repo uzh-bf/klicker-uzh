@@ -181,10 +181,10 @@ preview and the later examples-excluded baseline.
 
 ## Progress
 
-- Status: K6.1 through K6.4 are committed. The integrated final-review
-  corrections, including the follow-up current-snapshot citation-parity guard,
-  are implemented and repository-native verified; correction review is in
-  progress.
+- Status: K6.1 through K6.4 are locally complete and repository-native
+  verified. The integrated final review and its correction passes returned
+  `DONE` with no remaining findings. Push, PR publication, merge, deployment,
+  and live model use remain withheld.
 - Completed: remote-state gate, clean purpose-based worktree, approved program
   plan transfer, current source seam mapping, package-plan narrowing, shared
   current-evidence validation, owner-service reconciliation, and focused util,
@@ -215,13 +215,14 @@ preview and the later examples-excluded baseline.
   Its correction review found that the same-statement projection also needed
   to revalidate citation parity; search now applies the shared parity predicate
   to that current row and the PostgreSQL regression proves concurrent invalid
-  edits are omitted.
+  edits are omitted. The final correction review returned `DONE` with no
+  remaining findings at `4fe8565fefe3375189ecb4b8e98247a4c8a1f216`.
 - Verification limitation: repository-wide `pnpm run check:all` reaches the
   unrelated analytics lint, where the container selects Python 3.14 and cannot
   build pandas because no C compiler is installed. All affected package checks
   pass independently.
 - Runtime note: the exact task DevPod `feat-chatbot-response-example-ru` was
-  resumed only for correction verification. It will be stopped and verified
-  again before the correction review is closed.
-- Next: commit the verified citation-parity correction, complete the correction
-  review, stop the exact runtime, and stop at the withheld push and PR boundary.
+  stopped after its final PostgreSQL-producing run. Provider state is `Stopped`
+  and the checkout has zero exact devrouter routes; no runtime data was deleted.
+- Next: stop at the withheld push and PR boundary. After separate publication
+  authority, push this branch and open its PR against `v3-ai`.

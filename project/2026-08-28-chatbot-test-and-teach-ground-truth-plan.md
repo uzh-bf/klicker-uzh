@@ -978,12 +978,11 @@ paths named by the package plan and do not revert other work.
 
 ## Progress
 
-- Status: approved and executing K6 locally; the runtime skill and participant
-  composition are committed and repository-native verified. Slice review
-  corrections are cleared, and the integrated final-review corrections,
-  including current-snapshot citation-parity revalidation, are implemented and
-  verified. Their correction review remains in progress. Push, PR publication,
-  merge, deployment, and live model use remain withheld.
+- Status: K6 is locally complete and repository-native verified. The runtime
+  skill and participant composition are committed, all armed review gates are
+  cleared, and the integrated final review returned `DONE` with no remaining
+  findings. Push, PR publication, merge, deployment, and live model use remain
+  withheld.
 - Completed: current `v3-ai` and PR #5633 seam mapping; response-example schema,
   API, and Manage workflow mapping; owner-preview mapping; Doc Query lineage
   contract mapping; evaluation-repository query-order mapping; required Sol
@@ -991,14 +990,12 @@ paths named by the package plan and do not revert other work.
   current-evidence slice; K6.2 bounded hybrid skill; K6.3 authenticated
   participant composition; native util, chat, PostgreSQL, GraphQL, type/schema,
   formatting, and lint verification; and the first slice review corrections.
-- Ready now: commit and review K6's final citation-parity correction, stop the
-  exact task runtime, and present the separately withheld push and PR
-  boundary. K5 starts only after K6 lands on `v3-ai`. K7 planning can follow the
-  K6 runtime contract without waiting for W8.
+- Ready now: publish K6 only after separate push and PR authority. K5 starts
+  only after K6 lands on `v3-ai`. K7 planning can follow the K6 runtime contract
+  without waiting for W8.
 - External decision: U0 cannot create a branch until the `mcp-doc-query`
   `main`/`dev` flow is explicitly resolved.
 - Blocked: K8 remains blocked on W8 synthetic active-serving proof. U0-backed
   live source proof, deployment, and activation remain separately withheld.
-- Next action: close K6's correction review and exact runtime, then stop at the
-  separately withheld push and PR boundary. K5 becomes the next independent
-  package after K6 is merged and separately authorized.
+- Next action: stop at the separately withheld push and PR boundary. K5 becomes
+  the next independent package after K6 is merged and separately authorized.
