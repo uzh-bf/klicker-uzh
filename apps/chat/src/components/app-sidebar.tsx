@@ -18,6 +18,7 @@ import { useParams, useRouter } from 'next/navigation'
 import * as React from 'react'
 import { useChatStore } from '../stores/chatStore'
 import { CreditsFooter } from './credits-footer'
+import { ProductUpdatesPanel } from './product-updates-panel'
 import { SettingsPanel } from './settings-panel'
 import { ThreadList } from './thread-list'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
@@ -92,6 +93,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter className="p-0">
         <SettingsPanel />
         <CreditsFooter />
+        <ProductUpdatesPanel />
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>

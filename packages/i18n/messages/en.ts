@@ -55,6 +55,12 @@ export default {
       fallbackNotice:
         'Your credits are used up. Some models may no longer be available.',
     },
+    productUpdates: {
+      title: "What's new",
+      unread: 'Unread',
+      dismiss: 'Dismiss update',
+      details: 'Read more',
+    },
     sidebar: {
       newChat: 'New Chat',
       closeSidebar: 'Close sidebar',

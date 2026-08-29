@@ -1,5 +1,5 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { ChatbotStatus, Prisma } from '@klicker-uzh/prisma/client'
+import { ChatbotStatus, Prisma, UserRole } from '@klicker-uzh/prisma/client'
 import { jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -33,6 +33,68 @@ export async function getParticipantId(
         response: NextResponse.json(
           { error: 'Invalid authentication token' },
           { status: 401 }
+        ),
+      }
+    }
+
+    return { participantId }
+  } catch (error) {
+    console.error('JWT verification failed:', error)
+    return {
+      response: NextResponse.json(
+        { error: 'Invalid authentication token' },
+        { status: 401 }
+      ),
+    }
+  }
+}
+
+// Product updates are addressed to people who own a persistent account, so the
+// caller must be a full participant. `getParticipantId` deliberately accepts any
+// token that carries a subject, which includes the temporary accounts issued for
+// anonymous live-quiz participation; this guard is the only thing that keeps
+// those out. It mirrors `resolveActor` in the GraphQL product-update service,
+// which rejects such accounts outright instead of returning an empty feed, so a
+// misdirected caller learns it is on the wrong surface.
+export async function getProductUpdateParticipantId(
+  req: NextRequest
+): Promise<{ participantId: string } | { response: NextResponse }> {
+  const participantToken = req.cookies.get('participant_token')?.value
+
+  if (!participantToken) {
+    return {
+      response: NextResponse.json(
+        { error: 'No authentication token found' },
+        { status: 401 }
+      ),
+    }
+  }
+
+  try {
+    const { payload } = await jwtVerify(
+      participantToken,
+      new TextEncoder().encode(process.env.APP_SECRET || '')
+    )
+
+    const participantId =
+      typeof payload.sub === 'string' && payload.sub ? payload.sub : null
+
+    if (!participantId) {
+      return {
+        response: NextResponse.json(
+          { error: 'Invalid authentication token' },
+          { status: 401 }
+        ),
+      }
+    }
+
+    // Participant tokens carry no scope claim, so unlike the lecturer path there
+    // is no further write floor to apply: the role is the whole check.
+    if (payload.role !== UserRole.PARTICIPANT) {
+      return {
+        response: NextResponse.json(
+          { error: 'This account type does not receive product updates' },
+          { status: 403 }
         ),
       }
     }

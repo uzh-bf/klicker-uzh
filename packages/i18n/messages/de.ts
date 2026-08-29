@@ -57,6 +57,12 @@ export default {
       fallbackNotice:
         'Deine Credits sind aufgebraucht. Einige Modelle sind möglicherweise nicht mehr verfügbar.',
     },
+    productUpdates: {
+      title: 'Neuigkeiten',
+      unread: 'Ungelesen',
+      dismiss: 'Neuigkeit ausblenden',
+      details: 'Mehr erfahren',
+    },
     sidebar: {
       newChat: 'Neuer Chat',
       closeSidebar: 'Seitenleiste schliessen',
