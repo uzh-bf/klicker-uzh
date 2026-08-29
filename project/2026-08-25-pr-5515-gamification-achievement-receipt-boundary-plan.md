@@ -486,3 +486,7 @@ W6 remains `delivery_pending` until the reviewed exact head is published and
 its CI is dispositioned. Commit this review receipt, push the branch, update
 PR #5515, and monitor exact-head CI under the user's explicit approval. Do not
 merge the PR, deploy, or clean up the retained worktree or runtime records.
+
+2026-08-29: superseded — W6 delivered at exact head `285d58895` (push, PR
+update, and exact-head CI passed); see the roadmap Progress entry for W6
+closure. Merge remains a separate, withheld action.

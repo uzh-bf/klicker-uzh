@@ -4,16 +4,16 @@
 
 - Date: 2026-08-23
 - Last reconciled: 2026-08-29
-- Status: PR #5515 is published at `a23e2a706` and remains
-  `delivery_pending`. The local branch has integrated exact `v3` and passed its
-  final correction review at `77c64ed3f`; publishing that exact head, updating
-  the PR, and exact-head CI remain pending.
+- Status: delivered. PR #5515 publishes the reviewed exact head `285d58895`;
+  its exact-head CI passed on 2026-08-29 and the `/final-review` run completed
+  successfully. Merge, ClickUp reconciliation, deployment, cleanup, and
+  live-data actions remain separate authority boundaries.
 - Repository: `uzh-bf/klicker-uzh`
 - Authoritative remote base checked: remote `v3` at
   `f0659e1301254320b2f67a0a4be752ebf6a41c0f`
 - Roadmap worktree: branch `rs/gamification-achievement-receipts` at
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/gamification-roadmap`
-- The local task branch is zero commits behind and 57 commits ahead of the
+- The local task branch is zero commits behind and 65 commits ahead of the
   checked remote `v3`. The one approved integration pass is complete.
 - Delivery layer: PR #5515 is open. Publishing the reviewed exact head, updating
   the pull request, and monitoring CI are authorized. Merge, ClickUp
@@ -64,10 +64,10 @@ or efficacy claim.
 | --- | --- | --- | --- |
 | Course gamification | `Course.isGamificationEnabled`, participant leaderboard participation through `Participation.isActive`, course points, session points, and privacy-aware profiles exist | Backlog contains further gamification-setting work | Reuse the existing lecturer activation and participant join flow |
 | XP and avatars | XP is recorded on the participant, response feedback shows awarded XP, levels exist, and profile avatars are account-level | Graduated XP, caps, and multipliers are concepts only | Leave unchanged in this package |
-| Course leaderboards | Top 10 plus self, rolling 14-day mode, privacy handling, opt-in, and tie-aware ranks are shipped | S1 nearby context is implemented on this branch with service-test coverage | No further leaderboard scope is planned in this package |
+| Course leaderboards | Top 10 plus self, rolling 14-day mode, privacy handling, opt-in, tie-aware ranks, and nearby context are shipped | Further leaderboard scope is not planned | Package work is delivered in PR #5515 and awaits the separate merge decision |
 | Responses | `QuestionResponseDetail` stores each PracticeQuiz and MicroLearning attempt; `QuestionResponse` stores one aggregate per participant and question instance with `lastAnsweredAt` | Regular LiveQuiz responses remain Redis-only; `LiveQuizResponse` is persisted for assessment flows | Use the existing aggregate for today and existing details for overdue repair; exclude regular LiveQuiz at launch |
-| Streaks and freezes | `Participation` state, Prisma reconciliation, self-scoped API, PWA cards/progress, notices, focused tests, and browser proof are implemented on this branch | The latest correction initializes seeded participants and repairs current and overdue state without response backfill | Keep the private, course-scoped contract; no new streak primitive |
-| Achievements | Catalog discoverability, historical award preservation, private `receiptAcknowledgedAt`, idempotent self-only acknowledgement, and retryable post-presentation receipt UI are implemented on this branch | PR #5515 is open; its receipt browser fixture needs the prepared visible-participant correction and fresh CI | Preserve every award; keep public profiles receipt-free |
+| Streaks and freezes | `Participation` state, Prisma reconciliation, self-scoped API, PWA cards/progress including course and start-page placement, daily progress, notices, focused tests, and browser proof are implemented | Runtime migration on container start repairs seeded participants and current/overdue state without response backfill | Keep the private, course-scoped contract; no new streak primitive |
+| Achievements | Catalog discoverability, historical award preservation, private `receiptAcknowledgedAt`, idempotent self-only acknowledgement, and retryable post-presentation receipt UI are implemented | PR #5515 exact-head CI passed and the `/final-review` run completed | Preserve every award; keep public profiles receipt-free |
 | Product experimentation | Normal logs, support feedback, and product iteration exist | Open PR #5323 concerns GrowthBook and Learning Analytics; it is not part of this package | No new experiment, survey, or analysis workstream |
 
 Verified repository history:
@@ -82,13 +82,14 @@ Verified repository history:
   open and is not a dependency.
 
 The student-gamification implementation package and W6 receipt correction are
-committed locally on `rs/gamification-achievement-receipts`. S1 nearby
-leaderboard context, S2 private Study streaks, S3 achievement changes, S4 PWA
-presentation, follow-up streak corrections, and W6 receipt closure are present
-in the branch. The final integrated checks and review passed; the package is
-at a historical local `pr_ready` checkpoint. W6 currently remains
-`delivery_pending` until the latest published head passes exact-head checks and
-review.
+published on `rs/gamification-achievement-receipts` at exact head `285d58895`.
+S1 nearby leaderboard context, S2 private Study streaks, S3 achievement
+changes, S4 PWA presentation, follow-up streak corrections, and W6 receipt
+closure are on the branch. Exact-head CI passed on 2026-08-29 with only the
+known pre-existing GitGuardian false positive red; the `/final-review` run
+completed. W6 is delivered pending the separate merge decision; no follow-up
+W-item is currently ordered. Further gamification continuation (for example
+streak XP and multipliers) stays explicitly deferred in this roadmap.
 
 ## Settled product contract
 
@@ -606,10 +607,11 @@ the layer changes UI. S2 additionally records the inspected current-day and
 overdue query plans plus forced-failure repair proof. S3 records one integrated
 English and German mobile/desktop flow and the final review result.
 
-The implementation branch reached a historical local `pr_ready` checkpoint
-through the W6 final review. Its current delivery state is `delivery_pending`
-until the latest published head passes exact-head checks and review. Merge,
-release, deployment, and live behavior are later states.
+The implementation branch reached `pr_ready` through the W6 final review, then
+published exact head `285d58895`. Exact-head CI passed and the `/final-review`
+run completed on 2026-08-29 with only the known pre-existing GitGuardian false
+positive red. W6 is delivered; merge, release, deployment, and live behavior
+remain separate later states.
 
 ## Backlog reconciliation proposal
 
