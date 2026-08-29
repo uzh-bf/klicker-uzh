@@ -5,6 +5,7 @@ import {
   cleanupQuestionGenerationReviewFixture,
   seedQuestionGenerationReviewFixture,
 } from '../util/fixtures/questionGenerationReview.js'
+import { fillAnswerField, fillEditorField } from '../util/fixtures/elements.js'
 import { gotoCommit } from '../util/workflow.js'
 
 const FIXTURE_PREFIX = 'Synthetic question-generation review fixture'
@@ -168,11 +169,40 @@ test.describe('Generated element review inbox', () => {
       await expect(review.locator('tbody tr')).toHaveCount(20)
       await expect(discardRow).toContainText('Needs review')
 
-      const roundTripTypes = ['MC', 'KPRIM', 'FLASHCARD'] as const
+      const roundTripEdits = {
+        MC: {
+          content: 'Edited multiple-choice prompt',
+          choice: 'Edited multiple-choice answer',
+        },
+        KPRIM: {
+          content: 'Edited KPRIM prompt',
+          choice: 'Edited KPRIM answer',
+        },
+        FLASHCARD: {
+          content: 'Edited flashcard front',
+          explanation: 'Edited flashcard back',
+        },
+      } as const
+      const roundTripTypes = Object.keys(roundTripEdits) as Array<
+        keyof typeof roundTripEdits
+      >
       for (const type of roundTripTypes) {
         const draftId = fixture.draftIdsByType[type]
         await review.getByTestId(`element-generation-open-${draftId}`).click()
         const roundTripEditor = page.getByRole('dialog')
+        const edit = roundTripEdits[type]
+        await fillEditorField(page, 'insert-question-text', edit.content, true)
+        if ('choice' in edit) {
+          await fillAnswerField(page, 0, edit.choice, true)
+          await roundTripEditor.getByTestId('set-correctness-0').click()
+        } else {
+          await fillEditorField(
+            page,
+            'insert-question-explanation',
+            edit.explanation,
+            true
+          )
+        }
         await roundTripEditor
           .getByTestId(`generated-element-keep-${draftId}`)
           .click()
@@ -192,6 +222,7 @@ test.describe('Generated element review inbox', () => {
               type: true,
               status: true,
               content: true,
+              explanation: true,
               basePoints: true,
               options: true,
             },
@@ -207,16 +238,32 @@ test.describe('Generated element review inbox', () => {
           type: draft.elementType,
           status: 'REVIEW',
         })
+        if (
+          draft.elementType !== 'MC' &&
+          draft.elementType !== 'KPRIM' &&
+          draft.elementType !== 'FLASHCARD'
+        ) {
+          throw new Error(`Unexpected round-trip type ${draft.elementType}`)
+        }
+        const edit = roundTripEdits[draft.elementType]
+        expect(draft.savedElement.content).toContain(edit.content)
         if (draft.elementType === 'FLASHCARD') {
+          expect(draft.savedElement.explanation).toContain(
+            roundTripEdits.FLASHCARD.explanation
+          )
           expect(draft.savedElement.basePoints).toBe(false)
           expect(draft.savedElement.options).toEqual({})
         } else {
           const options = draft.savedElement.options as {
-            choices: unknown[]
+            choices: Array<{ value: string; correct: boolean }>
           }
           expect(options.choices).toHaveLength(
             draft.elementType === 'MC' ? 5 : 4
           )
+          expect(options.choices[0]).toMatchObject({
+            value: roundTripEdits[draft.elementType].choice,
+            correct: false,
+          })
         }
       }
 
