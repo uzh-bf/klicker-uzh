@@ -77,7 +77,7 @@ implementation and this branch:
 - Redis idempotency and persistent status polling with reload recovery;
 - success notification with an action to open the new course;
 - in-progress modal/dropdown affordances and localized date/duration text;
-- source-owner administrative-access disclosure and past-end-date warning;
+- source-owner administrative-access disclosure and end-date-future validation;
 - associated labels, localized copy suffix, and redirect assertions in the
   Playwright flow;
 - documentation in `docs/domain-model.md` and the lecturer course-management
@@ -109,9 +109,11 @@ local code change:
 5. Native form controls versus the design-system components remain a visual
    consistency decision for maintainers. The controls are labeled and tested,
    but this review does not claim a design-system sign-off.
-6. Product owners should retain the documented decisions that a non-owner
-   duplicator grants the source owner `ADMIN` on the copy and that a copy may
-   intentionally be created with an end date in the past.
+6. Product owners should confirm the date policy. The current schema rejects a
+   duplicated course whose derived end date is in the past, so the existing
+   past-end-date warning is not reachable; either keep the future-end-date
+   rule and remove that warning, or explicitly allow archival copies with a
+   warning and a dedicated test.
 
 ## Verification
 
