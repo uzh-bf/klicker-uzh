@@ -466,11 +466,23 @@ finish gate for the complete package.
   steps. The runtime streak initialization remains Prisma-based. The only
   local correction after integration removes an extra leading and trailing
   blank line from the first migration artifact.
+- 2026-08-29: Integrated correction commit `77c64ed3f` closes the five final
+  review blockers and related verified PR comments. Backend startup no longer
+  awaits runtime migrations, replica coordination is Prisma-only, streak
+  fields are owner-only, freeze cycles reset at the cap, daily-goal copy is
+  eligibility-aware, and seeded achievement discoverability uses an explicit
+  current-ID allowlist with a false fallback. The same correction includes the
+  ended-untracked read guard, concurrent response indexes, achievement
+  empty-state fix, and import cleanup.
+- 2026-08-29: The generic-continuity integrated final reviewer passed exact
+  head `77c64ed3f37c3ed4342a4833206e18b61125a7f8` with no remaining findings.
+  `git diff --check` passes. No pnpm or browser execution was possible because
+  Docker network-pool exhaustion prevents the exact DevPod from starting;
+  exact-head CI remains the executable publication proof.
 
 ## Next step
 
-W6 remains `delivery_pending` on the integrated base. Commit the migration
-format correction and this Progress receipt, run the integrated final review,
-then publish the reviewed exact head, update PR #5515, and monitor its CI under
-the user's explicit approval. Do not merge the PR, deploy, or clean up the
-retained worktree or runtime records.
+W6 remains `delivery_pending` until the reviewed exact head is published and
+its CI is dispositioned. Commit this review receipt, push the branch, update PR
+#5515, and monitor exact-head CI under the user's explicit approval. Do not
+merge the PR, deploy, or clean up the retained worktree or runtime records.

@@ -4,23 +4,21 @@
 
 - Date: 2026-08-23
 - Last reconciled: 2026-08-29
-- Status: PR #5515 is published at `a23e2a706` and has been reopened at
-  `delivery_pending`. Exact-head CI exposed one package-owned receipt-browser
-  fixture failure; its correction is locally committed as `8e83924a3`, while
-  this Progress reconciliation remains uncommitted. Current `v3` integration,
-  affected verification, push, and PR update remain pending.
+- Status: PR #5515 is published at `a23e2a706` and remains
+  `delivery_pending`. The local branch has integrated exact `v3` and passed its
+  final correction review at `77c64ed3f`; publishing that exact head, updating
+  the PR, and exact-head CI remain pending.
 - Repository: `uzh-bf/klicker-uzh`
 - Authoritative remote base checked: remote `v3` at
   `f0659e1301254320b2f67a0a4be752ebf6a41c0f`
 - Roadmap worktree: branch `rs/gamification-achievement-receipts` at
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/gamification-roadmap`
-- The published task branch is 34 commits behind and 52 commits ahead of the
-  checked remote `v3`; the local branch has the additional focused correction
-  commit. No new integration has been authorized.
-- Delivery layer: PR #5515 is open. One focused test correction and this
-  reconciliation are local only; integration, verification, push, pull-request
-  update, merge, ClickUp reconciliation, deployment, and live-data actions
-  remain separate authority boundaries.
+- The local task branch is zero commits behind and 57 commits ahead of the
+  checked remote `v3`. The one approved integration pass is complete.
+- Delivery layer: PR #5515 is open. Publishing the reviewed exact head, updating
+  the pull request, and monitoring CI are authorized. Merge, ClickUp
+  reconciliation, deployment, cleanup, and live-data actions remain separate
+  authority boundaries.
 - Audience: an engineer or execution agent with no earlier session context.
 
 Read these sources before starting:
@@ -961,3 +959,17 @@ Append entries; do not rewrite history.
   retained the three ordered forward-only Prisma migrations and removed only
   an extra leading and trailing blank line from the first generated SQL
   artifact. Integrated final review, publication, and exact-head CI remain.
+- 2026-08-29 — Commit `77c64ed3f` closes the integrated final-review and open
+  review findings. Runtime migrations now start after the API listens, remain
+  fail-open, and coordinate through Prisma without raw SQL. All private streak
+  fields are owner-only and nullable; freeze earning no longer banks progress
+  at the cap; the course card shows exact or neutral daily-goal copy; and the
+  seed uses an explicit discoverability allowlist for all current achievement
+  IDs while future IDs default to hidden. Related ended-course, empty-state,
+  import, and concurrent-index corrections are included.
+- 2026-08-29 — The generic-continuity integrated final reviewer passed exact
+  head `77c64ed3f` with no remaining findings. `git diff --check` passes. The
+  exact DevPod remains unavailable because Docker exhausted its predefined
+  network pools, so pnpm and browser checks are deferred to exact-head CI after
+  publication. The unrelated untracked Prisma `schema/views/` directory
+  remains untouched.
