@@ -1,9 +1,9 @@
 # Follow-up Review: PR #5636 - Course Duplication Date Guard
 
 Reviewer: Codex
-Scope: `origin/v3...feat/course-duplication-start-date-required` at the
-remote date-validation follow-up (`f1804638e5e90eb1b670e4852f0cdb5951c87ab2`),
-plus the working-tree changes prepared during this follow-up.
+Scope: `origin/v3...feat/course-duplication-start-date-required` at
+`0b222f8f877cb0158d8901c3974f2e1febf68d52` (the remote date-validation
+follow-up plus the lifecycle fixes pushed in this review).
 
 ## Verdict
 
@@ -134,7 +134,6 @@ denied a subprocess port bind (`Operation not permitted`). CI must still run
 the normal pre-push build in its production environment.
 
 - Browser screenshots and the full Playwright run were not completed because
-  the devrouter
-  startup failure above. The existing PR screenshots remain representative
-  of the visible blank-date and derived-end-date states; no visual code change
-  in this follow-up requires replacing them.
+  of the devrouter startup failure above. The existing PR screenshots remain
+  representative of the visible blank-date and derived-end-date states; no
+  visual code change in this follow-up requires replacing them.
