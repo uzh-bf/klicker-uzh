@@ -9,6 +9,8 @@
 - Target: `v3-ai`
 - Baseline: `609000ea9626e3fef2e713768ca2a796cac2f9a4`
 - PR: [#5650](https://github.com/uzh-bf/klicker-uzh/pull/5650)
+- Native stack: [v3-ai PR #5092](https://github.com/uzh-bf/klicker-uzh/pull/5092)
+  followed by PR #5650
 - Program plan: [Chatbot Test & Teach ground-truth plan](./2026-08-28-chatbot-test-and-teach-ground-truth-plan.md)
 
 ## Goal
@@ -34,9 +36,12 @@ preview and the later examples-excluded baseline.
 - Authority: local source and documentation edits, repository-native checks,
   browser proof only if a visible UI changes, required read-only reviews,
   local commits, the separately authorized exact branch push and PR
-  publication, and branch-caused exact-head CI or review corrections.
-- Withheld: upstream integration, merge, release, deployment, runtime
-  activation, live model calls, secret access, and staging or production data.
+  publication, branch-caused exact-head CI or review corrections, the
+  separately approved one-time integration of current `origin/v3-ai`, and
+  registration of PR #5650 above PR #5092 in GitHub's native stack.
+- Withheld: any further upstream integration, merge, release, deployment,
+  runtime activation, live model calls, secret access, and staging or
+  production data.
 - Terminal: the complete K6 package is committed, locally verified, reviewed,
   published at PR #5650, and its exact-head checks and forge review are
   dispositioned. Stop before merge.
@@ -45,6 +50,13 @@ preview and the later examples-excluded baseline.
   persistence, credits, or source-retrieval behavior must change.
 
 ## Decisions
+
+- Keep PR #5650 targeted at `v3-ai`. For the repository's required final-review
+  policy, register it as the upper layer of the native GitHub stack rooted at
+  the existing `v3-ai` PR #5092. This changes only forge topology: PR #5092
+  remains the lower integration layer and PR #5650 remains the independently
+  reviewable response-example runtime layer. No other open `v3-ai` PR joins
+  this stack.
 
 - Keep the first implementation small. Use one server-only response-example
   runtime module in the chat app and shared pure projection helpers in the util
@@ -182,14 +194,13 @@ preview and the later examples-excluded baseline.
 ## Progress
 
 - Status: K6.1 through K6.4 are source-complete and published as open,
-  non-draft PR #5650 against `v3-ai`. The integrated final review and its
-  correction passes returned `DONE` with no remaining findings. Exact-head CI
-  confirmed the formatting correction and all application, security, and
-  seven of eight hosted Playwright shards. The final shard exposed a
-  branch-caused fixture gap: the seeded response examples had no current KB
-  resource under the new eligibility contract. The fixture correction is
-  prepared for the next published head. Merge, deployment, and live model use
-  remain withheld.
+  non-draft PR #5650 against `v3-ai`. The deterministic current-source seed
+  correction is committed, reviewed, and passed every hosted Playwright shard
+  on its published head. The separately approved integration of
+  `origin/v3-ai@bedc6a855` is complete without conflicts or overlapping product
+  changes. GitHub native stack #5657 now records PR #5092 followed by PR #5650.
+  Exact integrated-head checks remain the producing completion evidence;
+  merge, deployment, and live model use remain withheld.
 - Completed: remote-state gate, clean purpose-based worktree, approved program
   plan transfer, current source seam mapping, package-plan narrowing, shared
   current-evidence validation, owner-service reconciliation, and focused util,
@@ -237,8 +248,9 @@ preview and the later examples-excluded baseline.
   error. No raw DevPod stop or cleanup bypass was attempted.
 - Delivery: branch `feat/chatbot-response-example-runtime` is published at PR
   #5650. The PR is mergeable and `UNSTABLE`. The final-review policy rejects a
-  standalone PR targeting non-default branch `v3-ai`; it requires the default
-  branch or verified GitHub native-stack membership. `v3-ai` also advanced by
-  one commit after publication, while upstream integration remains withheld.
-- Next: publish and verify the synthetic-source correction. Then resolve the
-  separate upstream-integration and PR-topology boundaries before merge.
+  standalone PR targeting non-default branch `v3-ai`; native stack #5657 now
+  supplies the required topology through draft foundation PR #5092. The
+  one-time approved upstream integration is complete. Any further upstream
+  integration and merge remain separately withheld.
+- Next: publish the integrated branch and settle PR #5650's exact-head checks
+  and forge review. Merge remains separately withheld.
