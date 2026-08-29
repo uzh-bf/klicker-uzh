@@ -101,36 +101,18 @@ export async function markTourCompleted(
   // completion again without rewriting it. The `update` branch therefore
   // touches only the housekeeping timestamp — but it must not be empty, because
   // Prisma turns an empty update into a read-then-insert that two concurrent
-  // calls can race into a unique-constraint error.
-  const state =
-    actor.type === 'user'
-      ? await ctx.prisma.userTourState.upsert({
-          where: { userId_tourId: { userId: actor.id, tourId } },
-          create: { tourId, userId: actor.id, completedAt: now },
-          update: { updatedAt: now },
-        })
-      : await ctx.prisma.participantTourState.upsert({
-          where: { participantId_tourId: { participantId: actor.id, tourId } },
-          create: { tourId, participantId: actor.id, completedAt: now },
-          update: { updatedAt: now },
-        })
-
-  // A row without a completion can only come from a writer that records a
-  // started tour, which none does today; filling it in keeps this mutation's
-  // promise true whoever created the row.
-  if (state.completedAt) {
-    return state
-  }
-
-  if (actor.type === 'user') {
-    return ctx.prisma.userTourState.update({
-      where: { userId_tourId: { userId: actor.id, tourId } },
-      data: { completedAt: now },
-    })
-  }
-
-  return ctx.prisma.participantTourState.update({
-    where: { participantId_tourId: { participantId: actor.id, tourId } },
-    data: { completedAt: now },
-  })
+  // calls can race into a unique-constraint error. This mutation is the only
+  // writer of both tables, and it always sets `completedAt` on insert, so every
+  // row it can meet here already carries a completion.
+  return actor.type === 'user'
+    ? await ctx.prisma.userTourState.upsert({
+        where: { userId_tourId: { userId: actor.id, tourId } },
+        create: { tourId, userId: actor.id, completedAt: now },
+        update: { updatedAt: now },
+      })
+    : await ctx.prisma.participantTourState.upsert({
+        where: { participantId_tourId: { participantId: actor.id, tourId } },
+        create: { tourId, participantId: actor.id, completedAt: now },
+        update: { updatedAt: now },
+      })
 }

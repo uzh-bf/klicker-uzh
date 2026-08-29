@@ -363,7 +363,11 @@ two tabs can race into a unique-constraint error.
 per-surface tour ids keep the rows disjoint, but the semantics above — validated
 id, non-empty-update upsert, first write wins on `completedAt` — must stay
 identical in both writers. Changing them in one place only is the failure mode
-to watch for.
+to watch for. A future writer that records a started-but-unfinished tour would
+create rows without a `completedAt`; it must then finish them with an update
+conditioned on `completedAt` still being null, or first write wins is lost. The
+current mutation deliberately has no such path — it always sets `completedAt`
+when it inserts.
 
 ### When a tour starts by itself
 
