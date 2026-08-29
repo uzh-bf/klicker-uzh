@@ -451,9 +451,32 @@
   The installed CLI reports 0.0.45 with bundle SHA-256
   `05368b5071679631ed5cd1df31890068700f9f92a4d739200b7c98c33af25bfd`;
   the consumer pin and final provider proof now use this released artifact.
-- Current state: `active`. Completed: K0-K2 and the non-collision K3 provider,
-  profile, capability, cold-bootstrap, browser evidence, and upstream
-  collision-safe Devrouter release. Active: released consumer repin and fresh
-  mixed-provider collision proof. Remaining: K4 final review and delivery. All completed validation
-  runtimes are stopped with their exact routes freed; worktrees, registrations,
-  containers, and volumes are retained.
+- `2026-08-29`: The released consumer exact head `8378f1032` passes the shell
+  and profile suites, generated Dev Container verification, formatting, and
+  full `pnpm run check:all` with 25 type-check and 7 lint tasks successful. The
+  ignored analytics virtual environment uses Python 3.12 because the pinned
+  pandas version cannot build under the host-selected Python 3.14 image; no
+  tracked file changed for that validation accommodation.
+- `2026-08-29`: Two fresh colliding-prefix checkouts claimed distinct 0.0.45
+  identities before provider mutation: Devsy retained the readable
+  `rs-provider-safe-0045-collision`, while DevPod received the deterministic
+  `rs-provider-safe-0045-c-b0bc1afa`. The Devsy `mcp` profile passed exact-head,
+  completion-marker, local health, zero-drift, and repository-check evidence.
+  Its exact runtime is now stopped and both checkouts report zero routes.
+- `2026-08-29`: The fresh DevPod half stopped before application startup or
+  route publication because Docker could not allocate another project network:
+  `all predefined address pools have been fully subnetted`. The failed exact
+  workspace is `NotFound` and has zero routes. One earlier task-owned cold
+  validation network, `default-rs-d9c0c_default`, is empty; its provider is
+  stopped and all retained containers are stopped. Removing only that network
+  would free one subnet without removing its containers, volumes, worktree, or
+  registration, but destructive cleanup remains withheld pending explicit
+  approval.
+- Current state: `delivery_pending`. Completed: K0-K2, the non-collision K3
+  provider/profile/capability/cold-bootstrap/browser evidence, the upstream
+  collision-safe Devrouter release, the released consumer pin, and the Devsy
+  half of fresh mixed-provider proof. Remaining: restore one Docker subnet,
+  complete the exact-head DevPod and simultaneous routed proof, then run K4
+  final review and delivery. Every touched task runtime is stopped with zero
+  routes; worktrees, registrations, containers, volumes, and networks are
+  retained.
