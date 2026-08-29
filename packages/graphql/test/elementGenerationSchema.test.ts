@@ -1,11 +1,11 @@
+import { readFileSync } from 'node:fs'
 import {
   buildSchema,
+  type GraphQLSchema,
   isEnumType,
   isInputObjectType,
   isObjectType,
-  type GraphQLSchema,
 } from 'graphql'
-import { readFileSync } from 'node:fs'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 describe('unified element-generation GraphQL contract', () => {
@@ -35,6 +35,7 @@ describe('unified element-generation GraphQL contract', () => {
       updateGeneratedElementDraft: expect.any(Object),
       duplicateGeneratedElementDraft: expect.any(Object),
       setGeneratedElementDecision: expect.any(Object),
+      keepGeneratedElementDraft: expect.any(Object),
       saveGeneratedElements: expect.any(Object),
       retryElementGeneration: expect.any(Object),
       publishIncompleteElementGeneration: expect.any(Object),
@@ -66,6 +67,23 @@ describe('unified element-generation GraphQL contract', () => {
     if (!isObjectType(build))
       throw new Error('ElementGenerationBuild is missing')
     expect(build.getFields().graphBuildId?.type.toString()).toBe('ID!')
+    expect(build.getFields().sources?.type.toString()).toBe(
+      '[ElementGenerationBuildSource!]!'
+    )
+
+    const keep = schema.getMutationType()?.getFields().keepGeneratedElementDraft
+    expect(keep?.args.map((argument) => argument.name)).toEqual(
+      expect.arrayContaining([
+        'draftId',
+        'expectedRevision',
+        'status',
+        'type',
+        'name',
+        'content',
+        'basePoints',
+        'pointsMultiplier',
+      ])
+    )
 
     const publicFields = [
       ...Object.keys(schema.getQueryType()?.getFields() ?? {}),

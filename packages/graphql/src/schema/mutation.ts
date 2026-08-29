@@ -9,9 +9,8 @@ import * as ChatAccountUsageService from '../services/chatAccountUsage.js'
 import * as ChatbotsService from '../services/chatbots.js'
 import * as CourseDuplicationService from '../services/courseDuplication.js'
 import * as CourseService from '../services/courses.js'
-import * as ElementService from '../services/elements.js'
 import * as ElementGenerationService from '../services/elementGeneration.js'
-import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
+import * as ElementService from '../services/elements.js'
 import * as FeedbackService from '../services/feedbacks.js'
 import * as GroupService from '../services/groups.js'
 import * as KnowledgeService from '../services/knowledge.js'
@@ -21,6 +20,7 @@ import * as NotificationService from '../services/notifications.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
+import { elementGenerationGraphQLResult } from '../services/questionGenerationErrors.js'
 import * as ResourcesService from '../services/resources.js'
 import * as ResponseExamplesService from '../services/responseExamples.js'
 import * as SharingService from '../services/sharing.js'
@@ -43,6 +43,7 @@ import {
   Tag,
   TemplateBlockInput,
 } from './element.js'
+import { ElementStatus, ElementType } from './elementData.js'
 import {
   ElementGenerationBuildInputRef,
   ElementGenerationBuildRef,
@@ -55,7 +56,6 @@ import {
   StartElementGenerationInputRef,
   UpdateGeneratedElementDraftInputRef,
 } from './elementGeneration.js'
-import { ElementStatus, ElementType } from './elementData.js'
 import {
   GroupActivity,
   GroupActivityClueInput,
@@ -2167,6 +2167,32 @@ export const Mutation = builder.mutationType({
               input.decision,
               ctx
             )
+          )
+        },
+      }),
+
+      keepGeneratedElementDraft: t.withAuth(asUserFullAccess).field({
+        nullable: false,
+        type: GeneratedElementDraftRef,
+        args: {
+          draftId: t.arg.id({ required: true, validate: { uuid: true } }),
+          expectedRevision: t.arg.int({
+            required: true,
+            validate: { min: 0 },
+          }),
+          status: t.arg({ type: ElementStatus, required: true }),
+          type: t.arg({ type: ElementType, required: true }),
+          name: t.arg.string({ required: true }),
+          content: t.arg.string({ required: true }),
+          explanation: t.arg.string({ required: false }),
+          basePoints: t.arg.boolean({ required: true }),
+          pointsMultiplier: t.arg.int({ required: true }),
+          tags: t.arg.stringList({ required: false }),
+          options: t.arg({ type: OptionsChoicesInput, required: false }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await elementGenerationGraphQLResult(
+            ElementGenerationService.keepGeneratedElementDraft(args, ctx)
           )
         },
       }),

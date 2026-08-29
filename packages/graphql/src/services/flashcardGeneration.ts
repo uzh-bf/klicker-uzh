@@ -74,6 +74,7 @@ const buildInclude = {
         select: {
           resourceId: true,
           title: true,
+          type: true,
           contentSha256: true,
           sourceUrl: true,
           blobName: true,

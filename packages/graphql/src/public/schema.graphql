@@ -1332,6 +1332,7 @@ type ElementGenerationBuild {
   requestedElementCount: Int!
   retryCount: Int!
   reviews: [ElementGenerationReview!]!
+  sources: [ElementGenerationBuildSource!]!
   stage: String!
   startedAt: Date
   status: ElementGenerationBuildStatus!
@@ -1342,6 +1343,13 @@ type ElementGenerationBuild {
 
 input ElementGenerationBuildInput {
   buildId: ID!
+}
+
+type ElementGenerationBuildSource {
+  resourceId: ID!
+  sourceUrl: String
+  title: String!
+  type: KBResourceType!
 }
 
 enum ElementGenerationBuildStatus {
@@ -2598,6 +2606,7 @@ type Mutation {
   joinCourseWithPin(pin: Int!): Participant
   joinParticipantGroup(code: Int!, courseId: String!): String
   joinRandomCourseGroupPool(courseId: String!): Boolean!
+  keepGeneratedElementDraft(basePoints: Boolean!, content: String!, draftId: ID!, expectedRevision: Int!, explanation: String, name: String!, options: OptionsChoicesInput, pointsMultiplier: Int!, status: ElementStatus!, tags: [String!], type: ElementType!): GeneratedElementDraft!
   leaveCourseLeaderboard(courseId: String!): LeaveCourseParticipation
   leaveParticipantGroup(courseId: String!, groupId: String!): ParticipantGroup
   leaveRandomCourseGroupPool(courseId: String!): Boolean!

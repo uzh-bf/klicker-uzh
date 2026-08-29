@@ -89,6 +89,12 @@ fragment ElementGenerationBuildData on ElementGenerationBuild {
     warningsAcknowledged
     reviewedAt
   }
+  sources {
+    resourceId
+    title
+    type
+    sourceUrl
+  }
   drafts {
     id
     sourceElementId
