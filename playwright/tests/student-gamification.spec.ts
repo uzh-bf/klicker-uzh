@@ -1,10 +1,11 @@
-import { AchievementType } from '@klicker-uzh/prisma/client'
+import { AchievementType, LeaderboardType } from '@klicker-uzh/prisma/client'
 import { COURSE_ID_TEST, PARTICIPANT_IDS } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
 import { getPrisma } from '../global-setup.js'
 import { enMessages as messages } from '../util/messages.js'
 
 let testAchievementId: number | undefined
+let publicParticipantUsername: string | undefined
 
 test.beforeAll(async () => {
   const prisma = await getPrisma()
@@ -25,6 +26,22 @@ test.beforeAll(async () => {
   })
   testAchievementId = achievement.id
 
+  const publicParticipant = await prisma.leaderboardEntry.findFirstOrThrow({
+    where: {
+      courseId: COURSE_ID_TEST,
+      type: LeaderboardType.COURSE,
+      participantId: { not: PARTICIPANT_IDS[48]! },
+      participant: { isProfilePublic: true },
+      participation: { is: { isActive: true } },
+    },
+    orderBy: { score: 'desc' },
+    select: {
+      participantId: true,
+      participant: { select: { username: true } },
+    },
+  })
+  publicParticipantUsername = publicParticipant.participant.username
+
   await prisma.participantAchievementInstance.createMany({
     data: [
       {
@@ -33,7 +50,7 @@ test.beforeAll(async () => {
         achievedAt: new Date('2026-01-01T00:00:00Z'),
       },
       {
-        participantId: PARTICIPANT_IDS[0]!,
+        participantId: publicParticipant.participantId,
         achievementId: achievement.id,
         achievedAt: new Date('2026-01-01T00:00:00Z'),
       },
@@ -114,7 +131,7 @@ test('acknowledges receipts only for self profiles and retries after failure', a
 
   await page.goto(`/course/${COURSE_ID_TEST}`)
   const publicParticipant = page
-    .getByTestId('leaderboard-entry-testuser1')
+    .getByTestId(`leaderboard-entry-${publicParticipantUsername}`)
     .first()
   await expect(publicParticipant).toBeVisible()
   await publicParticipant.click()
