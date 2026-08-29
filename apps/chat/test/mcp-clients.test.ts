@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 const createSDKMCPClientMock = vi.hoisted(() => vi.fn())
+const closeSDKMCPClientMock = vi.hoisted(() => vi.fn())
 const signDocQueryScopeTokenMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@ai-sdk/mcp', () => ({
@@ -21,9 +22,21 @@ import {
 } from '../src/lib/server/mcpRuntimePolicy'
 import { isDocQueryToolName } from '../src/lib/sources/normalizeSources'
 import {
-  getAggregatedMCPTools,
+  getAggregatedMCPTools as getAggregatedMCPToolsHandle,
   type MCPServerWithConfig,
 } from '../src/services/mcpClients'
+
+const openHandles: Array<
+  Awaited<ReturnType<typeof getAggregatedMCPToolsHandle>>
+> = []
+
+async function getAggregatedMCPTools(
+  ...args: Parameters<typeof getAggregatedMCPToolsHandle>
+) {
+  const handle = await getAggregatedMCPToolsHandle(...args)
+  openHandles.push(handle)
+  return handle.tools
+}
 
 function createServer(
   overrides: Partial<MCPServerWithConfig['server']> = {},
@@ -47,6 +60,7 @@ function createServer(
 
 function setTools(rawTools: Record<string, unknown>) {
   createSDKMCPClientMock.mockResolvedValue({
+    close: closeSDKMCPClientMock,
     tools: vi.fn().mockResolvedValue(rawTools),
   })
 }
@@ -55,6 +69,10 @@ describe('MCP runtime policy', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     signDocQueryScopeTokenMock.mockResolvedValue('scope-token')
+  })
+
+  afterEach(async () => {
+    await Promise.all(openHandles.splice(0).map((handle) => handle.close()))
   })
 
   test('keeps configs without reserved policy keys optional', () => {
@@ -156,6 +174,41 @@ describe('MCP runtime policy', () => {
         redirect: 'error',
       },
     })
+  })
+
+  test('returns an idempotent cleanup handle for every created client', async () => {
+    setTools({ search_docs: { description: 'search' } })
+
+    const handle = await getAggregatedMCPToolsHandle(
+      [createServer(), createServer({ id: 'server-2', name: 'Second' })],
+      { chatbotId: 'chatbot-1', authMode: 'account' }
+    )
+
+    expect(Object.keys(handle.tools)).toEqual([
+      'IW_search_docs',
+      'Second_search_docs',
+    ])
+    await handle.close()
+    await handle.close()
+
+    expect(closeSDKMCPClientMock).toHaveBeenCalledTimes(2)
+  })
+
+  test('closes a client when tool discovery fails', async () => {
+    createSDKMCPClientMock.mockResolvedValue({
+      close: closeSDKMCPClientMock,
+      tools: vi.fn().mockRejectedValue(new Error('discovery failed')),
+    })
+
+    const handle = await getAggregatedMCPToolsHandle([createServer()], {
+      chatbotId: 'chatbot-1',
+      authMode: 'account',
+    })
+
+    expect(handle.tools).toEqual({})
+    expect(closeSDKMCPClientMock).toHaveBeenCalledTimes(1)
+    await handle.close()
+    expect(closeSDKMCPClientMock).toHaveBeenCalledTimes(1)
   })
 
   test('requires one exact aliased tool for strict configs', async () => {
@@ -342,9 +395,11 @@ describe('MCP runtime policy', () => {
 
     createSDKMCPClientMock
       .mockResolvedValueOnce({
+        close: closeSDKMCPClientMock,
         tools: vi.fn().mockResolvedValue({ doc_query: {} }),
       })
       .mockResolvedValueOnce({
+        close: closeSDKMCPClientMock,
         tools: vi.fn().mockResolvedValue({ video_expert: {} }),
       })
     await expect(
@@ -359,9 +414,11 @@ describe('MCP runtime policy', () => {
     required.config.priority = 0
     createSDKMCPClientMock
       .mockResolvedValueOnce({
+        close: closeSDKMCPClientMock,
         tools: vi.fn().mockResolvedValue({ video_expert: {} }),
       })
       .mockResolvedValueOnce({
+        close: closeSDKMCPClientMock,
         tools: vi.fn().mockResolvedValue({ doc_query: {} }),
       })
     await expect(

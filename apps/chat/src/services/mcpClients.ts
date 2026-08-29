@@ -55,6 +55,11 @@ export interface MCPRequestOptions {
   requestTimeoutMs?: number
 }
 
+export interface MCPToolsHandle {
+  tools: Record<string, any>
+  close: () => Promise<void>
+}
+
 const HTTP_HEADER_NAME_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/
 const DOC_QUERY_SCOPE_HEADER_PREFIX = 'x-doc-query-'
 const RESERVED_DOC_QUERY_SCOPE_HEADERS = new Set([
@@ -395,10 +400,26 @@ async function loadServerTools(
   serverWithConfig: MCPServerWithConfig,
   context: MCPRequestContext,
   options: MCPRequestOptions
-): Promise<Record<string, any>> {
+): Promise<MCPToolsHandle> {
   const { server, config } = serverWithConfig
   const runtimePolicy = parseMCPRuntimePolicy(config.parameters)
   let requiredRawToolName: string | undefined
+  let client: Awaited<ReturnType<typeof createMCPClient>> | undefined
+
+  const close = async () => {
+    const activeClient = client
+    client = undefined
+    if (!activeClient) return
+
+    try {
+      await activeClient.close()
+    } catch (error) {
+      console.warn('Failed to close MCP client', {
+        server: server.name,
+        errorType: error instanceof Error ? error.name : typeof error,
+      })
+    }
+  }
 
   if (runtimePolicy.required) {
     const configuredTool = config.allowedTools?.[0]
@@ -418,11 +439,11 @@ async function loadServerTools(
     if (runtimePolicy.required) {
       throw new RequiredMCPUnavailableError()
     }
-    return {}
+    return { tools: {}, close }
   }
 
   try {
-    const client = await createMCPClient(server, context, options)
+    client = await createMCPClient(server, context, options)
     const rawTools = await client.tools()
 
     if (runtimePolicy.required && requiredRawToolName) {
@@ -463,8 +484,9 @@ async function loadServerTools(
     console.log(
       `Loaded ${Object.keys(filteredTools).length} tools from ${server.name}`
     )
-    return filteredTools
+    return { tools: filteredTools, close }
   } catch (error) {
+    await close()
     if (
       error instanceof RequiredMCPUnavailableError ||
       runtimePolicy.required
@@ -475,7 +497,7 @@ async function loadServerTools(
 
     console.error('Optional MCP tools unavailable', { server: server.name })
     // Return empty object to allow other servers to continue loading
-    return {}
+    return { tools: {}, close }
   }
 }
 
@@ -487,7 +509,7 @@ export async function getAggregatedMCPTools(
   contextOrChatbotId: MCPRequestContext | string,
   participantIdOrOptions: string | MCPRequestOptions = '',
   authMode: AuthMode = 'account'
-): Promise<Record<string, any>> {
+): Promise<MCPToolsHandle> {
   console.log(`Loading MCP Tools from ${serversWithConfigs.length} servers...`)
 
   const { context, options } = normalizeMCPRequest(
@@ -498,7 +520,7 @@ export async function getAggregatedMCPTools(
 
   if (serversWithConfigs.length === 0) {
     console.log('No MCP servers configured')
-    return {}
+    return { tools: {}, close: async () => {} }
   }
 
   // Sort by priority (lower number = higher priority)
@@ -508,19 +530,29 @@ export async function getAggregatedMCPTools(
 
   const aggregatedTools: Record<string, any> = {}
   const requiredToolNames = new Set<string>()
+  const serverHandles: MCPToolsHandle[] = []
+
+  let closePromise: Promise<void> | undefined
+  const close = () => {
+    closePromise ??= Promise.all(
+      serverHandles.map((handle) => handle.close())
+    ).then(() => undefined)
+    return closePromise
+  }
 
   // Load tools from each server in priority order
   for (const serverWithConfig of sortedServers) {
     try {
-      const serverTools = await loadServerTools(
+      const serverHandle = await loadServerTools(
         serverWithConfig,
         context,
         options
       )
+      serverHandles.push(serverHandle)
       const runtimePolicy = parseMCPRuntimePolicy(
         serverWithConfig.config.parameters
       )
-      for (const [name, def] of Object.entries(serverTools)) {
+      for (const [name, def] of Object.entries(serverHandle.tools)) {
         if (!(name in aggregatedTools)) {
           aggregatedTools[name] = def
           if (runtimePolicy.required) requiredToolNames.add(name)
@@ -529,7 +561,10 @@ export async function getAggregatedMCPTools(
         }
       }
     } catch (error) {
-      if (error instanceof RequiredMCPUnavailableError) throw error
+      if (error instanceof RequiredMCPUnavailableError) {
+        await close()
+        throw error
+      }
 
       console.error(
         `Failed to load tools from ${serverWithConfig.server.name}, continuing with other servers`
@@ -540,7 +575,7 @@ export async function getAggregatedMCPTools(
   console.log(`Total aggregated tools: ${Object.keys(aggregatedTools).length}`)
   console.log('Available tools:', Object.keys(aggregatedTools))
 
-  return aggregatedTools
+  return { tools: aggregatedTools, close }
 }
 
 /**
@@ -577,14 +612,14 @@ export async function getMCPTools(
   }
 
   try {
-    const serverTools = await loadServerTools(
+    const serverHandle = await loadServerTools(
       { server: legacyServer, config: legacyConfig },
       { chatbotId, participantId, authMode },
       {}
     )
-    return serverTools
+    return serverHandle
   } catch (error) {
     console.error('Failed to load legacy MCP Tools:', error)
-    return {}
+    return { tools: {}, close: async () => {} }
   }
 }
