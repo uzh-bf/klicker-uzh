@@ -74,18 +74,19 @@ for app in response-api hatchet-worker-general hatchet-worker-response-processor
   touch "$ROOT/apps/${app}/.env"
 done
 
-# Hatchet client token — automatically created by hatchet-lite-dev at /config/authdisabled-token.
+# Hatchet client token — automatically created by hatchet-lite-dev at the path
+# configured by HATCHET_TOKEN_FILE.
 # The backend's HatchetClient.init runs at MODULE LOAD (not lazy), so the backend
 # CRASHES at boot without it — capture it here so post-start sources it before
 # turbo dev.
-echo "[post-create] Waiting for the Hatchet client token (/config/authdisabled-token)..."
+echo "[post-create] Waiting for the Hatchet client token ($HATCHET_TOKEN_FILE)..."
 HATCHET_ENV="$ROOT/.devcontainer/.hatchet.env"
 : > "$HATCHET_ENV"
 for attempt in $(seq 1 30); do
   if [ -s "$HATCHET_TOKEN_FILE" ]; then
     TOKEN=$(tr -d '[:space:]' < "$HATCHET_TOKEN_FILE")
     echo "HATCHET_CLIENT_TOKEN=${TOKEN}" > "$HATCHET_ENV"
-    echo "[post-create] Hatchet token captured from /config/authdisabled-token."
+    echo "[post-create] Hatchet token captured from $HATCHET_TOKEN_FILE."
 
     # Populate packages/graphql/.env for Vitest
     cat <<EOF > "$ROOT/packages/graphql/.env"
