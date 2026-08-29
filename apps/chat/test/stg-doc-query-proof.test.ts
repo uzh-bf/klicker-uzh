@@ -190,7 +190,10 @@ describe('STG Doc Query proof transport', () => {
     }
 
     const headers = { authorization: 'Bearer dummy-transport-token' }
-    createMcpTransport(headers, RecordingTransport)
+    createMcpTransport(
+      headers,
+      RecordingTransport as unknown as Parameters<typeof createMcpTransport>[1]
+    )
 
     expect(capturedOptions).toMatchObject({
       requestInit: { headers, redirect: 'error' },
