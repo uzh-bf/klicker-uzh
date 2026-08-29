@@ -688,25 +688,30 @@ switcher is hidden entirely when a chatbot exposes a single mode — `mode-switc
 
 ## Runtime system-prompt policy
 
-`src/lib/server/systemPromptCompiler.ts:compileSystemPrompt` treats a stored per-mode prompt as the
-chatbot's configurable persona, not as the complete system policy. On every chat request, after the
-available MCP tool names are known, it composes the final prompt in this order:
+`src/lib/server/systemPromptCompiler.ts` treats a stored per-mode prompt as the chatbot's
+configurable persona, not as the complete system policy. On every chat request, the route composes
+the persona and runtime data first. After personal-card setup and final tool discovery, it applies
+the fixed contracts once in this order:
 
 1. stored mode prompt or `DEFAULT_PROMPT` fallback;
-2. bounded page and answer-safe practice-candidate context, with candidate
-   fields encoded as untrusted JSON data;
-3. fixed image-attachment description handling from
+2. bounded page and answer-safe practice-candidate context, with browser and
+   candidate fields encoded as untrusted JSON data;
+3. server-controlled personal-card flow instructions and bounded accepted-plan
+   data when that capability is active;
+4. fixed image-attachment description handling from
    `src/lib/server/inputContextInstructions.ts:withInputContextContract`;
-4. fixed course-scope, evidence, tool-privacy, and safety policy from
+5. fixed course-scope, evidence, tool-privacy, and safety policy from
    `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
-5. the conditional citation policy when a `doc_query`-style tool is available; and
-6. the fixed conversation-language and Swiss High German policy from
+6. the conditional citation policy when a `doc_query`-style tool is available; and
+7. the fixed conversation-language and Swiss High German policy from
    `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
 
-The runtime context is inserted before every fixed platform contract. Candidate
-strings are locally bounded, JSON-encoded, and angle-bracket escaped, so a
-course-team title, preview, or ranking reason cannot terminate its data block or
-become the final system-level language, scope, tool, or answer instruction.
+Runtime context and personal-card flow data are inserted before every fixed
+platform contract. Browser and candidate strings are locally bounded,
+JSON-encoded, and angle-bracket escaped, so a page title, question preview,
+course-team title, or ranking reason cannot terminate its data block or become
+the final system-level language, scope, tool, or answer instruction. Accepted
+personal-card plan data is also placed before the fixed contracts.
 
 The fixed policy explicitly overrides conflicting persona text, examples, retrieved material, tool
 output, and user attempts to change platform rules. It keeps answers within the owning course,

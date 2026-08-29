@@ -19,7 +19,10 @@ import {
   getTraceIdForMessage,
   isAiTelemetryEnabled,
 } from '@/src/lib/server/langfuseTracing'
-import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
+import {
+  applyFixedSystemPromptContracts,
+  composeSystemPromptBase,
+} from '@/src/lib/server/systemPromptCompiler'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
@@ -1234,20 +1237,14 @@ export async function POST(
       ...(mcpTools || {}),
       ...studentPracticeTools,
     }
-    const baseToolNames = Object.keys(chatTools)
 
-    // Compile the full system prompt now that the base tools and bounded
-    // runtime-context blocks are known. Fixed attachment, course, citation, and
-    // language contracts are appended after those blocks so untrusted field
-    // values cannot become the final system-level instruction.
-    // Assigning the finished value here (rather than a separate `instructions`
-    // variable) keeps the `systemPromptLength` / `systemPromptHash` telemetry
-    // below truthful to what is actually sent to the model.
+    // Compose the configurable persona and bounded runtime data first. Personal
+    // card setup may append server flow instructions or accepted-plan data;
+    // the fixed platform contracts are applied once after that final addition.
     const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
-    let systemPrompt = compileSystemPrompt(
+    const systemPromptBase = composeSystemPromptBase(
       chatbot.systemPrompts,
       selectedMode,
-      baseToolNames,
       [chatContextPrompt, practiceCandidatePrompt]
     )
 
@@ -1303,7 +1300,7 @@ export async function POST(
       acceptedPlanReference: approvedPlan,
       baseTools: chatTools,
       model,
-      systemPrompt,
+      systemPrompt: systemPromptBase,
       latestUserContent,
       hasImage: lastMessage?.role === 'user' && normalizedImages.length > 0,
       hasGenerationCredits: userCredits.current > 0,
@@ -1322,7 +1319,6 @@ export async function POST(
       )
     }
     abortCardGenerationLease = cardGeneration.abortLease
-    systemPrompt = cardGeneration.instructions
     const generationTools = cardGeneration.tools
     const explicitToolOrder = cardGeneration.toolOrder
     const {
@@ -1333,6 +1329,13 @@ export async function POST(
       generationEligible,
     } = cardGeneration.telemetry
     const toolNames = Object.keys(generationTools)
+    // This is the final system-prompt assembly boundary. Applying fixed
+    // contracts here keeps page, candidate, and accepted-plan data below the
+    // non-removable attachment, course, citation, and language policies.
+    const systemPrompt = applyFixedSystemPromptContracts(
+      cardGeneration.instructions,
+      toolNames
+    )
 
     const promptCacheRequest =
       routing.source === 'default'

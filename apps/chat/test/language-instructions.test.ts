@@ -15,6 +15,7 @@ describe('withLanguageStyleContract', () => {
     expect(result).toContain("user's latest non-trivial message")
     expect(result).toContain('short acknowledgement')
     expect(result).toContain('Do not choose the reply language')
+    expect(result).toContain('page context')
     expect(result).toContain('attached images or their descriptions')
     expect(result).toContain('retrieved passages')
     expect(result).toContain('Use one reply language throughout')

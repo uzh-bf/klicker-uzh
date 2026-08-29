@@ -998,6 +998,20 @@ describe('retrieval route wiring', () => {
     expect(options.instructions).not.toContain(
       'retrieve course material first, then call propose_card_plan'
     )
+    const acceptedPlanIdx = options.instructions.indexOf(
+      'The student accepted this exact final card plan.'
+    )
+    const inputContextIdx = options.instructions.indexOf('Attachment context:')
+    const coursePolicyIdx = options.instructions.indexOf('Course scope:')
+    const citationIdx = options.instructions.indexOf('Citation format:')
+    const languageIdx = options.instructions.indexOf(
+      'Swiss High German orthography'
+    )
+    expect(acceptedPlanIdx).toBeGreaterThanOrEqual(0)
+    expect(inputContextIdx).toBeGreaterThan(acceptedPlanIdx)
+    expect(coursePolicyIdx).toBeGreaterThan(inputContextIdx)
+    expect(citationIdx).toBeGreaterThan(coursePolicyIdx)
+    expect(languageIdx).toBeGreaterThan(citationIdx)
     expect(options.tools).not.toHaveProperty('propose_card_plan')
     expect(options.tools).not.toHaveProperty('course_retrieval_unavailable')
     expect(options.prepareStep({ stepNumber: 0, steps: [] })).toMatchObject({

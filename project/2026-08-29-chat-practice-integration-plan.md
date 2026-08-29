@@ -159,8 +159,8 @@ snapshots.
   duplicate-prose suppression, retrieval-unavailable rendering, and Quizzer's
   unavailable-mode action guards.
 - Acceptance: route order is effective mode/MCP, Quizzer retrieval gate,
-  lecturer practice, fixed prompt compile, chat/candidate context, then
-  personal generation.
+  lecturer practice, persona plus bounded runtime data, personal-generation
+  flow data, then fixed platform contracts at the final model-input boundary.
 
 ### S3 — Make provenance explicit and document the adapter
 
@@ -235,6 +235,12 @@ pnpm checks and browser/model evidence remain outstanding.
    still have zero changed-path overlap with this adapter. The published
    student ref remains `cce6e445`; neither local nor remote ref was moved by
    this worktree.
+9. During final review the local branch advanced again to
+   `de9012814f7ef8f337ad40344ff56623f9fce25f`. Its additional source-metadata
+   closure commit remains a descendant of the frozen input and has zero
+   changed-path overlap with this adapter. The published ref remains
+   `cce6e445`; downstream integration must still reconcile the latest stable
+   student head rather than treating this synthetic adapter as current.
 
 ## Review gates
 
@@ -296,5 +302,16 @@ pnpm checks and browser/model evidence remain outstanding.
   in GraphQL, Prisma, or personal-card generation. The staged gitleaks scan
   reported no leaks. Pnpm, browser, model, database, and MCP checks remain
   skipped under the approved no-runtime boundary.
-- Status: S1-S3 and static verification complete; integrated final review
-  pending.
+- 2026-08-29: The configured native final-review route was unavailable because
+  the dispatcher paired an unsupported reasoning effort with its model. A
+  fresh trusted `gpt-5.6-sol` read-only fallback requested three corrections:
+  the stale encoded-id assertion (fixed in `2aaa2eec5`), untrusted raw page
+  context, and accepted-plan data following the fixed contracts. Page fields
+  are now bounded and encoded in a delimiter-safe data block. The route now
+  applies the fixed contracts once after all card-flow data, without changing
+  the personal-generation service.
+- 2026-08-29: During final review the parallel student branch advanced again
+  to `de9012814`. Its additional source-metadata closure commit remains path-
+  disjoint from the adapter. No ref was moved or integrated here.
+- Status: S1-S3 source work and initial static verification complete; final-
+  review corrections implemented and pending exact-head static verification.
