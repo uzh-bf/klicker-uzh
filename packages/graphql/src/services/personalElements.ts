@@ -752,10 +752,16 @@ function normalizeElementSourceReferencesWithSchema(
       pageLocators: [],
       webLocators: [],
     }
-    reference.chunkIds.push(
-      sanitizeElementSourceIdentity(source.chunkId) ??
-        `stored-chunk-${sourceIndex + 1}`
-    )
+    if (inputSchema === storedSourceInputsSchema) {
+      if (!reference.chunkIds.includes(source.chunkId)) {
+        reference.chunkIds.push(source.chunkId)
+      }
+    } else {
+      reference.chunkIds.push(
+        sanitizeElementSourceIdentity(source.chunkId) ??
+          `stored-chunk-${sourceIndex + 1}`
+      )
+    }
     if (validPage !== undefined) {
       reference.pageLocators.push({
         type: 'PAGE_RANGE',

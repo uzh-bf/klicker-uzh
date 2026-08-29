@@ -338,6 +338,31 @@ describe('personal elements service', () => {
     ])
   })
 
+  it('deduplicates identical raw chunk IDs in stored flat references', () => {
+    expect(
+      readElementSourceReferences([
+        {
+          sourceId: 'script',
+          chunkId: 'chunk-1',
+          title: 'Course script',
+          page: 1,
+        },
+        {
+          sourceId: 'script',
+          chunkId: 'chunk-1',
+          title: 'Course script',
+          page: 2,
+        },
+      ])
+    ).toMatchObject([
+      {
+        sourceId: 'script',
+        chunkIds: ['chunk-1'],
+        locators: [{ type: 'PAGE_RANGE', pageFrom: 1, pageTo: 2 }],
+      },
+    ])
+  })
+
   it('rejects repeated candidate IDs within one batch', async () => {
     const { course, participant } = await createFixture()
     const input = candidate()
