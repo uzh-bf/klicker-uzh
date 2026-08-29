@@ -405,6 +405,19 @@ classification_output="$(
 assert_equal "$classification_status" '22'
 assert_equal "$classification_output" 'unexpected: HTTP 404 text/html'
 
+assert_equal \
+  "$(bash "$RUNTIME_SCRIPT" classify-response health-text 200 'text/plain; charset=utf-8')" \
+  'ready: HTTP 200 text/plain; charset=utf-8'
+
+# The stale Next.js classification must not apply to text probes: a 404
+# from the lecturer MCP health endpoint is unexpected, not stale.
+classification_status=0
+classification_output="$(
+  bash "$RUNTIME_SCRIPT" classify-response health-text 404 'text/html'
+)" || classification_status=$?
+assert_equal "$classification_status" '22'
+assert_equal "$classification_output" 'unexpected: HTTP 404 text/html'
+
 classification_status=0
 classification_output="$(
   bash "$RUNTIME_SCRIPT" classify-response html-shell 404 'text/html'

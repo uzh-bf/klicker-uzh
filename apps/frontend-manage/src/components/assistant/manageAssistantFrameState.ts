@@ -40,8 +40,13 @@ export function reduceManageAssistantFrameState(
     }
   }
 
+  // Actions carrying a generation are dropped when stale. Only url-changed
+  // and retry intentionally bypass this check.
+  if ('generation' in action && action.generation !== state.generation) {
+    return state
+  }
+
   if (action.type === 'ready') {
-    if (action.generation !== state.generation) return state
     return { ...state, phase: 'ready' }
   }
 
@@ -52,8 +57,6 @@ export function reduceManageAssistantFrameState(
       phase: 'retrying',
     }
   }
-
-  if (action.generation !== state.generation) return state
 
   if (action.type === 'deadline') {
     if (state.phase !== 'loading' && state.phase !== 'retrying') return state
