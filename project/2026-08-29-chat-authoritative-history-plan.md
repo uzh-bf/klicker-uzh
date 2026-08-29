@@ -708,3 +708,33 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   its requirement for frontmatter on every existing ADR despite this
   repository's established ADR format; no unrelated bundle rewrite was made.
   S3 is ready for its documentation commit.
+- 2026-08-29: the S3 documentation checkpoint is committed at `56196c3d2`
+  (renumbered to `fa414beb6` by the one-time integration onto then-current
+  `origin/v3` at `bb495a1b2`, which moved only devcontainer/CI/docs paths).
+- 2026-08-29: the integrated final review over the exact pre-rebase range
+  `f0659e130..56196c3d2` (trusted Sol xhigh continuity route; the configured
+  `final-reviewer` failed before launch on the substituted
+  `combo/glm-5.3-flash` / `max` route) returned CHANGES_REQUIRED with two
+  majors: a parent cycle closing exactly at the 256-row truncation boundary
+  was accepted, and image-description completion threw on a losing concurrent
+  conditional update while treating a persisted empty description as
+  unrecoverable. One minor plan-wording finding was also accepted.
+- 2026-08-29: the corrections are committed at `16ff69e92`. The boundary walk
+  now rejects when the oldest walked row's parent already appears in the
+  collected path; description completion falls back on blank model output,
+  matches null or empty values, reads back a concurrently persisted winner
+  fenced by the trigger's own message, fails closed only on a still-blank
+  read-back, and projects the persisted value. Regressions: a synthetic
+  PostgreSQL boundary-cycle test and route tests for the concurrent winner and
+  empty-description recovery. Recheck evidence on this exact tree: full Chat
+  suite 448 passed and 32 skipped, 466 passed and 14 skipped with the opt-in
+  PostgreSQL flag, Chat typecheck pass, Biome formatting applied, and
+  `git diff --check` clean. Final status: correction-range recheck pending
+  (both reviewer routes returned transient provider 429s); tracked as the
+  only open review gate.
+- 2026-08-29: runtime lifecycle closed. The exact workspace
+  `rs-chat-authoritative-history` is stopped with fresh provider-state
+  verification after the last container check; the devrouter route listing
+  carries no route for this checkout. The `browser smoke blocked` and
+  `check:all blocked` evidence gaps above remain as recorded. Roadmap receipt
+  added to the local CodeAPI roadmap.
