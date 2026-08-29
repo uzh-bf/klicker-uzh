@@ -45,7 +45,6 @@ interface DisclaimerStatus {
 interface AssistantProps {
   readonly chatbot: { id: string; name: string; avatar?: string }
   readonly initialModeOptions: Record<string, string>
-  readonly initialModeOptionsAreFallback: boolean
 }
 
 interface ParticipationRequiredProps {
@@ -66,7 +65,6 @@ interface DisclaimerDeclinedProps {
 export function Assistant({
   chatbot,
   initialModeOptions,
-  initialModeOptionsAreFallback,
 }: AssistantProps) {
   const t = useTranslations()
   const embedded = useEmbedded()
@@ -125,12 +123,10 @@ export function Assistant({
         <RuntimeProvider
           chatbotId={chatbot.id}
           initialModeOptions={initialModeOptions}
-          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
         >
           <AssistantLayout
             chatbot={chatbot}
             initialModeOptions={initialModeOptions}
-            initialModeOptionsAreFallback={initialModeOptionsAreFallback}
           />
         </RuntimeProvider>
       </ChatUiProvider>
@@ -473,11 +469,9 @@ function ThreadSkeleton() {
 function SidebarMain({
   chatbot,
   initialModeOptions,
-  initialModeOptionsAreFallback,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
   initialModeOptions: Record<string, string>
-  initialModeOptionsAreFallback: boolean
 }) {
   const t = useTranslations()
   const { open } = useSidebar()
@@ -564,7 +558,6 @@ function SidebarMain({
             chatbotAvatar={chatbot.avatar ?? ''}
             chatbotName={chatbot.name}
             initialModeOptions={initialModeOptions}
-            initialModeOptionsAreFallback={initialModeOptionsAreFallback}
           />
         </div>
       </div>
@@ -575,11 +568,9 @@ function SidebarMain({
 function AssistantLayout({
   chatbot,
   initialModeOptions,
-  initialModeOptionsAreFallback,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
   initialModeOptions: Record<string, string>
-  initialModeOptionsAreFallback: boolean
 }) {
   const { showSidebar } = useChatUi()
   const isLoading = useChatStore((state) => state.isLoading)
@@ -591,7 +582,6 @@ function AssistantLayout({
         <SidebarMain
           chatbot={chatbot}
           initialModeOptions={initialModeOptions}
-          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
         />
       </SidebarProvider>
     )
@@ -620,7 +610,6 @@ function AssistantLayout({
             chatbotAvatar={chatbot.avatar ?? ''}
             chatbotName={chatbot.name}
             initialModeOptions={initialModeOptions}
-            initialModeOptionsAreFallback={initialModeOptionsAreFallback}
           />
         </div>
         <EmbeddedCreditsBar />

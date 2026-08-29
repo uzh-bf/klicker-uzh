@@ -89,7 +89,6 @@ type ThreadProps = {
   chatbotAvatar: string
   chatbotName: string
   initialModeOptions: Record<string, string>
-  initialModeOptionsAreFallback: boolean
 }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
@@ -267,7 +266,6 @@ export const Thread: FC<ThreadProps> = ({
   chatbotAvatar,
   chatbotName,
   initialModeOptions,
-  initialModeOptionsAreFallback,
 }) => {
   const t = useTranslations()
   const { embedded } = useChatUi()
@@ -315,7 +313,6 @@ export const Thread: FC<ThreadProps> = ({
           chatbotAvatar={chatbotAvatar}
           chatbotName={chatbotName}
           initialModeOptions={initialModeOptions}
-          initialModeOptionsAreFallback={initialModeOptionsAreFallback}
         />
 
         <ChatbotAvatarContext.Provider value={chatbotAvatar}>
@@ -471,55 +468,33 @@ const ThinkingDots: FC = () => {
   )
 }
 
-const useWelcomeModeOptions = (
-  initialModeOptions: Record<string, string>,
-  initialModeOptionsAreFallback = false
-) => {
+const useWelcomeModeOptions = (initialModeOptions: Record<string, string>) => {
   const { chatbotId } = useParams<{ chatbotId: string }>()
   const modeOptions = useSettingsStore((state) => state.modeOptions)
   const modeOptionsChatbotId = useSettingsStore(
     (state) => state.modeOptionsChatbotId
   )
-  const modeOptionsAreFallback = useSettingsStore(
-    (state) => state.modeOptionsAreFallback
-  )
+  const hasCurrentChatbotModeOptions = modeOptionsChatbotId === chatbotId
 
-  const hasCurrentChatbotModeOptions =
-    modeOptionsChatbotId === chatbotId && Object.keys(modeOptions).length > 0
-
-  return {
-    modeOptions: hasCurrentChatbotModeOptions
-      ? modeOptions
-      : initialModeOptions,
-    modeOptionsAreFallback: hasCurrentChatbotModeOptions
-      ? modeOptionsAreFallback
-      : initialModeOptionsAreFallback,
-  }
+  return hasCurrentChatbotModeOptions ? modeOptions : initialModeOptions
 }
 
 const ThreadWelcome: FC<{
   chatbotAvatar: string
   chatbotName: string
   initialModeOptions: Record<string, string>
-  initialModeOptionsAreFallback: boolean
 }> = ({
   chatbotAvatar,
   chatbotName,
   initialModeOptions,
-  initialModeOptionsAreFallback,
 }) => {
   const t = useTranslations()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
-  const { modeOptions, modeOptionsAreFallback } = useWelcomeModeOptions(
-    initialModeOptions,
-    initialModeOptionsAreFallback
-  )
+  const modeOptions = useWelcomeModeOptions(initialModeOptions)
   const activeMode = resolveSelectedMode(modeOptions, selectedMode)
   const modeLabel = activeMode ? formatModeLabel(t, activeMode) : null
   const modeDescription = activeMode
-    ? !modeOptionsAreFallback && Object.hasOwn(modeOptions, activeMode)
-      ? (modeOptions[activeMode]?.trim() ?? '')
-      : getModeDescription(t, activeMode, modeOptions)
+    ? getModeDescription(t, activeMode, modeOptions)
     : null
 
   return (
@@ -595,7 +570,7 @@ const ThreadWelcomeSuggestions: FC<{
 }> = ({ initialModeOptions }) => {
   const t = useTranslations()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
-  const { modeOptions } = useWelcomeModeOptions(initialModeOptions)
+  const modeOptions = useWelcomeModeOptions(initialModeOptions)
 
   if (Object.keys(modeOptions).length === 0) return null
 

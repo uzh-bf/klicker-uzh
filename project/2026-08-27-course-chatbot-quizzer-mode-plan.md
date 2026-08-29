@@ -209,7 +209,7 @@ The first pull request must improve existing chatbots automatically where the re
   - Add Quizzer icon, localized English and German labels and descriptions, and Quizzer-specific starter prompts.
   - Update mode switcher and settings consumers only as required by the effective metadata from S1.
   - Extend prompt compiler, mode metadata, settings, suggestions, and i18n tests at existing seams.
-  - Amend ADR 0021, update `docs/chat-platform.md`, and add the repository wiki log entry.
+  - Amend ADR 0021 and update `docs/chat-platform.md`. Keep the wiki change in Git history; the repository wiki workflow forbids separate log files.
   - Record that no repository skill matches course-chat prompt configuration; do not modify unrelated frontend or browser skills.
 - Do not mention future lecturer-question or personal-card tools in the Stage 1 prompt, expose tool names, claim exam equivalence, or duplicate fixed policy.
 - Static verification: focused source tests through pull-request CI, `git diff --check`, exact diff review, staged secret/personal-data inspection, and i18n key completeness. No runtime, browser, or live-model check.
@@ -245,11 +245,11 @@ Stage 2 is a future package, not an unimplemented slice of the Stage 1 pull requ
 
 ## Progress
 
-- Status: Stage 1 approved; S1 is active.
-- Completed: remote-state gate, isolated worktree and branch, current Klicker prompt and mode review, AI Buddy policy comparison, `v3-ai` structured-practice review, open personal-practice stack review, product-primitive pass, stack-boundary review, and native planning review.
-- Active slice: S1, effective modes and safe retrieval bindings.
+- Status: Stage 1 approved; S1 implementation is source-complete and awaiting immutable-slice review.
+- Completed: remote-state gate, isolated worktree and branch, current Klicker prompt and mode review, AI Buddy policy comparison, `v3-ai` structured-practice review, open personal-practice stack review, product-primitive pass, stack-boundary review, native planning review, approved plan commit, S1 implementation, static diff checks, and focused test updates for exact-head CI.
+- Active slice: S1 immutable commit, simplifier review, and slice review.
 - Remaining: S1, S2, integrated final review, push, draft pull request, and exact-head CI report.
 - Required delivery layer: source-complete draft pull request against `v3`.
 - Runtime: not started and excluded from this plan.
 - Withheld beyond terminal: browser evidence, ready marking, merge, deployment, live evaluation, database work, upstream integration, practice-stack mutation, and cleanup.
-- Next action: commit the approved plan, then implement S1 on the reviewed baseline.
+- Next action: commit S1 after staged data-hygiene checks, then run its required parallel reviews.
