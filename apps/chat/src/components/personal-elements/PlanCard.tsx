@@ -30,6 +30,16 @@ function asObject(value: unknown): Record<string, unknown> | null {
     : null
 }
 
+function nextRenderKey(
+  scope: string,
+  value: string,
+  occurrences: Map<string, number>
+) {
+  const occurrence = occurrences.get(value) ?? 0
+  occurrences.set(value, occurrence + 1)
+  return `${scope}:${value}:${occurrence}`
+}
+
 export function PlanCard({ part }: { part: PlanPart }) {
   const t = useTranslations()
   const message = useAuiState((state) => state.message)
@@ -53,6 +63,8 @@ export function PlanCard({ part }: { part: PlanPart }) {
       )
     : []
   const allDuplicates = plan?.status === 'all_duplicates'
+  const cardKeyOccurrences = new Map<string, number>()
+  const duplicateKeyOccurrences = new Map<string, number>()
 
   if (status === 'superseded') {
     return (
@@ -97,7 +109,11 @@ export function PlanCard({ part }: { part: PlanPart }) {
               typeof value.candidateId === 'string'
                 ? value.candidateId
                 : title
-            return <li key={key}>{title}</li>
+            return (
+              <li key={nextRenderKey('card', key, cardKeyOccurrences)}>
+                {title}
+              </li>
+            )
           })}
         </ol>
       ) : null}
@@ -110,7 +126,15 @@ export function PlanCard({ part }: { part: PlanPart }) {
           <p>{t('chat.personalElements.duplicatesSkipped')}</p>
           <ul className="mt-1 list-inside list-disc">
             {discardedDuplicates.map((duplicate) => (
-              <li key={duplicate.title}>{duplicate.title}</li>
+              <li
+                key={nextRenderKey(
+                  'duplicate',
+                  duplicate.title,
+                  duplicateKeyOccurrences
+                )}
+              >
+                {duplicate.title}
+              </li>
             ))}
           </ul>
         </div>

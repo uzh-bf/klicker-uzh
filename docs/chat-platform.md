@@ -490,8 +490,9 @@ Chat carries the UZH brand through the shadcn semantic tokens in `src/app/global
 
 The chat branch uses `@assistant-ui/react` 0.15's stable `GroupedParts` primitive. Local
 composition lives in `src/components/message-parts.tsx:AssistantMessageParts`: adjacent
-reasoning parts share one disclosure, adjacent tool calls share one group when there is more
-than one, and a single tool call keeps its direct result disclosure. Reasoning auto-opens only
+reasoning parts share one disclosure, while two or more adjacent visible non-personal tool calls
+share a group. The internal `select_response_type` tool stays hidden, and interactive personal-
+element tools keep their direct result disclosure even beside another tool. Reasoning auto-opens only
 while active until the participant manually chooses an open state; that manual choice then wins.
 The source-card section is derived from completed `doc_query` tool results but
 stays hidden for the full time the same assistant message is actively running,
@@ -885,7 +886,7 @@ Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat
 
 `history-rail.test.ts` pins active-path order, adjacent user/assistant pairing, orphan messages, complete text, stable message anchors, exclusion of reasoning/tool/error part landmarks, and running/partial/error states. Browser verification must additionally exercise desktop tick activation, the mobile history-trigger/dialog flow, complete-text popovers, focus, current-entry highlighting, rapid navigation, and EN/DE rail labels; the seeded local app can prove the navigation and error states without an upstream model key.
 
-The `Chatbot Source Citations` block in that spec exercises the citation pipeline against real persisted tool-call parts: card ordering and count, dedupe across two doc_query calls, a valid `[n]` rendering as a citation chip/link while an out-of-range marker stays literal, compact cards with hover/focus previews for cards and inline citations, click-scroll without navigation, all four activity-chip labels with their icon gating, the composer hint's standalone/embedded gate, and the message timestamp. Seed tool results in the raw MCP envelope shape (`result: { content: [{ type: 'text', text: '<json>' }], isError }`) — that is what production sends, and `convertApiMessageToMessage` hoists `isError` to the part. Put more than one tool-call part on a single message only when you mean to: `message-parts.tsx` wraps two or more adjacent ones in a collapsed group that a test must expand first.
+The `Chatbot Source Citations` block in that spec exercises the citation pipeline against real persisted tool-call parts: card ordering and count, dedupe across two doc_query calls, a valid `[n]` rendering as a citation chip/link while an out-of-range marker stays literal, compact cards with hover/focus previews for cards and inline citations, click-scroll without navigation, all four activity-chip labels with their icon gating, the composer hint's standalone/embedded gate, and the message timestamp. Seed tool results in the raw MCP envelope shape (`result: { content: [{ type: 'text', text: '<json>' }], isError }`) — that is what production sends, and `convertApiMessageToMessage` hoists `isError` to the part. Put more than one tool-call part on a single message only when you mean to: `message-parts.tsx` collapses adjacent visible non-personal tools, so a test must expand that group first. The hidden response selector and interactive personal-element tools are exceptions.
 
 The chat package uses Turbopack for development, test, and production builds
 (`apps/chat/package.json:scripts`). For a production-readiness gate, run the package check,

@@ -290,4 +290,38 @@ describe('personal-element cards', () => {
     expect(html).not.toContain('Should not be accepted')
     expect(html).not.toContain('<button')
   })
+
+  test('renders repeated plan titles without duplicate React keys', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const html = renderToStaticMarkup(
+        PersonalElementsProvider({
+          value: {
+            approvePlan: vi.fn(),
+            getPlanStatus: () => 'current' as const,
+          },
+          children: createElement(PlanCard, {
+            part: {
+              toolCallId: 'repeated-plan-tool',
+              argsText: JSON.stringify({
+                topic: 'Repeated titles',
+                cards: [{ title: 'Same title' }, { title: 'Same title' }],
+                discardedDuplicates: [
+                  { title: 'Existing title' },
+                  { title: 'Existing title' },
+                ],
+              }),
+              status: { type: 'running' },
+            },
+          }),
+        })
+      )
+
+      expect(html.match(/Same title/g)).toHaveLength(2)
+      expect(html.match(/Existing title/g)).toHaveLength(2)
+      expect(consoleError).not.toHaveBeenCalled()
+    } finally {
+      consoleError.mockRestore()
+    }
+  })
 })
