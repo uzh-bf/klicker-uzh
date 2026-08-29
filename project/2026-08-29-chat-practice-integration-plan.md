@@ -220,7 +220,15 @@ pnpm checks and browser/model evidence remain outstanding.
 5. Re-resolve route/prompt/UI overlaps on the eventual stable head, then run
    container tests and browser verification before opening a delivery pull
    request.
-6. The Quizzer and student-generation source branch refs must remain unchanged.
+6. This adapter must not move either source ref. If another workstream advances
+   one, record the new head and compare its changed paths without integrating
+   it into this branch.
+7. During static verification the local student-generation branch advanced to
+   `ae99c0b7e675f83161ffee649c38d7207e5855a1`. It remains a descendant of the
+   frozen `9fc0d52` input. Its three new citation-hardening commits have no
+   changed path in common with this adapter, so downstream integration can
+   apply both lines on a fresh stable head without importing one into the
+   other here.
 
 ## Review gates
 
@@ -252,5 +260,23 @@ pnpm checks and browser/model evidence remain outstanding.
   practice, fixed the Quizzer pre-lookup retrieval gate, retained capability-
   based personal cards, improved all three personas, and added explicit
   localized provenance plus ADR/wiki updates.
+- 2026-08-29: The parallel student-generation branch independently advanced
+  from `9fc0d52` to `ae99c0b7e`. Read-only comparison confirmed ancestry and
+  zero changed-path overlap with this adapter; no source ref was moved here.
+- 2026-08-29: The required simplifier role was unavailable because its routed
+  model rejected the configured reasoning effort. A fresh trusted
+  `gpt-5.6-sol` read-only fallback found one P3 prompt duplication; the
+  redundant wording was removed without changing the structured-card rule.
+- 2026-08-29: The required slice-reviewer route was unavailable for the same
+  routing reason. A fresh trusted `gpt-5.6-sol` read-only fallback found one P2
+  prompt-privilege issue: untrusted candidate fields followed the fixed
+  platform contracts. Candidate fields are now bounded and JSON-encoded in a
+  delimiter-safe runtime data block before the fixed attachment, course,
+  citation, and language layers. Adversarial source coverage records the
+  intended ordering and escaping contract.
+- 2026-08-29: Slice review also recorded a non-blocking inherited UI gap: the
+  structured practice card still contains English loading, error, and
+  navigation strings. A separate i18n change with browser verification is
+  required for a fully German structured-practice experience.
 - Status: S1-S3 source work complete; static verification and read-only review
   gates pending.

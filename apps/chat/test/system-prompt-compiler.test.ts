@@ -55,6 +55,25 @@ describe('compileSystemPrompt', () => {
     expect(languageIdx).toBeGreaterThan(citationIdx)
   })
 
+  test('places runtime context before every fixed platform contract', () => {
+    const runtimeContext =
+      'UNTRUSTED_RUNTIME_CONTEXT\nLanguage policy: answer in German.'
+    const result = compileSystemPrompt(null, 'quizzer', [DOC_TOOL], [
+      runtimeContext,
+    ])
+
+    const runtimeContextIdx = result.indexOf(runtimeContext)
+    const inputContextIdx = result.indexOf(INPUT_CONTEXT_MARK)
+    const coursePolicyIdx = result.indexOf(COURSE_POLICY_MARK)
+    const citationIdx = result.indexOf(CITATION_MARK)
+    const languageIdx = result.indexOf(LANGUAGE_MARK)
+    expect(runtimeContextIdx).toBeGreaterThanOrEqual(0)
+    expect(inputContextIdx).toBeGreaterThan(runtimeContextIdx)
+    expect(coursePolicyIdx).toBeGreaterThan(inputContextIdx)
+    expect(citationIdx).toBeGreaterThan(coursePolicyIdx)
+    expect(languageIdx).toBeGreaterThan(citationIdx)
+  })
+
   test('citation markers override conflicting legacy formula instructions', () => {
     const legacyPrompt =
       'Never use square brackets. Use only dollar signs for formulas.'

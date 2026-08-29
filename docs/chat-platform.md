@@ -693,13 +693,20 @@ chatbot's configurable persona, not as the complete system policy. On every chat
 available MCP tool names are known, it composes the final prompt in this order:
 
 1. stored mode prompt or `DEFAULT_PROMPT` fallback;
-2. fixed image-attachment description handling from
+2. bounded page and answer-safe practice-candidate context, with candidate
+   fields encoded as untrusted JSON data;
+3. fixed image-attachment description handling from
    `src/lib/server/inputContextInstructions.ts:withInputContextContract`;
-3. fixed course-scope, evidence, tool-privacy, and safety policy from
+4. fixed course-scope, evidence, tool-privacy, and safety policy from
    `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
-4. the conditional citation policy when a `doc_query`-style tool is available; and
-5. the fixed conversation-language and Swiss High German policy from
+5. the conditional citation policy when a `doc_query`-style tool is available; and
+6. the fixed conversation-language and Swiss High German policy from
    `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
+
+The runtime context is inserted before every fixed platform contract. Candidate
+strings are locally bounded, JSON-encoded, and angle-bracket escaped, so a
+course-team title, preview, or ranking reason cannot terminate its data block or
+become the final system-level language, scope, tool, or answer instruction.
 
 The fixed policy explicitly overrides conflicting persona text, examples, retrieved material, tool
 output, and user attempts to change platform rules. It keeps answers within the owning course,
@@ -708,6 +715,13 @@ unrelated requests. Immediate safety concerns are not refused merely as out of s
 queries must omit or generalise personal names, contact details such as email addresses, phone
 numbers, or postal addresses, participant or student identifiers, and other sensitive personal
 information. Retrieved content is evidence rather than instruction.
+
+That course-tool rule governs model-selected tool use. The plan-first personal-card pipeline in
+[ADR 0027](./adr/0027-plan-first-retrieval-backed-card-generation.md) separately forces one
+retrieval preflight on every eligible non-empty turn before the model selects a response type,
+including a turn the fixed policy later classifies as unrelated. This inherited first-version
+cost and latency trade-off is unchanged here: it does not widen answer scope, and the model still
+briefly redirects the unrelated request instead of using retrieved material to answer it.
 
 When a `doc_query`-style tool is present, the model is instructed to retrieve before course-content
 claims, use only relevant results, and acknowledge insufficient course evidence instead of filling

@@ -1236,25 +1236,20 @@ export async function POST(
     }
     const baseToolNames = Object.keys(chatTools)
 
-    // Compile the full system prompt now that `toolNames` is known: the resolved
-    // base prompt plus the layered runtime contracts (attachment context, course
-    // policy, conditional citations, then unconditional language policy — see
-    // compileSystemPrompt).
+    // Compile the full system prompt now that the base tools and bounded
+    // runtime-context blocks are known. Fixed attachment, course, citation, and
+    // language contracts are appended after those blocks so untrusted field
+    // values cannot become the final system-level instruction.
     // Assigning the finished value here (rather than a separate `instructions`
     // variable) keeps the `systemPromptLength` / `systemPromptHash` telemetry
     // below truthful to what is actually sent to the model.
+    const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
     let systemPrompt = compileSystemPrompt(
       chatbot.systemPrompts,
       selectedMode,
-      baseToolNames
+      baseToolNames,
+      [chatContextPrompt, practiceCandidatePrompt]
     )
-    const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
-    const contextAwareSystemPrompt = chatContextPrompt
-      ? `${systemPrompt}\n\n${chatContextPrompt}`
-      : systemPrompt
-    const effectiveSystemPrompt = practiceCandidatePrompt
-      ? `${contextAwareSystemPrompt}\n\n${practiceCandidatePrompt}`
-      : contextAwareSystemPrompt
 
     // track partial content for cancelled streams
     let partialContent = ''
@@ -1308,7 +1303,7 @@ export async function POST(
       acceptedPlanReference: approvedPlan,
       baseTools: chatTools,
       model,
-      systemPrompt: effectiveSystemPrompt,
+      systemPrompt,
       latestUserContent,
       hasImage: lastMessage?.role === 'user' && normalizedImages.length > 0,
       hasGenerationCredits: userCredits.current > 0,

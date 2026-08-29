@@ -41,10 +41,11 @@ function resolveBaseSystemPrompt(
 
 /**
  * Compile the full system prompt actually sent to the model: the resolved base
- * prompt with the layered runtime contracts applied in fixed order: attachment
- * context, course policy, conditional citations, then language. The final text
- * therefore reads base persona, attachment context, course policy, citation
- * policy, language policy.
+ * prompt with runtime data and fixed contracts applied in this order: base
+ * persona, bounded runtime context, attachment context, course policy,
+ * conditional citations, then language. Placing the fixed contracts after
+ * runtime data prevents untrusted page or practice-candidate fields from
+ * becoming the final system-level instruction.
  *
  * The citation contract is appended only when a doc_query-style RAG tool is
  * available for the request (decided inside `withCitationContract` from
@@ -55,10 +56,20 @@ function resolveBaseSystemPrompt(
 export function compileSystemPrompt(
   systemPrompts: unknown,
   selectedMode: string,
-  toolNames: readonly string[]
+  toolNames: readonly string[],
+  runtimeContextBlocks: readonly string[] = []
 ): string {
   const base = resolveBaseSystemPrompt(systemPrompts, selectedMode)
-  const inputContext = withInputContextContract(base)
+  const runtimeContext = runtimeContextBlocks
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .join('\n\n')
+  const contextualBase = runtimeContext
+    ? base.trimEnd().length > 0
+      ? `${base.trimEnd()}\n\n${runtimeContext}`
+      : runtimeContext
+    : base
+  const inputContext = withInputContextContract(contextualBase)
   const coursePolicy = withCoursePolicyContract(inputContext, toolNames)
   const citations = withCitationContract(coursePolicy, toolNames)
   return withLanguageStyleContract(citations)
