@@ -46,6 +46,8 @@ const mocks = vi.hoisted(() => ({
     execute: vi.fn(),
   })),
   isPersonalCardGenerationEnabled: vi.fn(),
+  lookupRelevantPracticeStacks: vi.fn(),
+  getPracticeStackForQuiz: vi.fn(),
   generateToolOptions: [] as GenerateToolOptions[],
 }))
 
@@ -91,6 +93,17 @@ vi.mock('@klicker-uzh/prisma', () => ({
 vi.mock('@/src/services/mcpClients', () => ({
   getAggregatedMCPTools: mocks.getAggregatedMCPTools,
 }))
+
+vi.mock('@/src/services/studentPracticeMcp', async () => {
+  const actual = await vi.importActual<
+    typeof import('@/src/services/studentPracticeMcp')
+  >('@/src/services/studentPracticeMcp')
+  return {
+    ...actual,
+    lookupRelevantPracticeStacks: mocks.lookupRelevantPracticeStacks,
+    getPracticeStackForQuiz: mocks.getPracticeStackForQuiz,
+  }
+})
 
 vi.mock('@/src/services/credits', () => ({
   CreditsService: {
@@ -153,6 +166,7 @@ function createRequest(
   options: {
     parentId?: string
     approvedPlan?: { messageId: string; toolCallId: string }
+    selectedMode?: string
   } = {}
 ) {
   return new NextRequest('http://localhost/api/chatbots/chatbot-1/chat', {
@@ -163,11 +177,46 @@ function createRequest(
       threadId: 'thread-1',
       ...(options.parentId ? { parentId: options.parentId } : {}),
       selectedModel: 'gpt-4.1',
-      selectedMode: 'explainer',
+      selectedMode: options.selectedMode ?? 'explainer',
       assistantMessageId,
       ...(options.approvedPlan ? { approvedPlan: options.approvedPlan } : {}),
     }),
   })
+}
+
+function chatbotForPracticeMode(mode: 'tutor' | 'quizzer' | 'QuickCheck') {
+  return {
+    id: 'chatbot-1',
+    courseId: 'course-1',
+    systemPrompts: {
+      [mode]: { prompt: `Prompt for ${mode}.` },
+    },
+    allowedModelIds: [],
+    allowedReasoningEffortsByModel: {},
+    modelSelection: true,
+    openaiApiKey: null,
+    openaiBaseUrl: null,
+    mcpConfigurations: [
+      {
+        chatMode: mode,
+        isEnabled: true,
+        priority: 0,
+        allowedTools: ['doc_query'],
+        parameters: null,
+        mcpServer: {
+          id: 'server-1',
+          name: 'Course knowledge base',
+          url: 'https://mcp.example.test',
+          authType: 'none',
+          authSecret: null,
+          parameters: null,
+          isActive: true,
+          passChatbotId: false,
+          chatbotIdHeader: null,
+        },
+      },
+    ],
+  }
 }
 
 function emptyRetrievalStep() {
@@ -293,7 +342,11 @@ describe('retrieval route wiring', () => {
     mocks.generateToolOptions.length = 0
     process.env.OPENAI_BASE_URL = 'https://example.test/v1'
 
-    mocks.withChatbotAuth.mockResolvedValue({ participantId: 'participant-1' })
+    mocks.withChatbotAuth.mockResolvedValue({
+      participantId: 'participant-1',
+      authMode: 'account',
+      chatbot: { courseId: 'course-1' },
+    })
     mocks.checkDisclaimerStatus.mockResolvedValue({
       required: false,
       accepted: true,
@@ -365,6 +418,8 @@ describe('retrieval route wiring', () => {
     mocks.buildPromptCacheRequest.mockResolvedValue(null)
     mocks.listPersonalElements.mockResolvedValue([])
     mocks.isPersonalCardGenerationEnabled.mockResolvedValue(true)
+    mocks.lookupRelevantPracticeStacks.mockResolvedValue({ candidates: [] })
+    mocks.getPracticeStackForQuiz.mockResolvedValue(null)
     mocks.createGenerateCardsTool.mockImplementation((options) => {
       mocks.generateToolOptions.push(options)
       return { execute: vi.fn() }
@@ -388,6 +443,83 @@ describe('retrieval route wiring', () => {
       toUIMessageStream: mocks.toUIMessageStream,
     }))
   })
+
+  test.each(['tutor', 'quizzer'] as const)(
+    'composes course-team practice and personal-card tools in %s mode',
+    async (selectedMode) => {
+      mocks.chatbotFindUnique.mockResolvedValueOnce(
+        chatbotForPracticeMode(selectedMode)
+      )
+      mocks.lookupRelevantPracticeStacks.mockResolvedValueOnce({
+        candidates: [
+          {
+            questionRef: 'opaque-question-ref',
+            stackTitle: 'Portfolio risk',
+            sourcePracticeQuizTitle: 'Week 3 practice',
+            supportedElementTypes: ['SC'],
+            shortQuestionPreview: 'Which risk can diversification reduce?',
+            relevanceScore: 0.95,
+            srsScore: 0.8,
+            reason: 'Matches the current topic.',
+          },
+        ],
+      })
+
+      const response = await POST(
+        createRequest(
+          'Practise portfolio risk.',
+          `assistant-${selectedMode}`,
+          { selectedMode }
+        ),
+        { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+      )
+
+      expect(response.status).toBe(200)
+      expect(mocks.lookupRelevantPracticeStacks).toHaveBeenCalledOnce()
+      expect(mocks.createProposeCardPlanTool).toHaveBeenCalledOnce()
+      const options = mocks.streamText.mock.calls[0]?.[0] as {
+        instructions: string
+        tools: Record<string, unknown>
+      }
+      expect(options.tools).toHaveProperty('start_student_practice_quiz')
+      expect(options.tools).toHaveProperty('propose_card_plan')
+      expect(options.instructions).toContain(
+        'Relevant course-team practice-question candidates'
+      )
+      expect(options.instructions).toContain(
+        'They are not AI-generated and must not be described as exam questions.'
+      )
+    }
+  )
+
+  test.each(['explainer', 'QuickCheck'] as const)(
+    'keeps personal-card generation capability-based without lecturer practice in %s mode',
+    async (selectedMode) => {
+      if (selectedMode === 'QuickCheck') {
+        mocks.chatbotFindUnique.mockResolvedValueOnce(
+          chatbotForPracticeMode(selectedMode)
+        )
+      }
+
+      const response = await POST(
+        createRequest(
+          'Generate cards about CAPM.',
+          `assistant-${selectedMode}`,
+          { selectedMode }
+        ),
+        { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+      )
+
+      expect(response.status).toBe(200)
+      expect(mocks.lookupRelevantPracticeStacks).not.toHaveBeenCalled()
+      expect(mocks.createProposeCardPlanTool).toHaveBeenCalledOnce()
+      const options = mocks.streamText.mock.calls[0]?.[0] as {
+        tools: Record<string, unknown>
+      }
+      expect(options.tools).not.toHaveProperty('start_student_practice_quiz')
+      expect(options.tools).toHaveProperty('propose_card_plan')
+    }
+  )
 
   test('forces retrieval and bounds empty results for an ordinary question', async () => {
     const response = await POST(
@@ -866,6 +998,20 @@ describe('retrieval route wiring', () => {
     expect(options.instructions).not.toContain(
       'retrieve course material first, then call propose_card_plan'
     )
+    const acceptedPlanIdx = options.instructions.indexOf(
+      'The student accepted this exact final card plan.'
+    )
+    const inputContextIdx = options.instructions.indexOf('Attachment context:')
+    const coursePolicyIdx = options.instructions.indexOf('Course scope:')
+    const citationIdx = options.instructions.indexOf('Citation format:')
+    const languageIdx = options.instructions.indexOf(
+      'Swiss High German orthography'
+    )
+    expect(acceptedPlanIdx).toBeGreaterThanOrEqual(0)
+    expect(inputContextIdx).toBeGreaterThan(acceptedPlanIdx)
+    expect(coursePolicyIdx).toBeGreaterThan(inputContextIdx)
+    expect(citationIdx).toBeGreaterThan(coursePolicyIdx)
+    expect(languageIdx).toBeGreaterThan(citationIdx)
     expect(options.tools).not.toHaveProperty('propose_card_plan')
     expect(options.tools).not.toHaveProperty('course_retrieval_unavailable')
     expect(options.prepareStep({ stepNumber: 0, steps: [] })).toMatchObject({

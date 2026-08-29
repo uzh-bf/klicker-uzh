@@ -21,7 +21,9 @@ import {
   MarkdownText,
   normalizeCustomMathTags,
 } from '@/src/components/markdown-text'
+import { hasAvailableChatMode } from '@/src/lib/config/modes'
 import { formatReasoningEffort } from '@/src/lib/config/reasoning'
+import { useSettingsStore } from '@/src/stores/settingsStore'
 import {
   getPersonalElementToolPresentation,
   isInternalChatTool,
@@ -161,6 +163,9 @@ type ChatErrorPartData = {
  */
 const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
   const t = useTranslations()
+  const hasAvailableMode = useSettingsStore((state) =>
+    hasAvailableChatMode(state.modeOptions)
+  )
 
   return (
     <div
@@ -178,16 +183,18 @@ const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
           {`: ${data.message}`}
         </p>
       </div>
-      <ActionBarPrimitive.Reload asChild>
-        <button
-          type="button"
-          data-cy="chat-retry-message-button"
-          className="hover:bg-destructive/15 focus-visible:ring-ring inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 font-medium touch-manipulation focus-visible:outline-none focus-visible:ring-1 fine-pointer:min-h-8"
-        >
-          <RefreshCwIcon className="size-4" aria-hidden />
-          {t('chat.message.retry')}
-        </button>
-      </ActionBarPrimitive.Reload>
+      {hasAvailableMode && (
+        <ActionBarPrimitive.Reload asChild>
+          <button
+            type="button"
+            data-cy="chat-retry-message-button"
+            className="hover:bg-destructive/15 focus-visible:ring-ring inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 font-medium touch-manipulation focus-visible:outline-none focus-visible:ring-1 fine-pointer:min-h-8"
+          >
+            <RefreshCwIcon className="size-4" aria-hidden />
+            {t('chat.message.retry')}
+          </button>
+        </ActionBarPrimitive.Reload>
+      )}
     </div>
   )
 }
@@ -201,6 +208,9 @@ const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
  */
 const ChatStoppedPart: FC = () => {
   const t = useTranslations()
+  const hasAvailableMode = useSettingsStore((state) =>
+    hasAvailableChatMode(state.modeOptions)
+  )
 
   return (
     <div
@@ -211,16 +221,18 @@ const ChatStoppedPart: FC = () => {
         <CircleStopIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
         <p>{t('chat.message.stoppedNotice')}</p>
       </div>
-      <ActionBarPrimitive.Reload asChild>
-        <button
-          type="button"
-          data-cy="chat-retry-stopped-button"
-          className="hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 font-medium touch-manipulation focus-visible:outline-none focus-visible:ring-1 fine-pointer:min-h-8"
-        >
-          <RefreshCwIcon className="size-4" aria-hidden />
-          {t('chat.message.retry')}
-        </button>
-      </ActionBarPrimitive.Reload>
+      {hasAvailableMode && (
+        <ActionBarPrimitive.Reload asChild>
+          <button
+            type="button"
+            data-cy="chat-retry-stopped-button"
+            className="hover:bg-accent hover:text-foreground focus-visible:ring-ring inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 font-medium touch-manipulation focus-visible:outline-none focus-visible:ring-1 fine-pointer:min-h-8"
+          >
+            <RefreshCwIcon className="size-4" aria-hidden />
+            {t('chat.message.retry')}
+          </button>
+        </ActionBarPrimitive.Reload>
+      )}
     </div>
   )
 }

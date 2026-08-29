@@ -8,9 +8,9 @@ import {
   type CardPlan,
   cardPlanSchema,
   type GeneratedCardCandidate,
-  generatedCardCandidateSchema,
   MAX_CARDS,
   normalizeRetrievedChunks,
+  parseStoredGeneratedCardCandidate,
 } from './contracts'
 
 export type PersistedChatContentPart = {
@@ -169,11 +169,11 @@ export function extractUnsavedCandidates(
         continue
       }
       for (const value of values) {
-        const parsed = generatedCardCandidateSchema.safeParse(value)
-        if (!parsed.success || savedCandidateIds.has(parsed.data.candidateId)) {
+        const parsed = parseStoredGeneratedCardCandidate(value)
+        if (!parsed || savedCandidateIds.has(parsed.candidateId)) {
           continue
         }
-        candidates.set(parsed.data.candidateId, parsed.data)
+        candidates.set(parsed.candidateId, parsed)
       }
     }
   }

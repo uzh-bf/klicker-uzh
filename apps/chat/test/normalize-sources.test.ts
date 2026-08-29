@@ -66,14 +66,83 @@ describe('normalizeSourcesFromParts', () => {
 
     expect(result).toEqual([
       {
-        id: 'candidate:source-1:chunk-1',
+        id: 'candidate:candidate-1:source-1',
         index: 1,
         type: 'document',
         title: 'Lecture 1',
         page: 4,
-        url: 'https://example.com/lecture-1.pdf',
+        url: 'https://example.com/lecture-1.pdf#page=4',
+        elementReference: {
+          sourceId: 'source-1',
+          kind: 'DOCUMENT',
+          title: 'Lecture 1',
+          canonicalUrl: 'https://example.com/lecture-1.pdf',
+          chunkIds: ['chunk-1'],
+          locators: [{ type: 'PAGE_RANGE', pageFrom: 4, pageTo: 4 }],
+        },
       },
     ])
+  })
+
+  test('keeps grouped disjoint locators as one generated-card source', () => {
+    const result = normalizeSourcesFromParts([
+      toolCallPart('generate_cards', {
+        candidates: [
+          {
+            candidateId: 'candidate-1',
+            sources: [
+              {
+                sourceId: 'script',
+                kind: 'DOCUMENT',
+                title: 'Course script',
+                canonicalUrl: 'https://example.com/script.pdf',
+                chunkIds: ['chunk-1', 'chunk-7'],
+                locators: [
+                  {
+                    type: 'PAGE_RANGE',
+                    pageFrom: 1,
+                    pageTo: 4,
+                    labelFrom: 'i',
+                    labelTo: 'iv',
+                  },
+                  { type: 'PAGE_RANGE', pageFrom: 7, pageTo: 9 },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    ])
+
+    expect(result).toEqual([
+      {
+        id: 'candidate:candidate-1:script',
+        index: 1,
+        type: 'document',
+        title: 'Course script',
+        page: 1,
+        labeledPage: 'i',
+        url: 'https://example.com/script.pdf#page=1',
+        elementReference: {
+          sourceId: 'script',
+          kind: 'DOCUMENT',
+          title: 'Course script',
+          canonicalUrl: 'https://example.com/script.pdf',
+          chunkIds: ['chunk-1', 'chunk-7'],
+          locators: [
+            {
+              type: 'PAGE_RANGE',
+              pageFrom: 1,
+              pageTo: 4,
+              labelFrom: 'i',
+              labelTo: 'iv',
+            },
+            { type: 'PAGE_RANGE', pageFrom: 7, pageTo: 9 },
+          ],
+        },
+      },
+    ])
+    expect(JSON.stringify(result)).not.toContain('excerpt')
   })
 
   test('does not qualify sources from a failed generated-card result', () => {
@@ -485,7 +554,7 @@ describe('normalizeSourcesFromParts', () => {
 
     expect(result).toHaveLength(20)
     expect(result[19]).toMatchObject({
-      id: 'candidate:source-19:chunk-19',
+      id: 'candidate:candidate-1:source-19',
       index: 20,
     })
   })

@@ -1,5 +1,7 @@
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import { withCitationContract } from '@/src/lib/server/citationInstructions'
+import { withCoursePolicyContract } from '@/src/lib/server/coursePolicyInstructions'
+import { withInputContextContract } from '@/src/lib/server/inputContextInstructions'
 import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions'
 
 /**
@@ -10,8 +12,8 @@ import { withLanguageStyleContract } from '@/src/lib/server/languageInstructions
  * "tidy" without a behaviour review — the chat route relies on each quirk):
  * - A stored mode entry whose `prompt` is empty/absent falls through to the
  *   default for that mode, then to `''`. An empty stored prompt is never sent.
- * - An unknown mode (no stored entry and no `DEFAULT_PROMPT` entry, e.g.
- *   `explainer` while the default only defines `tutor`) yields `''`.
+ * - An unknown mode with no stored entry and no `DEFAULT_PROMPT` entry yields
+ *   `''`.
  */
 function resolveBaseSystemPrompt(
   systemPrompts: unknown,
@@ -38,22 +40,57 @@ function resolveBaseSystemPrompt(
 }
 
 /**
- * Compile the full system prompt actually sent to the model: the resolved base
- * prompt with the layered runtime contracts applied in fixed order — citation
- * (inner) then language style (outer), so the final text reads base, then
- * citation, then language.
- *
- * The citation contract is appended only when a doc_query-style RAG tool is
- * available for the request (decided inside `withCitationContract` from
- * `toolNames`). The language-style contract is unconditional, because a stored
- * lecturer prompt replaces `DEFAULT_PROMPT` entirely and Swiss High German
- * orthography must still be enforced for every chatbot.
+ * Resolve the configurable persona and bounded runtime data that must precede
+ * every fixed platform contract. The route may append server-controlled flow
+ * instructions or accepted-plan data to this base before applying the fixed
+ * contracts once at the final model-input boundary.
+ */
+export function composeSystemPromptBase(
+  systemPrompts: unknown,
+  selectedMode: string,
+  runtimeContextBlocks: readonly string[] = []
+): string {
+  const base = resolveBaseSystemPrompt(systemPrompts, selectedMode)
+  const runtimeContext = runtimeContextBlocks
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .join('\n\n')
+  const contextualBase = runtimeContext
+    ? base.trimEnd().length > 0
+      ? `${base.trimEnd()}\n\n${runtimeContext}`
+      : runtimeContext
+    : base
+  return contextualBase
+}
+
+/**
+ * Apply the non-removable platform contracts to a complete system-prompt base.
+ * The citation contract is conditional on a doc_query-style RAG tool; the
+ * attachment, course, and language contracts are unconditional.
+ */
+export function applyFixedSystemPromptContracts(
+  systemPromptBase: string,
+  toolNames: readonly string[]
+): string {
+  const inputContext = withInputContextContract(systemPromptBase)
+  const coursePolicy = withCoursePolicyContract(inputContext, toolNames)
+  const citations = withCitationContract(coursePolicy, toolNames)
+  return withLanguageStyleContract(citations)
+}
+
+/**
+ * Compile a complete system prompt when no later system-level data or flow
+ * instructions need to be inserted. Final request assembly should instead
+ * compose its base first and apply the fixed contracts at the model boundary.
  */
 export function compileSystemPrompt(
   systemPrompts: unknown,
   selectedMode: string,
-  toolNames: readonly string[]
+  toolNames: readonly string[],
+  runtimeContextBlocks: readonly string[] = []
 ): string {
-  const base = resolveBaseSystemPrompt(systemPrompts, selectedMode)
-  return withLanguageStyleContract(withCitationContract(base, toolNames))
+  return applyFixedSystemPromptContracts(
+    composeSystemPromptBase(systemPrompts, selectedMode, runtimeContextBlocks),
+    toolNames
+  )
 }

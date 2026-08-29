@@ -9,9 +9,14 @@ export default {
     modes: {
       switcherLabel: 'Chat mode',
       tutor: 'Tutor',
-      tutorDescription: 'Get patient, step-by-step help with your questions.',
+      tutorDescription:
+        'Get step-by-step guidance with focused questions, hints, and feedback.',
       explainer: 'Explainer',
-      explainerDescription: 'Get clear explanations of difficult concepts.',
+      explainerDescription:
+        'Get direct explanations with definitions and course-based examples.',
+      quizzer: 'Quizzer',
+      quizzerDescription:
+        'Practise one grounded question at a time, using course-team questions when available or clearly labelled AI-generated questions.',
     },
     settingsPanel: {
       title: 'Settings',
@@ -189,6 +194,12 @@ export default {
       compareConcepts: 'Compare two concepts',
       compareConceptsPrompt:
         'Compare two concepts from the course materials. Explain the key difference, when each applies, and cite the relevant sources.',
+      startPracticeQuiz: 'Start a practice quiz',
+      startPracticeQuizPrompt:
+        'Start a practice quiz based on the course materials. Choose a suitable topic and ask me one question at a time.',
+      practiceWeakSpot: 'Practise a weak spot',
+      practiceWeakSpotPrompt:
+        'Help me practise a topic I find difficult. First ask which topic, then use one relevant course-team practice question when available or one clearly labelled AI-generated question based on the course materials.',
     },
     message: {
       creditsUsed:
@@ -210,6 +221,8 @@ export default {
     },
     composer: {
       placeholder: 'Write a message...',
+      modeUnavailable:
+        'No chat mode is currently available. Please contact your lecturer.',
       send: 'Send message',
       stop: 'Stop response',
       disclaimerHint:
@@ -244,6 +257,10 @@ export default {
       courseMaterialUnavailable:
         'I could not find usable evidence in the course materials for this request. Please try a more specific question.',
       imageAnalyzed: 'Image analyzed',
+    },
+    practice: {
+      courseTeamQuestion: 'Course-team practice question',
+      archivedCourseTeamQuestion: 'Archived course-team practice question',
     },
     personalElements: {
       planTitle: 'Card plan',
@@ -283,10 +300,16 @@ export default {
       practiceNow: 'Practice now',
       revisionUpdated: 'Updated · version {version}',
       revisionConflict: 'This card changed before the revision completed.',
+      revisionInsufficientEvidence:
+        'The saved card was not changed because the course material did not provide enough evidence for this revision.',
     },
     sources: {
       title: 'Sources',
       page: 'p. {page}',
+      pages: 'pp. {from}–{to}',
+      pdfPage: 'PDF p. {page}',
+      pdfPages: 'PDF pp. {from}–{to}',
+      unavailable: 'Source link unavailable',
       video: 'Video',
       image: 'Image',
     },
@@ -1142,6 +1165,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       sourceLinked: 'source-linked',
       notReviewed: 'not reviewed by the course team',
       sources: 'Sources',
+      generationSources: 'Sources used to generate this card',
       page: 'p. {page}',
       previous: 'Previous',
       next: 'Next',

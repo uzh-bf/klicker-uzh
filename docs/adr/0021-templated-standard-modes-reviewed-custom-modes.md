@@ -19,11 +19,30 @@ styles.
 Prompt influence is two-tier, and prompt compilation is layered, not
 replacing:
 
-- **Standard modes** (`tutor`, `explainer`) always exist and are maintained by
-  the platform. Lecturers freely edit a small set of constrained persona
-  fields — course name, subject domain, language of instruction, optional
-  scope note — that the server compiles into the standard prompts. No
-  approval, because these fields can only aim the bot, not disarm it.
+- **Standard modes** (`tutor`, `explainer`, `quizzer`) are maintained by the
+  platform and compose additively with stored modes. A stored standard-mode
+  prompt overrides only that mode's persona; a missing entry uses the platform
+  default. The platform owns standard-mode labels and descriptions. A stored
+  `enabled: false` explicitly opts a chatbot out of one mode without a schema
+  migration.
+- Tutor and Explainer are general standard candidates. Quizzer is
+  capability-gated: it appears only when the server can resolve a restricted
+  course `doc_query` binding. An exact Quizzer MCP configuration takes
+  precedence per server. Otherwise Quizzer may inherit only a Tutor binding
+  that exposes an exact `doc_query` tool or a required single-tool alias named
+  `doc_query`; unrestricted and wildcard configurations are never inherited.
+  A disabled exact Quizzer row blocks inheritance from that server. After MCP
+  discovery, a Quizzer request fails closed with the existing required-tool
+  response if no `doc_query` tool is available; optional retrieval outages keep
+  their existing graceful-degradation behavior in Tutor and Explainer.
+- The server may hide any mode that cannot satisfy the chatbot's required-MCP
+  policy. The same effective-mode resolver drives participant presentation,
+  settings data, request validation, and request-time MCP selection, so a
+  hidden mode cannot be selected with a crafted request.
+- Lecturers may later edit a small set of constrained persona fields — course
+  name, subject domain, language of instruction, optional scope note — that
+  the server compiles into standard prompts. No approval is needed because
+  these fields can only aim the bot, not disarm it.
 - **Custom modes** let a lecturer author a name, description, and free persona
   text. That text is compiled as the persona section on top of the same
   scaffolding; publication of a new or edited custom mode requires team
@@ -40,3 +59,34 @@ replacing:
 - The compile step becomes the contract every runtime must honor (ADR 0019).
 - Few-shot examples, not prompt text, are the primary self-service steering
   lever for behavior.
+- Existing chatbots receive changed standard defaults automatically without a
+  data migration unless they store an override or explicit opt-out. Stage 1
+  Quizzer asks AI-generated questions grounded in course material; it does not
+  imply access to lecturer-authored questions, personal practice cards, or an
+  exam-equivalent question bank.
+
+## Amendment — 2026-08-29
+
+Quizzer now composes two answer-safe question sources. It prefers a relevant
+structured question from a course-team activity when the participant practice
+adapter returns one; otherwise it may create one clearly labelled AI-generated
+question from retrieved course material. The structured card, not the model,
+owns answer submission and feedback, so the model neither reproduces the
+question nor reveals its answer in prose. Neither source is described as an
+exam question or an exam prediction.
+
+This does not make personal-card generation mode-specific. Plan-first card
+generation remains available in any effective mode that has retrieval, an
+enabled generation flag, and participant credits, as defined by
+[ADR 0027](./0027-plan-first-retrieval-backed-card-generation.md). Generated
+candidates are labelled AI-generated, source-linked, and not reviewed by the
+course team; their durable source snapshots retain evidence lineage without
+asserting correctness or review, as defined by
+[ADR 0042](./0042-generated-elements-own-source-reference-snapshots.md).
+
+The Quizzer retrieval gate runs before either downstream capability is set up.
+Tutor and Quizzer may register the course-team practice adapter; Explainer and
+custom modes do not. Existing chatbot prompt rows still require no migration:
+platform persona updates apply automatically wherever a stored mode prompt does
+not override them, while fixed language, scope, grounding, and safety layers
+continue to compile for every mode.

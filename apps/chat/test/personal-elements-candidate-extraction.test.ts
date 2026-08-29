@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { parseStoredGeneratedCardCandidate } from '../src/lib/server/personalElements/contracts'
 import {
   extractUnsavedCandidates,
   isFailedGenerationContent,
@@ -38,6 +39,216 @@ function message(
 }
 
 describe('unsaved candidate extraction', () => {
+  test('drops unsafe locators and source bodies from flat stored candidates', () => {
+    expect(
+      parseStoredGeneratedCardCandidate({
+        ...candidate,
+        candidateId: 'legacy-candidate',
+        sources: [
+          {
+            sourceId: 'source-1',
+            chunkId: 'chunk-1',
+            url: 'https://example.org/script.pdf?sig=expired',
+            page: 0.5,
+            metadata: { excerpt: 'Old source text' },
+          },
+        ],
+      })
+    ).toMatchObject({
+      sources: [
+        {
+          sourceId: 'source-1',
+          kind: 'DOCUMENT',
+          chunkIds: ['chunk-1'],
+          locators: [],
+        },
+      ],
+    })
+  })
+
+  test('keeps grouped stored candidates when hardened links are removed', () => {
+    expect(
+      parseStoredGeneratedCardCandidate({
+        ...candidate,
+        candidateId: 'grouped-candidate',
+        sources: [
+          {
+            sourceId:
+              's3://user:password@bucket/course?token=temporary#section',
+            kind: 'WEB',
+            title:
+              'ftp://user:password@example.org/course?token=temporary#section',
+            canonicalUrl:
+              'https://example.org/chapter#access_token%3Dtemporary',
+            chunkIds: ['chunk-1'],
+            locators: [
+              {
+                type: 'WEB_ANCHOR',
+                url: 'https://example.org/chapter#access_token%3Dtemporary',
+              },
+            ],
+          },
+        ],
+      })
+    ).toMatchObject({
+      sources: [
+        {
+          sourceId: 's3://bucket/course',
+          kind: 'WEB',
+          title: 'course',
+          chunkIds: ['chunk-1'],
+          locators: [],
+        },
+      ],
+    })
+  })
+
+  test('canonicalizes grouped stored locators before save', () => {
+    expect(
+      parseStoredGeneratedCardCandidate({
+        ...candidate,
+        candidateId: 'grouped-candidate',
+        sources: [
+          {
+            sourceId: 'source-1',
+            kind: 'DOCUMENT',
+            title: 'Course script',
+            chunkIds: [
+              '//user:password@example.org/chunk-2?token=temporary',
+              'chunk-1',
+              '//user:password@example.org/chunk-2?token=temporary',
+            ],
+            locators: [
+              {
+                type: 'PAGE_RANGE',
+                pageFrom: 7,
+                pageTo: 9,
+                labelFrom:
+                  'ftp://user:password@example.org/page-vii?token=temporary',
+              },
+              { type: 'PAGE_RANGE', pageFrom: 3, pageTo: 4 },
+              { type: 'PAGE_RANGE', pageFrom: 4, pageTo: 8 },
+            ],
+          },
+          {
+            sourceId: 'source-2',
+            kind: 'WEB',
+            title: 'Course page',
+            chunkIds: ['chunk-3'],
+            locators: [
+              {
+                type: 'WEB_ANCHOR',
+                url: 'https://example.org/chapter#section-2',
+              },
+              {
+                type: 'WEB_ANCHOR',
+                url: 'https://example.org/chapter#section-2',
+              },
+            ],
+          },
+        ],
+      })
+    ).toMatchObject({
+      sources: [
+        {
+          sourceId: 'source-1',
+          chunkIds: ['//example.org/chunk-2', 'chunk-1'],
+          locators: [
+            {
+              type: 'PAGE_RANGE',
+              pageFrom: 3,
+              pageTo: 9,
+              labelTo: 'page-vii',
+            },
+          ],
+        },
+        {
+          sourceId: 'source-2',
+          locators: [
+            {
+              type: 'WEB_ANCHOR',
+              url: 'https://example.org/chapter#section-2',
+            },
+          ],
+        },
+      ],
+    })
+  })
+
+  test('keeps grouped sources readable when sanitized identities collide', () => {
+    expect(
+      parseStoredGeneratedCardCandidate({
+        ...candidate,
+        candidateId: 'colliding-sources',
+        sources: [
+          {
+            sourceId: 's3://first:secret@bucket/script',
+            kind: 'DOCUMENT',
+            title: 'Course script',
+            chunkIds: ['s3://first:secret@bucket/chunk-1'],
+            locators: [{ type: 'PAGE_RANGE', pageFrom: 1, pageTo: 1 }],
+          },
+          {
+            sourceId: 's3://second:secret@bucket/script',
+            kind: 'DOCUMENT',
+            title: 'Course script',
+            chunkIds: ['s3://second:secret@bucket/chunk-1'],
+            locators: [{ type: 'PAGE_RANGE', pageFrom: 2, pageTo: 2 }],
+          },
+        ],
+      })
+    ).toMatchObject({
+      sources: [
+        { sourceId: 's3://bucket/script', chunkIds: ['s3://bucket/chunk-1'] },
+        { sourceId: 'stored-source-2', chunkIds: ['stored-chunk-2'] },
+      ],
+    })
+  })
+
+  test('keeps distinct same-source chunk IDs when sanitization collides', () => {
+    const grouped = parseStoredGeneratedCardCandidate({
+      ...candidate,
+      candidateId: 'colliding-grouped-chunks',
+      sources: [
+        {
+          sourceId: 'script',
+          kind: 'DOCUMENT',
+          title: 'Course script',
+          chunkIds: [
+            's3://first:secret@bucket/chunk-1',
+            's3://second:secret@bucket/chunk-1',
+          ],
+          locators: [{ type: 'PAGE_RANGE', pageFrom: 1, pageTo: 1 }],
+        },
+      ],
+    })
+    const flat = parseStoredGeneratedCardCandidate({
+      ...candidate,
+      candidateId: 'colliding-flat-chunks',
+      sources: [
+        {
+          sourceId: 'script',
+          chunkId: 's3://first:secret@bucket/chunk-1',
+          page: 1,
+        },
+        {
+          sourceId: 'script',
+          chunkId: 's3://second:secret@bucket/chunk-1',
+          page: 2,
+        },
+      ],
+    })
+
+    expect(grouped?.sources[0]?.chunkIds).toEqual([
+      's3://bucket/chunk-1',
+      'stored-chunk-2',
+    ])
+    expect(flat?.sources[0]?.chunkIds).toEqual([
+      's3://bucket/chunk-1',
+      'stored-chunk-2',
+    ])
+  })
+
   test('excludes candidates that already have saved linkage', () => {
     const messages = [
       message('saved-generation', {

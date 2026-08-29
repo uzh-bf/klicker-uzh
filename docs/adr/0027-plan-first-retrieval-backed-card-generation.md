@@ -104,3 +104,20 @@ is correct or reviewed. Creation tools are additionally behind the
 fail-closed, participant-and-chatbot-targeted `personal-card-generation` flag;
 saved-card practice and correction paths remain available while creation is
 disabled.
+
+## Amendment — 2026-08-29
+
+Per-card generation has an explicit structured abstention outcome. Insufficient
+evidence produces no candidate and no model-written explanation of retrieval
+limitations. A ready card is self-contained and cites only chunks returned by
+its own retrieval.
+
+The durable citation contract is an element source reference, grouped once per
+source material rather than once per chunk. It retains exact cited chunk
+lineage and ordered, disjoint locators: physical page spans with
+publisher-labelled endpoints for documents, or provider-supplied anchors for
+web sources. Display metadata and locators are copied onto the saved personal
+element, while excerpts and source bodies are not copied into the generated
+tool result or saved element. Missing current access disables the link but does
+not delete the saved reference. See ADR 0042 for the corresponding
+lecturer-element ownership boundary.

@@ -1602,6 +1602,45 @@ enum ElementOrderType {
   SPACED_REPETITION
 }
 
+enum ElementSourceKind {
+  DOCUMENT
+  WEB
+}
+
+type ElementSourceLocator {
+  label: String
+  labelFrom: String
+  labelTo: String
+  pageFrom: Int
+  pageTo: Int
+  type: ElementSourceLocatorType!
+  url: String
+}
+
+input ElementSourceLocatorInput {
+  label: String
+  labelFrom: String
+  labelTo: String
+  pageFrom: Int
+  pageTo: Int
+  type: ElementSourceLocatorType!
+  url: String
+}
+
+enum ElementSourceLocatorType {
+  PAGE_RANGE
+  WEB_ANCHOR
+}
+
+type ElementSourceReference {
+  canonicalUrl: String
+  chunkIds: [String!]!
+  kind: ElementSourceKind!
+  locators: [ElementSourceLocator!]!
+  sourceId: String!
+  title: String!
+}
+
 type ElementStack {
   description: String
   displayName: String
@@ -3092,7 +3131,7 @@ type PersonalElement {
   partialCorrectCount: Int!
   sourceMessageId: String
   sourceToolCallId: String
-  sources: [PersonalElementSource!]
+  sources: [ElementSourceReference!]
   type: ElementType!
   updatedAt: Date!
   version: Int!
@@ -3115,19 +3154,14 @@ enum PersonalElementOrigin {
   AUTHORED
 }
 
-type PersonalElementSource {
-  chunkId: String!
-  metadata: Json
-  page: Float
-  sourceId: String!
-  title: String
-  url: String
-}
-
 input PersonalElementSourceInput {
-  chunkId: String!
+  canonicalUrl: String
+  chunkId: String
+  chunkIds: [String!]
+  kind: ElementSourceKind
+  locators: [ElementSourceLocatorInput!]
   metadata: Json
-  page: Float
+  page: Int
   sourceId: String!
   title: String
   url: String

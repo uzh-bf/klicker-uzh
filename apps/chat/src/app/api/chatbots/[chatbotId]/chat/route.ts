@@ -1,5 +1,5 @@
-import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
 import { type ReasoningEffort } from '@/src/lib/config/reasoning'
+import { isDocQueryToolName } from '@/src/lib/sources/normalizeSources'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   getAllowedReasoningEffortsForModel,
@@ -11,11 +11,18 @@ import {
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
+  resolveEffectiveChatModeOptions,
+  resolveEffectiveMCPConfigurations,
+} from '@/src/lib/server/effectiveChatModes'
+import {
   getParentSpanContext,
   getTraceIdForMessage,
   isAiTelemetryEnabled,
 } from '@/src/lib/server/langfuseTracing'
-import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
+import {
+  applyFixedSystemPromptContracts,
+  composeSystemPromptBase,
+} from '@/src/lib/server/systemPromptCompiler'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
@@ -232,12 +239,6 @@ function getModel(chatbot: Chatbot, modelConfig: ChatModelConfig) {
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object') return null
   return value as Record<string, unknown>
-}
-
-function getSupportedChatModes(systemPrompts: unknown): Set<string> {
-  const configuredModes = asObject(systemPrompts)
-  const modeKeys = configuredModes ? Object.keys(configuredModes) : []
-  return new Set(modeKeys.length > 0 ? modeKeys : Object.keys(DEFAULT_PROMPT))
 }
 
 function truncateString(
@@ -679,11 +680,7 @@ export async function POST(
     ),
     threadId: z.string().min(1).nullable().optional(),
     selectedModel: z.string().min(1),
-    selectedMode: z
-      .string()
-      .optional()
-      .transform((val) => val?.toLowerCase())
-      .default('tutor'),
+    selectedMode: z.string().optional().default('tutor'),
     reasoningEffort: z.string().min(1).optional().default('none'),
     chatContext: z.unknown().optional(),
     parentId: z.string().min(1).nullable().optional(),
@@ -773,8 +770,9 @@ export async function POST(
   let currentThreadId = threadId
   let userMessageId: string | null = null
 
-  // fetch the chatbot with its enabled MCP configurations (its stored
-  // systemPrompts feed compileSystemPrompt once the tool set is known below)
+  // Fetch every MCP configuration so an explicitly disabled Quizzer row can
+  // block inheritance from the matching Tutor server. Only effective enabled
+  // configurations reach tool setup below.
   let mcpServersWithConfigs: MCPServerWithConfig[] = []
   let chatbot = null
   let enabledKnowledgeBaseId: string | undefined
@@ -784,9 +782,6 @@ export async function POST(
       where: { id: chatbotId },
       include: {
         mcpConfigurations: {
-          where: {
-            isEnabled: true,
-          },
           include: {
             mcpServer: true,
           },
@@ -811,7 +806,11 @@ export async function POST(
     return NextResponse.json({ error: 'Chatbot not found' }, { status: 404 })
   }
 
-  if (!getSupportedChatModes(chatbot.systemPrompts).has(selectedMode)) {
+  const modeOptions = resolveEffectiveChatModeOptions(
+    chatbot.systemPrompts,
+    chatbot.mcpConfigurations
+  )
+  if (!Object.hasOwn(modeOptions, selectedMode)) {
     return NextResponse.json(
       { error: `Unsupported chat mode: ${selectedMode}` },
       { status: 400 }
@@ -888,25 +887,10 @@ export async function POST(
     }
   }
 
-  const enabledMCPConfigurations = chatbot.mcpConfigurations ?? []
-  const selectedMCPConfigurations = enabledMCPConfigurations.filter(
-    (config) => config.chatMode === selectedMode
+  const selectedMCPConfigurations = resolveEffectiveMCPConfigurations(
+    chatbot.mcpConfigurations ?? [],
+    selectedMode
   )
-  const chatbotHasRequiredMCP = enabledMCPConfigurations.some(
-    (config) => asObject(config.parameters)?.required === true
-  )
-  const selectedModeHasRequiredMCP = selectedMCPConfigurations.some(
-    (config) => asObject(config.parameters)?.required === true
-  )
-  if (chatbotHasRequiredMCP && !selectedModeHasRequiredMCP) {
-    return NextResponse.json(
-      {
-        error: 'Required MCP tool unavailable',
-        code: REQUIRED_MCP_UNAVAILABLE_CODE,
-      },
-      { status: 503 }
-    )
-  }
 
   mcpServersWithConfigs = selectedMCPConfigurations.map((config) => ({
     server: {
@@ -1151,11 +1135,26 @@ export async function POST(
       throw error
     }
 
+    const mcpToolNames = Object.keys(mcpTools || {})
+    if (
+      selectedMode === 'quizzer' &&
+      !mcpToolNames.some(isDocQueryToolName)
+    ) {
+      await failOrDiscardUnstartedClaim('mcp.quizzer')
+      return NextResponse.json(
+        {
+          error: 'Required MCP tool unavailable',
+          code: REQUIRED_MCP_UNAVAILABLE_CODE,
+        },
+        { status: 503 }
+      )
+    }
+
     let practiceCandidatePrompt = ''
     let practiceCandidateCount = 0
     const practiceCandidateRefs = new Map<string, string>()
 
-    if (selectedMode === 'tutor') {
+    if (selectedMode === 'tutor' || selectedMode === 'quizzer') {
       try {
         const lookupResult = await lookupRelevantPracticeStacks({
           authMode,
@@ -1238,26 +1237,16 @@ export async function POST(
       ...(mcpTools || {}),
       ...studentPracticeTools,
     }
-    const baseToolNames = Object.keys(chatTools)
 
-    // Compile the full system prompt now that `toolNames` is known: the resolved
-    // base prompt plus the layered runtime contracts (conditional citation, then
-    // unconditional Swiss High German language style — see compileSystemPrompt).
-    // Assigning the finished value here (rather than a separate `instructions`
-    // variable) keeps the `systemPromptLength` / `systemPromptHash` telemetry
-    // below truthful to what is actually sent to the model.
-    let systemPrompt = compileSystemPrompt(
+    // Compose the configurable persona and bounded runtime data first. Personal
+    // card setup may append server flow instructions or accepted-plan data;
+    // the fixed platform contracts are applied once after that final addition.
+    const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
+    const systemPromptBase = composeSystemPromptBase(
       chatbot.systemPrompts,
       selectedMode,
-      baseToolNames
+      [chatContextPrompt, practiceCandidatePrompt]
     )
-    const chatContextPrompt = formatKlickerChatContextForPrompt(chatContext)
-    const contextAwareSystemPrompt = chatContextPrompt
-      ? `${systemPrompt}\n\n${chatContextPrompt}`
-      : systemPrompt
-    const effectiveSystemPrompt = practiceCandidatePrompt
-      ? `${contextAwareSystemPrompt}\n\n${practiceCandidatePrompt}`
-      : contextAwareSystemPrompt
 
     // track partial content for cancelled streams
     let partialContent = ''
@@ -1311,7 +1300,7 @@ export async function POST(
       acceptedPlanReference: approvedPlan,
       baseTools: chatTools,
       model,
-      systemPrompt: effectiveSystemPrompt,
+      systemPrompt: systemPromptBase,
       latestUserContent,
       hasImage: lastMessage?.role === 'user' && normalizedImages.length > 0,
       hasGenerationCredits: userCredits.current > 0,
@@ -1330,7 +1319,6 @@ export async function POST(
       )
     }
     abortCardGenerationLease = cardGeneration.abortLease
-    systemPrompt = cardGeneration.instructions
     const generationTools = cardGeneration.tools
     const explicitToolOrder = cardGeneration.toolOrder
     const {
@@ -1341,6 +1329,13 @@ export async function POST(
       generationEligible,
     } = cardGeneration.telemetry
     const toolNames = Object.keys(generationTools)
+    // This is the final system-prompt assembly boundary. Applying fixed
+    // contracts here keeps page, candidate, and accepted-plan data below the
+    // non-removable attachment, course, citation, and language policies.
+    const systemPrompt = applyFixedSystemPromptContracts(
+      cardGeneration.instructions,
+      toolNames
+    )
 
     const promptCacheRequest =
       routing.source === 'default'

@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-26'
+timestamp: '2026-08-27'
 tags:
   - frontend
   - chat
@@ -20,7 +20,7 @@ tags:
 > framing is obsolete. Staged doc/skill changes for that exploration:
 > `project/plans_future/2026-07-07-wiki-skills-migration-roadmap.md`.
 
-**This app is an island — do not apply the pages-router conventions here.** It is the only Next.js **app-router** app (port 3004), talks to the backend's Prisma models directly through its own API route handlers (no GraphQL ops), uses **zustand** for client state (nowhere else in the repo), and renders chat via **assistant-ui** (`@assistant-ui/react`) over the Vercel AI SDK (`@ai-sdk/*`). The current runtime keeps the app's `useChatResponse` transport adapter after the U5 `useAISDKRuntime` spike gate was not verifiable without a live model key. Domain models live in `packages/prisma` `chat.prisma` (chatbots, threads, messages, credits as `Decimal(18,6)`).
+**This app is an island — do not apply the pages-router conventions here.** It is the only Next.js **app-router** app (port 3004), uses **zustand** for client state (nowhere else in the repo), and renders chat via **assistant-ui** (`@assistant-ui/react`) over the Vercel AI SDK (`@ai-sdk/*`). Most Chat API handlers still access the backend's Prisma models directly, but participant practice-card operations use persisted GraphQL operations through the server-only adapter described below. The current runtime keeps the app's `useChatResponse` transport adapter after the U5 `useAISDKRuntime` spike gate was not verifiable without a live model key. Domain models live in `packages/prisma` `chat.prisma` (chatbots, threads, messages, credits as `Decimal(18,6)`).
 
 The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and production builds (`apps/chat/package.json:scripts`). Control, manage, and PWA production builds retain Webpack for service-worker compatibility. The chat production image copies the Next standalone server from `.next/standalone` and starts `apps/chat/server.js` (`apps/chat/Dockerfile`). Verify that path with a production build and container smoke test; a successful source build alone does not prove the runtime copy layout.
 
@@ -43,12 +43,15 @@ one-shot approval claim before forcing `generate_cards`.
 Each generation accepts at most five cards. Every generated card performs its
 own bounded retrieval and structured model call. The nested retrieval sends
 exactly the shared `doc_query` input field `question`; strict MCP servers reject
-unknown input fields. Its cited chunk IDs must be a
-non-empty subset of that retrieval, and only bounded source metadata is
-persisted. A card that cannot be produced returns one of the bounded failure
-codes `retrieval_unavailable`, `insufficient_evidence`, or `generation_failed`;
-raw provider and retrieval diagnostics never cross the Chat API. The chat API
-joins saved state by
+unknown input fields. Its cited chunk IDs must be a non-empty subset of that
+retrieval. The generator returns either a ready card or structured
+`insufficient_evidence`; an abstention contains no card prose and never enters
+the candidate list. Ready cards may not expose cited chunk IDs or the retrieval
+protocol markers in participant-facing content. Only grouped, bounded,
+source-body-free references are persisted. A card that cannot be produced
+returns one of the bounded failure codes `retrieval_unavailable`,
+`insufficient_evidence`, or `generation_failed`; raw provider and retrieval
+diagnostics never cross the Chat API. The chat API joins saved state by
 assistant message, tool call, and candidate ID, so a frozen tool result never
 claims a card was saved. Cards are acted on individually: Save creates the
 participant-owned row, while Discard writes a
@@ -64,7 +67,8 @@ fails closed with an explicit retry action if durable decision state is still
 unavailable.
 `list_personal_elements` returns the participant's course-scoped compact rows;
 `revise_personal_element` updates a saved row with an expected-version check
-and keeps the card's source-linked origin wording. Candidate cards do not have a
+and atomically replaces the complete card and source-reference set only after a
+grounded ready result. Insufficient evidence leaves both unchanged. Candidate cards do not have a
 separate unsaved-revision path; each generated card is either saved or
 discarded. The server-only GraphQL service is the single owner of
 authorization, caps, and revision semantics.
@@ -228,9 +232,10 @@ Participant practice questions reach the chat through a second FastMCP server, n
 
 `pnpm --filter @klicker-uzh/mcp-student smoke:negative` exercises those rejections against a running service (the lecturer service has a matching `smoke:negative`). Answers are addressed by short-lived signed `questionRef` values (`MCP_STUDENT_QUESTION_REF_TTL_SECONDS`, default 20 min), so the chat never handles raw element ids or answer keys.
 
-Three properties matter when debugging it:
+Four properties matter when debugging it:
 
-- The lookup runs **only in `tutor` mode** (`src/app/api/chatbots/[chatbotId]/chat/route.ts`); other modes never register `start_student_practice_quiz`.
+- The lookup runs only in **Tutor and Quizzer** (`src/app/api/chatbots/[chatbotId]/chat/route.ts`). Explainer and custom modes never register `start_student_practice_quiz`.
+- Quizzer proves that MCP discovery returned a `doc_query`-style tool before candidate lookup. A missing retrieval tool therefore cannot trigger a course-team lookup or personal-card generation setup.
 - Student practice authorization requires a matching chatbot/course pair and an
   existing `Participation` row for the participant. `Participation.isActive`
   is only the course-leaderboard opt-in and must not gate MCP practice access.
@@ -447,9 +452,44 @@ The settings panel translates model capabilities into student-facing description
 render deployment registry descriptions, because those can expose provider or router terminology
 and are not localized. Automatic, reasoning, general-purpose, and fallback models each have a
 localized explanation in `packages/i18n/messages/en.ts` and `de.ts`; the read-only automatic
-selection state uses the same plain-language contract. Known Tutor and Explainer modes use their
-localized purpose descriptions in `src/components/mode-switcher.tsx`; custom modes fall back to
-their configured description.
+selection state uses the same plain-language contract. Known Tutor, Explainer, and Quizzer modes
+use their platform-owned localized purpose descriptions in `src/components/mode-switcher.tsx`;
+custom modes use their configured description.
+
+`src/lib/server/effectiveChatModes.ts` is the server-authoritative mode seam. It composes platform
+defaults with stored per-mode overrides and custom modes, honours `enabled: false`, excludes modes
+that cannot satisfy the chatbot's required-MCP policy, and exposes Quizzer only with a provably
+restricted course `doc_query` binding. Exact Quizzer configuration shadows Tutor inheritance per
+MCP server, including disabled exact rows; inherited optional bindings are narrowed to
+`doc_query`, while required single-tool aliases preserve their raw tool restriction and remain
+fail-closed. The layout, participant settings endpoint, chat request validation, and request-time
+MCP selection all use this resolver. The browser receives resolved mode descriptions but never
+MCP server configuration. If explicit opt-outs leave no effective mode, the client replaces the
+composer with a localized unavailable notice and suppresses edit and retry generation actions
+instead of allowing requests the server would reject.
+
+Standard prompt changes apply automatically to chatbots that do not store an override for that
+mode. Quizzer conducts one grounded question at a time. It may select an answer-safe question from
+a course-team activity through `start_student_practice_quiz`, or create a clearly labelled
+AI-generated question from retrieved course material. Neither source is presented as an exam
+question or an exam prediction. Chatbots without a safe course retrieval binding do not expose
+Quizzer. The request-time `doc_query` gate runs before course-team candidate lookup or personal-card
+setup, so an optional binding that discovers no retrieval tool fails closed without starting those
+downstream workflows. Optional retrieval outages can still degrade gracefully in Tutor and
+Explainer. No stored prompt or database migration is required.
+
+Question and card capabilities compose independently of the visible mode persona:
+
+| Mode | Model-authored practice question | Course-team structured question | Personal-card plan and generation |
+| --- | --- | --- | --- |
+| Tutor | A focused tutoring question when useful | Available when answer-safe candidates exist | Available when retrieval, feature flag, and credits permit |
+| Explainer | Not a practice-loop default | Not registered | Available when retrieval, feature flag, and credits permit |
+| Quizzer | One clearly labelled AI-generated question at a time | Preferred when a relevant candidate exists | Available on an explicit student request when retrieval, feature flag, and credits permit |
+| Custom | Defined by the reviewed persona | Not registered | Available when retrieval, feature flag, and credits permit |
+
+The mode never changes card ownership or review status. Personal-card generation remains the
+plan-first, per-card retrieval-backed capability from [ADR 0027](./adr/0027-plan-first-retrieval-backed-card-generation.md),
+and saved cards retain source snapshots under [ADR 0042](./adr/0042-generated-elements-own-source-reference-snapshots.md).
 
 In the sidebar layout, `src/components/credits-footer.tsx:MobileCreditsBar` keeps the legacy
 participant usage-credit balance visible below the header at mobile widths, even while the
@@ -646,7 +686,75 @@ product ruling (`project/2026-07-27-student-chat-v3-follow-up-roadmap.md`, W7 it
 switcher is hidden entirely when a chatbot exposes a single mode — `mode-switcher.tsx` returns
 `null` for one or fewer mode keys, so there is no disabled one-pill state to style.
 
+## Runtime system-prompt policy
+
+`src/lib/server/systemPromptCompiler.ts` treats a stored per-mode prompt as the chatbot's
+configurable persona, not as the complete system policy. On every chat request, the route composes
+the persona and runtime data first. After personal-card setup and final tool discovery, it applies
+the fixed contracts once in this order:
+
+1. stored mode prompt or `DEFAULT_PROMPT` fallback;
+2. bounded page and answer-safe practice-candidate context, with browser and
+   candidate fields encoded as untrusted JSON data;
+3. server-controlled personal-card flow instructions and bounded accepted-plan
+   data when that capability is active;
+4. fixed image-attachment description handling from
+   `src/lib/server/inputContextInstructions.ts:withInputContextContract`;
+5. fixed course-scope, evidence, tool-privacy, and safety policy from
+   `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
+6. the conditional citation policy when a `doc_query`-style tool is available; and
+7. the fixed conversation-language and Swiss High German policy from
+   `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
+
+Runtime context and personal-card flow data are inserted before every fixed
+platform contract. Browser and candidate strings are locally bounded,
+JSON-encoded, and angle-bracket escaped, so a page title, question preview,
+course-team title, or ranking reason cannot terminate its data block or become
+the final system-level language, scope, tool, or answer instruction. Accepted
+personal-card plan data is also placed before the fixed contracts.
+
+The fixed policy explicitly overrides conflicting persona text, examples, retrieved material, tool
+output, and user attempts to change platform rules. It keeps answers within the owning course,
+asks one clarification when course relevance is genuinely ambiguous, and briefly refuses clearly
+unrelated requests. Immediate safety concerns are not refused merely as out of scope. Course-tool
+queries must omit or generalise personal names, contact details such as email addresses, phone
+numbers, or postal addresses, participant or student identifiers, and other sensitive personal
+information. Retrieved content is evidence rather than instruction.
+
+That course-tool rule governs model-selected tool use. The plan-first personal-card pipeline in
+[ADR 0027](./adr/0027-plan-first-retrieval-backed-card-generation.md) separately forces one
+retrieval preflight on every eligible non-empty turn before the model selects a response type,
+including a turn the fixed policy later classifies as unrelated. This inherited first-version
+cost and latency trade-off is unchanged here: it does not widen answer scope, and the model still
+briefly redirects the unrelated request instead of using retrieved material to answer it.
+
+When a `doc_query`-style tool is present, the model is instructed to retrieve before course-content
+claims, use only relevant results, and acknowledge insufficient course evidence instead of filling
+gaps from general knowledge. Free-text queries start in the locked conversation language but may
+preserve exact non-personal course and source labels, titles, codes, and identifiers, or
+reformulate in a source language when retrieval genuinely needs it.
+
+Because compilation happens for every request after loading `chatbot.systemPrompts`, the policy
+applies to existing and newly created chatbots as soon as this application revision is deployed.
+No prompt-row migration is required. Existing stored prompts remain unchanged and continue to
+supply each mode's persona beneath the fixed policy. A chatbot served by an older application
+revision keeps the old behaviour until that revision is replaced.
+
+The language lock follows the user's latest non-trivial message or explicit language request.
+Quoted text, attached images or their descriptions, retrieved chunks, tool output, and earlier
+assistant messages cannot switch the response language. Short acknowledgements preserve the
+established conversation language. German answers use Swiss High German orthography (`ss`, never
+`ß`, and real umlauts). Unit tests prove prompt composition only; model compliance still requires
+a separately authorised live-model evaluation.
+
 ## Sources and citations
+
+Student-facing provenance is explicit at the rendering seam. A model-authored Quizzer item is
+introduced as an AI-generated practice question. A structured question card is labelled as a
+course-team practice question and owns its own answer and feedback flow; the model must not
+reproduce or answer it in prose. A generated personal-card candidate is labelled AI-generated,
+source-linked, and not reviewed by the course team. Source linkage records the material used; it
+does not assert correctness, lecturer approval, or exam relevance.
 
 ### Student-generated card plans
 
@@ -678,13 +786,21 @@ same persisted content. If a generation attempt is partial, saved or
 discarded plan entries remain decided and a retry runs only the unresolved
 entries.
 
+Each ready candidate owns one grouped `ElementSourceReference` per source
+material. The reference contains the title snapshot, source kind, exact cited
+chunk IDs as internal lineage, an optional non-expiring safe canonical URL, and
+ordered page spans or provider-supplied web anchors. Chat reads physical and
+publisher-labelled pages from each cited chunk, collapses adjacent pages, and
+retains disjoint ranges. It copies no excerpt or source body into the tool
+result, GraphQL request, or saved card.
+
 An answer's sources are **derived from the message's own tool-call parts**, not carried in a
 dedicated API field or database column ([ADR 0004](./adr/0004-chat-citations-from-tool-call-parts.md)).
 `src/lib/sources/normalizeSources.ts` is the single seam: everything downstream — the source
 cards, the inline `[n]` chips, the friendly activity chip, and the server-side prompt contract —
 keys off the same tool-name predicates. Retrieval tools use `isDocQueryToolName`; the
-`generate_cards` tool contributes its bounded source metadata through the same normalizer, with a
-stable `candidate:<sourceId>:<chunkId>` key so card-local citations and
+`generate_cards` tool contributes its bounded source references through the same normalizer, with a
+stable `candidate:<candidateId>:<sourceId>` key so card-local citations and
 the message source area resolve the same source. A tool the relevant predicate misses silently
 loses all four at once. The compact twelve-source display bound applies only
 to doc-query results; candidate citations retain the bounded generation
@@ -708,7 +824,7 @@ long-name regression case lives in `test/mcp-clients.test.ts`.
 an already-parsed object. FastMCP may put the JSON payload in a `structuredContent.result` string;
 the normalizer unwraps that compatibility layer before applying the same rules. It treats the
 pipeline's literal `"N/A"` as absent; it dedupes retrieval results by file/page/url and normalized
-video range (`startSec`/`endSec`) and generated-card results by their source/chunk key, then
+video range (`startSec`/`endSec`) and generated-card results by their candidate/source key, then
 numbers what survives **1..N in first-appearance order across every retrieval or card tool call in
 one message**. The compact doc-query registry is capped at `MAX_DOC_QUERY_SOURCES`, while the
 candidate-card registry has its own `MAX_CANDIDATE_SOURCES` bound. Both registries still share one
@@ -782,6 +898,14 @@ document/media results aligned, and the `min(230px, 100%)` floor keeps a track
 from forcing horizontal overflow in containers narrower than 230px (mobile and
 embedded mode).
 
+Generated-card citations render one card per source material. Publisher labels
+lead when they differ from physical PDF pages, and every disjoint page span or
+exact web anchor gets its own action. Public PDF actions open the first physical
+page of that span. Private, local, signed, expired, or otherwise unproven URLs
+remain passive snapshots labelled unavailable. Saved-card management always
+shows these references; active-recall practice hides them until the answer is
+revealed.
+
 The activity chip's four states come from the pure `getDocQueryChipState` in `tool-fallback.tsx`.
 "No results" is claimed only for a payload that actually **parsed**: a cancelled call leaves the
 literal `'Loading...'` / `'Executing...'` placeholder from `src/hooks/useChatResponse.ts` behind as
@@ -817,13 +941,8 @@ formula, surrounding Markdown, and assistant-row identity.
 
 Chat has no locale switcher: the locale comes from the `NEXT_LOCALE` cookie and falls back to `en` ([ADR 0001](./adr/0001-chat-locale-from-cookie.md)). It is resolved **directly in the chat-local `getRequestConfig`** (`src/types/i18n.ts`). Relying on `setRequestLocale`/`requestLocale` alone produces a split brain — `<html lang>` follows the cookie while server-side `getTranslations()` stays on the default locale. Messages come from the static `messagesByLocale` map exported there, which the root layout reuses: Turbopack cannot build a dynamic-import context for a bare package subpath (`import('@klicker-uzh/i18n/messages/' + locale)`), so the dynamic form silently resolves nothing in this app. Strings live in `packages/i18n/messages/{en,de}.ts`; `apps/chat/src/types/app.d.ts` enforces en/de key parity through a `DeepIntersection`, so a missing key fails `pnpm --filter @klicker-uzh/chat check` rather than at runtime. German addressed to students is informal (`Du`/`Dein`/`Dir`), instructors are "Dozierende", and Swiss `ss` is used instead of `ß`.
 
-Model answers are held to the same orthography server-side: the chat route wraps every system
-prompt in `withLanguageStyleContract` (`src/lib/server/languageInstructions.ts`) — unconditionally,
-unlike the citation contract, because a lecturer's stored prompt replaces `DEFAULT_PROMPT`
-entirely and a rule written only in the default text silently disappears the moment a custom
-prompt is saved. The contract asks for Swiss High German ("ss" not "ß", real umlauts, never
-ae/oe/ue). As with the citation contract, only prompt assembly is unit-tested; model compliance
-needs a live key the devcontainer does not carry.
+Model-answer language and orthography are fixed by the runtime system-prompt policy above, not by
+the UI locale or by a lecturer's stored persona prompt.
 
 Two recurring traps in this app's strings:
 
@@ -871,8 +990,11 @@ The assistant UI registers the retrieval card through `src/components/tools-ui/r
 
 The self-contained devcontainer starts the seeded local MCP fixture through
 `post-start.sh`. Benibot's Tutor and Explainer configurations already point to
-`http://localhost:1417/mcp` and allow `doc_query`; the runtime namespaces the
-tool as `KB_doc_query`. Keep Auto Mode selected, then prompt Benibot with “Use
+`http://localhost:1417/mcp` and allow `doc_query`; Quizzer therefore inherits
+the restricted Tutor binding automatically. The runtime namespaces the tool
+as `KB_doc_query`; if discovery does not return that tool, Quizzer fails closed
+while Tutor and Explainer retain their optional-retrieval behavior. Keep Auto
+Mode selected, then prompt Benibot with “Use
 the local MCP tool to test the integration. Search for
 `portfolio diversification` and tell me the exact marker it returns.” The
 end-to-end pass requires a completed tool call, `KLICKER_LOCAL_MCP_OK` in the

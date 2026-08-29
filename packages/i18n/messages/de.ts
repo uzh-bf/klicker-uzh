@@ -10,10 +10,13 @@ export default {
       switcherLabel: 'Chat-Modus',
       tutor: 'Tutor',
       tutorDescription:
-        'Erhalte geduldige, schrittweise Hilfe bei Deinen Fragen.',
+        'Erhalte schrittweise Begleitung mit gezielten Fragen, Hinweisen und Rückmeldungen.',
       explainer: 'Erklärer',
       explainerDescription:
-        'Erhalte klare Erklärungen zu schwierigen Konzepten.',
+        'Erhalte direkte Erklärungen mit Definitionen und Beispielen aus den Kursunterlagen.',
+      quizzer: 'Quiz',
+      quizzerDescription:
+        'Übe jeweils eine fundierte Frage, wenn möglich aus dem Kursteam oder sonst klar als KI-generiert gekennzeichnet.',
     },
     settingsPanel: {
       title: 'Einstellungen',
@@ -192,6 +195,12 @@ export default {
       compareConcepts: 'Zwei Konzepte vergleichen',
       compareConceptsPrompt:
         'Vergleiche zwei Konzepte anhand der Kursunterlagen. Erkläre den wichtigsten Unterschied, wann welches Konzept gilt, und nenne die relevanten Quellen.',
+      startPracticeQuiz: 'Übungsquiz starten',
+      startPracticeQuizPrompt:
+        'Starte ein Übungsquiz auf Basis der Kursunterlagen. Wähle ein passendes Thema und stelle mir jeweils eine Frage.',
+      practiceWeakSpot: 'Unsicheres Thema üben',
+      practiceWeakSpotPrompt:
+        'Hilf mir, ein Thema zu üben, bei dem ich noch unsicher bin. Frage zuerst nach dem Thema und verwende danach wenn möglich eine passende Übungsfrage des Kursteams oder sonst eine klar als KI-generiert gekennzeichnete Frage auf Basis der Kursunterlagen.',
     },
     message: {
       creditsUsed:
@@ -213,6 +222,8 @@ export default {
     },
     composer: {
       placeholder: 'Nachricht schreiben...',
+      modeUnavailable:
+        'Für diesen Chatbot ist derzeit kein Chatmodus verfügbar. Wende Dich bitte an Deine Dozierenden.',
       send: 'Nachricht senden',
       stop: 'Antwort stoppen',
       disclaimerHint:
@@ -248,6 +259,10 @@ export default {
       courseMaterialUnavailable:
         'Ich konnte in den Kursmaterialien keine passenden Belege für diese Anfrage finden. Bitte stelle eine spezifischere Frage.',
       imageAnalyzed: 'Bild analysiert',
+    },
+    practice: {
+      courseTeamQuestion: 'Übungsfrage des Kursteams',
+      archivedCourseTeamQuestion: 'Archivierte Übungsfrage des Kursteams',
     },
     personalElements: {
       planTitle: 'Kartenplan',
@@ -290,10 +305,16 @@ export default {
       revisionUpdated: 'Aktualisiert · Version {version}',
       revisionConflict:
         'Diese Karte wurde vor Abschluss der Überarbeitung geändert.',
+      revisionInsufficientEvidence:
+        'Die gespeicherte Karte wurde nicht geändert, weil die Kursmaterialien nicht genügend Belege für diese Überarbeitung enthalten.',
     },
     sources: {
       title: 'Quellen',
       page: 'S. {page}',
+      pages: 'S. {from}–{to}',
+      pdfPage: 'PDF-S. {page}',
+      pdfPages: 'PDF-S. {from}–{to}',
+      unavailable: 'Quellenlink nicht verfügbar',
       video: 'Video',
       image: 'Bild',
     },
@@ -1155,6 +1176,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       sourceLinked: 'mit Quellen verknüpft',
       notReviewed: 'nicht vom Kursteam geprüft',
       sources: 'Quellen',
+      generationSources: 'Quellen für die Erstellung dieser Karte',
       page: 'S. {page}',
       previous: 'Zurück',
       next: 'Weiter',
