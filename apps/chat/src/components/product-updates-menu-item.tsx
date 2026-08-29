@@ -41,6 +41,13 @@ export function ProductUpdatesMenuItem() {
   // again. Radix's own restore does not survive this modal — measured in the
   // browser: focus ends up on `<body>` — so the entry is refocused explicitly
   // once the dialog is gone.
+  //
+  // Dismissing the last card is the one close that leaves no entry behind: the
+  // feed is empty, so this component renders nothing and the trigger is gone by
+  // the time the restore runs. Focus then goes to `#main-content`, the element
+  // the app's own skip link targets and which every rendered chat state
+  // provides with `tabIndex={-1}` — the participant is done with the sidebar,
+  // so the start of the conversation is where they should land.
   useEffect(() => {
     if (isOpen) {
       wasOpen.current = true
@@ -49,8 +56,16 @@ export function ProductUpdatesMenuItem() {
 
     if (!wasOpen.current) return
     wasOpen.current = false
-    triggerRef.current?.focus()
+    const target = triggerRef.current ?? document.getElementById('main-content')
+    target?.focus()
   }, [isOpen])
+
+  // Dismissing the last card empties the feed, which unmounts the modal along
+  // with the entry. Clearing the open flag keeps the component's state matching
+  // what is on screen and lets the restore effect above run for this path too.
+  useEffect(() => {
+    if (updates.length === 0) setIsOpen(false)
+  }, [updates.length])
 
   // Loading the feed only fills the badge; nothing is recorded here. Mounting
   // the sidebar means the participant opened the application, not that an
