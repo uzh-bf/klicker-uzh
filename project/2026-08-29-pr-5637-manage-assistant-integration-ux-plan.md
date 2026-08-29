@@ -797,3 +797,13 @@ follow_up_stacks:
 - Next: Run the required post-correction simplification and risk reviews, then
   push PR #5670 and require a clean exact-head hosted browser run before A1 is
   accepted.
+- A1 correction reviews: The `slice-reviewer` found no actionable defect in
+  `5a2230218..359341e51` and retained exact-head hosted browser execution as the
+  only evidence gap. The `simplifier` proposed restoring the permissive final
+  reducer fallback to save two lines. That suggestion is rejected because it
+  would reintroduce OpenCodeReview's verified silent-action-swallowing defect;
+  the exhaustive `never` check is the intended compile-time state-machine
+  invariant. Reports are retained under `project/_local/reviews/`.
+- Next: Push PR #5670, reply to and resolve the verified OpenCodeReview thread,
+  refresh the whole-branch PR body, and require clean exact-head hosted CI
+  before A1 is accepted.
