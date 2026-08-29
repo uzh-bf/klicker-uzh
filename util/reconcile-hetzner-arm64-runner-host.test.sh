@@ -59,6 +59,9 @@ main() {
     fail 'started hook setting was not replaced exactly once'
   [[ "$(grep -Fc "ACTIONS_RUNNER_HOOK_JOB_COMPLETED=${COMPLETE_HOOK}" <<<"$rendered_env")" == '1' ]] ||
     fail 'completed hook setting was not replaced exactly once'
+  printf '%s\n' "$rendered_env" >"${TEMP_DIR}/current.env"
+  [[ "$(render_runner_env "${TEMP_DIR}/current.env")" == "$rendered_env" ]] ||
+    fail 'runner environment rendering is not idempotent'
 
   if grep -Eq 'docker (system prune|volume prune)|config\.sh remove|svc\.sh uninstall|userdel|rm -rf' "$HOST_SCRIPT"; then
     fail 'host reconciler contains a forbidden destructive operation'

@@ -23,6 +23,7 @@ MODE=''
 HOST_SLOT=''
 CURRENT_STAGE='initial validation'
 DRIFT_COUNT=0
+RUNNER_ENV_CHANGED=0
 EXPECTED_NAMES=()
 
 usage() {
@@ -280,6 +281,7 @@ check_reconciliation_state() {
   for name in "${EXPECTED_NAMES[@]}"; do
     runner_env="${RUNNER_BASE_DIR}/${name}/.env"
     if [[ ! -f "$runner_env" || -L "$runner_env" ]] ||
+      [[ "$(stat -c '%U:%G:%a' "$runner_env" 2>/dev/null || true)" != 'root:root:644' ]] ||
       [[ "$(grep -Fxc "ACTIONS_RUNNER_HOOK_JOB_STARTED=${START_HOOK}" "$runner_env" || true)" != '1' ]] ||
       [[ "$(grep -Fxc "ACTIONS_RUNNER_HOOK_JOB_COMPLETED=${COMPLETE_HOOK}" "$runner_env" || true)" != '1' ]]; then
       info "Drift: ${runner_env} hook settings"
@@ -323,6 +325,7 @@ install_hooks() {
 
 configure_runner_envs() {
   local name runner_dir runner_env temporary
+  RUNNER_ENV_CHANGED=0
   for name in "${EXPECTED_NAMES[@]}"; do
     runner_dir="${RUNNER_BASE_DIR}/${name}"
     runner_env="${runner_dir}/.env"
@@ -331,13 +334,22 @@ configure_runner_envs() {
         die "runner environment file is invalid: ${name}"
     fi
     temporary=$(mktemp "${runner_dir}/.env.reconcile.XXXXXX")
-    if ! render_runner_env "$runner_env" >"$temporary" ||
-      ! chmod 0644 "$temporary" ||
+    if ! render_runner_env "$runner_env" >"$temporary"; then
+      rm -f -- "$temporary"
+      die "runner environment could not be updated: ${name}"
+    fi
+    if [[ -f "$runner_env" ]] && cmp --silent "$temporary" "$runner_env" &&
+      [[ "$(stat -c '%U:%G:%a' "$runner_env")" == 'root:root:644' ]]; then
+      rm -f -- "$temporary"
+      continue
+    fi
+    if ! chmod 0644 "$temporary" ||
       ! chown root:root "$temporary" ||
       ! mv -Tf -- "$temporary" "$runner_env"; then
       rm -f -- "$temporary"
       die "runner environment could not be updated: ${name}"
     fi
+    RUNNER_ENV_CHANGED=1
   done
 }
 
@@ -384,6 +396,11 @@ main() {
     exit 0
   fi
 
+  if ((DRIFT_COUNT == 0)); then
+    printf '\n==> Runner host already matches the optimized configuration; no changes made\n'
+    exit 0
+  fi
+
   prompt_confirmation
   acquire_lock
   CURRENT_STAGE='pre-apply idle validation'
@@ -395,7 +412,11 @@ main() {
   CURRENT_STAGE='CI image pre-pull'
   prepull_images
   CURRENT_STAGE='runner service restart'
-  restart_runners
+  if ((RUNNER_ENV_CHANGED == 1)); then
+    restart_runners
+  else
+    info 'Runner hook settings were unchanged; service restart skipped'
+  fi
   CURRENT_STAGE='post-apply verification'
   check_reconciliation_state
   ((DRIFT_COUNT == 0)) || die 'post-apply configuration still differs'
