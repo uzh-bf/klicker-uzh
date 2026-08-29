@@ -292,16 +292,12 @@ export const Participation = ParticipationRef.implement({
     studyStreakCurrent: t.int({
       nullable: true,
       resolve: (parent, _, ctx) =>
-        canViewStudyStreak(parent, ctx.user)
-          ? parent.studyStreakCurrent
-          : null,
+        canViewStudyStreak(parent, ctx.user) ? parent.studyStreakCurrent : null,
     }),
     studyStreakLongest: t.int({
       nullable: true,
       resolve: (parent, _, ctx) =>
-        canViewStudyStreak(parent, ctx.user)
-          ? parent.studyStreakLongest
-          : null,
+        canViewStudyStreak(parent, ctx.user) ? parent.studyStreakLongest : null,
     }),
     studyStreakFreezeBalance: t.int({
       nullable: true,
