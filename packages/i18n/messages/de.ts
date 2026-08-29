@@ -10,10 +10,13 @@ export default {
       switcherLabel: 'Chat-Modus',
       tutor: 'Tutor',
       tutorDescription:
-        'Erhalte geduldige, schrittweise Hilfe bei Deinen Fragen.',
+        'Erhalte schrittweise Begleitung mit gezielten Fragen, Hinweisen und Rückmeldungen.',
       explainer: 'Erklärer',
       explainerDescription:
-        'Erhalte klare Erklärungen zu schwierigen Konzepten.',
+        'Erhalte direkte Erklärungen mit Definitionen und Beispielen aus den Kursunterlagen.',
+      quizzer: 'Quiz',
+      quizzerDescription:
+        'Übe mit jeweils einer KI-generierten Frage auf Basis der Kursunterlagen.',
     },
     settingsPanel: {
       title: 'Einstellungen',
@@ -192,6 +195,12 @@ export default {
       compareConcepts: 'Zwei Konzepte vergleichen',
       compareConceptsPrompt:
         'Vergleiche zwei Konzepte anhand der Kursunterlagen. Erkläre den wichtigsten Unterschied, wann welches Konzept gilt, und nenne die relevanten Quellen.',
+      startPracticeQuiz: 'Übungsquiz starten',
+      startPracticeQuizPrompt:
+        'Starte ein Übungsquiz auf Basis der Kursunterlagen. Wähle ein passendes Thema und stelle mir jeweils eine Frage.',
+      practiceWeakSpot: 'Unsicheres Thema üben',
+      practiceWeakSpotPrompt:
+        'Hilf mir, ein Thema zu üben, bei dem ich noch unsicher bin. Frage zuerst nach dem Thema und stelle mir danach jeweils eine KI-generierte Frage auf Basis der Kursunterlagen.',
     },
     message: {
       creditsUsed:

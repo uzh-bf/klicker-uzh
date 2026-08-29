@@ -1,13 +1,17 @@
 import { describe, expect, test } from 'vitest'
+import { DEFAULT_PROMPT } from '../src/lib/config/prompts'
 import { compileSystemPrompt } from '../src/lib/server/systemPromptCompiler'
 
 // Distinctive, stable fragments of each layer. Asserting on these (rather than
 // the full contract text) keeps the test robust to wording tweaks in the
 // individual contracts while still pinning the compile seam's composition.
-const DEFAULT_TUTOR_MARK = 'KlickerChat' // only in DEFAULT_PROMPT.tutor
+const DEFAULT_TUTOR_MARK = 'next useful learning step'
+const DEFAULT_EXPLAINER_MARK = 'Make the requested idea clear and usable'
+const DEFAULT_QUIZZER_MARK = 'Conduct active practice'
+const INPUT_CONTEXT_MARK = 'Attachment context:'
 const COURSE_POLICY_MARK = 'Course scope:' // unconditional course policy
 const GROUNDING_MARK = 'Course grounding:' // doc_query-only grounding policy
-const CITATION_MARK = 'citation markers' // only in the citation contract
+const CITATION_MARK = 'Citation format:' // only in the citation contract
 const LANGUAGE_MARK = 'Swiss High German orthography' // only in the language contract
 
 // A doc_query-style tool triggers the (conditional) citation contract; a plain
@@ -23,6 +27,7 @@ describe('compileSystemPrompt', () => {
 
     expect(result.startsWith('STORED-TUTOR-PROMPT')).toBe(true)
     expect(result).not.toContain(DEFAULT_TUTOR_MARK)
+    expect(result).toContain(INPUT_CONTEXT_MARK)
     expect(result).toContain(COURSE_POLICY_MARK)
     expect(result).not.toContain(GROUNDING_MARK)
     expect(result).toContain(LANGUAGE_MARK)
@@ -34,14 +39,17 @@ describe('compileSystemPrompt', () => {
 
     const result = compileSystemPrompt(stored, 'tutor', [DOC_TOOL])
 
-    // Fixed layering: base, course policy, grounding, citation, language.
+    // Fixed layering: base, attachment context, course policy, grounding,
+    // citation, language.
     const baseIdx = result.indexOf('STORED-TUTOR-PROMPT')
+    const inputContextIdx = result.indexOf(INPUT_CONTEXT_MARK)
     const coursePolicyIdx = result.indexOf(COURSE_POLICY_MARK)
     const groundingIdx = result.indexOf(GROUNDING_MARK)
     const citationIdx = result.indexOf(CITATION_MARK)
     const languageIdx = result.indexOf(LANGUAGE_MARK)
     expect(baseIdx).toBeGreaterThanOrEqual(0)
-    expect(coursePolicyIdx).toBeGreaterThan(baseIdx)
+    expect(inputContextIdx).toBeGreaterThan(baseIdx)
+    expect(coursePolicyIdx).toBeGreaterThan(inputContextIdx)
     expect(groundingIdx).toBeGreaterThan(coursePolicyIdx)
     expect(citationIdx).toBeGreaterThan(groundingIdx)
     expect(languageIdx).toBeGreaterThan(citationIdx)
@@ -71,6 +79,42 @@ describe('compileSystemPrompt', () => {
     expect(resultWithTool).toContain(GROUNDING_MARK)
     expect(resultWithTool).toContain(CITATION_MARK)
     expect(resultWithTool).toContain(LANGUAGE_MARK)
+  })
+
+  test('provides distinct built-in Tutor, Explainer, and Quizzer personas', () => {
+    const tutor = compileSystemPrompt(null, 'tutor', [])
+    const explainer = compileSystemPrompt(null, 'explainer', [])
+    const quizzer = compileSystemPrompt(null, 'quizzer', [DOC_TOOL])
+
+    expect(tutor).toContain(DEFAULT_TUTOR_MARK)
+    expect(tutor).not.toContain(DEFAULT_EXPLAINER_MARK)
+    expect(tutor).not.toContain(DEFAULT_QUIZZER_MARK)
+    expect(explainer).toContain(DEFAULT_EXPLAINER_MARK)
+    expect(explainer).not.toContain(DEFAULT_TUTOR_MARK)
+    expect(explainer).not.toContain(DEFAULT_QUIZZER_MARK)
+    expect(quizzer).toContain(DEFAULT_QUIZZER_MARK)
+    expect(quizzer).not.toContain(DEFAULT_TUTOR_MARK)
+    expect(quizzer).not.toContain(DEFAULT_EXPLAINER_MARK)
+  })
+
+  test('keeps fixed platform contracts out of the mode personas', () => {
+    for (const { prompt } of Object.values(DEFAULT_PROMPT)) {
+      expect(prompt).not.toContain('Platform course policy:')
+      expect(prompt).not.toContain('Citation format:')
+      expect(prompt).not.toContain('Language policy:')
+      expect(prompt).not.toContain('[Attached image description:')
+    }
+  })
+
+  test('uses a stored override only for its matching standard mode', () => {
+    const stored = { tutor: { prompt: 'STORED-TUTOR-PROMPT' } }
+
+    expect(compileSystemPrompt(stored, 'tutor', [])).toContain(
+      'STORED-TUTOR-PROMPT'
+    )
+    expect(compileSystemPrompt(stored, 'explainer', [])).toContain(
+      DEFAULT_EXPLAINER_MARK
+    )
   })
 
   test('falls back to the default when a stored mode entry has an empty prompt', () => {
@@ -107,17 +151,28 @@ describe('compileSystemPrompt', () => {
     expect(result).toContain(DEFAULT_TUTOR_MARK)
   })
 
-  test('yields the fixed course and language policy for an unknown mode', () => {
-    // `explainer` has no DEFAULT_PROMPT entry, so the base resolves to '' and
-    // only the unconditional platform contracts remain.
-    const result = compileSystemPrompt(null, 'explainer', [])
+  test('yields the fixed platform contracts for an unknown mode', () => {
+    const result = compileSystemPrompt(null, 'custom', [])
 
     expect(result).not.toContain(DEFAULT_TUTOR_MARK)
     expect(result).not.toContain(CITATION_MARK)
+    expect(result).toContain(INPUT_CONTEXT_MARK)
     expect(result).toContain(COURSE_POLICY_MARK)
     expect(result).toContain(LANGUAGE_MARK)
-    expect(result.startsWith('Platform course policy:')).toBe(true)
+    expect(result.startsWith(INPUT_CONTEXT_MARK)).toBe(true)
   })
+
+  test.each(['tutor', 'explainer', 'quizzer', 'custom'])(
+    'keeps attachment descriptions in the fixed %s prompt layer',
+    (mode) => {
+      const stored = { [mode]: { prompt: `STORED-${mode}` } }
+      const result = compileSystemPrompt(stored, mode, [])
+
+      expect(result).toContain(INPUT_CONTEXT_MARK)
+      expect(result).toContain('[Attached image description: ...]')
+      expect(result).toContain('[Attached image N description: ...]')
+    }
+  )
 
   test('keeps scope, evidence, privacy, and safety rules outside lecturer control', () => {
     const stored = {

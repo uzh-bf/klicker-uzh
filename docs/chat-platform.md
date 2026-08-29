@@ -328,9 +328,24 @@ The settings panel translates model capabilities into student-facing description
 render deployment registry descriptions, because those can expose provider or router terminology
 and are not localized. Automatic, reasoning, general-purpose, and fallback models each have a
 localized explanation in `packages/i18n/messages/en.ts` and `de.ts`; the read-only automatic
-selection state uses the same plain-language contract. Known Tutor and Explainer modes use their
-localized purpose descriptions in `src/components/mode-switcher.tsx`; custom modes fall back to
-their configured description.
+selection state uses the same plain-language contract. Known Tutor, Explainer, and Quizzer modes
+use their platform-owned localized purpose descriptions in `src/components/mode-switcher.tsx`;
+custom modes use their configured description.
+
+`src/lib/server/effectiveChatModes.ts` is the server-authoritative mode seam. It composes platform
+defaults with stored per-mode overrides and custom modes, honours `enabled: false`, excludes modes
+that cannot satisfy the chatbot's required-MCP policy, and exposes Quizzer only with a provably
+restricted course `doc_query` binding. Exact Quizzer configuration shadows Tutor inheritance per
+MCP server, including disabled exact rows; inherited optional bindings are narrowed to
+`doc_query`, while required single-tool aliases preserve their raw tool restriction and remain
+fail-closed. The layout, participant settings endpoint, chat request validation, and request-time
+MCP selection all use this resolver. The browser receives resolved mode descriptions but never
+MCP server configuration.
+
+Standard prompt changes apply automatically to chatbots that do not store an override for that
+mode. Stage 1 Quizzer generates one practice question at a time from retrieved course material; it
+does not present questions as lecturer-authored or exam-equivalent. Chatbots without a safe course
+retrieval binding do not expose Quizzer, and no stored prompt or database migration is required.
 
 In the sidebar layout, `src/components/credits-footer.tsx:MobileCreditsBar` keeps the legacy
 participant usage-credit balance visible below the header at mobile widths, even while the
@@ -740,8 +755,9 @@ PostgreSQL is the only rating store. Do not mirror votes to Langfuse while the t
 Start the self-contained devcontainer with
 `devrouter ensure . --profile chat,ai,mcp`. `post-start.sh` then starts the
 seeded local MCP fixture. Benibot's Tutor and Explainer configurations point to
-`http://localhost:1417/mcp` and allow `doc_query`; the runtime namespaces the
-tool as `KB_doc_query`. Keep Auto Mode selected, then prompt Benibot with “Use
+`http://localhost:1417/mcp` and allow `doc_query`; Quizzer therefore inherits
+the restricted Tutor binding automatically. The runtime namespaces the tool
+as `KB_doc_query`. Keep Auto Mode selected, then prompt Benibot with “Use
 the local MCP tool to test the integration. Search for
 `portfolio diversification` and tell me the exact marker it returns.” The
 end-to-end pass requires a completed tool call, `KLICKER_LOCAL_MCP_OK` in the

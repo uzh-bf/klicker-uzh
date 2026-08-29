@@ -6,6 +6,7 @@ import { formatModeLabel, isKnownMode } from '../src/lib/config/modes'
 const t = ((key: string) => {
   if (key === 'chat.modes.tutor') return 'Tutor'
   if (key === 'chat.modes.explainer') return 'Explainer'
+  if (key === 'chat.modes.quizzer') return 'Quizzer'
   return key
 }) as unknown as Parameters<typeof formatModeLabel>[0]
 
@@ -13,6 +14,7 @@ describe('formatModeLabel', () => {
   test('returns the localized label for a well-known mode', () => {
     expect(formatModeLabel(t, 'tutor')).toBe('Tutor')
     expect(formatModeLabel(t, 'explainer')).toBe('Explainer')
+    expect(formatModeLabel(t, 'quizzer')).toBe('Quizzer')
   })
 
   test('falls back to the capitalized raw name for an unknown mode', () => {
