@@ -833,6 +833,7 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-stack-ocr-config.json
+          OCR_LLM_MODEL: anthropic/claude-opus-4.6
         run: |
           set -euo pipefail
           printf '%s' "${OPENROUTER_API_KEY}" |
@@ -867,7 +868,7 @@ jobs:
           OCR_CONFIG_PATH: ${{ runner.temp }}/final-ai-stack-ocr-config.json
           OCR_LLM_URL: https://openrouter.ai/api/v1/chat/completions
           OCR_LLM_TOKEN: ${{ secrets.OPENROUTER_API_KEY }}
-          OCR_LLM_MODEL: z-ai/glm-5.3-flash
+          OCR_LLM_MODEL: anthropic/claude-opus-4.6
         run: |
           set -euo pipefail
           if [[ "${REVIEW_MODE}" == "incremental" ]]; then
