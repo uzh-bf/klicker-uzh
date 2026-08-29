@@ -294,7 +294,7 @@ test.describe.serial('Semantic free-text Practice Quiz retries', () => {
     await page.getByTestId('semantic-try-again').click()
     await page
       .getByTestId('free-text-input-0')
-      .fill(`${data.incorrectAnswer} [semantic:failure]`)
+      .fill('[semantic:retry-once] Synthetic unavailable evaluation.')
     await page.getByTestId('semantic-submit-improved-answer').click()
 
     await expect(panel).toContainText(

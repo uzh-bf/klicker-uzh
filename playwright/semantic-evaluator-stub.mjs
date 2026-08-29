@@ -1,7 +1,7 @@
 import { createServer } from 'node:http'
 
 const DEFAULT_PORT = 7099
-const HOST = '127.0.0.1'
+const HOST = process.env.PLAYWRIGHT_SEMANTIC_EVALUATOR_HOST ?? '127.0.0.1'
 
 function sendJson(response, status, body) {
   response.writeHead(status, { 'content-type': 'application/json' })

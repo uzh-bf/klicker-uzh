@@ -98,6 +98,7 @@ export function resolvePlaywrightEnvironment({
     DATABASE_URL: databaseUrl.toString(),
     [HOST_RUNNER_ENV]: '1',
     PLAYWRIGHT_BASE_URL: studentUrl,
+    PLAYWRIGHT_SEMANTIC_EVALUATOR_HOST: '0.0.0.0',
     URL_AUTH: appUrl('auth'),
     URL_CHAT: appUrl('chat'),
     URL_CONTROL: appUrl('control'),

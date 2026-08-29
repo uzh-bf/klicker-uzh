@@ -92,6 +92,7 @@ test('workspace URLs and the loopback database port resolve together', () => {
     environment.DATABASE_URL,
     'postgres://user:password@127.0.0.1:49153/database'
   )
+  assert.equal(environment.PLAYWRIGHT_SEMANTIC_EVALUATOR_HOST, '0.0.0.0')
 })
 
 test('Docker port output resolves IPv4 and IPv6 bindings', () => {
