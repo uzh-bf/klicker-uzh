@@ -192,12 +192,12 @@ profiles:
 
 When a host app depends on a TCP Docker service, `devrouter app run` and `devrouter app exec` inject per-dep deterministic vars (where `{PREFIX} = dep.name.toUpperCase().replace(/-/g, "_")`):
 
-| Variable                | Value                                                       |
-| ----------------------- | ----------------------------------------------------------- |
-| `{PREFIX}_HOST`         | `localhost`                                                 |
-| `{PREFIX}_PORT`         | random mapped port                                          |
-| `{PREFIX}_URL`          | protocol-specific URL (postgres, redis, mysql/mariadb)      |
-| `{PREFIX}_SHADOW_URL`   | `postgres://prisma:prisma@localhost:<port>/shadow` (postgres only) |
+| Variable              | Value                                                              |
+| --------------------- | ------------------------------------------------------------------ |
+| `{PREFIX}_HOST`       | `localhost`                                                        |
+| `{PREFIX}_PORT`       | random mapped port                                                 |
+| `{PREFIX}_URL`        | protocol-specific URL (postgres, redis, mysql/mariadb)             |
+| `{PREFIX}_SHADOW_URL` | `postgres://prisma:prisma@localhost:<port>/shadow` (postgres only) |
 
 Host apps also receive `PORT` (random free port), `HOSTNAME=0.0.0.0`, `HOST=0.0.0.0`.
 
