@@ -13,6 +13,7 @@ const config = defineConfig([
       'src/publicUrl.ts',
       'src/responseExampleDigest.ts',
       'src/responseExampleEligibility.ts',
+      'src/responseExampleRuntime.ts',
     ],
     output: {
       dir: 'dist',

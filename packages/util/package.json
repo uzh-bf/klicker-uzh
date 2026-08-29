@@ -76,6 +76,10 @@
     "./response-example-eligibility": {
       "types": "./dist/responseExampleEligibility.d.ts",
       "default": "./dist/responseExampleEligibility.js"
+    },
+    "./response-example-runtime": {
+      "types": "./dist/responseExampleRuntime.d.ts",
+      "default": "./dist/responseExampleRuntime.js"
     }
   },
   "type": "module"
