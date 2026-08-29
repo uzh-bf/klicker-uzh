@@ -46,13 +46,13 @@
 
 ### Progress
 
-- **Status:** execution authorized; S0 plan and topology setup is active.
-- **Completed:** authenticated UX audit, planner challenge, product rulings for all four types and the Review default, remote refresh, and #5635 dependency readback.
-- **Remaining:** S0 plan commit/topology; S1 atomic Keep; S2 source-aware inbox; S3 canonical editor; S4 deterministic proof/docs/final review/draft publication.
-- **Latest evidence:** the task worktree is clean except this plan; `origin/v3-ai` is `bedc6a8556b07e2603d7c34178cb1dbe06e7891c`; #5635 is open, non-draft, mergeable, and at `8971f63b9e5df9fba096a9b6bac34fa881feb3cd`.
+- **Status:** committed and pushed; awaiting exact-head CI, review gates, and publication.
+- **Completed:** authenticated UX audit, planner challenge, product rulings for all four types and the Review default, remote refresh, #5635 dependency readback, the S0 plan commit, native stack initialization, S1 atomic Keep, S2 source-aware inbox, S3 canonical editor integration, atomic commits a42f01816 (Keep contract), c31fc0422 (review inbox), a776a891d (i18n labels), f76004413 (docs), and 0e1fe2aed (E2E journey), plus host-side verification: GraphQL typescript check pass, 12/12 focused vitest tests pass, Manage next typegen + tsc pass, Playwright specs tsc pass, and root format/lint/type checks pass excluding the known unrelated analytics sandbox failure.
+- **Remaining:** draft publication on the #5635 stack, exact-head CI readback, and the integrated final review.
+- **Latest evidence:** the task worktree retains only uncommitted DevPod runtime metadata (devcontainer.json, devrouter.yml) that stays out of every commit; `origin/v3-ai` is `bedc6a8556b07e2603d7c34178cb1dbe06e7891c`; #5635 is open, non-draft, mergeable, and at `8971f63b9e5df9fba096a9b6bac34fa881feb3cd`.
 - **Required delivery layer:** review-ready draft PR in the native GitHub stack. **Achieved:** local approved plan only.
-- **Unresolved gates:** exact #5635 CI/readiness does not block local execution, but base/head drift must be re-read before publication. No runtime has been started.
-- **Next:** create `rs/question-generation-review-inbox` from #5635's exact head, commit this approved plan, then implement S1.
+- **Unresolved gates:** browser journey verification was attempted on the task runtime and is currently blocked — `devrouter ensure .` fails at `injecting_agent` with "agent binary not found" (devsy local-binary handshake hangs); three 20-minute timeouts and IDE reconfiguration did not recover it. Treat as an infrastructure gap and record it in the PR body rather than retrying indefinitely.
+- **Next:** push the branch, open the stacked draft PR, read back exact-head CI, and complete the integrated final review.
 
 ### Slice list
 
