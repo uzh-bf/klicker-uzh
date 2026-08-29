@@ -101,21 +101,30 @@ Why this shape (ArgoCD-native hook, dedicated migrator image, manual demoted to 
 
 The `rollout.klicker.uzh.ch/release` annotation exists to break that tie: it lands in the **pod template**, so changing it is a real manifest change. The promoter discovers every occurrence in `deploy/env-uzh-stg/values.yaml`; prd has no such annotation because its pinned tags change on every release.
 
-`.github/workflows/deploy-stg-promote.yml` resolves `STG_SOURCE_BRANCH` once, checks out that branch, aligns every discovered image tag, and writes the built commit's short SHA into every discovered rollout annotation once **every** `v3_*-stg.yml` image build for the selected commit has succeeded. Both inventories must be non-empty, but their sizes are intentionally independent. A rollout can therefore never start against a half-published source tag, and the PreSync migration hook runs before the new pods. The workflow publishes a pull request to the selected source branch rather than pushing directly. Before enabling auto-merge it waits for the exact `Verified generated staging promotion` status, which also protects an unprotected source branch from merging before the generated-content and exact-build checks finish. `[skip ci]` in the title prevents the squash commit from rebuilding every image and re-firing the promoter.
+`.github/workflows/deploy-stg-promote.yml` resolves `STG_SOURCE_BRANCH` once, checks out that branch, aligns every discovered image tag, and writes the built commit's short SHA into every discovered rollout annotation once **every** `v3_*-stg.yml` image build for the selected commit has succeeded. Both inventories must be non-empty, but their sizes are intentionally independent. A rollout can therefore never start against a half-published source tag, and the PreSync migration hook runs before the new pods. The workflow publishes a pull request to the selected source branch rather than pushing directly. It waits for the exact `Verified generated staging promotion` status and an immediately mergeable pull request, rechecks the live pause variable, and then merges without leaving auto-merge armed. `[skip ci]` in the title prevents the squash commit from rebuilding every image and re-firing the promoter.
 
 Operational notes.
 
 - Set the repository variable `STG_PROMOTION_PAUSED=true` before a migration or
-  release window must hold staging at its last known-good deployment. Both
-  automatic and manual promotion runs then fail before they can open a pull
-  request. Set it to `false` or remove it to resume. Any other value also fails
+  release window must hold staging at its last known-good deployment. The
+  promoter checks the context value before its gates and reads the repository
+  variable through the API immediately before every external write. It never
+  leaves auto-merge armed. Values are strict: only lowercase `false` or an
+  unset variable resumes; lowercase `true` pauses; every other value fails
   closed.
+- **Drain before declaring the pause effective:** after setting
+  `STG_PROMOTION_PAUSED=true`, cancel every queued or running `Promote to stg`
+  run, disable auto-merge if it is armed, and close every open
+  `chore/promote-stg-*` pull request. Then verify that no such run or pull
+  request remains. Setting a variable cannot retract an API request already
+  accepted by GitHub. Record the variable change, drain evidence, and unchanged
+  staging revision in the release manifest.
 - Set the repository variable `STG_SOURCE_BRANCH` to select the active supported `v3*` branch; it falls back to `v3` when unset. Set it explicitly to `v3-ai` for the current staging source. The branch name must be a Docker-safe image tag because the build workflows publish branch-name tags.
 - **Default-branch activation:** GitHub evaluates `workflow_run` from the repository default branch. A promoter correction merged only to `v3-ai` is available for a branch-selected manual dispatch but does not change automatic fan-in until the same executable correction reaches default branch `v3`. Activate it with a focused pull request; do not repeat a broad `v3` to `v3-ai` merge for that purpose.
 - **Already-built commits:** a build set started before a promoter correction keeps the old behavior. After the correction is active, first require every exact-head staging image build to succeed, inspect and resolve any stale wrong-base promotion pull request, then dispatch `Promote to stg` on the selected source ref with the full commit SHA and `dry_run=false`. Dispatch and rollout remain separate authorized actions. Merging the correction alone does not redeploy an existing image set.
 - Before changing ArgoCD `targetRevision`, render the staging chart from the branch ArgoCD will track and verify every workload image tag uses that branch. After an authorized sync, require both `Synced` and `Healthy`; a successful sync alone can still leave workloads in `ImagePullBackOff` or `OOMKilled`.
-- It needs `secrets.STG_PROMOTE_TOKEN`, a repository-owned PAT with `contents: write` and `pull-requests: write`, plus permission to merge into the selected source branch. A pull request opened with the default `GITHUB_TOKEN` does not trigger workflows, so the generated verifier would never report and the promoter would fail closed.
-- Two settings outside this repo are load-bearing. `squash_merge_commit_title` must stay `PR_TITLE`, or the `[skip ci]` marker never reaches the squash commit and every promotion rebuilds all staging images. The workflow does not rely on it alone — the guard also refuses to promote any commit whose subject starts with `chore(deploy): promote ` — but the belt is worth keeping. Auto-merge must be enabled on the repository.
+- It needs `secrets.STG_PROMOTE_TOKEN`, a repository-owned PAT with `contents: write`, `pull-requests: write`, and repository `variables: read`, plus permission to merge into the selected source branch. A pull request opened with the default `GITHUB_TOKEN` does not trigger workflows, so the generated verifier would never report and the promoter would fail closed.
+- The repository setting `squash_merge_commit_title` is load-bearing and recorded nowhere else. It must stay `PR_TITLE`, or the `[skip ci]` marker never reaches the squash commit and every promotion rebuilds all staging images. The workflow does not rely on it alone — the guard also refuses to promote any commit whose subject starts with `chore(deploy): promote ` — but the belt is worth keeping.
 - The annotation records which commit _triggered_ the rollout, not which bits are in the image: two merges minutes apart cancel the first build (`cancel-in-progress: true`) and the selected source tag then holds the later images. Immutable per-commit tags are the fix if that ever matters.
 
 Rationale and rejected alternatives: [ADR-0003](./adr/0003-promote-stg-via-release-annotation-write-back.md).

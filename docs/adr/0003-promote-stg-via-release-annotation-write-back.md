@@ -20,12 +20,17 @@ Automate that annotation. `.github/workflows/deploy-stg-promote.yml` writes the 
 
 Promotion is gated on **every** `v3_*-stg.yml` image build succeeding for the selected source commit, with the required set derived from the workflow files present in the checkout rather than a hardcoded list. `skipped` is not treated as success. A rollout therefore cannot start against a half-published or stale source tag, and cannot run migrations from a stale migrator image.
 
-The workflow publishes as an **auto-merging pull request** to the selected source branch, not a direct push. It requires both image-tag and rollout-annotation inventories to be non-empty, replaces every discovered entry, and proves the independent before/after counts. Before requesting auto-merge it waits for the exact generated-promotion verification status so an unprotected source branch cannot merge the pull request before verification.
+The workflow publishes through a **workflow-owned pull request** to the selected source branch, not a direct push. It requires both image-tag and rollout-annotation inventories to be non-empty, replaces every discovered entry, and proves the independent before/after counts. It waits for the exact generated-promotion verification status and an immediately mergeable pull request, rechecks the live pause variable, and then merges without leaving auto-merge armed.
 
 The repository variable `STG_PROMOTION_PAUSED` is an explicit release-window
-interlock. When it is `true`, both automatic and manual runs fail before reading
-the promotion token or changing repository state. An unset value or `false`
-preserves normal promotion; any other value fails closed.
+interlock. The promoter checks it before its gates and reads it again through
+the repository API immediately before every external write. It never leaves
+auto-merge armed on a generated pull request. Values are strict: lowercase
+`true` pauses, while lowercase `false` or an unset variable permits promotion;
+any other value or an unreadable API response fails closed. Because a variable
+change cannot retract an API request that GitHub has already accepted, the
+operator also cancels active promoter runs, disables auto-merge if armed, and
+closes every open promotion pull request before declaring the pause effective.
 
 ## Considered options
 
@@ -45,7 +50,7 @@ Each promoted source commit produces a **second** commit on the selected source 
 
 The required set is derived from the `v3_*-stg.yml` files, which includes `v3_analytics-stg.yml` — and `analytics` has **no** Deployment in the chart. A failed analytics image build therefore blocks the staging rollout of components that do not depend on it. Accepted deliberately: a hardcoded exception would rot when the staging build inventory changes, and the failure is visible in the promoter's run log.
 
-Two repository settings are load-bearing and recorded nowhere else: `squash_merge_commit_title` must remain `PR_TITLE` so the `[skip ci]` marker reaches the squash commit, and auto-merge must stay enabled. The guard additionally refuses any commit whose subject starts with `chore(deploy): promote `, so a flipped setting degrades to wasted rebuilds rather than an unbounded promotion loop.
+One repository setting is load-bearing and recorded nowhere else: `squash_merge_commit_title` must remain `PR_TITLE` so the `[skip ci]` marker reaches the squash commit. The guard additionally refuses any commit whose subject starts with `chore(deploy): promote `, so a flipped setting degrades to wasted rebuilds rather than an unbounded promotion loop.
 
 Every workload carrying the rollout annotation rolls on each promoted commit from the selected source branch, including the Hatchet workers. The workers' SDK drains in-flight tasks on `SIGTERM` and their tasks declare retries, but the chart sets no `terminationGracePeriodSeconds` and no `preStop`, and both worker Dockerfiles use shell-form `CMD`, so signal delivery is not guaranteed. This is pre-existing and applies equally to every manual sync today; automation only changes how often it happens. Hardening it is tracked separately.
 

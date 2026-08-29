@@ -84,31 +84,14 @@ jobs:
       contents: read
       actions: read
     steps:
-      - name: Refuse promotion while paused
-        env:
-          PROMOTION_PAUSED: ${{ vars.STG_PROMOTION_PAUSED }}
-        run: |
-          set -euo pipefail
-          case "${PROMOTION_PAUSED,,}" in
-            '') ;;
-            false) ;;
-            true)
-              echo "::error::staging promotion is paused by STG_PROMOTION_PAUSED"
-              exit 1
-              ;;
-            *)
-              echo "::error::STG_PROMOTION_PAUSED must be true, false, or unset"
-              exit 1
-              ;;
-          esac
-
       - name: Require the promotion token
         env:
           TOKEN: ${{ secrets.STG_PROMOTE_TOKEN }}
         run: |
           set -euo pipefail
           # A PR opened with the default GITHUB_TOKEN does not trigger workflows, so
-          # its required checks would never report and auto-merge would never fire.
+          # its required checks would never report and the controlled merge would
+          # never become eligible.
           # The promotion therefore needs a token that acts as a real user/app.
           if [ -z "${TOKEN}" ]; then
             echo "::error::secrets.STG_PROMOTE_TOKEN is not set - see docs/ci-and-deployment.md"
@@ -142,6 +125,11 @@ jobs:
           ref: ${{ steps.target.outputs.source_branch }}
           fetch-depth: 0 # merge-base needs full history
           token: ${{ secrets.STG_PROMOTE_TOKEN }}
+
+      - name: Refuse promotion while paused
+        env:
+          PROMOTION_PAUSED: ${{ vars.STG_PROMOTION_PAUSED }}
+        run: bash .github/scripts/check-stg-promotion-pause.sh --value "$PROMOTION_PAUSED"
 
       - name: Require every stg image for this commit
         id: gate
@@ -291,7 +279,7 @@ jobs:
           git diff -- "$F"
           echo "short=$SHORT" >>"$GITHUB_OUTPUT"
 
-      - name: Open the promotion PR and auto-merge it
+      - name: Open and merge the promotion PR
         if: steps.write.outcome == 'success' && github.event.inputs.dry_run != 'true'
         env:
           GH_TOKEN: ${{ secrets.STG_PROMOTE_TOKEN }}
@@ -301,6 +289,13 @@ jobs:
         run: |
           set -euo pipefail
           BRANCH="chore/promote-stg-${SHORT}"
+          require_live_unpaused() {
+            bash .github/scripts/check-stg-promotion-pause.sh --live
+          }
+
+          # The context check happened before the image and verifier waits. Re-read
+          # the repository variable at execution time before every external write.
+          require_live_unpaused
 
           # Supersede any promotion still open: with `strict: true` an older one can
           # sit un-mergeable behind a newer commit and would otherwise roll stg back.
@@ -310,6 +305,7 @@ jobs:
                        | jq -r --arg b "$BRANCH" \
                          '.[] | select(.headRefName | startswith("chore/promote-stg-"))
                               | select(.headRefName != $b) | .number'); do
+            require_live_unpaused
             gh pr close "$n" --delete-branch \
               --comment "Superseded by the promotion of ${SHORT}." || true
           done
@@ -319,6 +315,7 @@ jobs:
           git checkout -b "$BRANCH"
           git add deploy/env-uzh-stg/values.yaml
           git commit -m "chore(deploy): promote ${SHORT} to stg"
+          require_live_unpaused
           git push origin "$BRANCH"
 
           # `[skip ci]` in the title becomes the squash commit message, which stops the
@@ -335,6 +332,7 @@ jobs:
           commit. See ADR-0003.
           EOF
 
+          require_live_unpaused
           PR_URL=$(gh pr create \
             --base "$SOURCE_BRANCH" --head "$BRANCH" \
             --title "chore(deploy): promote ${SHORT} to stg [skip ci]" \
@@ -360,24 +358,28 @@ jobs:
           [ "$VERIFIED" = 'true' ] \
             || { echo "::error::generated promotion verification did not succeed for ${PR_URL}"; exit 1; }
 
-          gh pr merge "$BRANCH" --squash --auto --delete-branch
-
-          # `--auto` returns immediately, so a PR that can NEVER merge would otherwise
-          # leave a green run, an open PR nobody looks at, and staging exactly as stale
-          # as before -- the silent no-op this whole workflow exists to prevent. Watch
-          # it briefly and fail loudly instead. Still pending after this is fine: that
-          # is auto-merge waiting on checks, which will complete on its own.
-          STATE=''
-          for attempt in 1 2 3 4 5 6; do
-            sleep 20
-            STATE=$(gh pr view "$BRANCH" --json state,mergeStateStatus \
-                      --jq '.state + "/" + .mergeStateStatus')
+          # Never leave auto-merge armed: a later pause cannot revoke a successful
+          # status on an already-open PR. Wait for an immediately mergeable state,
+          # re-read the live pause variable, and merge in the same bounded step.
+          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            STATE=$(gh pr view "$BRANCH" --json state,mergeable,mergeStateStatus \
+                      --jq '[.state, .mergeable, .mergeStateStatus] | @tsv')
             case "$STATE" in
-              MERGED/*)
+              $'MERGED\t'*)
                 echo "::notice::promotion of ${SHORT} merged"; exit 0 ;;
-              */BLOCKED | */DIRTY)
-                echo "::error::promotion PR for ${SHORT} is ${STATE} and will not merge on its own - staging will NOT update"
+              $'OPEN\tMERGEABLE\tCLEAN' | $'OPEN\tMERGEABLE\tHAS_HOOKS' | $'OPEN\tMERGEABLE\tUNSTABLE')
+                require_live_unpaused
+                gh pr merge "$BRANCH" --squash --delete-branch
+                echo "::notice::promotion of ${SHORT} merged"; exit 0 ;;
+              $'OPEN\tCONFLICTING\t'* | $'OPEN\tMERGEABLE\tDIRTY' | $'OPEN\tMERGEABLE\tBEHIND')
+                echo "::error::promotion PR for ${SHORT} is ${STATE} and requires a new promotion run"
+                exit 1 ;;
+              $'CLOSED\t'*)
+                echo "::error::promotion PR for ${SHORT} was closed before merge"
                 exit 1 ;;
             esac
+            echo "attempt ${attempt}: waiting for mergeable promotion PR ${PR_URL} (${STATE})"
+            [ "$attempt" -eq 12 ] || sleep 20
           done
-          echo "::notice::promotion PR for ${SHORT} is ${STATE}; auto-merge will complete it"
+          echo "::error::promotion PR for ${SHORT} did not become mergeable (${STATE})"
+          exit 1

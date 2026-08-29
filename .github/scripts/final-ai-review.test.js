@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict')
+const { spawnSync } = require('node:child_process')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
@@ -2141,11 +2142,82 @@ test('staging promoter targets the selected source without fixed value counts', 
     workflow,
     /PROMOTION_PAUSED: \$\{\{ vars\.STG_PROMOTION_PAUSED \}\}/
   )
+  assert.match(
+    workflow,
+    /github\.event_name == 'workflow_dispatch' \|\|[\s\S]*github\.event\.workflow_run\.event == 'push'/
+  )
   assert.ok(
     workflow.indexOf('Refuse promotion while paused') <
-      workflow.indexOf('Require the promotion token')
+      workflow.indexOf('Require every stg image for this commit')
   )
-  assert.match(workflow, /STG_PROMOTION_PAUSED must be true, false, or unset/)
+  assert.ok(workflow.includes('check-stg-promotion-pause.sh --live'))
+  assert.doesNotMatch(workflow, /gh pr merge .*--auto/)
+})
+
+test('staging pause guard accepts only strict values', () => {
+  const script = path.join(__dirname, 'check-stg-promotion-pause.sh')
+  const cases = [
+    { value: '', status: 0 },
+    { value: 'false', status: 0 },
+    { value: 'true', status: 1 },
+    { value: 'FALSE', status: 1 },
+    { value: 'yes', status: 1 },
+  ]
+
+  for (const entry of cases) {
+    const result = spawnSync('bash', [script, '--value', entry.value], {
+      encoding: 'utf8',
+    })
+    assert.equal(
+      result.status,
+      entry.status,
+      `${JSON.stringify(entry.value)}: ${result.stderr}`
+    )
+  }
+})
+
+test('live staging pause checks fail closed when GitHub cannot be read', () => {
+  const script = path.join(__dirname, 'check-stg-promotion-pause.sh')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'stg-pause-'))
+  const gh = path.join(directory, 'gh')
+  fs.writeFileSync(
+    gh,
+    '#!/usr/bin/env bash\n[ "${MOCK_GH_FAIL:-0}" = 0 ] || exit 2\nprintf "%s\\n" "${MOCK_PAUSE_VALUE:-}"\n',
+    { mode: 0o700 }
+  )
+
+  try {
+    for (const entry of [
+      { value: '', status: 0 },
+      { value: 'false', status: 0 },
+      { value: 'true', status: 1 },
+      { value: 'False', status: 1 },
+    ]) {
+      const result = spawnSync('bash', [script, '--live'], {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          GITHUB_REPOSITORY: 'uzh-bf/klicker-uzh',
+          MOCK_PAUSE_VALUE: entry.value,
+          PATH: `${directory}:${process.env.PATH}`,
+        },
+      })
+      assert.equal(result.status, entry.status)
+    }
+
+    const unreadable = spawnSync('bash', [script, '--live'], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        GITHUB_REPOSITORY: 'uzh-bf/klicker-uzh',
+        MOCK_GH_FAIL: '1',
+        PATH: `${directory}:${process.env.PATH}`,
+      },
+    })
+    assert.notEqual(unreadable.status, 0)
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
 })
 
 test('requires every trusted exact-SHA staging build run for a promotion', async () => {
