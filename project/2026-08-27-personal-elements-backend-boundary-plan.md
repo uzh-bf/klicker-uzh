@@ -718,5 +718,11 @@ no migration.
   surviving reload. The personal practice runner submits a rating and Finish
   returns to its overview. The user requested that this exact runtime remain
   available for further testing.
-- [ ] Commit the follow-up, complete integrated final review, push the exact
-  head, and update pull request #5483.
+- [x] Commit the follow-up and complete integrated final review —
+  `89ed57724` contains the grounded workflow and PWA Finish corrections;
+  `7526371ca` resolves the review's repeated-title key and wiki-accuracy
+  findings. The native final-reviewer launch failed before work because the
+  harness attempted an unsupported GLM reasoning configuration, so the
+  configured continuity route used GPT-5.6 Sol xhigh. Its correction pass
+  returned `DONE` with no remaining material issue.
+- [ ] Push the exact head and update pull request #5483.
