@@ -31,7 +31,7 @@ Apps (dev ports in [Getting Started](./getting-started.md)):
 | `apps/olat-api`, `apps/lti`, `apps/office-addin`      | LMS/Office integrations                                                             |
 | `apps/docs`                                           | User-facing Docusaurus site (not this wiki)                                         |
 
-Packages: `graphql` (schema + services + ops — the heart), `prisma` (schema + migrations), `prisma-data` (seeds), `grading` (pure scoring math), `hatchet` (task definitions), `feature-flags` (typed GrowthBook contracts and browser/Node adapters), `types`, `util` (JWT/cookie helpers), `i18n`, `shared-components`, `markdown`, `export`, `word-cloud`, `product-updates` (the in-repo announcement catalog and its pure selection helpers), `next-config`, `transactional` (react-email).
+Packages: `graphql` (schema + services + ops — the heart), `prisma` (schema + migrations), `prisma-data` (seeds), `grading` (pure scoring math), `hatchet` (task definitions), `feature-flags` (typed GrowthBook contracts and browser/Node adapters), `types`, `util` (JWT/cookie helpers), `i18n`, `shared-components`, `markdown`, `export`, `word-cloud`, `product-updates` (the in-repo announcement catalog and its pure selection helpers), `product-tours` (the pure tour-id registry and HTML-escaping entry, plus a `./react` driver.js adapter), `next-config`, `transactional` (react-email).
 
 ## Request flow (query/mutation)
 
