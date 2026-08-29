@@ -987,14 +987,15 @@ paths named by the package plan and do not revert other work.
   current-evidence slice; K6.2 bounded hybrid skill; K6.3 authenticated
   participant composition; native util, chat, PostgreSQL, GraphQL, type/schema,
   formatting, and lint verification; and the first slice review corrections.
-- Ready now: finish K6 documentation and reviews, stop the exact task runtime,
-  and present the separately withheld push and PR boundary. K5 starts only
-  after K6 lands on `v3-ai`. K7 planning can follow the K6 runtime contract
-  without waiting for W8.
+- Ready now: complete K6's integrated final review and present the separately
+  withheld push and PR boundary. K6 documentation, verification, slice reviews,
+  and exact-runtime shutdown are complete. K5 starts only after K6 lands on
+  `v3-ai`. K7 planning can follow the K6 runtime contract without waiting for
+  W8.
 - External decision: U0 cannot create a branch until the `mcp-doc-query`
   `main`/`dev` flow is explicitly resolved.
 - Blocked: K8 remains blocked on W8 synthetic active-serving proof. U0-backed
   live source proof, deployment, and activation remain separately withheld.
-- Next action: complete K6 verification and reviews, then stop at the separately
+- Next action: complete K6's integrated final review, then stop at the separately
   withheld push and PR boundary. K5 becomes the next independent package after
   K6 is merged and separately authorized.

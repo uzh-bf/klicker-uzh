@@ -176,8 +176,8 @@ preview and the later examples-excluded baseline.
 
 ## Progress
 
-- Status: K6.1 through K6.3 are committed and repository-native verified;
-  K6.4 documentation and the final review gate are in progress.
+- Status: K6.1 through K6.4 are committed and repository-native verified; the
+  integrated final review gate is in progress.
 - Completed: remote-state gate, clean purpose-based worktree, approved program
   plan transfer, current source seam mapping, package-plan narrowing, shared
   current-evidence validation, owner-service reconciliation, and focused util,
@@ -187,7 +187,7 @@ preview and the later examples-excluded baseline.
   tool, cache-identity, and failure-degradation composition are committed. The
   review corrections make knowledge-base/resource selection one atomic
   parameterized statement and publish the skill only after tool construction.
-  Full util tests pass with 127 tests; full chat tests pass with 710 tests and
+  Full util tests pass with 127 tests; full chat tests pass with 712 tests and
   14 explicit skips; focused chat runtime tests pass with 64 tests; the real
   PostgreSQL runtime test and all 11 GraphQL response-example tests pass; chat,
   util, and GraphQL type/schema checks pass; chat lint reports zero errors.
@@ -206,8 +206,8 @@ preview and the later examples-excluded baseline.
   unrelated analytics lint, where the container selects Python 3.14 and cannot
   build pandas because no C compiler is installed. All affected package checks
   pass independently.
-- Runtime note: the exact task DevPod is running only for final verification. It
-  will be stopped and verified before the final review.
-- Next: close the slice correction reviews, commit K6.4, run the fresh package
-  checks, stop the exact runtime, complete the Sol final review, and stop at the
-  withheld push and PR boundary.
+- Runtime note: the exact task DevPod `feat-chatbot-response-example-ru` is
+  stopped, its provider reports `Stopped`, and the exact worktree has zero
+  DevRouter routes. The DevPod remains recoverable and was not deleted.
+- Next: complete and disposition the integrated Sol final review, then stop at
+  the withheld push and PR boundary.
