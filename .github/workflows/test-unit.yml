@@ -13,6 +13,7 @@ on:
       - 'packages/markdown/**'
       - 'packages/next-config/**'
       - 'packages/prisma/**'
+      - 'packages/product-tours/**'
       - 'packages/product-updates/**'
       - 'packages/shared-components/**'
       - 'packages/types/**'
@@ -33,6 +34,7 @@ on:
       - 'packages/markdown/**'
       - 'packages/next-config/**'
       - 'packages/prisma/**'
+      - 'packages/product-tours/**'
       - 'packages/product-updates/**'
       - 'packages/shared-components/**'
       - 'packages/types/**'
@@ -99,6 +101,7 @@ jobs:
           # feature-flags must be built before product-updates is tested.
           pnpm --filter @klicker-uzh/feature-flags build
           pnpm --filter @klicker-uzh/product-updates build
+          pnpm --filter @klicker-uzh/product-tours build
 
       - name: Setup chat test database
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
@@ -121,6 +124,10 @@ jobs:
       - name: Test markdown package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: pnpm --filter @klicker-uzh/markdown test
+
+      - name: Test product-tours package
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm --filter @klicker-uzh/product-tours test
 
       - name: Test product-updates package
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}

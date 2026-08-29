@@ -25,7 +25,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
+          pattern: '^(packages/graphql/|packages/prisma/|packages/grading/|packages/types/|packages/util/|packages/hatchet/|packages/product-updates/|packages/product-tours/|apps/hatchet-worker-general/|package\.json|pnpm-lock\.yaml|tsconfig\.json|\.github/workflows/test-graphql\.yml|\.github/actions/changed-paths/)'
 
   test-graphql:
     needs: filter
@@ -140,6 +140,14 @@ jobs:
           cd ../grading
           pnpm run build
           cd ../util
+          pnpm run build
+          # product-updates reads FeatureFlagKey types from feature-flags, and
+          # graphql depends on both product-updates and product-tours.
+          cd ../feature-flags
+          pnpm run build
+          cd ../product-updates
+          pnpm run build
+          cd ../product-tours
           pnpm run build
           cd ../graphql
           pnpm run build

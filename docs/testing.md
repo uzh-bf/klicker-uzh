@@ -111,11 +111,13 @@ For authoring specifics, helper patterns, and failure triage, use the `klicker-p
 ## CI matrix
 
 The path-filtered `test-unit` workflow runs the chat, grading, markdown, util,
-and product-updates suites with one frozen install. It builds Prisma, types,
-grading, util, feature-flags, and product-updates once, then keeps each suite as
-a separately visible step. The product-updates suite validates the announcement
-catalog and reads the flag registry at runtime, which is why feature-flags is
-built before it ([Product Updates](./product-updates.md)).
+product-updates, and product-tours suites with one frozen install. It builds
+Prisma, types, grading, util, feature-flags, product-updates, and product-tours
+once, then keeps each suite as a separately visible step. The product-updates
+suite validates the announcement catalog and reads the flag registry at
+runtime, which is why feature-flags is built before it
+([Product Updates](./product-updates.md)). The product-tours suite covers the
+pure tour-id registry and HTML-escaping helpers.
 The chat suite runs against a PostgreSQL 15 service; the workflow resets that disposable test database
 before the suite and enables the account-usage integration cases. Later suites
 still run after an earlier test failure, but not after setup or
