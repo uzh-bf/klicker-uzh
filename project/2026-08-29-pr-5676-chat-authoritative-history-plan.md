@@ -819,6 +819,13 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   skipped by its path filter, so CI carries no unit coverage of the corrected
   fixture; the in-container rerun stays the open follow-up for the next
   runtime window.
+- 2026-08-30 superseding delivery receipt: draft PR #5676 is published and the
+  runtime-failure receipt above is committed. At the previous published head,
+  policy, static, type, and security checks passed while hosted Playwright
+  shards and the external review job remained pending. Publishing this final
+  documentation receipt requires a fresh exact-head CI cycle. The historical
+  pre-publication entry below is retained as the state that applied before the
+  later publication receipt.
 - 2026-08-30: delivery state — locally committed and reviewed through
   `d72d598ee`. Push and draft PR remain separately authorized actions and
   additionally blocked by host DNS failure for `github.com` Git transport

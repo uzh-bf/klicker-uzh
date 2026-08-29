@@ -24,7 +24,7 @@ engine must continue to run the product without a private service.
 - First delivery worktree: `trees/chat-authoritative-history`
 - Accepted base: `origin/v3` at `bb495a1b20886b8744798dd2b3d188b3cfabf982`
 - Existing execution plan:
-  `project/2026-08-29-chat-authoritative-history-plan.md` on
+  `project/2026-08-29-pr-5676-chat-authoritative-history-plan.md` on
   `rs/chat-authoritative-history`
 - Companion private roadmap: maintained in the Catalyst repository and not
   linked from this public artifact
@@ -72,14 +72,18 @@ branches, credits, identity, privacy, or product policy.
   `apps/chat/src/lib/api/utils.ts` derives branch paths.
 - **Verified:** `apps/chat/src/lib/server/chatModelRegistry.ts:5-25` records
   output limits, but not a complete input/context budget.
-- **Verified:** the active authoritative-history branch reached committed head
-  `d7c28b6b8`, nine commits ahead of and one non-overlapping commit behind
-  current `origin/v3`. It reconstructs one persisted ancestor chain, validates
-  up to 256 rows, sends the closest 64 projected rows, and makes image bindings
+- **Verified:** the active authoritative-history package is published as draft
+  PR #5676. It reconstructs one persisted ancestor chain, validates up to 256
+  rows, sends the closest 64 projected rows, and makes image bindings
   server-authoritative. Its integrated final review found no remaining
   source-level correctness, authorization, privacy, security, or architecture
-  defect. Documentation corrections are applied; the managed browser smoke is
-  the remaining package-evidence gate.
+  defect. The branch is one non-overlapping commit behind current `origin/v3`.
+  At the last published head, static, type, security, and policy checks passed;
+  hosted Playwright shards and the external review job were still pending.
+  The corrected PostgreSQL boundary fixture and managed browser smoke remain
+  local evidence gaps because provider-layer Devsy transitions failed and the
+  exact workspace exposes zero routes. Fresh exact-head CI remains required
+  after the final documentation receipt.
 - **Verified:** PR #5126 and draft PR #5129 are open and conflicting against
   current public history. Their contract and default-engine ideas are useful;
   their `chat-api` client-history and timestamp assumptions are not.
@@ -297,3 +301,14 @@ revalidates branch ancestry and the source digest before persistence.
   failed because the host could not resolve `github.com`, so draft PR
   publication and
   exact-head CI remain pending. Merge and activation remain withheld.
+- 2026-08-30 superseding receipt: the public package is published as draft PR
+  #5676, and the companion private roadmap draft is updated with green
+  repository checks. A one-command, TLS-validated Git transport override
+  bypassed the host resolver without changing persistent host or Git
+  configuration. Public checks passed through policy, static, type, and
+  security gates at the previous published head; hosted Playwright shards and
+  the external review job were still pending before this final documentation
+  receipt. The exact public workspace still has zero routes after bounded
+  provider-layer Devsy failures, so the corrected PostgreSQL fixture rerun and
+  browser smoke remain open evidence gaps. Exact-head CI, upstream integration,
+  merge, deployment, and activation remain withheld gates.
