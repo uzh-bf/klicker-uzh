@@ -256,6 +256,36 @@ describePostgres('response-example PostgreSQL runtime', () => {
       }),
     ])
 
+    const concurrentlyInvalidated = await createApprovedExample({
+      studentMessage: 'concurrent citation parity marker',
+      referenceAnswer: 'Initially grounded lecturer answer [1].',
+    })
+    let invalidationReconciliationCount = 0
+    const invalidationSkill = await loadResponseExampleRuntimeSkill({
+      prisma,
+      chatbotId: CHATBOT_ID,
+      chatMode: 'tutor',
+      role: 'included',
+      reconcile: async (client, chatbotId) => {
+        const snapshot = await reconcileCurrentResponseExampleRuntimeSet(
+          client,
+          chatbotId
+        )
+        invalidationReconciliationCount += 1
+        if (invalidationReconciliationCount === 2) {
+          await client.responseExample.update({
+            where: { id: concurrentlyInvalidated.id },
+            data: { referenceAnswer: 'Current ungrounded lecturer answer.' },
+          })
+        }
+        return snapshot
+      },
+    })
+    const invalidatedResult = await invalidationSkill.search(
+      'concurrent citation parity marker'
+    )
+    expect(invalidatedResult.examples).toEqual([])
+
     const changedEvidence =
       await prisma.responseExampleEvidenceReference.findFirstOrThrow({
         where: { responseExampleId: questionMatch.id },

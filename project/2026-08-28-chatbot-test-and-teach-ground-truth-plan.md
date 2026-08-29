@@ -980,9 +980,10 @@ paths named by the package plan and do not revert other work.
 
 - Status: approved and executing K6 locally; the runtime skill and participant
   composition are committed and repository-native verified. Slice review
-  corrections are cleared, and the integrated final-review corrections are
-  implemented and verified. Their correction review remains in progress. Push,
-  PR publication, merge, deployment, and live model use remain withheld.
+  corrections are cleared, and the integrated final-review corrections,
+  including current-snapshot citation-parity revalidation, are implemented and
+  verified. Their correction review remains in progress. Push, PR publication,
+  merge, deployment, and live model use remain withheld.
 - Completed: current `v3-ai` and PR #5633 seam mapping; response-example schema,
   API, and Manage workflow mapping; owner-preview mapping; Doc Query lineage
   contract mapping; evaluation-repository query-order mapping; required Sol
@@ -990,8 +991,8 @@ paths named by the package plan and do not revert other work.
   current-evidence slice; K6.2 bounded hybrid skill; K6.3 authenticated
   participant composition; native util, chat, PostgreSQL, GraphQL, type/schema,
   formatting, and lint verification; and the first slice review corrections.
-- Ready now: commit and review K6's integrated final-review corrections, stop
-  the exact task runtime, and present the separately withheld push and PR
+- Ready now: commit and review K6's final citation-parity correction, stop the
+  exact task runtime, and present the separately withheld push and PR
   boundary. K5 starts only after K6 lands on `v3-ai`. K7 planning can follow the
   K6 runtime contract without waiting for W8.
 - External decision: U0 cannot create a branch until the `mcp-doc-query`

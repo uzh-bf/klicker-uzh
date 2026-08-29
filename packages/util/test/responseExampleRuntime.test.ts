@@ -8,20 +8,22 @@ import {
   RESPONSE_EXAMPLE_SUMMARY_MAX_CHARACTERS,
 } from '../src/responseExampleRuntime.js'
 
-const candidate = (id: string, answer = 'Use the concept [1].') => ({
+const candidate = (
+  id: string,
+  answer = 'Use the concept [1].',
+  citationIndexes = [1]
+) => ({
   id,
   responseStyle: 'GUIDED_QUESTIONS',
   studentMessage: `Question ${id}`,
   referenceAnswer: answer,
-  evidenceReferences: [
-    {
-      citationIndex: 1,
-      sourceId: `source-${id}`,
-      chunkId: `chunk-${id}`,
-      contentHash: `hash-${id}`,
-      citationAnchor: `page ${id}`,
-    },
-  ],
+  evidenceReferences: citationIndexes.map((citationIndex) => ({
+    citationIndex,
+    sourceId: `source-${id}`,
+    chunkId: `chunk-${id}`,
+    contentHash: `hash-${id}`,
+    citationAnchor: `page ${id}`,
+  })),
 })
 
 describe('response-example runtime projection', () => {
@@ -107,7 +109,11 @@ describe('response-example runtime projection', () => {
 
   it('removes every renderer-compatible citation marker from ideal answers', () => {
     const selected = boundResponseExampleSearchResults([
-      candidate('1', 'Use the grounded concept [1], then compare it [2].'),
+      candidate(
+        '1',
+        'Use the grounded concept [1], then compare it [2].',
+        [1, 2]
+      ),
     ])
 
     expect(selected[0]?.referenceAnswer).toBe(
@@ -133,6 +139,15 @@ describe('response-example runtime projection', () => {
     expect(selected[0]?.referenceAnswer).toBe(
       answer.replace('[1].', '[example-source-1].')
     )
+  })
+
+  it('skips examples whose current answer no longer matches its evidence citations', () => {
+    expect(
+      boundResponseExampleSearchResults([
+        candidate('missing', 'This answer has no citation.'),
+        candidate('mismatched', 'This answer cites the wrong source [2].'),
+      ])
+    ).toEqual([])
   })
 
   it('skips an example that cannot fit without truncating later examples', () => {

@@ -3,6 +3,7 @@ import {
   extractCitationIndexes,
   extractCitationMarkerSpans,
 } from './citations.js'
+import { hasCompleteResponseExampleCitationParity } from './responseExampleEligibility.js'
 
 export const RESPONSE_EXAMPLE_RUNTIME_CONTRACT_VERSION = 1
 export const RESPONSE_EXAMPLE_SUMMARY_MAX_CHARACTERS = 1_500
@@ -144,6 +145,7 @@ export function boundResponseExampleSearchResults(
 
   for (const candidate of candidates) {
     if (selected.length >= RESPONSE_EXAMPLE_SEARCH_MAX_ITEMS) break
+    if (!hasCompleteResponseExampleCitationParity(candidate)) continue
 
     const referenceAnswer = rewriteResponseExampleCitations(
       candidate.referenceAnswer

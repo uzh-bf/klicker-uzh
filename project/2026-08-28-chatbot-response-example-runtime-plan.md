@@ -181,9 +181,10 @@ preview and the later examples-excluded baseline.
 
 ## Progress
 
-- Status: K6.1 through K6.4 are committed. The first integrated final review
-  findings are corrected and repository-native verified; correction review is
-  in progress.
+- Status: K6.1 through K6.4 are committed. The integrated final-review
+  corrections, including the follow-up current-snapshot citation-parity guard,
+  are implemented and repository-native verified; correction review is in
+  progress.
 - Completed: remote-state gate, clean purpose-based worktree, approved program
   plan transfer, current source seam mapping, package-plan narrowing, shared
   current-evidence validation, owner-service reconciliation, and focused util,
@@ -193,7 +194,7 @@ preview and the later examples-excluded baseline.
   tool, cache-identity, and failure-degradation composition are committed. The
   review corrections make knowledge-base/resource selection one atomic
   parameterized statement and publish the skill only after tool construction.
-  Full util tests pass with 128 tests; full chat tests pass with 715 tests and
+  Full util tests pass with 129 tests; full chat tests pass with 715 tests and
   14 explicit skips; focused chat runtime tests pass with 64 tests; the real
   PostgreSQL runtime test and all 11 GraphQL response-example tests pass; chat,
   util, and GraphQL type/schema checks pass; chat lint reports zero errors.
@@ -211,6 +212,10 @@ preview and the later examples-excluded baseline.
   search projection, broad citation rewriting, and an unenforced set-size cap.
   The correction keeps full results model-only, ranks and projects in one
   statement, rewrites exact renderer spans, and fails closed above 200 examples.
+  Its correction review found that the same-statement projection also needed
+  to revalidate citation parity; search now applies the shared parity predicate
+  to that current row and the PostgreSQL regression proves concurrent invalid
+  edits are omitted.
 - Verification limitation: repository-wide `pnpm run check:all` reaches the
   unrelated analytics lint, where the container selects Python 3.14 and cannot
   build pandas because no C compiler is installed. All affected package checks
@@ -218,5 +223,5 @@ preview and the later examples-excluded baseline.
 - Runtime note: the exact task DevPod `feat-chatbot-response-example-ru` was
   resumed only for correction verification. It will be stopped and verified
   again before the correction review is closed.
-- Next: commit the verified final-review corrections, complete their correction
+- Next: commit the verified citation-parity correction, complete the correction
   review, stop the exact runtime, and stop at the withheld push and PR boundary.
