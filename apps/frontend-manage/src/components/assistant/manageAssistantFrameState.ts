@@ -63,7 +63,11 @@ export function reduceManageAssistantFrameState(
     return { ...state, phase: 'delayed' }
   }
 
-  if (action.type === 'error') return { ...state, phase: 'failed' }
+  if (action.type === 'error') {
+    if (state.phase !== 'loading' && state.phase !== 'retrying') return state
+    return { ...state, phase: 'failed' }
+  }
 
-  return state
+  const exhaustive: never = action
+  return exhaustive
 }

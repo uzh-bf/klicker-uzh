@@ -25,6 +25,12 @@ const recoveredLate = reduceManageAssistantFrameState(delayed, {
 })
 assert.equal(recoveredLate.phase, 'ready')
 
+const ignoredDelayedError = reduceManageAssistantFrameState(delayed, {
+  generation: 0,
+  type: 'error',
+})
+assert.equal(ignoredDelayedError, delayed)
+
 const retrying = reduceManageAssistantFrameState(delayed, {
   type: 'retry',
 })
@@ -73,3 +79,9 @@ const changedUrlReady = reduceManageAssistantFrameState(changedUrl, {
   type: 'ready',
 })
 assert.equal(changedUrlReady.phase, 'ready')
+
+const ignoredReadyError = reduceManageAssistantFrameState(changedUrlReady, {
+  generation: 2,
+  type: 'error',
+})
+assert.equal(ignoredReadyError, changedUrlReady)

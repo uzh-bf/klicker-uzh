@@ -860,12 +860,12 @@ test.describe('Manage Assistant — Slow hydration', () => {
     await page.getByTestId('manage-assistant-open').click()
 
     // Chromium fires load, not error, on a failed iframe navigation, so the
-    // network abort alone never reaches the widget. Dispatch the error event
-    // on the frame element to exercise the failed-state recovery path that
-    // the widget's iframe error handler owns.
+    // network abort alone never reaches the widget. Playwright dispatches a
+    // bubbling error event on the frame element to exercise the recovery path
+    // owned by the widget's iframe error handler.
     await page
       .locator('[data-cy="manage-assistant-frame"]')
-      .evaluate((frame) => frame.dispatchEvent(new Event('error')))
+      .dispatchEvent('error')
 
     await expect(page.getByTestId('manage-assistant-failed')).toBeVisible({
       timeout: 5_000,
