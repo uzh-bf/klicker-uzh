@@ -7,6 +7,8 @@ import { enMessages as messages } from '../util/messages.js'
 let testAchievementId: number | undefined
 let publicParticipantId: string | undefined
 let publicParticipantWasPublic: boolean | undefined
+let publicParticipantWasActive: boolean | undefined
+let publicLeaderboardEntryId: number | undefined
 let publicParticipantUsername: string | undefined
 
 test.beforeAll(async () => {
@@ -28,27 +30,59 @@ test.beforeAll(async () => {
   })
   testAchievementId = achievement.id
 
-  const publicParticipant = await prisma.leaderboardEntry.findFirstOrThrow({
-    where: {
-      courseId: COURSE_ID_TEST,
+  const publicParticipantIdForTest = PARTICIPANT_IDS[0]!
+  const [publicParticipant, publicParticipation] = await Promise.all([
+    prisma.participant.findUniqueOrThrow({
+      where: { id: publicParticipantIdForTest },
+      select: { isProfilePublic: true, username: true },
+    }),
+    prisma.participation.findUniqueOrThrow({
+      where: {
+        courseId_participantId: {
+          courseId: COURSE_ID_TEST,
+          participantId: publicParticipantIdForTest,
+        },
+      },
+      select: { isActive: true },
+    }),
+  ])
+  const publicLeaderboardEntry = await prisma.leaderboardEntry.create({
+    data: {
       type: LeaderboardType.COURSE,
-      participantId: { not: PARTICIPANT_IDS[48]! },
-      participation: { is: { isActive: true } },
-    },
-    orderBy: { score: 'desc' },
-    select: {
-      participantId: true,
-      participant: { select: { isProfilePublic: true, username: true } },
+      score: 100,
+      participant: { connect: { id: publicParticipantIdForTest } },
+      course: { connect: { id: COURSE_ID_TEST } },
+      participation: {
+        connect: {
+          courseId_participantId: {
+            courseId: COURSE_ID_TEST,
+            participantId: publicParticipantIdForTest,
+          },
+        },
+      },
     },
   })
-  publicParticipantId = publicParticipant.participantId
-  publicParticipantWasPublic = publicParticipant.participant.isProfilePublic
-  publicParticipantUsername = publicParticipant.participant.username
+  publicParticipantId = publicParticipantIdForTest
+  publicParticipantWasPublic = publicParticipant.isProfilePublic
+  publicParticipantWasActive = publicParticipation.isActive
+  publicLeaderboardEntryId = publicLeaderboardEntry.id
+  publicParticipantUsername = publicParticipant.username
 
-  await prisma.participant.update({
-    where: { id: publicParticipant.participantId },
-    data: { isProfilePublic: true },
-  })
+  await Promise.all([
+    prisma.participant.update({
+      where: { id: publicParticipantIdForTest },
+      data: { isProfilePublic: true },
+    }),
+    prisma.participation.update({
+      where: {
+        courseId_participantId: {
+          courseId: COURSE_ID_TEST,
+          participantId: publicParticipantIdForTest,
+        },
+      },
+      data: { isActive: true },
+    }),
+  ])
 
   await prisma.participantAchievementInstance.createMany({
     data: [
@@ -58,7 +92,7 @@ test.beforeAll(async () => {
         achievedAt: new Date('2026-01-01T00:00:00Z'),
       },
       {
-        participantId: publicParticipant.participantId,
+        participantId: publicParticipantIdForTest,
         achievementId: achievement.id,
         achievedAt: new Date('2026-01-01T00:00:00Z'),
       },
@@ -71,6 +105,27 @@ test.afterAll(async () => {
 
   const prisma = await getPrisma()
   await prisma.achievement.delete({ where: { id: testAchievementId } })
+
+  if (
+    typeof publicParticipantId !== 'undefined' &&
+    typeof publicParticipantWasActive !== 'undefined'
+  ) {
+    await prisma.participation.update({
+      where: {
+        courseId_participantId: {
+          courseId: COURSE_ID_TEST,
+          participantId: publicParticipantId,
+        },
+      },
+      data: { isActive: publicParticipantWasActive },
+    })
+  }
+
+  if (typeof publicLeaderboardEntryId !== 'undefined') {
+    await prisma.leaderboardEntry.delete({
+      where: { id: publicLeaderboardEntryId },
+    })
+  }
 
   if (
     typeof publicParticipantId !== 'undefined' &&
