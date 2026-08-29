@@ -290,10 +290,16 @@ export default {
       revisionUpdated: 'Aktualisiert · Version {version}',
       revisionConflict:
         'Diese Karte wurde vor Abschluss der Überarbeitung geändert.',
+      revisionInsufficientEvidence:
+        'Die gespeicherte Karte wurde nicht geändert, weil die Kursmaterialien nicht genügend Belege für diese Überarbeitung enthalten.',
     },
     sources: {
       title: 'Quellen',
       page: 'S. {page}',
+      pages: 'S. {from}–{to}',
+      pdfPage: 'PDF-S. {page}',
+      pdfPages: 'PDF-S. {from}–{to}',
+      unavailable: 'Quellenlink nicht verfügbar',
       video: 'Video',
       image: 'Bild',
     },
@@ -1155,6 +1161,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       sourceLinked: 'mit Quellen verknüpft',
       notReviewed: 'nicht vom Kursteam geprüft',
       sources: 'Quellen',
+      generationSources: 'Quellen für die Erstellung dieser Karte',
       page: 'S. {page}',
       previous: 'Zurück',
       next: 'Weiter',

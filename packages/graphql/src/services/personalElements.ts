@@ -1,6 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import * as DB from '@klicker-uzh/prisma/client'
-import { FlashcardCorrectness } from '@klicker-uzh/types'
+import {
+  type ElementSourceLocator,
+  type ElementSourcePageLocator,
+  type ElementSourceReference,
+  FlashcardCorrectness,
+  isSafeElementSourceUrl,
+} from '@klicker-uzh/types'
 import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import { isDeepEqual } from 'remeda'
@@ -13,6 +19,7 @@ const TRANSACTION_MAX_WAIT_MS = 5_000
 const TRANSACTION_TIMEOUT_MS = 15_000
 const CARD_GENERATION_LEASE_MS = 5 * 60 * 1000
 const MAX_SOURCE_COUNT = 32
+const MAX_SOURCE_LOCATOR_COUNT = 16
 const MAX_CANDIDATE_COUNT = 32
 const MAX_ID_LENGTH = 128
 const MAX_TITLE_LENGTH = 256
@@ -164,30 +171,125 @@ const cardExplanationSchema = z
     message: 'Generated card explanation must contain an answer',
   })
 
-const sourceMetadataValueSchema = z.union([
+const legacySourceMetadataValueSchema = z.union([
   z.string().max(MAX_TITLE_LENGTH),
   z.number().finite(),
   z.boolean(),
   z.null(),
 ])
 
-const sourceSchema = z
+const safeSourceUrlSchema = z
+  .string()
+  .trim()
+  .url()
+  .max(MAX_URL_LENGTH)
+  .refine(isSafeElementSourceUrl, {
+    message: 'Source URLs must be stable http(s) addresses without credentials',
+  })
+
+const pageLocatorSchema = z
+  .object({
+    type: z.literal('PAGE_RANGE'),
+    pageFrom: z.number().int().min(1),
+    pageTo: z.number().int().min(1),
+    labelFrom: z.string().trim().min(1).max(MAX_TITLE_LENGTH).optional(),
+    labelTo: z.string().trim().min(1).max(MAX_TITLE_LENGTH).optional(),
+  })
+  .strict()
+
+const webLocatorSchema = z
+  .object({
+    type: z.literal('WEB_ANCHOR'),
+    url: safeSourceUrlSchema,
+    label: z.string().trim().min(1).max(MAX_TITLE_LENGTH).optional(),
+  })
+  .strict()
+
+const sourceLocatorSchema = z.discriminatedUnion('type', [
+  pageLocatorSchema,
+  webLocatorSchema,
+])
+
+const elementSourceReferenceSchema = z
+  .object({
+    sourceId: z.string().trim().min(1).max(MAX_ID_LENGTH),
+    kind: z.enum(['DOCUMENT', 'WEB']),
+    title: z.string().trim().min(1).max(MAX_TITLE_LENGTH),
+    canonicalUrl: safeSourceUrlSchema.optional(),
+    chunkIds: z
+      .array(z.string().trim().min(1).max(MAX_ID_LENGTH))
+      .min(1)
+      .max(MAX_SOURCE_COUNT),
+    locators: z.array(sourceLocatorSchema).max(MAX_SOURCE_LOCATOR_COUNT),
+  })
+  .strict()
+  .superRefine((source, refinementContext) => {
+    if (new Set(source.chunkIds).size !== source.chunkIds.length) {
+      refinementContext.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['chunkIds'],
+        message: 'Source chunk IDs must be unique',
+      })
+    }
+
+    if (
+      source.locators.some((locator) =>
+        source.kind === 'DOCUMENT'
+          ? locator.type !== 'PAGE_RANGE'
+          : locator.type !== 'WEB_ANCHOR'
+      )
+    ) {
+      refinementContext.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['locators'],
+        message: 'Source locators must match their source kind',
+      })
+    }
+
+    const pageLocators = source.locators.filter(
+      (locator): locator is ElementSourcePageLocator =>
+        locator.type === 'PAGE_RANGE'
+    )
+    for (const [index, locator] of pageLocators.entries()) {
+      if (locator.pageTo < locator.pageFrom) {
+        refinementContext.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['locators', index],
+          message: 'Source page ranges must end on or after their first page',
+        })
+      }
+    }
+    for (let index = 1; index < pageLocators.length; index += 1) {
+      if (pageLocators[index]!.pageFrom <= pageLocators[index - 1]!.pageTo) {
+        refinementContext.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['locators', index],
+          message: 'Source page ranges must be ordered and disjoint',
+        })
+      }
+    }
+
+    const webUrls = source.locators.flatMap((locator) =>
+      locator.type === 'WEB_ANCHOR' ? [locator.url] : []
+    )
+    if (new Set(webUrls).size !== webUrls.length) {
+      refinementContext.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['locators'],
+        message: 'Source web anchors must be unique',
+      })
+    }
+  })
+
+const legacySourceSchema = z
   .object({
     sourceId: z.string().trim().min(1).max(MAX_ID_LENGTH),
     chunkId: z.string().trim().min(1).max(MAX_ID_LENGTH),
     title: z.string().trim().min(1).max(MAX_TITLE_LENGTH).optional(),
-    url: z
-      .string()
-      .trim()
-      .url()
-      .max(MAX_URL_LENGTH)
-      .refine((value) => /^https?:\/\//i.test(value), {
-        message: 'Source URLs must use http or https',
-      })
-      .optional(),
-    page: z.number().finite().optional(),
+    url: safeSourceUrlSchema.optional(),
+    page: z.number().int().min(1).optional(),
     metadata: z
-      .record(z.string().max(MAX_ID_LENGTH), sourceMetadataValueSchema)
+      .record(z.string().max(MAX_ID_LENGTH), legacySourceMetadataValueSchema)
       .optional(),
   })
   .strict()
@@ -203,12 +305,38 @@ const sourceSchema = z
     }
   })
 
-const sourcesSchema = z
-  .array(sourceSchema)
+const sourceInputSchema = z.union([
+  elementSourceReferenceSchema,
+  legacySourceSchema,
+])
+
+const sourceInputsSchema = z
+  .array(sourceInputSchema)
+  .min(1)
+  .max(MAX_SOURCE_COUNT)
+
+const elementSourceReferencesSchema = z
+  .array(elementSourceReferenceSchema)
   .min(1)
   .max(MAX_SOURCE_COUNT)
   .superRefine((sources, refinementContext) => {
-    const chunkIds = sources.map((source) => source.chunkId)
+    const sourceIds = sources.map((source) => source.sourceId)
+    if (new Set(sourceIds).size !== sourceIds.length) {
+      refinementContext.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [],
+        message: 'Source material IDs must be unique',
+      })
+    }
+
+    const chunkIds = sources.flatMap((source) => source.chunkIds)
+    if (chunkIds.length > MAX_SOURCE_COUNT) {
+      refinementContext.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [],
+        message: 'Source references exceed the 32 chunk limit',
+      })
+    }
     if (new Set(chunkIds).size !== chunkIds.length) {
       refinementContext.addIssue({
         code: z.ZodIssueCode.custom,
@@ -223,7 +351,7 @@ const sourcesSchema = z
       refinementContext.addIssue({
         code: z.ZodIssueCode.custom,
         path: [],
-        message: 'Source metadata exceeds the 64 KiB limit',
+        message: 'Source references exceed the 64 KiB limit',
       })
     }
   })
@@ -234,7 +362,7 @@ const candidateSchema = z
     name: z.string().trim().min(1).max(MAX_TITLE_LENGTH),
     content: z.string().trim().min(1).max(8_192),
     explanation: cardExplanationSchema,
-    sources: sourcesSchema,
+    sources: elementSourceReferencesSchema,
     sourceMessageId: z.string().trim().min(1).max(MAX_ID_LENGTH),
     sourceToolCallId: z.string().trim().min(1).max(MAX_ID_LENGTH),
     origin: z.enum(['AI_GENERATED', 'AUTHORED']).nullish(),
@@ -265,7 +393,7 @@ const validateCardCandidateInputSchema = z
     title: z.string().trim().min(1).max(MAX_TITLE_LENGTH),
     front: z.string().trim().min(1).max(8_192),
     back: cardExplanationSchema,
-    sources: sourcesSchema,
+    sources: elementSourceReferencesSchema,
     sourceMessageId: z.string().trim().min(1).max(MAX_ID_LENGTH),
     sourceToolCallId: z.string().trim().min(1).max(MAX_ID_LENGTH),
   })
@@ -284,7 +412,7 @@ const leaseSettlementSchema = z.object({
   attemptToken: z.string().min(1),
 })
 
-export type PersonalElementSource = z.infer<typeof sourceSchema>
+export type PersonalElementSource = ElementSourceReference
 
 export type PersonalElementCandidate = z.infer<typeof candidateSchema>
 
@@ -301,8 +429,24 @@ export type PersonalElementCandidateInput = {
 
 export type PersonalElementSourceInput = {
   sourceId: string
-  chunkId: string
+  kind?: 'DOCUMENT' | 'WEB' | null
   title?: string | null
+  canonicalUrl?: string | null
+  chunkIds?: readonly string[] | null
+  locators?:
+    | readonly {
+        type: 'PAGE_RANGE' | 'WEB_ANCHOR'
+        pageFrom?: number | null
+        pageTo?: number | null
+        labelFrom?: string | null
+        labelTo?: string | null
+        url?: string | null
+        label?: string | null
+      }[]
+    | null
+  // Compatibility fields for candidate messages and rows written by the
+  // unreleased flat-source prototype. New clients never send these fields.
+  chunkId?: string | null
   url?: string | null
   page?: number | null
   metadata?: unknown
@@ -396,6 +540,199 @@ function parsePersonalElementInput<T>(schema: z.ZodType<T>, value: unknown) {
     }
     throw error
   }
+}
+
+function withoutNullFields(value: PersonalElementSourceInput) {
+  const locators = value.locators?.map((locator) => ({
+    type: locator.type,
+    ...(locator.pageFrom !== undefined && locator.pageFrom !== null
+      ? { pageFrom: locator.pageFrom }
+      : {}),
+    ...(locator.pageTo !== undefined && locator.pageTo !== null
+      ? { pageTo: locator.pageTo }
+      : {}),
+    ...(locator.labelFrom ? { labelFrom: locator.labelFrom } : {}),
+    ...(locator.labelTo ? { labelTo: locator.labelTo } : {}),
+    ...(locator.url ? { url: locator.url } : {}),
+    ...(locator.label ? { label: locator.label } : {}),
+  }))
+
+  return {
+    sourceId: value.sourceId,
+    ...(value.kind ? { kind: value.kind } : {}),
+    ...(value.title ? { title: value.title } : {}),
+    ...(value.canonicalUrl ? { canonicalUrl: value.canonicalUrl } : {}),
+    ...(value.chunkIds ? { chunkIds: [...value.chunkIds] } : {}),
+    ...(locators ? { locators } : {}),
+    ...(value.chunkId ? { chunkId: value.chunkId } : {}),
+    ...(value.url ? { url: value.url } : {}),
+    ...(value.page !== undefined && value.page !== null
+      ? { page: value.page }
+      : {}),
+    ...(value.metadata !== undefined && value.metadata !== null
+      ? { metadata: value.metadata }
+      : {}),
+  }
+}
+
+function collapsePageLocators(
+  locators: readonly ElementSourcePageLocator[]
+): ElementSourcePageLocator[] {
+  const collapsed: ElementSourcePageLocator[] = []
+
+  for (const locator of locators) {
+    const previous = collapsed.at(-1)
+    if (previous && locator.pageFrom === previous.pageTo + 1) {
+      previous.pageTo = locator.pageTo
+      previous.labelTo = locator.labelTo ?? locator.labelFrom
+      continue
+    }
+    collapsed.push({ ...locator })
+  }
+
+  return collapsed
+}
+
+function canonicalizeReference(
+  source: z.infer<typeof elementSourceReferenceSchema>
+): ElementSourceReference {
+  const locators: ElementSourceLocator[] =
+    source.kind === 'DOCUMENT'
+      ? collapsePageLocators(
+          source.locators.filter(
+            (locator): locator is ElementSourcePageLocator =>
+              locator.type === 'PAGE_RANGE'
+          )
+        )
+      : source.locators
+
+  return {
+    sourceId: source.sourceId,
+    kind: source.kind,
+    title: source.title,
+    ...(source.canonicalUrl ? { canonicalUrl: source.canonicalUrl } : {}),
+    chunkIds: [...source.chunkIds],
+    locators,
+  }
+}
+
+function isPdfSourceUrl(url: string | undefined) {
+  if (!url) return false
+  try {
+    return new URL(url).pathname.toLowerCase().endsWith('.pdf')
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Canonical service-boundary parser for the durable source-reference value.
+ * It reads the unreleased flat prototype and the grouped shape, but always
+ * returns the grouped, source-body-free domain value used for persistence.
+ */
+export function normalizeElementSourceReferences(
+  input: readonly PersonalElementSourceInput[] | unknown
+): ElementSourceReference[] {
+  if (Buffer.byteLength(JSON.stringify(input), 'utf8') > MAX_METADATA_BYTES) {
+    throw personalElementError(
+      'PERSONAL_ELEMENTS_INVALID_INPUT',
+      'Source references exceed the 64 KiB limit'
+    )
+  }
+
+  const normalizedInput = Array.isArray(input)
+    ? input.map((source) =>
+        source && typeof source === 'object'
+          ? withoutNullFields(source as PersonalElementSourceInput)
+          : source
+      )
+    : input
+  const parsed = parsePersonalElementInput(sourceInputsSchema, normalizedInput)
+  const references: ElementSourceReference[] = []
+  const legacyBySourceId = new Map<
+    string,
+    {
+      sourceId: string
+      kind: 'DOCUMENT' | 'WEB'
+      title: string
+      canonicalUrl?: string
+      chunkIds: string[]
+      pageLocators: ElementSourcePageLocator[]
+      webLocators: Array<{ type: 'WEB_ANCHOR'; url: string }>
+    }
+  >()
+
+  for (const source of parsed) {
+    if ('chunkIds' in source) {
+      references.push(canonicalizeReference(source))
+      continue
+    }
+
+    const kind =
+      source.page !== undefined || isPdfSourceUrl(source.url)
+        ? 'DOCUMENT'
+        : 'WEB'
+    const title = source.title ?? source.sourceId
+    const existing = legacyBySourceId.get(source.sourceId)
+    if (
+      existing &&
+      (existing.kind !== kind ||
+        existing.title !== title ||
+        existing.canonicalUrl !== source.url)
+    ) {
+      throw personalElementError(
+        'PERSONAL_ELEMENTS_INVALID_INPUT',
+        'Flat source entries for one material must share the same snapshot'
+      )
+    }
+
+    const reference = existing ?? {
+      sourceId: source.sourceId,
+      kind,
+      title,
+      ...(source.url ? { canonicalUrl: source.url } : {}),
+      chunkIds: [],
+      pageLocators: [],
+      webLocators: [],
+    }
+    reference.chunkIds.push(source.chunkId)
+    if (source.page !== undefined) {
+      reference.pageLocators.push({
+        type: 'PAGE_RANGE',
+        pageFrom: source.page,
+        pageTo: source.page,
+      })
+    } else if (kind === 'WEB' && source.url) {
+      reference.webLocators.push({ type: 'WEB_ANCHOR', url: source.url })
+    }
+    legacyBySourceId.set(source.sourceId, reference)
+  }
+
+  for (const source of legacyBySourceId.values()) {
+    const pageLocators = [...source.pageLocators].sort(
+      (left, right) => left.pageFrom - right.pageFrom
+    )
+    const uniquePageLocators = pageLocators.filter(
+      (locator, index) => locator.pageFrom !== pageLocators[index - 1]?.pageFrom
+    )
+    references.push({
+      sourceId: source.sourceId,
+      kind: source.kind,
+      title: source.title,
+      ...(source.canonicalUrl ? { canonicalUrl: source.canonicalUrl } : {}),
+      chunkIds: [...source.chunkIds],
+      locators:
+        source.kind === 'DOCUMENT'
+          ? collapsePageLocators(uniquePageLocators)
+          : source.webLocators.filter(
+              (locator, index, all) =>
+                all.findIndex((candidate) => candidate.url === locator.url) ===
+                index
+            ),
+    })
+  }
+
+  return parsePersonalElementInput(elementSourceReferencesSchema, references)
 }
 
 function assertParticipantContext(context: PersonalElementServiceContext) {
@@ -540,10 +877,10 @@ export async function validateCardCandidate(
   context: PersonalElementServiceContext
 ): Promise<true> {
   assertParticipantContext(context)
-  const parsed = parsePersonalElementInput(
-    validateCardCandidateInputSchema,
-    input
-  )
+  const parsed = parsePersonalElementInput(validateCardCandidateInputSchema, {
+    ...input,
+    sources: normalizeElementSourceReferences(input.sources),
+  })
 
   await assertCourseParticipation(
     context.prisma,
@@ -607,27 +944,8 @@ function normalizeCandidates(
   return parsed
 }
 
-// The GraphQL wire contract allows null for optional source fields; Prisma
-// rejects null in Json values, so absent fields are dropped before
-// validation and persistence. Keys are omitted rather than set to undefined
-// so persisted Json matches the parsed shape for deep-equality checks.
 function toPersistedSources(sources: readonly PersonalElementSourceInput[]) {
-  return sources.map((source) => ({
-    sourceId: source.sourceId,
-    chunkId: source.chunkId,
-    ...(source.title !== undefined && source.title !== null
-      ? { title: source.title }
-      : {}),
-    ...(source.url !== undefined && source.url !== null
-      ? { url: source.url }
-      : {}),
-    ...(source.page !== undefined && source.page !== null
-      ? { page: source.page }
-      : {}),
-    ...(source.metadata !== undefined && source.metadata !== null
-      ? { metadata: source.metadata }
-      : {}),
-  }))
+  return normalizeElementSourceReferences(sources)
 }
 
 const NEW_PERSONAL_ELEMENT_STATE = {
@@ -1126,6 +1444,12 @@ export async function updatePersonalElement(
   if (!Number.isInteger(input.expectedVersion) || input.expectedVersion < 1) {
     throw personalElementError('PERSONAL_ELEMENT_INVALID_VERSION')
   }
+  if (input.sources && (!input.name || !input.content || !input.explanation)) {
+    throw personalElementError(
+      'PERSONAL_ELEMENTS_INVALID_INPUT',
+      'A generated revision must replace the complete card and source reference set'
+    )
+  }
 
   const updateData = {
     name: input.name?.trim(),
@@ -1139,7 +1463,7 @@ export async function updatePersonalElement(
         name: z.string().min(1).max(MAX_TITLE_LENGTH).optional(),
         content: z.string().min(1).max(8_192).optional(),
         explanation: cardExplanationSchema.optional(),
-        sources: sourcesSchema.optional(),
+        sources: elementSourceReferencesSchema.optional(),
       })
       .strict(),
     updateData

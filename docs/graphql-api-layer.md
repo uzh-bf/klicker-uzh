@@ -85,6 +85,15 @@ title-similarity check inside its serializable transaction;
 `updatePersonalElement` applies the expected-version revision contract.
 `personalElements` returns the durable saved state for reload.
 
+`PersonalElement.sources` exposes grouped, source-body-free reference snapshots.
+Each reference identifies one source material and contains disjoint physical
+PDF page ranges or exact web anchors plus optional human-readable labels. The
+service accepts the earlier flat source shape during the transition, normalizes
+it to the grouped shape, suppresses unsafe or signed URLs, and stores the full
+replacement set atomically with an AI-generated content revision. Manual content
+updates preserve the existing references. Saved elements own these snapshots;
+they do not depend on retaining the Chat generation record.
+
 ## Layering contract
 
 - `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.deleteCourse(args, ctx)`.

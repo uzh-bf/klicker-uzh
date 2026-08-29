@@ -1,10 +1,14 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import type {
+  ElementSourceLocator as ElementSourceLocatorValue,
+  ElementSourceReference as ElementSourceReferenceValue,
+} from '@klicker-uzh/types'
 import builder from '../builder.js'
 import {
   type DiscardedDuplicateCard as DiscardedDuplicateCardValue,
-  type PersonalElementSource as PersonalElementSourceValue,
-  type PreparedCardPlan as PreparedCardPlanValue,
+  normalizeElementSourceReferences,
   type PreparedCardPlanEntry as PreparedCardPlanEntryValue,
+  type PreparedCardPlan as PreparedCardPlanValue,
 } from '../services/personalElements.js'
 import { ElementType } from './elementData.js'
 import { ResponseCorrectness } from './evaluation.js'
@@ -14,29 +18,101 @@ export const PersonalElementOrigin = builder.enumType('PersonalElementOrigin', {
   values: Object.values(DB.PersonalElementOrigin),
 })
 
-export const PersonalElementSourceRef =
-  builder.objectRef<PersonalElementSourceValue>('PersonalElementSource')
+export const ElementSourceKind = builder.enumType('ElementSourceKind', {
+  values: ['DOCUMENT', 'WEB'] as const,
+})
 
-export const PersonalElementSource = PersonalElementSourceRef.implement({
+export const ElementSourceLocatorType = builder.enumType(
+  'ElementSourceLocatorType',
+  {
+    values: ['PAGE_RANGE', 'WEB_ANCHOR'] as const,
+  }
+)
+
+export const ElementSourceLocatorRef =
+  builder.objectRef<ElementSourceLocatorValue>('ElementSourceLocator')
+
+export const ElementSourceLocator = ElementSourceLocatorRef.implement({
   fields: (t) => ({
-    sourceId: t.exposeString('sourceId'),
-    chunkId: t.exposeString('chunkId'),
-    title: t.exposeString('title', { nullable: true }),
-    url: t.exposeString('url', { nullable: true }),
-    page: t.exposeFloat('page', { nullable: true }),
-    metadata: t.expose('metadata', { type: 'Json', nullable: true }),
+    type: t.expose('type', { type: ElementSourceLocatorType }),
+    pageFrom: t.int({
+      nullable: true,
+      resolve: (locator) =>
+        locator.type === 'PAGE_RANGE' ? locator.pageFrom : null,
+    }),
+    pageTo: t.int({
+      nullable: true,
+      resolve: (locator) =>
+        locator.type === 'PAGE_RANGE' ? locator.pageTo : null,
+    }),
+    labelFrom: t.string({
+      nullable: true,
+      resolve: (locator) =>
+        locator.type === 'PAGE_RANGE' ? (locator.labelFrom ?? null) : null,
+    }),
+    labelTo: t.string({
+      nullable: true,
+      resolve: (locator) =>
+        locator.type === 'PAGE_RANGE' ? (locator.labelTo ?? null) : null,
+    }),
+    url: t.string({
+      nullable: true,
+      resolve: (locator) =>
+        locator.type === 'WEB_ANCHOR' ? locator.url : null,
+    }),
+    label: t.string({
+      nullable: true,
+      resolve: (locator) =>
+        locator.type === 'WEB_ANCHOR' ? (locator.label ?? null) : null,
+    }),
   }),
 })
+
+export const ElementSourceReferenceRef =
+  builder.objectRef<ElementSourceReferenceValue>('ElementSourceReference')
+
+export const ElementSourceReference = ElementSourceReferenceRef.implement({
+  fields: (t) => ({
+    sourceId: t.exposeString('sourceId'),
+    kind: t.expose('kind', { type: ElementSourceKind }),
+    title: t.exposeString('title'),
+    canonicalUrl: t.exposeString('canonicalUrl', { nullable: true }),
+    chunkIds: t.exposeStringList('chunkIds'),
+    locators: t.expose('locators', { type: [ElementSourceLocator] }),
+  }),
+})
+
+export const ElementSourceLocatorInput = builder.inputType(
+  'ElementSourceLocatorInput',
+  {
+    fields: (t) => ({
+      type: t.field({ type: ElementSourceLocatorType, required: true }),
+      pageFrom: t.int({ required: false }),
+      pageTo: t.int({ required: false }),
+      labelFrom: t.string({ required: false }),
+      labelTo: t.string({ required: false }),
+      url: t.string({ required: false }),
+      label: t.string({ required: false }),
+    }),
+  }
+)
 
 export const PersonalElementSourceInput = builder.inputType(
   'PersonalElementSourceInput',
   {
     fields: (t) => ({
       sourceId: t.string({ required: true }),
-      chunkId: t.string({ required: true }),
+      kind: t.field({ type: ElementSourceKind, required: false }),
       title: t.string({ required: false }),
+      canonicalUrl: t.string({ required: false }),
+      chunkIds: t.stringList({ required: false }),
+      locators: t.field({
+        type: [ElementSourceLocatorInput],
+        required: false,
+      }),
+      chunkId: t.string({ required: false }),
       url: t.string({ required: false }),
-      page: t.float({ required: false }),
+      page: t.int({ required: false }),
       metadata: t.field({ type: 'Json', required: false }),
     }),
   }
@@ -198,11 +274,12 @@ export const PersonalElement = builder.objectType(PersonalElementRef, {
     content: t.exposeString('content'),
     explanation: t.exposeString('explanation'),
     sources: t.field({
-      type: [PersonalElementSource],
+      type: [ElementSourceReference],
       nullable: true,
       resolve: (element) =>
-        (element.sources as unknown as PersonalElementSourceValue[] | null) ??
-        null,
+        element.sources
+          ? normalizeElementSourceReferences(element.sources)
+          : null,
     }),
     origin: t.expose('origin', { type: PersonalElementOrigin }),
     sourceMessageId: t.exposeString('sourceMessageId', { nullable: true }),

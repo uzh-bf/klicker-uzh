@@ -90,10 +90,23 @@ before any element is generated. _Avoid_: outline, proposal.
 a person. Who owns it is a separate fact. _Avoid_: source (that word names
 citations).
 
+**Source material**: A course resource used as context to generate an element,
+such as a script, web page, or video. Its availability and access remain
+separate from the generated element.
+
+**Element source reference**: A durable reference from one generated element to
+one source material. It preserves the source identity, display title, and exact
+cited locations as generation context without claiming correctness, current
+availability, or review. _Avoid_: source copy, verification
+
+**Citation**: The user-facing rendering of an element source reference. Several
+cited locations in the same source material remain one citation with distinct
+locator spans rather than becoming chunk-level citations.
+
 **Source-linked personal card**: A participant-owned card that keeps bounded
-citation metadata for the course chunks used during generation. Source links
-let the participant inspect the material; they do not claim correctness,
-entailment, or course-team review. _Avoid_: verified card, validated card.
+element source references for the course material used during generation. The
+references provide context; they do not claim correctness, entailment, or
+course-team review. _Avoid_: verified card, validated card.
 
 **Activity**: The umbrella for the four things a course can run — **live
 quiz**, **practice quiz**, **microlearning**, and **group activity**. Use the

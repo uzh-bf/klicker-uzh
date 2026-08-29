@@ -15,6 +15,7 @@ import {
   deletePersonalElement,
   discardPersonalElementCandidate,
   listPersonalElements,
+  normalizeElementSourceReferences,
   prepareCardPlan,
   respondToPersonalElement,
   updatePersonalElement,
@@ -39,10 +40,19 @@ function candidate(
     sources: [
       {
         sourceId: 'course-material',
-        chunkId: randomUUID(),
+        kind: 'DOCUMENT' as const,
         title: 'Economics notes',
-        url: 'https://example.org/economics',
-        page: 4,
+        canonicalUrl: 'https://example.org/economics.pdf',
+        chunkIds: [randomUUID()],
+        locators: [
+          {
+            type: 'PAGE_RANGE' as const,
+            pageFrom: 4,
+            pageTo: 4,
+            labelFrom: 'iv',
+            labelTo: 'iv',
+          },
+        ],
       },
     ],
     sourceMessageId: randomUUID(),
@@ -212,6 +222,72 @@ describe('personal elements service', () => {
     expect(first[0]?.sources).toEqual(input.sources)
   })
 
+  it('normalizes the flat prototype into grouped disjoint page ranges', () => {
+    expect(
+      normalizeElementSourceReferences([
+        {
+          sourceId: 'script',
+          chunkId: 'chunk-1',
+          title: 'Course script',
+          url: 'https://example.org/course-script.PDF?edition=2',
+          page: 1,
+        },
+        {
+          sourceId: 'script',
+          chunkId: 'chunk-2',
+          title: 'Course script',
+          url: 'https://example.org/course-script.PDF?edition=2',
+          page: 2,
+        },
+        {
+          sourceId: 'script',
+          chunkId: 'chunk-7',
+          title: 'Course script',
+          url: 'https://example.org/course-script.PDF?edition=2',
+          page: 7,
+        },
+      ])
+    ).toEqual([
+      {
+        sourceId: 'script',
+        kind: 'DOCUMENT',
+        title: 'Course script',
+        canonicalUrl: 'https://example.org/course-script.PDF?edition=2',
+        chunkIds: ['chunk-1', 'chunk-2', 'chunk-7'],
+        locators: [
+          { type: 'PAGE_RANGE', pageFrom: 1, pageTo: 2 },
+          { type: 'PAGE_RANGE', pageFrom: 7, pageTo: 7 },
+        ],
+      },
+    ])
+  })
+
+  it('rejects signed URLs and source bodies at the service boundary', () => {
+    expect(() =>
+      normalizeElementSourceReferences([
+        {
+          sourceId: 'script',
+          kind: 'DOCUMENT',
+          title: 'Course script',
+          canonicalUrl: 'https://example.org/script.pdf?sig=secret',
+          chunkIds: ['chunk-1'],
+          locators: [{ type: 'PAGE_RANGE', pageFrom: 1, pageTo: 1 }],
+        },
+      ])
+    ).toThrowError(/stable http\(s\) addresses/u)
+    expect(() =>
+      normalizeElementSourceReferences([
+        {
+          sourceId: 'script',
+          chunkId: 'chunk-1',
+          title: 'Course script',
+          page: 1,
+          metadata: { excerpt: 'Raw source text must not persist' },
+        },
+      ])
+    ).toThrowError(/Source text must not be persisted/u)
+  })
+
   it('rejects repeated candidate IDs within one batch', async () => {
     const { course, participant } = await createFixture()
     const input = candidate()
@@ -284,6 +360,38 @@ describe('personal elements service', () => {
     expect(revised.explanation).toBe(
       'Die Flashcard verwendet ausschließlich die Informationen aus dem bereitgestellten Chunk.'
     )
+  })
+
+  it('requires generated source revisions to replace the complete card atomically', async () => {
+    const { course, participant } = await createFixture()
+    const [element] = await createPersonalElements(
+      { courseId: course.id, candidates: [candidate()] },
+      context(participant.id)
+    )
+
+    await expect(
+      updatePersonalElement(
+        {
+          id: element!.id,
+          expectedVersion: element!.version,
+          sources: candidate().sources,
+        },
+        context(participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },
+    })
+    expect(
+      await prisma.personalElement.findUniqueOrThrow({
+        where: { id: element!.id },
+      })
+    ).toMatchObject({
+      version: element!.version,
+      name: element!.name,
+      content: element!.content,
+      explanation: element!.explanation,
+      sources: element!.sources,
+    })
   })
 
   it('rejects a candidate that was durably discarded', async () => {
@@ -650,14 +758,19 @@ describe('personal elements service', () => {
     const revisedSources = [
       {
         sourceId: 'updated-source',
-        chunkId: 'updated-chunk',
+        kind: 'DOCUMENT' as const,
         title: 'Updated notes',
+        chunkIds: ['updated-chunk'],
+        locators: [{ type: 'PAGE_RANGE' as const, pageFrom: 7, pageTo: 9 }],
       },
     ]
     const revisedWithSources = await updatePersonalElement(
       {
         id: element!.id,
         expectedVersion: 2,
+        name: revised.name,
+        content: revised.content,
+        explanation: revised.explanation,
         sources: revisedSources,
       },
       context(participant.id)
@@ -786,10 +899,15 @@ describe('personal elements service', () => {
         sources: [
           {
             sourceId: 'course-material',
-            chunkId: updatedChunkId,
+            kind: 'DOCUMENT',
             title: 'Updated economics notes',
+            chunkIds: [updatedChunkId],
+            locators: [{ type: 'PAGE_RANGE', pageFrom: 7, pageTo: 9 }],
           },
         ],
+        name: element!.name,
+        content: element!.content,
+        explanation: explanationRevision.explanation,
       },
       context(participant.id)
     )
@@ -800,18 +918,29 @@ describe('personal elements service', () => {
       sourceId: 'course-material',
       title: 'Updated economics notes',
     })
-    expect(revised.sources?.[0]?.chunkId).not.toBe(input.sources[0]?.chunkId)
+    expect(revised.sources?.[0]?.chunkIds).not.toEqual(
+      input.sources[0]?.chunkIds
+    )
     expectNewLearningState(revised)
 
     const sameSources = [
       {
         title: 'Updated economics notes',
-        chunkId: updatedChunkId,
         sourceId: 'course-material',
+        kind: 'DOCUMENT' as const,
+        chunkIds: [updatedChunkId],
+        locators: [{ type: 'PAGE_RANGE' as const, pageFrom: 7, pageTo: 9 }],
       },
     ]
     const unchanged = await updatePersonalElement(
-      { id: element!.id, expectedVersion: 3, sources: sameSources },
+      {
+        id: element!.id,
+        expectedVersion: 3,
+        name: revised.name,
+        content: revised.content,
+        explanation: revised.explanation,
+        sources: sameSources,
+      },
       context(participant.id)
     )
     expect(unchanged.version).toBe(3)

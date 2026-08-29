@@ -65,8 +65,14 @@ not eligible. Course and participant deletion cascade to the cards.
 
 The row keeps its own SM-2 state (`eFactor`, `interval`, streak and response
 counters, and `nextDueAt`). The GraphQL service caps a participant at 500 cards
-per course, validates source metadata (up to 32 chunk references, bounded IDs,
-titles, URLs, and 64 KiB serialized metadata), and persists no retrieved text.
+per course and validates the grouped `ElementSourceReference` value stored in
+the existing `sources` JSON. One reference represents one source material and
+contains a stable title snapshot, source kind, exact cited chunk IDs as internal
+lineage, an optional safe canonical URL, and ordered page spans or exact web
+anchors. The parser accepts the unreleased flat prototype for compatibility but
+every new write is grouped. It bounds references, chunk IDs, locators, URLs,
+and the 64 KiB serialized value, rejects source bodies and signed URLs, and
+persists no retrieved text.
 The `origin` field records whether content was AI-generated or authored. Content
 revisions increment `version`; the revision and learning-state reset contract is
 defined by the service and does not create a lecturer trust state. Chat proposes
@@ -96,6 +102,14 @@ check in its transaction, discardPersonalElementCandidate persists the
 negative decision idempotently, and updatePersonalElement applies the
 expected-version and scheduling contract to a saved card. listPersonalElements
 returns the durable saved state for reload.
+
+Source references are system-managed. Manual edits to card text preserve the
+existing set. A successful generated revision supplies the full card and
+replaces the complete set atomically; an abstention or failure changes neither.
+The saved `PersonalElement` owns this snapshot independently of the Chat
+generation record, so generated-message retention is not the citation
+lifecycle. The rationale and future lecturer-owned composition contract are in
+[ADR 0042](./adr/0042-generated-elements-own-source-reference-snapshots.md).
 
 Chat candidates are not bulk-selected. Each card is saved or discarded on its
 own. A discard is stored in `PersonalElementDiscard`, scoped to the participant,

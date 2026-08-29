@@ -42,11 +42,20 @@ vi.mock('@/src/components/message-sources-context', () => ({
     messageId: 'candidate-message',
     sources: [
       {
-        id: 'candidate:source-1:chunk-1',
+        id: 'candidate:candidate-1:source-1',
         index: 1,
         type: 'document',
         title: 'Course reader',
         page: 12,
+        url: 'https://example.org/course-reader.pdf#page=12',
+        elementReference: {
+          sourceId: 'source-1',
+          kind: 'DOCUMENT',
+          title: 'Course reader',
+          canonicalUrl: 'https://example.org/course-reader.pdf',
+          chunkIds: ['chunk-1'],
+          locators: [{ type: 'PAGE_RANGE', pageFrom: 12, pageTo: 12 }],
+        },
       },
     ],
   }),
@@ -195,7 +204,16 @@ describe('personal-element cards', () => {
                 sourceMessageId: 'candidate-message',
                 sourceToolCallId: 'generation-tool',
                 sources: [
-                  { sourceId: 'source-1', chunkId: 'chunk-1', page: 12 },
+                  {
+                    sourceId: 'source-1',
+                    kind: 'DOCUMENT',
+                    title: 'Course reader',
+                    canonicalUrl: 'https://example.org/course-reader.pdf',
+                    chunkIds: ['chunk-1'],
+                    locators: [
+                      { type: 'PAGE_RANGE', pageFrom: 12, pageTo: 12 },
+                    ],
+                  },
                 ],
               },
             ],

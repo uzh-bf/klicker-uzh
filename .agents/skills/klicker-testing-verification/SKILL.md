@@ -159,6 +159,17 @@ flag must be tested both disabled (creation tools hidden) and enabled; saved
 card paths remain available in either state. A green GraphQL or chat check does
 not prove the browser state or the external model path.
 
+Grounded personal-element generation also needs deterministic tests for
+structured abstention, missing locators, evidence-protocol leakage, grouped and
+disjoint page ranges, exact web anchors, labelled-versus-physical page display,
+unsafe-link suppression, legacy-source normalization, and the absence of source
+bodies from persisted references. Revision tests must prove that a successful
+generated revision replaces content and references together, while insufficient
+evidence leaves both unchanged. Browser proof must show the same grouped
+references on the Chat candidate and saved-card views, keep unavailable sources
+visible without a link, and hide practice references until the answer is
+revealed.
+
 ## Pre-PR verification checklist
 
 Every item, in order; paste evidence (command + tail of output, screenshots) into the PR or task report:

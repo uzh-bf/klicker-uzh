@@ -19,6 +19,7 @@ import { twMerge } from 'tailwind-merge'
 import { getSourceSecondaryLine } from '@/src/lib/sources/sourceDisplay'
 import type { ChatSource, ChatSourceType } from '@/src/lib/sources/types'
 import { useMessageSourcesContext } from './message-sources-context'
+import { SourceActionLinks } from './source-action-links'
 import { SourcePreviewContent } from './source-preview-content'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 
@@ -88,7 +89,7 @@ function SourceCard({
           </span>
         )}
       </span>
-      {source.url && (
+      {(source.url || source.elementReference) && (
         <ExternalLinkIcon
           aria-hidden="true"
           className="text-muted-foreground mt-0.5 size-3 shrink-0"
@@ -106,11 +107,19 @@ function SourceCard({
       // stay visible even though the card itself isn't a link. All cards use
       // the same passive tooltip for their source details.
       'border-border bg-background focus-visible:ring-ring flex h-full min-w-0 items-start gap-2 rounded-lg border p-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-1',
-      source.url && 'hover:bg-accent hover:text-accent-foreground'
+      source.url &&
+        !source.elementReference &&
+        'hover:bg-accent hover:text-accent-foreground'
     ),
   }
 
-  const card = source.url ? (
+  const card = source.elementReference ? (
+    // biome-ignore lint/a11y/noNoninteractiveTabindex: Citation navigation focuses this passive source summary before the participant chooses a locator action.
+    <div {...sharedProps} tabIndex={0}>
+      {inner}
+      <SourceActionLinks source={source.elementReference} />
+    </div>
+  ) : source.url ? (
     <a
       {...sharedProps}
       href={source.url}

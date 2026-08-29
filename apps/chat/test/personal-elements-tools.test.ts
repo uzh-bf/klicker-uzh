@@ -17,6 +17,7 @@ vi.mock('ai', async () => {
 })
 
 import {
+  buildElementSourceReferences,
   type CardPlan,
   cardPlanInputSchema,
   cardPlanSchema,
@@ -30,14 +31,23 @@ import {
   createProposeCardPlanTool,
   createRevisePersonalElementTool,
   generationOutputSchema,
+  generationResultSchema,
 } from '../src/lib/server/personalElements/tools'
 
 const retrieval = {
   sources: [
     {
       file_name: 'Monetary policy',
-      page_number: 4,
-      chunks: [{ chunk_id: 'chunk-1', content: 'Synthetic course evidence.' }],
+      source_type: 'document',
+      source_url: 'https://example.org/monetary-policy.pdf',
+      chunks: [
+        {
+          chunk_id: 'chunk-1',
+          content: 'Synthetic course evidence.',
+          page_number: 4,
+          labeled_page_number: 'iv',
+        },
+      ],
     },
   ],
 }
@@ -76,11 +86,14 @@ describe('personal-element chat tools', () => {
     vi.clearAllMocks()
     mocks.generateObject.mockResolvedValue({
       object: {
-        type: 'FLASHCARD',
-        title: 'Revised card',
-        front: 'Short answer.',
-        back: 'Synthetic explanation.',
-        citedChunkIds: ['chunk-1'],
+        status: 'ready',
+        card: {
+          type: 'FLASHCARD',
+          title: 'Revised card',
+          front: 'Short answer.',
+          back: 'Synthetic explanation.',
+          citedChunkIds: ['chunk-1'],
+        },
       },
       usage: { inputTokens: 8, outputTokens: 12 },
     })
@@ -304,14 +317,50 @@ describe('personal-element chat tools', () => {
   test('keeps page evidence separate from source metadata', () => {
     const normalized = normalizeRetrievedChunks(retrieval)
 
-    expect(normalized.sources).toEqual([
+    expect(normalized.chunks).toEqual([
       {
         sourceId: 'Monetary policy',
         chunkId: 'chunk-1',
+        text: 'Synthetic course evidence.',
+        kind: 'DOCUMENT',
         title: 'Monetary policy',
+        canonicalUrl: 'https://example.org/monetary-policy.pdf',
         page: 4,
+        labeledPage: 'iv',
       },
     ])
+  })
+
+  test('groups cited pages into ordered disjoint ranges without source bodies', () => {
+    const chunks = [1, 2, 3, 4, 7, 8, 9].map((page) => ({
+      chunkId: `chunk-${page}`,
+      sourceId: 'script',
+      text: `Synthetic evidence on page ${page}`,
+      kind: 'DOCUMENT' as const,
+      title: 'Course script',
+      canonicalUrl: 'https://example.org/course-script.pdf',
+      page,
+    }))
+
+    const references = buildElementSourceReferences(
+      chunks.map(({ chunkId }) => chunkId),
+      chunks
+    )
+
+    expect(references).toEqual([
+      {
+        sourceId: 'script',
+        kind: 'DOCUMENT',
+        title: 'Course script',
+        canonicalUrl: 'https://example.org/course-script.pdf',
+        chunkIds: chunks.map(({ chunkId }) => chunkId),
+        locators: [
+          { type: 'PAGE_RANGE', pageFrom: 1, pageTo: 4 },
+          { type: 'PAGE_RANGE', pageFrom: 7, pageTo: 9 },
+        ],
+      },
+    ])
+    expect(JSON.stringify(references)).not.toContain('Synthetic evidence')
   })
 
   test('keeps maximum plan prompts out of persisted sources', async () => {
@@ -349,9 +398,19 @@ describe('personal-element chat tools', () => {
     expect(generated.candidates[0]?.sources).toEqual([
       {
         sourceId: 'Monetary policy',
-        chunkId: 'chunk-1',
+        kind: 'DOCUMENT',
         title: 'Monetary policy',
-        page: 4,
+        canonicalUrl: 'https://example.org/monetary-policy.pdf',
+        chunkIds: ['chunk-1'],
+        locators: [
+          {
+            type: 'PAGE_RANGE',
+            pageFrom: 4,
+            pageTo: 4,
+            labelFrom: 'iv',
+            labelTo: 'iv',
+          },
+        ],
       },
     ])
 
@@ -768,6 +827,158 @@ describe('personal-element chat tools', () => {
     })
     expect(JSON.stringify(result)).not.toContain('No grounded retrieval')
     expect(generationOutputSchema.safeParse(result).success).toBe(true)
+  })
+
+  test('fails closed when the nested model abstains', async () => {
+    const plan: CardPlan = {
+      planId: '00000000-0000-0000-0000-000000000011',
+      topic: 'Monetary policy',
+      cards: [
+        {
+          type: 'FLASHCARD',
+          candidateId: 'card-1',
+          title: 'Rates',
+          intent: 'Define rates',
+          query: 'rates',
+        },
+      ],
+    }
+    mocks.generateObject.mockResolvedValueOnce({
+      object: { status: 'insufficient_evidence' },
+      usage: { inputTokens: 5, outputTokens: 1 },
+    })
+    const outputs: unknown[] = []
+    for await (const output of executeStreamingTool(
+      createGenerateCardsTool({ ...options, approvedPlan: plan })
+    ).execute(plan, { toolCallId: 'generate-abstention' })) {
+      outputs.push(output)
+    }
+
+    expect(outputs.at(-1)).toMatchObject({
+      status: 'error',
+      candidates: [],
+      failedCards: [{ candidateId: 'card-1', code: 'insufficient_evidence' }],
+    })
+    expect(
+      generationResultSchema.safeParse({
+        status: 'insufficient_evidence',
+      }).success
+    ).toBe(true)
+  })
+
+  test('treats missing citation locators as insufficient evidence', async () => {
+    const plan: CardPlan = {
+      planId: '00000000-0000-0000-0000-000000000012',
+      topic: 'Monetary policy',
+      cards: [
+        {
+          type: 'FLASHCARD',
+          candidateId: 'card-1',
+          title: 'Rates',
+          intent: 'Define rates',
+          query: 'rates',
+        },
+      ],
+    }
+    const retrievalWithoutPage = {
+      sources: [
+        {
+          file_name: 'Synthetic notes',
+          source_type: 'document',
+          chunks: [
+            { chunk_id: 'chunk-1', content: 'Synthetic course evidence.' },
+          ],
+        },
+      ],
+    }
+    const outputs: unknown[] = []
+    for await (const output of executeStreamingTool(
+      createGenerateCardsTool({
+        ...options,
+        approvedPlan: plan,
+        docQueryTool: {
+          execute: vi.fn().mockResolvedValue(retrievalWithoutPage),
+        },
+      })
+    ).execute(plan, { toolCallId: 'generate-missing-locator' })) {
+      outputs.push(output)
+    }
+
+    expect(outputs.at(-1)).toMatchObject({
+      status: 'error',
+      candidates: [],
+      failedCards: [{ candidateId: 'card-1', code: 'insufficient_evidence' }],
+    })
+  })
+
+  test('rejects retrieval protocol markers in generated card content', async () => {
+    const plan: CardPlan = {
+      planId: '00000000-0000-0000-0000-000000000013',
+      topic: 'Monetary policy',
+      cards: [
+        {
+          type: 'FLASHCARD',
+          candidateId: 'card-1',
+          title: 'Rates',
+          intent: 'Define rates',
+          query: 'rates',
+        },
+      ],
+    }
+    mocks.generateObject.mockResolvedValueOnce({
+      object: {
+        status: 'ready',
+        card: {
+          type: 'FLASHCARD',
+          title: 'Rates',
+          front: 'What does chunk-1 say?',
+          back: 'A substantive answer.',
+          citedChunkIds: ['chunk-1'],
+        },
+      },
+    })
+    const outputs: unknown[] = []
+    for await (const output of executeStreamingTool(
+      createGenerateCardsTool({ ...options, approvedPlan: plan })
+    ).execute(plan, { toolCallId: 'generate-leak' })) {
+      outputs.push(output)
+    }
+
+    expect(outputs.at(-1)).toMatchObject({
+      status: 'error',
+      candidates: [],
+      failedCards: [{ candidateId: 'card-1', code: 'generation_failed' }],
+    })
+  })
+
+  test('does not update a saved card when revision evidence is insufficient', async () => {
+    mocks.listPersonalElements.mockResolvedValue([
+      {
+        id: '00000000-0000-0000-0000-000000000014',
+        version: 3,
+        name: 'Saved card',
+        content: 'Front',
+        explanation: 'Back',
+        origin: 'AI_GENERATED',
+        nextDueAt: null,
+      },
+    ])
+    mocks.generateObject.mockResolvedValueOnce({
+      object: { status: 'insufficient_evidence' },
+    })
+
+    const result = await execute(createRevisePersonalElementTool(options), {
+      id: '00000000-0000-0000-0000-000000000014',
+      expectedVersion: 3,
+      instruction: 'Make it more specific',
+    })
+
+    expect(result).toMatchObject({
+      status: 'unchanged',
+      version: 3,
+      reason: 'insufficient_evidence',
+    })
+    expect(mocks.updatePersonalElement).not.toHaveBeenCalled()
   })
 
   test('maps model and citation failures to generation_failed', async () => {

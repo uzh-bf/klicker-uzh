@@ -7,6 +7,7 @@ import type {
   ElementInstanceOptions,
   ElementInstanceResults,
   ElementOptions,
+  ElementSourceReference,
   FlashcardGenerationConfiguration,
   GeneratedFlashcard,
   GeneratedFlashcardEditable,
@@ -87,14 +88,7 @@ declare global {
     type PrismaElementGenerationProvenance =
       QuestionGenerationQuestionProvenance
     type PrismaPersonalElementOptions = Record<string, never>
-    type PrismaPersonalElementSources = Array<{
-      sourceId: string
-      chunkId: string
-      title?: string
-      url?: string
-      page?: number
-      metadata?: Record<string, string | number | boolean | null>
-    }>
+    type PrismaPersonalElementSources = ElementSourceReference[]
   }
 }
 // #endregion

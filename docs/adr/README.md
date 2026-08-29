@@ -27,6 +27,7 @@ The durable record of **why** — the significant, hard-to-reverse choices behin
 - [0022](./0022-no-student-text-in-manage.md) — The manage surface shows no student-authored text
 - [0037](./0037-standard-activity-formats.md) — Practice quizzes, microlearnings, and group activities are standard capabilities
 - [0041](./0041-chatbot-trusted-pilot-boundary.md) — Stage chatbot usage enforcement and keep the trusted pilot operations-assisted
+- [0042](./0042-generated-elements-own-source-reference-snapshots.md) — Generated elements own their durable source-reference snapshots
 
 `0001`, `0003`, and `0008` are each used twice — their lines were numbered
 independently before this index existed. Numbers are not reassigned, because

@@ -9,10 +9,16 @@ import type {
   MDiscardPersonalElementCandidateMutation,
   MUpdatePersonalElementMutation,
   PersonalElement,
+  PersonalElementCandidateInput,
   QPersonalElementsQuery,
   UpdatePersonalElementInput,
 } from '@klicker-uzh/graphql/dist/ops'
+import {
+  ElementSourceKind,
+  ElementSourceLocatorType,
+} from '@klicker-uzh/graphql/dist/ops'
 import { prisma } from '@klicker-uzh/prisma'
+import type { ElementSourceReference } from '@klicker-uzh/types'
 import { signJWT } from '@klicker-uzh/util'
 
 const JWT_TTL_SECONDS = 5 * 60
@@ -191,13 +197,26 @@ export async function abortCardGenerationLease(
 }
 
 export async function createPersonalElements(
-  input: CreatePersonalElementsInput,
+  input: Omit<CreatePersonalElementsInput, 'candidates'> & {
+    candidates: Array<
+      Omit<PersonalElementCandidateInput, 'sources'> & {
+        sources: ElementSourceReference[]
+      }
+    >
+  },
   participantId: string
 ): Promise<PersonalElement[]> {
+  const graphqlInput: CreatePersonalElementsInput = {
+    ...input,
+    candidates: input.candidates.map((candidate) => ({
+      ...candidate,
+      sources: candidate.sources.map(toGraphqlSourceReference),
+    })),
+  }
   const data =
     await executePersonalElementOperation<MCreatePersonalElementsMutation>({
       operationName: 'MCreatePersonalElements',
-      variables: { input },
+      variables: { input: graphqlInput },
       participantId,
     })
   return data.createPersonalElements ?? []
@@ -231,13 +250,24 @@ export async function listPersonalElements(
 }
 
 export async function updatePersonalElement(
-  input: UpdatePersonalElementInput,
+  input: Omit<UpdatePersonalElementInput, 'sources'> & {
+    sources?: ElementSourceReference[] | null
+  },
   participantId: string
 ): Promise<PersonalElement> {
+  const { sources, ...update } = input
+  const graphqlInput: UpdatePersonalElementInput = {
+    ...update,
+    ...(sources
+      ? { sources: sources.map(toGraphqlSourceReference) }
+      : sources === null
+        ? { sources: null }
+        : {}),
+  }
   const data =
     await executePersonalElementOperation<MUpdatePersonalElementMutation>({
       operationName: 'MUpdatePersonalElement',
-      variables: { input },
+      variables: { input: graphqlInput },
       participantId,
     })
   const element = data.updatePersonalElement
@@ -245,6 +275,34 @@ export async function updatePersonalElement(
     throw new Error('Personal element update returned no element')
   }
   return element
+}
+
+function toGraphqlSourceReference(source: ElementSourceReference) {
+  return {
+    sourceId: source.sourceId,
+    kind:
+      source.kind === 'DOCUMENT'
+        ? ElementSourceKind.Document
+        : ElementSourceKind.Web,
+    title: source.title,
+    canonicalUrl: source.canonicalUrl,
+    chunkIds: source.chunkIds,
+    locators: source.locators.map((locator) =>
+      locator.type === 'PAGE_RANGE'
+        ? {
+            type: ElementSourceLocatorType.PageRange,
+            pageFrom: locator.pageFrom,
+            pageTo: locator.pageTo,
+            labelFrom: locator.labelFrom,
+            labelTo: locator.labelTo,
+          }
+        : {
+            type: ElementSourceLocatorType.WebAnchor,
+            url: locator.url,
+            label: locator.label,
+          }
+    ),
+  }
 }
 
 /**

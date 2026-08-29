@@ -10,9 +10,10 @@ This plan also removes language-specific retrieval and presentation heuristics,
 reduces the Chat route and supporting modules, and keeps one small extension
 seam for future personal-element types.
 
-Status: awaiting approval. No implementation, stack integration, commit, push,
-pull-request update, deployment, migration, or live AI run is authorized by
-this planning pass.
+Status: S1 through S6 and the 2026-08-29 grounded-generation follow-up are
+complete and published on pull request #5483. S7 is approved and in progress on
+the existing top worktree. No deployment, migration, or stack integration is
+authorized.
 
 ## Plan identity and prior decisions
 
@@ -36,31 +37,38 @@ The Sol planner report is recorded locally at
 
 ## Execution contract
 
-After approval, the package execution orchestrator owns the slices, generated
-artifacts, focused reviews, verification, plan Progress, and local commits on
-the existing three branches. It may use bounded executors with exclusive file
-ownership and must verify their work before accepting it.
+The original S0 through S6 authority and stack state are historical and remain
+recorded in Progress. They do not govern the proposed S7 follow-up.
 
-Approval does not authorize any of these external or integration actions:
+One approval of this reviewed S7 plan authorizes the package execution
+orchestrator to:
 
-- rebasing or merging the stack onto current `origin/v3-ai`;
-- merging `origin/dev` directly into any stack branch;
-- pushing the three branches or updating their pull requests;
-- starting an Infisical-backed or OpenRouter-backed local runtime;
-- applying a database migration or using non-synthetic data;
-- merging, publishing, deploying, or deleting branches and worktrees.
+- edit only the existing top worktree and update generated GraphQL artifacts;
+- reuse the already running Infisical-backed local runtime, staging doc-query
+  tunnel, seeded synthetic account, and external model for one bounded browser
+  generation check;
+- run focused and repository-native verification, required reviews, and plan
+  Progress updates;
+- create local conventional commits on
+  `rs/student-generated-practice-elements-plan`;
+- push the exact reviewed head to
+  `origin/rs/student-generated-practice-elements-plan` and update pull request
+  #5483 to describe the whole branch.
 
-The current top branch is clean at
-`777009121c8c54829e6d127f736f9e619a3eab5f`. It is nine commits behind and
-twenty-six commits ahead of `origin/v3-ai`. The remote `origin/dev` line has
-also advanced since the stack merge-base and overlaps files changed in the
-stack. Execution should therefore start with one separately approved,
-stack-aware integration onto `origin/v3-ai`, cascading A to B to C. A direct
-merge from `origin/dev` is not part of this plan.
+Approval does not authorize upstream integration, another stack cascade, a
+physical database migration, non-synthetic or production data, merge,
+deployment, release publication, branch or worktree deletion, or a broader
+external model evaluation. The current branch head is
+`cce6e445134f6130b0a32d5dcb4e9f826c8354dd`, matches its upstream, and is
+nineteen commits behind and one hundred sixty-seven commits ahead of
+`origin/v3`. S7 must pass on this base first; any later integration remains a
+separate decision.
 
-The terminal condition for local execution is a clean three-layer stack with
-all planned checks and reviews passing at the exact top head. Push and pull-
-request updates remain a separate delivery decision.
+The terminal condition is the reviewed S7 behavior committed and pushed at one
+exact head, pull request #5483 updated, deterministic checks passing, the single
+bounded synthetic staging browser run recorded, and the existing local runtime
+left available for user testing. A provider or tunnel failure is reported as
+delivery-pending evidence rather than hidden or replaced with a mocked claim.
 
 ## Review findings
 
@@ -109,11 +117,18 @@ matching English or German sentences.
 | Save and Discard | Keep the existing durable lifecycle. | The backend is the sole authority and Discard remains persistent. |
 | Generation lease | Keep it as operational coordination. | Do not expose it as a user-facing product concept. |
 | Element type | Keep one `type` discriminator with `FLASHCARD` now. | Future types add one backend validator and one renderer, not a workflow framework. |
+| Source material | Reuse the external course resource as the referenced object. | Do not copy its body or make Klicker a second source-material store. |
+| Element source reference | Extend the existing bounded personal-element source metadata into one durable, element-owned value per source material. | Persist source identity, a display snapshot, exact locator spans, and internal chunk lineage; render it as a citation. |
+| Citation | Compose the element source reference with the existing source-preview UI. | It provides generation context, not correctness, entailment, availability, or lecturer review. |
 
-No new database model, column, enum, or migration is planned. The existing
-single migration remains the stack's only migration unless execution proves a
-missing invariant that cannot be expressed with the current schema. Such a
-finding is a stop condition and requires a plan correction before schema work.
+S7 adds no database model, column, enum, or physical migration. It changes the
+typed value stored in the existing `PersonalElement.sources` JSON field from
+one flat entry per chunk to one grouped element source reference per source
+material. A reader-side compatibility normalizer keeps already saved prototype
+rows usable: the GraphQL service boundary accepts old flat entries and new
+grouped references, returns the grouped shape, and writes only the grouped
+shape. The later lecturer slice is expected to add Element-owned storage and
+will own its separately reviewed migration.
 
 ## Target architecture
 
@@ -150,8 +165,9 @@ Chat owns:
 - conversation branch selection and generic AI history projection.
 
 Raw retrieval chunks stay inside the Chat/model boundary. GraphQL receives only
-the compact candidate payload and bounded source metadata needed to validate
-and save the result.
+the compact candidate payload and bounded element source references needed to
+validate and save the result. No excerpt or source body is copied into the
+generated-card tool result, GraphQL payload, or PersonalElement.
 
 Chat must not query or mutate `PersonalElement`, `PersonalElementDiscard`, or
 `CardGenerationLease` through Prisma. It must not import internal GraphQL
@@ -421,6 +437,138 @@ remains.
 
 **Commit.** `refactor(chat): simplify generated card presentation`
 
+### S7 — fail closed and persist useful personal-element citations on C
+
+**Observed defect.** The exact local thread returned chunk-level
+`page_number`, `labeled_page_number`, and content from the staging doc-query
+service. Chat read the page only from the parent source and reduced candidate
+references to source and chunk identifiers, so the UI lost page and preview
+context. The nested generator also required a card-shaped object and therefore
+had no valid way to abstain when retrieved evidence did not support the planned
+card. It produced an unusable card that discussed the retrieval container
+instead.
+
+**Generation outcome.** A generator returns either a ready, self-contained
+Flashcard or a structured `insufficient_evidence` outcome with no generated
+prose. Abstentions reuse the existing bounded card failure and never enter the
+visible candidate list. Ready cards cite only retrieved chunk identifiers. A
+narrow deterministic guard rejects exact cited chunk identifiers and reserved
+protocol delimiters if they leak into user-facing card content; generic domain
+terms such as “source” or “retrieval” remain valid content.
+
+**Durable reference.** Introduce one shared `ElementSourceReference` value per
+source material and use it in the existing typed `PersonalElement.sources`
+JSON. Each value contains:
+
+- the provider source identity, source kind, immutable display-title snapshot,
+  and an optional safe canonical URL that contains no ephemeral credentials;
+- the exact cited chunk identifiers as internal lineage, not participant-facing
+  labels;
+- ordered, disjoint locators: physical page spans with publisher-labelled
+  endpoints for documents, or exact provider-supplied anchors for websites.
+
+One canonical parser at the GraphQL service boundary accepts the prototype's
+old flat per-chunk entries and the new grouped references, returns only the
+grouped domain shape, and writes only that grouped shape. It preserves the
+existing chunk-count and aggregate-byte limits and adds explicit bounds for
+reference count and locator spans. Chat verifies cited chunk, page, and anchor
+membership against the raw retrieval. GraphQL validates grouped shape, bounds,
+participant ownership, and immutable candidate linkage without claiming it can
+reconstruct raw retrieval evidence.
+
+Chat reads numeric and labelled pages from each chunk, using parent values only
+as a legacy fallback. It groups cited chunks by source material, sorts them by
+physical page, and collapses adjacent pages while retaining disjoint spans such
+as `p. 1–4, 7–9`. Display leads with publisher-labelled pages and includes the
+physical PDF page only when it differs. Each disjoint page span or website
+anchor is its own open action: a public PDF action targets that span's first
+physical page, and a website action uses only the exact anchor supplied by the
+provider. A filename or stale URL remains a useful snapshot but does not become
+an authorized link.
+
+No excerpt or source body is copied into the generated-card tool result,
+GraphQL payload, or PersonalElement. Candidate hover and focus previews use the
+source title and exact locators. A link is active only when an existing
+authoritative resolver proves current access or the target is demonstrably
+public; persisted URLs and PersonalElement ownership are never authorization.
+A removed or unauthorized source keeps its title and locators, is labelled
+unavailable, and has no active action.
+
+References are system-managed. Participants cannot add, edit, or remove one
+independently, but may delete the whole card. Manual card edits retain the label
+“Sources used to generate this card.” A successful AI revision atomically
+replaces content and the complete reference set; abstention or failure leaves
+both unchanged.
+
+**Presentation.** Chat candidate review and personal-card management show the
+full citations. Active-recall practice hides them until the answer is revealed,
+then shows them through the existing source-preview component. The same rule
+applies on reload. Multiple chunks from one source render as one citation, not
+as implementation-level chunk rows.
+
+**Primary ownership.** Shared source-reference types, GraphQL validation and
+serialization, Chat generation and retrieval normalization, candidate and
+saved-card source normalization, personal-card GraphQL operations and PWA
+presentation, focused tests, `CONTEXT.md`, ADRs 0027 and 0042, and the Chat,
+GraphQL, and domain-model wiki pages.
+
+**Acceptance.** Runtime-shaped fixtures prove per-chunk pages and labels win;
+structured abstention and mixed batches emit no unusable candidates, including
+intermediate streams; exact protocol leakage fails closed without rejecting
+legitimate generic terminology; source grouping retains exact disjoint spans;
+labelled and physical page targets do not drift; each disjoint span has its own
+action; only authorized public targets or provider-supplied web anchors become
+links; serialization tests prove no excerpt or source body enters the generated
+tool result, GraphQL payload, or PersonalElement; durable references survive
+Save, reload, manual edit, and source unavailability; successful revision
+replaces them atomically; candidate, management, and post-reveal practice
+surfaces render the same citations. Deterministic tests gate abstention and
+reference behavior. One fresh synthetic staging browser run then proves the
+integrated ready-card citation, exact locator action, persistence, and
+hidden-before-reveal flow without exposing real course content. Any observed
+abstention is supplementary evidence, not a browser acceptance gate.
+
+**Non-goals.** No physical database migration, ingestion or doc-query change,
+lecturer Element schema change, semantic LLM judge, new evaluation dependency,
+or persisted source excerpt. The private DeepEval submodule remains
+uninitialized; deterministic contract tests and one synthetic real-model/browser
+run are proportionate for this defect. Chapter support requires a later
+ingestion and doc-query contract that emits a structured section locator; S7
+does not accept or fabricate one.
+
+**Delivery after approval.** Implement and review S7, commit it on the existing
+top branch, push that exact head to `origin/rs/student-generated-practice-elements-plan`,
+and update pull request #5483. Do not integrate upstream, merge, deploy,
+release-publish, or delete branches or worktrees.
+
+### Later lecturer composition — mapped, not authorized in S7
+
+Lecturer-generated elements reuse the same `ElementSourceReference` value.
+When a `GeneratedElementDraft` is saved, the transaction copies its content and
+complete reference snapshot onto the resulting `Element`. The Element-owned
+snapshot is authoritative for participant-facing citations, duplication, and
+full-fidelity export; internal chunk lineage stays out of public export shapes.
+The generation record remains workflow state and is not the durable citation
+owner.
+
+Lecturer manual edits retain “Sources used to generate this Element”; a
+successful generated revision replaces the reference set atomically. Adoption
+of a personal element copies its references even when a source is unavailable;
+the unavailable snapshot remains visible without an open action and does not
+become a correctness or review claim. Lecturer management shows citations
+wherever the Element is reviewed, while participant practice follows the same
+post-reveal rule as personal elements.
+
+That later slice owns the Element schema migration, generated-draft transfer,
+duplication and export projections, and cleanup of content-bearing generation
+records. It must choose and enforce a bounded retention duration before release,
+after proving durable transfer. No new generation-audit entity is planned:
+content and references live on the Element, and required cost facts must be
+preserved through the existing accounting ledger before their generation build
+can be removed. Rejected, failed, or abstained workflow detail may expire. A
+concrete compliance or support requirement would trigger a separate decision
+before adding a receipt model.
+
 ## Delegation and review map
 
 | Slice | Execution route | Review gate | Acceptance evidence |
@@ -432,6 +580,7 @@ remains.
 | S4 | Chat executor with exclusive adapter/auth ownership | Simplifier plus architecture/auth slice review | Generated-client and denial-path tests |
 | S5 | Chat executor after S4 acceptance | Simplifier plus retrieval/AI-contract slice review | Deterministic protocol-state and tool tests |
 | S6 | Chat executor after S5 acceptance | Simplifier plus UI/history slice review | Component tests and browser evidence |
+| S7 | Main orchestrator; generation, durable references, and presentation are one coupled evidence contract | Simplifier plus AI/data-boundary slice review | Focused contract tests, source-body-free persistence regression, Chat and PWA browser proof |
 | Integrated stack | Main orchestrator | Native `final-reviewer`, with model and provider selected through model routing | Exact-head full verification and stack diff |
 
 Executors are not given secret values, real participant data, or unrelated
@@ -454,6 +603,9 @@ generated artifacts, product decisions, authentication design, and final proof.
   terminal failure, and retry ownership;
 - reject missing sources, foreign source identifiers, excessive source count,
   and excessive aggregate source metadata before rendering;
+- validate the grouped reference shape, unique chunk identifiers, reference and
+  locator bounds, safe URLs, ownership and candidate linkage, and the absence
+  of excerpts or source bodies;
 - prove Save and Discard idempotency, mutual exclusion, reload state, expected
   version, and scheduling behavior.
 
@@ -463,6 +615,10 @@ generated artifacts, product decisions, authentication design, and final proof.
   or locale fixtures;
 - keep planning locked after missing, failed, or empty retrieval;
 - require fresh retrieval for every candidate in an approved plan;
+- emit a structured abstention without a candidate when evidence cannot support
+  both sides of a card;
+- group only cited chunks into exact page spans, keep labelled and physical page
+  positions distinct, and reject fabricated locators or foreign anchors;
 - prove that ordinary assistant prose cannot be interpreted, rendered, or
   saved as a generated candidate;
 - keep raw chunks inside Chat while sending only bounded candidate/source data
@@ -477,9 +633,26 @@ generated artifacts, product decisions, authentication design, and final proof.
   as an ordinary practice quiz;
 - show an accepted plan as accepted while preserving its final contents;
 - render front and back Markdown without visible source syntax artifacts;
-- show actual inline and card-level references using the shared sources area;
+- render one citation per source material with exact disjoint labelled spans,
+  and target safe links to the cited PDF page or supplied website anchor;
+- show citations in candidate review and personal-card management, hide them
+  before active-recall reveal, and show them after reveal;
+- retain an unavailable citation snapshot without offering a stale or
+  unauthorized link;
 - Save or Discard each card independently and retain both outcomes on reload;
 - verify relevant locales, mobile and desktop layouts, keyboard use, and focus.
+
+### S7 primary test matrix
+
+| Contract              | Primary seam                                               | Required evidence                                                                                                 |
+| --------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Insufficient evidence | Nested generation result parser                            | Structured abstention emits no candidate in partial or final tool output.                                         |
+| Legacy compatibility  | GraphQL personal-element source parser                     | Old flat entries normalize to grouped references; every new write uses only the grouped shape.                    |
+| Exact grouping        | Chat retrieval adapter                                     | Only cited chunks contribute; adjacent pages collapse and disjoint spans remain distinct with labelled endpoints. |
+| Source-body exclusion | Tool-result, GraphQL-request, and Prisma-write serializers | No excerpt, raw content, or transient preview field crosses any of the three boundaries.                          |
+| Atomic revision       | GraphQL service transaction                                | Success replaces content and all references; failure or abstention changes neither.                               |
+| Link authorization    | Source-reference presenter                                 | Public exact targets open; protected, signed, stale, or unproven targets stay unavailable.                        |
+| Recall timing         | Personal practice runner                                   | Citations are absent before reveal, present after reveal, and remain correct across navigation and reload.        |
 
 Delete brittle tests that assert phrase lists, copied title algorithms, or
 presentation disclaimers. Consolidate evidence at the backend service boundary,
@@ -495,8 +668,8 @@ Run repository-native commands inside the managed devrouter container:
 3. verify A at its exact head after S1 and S2;
 4. run B's focused checks and build at its exact head after S3, even when the
    cascade required no compatibility edit;
-5. run focused Chat tests, then Chat check, lint, and build, and verify C at its
-   exact head after S4 through S6;
+5. run focused Chat and PWA tests, then their checks, lint, and builds, and
+   verify C at its exact head after S4 through S7;
 6. run root formatting, type, lint, sync, test, and build gates appropriate to
    the final diff;
 7. verify Prisma schema equivalence, analytics synchronization, and that the
@@ -504,9 +677,11 @@ Run repository-native commands inside the managed devrouter container:
 8. inspect the exact stack diff and staged data for unrelated changes,
    credentials, personal data, and generated-file drift.
 
-For frontend proof, start the exact worktree runtime through the local runtime
-lifecycle and use `agent-browser` with seeded synthetic users. Capture the
-changed Chat and PWA states across relevant viewports and locales.
+For frontend proof, reuse the already running exact-worktree runtime and use
+`agent-browser` with seeded synthetic users. Capture the changed Chat and PWA
+states across relevant viewports and locales. If the runtime or existing tunnel
+requires restart or re-establishment, record browser proof as
+`delivery_pending` and stop; S7 approval does not authorize a new connection.
 
 An Infisical/OpenRouter-backed model run is a separate external-provider and
 secret-use boundary and is not required for the local S5 gate. If authorized,
@@ -524,6 +699,9 @@ reload state. A local component render or mocked test is not live AI proof.
 | Current schema cannot express an invariant | Reuse existing lease, discard, and personal-element rows first | A new migration appears necessary; revise the plan before editing Prisma. |
 | Stack reconciliation changes product behavior | Integrate once, inspect conflicts, rerun affected reviews | A conflict requires a new product or security decision. |
 | Operation count encourages a generic workflow API | Keep outcomes explicit and feature-scoped | Proposed abstraction serves only hypothetical future types. |
+| Prompt compliance still allows a semantic paraphrase of retrieval mechanics | Combine structured abstention with exact protocol-marker checks and a synthetic browser run | A hard semantic guarantee is required; stop for a product decision before adding a model judge. |
+| Citation context becomes a source-body copy | Persist only identity, display snapshot, structured locators, and chunk lineage | Any excerpt or source body enters the generated-card tool result, GraphQL payload, or PersonalElement. |
+| A stored link bypasses current source authorization | Persist only safe canonical public targets; resolve protected access at request time and disable unavailable links | A signed, ephemeral, or unauthorized URL enters the durable reference. |
 
 ## Rollback
 
@@ -729,3 +907,21 @@ no migration.
   head `0f3d117c2` is published, and the pull-request body now covers the
   grounded retrieval and browser follow-up with current verification and stack
   blockers. The local development runtime remains available for user testing.
+- [x] 2026-08-29 S7 investigation — the exact failing thread proves the staging
+  doc-query response already includes numeric page, labelled page, and content
+  on every chunk. Chat currently discards those fields and the generator cannot
+  abstain. The corrected slice was challenged by the planner and aligned with
+  current AI SDK structured-output error handling.
+- [x] 2026-08-29 citation domain grill — settled one durable element source
+  reference per source material, exact disjoint labelled locator spans, safe
+  physical-page or provider-anchor targets, source-body-free snapshots,
+  unavailable-source retention, post-reveal practice display, and atomic
+  replacement on generated revision. ADR 0042 records that saved Elements own
+  copied references so content-bearing generation records can expire. The S7
+  prototype remains PersonalElement-only; the later lecturer migration,
+  transfer, export, and cleanup work is mapped but not authorized here.
+- [x] Obtain approval for S7 implementation, local commit, push to the existing
+  remote branch, and pull-request #5483 update.
+- [ ] Implement S7, run its focused and browser checks, complete the slice and
+  integrated review gates, push the exact reviewed head, and leave the local
+  runtime available for user testing.

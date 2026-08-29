@@ -1,3 +1,5 @@
+import type { ElementSourceReference } from '@klicker-uzh/types'
+
 export type ChatSourceType = 'document' | 'link' | 'video' | 'image'
 
 export interface ChatSource {
@@ -13,4 +15,5 @@ export interface ChatSource {
   endSec?: number
   url?: string
   excerpt?: string
+  elementReference?: ElementSourceReference
 }

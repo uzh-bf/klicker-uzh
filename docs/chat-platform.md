@@ -20,7 +20,7 @@ tags:
 > framing is obsolete. Staged doc/skill changes for that exploration:
 > `project/plans_future/2026-07-07-wiki-skills-migration-roadmap.md`.
 
-**This app is an island — do not apply the pages-router conventions here.** It is the only Next.js **app-router** app (port 3004), talks to the backend's Prisma models directly through its own API route handlers (no GraphQL ops), uses **zustand** for client state (nowhere else in the repo), and renders chat via **assistant-ui** (`@assistant-ui/react`) over the Vercel AI SDK (`@ai-sdk/*`). The current runtime keeps the app's `useChatResponse` transport adapter after the U5 `useAISDKRuntime` spike gate was not verifiable without a live model key. Domain models live in `packages/prisma` `chat.prisma` (chatbots, threads, messages, credits as `Decimal(18,6)`).
+**This app is an island — do not apply the pages-router conventions here.** It is the only Next.js **app-router** app (port 3004), uses **zustand** for client state (nowhere else in the repo), and renders chat via **assistant-ui** (`@assistant-ui/react`) over the Vercel AI SDK (`@ai-sdk/*`). Most Chat API handlers still access the backend's Prisma models directly, but participant practice-card operations use persisted GraphQL operations through the server-only adapter described below. The current runtime keeps the app's `useChatResponse` transport adapter after the U5 `useAISDKRuntime` spike gate was not verifiable without a live model key. Domain models live in `packages/prisma` `chat.prisma` (chatbots, threads, messages, credits as `Decimal(18,6)`).
 
 The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and production builds (`apps/chat/package.json:scripts`). Control, manage, and PWA production builds retain Webpack for service-worker compatibility. The chat production image copies the Next standalone server from `.next/standalone` and starts `apps/chat/server.js` (`apps/chat/Dockerfile`). Verify that path with a production build and container smoke test; a successful source build alone does not prove the runtime copy layout.
 
@@ -43,12 +43,15 @@ one-shot approval claim before forcing `generate_cards`.
 Each generation accepts at most five cards. Every generated card performs its
 own bounded retrieval and structured model call. The nested retrieval sends
 exactly the shared `doc_query` input field `question`; strict MCP servers reject
-unknown input fields. Its cited chunk IDs must be a
-non-empty subset of that retrieval, and only bounded source metadata is
-persisted. A card that cannot be produced returns one of the bounded failure
-codes `retrieval_unavailable`, `insufficient_evidence`, or `generation_failed`;
-raw provider and retrieval diagnostics never cross the Chat API. The chat API
-joins saved state by
+unknown input fields. Its cited chunk IDs must be a non-empty subset of that
+retrieval. The generator returns either a ready card or structured
+`insufficient_evidence`; an abstention contains no card prose and never enters
+the candidate list. Ready cards may not expose cited chunk IDs or the retrieval
+protocol markers in participant-facing content. Only grouped, bounded,
+source-body-free references are persisted. A card that cannot be produced
+returns one of the bounded failure codes `retrieval_unavailable`,
+`insufficient_evidence`, or `generation_failed`; raw provider and retrieval
+diagnostics never cross the Chat API. The chat API joins saved state by
 assistant message, tool call, and candidate ID, so a frozen tool result never
 claims a card was saved. Cards are acted on individually: Save creates the
 participant-owned row, while Discard writes a
@@ -64,7 +67,8 @@ fails closed with an explicit retry action if durable decision state is still
 unavailable.
 `list_personal_elements` returns the participant's course-scoped compact rows;
 `revise_personal_element` updates a saved row with an expected-version check
-and keeps the card's source-linked origin wording. Candidate cards do not have a
+and atomically replaces the complete card and source-reference set only after a
+grounded ready result. Insufficient evidence leaves both unchanged. Candidate cards do not have a
 separate unsaved-revision path; each generated card is either saved or
 discarded. The server-only GraphQL service is the single owner of
 authorization, caps, and revision semantics.
@@ -678,13 +682,21 @@ same persisted content. If a generation attempt is partial, saved or
 discarded plan entries remain decided and a retry runs only the unresolved
 entries.
 
+Each ready candidate owns one grouped `ElementSourceReference` per source
+material. The reference contains the title snapshot, source kind, exact cited
+chunk IDs as internal lineage, an optional non-expiring safe canonical URL, and
+ordered page spans or provider-supplied web anchors. Chat reads physical and
+publisher-labelled pages from each cited chunk, collapses adjacent pages, and
+retains disjoint ranges. It copies no excerpt or source body into the tool
+result, GraphQL request, or saved card.
+
 An answer's sources are **derived from the message's own tool-call parts**, not carried in a
 dedicated API field or database column ([ADR 0004](./adr/0004-chat-citations-from-tool-call-parts.md)).
 `src/lib/sources/normalizeSources.ts` is the single seam: everything downstream — the source
 cards, the inline `[n]` chips, the friendly activity chip, and the server-side prompt contract —
 keys off the same tool-name predicates. Retrieval tools use `isDocQueryToolName`; the
-`generate_cards` tool contributes its bounded source metadata through the same normalizer, with a
-stable `candidate:<sourceId>:<chunkId>` key so card-local citations and
+`generate_cards` tool contributes its bounded source references through the same normalizer, with a
+stable `candidate:<candidateId>:<sourceId>` key so card-local citations and
 the message source area resolve the same source. A tool the relevant predicate misses silently
 loses all four at once. The compact twelve-source display bound applies only
 to doc-query results; candidate citations retain the bounded generation
@@ -708,7 +720,7 @@ long-name regression case lives in `test/mcp-clients.test.ts`.
 an already-parsed object. FastMCP may put the JSON payload in a `structuredContent.result` string;
 the normalizer unwraps that compatibility layer before applying the same rules. It treats the
 pipeline's literal `"N/A"` as absent; it dedupes retrieval results by file/page/url and normalized
-video range (`startSec`/`endSec`) and generated-card results by their source/chunk key, then
+video range (`startSec`/`endSec`) and generated-card results by their candidate/source key, then
 numbers what survives **1..N in first-appearance order across every retrieval or card tool call in
 one message**. The compact doc-query registry is capped at `MAX_DOC_QUERY_SOURCES`, while the
 candidate-card registry has its own `MAX_CANDIDATE_SOURCES` bound. Both registries still share one
@@ -781,6 +793,14 @@ and only wrap when they genuinely no longer fit. Equal-width tracks keep mixed
 document/media results aligned, and the `min(230px, 100%)` floor keeps a track
 from forcing horizontal overflow in containers narrower than 230px (mobile and
 embedded mode).
+
+Generated-card citations render one card per source material. Publisher labels
+lead when they differ from physical PDF pages, and every disjoint page span or
+exact web anchor gets its own action. Public PDF actions open the first physical
+page of that span. Private, local, signed, expired, or otherwise unproven URLs
+remain passive snapshots labelled unavailable. Saved-card management always
+shows these references; active-recall practice hides them until the answer is
+revealed.
 
 The activity chip's four states come from the pure `getDocQueryChipState` in `tool-fallback.tsx`.
 "No results" is claimed only for a payload that actually **parsed**: a cancelled call leaves the

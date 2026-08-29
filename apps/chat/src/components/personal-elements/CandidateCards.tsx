@@ -2,6 +2,7 @@
 
 import { useAuiState } from '@assistant-ui/react'
 import { Markdown } from '@klicker-uzh/markdown'
+import type { ElementSourceReference } from '@klicker-uzh/types'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useEffect, useMemo, useState } from 'react'
@@ -9,6 +10,7 @@ import { getCandidateSourceKey } from '@/src/lib/sources/normalizeSources'
 import { useChatStore } from '@/src/stores/chatStore'
 import { CitationChip } from '../citation-chip'
 import { useMessageSourcesContext } from '../message-sources-context'
+import { SourceActionLinks } from '../source-action-links'
 import { SourcePreviewContent } from '../source-preview-content'
 import { isFailedCandidateAttemptInMessages } from './runtime-context'
 
@@ -22,13 +24,7 @@ type Candidate = {
   explanation: string
   sourceMessageId: string
   sourceToolCallId: string
-  sources: Array<{
-    sourceId: string
-    chunkId: string
-    title?: string
-    url?: string
-    page?: number
-  }>
+  sources: ElementSourceReference[]
 }
 
 type CandidatePart = {
@@ -349,7 +345,11 @@ export function CandidateCards({ part }: { part: CandidatePart }) {
         const sourceReferences = candidate.sources.flatMap((source) => {
           const normalized = messageSources.find(
             (messageSource) =>
-              messageSource.id === getCandidateSourceKey(source)
+              messageSource.id ===
+              getCandidateSourceKey({
+                candidateId: candidate.candidateId,
+                sourceId: source.sourceId,
+              })
           )
           return normalized
             ? [{ index: normalized.index, source: normalized }]
@@ -395,29 +395,20 @@ export function CandidateCards({ part }: { part: CandidatePart }) {
                 </p>
                 <div className="space-y-1">
                   {sourceReferences.map(({ index, source }) => {
-                    const preview = source.url ? (
-                      <a
-                        href={source.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="min-w-0 flex-1 hover:underline"
-                      >
-                        <SourcePreviewContent source={source} />
-                        <span className="sr-only">
-                          {t('chat.common.opensInNewTab')}
-                        </span>
-                      </a>
-                    ) : (
-                      <SourcePreviewContent source={source} />
-                    )
-
                     return (
                       <div
                         key={source.id}
                         className="border-border bg-muted/20 flex items-start gap-2 rounded border p-2 text-left"
                       >
                         <CitationChip index={index} />
-                        {preview}
+                        <div className="min-w-0 flex-1">
+                          <SourcePreviewContent source={source} />
+                          {source.elementReference ? (
+                            <SourceActionLinks
+                              source={source.elementReference}
+                            />
+                          ) : null}
+                        </div>
                       </div>
                     )
                   })}
@@ -530,24 +521,25 @@ type RevisionPart = {
 }
 
 type RevisionResult = {
-  status: 'updated' | 'conflict'
+  status: 'updated' | 'conflict' | 'unchanged'
   version?: number
   name?: string
   content?: string
   explanation?: string
-  sources?: Array<{
-    sourceId?: string
-    chunkId?: string
-    title?: string
-    page?: number
-  }>
+  sources?: ElementSourceReference[]
   reason?: string
 }
 
 function revisionFromResult(result: unknown): RevisionResult | null {
   if (!result || typeof result !== 'object') return null
   const value = result as Partial<RevisionResult>
-  if (value.status !== 'updated' && value.status !== 'conflict') return null
+  if (
+    value.status !== 'updated' &&
+    value.status !== 'conflict' &&
+    value.status !== 'unchanged'
+  ) {
+    return null
+  }
   return value as RevisionResult
 }
 
@@ -556,14 +548,20 @@ export function SavedRevisionCard({ part }: { part: RevisionPart }) {
   const revision = revisionFromResult(part.result)
   if (!revision) return null
 
-  if (revision.status === 'conflict') {
+  if (revision.status === 'conflict' || revision.status === 'unchanged') {
     return (
       <article
         className="border-destructive/50 bg-destructive/10 rounded-lg border p-3 text-sm"
-        data-cy="personal-element-revision-conflict"
+        data-cy={
+          revision.status === 'conflict'
+            ? 'personal-element-revision-conflict'
+            : 'personal-element-revision-unchanged'
+        }
         role="alert"
       >
-        {revision.reason ?? t('chat.personalElements.revisionConflict')}
+        {revision.status === 'unchanged'
+          ? t('chat.personalElements.revisionInsufficientEvidence')
+          : (revision.reason ?? t('chat.personalElements.revisionConflict'))}
       </article>
     )
   }
@@ -583,24 +581,34 @@ export function SavedRevisionCard({ part }: { part: RevisionPart }) {
           </span>
         ) : null}
       </div>
-      <p className="text-sm">{revision.content}</p>
-      <p className="text-muted-foreground text-sm">{revision.explanation}</p>
+      {revision.content ? (
+        <Markdown
+          content={revision.content}
+          withLinkButtons={false}
+          withModal={false}
+          withProse
+          className={{ root: 'prose-sm' }}
+        />
+      ) : null}
+      {revision.explanation ? (
+        <Markdown
+          content={revision.explanation}
+          withLinkButtons={false}
+          withModal={false}
+          withProse
+          className={{ root: 'prose-sm text-muted-foreground' }}
+        />
+      ) : null}
       {revision.sources && revision.sources.length > 0 ? (
         <div className="text-muted-foreground text-xs">
           {revision.sources.map((source) => (
-            <span
-              key={
-                (source.sourceId ?? 'source') +
-                ':' +
-                (source.chunkId ?? 'chunk')
-              }
+            <div
+              key={source.sourceId}
               className="mr-2 inline-block rounded bg-slate-100 px-2 py-1"
             >
-              {source.title ?? source.sourceId ?? source.chunkId}
-              {typeof source.page === 'number'
-                ? ' · ' + t('chat.sources.page', { page: source.page })
-                : ''}
-            </span>
+              <span>{source.title}</span>
+              <SourceActionLinks source={source} />
+            </div>
           ))}
         </div>
       ) : null}

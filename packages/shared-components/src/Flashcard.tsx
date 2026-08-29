@@ -5,7 +5,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { FlashcardCorrectness } from '@klicker-uzh/graphql/dist/ops'
 import { Button } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import React, { useEffect, useState } from 'react'
+import type React from 'react'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import DynamicMarkdown from './evaluation/DynamicMarkdown'
 
@@ -16,6 +17,7 @@ interface FlashcardProps {
   setResponse: (value: FlashcardCorrectness) => void
   existingResponse?: FlashcardCorrectness
   elementIx: number
+  onReveal?: () => void
 }
 
 function Flashcard({
@@ -25,6 +27,7 @@ function Flashcard({
   setResponse,
   existingResponse,
   elementIx,
+  onReveal,
 }: FlashcardProps) {
   const t = useTranslations()
   const [isFlipped, setIsFlipped] = useState(
@@ -33,6 +36,7 @@ function Flashcard({
 
   const handleFlip = () => {
     setIsFlipped((prev) => !prev)
+    if (!isFlipped) onReveal?.()
   }
 
   useEffect(() => {

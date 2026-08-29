@@ -8,11 +8,19 @@ fragment FPersonalElement on PersonalElement {
   explanation
   sources {
     sourceId
-    chunkId
+    kind
     title
-    url
-    page
-    metadata
+    canonicalUrl
+    chunkIds
+    locators {
+      type
+      pageFrom
+      pageTo
+      labelFrom
+      labelTo
+      url
+      label
+    }
   }
   origin
   sourceMessageId
