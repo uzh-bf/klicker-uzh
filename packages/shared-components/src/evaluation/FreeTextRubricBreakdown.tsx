@@ -100,6 +100,20 @@ function getRubricStatus(normalizedScore: number): RubricStatus {
   return 'OPEN'
 }
 
+function RubricStatusLabel({ status }: { status: RubricStatus }) {
+  const t = useTranslations()
+
+  return (
+    <span className="sr-only">
+      {status === 'MET'
+        ? t('pwa.practiceQuiz.semanticRubricStatusMet')
+        : status === 'PARTIAL'
+          ? t('pwa.practiceQuiz.semanticRubricStatusPartial')
+          : t('pwa.practiceQuiz.semanticRubricStatusOpen')}
+    </span>
+  )
+}
+
 function RubricDetail({
   assessment,
   index,
@@ -248,6 +262,7 @@ function FreeTextRubricBreakdown({
                   className={style.iconClassName}
                   aria-hidden="true"
                 />
+                <RubricStatusLabel status={status} />
                 <span className="min-w-0 flex-1 break-words font-medium">
                   {assessment.rubricName}
                 </span>

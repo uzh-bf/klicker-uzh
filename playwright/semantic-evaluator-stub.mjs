@@ -4,6 +4,7 @@ const DEFAULT_PORT = 7099
 const HOST = process.env.PLAYWRIGHT_SEMANTIC_EVALUATOR_HOST ?? '127.0.0.1'
 
 function sendJson(response, status, body) {
+  if (response.destroyed || response.writableEnded) return
   response.writeHead(status, { 'content-type': 'application/json' })
   response.end(JSON.stringify(body))
 }
@@ -34,12 +35,14 @@ function validateRequest(value) {
       isRecord(rubric) &&
       typeof rubric.id === 'string' &&
       typeof rubric.name === 'string' &&
+      typeof rubric.description === 'string' &&
       Array.isArray(rubric.achievement_levels) &&
       rubric.achievement_levels.length > 0 &&
       rubric.achievement_levels.every(
         (level) =>
           isRecord(level) &&
           typeof level.name === 'string' &&
+          typeof level.description === 'string' &&
           Number.isFinite(level.normalized_score)
       )
   )
@@ -131,10 +134,7 @@ function getEvaluationCopy({ rubric, level, scenario, isGerman }) {
     }
   }
 
-  const levelDescription =
-    typeof level.description === 'string' && level.description.trim().length > 0
-      ? level.description.trim()
-      : rubric.description
+  const levelDescription = level.description.trim()
   return isGerman
     ? {
         rationale: `Die Stufe „${level.name}“ wurde gewählt, weil die Antwort folgendes Kriterium erfüllt: ${levelDescription}`,
@@ -277,6 +277,8 @@ const server = createServer((request, response) => {
     }
 
     setTimeout(() => {
+      if (request.aborted || response.destroyed || response.writableEnded)
+        return
       sendJson(
         response,
         200,
@@ -287,6 +289,19 @@ const server = createServer((request, response) => {
       )
     }, 300)
   })
+})
+
+server.on('clientError', (_error, socket) => {
+  socket.destroy()
+})
+
+server.on('error', (error) => {
+  const code = typeof error === 'object' && error ? error.code : undefined
+  const detail = code === 'EADDRINUSE' ? `: port ${port} is already in use` : ''
+  process.stderr.write(
+    `[semantic-evaluator-stub] server error${detail}: ${String(error)}\n`
+  )
+  process.exitCode = 1
 })
 
 server.listen(port, HOST, () => {

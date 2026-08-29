@@ -1210,6 +1210,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       semanticRubricCriterionCount:
         '{count, plural, =1 {1 criterion assessed} other {# criteria assessed}}',
       semanticRubricScore: 'Score: {score}%',
+      semanticRubricStatusMet: 'Criterion fully met',
+      semanticRubricStatusPartial: 'Criterion partially met',
+      semanticRubricStatusOpen: 'Criterion not met',
       semanticRubricDetails: 'Detailed feedback',
       semanticAiFeedback: 'AI feedback',
       semanticWhyThisScore: 'Why this score',
