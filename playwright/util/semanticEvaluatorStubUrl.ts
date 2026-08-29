@@ -24,12 +24,29 @@ export function semanticEvaluatorStubUrls(rawUrl: string) {
 
 export async function probeSemanticEvaluatorStub(
   rawUrl: string,
-  probe: (url: URL) => Promise<{ ok: boolean }> = fetch
+  {
+    token,
+    probe = fetch,
+  }: {
+    token?: string
+    probe?: (
+      url: URL,
+      init?: { headers?: { authorization: string } }
+    ) => Promise<{ ok: boolean }>
+  } = {}
 ) {
   const urls = semanticEvaluatorStubUrls(rawUrl)
 
   try {
-    return { ...urls, running: (await probe(urls.healthUrl)).ok }
+    return {
+      ...urls,
+      running: (
+        await probe(
+          urls.healthUrl,
+          token ? { headers: { authorization: `Bearer ${token}` } } : undefined
+        )
+      ).ok,
+    }
   } catch {
     return { ...urls, running: false }
   }

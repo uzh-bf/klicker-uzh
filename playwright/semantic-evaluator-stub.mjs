@@ -1,7 +1,18 @@
 import { createServer } from 'node:http'
+import {
+  isSemanticEvaluatorStubAuthorized,
+  requiresSemanticEvaluatorStubToken,
+} from './util/semanticEvaluatorStubAuth.mjs'
 
 const DEFAULT_PORT = 7099
 const HOST = process.env.PLAYWRIGHT_SEMANTIC_EVALUATOR_HOST ?? '127.0.0.1'
+const AUTH_TOKEN = process.env.CATALYST_FORMATIVE_EVALUATOR_TOKEN
+
+if (requiresSemanticEvaluatorStubToken(HOST) && !AUTH_TOKEN) {
+  throw new Error(
+    'A bearer token is required when the evaluator stub listens beyond loopback'
+  )
+}
 
 function sendJson(response, status, body) {
   if (response.destroyed || response.writableEnded) return
@@ -216,6 +227,16 @@ const port = Number(
 )
 const retryOnceTaskBundles = new Set()
 const server = createServer((request, response) => {
+  if (
+    !isSemanticEvaluatorStubAuthorized(
+      request.headers.authorization,
+      AUTH_TOKEN
+    )
+  ) {
+    sendJson(response, 401, { error: 'unauthorized' })
+    return
+  }
+
   if (request.method === 'GET' && request.url === '/healthz') {
     sendJson(response, 200, { status: 'ok' })
     return

@@ -153,6 +153,7 @@ The evaluator adapter is configured with:
 
 - `CATALYST_FORMATIVE_EVALUATOR_URL`
 - `CATALYST_FORMATIVE_EVALUATOR_TOKEN` (optional bearer token)
+- `CATALYST_FORMATIVE_EVALUATOR_HEALTH_URL` (optional availability probe)
 - `CATALYST_FORMATIVE_EVALUATOR_TIMEOUT_MS` (optional; 30 seconds by default)
 - `SEMANTIC_EVALUATION_DISCLOSURE_VERSION`
 
@@ -164,8 +165,11 @@ Local HTTP is accepted only outside production for loopback or
 `CATALYST_FORMATIVE_EVALUATOR_ALLOW_INSECURE_LOCAL=true` (or under
 `NODE_ENV=test`).
 
-Absent configuration selects the deterministic unavailable/exact-match fallback;
-it is not interpreted as an incorrect answer.
+Absent or invalid evaluator configuration selects the deterministic
+unavailable/exact-match fallback: accepted exact answers are correct, while
+non-matches remain honestly unavailable rather than being labelled incorrect.
+Non-matches consume an answer attempt and remain answerable until the
+lecturer-configured limit is exhausted.
 
 ## Feedback and solution boundary
 
@@ -187,14 +191,18 @@ the attempt history.
 
 ## Deterministic Playwright boundary
 
-Playwright starts a localhost-only, dependency-free evaluator stub when
-`NODE_ENV=test`. The service validates the outbound v1 request and returns synthetic
+Playwright starts a dependency-free evaluator stub when `NODE_ENV=test`. Host-only
+runs bind it to loopback. Profile-backed runs bind a Docker-facing listener protected
+by a synthetic bearer token so the application container can reach it. The service
+validates the outbound v1 request and returns synthetic
 correct, partial, incorrect, uncertain, or failing results selected by explicit
 fixture markers. It refuses to start outside the test environment. The application,
 GraphQL API, database, Hatchet scheduling, and participant UI remain real; only the
 private Catalyst HTTP boundary is replaced.
 
-The local test-origin wrapper sets the stub URL and disclosure version. Set
+The local test-origin wrapper sets the stub URL and disclosure version. The profile
+runtime also uses a health probe, so the evaluator is reported unavailable whenever
+the authenticated test stub is absent. Set
 `PLAYWRIGHT_SEMANTIC_EVALUATOR_STUB=false` to run a test environment without the
 stub.
 

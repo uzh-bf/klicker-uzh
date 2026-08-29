@@ -1212,6 +1212,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       semanticHistoryUnavailable: 'Bewertung nicht verfügbar',
       semanticHistoryEvaluated: 'Bewertet',
       semanticRubricFeedback: 'Rubrik-Feedback',
+      semanticRubricFromAttempt:
+        'Dieses Rubrik-Feedback gehört zu Antwortversuch {attempt}.',
       semanticAchievedLevel: 'Erreichte Stufe',
       semanticRubricCriteriaMet:
         '{met} von {total} Kriterien vollständig erfüllt',

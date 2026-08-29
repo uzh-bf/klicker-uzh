@@ -81,6 +81,7 @@ test('workspace URLs and the loopback database port resolve together', () => {
     appSecret: 'synthetic-test-value',
     databaseTemplate: 'postgres://user:password@postgres:5432/database',
     databasePort: 49153,
+    semanticEvaluatorToken: 'synthetic-evaluator-token',
     workspace: 'rs-host-playwright',
   })
 
@@ -93,6 +94,10 @@ test('workspace URLs and the loopback database port resolve together', () => {
     'postgres://user:password@127.0.0.1:49153/database'
   )
   assert.equal(environment.PLAYWRIGHT_SEMANTIC_EVALUATOR_HOST, '0.0.0.0')
+  assert.equal(
+    environment.CATALYST_FORMATIVE_EVALUATOR_TOKEN,
+    'synthetic-evaluator-token'
+  )
 })
 
 test('Docker port output resolves IPv4 and IPv6 bindings', () => {

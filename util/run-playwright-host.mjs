@@ -80,6 +80,7 @@ export function resolvePlaywrightEnvironment({
   appSecret,
   databaseTemplate,
   databasePort,
+  semanticEvaluatorToken,
   workspace,
 }) {
   const namespace = workspace ? `.${workspace}` : ''
@@ -94,6 +95,7 @@ export function resolvePlaywrightEnvironment({
   return {
     APP_ORIGIN_AUTH: appUrl('auth'),
     APP_SECRET: appSecret,
+    CATALYST_FORMATIVE_EVALUATOR_TOKEN: semanticEvaluatorToken,
     COOKIE_DOMAIN: `klicker${namespace}.localhost`,
     DATABASE_URL: databaseUrl.toString(),
     [HOST_RUNNER_ENV]: '1',
@@ -245,15 +247,21 @@ export function main(argv = process.argv.slice(2)) {
   )
   const databaseTemplate = committedEnvironment.get('DATABASE_URL')
   const appSecret = committedEnvironment.get('APP_SECRET')
+  const semanticEvaluatorToken = committedEnvironment.get(
+    'CATALYST_FORMATIVE_EVALUATOR_TOKEN'
+  )
 
-  if (!databaseTemplate || !appSecret) {
-    fail('devcontainer.env must define DATABASE_URL and APP_SECRET')
+  if (!databaseTemplate || !appSecret || !semanticEvaluatorToken) {
+    fail(
+      'devcontainer.env must define DATABASE_URL, APP_SECRET, and CATALYST_FORMATIVE_EVALUATOR_TOKEN'
+    )
   }
 
   const resolvedEnvironment = resolvePlaywrightEnvironment({
     appSecret,
     databaseTemplate,
     databasePort,
+    semanticEvaluatorToken,
     workspace,
   })
 

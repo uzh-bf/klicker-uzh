@@ -1205,6 +1205,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       semanticHistoryUnavailable: 'Evaluation unavailable',
       semanticHistoryEvaluated: 'Evaluated',
       semanticRubricFeedback: 'Rubric feedback',
+      semanticRubricFromAttempt:
+        'This rubric feedback belongs to answer attempt {attempt}.',
       semanticAchievedLevel: 'Achieved level',
       semanticRubricCriteriaMet: '{met} of {total} criteria fully met',
       semanticRubricCriterionCount:

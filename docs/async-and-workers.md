@@ -89,18 +89,21 @@ To correlate a user report ("my duplication vanished") with only a course name o
 
 **Rolling back this feature:** old code never registers the `process-course-duplication` workflow, so already-enqueued events stay QUEUED in Hatchet and mid-flight job records simply age out at their TTLs; users lose completion signals until the rollback completes, but no partial copies exist at any point (the copy is one database transaction). Recovery-by-resubmit works immediately after rollback because the legacy synchronous path ignores duplication locks. To release held source locks without waiting for TTL expiry: `SCAN 0 MATCH "course-duplication:source:*"` then `DEL` the listed keys.
 
-The semantic evaluator uses `CATALYST_FORMATIVE_EVALUATOR_URL` and the optional
-`CATALYST_FORMATIVE_EVALUATOR_TOKEN`. The public `FreeTextAttempt` row is the
+The semantic evaluator uses `CATALYST_FORMATIVE_EVALUATOR_URL`, the optional
+`CATALYST_FORMATIVE_EVALUATOR_TOKEN`, and the optional
+`CATALYST_FORMATIVE_EVALUATOR_HEALTH_URL` capability probe. The public `FreeTextAttempt` row is the
 client-visible source of truth; Hatchet workflow IDs remain internal. A completed
 attempt is also a recovery checkpoint: if aggregate response/reward side effects
 did not finish, a repeated worker delivery applies them exactly once through the
 attempt's unique `QuestionResponseDetail` relation.
 
 Playwright replaces only the private evaluator HTTP boundary with
-`playwright/semantic-evaluator-stub.mjs`. Global setup starts it on localhost under
-`NODE_ENV=test`, and global teardown stops the exact child process. The test-origin
-wrapper gives the already-running general worker the same localhost evaluator URL.
-The stub validates the request contract and never runs in development or production.
+`playwright/semantic-evaluator-stub.mjs`. Global setup starts it under
+`NODE_ENV=test`, and global teardown stops the exact child process. Host-only runs
+bind to loopback; profile-backed runs expose an authenticated Docker-facing listener
+using the committed synthetic test token. The profile health probe reports the
+evaluator unavailable whenever that stub is absent. The stub validates the request
+contract and never runs in development or production.
 
 ## Running locally (config-derived — verify on your machine)
 

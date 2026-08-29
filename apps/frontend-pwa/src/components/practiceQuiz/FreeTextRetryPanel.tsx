@@ -47,9 +47,20 @@ function FreeTextRetryPanel({
       attempt?.availabilityReason === 'CONSENT_DECLINED')
   const evaluated =
     attempt?.evaluationStatus === FreeTextEvaluationStatus.Evaluated
-  const rubricAttempt = [...state.attempts]
-    .reverse()
-    .find((historyAttempt) => historyAttempt.structuredResult)
+  const rubricAttempt = attempt?.structuredResult
+    ? attempt
+    : unavailable
+      ? [...state.attempts]
+          .reverse()
+          .find((historyAttempt) => historyAttempt.structuredResult)
+      : undefined
+  const rubricAttemptNumber = rubricAttempt
+    ? state.attempts.findIndex(
+        (historyAttempt) => historyAttempt.id === rubricAttempt.id
+      ) + 1
+    : 0
+  const showingHistoricalRubric =
+    rubricAttempt != null && rubricAttempt.id !== attempt?.id
   const explanationId = `semantic-solution-feedback-${state.cycleId}`
 
   let defaultOutcome = t('pwa.practiceQuiz.semanticIncorrect')
@@ -199,6 +210,16 @@ function FreeTextRetryPanel({
 
       {state.solutionAuthorized && detailsOpen && (
         <div id={explanationId} className="mt-4">
+          {showingHistoricalRubric && (
+            <p
+              className="mb-2 text-sm text-gray-600"
+              data-cy="semantic-rubric-feedback-source"
+            >
+              {t('pwa.practiceQuiz.semanticRubricFromAttempt', {
+                attempt: rubricAttemptNumber,
+              })}
+            </p>
+          )}
           <FreeTextRubricBreakdown result={rubricAttempt?.structuredResult} />
         </div>
       )}

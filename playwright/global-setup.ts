@@ -46,12 +46,18 @@ const SEMANTIC_EVALUATOR_STUB_URL =
   process.env.CATALYST_FORMATIVE_EVALUATOR_URL ??
   'http://127.0.0.1:7099/evaluate'
 
+const SEMANTIC_EVALUATOR_TOKEN = process.env.CATALYST_FORMATIVE_EVALUATOR_TOKEN
+
 async function waitForSemanticEvaluatorStub(healthUrl: URL) {
   const deadline = Date.now() + 10_000
 
   while (Date.now() < deadline) {
     try {
-      const response = await fetch(healthUrl)
+      const response = await fetch(healthUrl, {
+        headers: SEMANTIC_EVALUATOR_TOKEN
+          ? { authorization: `Bearer ${SEMANTIC_EVALUATOR_TOKEN}` }
+          : undefined,
+      })
       if (response.ok) return
     } catch {
       // The child process can take a moment to bind its port.
@@ -70,7 +76,8 @@ async function startSemanticEvaluatorStub() {
   }
 
   const { evaluatorUrl, healthUrl, running } = await probeSemanticEvaluatorStub(
-    SEMANTIC_EVALUATOR_STUB_URL
+    SEMANTIC_EVALUATOR_STUB_URL,
+    { token: SEMANTIC_EVALUATOR_TOKEN }
   )
   if (running) {
     console.log('[global-setup] Reusing semantic evaluator stub.')
