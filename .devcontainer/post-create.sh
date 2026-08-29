@@ -3,6 +3,7 @@
 # workspace packages the apps import, prepares the DB, and picks up the Hatchet
 # token. Every routed app plus the two Hatchet workers.
 ROOT="${KLICKER_DEVCONTAINER_ROOT:-/workspaces/klicker-uzh}"
+ROOT="$(cd "$ROOT" && pwd)" || exit 1
 HATCHET_TOKEN_FILE="${KLICKER_HATCHET_TOKEN_FILE:-/config/authdisabled-token}"
 set -euo pipefail
 bash "$ROOT/util/dev-runtime.sh" begin-bootstrap
@@ -101,7 +102,7 @@ EOF
   sleep 1
 done
 if [ ! -s "$HATCHET_ENV" ]; then
-  echo "[post-create] WARNING: /config/authdisabled-token not present yet; backend will wait for post-start or container env." >&2
+  echo "[post-create] WARNING: $HATCHET_TOKEN_FILE not present yet; backend will wait for post-start or container env." >&2
 fi
 
 echo "[post-create] Bootstrap steps succeeded; publishing completion marker."

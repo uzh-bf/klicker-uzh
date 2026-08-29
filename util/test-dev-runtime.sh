@@ -205,6 +205,21 @@ fi
 assert_absent "$KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR/bootstrap-complete"
 : > "$INSTALL_LOG"
 rm -f "$ROOT/node_modules/.klicker-dependency-fingerprint"
+write_file "$TEST_ROOT/hatchet-token" 'synthetic-test-token'
+bash "$RUNTIME_SCRIPT" begin-bootstrap >/dev/null
+(
+  cd "$TEST_ROOT"
+  KLICKER_DEVCONTAINER_ROOT='repo' \
+    KLICKER_HATCHET_TOKEN_FILE="$TEST_ROOT/hatchet-token" \
+    bash "$REPO_ROOT/.devcontainer/post-create.sh" >/dev/null
+)
+assert_exists "$ROOT/.devcontainer/.hatchet.env"
+grep -Fq 'HATCHET_CLIENT_TOKEN=synthetic-test-token' \
+  "$ROOT/.devcontainer/.hatchet.env" || \
+  fail 'relative post-create root wrote the Hatchet environment incorrectly'
+bash "$RUNTIME_SCRIPT" require-bootstrap >/dev/null
+: > "$INSTALL_LOG"
+rm -f "$ROOT/node_modules/.klicker-dependency-fingerprint"
 
 bash "$INIT_ROOT/initialize.sh"
 bash "$INIT_ROOT/initialize.sh"
