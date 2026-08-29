@@ -62,6 +62,7 @@ import {
 import { useSettingsStore } from '@/src/stores/settingsStore'
 import {
   formatModeLabel,
+  getComposerSubmitMode,
   getModeDescription,
   hasAvailableChatMode,
   isKnownMode,
@@ -1392,6 +1393,7 @@ const EditComposer: FC = () => {
         <ComposerPrimitive.Input
           data-cy="chat-edit-composer-input"
           autoFocus
+          submitMode={getComposerSubmitMode(hasAvailableMode)}
           className="text-foreground flex min-h-[2.5rem] w-full resize-none border-0 bg-transparent px-4 pt-4 outline-none focus:border-0 focus:shadow-none focus:outline-none focus:ring-0"
         />
 

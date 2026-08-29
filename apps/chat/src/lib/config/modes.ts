@@ -53,6 +53,12 @@ export function hasAvailableChatMode(
   return Object.keys(modeOptions).length > 0
 }
 
+export function getComposerSubmitMode(
+  hasAvailableMode: boolean
+): 'enter' | 'none' {
+  return hasAvailableMode ? 'enter' : 'none'
+}
+
 export function getModeDescription(
   t: ReturnType<typeof useTranslations<never>>,
   mode: string,

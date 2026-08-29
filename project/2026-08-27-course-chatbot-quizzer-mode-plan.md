@@ -245,11 +245,10 @@ Stage 2 is a future package, not an unimplemented slice of the Stage 1 pull requ
 
 ## Progress
 
-- Status: Stage 1 is source-complete; integrated final review found no P0/P1 issue, and the second correction delta is ready for its bounded recheck.
-- Completed: remote-state gate, isolated worktree and branch, current Klicker prompt and mode review, AI Buddy policy comparison, `v3-ai` structured-practice review, open personal-practice stack review, product-primitive pass, stack-boundary review, native planning review, approved plan commit, reviewed and corrected S1, S2 prompt and presentation implementation, focused test updates for exact-head CI, ADR amendment, Chat wiki update, parallel S2 simplifier and risk review, request-time Quizzer retrieval enforcement, legacy citation precedence, integrated generic-continuity final review, unavailable-mode UI and required-alias corrections, and the first correction-delta review.
-- Active slice: gate edit and retry generation paths when no effective mode exists, then recheck only this second correction delta.
-- Remaining: correction-delta recheck, final progress receipt, push, draft pull request, and exact-head CI report.
+- Status: Stage 1 source and local review work are complete; integrated final review found no P0/P1 issue, and every accepted finding is corrected in the branch head.
+- Completed: remote-state gate, isolated worktree and branch, current Klicker prompt and mode review, AI Buddy policy comparison, `v3-ai` structured-practice review, open personal-practice stack review, product-primitive pass, stack-boundary review, native planning review, approved plan commit, reviewed and corrected S1, S2 prompt and presentation implementation, focused test updates for exact-head CI, ADR amendment, Chat wiki update, parallel S2 simplifier and risk review, request-time Quizzer retrieval enforcement, legacy citation precedence, integrated generic-continuity final review, required-alias correction, unavailable-mode gating across every generation action, and two bounded correction reviews.
+- Review receipt: the correction-rerun limit is exhausted after the second review found the edit composer's default Enter submission path. The final keyboard-only guard uses assistant-ui's documented `submitMode="none"` contract and closes through main-session static verification rather than another reviewer loop.
+- Delivery receipt: the approved terminal is a source-complete draft pull request against `v3`; its exact head and CI status are recorded on the forge after publication.
 - Required delivery layer: source-complete draft pull request against `v3`.
 - Runtime: not started and excluded from this plan.
 - Withheld beyond terminal: browser evidence, ready marking, merge, deployment, live evaluation, database work, upstream integration, practice-stack mutation, and cleanup.
-- Next action: commit the second correction delta after static and staged data-hygiene checks, then run one bounded recheck before publication.
