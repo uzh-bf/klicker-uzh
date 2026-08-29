@@ -627,7 +627,7 @@ follow_up_stacks:
 
 ## Progress
 
-- Status: `active_a1_s2`
+- Status: `active_a1_ci_correction`
 - Baseline: PR #5637 exact head `902af183d8018c79cadcefe46d4a7f17f395392a`;
   all branch-executable checks and eight Playwright shards passed at that head;
   one CodeRabbit thread is resolved. The `final-ai-review` status context is
@@ -778,3 +778,22 @@ follow_up_stacks:
   `97fea1a227c6`; all local checks pass. Stacked draft PR #5670 is published
   on top of #5637. Exact-head hosted CI, including the focused Playwright
   regression, remains required before the layer can be accepted.
+- A1 exact-head correction: OpenCodeReview's fourth round correctly identified
+  that a same-generation iframe error could regress an already delayed or ready
+  frame. Commit `64765b51c3ff` now limits failures to loading and retrying states,
+  adds delayed and ready regression cases, and makes the reducer's action union
+  exhaustive. The hosted shard-2 trace also confirmed that the document abort
+  occurred while the hand-written non-bubbling event failed to reach React;
+  the focused browser test now uses Playwright's composed, cancelable, bubbling
+  `dispatchEvent` seam. The unrelated shard-4 analytics navigation failure did
+  not touch this branch's files and remains classified as CI infrastructure
+  noise pending the exact-head rerun.
+- A1 correction verification: All five Frontend Manage pure test files pass,
+  the Frontend Manage and Playwright TypeScript checks pass, focused Biome and
+  Prettier checks pass, and the commit hook completed the repository-wide
+  check, format, lint, Syncpack, secret, wiki, Prisma-sync, and Playwright-host
+  checks. Local browser execution remains blocked by the unchanged Devsy agent
+  injection failure recorded above.
+- Next: Run the required post-correction simplification and risk reviews, then
+  push PR #5670 and require a clean exact-head hosted browser run before A1 is
+  accepted.
