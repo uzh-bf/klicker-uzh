@@ -389,6 +389,31 @@ test('writes an exact high-reasoning OCR config with mode 0600', () => {
   assert.deepEqual(config, buildOCRConfig({ token }))
   assert.equal(config.llm.model, FINAL_REVIEW_MODEL)
   assert.deepEqual(config.llm.extra_body, {
+    provider: {
+      order: ['deepinfra', 'fireworks'],
+      allow_fallbacks: true,
+    },
+    reasoning: { effort: 'high' },
+  })
+  assert.equal(fs.statSync(configPath).mode & 0o777, 0o600)
+
+  removeOCRConfig(configPath)
+  assert.equal(fs.existsSync(configPath), false)
+})
+
+test('writes an Opus OCR config without GLM-specific provider routing', () => {
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'final-stack-review-config-')
+  )
+  const configPath = path.join(directory, 'config.json')
+  const model = 'anthropic/claude-opus-4.6'
+  const token = 'dummy-test-token'
+
+  writeOCRConfig({ token, model, configPath })
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
+  assert.deepEqual(config, buildOCRConfig({ token, model }))
+  assert.equal(config.llm.model, model)
+  assert.deepEqual(config.llm.extra_body, {
     reasoning: { effort: 'high' },
   })
   assert.equal(fs.statSync(configPath).mode & 0o777, 0o600)
