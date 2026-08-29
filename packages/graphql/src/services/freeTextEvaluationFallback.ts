@@ -1,7 +1,7 @@
 import type * as DB from '@klicker-uzh/prisma/client'
 import type { FreeTextEvaluationAvailabilityReason } from '@klicker-uzh/types'
 import {
-  completeFreeTextAttemptExactMatchFallbackInTransaction,
+  completeFreeTextAttemptExactFallbackInTransaction,
   markFreeTextAttemptUnavailable,
 } from './freeTextEvaluationTransitions.js'
 import { applyEvaluatedFreeTextAttemptInTransaction } from './freeTextPracticeResponseApplication.js'
@@ -22,8 +22,8 @@ export async function resolveFreeTextAttemptUnavailability(
 ) {
   const exactMatchApplied = await prisma.$transaction(async (tx) => {
     const evaluationApplied =
-      await completeFreeTextAttemptExactMatchFallbackInTransaction(
-        { attemptId, evaluationRevision },
+      await completeFreeTextAttemptExactFallbackInTransaction(
+        { attemptId, evaluationRevision, reason },
         tx
       )
     if (!evaluationApplied) return false

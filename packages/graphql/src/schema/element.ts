@@ -20,7 +20,6 @@ import {
   type IInstanceEvaluationChoices,
   type IInstanceEvaluationContent,
   type IInstanceEvaluationFlashcard,
-  type IInstanceEvaluationFreeText,
   type IInstanceEvaluationNumerical,
   type IInstanceEvaluationSelection,
   type IQuestionFeedback,
@@ -48,7 +47,7 @@ import {
   type TemplateBlockInput as TemplateBlockInputType,
 } from '@klicker-uzh/types'
 import builder from '../builder.js'
-import type { FreeTextPracticeState } from '../services/freeTextEvaluation.js'
+import type { SemanticFreeTextInstanceEvaluation } from '../services/freeTextPracticeSubmission.js'
 import { ActivityType, ElementFeedbackRef } from './analytics.js'
 import {
   CaseStudyCaseSolution,
@@ -526,15 +525,8 @@ export const SingleFreeTextResponse = builder
     }),
   })
 
-type FreeTextInstanceEvaluationWithSemanticState =
-  IInstanceEvaluationFreeText & {
-    semanticState?: FreeTextPracticeState | null
-  }
-
 export const FreeTextInstanceEvaluation = builder
-  .objectRef<FreeTextInstanceEvaluationWithSemanticState>(
-    'FreeTextInstanceEvaluation'
-  )
+  .objectRef<SemanticFreeTextInstanceEvaluation>('FreeTextInstanceEvaluation')
   .implement({
     fields: (t) => ({
       ...sharedEvaluationProps(t),

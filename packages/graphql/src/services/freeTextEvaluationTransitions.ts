@@ -133,11 +133,16 @@ export async function completeFreeTextAttemptEvaluationInTransaction(
   return true
 }
 
-export async function completeFreeTextAttemptExactMatchFallbackInTransaction(
+export async function completeFreeTextAttemptExactFallbackInTransaction(
   {
     attemptId,
     evaluationRevision,
-  }: { attemptId: string; evaluationRevision: number },
+    reason,
+  }: {
+    attemptId: string
+    evaluationRevision: number
+    reason: FreeTextEvaluationAvailabilityReason
+  },
   prisma: PrismaTransactionClient
 ) {
   await prisma.$queryRaw`
@@ -171,24 +176,33 @@ export async function completeFreeTextAttemptExactMatchFallbackInTransaction(
   }
   if (
     attempt.rubricSchemaVersion !== config.rubric_schema.schema_version ||
-    attempt.rubricSchemaHash !== getSemanticFreeTextConfigHash(config) ||
-    !matchesAcceptedExactAnswer({
-      response: attempt.answer,
-      acceptedExactAnswers: config.accepted_exact_answers,
-    })
+    attempt.rubricSchemaHash !== getSemanticFreeTextConfigHash(config)
   ) {
     return false
   }
+  const exactMatch = matchesAcceptedExactAnswer({
+    response: attempt.answer,
+    acceptedExactAnswers: config.accepted_exact_answers,
+  })
+  const aggregateScore = exactMatch ? 100 : 0
   const outcomeBand = mapFreeTextOutcome({
-    score: 100,
+    score: aggregateScore,
     outcomeBands:
       config.outcome_bands ??
       getDefaultFreeTextOutcomeBands(config.question_language),
   })
-  if (outcomeBand?.category !== 'CORRECT') {
-    throw new Error('Exact-match fallback could not be mapped as correct')
+  if (!outcomeBand) {
+    throw new Error('Exact fallback could not be mapped')
   }
 
+  const evaluatedCount = await prisma.freeTextAttempt.count({
+    where: {
+      cycleId: attempt.cycleId,
+      evaluationStatus: DB.FreeTextEvaluationStatus.EVALUATED,
+    },
+  })
+  const exhausted =
+    !exactMatch && evaluatedCount + 1 >= attempt.cycle.attemptLimit
   const completedAt = new Date()
   const transitioned = await prisma.freeTextAttempt.updateMany({
     where: {
@@ -201,11 +215,11 @@ export async function completeFreeTextAttemptExactMatchFallbackInTransaction(
       evaluationStatus: DB.FreeTextEvaluationStatus.EVALUATED,
       evaluationSource: DB.FreeTextEvaluationSource.EXACT_MATCH,
       retryable: false,
-      availabilityReason: null,
+      availabilityReason: reason,
       completedAt,
       evaluatorVersion: null,
       modelVersion: null,
-      aggregateScore: 100,
+      aggregateScore,
       outcomeBandId: outcomeBand.id,
       outcomeBandLabel: outcomeBand.label,
       correctness: outcomeBand.category,
@@ -220,9 +234,15 @@ export async function completeFreeTextAttemptExactMatchFallbackInTransaction(
       status: DB.FreeTextPracticeCycleStatus.ACTIVE,
     },
     data: {
-      bestScore: Math.max(attempt.cycle.bestScore, 100),
-      status: DB.FreeTextPracticeCycleStatus.CORRECT,
-      endedAt: completedAt,
+      bestScore: Math.max(attempt.cycle.bestScore, aggregateScore),
+      status: exactMatch
+        ? DB.FreeTextPracticeCycleStatus.CORRECT
+        : exhausted
+          ? DB.FreeTextPracticeCycleStatus.EXHAUSTED
+          : DB.FreeTextPracticeCycleStatus.ACTIVE,
+      endedAt: exactMatch || exhausted ? completedAt : null,
+      solutionRevealedAt:
+        exhausted && config.solution_reveal_enabled ? completedAt : null,
       stateVersion: { increment: 1 },
     },
   })

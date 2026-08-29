@@ -1162,8 +1162,8 @@ async function respondToElement({
         instance?.elementData.type === DB.ElementType.FREE_TEXT
           ? instance.elementData.options.semanticEvaluation
           : null
-      if (semanticConfig && response.clientSubmissionId) {
-        if (!response.freeTextResponse) {
+      if (semanticConfig) {
+        if (!response.freeTextResponse || !response.clientSubmissionId) {
           throw new Error(
             'Semantic free-text responses require an answer and client submission ID'
           )

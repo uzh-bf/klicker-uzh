@@ -1,6 +1,7 @@
 import * as DB from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
+  type ElementData,
   HatchetHandlers,
   type ElementStackInput,
 } from '@klicker-uzh/types'
@@ -24,6 +25,25 @@ import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
 import { computeStackEvaluation } from './stacks.js'
 
+function hideSemanticAuthoringData(elementData: ElementData): ElementData {
+  if (
+    elementData.type !== DB.ElementType.FREE_TEXT ||
+    !elementData.options.semanticEvaluation
+  ) {
+    return elementData
+  }
+
+  return {
+    ...elementData,
+    explanation: null,
+    options: {
+      ...elementData.options,
+      solutions: null,
+      semanticEvaluation: undefined,
+    },
+  }
+}
+
 export async function getPracticeQuizData(
   { id }: { id: string },
   ctx: Context
@@ -42,6 +62,10 @@ export async function getPracticeQuizData(
     },
     include: {
       course: true,
+      permissions: {
+        where: { userId: ctx.user?.sub ?? '' },
+        select: { id: true },
+      },
       stacks: {
         include: {
           elements: {
@@ -63,27 +87,45 @@ export async function getPracticeQuizData(
     (ctx.user.role === DB.UserRole.USER || ctx.user.role === DB.UserRole.ADMIN)
       ? ctx.user.sub === quiz.ownerId
       : false
+  const isAuthoringUser =
+    ctx.user?.role === DB.UserRole.USER || ctx.user?.role === DB.UserRole.ADMIN
+  const canViewAuthoringData = isOwner || quiz.permissions.length > 0
+  const visibleQuiz =
+    isAuthoringUser && !canViewAuthoringData
+      ? {
+          ...quiz,
+          stacks: quiz.stacks.map((stack) => ({
+            ...stack,
+            elements: stack.elements.map((element) => ({
+              ...element,
+              elementData: hideSemanticAuthoringData(element.elementData),
+            })),
+          })),
+        }
+      : quiz
 
   // if the quiz is scheduled, return the quiz without the stacks
   if (quiz.status === DB.PublicationStatus.SCHEDULED) {
-    return isOwner ? { ...quiz, isOwner } : { ...quiz, isOwner, stacks: [] }
+    return isOwner
+      ? { ...visibleQuiz, isOwner }
+      : { ...visibleQuiz, isOwner, stacks: [] }
   }
 
   if (ctx.user?.sub && ctx.user.role === DB.UserRole.PARTICIPANT) {
     const orderedStacks =
-      quiz.orderType === DB.ElementOrderType.SPACED_REPETITION
-        ? orderStacks(quiz.stacks)
-        : quiz.stacks
+      visibleQuiz.orderType === DB.ElementOrderType.SPACED_REPETITION
+        ? orderStacks(visibleQuiz.stacks)
+        : visibleQuiz.stacks
 
     return {
-      ...quiz,
+      ...visibleQuiz,
       isOwner,
       stacks: orderedStacks,
       numOfStacks: orderedStacks.length,
     }
   }
 
-  return { ...quiz, isOwner }
+  return { ...visibleQuiz, isOwner }
 }
 
 export async function getPracticeQuizEvaluation(

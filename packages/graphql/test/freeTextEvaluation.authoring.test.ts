@@ -16,6 +16,7 @@ import {
   semanticEvaluationForViewer,
 } from '../src/schema/elementData.js'
 import { manipulateElement } from '../src/services/elements.js'
+import { getPracticeQuizData } from '../src/services/practiceQuizzes.js'
 import {
   cleanupFixtures,
   createFixture,
@@ -240,5 +241,37 @@ describe('semantic free-text authoring', () => {
         UserRole.PARTICIPANT
       )
     ).toBeNull()
+  })
+
+  it('withholds semantic authoring data from unrelated lecturers', async () => {
+    const unrelated = await createFixture(`${TEST_PREFIX}-unrelated`)
+
+    const unauthorizedView = await getPracticeQuizData(
+      { id: fixture.practiceQuiz.id },
+      lecturerContext(unrelated.lecturer.id)
+    )
+    const unauthorizedData =
+      unauthorizedView?.stacks[0]?.elements[0]?.elementData
+    expect(unauthorizedData?.type).toBe(ElementType.FREE_TEXT)
+    if (unauthorizedData?.type !== ElementType.FREE_TEXT) {
+      throw new Error('Expected a free-text element instance')
+    }
+    expect(unauthorizedData.options.semanticEvaluation).toBeUndefined()
+    expect(unauthorizedData.options.solutions).toBeNull()
+    expect(unauthorizedData.explanation).toBeNull()
+
+    const ownerView = await getPracticeQuizData(
+      { id: fixture.practiceQuiz.id },
+      lecturerContext(fixture.lecturer.id)
+    )
+    const ownerData = ownerView?.stacks[0]?.elements[0]?.elementData
+    expect(ownerData?.type).toBe(ElementType.FREE_TEXT)
+    if (ownerData?.type !== ElementType.FREE_TEXT) {
+      throw new Error('Expected a free-text element instance')
+    }
+    expect(ownerData.options.semanticEvaluation).toEqual(semanticConfig)
+    expect(ownerData.options.solutions).toEqual([
+      'Diversification reduces idiosyncratic risk.',
+    ])
   })
 })

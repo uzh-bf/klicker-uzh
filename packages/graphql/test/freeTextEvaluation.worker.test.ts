@@ -73,7 +73,7 @@ describe('semantic free-text evaluation worker', () => {
       vi.fn().mockImplementation(async (_url, init) => {
         requestBody = JSON.parse(String(init?.body))
         return new Response(
-          JSON.stringify(evaluatorResponse(attempt.id, 60, 'complete')),
+          JSON.stringify(evaluatorResponse(attempt.id, 60, 'partial')),
           { status: 200, headers: { 'content-type': 'application/json' } }
         )
       })
@@ -174,7 +174,7 @@ describe('semantic free-text evaluation worker', () => {
           {
             rubricId: 'risk',
             rubricName: 'Risk reduction',
-            proposedLevel: 'complete',
+            proposedLevel: 'partial',
             normalizedScore: 60,
             rationale: 'The answer identifies diversification of risk.',
           },
@@ -216,7 +216,7 @@ describe('semantic free-text evaluation worker', () => {
         {
           attemptId: attempt.id,
           evaluationRevision: attempt.evaluationRevision,
-          evaluation: evaluatorResponse(attempt.id, 60, 'complete'),
+          evaluation: evaluatorResponse(attempt.id, 60, 'partial'),
         },
         tx
       )
@@ -282,7 +282,7 @@ describe('semantic free-text evaluation worker', () => {
         {
           attemptId: attempt.id,
           evaluationRevision: attempt.evaluationRevision,
-          evaluation: evaluatorResponse(attempt.id, 60, 'complete'),
+          evaluation: evaluatorResponse(attempt.id, 60, 'partial'),
         },
         tx
       )
@@ -325,7 +325,7 @@ describe('semantic free-text evaluation worker', () => {
           {
             attemptId: firstAttempt.id,
             evaluationRevision: firstAttempt.evaluationRevision,
-            evaluation: evaluatorResponse(firstAttempt.id, 60, 'complete'),
+            evaluation: evaluatorResponse(firstAttempt.id, 60, 'partial'),
           },
           tx
         )
@@ -426,7 +426,7 @@ describe('semantic free-text evaluation worker', () => {
         .fn()
         .mockResolvedValue(
           new Response(
-            JSON.stringify(evaluatorResponse(attempt.id, 60, 'complete')),
+            JSON.stringify(evaluatorResponse(attempt.id, 60, 'partial')),
             { status: 200, headers: { 'content-type': 'application/json' } }
           )
         )
@@ -503,7 +503,7 @@ describe('semantic free-text evaluation worker', () => {
         {
           attemptId: attempt.id,
           evaluationRevision: attempt.evaluationRevision,
-          evaluation: evaluatorResponse(attempt.id, 60, 'complete'),
+          evaluation: evaluatorResponse(attempt.id, 60, 'partial'),
         },
         tx
       )
@@ -529,7 +529,7 @@ describe('semantic free-text evaluation worker', () => {
     }
   })
 
-  it('marks uncertain output unavailable without consuming an answer attempt', async () => {
+  it('uses exact matching when an uncertain output is not an exact match', async () => {
     const ctx = participantContext(fixture.participant.id)
     await decideSemanticEvaluationConsent(
       { disclosureVersion: '2026-08-18', accepted: true },
@@ -548,7 +548,7 @@ describe('semantic free-text evaluation worker', () => {
     const response = evaluatorResponse(
       pending.currentAttempt!.id,
       60,
-      'complete'
+      'partial'
     )
     response.rubric_assessments[0]!.needs_review = true
     vi.stubGlobal(
@@ -574,12 +574,15 @@ describe('semantic free-text evaluation worker', () => {
       ctx
     )
     expect(state).toMatchObject({
-      attemptsUsed: 0,
-      attemptsRemaining: 2,
+      attemptsUsed: 1,
+      attemptsRemaining: 1,
+      canSubmitAnswer: true,
       currentAttempt: {
-        evaluationStatus: 'UNAVAILABLE',
+        evaluationStatus: 'EVALUATED',
+        evaluationSource: 'EXACT_MATCH',
+        correctness: 'INCORRECT',
         availabilityReason: 'EVALUATOR_RESULT_UNAVAILABLE',
-        retryable: true,
+        retryable: false,
       },
     })
   })
@@ -603,7 +606,7 @@ describe('semantic free-text evaluation worker', () => {
     const response = evaluatorResponse(
       pending.currentAttempt!.id,
       60,
-      'complete'
+      'partial'
     )
     response.rubric_assessments[0]!.needs_review = true
     vi.stubGlobal(
@@ -634,7 +637,7 @@ describe('semantic free-text evaluation worker', () => {
       evaluationSource: 'EXACT_MATCH',
       aggregateScore: 100,
       correctness: 'CORRECT',
-      availabilityReason: null,
+      availabilityReason: 'EVALUATOR_RESULT_UNAVAILABLE',
       retryable: false,
       cycle: {
         status: 'CORRECT',
@@ -836,9 +839,13 @@ describe('semantic free-text evaluation worker', () => {
       ctx
     )
     expect(state?.currentAttempt).toMatchObject({
-      evaluationStatus: 'UNAVAILABLE',
+      evaluationStatus: 'EVALUATED',
+      evaluationSource: 'EXACT_MATCH',
+      correctness: 'INCORRECT',
       availabilityReason: 'LECTURER_ENTITLEMENT_UNAVAILABLE',
+      retryable: false,
     })
+    expect(state?.canSubmitAnswer).toBe(true)
     expect(fetchMock).not.toHaveBeenCalled()
   })
 

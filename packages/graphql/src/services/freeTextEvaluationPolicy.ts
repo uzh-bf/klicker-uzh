@@ -84,6 +84,27 @@ export function getSemanticEvaluationDisclosureVersion() {
   return getDisclosureVersion()
 }
 
+async function isSemanticEvaluatorAvailable() {
+  if (!process.env.CATALYST_FORMATIVE_EVALUATOR_URL) return false
+
+  const healthUrl = process.env.CATALYST_FORMATIVE_EVALUATOR_HEALTH_URL
+  if (!healthUrl) return true
+
+  try {
+    const response = await fetch(healthUrl, {
+      headers: process.env.CATALYST_FORMATIVE_EVALUATOR_TOKEN
+        ? {
+            authorization: `Bearer ${process.env.CATALYST_FORMATIVE_EVALUATOR_TOKEN}`,
+          }
+        : undefined,
+      signal: AbortSignal.timeout(1_000),
+    })
+    return response.ok
+  } catch {
+    return false
+  }
+}
+
 export async function getSemanticFreeTextCapability(
   ctx: ContextWithUser
 ): Promise<SemanticFreeTextCapabilityData> {
@@ -95,11 +116,15 @@ export async function getSemanticFreeTextCapability(
   const entitled = !!(
     ctx.user.catalystInstitutional || ctx.user.catalystIndividual
   )
-  const available = !!process.env.CATALYST_FORMATIVE_EVALUATOR_URL
+  const available = await isSemanticEvaluatorAvailable()
   return {
     entitled,
     availability: available ? 'AVAILABLE' : 'UNAVAILABLE',
-    reason: available ? null : 'EVALUATOR_NOT_CONFIGURED',
+    reason: available
+      ? null
+      : process.env.CATALYST_FORMATIVE_EVALUATOR_URL
+        ? 'EVALUATOR_UNAVAILABLE'
+        : 'EVALUATOR_NOT_CONFIGURED',
     retryable: !available,
     disclosureVersion,
     provider: 'CATALYST',

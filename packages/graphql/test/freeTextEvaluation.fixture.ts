@@ -42,6 +42,11 @@ export const semanticConfig: SemanticFreeTextConfig = {
             normalized_score: 100,
           },
           {
+            name: 'partial',
+            description: 'Makes part of the connection.',
+            normalized_score: 60,
+          },
+          {
             name: 'missing',
             description: 'Does not make the connection.',
             normalized_score: 0,

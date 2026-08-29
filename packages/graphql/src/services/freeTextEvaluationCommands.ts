@@ -245,13 +245,19 @@ export async function createFreeTextAttempt(
     ownerEntitled: ownerHasCatalyst(semanticInstance.practiceQuiz),
     consent: consent?.decision ?? null,
   })
-  const exactMatchFallback = exactMatch && unavailableReason !== null
+  const exactMatchFallback = unavailableReason !== null
+  const fallbackScore = exactMatch ? 100 : 0
   const bands =
     config.outcome_bands ??
     getDefaultFreeTextOutcomeBands(config.question_language)
   const exactBand = exactMatchFallback
-    ? mapFreeTextOutcome({ score: 100, outcomeBands: bands })
+    ? mapFreeTextOutcome({ score: fallbackScore, outcomeBands: bands })
     : null
+  const fallbackExhausted =
+    exactMatchFallback &&
+    !exactMatch &&
+    evaluatedCount + 1 >= cycle.attemptLimit
+  const fallbackCompletedAt = exactMatchFallback ? new Date() : null
 
   const attemptData = {
     cycleId: cycle.id,
@@ -269,15 +275,13 @@ export async function createFreeTextAttempt(
     evaluationSource: exactMatchFallback
       ? DB.FreeTextEvaluationSource.EXACT_MATCH
       : null,
-    retryable: !exactMatchFallback && unavailableReason !== null,
-    availabilityReason: exactMatchFallback ? null : unavailableReason,
-    completedAt: exactMatchFallback || unavailableReason ? new Date() : null,
-    aggregateScore: exactMatchFallback ? 100 : null,
+    retryable: false,
+    availabilityReason: unavailableReason,
+    completedAt: fallbackCompletedAt,
+    aggregateScore: exactMatchFallback ? fallbackScore : null,
     outcomeBandId: exactBand?.id,
     outcomeBandLabel: exactBand?.label,
-    correctness: exactMatchFallback
-      ? DB.FreeTextCorrectnessCategory.CORRECT
-      : null,
+    correctness: exactBand?.category ?? null,
   }
   let attempt: DB.FreeTextAttempt
   try {
@@ -290,9 +294,18 @@ export async function createFreeTextAttempt(
         },
         data: exactMatchFallback
           ? {
-              status: DB.FreeTextPracticeCycleStatus.CORRECT,
-              endedAt: new Date(),
-              bestScore: 100,
+              status: exactMatch
+                ? DB.FreeTextPracticeCycleStatus.CORRECT
+                : fallbackExhausted
+                  ? DB.FreeTextPracticeCycleStatus.EXHAUSTED
+                  : DB.FreeTextPracticeCycleStatus.ACTIVE,
+              endedAt:
+                exactMatch || fallbackExhausted ? fallbackCompletedAt : null,
+              solutionRevealedAt:
+                fallbackExhausted && config.solution_reveal_enabled
+                  ? fallbackCompletedAt
+                  : null,
+              bestScore: Math.max(cycle.bestScore, fallbackScore),
               stateVersion: { increment: 1 },
             }
           : { stateVersion: { increment: 1 } },

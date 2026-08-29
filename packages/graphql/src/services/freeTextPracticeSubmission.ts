@@ -17,7 +17,7 @@ type SemanticResponse = {
 }
 
 export type SemanticFreeTextInstanceEvaluation = InstanceEvaluationFreeText & {
-  semanticState: FreeTextPracticeState
+  semanticState?: FreeTextPracticeState | null
 }
 
 /** Maps semantic practice state back to the longstanding stack response API. */
