@@ -128,11 +128,6 @@ async function fillPublicationRequest(page: Page, useCase: string) {
 }
 
 test.describe.serial('Lecturer chatbot draft authoring', () => {
-  // The production manage build registers a service worker whose fetch
-  // handling bypasses page-level network interception, so the in-flight
-  // lock below would never observe the delayed mutation in CI.
-  test.use({ serviceWorkers: 'block' })
-
   test.beforeEach(async ({ loginLecturer, page }) => {
     await cleanupAuthoringChatbots()
     await loginLecturer()
@@ -348,18 +343,21 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     )
     const submitButton = page.getByTestId('request-chatbot-publication')
     await expect(submitButton).toBeEnabled()
+    const publicationRequestGate = createRequestGate()
     // While the mutation is in flight, all publication inputs lock with the
     // submit button so late edits cannot diverge from the submitted payload.
-    await page.route('**/graphql', async (route) => {
+    await page.route('**/api/graphql', async (route) => {
       const request = route.request()
       if (
-        request.postDataJSON()?.query?.includes('requestChatbotPublication')
+        request.postDataJSON()?.operationName !== 'RequestChatbotPublication'
       ) {
-        await new Promise((resolve) => setTimeout(resolve, 3000))
         await route.continue()
-      } else {
-        await route.continue()
+        return
       }
+
+      const response = await route.fetch()
+      await publicationRequestGate.wait
+      await route.fulfill({ response })
     })
     await submitButton.click()
     await expect(submitButton).toBeDisabled()
@@ -373,6 +371,7 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       page.getByTestId('chatbot-publication-proposed-credits')
     ).toBeDisabled()
 
+    publicationRequestGate.release()
     await expect(
       page.getByTestId('chatbot-details').getByTestId('chatbot-status')
     ).toHaveText('Pending approval')
