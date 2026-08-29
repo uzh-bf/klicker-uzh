@@ -6,7 +6,10 @@ import {
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
-import { COURSE_DUPLICATION_ERROR_CODES } from '@klicker-uzh/types'
+import {
+  ASYNC_TASK_TRACKED_IDS_LIMIT,
+  COURSE_DUPLICATION_ERROR_CODES,
+} from '@klicker-uzh/types'
 import { createYoga } from 'graphql-yoga'
 import type { ContextWithUser } from '@/lib/context.js'
 import {
@@ -69,7 +72,9 @@ describe('AsyncTask service and GraphQL API', () => {
     return {
       prisma,
       redisExec: {
+        get: async () => null,
         mget: async (...keys: string[]) => keys.map(() => 'present'),
+        set: async () => 'OK',
       },
       user: {
         sub,
@@ -78,7 +83,7 @@ describe('AsyncTask service and GraphQL API', () => {
         catalystInstitutional: false,
         catalystIndividual: false,
       },
-    } as ContextWithUser
+    } as unknown as ContextWithUser
   }
 
   async function executeGraphql({
@@ -164,7 +169,7 @@ describe('AsyncTask service and GraphQL API', () => {
       ],
     })
 
-    const tasks = await getAsyncTasks(ownerCtx)
+    const tasks = await getAsyncTasks({ trackedIds: [] }, ownerCtx)
 
     expect(tasks.map((task) => task.subjectName)).toEqual([
       'Active owner task',
@@ -216,7 +221,7 @@ describe('AsyncTask service and GraphQL API', () => {
 
     const [attentionCount, tasks] = await Promise.all([
       getAsyncTaskAttentionCount(ownerCtx),
-      getAsyncTasks(ownerCtx),
+      getAsyncTasks({ trackedIds: [] }, ownerCtx),
     ])
 
     expect(attentionCount).toBe(72)
@@ -289,6 +294,26 @@ describe('AsyncTask service and GraphQL API', () => {
     ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
   })
 
+  it('rejects tracked-task batches larger than the shared limit', async () => {
+    await expect(
+      getAsyncTasks(
+        {
+          trackedIds: Array.from(
+            { length: ASYNC_TASK_TRACKED_IDS_LIMIT + 1 },
+            () => randomUUID()
+          ),
+        },
+        ownerCtx
+      )
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+  })
+
+  it('rejects malformed tracked-task ids before querying UUID columns', async () => {
+    await expect(
+      getAsyncTasks({ trackedIds: ['not-a-uuid'] }, ownerCtx)
+    ).rejects.toMatchObject({ extensions: { code: 'BAD_USER_INPUT' } })
+  })
+
   it('surfaces older unread tasks after the newest outcomes are acknowledged', async () => {
     const now = Date.now()
     await prisma.asyncTask.createMany({
@@ -301,7 +326,20 @@ describe('AsyncTask service and GraphQL API', () => {
       })),
     })
 
-    const firstPage = await getAsyncTasks(ownerCtx)
+    const oldestTask = await prisma.asyncTask.findFirstOrThrow({
+      where: { ownerId },
+      orderBy: [{ finishedAt: 'asc' }, { id: 'asc' }],
+    })
+    const trackedPage = await getAsyncTasks(
+      { trackedIds: [oldestTask.id] },
+      ownerCtx
+    )
+    expect(trackedPage).toHaveLength(21)
+    expect(trackedPage).toContainEqual(
+      expect.objectContaining({ id: oldestTask.id })
+    )
+
+    const firstPage = await getAsyncTasks({ trackedIds: [] }, ownerCtx)
     expect(firstPage).toHaveLength(20)
     expect(firstPage.every((task) => task.readAt === null)).toBe(true)
 
@@ -309,7 +347,7 @@ describe('AsyncTask service and GraphQL API', () => {
       { ids: firstPage.map((task) => task.id) },
       ownerCtx
     )
-    const secondPage = await getAsyncTasks(ownerCtx)
+    const secondPage = await getAsyncTasks({ trackedIds: [] }, ownerCtx)
 
     expect(secondPage).toHaveLength(20)
     expect(secondPage.filter((task) => task.readAt === null)).toHaveLength(1)
@@ -328,11 +366,17 @@ describe('AsyncTask service and GraphQL API', () => {
         updatedAt: new Date(Date.now() - 76 * 60 * 1000),
       },
     })
+    let reconciliationCursor: string | null = null
     ownerCtx.redisExec = {
+      get: async () => reconciliationCursor,
       mget: async (...keys: string[]) => keys.map(() => null),
-    } as ContextWithUser['redisExec']
+      set: async (_key: string, value: string) => {
+        reconciliationCursor = value
+        return 'OK'
+      },
+    } as unknown as ContextWithUser['redisExec']
 
-    const tasks = await getAsyncTasks(ownerCtx)
+    const tasks = await getAsyncTasks({ trackedIds: [] }, ownerCtx)
 
     expect(tasks).toContainEqual(
       expect.objectContaining({
@@ -343,36 +387,118 @@ describe('AsyncTask service and GraphQL API', () => {
     )
   })
 
-  it('reconciles an older active task hidden beyond the display limit', async () => {
+  it('reconciles a stale task between both display-limit windows', async () => {
+    const now = Date.now()
     const staleTask = await prisma.asyncTask.create({
       data: {
         kind: AsyncTaskKind.COURSE_DUPLICATION,
         status: AsyncTaskStatus.RUNNING,
         subjectName: 'Hidden missing duplication',
         ownerId,
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        updatedAt: new Date(Date.now() - 76 * 60 * 1000),
+        createdAt: new Date(now - 51 * 1000),
+        updatedAt: new Date(now - 76 * 60 * 1000),
       },
     })
     await prisma.asyncTask.createMany({
-      data: Array.from({ length: 50 }, (_, index) => ({
-        kind: AsyncTaskKind.COURSE_DUPLICATION,
-        status: AsyncTaskStatus.QUEUED,
-        subjectName: `Newer duplication ${index}`,
-        ownerId,
-        createdAt: new Date(Date.now() - index * 1000),
-      })),
+      data: [
+        ...Array.from({ length: 50 }, (_, index) => ({
+          kind: AsyncTaskKind.COURSE_DUPLICATION,
+          status: AsyncTaskStatus.QUEUED,
+          subjectName: `Older duplication ${index}`,
+          ownerId,
+          createdAt: new Date(now - (101 - index) * 1000),
+        })),
+        ...Array.from({ length: 50 }, (_, index) => ({
+          kind: AsyncTaskKind.COURSE_DUPLICATION,
+          status: AsyncTaskStatus.QUEUED,
+          subjectName: `Newer duplication ${index}`,
+          ownerId,
+          createdAt: new Date(now - (50 - index) * 1000),
+        })),
+      ],
     })
+    let reconciliationCursor: string | null = null
     ownerCtx.redisExec = {
+      get: async () => reconciliationCursor,
       mget: async (...keys: string[]) =>
         keys.map((key) => (key.includes(staleTask.id) ? null : 'present')),
-    } as ContextWithUser['redisExec']
+      set: async (_key: string, value: string) => {
+        reconciliationCursor = value
+        return 'OK'
+      },
+    } as unknown as ContextWithUser['redisExec']
 
-    const tasks = await getAsyncTasks(ownerCtx)
+    const tasks = await getAsyncTasks({ trackedIds: [] }, ownerCtx)
 
     expect(tasks).toContainEqual(
       expect.objectContaining({
         id: staleTask.id,
+        status: AsyncTaskStatus.FAILED,
+        errorCode: COURSE_DUPLICATION_ERROR_CODES.failed,
+      })
+    )
+  })
+
+  it('advances through stale batches when older Redis jobs still exist', async () => {
+    const now = Date.now()
+    const staleTaskId = randomUUID()
+    await prisma.asyncTask.createMany({
+      data: [
+        ...Array.from({ length: 60 }, (_, index) => ({
+          kind: AsyncTaskKind.COURSE_DUPLICATION,
+          status: AsyncTaskStatus.QUEUED,
+          subjectName: `Older active duplication ${index}`,
+          ownerId,
+          createdAt: new Date(now - (300 - index) * 1000),
+        })),
+        ...Array.from({ length: 50 }, (_, index) => ({
+          kind: AsyncTaskKind.COURSE_DUPLICATION,
+          status: AsyncTaskStatus.RUNNING,
+          subjectName: `Stale present duplication ${index}`,
+          ownerId,
+          createdAt: new Date(now - (200 - index) * 1000),
+          updatedAt: new Date(now - (200 + index) * 60 * 1000),
+        })),
+        {
+          id: staleTaskId,
+          kind: AsyncTaskKind.COURSE_DUPLICATION,
+          status: AsyncTaskStatus.RUNNING,
+          subjectName: 'Stale task after present batch',
+          ownerId,
+          createdAt: new Date(now - 100 * 1000),
+          updatedAt: new Date(now - 76 * 60 * 1000),
+        },
+        ...Array.from({ length: 60 }, (_, index) => ({
+          kind: AsyncTaskKind.COURSE_DUPLICATION,
+          status: AsyncTaskStatus.QUEUED,
+          subjectName: `Newer active duplication ${index}`,
+          ownerId,
+          createdAt: new Date(now - (60 - index) * 1000),
+        })),
+      ],
+    })
+
+    let reconciliationCursor: string | null = null
+    ownerCtx.redisExec = {
+      get: async () => reconciliationCursor,
+      mget: async (...keys: string[]) =>
+        keys.map((key) => (key.includes(staleTaskId) ? null : 'present')),
+      set: async (_key: string, value: string) => {
+        reconciliationCursor = value
+        return 'OK'
+      },
+    } as unknown as ContextWithUser['redisExec']
+
+    await getAsyncTasks({ trackedIds: [] }, ownerCtx)
+    await expect(
+      prisma.asyncTask.findUniqueOrThrow({ where: { id: staleTaskId } })
+    ).resolves.toMatchObject({ status: AsyncTaskStatus.RUNNING })
+
+    const secondPage = await getAsyncTasks({ trackedIds: [] }, ownerCtx)
+
+    expect(secondPage).toContainEqual(
+      expect.objectContaining({
+        id: staleTaskId,
         status: AsyncTaskStatus.FAILED,
         errorCode: COURSE_DUPLICATION_ERROR_CODES.failed,
       })
@@ -459,7 +585,13 @@ describe('AsyncTask service and GraphQL API', () => {
     })
 
     const queryResult = await executeGraphql({
-      source: `query { asyncTaskAttentionCount asyncTasks { id subjectName } }`,
+      source: `
+        query AsyncTasks($trackedIds: [String!]!) {
+          asyncTaskAttentionCount
+          asyncTasks(trackedIds: $trackedIds) { id subjectName }
+        }
+      `,
+      variables: { trackedIds: [otherOwnerTask.id] },
     })
     expect(queryResult.errors).toBeUndefined()
     expect(queryResult.data?.asyncTaskAttentionCount).toBe(1)

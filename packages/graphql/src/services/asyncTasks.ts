@@ -1,5 +1,9 @@
 import * as DB from '@klicker-uzh/prisma/client'
-import { COURSE_DUPLICATION_ERROR_CODES } from '@klicker-uzh/types'
+import {
+  ASYNC_TASK_TRACKED_IDS_LIMIT,
+  COURSE_DUPLICATION_ERROR_CODES,
+  isAsyncTaskId,
+} from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
 import {
@@ -11,6 +15,9 @@ const ASYNC_TASK_ACTIVE_LIMIT = 50
 const ASYNC_TASK_RECENT_LIMIT = 20
 const ASYNC_TASK_ACKNOWLEDGEMENT_LIMIT = 50
 const ASYNC_TASK_RECENT_RETENTION_MS = 30 * 24 * 60 * 60 * 1000
+const ASYNC_TASK_RECONCILIATION_CURSOR_TTL_SECONDS = 24 * 60 * 60
+const ASYNC_TASK_RECONCILIATION_CURSOR_KEY_PREFIX =
+  'async-task:course-duplication-reconciliation-cursor'
 
 const ACTIVE_ASYNC_TASK_STATUSES = [
   DB.AsyncTaskStatus.QUEUED,
@@ -100,32 +107,121 @@ function getCourseDuplicationTaskData(job: CourseDuplicationTaskSnapshot) {
   }
 }
 
+interface ReconciliationCursor {
+  id: string
+  updatedAt: Date
+}
+
+function parseReconciliationCursor(value: string | null) {
+  if (!value) return null
+
+  try {
+    const parsed = JSON.parse(value) as { id?: unknown; updatedAt?: unknown }
+    if (
+      typeof parsed.id !== 'string' ||
+      !isAsyncTaskId(parsed.id) ||
+      typeof parsed.updatedAt !== 'string'
+    ) {
+      return null
+    }
+
+    const updatedAt = new Date(parsed.updatedAt)
+    return Number.isNaN(updatedAt.getTime())
+      ? null
+      : { id: parsed.id, updatedAt }
+  } catch {
+    return null
+  }
+}
+
+async function getStaleActiveTaskBatch({
+  ctx,
+  staleCutoff,
+  where,
+}: {
+  ctx: ContextWithUser
+  staleCutoff: Date
+  where: DB.Prisma.AsyncTaskWhereInput
+}) {
+  const cursorKey = `${ASYNC_TASK_RECONCILIATION_CURSOR_KEY_PREFIX}:${ctx.user.sub}`
+  const cursor = parseReconciliationCursor(await ctx.redisExec.get(cursorKey))
+
+  const findBatch = (after: ReconciliationCursor | null) =>
+    ctx.prisma.asyncTask.findMany({
+      where: {
+        ...where,
+        updatedAt: { lt: staleCutoff },
+        ...(after
+          ? {
+              OR: [
+                {
+                  updatedAt: {
+                    gt: after.updatedAt,
+                    lt: staleCutoff,
+                  },
+                },
+                { id: { gt: after.id }, updatedAt: after.updatedAt },
+              ],
+            }
+          : {}),
+      },
+      select: { id: true, updatedAt: true },
+      orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
+      take: ASYNC_TASK_ACTIVE_LIMIT,
+    })
+
+  let tasks = await findBatch(cursor)
+  if (tasks.length === 0 && cursor) {
+    tasks = await findBatch(null)
+  }
+
+  const lastTask = tasks.at(-1)
+  if (lastTask) {
+    await ctx.redisExec.set(
+      cursorKey,
+      JSON.stringify({
+        id: lastTask.id,
+        updatedAt: lastTask.updatedAt.toISOString(),
+      }),
+      'EX',
+      ASYNC_TASK_RECONCILIATION_CURSOR_TTL_SECONDS
+    )
+  }
+
+  return tasks
+}
+
 async function reconcileMissingCourseDuplicationTasks(ctx: ContextWithUser) {
-  const where = {
+  const where: DB.Prisma.AsyncTaskWhereInput = {
     kind: DB.AsyncTaskKind.COURSE_DUPLICATION,
     ownerId: ctx.user.sub,
     status: { in: [...ACTIVE_ASYNC_TASK_STATUSES] },
   }
-  const [newestActiveTasks, oldestActiveTasks] = await Promise.all([
-    ctx.prisma.asyncTask.findMany({
-      where,
-      select: { id: true, updatedAt: true },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      take: ASYNC_TASK_ACTIVE_LIMIT,
-    }),
-    ctx.prisma.asyncTask.findMany({
-      where,
-      select: { id: true, updatedAt: true },
-      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-      take: ASYNC_TASK_ACTIVE_LIMIT,
-    }),
-  ])
+  const now = new Date()
+  const staleCutoff = new Date(
+    now.getTime() - COURSE_DUPLICATION_STALE_AFTER_MS
+  )
+  const [newestActiveTasks, oldestActiveTasks, staleActiveTasks] =
+    await Promise.all([
+      ctx.prisma.asyncTask.findMany({
+        where,
+        select: { id: true, updatedAt: true },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: ASYNC_TASK_ACTIVE_LIMIT,
+      }),
+      ctx.prisma.asyncTask.findMany({
+        where,
+        select: { id: true, updatedAt: true },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        take: ASYNC_TASK_ACTIVE_LIMIT,
+      }),
+      getStaleActiveTaskBatch({ ctx, staleCutoff, where }),
+    ])
   const activeTasks = [
     ...new Map(
-      [...newestActiveTasks, ...oldestActiveTasks].map((task) => [
-        task.id,
-        task,
-      ])
+      [...newestActiveTasks, ...oldestActiveTasks, ...staleActiveTasks].map(
+        (task) => [task.id, task]
+      )
     ).values(),
   ]
   if (activeTasks.length === 0) return
@@ -143,13 +239,11 @@ async function reconcileMissingCourseDuplicationTasks(ctx: ContextWithUser) {
   const committedCourseIds = new Set(
     committedCourses.map((course) => course.id)
   )
-  const now = new Date()
-  const staleCutoff = now.getTime() - COURSE_DUPLICATION_STALE_AFTER_MS
-
   await Promise.all(
     missingTasks.map(async (task) => {
       const committed = committedCourseIds.has(task.id)
-      if (!committed && task.updatedAt.getTime() >= staleCutoff) return
+      if (!committed && task.updatedAt.getTime() >= staleCutoff.getTime())
+        return
 
       await ctx.prisma.asyncTask.updateMany({
         where: {
@@ -175,7 +269,21 @@ async function reconcileMissingCourseDuplicationTasks(ctx: ContextWithUser) {
   )
 }
 
-export async function getAsyncTasks(ctx: ContextWithUser) {
+export async function getAsyncTasks(
+  { trackedIds }: { trackedIds: string[] },
+  ctx: ContextWithUser
+) {
+  const uniqueTrackedIds = [...new Set(trackedIds)]
+  if (
+    uniqueTrackedIds.length > ASYNC_TASK_TRACKED_IDS_LIMIT ||
+    uniqueTrackedIds.some((id) => !isAsyncTaskId(id))
+  ) {
+    throw new GraphQLError(
+      `Tracked tasks must contain at most ${ASYNC_TASK_TRACKED_IDS_LIMIT} valid ids.`,
+      { extensions: { code: 'BAD_USER_INPUT' } }
+    )
+  }
+
   try {
     await reconcileMissingCourseDuplicationTasks(ctx)
   } catch (error) {
@@ -183,36 +291,44 @@ export async function getAsyncTasks(ctx: ContextWithUser) {
   }
 
   const recentCutoff = new Date(Date.now() - ASYNC_TASK_RECENT_RETENTION_MS)
-  const [activeTasks, unreadRecentTasks, readRecentTasks] = await Promise.all([
-    ctx.prisma.asyncTask.findMany({
-      where: {
-        ownerId: ctx.user.sub,
-        status: { in: [...ACTIVE_ASYNC_TASK_STATUSES] },
-      },
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      take: ASYNC_TASK_ACTIVE_LIMIT,
-    }),
-    ctx.prisma.asyncTask.findMany({
-      where: {
-        ownerId: ctx.user.sub,
-        readAt: null,
-        status: { in: [...TERMINAL_ASYNC_TASK_STATUSES] },
-        finishedAt: { gte: recentCutoff },
-      },
-      orderBy: [{ finishedAt: 'desc' }, { id: 'desc' }],
-      take: ASYNC_TASK_RECENT_LIMIT,
-    }),
-    ctx.prisma.asyncTask.findMany({
-      where: {
-        ownerId: ctx.user.sub,
-        readAt: { not: null },
-        status: { in: [...TERMINAL_ASYNC_TASK_STATUSES] },
-        finishedAt: { gte: recentCutoff },
-      },
-      orderBy: [{ finishedAt: 'desc' }, { id: 'desc' }],
-      take: ASYNC_TASK_RECENT_LIMIT,
-    }),
-  ])
+  const [activeTasks, unreadRecentTasks, readRecentTasks, trackedTasks] =
+    await Promise.all([
+      ctx.prisma.asyncTask.findMany({
+        where: {
+          ownerId: ctx.user.sub,
+          status: { in: [...ACTIVE_ASYNC_TASK_STATUSES] },
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: ASYNC_TASK_ACTIVE_LIMIT,
+      }),
+      ctx.prisma.asyncTask.findMany({
+        where: {
+          ownerId: ctx.user.sub,
+          readAt: null,
+          status: { in: [...TERMINAL_ASYNC_TASK_STATUSES] },
+          finishedAt: { gte: recentCutoff },
+        },
+        orderBy: [{ finishedAt: 'desc' }, { id: 'desc' }],
+        take: ASYNC_TASK_RECENT_LIMIT,
+      }),
+      ctx.prisma.asyncTask.findMany({
+        where: {
+          ownerId: ctx.user.sub,
+          readAt: { not: null },
+          status: { in: [...TERMINAL_ASYNC_TASK_STATUSES] },
+          finishedAt: { gte: recentCutoff },
+        },
+        orderBy: [{ finishedAt: 'desc' }, { id: 'desc' }],
+        take: ASYNC_TASK_RECENT_LIMIT,
+      }),
+      ctx.prisma.asyncTask.findMany({
+        where: {
+          id: { in: uniqueTrackedIds },
+          ownerId: ctx.user.sub,
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      }),
+    ])
 
   const recentTasks = [
     ...unreadRecentTasks,
@@ -225,7 +341,14 @@ export async function getAsyncTasks(ctx: ContextWithUser) {
       (right.finishedAt?.getTime() ?? 0) - (left.finishedAt?.getTime() ?? 0)
   )
 
-  return [...activeTasks, ...recentTasks]
+  return [
+    ...new Map(
+      [...activeTasks, ...recentTasks, ...trackedTasks].map((task) => [
+        task.id,
+        task,
+      ])
+    ).values(),
+  ]
 }
 
 export async function getAsyncTaskAttentionCount(ctx: ContextWithUser) {

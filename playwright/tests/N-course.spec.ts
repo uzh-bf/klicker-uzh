@@ -3465,12 +3465,20 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     )
 
     const manageUrl = process.env.URL_MANAGE ?? 'http://127.0.0.1:3002'
-    await page.evaluate((jobId) => {
-      window.localStorage.setItem(
-        'course-duplication-job-ids',
-        JSON.stringify([jobId])
-      )
-    }, restoredJobs[0].id)
+    const trackedJobsStorageKey = `course-duplication-job-ids:${LECTURER_ID}`
+    await page.evaluate(
+      ({ jobIds, storageKey }) => {
+        window.localStorage.setItem(storageKey, JSON.stringify(jobIds))
+      },
+      {
+        jobIds: [
+          'not-a-uuid',
+          '99999999-9999-4999-8999-999999999999',
+          restoredJobs[0].id,
+        ],
+        storageKey: trackedJobsStorageKey,
+      }
+    )
     await page.goto(`${manageUrl}/?dup-verify=1`, {
       waitUntil: 'domcontentloaded',
     })
@@ -3483,8 +3491,9 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await expect(restoredCompletionToast).toBeVisible()
     await expect
       .poll(() =>
-        page.evaluate(() =>
-          window.localStorage.getItem('course-duplication-job-ids')
+        page.evaluate(
+          (storageKey) => window.localStorage.getItem(storageKey),
+          trackedJobsStorageKey
         )
       )
       .toBeNull()

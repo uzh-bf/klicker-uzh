@@ -1,3 +1,9 @@
+export const ASYNC_TASK_TRACKED_IDS_LIMIT = 50
+
+export function isAsyncTaskId(value: string) {
+  return /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(value)
+}
+
 export const COURSE_DUPLICATION_ERROR_CODES = {
   accessDenied: 'COURSE_DUPLICATION_ACCESS_DENIED',
   failed: 'COURSE_DUPLICATION_FAILED',

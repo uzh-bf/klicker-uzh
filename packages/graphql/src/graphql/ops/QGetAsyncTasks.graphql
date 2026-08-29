@@ -1,6 +1,6 @@
-query GetAsyncTasks {
+query GetAsyncTasks($trackedIds: [String!]!) {
   asyncTaskAttentionCount
-  asyncTasks {
+  asyncTasks(trackedIds: $trackedIds) {
     id
     kind
     status

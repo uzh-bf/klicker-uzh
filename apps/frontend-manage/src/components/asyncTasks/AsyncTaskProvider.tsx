@@ -7,8 +7,13 @@ import {
   GetAsyncTasksDocument,
   GetUserCoursesDocument,
   StartCourseDuplicationDocument,
+  UserProfileDocument,
 } from '@klicker-uzh/graphql/dist/ops'
-import { COURSE_DUPLICATION_ERROR_CODES } from '@klicker-uzh/types'
+import {
+  ASYNC_TASK_TRACKED_IDS_LIMIT,
+  COURSE_DUPLICATION_ERROR_CODES,
+  isAsyncTaskId,
+} from '@klicker-uzh/types'
 import { toast } from '@uzh-bf/design-system'
 import dayjs from 'dayjs'
 import { useRouter } from 'next/router'
@@ -21,6 +26,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react'
 import {
   type CourseDuplicationErrorType,
@@ -64,7 +70,7 @@ interface AsyncTaskContextValue {
 
 const AsyncTaskContext = createContext<AsyncTaskContextValue | null>(null)
 
-const COURSE_DUPLICATION_STORAGE_KEY = 'course-duplication-job-ids'
+const COURSE_DUPLICATION_STORAGE_KEY_PREFIX = 'course-duplication-job-ids'
 const ASYNC_TASK_POLL_INTERVAL = 5000
 const EMPTY_ASYNC_TASKS: AsyncTaskData[] = []
 
@@ -144,14 +150,24 @@ function getCourseDuplicationTaskErrorType(
   }
 }
 
-function readStoredCourseDuplicationJobIds() {
+function getCourseDuplicationStorageKey(userId: string) {
+  return `${COURSE_DUPLICATION_STORAGE_KEY_PREFIX}:${userId}`
+}
+
+function getBoundedCourseDuplicationJobIds(jobIds: Iterable<string>) {
+  return new Set(
+    [...jobIds].filter(isAsyncTaskId).slice(-ASYNC_TASK_TRACKED_IDS_LIMIT)
+  )
+}
+
+function readStoredCourseDuplicationJobIds(userId: string) {
   try {
     const storedValue = window.localStorage.getItem(
-      COURSE_DUPLICATION_STORAGE_KEY
+      getCourseDuplicationStorageKey(userId)
     )
     const parsedValue = storedValue ? JSON.parse(storedValue) : []
 
-    return new Set(
+    return getBoundedCourseDuplicationJobIds(
       Array.isArray(parsedValue)
         ? parsedValue.filter(
             (value): value is string => typeof value === 'string'
@@ -164,17 +180,19 @@ function readStoredCourseDuplicationJobIds() {
   }
 }
 
-function writeStoredCourseDuplicationJobIds(jobIds: Set<string>) {
+function writeStoredCourseDuplicationJobIds(
+  userId: string,
+  jobIds: Set<string>
+) {
+  const storageKey = getCourseDuplicationStorageKey(userId)
+
   try {
     if (jobIds.size === 0) {
-      window.localStorage.removeItem(COURSE_DUPLICATION_STORAGE_KEY)
+      window.localStorage.removeItem(storageKey)
       return
     }
 
-    window.localStorage.setItem(
-      COURSE_DUPLICATION_STORAGE_KEY,
-      JSON.stringify([...jobIds])
-    )
+    window.localStorage.setItem(storageKey, JSON.stringify([...jobIds]))
   } catch (error) {
     console.error('Failed to persist course duplication jobs', error)
   }
@@ -186,18 +204,39 @@ export function AsyncTaskProvider({
   const router = useRouter()
   const t = useTranslations()
   const client = useApolloClient()
+  const skipUserProfile =
+    router.pathname === '/quizzes/[id]/evaluation' &&
+    (!router.isReady || router.query.hmac !== undefined)
+  const { data: userData } = useQuery(UserProfileDocument, {
+    fetchPolicy: 'cache-first',
+    skip: skipUserProfile,
+    ssr: false,
+  })
+  const userId = userData?.userProfile?.id
   const inFlightSourceCourseIdsRef = useRef(new Set<string>())
   const previousStatusesRef = useRef(new Map<string, AsyncTaskStatus>())
   const trackedCourseDuplicationIdsRef = useRef(new Set<string>())
-
-  const { data, loading, refetch, startPolling, stopPolling } = useQuery(
-    GetAsyncTasksDocument,
-    {
-      fetchPolicy: 'cache-and-network',
-      nextFetchPolicy: 'cache-first',
-      ssr: false,
-    }
+  const [trackedCourseDuplicationIds, setTrackedCourseDuplicationIds] =
+    useState<string[]>([])
+  const requestedTrackedIds = useMemo(
+    () => trackedCourseDuplicationIds.slice(0, ASYNC_TASK_TRACKED_IDS_LIMIT),
+    [trackedCourseDuplicationIds]
   )
+
+  const {
+    data,
+    error: taskQueryError,
+    loading,
+    refetch,
+    startPolling,
+    stopPolling,
+  } = useQuery(GetAsyncTasksDocument, {
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-first',
+    skip: !userId,
+    ssr: false,
+    variables: { trackedIds: requestedTrackedIds },
+  })
   const [acknowledgeAsyncTasks] = useMutation(AcknowledgeAsyncTasksDocument)
   const [startCourseDuplicationMutation] = useMutation(
     StartCourseDuplicationDocument
@@ -213,28 +252,41 @@ export function AsyncTaskProvider({
     data?.asyncTaskAttentionCount ??
     activeTasks.length + unreadTerminalTasks.length
   const hasActiveTasks = activeTasks.length > 0
+  const hasTasksToPoll =
+    hasActiveTasks || trackedCourseDuplicationIds.length > 0
 
   const refetchTasks = useCallback(async () => {
+    if (!userId) return
+
     try {
       await refetch()
     } catch (error) {
       console.error('Failed to refresh asynchronous tasks', error)
     }
-  }, [refetch])
+  }, [refetch, userId])
 
   useEffect(() => {
-    trackedCourseDuplicationIdsRef.current = readStoredCourseDuplicationJobIds()
-  }, [])
+    previousStatusesRef.current.clear()
+    if (!userId) {
+      trackedCourseDuplicationIdsRef.current.clear()
+      setTrackedCourseDuplicationIds([])
+      return
+    }
+
+    const storedIds = readStoredCourseDuplicationJobIds(userId)
+    trackedCourseDuplicationIdsRef.current = storedIds
+    setTrackedCourseDuplicationIds([...storedIds])
+  }, [userId])
 
   useEffect(() => {
-    if (hasActiveTasks) {
+    if (hasTasksToPoll) {
       startPolling(ASYNC_TASK_POLL_INTERVAL)
     } else {
       stopPolling()
     }
 
     return stopPolling
-  }, [hasActiveTasks, startPolling, stopPolling])
+  }, [hasTasksToPoll, startPolling, stopPolling])
 
   useEffect(() => {
     const handleWindowFocus = () => {
@@ -244,6 +296,32 @@ export function AsyncTaskProvider({
     window.addEventListener('focus', handleWindowFocus)
     return () => window.removeEventListener('focus', handleWindowFocus)
   }, [refetchTasks])
+
+  useEffect(() => {
+    if (
+      !userId ||
+      loading ||
+      taskQueryError ||
+      requestedTrackedIds.length === 0
+    ) {
+      return
+    }
+
+    const returnedIds = new Set(tasks.map((task) => task.id))
+    const missingTrackedIds = requestedTrackedIds.filter(
+      (id) => !returnedIds.has(id)
+    )
+    if (missingTrackedIds.length === 0) return
+
+    for (const id of missingTrackedIds) {
+      trackedCourseDuplicationIdsRef.current.delete(id)
+    }
+    setTrackedCourseDuplicationIds([...trackedCourseDuplicationIdsRef.current])
+    writeStoredCourseDuplicationJobIds(
+      userId,
+      trackedCourseDuplicationIdsRef.current
+    )
+  }, [loading, requestedTrackedIds, taskQueryError, tasks, userId])
 
   useEffect(() => {
     if (loading) return
@@ -304,12 +382,18 @@ export function AsyncTaskProvider({
       }
     }
 
-    if (trackedIdsChanged) {
-      writeStoredCourseDuplicationJobIds(trackedCourseDuplicationIdsRef.current)
+    if (trackedIdsChanged && userId) {
+      setTrackedCourseDuplicationIds([
+        ...trackedCourseDuplicationIdsRef.current,
+      ])
+      writeStoredCourseDuplicationJobIds(
+        userId,
+        trackedCourseDuplicationIdsRef.current
+      )
     }
 
     previousStatusesRef.current = nextStatuses
-  }, [client, loading, router, t, tasks])
+  }, [client, loading, router, t, tasks, userId])
 
   const acknowledgeTerminalTasks = useCallback(async () => {
     const ids = unreadTerminalTasks.map((task) => task.id)
@@ -394,10 +478,20 @@ export function AsyncTaskProvider({
 
         const startedJob = result.data?.startCourseDuplication
         if (startedJob) {
-          trackedCourseDuplicationIdsRef.current.add(startedJob.id)
-          writeStoredCourseDuplicationJobIds(
-            trackedCourseDuplicationIdsRef.current
-          )
+          trackedCourseDuplicationIdsRef.current =
+            getBoundedCourseDuplicationJobIds([
+              ...trackedCourseDuplicationIdsRef.current,
+              startedJob.id,
+            ])
+          setTrackedCourseDuplicationIds([
+            ...trackedCourseDuplicationIdsRef.current,
+          ])
+          if (userId) {
+            writeStoredCourseDuplicationJobIds(
+              userId,
+              trackedCourseDuplicationIdsRef.current
+            )
+          }
           void refetchTasks()
           return true
         }
@@ -416,7 +510,7 @@ export function AsyncTaskProvider({
 
       return false
     },
-    [activeTasks, refetchTasks, startCourseDuplicationMutation]
+    [activeTasks, refetchTasks, startCourseDuplicationMutation, userId]
   )
 
   const value = useMemo(

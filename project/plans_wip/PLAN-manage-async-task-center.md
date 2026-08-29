@@ -58,13 +58,17 @@ duplication status into the generic task contract.
   must not corrupt an already committed course copy; they are logged and can be
   reconciled from existing course-duplication status handling.
 - **UI:** insert the task center between the running-live-quiz and user menus.
-  Query on app load, refetch every five seconds only while active tasks exist,
-  and refetch on menu open/window focus. Group active and recent tasks, show
+  Query on app load, refetch every five seconds while active tasks exist or a
+  locally started task awaits its terminal result, and refetch on menu
+  open/window focus. Group active and recent tasks, show
   text and icons for every state, avoid fabricated percentages, retain terminal
   rows until acknowledged, and keep existing completion/error toasts. Add
   stable `data-cy` hooks and keyboard-accessible popover behavior. Cap the
   popover width to the available viewport; the existing Manage navigation's
-  phone-width responsiveness remains outside this feature.
+  phone-width responsiveness remains outside this feature. Scope locally
+  tracked completion-toast ids by lecturer, validate and cap them before
+  querying, and prune ids that a successful owner-scoped response does not
+  return.
 - **Failure semantics:** expose stable `errorCode` values and localize them in
   the frontend. Unknown failures render a generic message. Terminal state is
   monotonic. A task-record write failure never authorizes a second duplication
@@ -125,6 +129,7 @@ duplication status into the generic task contract.
   neither originates in the task center.
 - 2026-08-29: A second independent standards/spec review added an exact
   owner-scoped attention aggregate beyond the bounded row list, reload-safe
-  local completion toasts, oldest-task reconciliation, resilient refetch and
+  local completion toasts with explicitly tracked rows, stale-task
+  reconciliation outside both display windows, resilient refetch/polling and
   acknowledgement handling, shared error-code/route helpers, and focused
   regressions for the corrected behavior.

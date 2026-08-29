@@ -335,7 +335,10 @@ export const Query = builder.queryType({
 
       asyncTasks: t.withAuth(asUser).field({
         type: [AsyncTask],
-        resolve: (_, __, ctx) => AsyncTaskService.getAsyncTasks(ctx),
+        args: {
+          trackedIds: t.arg.stringList({ required: true }),
+        },
+        resolve: (_, args, ctx) => AsyncTaskService.getAsyncTasks(args, ctx),
       }),
 
       asyncTaskAttentionCount: t.withAuth(asUser).field({

@@ -2614,7 +2614,7 @@ type Query {
   assessmentResultsCourse(courseId: String!): AssessmentResultsCourse
   assessmentResultsLiveQuiz(liveQuizId: String!): AssessmentResultsLiveQuiz
   asyncTaskAttentionCount: Int!
-  asyncTasks: [AsyncTask!]!
+  asyncTasks(trackedIds: [String!]!): [AsyncTask!]!
   basicCourseInformation(courseId: String!): StudentCourse
   checkParticipantNameAvailable(username: String!): Boolean!
   checkShortnameAvailable(shortname: String!): Boolean!
