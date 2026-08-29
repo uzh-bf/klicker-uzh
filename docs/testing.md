@@ -135,8 +135,9 @@ uses a path-scoped filter and compiles once before running the 8 shards.
 Eligible same-repository public PRs (non-draft, non-bot, rollout enabled or
 canary) run the changed-path prepare and build in the Playwright container on
 the `public-pr-arm64` runner group through the reusable
-`public-pr-playwright-shards.yml` workflow, which gives at most three
-concurrent shards; pushes, fork PRs, drafts, bots, private repositories, and
+`public-pr-playwright-shards.yml` workflow, which runs eight concurrent shards
+across the two-host public pool; pushes, fork PRs, drafts, bots, private
+repositories, and
 disabled rollouts keep all eight shards on GitHub-hosted runners. Both paths
 preserve the same artifact names and feed the route-aware
 `test-playwright-status` gate, which requires exactly one of the hosted or
