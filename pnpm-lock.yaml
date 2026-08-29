@@ -1271,7 +1271,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: ~3.2.4
-        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.47.1)(tsx@4.19.4)(yaml@2.8.1)
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.49.0)(tsx@4.19.4)(yaml@2.9.0)
 
   apps/hatchet-worker-general:
     dependencies:
@@ -1315,7 +1315,6 @@ importers:
       '@types/node':
         specifier: ^24.10.1
         version: 24.12.4
-<<<<<<< HEAD
       cross-env:
         specifier: ~7.0.3
         version: 7.0.3
@@ -1325,12 +1324,6 @@ importers:
       npm-run-all:
         specifier: ~4.1.5
         version: 4.1.5
-||||||| parent of 9cd73014c (fix(hatchet): keep development workers alive)
-=======
-      nodemon:
-        specifier: ~3.1.14
-        version: 3.1.14
->>>>>>> 9cd73014c (fix(hatchet): keep development workers alive)
       rollup:
         specifier: ~4.34.9
         version: 4.34.9
@@ -1374,7 +1367,6 @@ importers:
       '@types/node':
         specifier: ^24.10.1
         version: 24.12.4
-<<<<<<< HEAD
       cross-env:
         specifier: ~7.0.3
         version: 7.0.3
@@ -1384,12 +1376,6 @@ importers:
       npm-run-all:
         specifier: ~4.1.5
         version: 4.1.5
-||||||| parent of 9cd73014c (fix(hatchet): keep development workers alive)
-=======
-      nodemon:
-        specifier: ~3.1.14
-        version: 3.1.14
->>>>>>> 9cd73014c (fix(hatchet): keep development workers alive)
       rollup:
         specifier: ~4.34.9
         version: 4.34.9
@@ -1401,7 +1387,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: ~3.2.4
-        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.47.1)(tsx@4.19.4)(yaml@2.8.1)
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.49.0)(tsx@4.19.4)(yaml@2.9.0)
 
   apps/lti:
     dependencies:
@@ -1605,7 +1591,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: ~3.2.4
-        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.47.1)(tsx@4.19.4)(yaml@2.8.1)
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.49.0)(tsx@4.19.4)(yaml@2.9.0)
 
   packages/export:
     dependencies:
