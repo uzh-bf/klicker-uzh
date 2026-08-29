@@ -56,6 +56,17 @@ chain from reusable definition to what one participant actually sees.
 a question, a flashcard, or a content slide. It is owned by a user, lives in
 their library independently of any course, and is never answered directly.
 
+**Candidate element**: A generated element shown in the chat that the student
+has not saved yet. It becomes a personal element only through an explicit
+save. It is distinct from the lecturer-side generated element draft.
+_Avoid_: draft, because that word names publication and editing states.
+
+**Generated element draft**: A lecturer-facing generated item inside an
+element generation build, awaiting the lecturer's individual accept, reject,
+or save decision. Saving copies its content into an ordinary lecturer element
+that records its AI origin. It is distinct from the candidate element in the
+student chat. _Avoid_: generation candidate; candidate on its own.
+
 **Element instance**: A copy of an element placed inside one activity. It
 carries its own results and its own frozen copy of the element's content, so
 editing the original element never rewrites what participants already answered.
