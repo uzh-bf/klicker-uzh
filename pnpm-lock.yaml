@@ -1133,6 +1133,9 @@ importers:
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
+      '@klicker-uzh/product-tours':
+        specifier: workspace:*
+        version: link:../../packages/product-tours
       '@klicker-uzh/product-updates':
         specifier: workspace:*
         version: link:../../packages/product-updates
@@ -1163,6 +1166,9 @@ importers:
       deepmerge:
         specifier: 4.3.1
         version: 4.3.1
+      driver.js:
+        specifier: 1.8.0
+        version: 1.8.0
       formik:
         specifier: 2.4.9
         version: 2.4.9(@types/react@19.2.17)(react@19.2.7)
@@ -1274,7 +1280,7 @@ importers:
         version: 9.30.1(jiti@2.7.0)
       eslint-config-next:
         specifier: ~16.2.10
-        version: 16.2.10(@typescript-eslint/parser@8.62.0(eslint@9.30.1(jiti@2.7.0))(typescript@6.0.3))(eslint@9.30.1(jiti@2.7.0))(typescript@6.0.3)
+        version: 16.2.10(eslint@9.30.1(jiti@2.7.0))(typescript@6.0.3)
       postcss:
         specifier: ~8.4.47
         version: 8.4.49
