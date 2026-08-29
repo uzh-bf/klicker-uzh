@@ -188,8 +188,10 @@
 - Product primitive: No learner, lecturer, content, API, or stored-data
   primitive changes. This is local developer-runtime behavior.
 - ADR: The generic lifecycle decision belongs upstream in devrouter. Klicker is
-  a consumer implementation of the Dev Container specification and existing
-  profile ADR, so no new ADR is required.
+  a consumer implementation of the Dev Container specification and the profile
+  contract documented in `.devcontainer/README.md` and
+  `docs/getting-started.md`. No matching repository ADR exists, and no new ADR
+  is required.
 - Re-arm the ADR gate if implementation changes foundational service ownership,
   makes a warm switch destructive, adds another provider/data boundary, or
   expands the managed application topology.
@@ -222,7 +224,7 @@
 | --- | --- | --- | --- | --- |
 | K0 plan | main | approval | Both linked plans are approved and committed | planner complete via disclosed continuity route |
 | K1 bootstrap marker | executor | K0 | Marker operations, scripts, tests, and docs pass locally | simplifier + lifecycle slice-reviewer |
-| K2 released pin and static matrix | main | upstream `0.0.44` | Pin, config, profile tests, and generated-config proof pass | simplifier; main verifies |
+| K2 released pin and static matrix | main | upstream `0.0.45` | Pin, config, profile tests, and generated-config proof pass | simplifier; main verifies |
 | K3 provider matrix | main | K1-K2 | DevPod and Devsy cold/warm/browser/cleanup proof passes | main integration evidence |
 | K4 delivery | main | K3 | Final review, exact-head CI, PR body, and threads reach merge-ready | final-reviewer |
 
@@ -332,16 +334,18 @@
 
 - Route: `main`; execution-tier skip reason: exact published artifact identity
   and the cross-repository release gate are critically coupled.
-- Acceptance: Published `0.0.44` is read back, the pin and generated/source
-  configs agree, and the complete static profile matrix passes.
-- After registry verification, pin exactly devrouter `0.0.44` in
+- Acceptance: Published `0.0.45` is read back, the pin and generated/source
+  configs agree, and the complete static profile matrix passes. Devrouter
+  `0.0.44` remains an intermediate historical TLS-serialization step rather
+  than the final consumer contract.
+- After registry verification, pin exactly devrouter `0.0.45` in
   `.devrouter.yml` and matching guidance.
 - Run `test:dev-runtime`, `test:profile-resolver`, source/generated devcontainer
   inspection, Compose validation, changed-file formatting, relevant docs/skill
   checks, and focused package checks.
 - Confirm the profile table, native `runServices`, managed base, profile service
   registry, process registry, and route-free capability behavior are unchanged.
-- Commit: `chore(devcontainer): require devrouter 0.0.44`.
+- Commit: `chore(devcontainer): require devrouter 0.0.45`.
 
 ### K3: run the provider matrix
 
