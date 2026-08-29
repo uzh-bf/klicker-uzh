@@ -207,8 +207,12 @@ export function useProductTour({
     if (activeDriver.current) {
       silentTeardown.current = true
       activeDriver.current.destroy()
-      silentTeardown.current = false
     }
+
+    // A previous teardown may have left the flag raised — React's development
+    // double mount runs the unmount cleanup on the same refs the remounted hook
+    // keeps using. A tour that is starting now always reports how it ends.
+    silentTeardown.current = false
 
     const instance = driver({
       steps: driverSteps,
