@@ -220,6 +220,18 @@ function validRetrievalStep() {
   }
 }
 
+function responseTypeStep(responseType: 'answer' | 'card_plan') {
+  return {
+    toolResults: [
+      {
+        type: 'tool-result',
+        toolName: 'select_response_type',
+        output: { responseType },
+      },
+    ],
+  }
+}
+
 async function readSseChunks(response: Response) {
   const body = await response.text()
   return body
@@ -506,7 +518,7 @@ describe('retrieval route wiring', () => {
     expect(chunks.some((chunk) => chunk.type === 'error')).toBe(true)
   })
 
-  test('waits for valid chunks before proposing cards and bounds malformed results', async () => {
+  test('waits for valid chunks and explicit response selection before proposing cards', async () => {
     const response = await POST(
       createRequest('Generate flashcards about CAPM.', 'assistant-cards'),
       { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
@@ -540,8 +552,31 @@ describe('retrieval route wiring', () => {
       stepNumber: 1,
       steps: [validRetrievalStep()],
     }) as { activeTools: string[]; toolChoice?: unknown }
-    expect(unlocked.activeTools).toContain('propose_card_plan')
-    expect(unlocked.toolChoice).toBeUndefined()
+    expect(unlocked).toMatchObject({
+      activeTools: ['select_response_type'],
+      toolChoice: { type: 'tool', toolName: 'select_response_type' },
+    })
+    expect(
+      options.prepareStep({
+        stepNumber: 2,
+        steps: [validRetrievalStep(), responseTypeStep('card_plan')],
+      })
+    ).toMatchObject({
+      activeTools: ['propose_card_plan'],
+      toolChoice: { type: 'tool', toolName: 'propose_card_plan' },
+    })
+    expect(
+      options.prepareStep({
+        stepNumber: 2,
+        steps: [validRetrievalStep(), responseTypeStep('answer')],
+      })
+    ).toMatchObject({
+      activeTools: [
+        'KB_doc_query',
+        'list_personal_elements',
+        'revise_personal_element',
+      ],
+    })
     expect(Array.isArray(options.stopWhen)).toBe(true)
     expect(options.stopWhen).toHaveLength(3)
 

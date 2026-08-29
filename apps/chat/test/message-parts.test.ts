@@ -2,7 +2,9 @@ import { describe, expect, test } from 'vitest'
 import {
   getPersonalElementToolPresentation,
   hasChatError,
+  isInternalChatTool,
   resolveDisclosureOpen,
+  shouldGroupToolCalls,
   truncateMessagesForReload,
 } from '../src/components/message-parts-state'
 
@@ -48,5 +50,25 @@ describe('message part disclosure state', () => {
     expect(getPersonalElementToolPresentation('revise_personal_element')).toBe(
       'saved-revision'
     )
+  })
+
+  test('hides only the response-path selector from the conversation', () => {
+    expect(isInternalChatTool('select_response_type')).toBe(true)
+    expect(isInternalChatTool('KB_doc_query')).toBe(false)
+    expect(isInternalChatTool('propose_card_plan')).toBe(false)
+  })
+
+  test('keeps interactive personal-element tools outside collapsed groups', () => {
+    expect(
+      shouldGroupToolCalls([
+        'KB_doc_query',
+        'select_response_type',
+        'propose_card_plan',
+      ])
+    ).toBe(false)
+    expect(shouldGroupToolCalls(['tool_one', 'tool_two'])).toBe(true)
+    expect(
+      shouldGroupToolCalls(['select_response_type', 'propose_card_plan'])
+    ).toBe(false)
   })
 })

@@ -42,6 +42,13 @@ import {
 
 const MAX_RETRIEVAL_ATTEMPTS = 2
 const RETRIEVAL_UNAVAILABLE_TOOL_NAME = 'course_retrieval_unavailable'
+const RESPONSE_TYPE_TOOL_NAME = 'select_response_type'
+
+const responseTypeSchema = z.object({
+  responseType: z.enum(['answer', 'card_plan']),
+})
+
+type ResponseType = z.infer<typeof responseTypeSchema>['responseType']
 
 type AcceptedPlanReference = {
   messageId: string
@@ -124,6 +131,36 @@ function createRetrievalUnavailableTool() {
     inputSchema: z.object({}),
     execute: async () => ({ status: 'course_material_unavailable' as const }),
   }
+}
+
+function createResponseTypeTool() {
+  return {
+    description:
+      'Select card_plan only when the student is asking to create or propose new personal flashcards. Select answer for every other request, including explanations, revisions, and questions about flashcards. This tool only selects the response path and must not answer the request.',
+    inputSchema: responseTypeSchema,
+    execute: async (input: z.infer<typeof responseTypeSchema>) => input,
+  }
+}
+
+function getSelectedResponseType(
+  steps: Array<{ toolResults?: unknown[] }>
+): ResponseType | null {
+  for (const step of steps) {
+    for (const result of step.toolResults ?? []) {
+      if (!result || typeof result !== 'object') continue
+      const candidate = result as {
+        toolName?: unknown
+        output?: unknown
+        result?: unknown
+      }
+      if (candidate.toolName !== RESPONSE_TYPE_TOOL_NAME) continue
+      const parsed = responseTypeSchema.safeParse(
+        candidate.output ?? candidate.result
+      )
+      if (parsed.success) return parsed.data.responseType
+    }
+  }
+  return null
 }
 
 function getForcedToolName({
@@ -270,6 +307,7 @@ export async function createCardGeneration({
   if (generationEligible && !acceptedPlanReference) {
     tools = {
       ...tools,
+      [RESPONSE_TYPE_TOOL_NAME]: createResponseTypeTool(),
       propose_card_plan: createProposeCardPlanTool({
         getExistingCardTitles: async () =>
           (await loadExistingCards()).map((card) => card.name),
@@ -278,6 +316,7 @@ export async function createCardGeneration({
     toolOrder = [
       ...baseToolNames,
       ...personalToolNames,
+      RESPONSE_TYPE_TOOL_NAME,
       'propose_card_plan',
       ...(retrievalRequired ? [RETRIEVAL_UNAVAILABLE_TOOL_NAME] : []),
     ]
@@ -458,7 +497,7 @@ export async function createCardGeneration({
   }
 
   if (generationEligible && !acceptedPlan) {
-    systemPrompt = `${systemPrompt}\n\nWhen the student asks for flashcards in any configured mode, retrieve course material first, then call propose_card_plan. Never generate or save cards before the student accepts the plan.`
+    systemPrompt = `${systemPrompt}\n\nAfter retrieving course material, call select_response_type. If it selects card_plan, call propose_card_plan next and never print the requested cards as prose. Never generate or save cards before the student accepts the plan.`
   }
   if (generationEligible && !acceptedPlan) {
     systemPrompt = `${systemPrompt}\n\nBefore proposing cards, avoid repeating existing personal cards. The server compares every proposed title against the complete saved-title list with a conservative local similarity check and removes potential duplicates.`
@@ -518,14 +557,28 @@ export async function createCardGeneration({
         toolOrder,
       }
     }
+    if (hasRetrieved && generationEligible) {
+      const responseType = getSelectedResponseType(steps)
+      if (!responseType) {
+        return {
+          activeTools: [RESPONSE_TYPE_TOOL_NAME],
+          toolChoice: {
+            type: 'tool',
+            toolName: RESPONSE_TYPE_TOOL_NAME,
+          },
+          toolOrder,
+        }
+      }
+      if (responseType === 'card_plan') {
+        return {
+          activeTools: ['propose_card_plan'],
+          toolChoice: { type: 'tool', toolName: 'propose_card_plan' },
+          toolOrder,
+        }
+      }
+    }
     return {
-      activeTools: hasRetrieved
-        ? [
-            ...baseToolNames,
-            ...personalToolNames,
-            ...(generationEligible ? ['propose_card_plan'] : []),
-          ]
-        : [...baseToolNames, ...personalToolNames],
+      activeTools: [...baseToolNames, ...personalToolNames],
       toolOrder,
     }
   }

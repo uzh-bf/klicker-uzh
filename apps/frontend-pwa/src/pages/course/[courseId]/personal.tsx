@@ -9,15 +9,15 @@ import {
   QPersonalElementsDocument,
   type QPersonalElementsQuery,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import Flashcard from '@klicker-uzh/shared-components/src/Flashcard'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button, H1, UserNotification } from '@uzh-bf/design-system'
-import { GetStaticPropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
-import Layout from '../../../components/Layout'
 import StepProgressWithScoring from '../../../components/common/StepProgressWithScoring'
+import Layout from '../../../components/Layout'
 import PracticeQuizOverview from '../../../components/practiceQuiz/PracticeQuizOverview'
 
 type PersonalCard = NonNullable<
@@ -204,7 +204,8 @@ function PersonalElements() {
       return
     }
 
-    void router.push(`/course/${courseId}/personal`)
+    window.scrollTo(0, 0)
+    setCurrentIx(-1)
   }
 
   const hasError =

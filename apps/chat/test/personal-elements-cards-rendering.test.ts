@@ -65,6 +65,7 @@ import {
   CandidateCards,
   fetchCandidateDecisionState,
   shouldExposeCandidateDecisionState,
+  shouldLoadCandidateDecisionState,
 } from '../src/components/personal-elements/CandidateCards'
 import { PlanCard } from '../src/components/personal-elements/PlanCard'
 import { PersonalElementsProvider } from '../src/components/personal-elements/runtime-context'
@@ -90,6 +91,55 @@ describe('personal-element cards', () => {
         'complete',
         'message:tool',
         'message:tool'
+      )
+    ).toBe(true)
+    expect(
+      shouldLoadCandidateDecisionState(
+        'complete',
+        'complete',
+        [],
+        'candidate-message',
+        'generation-tool'
+      )
+    ).toBe(false)
+    expect(
+      shouldLoadCandidateDecisionState(
+        'complete',
+        'running',
+        [
+          {
+            id: 'candidate-message',
+            content: [
+              {
+                type: 'tool-call',
+                toolName: 'generate_cards',
+                toolCallId: 'generation-tool',
+              },
+            ],
+          },
+        ],
+        'candidate-message',
+        'generation-tool'
+      )
+    ).toBe(false)
+    expect(
+      shouldLoadCandidateDecisionState(
+        'complete',
+        'complete',
+        [
+          {
+            id: 'candidate-message',
+            content: [
+              {
+                type: 'tool-call',
+                toolName: 'generate_cards',
+                toolCallId: 'generation-tool',
+              },
+            ],
+          },
+        ],
+        'candidate-message',
+        'generation-tool'
       )
     ).toBe(true)
   })
@@ -121,7 +171,7 @@ describe('personal-element cards', () => {
       discardedCandidateIds: [],
     })
     expect(fetcher).toHaveBeenCalledTimes(2)
-    expect(sleep).toHaveBeenCalledWith(100)
+    expect(sleep).toHaveBeenCalledWith(250)
   })
 
   test('renders candidate Markdown and its card-local source reference', () => {
@@ -189,6 +239,17 @@ describe('personal-element cards', () => {
                 },
               ],
             }),
+            result: {
+              status: 'ready',
+              topic: 'Diversification',
+              cards: [
+                {
+                  type: 'FLASHCARD',
+                  candidateId: 'candidate-1',
+                  title: 'Portfolio risk',
+                },
+              ],
+            },
             status: { type: 'complete' },
           },
         }),
@@ -200,5 +261,33 @@ describe('personal-element cards', () => {
     expect(html).toContain('chat.personalElements.accepted')
     expect(html).not.toContain('<button')
     expect(html).not.toContain('chat.personalElements.approve')
+  })
+
+  test('does not expose an approval control for a failed plan tool call', () => {
+    const html = renderToStaticMarkup(
+      PersonalElementsProvider({
+        value: {
+          approvePlan: vi.fn(),
+          getPlanStatus: () => 'current' as const,
+        },
+        children: createElement(PlanCard, {
+          part: {
+            toolCallId: 'failed-plan-tool',
+            argsText: JSON.stringify({
+              topic: 'Invalid preview',
+              cards: [{ title: 'Should not be accepted' }],
+            }),
+            result: 'upstream failure',
+            isError: true,
+            status: { type: 'complete' },
+          },
+        }),
+      })
+    )
+
+    expect(html).toContain('chat.personalElements.planUnavailable')
+    expect(html).not.toContain('Invalid preview')
+    expect(html).not.toContain('Should not be accepted')
+    expect(html).not.toContain('<button')
   })
 })

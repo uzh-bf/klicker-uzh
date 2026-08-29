@@ -18,9 +18,13 @@ the v1 implementation without changing the chat surface.
 
 Generation is a two-tool contract inside a configured course-chatbot mode:
 
-1. `propose_card_plan` is available only after at least one retrieval call in
-   the turn and returns a plan (titles, intents, retrieval queries), never
-   cards. The route supplies the server-side tool with the participant's
+1. After at least one retrieval call in the turn, the route forces the local
+   `select_response_type` tool to choose between a normal answer and a card
+   plan. This language-neutral model decision replaces phrase or locale
+   allowlists. A `card_plan` decision forces `propose_card_plan`; the model
+   cannot replace the interactive plan with prose. `propose_card_plan` returns
+   a plan (titles, intents, retrieval queries), never cards. The route supplies
+   the server-side tool with the participant's
    complete saved title list; raw participant-controlled titles are not copied
    into the model prompt. The tool applies a deterministic local similarity check to each
    proposed title, removes potential duplicates (including duplicates within
@@ -34,7 +38,9 @@ Generation is a two-tool contract inside a configured course-chatbot mode:
    key cannot drift during generation.
 2. `generate_cards` performs, per planned card, one retrieval call and one
    structured model call whose output schema requires cited chunk ids from
-   that retrieval. The retrieval adapter exposes stable chunk IDs and bounded
+   that retrieval. The nested MCP request uses the shared `doc_query` contract's
+   single `question` field; strict servers may reject additional fields. The
+   retrieval adapter exposes stable chunk IDs and bounded
    source metadata; every cited ID must be a non-empty subset of that card's
    retrieved IDs. Missing, malformed, or evidence-free output fails closed.
    Grounding is enforced by the pipeline, not by the prompt. The generated
@@ -56,6 +62,9 @@ candidate ID, so it survives reload without storing retrieved text or
 mutating the immutable chat message. The source message and tool call remain
 request-time linkage for validating the candidate, not durable discard
 identity.
+The candidate actions wait until the completed assistant message is present in
+the active thread and retry a transient not-yet-persisted response. They remain
+disabled if the durable decision state still cannot be read.
 A retry of a partial generation excludes plan entries already saved or
 discarded, so successful decisions are not regenerated or blocked by their own
 titles.

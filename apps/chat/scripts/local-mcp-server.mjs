@@ -20,7 +20,7 @@ function createMcpServer() {
       description:
         'Search deterministic synthetic course material. Use this tool whenever the user asks to test the local MCP integration.',
       inputSchema: {
-        query: z
+        question: z
           .string()
           .min(1)
           .max(500)
@@ -33,7 +33,7 @@ function createMcpServer() {
         openWorldHint: false,
       },
     },
-    async ({ query }) => {
+    async ({ question: query }) => {
       const payload = {
         answer: `KLICKER_LOCAL_MCP_OK: the local MCP server received "${query}".`,
         sources_used: 1,

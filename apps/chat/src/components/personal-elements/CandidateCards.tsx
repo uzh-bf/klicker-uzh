@@ -61,7 +61,7 @@ type CandidateDecisionResponse = {
   json: () => Promise<CandidateDecisionState>
 }
 
-const DECISION_STATE_RETRY_DELAYS_MS = [100, 250, 500] as const
+const DECISION_STATE_RETRY_DELAYS_MS = [250, 500, 1_000, 2_000] as const
 
 export async function fetchCandidateDecisionState(
   url: string,
@@ -87,6 +87,26 @@ export function shouldExposeCandidateDecisionState(
   currentKey: string
 ) {
   return statusType === 'complete' && loadedKey === currentKey
+}
+
+export function shouldLoadCandidateDecisionState(
+  statusType: string,
+  messageStatusType: string | undefined,
+  messages: readonly { id?: string; content?: unknown }[],
+  messageId: string,
+  toolCallId: string
+) {
+  if (statusType !== 'complete' || messageStatusType !== 'complete')
+    return false
+  const message = messages.find((candidate) => candidate.id === messageId)
+  if (!message || !Array.isArray(message.content)) return false
+  return message.content.some(
+    (part) =>
+      !!part &&
+      typeof part === 'object' &&
+      (part as { toolName?: unknown }).toolName === 'generate_cards' &&
+      (part as { toolCallId?: unknown }).toolCallId === toolCallId
+  )
 }
 
 function candidatesFromResult(result: unknown): Candidate[] {
@@ -158,6 +178,15 @@ export function CandidateCards({ part }: { part: CandidatePart }) {
   )
   const isComplete = part.status.type === 'complete'
   const decisionKey = message.id + ':' + part.toolCallId
+  const shouldLoadDecisionState =
+    !failedCandidateAttempt &&
+    shouldLoadCandidateDecisionState(
+      part.status.type,
+      message.status?.type,
+      activeMessages,
+      message.id,
+      part.toolCallId
+    )
   const decisionStateReady = shouldExposeCandidateDecisionState(
     part.status.type,
     loadedDecisionKey,
@@ -183,7 +212,7 @@ export function CandidateCards({ part }: { part: CandidatePart }) {
       progress.status === 'error')
 
   useEffect(() => {
-    if (!isComplete) return
+    if (!shouldLoadDecisionState) return
 
     let active = true
     const url =
@@ -226,10 +255,10 @@ export function CandidateCards({ part }: { part: CandidatePart }) {
   }, [
     chatbotId,
     decisionKey,
-    isComplete,
     message.id,
     part.toolCallId,
     savedStateAttempt,
+    shouldLoadDecisionState,
   ])
 
   const savedIds = decisionStateReady ? (saved ?? []) : []

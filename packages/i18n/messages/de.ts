@@ -251,6 +251,8 @@ export default {
     },
     personalElements: {
       planTitle: 'Kartenplan',
+      planUnavailable:
+        'Dieser Kartenplan konnte nicht vorbereitet werden. Bitte versuche es erneut.',
       cardNumber: 'Karte {number}',
       approve: 'Diese Karten erstellen',
       generating: 'Karten werden erstellt...',

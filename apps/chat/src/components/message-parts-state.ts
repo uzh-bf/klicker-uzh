@@ -71,3 +71,19 @@ export function getPersonalElementToolPresentation(
   if (toolName === 'revise_personal_element') return 'saved-revision'
   return null
 }
+
+export function isInternalChatTool(toolName: string): boolean {
+  return toolName === 'select_response_type'
+}
+
+export function shouldGroupToolCalls(toolNames: readonly string[]): boolean {
+  const visibleToolNames = toolNames.filter(
+    (toolName) => !isInternalChatTool(toolName)
+  )
+  return (
+    visibleToolNames.length > 1 &&
+    !visibleToolNames.some(
+      (toolName) => getPersonalElementToolPresentation(toolName) !== null
+    )
+  )
+}

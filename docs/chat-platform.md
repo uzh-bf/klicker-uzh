@@ -41,7 +41,9 @@ participant, thread, chatbot course, latest plan, credit, capability, and
 one-shot approval claim before forcing `generate_cards`.
 
 Each generation accepts at most five cards. Every generated card performs its
-own bounded retrieval and structured model call. Its cited chunk IDs must be a
+own bounded retrieval and structured model call. The nested retrieval sends
+exactly the shared `doc_query` input field `question`; strict MCP servers reject
+unknown input fields. Its cited chunk IDs must be a
 non-empty subset of that retrieval, and only bounded source metadata is
 persisted. A card that cannot be produced returns one of the bounded failure
 codes `retrieval_unavailable`, `insufficient_evidence`, or `generation_failed`;
@@ -56,6 +58,10 @@ lookup and is checked again inside the serializable GraphQL save transaction,
 so a discarded card stays discarded across reloads and save/discard races.
 The discard route uses the same serializable service boundary and returns a
 conflict if the card was saved first.
+Candidate actions appear only after the completed assistant message is in the
+active thread. The client retries the brief stream-to-persistence race, then
+fails closed with an explicit retry action if durable decision state is still
+unavailable.
 `list_personal_elements` returns the participant's course-scoped compact rows;
 `revise_personal_element` updates a saved row with an expected-version check
 and keeps the card's source-linked origin wording. Candidate cards do not have a
@@ -645,8 +651,12 @@ switcher is hidden entirely when a chatbot exposes a single mode — `mode-switc
 
 When a student asks for new cards, the Chat route loads every saved card title
 for that participant and course and passes that full title list to the server-side
-plan tool. The raw participant-controlled titles are not interpolated into the
-model prompt. `propose_card_plan` then applies a deterministic local title check
+plan tool. After grounded retrieval, the route first forces
+`select_response_type`; its model-selected `answer` or `card_plan` result avoids
+language-specific request matching, and `card_plan` deterministically forces the
+interactive plan tool instead of allowing a prose-only card response. The raw
+participant-controlled titles are not interpolated into the model prompt.
+`propose_card_plan` then applies a deterministic local title check
 before approval: normalized exact matches, abbreviation/expanded-title matches,
 multi-word subsets, and close character-gram matches at or above the 0.8
 threshold are potential duplicates. Such entries are removed from the proposed

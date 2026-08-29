@@ -704,4 +704,19 @@ no migration.
 - [x] Execute S1 through S6 with their review gates and local commits.
 - [x] Complete exact-head verification and the integrated native
   `final-reviewer` gate.
-- [ ] Obtain separate authority for push and pull-request updates.
+- [x] Obtain separate authority for push and pull-request updates.
+- [x] 2026-08-29 local AI and browser follow-up — the Chat path now forces a
+  language-neutral response selection after grounded retrieval, forces the
+  interactive plan for card-generation requests, sends the strict shared
+  `doc_query` `question` input, keeps failed plans non-approvable, and waits for
+  the persisted assistant message before enabling durable Save or Discard
+  actions. The PWA Finish action now returns from the personal-card runner to
+  its overview. In the managed runtime, 68 focused Chat tests pass and the Chat
+  and PWA type checks pass. Authenticated browser proof against the staging
+  doc-query tunnel shows retrieval, an accepted final plan, generated Markdown,
+  card-local references, immediately enabled actions, and a discarded decision
+  surviving reload. The personal practice runner submits a rating and Finish
+  returns to its overview. The user requested that this exact runtime remain
+  available for further testing.
+- [ ] Commit the follow-up, complete integrated final review, push the exact
+  head, and update pull request #5483.

@@ -24,14 +24,16 @@ import {
 import { formatReasoningEffort } from '@/src/lib/config/reasoning'
 import {
   getPersonalElementToolPresentation,
+  isInternalChatTool,
   resolveDisclosureOpen,
+  shouldGroupToolCalls,
 } from './message-parts-state'
-import { ToolFallback } from './tool-fallback'
 import {
   CandidateCards,
   SavedRevisionCard,
 } from './personal-elements/CandidateCards'
 import { PlanCard } from './personal-elements/PlanCard'
+import { ToolFallback } from './tool-fallback'
 
 type MessageWithCustomMetadata = {
   metadata?: {
@@ -274,17 +276,27 @@ export const AssistantMessageParts: FC = () => {
                 </ReasoningGroup>
               </div>
             )
-          case 'group-tool':
-            return part.indices.length <= 1 ? (
+          case 'group-tool': {
+            const toolNames = part.indices.flatMap((index) => {
+              const groupedPart = message.content[index]
+              return groupedPart?.type === 'tool-call'
+                ? [groupedPart.toolName]
+                : []
+            })
+            const visibleToolCount = toolNames.filter(
+              (toolName) => !isInternalChatTool(toolName)
+            ).length
+            return !shouldGroupToolCalls(toolNames) ? (
               children
             ) : (
               <ToolGroup
                 active={part.status.type === 'running'}
-                count={part.indices.length}
+                count={visibleToolCount}
               >
                 {children}
               </ToolGroup>
             )
+          }
           case 'text':
             return hasGeneratedCards || hasRetrievalUnavailable ? null : (
               <MarkdownText />
@@ -292,6 +304,7 @@ export const AssistantMessageParts: FC = () => {
           case 'reasoning':
             return <ReasoningPart {...part} />
           case 'tool-call': {
+            if (isInternalChatTool(part.toolName)) return null
             const personalElementPresentation =
               getPersonalElementToolPresentation(part.toolName)
             return (

@@ -9,6 +9,7 @@ type PlanPart = {
   toolCallId: string
   argsText: string
   result?: unknown
+  isError?: boolean
   status: { type: string }
 }
 
@@ -36,8 +37,9 @@ export function PlanCard({ part }: { part: PlanPart }) {
   const [submitting, setSubmitting] = useState(false)
   const inputPlan = useMemo(() => parseJson(part.argsText), [part.argsText])
   const resultPlan = asObject(part.result)
-  const plan =
-    resultPlan && Array.isArray(resultPlan.cards) ? resultPlan : inputPlan
+  const isRunning = part.status.type === 'running'
+  const hasResultPlan = resultPlan && Array.isArray(resultPlan.cards)
+  const plan = hasResultPlan ? resultPlan : isRunning ? inputPlan : null
   const messageId = message.id
   const status = getPlanStatus({ messageId, toolCallId: part.toolCallId })
   const cards = Array.isArray(plan?.cards) ? plan.cards : []
@@ -56,6 +58,18 @@ export function PlanCard({ part }: { part: PlanPart }) {
     return (
       <div className="text-muted-foreground rounded border px-3 py-2 text-sm">
         {t('chat.personalElements.superseded')}
+      </div>
+    )
+  }
+
+  if (part.isError || (!isRunning && !hasResultPlan)) {
+    return (
+      <div
+        className="text-destructive rounded border px-3 py-2 text-sm"
+        data-cy="card-plan-unavailable"
+        role="alert"
+      >
+        {t('chat.personalElements.planUnavailable')}
       </div>
     )
   }
@@ -83,7 +97,7 @@ export function PlanCard({ part }: { part: PlanPart }) {
               typeof value.candidateId === 'string'
                 ? value.candidateId
                 : title
-            return <li key={`${key}-${index}`}>{title}</li>
+            return <li key={key}>{title}</li>
           })}
         </ol>
       ) : null}
@@ -95,8 +109,8 @@ export function PlanCard({ part }: { part: PlanPart }) {
         >
           <p>{t('chat.personalElements.duplicatesSkipped')}</p>
           <ul className="mt-1 list-inside list-disc">
-            {discardedDuplicates.map((duplicate, index) => (
-              <li key={`${duplicate.title}-${index}`}>{duplicate.title}</li>
+            {discardedDuplicates.map((duplicate) => (
+              <li key={duplicate.title}>{duplicate.title}</li>
             ))}
           </ul>
         </div>
@@ -120,7 +134,7 @@ export function PlanCard({ part }: { part: PlanPart }) {
       ) : (
         <button
           type="button"
-          disabled={submitting || part.status.type === 'running'}
+          disabled={submitting || isRunning}
           onClick={() => {
             setSubmitting(true)
             void approvePlan(

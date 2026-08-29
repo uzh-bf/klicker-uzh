@@ -247,6 +247,8 @@ export default {
     },
     personalElements: {
       planTitle: 'Card plan',
+      planUnavailable:
+        'This card plan could not be prepared. Please try again.',
       cardNumber: 'Card {number}',
       approve: 'Generate these cards',
       generating: 'Generating cards...',

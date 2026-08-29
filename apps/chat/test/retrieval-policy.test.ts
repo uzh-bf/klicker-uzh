@@ -117,6 +117,18 @@ function failedRetrievalStep() {
   }
 }
 
+function responseTypeStep(responseType: 'answer' | 'card_plan') {
+  return {
+    toolResults: [
+      {
+        type: 'tool-result',
+        toolName: 'select_response_type',
+        result: { responseType },
+      },
+    ],
+  }
+}
+
 describe('retrieval protocol state machine', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -171,7 +183,7 @@ describe('retrieval protocol state machine', () => {
     expect(step.activeTools as string[]).not.toContain('propose_card_plan')
   })
 
-  test('unlocks grounded tools and propose_card_plan only after retrieval succeeds', async () => {
+  test('selects the response type only after retrieval succeeds', async () => {
     const setup = await createSetup()
 
     const before = setup.prepareStep({ stepNumber: 0, steps: [] })
@@ -182,14 +194,40 @@ describe('retrieval protocol state machine', () => {
     expect(before.activeTools).not.toContain('propose_card_plan')
 
     const after = setup.prepareStep({ stepNumber: 1, steps: [retrievedStep()] })
-    expect(after.activeTools).toEqual(
-      expect.arrayContaining([
-        'KB_doc_query',
-        'list_personal_elements',
-        'revise_personal_element',
-        'propose_card_plan',
-      ])
-    )
+    expect(after).toMatchObject({
+      activeTools: ['select_response_type'],
+      toolChoice: { type: 'tool', toolName: 'select_response_type' },
+    })
+  })
+
+  test('forces a card plan after the response type selects card_plan', async () => {
+    const setup = await createSetup()
+
+    const after = setup.prepareStep({
+      stepNumber: 2,
+      steps: [retrievedStep(), responseTypeStep('card_plan')],
+    })
+
+    expect(after).toMatchObject({
+      activeTools: ['propose_card_plan'],
+      toolChoice: { type: 'tool', toolName: 'propose_card_plan' },
+    })
+  })
+
+  test('keeps card planning unavailable when the response type selects answer', async () => {
+    const setup = await createSetup()
+
+    const after = setup.prepareStep({
+      stepNumber: 2,
+      steps: [retrievedStep(), responseTypeStep('answer')],
+    })
+
+    expect(after.activeTools).toEqual([
+      'KB_doc_query',
+      'list_personal_elements',
+      'revise_personal_element',
+    ])
+    expect(after.toolChoice).toBeUndefined()
   })
 
   test('keeps planning locked after a failed retrieval', async () => {

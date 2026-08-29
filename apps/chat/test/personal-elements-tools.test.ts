@@ -355,9 +355,9 @@ describe('personal-element chat tools', () => {
       },
     ])
 
-    expect(executeDocQuery.mock.calls.map(([input]) => input.query)).toEqual([
-      query,
-    ])
+    expect(executeDocQuery.mock.calls.map(([input]) => input.question)).toEqual(
+      [query]
+    )
   })
 
   test('lists only the authenticated participant course scope', async () => {
@@ -526,15 +526,13 @@ describe('personal-element chat tools', () => {
     }
 
     expect(executeDocQuery).toHaveBeenCalledTimes(2)
-    expect(executeDocQuery.mock.calls.map(([input]) => input.query)).toEqual(
+    expect(executeDocQuery.mock.calls.map(([input]) => input.question)).toEqual(
       expect.arrayContaining(['rates', 'inflation'])
     )
     for (const input of executeDocQuery.mock.calls.map(([input]) => input)) {
       expect(input).toEqual({
-        query: expect.any(String),
         question: expect.any(String),
       })
-      expect(input.question).toBe(input.query)
     }
     expect(mocks.generateObject).toHaveBeenCalledTimes(2)
     expect(outputs.at(-1)).toMatchObject({

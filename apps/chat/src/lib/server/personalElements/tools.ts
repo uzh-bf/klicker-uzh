@@ -142,11 +142,10 @@ async function executeDocQuery(
   if (typeof toolDefinition.execute !== 'function') {
     throw new Error('The configured doc_query tool cannot be executed')
   }
-  // The deployed doc-query producer exposes `question` as its retrieval input;
-  // the local MCP fixture accepts `query`, so send both and let each producer
-  // pick its contract field.
+  // The current shared doc-query contract exposes `question` as its retrieval
+  // input and rejects unknown fields before executing the retrieval pipeline.
   return await toolDefinition.execute(
-    { query, question: query },
+    { question: query },
     { toolCallId, messages: [], abortSignal, context: {} }
   )
 }
