@@ -153,7 +153,31 @@ two inserts hit the unique constraint; the service treats that violation as
 proof that the row now exists and reads it back. The second statement then
 keeps the first read and the first dismissal from moving.
 
-## Current consumers
+## The chat surface
+
+`apps/chat` is the first interactive feed. It does not use the GraphQL fields
+above: chat talks to Prisma directly like every other data path in that
+application, so `apps/chat/src/services/productUpdates.ts` restates the
+participant half of the GraphQL service, keeping the same idempotent write
+shapes, and `apps/chat/src/app/api/product-updates/route.ts` exposes them as one
+authenticated REST route (`GET` for the feed, `POST` with `read`, `dismiss`, or
+`presented`). Both halves must move together when the write semantics change.
+
+Two behaviors are specific to this surface. The route is guarded by
+`getProductUpdateParticipantId`, a sibling of `getParticipantId` that additionally
+requires the `PARTICIPANT` role, because the shared participant guard accepts the
+temporary accounts issued for anonymous live-quiz participation. And no feature
+flags are evaluated here, so an entry carrying `requiredFeatureFlags` never
+becomes eligible in chat — the fail-closed direction, consistent with the
+selection rule above.
+
+The feed renders in the sidebar footer (`ProductUpdatesPanel` in
+`app-sidebar.tsx`), which the embedded chatbot mode hides entirely, so an
+embedded conversation neither shows nor requests product updates. Locale comes
+from the `NEXT_LOCALE` cookie; the panel chrome lives in
+`packages/i18n/messages/{de,en}.ts` under `chat.productUpdates`.
+
+## Other consumers
 
 The documentation homepage banner
 (`apps/docs/src/components/landing/TitleImage.tsx`) renders the newest released
