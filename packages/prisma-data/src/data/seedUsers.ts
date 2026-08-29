@@ -75,9 +75,9 @@ export async function seedUsers(prisma: Prisma.PrismaClient) {
 
   // Seeded lecturer/admin accounts represent established users, not first
   // logins, so mark the manage onboarding tour as already completed for all
-  // of them. Without this, the tour's unsolicited spotlight would auto-start
-  // on every seeded account and its document-wide pointer-blocking overlay
-  // would break every manage E2E spec that logs in and interacts right away.
+  // of them. Without this, the tour would auto-start unsolicited on every
+  // seeded account and its document-wide pointer-blocking overlay would
+  // break every manage E2E spec that logs in and interacts right away.
   for (const userId of [
     USER_ID_TEST,
     USER_ID_TEST2,
