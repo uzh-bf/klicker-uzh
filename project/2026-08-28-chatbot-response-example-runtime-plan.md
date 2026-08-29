@@ -181,10 +181,11 @@ preview and the later examples-excluded baseline.
 
 ## Progress
 
-- Status: K6.1 through K6.4 are locally complete and repository-native
-  verified. The integrated final review and its correction passes returned
-  `DONE` with no remaining findings. Push, PR publication, merge, deployment,
-  and live model use remain withheld.
+- Status: K6.1 through K6.4 are source-complete and published as open,
+  non-draft PR #5650 against `v3-ai`. The integrated final review and its
+  correction passes returned `DONE` with no remaining findings. Exact-head
+  GitHub checks are pending; merge, deployment, and live model use remain
+  withheld.
 - Completed: remote-state gate, clean purpose-based worktree, approved program
   plan transfer, current source seam mapping, package-plan narrowing, shared
   current-evidence validation, owner-service reconciliation, and focused util,
@@ -224,5 +225,8 @@ preview and the later examples-excluded baseline.
 - Runtime note: the exact task DevPod `feat-chatbot-response-example-ru` was
   stopped after its final PostgreSQL-producing run. Provider state is `Stopped`
   and the checkout has zero exact devrouter routes; no runtime data was deleted.
-- Next: stop at the withheld push and PR boundary. After separate publication
-  authority, push this branch and open its PR against `v3-ai`.
+- Delivery: branch `feat/chatbot-response-example-runtime` is published at PR
+  #5650. The PR is mergeable and initially `UNSTABLE` only because exact-head
+  checks are pending.
+- Next: keep PR #5650 at its exact published head until required checks and
+  forge review settle. Merge remains separately withheld.

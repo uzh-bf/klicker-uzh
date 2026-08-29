@@ -978,11 +978,11 @@ paths named by the package plan and do not revert other work.
 
 ## Progress
 
-- Status: K6 is locally complete and repository-native verified. The runtime
-  skill and participant composition are committed, all armed review gates are
-  cleared, and the integrated final review returned `DONE` with no remaining
-  findings. Push, PR publication, merge, deployment, and live model use remain
-  withheld.
+- Status: K6 is source-complete and published as open, non-draft PR #5650
+  against `v3-ai`. The runtime skill and participant composition are committed,
+  all armed review gates are cleared, and the integrated final review returned
+  `DONE` with no remaining findings. Exact-head GitHub checks are pending;
+  merge, deployment, and live model use remain withheld.
 - Completed: current `v3-ai` and PR #5633 seam mapping; response-example schema,
   API, and Manage workflow mapping; owner-preview mapping; Doc Query lineage
   contract mapping; evaluation-repository query-order mapping; required Sol
@@ -990,12 +990,15 @@ paths named by the package plan and do not revert other work.
   current-evidence slice; K6.2 bounded hybrid skill; K6.3 authenticated
   participant composition; native util, chat, PostgreSQL, GraphQL, type/schema,
   formatting, and lint verification; and the first slice review corrections.
-- Ready now: publish K6 only after separate push and PR authority. K5 starts
-  only after K6 lands on `v3-ai`. K7 planning can follow the K6 runtime contract
-  without waiting for W8.
+- Ready now: settle PR #5650's exact-head checks and forge review without moving
+  its reviewed executable content. K5 starts only after K6 lands on `v3-ai`.
+  K7 planning can follow the K6 runtime contract without waiting for W8.
 - External decision: U0 cannot create a branch until the `mcp-doc-query`
   `main`/`dev` flow is explicitly resolved.
 - Blocked: K8 remains blocked on W8 synthetic active-serving proof. U0-backed
   live source proof, deployment, and activation remain separately withheld.
-- Next action: stop at the separately withheld push and PR boundary. K5 becomes
-  the next independent package after K6 is merged and separately authorized.
+- Delivery: K6 has reached the `pr_ready` layer through PR #5650; its initial
+  GitHub checks are pending. K5 becomes the next independent package after K6
+  is merged and separately authorized.
+- Next action: keep PR #5650 at its exact published head until required checks
+  settle. Merge remains separately withheld.
