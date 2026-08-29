@@ -783,6 +783,22 @@ export type CatalogSelectionObject = {
   name: Scalars['String']['output'];
 };
 
+export type ChatAccountUsageLane = {
+  __typename?: 'ChatAccountUsageLane';
+  budgetCredits: Scalars['Float']['output'];
+  remainingCredits: Scalars['Float']['output'];
+  resetAt: Scalars['Date']['output'];
+  usageClass: ChatUsageClass;
+  usedCredits: Scalars['Float']['output'];
+};
+
+export type ChatAccountUsageOverview = {
+  __typename?: 'ChatAccountUsageOverview';
+  advancedModelUsage: ChatAccountUsageLane;
+  authorized: Scalars['Boolean']['output'];
+  baseModelUsage: ChatAccountUsageLane;
+};
+
 export type ChatModelCapability = {
   __typename?: 'ChatModelCapability';
   description: Scalars['String']['output'];
@@ -792,6 +808,11 @@ export type ChatModelCapability = {
   supportedReasoningEfforts: Array<Scalars['String']['output']>;
   supportsReasoning: Scalars['Boolean']['output'];
 };
+
+export enum ChatUsageClass {
+  Advanced = 'ADVANCED',
+  Base = 'BASE'
+}
 
 export type Chatbot = {
   __typename?: 'Chatbot';
@@ -806,10 +827,15 @@ export type Chatbot = {
   creditResetPeriod: CreditResetPeriod;
   description?: Maybe<Scalars['String']['output']>;
   disclaimerSummary?: Maybe<ChatbotDisclaimerSummary>;
+  expectedStudentCount?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   mcpConfigurations: Array<ChatbotMcpConfigurationSummary>;
   modelSelection: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
+  publicationUseCase?: Maybe<Scalars['String']['output']>;
+  publishedAt?: Maybe<Scalars['Date']['output']>;
+  reviewComment?: Maybe<Scalars['String']['output']>;
+  status: ChatbotStatus;
   updatedAt?: Maybe<Scalars['Date']['output']>;
   usageSummary?: Maybe<ChatbotUsageSummary>;
 };
@@ -854,6 +880,14 @@ export type ChatbotReasoningConfigInput = {
   efforts: Array<Scalars['String']['input']>;
   modelId: Scalars['String']['input'];
 };
+
+export enum ChatbotStatus {
+  Draft = 'DRAFT',
+  Paused = 'PAUSED',
+  PendingApproval = 'PENDING_APPROVAL',
+  Published = 'PUBLISHED',
+  Rejected = 'REJECTED'
+}
 
 export type ChatbotUsageSummary = {
   __typename?: 'ChatbotUsageSummary';
@@ -2125,6 +2159,7 @@ export type Mutation = {
   addUserToUserGroup?: Maybe<UserInfo>;
   applyActivityBatchOperations: Scalars['Int']['output'];
   applyElementBatchOperations: Scalars['Int']['output'];
+  approveChatbotPublication?: Maybe<Chatbot>;
   approveObjectSharingRequest: Scalars['Boolean']['output'];
   bookmarkElementStack?: Maybe<Array<Scalars['Int']['output']>>;
   cancelLiveQuiz?: Maybe<LiveQuiz>;
@@ -2149,6 +2184,7 @@ export type Mutation = {
   createAnswerCollection?: Maybe<AnswerCollection>;
   createAssessmentParticipantInvitations?: Maybe<CreateAssessmentParticipantInvitationsPayload>;
   createCatalogCollection?: Maybe<CatalogCollection>;
+  createChatbot: Chatbot;
   createCourse?: Maybe<Course>;
   createFeedback?: Maybe<Feedback>;
   createGroupActivity?: Maybe<ActivityInfo>;
@@ -2238,6 +2274,7 @@ export type Mutation = {
   publishMicroLearning?: Maybe<MicroLearning>;
   publishPracticeQuiz?: Maybe<PracticeQuiz>;
   rateElement?: Maybe<ElementFeedback>;
+  rejectChatbotPublication?: Maybe<Chatbot>;
   removeCatalogObjectAssignment: Scalars['Boolean']['output'];
   removeObject?: Maybe<Scalars['String']['output']>;
   removeUserFromGroup: Scalars['Boolean']['output'];
@@ -2245,6 +2282,7 @@ export type Mutation = {
   requestCatalogCollection?: Maybe<CatalogCollection>;
   requestCatalogObject: Scalars['Boolean']['output'];
   requestCatalystAccess: Scalars['Boolean']['output'];
+  requestChatbotPublication?: Maybe<Chatbot>;
   resetAssessmentLiveQuiz?: Maybe<ActivityInfo>;
   resolveActivityLogEntry?: Maybe<ActivityLogEntry>;
   resolveFeedback?: Maybe<Feedback>;
@@ -2255,6 +2293,7 @@ export type Mutation = {
   scheduleLiveQuiz?: Maybe<LiveQuizMeta>;
   sendMagicLink?: Maybe<Scalars['Boolean']['output']>;
   setActivityReviewStatus?: Maybe<ReviewStatus>;
+  setChatAccountUsageBudgets?: Maybe<ChatAccountUsageOverview>;
   setLiveQuizPin: Scalars['Boolean']['output'];
   shareElementsBatch: ElementBatchSharingResult;
   shareObject?: Maybe<PermissionInfo>;
@@ -2271,6 +2310,7 @@ export type Mutation = {
   unpublishMicroLearning?: Maybe<MicroLearning>;
   unpublishPracticeQuiz?: Maybe<PracticeQuiz>;
   unsubscribeFromPush?: Maybe<Scalars['Boolean']['output']>;
+  updateChatbot?: Maybe<Chatbot>;
   updateChatbotModelSettings?: Maybe<Chatbot>;
   updateCourseSettings?: Maybe<Course>;
   updateElementInstances?: Maybe<Array<ElementInstance>>;
@@ -2356,6 +2396,11 @@ export type MutationApplyElementBatchOperationsArgs = {
   unarchive: Scalars['Boolean']['input'];
   updateInstances: Scalars['Boolean']['input'];
   updateTemplateInstances: Scalars['Boolean']['input'];
+};
+
+
+export type MutationApproveChatbotPublicationArgs = {
+  id: Scalars['String']['input'];
 };
 
 
@@ -2532,6 +2577,14 @@ export type MutationCreateAssessmentParticipantInvitationsArgs = {
 
 export type MutationCreateCatalogCollectionArgs = {
   access: ObjectAccess;
+  name: Scalars['String']['input'];
+};
+
+
+export type MutationCreateChatbotArgs = {
+  avatar?: InputMaybe<Scalars['String']['input']>;
+  courseId: Scalars['String']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
 };
 
@@ -3182,6 +3235,12 @@ export type MutationRateElementArgs = {
 };
 
 
+export type MutationRejectChatbotPublicationArgs = {
+  comment: Scalars['String']['input'];
+  id: Scalars['String']['input'];
+};
+
+
 export type MutationRemoveCatalogObjectAssignmentArgs = {
   assignmentId: Scalars['Int']['input'];
 };
@@ -3221,6 +3280,14 @@ export type MutationRequestCatalogObjectArgs = {
 
 export type MutationRequestCatalystAccessArgs = {
   institution: Scalars['String']['input'];
+  useCase: Scalars['String']['input'];
+};
+
+
+export type MutationRequestChatbotPublicationArgs = {
+  expectedStudentCount: Scalars['Int']['input'];
+  id: Scalars['String']['input'];
+  proposedCredits: Scalars['Int']['input'];
   useCase: Scalars['String']['input'];
 };
 
@@ -3285,6 +3352,13 @@ export type MutationSetActivityReviewStatusArgs = {
   activityId: Scalars['String']['input'];
   activityType: ActivityType;
   isReviewed: Scalars['Boolean']['input'];
+};
+
+
+export type MutationSetChatAccountUsageBudgetsArgs = {
+  advancedBudgetCredits: Scalars['Float']['input'];
+  baseBudgetCredits: Scalars['Float']['input'];
+  ownerId: Scalars['String']['input'];
 };
 
 
@@ -3399,6 +3473,14 @@ export type MutationUnpublishPracticeQuizArgs = {
 export type MutationUnsubscribeFromPushArgs = {
   courseId: Scalars['String']['input'];
   endpoint: Scalars['String']['input'];
+};
+
+
+export type MutationUpdateChatbotArgs = {
+  avatar?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['String']['input'];
+  name?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -4028,6 +4110,7 @@ export type Query = {
   getCatalogLiveQuizTemplates?: Maybe<Array<CatalogSelectionObject>>;
   getCatalogObjects?: Maybe<Array<CatalogObject>>;
   getCatalogSharingRequests?: Maybe<Array<ObjectSharingRequest>>;
+  getChatAccountUsage?: Maybe<ChatAccountUsageOverview>;
   getChatModelRegistry: Array<ChatModelCapability>;
   getChatbotsInfo?: Maybe<Array<Chatbot>>;
   getCourseActivities?: Maybe<Course>;
@@ -4289,6 +4372,11 @@ export type QueryGetCatalogCollectionInfoArgs = {
 
 export type QueryGetCatalogObjectsArgs = {
   catalogCollectionId?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+export type QueryGetChatAccountUsageArgs = {
+  ownerId?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -7045,6 +7133,13 @@ export type QGetCatalystRequestAccessQueryVariables = Exact<{ [key: string]: nev
 
 export type QGetCatalystRequestAccessQuery = { __typename?: 'Query', userScope?: UserLoginScope | null };
 
+export type GetChatAccountUsageQueryVariables = Exact<{
+  ownerId?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type GetChatAccountUsageQuery = { __typename?: 'Query', getChatAccountUsage?: { __typename?: 'ChatAccountUsageOverview', authorized: boolean, baseModelUsage: { __typename?: 'ChatAccountUsageLane', usageClass: ChatUsageClass, budgetCredits: number, usedCredits: number, remainingCredits: number, resetAt: any }, advancedModelUsage: { __typename?: 'ChatAccountUsageLane', usageClass: ChatUsageClass, budgetCredits: number, usedCredits: number, remainingCredits: number, resetAt: any } } | null };
+
 export type GetChatModelRegistryQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -7053,7 +7148,7 @@ export type GetChatModelRegistryQuery = { __typename?: 'Query', getChatModelRegi
 export type GetChatbotsInfoQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetChatbotsInfoQuery = { __typename?: 'Query', getChatbotsInfo?: Array<{ __typename?: 'Chatbot', id: string, name: string, description?: string | null, avatar?: string | null, modelSelection: boolean, allowedModelIds: Array<string>, creditInitialCredits: number, creditResetPeriod: CreditResetPeriod, creditResetAmount: number, creditMaxCredits: number, createdAt?: any | null, updatedAt?: any | null, allowedReasoningEffortsByModel: Array<{ __typename?: 'ChatbotReasoningConfig', modelId: string, efforts: Array<string> }>, courses: Array<{ __typename?: 'CourseListEntry', id: string, name: string }>, usageSummary?: { __typename?: 'ChatbotUsageSummary', threadCount: number, messageCount: number, participantCount: number, lastActivityAt?: any | null, totalCredits?: number | null, currentCredits?: number | null, totalResets?: number | null, lastResetAt?: any | null } | null, disclaimerSummary?: { __typename?: 'ChatbotDisclaimerSummary', id: string, name: string, title: string, acceptedCount: number, declinedCount: number, pendingCount: number } | null, mcpConfigurations: Array<{ __typename?: 'ChatbotMcpConfigurationSummary', serverId: string, serverName: string, serverDescription?: string | null, serverIsActive: boolean, chatMode: string, isEnabled: boolean, priority: number, allowedToolsCount?: number | null }> }> | null };
+export type GetChatbotsInfoQuery = { __typename?: 'Query', getChatbotsInfo?: Array<{ __typename?: 'Chatbot', id: string, name: string, description?: string | null, avatar?: string | null, status: ChatbotStatus, modelSelection: boolean, allowedModelIds: Array<string>, creditInitialCredits: number, creditResetPeriod: CreditResetPeriod, creditResetAmount: number, creditMaxCredits: number, createdAt?: any | null, updatedAt?: any | null, allowedReasoningEffortsByModel: Array<{ __typename?: 'ChatbotReasoningConfig', modelId: string, efforts: Array<string> }>, courses: Array<{ __typename?: 'CourseListEntry', id: string, name: string }>, usageSummary?: { __typename?: 'ChatbotUsageSummary', threadCount: number, messageCount: number, participantCount: number, lastActivityAt?: any | null, totalCredits?: number | null, currentCredits?: number | null, totalResets?: number | null, lastResetAt?: any | null } | null, disclaimerSummary?: { __typename?: 'ChatbotDisclaimerSummary', id: string, name: string, title: string, acceptedCount: number, declinedCount: number, pendingCount: number } | null, mcpConfigurations: Array<{ __typename?: 'ChatbotMcpConfigurationSummary', serverId: string, serverName: string, serverDescription?: string | null, serverIsActive: boolean, chatMode: string, isEnabled: boolean, priority: number, allowedToolsCount?: number | null }> }> | null };
 
 export type GetCockpitQuizQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -8033,8 +8128,9 @@ export const GetCatalogLiveQuizTemplatesDocument = {"kind":"Document","definitio
 export const GetCatalogObjectsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetCatalogObjects"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"catalogCollectionId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getCatalogObjects"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"catalogCollectionId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"catalogCollectionId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"CatalogObjectData"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"CatalogObjectData"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"CatalogObject"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"objectId"}},{"kind":"Field","name":{"kind":"Name","value":"objectUuid"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"objectType"}},{"kind":"Field","name":{"kind":"Name","value":"templateId"}},{"kind":"Field","name":{"kind":"Name","value":"access"}},{"kind":"Field","name":{"kind":"Name","value":"ownerShortname"}},{"kind":"Field","name":{"kind":"Name","value":"isOwner"}},{"kind":"Field","name":{"kind":"Name","value":"isManager"}},{"kind":"Field","name":{"kind":"Name","value":"isRequested"}},{"kind":"Field","name":{"kind":"Name","value":"isShared"}}]}}]} as unknown as DocumentNode<GetCatalogObjectsQuery, GetCatalogObjectsQueryVariables>;
 export const GetCatalogSharingRequestsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetCatalogSharingRequests"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getCatalogSharingRequests"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"requestId"}},{"kind":"Field","name":{"kind":"Name","value":"objectName"}},{"kind":"Field","name":{"kind":"Name","value":"objectType"}},{"kind":"Field","name":{"kind":"Name","value":"userId"}},{"kind":"Field","name":{"kind":"Name","value":"userShortname"}},{"kind":"Field","name":{"kind":"Name","value":"userEmail"}}]}}]}}]} as unknown as DocumentNode<GetCatalogSharingRequestsQuery, GetCatalogSharingRequestsQueryVariables>;
 export const QGetCatalystRequestAccessDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"QGetCatalystRequestAccess"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"userScope"}}]}}]} as unknown as DocumentNode<QGetCatalystRequestAccessQuery, QGetCatalystRequestAccessQueryVariables>;
+export const GetChatAccountUsageDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetChatAccountUsage"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ownerId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getChatAccountUsage"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ownerId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ownerId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"authorized"}},{"kind":"Field","name":{"kind":"Name","value":"baseModelUsage"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"usageClass"}},{"kind":"Field","name":{"kind":"Name","value":"budgetCredits"}},{"kind":"Field","name":{"kind":"Name","value":"usedCredits"}},{"kind":"Field","name":{"kind":"Name","value":"remainingCredits"}},{"kind":"Field","name":{"kind":"Name","value":"resetAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"advancedModelUsage"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"usageClass"}},{"kind":"Field","name":{"kind":"Name","value":"budgetCredits"}},{"kind":"Field","name":{"kind":"Name","value":"usedCredits"}},{"kind":"Field","name":{"kind":"Name","value":"remainingCredits"}},{"kind":"Field","name":{"kind":"Name","value":"resetAt"}}]}}]}}]}}]} as unknown as DocumentNode<GetChatAccountUsageQuery, GetChatAccountUsageQueryVariables>;
 export const GetChatModelRegistryDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetChatModelRegistry"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getChatModelRegistry"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"fallback"}},{"kind":"Field","name":{"kind":"Name","value":"supportsReasoning"}},{"kind":"Field","name":{"kind":"Name","value":"supportedReasoningEfforts"}}]}}]}}]} as unknown as DocumentNode<GetChatModelRegistryQuery, GetChatModelRegistryQueryVariables>;
-export const GetChatbotsInfoDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetChatbotsInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getChatbotsInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"modelSelection"}},{"kind":"Field","name":{"kind":"Name","value":"allowedModelIds"}},{"kind":"Field","name":{"kind":"Name","value":"allowedReasoningEffortsByModel"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"modelId"}},{"kind":"Field","name":{"kind":"Name","value":"efforts"}}]}},{"kind":"Field","name":{"kind":"Name","value":"creditInitialCredits"}},{"kind":"Field","name":{"kind":"Name","value":"creditResetPeriod"}},{"kind":"Field","name":{"kind":"Name","value":"creditResetAmount"}},{"kind":"Field","name":{"kind":"Name","value":"creditMaxCredits"}},{"kind":"Field","name":{"kind":"Name","value":"courses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"usageSummary"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"threadCount"}},{"kind":"Field","name":{"kind":"Name","value":"messageCount"}},{"kind":"Field","name":{"kind":"Name","value":"participantCount"}},{"kind":"Field","name":{"kind":"Name","value":"lastActivityAt"}},{"kind":"Field","name":{"kind":"Name","value":"totalCredits"}},{"kind":"Field","name":{"kind":"Name","value":"currentCredits"}},{"kind":"Field","name":{"kind":"Name","value":"totalResets"}},{"kind":"Field","name":{"kind":"Name","value":"lastResetAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"disclaimerSummary"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"acceptedCount"}},{"kind":"Field","name":{"kind":"Name","value":"declinedCount"}},{"kind":"Field","name":{"kind":"Name","value":"pendingCount"}}]}},{"kind":"Field","name":{"kind":"Name","value":"mcpConfigurations"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"serverId"}},{"kind":"Field","name":{"kind":"Name","value":"serverName"}},{"kind":"Field","name":{"kind":"Name","value":"serverDescription"}},{"kind":"Field","name":{"kind":"Name","value":"serverIsActive"}},{"kind":"Field","name":{"kind":"Name","value":"chatMode"}},{"kind":"Field","name":{"kind":"Name","value":"isEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"priority"}},{"kind":"Field","name":{"kind":"Name","value":"allowedToolsCount"}}]}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<GetChatbotsInfoQuery, GetChatbotsInfoQueryVariables>;
+export const GetChatbotsInfoDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetChatbotsInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"getChatbotsInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"avatar"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"modelSelection"}},{"kind":"Field","name":{"kind":"Name","value":"allowedModelIds"}},{"kind":"Field","name":{"kind":"Name","value":"allowedReasoningEffortsByModel"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"modelId"}},{"kind":"Field","name":{"kind":"Name","value":"efforts"}}]}},{"kind":"Field","name":{"kind":"Name","value":"creditInitialCredits"}},{"kind":"Field","name":{"kind":"Name","value":"creditResetPeriod"}},{"kind":"Field","name":{"kind":"Name","value":"creditResetAmount"}},{"kind":"Field","name":{"kind":"Name","value":"creditMaxCredits"}},{"kind":"Field","name":{"kind":"Name","value":"courses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"usageSummary"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"threadCount"}},{"kind":"Field","name":{"kind":"Name","value":"messageCount"}},{"kind":"Field","name":{"kind":"Name","value":"participantCount"}},{"kind":"Field","name":{"kind":"Name","value":"lastActivityAt"}},{"kind":"Field","name":{"kind":"Name","value":"totalCredits"}},{"kind":"Field","name":{"kind":"Name","value":"currentCredits"}},{"kind":"Field","name":{"kind":"Name","value":"totalResets"}},{"kind":"Field","name":{"kind":"Name","value":"lastResetAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"disclaimerSummary"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"acceptedCount"}},{"kind":"Field","name":{"kind":"Name","value":"declinedCount"}},{"kind":"Field","name":{"kind":"Name","value":"pendingCount"}}]}},{"kind":"Field","name":{"kind":"Name","value":"mcpConfigurations"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"serverId"}},{"kind":"Field","name":{"kind":"Name","value":"serverName"}},{"kind":"Field","name":{"kind":"Name","value":"serverDescription"}},{"kind":"Field","name":{"kind":"Name","value":"serverIsActive"}},{"kind":"Field","name":{"kind":"Name","value":"chatMode"}},{"kind":"Field","name":{"kind":"Name","value":"isEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"priority"}},{"kind":"Field","name":{"kind":"Name","value":"allowedToolsCount"}}]}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<GetChatbotsInfoQuery, GetChatbotsInfoQueryVariables>;
 export const GetCockpitQuizDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetCockpitQuiz"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"cockpitQuiz"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isLiveQAEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isConfusionFeedbackEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isModerationEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isGamificationEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"isAssessmentEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"namespace"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"pinCode"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"startedAt"}},{"kind":"Field","name":{"kind":"Name","value":"course"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"language"}}]}},{"kind":"Field","name":{"kind":"Name","value":"blocks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"numOfParticipants"}},{"kind":"Field","name":{"kind":"Name","value":"order"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"expiresAt"}},{"kind":"Field","name":{"kind":"Name","value":"timeLimit"}},{"kind":"Field","name":{"kind":"Name","value":"randomSelection"}},{"kind":"Field","name":{"kind":"Name","value":"execution"}},{"kind":"Field","name":{"kind":"Name","value":"elements"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"elementType"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"ElementDataInfo"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"activeBlock"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"confusionSummary"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"speed"}},{"kind":"Field","name":{"kind":"Name","value":"difficulty"}},{"kind":"Field","name":{"kind":"Name","value":"numberOfParticipants"}}]}},{"kind":"Field","name":{"kind":"Name","value":"feedbacks"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"isPublished"}},{"kind":"Field","name":{"kind":"Name","value":"isPinned"}},{"kind":"Field","name":{"kind":"Name","value":"isResolved"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"votes"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"resolvedAt"}},{"kind":"Field","name":{"kind":"Name","value":"responses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"positiveReactions"}},{"kind":"Field","name":{"kind":"Name","value":"negativeReactions"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"ElementDataInfo"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ElementInstance"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"elementData"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ChoicesElementData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"basePoints"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"NumericalElementData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"basePoints"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FreeTextElementData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"basePoints"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"SelectionElementData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"basePoints"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"CaseStudyElementData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"basePoints"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"FlashcardElementData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"basePoints"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"ContentElementData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"basePoints"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"QrScanElementData"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"elementId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"content"}},{"kind":"Field","name":{"kind":"Name","value":"explanation"}},{"kind":"Field","name":{"kind":"Name","value":"basePoints"}},{"kind":"Field","name":{"kind":"Name","value":"pointsMultiplier"}}]}}]}}]}}]} as unknown as DocumentNode<GetCockpitQuizQuery, GetCockpitQuizQueryVariables>;
 export const GetControlCourseDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetControlCourse"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"controlCourse"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"courseId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"liveQuizzes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"status"}}]}}]}}]}}]} as unknown as DocumentNode<GetControlCourseQuery, GetControlCourseQueryVariables>;
 export const GetControlCoursesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetControlCourses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"controlCourses"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"isArchived"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"description"}}]}}]}}]} as unknown as DocumentNode<GetControlCoursesQuery, GetControlCoursesQueryVariables>;
