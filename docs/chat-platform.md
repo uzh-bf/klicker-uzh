@@ -824,6 +824,13 @@ The chat route derives the enabled knowledge-base id from the authenticated chat
 
 `src/lib/server/docQueryScopeToken.ts:signDocQueryScopeToken` signs a five-minute ES256 token with `DOC_QUERY_SCOPE_PRIVATE_KEY`, `DOC_QUERY_SCOPE_KID`, `DOC_QUERY_SCOPE_ISSUER`, and `DOC_QUERY_SCOPE_AUDIENCE`. Claims bind `kb_id`, `chatbot_id`, session subject, and a unique `jti`; participant identity is intentionally absent. Scope-token requests carry the scoped bearer in `X-Doc-Query-Scope-Token` and retain `Authorization` only for transport authentication; they never use the legacy `Chatbot-ID` header for retrieval scope. Existing participant-JWT MCP authentication is unchanged.
 
+The staging isolation verifier keeps positive and negative evidence asymmetric:
+positive markers may appear in returned source references or chunk content, but
+each `foreign.forbidReferences` marker must identify a stable
+`source.reference` unique to the foreign corpus. Never use a shared subject
+term as negative evidence; related courses can legitimately retrieve the same
+terminology without crossing the signed knowledge-base boundary.
+
 The assistant UI registers the retrieval card through `src/components/tools-ui/rag-tool-ui.tsx:RAGToolUI`. Its registration uses `src/services/mcpScope.ts:DOC_QUERY_TOOL_NAME` (`KB_doc_query`), matching the namespaced runtime tool name. The card is localized through `pwa.chatbot.retrieval` and renders only a generic failure state; raw retrieval-service errors must never reach participants.
 
 ## Testing
