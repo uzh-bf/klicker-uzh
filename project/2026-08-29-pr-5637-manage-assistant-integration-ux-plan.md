@@ -773,6 +773,8 @@ follow_up_stacks:
   correctly found that FastMCP 4.13.1 serves `/healthz` as `200 text/plain`,
   while the first probe and fixture required JSON; the corrected dedicated
   text-health contract now matches installed package documentation.
-- Next: Complete A1's recoverable iframe shell, honest standalone boundary,
-  focused lecturer-MCP runtime contract, independent reviews, and exact-head
-  draft-layer verification.
+- Next: A1's recoverable iframe shell, honest standalone boundary, focused
+  lecturer-MCP runtime contract, and independent reviews are complete at head
+  `97fea1a227c6`; all local checks pass. Stacked draft PR #5670 is published
+  on top of #5637. Exact-head hosted CI, including the focused Playwright
+  regression, remains required before the layer can be accepted.
