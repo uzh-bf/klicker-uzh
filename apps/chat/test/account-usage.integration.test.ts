@@ -533,6 +533,15 @@ describePostgres('account usage PostgreSQL integration', () => {
     }
     await accountUsage.failChatTurn({
       ...exactClaim,
+      participantId: foreignParticipantId,
+      lifecycleAttemptId: first.lifecycleAttemptId,
+    })
+    await expect(
+      prisma.chatMessage.findUniqueOrThrow({ where: { id: messageId } })
+    ).resolves.toMatchObject({ lifecycleStatus: 'IN_PROGRESS' })
+
+    await accountUsage.failChatTurn({
+      ...exactClaim,
       parentId: THREAD_TWO_PARENT_ID,
       lifecycleAttemptId: first.lifecycleAttemptId,
     })
@@ -578,6 +587,25 @@ describePostgres('account usage PostgreSQL integration', () => {
         lifecycleAttemptId: retry.lifecycleAttemptId,
       })
     ).resolves.toEqual({ outcome: 'completed', creditsUsed: 0.25 })
+    await expect(
+      accountUsage.finalizeChatTurn({
+        ...turnInput(messageId),
+        lifecycleAttemptId: retry.lifecycleAttemptId,
+      })
+    ).resolves.toEqual({ outcome: 'duplicate', creditsUsed: 0.25 })
+    await expect(
+      accountUsage.finalizeChatTurn({
+        ...turnInput(messageId),
+        parentId: THREAD_TWO_PARENT_ID,
+        lifecycleAttemptId: retry.lifecycleAttemptId,
+      })
+    ).rejects.toBeInstanceOf(accountUsage.ChatTurnConflictError)
+    await expect(
+      accountUsage.claimChatTurn({
+        ...exactClaim,
+        parentId: THREAD_TWO_PARENT_ID,
+      })
+    ).rejects.toBeInstanceOf(accountUsage.ChatTurnConflictError)
     await expect(
       accountUsage.finalizeChatTurn({
         ...turnInput(messageId),

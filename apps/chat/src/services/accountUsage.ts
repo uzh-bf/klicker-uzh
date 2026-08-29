@@ -110,19 +110,6 @@ export async function claimChatTurn(
   const lifecycleAttemptId = randomUUID()
 
   return withTransaction(async (tx) => {
-    const thread = await tx.chatThread.findFirst({
-      where: {
-        id: input.threadId,
-        participantId: input.participantId,
-        chatbotId: input.chatbotId,
-        chatbot: { ownerId: input.ownerId },
-      },
-      select: { id: true },
-    })
-    if (!thread) {
-      throw new ChatTurnConflictError()
-    }
-
     const parent = await tx.chatMessage.findFirst({
       where: {
         id: input.parentId,
@@ -265,19 +252,6 @@ export async function finalizeChatTurn(
       : roundChatUsageCredits(input.rawCreditsUsed)
 
   return withTransaction(async (tx) => {
-    const thread = await tx.chatThread.findFirst({
-      where: {
-        id: input.threadId,
-        participantId: input.participantId,
-        chatbotId: input.chatbotId,
-        chatbot: { ownerId: input.ownerId },
-      },
-      select: { id: true },
-    })
-    if (!thread) {
-      throw new ChatTurnConflictError()
-    }
-
     const parent = await tx.chatMessage.findFirst({
       where: {
         id: input.parentId,

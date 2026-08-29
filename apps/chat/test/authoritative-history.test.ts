@@ -93,7 +93,6 @@ beforeEach(() => {
 describe('authoritative conversation history', () => {
   test('creates one completed trigger and returns persisted model text', async () => {
     await expect(prepareAuthoritativeConversation(input)).resolves.toEqual({
-      triggerId: 'trigger-1',
       triggerText: 'Question',
       modelMessages: [{ id: 'trigger-1', role: 'user', content: 'trigger-1' }],
       validatedRowCount: 1,

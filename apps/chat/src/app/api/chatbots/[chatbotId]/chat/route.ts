@@ -1214,14 +1214,17 @@ export async function POST(
       userPromptHash: authoritativeConversation.triggerText
         ? hashSnippet(authoritativeConversation.triggerText)
         : null,
-      validatedHistoryRowCount: authoritativeConversation.validatedRowCount,
-      modelHistoryRowCount: authoritativeConversation.modelRowCount,
-      historyTruncated: authoritativeConversation.truncated,
       imageAttachmentCount: normalizedImages.length,
       imageAttachmentSizes: resolvedImages.map((image) =>
         Buffer.byteLength(image.imageBase64, 'utf8')
       ),
       elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
+    })
+
+    logEvent('request.history', {
+      validatedHistoryRowCount: authoritativeConversation.validatedRowCount,
+      modelHistoryRowCount: authoritativeConversation.modelRowCount,
+      historyTruncated: authoritativeConversation.truncated,
     })
 
     logEvent('thread.resolved', {

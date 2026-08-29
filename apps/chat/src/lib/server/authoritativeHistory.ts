@@ -39,7 +39,6 @@ export type PrepareAuthoritativeConversationInput = {
 }
 
 export type AuthoritativeConversation = {
-  triggerId: string
   triggerText: string
   modelMessages: AuthoritativeModelMessage[]
   validatedRowCount: number
@@ -275,7 +274,6 @@ export async function prepareAuthoritativeConversation(
       })
 
     return {
-      triggerId: input.trigger.id,
       triggerText,
       modelMessages,
       validatedRowCount: rows.length,

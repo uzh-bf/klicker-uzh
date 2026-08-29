@@ -630,3 +630,19 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   `check:all` remains blocked outside W3 because analytics lint attempts to
   build pandas without a C compiler in this devcontainer; the already-failed
   run was stopped after its independent evidence completed.
+- 2026-08-29: S1 source and tests are committed at `4cc4b97fe`. The native
+  simplifier and slice-reviewer routes failed before launch because the task's
+  injected `combo/glm-5.3-flash` / `max` route could not start, so the routing
+  continuity ladder used two independent trusted GPT-5.6 Sol xhigh reviews of
+  the immutable `b82396a95..4cc4b97fe` range. The simplifier reported zero
+  blockers and three optional reductions; the risk review blocked on
+  identifier-associated history telemetry and an incomplete authorization and
+  concurrency test matrix. All five findings were accepted.
+- 2026-08-29: the S1 review adjustment removes redundant lifecycle thread
+  queries, narrows the browser branch walker to its consumed path result,
+  removes the unused authoritative trigger ID, isolates history counts in a
+  request-ID-only event, and fills the PostgreSQL trigger and lifecycle matrix.
+  The adjusted portfolio passes 48 focused unit/route tests, 13 authoritative
+  history PostgreSQL tests, 14 account-lifecycle PostgreSQL tests, chat
+  TypeScript checking, and `git diff --check`. The adjustment is ready for its
+  scoped commit before S2 begins.

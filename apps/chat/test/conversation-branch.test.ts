@@ -26,11 +26,11 @@ describe('conversation branch walking', () => {
       message('sibling', 'answer', 'user'),
     ]
 
-    expect(walkConversationBranch(messages, 'leaf')).toEqual({
-      path: [messages[0], messages[1], messages[2]],
-      status: 'complete',
-      missingParentId: null,
-    })
+    expect(walkConversationBranch(messages, 'leaf')).toEqual([
+      messages[0],
+      messages[1],
+      messages[2],
+    ])
     expect(getPathToLeaf(messages, 'leaf').map(({ id }) => id)).toEqual([
       'root',
       'answer',
@@ -39,16 +39,9 @@ describe('conversation branch walking', () => {
   })
 
   test('fails closed when an ancestor is absent', () => {
-    const result = walkConversationBranch(
-      [message('leaf', 'missing', 'user')],
-      'leaf'
-    )
-
-    expect(result).toEqual({
-      path: [],
-      status: 'missing-parent',
-      missingParentId: 'missing',
-    })
+    expect(
+      walkConversationBranch([message('leaf', 'missing', 'user')], 'leaf')
+    ).toEqual([])
   })
 
   test('terminates a cycle without manufacturing a partial path', () => {
@@ -57,11 +50,7 @@ describe('conversation branch walking', () => {
       message('second', 'first', 'assistant'),
     ]
 
-    expect(walkConversationBranch(messages, 'first')).toEqual({
-      path: [],
-      status: 'cycle',
-      missingParentId: null,
-    })
+    expect(walkConversationBranch(messages, 'first')).toEqual([])
     expect(getPathToLeaf(messages, 'first')).toEqual([])
   })
 })

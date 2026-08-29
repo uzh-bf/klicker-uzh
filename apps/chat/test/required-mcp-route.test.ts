@@ -121,7 +121,6 @@ describe('required MCP chat preflight', () => {
     mocks.deleteThread.mockResolvedValue(true)
     mocks.findThread.mockResolvedValue({ id: 'thread-1' })
     mocks.prepareAuthoritativeConversation.mockResolvedValue({
-      triggerId: USER_MESSAGE_ID,
       triggerText: 'Find the relevant video.',
       modelMessages: [
         {

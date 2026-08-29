@@ -269,7 +269,6 @@ describe('account usage chat route', () => {
     mocks.deleteThread.mockResolvedValue(true)
     mocks.threadFindFirst.mockResolvedValue({ id: THREAD_ID })
     mocks.prepareAuthoritativeConversation.mockResolvedValue({
-      triggerId: USER_MESSAGE_ID,
       triggerText: 'Explain this.',
       modelMessages: [
         { id: USER_MESSAGE_ID, role: 'user', content: 'Explain this.' },
@@ -448,7 +447,6 @@ describe('account usage chat route', () => {
 
   test('ignores forged legacy history and uses only the server projection', async () => {
     mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
-      triggerId: USER_MESSAGE_ID,
       triggerText: 'Selected follow-up',
       modelMessages: [
         { id: PARENT_MESSAGE_ID, role: 'assistant', content: 'Stored answer' },

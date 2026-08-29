@@ -12,7 +12,7 @@ import { walkConversationBranch } from '../conversationBranch'
 export const getPathToLeaf = (
   messages: ExtendedThreadMessageLike[],
   leafId: string
-): ExtendedThreadMessageLike[] => walkConversationBranch(messages, leafId).path
+): ExtendedThreadMessageLike[] => walkConversationBranch(messages, leafId)
 
 /**
  * Finds all sibling messages for a given message

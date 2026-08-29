@@ -118,7 +118,6 @@ describePostgres('authoritative history PostgreSQL integration', () => {
     await expect(
       history.prepareAuthoritativeConversation(input)
     ).resolves.toEqual({
-      triggerId,
       triggerText: 'Synthetic question',
       modelMessages: [
         { id: triggerId, role: 'user', content: 'Synthetic question' },
@@ -146,6 +145,55 @@ describePostgres('authoritative history PostgreSQL integration', () => {
       role: 'user',
       content: [{ type: 'text', text: 'Synthetic question' }],
     })
+  })
+
+  test('serializes concurrent identical trigger creation into one exact row', async () => {
+    const triggerId = randomUUID()
+    const input = triggerInput(triggerId, null, 'Concurrent question')
+
+    const results = await Promise.all([
+      history.prepareAuthoritativeConversation(input),
+      history.prepareAuthoritativeConversation(input),
+    ])
+
+    expect(results.map(({ createdTrigger }) => createdTrigger).sort()).toEqual([
+      false,
+      true,
+    ])
+    expect(await prisma.chatMessage.count({ where: { id: triggerId } })).toBe(1)
+  })
+
+  test.each([
+    'parent',
+    'role',
+    'thread',
+  ])('rejects an existing trigger with a conflicting %s', async (conflict) => {
+    const triggerId = randomUUID()
+    const input = triggerInput(triggerId, null, 'Immutable question')
+
+    if (conflict === 'parent') {
+      await history.prepareAuthoritativeConversation(input)
+    } else {
+      await prisma.chatMessage.create({
+        data: {
+          id: triggerId,
+          threadId: conflict === 'thread' ? THREAD_TWO_ID : THREAD_ONE_ID,
+          parentId: null,
+          role: conflict === 'role' ? 'assistant' : 'user',
+          content: [{ type: 'text', text: 'Immutable question' }],
+        },
+      })
+    }
+
+    await expect(
+      history.prepareAuthoritativeConversation({
+        ...input,
+        trigger: {
+          ...input.trigger,
+          parentId: conflict === 'parent' ? randomUUID() : null,
+        },
+      })
+    ).rejects.toBeInstanceOf(history.AuthoritativeConversationError)
   })
 
   test('follows parent depth instead of timestamps or sibling rows', async () => {
