@@ -424,6 +424,6 @@ main() {
   printf '\n==> Runner host optimization completed and verified\n'
 }
 
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+if [[ "${BASH_SOURCE[0]:-$0}" == "$0" ]]; then
   main "$@"
 fi

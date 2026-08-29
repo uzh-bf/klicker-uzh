@@ -21,8 +21,13 @@ fail() {
 }
 
 main() {
-  local telemetry_hook started_hook completed_hook rendered_env
+  local telemetry_hook started_hook completed_hook rendered_env streamed_help
   bash -n "$HOST_SCRIPT"
+  if ! streamed_help=$(bash -s -- --help <"$HOST_SCRIPT" 2>&1); then
+    fail "host reconciler cannot run from stdin: ${streamed_help}"
+  fi
+  grep -Fq 'Reconcile one existing public PR ARM64 runner host.' <<<"$streamed_help" ||
+    fail 'stdin execution did not invoke the host reconciler entrypoint'
   # shellcheck disable=SC1090,SC1091
   source "$HOST_SCRIPT"
 
