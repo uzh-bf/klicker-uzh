@@ -73,9 +73,11 @@ describe('unsaved candidate extraction', () => {
         candidateId: 'grouped-candidate',
         sources: [
           {
-            sourceId: 'source-1',
+            sourceId:
+              's3://user:password@bucket/course?token=temporary#section',
             kind: 'WEB',
-            title: 'Course page',
+            title:
+              'ftp://user:password@example.org/course?token=temporary#section',
             canonicalUrl:
               'https://example.org/chapter#access_token%3Dtemporary',
             chunkIds: ['chunk-1'],
@@ -91,9 +93,9 @@ describe('unsaved candidate extraction', () => {
     ).toMatchObject({
       sources: [
         {
-          sourceId: 'source-1',
+          sourceId: 's3://bucket/course',
           kind: 'WEB',
-          title: 'Course page',
+          title: 'course',
           chunkIds: ['chunk-1'],
           locators: [],
         },

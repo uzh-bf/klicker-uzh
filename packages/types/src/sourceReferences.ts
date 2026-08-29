@@ -27,6 +27,47 @@ export type ElementSourceReference = {
   locators: ElementSourceLocator[]
 }
 
+const RESOURCE_URI_SCHEME = /^[a-z][a-z0-9+.-]*:/iu
+
+function sanitizedResourceUri(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  if (!RESOURCE_URI_SCHEME.test(trimmed)) return trimmed
+
+  try {
+    const uri = new URL(trimmed)
+    uri.username = ''
+    uri.password = ''
+    uri.search = ''
+    uri.hash = ''
+    return uri.toString()
+  } catch {
+    return undefined
+  }
+}
+
+/** Removes credential-bearing URI channels from durable source identities. */
+export function sanitizeElementSourceIdentity(value: string) {
+  return sanitizedResourceUri(value)
+}
+
+/** Turns a URI-shaped source label into a query-free material name. */
+export function sanitizeElementSourceLabel(value: string) {
+  const sanitized = sanitizedResourceUri(value)
+  if (!sanitized || !RESOURCE_URI_SCHEME.test(value.trim())) return sanitized
+
+  const uri = new URL(sanitized)
+  const last = uri.pathname.split('/').filter(Boolean).at(-1)
+  if (last) {
+    try {
+      return decodeURIComponent(last)
+    } catch {
+      return last
+    }
+  }
+  return uri.hostname || uri.protocol.slice(0, -1)
+}
+
 const SENSITIVE_QUERY_PARAMETER =
   /^(?:access[_-]?token|api[_-]?key|auth|client[_-]?secret|credential|expires?|id[_-]?token|jwt|key|password|refresh[_-]?token|sas|secret|se|session[_-]?token|sig|signature|ske|skoid|sks|skt|sktid|skv|sp|spr|sr|st|sv|token)$/iu
 

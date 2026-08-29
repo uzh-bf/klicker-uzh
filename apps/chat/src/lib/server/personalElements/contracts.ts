@@ -4,6 +4,8 @@ import {
   type ElementSourceReference,
   type ElementSourceWebLocator,
   isSafeElementSourceUrl,
+  sanitizeElementSourceIdentity,
+  sanitizeElementSourceLabel,
 } from '@klicker-uzh/types'
 import { z } from 'zod'
 import { parseDocQueryPayload } from '@/src/lib/sources/normalizeSources'
@@ -253,16 +255,21 @@ export function parseStoredGeneratedCardCandidate(
   if (groupedCandidate.success) {
     return {
       ...groupedCandidate.data,
-      sources: groupedCandidate.data.sources.map((source) => ({
-        sourceId: source.sourceId,
-        kind: source.kind,
-        title: source.title,
-        ...(source.canonicalUrl && isSafeElementSourceUrl(source.canonicalUrl)
-          ? { canonicalUrl: source.canonicalUrl }
-          : {}),
-        chunkIds: [...new Set(source.chunkIds)],
-        locators: canonicalizeStoredLocators(source),
-      })),
+      sources: groupedCandidate.data.sources.map((source, index) => {
+        const sourceId =
+          sanitizeElementSourceIdentity(source.sourceId) ??
+          `stored-source-${index + 1}`
+        return {
+          sourceId,
+          kind: source.kind,
+          title: sanitizeElementSourceLabel(source.title) ?? sourceId,
+          ...(source.canonicalUrl && isSafeElementSourceUrl(source.canonicalUrl)
+            ? { canonicalUrl: source.canonicalUrl }
+            : {}),
+          chunkIds: [...new Set(source.chunkIds)],
+          locators: canonicalizeStoredLocators(source),
+        }
+      }),
     }
   }
 
@@ -270,7 +277,10 @@ export function parseStoredGeneratedCardCandidate(
   if (!legacy.success) return null
 
   const grouped = new Map<string, ElementSourceReference>()
-  for (const source of legacy.data.sources) {
+  for (const [sourceIndex, source] of legacy.data.sources.entries()) {
+    const sourceId =
+      sanitizeElementSourceIdentity(source.sourceId) ??
+      `stored-source-${sourceIndex + 1}`
     const stableUrl =
       source.url && isSafeElementSourceUrl(source.url) ? source.url : undefined
     const validPage =
@@ -281,13 +291,14 @@ export function parseStoredGeneratedCardCandidate(
       source.page !== undefined || storedSourceIsPdf(source.url)
         ? 'DOCUMENT'
         : 'WEB'
-    const existing = grouped.get(source.sourceId)
+    const existing = grouped.get(sourceId)
     if (existing && existing.kind !== kind) return null
 
     const reference = existing ?? {
-      sourceId: source.sourceId,
+      sourceId,
       kind,
-      title: source.title ?? source.sourceId,
+      title:
+        sanitizeElementSourceLabel(source.title ?? source.sourceId) ?? sourceId,
       chunkIds: [],
       locators: [],
     }
@@ -312,7 +323,7 @@ export function parseStoredGeneratedCardCandidate(
     } else if (kind === 'WEB' && stableUrl) {
       reference.locators.push({ type: 'WEB_ANCHOR', url: stableUrl })
     }
-    grouped.set(source.sourceId, reference)
+    grouped.set(sourceId, reference)
   }
 
   for (const source of grouped.values()) {
@@ -418,31 +429,23 @@ function httpUrl(value: unknown): string | undefined {
   return isSafeElementSourceUrl(candidate) ? candidate : undefined
 }
 
-function nonUrlIdentifier(value: unknown) {
+function sourceIdentity(value: unknown) {
   const candidate = stringValue(value)
-  return candidate && !/^https?:\/\//iu.test(candidate) ? candidate : undefined
+  return candidate ? sanitizeElementSourceIdentity(candidate) : undefined
 }
 
 function sourceLabel(value: unknown) {
   const candidate = stringValue(value)
-  if (!candidate || !/^https?:\/\//iu.test(candidate)) return candidate
-
-  try {
-    const url = new URL(candidate)
-    const last = url.pathname.split('/').filter(Boolean).at(-1)
-    return last ? decodeURIComponent(last) : url.hostname
-  } catch {
-    return undefined
-  }
+  return candidate ? sanitizeElementSourceLabel(candidate) : undefined
 }
 
 function sourceIdFor(source: Record<string, unknown>, index: number) {
   return (
-    nonUrlIdentifier(source.source_id) ??
-    nonUrlIdentifier(source.resource_id) ??
-    nonUrlIdentifier(source.file_name) ??
-    nonUrlIdentifier(source.reference) ??
-    nonUrlIdentifier(source.source_url) ??
+    sourceIdentity(source.source_id) ??
+    sourceIdentity(source.resource_id) ??
+    sourceIdentity(source.file_name) ??
+    sourceIdentity(source.reference) ??
+    sourceIdentity(source.source_url) ??
     `retrieval-source-${index + 1}`
   )
 }
@@ -477,17 +480,18 @@ function webAnchorFor(
   chunk: Record<string, unknown>,
   canonicalUrl?: string
 ) {
-  const exactUrl = httpUrl(
+  const exactTarget = stringValue(
     chunk.anchor_url ?? chunk.source_url ?? chunk.url ?? chunk.reference
   )
-  if (exactUrl) return exactUrl
+  if (exactTarget) return httpUrl(exactTarget)
 
   const fragment = stringValue(chunk.anchor ?? chunk.fragment)
-  if (canonicalUrl && fragment?.startsWith('#')) {
+  if (fragment) {
+    if (!canonicalUrl || !fragment.startsWith('#')) return undefined
     const target = new URL(canonicalUrl)
     target.hash = fragment.slice(1)
-    const exactTarget = target.toString()
-    return isSafeElementSourceUrl(exactTarget) ? exactTarget : undefined
+    const assembledTarget = target.toString()
+    return isSafeElementSourceUrl(assembledTarget) ? assembledTarget : undefined
   }
 
   return httpUrl(source.source_url ?? source.reference)

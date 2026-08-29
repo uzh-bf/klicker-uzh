@@ -293,9 +293,11 @@ describe('personal elements service', () => {
     expect(
       readElementSourceReferences([
         {
-          sourceId: 'legacy-script',
+          sourceId:
+            's3://user:password@bucket/legacy-script?token=temporary#section',
           chunkId: 'chunk-1',
-          title: 'Legacy script',
+          title:
+            'ftp://user:password@example.org/legacy-script?token=temporary#section',
           url: 'https://example.org/script.pdf?sig=expired',
           page: 0.5,
           metadata: { excerpt: 'Old source text is not retained' },
@@ -303,9 +305,9 @@ describe('personal elements service', () => {
       ])
     ).toEqual([
       {
-        sourceId: 'legacy-script',
+        sourceId: 's3://bucket/legacy-script',
         kind: 'DOCUMENT',
-        title: 'Legacy script',
+        title: 'legacy-script',
         chunkIds: ['chunk-1'],
         locators: [],
       },

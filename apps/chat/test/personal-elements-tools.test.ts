@@ -359,7 +359,10 @@ describe('personal-element chat tools', () => {
     const normalized = normalizeRetrievedChunks({
       sources: [
         {
-          title: 'https://example.org/chapter?sig=temporary',
+          source_id:
+            's3://user:password@bucket/chapter?token=temporary#section',
+          title:
+            'ftp://user:password@example.org/chapter?token=temporary#section',
           source_type: 'web',
           source_url: 'https://example.org/chapter?sig=temporary',
           chunks: [
@@ -374,11 +377,35 @@ describe('personal-element chat tools', () => {
 
     expect(normalized.chunks).toMatchObject([
       {
-        sourceId: 'retrieval-source-1',
+        sourceId: 's3://bucket/chapter',
         title: 'chapter',
       },
     ])
+    expect(JSON.stringify(normalized)).not.toContain('password')
+    expect(JSON.stringify(normalized)).not.toContain('token=temporary')
     expect(JSON.stringify(normalized)).not.toContain('sig=temporary')
+  })
+
+  test('does not replace an unsafe exact chunk anchor with a source-level URL', () => {
+    const normalized = normalizeRetrievedChunks({
+      sources: [
+        {
+          source_id: 'course-page',
+          source_type: 'web',
+          source_url: 'https://example.org/chapter',
+          chunks: [
+            {
+              chunk_id: 'chunk-1',
+              content: 'Synthetic course evidence.',
+              anchor_url:
+                'https://example.org/chapter?token=temporary#section-2',
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(normalized.chunks[0]).not.toHaveProperty('webAnchor')
   })
 
   test('groups cited pages into ordered disjoint ranges without source bodies', () => {
