@@ -8,7 +8,9 @@ ADD COLUMN     "studyStreakQualifiedDaysSinceFreeze" INTEGER NOT NULL DEFAULT 0,
 ADD COLUMN     "studyStreakTrackingStartedAt" TIMESTAMP(3);
 
 -- CreateIndex
-CREATE INDEX "QuestionResponse_participationId_lastAnsweredAt_idx" ON "QuestionResponse"("participationId", "lastAnsweredAt");
+-- Prisma does not generate CONCURRENTLY; this avoids blocking response writes
+-- while the index is built on an existing production table.
+CREATE INDEX CONCURRENTLY "QuestionResponse_participationId_lastAnsweredAt_idx" ON "QuestionResponse"("participationId", "lastAnsweredAt");
 
 -- CreateIndex
-CREATE INDEX "QuestionResponseDetail_participationId_createdAt_idx" ON "QuestionResponseDetail"("participationId", "createdAt");
+CREATE INDEX CONCURRENTLY "QuestionResponseDetail_participationId_createdAt_idx" ON "QuestionResponseDetail"("participationId", "createdAt");

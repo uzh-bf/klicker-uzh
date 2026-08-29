@@ -8,6 +8,7 @@ interface StudyStreakCardProps {
   longest: number
   freezeBalance: number
   qualifiedToday: boolean
+  responsesRemainingToday?: number | null
 }
 
 function StudyStreakCard({
@@ -15,8 +16,17 @@ function StudyStreakCard({
   longest,
   freezeBalance,
   qualifiedToday,
+  responsesRemainingToday,
 }: StudyStreakCardProps) {
   const t = useTranslations()
+  const statusMessage =
+    responsesRemainingToday === null || responsesRemainingToday === undefined
+      ? t('pwa.general.studyStreakNoDailyGoal')
+      : qualifiedToday || responsesRemainingToday === 0
+        ? t('pwa.general.studyStreakDoneToday')
+        : t('pwa.general.studyStreakKeepGoing', {
+            remaining: responsesRemainingToday,
+          })
 
   return (
     <section
@@ -36,11 +46,7 @@ function StudyStreakCard({
           <div className="text-3xl font-bold tabular-nums text-orange-700">
             {t('pwa.general.studyStreakDays', { current })}
           </div>
-          <div className="mt-1 text-sm text-slate-700">
-            {qualifiedToday
-              ? t('pwa.general.studyStreakDoneToday')
-              : t('pwa.general.studyStreakNotDoneToday')}
-          </div>
+          <div className="mt-1 text-sm text-slate-700">{statusMessage}</div>
         </div>
 
         <div className="grid gap-2 text-sm text-slate-700 sm:grid-cols-2 md:min-w-96">

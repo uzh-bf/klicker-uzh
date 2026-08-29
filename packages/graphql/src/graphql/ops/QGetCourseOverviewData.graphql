@@ -19,6 +19,7 @@ query GetCourseOverviewData($courseId: String!) {
       studyStreakLongest
       studyStreakFreezeBalance
       studyStreakQualifiedToday
+      studyStreakResponsesRemainingToday
     }
     course {
       id

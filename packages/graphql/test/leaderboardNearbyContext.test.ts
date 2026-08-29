@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { selectLeaderboardNearbyContext } from '../src/services/courses.js'
+import { selectLeaderboardNearbyContext } from '@/services/courses.js'
 
 function entries(count: number) {
   return Array.from({ length: count }, (_, ix) => ({

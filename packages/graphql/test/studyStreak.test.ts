@@ -153,6 +153,26 @@ describe('applyQualifiedDate', () => {
     const result = applyQualifiedDate(atMax, '2026-08-24')
     expect(result.freezeBalance).toBe(FREEZE_BALANCE_MAX)
   })
+
+  it('does not bank a completed freeze cycle at maximum balance', () => {
+    const atMax = {
+      ...initialState(),
+      current: 6,
+      longest: 6,
+      freezeBalance: FREEZE_BALANCE_MAX,
+      qualifiedDaysSinceFreeze: FREEZE_EARN_THRESHOLD - 1,
+      lastQualifiedDate: '2026-08-31',
+      lastProcessedDate: '2026-08-31',
+    }
+
+    const capped = applyQualifiedDate(atMax, '2026-09-01')
+    expect(capped.freezeBalance).toBe(FREEZE_BALANCE_MAX)
+    expect(capped.qualifiedDaysSinceFreeze).toBe(0)
+
+    const afterMiss = applyQualifiedDate(capped, '2026-09-03')
+    expect(afterMiss.freezeBalance).toBe(FREEZE_BALANCE_MAX - 1)
+    expect(afterMiss.qualifiedDaysSinceFreeze).toBe(1)
+  })
 })
 
 describe('applyMissedDate', () => {

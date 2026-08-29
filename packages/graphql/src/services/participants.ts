@@ -209,6 +209,7 @@ export async function getParticipations(
         select: {
           courseId: true,
           studyStreakLastProcessedDate: true,
+          studyStreakTrackingStartedAt: true,
           course: {
             select: {
               startDate: true,
@@ -220,16 +221,25 @@ export async function getParticipations(
 
   await Promise.all(
     streakParticipations
-      .filter(({ course, studyStreakLastProcessedDate }) => {
-        const courseStart = zurichDate(course.startDate)
-        const courseEnd = zurichDate(course.endDate)
-        const lastProcessed = studyStreakLastProcessedDate
-          ? zurichDate(studyStreakLastProcessedDate)
-          : null
+      .filter(
+        ({
+          course,
+          studyStreakLastProcessedDate,
+          studyStreakTrackingStartedAt,
+        }) => {
+          const courseStart = zurichDate(course.startDate)
+          const courseEnd = zurichDate(course.endDate)
+          const lastProcessed = studyStreakLastProcessedDate
+            ? zurichDate(studyStreakLastProcessedDate)
+            : null
 
-        if (today < courseStart) return false
-        return today <= courseEnd || !lastProcessed || lastProcessed < courseEnd
-      })
+          if (today < courseStart) return false
+          if (today > courseEnd && !studyStreakTrackingStartedAt) return false
+          return (
+            today <= courseEnd || !lastProcessed || lastProcessed < courseEnd
+          )
+        }
+      )
       .map(({ courseId }) =>
         reconcileStudyStreak(
           { prisma: ctx.prisma },

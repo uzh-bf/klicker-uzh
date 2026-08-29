@@ -836,9 +836,9 @@ Other participants will only see your public **participant profile**, including 
       studyStreakDays: '{current, plural, one {# day} other {# days}}',
       studyStreakLongest: 'Longest streak: {longest} days',
       studyStreakFreezeBalance: 'Freezes available: {balance}',
-      studyStreakNotDoneToday:
-        'Answer 5 questions today to keep your streak going!',
       studyStreakDoneToday: 'Nice work — your streak is secured for today.',
+      studyStreakNoDailyGoal:
+        'No practice goal today — your streak is not at risk.',
       studyStreakKeepGoing:
         'Keep it going — {remaining, plural, one {# question} other {# questions}} left today.',
       studyStreakNoFreezes:

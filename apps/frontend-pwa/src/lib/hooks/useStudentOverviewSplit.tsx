@@ -101,13 +101,13 @@ function useStudentOverviewSplit({
                   isGamificationEnabled:
                     participation.course?.isGamificationEnabled,
                   isLeaderboardParticipant: participation.isActive,
-                  studyStreakCurrent: participation.studyStreakCurrent,
+                  studyStreakCurrent: participation.studyStreakCurrent ?? 0,
                   studyStreakQualifiedToday:
-                    participation.studyStreakQualifiedToday,
+                    participation.studyStreakQualifiedToday ?? false,
                   studyStreakResponsesRemainingToday:
                     participation.studyStreakResponsesRemainingToday,
                   studyStreakFreezeBalance:
-                    participation.studyStreakFreezeBalance,
+                    participation.studyStreakFreezeBalance ?? 0,
                   isSubscribed:
                     (participation.subscriptions &&
                       participation.subscriptions.length > 0) ??
@@ -126,13 +126,13 @@ function useStudentOverviewSplit({
                 isGamificationEnabled:
                   participation.course?.isGamificationEnabled,
                 isLeaderboardParticipant: participation.isActive,
-                studyStreakCurrent: participation.studyStreakCurrent,
+                studyStreakCurrent: participation.studyStreakCurrent ?? 0,
                 studyStreakQualifiedToday:
-                  participation.studyStreakQualifiedToday,
+                  participation.studyStreakQualifiedToday ?? false,
                 studyStreakResponsesRemainingToday:
                   participation.studyStreakResponsesRemainingToday,
                 studyStreakFreezeBalance:
-                  participation.studyStreakFreezeBalance,
+                  participation.studyStreakFreezeBalance ?? 0,
                 isSubscribed:
                   (participation.subscriptions &&
                     participation.subscriptions.length > 0) ??

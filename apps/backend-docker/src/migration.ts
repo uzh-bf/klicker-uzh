@@ -103,10 +103,12 @@ async function initializeActiveStudyStreaks(
 const migrations: Migration[] = [
   {
     id: '20260824_initialize_active_study_streaks',
+    isIdempotent: true,
     migrate: initializeActiveStudyStreaks,
   },
   {
     id: '20260824_repair_active_study_streaks',
+    isIdempotent: true,
     migrate: initializeActiveStudyStreaks,
   },
 ]
@@ -118,7 +120,7 @@ export async function migrate(prisma: PrismaClient) {
     for (let attempt = 1; attempt <= MIGRATION_RETRY_ATTEMPTS; attempt++) {
       try {
         if (isIdempotent) {
-          const migration = await prisma.migration.findFirst({ where: { id } })
+          const migration = await prisma.migration.findUnique({ where: { id } })
           if (migration !== null) break
 
           console.log(`Migrating ${id} (idempotent mode without transaction)`)
@@ -132,20 +134,14 @@ export async function migrate(prisma: PrismaClient) {
             if (!isUniqueConstraintViolation(error)) throw error
           }
         } else {
-          // The advisory lock serializes concurrent replicas: a second pod
-          // blocks until the first pod's transaction commits, then sees the
-          // migration record and skips the work. hashtext maps the migration
-          // id to the bigint key PostgreSQL advisory locks require.
+          // Creating the migration record first serializes replicas on its
+          // primary key. The record and data changes commit atomically, so a
+          // failed migration remains eligible for a later retry.
           await prisma.$transaction(
             async (tx: PrismaMigrationClient) => {
-              await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${id}))`
-
-              const migration = await tx.migration.findFirst({ where: { id } })
-              if (migration !== null) return
-
+              await tx.migration.create({ data: { id } })
               console.log(`Migrating ${id} (with transaction)`)
               await runMigration(tx)
-              await tx.migration.create({ data: { id } })
             },
             {
               timeout: 120000,
@@ -159,7 +155,10 @@ export async function migrate(prisma: PrismaClient) {
       } catch (error) {
         lastError = error
 
-        if (isUniqueConstraintViolation(error)) {
+        if (
+          isUniqueConstraintViolation(error) &&
+          (await prisma.migration.findUnique({ where: { id } })) !== null
+        ) {
           // Another replica completed this migration while we were checking.
           console.log(`Migration ${id} already applied by another replica`)
           lastError = null
@@ -185,4 +184,12 @@ export async function migrate(prisma: PrismaClient) {
 
     if (lastError !== null) throw lastError
   }
+}
+
+export function startRuntimeMigrations(prisma: PrismaClient): void {
+  void migrate(prisma).catch((error) => {
+    // Runtime data fixes are fail-open. The API remains available and an
+    // unrecorded migration is retried on the next backend restart.
+    console.error('Runtime migrations failed; server remains available:', error)
+  })
 }

@@ -130,17 +130,16 @@ export function applyQualifiedDate(
 }
 
 function awardFreezeIfDue(state: StreakState): StreakState {
-  if (
-    state.freezeBalance < FREEZE_BALANCE_MAX &&
-    state.qualifiedDaysSinceFreeze >= FREEZE_EARN_THRESHOLD
-  ) {
-    return {
-      ...state,
-      freezeBalance: state.freezeBalance + 1,
-      qualifiedDaysSinceFreeze: 0,
-    }
+  if (state.qualifiedDaysSinceFreeze < FREEZE_EARN_THRESHOLD) return state
+
+  return {
+    ...state,
+    freezeBalance:
+      state.freezeBalance < FREEZE_BALANCE_MAX
+        ? state.freezeBalance + 1
+        : state.freezeBalance,
+    qualifiedDaysSinceFreeze: 0,
   }
-  return state
 }
 
 function isPrismaError(error: unknown, code: 'P2034') {

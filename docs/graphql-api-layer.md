@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-08-21'
+timestamp: '2026-08-29'
 tags:
   - backend
   - graphql
@@ -25,6 +25,15 @@ courseId, plus a nullable boolean that preserves the existing behavior when
 omitted), `controlCourse` in `query.ts` (EXECUTE), `getLiveQuizSummary` (READ).
 Existing fields use `t.withAuth(...)` exclusively — follow them rather than
 inventing `authScopes` variants.
+
+### Private Participation fields
+
+The `Participation` object can be reached from both student course queries and
+lecturer leaderboard entries. Private Study streak fields therefore enforce
+ownership in each field resolver, not only at the root query. Current streak,
+longest streak, freeze balance, qualified-today status, and remaining daily
+responses all resolve to null unless the caller is the participant who owns
+the row (`packages/graphql/src/schema/participant.ts:canViewStudyStreak`).
 
 ## Layering contract
 

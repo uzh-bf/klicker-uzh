@@ -843,10 +843,10 @@ Andere Teilnehmende sehen nur Dein öffentliches **Teilnehmendenprofil**, einsch
       studyStreakDays: '{current, plural, one {# Tag} other {# Tage}}',
       studyStreakLongest: 'Längste Serie: {longest} Tage',
       studyStreakFreezeBalance: 'Verfügbare Pausen: {balance}',
-      studyStreakNotDoneToday:
-        'Beantworte heute 5 Fragen, um deine Serie zu halten!',
       studyStreakDoneToday:
         'Super gemacht – deine Serie ist für heute gesichert.',
+      studyStreakNoDailyGoal:
+        'Heute gibt es kein Übungsziel – deine Serie ist nicht gefährdet.',
       studyStreakKeepGoing:
         'Weiter so – noch {remaining, plural, one {# Frage} other {# Fragen}} heute.',
       studyStreakNoFreezes:

@@ -1,4 +1,11 @@
 import { useBackgroundQuery, useMutation, useQuery } from '@apollo/client'
+import SuspendedGroupView from '@components/course/SuspendedGroupView'
+import SuspendedAssessmentResults from '@components/insights/assessmentResults/SuspendedAssessmentResults'
+import Layout from '@components/Layout'
+import GroupCreationActions from '@components/participant/groups/GroupCreationActions'
+import LeaveLeaderboardModal from '@components/participant/LeaveLeaderboardModal'
+import ParticipantProfileModal from '@components/participant/ParticipantProfileModal'
+import StudyStreakCard from '@components/participant/StudyStreakCard'
 import { faLock } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -36,13 +43,6 @@ import Rank2Img from 'public/rank2.svg'
 import Rank3Img from 'public/rank3.svg'
 import { Suspense, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import SuspendedGroupView from '../../../components/course/SuspendedGroupView'
-import SuspendedAssessmentResults from '../../../components/insights/assessmentResults/SuspendedAssessmentResults'
-import Layout from '../../../components/Layout'
-import GroupCreationActions from '../../../components/participant/groups/GroupCreationActions'
-import LeaveLeaderboardModal from '../../../components/participant/LeaveLeaderboardModal'
-import ParticipantProfileModal from '../../../components/participant/ParticipantProfileModal'
-import StudyStreakCard from '../../../components/participant/StudyStreakCard'
 
 interface Props {
   courseId: string
@@ -319,6 +319,9 @@ function CourseOverview({
                         }
                         qualifiedToday={
                           participation.studyStreakQualifiedToday ?? false
+                        }
+                        responsesRemainingToday={
+                          participation.studyStreakResponsesRemainingToday
                         }
                       />
                     </div>

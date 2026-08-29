@@ -336,7 +336,7 @@ function ElementStack({
                   studyStreakParticipation.studyStreakResponsesRemainingToday
                 }
                 qualifiedToday={
-                  studyStreakParticipation.studyStreakQualifiedToday
+                  studyStreakParticipation.studyStreakQualifiedToday ?? false
                 }
               />
             </div>

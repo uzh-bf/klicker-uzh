@@ -268,6 +268,17 @@ export interface IParticipation extends DB.Participation {
   participant?: IParticipant
   studyStreakResponsesRemainingToday?: number | null
 }
+
+function canViewStudyStreak(
+  participation: IParticipation,
+  user?: { role: DB.UserRole; sub: string }
+): boolean {
+  return (
+    user?.role === DB.UserRole.PARTICIPANT &&
+    user.sub === participation.participantId
+  )
+}
+
 export const ParticipationRef =
   builder.objectRef<IParticipation>('Participation')
 export const Participation = ParticipationRef.implement({
@@ -278,18 +289,31 @@ export const Participation = ParticipationRef.implement({
 
     // self-only private Study streak status (Europe/Zurich weekdays,
     // PracticeQuiz and MicroLearning; see gamification ADR)
-    studyStreakCurrent: t.exposeInt('studyStreakCurrent'),
-    studyStreakLongest: t.exposeInt('studyStreakLongest'),
-    studyStreakFreezeBalance: t.exposeInt('studyStreakFreezeBalance'),
+    studyStreakCurrent: t.int({
+      nullable: true,
+      resolve: (parent, _, ctx) =>
+        canViewStudyStreak(parent, ctx.user)
+          ? parent.studyStreakCurrent
+          : null,
+    }),
+    studyStreakLongest: t.int({
+      nullable: true,
+      resolve: (parent, _, ctx) =>
+        canViewStudyStreak(parent, ctx.user)
+          ? parent.studyStreakLongest
+          : null,
+    }),
+    studyStreakFreezeBalance: t.int({
+      nullable: true,
+      resolve: (parent, _, ctx) =>
+        canViewStudyStreak(parent, ctx.user)
+          ? parent.studyStreakFreezeBalance
+          : null,
+    }),
     studyStreakResponsesRemainingToday: t.int({
       nullable: true,
       resolve: async (parent, _, ctx) => {
-        if (
-          ctx.user?.role !== DB.UserRole.PARTICIPANT ||
-          ctx.user.sub !== parent.participantId
-        ) {
-          return null
-        }
+        if (!canViewStudyStreak(parent, ctx.user)) return null
 
         if (parent.studyStreakResponsesRemainingToday !== undefined) {
           return parent.studyStreakResponsesRemainingToday
@@ -309,7 +333,9 @@ export const Participation = ParticipationRef.implement({
       },
     }),
     studyStreakQualifiedToday: t.boolean({
-      resolve: (parent) => {
+      nullable: true,
+      resolve: (parent, _, ctx) => {
+        if (!canViewStudyStreak(parent, ctx.user)) return null
         if (!parent.studyStreakLastQualifiedDate) return false
         return (
           zurichDate(parent.studyStreakLastQualifiedDate) ===

@@ -47,6 +47,7 @@ describe('getParticipations streak read path', () => {
       {
         courseId: 'current-course',
         studyStreakLastProcessedDate: null,
+        studyStreakTrackingStartedAt: new Date('2026-08-01T00:00:00.000Z'),
         course: {
           startDate: new Date('2026-01-01T00:00:00.000Z'),
           endDate: new Date('2026-12-31T00:00:00.000Z'),
@@ -55,6 +56,7 @@ describe('getParticipations streak read path', () => {
       {
         courseId: 'future-course',
         studyStreakLastProcessedDate: null,
+        studyStreakTrackingStartedAt: new Date('2026-08-01T00:00:00.000Z'),
         course: {
           startDate: new Date('2027-01-01T00:00:00.000Z'),
           endDate: new Date('2027-12-31T00:00:00.000Z'),
@@ -63,6 +65,16 @@ describe('getParticipations streak read path', () => {
       {
         courseId: 'finalized-course',
         studyStreakLastProcessedDate: new Date('2026-01-31T00:00:00.000Z'),
+        studyStreakTrackingStartedAt: new Date('2026-01-01T00:00:00.000Z'),
+        course: {
+          startDate: new Date('2026-01-01T00:00:00.000Z'),
+          endDate: new Date('2026-01-31T00:00:00.000Z'),
+        },
+      },
+      {
+        courseId: 'ended-untracked-course',
+        studyStreakLastProcessedDate: null,
+        studyStreakTrackingStartedAt: null,
         course: {
           startDate: new Date('2026-01-01T00:00:00.000Z'),
           endDate: new Date('2026-01-31T00:00:00.000Z'),

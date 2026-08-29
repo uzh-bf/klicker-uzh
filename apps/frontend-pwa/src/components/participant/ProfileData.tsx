@@ -119,8 +119,8 @@ function ProfileData({
             {((!isSelf && (!achievements || achievements.length === 0)) ||
               (isSelf &&
                 (!achievements || achievements.length === 0) &&
-                (!possibleAchievements ||
-                  possibleAchievements.length === 0))) && (
+                (!remainingAchievements ||
+                  remainingAchievements.length === 0))) && (
               <div>{t('pwa.achievements.noAchievements')}</div>
             )}
           </div>

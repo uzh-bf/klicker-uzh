@@ -30,6 +30,21 @@ interface CourseElementProps {
   onSubscribeClick?: (subscribed: boolean, courseId: string) => void
 }
 
+function getStudyStreakStatus(
+  course: CourseElementProps['course'],
+  isStreakVisible: boolean
+): 'secured' | 'atRisk' | 'keepGoing' | 'start' | null {
+  const remaining = course.studyStreakResponsesRemainingToday
+  if (!isStreakVisible || remaining === null || remaining === undefined) {
+    return null
+  }
+  if (course.studyStreakQualifiedToday || remaining === 0) return 'secured'
+  if (course.studyStreakCurrent === 0) return 'start'
+  if (course.studyStreakFreezeBalance === 0) return 'atRisk'
+  if (remaining <= 2) return 'keepGoing'
+  return null
+}
+
 function CourseElement({ disabled, course }: CourseElementProps) {
   const t = useTranslations()
   const isFuture = dayjs(course.startDate).isAfter(dayjs())
@@ -38,18 +53,7 @@ function CourseElement({ disabled, course }: CourseElementProps) {
     course.isGamificationEnabled && course.isLeaderboardParticipant
   const remaining = course.studyStreakResponsesRemainingToday
   const remainingValue = remaining ?? 0
-  const streakStatus =
-    isStreakVisible && remaining !== null && remaining !== undefined
-      ? course.studyStreakQualifiedToday || remaining === 0
-        ? 'secured'
-        : course.studyStreakCurrent > 0 && course.studyStreakFreezeBalance === 0
-          ? 'atRisk'
-          : course.studyStreakCurrent > 0 && remaining <= 2
-            ? 'keepGoing'
-            : course.studyStreakCurrent === 0
-              ? 'start'
-              : null
-      : null
+  const streakStatus = getStudyStreakStatus(course, isStreakVisible)
   const formatDate = (date: string) =>
     new Intl.DateTimeFormat('de-CH', {
       day: '2-digit',
