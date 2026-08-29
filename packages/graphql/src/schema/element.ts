@@ -47,7 +47,7 @@ import {
   type TemplateBlockElementInput as TemplateBlockElementInputType,
   type TemplateBlockInput as TemplateBlockInputType,
 } from '@klicker-uzh/types'
-import builder, { JsonScalar } from '../builder.js'
+import builder from '../builder.js'
 import type { FreeTextPracticeState } from '../services/freeTextEvaluation.js'
 import { ActivityType, ElementFeedbackRef } from './analytics.js'
 import {
@@ -169,7 +169,7 @@ export const OptionsFreeTextInput = OptionsFreeTextInputRef.implement({
       required: false,
     }),
     solutions: t.stringList({ required: false }),
-    semanticEvaluation: t.field({ type: JsonScalar, required: false }),
+    semanticEvaluation: t.field({ type: 'Json', required: false }),
     feedback: t.string({ required: false }),
   }),
 })

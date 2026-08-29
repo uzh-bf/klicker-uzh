@@ -145,6 +145,35 @@ describe('semantic free-text authoring', () => {
     ).toBe(2)
   })
 
+  it('rejects semantic configuration on creation without entitlement', async () => {
+    const ctx = lecturerContext(fixture.lecturer.id)
+    ctx.user.catalystInstitutional = false
+    ctx.user.catalystIndividual = false
+    const name = `${TEST_PREFIX}-blocked-creation`
+
+    const result = await manipulateElement(
+      {
+        type: ElementType.FREE_TEXT,
+        status: 'READY',
+        name,
+        content: 'What is the principal benefit of diversification?',
+        explanation: 'Diversification reduces asset-specific risk.',
+        basePoints: true,
+        pointsMultiplier: 1,
+        options: {
+          hasSampleSolution: true,
+          semanticEvaluation: semanticConfig,
+        },
+      },
+      ctx
+    )
+
+    expect(result).toBeNull()
+    await expect(
+      prisma.element.findFirst({ where: { name } })
+    ).resolves.toBeNull()
+  })
+
   it('accepts a semantic reference solution without a legacy exact solution', async () => {
     const result = await manipulateElement(
       {

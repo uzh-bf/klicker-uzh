@@ -168,7 +168,7 @@ export const FreeTextElementOptions = builder
         type: 'Json',
         nullable: true,
         resolve: (options, _, ctx) =>
-          semanticEvaluationForViewer(options, ctx.user?.role) as never,
+          semanticEvaluationForViewer(options, ctx.user?.role) ?? null,
       }),
       hasSemanticEvaluation: t.boolean({
         nullable: true,
