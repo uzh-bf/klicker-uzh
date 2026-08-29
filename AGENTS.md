@@ -213,7 +213,7 @@ card. Reload the thread and require the tool result, answer, and source to
 remain visible. Use the direct `GPT-5.6 Luna` option only when isolating the
 router from the model/tool integration.
 
-**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.44 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, and 0.0.44 serializes shared TLS refresh for concurrent worktrees. One-time host setup must happen **before** the container starts:
+**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.45 fronts the stack over the shared `devnet` network. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, and 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees. One-time host setup must happen **before** the container starts:
 
 ```bash
 devrouter setup --yes # Traefik + devnet + mkcert CA
@@ -347,4 +347,5 @@ Quick validation sequence:
 - Managed selective profile: `devrouter ensure . --profile <name> --json`
 - Host/docker runtime app only: `devrouter app run <host-app> --repo . --yes`
 - `devrouter ls`
+- Managed devcontainer source configs with `postCreateCommand` and a managed post-start adapter must set `waitFor` exactly to `postCreateCommand` or `postStartCommand`; generated managed configs preserve lifecycle fields and change only `runServices`.
 <!-- /devrouter -->

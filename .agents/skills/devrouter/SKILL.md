@@ -180,25 +180,24 @@ profiles:
 - Warm profile changes retain the exact DevPod and volumes, do not rerun
   `postCreateCommand`, avoid `--recreate` and broad `down`, and stop dropped
   services/processes only after exact ownership proof. Routes publish last.
-- A managed adapter that consumes post-create outputs must pair its
-  `postCreateCommand` with `waitFor: postCreateCommand` (or the later
-  `postStartCommand` wait point). Keep an exact container-local completion
-  marker as a fail-closed assertion; a warm profile switch never writes it or
-  reruns bootstrap.
 - Inspect managed desired, active, and drift state with `devrouter status` and
   `devrouter doctor`; values such as credentials and environment contents are
   never written to managed runtime state.
+- A managed adapter paired with `postCreateCommand` requires `waitFor` exactly
+  `postCreateCommand` or `postStartCommand` before provider mutation. Generated
+  selective configuration preserves lifecycle fields and changes only
+  `runServices`.
 
 ## Env var injection
 
 When a host app depends on a TCP Docker service, `devrouter app run` and `devrouter app exec` inject per-dep deterministic vars (where `{PREFIX} = dep.name.toUpperCase().replace(/-/g, "_")`):
 
-| Variable              | Value                                                              |
-| --------------------- | ------------------------------------------------------------------ |
-| `{PREFIX}_HOST`       | `localhost`                                                        |
-| `{PREFIX}_PORT`       | random mapped port                                                 |
-| `{PREFIX}_URL`        | protocol-specific URL (postgres, redis, mysql/mariadb)             |
-| `{PREFIX}_SHADOW_URL` | `postgres://prisma:prisma@localhost:<port>/shadow` (postgres only) |
+| Variable                | Value                                                       |
+| ----------------------- | ----------------------------------------------------------- |
+| `{PREFIX}_HOST`         | `localhost`                                                 |
+| `{PREFIX}_PORT`         | random mapped port                                          |
+| `{PREFIX}_URL`          | protocol-specific URL (postgres, redis, mysql/mariadb)      |
+| `{PREFIX}_SHADOW_URL`   | `postgres://prisma:prisma@localhost:<port>/shadow` (postgres only) |
 
 Host apps also receive `PORT` (random free port), `HOSTNAME=0.0.0.0`, `HOST=0.0.0.0`.
 
@@ -206,9 +205,9 @@ Config-level `envMap` on dependency references aliases per-dep vars to app-expec
 
 ## Workspace isolation (parallel git worktrees / agents)
 
-Run several worktrees of one repo in parallel without host/route collisions. A **workspace token** spans the DevPod id, devrouter routes, `${WORKSPACE}` proxy upstreams, and devcontainer aliases.
+Run several worktrees of one repo in parallel without host/route collisions. A **workspace token** spans the workspace-runtime id, devrouter routes, `${WORKSPACE}` proxy upstreams, and devcontainer aliases.
 
-- **Identity**: each managed linked worktree stores a local token in Git metadata plus a durable owner record in the repository's Git common directory. The record survives linked-worktree removal and binds the exact path to its DevPod ID. First use reuses an exact-path DevPod or derives a sanitized branch/path slug. Later flags or `DEVROUTER_WORKSPACE` may repeat the identity but cannot rename it. Ambiguous identities fail closed. The primary checkout remains non-namespaced.
+- **Identity**: each managed linked worktree stores a local token in Git metadata plus a durable owner record in the repository's Git common directory. The record survives linked-worktree removal and binds the exact path to its workspace-runtime ID. First use reconciles persisted metadata, the exact-path owner record, and both DevPod and Devsy registries. It reuses an established agreement, keeps the readable sanitized branch/path slug when free, or claims a deterministic hash-suffixed fallback on collision before provider or route mutation. Later flags or `DEVROUTER_WORKSPACE` may repeat the identity but cannot rename it. Unreadable or conflicting evidence fails closed. The primary checkout remains non-namespaced.
 - **When active**: hosts auto-namespace (`web.localhost` → `web.<ws>.localhost`), `${WORKSPACE}` in `upstream` is substituted with the token, and the docker `router` key is suffixed per workspace. Managed `ensure` rejects every HTTP/TCP proxy upstream outside that exact alias namespace before it mutates DevPod or routes. The runtime config is computed in memory only — the committed `.devrouter.yml` is never rewritten.
 - **TLS**: namespaced hosts (`web.<ws>.localhost`) are not covered by the `*.localhost` wildcard; devrouter auto-extends the mkcert cert SANs for active hosts when TLS is enabled.
 - **devcontainer integration**: managed scaffolds list the base compose file, then `${localEnv:DEVCONTAINER_COMPOSE_OVERLAY:docker-compose.default.yml}`; custom repositories may keep another default overlay. Selecting `.devcontainer/docker-compose.devrouter.yml` for linked worktrees must pass `WORKSPACE` and `DEVROUTER_WORKSPACE` across the combined base/overlay config and bind-mount `${DEVROUTER_GIT_COMMON_DIR}` to the same absolute app-container path. The app exposes `${WORKSPACE}-app`; the proxy uses `upstream: ${WORKSPACE}-app:<port>`.
@@ -322,7 +321,7 @@ For host/docker runtime apps only:
 
 ## Runtime behavior notes
 
-- Managed devcontainer images contain no devrouter package or helper. `devrouter ensure` delivers its matching process helper to the exact running container and invokes the repository-owned `.devcontainer/post-start.sh`; keep `.devrouter.yml` as the only consumer-side devrouter version pin. When the adapter consumes post-create outputs, set `waitFor` to `postCreateCommand` and require an exact completion marker before process startup.
+- Managed devcontainer images contain no devrouter package or helper. `devrouter ensure` delivers its matching process helper to the exact running container and invokes the repository-owned `.devcontainer/post-start.sh`; keep `.devrouter.yml` as the only consumer-side devrouter version pin.
 - `devrouter app run` auto-starts Docker dependencies and waits for health. Host app runs stop auto-started docker deps on exit; docker app runs leave target services running until explicit cleanup.
 - Host-runtime dependencies are NOT auto-started (v1).
 - `kind=dependency` entries do not create routes and cannot be direct targets for `devrouter app run`, `devrouter app exec`, or `devrouter open`.

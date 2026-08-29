@@ -38,12 +38,10 @@
   commits, fresh synthetic DevPod and Devsy validation workspaces, exact runtime
   stops, browser proof with seeded local accounts, required reviews, push,
   pull-request creation and maintenance, and exact-head CI monitoring.
-- Upstream dependency: Klicker implementation may prepare locally in parallel.
-  Devrouter `0.0.44` is the validated bootstrap/TLS baseline. Fresh parallel
-  provider validation exposed a separate long-prefix identity collision, so the
-  final pin, collision smoke, push, and pull request require the next published
-  Devrouter patch. An unpublished package or host checkout is not final
-  acceptance evidence.
+- Upstream dependency: Resolved by published Devrouter `0.0.45`, which combines
+  the validated bootstrap/TLS baseline with collision-safe workspace claims for
+  parallel DevPod and Devsy worktrees. An unpublished package or host checkout
+  remains insufficient final acceptance evidence.
 - Withheld authority: Klicker merge, deployment, machine provider-preference
   changes, Devsy installation/configuration, secret access, external model
   calls, real or personal data, force-push, destructive cleanup, branch or
@@ -51,8 +49,7 @@
 - Execution owner: The current main session is the cross-repository execution
   orchestrator because the upstream validator, release artifact, consumer pin,
   provider runtimes, and final evidence are one critical path.
-- Terminal: The pushed Klicker exact head pins the published collision-safe
-  Devrouter patch after `0.0.44`;
+- Terminal: The pushed Klicker exact head pins published Devrouter `0.0.45`;
   static checks, provider matrix, required reviews, and exact-head CI pass; its
   pull request is merge-ready; every task runtime is stopped with zero owned
   routes. Merge and destructive cleanup remain separate decisions.
@@ -76,9 +73,10 @@
 - Upstream plan: devrouter
   `docs/project/2026-08-28-managed-bootstrap-ordering-plan.md` on branch
   `rs/managed-bootstrap-ordering`.
-- Required release: published devrouter `0.0.44`, which includes the `0.0.43`
-  bootstrap-ordering validator and parallel-worktree TLS serialization.
-- Required follow-up: the collision-safe workspace-identity patch planned in
+- Required release: published devrouter `0.0.45`, which includes the `0.0.43`
+  bootstrap-ordering validator, `0.0.44` parallel-worktree TLS serialization,
+  and collision-safe mixed-provider workspace claims.
+- Resolved follow-up: the collision-safe workspace-identity patch delivered in
   Devrouter at
   `docs/project/2026-08-28-collision-safe-workspace-identities-plan.md`.
 - Packaging: One ordinary consumer pull request after one upstream release.
@@ -119,9 +117,10 @@
   This is the provider-facing synchronization contract.
 - Keep the committed native `runServices`, lifecycle command, Compose files,
   mounts, ports, and workspace folder unchanged.
-- Pin published devrouter `0.0.44`, whose managed-adapter preflight rejects this
-  repository if the wait contract is removed or weakened and whose TLS lock
-  preserves route coverage when provider worktrees start concurrently.
+- Pin published devrouter `0.0.45`, whose managed-adapter preflight rejects this
+  repository if the wait contract is removed or weakened, whose TLS lock
+  preserves route coverage, and whose workspace claim prevents mixed-provider
+  collisions when worktrees start concurrently.
 
 ### Completion marker
 
@@ -444,9 +443,17 @@
   HTTPS routes both returned the expected fixture response. Both exact runtimes
   were then stopped, and workspace readback reported zero remaining routes.
   Merge, publication, and installation remain separately approval-gated.
+- `2026-08-29`: The user authorized the Devrouter release boundary. PR #43
+  merged as `ddb7e991b50df1287806b86be366ddb14dc9ac8b`; release workflow
+  `33236865594` passed both `check` and provenance-backed `publish`. npm readback
+  reports `@devrouter/cli@0.0.45` with integrity
+  `sha512-EDr0yopCg0LSohpKsNgImFpTajpckRor/BI4XCVmGleP0je+SaO+ReU8lCe6iAOaIh/NH+GFU2pB5ZoFfp/j/w==`.
+  The installed CLI reports 0.0.45 with bundle SHA-256
+  `05368b5071679631ed5cd1df31890068700f9f92a4d739200b7c98c33af25bfd`;
+  the consumer pin and final provider proof now use this released artifact.
 - Current state: `active`. Completed: K0-K2 and the non-collision K3 provider,
-  profile, capability, cold-bootstrap, and browser evidence. Active: upstream
-  collision-safe Devrouter patch. Remaining: repin, fresh mixed-provider
-  collision proof, K4 final review and delivery. All completed validation
+  profile, capability, cold-bootstrap, browser evidence, and upstream
+  collision-safe Devrouter release. Active: released consumer repin and fresh
+  mixed-provider collision proof. Remaining: K4 final review and delivery. All completed validation
   runtimes are stopped with their exact routes freed; worktrees, registrations,
   containers, and volumes are retained.
