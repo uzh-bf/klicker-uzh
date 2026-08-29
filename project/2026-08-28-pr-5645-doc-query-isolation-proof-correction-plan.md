@@ -32,7 +32,7 @@ against `v3-ai` without running another live proof or changing runtime state.
 
 - Branch: `fix/doc-query-isolation-proof`
 - Target: `v3-ai`
-- Plan: `project/2026-08-28-doc-query-isolation-proof-correction-plan.md`
+- Plan: `project/2026-08-28-pr-5645-doc-query-isolation-proof-correction-plan.md`
 - The source package includes the previously reviewed proof custody and
   lifecycle protections together with this source-specific isolation
   correction.
@@ -121,8 +121,8 @@ branch integration, and final delivery are coupled on the critical path.
 
 ## Progress
 
-- Status: Source-reference-only correction implemented; the final review's
-  preservation-evidence finding is corrected locally.
+- Status: Source-reference-only correction implemented, reviewed, and
+  published as draft PR #5645; exact-head CI is pending.
 - Completed: False-positive classification, current-base worktree, continuity
   planning review, purpose-based naming, reviewed proof custody and lifecycle
   protections, asymmetric marker logic, regression coverage, and wiki
@@ -150,10 +150,12 @@ branch integration, and final delivery are coupled on the critical path.
 - Fresh checks after the final-review correction: Focused Vitest passed 23/23
   under pinned Node 24; Node syntax, Biome, Prettier, and `git diff --check`
   passed.
-- Remaining: Final-review correction confirmation, target integration
-  decision, explicit push, pull request, exact-head CI, and ready state.
+- Integration: The one-time rebase onto `v3-ai@609000ea` preserved the complete
+  reviewed source tree; the only upstream change was the known staging
+  deployment annotation.
+- Published: Draft PR #5645 at exact head `d2b9fe6d7`.
+- Remaining: Exact-head CI and ready state.
 - Required delivery layer: Ready pull request. Achieved layer: Verified local
   correction.
-- Next action: Commit and confirm the final-review correction, then request the
-  one-time target integration authority required by the deployment-only target
-  drift.
+- Next action: Commit the PR metadata, push it, monitor exact-head CI, and mark
+  the unchanged passing PR ready.
