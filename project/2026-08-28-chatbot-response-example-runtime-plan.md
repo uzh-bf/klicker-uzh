@@ -176,14 +176,38 @@ preview and the later examples-excluded baseline.
 
 ## Progress
 
-- Status: executing K6.1 from the exact `v3-ai` baseline.
+- Status: K6.1 through K6.3 are committed and repository-native verified;
+  K6.4 documentation and the final review gate are in progress.
 - Completed: remote-state gate, clean purpose-based worktree, approved program
-  plan transfer, current source seam mapping, and package-plan narrowing.
+  plan transfer, current source seam mapping, package-plan narrowing, shared
+  current-evidence validation, owner-service reconciliation, and focused util,
+  GraphQL fixture, and GraphQL type checks; the K6.1 simplifier findings were
+  applied in `22cb30b14e44d5ee8dda58dda40386ad954aeab0`; the bounded summary,
+  PostgreSQL search, included/excluded runtime seam, and participant prompt,
+  tool, cache-identity, and failure-degradation composition are committed. The
+  review corrections make knowledge-base/resource selection one atomic
+  parameterized statement and publish the skill only after tool construction.
+  Full util tests pass with 127 tests; full chat tests pass with 710 tests and
+  14 explicit skips; focused chat runtime tests pass with 64 tests; the real
+  PostgreSQL runtime test and all 11 GraphQL response-example tests pass; chat,
+  util, and GraphQL type/schema checks pass; chat lint reports zero errors.
 - Review note: the configured cross-provider advisor was unavailable because
   the organization disabled Claude Code subscription access. The trusted main
   session selected the smaller no-new-package design. The generic-continuity
   Sol planning review returned `DONE_WITH_CONCERNS`; its required hierarchy,
   exclusion, concurrency, bounds, degradation, and verification corrections
-  are incorporated. The required Sol final review remains armed.
-- Next: commit the planning-review corrections, then implement current
-  eligibility.
+  are incorporated. The configured native simplifier and slice-reviewer routes
+  failed terminally because their resolved model/effort pair is unsupported;
+  separate native Sol xhigh reviewers preserved both roles. Their first pass
+  identified the atomic-read and atomic-activation corrections now committed;
+  both correction passes returned `DONE` with no remaining findings. The
+  required Sol final review remains armed.
+- Verification limitation: repository-wide `pnpm run check:all` reaches the
+  unrelated analytics lint, where the container selects Python 3.14 and cannot
+  build pandas because no C compiler is installed. All affected package checks
+  pass independently.
+- Runtime note: the exact task DevPod is running only for final verification. It
+  will be stopped and verified before the final review.
+- Next: close the slice correction reviews, commit K6.4, run the fresh package
+  checks, stop the exact runtime, complete the Sol final review, and stop at the
+  withheld push and PR boundary.

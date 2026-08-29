@@ -975,20 +975,26 @@ paths named by the package plan and do not revert other work.
 
 ## Progress
 
-- Status: planning complete; awaiting approval of the product boundary and
-  package topology.
+- Status: approved and executing K6 locally; the runtime skill and participant
+  composition are committed and repository-native verified. Slice review
+  corrections are committed and cleared; the final review gate remains in
+  progress. Push, PR publication, merge, deployment, and live model use remain
+  withheld.
 - Completed: current `v3-ai` and PR #5633 seam mapping; response-example schema,
   API, and Manage workflow mapping; owner-preview mapping; Doc Query lineage
   contract mapping; evaluation-repository query-order mapping; required Sol
-  planning review and disposition.
-- Ready now: K6 repo-local package planning and source work. K5 starts after
-  #5633 lands. K7 planning can follow the K6 kernel contract without waiting
-  for W8.
+  planning review and disposition; K6 package planning; the committed K6.1
+  current-evidence slice; K6.2 bounded hybrid skill; K6.3 authenticated
+  participant composition; native util, chat, PostgreSQL, GraphQL, type/schema,
+  formatting, and lint verification; and the first slice review corrections.
+- Ready now: finish K6 documentation and reviews, stop the exact task runtime,
+  and present the separately withheld push and PR boundary. K5 starts only
+  after K6 lands on `v3-ai`. K7 planning can follow the K6 runtime contract
+  without waiting for W8.
 - External decision: U0 cannot create a branch until the `mcp-doc-query`
   `main`/`dev` flow is explicitly resolved.
 - Blocked: K8 remains blocked on W8 synthetic active-serving proof. U0-backed
   live source proof, deployment, and activation remain separately withheld.
-- Next action after approval: create the K6 repo-local execution plan and
-  purpose-based worktree from a fresh `origin/v3-ai`, because it is independent
-  of #5633, U0 deployment, and W8. K5 becomes the next independent package once
-  #5633 is merged and the user authorizes it.
+- Next action: complete K6 verification and reviews, then stop at the separately
+  withheld push and PR boundary. K5 becomes the next independent package after
+  K6 is merged and separately authorized.

@@ -13,14 +13,23 @@ add retrieval cost and could inject irrelevant behavior guidance.
 ## Decision
 
 The bounded mode prompt contains a response-example summary that tells the
-model when and how to search. The model invokes an authenticated semantic search
-using the current turn, chatbot, and mode. Search returns a capped set of
-applicable approved examples, and the selection remains visible in tool traces.
-The prompt summary describes categories, topics, and search cues rather than
-enumerating the full set. Selection requires an exact chatbot-and-mode match.
-No match returns no full example. A loader failure also continues the turn with
-the summary, mode scaffolding, knowledge retrieval, and ordinary tools while
-recording degraded selection; it never substitutes another scope or chatbot.
+model when and how to search. The model invokes the authenticated
+`search_response_examples` tool using the current question. The first release
+uses parameterized PostgreSQL full-text search with the question weighted above
+the ideal answer. Results require an exact chatbot-and-mode match, approved
+status, and currently eligible evidence. Ties are ordered by rank, update time,
+and stable ID.
+
+Search accepts at most 4,000 characters and returns at most three complete
+examples within 24,000 serialized characters. It skips examples that do not fit
+instead of truncating them. Example citations use a separate example-source
+namespace and are not current-answer citations.
+
+No match returns no full example. A loading or evidence-reconciliation failure
+omits both the summary and tool while the ordinary chat turn continues. A later
+search failure returns an empty result marked as degraded. Neither failure mode
+substitutes another chatbot, mode, or source scope. An examples-excluded run
+keeps the same tool schema with an empty implementation that reads no examples.
 
 ## Consequences
 
@@ -28,3 +37,5 @@ recording degraded selection; it never substitutes another scope or chatbot.
 - Full-example selection is observable and evaluable.
 - Example delivery remains optional behavior guidance rather than a hard chat
   dependency.
+- PostgreSQL provides bounded lexical ranking without adding a vector provider
+  before retrieval quality demonstrates that one is needed.
