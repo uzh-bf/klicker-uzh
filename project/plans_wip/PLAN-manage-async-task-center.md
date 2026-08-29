@@ -123,3 +123,8 @@ duplication status into the generic task contract.
   The runtime console still reports the pre-existing disabled-Analytics tooltip
   nesting a button and the production builds retain existing warning output;
   neither originates in the task center.
+- 2026-08-29: A second independent standards/spec review added an exact
+  owner-scoped attention aggregate beyond the bounded row list, reload-safe
+  local completion toasts, oldest-task reconciliation, resilient refetch and
+  acknowledgement handling, shared error-code/route helpers, and focused
+  regressions for the corrected behavior.

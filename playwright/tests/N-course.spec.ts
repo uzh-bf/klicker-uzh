@@ -3241,7 +3241,12 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
               }
             }
             return new window.Response(
-              JSON.stringify({ data: { asyncTasks: tasks } }),
+              JSON.stringify({
+                data: {
+                  asyncTaskAttentionCount: tasks.length,
+                  asyncTasks: tasks,
+                },
+              }),
               { headers: { 'Content-Type': 'application/json' } }
             )
           }
@@ -3424,6 +3429,8 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
           return new window.Response(
             JSON.stringify({
               data: {
+                asyncTaskAttentionCount: jobs.filter((job) => !job.readAt)
+                  .length,
                 asyncTasks: jobs.map((job) => ({
                   id: job.id,
                   kind: 'COURSE_DUPLICATION',
@@ -3458,11 +3465,29 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     )
 
     const manageUrl = process.env.URL_MANAGE ?? 'http://127.0.0.1:3002'
+    await page.evaluate((jobId) => {
+      window.localStorage.setItem(
+        'course-duplication-job-ids',
+        JSON.stringify([jobId])
+      )
+    }, restoredJobs[0].id)
     await page.goto(`${manageUrl}/?dup-verify=1`, {
       waitUntil: 'domcontentloaded',
     })
     const preActionUrl = page.url()
 
+    const restoredCompletionToast = page
+      .getByLabel(/Notifications/)
+      .getByRole('listitem')
+      .filter({ hasText: restoredJobs[0].name })
+    await expect(restoredCompletionToast).toBeVisible()
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          window.localStorage.getItem('course-duplication-job-ids')
+        )
+      )
+      .toBeNull()
     await expect(asyncTaskCenterTrigger(page)).toContainText('2')
     await asyncTaskCenterTrigger(page).click()
     const taskA = page.getByTestId(`async-task-${restoredJobs[0].id}`)
@@ -3477,7 +3502,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       'No tasks need attention'
     )
     await taskB
-      .getByRole('button', {
+      .getByRole('link', {
         name: messages.manage.asyncTasks.openResultLabel.replace(
           '{name}',
           restoredJobs[1].name
@@ -3489,7 +3514,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     )
   })
 
-  test('Shows active and recent tasks from one bounded response', async ({
+  test('Shows an exact badge count with one bounded task response', async ({
     loginLecturer,
     page,
   }) => {
@@ -3575,6 +3600,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
           return new window.Response(
             JSON.stringify({
               data: {
+                asyncTaskAttentionCount: 72,
                 asyncTasks: jobs.map((job, index) => ({
                   id: job.id,
                   kind: 'COURSE_DUPLICATION',
@@ -3604,7 +3630,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
       waitUntil: 'domcontentloaded',
     })
 
-    await expect(asyncTaskCenterTrigger(page)).toContainText('51', {
+    await expect(asyncTaskCenterTrigger(page)).toContainText('72', {
       timeout: 30_000,
     })
     await asyncTaskCenterTrigger(page).click()

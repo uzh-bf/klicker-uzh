@@ -51,7 +51,7 @@ The package build runs this generation before Rollup. Commit the handwritten ope
 
 ### Lecturer async-task API
 
-`asyncTasks` and `acknowledgeAsyncTasks` use `asUser` without a subject-level permission wrapper because the task itself belongs to the authenticated lecturer. The service is the authorization boundary: every list/update includes `ownerId = ctx.user.sub`, acknowledgement accepts at most 50 unique ids and updates only unread terminal rows, and the query returns bounded active plus recent-terminal sets (`packages/graphql/src/services/asyncTasks.ts:getAsyncTasks`). The API exposes product lifecycle, subjects, stable error codes, and result ids; it does not expose Redis keys, Hatchet runs, leases, or retries.
+`asyncTasks`, `asyncTaskAttentionCount`, and `acknowledgeAsyncTasks` use `asUser` without a subject-level permission wrapper because the task itself belongs to the authenticated lecturer. The service is the authorization boundary: every list/count/update includes `ownerId = ctx.user.sub`, acknowledgement accepts at most 50 unique ids and updates only unread terminal rows, and the row query returns bounded active plus recent-terminal sets (`packages/graphql/src/services/asyncTasks.ts:getAsyncTasks`). The separate count includes every active and unread recent-terminal task, so the header badge remains exact even when the popover rows are capped (`packages/graphql/src/services/asyncTasks.ts:getAsyncTaskAttentionCount`). The API exposes product lifecycle, subjects, stable error codes, and result ids; it does not expose Redis keys, Hatchet runs, leases, or retries.
 
 ### Assessment invitation API
 

@@ -1,14 +1,14 @@
 -- CreateEnum
-CREATE TYPE "AsyncTaskKind" AS ENUM ('COURSE_DUPLICATION', 'KNOWLEDGE_GRAPH_GENERATION', 'QUESTION_GENERATION');
+CREATE TYPE "public"."AsyncTaskKind" AS ENUM ('COURSE_DUPLICATION', 'KNOWLEDGE_GRAPH_GENERATION', 'QUESTION_GENERATION');
 
 -- CreateEnum
-CREATE TYPE "AsyncTaskStatus" AS ENUM ('QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED');
+CREATE TYPE "public"."AsyncTaskStatus" AS ENUM ('QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED');
 
 -- CreateTable
-CREATE TABLE "AsyncTask" (
+CREATE TABLE "public"."AsyncTask" (
     "id" UUID NOT NULL,
-    "kind" "AsyncTaskKind" NOT NULL,
-    "status" "AsyncTaskStatus" NOT NULL DEFAULT 'QUEUED',
+    "kind" "public"."AsyncTaskKind" NOT NULL,
+    "status" "public"."AsyncTaskStatus" NOT NULL DEFAULT 'QUEUED',
     "subjectId" TEXT,
     "subjectName" TEXT NOT NULL,
     "targetName" TEXT,
@@ -25,10 +25,10 @@ CREATE TABLE "AsyncTask" (
 );
 
 -- CreateIndex
-CREATE INDEX "AsyncTask_ownerId_status_createdAt_idx" ON "AsyncTask"("ownerId", "status", "createdAt");
+CREATE INDEX "AsyncTask_ownerId_status_createdAt_idx" ON "public"."AsyncTask"("ownerId", "status", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "AsyncTask_ownerId_finishedAt_idx" ON "AsyncTask"("ownerId", "finishedAt");
+CREATE INDEX "AsyncTask_ownerId_finishedAt_idx" ON "public"."AsyncTask"("ownerId", "finishedAt");
 
 -- AddForeignKey
-ALTER TABLE "AsyncTask" ADD CONSTRAINT "AsyncTask_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."AsyncTask" ADD CONSTRAINT "AsyncTask_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

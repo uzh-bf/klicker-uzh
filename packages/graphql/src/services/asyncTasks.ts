@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import { COURSE_DUPLICATION_ERROR_CODES } from '@klicker-uzh/types'
 import { GraphQLError } from 'graphql'
 import type { ContextWithUser } from '../lib/context.js'
 import {
@@ -54,11 +55,11 @@ function getCourseDuplicationErrorCode(
 ) {
   switch (errorType) {
     case 'access':
-      return 'COURSE_DUPLICATION_ACCESS_DENIED'
+      return COURSE_DUPLICATION_ERROR_CODES.accessDenied
     case 'partial':
-      return 'COURSE_DUPLICATION_PARTIAL_FAILURE'
+      return COURSE_DUPLICATION_ERROR_CODES.partialFailure
     case 'generic':
-      return 'COURSE_DUPLICATION_FAILED'
+      return COURSE_DUPLICATION_ERROR_CODES.failed
     default:
       return null
   }
@@ -100,16 +101,33 @@ function getCourseDuplicationTaskData(job: CourseDuplicationTaskSnapshot) {
 }
 
 async function reconcileMissingCourseDuplicationTasks(ctx: ContextWithUser) {
-  const activeTasks = await ctx.prisma.asyncTask.findMany({
-    where: {
-      kind: DB.AsyncTaskKind.COURSE_DUPLICATION,
-      ownerId: ctx.user.sub,
-      status: { in: [...ACTIVE_ASYNC_TASK_STATUSES] },
-    },
-    select: { id: true, updatedAt: true },
-    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-    take: ASYNC_TASK_ACTIVE_LIMIT,
-  })
+  const where = {
+    kind: DB.AsyncTaskKind.COURSE_DUPLICATION,
+    ownerId: ctx.user.sub,
+    status: { in: [...ACTIVE_ASYNC_TASK_STATUSES] },
+  }
+  const [newestActiveTasks, oldestActiveTasks] = await Promise.all([
+    ctx.prisma.asyncTask.findMany({
+      where,
+      select: { id: true, updatedAt: true },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: ASYNC_TASK_ACTIVE_LIMIT,
+    }),
+    ctx.prisma.asyncTask.findMany({
+      where,
+      select: { id: true, updatedAt: true },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: ASYNC_TASK_ACTIVE_LIMIT,
+    }),
+  ])
+  const activeTasks = [
+    ...new Map(
+      [...newestActiveTasks, ...oldestActiveTasks].map((task) => [
+        task.id,
+        task,
+      ])
+    ).values(),
+  ]
   if (activeTasks.length === 0) return
 
   const redisJobs = await ctx.redisExec.mget(
@@ -149,7 +167,7 @@ async function reconcileMissingCourseDuplicationTasks(ctx: ContextWithUser) {
           : {
               status: DB.AsyncTaskStatus.FAILED,
               resultId: null,
-              errorCode: 'COURSE_DUPLICATION_FAILED',
+              errorCode: COURSE_DUPLICATION_ERROR_CODES.failed,
               finishedAt: now,
             },
       })
@@ -208,6 +226,24 @@ export async function getAsyncTasks(ctx: ContextWithUser) {
   )
 
   return [...activeTasks, ...recentTasks]
+}
+
+export async function getAsyncTaskAttentionCount(ctx: ContextWithUser) {
+  const recentCutoff = new Date(Date.now() - ASYNC_TASK_RECENT_RETENTION_MS)
+
+  return await ctx.prisma.asyncTask.count({
+    where: {
+      ownerId: ctx.user.sub,
+      OR: [
+        { status: { in: [...ACTIVE_ASYNC_TASK_STATUSES] } },
+        {
+          readAt: null,
+          status: { in: [...TERMINAL_ASYNC_TASK_STATUSES] },
+          finishedAt: { gte: recentCutoff },
+        },
+      ],
+    },
+  })
 }
 
 export async function acknowledgeAsyncTasks(

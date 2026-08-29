@@ -1419,9 +1419,8 @@ export const Mutation = builder.mutationType({
         args: {
           ids: t.arg.stringList({ required: true }),
         },
-        resolve: async (_, args, ctx) => {
-          return await AsyncTaskService.acknowledgeAsyncTasks(args, ctx)
-        },
+        resolve: (_, args, ctx) =>
+          AsyncTaskService.acknowledgeAsyncTasks(args, ctx),
       }),
 
       updateCourseSettings: t.withAuth(asUserFullAccess).field({

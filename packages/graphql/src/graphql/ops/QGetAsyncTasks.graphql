@@ -1,4 +1,5 @@
 query GetAsyncTasks {
+  asyncTaskAttentionCount
   asyncTasks {
     id
     kind

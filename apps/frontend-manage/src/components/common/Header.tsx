@@ -220,7 +220,7 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
     />
   )
 
-  const rightNavigation: NavigationItemProps[] = [
+  const rightNavigationBeforeTasks: NavigationItemProps[] = [
     {
       type: 'button',
       key: 'support-menubar-item',
@@ -252,6 +252,8 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
           data: { cy: `running-live-quiz-${quiz.name}` },
         })) ?? [],
     },
+  ]
+  const rightNavigationAfterTasks: NavigationItemProps[] = [
     {
       type: 'dropdown',
       key: 'user-menubar-dropdown',
@@ -331,12 +333,12 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
         </div>
         <div className="flex h-10 flex-row items-center">
           <Navigation
-            items={rightNavigation.slice(0, 2)}
+            items={rightNavigationBeforeTasks}
             className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
           />
           <AsyncTaskCenter />
           <Navigation
-            items={rightNavigation.slice(2)}
+            items={rightNavigationAfterTasks}
             className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
           />
         </div>

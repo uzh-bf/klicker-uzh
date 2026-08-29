@@ -10,18 +10,16 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { AsyncTaskKind, AsyncTaskStatus } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
+import { COURSE_DUPLICATION_ERROR_CODES } from '@klicker-uzh/types'
 import { Popover, PopoverContent, PopoverTrigger } from '@uzh-bf/design-system'
-import { useRouter } from 'next/router'
+import Link from 'next/link'
 import { useFormatter, useTranslations } from 'next-intl'
-import type { AsyncTaskData } from './AsyncTaskProvider'
 import { useAsyncTasks } from './AsyncTaskProvider'
-
-function isActiveTask(task: AsyncTaskData) {
-  return (
-    task.status === AsyncTaskStatus.Queued ||
-    task.status === AsyncTaskStatus.Running
-  )
-}
+import {
+  type AsyncTaskData,
+  getManageCoursePath,
+  isActiveTask,
+} from './asyncTaskHelpers'
 
 function getTaskIcon(kind: AsyncTaskKind): IconDefinition {
   switch (kind) {
@@ -35,22 +33,25 @@ function getTaskIcon(kind: AsyncTaskKind): IconDefinition {
 }
 
 function AsyncTaskStatusIcon({ task }: Readonly<{ task: AsyncTaskData }>) {
-  if (task.status === AsyncTaskStatus.Running) {
-    return <Loader basic data={{ cy: `async-task-spinner-${task.id}` }} />
-  }
+  let icon: IconDefinition
+  let className: string
 
-  const icon =
-    task.status === AsyncTaskStatus.Queued
-      ? faClock
-      : task.status === AsyncTaskStatus.Succeeded
-        ? faCircleCheck
-        : faTriangleExclamation
-  const className =
-    task.status === AsyncTaskStatus.Succeeded
-      ? 'text-green-700'
-      : task.status === AsyncTaskStatus.Failed
-        ? 'text-red-700'
-        : 'text-slate-500'
+  switch (task.status) {
+    case AsyncTaskStatus.Running:
+      return <Loader basic data={{ cy: `async-task-spinner-${task.id}` }} />
+    case AsyncTaskStatus.Queued:
+      icon = faClock
+      className = 'text-slate-500'
+      break
+    case AsyncTaskStatus.Succeeded:
+      icon = faCircleCheck
+      className = 'text-green-700'
+      break
+    case AsyncTaskStatus.Failed:
+      icon = faTriangleExclamation
+      className = 'text-red-700'
+      break
+  }
 
   return (
     <FontAwesomeIcon
@@ -62,33 +63,37 @@ function AsyncTaskStatusIcon({ task }: Readonly<{ task: AsyncTaskData }>) {
 }
 
 function AsyncTaskRow({ task }: Readonly<{ task: AsyncTaskData }>) {
-  const router = useRouter()
   const t = useTranslations()
   const format = useFormatter()
   const taskName =
     task.kind === AsyncTaskKind.CourseDuplication
       ? (task.targetName ?? task.subjectName)
       : task.subjectName
-  const taskKindLabel =
-    task.kind === AsyncTaskKind.CourseDuplication
-      ? t('manage.asyncTasks.kind.courseDuplication')
-      : task.kind === AsyncTaskKind.KnowledgeGraphGeneration
-        ? t('manage.asyncTasks.kind.knowledgeGraphGeneration')
-        : t('manage.asyncTasks.kind.questionGeneration')
-  const statusLabel =
-    task.status === AsyncTaskStatus.Queued
-      ? t('manage.asyncTasks.status.queued')
-      : task.status === AsyncTaskStatus.Running
-        ? t('manage.asyncTasks.status.running')
-        : task.status === AsyncTaskStatus.Succeeded
-          ? t('manage.asyncTasks.status.succeeded')
-          : t('manage.asyncTasks.status.failed')
-  const failureLabel =
-    task.errorCode === 'COURSE_DUPLICATION_ACCESS_DENIED'
-      ? t('manage.asyncTasks.failure.courseDuplicationAccess')
-      : task.errorCode === 'COURSE_DUPLICATION_PARTIAL_FAILURE'
-        ? t('manage.asyncTasks.failure.courseDuplicationPartial')
-        : t('manage.asyncTasks.failure.generic')
+  const taskKindLabels: Record<AsyncTaskKind, string> = {
+    [AsyncTaskKind.CourseDuplication]: t(
+      'manage.asyncTasks.kind.courseDuplication'
+    ),
+    [AsyncTaskKind.KnowledgeGraphGeneration]: t(
+      'manage.asyncTasks.kind.knowledgeGraphGeneration'
+    ),
+    [AsyncTaskKind.QuestionGeneration]: t(
+      'manage.asyncTasks.kind.questionGeneration'
+    ),
+  }
+  const statusLabels: Record<AsyncTaskStatus, string> = {
+    [AsyncTaskStatus.Queued]: t('manage.asyncTasks.status.queued'),
+    [AsyncTaskStatus.Running]: t('manage.asyncTasks.status.running'),
+    [AsyncTaskStatus.Succeeded]: t('manage.asyncTasks.status.succeeded'),
+    [AsyncTaskStatus.Failed]: t('manage.asyncTasks.status.failed'),
+  }
+  const taskKindLabel = taskKindLabels[task.kind]
+  const statusLabel = statusLabels[task.status]
+  let failureLabel = t('manage.asyncTasks.failure.generic')
+  if (task.errorCode === COURSE_DUPLICATION_ERROR_CODES.accessDenied) {
+    failureLabel = t('manage.asyncTasks.failure.courseDuplicationAccess')
+  } else if (task.errorCode === COURSE_DUPLICATION_ERROR_CODES.partialFailure) {
+    failureLabel = t('manage.asyncTasks.failure.courseDuplicationPartial')
+  }
   const statusTimestamp = isActiveTask(task)
     ? task.updatedAt
     : (task.finishedAt ?? task.updatedAt)
@@ -135,17 +140,16 @@ function AsyncTaskRow({ task }: Readonly<{ task: AsyncTaskData }>) {
       {task.status === AsyncTaskStatus.Succeeded &&
       task.kind === AsyncTaskKind.CourseDuplication &&
       task.resultId ? (
-        <button
+        <Link
           aria-label={t('manage.asyncTasks.openResultLabel', {
             name: taskName,
           })}
-          className="my-auto shrink-0 text-primary-100 text-xs font-semibold hover:underline focus:outline-none focus:ring-2 focus:ring-primary-80"
+          className="my-auto shrink-0 text-primary-100 text-xs font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-80"
           data-cy={`async-task-open-${task.id}`}
-          onClick={() => void router.push(`/courses/${task.resultId}`)}
-          type="button"
+          href={getManageCoursePath(task.resultId)}
         >
           {t('manage.asyncTasks.openResult')}
-        </button>
+        </Link>
       ) : null}
       {!task.readAt && !isActiveTask(task) ? (
         <>
@@ -179,7 +183,7 @@ export default function AsyncTaskCenter() {
         aria-label={t('manage.asyncTasks.triggerLabel', {
           count: attentionCount,
         })}
-        className="relative flex h-10 w-10 items-center justify-center rounded-sm text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-primary-80"
+        className="relative flex h-10 w-10 items-center justify-center rounded-sm text-slate-700 transition hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-80"
         data-cy="async-task-center-trigger"
         onClick={() => void refetchTasks()}
       >
@@ -209,7 +213,7 @@ export default function AsyncTaskCenter() {
           </div>
           {hasUnreadTerminalTasks ? (
             <button
-              className="shrink-0 text-primary-100 text-xs font-semibold hover:underline focus:outline-none focus:ring-2 focus:ring-primary-80"
+              className="shrink-0 text-primary-100 text-xs font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-80"
               data-cy="async-task-mark-read"
               onClick={() => void acknowledgeTerminalTasks()}
               type="button"

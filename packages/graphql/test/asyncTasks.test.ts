@@ -6,11 +6,13 @@ import {
   UserLoginScope,
   UserRole,
 } from '@klicker-uzh/prisma/client'
+import { COURSE_DUPLICATION_ERROR_CODES } from '@klicker-uzh/types'
 import { createYoga } from 'graphql-yoga'
 import type { ContextWithUser } from '@/lib/context.js'
 import {
   acknowledgeAsyncTasks,
   type CourseDuplicationTaskSnapshot,
+  getAsyncTaskAttentionCount,
   getAsyncTasks,
   syncCourseDuplicationTask,
 } from '@/services/asyncTasks.js'
@@ -170,6 +172,61 @@ describe('AsyncTask service and GraphQL API', () => {
     ])
   })
 
+  it('counts every active and unread recent task beyond the row limits', async () => {
+    const now = Date.now()
+    await prisma.asyncTask.createMany({
+      data: [
+        ...Array.from({ length: 51 }, (_, index) => ({
+          kind: AsyncTaskKind.COURSE_DUPLICATION,
+          status: AsyncTaskStatus.QUEUED,
+          subjectName: `Active task ${index}`,
+          ownerId,
+          createdAt: new Date(now - index * 1000),
+        })),
+        ...Array.from({ length: 21 }, (_, index) => ({
+          kind: AsyncTaskKind.QUESTION_GENERATION,
+          status: AsyncTaskStatus.SUCCEEDED,
+          subjectName: `Unread task ${index}`,
+          ownerId,
+          finishedAt: new Date(now - index * 1000),
+        })),
+        {
+          kind: AsyncTaskKind.QUESTION_GENERATION,
+          status: AsyncTaskStatus.SUCCEEDED,
+          subjectName: 'Read task',
+          ownerId,
+          finishedAt: new Date(now),
+          readAt: new Date(now),
+        },
+        {
+          kind: AsyncTaskKind.QUESTION_GENERATION,
+          status: AsyncTaskStatus.FAILED,
+          subjectName: 'Expired task',
+          ownerId,
+          finishedAt: new Date(now - 31 * 24 * 60 * 60 * 1000),
+        },
+        {
+          kind: AsyncTaskKind.KNOWLEDGE_GRAPH_GENERATION,
+          status: AsyncTaskStatus.RUNNING,
+          subjectName: 'Other owner task',
+          ownerId: otherOwnerId,
+        },
+      ],
+    })
+
+    const [attentionCount, tasks] = await Promise.all([
+      getAsyncTaskAttentionCount(ownerCtx),
+      getAsyncTasks(ownerCtx),
+    ])
+
+    expect(attentionCount).toBe(72)
+    expect(tasks).toHaveLength(70)
+    expect(
+      tasks.filter((task) => task.status === AsyncTaskStatus.QUEUED)
+    ).toHaveLength(50)
+    expect(tasks.filter((task) => task.readAt === null)).toHaveLength(70)
+  })
+
   it('acknowledges only unread terminal tasks owned by the caller', async () => {
     const [terminalTask, activeTask, otherOwnerTask] = await Promise.all([
       prisma.asyncTask.create({
@@ -281,7 +338,43 @@ describe('AsyncTask service and GraphQL API', () => {
       expect.objectContaining({
         id: task.id,
         status: AsyncTaskStatus.FAILED,
-        errorCode: 'COURSE_DUPLICATION_FAILED',
+        errorCode: COURSE_DUPLICATION_ERROR_CODES.failed,
+      })
+    )
+  })
+
+  it('reconciles an older active task hidden beyond the display limit', async () => {
+    const staleTask = await prisma.asyncTask.create({
+      data: {
+        kind: AsyncTaskKind.COURSE_DUPLICATION,
+        status: AsyncTaskStatus.RUNNING,
+        subjectName: 'Hidden missing duplication',
+        ownerId,
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+        updatedAt: new Date(Date.now() - 76 * 60 * 1000),
+      },
+    })
+    await prisma.asyncTask.createMany({
+      data: Array.from({ length: 50 }, (_, index) => ({
+        kind: AsyncTaskKind.COURSE_DUPLICATION,
+        status: AsyncTaskStatus.QUEUED,
+        subjectName: `Newer duplication ${index}`,
+        ownerId,
+        createdAt: new Date(Date.now() - index * 1000),
+      })),
+    })
+    ownerCtx.redisExec = {
+      mget: async (...keys: string[]) =>
+        keys.map((key) => (key.includes(staleTask.id) ? null : 'present')),
+    } as ContextWithUser['redisExec']
+
+    const tasks = await getAsyncTasks(ownerCtx)
+
+    expect(tasks).toContainEqual(
+      expect.objectContaining({
+        id: staleTask.id,
+        status: AsyncTaskStatus.FAILED,
+        errorCode: COURSE_DUPLICATION_ERROR_CODES.failed,
       })
     )
   })
@@ -366,9 +459,10 @@ describe('AsyncTask service and GraphQL API', () => {
     })
 
     const queryResult = await executeGraphql({
-      source: `query { asyncTasks { id subjectName } }`,
+      source: `query { asyncTaskAttentionCount asyncTasks { id subjectName } }`,
     })
     expect(queryResult.errors).toBeUndefined()
+    expect(queryResult.data?.asyncTaskAttentionCount).toBe(1)
     expect(queryResult.data?.asyncTasks).toEqual([
       { id: ownerTask.id, subjectName: 'Owner source' },
     ])

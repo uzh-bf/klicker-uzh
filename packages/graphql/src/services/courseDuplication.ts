@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import * as DB from '@klicker-uzh/prisma/client'
-import type { HatchetHandlers } from '@klicker-uzh/types'
+import {
+  COURSE_DUPLICATION_ERROR_CODES,
+  type HatchetHandlers,
+} from '@klicker-uzh/types'
 import {
   type PrismaTransactionClient,
   recomputeDerivedPermissions,
@@ -31,8 +34,6 @@ dayjs.extend(timezone)
 const DUPLICATE_COURSE_TRANSACTION_TIMEOUT = 10 * 60 * 1000
 const COURSE_DUPLICATION_TIME_ZONE = 'Europe/Zurich'
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
-const COURSE_DUPLICATION_PARTIAL_FAILURE_CODE =
-  'COURSE_DUPLICATION_PARTIAL_FAILURE'
 const COURSE_DUPLICATION_STATUS_TTL_SECONDS = 24 * 60 * 60
 const COURSE_DUPLICATION_PROCESS_LOCK_TTL_SECONDS = 60
 const COURSE_DUPLICATION_PROCESS_LOCK_RENEWAL_MS = 15 * 1000
@@ -49,7 +50,7 @@ const COURSE_DUPLICATION_SOURCE_LOCK_KEY_PREFIX = 'course-duplication:source'
 
 function courseDuplicationPartialFailure(message: string) {
   return new GraphQLError(message, {
-    extensions: { code: COURSE_DUPLICATION_PARTIAL_FAILURE_CODE },
+    extensions: { code: COURSE_DUPLICATION_ERROR_CODES.partialFailure },
   })
 }
 
@@ -180,7 +181,7 @@ function getCourseDuplicationJobErrorType(
   error: unknown
 ): CourseDuplicationErrorType {
   const code = getGraphQLErrorCode(error)
-  if (code === COURSE_DUPLICATION_PARTIAL_FAILURE_CODE) return 'partial'
+  if (code === COURSE_DUPLICATION_ERROR_CODES.partialFailure) return 'partial'
   if (code === 'FORBIDDEN') return 'access'
 
   return 'generic'
@@ -299,7 +300,7 @@ async function publishCourseDuplicationEvent(
         { cause: error instanceof Error ? error : undefined }
       )
       throw new GraphQLError('Course duplication could not be started', {
-        extensions: { code: 'COURSE_DUPLICATION_START_FAILED' },
+        extensions: { code: COURSE_DUPLICATION_ERROR_CODES.startFailed },
         originalError: publishError,
       })
     }
@@ -314,7 +315,7 @@ async function requireCourseDuplicationTask(
     await syncCourseDuplicationTask(job, prisma)
   } catch (error) {
     throw new GraphQLError('Course duplication could not be started', {
-      extensions: { code: 'COURSE_DUPLICATION_START_FAILED' },
+      extensions: { code: COURSE_DUPLICATION_ERROR_CODES.startFailed },
       originalError: error instanceof Error ? error : undefined,
     })
   }

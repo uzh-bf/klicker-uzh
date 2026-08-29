@@ -335,9 +335,13 @@ export const Query = builder.queryType({
 
       asyncTasks: t.withAuth(asUser).field({
         type: [AsyncTask],
-        resolve: async (_, __, ctx) => {
-          return await AsyncTaskService.getAsyncTasks(ctx)
-        },
+        resolve: (_, __, ctx) => AsyncTaskService.getAsyncTasks(ctx),
+      }),
+
+      asyncTaskAttentionCount: t.withAuth(asUser).field({
+        type: 'Int',
+        resolve: (_, __, ctx) =>
+          AsyncTaskService.getAsyncTaskAttentionCount(ctx),
       }),
 
       courseDuplicationStatuses: t.withAuth(asUser).field({
