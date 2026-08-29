@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useThreadManagement } from '../src/hooks/useThreadManagement'
 import { getEditedMessageSource } from '../src/lib/attachments/attachmentState'
+import { useComposerStore } from '../src/stores/composerStore'
 
 const { mockUseChatStore } = vi.hoisted(() => ({
   mockUseChatStore: Object.assign(vi.fn(), {
@@ -61,6 +62,7 @@ let chatActions: {
 
 describe('getEditedMessageSource', () => {
   beforeEach(() => {
+    useComposerStore.setState({ editRemovedAttachmentKeysByMessageId: {} })
     storeState = {
       activeThreadId: null,
       threads: [],
@@ -127,7 +129,7 @@ describe('getEditedMessageSource', () => {
     })
   })
 
-  test('root user edit preserves attachments on the replacement message', async () => {
+  test('root user edit keeps, removes, and adds only the selected attachments', async () => {
     const originalAttachments = [
       {
         id: 'att-1',
@@ -196,28 +198,51 @@ describe('getEditedMessageSource', () => {
       current: null,
     } as React.MutableRefObject<AbortController | null>)
 
+    useComposerStore
+      .getState()
+      .addEditRemovedAttachmentKey('root-user', 'id:att-2')
     await onEdit({
       id: 'root-user',
       parentId: null,
       content: [{ type: 'text', text: 'edited root message' }],
+      attachments: [
+        {
+          content: [
+            {
+              type: 'image',
+              image: 'data:image/png;base64,NEW',
+              imagePreview: 'data:image/png;base64,NEW_PREVIEW',
+            },
+          ],
+        },
+      ],
     } as any)
 
+    const expectedAttachments = [
+      originalAttachments[0],
+      {
+        type: 'image',
+        imageBase64: 'data:image/png;base64,NEW',
+        imagePreviewBase64: 'data:image/png;base64,NEW_PREVIEW',
+        imageDescription: null,
+      },
+    ]
     const editedMessage = storeState.threads[0]?.messages[0]
     expect(editedMessage).toMatchObject({
       id: 'edited-message-id',
       parentId: null,
-      imageAttachments: originalAttachments,
+      imageAttachments: expectedAttachments,
     })
     expect(storeState.threads[0]?.allMessages.at(-1)).toMatchObject({
       id: 'edited-message-id',
-      imageAttachments: originalAttachments,
+      imageAttachments: expectedAttachments,
     })
     expect(generateChatResponse).toHaveBeenCalledWith(
       [
         expect.objectContaining({
           id: 'edited-message-id',
           attachmentSourceMessageId: 'root-user',
-          imageAttachments: originalAttachments,
+          imageAttachments: expectedAttachments,
         }),
       ],
       'thread-1'

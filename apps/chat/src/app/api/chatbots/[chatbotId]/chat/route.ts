@@ -1,44 +1,59 @@
+import { createOpenAI } from '@ai-sdk/openai'
+import { prisma } from '@klicker-uzh/prisma'
+import type { Chatbot, Prisma } from '@klicker-uzh/prisma/client'
+import { safeDecrypt } from '@klicker-uzh/util'
+import { startActiveObservation } from '@langfuse/tracing'
+import {
+  consumeStream,
+  generateText,
+  isStepCount,
+  type ModelMessage,
+  type StepResult,
+  streamText,
+  type ToolSet,
+} from 'ai'
+import { createHash, randomUUID } from 'crypto'
+import { type NextRequest, NextResponse } from 'next/server'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
-import { type ReasoningEffort } from '@/src/lib/config/reasoning'
+import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
   AuthoritativeConversationError,
   prepareAuthoritativeConversation,
 } from '@/src/lib/server/authoritativeHistory'
 import {
+  type ChatModelConfig,
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
   getParticipantFallbackModelId,
-  type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
-import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
+import { parseChatRequestBody } from '@/src/lib/server/chatRequest'
 import {
   getParentSpanContext,
   getTraceIdForMessage,
   isAiTelemetryEnabled,
 } from '@/src/lib/server/langfuseTracing'
-import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
-import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import {
   buildAbortedAssistantContent,
   mapAssistantStepContent,
 } from '@/src/lib/server/persistedAssistantContent'
-import { parseChatRequestBody } from '@/src/lib/server/chatRequest'
+import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
   claimChatTurn,
   failChatTurn,
   finalizeChatTurn,
-  isChatAccountUsageEnforcementEnabled,
   isChatAccountUsageAvailable,
+  isChatAccountUsageEnforcementEnabled,
   roundChatUsageCredits,
 } from '@/src/services/accountUsage'
 import { CreditsService } from '@/src/services/credits'
@@ -48,31 +63,10 @@ import {
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
 import { ThreadService } from '@/src/services/threads'
-import { createOpenAI } from '@ai-sdk/openai'
-import { prisma } from '@klicker-uzh/prisma'
-import { Chatbot, type Prisma } from '@klicker-uzh/prisma/client'
-import { safeDecrypt } from '@klicker-uzh/util'
-import { startActiveObservation } from '@langfuse/tracing'
-import {
-  consumeStream,
-  generateText,
-  isStepCount,
-  streamText,
-  type ModelMessage,
-  type StepResult,
-  type ToolSet,
-} from 'ai'
-import { createHash, randomUUID } from 'crypto'
-import { NextRequest, NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
 
 export const maxDuration = 60
-
-type IncomingImageAttachment = {
-  imageBase64: string
-  imagePreviewBase64: string | null
-}
 
 type ChatRouteModelMessage = {
   role: 'user' | 'assistant'
@@ -652,19 +646,8 @@ export async function POST(
     reasoningEffort: requestedReasoningEffort,
     assistantMessageId,
     trigger,
-    legacyImages,
     usedLegacyAdapter,
   } = parsed
-
-  const normalizedImages: IncomingImageAttachment[] = legacyImages.map(
-    (image) =>
-      typeof image === 'string'
-        ? {
-            imageBase64: image,
-            imagePreviewBase64: null,
-          }
-        : image
-  )
 
   logChatDev('request.received', {
     requestId,
@@ -956,8 +939,9 @@ export async function POST(
         id: trigger.id,
         parentId: trigger.parentId,
         text: trigger.text,
-        hasAttachments: normalizedImages.length > 0,
+        attachments: trigger.attachments,
       },
+      usedLegacyAdapter,
       metadata: {
         chatMode: selectedMode,
         modelId: selectedModelConfig.id,
@@ -1095,23 +1079,20 @@ export async function POST(
           })
         : null
 
-    const resolvedImages = await Promise.all(
-      normalizedImages.map((image) => ensureImagePreviewBase64(image))
-    )
+    let resolvedImages = authoritativeConversation.currentAttachments
 
-    // create image descriptions if images attached
+    // Describe only bindings created by this request. Persisted source rows and
+    // immutable retry bindings are never updated or redescribed.
     let imageDescriptionCost: number = 0
-    const imageAttachments: {
-      imageBase64: string
-      imagePreviewBase64: string | null
-      imageDescription: string | null
-    }[] = []
-    if (normalizedImages.length > 0) {
+    const imagesMissingDescription = authoritativeConversation.createdTrigger
+      ? resolvedImages.filter((image) => !image.imageDescription)
+      : []
+    if (imagesMissingDescription.length > 0) {
       const descriptionPrompt = (userContent: string | undefined) =>
         `${userContent ? `User message context: ${userContent}\n\n` : ''}Describe this image in detail. Include all visible text, diagrams, charts, equations, labels, and notable visual elements. This description will serve as context for an ongoing conversation.`
 
       const results = await Promise.allSettled(
-        resolvedImages.map(async (image) => {
+        imagesMissingDescription.map(async (image) => {
           const descriptionResult = await generateText({
             model: model,
             messages: [
@@ -1134,14 +1115,12 @@ export async function POST(
         })
       )
 
-      for (const result of results) {
+      const descriptions = new Map<string, string>()
+      for (const [index, result] of results.entries()) {
+        const image = imagesMissingDescription[index]
         if (result.status === 'fulfilled') {
-          const { image, descriptionResult } = result.value
-          imageAttachments.push({
-            imageBase64: image.imageBase64,
-            imagePreviewBase64: image.imagePreviewBase64,
-            imageDescription: descriptionResult.text,
-          })
+          const { descriptionResult } = result.value
+          descriptions.set(image.id, descriptionResult.text)
           if (descriptionResult.usage) {
             imageDescriptionCost += calcCost(
               selectedModelConfig.cost,
@@ -1154,17 +1133,32 @@ export async function POST(
             requestId,
             error: result.reason,
           })
-          // find the corresponding image from the original array
-          const idx = results.indexOf(result)
-          imageAttachments.push({
-            imageBase64: normalizedImages[idx].imageBase64,
-            imagePreviewBase64: normalizedImages[idx].imagePreviewBase64,
-            imageDescription:
-              'The user attached an image that could not be described automatically.',
-          })
+          descriptions.set(
+            image.id,
+            'The user attached an image that could not be described automatically.'
+          )
         }
       }
 
+      await Promise.all(
+        [...descriptions].map(async ([id, imageDescription]) => {
+          const updated = await prisma.chatAttachment.updateMany({
+            where: { id, messageId: userMessageId },
+            data: { imageDescription },
+          })
+          if (updated.count !== 1) {
+            throw new AuthoritativeConversationError()
+          }
+        })
+      )
+      resolvedImages = resolvedImages.map((image) => ({
+        ...image,
+        imageDescription:
+          descriptions.get(image.id) ?? image.imageDescription ?? null,
+      }))
+    }
+
+    if (resolvedImages.length > 0) {
       const triggerMessageIndex =
         authoritativeConversation.modelMessages.findIndex(
           (message) => message.id === userMessageId
@@ -1214,7 +1208,7 @@ export async function POST(
       userPromptHash: authoritativeConversation.triggerText
         ? hashSnippet(authoritativeConversation.triggerText)
         : null,
-      imageAttachmentCount: normalizedImages.length,
+      imageAttachmentCount: resolvedImages.length,
       imageAttachmentSizes: resolvedImages.map((image) =>
         Buffer.byteLength(image.imageBase64, 'utf8')
       ),
@@ -1231,33 +1225,6 @@ export async function POST(
       hasOwningThread: true,
       elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
     })
-
-    // S2 moves image binding creation into the authoritative transaction. Until
-    // then, only a newly created legacy trigger may receive these bindings;
-    // retries never replace an existing trigger's attachments.
-    if (
-      imageAttachments.length > 0 &&
-      authoritativeConversation.createdTrigger
-    ) {
-      try {
-        await prisma.chatAttachment.createMany({
-          data: imageAttachments.map((attachment, position) => ({
-            type: 'IMAGE' as const,
-            messageId: userMessageId,
-            position,
-            imageBase64: attachment.imageBase64,
-            imagePreviewBase64: attachment.imagePreviewBase64,
-            imageDescription: attachment.imageDescription,
-          })),
-        })
-      } catch (error) {
-        console.error('Failed to save user message attachments:', {
-          requestId,
-          phase: 'persist.userAttachments',
-          error,
-        })
-      }
-    }
 
     const normalizeCredits = (
       rawCreditsUsed: number | null,
@@ -1713,6 +1680,14 @@ export async function POST(
           reasoningEffort: appliedReasoningEffort,
           reasoningContent: assistantReasoningContent,
           creditsUsed,
+          imageAttachments: resolvedImages.map((attachment) => ({
+            id: attachment.id,
+            type: 'image' as const,
+            position: attachment.position,
+            imagePreviewBase64: attachment.imagePreviewBase64,
+            imageDescription: attachment.imageDescription,
+            hasFullImage: true,
+          })),
         }
       },
     })

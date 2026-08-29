@@ -20,11 +20,23 @@ const commonBodySchema = z.object({
   assistantMessageId: uuidSchema,
 })
 
+const triggerAttachmentSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('new-image'),
+    imageBase64: imageDataUrlSchema,
+  }),
+  z.object({
+    type: z.literal('persisted-image'),
+    id: uuidSchema,
+  }),
+])
+
 const canonicalBodySchema = commonBodySchema.extend({
   trigger: z.object({
     id: uuidSchema,
     parentId: uuidSchema.nullable().optional().default(null),
     text: z.string(),
+    attachments: z.array(triggerAttachmentSchema).max(3).optional().default([]),
   }),
 })
 
@@ -64,20 +76,36 @@ export type ParsedChatRequest = {
     id: string
     parentId: string | null
     text: string
+    attachments: Array<
+      | { type: 'new-image'; imageBase64: string }
+      | { type: 'persisted-image'; id: string }
+    >
   }
-  legacyImages: Array<
-    string | { imageBase64: string; imagePreviewBase64: string | null }
-  >
   usedLegacyAdapter: boolean
+}
+
+function assertUniquePersistedAttachments(
+  attachments: ParsedChatRequest['trigger']['attachments']
+) {
+  const persistedIds = attachments.flatMap((attachment) =>
+    attachment.type === 'persisted-image' ? [attachment.id] : []
+  )
+  if (new Set(persistedIds).size !== persistedIds.length) {
+    throw new z.ZodError([])
+  }
 }
 
 export function parseChatRequestBody(value: unknown): ParsedChatRequest {
   const candidate = value as Record<string, unknown> | null
   if (candidate && 'trigger' in candidate) {
     const parsed = canonicalBodySchema.parse(value)
-    if (parsed.trigger.text.trim().length === 0) {
+    if (
+      parsed.trigger.text.trim().length === 0 &&
+      parsed.trigger.attachments.length === 0
+    ) {
       throw new z.ZodError([])
     }
+    assertUniquePersistedAttachments(parsed.trigger.attachments)
     return {
       ...parsed,
       threadId: parsed.threadId ?? null,
@@ -85,7 +113,6 @@ export function parseChatRequestBody(value: unknown): ParsedChatRequest {
         ...parsed.trigger,
         parentId: parsed.trigger.parentId ?? null,
       },
-      legacyImages: [],
       usedLegacyAdapter: false,
     }
   }
@@ -109,8 +136,11 @@ export function parseChatRequestBody(value: unknown): ParsedChatRequest {
       id: finalMessage.id,
       parentId: parsed.parentId ?? null,
       text: finalMessage.content,
+      attachments: parsed.images.map((image) => ({
+        type: 'new-image' as const,
+        imageBase64: typeof image === 'string' ? image : image.imageBase64,
+      })),
     },
-    legacyImages: parsed.images,
     usedLegacyAdapter: true,
   }
 }

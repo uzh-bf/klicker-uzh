@@ -133,6 +133,7 @@ describe('required MCP chat preflight', () => {
       modelRowCount: 1,
       truncated: false,
       createdTrigger: true,
+      currentAttachments: [],
     })
     mocks.claimChatTurn.mockResolvedValue({
       outcome: 'claimed',

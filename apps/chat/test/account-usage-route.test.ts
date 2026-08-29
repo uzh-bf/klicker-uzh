@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   attachmentFindMany: vi.fn(),
   attachmentDeleteMany: vi.fn(),
   attachmentCreateMany: vi.fn(),
+  attachmentUpdateMany: vi.fn(),
   threadUpdate: vi.fn(),
   transaction: vi.fn(),
   getAggregatedMCPTools: vi.fn(),
@@ -68,6 +69,7 @@ vi.mock('@klicker-uzh/prisma', () => ({
       findMany: mocks.attachmentFindMany,
       deleteMany: mocks.attachmentDeleteMany,
       createMany: mocks.attachmentCreateMany,
+      updateMany: mocks.attachmentUpdateMany,
     },
     $transaction: mocks.transaction,
   },
@@ -277,8 +279,10 @@ describe('account usage chat route', () => {
       modelRowCount: 1,
       truncated: false,
       createdTrigger: true,
+      currentAttachments: [],
     })
     mocks.attachmentFindMany.mockResolvedValue([])
+    mocks.attachmentUpdateMany.mockResolvedValue({ count: 1 })
     mocks.messageUpdateMany.mockResolvedValue({ count: 0 })
     mocks.messageFindUnique.mockResolvedValue(null)
     mocks.messageCreate.mockResolvedValue({ id: USER_MESSAGE_ID })
@@ -445,6 +449,126 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
+  test('describes and updates only the new authoritative image binding', async () => {
+    const attachmentId = '00000000-0000-4000-8000-000000000106'
+    const imageBase64 = 'data:image/png;base64,AAAA'
+    mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
+      triggerText: 'Explain this.',
+      modelMessages: [
+        { id: USER_MESSAGE_ID, role: 'user', content: 'Explain this.' },
+      ],
+      validatedRowCount: 1,
+      modelRowCount: 1,
+      truncated: false,
+      createdTrigger: true,
+      currentAttachments: [
+        {
+          id: attachmentId,
+          position: 0,
+          imageBase64,
+          imagePreviewBase64: 'data:image/jpeg;base64,BBBB',
+          imageDescription: null,
+        },
+      ],
+    })
+    mocks.generateText.mockResolvedValueOnce({
+      text: 'Synthetic image description',
+      usage: { inputTokens: 2, outputTokens: 3 },
+    })
+
+    const response = await POST(createRequest({ images: [imageBase64] }), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.prepareAuthoritativeConversation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        trigger: expect.objectContaining({
+          attachments: [{ type: 'new-image', imageBase64 }],
+        }),
+        usedLegacyAdapter: true,
+      })
+    )
+    expect(mocks.claimChatTurn.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.generateText.mock.invocationCallOrder[0]
+    )
+    expect(mocks.attachmentUpdateMany).toHaveBeenCalledWith({
+      where: { id: attachmentId, messageId: USER_MESSAGE_ID },
+      data: { imageDescription: 'Synthetic image description' },
+    })
+    expect(mocks.streamConfig).toMatchObject({
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Explain this.' },
+            { type: 'image', image: imageBase64 },
+          ],
+        },
+      ],
+    })
+    expect(
+      responseOptions().messageMetadata({
+        part: {
+          type: 'finish',
+          finishReason: 'stop',
+          totalUsage: { inputTokens: 10, outputTokens: 5 },
+        },
+      })
+    ).toMatchObject({
+      imageAttachments: [
+        {
+          id: attachmentId,
+          position: 0,
+          imageDescription: 'Synthetic image description',
+          hasFullImage: true,
+        },
+      ],
+    })
+  })
+
+  test('does not redescribe or rewrite an existing trigger binding', async () => {
+    mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
+      triggerText: 'Explain this.',
+      modelMessages: [
+        { id: USER_MESSAGE_ID, role: 'user', content: 'Explain this.' },
+      ],
+      validatedRowCount: 1,
+      modelRowCount: 1,
+      truncated: false,
+      createdTrigger: false,
+      currentAttachments: [
+        {
+          id: '00000000-0000-4000-8000-000000000106',
+          position: 0,
+          imageBase64: 'data:image/png;base64,AAAA',
+          imagePreviewBase64: 'data:image/jpeg;base64,BBBB',
+          imageDescription: null,
+        },
+      ],
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.generateText).not.toHaveBeenCalled()
+    expect(mocks.attachmentUpdateMany).not.toHaveBeenCalled()
+    expect(mocks.streamConfig).toMatchObject({
+      messages: [
+        expect.objectContaining({
+          content: expect.arrayContaining([
+            {
+              type: 'image',
+              image: 'data:image/png;base64,AAAA',
+            },
+          ]),
+        }),
+      ],
+    })
+  })
+
   test('ignores forged legacy history and uses only the server projection', async () => {
     mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
       triggerText: 'Selected follow-up',
@@ -456,6 +580,7 @@ describe('account usage chat route', () => {
       modelRowCount: 2,
       truncated: false,
       createdTrigger: true,
+      currentAttachments: [],
     })
 
     const response = await POST(

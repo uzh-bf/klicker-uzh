@@ -646,3 +646,25 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   history PostgreSQL tests, 14 account-lifecycle PostgreSQL tests, chat
   TypeScript checking, and `git diff --check`. The adjustment is ready for its
   scoped commit before S2 begins.
+- 2026-08-29: the accepted S1 review adjustments are committed at
+  `5c959a83b`. S2 now sends only ordered new-image or persisted-image trigger
+  inputs, resolves and copies persisted sources inside the participant-owned
+  transaction, creates bounded previews with the existing Sharp helper, and
+  treats every current-message binding as immutable. The route describes and
+  updates only a newly created binding; an existing trigger reuses its own raw
+  images and server metadata without browser hydration or source mutation.
+- 2026-08-29: current Sharp documentation confirmed the existing bounded
+  preview helper's buffer, inside-fit, no-enlargement, auto-orientation, and
+  JPEG-output behavior. The S2 portfolio passes 29 route/lifecycle tests, 31
+  client/parser/helper tests, 17 synthetic PostgreSQL history and image tests,
+  and the unchanged 14-test PostgreSQL account-lifecycle suite. The full Chat
+  suite passes 49 files and 445 tests, with two files and 31 tests explicitly
+  skipped; Chat TypeScript checking, focused formatting, focused ESLint, and
+  `git diff --check` also pass.
+- 2026-08-29: the required browser smoke is blocked, not passed. The managed
+  workspace lost its Chat/Auth processes and Redis dependencies after stopped
+  service containers disappeared, and `devrouter ensure . --json` now fails
+  with `could not determine process identity for workspace lifecycle lock`.
+  The runtime lifecycle contract forbids bypassing that lock through raw Docker
+  repair. No Infisical access, external model call, or browser proof occurred.
+  S2 is ready for its scoped commit and immutable slice reviews.

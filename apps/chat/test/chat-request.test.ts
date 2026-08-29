@@ -5,6 +5,7 @@ const THREAD_ID = '00000000-0000-4000-8000-000000000301'
 const USER_ID = '00000000-0000-4000-8000-000000000302'
 const PARENT_ID = '00000000-0000-4000-8000-000000000303'
 const ASSISTANT_ID = '00000000-0000-4000-8000-000000000304'
+const ATTACHMENT_ID = '00000000-0000-4000-8000-000000000305'
 
 const common = {
   threadId: THREAD_ID,
@@ -19,13 +20,22 @@ describe('chat request parsing', () => {
     expect(
       parseChatRequestBody({
         ...common,
-        trigger: { id: USER_ID, parentId: PARENT_ID, text: 'Question' },
+        trigger: {
+          id: USER_ID,
+          parentId: PARENT_ID,
+          text: 'Question',
+          attachments: [{ type: 'persisted-image', id: ATTACHMENT_ID }],
+        },
       })
     ).toMatchObject({
       threadId: THREAD_ID,
       selectedMode: 'tutor',
-      trigger: { id: USER_ID, parentId: PARENT_ID, text: 'Question' },
-      legacyImages: [],
+      trigger: {
+        id: USER_ID,
+        parentId: PARENT_ID,
+        text: 'Question',
+        attachments: [{ type: 'persisted-image', id: ATTACHMENT_ID }],
+      },
       usedLegacyAdapter: false,
     })
   })
@@ -39,12 +49,19 @@ describe('chat request parsing', () => {
           { id: USER_ID, role: 'user', content: 'Persist this only' },
         ],
         parentId: PARENT_ID,
+        images: ['data:image/png;base64,AAAA'],
       })
     ).toMatchObject({
       trigger: {
         id: USER_ID,
         parentId: PARENT_ID,
         text: 'Persist this only',
+        attachments: [
+          {
+            type: 'new-image',
+            imageBase64: 'data:image/png;base64,AAAA',
+          },
+        ],
       },
       usedLegacyAdapter: true,
     })
@@ -57,7 +74,43 @@ describe('chat request parsing', () => {
       messages: [{ id: USER_ID, role: 'assistant', content: 'Answer' }],
     },
     { ...common, trigger: { id: USER_ID, text: '   ' } },
+    {
+      ...common,
+      trigger: {
+        id: USER_ID,
+        text: '',
+        attachments: [
+          { type: 'persisted-image', id: ATTACHMENT_ID },
+          { type: 'persisted-image', id: ATTACHMENT_ID },
+        ],
+      },
+    },
   ])('rejects malformed or non-user triggers', (body) => {
     expect(() => parseChatRequestBody(body)).toThrow()
+  })
+
+  test('accepts an image-only canonical trigger with a new raw image', () => {
+    expect(
+      parseChatRequestBody({
+        ...common,
+        trigger: {
+          id: USER_ID,
+          text: ' ',
+          attachments: [
+            {
+              type: 'new-image',
+              imageBase64: 'data:image/png;base64,AAAA',
+            },
+          ],
+        },
+      })
+    ).toMatchObject({
+      trigger: {
+        id: USER_ID,
+        text: ' ',
+        attachments: [{ type: 'new-image' }],
+      },
+      usedLegacyAdapter: false,
+    })
   })
 })

@@ -7,6 +7,10 @@ const mocks = vi.hoisted(() => ({
       findMany: vi.fn(),
       findUnique: vi.fn(),
     },
+    chatAttachment: {
+      createMany: vi.fn(),
+      findMany: vi.fn(),
+    },
     chatThread: {
       findFirst: vi.fn(),
       update: vi.fn(),
@@ -36,8 +40,9 @@ const input = {
     id: 'trigger-1',
     parentId: null,
     text: 'Question',
-    hasAttachments: false,
+    attachments: [],
   },
+  usedLegacyAdapter: false,
   metadata: {
     chatMode: 'tutor',
     modelId: 'model-1',
@@ -84,6 +89,8 @@ beforeEach(() => {
   )
   mocks.transaction.chatThread.findFirst.mockResolvedValue({ id: 'thread-1' })
   mocks.transaction.chatMessage.createMany.mockResolvedValue({ count: 1 })
+  mocks.transaction.chatAttachment.findMany.mockResolvedValue([])
+  mocks.transaction.chatAttachment.createMany.mockResolvedValue({ count: 0 })
   mocks.transaction.$queryRaw.mockResolvedValue([header()])
   mocks.transaction.chatMessage.findMany.mockResolvedValue([
     projectedMessage(header()),
@@ -99,6 +106,7 @@ describe('authoritative conversation history', () => {
       modelRowCount: 1,
       truncated: false,
       createdTrigger: true,
+      currentAttachments: [],
     })
 
     expect(mocks.transaction.chatMessage.createMany).toHaveBeenCalledWith({
