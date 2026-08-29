@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import {
   formatModeLabel,
+  getComposerSubmitMode,
   hasAvailableChatMode,
   isKnownMode,
 } from '../src/lib/config/modes'
@@ -37,5 +38,7 @@ describe('formatModeLabel', () => {
   test('gates generation actions when no chat mode is available', () => {
     expect(hasAvailableChatMode({})).toBe(false)
     expect(hasAvailableChatMode({ tutor: '' })).toBe(true)
+    expect(getComposerSubmitMode(false)).toBe('none')
+    expect(getComposerSubmitMode(true)).toBe('enter')
   })
 })
