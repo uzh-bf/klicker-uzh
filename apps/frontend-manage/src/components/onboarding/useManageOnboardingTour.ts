@@ -48,8 +48,10 @@ export function useManageOnboardingTour(): UseProductTourResult {
   const [markTourCompleted] = useMutation(MarkTourCompletedDocument)
 
   // A failed query answers with no rows, which is indistinguishable from an
-  // account that has never seen the tour, so eligibility stays unknown until
-  // the query is known to have succeeded.
+  // account that has never seen the tour, so the tour stays closed for this
+  // page view on error rather than guessing eligibility. That still resolves
+  // `autoStart` (instead of leaving it unknown), so it no longer blocks the
+  // shared spotlight slot for the rest of the page view.
   const statesLoaded = !loading && !error
   const completed = Boolean(
     data?.tourStates.find((state) => state.tourId === MANAGE_ONBOARDING_TOUR_ID)
@@ -127,7 +129,7 @@ export function useManageOnboardingTour(): UseProductTourResult {
   return useProductTour({
     steps,
     labels,
-    autoStart: statesLoaded ? !completed : null,
+    autoStart: statesLoaded ? !completed : error ? false : null,
     autoStartSuppressed: autoPresentSuppressed(router.pathname),
     onComplete: recordCompletion,
     onSkip: recordCompletion,

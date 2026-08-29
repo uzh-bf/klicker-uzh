@@ -380,9 +380,11 @@ The order between them is decided rather than raced. The tour reports when its
 eligibility has settled, and the spotlight's unsolicited path waits for that
 signal before it looks at the slot. On a fresh account the tour therefore wins;
 once it is completed, or once it turns out to be ineligible, the spotlight
-proceeds as before. Eligibility stays unknown while the state query is loading
-or failed, which keeps a failed query from looking like an account that has
-never seen the tour.
+proceeds as before. Eligibility stays unknown only while the state query is
+still loading, which keeps a loading query from looking like an account that
+has never seen the tour. A failed query settles as ineligible instead of
+staying unknown: the tour stays closed for that page view, but it still
+releases the spotlight's wait rather than starving it for the whole page view.
 
 Auto-start is suppressed on the same routes as the spotlight, for the same
 reason — driver.js blocks pointer events on the whole document — and the route
