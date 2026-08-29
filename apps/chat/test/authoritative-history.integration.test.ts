@@ -612,6 +612,28 @@ describePostgres('authoritative history PostgreSQL integration', () => {
     ).rejects.toBeInstanceOf(history.AuthoritativeConversationError)
   })
 
+  test('rejects a cycle that closes at the 256-row boundary', async () => {
+    const ids = Array.from({ length: history.MAX_VALIDATED_HISTORY_ROWS }, () =>
+      randomUUID()
+    )
+    await prisma.chatMessage.createMany({
+      data: ids.map((id, index) => ({
+        id,
+        threadId: THREAD_ONE_ID,
+        parentId: index === 0 ? ids[1] : ids[index - 1],
+        role: index % 2 === 0 ? 'user' : 'assistant',
+        content: [{ type: 'text', text: `Boundary cycle ${index}` }],
+      })),
+    })
+
+    const triggerId = ids.at(-1)!
+    await expect(
+      history.prepareAuthoritativeConversation(
+        triggerInput(triggerId, ids.at(-2)!, `Boundary cycle ${ids.length - 1}`)
+      )
+    ).rejects.toBeInstanceOf(history.AuthoritativeConversationError)
+  })
+
   test('accepts a 256-row effective root and projects the closest 64', async () => {
     const ids = Array.from(
       { length: history.MAX_VALIDATED_HISTORY_ROWS + 1 },

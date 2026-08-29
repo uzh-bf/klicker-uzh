@@ -263,10 +263,11 @@ version of this binding rule in W5.
 
 ### D6 — shared branch semantics without browser authority
 
-A small dependency-free branch module owns cycle-safe parent walking and edge
-validation over message headers. The server applies strict structural results
-to the CTE rows. Browser helpers use the same walker so a corrupt cycle or
-missing parent cannot loop forever or silently manufacture a path.
+A small dependency-free branch module owns cycle-safe parent walking over
+message headers. The server separately validates persisted role edges and
+applies the complete structural contract to the CTE rows. Browser helpers use
+the shared walker so a corrupt cycle or missing parent cannot loop forever or
+silently manufacture a path.
 
 The browser may choose which owned branch the participant is viewing, but its
 path remains a presentation hint. Only the server transaction authorizes the

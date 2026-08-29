@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   messageFindUnique: vi.fn(),
   messageCreate: vi.fn(),
   attachmentFindMany: vi.fn(),
+  attachmentFindFirst: vi.fn(),
   attachmentDeleteMany: vi.fn(),
   attachmentCreateMany: vi.fn(),
   attachmentUpdateMany: vi.fn(),
@@ -67,6 +68,7 @@ vi.mock('@klicker-uzh/prisma', () => ({
     },
     chatAttachment: {
       findMany: mocks.attachmentFindMany,
+      findFirst: mocks.attachmentFindFirst,
       deleteMany: mocks.attachmentDeleteMany,
       createMany: mocks.attachmentCreateMany,
       updateMany: mocks.attachmentUpdateMany,
@@ -282,6 +284,7 @@ describe('account usage chat route', () => {
       currentAttachments: [],
     })
     mocks.attachmentFindMany.mockResolvedValue([])
+    mocks.attachmentFindFirst.mockResolvedValue(null)
     mocks.attachmentUpdateMany.mockResolvedValue({ count: 1 })
     mocks.messageUpdateMany.mockResolvedValue({ count: 0 })
     mocks.messageFindUnique.mockResolvedValue(null)
@@ -496,7 +499,7 @@ describe('account usage chat route', () => {
       where: {
         id: attachmentId,
         messageId: USER_MESSAGE_ID,
-        imageDescription: null,
+        OR: [{ imageDescription: null }, { imageDescription: '' }],
       },
       data: { imageDescription: 'Synthetic image description' },
     })
@@ -567,7 +570,7 @@ describe('account usage chat route', () => {
       where: {
         id: attachmentId,
         messageId: USER_MESSAGE_ID,
-        imageDescription: null,
+        OR: [{ imageDescription: null }, { imageDescription: '' }],
       },
       data: { imageDescription: 'Recovered image description' },
     })
@@ -582,6 +585,107 @@ describe('account usage chat route', () => {
           ]),
         }),
       ],
+    })
+  })
+
+  test('uses a concurrently completed image description', async () => {
+    const attachmentId = '00000000-0000-4000-8000-000000000106'
+    mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
+      triggerText: 'Explain this.',
+      modelMessages: [
+        { id: USER_MESSAGE_ID, role: 'user', content: 'Explain this.' },
+      ],
+      validatedRowCount: 1,
+      modelRowCount: 1,
+      truncated: false,
+      createdTrigger: false,
+      currentAttachments: [
+        {
+          id: attachmentId,
+          position: 0,
+          imageBase64: 'data:image/png;base64,AAAA',
+          imagePreviewBase64: 'data:image/jpeg;base64,BBBB',
+          imageDescription: null,
+        },
+      ],
+    })
+    mocks.generateText.mockResolvedValueOnce({
+      text: 'Losing concurrent description',
+      usage: { inputTokens: 2, outputTokens: 3 },
+    })
+    mocks.attachmentUpdateMany.mockResolvedValueOnce({ count: 0 })
+    mocks.attachmentFindFirst.mockResolvedValueOnce({
+      imageDescription: 'Winning concurrent description',
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.attachmentFindFirst).toHaveBeenCalledWith({
+      where: { id: attachmentId, messageId: USER_MESSAGE_ID },
+      select: { imageDescription: true },
+    })
+    expect(
+      responseOptions().messageMetadata({
+        part: {
+          type: 'finish',
+          finishReason: 'stop',
+          totalUsage: { inputTokens: 10, outputTokens: 5 },
+        },
+      })
+    ).toMatchObject({
+      imageAttachments: [
+        {
+          id: attachmentId,
+          imageDescription: 'Winning concurrent description',
+        },
+      ],
+    })
+  })
+
+  test('recovers an empty persisted image description', async () => {
+    const attachmentId = '00000000-0000-4000-8000-000000000106'
+    mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
+      triggerText: 'Explain this.',
+      modelMessages: [
+        { id: USER_MESSAGE_ID, role: 'user', content: 'Explain this.' },
+      ],
+      validatedRowCount: 1,
+      modelRowCount: 1,
+      truncated: false,
+      createdTrigger: false,
+      currentAttachments: [
+        {
+          id: attachmentId,
+          position: 0,
+          imageBase64: 'data:image/png;base64,AAAA',
+          imagePreviewBase64: 'data:image/jpeg;base64,BBBB',
+          imageDescription: '',
+        },
+      ],
+    })
+    mocks.generateText.mockResolvedValueOnce({
+      text: '   ',
+      usage: { inputTokens: 2, outputTokens: 0 },
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(mocks.attachmentUpdateMany).toHaveBeenCalledWith({
+      where: {
+        id: attachmentId,
+        messageId: USER_MESSAGE_ID,
+        OR: [{ imageDescription: null }, { imageDescription: '' }],
+      },
+      data: {
+        imageDescription:
+          'The user attached an image that could not be described automatically.',
+      },
     })
   })
 

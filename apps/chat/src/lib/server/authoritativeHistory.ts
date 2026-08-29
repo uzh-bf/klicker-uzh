@@ -119,6 +119,9 @@ function assertValidHeaders(
   const oldest = rows.at(-1)!
   const truncated =
     rows.length === MAX_VALIDATED_HISTORY_ROWS && oldest.parentId !== null
+  if (truncated && oldest.parentId && ids.has(oldest.parentId)) {
+    throw new AuthoritativeConversationError()
+  }
   if (!truncated && oldest.parentId !== null) {
     throw new AuthoritativeConversationError()
   }

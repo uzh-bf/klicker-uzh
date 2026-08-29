@@ -1121,7 +1121,11 @@ export async function POST(
         const image = imagesMissingDescription[index]
         if (result.status === 'fulfilled') {
           const { descriptionResult } = result.value
-          descriptions.set(image.id, descriptionResult.text)
+          descriptions.set(
+            image.id,
+            descriptionResult.text.trim() ||
+              'The user attached an image that could not be described automatically.'
+          )
           if (descriptionResult.usage) {
             imageDescriptionCost += calcCost(
               selectedModelConfig.cost,
@@ -1141,25 +1145,39 @@ export async function POST(
         }
       }
 
+      const persistedDescriptions = new Map<string, string>()
       await Promise.all(
         [...descriptions].map(async ([id, imageDescription]) => {
           const updated = await prisma.chatAttachment.updateMany({
             where: {
               id,
               messageId: userMessageId,
-              imageDescription: null,
+              OR: [{ imageDescription: null }, { imageDescription: '' }],
             },
             data: { imageDescription },
           })
-          if (updated.count !== 1) {
+          if (updated.count === 1) {
+            persistedDescriptions.set(id, imageDescription)
+            return
+          }
+          if (updated.count !== 0) {
             throw new AuthoritativeConversationError()
           }
+
+          const existing = await prisma.chatAttachment.findFirst({
+            where: { id, messageId: userMessageId },
+            select: { imageDescription: true },
+          })
+          if (!existing?.imageDescription) {
+            throw new AuthoritativeConversationError()
+          }
+          persistedDescriptions.set(id, existing.imageDescription)
         })
       )
       resolvedImages = resolvedImages.map((image) => ({
         ...image,
         imageDescription:
-          descriptions.get(image.id) ?? image.imageDescription ?? null,
+          persistedDescriptions.get(image.id) ?? image.imageDescription ?? null,
       }))
     }
 
