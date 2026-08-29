@@ -441,8 +441,8 @@ function FormikNativeDateInput({
         onBlur={() => helpers.setTouched(true)}
         onChange={async (e) => {
           const date = getNativeDateInputDate(e.target.value)
-          await helpers.setValue(date)
-          await helpers.setTouched(true)
+          await helpers.setValue(date, !onDateChange)
+          await helpers.setTouched(true, false)
           await onDateChange?.(date)
         }}
         required={required}
@@ -628,8 +628,8 @@ function FormikNativeSwitch({
         onBlur={() => helpers.setTouched(true)}
         onChange={async (e) => {
           const checked = e.target.checked
-          await helpers.setValue(checked)
-          await helpers.setTouched(true)
+          await helpers.setValue(checked, !onCheckedChange)
+          await helpers.setTouched(true, false)
           await onCheckedChange?.(checked)
         }}
         type="checkbox"
@@ -751,7 +751,7 @@ function CourseDuplicationModal({
         }}
         validationSchema={schema}
       >
-        {({ values, isValid, isSubmitting, setFieldValue }) => {
+        {({ values, isValid, isSubmitting, setValues }) => {
           const infoNotifications = getCourseDuplicationInfoNotifications({
             values,
             t,
@@ -768,49 +768,46 @@ function CourseDuplicationModal({
             dayjs(startDate).add(deltaGroupCreationDeadline, 'day').toDate()
 
           const updateDatesFromStartDate = async (startDate?: Date) => {
-            if (!startDate) {
-              await setFieldValue('endDate', undefined)
-              await setFieldValue(
-                'groupCreationDeadline',
-                groupDeadlineDateInit
-              )
-              return
-            }
+            await setValues((currentValues) => {
+              if (!startDate) {
+                return {
+                  ...currentValues,
+                  startDate: undefined,
+                  endDate: undefined,
+                  groupCreationDeadline: groupDeadlineDateInit,
+                }
+              }
 
-            const endDate = dayjs(startDate)
-              .add(deltaCourseDates, 'day')
-              .toDate()
+              const endDate = dayjs(startDate)
+                .add(deltaCourseDates, 'day')
+                .toDate()
 
-            await setFieldValue('endDate', endDate)
-            await setFieldValue(
-              'groupCreationDeadline',
-              values.isGroupCreationEnabled
-                ? getGroupCreationDeadline(startDate)
-                : endDate
-            )
+              return {
+                ...currentValues,
+                startDate,
+                endDate,
+                groupCreationDeadline: currentValues.isGroupCreationEnabled
+                  ? getGroupCreationDeadline(startDate)
+                  : endDate,
+              }
+            })
           }
 
           const updateGroupCreation = async (isEnabled: boolean) => {
-            if (isEnabled) {
-              if (values.startDate) {
-                await setFieldValue(
-                  'groupCreationDeadline',
-                  getGroupCreationDeadline(values.startDate)
-                )
-              }
-            } else {
-              await setFieldValue('copyGroupActivities', false)
-              await setFieldValue(
-                'groupCreationDeadline',
-                values.endDate ?? groupDeadlineDateInit
-              )
-            }
-
-            await setFieldValue('maxGroupSize', values.maxGroupSize ?? 5)
-            await setFieldValue(
-              'preferredGroupSize',
-              values.preferredGroupSize ?? 3
-            )
+            await setValues((currentValues) => ({
+              ...currentValues,
+              isGroupCreationEnabled: isEnabled,
+              copyGroupActivities: isEnabled
+                ? currentValues.copyGroupActivities
+                : false,
+              groupCreationDeadline: isEnabled
+                ? currentValues.startDate
+                  ? getGroupCreationDeadline(currentValues.startDate)
+                  : currentValues.groupCreationDeadline
+                : currentValues.endDate ?? groupDeadlineDateInit,
+              maxGroupSize: currentValues.maxGroupSize ?? 5,
+              preferredGroupSize: currentValues.preferredGroupSize ?? 3,
+            }))
           }
 
           const formDisabled = isSubmitting || isDuplicating
