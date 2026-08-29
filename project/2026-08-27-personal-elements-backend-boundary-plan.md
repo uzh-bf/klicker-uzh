@@ -725,4 +725,7 @@ no migration.
   harness attempted an unsupported GLM reasoning configuration, so the
   configured continuity route used GPT-5.6 Sol xhigh. Its correction pass
   returned `DONE` with no remaining material issue.
-- [ ] Push the exact head and update pull request #5483.
+- [x] Push the exact head and update pull request #5483 — reviewed application
+  head `0f3d117c2` is published, and the pull-request body now covers the
+  grounded retrieval and browser follow-up with current verification and stack
+  blockers. The local development runtime remains available for user testing.
