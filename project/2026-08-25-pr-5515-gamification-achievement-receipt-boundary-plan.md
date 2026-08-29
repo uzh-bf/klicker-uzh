@@ -9,8 +9,8 @@
 - Worktree: `/Users/rschlae/Git/klicker/klicker-uzh/trees/gamification-roadmap`
 - Branch: `rs/gamification-achievement-receipts`
 - Target: `v3`
-- Current branch tip: `b046dd1656d4b727fec323ae9cc5a182e52aac08`
-- Fresh remote target: `origin/v3` at `de60498532f67b5c26e811e3761c180c43b605f0`
+- Planning-snapshot branch tip: `b046dd1656d4b727fec323ae9cc5a182e52aac08`
+- Planning-snapshot remote target: `origin/v3` at `de60498532f67b5c26e811e3761c180c43b605f0`
 - Current topology: one cohesive branch and one existing PR; no new PR or stacked topology
 
 ## Goal
@@ -422,9 +422,40 @@ finish gate for the complete package.
   remaining findings. W6 is locally verified at `pr_ready` on `428e8497f`,
   with the runtime retained and push, PR update, merge, deployment, and cleanup
   still withheld.
+- 2026-08-29: Delivery reconciliation found that the branch had subsequently
+  been pushed and PR #5515 was open at `a23e2a706`. The post-W6 first-parent
+  history contains documentation reconciliation (`c7b5c3a5c`, `29169726b`),
+  receipt-fixture isolation (`6223deab9`), two normal `v3` merges
+  (`930f9b3bf`, `a23e2a706`), and runtime startup-migration hardening
+  (`237fbb5e7`). These actions were not recorded here, so the former local
+  `pr_ready` classification no longer described the delivered package.
+- 2026-08-29: Exact-head CI evidence for `a23e2a706` shows the repository
+  check, build, GraphQL, unit, secrets, CodeQL, and Sonar gates passing. The
+  package-owned Playwright failure is in the receipt scenario: it hardcodes
+  seeded `testuser1`, whose rank 15 is intentionally outside the Top 10 plus
+  the requesting participant's nearby context. A separate chat-citation test
+  fails in another shard. OpenCodeReview failed on provider HTTP 402, while the
+  final-review trusted-policy job could not verify an existing workflow
+  definition commit; neither produced a code finding.
+- 2026-08-29: Commit `8e83924a3` makes the receipt test derive its
+  public-profile target from the highest-scoring active public
+  course-leaderboard entry. This preserves the real modal flow without changing
+  leaderboard scores or relying on one seeded rank. `git diff --check` passes.
+  Focused typecheck and browser execution remain pending: the exact DevPod
+  could not be created because Docker exhausted its predefined network address
+  pools. The failed attempt left no provider runtime; `devrouter stop` removed
+  ten exact stale routes and retained the worktree and owner record. The commit
+  used `--no-verify` because repository toolchain checks must run inside that
+  unavailable exact DevPod.
+- 2026-08-29: Remote `v3` is now `f0659e130`; the published branch is 34
+  commits behind and 52 commits ahead, with merge base `97d20293f`. No merge,
+  rebase, push, PR update, deployment, data action, or destructive cleanup was
+  performed during this reconciliation.
 
 ## Next step
 
-Terminal reached: W6 is locally verified at `pr_ready`. Retain the local
-runtime for testing; all remote delivery, deployment, and cleanup actions
-remain outside this task's authority.
+W6 is reopened at `delivery_pending`. Commit this Progress reconciliation on
+the existing baseline. Then request explicit authority for one normal merge of
+current `origin/v3`; after that integration, run the affected repository and
+browser checks. Pushing the resulting exact head and updating PR #5515 remain
+separate delivery actions.

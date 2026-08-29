@@ -3,22 +3,24 @@
 ## Identity and status
 
 - Date: 2026-08-23
-- Last reconciled: 2026-08-25
-- Status: W6 achievement receipt boundary closure is implemented on branch
-  `rs/gamification-achievement-receipts` through correction commit
-  `428e8497f` and is locally verified at `pr_ready`. The branch is not being
-  pushed or updated remotely in this task. See Progress and the W6 execution
-  plan for the current evidence.
+- Last reconciled: 2026-08-29
+- Status: PR #5515 is published at `a23e2a706` and has been reopened at
+  `delivery_pending`. Exact-head CI exposed one package-owned receipt-browser
+  fixture failure; its correction is locally committed as `8e83924a3`, while
+  this Progress reconciliation remains uncommitted. Current `v3` integration,
+  affected verification, push, and PR update remain pending.
 - Repository: `uzh-bf/klicker-uzh`
 - Authoritative remote base checked: remote `v3` at
-  `1d19ad9efc6e7af57cff2b805255b4746de25c29`
+  `f0659e1301254320b2f67a0a4be752ebf6a41c0f`
 - Roadmap worktree: branch `rs/gamification-achievement-receipts` at
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/gamification-roadmap`
-- The worktree was rebaselined onto the fresh `origin/v3` before W6; the task
-  branch is ahead of that base and has no commits behind it.
-- Delivery layer: local implementation and verification commits are complete.
-  Push, pull-request update, merge, ClickUp reconciliation, deployment, and
-  live-data actions remain separate authority boundaries.
+- The published task branch is 34 commits behind and 52 commits ahead of the
+  checked remote `v3`; the local branch has the additional focused correction
+  commit. No new integration has been authorized.
+- Delivery layer: PR #5515 is open. One focused test correction and this
+  reconciliation are local only; integration, verification, push, pull-request
+  update, merge, ClickUp reconciliation, deployment, and live-data actions
+  remain separate authority boundaries.
 - Audience: an engineer or execution agent with no earlier session context.
 
 Read these sources before starting:
@@ -67,7 +69,7 @@ or efficacy claim.
 | Course leaderboards | Top 10 plus self, rolling 14-day mode, privacy handling, opt-in, and tie-aware ranks are shipped | S1 nearby context is implemented on this branch with service-test coverage | No further leaderboard scope is planned in this package |
 | Responses | `QuestionResponseDetail` stores each PracticeQuiz and MicroLearning attempt; `QuestionResponse` stores one aggregate per participant and question instance with `lastAnsweredAt` | Regular LiveQuiz responses remain Redis-only; `LiveQuizResponse` is persisted for assessment flows | Use the existing aggregate for today and existing details for overdue repair; exclude regular LiveQuiz at launch |
 | Streaks and freezes | `Participation` state, Prisma reconciliation, self-scoped API, PWA cards/progress, notices, focused tests, and browser proof are implemented on this branch | The latest correction initializes seeded participants and repairs current and overdue state without response backfill | Keep the private, course-scoped contract; no new streak primitive |
-| Achievements | Catalog discoverability, historical award preservation, private `receiptAcknowledgedAt`, idempotent self-only acknowledgement, and retryable post-presentation receipt UI are implemented on this branch | Package is locally `pr_ready`; remote delivery remains separate | Preserve every award; keep public profiles receipt-free |
+| Achievements | Catalog discoverability, historical award preservation, private `receiptAcknowledgedAt`, idempotent self-only acknowledgement, and retryable post-presentation receipt UI are implemented on this branch | PR #5515 is open; its receipt browser fixture needs the prepared visible-participant correction and fresh CI | Preserve every award; keep public profiles receipt-free |
 | Product experimentation | Normal logs, support feedback, and product iteration exist | Open PR #5323 concerns GrowthBook and Learning Analytics; it is not part of this package | No new experiment, survey, or analysis workstream |
 
 Verified repository history:
@@ -932,3 +934,22 @@ Append entries; do not rewrite history.
   passed with no remaining findings. W6 is locally `pr_ready` at that commit;
   the runtime is retained for testing and no push, PR update, merge,
   deployment, or cleanup has occurred.
+- 2026-08-29 — Delivery reconciliation replaced the stale local-only status.
+  PR #5515 is open at `a23e2a706`; post-W6 history also contains the isolated
+  receipt fixtures, two `v3` merges, and runtime startup-migration hardening.
+  Current remote `v3` is `f0659e130`, leaving the branch 34 commits behind and
+  52 ahead. No new integration or remote mutation occurred in this pass.
+- 2026-08-29 — Exact-head CI passes the repository check/build, GraphQL, unit,
+  secrets, CodeQL, and Sonar gates. The owned Playwright failure is a stale test
+  assumption: seeded `testuser1` is rank 15 and therefore absent from the Top 10
+  plus viewer-nearby response. Commit `8e83924a3` derives the public profile
+  target from the current highest-scoring active public leaderboard entry. A
+  second Playwright failure belongs to the chat citation suite; the AI checks
+  failed on provider/policy infrastructure without code findings.
+- 2026-08-29 — `git diff --check` passes for the local correction. The commit
+  used `--no-verify` because repository toolchain checks must run inside the
+  exact DevPod. Focused runtime verification is pending because Docker has
+  exhausted its predefined network pools. The failed DevPod start produced no
+  provider runtime; ten exact stale gamification routes were removed
+  non-destructively, while the worktree and owner record were retained. The
+  package is `delivery_pending`, not merge-ready.

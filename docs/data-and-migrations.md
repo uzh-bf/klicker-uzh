@@ -36,7 +36,7 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 ## Migrations
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
-- Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes; don't confuse it with `prisma migrate deploy`. The streak rollout and repair migrations initialize tracking for active leaderboard participations in already-enabled, non-assessment courses without backfilling earlier responses. The development `Testkurs` seed also initializes new and existing active participations because the seed can run after the boot-time migration has already been recorded.
+- Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes; don't confuse it with `prisma migrate deploy`. The streak rollout and repair migrations initialize tracking only for active leaderboard participations in already-enabled, non-assessment courses whose `endDate` is on or after the current tracking-day start and whose `studyStreakTrackingStartedAt` is still null. They do not backfill earlier responses. The development `Testkurs` seed also initializes new and existing active participations because the seed can run after the boot-time migration has already been recorded.
 
 ### Deployment migrations
 
