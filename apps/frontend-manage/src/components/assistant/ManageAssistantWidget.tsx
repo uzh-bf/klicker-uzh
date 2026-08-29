@@ -547,6 +547,7 @@ export function ManageAssistantWidget() {
                 onClick={closeWidget}
                 className="inline-flex size-11 shrink-0 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 aria-label={t('shared.generic.close')}
+                data-cy="manage-assistant-close"
               >
                 <FontAwesomeIcon icon={faXmark} aria-hidden />
               </button>
@@ -579,6 +580,9 @@ export function ManageAssistantWidget() {
                         <button
                           type="button"
                           onClick={() => {
+                            // Retry removes this button from the DOM, so move
+                            // focus to persistent widget chrome first.
+                            closeButtonRef.current?.focus()
                             dispatchFrameState({
                               type: 'retry',
                             })

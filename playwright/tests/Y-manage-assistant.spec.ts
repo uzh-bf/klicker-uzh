@@ -832,6 +832,7 @@ test.describe('Manage Assistant — Slow hydration', () => {
     expect(fallbackUrl.searchParams.has('parentOrigin')).toBe(false)
 
     await page.getByTestId('manage-assistant-retry').click()
+    await expect(page.getByTestId('manage-assistant-close')).toBeFocused()
     await expect(page.getByTestId('manage-assistant-loading')).toContainText(
       'Reloading assistant'
     )
