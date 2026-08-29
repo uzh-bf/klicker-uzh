@@ -32,7 +32,7 @@ export default {
       usingPrimaryModel:
         'Das Standardmodell wird verwendet, solange Credits verfügbar sind.',
       usingFallbackModel:
-        'Es sind keine Credits mehr übrig. Neue Nachrichten verwenden daher das kleinere Modell.',
+        'Es sind keine Credits mehr übrig. Einige Modelle sind möglicherweise nicht mehr verfügbar.',
       reasoningEffortLabel: 'Denkaufwand',
       selectReasoningEffort: 'Denkaufwand auswählen',
       reasoningEffortHint:
@@ -53,9 +53,9 @@ export default {
       resetAt: 'Werden am {date} wieder aufgefüllt.',
       resetNone: 'Diese Credits werden nicht automatisch aufgefüllt.',
       exhausted:
-        'Du hast alle Deine Credits aufgebraucht. Du kannst jedoch weiterhin das kleinere Modell verwenden.',
+        'Deine Credits sind aufgebraucht. Einige Modelle sind möglicherweise nicht mehr verfügbar.',
       fallbackNotice:
-        'Deine Credits sind aufgebraucht. Neue Nachrichten verwenden das kleinere Modell.',
+        'Deine Credits sind aufgebraucht. Einige Modelle sind möglicherweise nicht mehr verfügbar.',
     },
     sidebar: {
       newChat: 'Neuer Chat',
@@ -1930,6 +1930,22 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte wählen Sie, ob Demo-Elemente generiert werden sollen oder nicht.',
     },
     settings: {
+      advancedModelUsage: 'Nutzung des fortgeschrittenen Modells',
+      baseModelUsage: 'Nutzung des Basismodells',
+      chatAccountUsageDescription:
+        'Prüfen Sie die geschätzte Nutzung des aktuellen Monats für jede Nutzungsklasse.',
+      chatAccountUsageBoundaryDescription:
+        'Budgets werden für die Betriebsplanung durch den Betrieb festgelegt. Sie sind Richtwerte und keine harte Sperre; laufende Anfragen können sie überschreiten.',
+      chatAccountUsageTitle: 'Chatbot-Nutzung',
+      chatAccountUsageUnauthorized:
+        'Die Chatbot-Nutzung ist für dieses Konto nicht freigeschaltet.',
+      usageBudget: 'Budget',
+      usageBudgetEmpty: 'Für diese Nutzungsklasse ist kein Budget festgelegt.',
+      usageBudgetExhausted: 'Das monatliche Budget ist ausgeschöpft.',
+      usageCredits: 'Credits',
+      usageRemaining: 'Verbleibend',
+      usageResetDate: 'Zurücksetzung',
+      usageUsed: 'Verwendet',
       userSettings: 'Benutzereinstellungen',
       languageSettings: 'Spracheinstellungen',
       storedEmail: 'E-Mail (Edu-ID)',
@@ -3788,6 +3804,14 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       linkedCourses: 'Verknüpfte Kurse',
       linkedCoursesList: 'Verknüpft mit: {courses}',
       noLinkedCourses: 'Noch keine Kurse verknüpft.',
+      chatbotStatusDraft: 'Entwurf',
+      chatbotStatusPendingApproval: 'Ausstehende Freigabe',
+      chatbotStatusPublished: 'Veröffentlicht',
+      chatbotStatusPaused: 'Pausiert',
+      chatbotStatusRejected: 'Abgelehnt',
+      chatbotStatusUnknown: 'Unbekannter Status',
+      chatbotNotLive:
+        'Der Teilnehmenden-Zugriff ist in diesem Status nicht verfügbar.',
       credits: 'Credits',
       creditInitialCredits: 'Start-Credits',
       creditResetPeriod: 'Zurücksetzungsintervall',

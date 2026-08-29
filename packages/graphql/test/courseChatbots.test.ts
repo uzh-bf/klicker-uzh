@@ -1,5 +1,9 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
-import { PrismaClient, UserRole } from '@klicker-uzh/prisma/client'
+import {
+  ChatbotStatus,
+  PrismaClient,
+  UserRole,
+} from '@klicker-uzh/prisma/client'
 import { EventEmitter } from 'events'
 import type { Context, ContextWithUser } from '../src/lib/context.js'
 import { getParticipantCourseChatbots } from '../src/services/chatbots.js'
@@ -51,6 +55,10 @@ describe('Integration tests for the public courseChatbots query', () => {
         name: 'Course Tutor',
         courseId: course.id,
         ownerId: userOneCtx.user.sub,
+        // The participant course-list query only returns PUBLISHED bots, so the
+        // visibility tests below seed a published bot explicitly (new bots
+        // default to DRAFT).
+        status: ChatbotStatus.PUBLISHED,
       },
     })
 
@@ -94,7 +102,7 @@ describe('Integration tests for the public courseChatbots query', () => {
   it('returns an empty list for a participant that is not enrolled in the course', async () => {
     const { course } = await seedCourseWithChatbot()
     const participant = await prisma.participant.create({
-      data: { username: 'chatbotParticipantUnenrolled', password: 'abcdabcd' },
+      data: { username: 'chatbotParticipantUnenrolled', password: 'not-used' },
     })
 
     const chatbots = await getParticipantCourseChatbots(
@@ -110,7 +118,7 @@ describe('Integration tests for the public courseChatbots query', () => {
     const participant = await prisma.participant.create({
       data: {
         username: 'chatbotParticipantEnrolled',
-        password: 'abcdabcd',
+        password: 'not-used',
         participations: { create: [{ courseId: course.id }] },
       },
     })
@@ -128,5 +136,33 @@ describe('Integration tests for the public courseChatbots query', () => {
         avatar: null,
       },
     ])
+  })
+
+  it('hides an unpublished chatbot from an enrolled participant', async () => {
+    const course = await seedCourse({}, userOneCtx)
+    // A DRAFT (unpublished) bot must never surface in a participant's course
+    // overview, mirroring the chat-app access gate (S4 publication boundary).
+    await prisma.chatbot.create({
+      data: {
+        name: 'Draft Tutor',
+        courseId: course.id,
+        ownerId: userOneCtx.user.sub,
+        status: ChatbotStatus.DRAFT,
+      },
+    })
+    const participant = await prisma.participant.create({
+      data: {
+        username: 'chatbotParticipantDraft',
+        password: 'not-used',
+        participations: { create: [{ courseId: course.id }] },
+      },
+    })
+
+    const chatbots = await getParticipantCourseChatbots(
+      { courseId: course.id },
+      participantContext(participant.id)
+    )
+
+    expect(chatbots).toEqual([])
   })
 })

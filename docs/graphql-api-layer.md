@@ -122,6 +122,9 @@ does not change endpoint-specific caps such as verification records. The
 Elements operation, schema field, service signature, and generated artifacts
 must change together (`packages/graphql/src/schema/query.ts:Query.userElements`,
 `packages/graphql/src/services/elements.ts:getUserElements`).
+Activity list filtering excludes deleted activities that are only reachable
+through derived access before fetching and counting, so pagination totals and
+rendered rows describe the same result set.
 
 ## Subscriptions
 

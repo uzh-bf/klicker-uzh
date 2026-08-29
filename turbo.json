@@ -109,6 +109,7 @@
     "CHAT_ENABLE_AI_TELEMETRY",
     "CHAT_PRIMARY_MODEL_ID",
     "CHAT_FALLBACK_MODEL_ID",
+    "CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED",
     "CHAT_MODEL_REGISTRY_JSON",
     "ALLOWED_FRAME_ANCESTORS",
     "BLOB_STORAGE_ACCOUNT_URL",
@@ -137,50 +138,22 @@
     },
     "dev": {
       "cache": false,
-      "dependsOn": [
-        "@klicker-uzh/util#build",
-        "@klicker-uzh/prisma#build",
-        "@klicker-uzh/graphql#build",
-        "@klicker-uzh/markdown#build",
-        "@klicker-uzh/word-cloud#build",
-        "@klicker-uzh/transactional#build"
-      ],
+      "dependsOn": ["^build"],
       "persistent": true
     },
     "dev:lti": {
       "cache": false,
-      "dependsOn": [
-        "@klicker-uzh/util#build",
-        "@klicker-uzh/prisma#build",
-        "@klicker-uzh/graphql#build",
-        "@klicker-uzh/markdown#build",
-        "@klicker-uzh/word-cloud#build",
-        "@klicker-uzh/transactional#build"
-      ],
+      "dependsOn": ["^build"],
       "persistent": true
     },
     "dev:offline": {
       "cache": false,
-      "dependsOn": [
-        "@klicker-uzh/util#build",
-        "@klicker-uzh/prisma#build",
-        "@klicker-uzh/graphql#build",
-        "@klicker-uzh/markdown#build",
-        "@klicker-uzh/word-cloud#build",
-        "@klicker-uzh/transactional#build"
-      ],
+      "dependsOn": ["^build"],
       "persistent": true
     },
     "dev:assessment": {
       "cache": false,
-      "dependsOn": [
-        "@klicker-uzh/util#build",
-        "@klicker-uzh/prisma#build",
-        "@klicker-uzh/graphql#build",
-        "@klicker-uzh/markdown#build",
-        "@klicker-uzh/word-cloud#build",
-        "@klicker-uzh/transactional#build"
-      ],
+      "dependsOn": ["^build"],
       "persistent": true
     },
     "dev:docs": {

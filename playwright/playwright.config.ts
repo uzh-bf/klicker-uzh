@@ -1,4 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
+import { assertPlaywrightHostBoundary } from '../util/playwright-host-policy.mjs'
+
+assertPlaywrightHostBoundary()
 
 const isCI = !!process.env.CI
 

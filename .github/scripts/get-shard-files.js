@@ -121,6 +121,10 @@ for (const item of filesWithDuration) {
   shards[minShardIndex].totalDuration += item.duration
 }
 
-const targetFiles = shards[shardIndex - 1].files
+const targetShard = shards[shardIndex - 1]
+const targetFiles = targetShard.files
 const relativePaths = targetFiles.map((file) => `tests/${file}`)
+console.error(
+  `Playwright shard ${shardIndex}/${numShards} on ${process.env.RUNNER_NAME ?? 'unknown runner'}: ${targetFiles.length} specs, ${targetShard.totalDuration.toFixed(3)}s estimated`
+)
 console.log(relativePaths.join(' '))
