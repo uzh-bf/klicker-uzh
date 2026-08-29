@@ -84,6 +84,24 @@ jobs:
       contents: read
       actions: read
     steps:
+      - name: Refuse promotion while paused
+        env:
+          PROMOTION_PAUSED: ${{ vars.STG_PROMOTION_PAUSED }}
+        run: |
+          set -euo pipefail
+          case "${PROMOTION_PAUSED,,}" in
+            '') ;;
+            false) ;;
+            true)
+              echo "::error::staging promotion is paused by STG_PROMOTION_PAUSED"
+              exit 1
+              ;;
+            *)
+              echo "::error::STG_PROMOTION_PAUSED must be true, false, or unset"
+              exit 1
+              ;;
+          esac
+
       - name: Require the promotion token
         env:
           TOKEN: ${{ secrets.STG_PROMOTE_TOKEN }}

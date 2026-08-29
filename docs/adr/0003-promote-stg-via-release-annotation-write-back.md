@@ -22,6 +22,11 @@ Promotion is gated on **every** `v3_*-stg.yml` image build succeeding for the se
 
 The workflow publishes as an **auto-merging pull request** to the selected source branch, not a direct push. It requires both image-tag and rollout-annotation inventories to be non-empty, replaces every discovered entry, and proves the independent before/after counts. Before requesting auto-merge it waits for the exact generated-promotion verification status so an unprotected source branch cannot merge the pull request before verification.
 
+The repository variable `STG_PROMOTION_PAUSED` is an explicit release-window
+interlock. When it is `true`, both automatic and manual runs fail before reading
+the promotion token or changing repository state. An unset value or `false`
+preserves normal promotion; any other value fails closed.
+
 ## Considered options
 
 **Publish mechanism — direct push vs pull request.** The pull request route preserves review and generated-content verification across both protected and unprotected source branches. The cost is a bot pull request per merge and a dependency on `secrets.STG_PROMOTE_TOKEN`, because a pull request opened with the default `GITHUB_TOKEN` does not trigger workflows and would never receive its generated-promotion status.

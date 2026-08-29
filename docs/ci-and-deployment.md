@@ -105,6 +105,11 @@ The `rollout.klicker.uzh.ch/release` annotation exists to break that tie: it lan
 
 Operational notes.
 
+- Set the repository variable `STG_PROMOTION_PAUSED=true` before a migration or
+  release window must hold staging at its last known-good deployment. Both
+  automatic and manual promotion runs then fail before they can open a pull
+  request. Set it to `false` or remove it to resume. Any other value also fails
+  closed.
 - Set the repository variable `STG_SOURCE_BRANCH` to select the active supported `v3*` branch; it falls back to `v3` when unset. Set it explicitly to `v3-ai` for the current staging source. The branch name must be a Docker-safe image tag because the build workflows publish branch-name tags.
 - **Default-branch activation:** GitHub evaluates `workflow_run` from the repository default branch. A promoter correction merged only to `v3-ai` is available for a branch-selected manual dispatch but does not change automatic fan-in until the same executable correction reaches default branch `v3`. Activate it with a focused pull request; do not repeat a broad `v3` to `v3-ai` merge for that purpose.
 - **Already-built commits:** a build set started before a promoter correction keeps the old behavior. After the correction is active, first require every exact-head staging image build to succeed, inspect and resolve any stale wrong-base promotion pull request, then dispatch `Promote to stg` on the selected source ref with the full commit SHA and `dry_run=false`. Dispatch and rollout remain separate authorized actions. Merging the correction alone does not redeploy an existing image set.

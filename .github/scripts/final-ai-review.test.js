@@ -2137,6 +2137,15 @@ test('staging promoter targets the selected source without fixed value counts', 
   assert.ok(workflow.includes('--base "$SOURCE_BRANCH"'))
   assert.ok(workflow.includes('Verified generated staging promotion'))
   assert.doesNotMatch(workflow, /expected 15/)
+  assert.match(
+    workflow,
+    /PROMOTION_PAUSED: \$\{\{ vars\.STG_PROMOTION_PAUSED \}\}/
+  )
+  assert.ok(
+    workflow.indexOf('Refuse promotion while paused') <
+      workflow.indexOf('Require the promotion token')
+  )
+  assert.match(workflow, /STG_PROMOTION_PAUSED must be true, false, or unset/)
 })
 
 test('requires every trusted exact-SHA staging build run for a promotion', async () => {
