@@ -2760,6 +2760,9 @@ importers:
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../packages/prisma
+      '@klicker-uzh/prisma-data':
+        specifier: workspace:*
+        version: link:../packages/prisma-data
       '@klicker-uzh/types':
         specifier: workspace:*
         version: link:../packages/types
