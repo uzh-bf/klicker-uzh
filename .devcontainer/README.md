@@ -41,7 +41,7 @@ The primary checkout keeps fixed localhost ports and receives stable unnamespace
 
 Use this to mirror production domain behaviors, test cookie-sharing over HTTPS, and enable parallel workspaces:
 
-1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.42 and set it up:
+1. **Host prerequisite**: Install [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.45 and set it up:
    ```bash
    devrouter setup --yes   # Traefik + the shared `devnet` + mkcert CA
    ```
@@ -70,7 +70,7 @@ Open the Manage URL printed by `ensure` and log in as **`lecturer` / `abcd`**
 
 ## Profiles
 
-This repository pins devrouter 0.0.42. Managed profiles, introduced in 0.0.40,
+This repository pins devrouter 0.0.45. Managed profiles, introduced in 0.0.40,
 select three independent dimensions: routed
 apps, optional Compose services, and managed processes. Merged selections are
 additive and order-insensitive; omitting `--profile` keeps the all-on `full`
@@ -92,6 +92,27 @@ treats both as boot-critical). Capability-only selections keep the idle app
 container plus that base and start no Turbo process; switching profiles never
 recreates the container, reruns post-create, resets the database, or removes
 volumes.
+
+For parallel agents, create one linked worktree per independent task with
+`devrouter workspace up <branch>`, then select the smallest profile in that
+worktree. Keep `ai`, `mcp`, and `email` off unless the task exercises those
+capabilities; for example, a lecturer UI task normally uses `manage`, while an
+AI chat task uses `chat,ai` and adds `mcp` only for tool-calling work. This keeps
+CPU and memory proportional to each task while every worktree retains isolated
+app caches, database state, routes, and managed processes. Start several
+worktrees concurrently only after installing the collision-safe Devrouter
+release named by this repository's pin.
+
+Cold startup waits for `postCreateCommand` before devrouter invokes the managed
+adapter. Post-create invalidates a container-local completion marker before any
+bootstrap work and publishes it only after dependency installation, builds,
+database setup, seed data, runtime shims, and Hatchet preparation succeed.
+Post-start requires the exact marker before reading bootstrap outputs or
+starting any profile process. A missing or malformed marker is a lifecycle
+failure; do not repair it by rerunning post-create during a warm profile switch.
+The bounded post-create Hatchet check may finish before its token appears;
+application profiles close that documented service race in post-start before
+starting the backend or workers.
 
 ## Playwright runs on the host
 

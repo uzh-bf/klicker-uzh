@@ -3,6 +3,7 @@
 # Invoked by host-side `devrouter ensure` after it validates the exact container.
 # Launches every routed app plus both workers through the delivered helper.
 set -euo pipefail
+bash /workspaces/klicker-uzh/util/dev-runtime.sh require-bootstrap
 cd /workspaces/klicker-uzh
 
 # Re-source the canonical env (DevPod truncates env_file values at '='), then the
