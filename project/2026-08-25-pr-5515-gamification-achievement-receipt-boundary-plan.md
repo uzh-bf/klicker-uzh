@@ -451,11 +451,26 @@ finish gate for the complete package.
   commits behind and 52 commits ahead, with merge base `97d20293f`. No merge,
   rebase, push, PR update, deployment, data action, or destructive cleanup was
   performed during this reconciliation.
+- 2026-08-29: The user approved one normal merge of exact `origin/v3`
+  `f0659e130`, conflict resolution, publication of the resulting exact head,
+  PR #5515 update, and CI monitoring. Merge commit `68ce2200b` completed that
+  integration. The sole conflict in `apps/backend-docker/src/index.ts`
+  preserves current `v3` chat-model registry validation and the branch's
+  fail-open runtime migration. The branch is now 55 commits ahead and zero
+  behind the approved base; the unrelated untracked Prisma `schema/views/`
+  directory remains untouched.
+- 2026-08-29: The post-integration migration audit confirms three distinct
+  forward-only Prisma migrations: streak state and indexes, receipt/catalog
+  fields plus seeded-achievement discoverability, and the later historical
+  receipt backfill. Their order reflects separate shipped behavior and data
+  steps. The runtime streak initialization remains Prisma-based. The only
+  local correction after integration removes an extra leading and trailing
+  blank line from the first migration artifact.
 
 ## Next step
 
-W6 is reopened at `delivery_pending`. Commit this Progress reconciliation on
-the existing baseline. Then request explicit authority for one normal merge of
-current `origin/v3`; after that integration, run the affected repository and
-browser checks. Pushing the resulting exact head and updating PR #5515 remain
-separate delivery actions.
+W6 remains `delivery_pending` on the integrated base. Commit the migration
+format correction and this Progress receipt, run the integrated final review,
+then publish the reviewed exact head, update PR #5515, and monitor its CI under
+the user's explicit approval. Do not merge the PR, deploy, or clean up the
+retained worktree or runtime records.

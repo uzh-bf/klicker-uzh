@@ -1,4 +1,3 @@
-
 -- AlterTable
 ALTER TABLE "Participation" ADD COLUMN     "studyStreakCurrent" INTEGER NOT NULL DEFAULT 0,
 ADD COLUMN     "studyStreakFreezeBalance" INTEGER NOT NULL DEFAULT 2,
@@ -13,4 +12,3 @@ CREATE INDEX "QuestionResponse_participationId_lastAnsweredAt_idx" ON "QuestionR
 
 -- CreateIndex
 CREATE INDEX "QuestionResponseDetail_participationId_createdAt_idx" ON "QuestionResponseDetail"("participationId", "createdAt");
-

@@ -953,3 +953,11 @@ Append entries; do not rewrite history.
   provider runtime; ten exact stale gamification routes were removed
   non-destructively, while the worktree and owner record were retained. The
   package is `delivery_pending`, not merge-ready.
+- 2026-08-29 — The approved one-time integration merged exact `v3` commit
+  `f0659e130` as `68ce2200b`. The sole conflict was the backend startup seam;
+  its resolution preserves both current `v3` chat-model registry validation
+  and the gamification package's fail-open runtime data migration. The branch
+  is now 55 commits ahead and zero behind that exact base. The migration audit
+  retained the three ordered forward-only Prisma migrations and removed only
+  an extra leading and trailing blank line from the first generated SQL
+  artifact. Integrated final review, publication, and exact-head CI remain.
