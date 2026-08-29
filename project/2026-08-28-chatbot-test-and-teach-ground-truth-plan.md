@@ -357,9 +357,9 @@ and stable ID provide deterministic ordering.
 
 Return at most three complete examples within a 24,000-character total budget.
 Skip an example that does not fit; never truncate its ideal answer. Because the
-first release caps a chatbot at a small reviewed set, no expression index or
-new migration is required. Reopen indexing only when measured query evidence
-shows the exact-set narrowing is insufficient.
+first release fails closed above 200 examples, no expression index or new
+migration is required. Reopen indexing only when measured query evidence shows
+the exact-set narrowing is insufficient.
 
 The always-present summary is deterministic and at most 1,500 characters. It
 contains the eligible example count, response-approach distribution, and a
@@ -368,9 +368,12 @@ full answer, source text, model-generated topic classification, or hidden
 fallback scope.
 
 Example answer citations are rewritten into an explicit example-only namespace
-inside the tool projection. The tool returns their source anchors separately.
-The prompt states that the model must not copy these markers as current-answer
-citations. Current claims still require live Doc Query retrieval.
+inside the model-only tool projection. Only exact renderer citation nodes are
+rewritten; citation-shaped code, math, and links stay intact. The model receives
+source anchors separately, while participant streams and stored chat messages
+receive only an opaque completion status. The prompt states that the model must
+not copy example markers as current-answer citations. Current claims still
+require live Doc Query retrieval.
 
 Loader or search failure records degraded response-example selection and
 continues with the ordinary mode prompt and Doc Query. It never searches
@@ -977,9 +980,9 @@ paths named by the package plan and do not revert other work.
 
 - Status: approved and executing K6 locally; the runtime skill and participant
   composition are committed and repository-native verified. Slice review
-  corrections are committed and cleared; the final review gate remains in
-  progress. Push, PR publication, merge, deployment, and live model use remain
-  withheld.
+  corrections are cleared, and the integrated final-review corrections are
+  implemented and verified. Their correction review remains in progress. Push,
+  PR publication, merge, deployment, and live model use remain withheld.
 - Completed: current `v3-ai` and PR #5633 seam mapping; response-example schema,
   API, and Manage workflow mapping; owner-preview mapping; Doc Query lineage
   contract mapping; evaluation-repository query-order mapping; required Sol
@@ -987,15 +990,14 @@ paths named by the package plan and do not revert other work.
   current-evidence slice; K6.2 bounded hybrid skill; K6.3 authenticated
   participant composition; native util, chat, PostgreSQL, GraphQL, type/schema,
   formatting, and lint verification; and the first slice review corrections.
-- Ready now: complete K6's integrated final review and present the separately
-  withheld push and PR boundary. K6 documentation, verification, slice reviews,
-  and exact-runtime shutdown are complete. K5 starts only after K6 lands on
-  `v3-ai`. K7 planning can follow the K6 runtime contract without waiting for
-  W8.
+- Ready now: commit and review K6's integrated final-review corrections, stop
+  the exact task runtime, and present the separately withheld push and PR
+  boundary. K5 starts only after K6 lands on `v3-ai`. K7 planning can follow the
+  K6 runtime contract without waiting for W8.
 - External decision: U0 cannot create a branch until the `mcp-doc-query`
   `main`/`dev` flow is explicitly resolved.
 - Blocked: K8 remains blocked on W8 synthetic active-serving proof. U0-backed
   live source proof, deployment, and activation remain separately withheld.
-- Next action: complete K6's integrated final review, then stop at the separately
-  withheld push and PR boundary. K5 becomes the next independent package after
-  K6 is merged and separately authorized.
+- Next action: close K6's correction review and exact runtime, then stop at the
+  separately withheld push and PR boundary. K5 becomes the next independent
+  package after K6 is merged and separately authorized.

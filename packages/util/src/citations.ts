@@ -32,7 +32,8 @@ export function parseCitationHref(
 
 export function splitCitationMarkers(
   value: string,
-  scope?: string
+  scope?: string,
+  sourceOffset?: number
 ): MarkdownAstNode[] {
   const nodes: MarkdownAstNode[] = []
   let lastIndex = 0
@@ -63,6 +64,15 @@ export function splitCitationMarkers(
       type: 'link',
       url: citationHrefFor(Number(citationIndex), scope),
       children: [{ type: 'text', value: citationIndex }],
+      data: {
+        responseExampleCitationMarker: true,
+        ...(sourceOffset === undefined
+          ? {}
+          : {
+              sourceStart: sourceOffset + start,
+              sourceEnd: sourceOffset + end + 1,
+            }),
+      },
     })
     lastIndex = end + 1
     searchFrom = lastIndex
@@ -100,7 +110,16 @@ export function transformCitationMarkers<T extends MarkdownAstNode>(
         !skipped &&
         child.value.includes('[')
       ) {
-        nextChildren.push(...splitCitationMarkers(child.value, scope))
+        const position = child.position as
+          | { start?: { offset?: number } }
+          | undefined
+        nextChildren.push(
+          ...splitCitationMarkers(
+            child.value,
+            scope,
+            position?.start?.offset
+          )
+        )
         continue
       }
 
@@ -192,6 +211,61 @@ export function extractCitationIndexes(
   }
 
   return indexes
+}
+
+export interface CitationMarkerSpan {
+  citationIndex: number
+  start: number
+  end: number
+}
+
+/** Return exact source spans for markers created by the citation renderer. */
+export function extractCitationMarkerSpans(
+  source: string,
+  options: CitationParserOptions = {}
+): CitationMarkerSpan[] {
+  const spans: CitationMarkerSpan[] = []
+  const tree = parseMarkdownForCitations(source, options)
+  const pending: MarkdownAstNode[] = [tree]
+
+  while (pending.length > 0) {
+    const node = pending.pop()
+    if (!node) continue
+
+    const data =
+      node.data && typeof node.data === 'object'
+        ? (node.data as {
+            responseExampleCitationMarker?: unknown
+            sourceStart?: unknown
+            sourceEnd?: unknown
+          })
+        : null
+    if (node.type === 'link' && data?.responseExampleCitationMarker === true) {
+      const citationIndex = parseCitationHref(
+        typeof node.url === 'string' ? node.url : null
+      )
+      const start = data.sourceStart
+      const end = data.sourceEnd
+      if (
+        citationIndex !== null &&
+        typeof start === 'number' &&
+        typeof end === 'number' &&
+        source.slice(start, end) === `[${citationIndex}]`
+      ) {
+        spans.push({ citationIndex, start, end })
+      }
+    }
+
+    for (
+      let childIndex = (node.children?.length ?? 0) - 1;
+      childIndex >= 0;
+      childIndex -= 1
+    ) {
+      pending.push(node.children![childIndex]!)
+    }
+  }
+
+  return spans.sort((left, right) => left.start - right.start)
 }
 
 /** Require a non-empty exact set of rendered citation indexes. */

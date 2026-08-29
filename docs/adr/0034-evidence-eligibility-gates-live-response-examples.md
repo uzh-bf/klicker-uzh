@@ -33,4 +33,5 @@ Generation may propose a replacement but never overwrites lecturer content.
 - Evidence changes fail closed without introducing example revisions.
 - Graph maintenance alone does not interrupt valid examples.
 - Zero or multiple enabled knowledge-base bindings fail closed.
-- Runtime selection rechecks current evidence before returning an example.
+- Runtime selection rechecks current evidence and projects the selected content
+  from the same database-statement snapshot before returning an example.

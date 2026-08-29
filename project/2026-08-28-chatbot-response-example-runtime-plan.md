@@ -81,7 +81,10 @@ preview and the later examples-excluded baseline.
 - The summary is capped at 1,500 characters. Search returns at most three
   complete examples and 24,000 total characters including metadata, skips an
   example that does not fit, and never returns renderer-compatible citation
-  markers from an ideal answer.
+  markers from an ideal answer. Runtime refuses sets above 200 examples.
+- Ranking, current-evidence validation, and content projection use one database
+  statement. Full results are model-only; the participant stream and persisted
+  assistant message receive only an opaque completion status.
 - Loader or reconciliation failure omits the whole skill. A later search
   failure returns a bounded empty degraded result without aborting chat or
   changing scope. The final prompt and final tool set both feed prompt-cache
@@ -161,7 +164,9 @@ preview and the later examples-excluded baseline.
 - Check: `pnpm --filter @klicker-uzh/chat test:run`,
   `pnpm --filter @klicker-uzh/chat check`, existing GraphQL checks, and
   repository-wide `pnpm run check:all`. No browser check is required because
-  this package changes no rendered UI.
+  this package changes no component or layout; server tool-output and
+  persistence tests prove that the participant-facing payload is opaque before
+  it reaches the UI stream or stored chat content.
 - Commit: `feat(chat): use response examples in participant chat`.
 
 ### K6.4 — Durable contract and finish
@@ -176,8 +181,9 @@ preview and the later examples-excluded baseline.
 
 ## Progress
 
-- Status: K6.1 through K6.4 are committed and repository-native verified; the
-  integrated final review gate is in progress.
+- Status: K6.1 through K6.4 are committed. The first integrated final review
+  findings are corrected and repository-native verified; correction review is
+  in progress.
 - Completed: remote-state gate, clean purpose-based worktree, approved program
   plan transfer, current source seam mapping, package-plan narrowing, shared
   current-evidence validation, owner-service reconciliation, and focused util,
@@ -187,7 +193,7 @@ preview and the later examples-excluded baseline.
   tool, cache-identity, and failure-degradation composition are committed. The
   review corrections make knowledge-base/resource selection one atomic
   parameterized statement and publish the skill only after tool construction.
-  Full util tests pass with 127 tests; full chat tests pass with 712 tests and
+  Full util tests pass with 128 tests; full chat tests pass with 715 tests and
   14 explicit skips; focused chat runtime tests pass with 64 tests; the real
   PostgreSQL runtime test and all 11 GraphQL response-example tests pass; chat,
   util, and GraphQL type/schema checks pass; chat lint reports zero errors.
@@ -200,14 +206,17 @@ preview and the later examples-excluded baseline.
   failed terminally because their resolved model/effort pair is unsupported;
   separate native Sol xhigh reviewers preserved both roles. Their first pass
   identified the atomic-read and atomic-activation corrections now committed;
-  both correction passes returned `DONE` with no remaining findings. The
-  required Sol final review remains armed.
+  both correction passes returned `DONE` with no remaining findings. The first
+  integrated Sol final review found model-output disclosure, mixed-version
+  search projection, broad citation rewriting, and an unenforced set-size cap.
+  The correction keeps full results model-only, ranks and projects in one
+  statement, rewrites exact renderer spans, and fails closed above 200 examples.
 - Verification limitation: repository-wide `pnpm run check:all` reaches the
   unrelated analytics lint, where the container selects Python 3.14 and cannot
   build pandas because no C compiler is installed. All affected package checks
   pass independently.
-- Runtime note: the exact task DevPod `feat-chatbot-response-example-ru` is
-  stopped, its provider reports `Stopped`, and the exact worktree has zero
-  DevRouter routes. The DevPod remains recoverable and was not deleted.
-- Next: complete and disposition the integrated Sol final review, then stop at
-  the withheld push and PR boundary.
+- Runtime note: the exact task DevPod `feat-chatbot-response-example-ru` was
+  resumed only for correction verification. It will be stopped and verified
+  again before the correction review is closed.
+- Next: commit the verified final-review corrections, complete their correction
+  review, stop the exact runtime, and stop at the withheld push and PR boundary.

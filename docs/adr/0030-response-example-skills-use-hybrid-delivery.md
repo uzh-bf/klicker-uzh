@@ -23,6 +23,9 @@ Full examples remain behind an authenticated server tool and are loaded only
 when the model decides that an example would help answer the current question.
 PostgreSQL remains authoritative for the example set and its exact approved
 content; the prompt summary and tool results are bounded projections.
+The full tool result is converted directly into model input. Participant
+streams and persisted messages receive only an opaque completion status, so
+later edits or rejection do not leave lecturer examples in chat history.
 
 ## Consequences
 

@@ -116,6 +116,25 @@ describe('response-example runtime projection', () => {
     expect(JSON.stringify(selected)).not.toMatch(/\[\d+\]/)
   })
 
+  it('preserves citation-shaped Markdown outside renderer citation nodes', () => {
+    const answer = [
+      'Use the grounded concept [1].',
+      '',
+      '`array[1]`',
+      '',
+      '[reference](https://example.test/path/[1])',
+      '',
+      '$$',
+      'x[1]',
+      '$$',
+    ].join('\n')
+    const selected = boundResponseExampleSearchResults([candidate('1', answer)])
+
+    expect(selected[0]?.referenceAnswer).toBe(
+      answer.replace('[1].', '[example-source-1].')
+    )
+  })
+
   it('skips an example that cannot fit without truncating later examples', () => {
     const oversized = candidate(
       'oversized',

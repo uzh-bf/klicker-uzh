@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto'
-import { extractCitationIndexes } from './citations.js'
+import {
+  extractCitationIndexes,
+  extractCitationMarkerSpans,
+} from './citations.js'
 
 export const RESPONSE_EXAMPLE_RUNTIME_CONTRACT_VERSION = 1
 export const RESPONSE_EXAMPLE_SUMMARY_MAX_CHARACTERS = 1_500
@@ -122,36 +125,13 @@ export function buildResponseExampleSkillProjection(args: {
 }
 
 export function rewriteResponseExampleCitations(answer: string) {
-  const indexes = new Set(extractCitationIndexes(answer))
-  if (indexes.size === 0) return answer
+  const spans = extractCitationMarkerSpans(answer)
+  if (spans.length === 0) return answer
 
-  let result = ''
-  let searchFrom = 0
-  while (searchFrom < answer.length) {
-    const start = answer.indexOf('[', searchFrom)
-    if (start === -1) {
-      result += answer.slice(searchFrom)
-      break
-    }
-
-    result += answer.slice(searchFrom, start)
-    let end = start + 1
-    while (
-      end < answer.length &&
-      answer.charCodeAt(end) >= 48 &&
-      answer.charCodeAt(end) <= 57
-    ) {
-      end += 1
-    }
-    const citationIndex = Number(answer.slice(start + 1, end))
-    if (end > start + 1 && answer[end] === ']' && indexes.has(citationIndex)) {
-      result += `[example-source-${citationIndex}]`
-      searchFrom = end + 1
-      continue
-    }
-
-    result += answer[start]
-    searchFrom = start + 1
+  let result = answer
+  for (let index = spans.length - 1; index >= 0; index -= 1) {
+    const span = spans[index]!
+    result = `${result.slice(0, span.start)}[example-source-${span.citationIndex}]${result.slice(span.end)}`
   }
 
   return result
@@ -165,13 +145,16 @@ export function boundResponseExampleSearchResults(
   for (const candidate of candidates) {
     if (selected.length >= RESPONSE_EXAMPLE_SEARCH_MAX_ITEMS) break
 
+    const referenceAnswer = rewriteResponseExampleCitations(
+      candidate.referenceAnswer
+    )
+    if (extractCitationIndexes(referenceAnswer).length > 0) continue
+
     const projected: ResponseExampleSearchProjection = {
       id: candidate.id,
       responseStyle: candidate.responseStyle,
       studentMessage: candidate.studentMessage,
-      referenceAnswer: rewriteResponseExampleCitations(
-        candidate.referenceAnswer
-      ),
+      referenceAnswer,
       sourceAnchors: candidate.evidenceReferences.map((reference) => ({
         citationIndex: reference.citationIndex,
         citationAnchor: reference.citationAnchor,

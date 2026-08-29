@@ -18,12 +18,19 @@ model when and how to search. The model invokes the authenticated
 uses parameterized PostgreSQL full-text search with the question weighted above
 the ideal answer. Results require an exact chatbot-and-mode match, approved
 status, and currently eligible evidence. Ties are ordered by rank, update time,
-and stable ID.
+and stable ID. Ranking, current-evidence validation, and result projection use
+one database statement so a concurrent edit cannot mix example versions.
 
 Search accepts at most 4,000 characters and returns at most three complete
 examples within 24,000 serialized characters. It skips examples that do not fit
 instead of truncating them. Example citations use a separate example-source
-namespace and are not current-answer citations.
+namespace and are not current-answer citations. Rewriting changes only exact
+renderer citation nodes and preserves citation-shaped code, math, and links.
+The first release omits the whole skill when a set exceeds 200 examples.
+
+Full search results are model-only. The participant stream and stored chat
+message receive an opaque tool-completion status without questions, ideal
+answers, or source anchors.
 
 No match returns no full example. A loading or evidence-reconciliation failure
 omits both the summary and tool while the ordinary chat turn continues. A later

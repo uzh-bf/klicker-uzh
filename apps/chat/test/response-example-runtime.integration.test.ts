@@ -7,7 +7,10 @@ import {
   ResponseExampleStyle,
 } from '@klicker-uzh/prisma/client'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
-import { loadResponseExampleRuntimeSkill } from '../src/lib/server/responseExampleRuntime'
+import {
+  loadResponseExampleRuntimeSkill,
+  reconcileCurrentResponseExampleRuntimeSet,
+} from '../src/lib/server/responseExampleRuntime'
 
 const describePostgres =
   process.env.CHAT_RESPONSE_EXAMPLE_INTEGRATION === '1'
@@ -217,6 +220,41 @@ describePostgres('response-example PostgreSQL runtime', () => {
         .sort()
         .slice(0, 3)
     )
+
+    const concurrentlyEdited = await createApprovedExample({
+      studentMessage: 'concurrent version marker',
+      referenceAnswer: 'Old lecturer answer [1].',
+    })
+    let reconciliationCount = 0
+    const concurrentSkill = await loadResponseExampleRuntimeSkill({
+      prisma,
+      chatbotId: CHATBOT_ID,
+      chatMode: 'tutor',
+      role: 'included',
+      reconcile: async (client, chatbotId) => {
+        const snapshot = await reconcileCurrentResponseExampleRuntimeSet(
+          client,
+          chatbotId
+        )
+        reconciliationCount += 1
+        if (reconciliationCount === 2) {
+          await client.responseExample.update({
+            where: { id: concurrentlyEdited.id },
+            data: { referenceAnswer: 'Current lecturer answer [1].' },
+          })
+        }
+        return snapshot
+      },
+    })
+    const concurrentResult = await concurrentSkill.search(
+      'concurrent version marker'
+    )
+    expect(concurrentResult.examples).toEqual([
+      expect.objectContaining({
+        id: concurrentlyEdited.id,
+        referenceAnswer: 'Current lecturer answer [example-source-1].',
+      }),
+    ])
 
     const changedEvidence =
       await prisma.responseExampleEvidenceReference.findFirstOrThrow({

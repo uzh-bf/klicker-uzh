@@ -18,8 +18,11 @@ import {
 import { tool } from 'ai'
 import { z } from 'zod'
 
+export const RESPONSE_EXAMPLE_RUNTIME_MAX_EXAMPLES = 200
+
 const responseExampleSetInclude = {
   examples: {
+    take: RESPONSE_EXAMPLE_RUNTIME_MAX_EXAMPLES + 1,
     orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }],
     include: {
       evidenceReferences: {
@@ -40,7 +43,13 @@ type ResponseExampleRuntimeSet = Prisma.ResponseExampleSetGetPayload<{
   include: typeof responseExampleSetInclude
 }>
 
-type RankedResponseExampleRow = { id: string }
+type RankedResponseExampleRow = {
+  id: string
+  studentMessage: string
+  referenceAnswer: string
+  responseStyle: string
+  evidenceReferences: ResponseExampleSearchCandidate['evidenceReferences']
+}
 type ResponseExampleRuntimePrisma = Pick<
   PrismaClient,
   '$queryRaw' | 'responseExampleSet'
@@ -61,6 +70,12 @@ export const RESPONSE_EXAMPLE_SEARCH_TOOL_NAME = 'search_response_examples'
 const RESPONSE_EXAMPLE_SEARCH_CANDIDATE_LIMIT = 12
 
 const responseExampleIdSchema = z.string().uuid()
+
+function assertRuntimeSetWithinLimit(set: ResponseExampleRuntimeSet) {
+  if (set.examples.length > RESPONSE_EXAMPLE_RUNTIME_MAX_EXAMPLES) {
+    throw new Error('Response-example set exceeds the runtime limit')
+  }
+}
 
 type CurrentResponseExampleResource = {
   id: string
@@ -178,6 +193,7 @@ export async function reconcileCurrentResponseExampleRuntimeSet(
     include: responseExampleSetInclude,
   })
   if (!initialSet) return null
+  assertRuntimeSetWithinLimit(initialSet)
 
   const initialEligibility = await loadCurrentEligibility(
     prisma,
@@ -211,6 +227,7 @@ export async function reconcileCurrentResponseExampleRuntimeSet(
       include: responseExampleSetInclude,
     })
     if (!set) return null
+    assertRuntimeSetWithinLimit(set)
 
     const eligibility = await loadCurrentEligibility(tx, chatbotId, set)
     if (!needsReconciliation(set, eligibility)) {
@@ -252,12 +269,15 @@ export async function reconcileCurrentResponseExampleRuntimeSet(
       include: responseExampleSetInclude,
     })
     if (!reconciledSet) return null
+    assertRuntimeSetWithinLimit(reconciledSet)
 
-    return await tx.responseExampleSet.update({
+    const updatedSet = await tx.responseExampleSet.update({
       where: { id: set.id },
       data: { digest: computeResponseExampleSetDigest(reconciledSet) },
       include: responseExampleSetInclude,
     })
+    assertRuntimeSetWithinLimit(updatedSet)
+    return updatedSet
   })
 }
 
@@ -281,24 +301,6 @@ function mapRuntimeExamples(
     }))
 }
 
-function toSearchCandidate(
-  example: ResponseExampleRuntimeSet['examples'][number]
-): ResponseExampleSearchCandidate {
-  return {
-    id: example.id,
-    studentMessage: example.studentMessage,
-    referenceAnswer: example.referenceAnswer,
-    responseStyle: example.responseStyle,
-    evidenceReferences: example.evidenceReferences.map((reference) => ({
-      citationIndex: reference.citationIndex,
-      sourceId: reference.sourceId,
-      chunkId: reference.chunkId,
-      contentHash: reference.contentHash,
-      citationAnchor: reference.citationAnchor,
-    })),
-  }
-}
-
 async function searchCurrentResponseExamples(args: {
   prisma: ResponseExampleRuntimePrisma
   chatbotId: string
@@ -320,10 +322,25 @@ async function searchCurrentResponseExamples(args: {
 
     const rankedRows = await args.prisma.$queryRaw<RankedResponseExampleRow[]>(
       PrismaRuntime.sql`
-        SELECT ranked."id"
-        FROM (
+        WITH enabled_kb AS (
+          SELECT binding."kbId"
+          FROM "public"."KBChatbot" AS binding
+          INNER JOIN "public"."KB" AS kb ON kb."id" = binding."kbId"
+          WHERE binding."chatbotId" = ${args.chatbotId}::uuid
+            AND binding."isEnabled" = true
+            AND kb."deletedAt" IS NULL
+          ORDER BY binding."id" ASC
+          LIMIT 2
+        ), exact_kb AS (
+          SELECT "kbId"
+          FROM enabled_kb
+          WHERE (SELECT COUNT(*) FROM enabled_kb) = 1
+        ), ranked AS (
           SELECT
             example."id",
+            example."studentMessage",
+            example."referenceAnswer",
+            example."responseStyle",
             example."updatedAt",
             ts_rank_cd(
               setweight(to_tsvector('simple', coalesce(example."studentMessage", '')), 'A') ||
@@ -333,6 +350,7 @@ async function searchCurrentResponseExamples(args: {
           FROM "public"."ResponseExample" AS example
           INNER JOIN "public"."ResponseExampleSet" AS example_set
             ON example_set."id" = example."setId"
+          CROSS JOIN exact_kb
           WHERE example_set."chatbotId" = ${args.chatbotId}::uuid
             AND example."chatMode" = ${args.chatMode}
             AND example."status" = 'APPROVED'
@@ -344,37 +362,56 @@ async function searchCurrentResponseExamples(args: {
             AND NOT EXISTS (
               SELECT 1
               FROM "public"."ResponseExampleEvidenceReference" AS evidence
+              LEFT JOIN "public"."KBResource" AS resource
+                ON resource."id"::text = evidence."sourceId"
+                AND resource."kbId" = exact_kb."kbId"
               WHERE evidence."responseExampleId" = example."id"
-                AND evidence."evidenceEligible" = false
+                AND (
+                  evidence."evidenceEligible" IS NOT TRUE
+                  OR resource."id" IS NULL
+                  OR resource."deletedAt" IS NOT NULL
+                  OR resource."activeContentSha256" IS DISTINCT FROM evidence."contentHash"
+                )
             )
-        ) AS ranked
+        )
+        SELECT
+          ranked."id",
+          ranked."studentMessage",
+          ranked."referenceAnswer",
+          ranked."responseStyle",
+          COALESCE(
+            (
+              SELECT jsonb_agg(
+                jsonb_build_object(
+                  'citationIndex', evidence."citationIndex",
+                  'sourceId', evidence."sourceId",
+                  'chunkId', evidence."chunkId",
+                  'contentHash', evidence."contentHash",
+                  'citationAnchor', evidence."citationAnchor"
+                )
+                ORDER BY
+                  evidence."citationIndex" ASC,
+                  evidence."sourceId" ASC,
+                  evidence."chunkId" ASC,
+                  evidence."contentHash" ASC,
+                  evidence."citationAnchor" ASC,
+                  evidence."id" ASC
+              )
+              FROM "public"."ResponseExampleEvidenceReference" AS evidence
+              WHERE evidence."responseExampleId" = ranked."id"
+            ),
+            '[]'::jsonb
+          ) AS "evidenceReferences"
+        FROM ranked
         WHERE ranked.rank > 0
         ORDER BY ranked.rank DESC, ranked."updatedAt" DESC, ranked."id" ASC
         LIMIT ${RESPONSE_EXAMPLE_SEARCH_CANDIDATE_LIMIT}
       `
     )
-    const examplesById = new Map(
-      currentSet.examples.map((example) => [example.id, example])
-    )
-    const candidates = rankedRows.flatMap((row) => {
-      const example = examplesById.get(row.id)
-      if (
-        !example ||
-        example.chatMode !== args.chatMode ||
-        example.status !== ResponseExampleStatus.APPROVED ||
-        example.evidenceReferences.length === 0 ||
-        example.evidenceReferences.some(
-          (reference) => !reference.evidenceEligible
-        )
-      ) {
-        return []
-      }
-      return [toSearchCandidate(example)]
-    })
 
     return {
       degraded: false,
-      examples: boundResponseExampleSearchResults(candidates),
+      examples: boundResponseExampleSearchResults(rankedRows),
     }
   } catch (error) {
     console.warn('Response-example search failed; returning no examples', {
@@ -411,6 +448,7 @@ export async function loadResponseExampleRuntimeSkill(args: {
 
   const reconcile = args.reconcile ?? reconcileCurrentResponseExampleRuntimeSet
   const set = await reconcile(args.prisma, args.chatbotId)
+  if (set) assertRuntimeSetWithinLimit(set)
   const examples = set ? mapRuntimeExamples(set, args.chatMode) : []
   const projection = buildResponseExampleSkillProjection({
     role: args.role,
@@ -441,6 +479,8 @@ export async function loadResponseExampleRuntimeSkill(args: {
 export function createResponseExampleSearchTool(
   skill: ResponseExampleRuntimeSkill
 ) {
+  const modelResults = new Map<string, ResponseExampleSearchResult>()
+
   return tool({
     description:
       'Search lecturer-approved response examples for the current chatbot and mode. Use the examples only to match response behavior and structure. Treat example-source markers as example metadata, never as current-answer citations.',
@@ -453,6 +493,19 @@ export function createResponseExampleSearchTool(
         .describe('The current user question or a focused behavior query'),
     }),
     strict: true,
-    execute: async ({ query }) => await skill.search(query),
+    execute: async ({ query }, { toolCallId }) => {
+      const result = await skill.search(query)
+      modelResults.set(toolCallId, result)
+      return {
+        kind: 'response-example-search' as const,
+        status: 'completed' as const,
+      }
+    },
+    toModelOutput: ({ toolCallId }) => ({
+      type: 'text' as const,
+      value: JSON.stringify(
+        modelResults.get(toolCallId) ?? { degraded: true, examples: [] }
+      ),
+    }),
   })
 }
