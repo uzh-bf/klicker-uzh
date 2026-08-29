@@ -980,11 +980,13 @@ paths named by the package plan and do not revert other work.
 
 - Status: K6 is source-complete and published as open, non-draft PR #5650
   against `v3-ai`. The runtime skill, participant composition, and deterministic
-  current-source seed are committed; all armed review gates are cleared. The
-  approved one-time integration of `origin/v3-ai@bedc6a855` is complete, and
-  GitHub native stack #5657 records foundation PR #5092 followed by PR #5650.
-  Exact integrated-head checks remain the producing completion evidence;
-  merge, deployment, and live model use remain withheld.
+  current-source seed are committed; all implementation review gates are
+  cleared. The approved one-time integration of `origin/v3-ai@bedc6a855` is
+  complete. PR
+  #5650 remains a standalone PR into the long-lived `v3-ai` consolidation
+  branch; the user removed the invalid native stack registration with the
+  separate eventual promotion PR into `v3`. Merge, deployment, and live model
+  use remain withheld.
 - Completed: current `v3-ai` and PR #5633 seam mapping; response-example schema,
   API, and Manage workflow mapping; owner-preview mapping; Doc Query lineage
   contract mapping; evaluation-repository query-order mapping; required Sol
@@ -992,15 +994,18 @@ paths named by the package plan and do not revert other work.
   current-evidence slice; K6.2 bounded hybrid skill; K6.3 authenticated
   participant composition; native util, chat, PostgreSQL, GraphQL, type/schema,
   formatting, and lint verification; and the first slice review corrections.
-- Ready now: publish the integrated PR #5650 head and settle its exact-head
-  checks and forge review. K5 starts only after K6 lands on `v3-ai`.
+- Ready now: keep the integrated PR #5650 head stable and resolve support for
+  final review on consolidation-branch PRs separately. K5 starts only after K6
+  lands on `v3-ai`.
   K7 planning can follow the K6 runtime contract without waiting for W8.
 - External decision: U0 cannot create a branch until the `mcp-doc-query`
   `main`/`dev` flow is explicitly resolved.
 - Blocked: K8 remains blocked on W8 synthetic active-serving proof. U0-backed
   live source proof, deployment, and activation remain separately withheld.
-- Delivery: K6 has reached the `pr_ready` layer through PR #5650 in native
-  GitHub stack #5657. K5 becomes the next independent package after K6 is
-  merged and separately authorized.
-- Next action: keep PR #5650 at its integrated published head until required
-  checks settle. Merge remains separately withheld.
+- Delivery: K6 has reached the `pr_ready` layer through standalone PR #5650
+  into `v3-ai`. The eventual `v3-ai` to `v3` promotion is not part of this
+  package or a native stack. K5 becomes the next independent package after K6
+  is merged and separately authorized.
+- Next action: keep PR #5650 at its integrated published head while the
+  consolidation-branch review-policy gap is handled separately. Merge remains
+  separately withheld.

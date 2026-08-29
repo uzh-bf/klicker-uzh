@@ -9,8 +9,8 @@
 - Target: `v3-ai`
 - Baseline: `609000ea9626e3fef2e713768ca2a796cac2f9a4`
 - PR: [#5650](https://github.com/uzh-bf/klicker-uzh/pull/5650)
-- Native stack: [v3-ai PR #5092](https://github.com/uzh-bf/klicker-uzh/pull/5092)
-  followed by PR #5650
+- Topology: standalone PR into the long-lived `v3-ai` consolidation branch;
+  not a native stack with the eventual `v3-ai` to `v3` promotion
 - Program plan: [Chatbot Test & Teach ground-truth plan](./2026-08-28-chatbot-test-and-teach-ground-truth-plan.md)
 
 ## Goal
@@ -37,8 +37,8 @@ preview and the later examples-excluded baseline.
   browser proof only if a visible UI changes, required read-only reviews,
   local commits, the separately authorized exact branch push and PR
   publication, branch-caused exact-head CI or review corrections, the
-  separately approved one-time integration of current `origin/v3-ai`, and
-  registration of PR #5650 above PR #5092 in GitHub's native stack.
+  separately approved one-time integration of current `origin/v3-ai`, and the
+  user-directed correction of the invalid native stack registration.
 - Withheld: any further upstream integration, merge, release, deployment,
   runtime activation, live model calls, secret access, and staging or
   production data.
@@ -51,12 +51,12 @@ preview and the later examples-excluded baseline.
 
 ## Decisions
 
-- Keep PR #5650 targeted at `v3-ai`. For the repository's required final-review
-  policy, register it as the upper layer of the native GitHub stack rooted at
-  the existing `v3-ai` PR #5092. This changes only forge topology: PR #5092
-  remains the lower integration layer and PR #5650 remains the independently
-  reviewable response-example runtime layer. No other open `v3-ai` PR joins
-  this stack.
+- Keep PR #5650 as a standalone PR targeted at `v3-ai`. The branch is a
+  long-lived consolidation branch for staging deployment, not the foundation
+  of a native stack. Never stack this PR with the separate eventual promotion
+  PR from `v3-ai` into `v3`. This supersedes the provisional stack registration
+  from 2026-08-29, which the user removed after identifying the invalid
+  topology.
 
 - Keep the first implementation small. Use one server-only response-example
   runtime module in the chat app and shared pure projection helpers in the util
@@ -198,9 +198,9 @@ preview and the later examples-excluded baseline.
   correction is committed, reviewed, and passed every hosted Playwright shard
   on its published head. The separately approved integration of
   `origin/v3-ai@bedc6a855` is complete without conflicts or overlapping product
-  changes. GitHub native stack #5657 now records PR #5092 followed by PR #5650.
-  Exact integrated-head checks remain the producing completion evidence;
-  merge, deployment, and live model use remain withheld.
+  changes. PR #5650 remains a standalone PR into the long-lived `v3-ai`
+  consolidation branch. The user removed the invalid native stack registration
+  with PR #5092. Merge, deployment, and live model use remain withheld.
 - Completed: remote-state gate, clean purpose-based worktree, approved program
   plan transfer, current source seam mapping, package-plan narrowing, shared
   current-evidence validation, owner-service reconciliation, and focused util,
@@ -247,10 +247,11 @@ preview and the later examples-excluded baseline.
   `Busy`; devrouter route readback is blocked by a host-route lock identity
   error. No raw DevPod stop or cleanup bypass was attempted.
 - Delivery: branch `feat/chatbot-response-example-runtime` is published at PR
-  #5650. The PR is mergeable and `UNSTABLE`. The final-review policy rejects a
-  standalone PR targeting non-default branch `v3-ai`; native stack #5657 now
-  supplies the required topology through draft foundation PR #5092. The
-  one-time approved upstream integration is complete. Any further upstream
-  integration and merge remain separately withheld.
-- Next: publish the integrated branch and settle PR #5650's exact-head checks
-  and forge review. Merge remains separately withheld.
+  #5650 as a standalone PR into `v3-ai`. Exact-head CodeQL and GitGuardian pass.
+  The final-review policy rejects a standalone PR targeting a non-default
+  branch; no stack workaround applies to a consolidation branch. The one-time
+  approved upstream integration is complete. Any further upstream integration,
+  review-policy change, and merge remain separately withheld.
+- Next: keep the integrated PR head stable. Resolve support for final review on
+  consolidation-branch PRs as a separate repository-policy package before
+  merge; do not involve the eventual `v3-ai` to `v3` promotion PR.

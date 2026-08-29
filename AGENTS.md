@@ -10,6 +10,7 @@
 ## Stacked PRs
 
 - GitHub stacked PRs are enabled for this repository. Always use `$stacked-change` and `$gh-stack` for larger features: substantial cross-layer or multi-concern work, changes with distinct reviewer audiences or runtime models, and existing large branches that need decomposition. Keep an ordinary single PR for small, cohesive changes only.
+- `v3-ai` is a long-lived consolidation branch that combines AI feature work for deployment to environments such as staging. Treat PRs targeting `v3-ai` as ordinary PRs into that branch. Never stack them with the separate eventual promotion PR from `v3-ai` into `v3`; that promotion can remain open or draft for an extended period.
 - This is a KlickerUZH repository capability, not a GitHub-wide assumption. Verify native stack support before using the workflow in another repository.
 
 ## Commands
