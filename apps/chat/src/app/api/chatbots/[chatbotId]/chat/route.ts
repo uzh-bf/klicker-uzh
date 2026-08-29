@@ -649,11 +649,7 @@ export async function POST(
     ),
     threadId: z.string().min(1).nullable().optional(),
     selectedModel: z.string().min(1),
-    selectedMode: z
-      .string()
-      .optional()
-      .transform((val) => val?.toLowerCase())
-      .default('tutor'),
+    selectedMode: z.string().optional().default('tutor'),
     reasoningEffort: z.string().min(1).optional().default('none'),
     parentId: z.string().min(1).nullable().optional(),
     assistantMessageId: z.string().min(1),
@@ -811,28 +807,10 @@ export async function POST(
     }
   }
 
-  const enabledMCPConfigurations = (chatbot.mcpConfigurations ?? []).filter(
-    (config) => config.isEnabled !== false
-  )
   const selectedMCPConfigurations = resolveEffectiveMCPConfigurations(
     chatbot.mcpConfigurations ?? [],
     selectedMode
   )
-  const chatbotHasRequiredMCP = enabledMCPConfigurations.some(
-    (config) => asObject(config.parameters)?.required === true
-  )
-  const selectedModeHasRequiredMCP = selectedMCPConfigurations.some(
-    (config) => asObject(config.parameters)?.required === true
-  )
-  if (chatbotHasRequiredMCP && !selectedModeHasRequiredMCP) {
-    return NextResponse.json(
-      {
-        error: 'Required MCP tool unavailable',
-        code: REQUIRED_MCP_UNAVAILABLE_CODE,
-      },
-      { status: 503 }
-    )
-  }
 
   mcpServersWithConfigs = selectedMCPConfigurations.map((config) => ({
     server: {
