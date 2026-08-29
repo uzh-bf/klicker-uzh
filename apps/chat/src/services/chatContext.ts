@@ -47,32 +47,25 @@ export function formatKlickerChatContextForPrompt(value: unknown): string {
 
   const currentStep = context.question?.currentStep
   const totalSteps = context.question?.totalSteps
+  const hasCompleteProgress =
+    currentStep != null && totalSteps != null && totalSteps > 0
   const promptContext = {
     surface: context.surface,
     courseId: context.courseId,
-    ...(context.activity
+    activity: context.activity
       ? {
-          activity: {
-            type: context.activity.type,
-            ...(context.activity.displayName
-              ? { displayName: context.activity.displayName }
-              : {}),
-          },
+          type: context.activity.type,
+          displayName: context.activity.displayName,
         }
-      : {}),
-    ...(context.question
+      : undefined,
+    question: context.question
       ? {
-          question: {
-            ...(currentStep != null && totalSteps != null && totalSteps > 0
-              ? { currentStep, totalSteps }
-              : {}),
-            ...(context.question.type ? { type: context.question.type } : {}),
-            ...(context.question.contentPreview
-              ? { contentPreview: context.question.contentPreview }
-              : {}),
-          },
+          currentStep: hasCompleteProgress ? currentStep : undefined,
+          totalSteps: hasCompleteProgress ? totalSteps : undefined,
+          type: context.question.type,
+          contentPreview: context.question.contentPreview,
         }
-      : {}),
+      : undefined,
   }
   const encodedContext = JSON.stringify(promptContext)
     .replaceAll('<', '\\u003c')
