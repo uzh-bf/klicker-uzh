@@ -3,8 +3,8 @@
 set -Eeuo pipefail
 umask 077
 
-readonly RECONCILER_REVISION='dd5c766c586303835f42601cfcb7a030684e78e8'
-readonly RECONCILER_SHA256='5177bf64aeb9cb77884ed968f5f93215ab367dbb7b62ff73aa5aea3cbfd10be3'
+readonly RECONCILER_REVISION='eb8ac25bce56671e3b81c89b5ece7ea9c8858387'
+readonly RECONCILER_SHA256='b9ce1f32ccfffd29fe06e0ec7503580bdf463bea50c36e9b507cda806164f52b'
 readonly RECONCILER_URL="https://raw.githubusercontent.com/uzh-bf/klicker-uzh/${RECONCILER_REVISION}/util/reconcile-hetzner-arm64-runner-host.sh"
 readonly REMOTE_RECONCILER='/root/reconcile-hetzner-arm64-runner-host.sh'
 readonly CONFIRMATION='RECONCILE PUBLIC PR RUNNER POOL'
