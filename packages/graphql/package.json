@@ -14,6 +14,7 @@
     "@hatchet-dev/typescript-sdk": "1.9.4",
     "@klicker-uzh/grading": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
+    "@klicker-uzh/product-tours": "workspace:*",
     "@klicker-uzh/product-updates": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@klicker-uzh/util": "workspace:*",

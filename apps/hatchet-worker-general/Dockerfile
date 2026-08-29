@@ -55,6 +55,7 @@ COPY --from=builder /app/packages/types/dist/ /app/packages/types/dist/
 COPY --from=builder /app/packages/util/dist/ /app/packages/util/dist/
 COPY --from=builder /app/packages/grading/dist/ /app/packages/grading/dist/
 COPY --from=builder /app/packages/product-updates/dist/ /app/packages/product-updates/dist/
+COPY --from=builder /app/packages/product-tours/dist/ /app/packages/product-tours/dist/
 COPY --from=builder /app/apps/hatchet-worker-general/dist/ /app/apps/hatchet-worker-general/dist/
 
 USER nodejs

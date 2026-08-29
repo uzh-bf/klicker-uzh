@@ -144,6 +144,7 @@
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
+        "@klicker-uzh/product-tours#build",
         "@klicker-uzh/product-updates#build",
         "@klicker-uzh/transactional#build"
       ],
@@ -157,6 +158,7 @@
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
+        "@klicker-uzh/product-tours#build",
         "@klicker-uzh/product-updates#build",
         "@klicker-uzh/transactional#build"
       ],
@@ -170,6 +172,7 @@
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
+        "@klicker-uzh/product-tours#build",
         "@klicker-uzh/product-updates#build",
         "@klicker-uzh/transactional#build"
       ],
@@ -183,6 +186,7 @@
         "@klicker-uzh/graphql#build",
         "@klicker-uzh/markdown#build",
         "@klicker-uzh/word-cloud#build",
+        "@klicker-uzh/product-tours#build",
         "@klicker-uzh/product-updates#build",
         "@klicker-uzh/transactional#build"
       ],
