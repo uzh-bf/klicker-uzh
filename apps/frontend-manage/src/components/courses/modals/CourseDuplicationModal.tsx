@@ -202,8 +202,10 @@ function getCourseDuplicationEndDateSchema(t: TranslationFn) {
     .test('checkDateInPast', t('manage.courseList.endDateFuture'), (d) => {
       return !!(d && d > new Date())
     })
-    .when('startDate', (startDate, schema) =>
-      schema.min(startDate, t('manage.courseList.endAfterStart'))
+    .when('startDate', ([startDate], schema) =>
+      startDate
+        ? schema.min(startDate, t('manage.courseList.endAfterStart'))
+        : schema
     )
     .required(t('manage.courseList.courseEndReq'))
 }

@@ -1343,6 +1343,7 @@ async function verifyCourseDuplicationModalUi(page: Page) {
   await expect(groupDeadlineInput).toHaveAttribute('type', 'date')
   await groupDeadlineInput.fill(adjustedGroupDeadlineValue)
   await expect(groupDeadlineInput).toHaveValue(adjustedGroupDeadlineValue)
+  await expect(page.getByTestId('manipulate-course-submit')).toBeEnabled()
 
   for (const testId of [
     'course-live-quizzes',
