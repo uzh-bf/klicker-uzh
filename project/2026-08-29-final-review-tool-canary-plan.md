@@ -37,7 +37,7 @@
 - Branch: `rs/final-review-tool-canary`.
 - Worktree: `trees/rs-final-review-tool-canary`.
 - Target: `origin/v3`.
-- Baseline: `05d379714738d6dca124bc973d81b4bd0206258e`.
+- Baseline: `bb495a1b20886b8744798dd2b3d188b3cfabf982`.
 - Package: one ordinary regression-fix PR.
 
 ## Evidence and decision
@@ -64,12 +64,19 @@
   read-only LLM test command, not review execution. A supplemental planner pass
   accepted using the default path on fresh GitHub-hosted runners and retaining
   the existing always-run cleanup.
+- `origin/v3` advanced through PR #5660 while this package was local. The user
+  explicitly chose GLM 5.3 Flash for individual and cumulative stack/topology
+  final reviews, superseding that PR's Opus stack policy. DeepSeek V4 Flash
+  0731 remains the unchanged low-cost draft reviewer.
 - Product primitives are unaffected. The ADR gate remains closed because this
   reuses the existing provider, credential, trigger, status, and data boundary.
 
 ## Design contract
 
 - Upgrade only the two manual jobs to OpenCodeReview 1.11.0.
+- Use `z-ai/glm-5.3-flash` for both manual individual and cumulative
+  stack/topology review. Keep `deepseek/deepseek-v4-flash-0731` for the separate
+  automatic draft workflow.
 - Pass `--effort low` to every manual `ocr review` invocation so the OCR
   upgrade stays at one review round. Keep `reasoning.effort: high` for
   OpenRouter.
@@ -98,13 +105,14 @@
 | `.github/workflows/check-ocr-final-review.yml` | Pin OCR, invoke the canary, and retain one review round |
 | `.github/scripts/final-ai-review.js` | Shared canary request, validation, sanitized diagnostics, and CLI command |
 | `.github/scripts/final-ai-review.test.js` | Canary, configuration, and workflow-source regression tests |
+| `.github/scripts/final-ai-stack-review.js` | Restore GLM for cumulative code and strict topology review |
+| `.github/scripts/final-ai-stack-review.test.js` | Lock the shared GLM final-review model policy |
+| `AGENTS.md` | Restore standing authorization for the low-cost GLM stack command |
 | `docs/ci-and-deployment.md` | Operator behavior and hosted-proof boundary |
 | `docs/solutions/integration/opencodereview-tool-call-preflight.md` | Non-obvious failure mechanism and prevention |
 | This plan | Durable execution and evidence record |
 
-`final-ai-stack-review.js`, its test, and
-`.github/workflows/check-ocr-review.yml` remain excluded unless direct evidence
-shows the shared helper cannot serve the stack path.
+`.github/workflows/check-ocr-review.yml` remains excluded and unchanged.
 
 ## Test portfolio
 
@@ -115,6 +123,7 @@ shows the shared helper cannot serve the stack path.
 | Sanitized provider failure | add | Error normalizer | Raw content, controls, key, or unbounded text reaches logs |
 | Malformed success and secret leakage | add | Response validator and CLI rendering | HTTP 200 is mistaken for tool success or the key is echoed |
 | Both manual jobs use one canary and OCR 1.11.0 | extend | Workflow-source test | One job keeps the weak preflight, wrong version, or two-round default |
+| Final and draft model policy | extend | Individual and stack source tests | Opus returns, or the draft reviewer stops using DeepSeek V4 Flash 0731 |
 | Exact OCR wire shape | add qualification probe | Fake local OpenAI-compatible endpoint | Release assumptions differ from the real CLI request |
 | Real provider behavior | post-merge proof | Manual individual and stack commands | Unit-safe code still fails against hosted OpenRouter/OCR |
 
@@ -165,8 +174,8 @@ workflow and current OpenRouter provider route work together.
 
 ## Progress
 
-- Status: S1 implementation, focused verification, and immutable slice review
-  pass; integrated final review and publication remain.
+- Status: implementation is rebased onto current `v3`; full verification and
+  immutable reviews are being repeated for the new exact head.
 - Completed: fresh authoritative baseline, hosted failure reconciliation,
   upstream release/source qualification, OpenRouter endpoint inspection,
   local credential-boundary check, baseline tests, native planning review, the
@@ -174,12 +183,16 @@ workflow and current OpenRouter provider route work together.
 - Probe evidence: one synthetic file completed with one tool request using GLM
   5.3 Flash, high reasoning, `max_completion_tokens: 16384`, and no provider
   order.
-- Verification: 105 helper and qualification tests pass; all 8 offline fixtures
-  match; workflow YAML parses; locked Biome 2.5.2 and Prettier 3.3.3 checks pass;
-  `git diff --check` passes; the low-cost draft workflow is unchanged.
-- Review: the simplifier and risk-selected slice reviewer returned `DONE` with
-  no findings for immutable commit `347a07918`. The incident lesson is captured
-  in a separate `docs(solutions)` commit.
+- Rebase evidence: branch `rs/final-review-tool-canary` is zero commits behind
+  current baseline `bb495a1b2`. The four expected conflicts preserve the exact
+  canary implementation while deliberately restoring GLM for stack review.
+- Verification after rebase: 86 individual and stack helper tests pass; both
+  workflow files parse; locked Biome 2.5.2 and Prettier 3.3.3 checks pass;
+  `git diff --check` passes; model-source checks confirm GLM for both final
+  paths and DeepSeek V4 Flash 0731 for drafts.
+- Review: the pre-rebase simplifier and slice-review receipts covered superseded
+  commit `347a07918` and are no longer completion evidence. Both gates will run
+  again on immutable rebased commit `9901974c3` and any follow-up plan commit.
 - Limitations: trusted advisor unavailable due expired OAuth; local live
   OpenRouter request unavailable without changing the approved secret setup.
   The managed devcontainer could not start because this checkout requires
