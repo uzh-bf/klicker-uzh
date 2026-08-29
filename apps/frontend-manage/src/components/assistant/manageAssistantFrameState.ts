@@ -60,5 +60,7 @@ export function reduceManageAssistantFrameState(
     return { ...state, phase: 'delayed' }
   }
 
-  return { ...state, phase: 'failed' }
+  if (action.type === 'error') return { ...state, phase: 'failed' }
+
+  return state
 }

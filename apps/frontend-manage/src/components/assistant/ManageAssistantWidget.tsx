@@ -40,6 +40,7 @@ import {
 import {
   createManageAssistantFrameState,
   MANAGE_ASSISTANT_LOADING_DEADLINE_MS,
+  type ManageAssistantFramePhase,
   reduceManageAssistantFrameState,
 } from './manageAssistantFrameState'
 import {
@@ -58,6 +59,16 @@ import {
 const MANAGE_ASSISTANT_PANEL_ID = 'manage-assistant-panel'
 const MANAGE_ASSISTANT_PANEL_SIZE_STORAGE_KEY =
   'klicker-manage-assistant-panel-size-v1'
+const MANAGE_ASSISTANT_OVERLAY_DATA_CY: Record<
+  ManageAssistantFramePhase,
+  string | undefined
+> = {
+  ready: undefined,
+  loading: 'manage-assistant-loading',
+  retrying: 'manage-assistant-loading',
+  delayed: 'manage-assistant-delayed',
+  failed: 'manage-assistant-failed',
+}
 const DESKTOP_PANEL_MEDIA_QUERY = '(min-width: 768px)'
 
 export function ManageAssistantWidget() {
@@ -483,11 +494,8 @@ export function ManageAssistantWidget() {
                   role={frameState.phase === 'failed' ? 'alert' : 'status'}
                   className="absolute inset-0 z-10 flex items-center justify-center bg-white px-6 text-sm text-gray-600"
                   data-cy={
-                    frameState.phase === 'failed'
-                      ? 'manage-assistant-failed'
-                      : frameState.phase === 'delayed'
-                        ? 'manage-assistant-delayed'
-                        : 'manage-assistant-loading'
+                    MANAGE_ASSISTANT_OVERLAY_DATA_CY[frameState.phase] ??
+                    'manage-assistant-loading'
                   }
                 >
                   {frameState.phase === 'loading' ||
