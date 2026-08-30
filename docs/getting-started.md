@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-08-27'
+timestamp: '2026-08-29'
 tags:
   - environment
   - onboarding
@@ -52,7 +52,7 @@ Postgres and Hatchet as the boot-critical base.
 2. **Accessing the apps:**
    - **Mode 1 (Primary checkout):** Stable routes such as `https://manage.klicker.localhost` plus the fixed localhost ports. Lecturer login is `lecturer`/`abcd`.
    - **Mode 2 (linked checkout):** Routes linked-worktree traffic over HTTPS at `https://manage.klicker.<workspace>.localhost`. Requires:
-     1. Install devrouter ≥ 0.0.42 and run `devrouter setup --yes` once. Version 0.0.39 is not safe for failed managed profile transitions.
+     1. Install devrouter ≥ 0.0.46 and run `devrouter setup --yes` once. Version 0.0.42 does not enforce post-create lifecycle ordering for managed adapters, 0.0.44 serializes shared TLS refresh, 0.0.45 assigns collision-safe identities to parallel DevPod and Devsy worktrees, and 0.0.46 queues parallel provider transitions fairly with visible wait progress and fail-closed detached-state recovery.
      2. From an existing linked worktree, start and prove the environment with:
         ```bash
         devrouter ensure .
@@ -67,6 +67,14 @@ needed; for example, `devrouter ensure . --profile chat,ai,mcp`. Capability-only
 profiles run no Turbo app process. Omitting `--profile` keeps the compatibility
 default `full`. Profile unions are additive and order-insensitive, and a warm
 transition does not recreate the app container or reset persistent data.
+
+Parallel task work should use one linked worktree per task and the smallest
+matching profile. A Manage-only task uses `manage`; Chat AI uses `chat,ai`;
+tool-calling work adds `mcp`; email work adds `email`. Independent worktrees
+keep separate app caches, database state, routes, and processes while sharing
+only the package-download cache. Do not default every parallel worktree to
+`full`, because that starts LiteLLM, MCP, MailHog, every routed app, and both
+workers in each environment.
 
 Playwright is the deliberate toolchain exception. Run
 `pnpm playwright:host -- <args>` from the host; the launcher calls
@@ -89,6 +97,20 @@ and declared non-secret origin environment in
 stale owned groups are replaced boundedly, unknown processes are never killed,
 and a failed profile transition restores the last usable generated config.
 
+The Dev Container waits for `postCreateCommand` before managed post-start.
+Post-create publishes a fixed container-local completion marker only after the
+destructive bootstrap and generated runtime inputs succeed; post-start checks
+that marker before it reads those inputs or starts a process. If the marker is
+missing or malformed, treat the workspace as incompletely bootstrapped and use
+the canonical stop/recovery path. A warm profile switch never manufactures the
+marker or reruns database bootstrap. The `ROOT` contract in
+[post-create](../.devcontainer/post-create.sh) and
+[post-start](../.devcontainer/post-start.sh) canonicalizes
+`KLICKER_DEVCONTAINER_ROOT` once and uses that same checkout for every
+repository-local path. Post-create invalidates any earlier completion marker
+before it validates the configured root, so an invalid override cannot expose a
+stale successful bootstrap.
+
 Devrouter owns generic process lifecycle and route readiness. `ensure` verifies
 the selected routes and can spend one container recreate when an exact
 workspace is alive but an application remains unhealthy. The repository-owned
@@ -96,7 +118,7 @@ semantic checks perform one bounded `.next` repair only after a known route
 repeatedly returns the stale-route signature. The adapter also primes Manage's
 course list and a synthetic course-detail URL within one bounded deadline.
 
-The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.42`.
+The consumer contract is pinned once in `.devrouter.yml` at devrouter `0.0.46`.
 The devcontainer image contains no devrouter package or helper, and
 `devcontainer.json` does not run the managed adapter independently.
 
