@@ -194,6 +194,27 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
     await expect(page.getByTestId('chatbot-disclaimer-title')).toBeDisabled()
     await expect(disclaimerEditor).toHaveAttribute('aria-disabled', 'true')
     await expect(disclaimerEditor).toHaveAttribute('contenteditable', 'false')
+    for (const toolbarButton of [
+      'content-input-bold',
+      'content-input-italic',
+      'content-input-numbered-list',
+      'content-input-bulleted-list',
+      'content-input-undo',
+      'content-input-redo',
+    ]) {
+      await expect(page.getByTestId(toolbarButton)).toBeDisabled()
+    }
+    await disclaimerEditor.focus()
+    await disclaimerEditor.dispatchEvent('keydown', {
+      code: 'KeyI',
+      ctrlKey: process.platform !== 'darwin',
+      key: 'i',
+      metaKey: process.platform === 'darwin',
+    })
+    await expect(page.getByTestId('content-input-italic')).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    )
     disclaimerRequestGate.release()
     await expect(
       page.getByRole('status').filter({ hasText: 'Chatbot disclaimer saved.' })
