@@ -151,16 +151,16 @@ type ManageSuggestion =
 
 type ManageSuggestionId = ManageSuggestion['id']
 
+const NO_SAVE_INSTRUCTION = 'do not save anything.'
+
 const PLAN_QUESTION_NO_SAVE: Pick<ThreadSuggestion, 'prompt' | 'text'> = {
   text: 'Plan a question',
-  prompt:
-    'Help me plan a question as a no-save preview. Ask me for the topic and question type if needed, and do not save anything.',
+  prompt: `Help me plan a question as a no-save preview. Ask me for the topic and question type if needed, and ${NO_SAVE_INSTRUCTION}`,
 }
 
 const IMPROVE_FEEDBACK_NO_SAVE: Pick<ThreadSuggestion, 'prompt' | 'text'> = {
   text: 'Improve feedback',
-  prompt:
-    'Ask me to provide the question and its answer options, then suggest concise answer-specific feedback, and do not save anything.',
+  prompt: `Ask me to provide the question and its answer options, then suggest concise answer-specific feedback, and ${NO_SAVE_INSTRUCTION}`,
 }
 
 const READ_ONLY_OVERRIDES: Partial<
@@ -168,30 +168,25 @@ const READ_ONLY_OVERRIDES: Partial<
 > = {
   'activity-creation-draft': {
     text: 'Plan quiz questions',
-    prompt:
-      'Help me plan one or more quiz questions as a no-save preview. Ask me for the topic and question type if unclear, and do not save anything.',
+    prompt: `Help me plan one or more quiz questions as a no-save preview. Ask me for the topic and question type if unclear, and ${NO_SAVE_INSTRUCTION}`,
   },
   'course-dashboard-draft': {
     text: 'Plan course question',
-    prompt:
-      'Help me plan a course question as a no-save preview. Ask me for the topic and question type if unclear, and do not save anything.',
+    prompt: `Help me plan a course question as a no-save preview. Ask me for the topic and question type if unclear, and ${NO_SAVE_INSTRUCTION}`,
   },
   'element-editor-variant': {
     text: 'Plan a variant',
-    prompt:
-      'Help me plan a variant as a no-save preview. Ask me to provide any question details you cannot access, and do not save anything.',
+    prompt: `Help me plan a variant as a no-save preview. Ask me to provide any question details you cannot access, and ${NO_SAVE_INSTRUCTION}`,
   },
   'evaluation-followup': {
     text: 'Plan follow-up',
-    prompt:
-      'Help me plan a follow-up question as a no-save preview. Ask me to describe the learning gap, and do not save anything.',
+    prompt: `Help me plan a follow-up question as a no-save preview. Ask me to describe the learning gap, and ${NO_SAVE_INSTRUCTION}`,
   },
   'general-draft': PLAN_QUESTION_NO_SAVE,
   'general-feedback': IMPROVE_FEEDBACK_NO_SAVE,
   'question-pool-draft': {
     text: 'Plan a question',
-    prompt:
-      'Help me plan a single-choice question as a no-save preview. Ask me for the topic first if needed, and do not save anything.',
+    prompt: `Help me plan a single-choice question as a no-save preview. Ask me for the topic first if needed, and ${NO_SAVE_INSTRUCTION}`,
   },
 }
 
@@ -216,11 +211,13 @@ function withoutPersistenceIntent(
   suggestion: ManageSuggestion
 ): ThreadSuggestion {
   const override = READ_ONLY_OVERRIDES[suggestion.id]
+  // Full overrides relabel starters whose base copy implies writing; the suffix
+  // safely constrains every other prompt without changing its original intent.
   if (override) return { ...suggestion, ...override }
 
   return {
     ...suggestion,
-    prompt: `${suggestion.prompt} Do not save anything.`,
+    prompt: `${suggestion.prompt} Please ${NO_SAVE_INSTRUCTION}`,
   }
 }
 

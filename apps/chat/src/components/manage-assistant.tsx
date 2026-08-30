@@ -55,27 +55,35 @@ function ManageAssistantInner() {
   const suggestions = welcomeCapability
     ? getManageSuggestions(context, welcomeCapability)
     : []
+  let capabilityActions: ThreadWelcomeCapability[] = []
+  let limitsNote: string | undefined
+  switch (welcomeCapability) {
+    case 'draft-and-read':
+      capabilityActions = [
+        { icon: SearchIcon, text: t('capabilitySearch') },
+        { icon: FilePenLineIcon, text: t('capabilityDraft') },
+      ]
+      limitsNote = t('limitsNote')
+      break
+    case 'read-only':
+      capabilityActions = [
+        { icon: SearchIcon, text: t('capabilitySearch') },
+        { icon: FilePenLineIcon, text: t('capabilityNoSaveDraft') },
+      ]
+      limitsNote = t('degradedLimitsNote')
+      break
+    case 'unavailable':
+      capabilityActions = [
+        { icon: FilePenLineIcon, text: t('capabilityNoSaveDraft') },
+      ]
+      limitsNote = t('degradedLimitsNote')
+      break
+  }
   const capabilities: ThreadWelcomeCapability[] = [
+    ...capabilityActions,
     { icon: MessageSquareTextIcon, text: t('capabilityFeedback') },
     { icon: BookOpenTextIcon, text: t('capabilityDocumentation') },
   ]
-  let limitsNote: string | undefined
-  if (welcomeCapability) {
-    capabilities.unshift({
-      icon: FilePenLineIcon,
-      text:
-        welcomeCapability === 'draft-and-read'
-          ? t('capabilityDraft')
-          : t('capabilityNoSaveDraft'),
-    })
-    if (welcomeCapability !== 'unavailable') {
-      capabilities.unshift({ icon: SearchIcon, text: t('capabilitySearch') })
-    }
-    limitsNote =
-      welcomeCapability === 'draft-and-read'
-        ? t('limitsNote')
-        : t('degradedLimitsNote')
-  }
 
   return (
     <ManageAssistantRuntimeProvider

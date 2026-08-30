@@ -921,3 +921,14 @@ follow_up_stacks:
 - Next: Commit and push the final A2 review correction, post the summary
   disposition, refresh PR #5679, and require all eight exact-head hosted
   Playwright shards before accepting A2 and starting A3.
+- A2 review round four: The accepted low-severity findings replace reverse
+  array mutation with explicit capability-state layouts, align the preflight
+  request with the file's async/await style, centralize the no-save boundary,
+  and document why write-oriented starters use full copy overrides while other
+  prompts use a conservative suffix. The shared API-path suggestion is rejected
+  because the filesystem route is authoritative and a client constant would be
+  a second source of truth. Raw preflight error logging is rejected because this
+  public endpoint intentionally emits values-free diagnostics.
+- Next: Verify, commit, and push the accepted review cleanup, post the exact
+  disposition, resolve the remaining thread, refresh PR #5679, and require all
+  exact-head hosted checks before accepting A2 and starting A3.

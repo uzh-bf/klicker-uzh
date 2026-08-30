@@ -24,12 +24,13 @@ export function useManageAssistantCapabilities() {
     const revisionAtStart = turnRevision.current
     dispatch({ type: 'check' })
 
-    void fetch('/api/manage/capabilities', {
-      cache: 'no-store',
-      credentials: 'same-origin',
-      signal: createManageAssistantPreflightSignal(controller.signal),
-    })
-      .then(async (response) => {
+    async function requestCapabilities() {
+      try {
+        const response = await fetch('/api/manage/capabilities', {
+          cache: 'no-store',
+          credentials: 'same-origin',
+          signal: createManageAssistantPreflightSignal(controller.signal),
+        })
         if (!response.ok) {
           throw new Error(
             `Manage assistant capability preflight failed (${response.status})`
@@ -49,8 +50,7 @@ export function useManageAssistantCapabilities() {
         ) {
           dispatch({ capability, type: 'resolve' })
         }
-      })
-      .catch(() => {
+      } catch {
         if (
           preflightController.current === controller &&
           !controller.signal.aborted &&
@@ -58,7 +58,10 @@ export function useManageAssistantCapabilities() {
         ) {
           dispatch({ capability: 'unavailable', type: 'resolve' })
         }
-      })
+      }
+    }
+
+    void requestCapabilities()
   }, [])
 
   useEffect(() => {
