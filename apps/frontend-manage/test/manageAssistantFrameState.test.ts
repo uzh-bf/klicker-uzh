@@ -25,11 +25,11 @@ const recoveredLate = reduceManageAssistantFrameState(delayed, {
 })
 assert.equal(recoveredLate.phase, 'ready')
 
-const ignoredDelayedError = reduceManageAssistantFrameState(delayed, {
+const failedAfterDeadline = reduceManageAssistantFrameState(delayed, {
   generation: 0,
   type: 'error',
 })
-assert.equal(ignoredDelayedError, delayed)
+assert.equal(failedAfterDeadline.phase, 'failed')
 
 const retrying = reduceManageAssistantFrameState(delayed, {
   type: 'retry',

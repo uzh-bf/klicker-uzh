@@ -64,7 +64,8 @@ export function reduceManageAssistantFrameState(
   }
 
   if (action.type === 'error') {
-    if (state.phase !== 'loading' && state.phase !== 'retrying') return state
+    // A late hard error can upgrade delayed, but must not regress ready.
+    if (state.phase === 'ready' || state.phase === 'failed') return state
     return { ...state, phase: 'failed' }
   }
 
