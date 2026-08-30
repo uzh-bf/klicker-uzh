@@ -64,6 +64,26 @@ list_workflow_promotions() {
        .number'
 }
 
+require_single_workflow_promotion() {
+  [ "$#" -eq 2 ] \
+    || fail 'single-writer proof requires the expected base branch and PR number'
+
+  local expected_base="$1"
+  local expected_number="$2"
+  local list_output number
+  local -a numbers=()
+
+  list_output="$(list_workflow_promotions "$expected_base")"
+  while IFS= read -r number; do
+    [ -n "$number" ] && numbers+=("$number")
+  done <<<"$list_output"
+
+  if [ "${#numbers[@]}" -ne 1 ] \
+    || [ "${numbers[0]:-}" != "$expected_number" ]; then
+    fail "promotion PR #${expected_number} is not the sole workflow-owned promotion targeting ${expected_base}: ${numbers[*]:-none}"
+  fi
+}
+
 retire_open_promotions() {
   [ "$#" -eq 1 ] \
     || fail 'promotion retirement requires the expected base branch'
@@ -77,6 +97,8 @@ retire_open_promotions() {
     [ -n "$number" ] && numbers+=("$number")
   done <<<"$list_output"
 
+  # Disarm every stale writer before closing any PR. These are safety writes:
+  # they remain allowed when a pause is raised during retirement.
   for number in "${numbers[@]}"; do
     [ -n "$number" ] || continue
     auto_merge="$(
@@ -85,15 +107,16 @@ retire_open_promotions() {
     )"
     case "$auto_merge" in
       true)
-        require_live_unpaused
         gh pr merge "$number" --disable-auto
         ;;
       false) ;;
       *) fail "could not determine auto-merge state for promotion PR #${number}" ;;
     esac
+  done
 
-    require_live_unpaused
-    gh pr close "$number" --delete-branch \
+  for number in "${numbers[@]}"; do
+    [ -n "$number" ] || continue
+    gh pr close "$number" \
       --comment 'Retired by the staging promotion single-writer guard.'
   done
 
@@ -118,7 +141,7 @@ merge_verified_promotion() {
   local repository_owner="${GITHUB_REPOSITORY%%/*}"
   local attempts="${STG_PROMOTION_MERGE_ATTEMPTS:-12}"
   local delay="${STG_PROMOTION_MERGE_DELAY_SECONDS:-20}"
-  local attempt auto_delete base cross_repository head head_owner head_ref
+  local attempt auto_delete auto_merge base cross_repository head head_owner head_ref
   local head_repository merge_result merge_state mergeable pr_json state status
 
   [[ "$pr_number" =~ ^[0-9]+$ ]] || fail 'promotion PR number must be numeric'
@@ -136,7 +159,7 @@ merge_verified_promotion() {
   for ((attempt = 1; attempt <= attempts; attempt++)); do
     pr_json="$(
       gh pr view "$pr_number" \
-        --json state,mergeable,mergeStateStatus,headRefOid,headRefName,baseRefName,headRepository,headRepositoryOwner,isCrossRepository
+        --json state,mergeable,mergeStateStatus,headRefOid,headRefName,baseRefName,headRepository,headRepositoryOwner,isCrossRepository,autoMergeRequest
     )"
     state="$(jq -r '.state' <<<"$pr_json")"
     head="$(jq -r '.headRefOid' <<<"$pr_json")"
@@ -147,6 +170,7 @@ merge_verified_promotion() {
     cross_repository="$(jq -r '.isCrossRepository' <<<"$pr_json")"
     mergeable="$(jq -r '.mergeable' <<<"$pr_json")"
     merge_state="$(jq -r '.mergeStateStatus' <<<"$pr_json")"
+    auto_merge="$(jq -r '.autoMergeRequest != null' <<<"$pr_json")"
 
     [ "$head" = "$verified_head" ] \
       || fail "promotion PR #${pr_number} head changed from verified ${verified_head} to ${head}"
@@ -159,6 +183,8 @@ merge_verified_promotion() {
       || [ "$head_owner" != "$repository_owner" ]; then
       fail "promotion PR #${pr_number} is no longer owned by ${GITHUB_REPOSITORY}"
     fi
+    [ "$auto_merge" = 'false' ] \
+      || fail "promotion PR #${pr_number} has auto-merge armed"
 
     status="$(
       gh api --paginate --slurp \
@@ -192,6 +218,14 @@ merge_verified_promotion() {
       )"
       [ "$auto_delete" = 'true' ] \
         || fail 'repository must enable automatic head-branch deletion before staging promotion'
+
+      require_single_workflow_promotion "$expected_base" "$pr_number"
+      auto_merge="$(
+        gh pr view "$pr_number" --json autoMergeRequest \
+          --jq '.autoMergeRequest != null'
+      )"
+      [ "$auto_merge" = 'false' ] \
+        || fail "promotion PR #${pr_number} has auto-merge armed immediately before merge"
       require_live_unpaused
       merge_result="$(
         gh api --method PUT \

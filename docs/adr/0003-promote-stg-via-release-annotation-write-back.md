@@ -20,12 +20,14 @@ Automate that annotation. `.github/workflows/deploy-stg-promote.yml` writes the 
 
 Promotion is gated on **every** `v3_*-stg.yml` image build succeeding for the selected source commit, with the required set derived from the workflow files present in the checkout rather than a hardcoded list. `skipped` is not treated as success. A rollout therefore cannot start against a half-published or stale source tag, and cannot run migrations from a stale migrator image.
 
-The workflow publishes through a **workflow-owned pull request** to the selected source branch, not a direct push. It requires both image-tag and rollout-annotation inventories to be non-empty, replaces every discovered entry, and proves the independent before/after counts. Promotion control is fetched from the trusted workflow SHA, while the source checkout persists no write credential. The workflow retires every older same-repository promotion pull request targeting the selected source without suppressing errors or touching similarly named fork pull requests. It waits for the exact generated-promotion verification status, then rechecks the unchanged head, intended base, repository ownership, exact status, live pause variable, and automatic branch-cleanup policy before using the synchronous merge endpoint. It never requests queueing; a repository-policy rejection fails closed instead of leaving an asynchronous merge armed.
+The workflow publishes through a **workflow-owned pull request** to the selected source branch, not a direct push. It requires both image-tag and rollout-annotation inventories to be non-empty, replaces every discovered entry, and proves the independent before/after counts. Promotion control is fetched from the trusted workflow SHA, while the source checkout persists no write credential. The workflow first disables auto-merge on every older same-repository promotion pull request targeting the selected source, then closes each one without relying on remote branch deletion; similarly named fork pull requests remain untouched. It waits for the exact generated-promotion verification status, then rechecks the unchanged head, intended base, repository ownership, exact status, live pause variable, automatic branch-cleanup policy, absence of another workflow-owned promotion, and disabled auto-merge state before using the synchronous merge endpoint. It never requests queueing; a repository-policy rejection fails closed instead of leaving an asynchronous merge armed.
 
 The repository variable `STG_PROMOTION_PAUSED` is an explicit release-window
 interlock. The promoter checks it before its gates and reads it again through
-the repository API immediately before every external write. It never leaves
-auto-merge armed on a generated pull request. Values are strict: lowercase
+the repository API immediately before every promotion-enabling external write.
+Safety retirement may still disable auto-merge and close a stale pull request
+after a pause is raised. It never leaves auto-merge armed on a generated pull
+request. Values are strict: lowercase
 `true` pauses, while lowercase `false` or an unset variable permits promotion;
 any other value or an unreadable API response fails closed. Because a variable
 change cannot retract an API request that GitHub has already accepted, the

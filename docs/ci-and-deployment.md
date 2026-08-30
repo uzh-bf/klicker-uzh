@@ -101,17 +101,18 @@ Why this shape (ArgoCD-native hook, dedicated migrator image, manual demoted to 
 
 The `rollout.klicker.uzh.ch/release` annotation exists to break that tie: it lands in the **pod template**, so changing it is a real manifest change. The promoter discovers every occurrence in `deploy/env-uzh-stg/values.yaml`; prd has no such annotation because its pinned tags change on every release.
 
-`.github/workflows/deploy-stg-promote.yml` resolves `STG_SOURCE_BRANCH` once, checks out that branch without persisting write credentials, aligns every discovered image tag, and writes the built commit's short SHA into every discovered rollout annotation once **every** `v3_*-stg.yml` image build for the selected commit has succeeded. Both inventories must be non-empty, but their sizes are intentionally independent. A rollout can therefore never start against a half-published or stale source tag, and the PreSync migration hook runs before the new pods. The workflow fetches its promotion control from the trusted workflow SHA, publishes a pull request to the selected source branch rather than pushing directly, and retires every older same-repository promotion pull request targeting that branch without suppressing failures or touching similarly named fork pull requests. It waits for the exact `Verified generated staging promotion` status, then rechecks the unchanged head, intended base, repository ownership, exact status, live pause variable, and automatic branch-cleanup policy before using GitHub's synchronous merge endpoint. It never requests a merge queue; a repository-policy rejection fails closed instead of leaving an asynchronous merge armed. The explicit `[skip ci]` squash title prevents the merge from rebuilding every image and re-firing the promoter.
+`.github/workflows/deploy-stg-promote.yml` resolves `STG_SOURCE_BRANCH` once, checks out that branch without persisting write credentials, aligns every discovered image tag, and writes the built commit's short SHA into every discovered rollout annotation once **every** `v3_*-stg.yml` image build for the selected commit has succeeded. Both inventories must be non-empty, but their sizes are intentionally independent. A rollout can therefore never start against a half-published or stale source tag, and the PreSync migration hook runs before the new pods. The workflow fetches its promotion control from the trusted workflow SHA, publishes a pull request to the selected source branch rather than pushing directly, and retires every older same-repository promotion pull request targeting that branch without suppressing failures or touching similarly named fork pull requests. Retirement disables every armed auto-merge before closing any pull request and does not depend on deleting an already-missing remote branch. It waits for the exact `Verified generated staging promotion` status, then rechecks the unchanged head, intended base, repository ownership, exact status, live pause variable, automatic branch-cleanup policy, sole-writer inventory, and disabled auto-merge state before using GitHub's synchronous merge endpoint. It never requests a merge queue; a repository-policy rejection fails closed instead of leaving an asynchronous merge armed. The explicit `[skip ci]` squash title prevents the merge from rebuilding every image and re-firing the promoter.
 
 Operational notes.
 
 - Set the repository variable `STG_PROMOTION_PAUSED=true` before a migration or
   release window must hold staging at its last known-good deployment. The
   promoter checks the context value before its gates and reads the repository
-  variable through the API immediately before every external write. It never
-  leaves auto-merge armed. Values are strict: only lowercase `false` or an
-  unset variable resumes; lowercase `true` pauses; every other value fails
-  closed.
+  variable through the API immediately before every promotion-enabling
+  external write. Safety retirement may still disable auto-merge and close a
+  stale pull request after a pause is raised. It never leaves auto-merge armed.
+  Values are strict: only lowercase `false` or an unset variable resumes;
+  lowercase `true` pauses; every other value fails closed.
 - **Drain before declaring the pause effective:** after setting
   `STG_PROMOTION_PAUSED=true`, cancel every queued or running `Promote to stg`
   run, disable auto-merge if it is armed, and close every open

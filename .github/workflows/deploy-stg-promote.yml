@@ -323,7 +323,8 @@ jobs:
           trap 'rm -f "$ASKPASS"' EXIT
 
           # The context check happened before the image and verifier waits. Re-read
-          # the repository variable at execution time before every external write.
+          # the repository variable before entering the writer. Safety retirement
+          # remains allowed if a pause is raised while stale PRs are being disarmed.
           require_live_unpaused
 
           # Retire every earlier same-repository workflow PR targeting this source,
@@ -394,8 +395,9 @@ jobs:
             || { echo "::error::generated promotion verification did not succeed for ${PR_URL}"; exit 1; }
 
           # The trusted control rechecks the head, base, repository ownership,
-          # verification status, and automatic branch-cleanup policy immediately
-          # before GitHub's synchronous merge endpoint. It never requests a queue.
+          # verification status, sole-writer inventory, disabled auto-merge state,
+          # live pause, and branch-cleanup policy immediately before GitHub's
+          # synchronous merge endpoint. It never requests a queue.
           bash "$PROMOTION_CONTROL" \
             --merge-verified \
             "$PR_NUMBER" "$PROMOTION_HEAD" "$SHORT" "$SOURCE_BRANCH"
