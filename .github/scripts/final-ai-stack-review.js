@@ -39,7 +39,7 @@ const {
 } = require('./native-stack.js')
 
 const STACK_REVIEW_COMMAND = '/final-review-stack'
-const FINAL_STACK_REVIEW_MODEL = 'anthropic/claude-opus-4.6'
+const FINAL_STACK_REVIEW_MODEL = 'z-ai/glm-5.3-flash'
 const STACK_REVIEW_CONTEXT = 'final-ai-stack-review'
 const STACK_REVIEW_SCHEMA = 'final-ai-stack-review/v4'
 const STACK_CLEAN_EVIDENCE_SCHEMA = 'final-ai-stack-clean-evidence/v1'
