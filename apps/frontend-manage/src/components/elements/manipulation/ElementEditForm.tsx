@@ -469,7 +469,7 @@ function ElementEditForm({
                     <Button
                       primary
                       onClick={() => submitForm()}
-                      disabled={!isValid}
+                      disabled={!isValid || secondaryActionLoading}
                       loading={isSubmitting}
                       data={{ cy: submitDataCy ?? 'save-new-question' }}
                     >
