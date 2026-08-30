@@ -301,7 +301,7 @@ jobs:
       needs.authorize.outputs.authorized == 'true' &&
       needs.start.outputs.run_review == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
     concurrency:
       group: final-ai-review-${{ needs.authorize.outputs.pr_number }}
       cancel-in-progress: true
@@ -316,6 +316,10 @@ jobs:
       publish_outcome: ${{ steps.publish.outcome }}
       clean_review: ${{ steps.publish.outputs.clean_review }}
     steps:
+      - name: Record review job start
+        id: job_start
+        run: echo "epoch=$(date +%s)" >>"${GITHUB_OUTPUT}"
+
       - name: Checkout trusted final-review implementation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -392,21 +396,60 @@ jobs:
           BACKGROUND: ${{ needs.start.outputs.background }}
           HEAD_SHA: ${{ needs.authorize.outputs.head_sha }}
           REVIEW_FROM: ${{ steps.range.outputs.review_from }}
+          REVIEW_JOB_STARTED_AT: ${{ steps.job_start.outputs.epoch }}
           RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
           STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
         run: |
           set -euo pipefail
-          ocr review \
-            --from "${REVIEW_FROM}" \
-            --to "${HEAD_SHA}" \
-            --audience agent \
-            --effort low \
-            --timeout 30 \
-            --max-tokens-budget 750000 \
-            --format json \
-            --background "${BACKGROUND}" \
-            --rule .github/open-code-review/final-review-rules.json \
-            >"${RESULT_PATH}" 2>"${STDERR_PATH}"
+          run_ocr_attempt() {
+            local output_path="$1"
+            local token_budget="$2"
+            local session_id="${3:-}"
+            local resume_args=()
+            local now
+            [[ "${REVIEW_JOB_STARTED_AT}" =~ ^[1-9][0-9]*$ ]]
+            now="$(date +%s)"
+            if (( now + 1860 > REVIEW_JOB_STARTED_AT + 3900 )); then
+              echo 'Refusing to start OCR without the reserved cleanup window' >&2
+              return 1
+            fi
+            if [[ -n "${session_id}" ]]; then
+              resume_args=(--resume "${session_id}")
+            fi
+            ocr review \
+              --from "${REVIEW_FROM}" \
+              --to "${HEAD_SHA}" \
+              --audience agent \
+              --effort low \
+              --timeout 30 \
+              --max-tokens-budget "${token_budget}" \
+              --format json \
+              --background "${BACKGROUND}" \
+              --rule .github/open-code-review/final-review-rules.json \
+              "${resume_args[@]}" \
+              >"${output_path}" 2>>"${STDERR_PATH}"
+          }
+
+          : >"${STDERR_PATH}"
+          run_ocr_attempt "${RESULT_PATH}" 750000
+          RESUME_PLAN_PATH="${RESULT_PATH}.resume-plan"
+          node .github/scripts/final-ai-review.js plan-ocr-resume \
+            "${RESULT_PATH}" 750000 >"${RESUME_PLAN_PATH}"
+          mapfile -t RESUME_PLAN <"${RESUME_PLAN_PATH}"
+          if (( ${#RESUME_PLAN[@]} > 0 )); then
+            (( ${#RESUME_PLAN[@]} == 2 ))
+            SESSION_ID="${RESUME_PLAN[0]}"
+            REMAINING_TOKENS="${RESUME_PLAN[1]}"
+            [[ "${SESSION_ID}" =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$ ]]
+            [[ "${REMAINING_TOKENS}" =~ ^[1-9][0-9]*$ ]]
+            RESUMED_PATH="${RESULT_PATH}.resumed"
+            MERGED_PATH="${RESULT_PATH}.merged"
+            run_ocr_attempt \
+              "${RESUMED_PATH}" "${REMAINING_TOKENS}" "${SESSION_ID}"
+            node .github/scripts/final-ai-review.js merge-ocr-resume \
+              "${RESULT_PATH}" "${RESUMED_PATH}" 750000 >"${MERGED_PATH}"
+            mv "${MERGED_PATH}" "${RESULT_PATH}"
+          fi
 
       - name: Summarize final review failure output
         if: failure() && steps.run_review.outcome == 'failure'
@@ -749,7 +792,7 @@ jobs:
       needs.authorize_stack.outputs.authorized == 'true' &&
       needs.start_stack.outputs.run_review == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     concurrency:
       group: final-ai-stack-review-${{ needs.authorize_stack.outputs.pr_number }}
       cancel-in-progress: true
@@ -765,6 +808,10 @@ jobs:
       publish_outcome: ${{ steps.publish.outcome }}
       clean_review: ${{ steps.publish.outputs.clean_review }}
     steps:
+      - name: Record review job start
+        id: job_start
+        run: echo "epoch=$(date +%s)" >>"${GITHUB_OUTPUT}"
+
       - name: Checkout trusted stack-review implementation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -862,41 +909,94 @@ jobs:
           REVIEW_FROM: ${{ steps.range.outputs.review_from }}
           REVIEW_MODE: ${{ needs.authorize_stack.outputs.mode }}
           REVIEW_RANGES: ${{ needs.authorize_stack.outputs.review_ranges }}
+          REVIEW_JOB_STARTED_AT: ${{ steps.job_start.outputs.epoch }}
           RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
           RANGE_DIR: ${{ runner.temp }}/final-ai-stack-code-ranges
           STDERR_PATH: ${{ runner.temp }}/final-ai-stack-code-stderr.log
         run: |
           set -euo pipefail
+          RESUME_USED=false
+
+          run_ocr_attempt() {
+            local review_from="$1"
+            local review_to="$2"
+            local token_budget="$3"
+            local output_path="$4"
+            local session_id="${5:-}"
+            local resume_args=()
+            local now
+            [[ "${REVIEW_JOB_STARTED_AT}" =~ ^[1-9][0-9]*$ ]]
+            now="$(date +%s)"
+            if (( now + 1860 > REVIEW_JOB_STARTED_AT + 4200 )); then
+              echo 'Refusing to start OCR without the reserved topology and cleanup window' >&2
+              return 1
+            fi
+            if [[ -n "${session_id}" ]]; then
+              resume_args=(--resume "${session_id}")
+            fi
+            ocr review \
+              --from "${review_from}" \
+              --to "${review_to}" \
+              --audience agent \
+              --effort low \
+              --timeout 30 \
+              --max-tokens-budget "${token_budget}" \
+              --format json \
+              --background "${BACKGROUND}" \
+              --rule .github/open-code-review/final-review-rules.json \
+              "${resume_args[@]}" \
+              >"${output_path}" 2>>"${STDERR_PATH}"
+          }
+
+          resume_partial_result() {
+            local review_from="$1"
+            local review_to="$2"
+            local token_budget="$3"
+            local result_path="$4"
+            local plan_path="${result_path}.resume-plan"
+            node .github/scripts/final-ai-review.js plan-ocr-resume \
+              "${result_path}" "${token_budget}" >"${plan_path}"
+            mapfile -t resume_plan <"${plan_path}"
+            if (( ${#resume_plan[@]} == 0 )); then
+              return
+            fi
+            (( ${#resume_plan[@]} == 2 ))
+            if [[ "${RESUME_USED}" == 'true' ]]; then
+              echo 'Only one partial OCR result may be resumed per stack job' >&2
+              return 1
+            fi
+            local session_id="${resume_plan[0]}"
+            local remaining_tokens="${resume_plan[1]}"
+            [[ "${session_id}" =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$ ]]
+            [[ "${remaining_tokens}" =~ ^[1-9][0-9]*$ ]]
+            RESUME_USED=true
+            local resumed_path="${result_path}.resumed"
+            local merged_path="${result_path}.merged"
+            run_ocr_attempt \
+              "${review_from}" "${review_to}" "${remaining_tokens}" \
+              "${resumed_path}" "${session_id}"
+            node .github/scripts/final-ai-review.js merge-ocr-resume \
+              "${result_path}" "${resumed_path}" "${token_budget}" \
+              >"${merged_path}"
+            mv "${merged_path}" "${result_path}"
+          }
+
+          : >"${STDERR_PATH}"
           if [[ "${REVIEW_MODE}" == "incremental" ]]; then
             mkdir -p "${RANGE_DIR}"
             while IFS=$'\t' read -r LAYER BASE HEAD; do
-              ocr review \
-                --from "${BASE}" \
-                --to "${HEAD}" \
-                --audience agent \
-                --effort low \
-                --timeout 30 \
-                --max-tokens-budget 750000 \
-                --format json \
-                --background "${BACKGROUND}" \
-                --rule .github/open-code-review/final-review-rules.json \
-                >"${RANGE_DIR}/${LAYER}.json" \
-                2>>"${STDERR_PATH}"
+              RANGE_PATH="${RANGE_DIR}/${LAYER}.json"
+              run_ocr_attempt "${BASE}" "${HEAD}" 750000 "${RANGE_PATH}"
+              resume_partial_result \
+                "${BASE}" "${HEAD}" 750000 "${RANGE_PATH}"
             done < <(node -e 'for (const r of JSON.parse(process.env.REVIEW_RANGES || "[]")) console.log(`${r.layer_number}\t${r.base_sha}\t${r.head_sha}`)')
             node .github/scripts/final-ai-stack-review.js combine-ocr \
               "${RESULT_PATH}" "${RANGE_DIR}"/*.json
           else
-            ocr review \
-              --from "${REVIEW_FROM}" \
-              --to "${HEAD_SHA}" \
-              --audience agent \
-              --effort low \
-              --timeout 30 \
-              --max-tokens-budget 2000000 \
-              --format json \
-              --background "${BACKGROUND}" \
-              --rule .github/open-code-review/final-review-rules.json \
-              >"${RESULT_PATH}" 2>"${STDERR_PATH}"
+            run_ocr_attempt \
+              "${REVIEW_FROM}" "${HEAD_SHA}" 2000000 "${RESULT_PATH}"
+            resume_partial_result \
+              "${REVIEW_FROM}" "${HEAD_SHA}" 2000000 "${RESULT_PATH}"
           fi
 
       - name: Summarize cumulative review failure output
