@@ -976,3 +976,13 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   474 tests with 32 PostgreSQL tests skipped; Chat typecheck, focused
   formatting, and `git diff --check` pass on Node 24.16.0 and pnpm 11.5.0.
   Commit, push, and fresh exact-head CI remain pending.
+
+- 2026-08-30 OCR-hardening review closure: immutable source commit
+  `263946fb4` passed the risk-selected slice review and simplifier with no
+  finding or warranted reduction. The full Chat suite passes 474 tests with
+  32 PostgreSQL integration tests skipped; repository-wide checks, Chat
+  typecheck, focused formatting, `git diff --check`, staged gitleaks, and the
+  Chat production build pass under Node 24.16.0 and pnpm 11.5.0. PostgreSQL
+  fixture execution and managed browser proof remain environment-gated. Push,
+  fresh exact-head CI/OCR, readiness, manual final review, merge, deployment,
+  and activation remain pending or separately gated.

@@ -399,3 +399,14 @@ revalidates branch ancestry and the source digest before persistence.
   diff and gitleaks checks pass. PostgreSQL/browser proof and exact-head
   publication checks remain public gates; no private implementation, contract
   mutation, deployment, or activation occurred.
+
+- 2026-08-30 post-integration public hardening: commit `263946fb4` bounds
+  canonical and temporary legacy request payloads, returns a pre-claim `400`
+  for undecodable current images, preserves generic client conflicts while
+  recording values-free internal reasons, and reports missed lifecycle-failure
+  transitions without weakening attempt fences. Both immutable review gates
+  passed without findings. The full Chat suite passes 474 tests with 32
+  PostgreSQL integration tests skipped; pinned Node 24 repository checks and
+  the Chat production build pass. Push, fresh exact-head CI/OCR, manual final
+  review, PostgreSQL/browser proof, merge, deployment, and activation remain
+  pending or separately gated.
