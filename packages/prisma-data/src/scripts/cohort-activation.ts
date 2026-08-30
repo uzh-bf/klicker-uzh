@@ -1,14 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
-import {
-  chmod,
-  mkdir,
-  readFile,
-  rename,
-  rm,
-  rmdir,
-  writeFile,
-} from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
+import { chmod, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { hostname } from 'node:os'
+import { dirname, join, resolve } from 'node:path'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 
 export const SOURCE_SERVER_NAME = 'Klicker-compat' as const
@@ -230,6 +223,7 @@ export type ReceiptAliases = {
   courses: string[]
   chatbots: string[]
   configurations: string[]
+  bindings: string[]
   excludedConfigurations: string[]
 }
 
@@ -308,7 +302,13 @@ export type ActivationReceiptPayload =
   | ActivationReceipt
   | ActivationReceiptIntent
 
-export interface ActivationReceiptStore {
+export interface ActivationReceiptStore extends ActivationReceiptSession {
+  runExclusive<T>(
+    callback: (store: ActivationReceiptSession) => Promise<T>
+  ): Promise<T>
+}
+
+export interface ActivationReceiptSession {
   read(): Promise<ActivationReceiptPayload | null>
   compareAndSwap(
     expectedDigest: string | null,
@@ -371,7 +371,6 @@ type ManifestIndex = {
   configByAlias: Map<string, FrozenConfiguration>
   configsByChatbotAlias: Map<string, Array<[string, FrozenConfiguration]>>
   excludedByAlias: Map<string, FrozenExcludedConfiguration>
-  excludedConfigAliasById: Map<string, string>
   excludedChatbotAliasForId: Map<string, string>
   bindingAliasByChatbotAlias: Map<string, string>
   aliases: ReceiptAliases
@@ -769,6 +768,187 @@ export function parseFrozenActivationManifest(
   return { ...manifest, fingerprint: fingerprintManifest(manifest) }
 }
 
+const RECEIPT_LOCK_OWNER_FILE = 'owner.json'
+const RECEIPT_LOCK_OWNER_VERSION = 1 as const
+const RECEIPT_LOCK_OWNER_MAX_BYTES = 512
+
+type ReceiptLockOwner = {
+  version: typeof RECEIPT_LOCK_OWNER_VERSION
+  pid: number
+  host: string
+  token: string
+}
+
+function errorCode(error: unknown): string | undefined {
+  if (error instanceof Error && 'code' in error) {
+    const code = (error as Error & { code?: unknown }).code
+    return typeof code === 'string' ? code : undefined
+  }
+  return undefined
+}
+
+function lockError(): CohortActivationError {
+  return new CohortActivationError(
+    'RECEIPT_LOCKED',
+    'activation receipt is already being updated'
+  )
+}
+
+function lockCleanupError(): CohortActivationError {
+  return new CohortActivationError(
+    'RECEIPT_LOCK_CLEANUP_FAILED',
+    'activation receipt lock cleanup failed'
+  )
+}
+
+function sameLockOwner(left: ReceiptLockOwner, right: ReceiptLockOwner) {
+  return (
+    left.version === right.version &&
+    left.pid === right.pid &&
+    left.host === right.host &&
+    left.token === right.token
+  )
+}
+
+async function readLockOwner(
+  lockPath: string
+): Promise<ReceiptLockOwner | null> {
+  try {
+    const contents = await readFile(
+      join(lockPath, RECEIPT_LOCK_OWNER_FILE),
+      'utf8'
+    )
+    if (Buffer.byteLength(contents, 'utf8') > RECEIPT_LOCK_OWNER_MAX_BYTES) {
+      return null
+    }
+    const parsed: unknown = JSON.parse(contents)
+    if (!isPlainObject(parsed)) return null
+    assertReceiptKeys(parsed, ['version', 'pid', 'host', 'token'])
+    if (
+      parsed.version !== RECEIPT_LOCK_OWNER_VERSION ||
+      typeof parsed.pid !== 'number' ||
+      !Number.isSafeInteger(parsed.pid) ||
+      parsed.pid <= 0 ||
+      parsed.pid > 2_147_483_647 ||
+      typeof parsed.host !== 'string' ||
+      parsed.host.length === 0 ||
+      parsed.host.length > 255 ||
+      CONTROL_CHARACTER_PATTERN.test(parsed.host) ||
+      typeof parsed.token !== 'string' ||
+      !UUID_PATTERN.test(parsed.token)
+    ) {
+      return null
+    }
+    return {
+      version: RECEIPT_LOCK_OWNER_VERSION,
+      pid: parsed.pid,
+      host: parsed.host,
+      token: parsed.token,
+    }
+  } catch {
+    return null
+  }
+}
+
+async function removeUnownedLock(lockPath: string): Promise<void> {
+  await rm(lockPath, { force: false, recursive: true })
+}
+
+async function reclaimDeadLock(
+  lockPath: string,
+  owner: ReceiptLockOwner
+): Promise<void> {
+  if (owner.host !== hostname()) throw lockError()
+  let dead = false
+  try {
+    process.kill(owner.pid, 0)
+  } catch (error) {
+    dead = errorCode(error) === 'ESRCH'
+  }
+  if (!dead) throw lockError()
+  const currentOwner = await readLockOwner(lockPath)
+  if (!currentOwner || !sameLockOwner(currentOwner, owner)) throw lockError()
+  try {
+    await removeUnownedLock(lockPath)
+  } catch (error) {
+    throw new AggregateError([lockError(), error], lockCleanupError().message)
+  }
+}
+
+async function acquireReceiptLock(lockPath: string): Promise<ReceiptLockOwner> {
+  try {
+    await mkdir(lockPath, { mode: 0o700 })
+  } catch (error) {
+    if (errorCode(error) !== 'EEXIST') {
+      throw new CohortActivationError(
+        'RECEIPT_WRITE_FAILED',
+        'receipt lock is unavailable'
+      )
+    }
+    const owner = await readLockOwner(lockPath)
+    if (!owner) throw lockError()
+    let dead = false
+    if (owner.host === hostname()) {
+      try {
+        process.kill(owner.pid, 0)
+      } catch (probeError) {
+        dead = errorCode(probeError) === 'ESRCH'
+      }
+    }
+    if (!dead) throw lockError()
+    await reclaimDeadLock(lockPath, owner)
+    try {
+      await mkdir(lockPath, { mode: 0o700 })
+    } catch (reacquireError) {
+      if (errorCode(reacquireError) === 'EEXIST') throw lockError()
+      throw new CohortActivationError(
+        'RECEIPT_WRITE_FAILED',
+        'receipt lock is unavailable'
+      )
+    }
+  }
+
+  const owner: ReceiptLockOwner = {
+    version: RECEIPT_LOCK_OWNER_VERSION,
+    pid: process.pid,
+    host: hostname(),
+    token: randomUUID(),
+  }
+  const contents = `${JSON.stringify(owner)}\n`
+  try {
+    await writeFile(join(lockPath, RECEIPT_LOCK_OWNER_FILE), contents, {
+      encoding: 'utf8',
+      flag: 'wx',
+      mode: 0o600,
+    })
+    await chmod(join(lockPath, RECEIPT_LOCK_OWNER_FILE), 0o600)
+  } catch {
+    const primary = new CohortActivationError(
+      'RECEIPT_WRITE_FAILED',
+      'receipt lock owner is unavailable'
+    )
+    try {
+      await removeUnownedLock(lockPath)
+    } catch (cleanupError) {
+      throw new AggregateError([primary, cleanupError], primary.message)
+    }
+    throw primary
+  }
+  if (Buffer.byteLength(contents, 'utf8') > RECEIPT_LOCK_OWNER_MAX_BYTES) {
+    const primary = new CohortActivationError(
+      'RECEIPT_WRITE_FAILED',
+      'receipt lock owner is too large'
+    )
+    try {
+      await removeUnownedLock(lockPath)
+    } catch (cleanupError) {
+      throw new AggregateError([primary, cleanupError], primary.message)
+    }
+    throw primary
+  }
+  return owner
+}
+
 export function createFileActivationReceiptStore(
   receiptPath: string
 ): ActivationReceiptStore {
@@ -782,11 +962,7 @@ export function createFileActivationReceiptStore(
       assertPayloadDigest(payload)
       return payload
     } catch (error) {
-      if (
-        error instanceof Error &&
-        'code' in error &&
-        error.code === 'ENOENT'
-      ) {
+      if (errorCode(error) === 'ENOENT') {
         return null
       }
       if (error instanceof CohortActivationError) throw error
@@ -794,62 +970,104 @@ export function createFileActivationReceiptStore(
     }
   }
 
-  return {
-    async read() {
-      return readCurrent()
-    },
-    async compareAndSwap(expectedDigest, receipt) {
-      if (
-        expectedDigest !== null &&
-        !FINGERPRINT_PATTERN.test(expectedDigest)
-      ) {
-        fail('RECEIPT_CAS_FAILED', 'receipt expected digest is invalid')
-      }
-      assertPayloadDigest(receipt)
-      try {
-        await mkdir(dirname(absolutePath), { recursive: true })
-      } catch {
-        fail('RECEIPT_WRITE_FAILED', 'receipt directory is unavailable')
-      }
-      try {
-        await mkdir(lockPath)
-      } catch (error) {
-        if (
-          error instanceof Error &&
-          'code' in error &&
-          error.code === 'EEXIST'
-        ) {
-          fail('RECEIPT_LOCKED', 'receipt is already being updated')
-        }
-        fail('RECEIPT_WRITE_FAILED', 'receipt lock is unavailable')
-      }
-      const temporaryPath = `${absolutePath}.tmp-${process.pid}-${randomUUID()}`
-      try {
-        const current = await readCurrent()
-        if ((current?.payloadDigest ?? null) !== expectedDigest) {
-          fail('RECEIPT_CAS_FAILED', 'receipt changed concurrently')
-        }
-        if (current) assertReceiptTransition(current, receipt)
-        else if (!isReceiptIntent(receipt)) {
-          fail('RECEIPT_STATE', 'a new receipt must start with intent')
-        }
-        if (current?.payloadDigest === receipt.payloadDigest) return
-        await writeFile(
-          temporaryPath,
-          `${JSON.stringify(receipt, null, 2)}\n`,
-          {
-            encoding: 'utf8',
-            flag: 'wx',
-            mode: 0o600,
-          }
+  async function compareAndSwapLocked(
+    expectedDigest: string | null,
+    receipt: ActivationReceiptPayload
+  ): Promise<void> {
+    if (expectedDigest !== null && !FINGERPRINT_PATTERN.test(expectedDigest)) {
+      fail('RECEIPT_CAS_FAILED', 'receipt expected digest is invalid')
+    }
+    assertPayloadDigest(receipt)
+    const temporaryPath = `${absolutePath}.tmp-${process.pid}-${randomUUID()}`
+    const current = await readCurrent()
+    if ((current?.payloadDigest ?? null) !== expectedDigest) {
+      fail('RECEIPT_CAS_FAILED', 'receipt changed concurrently')
+    }
+    if (current) assertReceiptTransition(current, receipt)
+    else if (!isReceiptIntent(receipt)) {
+      fail('RECEIPT_STATE', 'a new receipt must start with intent')
+    }
+    if (current?.payloadDigest === receipt.payloadDigest) return
+    try {
+      await writeFile(temporaryPath, `${JSON.stringify(receipt, null, 2)}\n`, {
+        encoding: 'utf8',
+        flag: 'wx',
+        mode: 0o600,
+      })
+      await chmod(temporaryPath, 0o600)
+      await rename(temporaryPath, absolutePath)
+    } catch (error) {
+      if (error instanceof CohortActivationError) throw error
+      fail('RECEIPT_WRITE_FAILED', 'could not persist activation receipt')
+    } finally {
+      await rm(temporaryPath, { force: true }).catch(() => undefined)
+    }
+  }
+
+  async function releaseReceiptLock(owner: ReceiptLockOwner): Promise<void> {
+    const currentOwner = await readLockOwner(lockPath)
+    if (!currentOwner || !sameLockOwner(currentOwner, owner)) {
+      throw lockCleanupError()
+    }
+    try {
+      await removeUnownedLock(lockPath)
+    } catch (error) {
+      throw new AggregateError(
+        [lockCleanupError(), error],
+        lockCleanupError().message
+      )
+    }
+  }
+
+  async function runExclusive<T>(
+    callback: (store: ActivationReceiptSession) => Promise<T>
+  ): Promise<T> {
+    try {
+      await mkdir(dirname(absolutePath), { recursive: true })
+    } catch {
+      fail('RECEIPT_WRITE_FAILED', 'receipt directory is unavailable')
+    }
+    const owner = await acquireReceiptLock(lockPath)
+    const session: ActivationReceiptSession = {
+      read: readCurrent,
+      compareAndSwap: compareAndSwapLocked,
+    }
+    let result: T | undefined
+    let completed = false
+    let primaryError: unknown
+    try {
+      result = await callback(session)
+      completed = true
+    } catch (error) {
+      primaryError = error
+    }
+    let cleanupError: unknown
+    try {
+      await releaseReceiptLock(owner)
+    } catch (error) {
+      cleanupError = error
+    }
+    if (cleanupError) {
+      if (!completed) {
+        throw new AggregateError(
+          [primaryError, cleanupError],
+          'activation receipt operation and lock cleanup failed'
         )
-        await chmod(temporaryPath, 0o600)
-        await rename(temporaryPath, absolutePath)
-      } finally {
-        await rm(temporaryPath, { force: true }).catch(() => undefined)
-        await rmdir(lockPath).catch(() => undefined)
       }
+      throw cleanupError
+    }
+    if (!completed) throw primaryError
+    return result as T
+  }
+
+  return {
+    read: readCurrent,
+    async compareAndSwap(expectedDigest, receipt) {
+      return runExclusive((session) =>
+        session.compareAndSwap(expectedDigest, receipt)
+      )
     },
+    runExclusive,
   }
 }
 
@@ -1182,11 +1400,9 @@ function buildManifestIndex(manifest: FrozenCohortManifest): ManifestIndex {
     left.configId.localeCompare(right.configId)
   )
   const excludedByAlias = new Map<string, FrozenExcludedConfiguration>()
-  const excludedConfigAliasById = new Map<string, string>()
   sortedExcluded.forEach((configuration, index) => {
     const alias = `excluded-config-${padAlias(index)}`
     excludedByAlias.set(alias, configuration)
-    excludedConfigAliasById.set(configuration.configId, alias)
   })
   const excludedChatbotAliasForId = new Map<string, string>()
   ;[...new Set(sortedExcluded.map((configuration) => configuration.chatbotId))]
@@ -1219,7 +1435,6 @@ function buildManifestIndex(manifest: FrozenCohortManifest): ManifestIndex {
     configByAlias,
     configsByChatbotAlias,
     excludedByAlias,
-    excludedConfigAliasById,
     excludedChatbotAliasForId,
     bindingAliasByChatbotAlias,
     aliases: {
@@ -1229,6 +1444,7 @@ function buildManifestIndex(manifest: FrozenCohortManifest): ManifestIndex {
       courses: [...courseIdByAlias.keys()].sort(),
       chatbots: [...chatbotIdByAlias.keys()].sort(),
       configurations: [...configByAlias.keys()].sort(),
+      bindings: [...bindingAliasByChatbotAlias.values()].sort(),
       excludedConfigurations: [...excludedByAlias.keys()].sort(),
     },
     counts: {
@@ -1375,6 +1591,7 @@ function assertReceiptAliases(value: unknown): asserts value is ReceiptAliases {
     'courses',
     'chatbots',
     'configurations',
+    'bindings',
     'excludedConfigurations',
   ])
   if (
@@ -1394,6 +1611,11 @@ function assertReceiptAliases(value: unknown): asserts value is ReceiptAliases {
     value.configurations,
     CONFIGURATION_ALIAS_PATTERN,
     EXPECTED_CONFIGURATIONS
+  )
+  assertReceiptAliasArray(
+    value.bindings,
+    BINDING_ALIAS_PATTERN,
+    EXPECTED_BINDINGS
   )
   assertReceiptAliasArray(
     value.excludedConfigurations,
@@ -1471,9 +1693,9 @@ function assertModeForReceipt(value: unknown): asserts value is string {
 
 function assertReceiptBindingSnapshots(
   value: unknown,
-  expectedLength: number
+  aliases: string[]
 ): void {
-  if (!Array.isArray(value) || value.length !== expectedLength) {
+  if (!Array.isArray(value) || value.length !== aliases.length) {
     receiptInvalid('receipt binding snapshots are invalid')
   }
   const seen = new Set<string>()
@@ -1498,6 +1720,9 @@ function assertReceiptBindingSnapshots(
     if (seen.has(entry.alias))
       receiptInvalid('receipt snapshots are duplicated')
     seen.add(entry.alias)
+  }
+  if (canonicalJson([...seen].sort()) !== canonicalJson([...aliases].sort())) {
+    receiptInvalid('receipt binding snapshot aliases are invalid')
   }
 }
 
@@ -1524,7 +1749,9 @@ function assertReceiptServerSnapshot(
   }
 }
 
-function assertReceiptCommonFields(value: Record<string, unknown>): void {
+function assertReceiptCommonFields(
+  value: Record<string, unknown>
+): asserts value is Record<string, unknown> & { aliases: ReceiptAliases } {
   if (value.receiptVersion !== ACTIVATION_RECEIPT_VERSION) {
     receiptInvalid('receipt version is unsupported')
   }
@@ -1580,7 +1807,6 @@ function assertPayloadShape(
   ) {
     receiptInvalid('receipt state is invalid')
   }
-  assertReceiptAliases(value.aliases)
   const aliases = value.aliases
   assertReceiptServerSnapshot(value.sourceServer, SOURCE_SERVER_NAME)
   assertReceiptServerSnapshot(value.targetServer, TARGET_SERVER_NAME)
@@ -1610,7 +1836,7 @@ function assertPayloadShape(
     EXCLUDED_CONFIGURATION_ALIAS_PATTERN,
     EXCLUDED_CHATBOT_ALIAS_PATTERN
   )
-  assertReceiptBindingSnapshots(value.bindings, EXPECTED_BINDINGS)
+  assertReceiptBindingSnapshots(value.bindings, aliases.bindings)
   assertReceiptConfigSnapshots(
     value.configurations,
     aliases.configurations,
@@ -1689,7 +1915,7 @@ function isReceiptIntent(
 }
 
 async function readReceipt(
-  receiptStore: ActivationReceiptStore | undefined
+  receiptStore: ActivationReceiptSession | undefined
 ): Promise<ActivationReceiptPayload | null> {
   if (!receiptStore) return null
   const payload = await receiptStore.read()
@@ -1711,6 +1937,164 @@ function assertReceiptMatchesIndex(
   }
   if (canonicalJson(receipt.aliases) !== canonicalJson(index.aliases)) {
     fail('RECEIPT_MISMATCH', 'receipt aliases do not match the manifest')
+  }
+  if (!isReceiptIntent(receipt)) {
+    assertReceiptSemantics(receipt, index)
+  }
+}
+
+function assertReceiptSemantics(
+  receipt: ActivationReceipt,
+  index: ManifestIndex
+): void {
+  const expectedBindingAliases = new Set(index.aliases.bindings)
+  const actualBindingAliases = new Set(
+    receipt.bindings.map((binding) => binding.alias)
+  )
+  if (
+    actualBindingAliases.size !== expectedBindingAliases.size ||
+    [...expectedBindingAliases].some(
+      (alias) => !actualBindingAliases.has(alias)
+    )
+  ) {
+    fail(
+      'RECEIPT_MISMATCH',
+      'receipt binding aliases do not match the manifest'
+    )
+  }
+
+  const chatbotAliases = new Set(index.aliases.chatbots)
+  const switchedAliases = new Set(receipt.switchedChatbotAliases)
+  const rollbackAliases = new Set(receipt.pendingRollbackAliases)
+  if (
+    [...switchedAliases].some((alias) => !chatbotAliases.has(alias)) ||
+    [...rollbackAliases].some((alias) => !chatbotAliases.has(alias)) ||
+    (receipt.pendingChatbotAlias !== null &&
+      !chatbotAliases.has(receipt.pendingChatbotAlias))
+  ) {
+    fail(
+      'RECEIPT_MISMATCH',
+      'receipt chatbot aliases do not match the manifest'
+    )
+  }
+  if (
+    receipt.pendingChatbotAlias !== null &&
+    switchedAliases.has(receipt.pendingChatbotAlias)
+  ) {
+    fail('RECEIPT_STATE', 'receipt switch intent overlaps switched aliases')
+  }
+  if (rollbackAliases.size > 1) {
+    fail('RECEIPT_STATE', 'receipt rollback intent names multiple chatbots')
+  }
+  if ([...rollbackAliases].some((alias) => !switchedAliases.has(alias))) {
+    fail('RECEIPT_STATE', 'receipt rollback intent names an unswitched chatbot')
+  }
+
+  const bindingByAlias = new Map(
+    receipt.bindings.map((binding) => [binding.alias, binding])
+  )
+  const configurationByAlias = new Map(
+    receipt.configurations.map((configuration) => [
+      configuration.alias,
+      configuration,
+    ])
+  )
+  const enabledAliases = new Set<string>()
+  for (const chatbotAlias of index.aliases.chatbots) {
+    const bindingAlias = index.bindingAliasByChatbotAlias.get(chatbotAlias)
+    const binding = bindingAlias ? bindingByAlias.get(bindingAlias) : undefined
+    const chatbotId = index.chatbotIdByAlias.get(chatbotAlias)
+    if (!chatbotId) {
+      fail(
+        'RECEIPT_MISMATCH',
+        'receipt chatbot mapping does not match the manifest'
+      )
+    }
+    if (
+      !binding ||
+      binding.alias !== bindingAlias ||
+      binding.chatbotAlias !== chatbotAlias ||
+      binding.corpusAlias !== corpusAliasFor(index, chatbotId)
+    ) {
+      fail(
+        'RECEIPT_MISMATCH',
+        'receipt binding mapping does not match the manifest'
+      )
+    }
+    const expectedConfigurations = [...index.configByAlias.entries()].filter(
+      ([, configuration]) =>
+        chatbotAliasFor(index, configuration.chatbotId) === chatbotAlias
+    )
+    const configurations = expectedConfigurations.map(([alias]) =>
+      configurationByAlias.get(alias)
+    )
+    if (
+      configurations.length === 0 ||
+      configurations.some((configuration) => !configuration) ||
+      expectedConfigurations.some(([alias, expected], index) => {
+        const configuration = configurations[index]
+        return (
+          !configuration ||
+          configuration.alias !== alias ||
+          configuration.chatbotAlias !== chatbotAlias ||
+          configuration.chatMode !== expected.chatMode
+        )
+      })
+    ) {
+      fail(
+        'RECEIPT_MISMATCH',
+        'receipt configuration mapping does not match the manifest'
+      )
+    }
+    const enabled = [
+      binding.isEnabled,
+      ...configurations.map((configuration) => configuration!.isEnabled),
+    ]
+    if (!enabled.every((value) => value === enabled[0])) {
+      fail('RECEIPT_STATE', 'receipt chatbot snapshots are mixed')
+    }
+    if (enabled[0]) enabledAliases.add(chatbotAlias)
+  }
+  if (
+    enabledAliases.size !== switchedAliases.size ||
+    [...enabledAliases].some((alias) => !switchedAliases.has(alias))
+  ) {
+    fail(
+      'RECEIPT_STATE',
+      'receipt enabled snapshots do not match switched aliases'
+    )
+  }
+
+  if (receipt.state === 'prepared') {
+    if (
+      switchedAliases.size !== 0 ||
+      receipt.pendingChatbotAlias !== null ||
+      rollbackAliases.size !== 0
+    ) {
+      fail('RECEIPT_STATE', 'prepared receipt intent fields are invalid')
+    }
+  } else if (receipt.state === 'switching') {
+    if (receipt.pendingChatbotAlias === null || rollbackAliases.size !== 0) {
+      fail('RECEIPT_STATE', 'switching receipt intent fields are invalid')
+    }
+  } else if (receipt.state === 'switched') {
+    if (
+      switchedAliases.size === 0 ||
+      receipt.pendingChatbotAlias !== null ||
+      rollbackAliases.size !== 0
+    ) {
+      fail('RECEIPT_STATE', 'switched receipt intent fields are invalid')
+    }
+  } else if (receipt.state === 'rolling_back') {
+    if (receipt.pendingChatbotAlias !== null || rollbackAliases.size !== 1) {
+      fail('RECEIPT_STATE', 'rollback receipt intent fields are invalid')
+    }
+  } else if (
+    switchedAliases.size !== 0 ||
+    receipt.pendingChatbotAlias !== null ||
+    rollbackAliases.size !== 0
+  ) {
+    fail('RECEIPT_STATE', 'rolled-back receipt intent fields are invalid')
   }
 }
 
@@ -2667,9 +3051,7 @@ export async function dryRunCohortActivation(
     expectedManifestFingerprint
   )
   const state = await inspectCohortState(store, index, target)
-  if (state.targetServer) {
-    assertTargetGroupsCoherent(state, index)
-  }
+  assertNoUntrackedPartialTargetRows(state, index)
   assertNoEnabledTargetRows(state)
   return operationResult(
     'dry-run',
@@ -2685,11 +3067,6 @@ export async function prepareCohortActivation(
   options: ActivationOptions
 ): Promise<ActivationResult> {
   validateTarget(options.target)
-  const index = buildManifestIndex(manifest)
-  const manifestFingerprint = requireManifestFingerprint(
-    manifest,
-    options.expectedManifestFingerprint
-  )
   if (options.dryRun) {
     return dryRunCohortActivation(
       store,
@@ -2698,6 +3075,11 @@ export async function prepareCohortActivation(
       options.expectedManifestFingerprint
     )
   }
+  const index = buildManifestIndex(manifest)
+  const manifestFingerprint = requireManifestFingerprint(
+    manifest,
+    options.expectedManifestFingerprint
+  )
   if (!options.receiptStore) {
     fail('RECEIPT_REQUIRED', 'a durable receipt store is required')
   }
@@ -2838,7 +3220,7 @@ export async function prepareCohortActivation(
 
 async function prepareOrReadReceipt(
   manifest: FrozenCohortManifest,
-  receiptStore: ActivationReceiptStore,
+  receiptStore: ActivationReceiptSession,
   expectedManifestFingerprint: string
 ): Promise<{
   index: ManifestIndex
@@ -2919,21 +3301,48 @@ export async function switchCohortChatbot(
     options.expectedManifestFingerprint
   )
   resolveChatbotAlias(index, options.chatbotAlias)
-  if (!options.receiptStore) {
+  const receiptStore = options.receiptStore
+  if (!receiptStore) {
     fail('RECEIPT_REQUIRED', 'a durable receipt store is required')
   }
-  const { receipt } = await prepareOrReadReceipt(
-    manifest,
-    options.receiptStore,
-    options.expectedManifestFingerprint
-  )
-  validateReceiptState(receipt, ['prepared', 'switched'])
+  const execute = async (
+    session: ActivationReceiptSession
+  ): Promise<ActivationResult> => {
+    const receipt = requireReceipt(
+      await readReceipt(session),
+      index,
+      manifestFingerprint
+    )
+    validateReceiptState(receipt, ['prepared', 'switched'])
 
-  const currentState = await inspectCohortState(store, index, options.target)
-  assertReceiptCurrent(currentState, index, receipt)
-  assertTargetGroupsCoherent(currentState, index)
-  assertNoEnabledOtherBinding(currentState, options.chatbotAlias)
-  if (options.dryRun) {
+    const currentState = await inspectCohortState(store, index, options.target)
+    assertReceiptCurrent(currentState, index, receipt)
+    assertTargetGroupsCoherent(currentState, index)
+    assertNoEnabledOtherBinding(currentState, options.chatbotAlias)
+    if (options.dryRun) {
+      if (receipt.switchedChatbotAliases.includes(options.chatbotAlias)) {
+        assertCandidateGroup(
+          currentState,
+          index,
+          options.chatbotAlias,
+          'switched'
+        )
+      } else {
+        assertCandidateGroup(
+          currentState,
+          index,
+          options.chatbotAlias,
+          'prepared'
+        )
+      }
+      return operationResult(
+        'dry-run',
+        index,
+        manifestFingerprint,
+        zeroWrites(),
+        receipt
+      )
+    }
     if (receipt.switchedChatbotAliases.includes(options.chatbotAlias)) {
       assertCandidateGroup(
         currentState,
@@ -2941,76 +3350,59 @@ export async function switchCohortChatbot(
         options.chatbotAlias,
         'switched'
       )
-    } else {
-      assertCandidateGroup(
-        currentState,
+      return operationResult(
+        'switched',
         index,
-        options.chatbotAlias,
-        'prepared'
+        manifestFingerprint,
+        zeroWrites(),
+        receipt
       )
     }
-    return operationResult(
-      'dry-run',
+    assertCandidateGroup(currentState, index, options.chatbotAlias, 'prepared')
+
+    const switchingReceipt = makeReceiptFromState(
+      currentState,
       index,
       manifestFingerprint,
-      zeroWrites(),
-      receipt
+      {
+        state: 'switching',
+        switchedChatbotAliases: receipt.switchedChatbotAliases,
+        pendingChatbotAlias: options.chatbotAlias,
+      }
     )
-  }
-  if (receipt.switchedChatbotAliases.includes(options.chatbotAlias)) {
-    assertCandidateGroup(currentState, index, options.chatbotAlias, 'switched')
+    await session.compareAndSwap(receipt.payloadDigest, switchingReceipt)
+
+    const switchedReceipt = await store.transaction(async (tx) => {
+      const state = await inspectCohortState(tx, index, options.target)
+      assertReceiptCurrent(state, index, receipt)
+      assertTargetGroupsCoherent(state, index)
+      assertCandidateGroup(state, index, options.chatbotAlias, 'prepared')
+      assertNoEnabledOtherBinding(state, options.chatbotAlias)
+      await applyChatbotSwitch(tx, state, index, options.chatbotAlias, true)
+      const after = await inspectCohortState(tx, index, options.target)
+      return makeReceiptFromState(after, index, manifestFingerprint, {
+        state: 'switched',
+        switchedChatbotAliases: [
+          ...receipt.switchedChatbotAliases,
+          options.chatbotAlias,
+        ],
+      })
+    })
+    await session.compareAndSwap(
+      switchingReceipt.payloadDigest,
+      switchedReceipt
+    )
     return operationResult(
       'switched',
       index,
       manifestFingerprint,
       zeroWrites(),
-      receipt
+      switchedReceipt
     )
   }
-  assertCandidateGroup(currentState, index, options.chatbotAlias, 'prepared')
 
-  const switchingReceipt = makeReceiptFromState(
-    currentState,
-    index,
-    manifestFingerprint,
-    {
-      state: 'switching',
-      switchedChatbotAliases: receipt.switchedChatbotAliases,
-      pendingChatbotAlias: options.chatbotAlias,
-    }
-  )
-  await options.receiptStore.compareAndSwap(
-    receipt.payloadDigest,
-    switchingReceipt
-  )
-
-  const switchedReceipt = await store.transaction(async (tx) => {
-    const state = await inspectCohortState(tx, index, options.target)
-    assertReceiptCurrent(state, index, receipt)
-    assertTargetGroupsCoherent(state, index)
-    assertCandidateGroup(state, index, options.chatbotAlias, 'prepared')
-    assertNoEnabledOtherBinding(state, options.chatbotAlias)
-    await applyChatbotSwitch(tx, state, index, options.chatbotAlias, true)
-    const after = await inspectCohortState(tx, index, options.target)
-    return makeReceiptFromState(after, index, manifestFingerprint, {
-      state: 'switched',
-      switchedChatbotAliases: [
-        ...receipt.switchedChatbotAliases,
-        options.chatbotAlias,
-      ],
-    })
-  })
-  await options.receiptStore.compareAndSwap(
-    switchingReceipt.payloadDigest,
-    switchedReceipt
-  )
-  return operationResult(
-    'switched',
-    index,
-    manifestFingerprint,
-    zeroWrites(),
-    switchedReceipt
-  )
+  if (options.dryRun) return execute(receiptStore)
+  return receiptStore.runExclusive(execute)
 }
 
 export async function rollbackCohortChatbot(
@@ -3025,132 +3417,131 @@ export async function rollbackCohortChatbot(
     options.expectedManifestFingerprint
   )
   resolveChatbotAlias(index, options.chatbotAlias)
-  if (!options.receiptStore) {
+  const receiptStore = options.receiptStore
+  if (!receiptStore) {
     fail('RECEIPT_REQUIRED', 'a durable receipt store is required')
   }
-  const { receipt } = await prepareOrReadReceipt(
-    manifest,
-    options.receiptStore,
-    options.expectedManifestFingerprint
-  )
-  validateReceiptState(receipt, ['switched', 'switching', 'rolling_back'])
-  if (
-    !receipt.switchedChatbotAliases.includes(options.chatbotAlias) &&
-    !(
-      receipt.state === 'switching' &&
-      receipt.pendingChatbotAlias === options.chatbotAlias
+  const execute = async (
+    session: ActivationReceiptSession
+  ): Promise<ActivationResult> => {
+    const receipt = requireReceipt(
+      await readReceipt(session),
+      index,
+      manifestFingerprint
     )
-  ) {
-    fail('RECEIPT_STATE', 'chatbot was not switched')
-  }
-  if (
-    (receipt.state === 'rolling_back' || receipt.state === 'switching') &&
-    receipt.state !== 'switching' &&
-    !receipt.pendingRollbackAliases.includes(options.chatbotAlias)
-  ) {
-    fail('RECEIPT_STATE', 'rollback intent does not name the chatbot')
-  }
-
-  const stateBefore = await inspectCohortState(store, index, options.target)
-  const pending =
-    receipt.state === 'rolling_back' || receipt.state === 'switching'
-  assertReceiptCurrent(
-    stateBefore,
-    index,
-    receipt,
-    pending ? { pendingChatbotAlias: options.chatbotAlias } : {}
-  )
-  assertTargetGroupsCoherent(stateBefore, index)
-  assertNoEnabledOtherBinding(stateBefore, options.chatbotAlias)
-  if (!pending) {
-    assertCandidateGroup(stateBefore, index, options.chatbotAlias, 'switched')
-  } else {
-    const current = groupState(stateBefore, index, options.chatbotAlias)
-    if (current !== 'switched' && current !== 'prepared') {
-      fail('MIXED_STATE', 'the selected chatbot group is mixed')
+    validateReceiptState(receipt, ['switched', 'switching', 'rolling_back'])
+    if (
+      !receipt.switchedChatbotAliases.includes(options.chatbotAlias) &&
+      !(
+        receipt.state === 'switching' &&
+        receipt.pendingChatbotAlias === options.chatbotAlias
+      )
+    ) {
+      fail('RECEIPT_STATE', 'chatbot was not switched')
     }
-  }
-  if (options.dryRun) {
+    if (
+      (receipt.state === 'rolling_back' || receipt.state === 'switching') &&
+      receipt.state !== 'switching' &&
+      !receipt.pendingRollbackAliases.includes(options.chatbotAlias)
+    ) {
+      fail('RECEIPT_STATE', 'rollback intent does not name the chatbot')
+    }
+
+    const stateBefore = await inspectCohortState(store, index, options.target)
+    const pending =
+      receipt.state === 'rolling_back' || receipt.state === 'switching'
+    assertReceiptCurrent(
+      stateBefore,
+      index,
+      receipt,
+      pending ? { pendingChatbotAlias: options.chatbotAlias } : {}
+    )
+    assertTargetGroupsCoherent(stateBefore, index)
+    assertNoEnabledOtherBinding(stateBefore, options.chatbotAlias)
+    if (!pending) {
+      assertCandidateGroup(stateBefore, index, options.chatbotAlias, 'switched')
+    } else {
+      const current = groupState(stateBefore, index, options.chatbotAlias)
+      if (current !== 'switched' && current !== 'prepared') {
+        fail('MIXED_STATE', 'the selected chatbot group is mixed')
+      }
+    }
+    if (options.dryRun) {
+      return operationResult(
+        'dry-run',
+        index,
+        manifestFingerprint,
+        zeroWrites(),
+        receipt
+      )
+    }
+
+    let rollbackReceipt = receipt
+    if (!pending) {
+      rollbackReceipt = makeReceiptFromState(
+        stateBefore,
+        index,
+        manifestFingerprint,
+        {
+          state: 'rolling_back',
+          switchedChatbotAliases: receipt.switchedChatbotAliases,
+          pendingRollbackAliases: [options.chatbotAlias],
+        }
+      )
+      await session.compareAndSwap(receipt.payloadDigest, rollbackReceipt)
+    } else if (receipt.state === 'switching') {
+      const current = groupState(stateBefore, index, options.chatbotAlias)
+      rollbackReceipt = makeReceiptFromState(
+        stateBefore,
+        index,
+        manifestFingerprint,
+        {
+          state: 'rolling_back',
+          switchedChatbotAliases:
+            current === 'switched'
+              ? [...receipt.switchedChatbotAliases, options.chatbotAlias]
+              : receipt.switchedChatbotAliases,
+          pendingRollbackAliases: [options.chatbotAlias],
+        }
+      )
+      await session.compareAndSwap(receipt.payloadDigest, rollbackReceipt)
+    }
+
+    const finalReceipt = await store.transaction(async (tx) => {
+      const state = await inspectCohortState(tx, index, options.target)
+      assertReceiptCurrent(state, index, rollbackReceipt, {
+        pendingChatbotAlias: options.chatbotAlias,
+      })
+      assertTargetGroupsCoherent(state, index)
+      assertNoEnabledOtherBinding(state, options.chatbotAlias)
+      const current = groupState(state, index, options.chatbotAlias)
+      if (current !== 'switched' && current !== 'prepared') {
+        fail('MIXED_STATE', 'the selected chatbot group is mixed')
+      }
+      if (current === 'switched') {
+        await applyChatbotSwitch(tx, state, index, options.chatbotAlias, false)
+      }
+      const remaining = rollbackReceipt.switchedChatbotAliases.filter(
+        (alias) => alias !== options.chatbotAlias
+      )
+      const after = await inspectCohortState(tx, index, options.target)
+      return makeReceiptFromState(after, index, manifestFingerprint, {
+        state: remaining.length === 0 ? 'rolled_back' : 'switched',
+        switchedChatbotAliases: remaining,
+      })
+    })
+    await session.compareAndSwap(rollbackReceipt.payloadDigest, finalReceipt)
     return operationResult(
-      'dry-run',
+      finalReceipt.state === 'rolled_back' ? 'rolled_back' : 'switched',
       index,
       manifestFingerprint,
       zeroWrites(),
-      receipt
+      finalReceipt
     )
   }
 
-  let rollbackReceipt = receipt
-  if (!pending) {
-    rollbackReceipt = makeReceiptFromState(
-      stateBefore,
-      index,
-      manifestFingerprint,
-      {
-        state: 'rolling_back',
-        switchedChatbotAliases: receipt.switchedChatbotAliases,
-        pendingRollbackAliases: [options.chatbotAlias],
-      }
-    )
-    await options.receiptStore.compareAndSwap(
-      receipt.payloadDigest,
-      rollbackReceipt
-    )
-  } else if (receipt.state === 'switching') {
-    rollbackReceipt = makeReceiptFromState(
-      stateBefore,
-      index,
-      manifestFingerprint,
-      {
-        state: 'rolling_back',
-        switchedChatbotAliases: receipt.switchedChatbotAliases.includes(
-          options.chatbotAlias
-        )
-          ? receipt.switchedChatbotAliases
-          : [...receipt.switchedChatbotAliases, options.chatbotAlias],
-        pendingRollbackAliases: [options.chatbotAlias],
-      }
-    )
-    await options.receiptStore.compareAndSwap(
-      receipt.payloadDigest,
-      rollbackReceipt
-    )
-  }
-
-  const finalReceipt = await store.transaction(async (tx) => {
-    const state = await inspectCohortState(tx, index, options.target)
-    assertReceiptCurrent(state, index, rollbackReceipt, {
-      pendingChatbotAlias: options.chatbotAlias,
-    })
-    assertTargetGroupsCoherent(state, index)
-    assertNoEnabledOtherBinding(state, options.chatbotAlias)
-    const current = groupState(state, index, options.chatbotAlias)
-    if (current !== 'switched' && current !== 'prepared') {
-      fail('MIXED_STATE', 'the selected chatbot group is mixed')
-    }
-    if (current === 'switched') {
-      await applyChatbotSwitch(tx, state, index, options.chatbotAlias, false)
-    }
-    const remaining = rollbackReceipt.switchedChatbotAliases.filter(
-      (alias) => alias !== options.chatbotAlias
-    )
-    const after = await inspectCohortState(tx, index, options.target)
-    return makeReceiptFromState(after, index, manifestFingerprint, {
-      state: remaining.length === 0 ? 'rolled_back' : 'switched',
-      switchedChatbotAliases: remaining,
-    })
-  })
-  await options.receiptStore.compareAndSwap(
-    rollbackReceipt.payloadDigest,
-    finalReceipt
-  )
-  return operationResult(
-    finalReceipt.state === 'rolled_back' ? 'rolled_back' : 'switched',
-    index,
-    manifestFingerprint,
-    zeroWrites(),
-    finalReceipt
-  )
+  if (options.dryRun) return execute(receiptStore)
+  return receiptStore.runExclusive(execute)
 }
 
 export async function readbackCohortActivation(

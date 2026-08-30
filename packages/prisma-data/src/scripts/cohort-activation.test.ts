@@ -1,12 +1,14 @@
+import { createHash } from 'node:crypto'
 import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
   rmdirSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { hostname, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
@@ -15,7 +17,9 @@ import {
   type ActivationConfigCreate,
   type ActivationConfigRecord,
   type ActivationKnowledgeBaseCreate,
+  type ActivationReceipt,
   type ActivationReceiptPayload,
+  type ActivationReceiptSession,
   type ActivationReceiptStore,
   type ActivationServerCreate,
   type ActivationServerRecord,
@@ -49,6 +53,50 @@ function uuid(number: number): string {
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
+}
+
+function canonicalReceipt(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map((item) => canonicalReceipt(item))
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>
+    return Object.fromEntries(
+      Object.keys(record)
+        .sort()
+        .map((key) => [key, canonicalReceipt(record[key])])
+    )
+  }
+  return value
+}
+
+function receiptDigest(receipt: ActivationReceipt): string {
+  const { payloadDigest: _payloadDigest, ...withoutDigest } = receipt
+  return createHash('sha256')
+    .update(JSON.stringify(canonicalReceipt(withoutDigest)))
+    .digest('hex')
+}
+
+function deadPid(): number {
+  for (let candidate = 2_000_000; candidate < 2_000_100; candidate += 1) {
+    try {
+      process.kill(candidate, 0)
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ESRCH') return candidate
+    }
+  }
+  throw new Error('no dead test pid found')
+}
+
+function writeLockOwner(lockPath: string, pid: number, host = hostname()) {
+  mkdirSync(lockPath)
+  writeFileSync(
+    join(lockPath, 'owner.json'),
+    `${JSON.stringify({
+      version: 1,
+      pid,
+      host,
+      token: uuid(9990),
+    })}\n`
+  )
 }
 
 function makeManifest(): FrozenCohortManifest {
@@ -167,7 +215,7 @@ class MemoryStore implements ActivationStore {
   private sequence = 20000
   private clock = 1
 
-  constructor(readonly manifest: FrozenCohortManifest) {
+  constructor(manifest: FrozenCohortManifest) {
     const chatbotIds = manifest.corpora.flatMap((corpus) => corpus.chatbotIds)
     for (const [index, chatbotId] of chatbotIds.entries()) {
       const corpus = manifest.corpora.find((entry) =>
@@ -334,7 +382,6 @@ class MemoryStore implements ActivationStore {
     const row = {
       id: this.nextId(),
       ...data,
-      description: data.description,
       updatedAt: this.nextDate(),
     }
     this.servers.set(row.id, row)
@@ -442,6 +489,13 @@ class MemoryStore implements ActivationStore {
 class MemoryReceiptStore {
   value: ActivationReceiptPayload | null = null
   writes = 0
+  private locked = false
+  private blockedExclusive: {
+    entered: Promise<void>
+    signalEntered: () => void
+    released: Promise<void>
+    release: () => void
+  } | null = null
 
   async read() {
     return this.value
@@ -456,6 +510,54 @@ class MemoryReceiptStore {
     }
     this.value = clone(receipt)
     this.writes += 1
+  }
+
+  async runExclusive<T>(
+    callback: (store: ActivationReceiptSession) => Promise<T>
+  ) {
+    if (this.locked) {
+      throw new CohortActivationError(
+        'RECEIPT_LOCKED',
+        'receipt is already being updated'
+      )
+    }
+    this.locked = true
+    const blocked = this.blockedExclusive
+    try {
+      if (blocked) {
+        blocked.signalEntered()
+        await blocked.released
+      }
+      return await callback(this)
+    } finally {
+      this.locked = false
+    }
+  }
+
+  blockNextExclusive() {
+    let resolveEntered!: () => void
+    let resolveRelease!: () => void
+    const entered = new Promise<void>((resolve) => {
+      resolveEntered = resolve
+    })
+    const released = new Promise<void>((resolve) => {
+      resolveRelease = resolve
+    })
+    this.blockedExclusive = {
+      entered,
+      signalEntered: resolveEntered,
+      released,
+      release: resolveRelease,
+    }
+  }
+
+  async waitForExclusive() {
+    await this.blockedExclusive?.entered
+  }
+
+  releaseExclusive() {
+    this.blockedExclusive?.release()
+    this.blockedExclusive = null
   }
 }
 
@@ -485,10 +587,12 @@ class ConcurrentReceiptStore implements ActivationReceiptStore {
   ) {
     return this.delegate.compareAndSwap(expectedDigest, receipt)
   }
-}
 
-function expectedFingerprint(value: FrozenCohortManifest): string {
-  return fingerprintManifest(value)
+  async runExclusive<T>(
+    callback: (store: ActivationReceiptSession) => Promise<T>
+  ) {
+    return this.delegate.runExclusive(callback)
+  }
 }
 
 function options(
@@ -496,7 +600,7 @@ function options(
   manifest: FrozenCohortManifest
 ) {
   return {
-    expectedManifestFingerprint: expectedFingerprint(manifest),
+    expectedManifestFingerprint: fingerprintManifest(manifest),
     receiptStore,
     target: TARGET,
   }
@@ -571,7 +675,7 @@ describe('cohort activation operator', () => {
           candidate,
           manifest,
           TARGET,
-          expectedFingerprint(manifest)
+          fingerprintManifest(manifest)
         )
       ).rejects.toThrowError(
         expect.objectContaining({ code: 'SOURCE_SERVER_MISMATCH' })
@@ -592,7 +696,7 @@ describe('cohort activation operator', () => {
         new MemoryStore(mismatchedManifest),
         mismatchedManifest,
         TARGET,
-        expectedFingerprint(mismatchedManifest)
+        fingerprintManifest(mismatchedManifest)
       )
     ).rejects.toThrowError(
       expect.objectContaining({ code: 'SOURCE_SERVER_MISMATCH' })
@@ -606,7 +710,7 @@ describe('cohort activation operator', () => {
         store,
         manifest,
         TARGET,
-        expectedFingerprint(manifest)
+        fingerprintManifest(manifest)
       )
     ).rejects.toThrowError(expect.objectContaining({ code: 'COURSE_MISSING' }))
 
@@ -617,7 +721,7 @@ describe('cohort activation operator', () => {
         store,
         manifest,
         TARGET,
-        expectedFingerprint(manifest)
+        fingerprintManifest(manifest)
       )
     ).rejects.toThrowError(expect.objectContaining({ code: 'COURSE_DRIFT' }))
 
@@ -631,7 +735,7 @@ describe('cohort activation operator', () => {
         store,
         manifest,
         TARGET,
-        expectedFingerprint(manifest)
+        fingerprintManifest(manifest)
       )
     ).rejects.toThrowError(
       expect.objectContaining({ code: 'COURSE_REFERENCE_MISSING' })
@@ -644,7 +748,7 @@ describe('cohort activation operator', () => {
         store,
         manifest,
         TARGET,
-        expectedFingerprint(manifest)
+        fingerprintManifest(manifest)
       )
     ).rejects.toThrowError(
       expect.objectContaining({ code: 'EXCLUDED_CONFIG_DRIFT' })
@@ -658,7 +762,7 @@ describe('cohort activation operator', () => {
         store,
         manifest,
         TARGET,
-        expectedFingerprint(manifest)
+        fingerprintManifest(manifest)
       )
     ).rejects.toThrowError(
       expect.objectContaining({ code: 'EXCLUDED_CONFIG_DRIFT' })
@@ -670,7 +774,7 @@ describe('cohort activation operator', () => {
       store,
       manifest,
       TARGET,
-      expectedFingerprint(manifest)
+      fingerprintManifest(manifest)
     )
     expect(result.status).toBe('dry-run')
     expect(result.writes).toEqual({
@@ -856,6 +960,29 @@ describe('cohort activation operator', () => {
     expect(receiptStore.writes).toBe(switchedReceipts)
   })
 
+  it('rejects concurrent switch and rollback under one receipt guard', async () => {
+    await prepareCohortActivation(
+      store,
+      manifest,
+      options(receiptStore, manifest)
+    )
+    receiptStore.blockNextExclusive()
+    const switching = switchCohortChatbot(store, manifest, {
+      ...options(receiptStore, manifest),
+      chatbotAlias: 'chatbot-001',
+    })
+    await receiptStore.waitForExclusive()
+    await expect(
+      rollbackCohortChatbot(store, manifest, {
+        ...options(receiptStore, manifest),
+        chatbotAlias: 'chatbot-001',
+      })
+    ).rejects.toThrowError(expect.objectContaining({ code: 'RECEIPT_LOCKED' }))
+    receiptStore.releaseExclusive()
+    await expect(switching).resolves.toMatchObject({ status: 'switched' })
+    expect(receiptStore.value?.state).toBe('switched')
+  })
+
   it('refuses a mixed target group and keeps the durable receipt unchanged', async () => {
     await prepareCohortActivation(
       store,
@@ -875,6 +1002,68 @@ describe('cohort activation operator', () => {
       expect.objectContaining({ code: 'SNAPSHOT_MISMATCH' })
     )
     expect(receiptStore.value).toEqual(receiptBefore)
+  })
+
+  it('rejects semantically inconsistent receipts with otherwise valid digests', async () => {
+    await prepareCohortActivation(
+      store,
+      manifest,
+      options(receiptStore, manifest)
+    )
+    const baseline = clone(receiptStore.value!) as ActivationReceipt
+
+    const wrongSwitchedAlias = clone(baseline)
+    wrongSwitchedAlias.switchedChatbotAliases = ['chatbot-999']
+    wrongSwitchedAlias.payloadDigest = receiptDigest(wrongSwitchedAlias)
+    receiptStore.value = wrongSwitchedAlias
+    await expect(
+      switchCohortChatbot(store, manifest, {
+        ...options(receiptStore, manifest),
+        chatbotAlias: 'chatbot-001',
+      })
+    ).rejects.toThrowError(
+      expect.objectContaining({ code: 'RECEIPT_MISMATCH' })
+    )
+
+    const enabledMismatch = clone(baseline)
+    enabledMismatch.bindings[0]!.isEnabled = true
+    enabledMismatch.payloadDigest = receiptDigest(enabledMismatch)
+    receiptStore.value = enabledMismatch
+    await expect(
+      switchCohortChatbot(store, manifest, {
+        ...options(receiptStore, manifest),
+        chatbotAlias: 'chatbot-001',
+      })
+    ).rejects.toThrowError(expect.objectContaining({ code: 'RECEIPT_STATE' }))
+
+    const invalidPending = clone(baseline)
+    invalidPending.pendingChatbotAlias = 'chatbot-001'
+    invalidPending.payloadDigest = receiptDigest(invalidPending)
+    receiptStore.value = invalidPending
+    await expect(
+      switchCohortChatbot(store, manifest, {
+        ...options(receiptStore, manifest),
+        chatbotAlias: 'chatbot-001',
+      })
+    ).rejects.toThrowError(expect.objectContaining({ code: 'RECEIPT_STATE' }))
+
+    receiptStore.value = baseline
+    await switchCohortChatbot(store, manifest, {
+      ...options(receiptStore, manifest),
+      chatbotAlias: 'chatbot-001',
+    })
+    const switched = clone(receiptStore.value!) as ActivationReceipt
+    const invalidRollback = clone(switched)
+    invalidRollback.state = 'rolling_back'
+    invalidRollback.pendingRollbackAliases = ['chatbot-002']
+    invalidRollback.payloadDigest = receiptDigest(invalidRollback)
+    receiptStore.value = invalidRollback
+    await expect(
+      rollbackCohortChatbot(store, manifest, {
+        ...options(receiptStore, manifest),
+        chatbotAlias: 'chatbot-001',
+      })
+    ).rejects.toThrowError(expect.objectContaining({ code: 'RECEIPT_STATE' }))
   })
 
   it('refuses enabled alternative bindings during switch and rollback validation', async () => {
@@ -986,6 +1175,74 @@ describe('cohort activation operator', () => {
     expect(await fileStore.read()).toEqual(receipt)
   })
 
+  it('reclaims only a dead same-host lock owner for in-flight recovery', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'cohort-activation-stale-'))
+    const path = join(directory, 'receipt.json')
+    writeLockOwner(`${path}.lock`, deadPid())
+    const fileStore = createFileActivationReceiptStore(path)
+    const result = await prepareCohortActivation(
+      store,
+      manifest,
+      options(fileStore, manifest)
+    )
+    expect(result.status).toBe('prepared')
+    expect(() => statSync(`${path}.lock`)).toThrow()
+  })
+
+  it('refuses live and unknown receipt lock owners without expiry', async () => {
+    const sourceDirectory = mkdtempSync(
+      join(tmpdir(), 'cohort-activation-lock-source-')
+    )
+    const sourcePath = join(sourceDirectory, 'receipt.json')
+    const sourceStore = createFileActivationReceiptStore(sourcePath)
+    await prepareCohortActivation(
+      store,
+      manifest,
+      options(sourceStore, manifest)
+    )
+    const receipt = await sourceStore.read()
+    for (const [index, owner] of [
+      { host: hostname(), pid: process.pid },
+      { host: 'unknown-host', pid: deadPid() },
+    ].entries()) {
+      const directory = mkdtempSync(
+        join(tmpdir(), `cohort-activation-locked-${index}-`)
+      )
+      const path = join(directory, 'receipt.json')
+      writeLockOwner(`${path}.lock`, owner.pid, owner.host)
+      const fileStore = createFileActivationReceiptStore(path)
+      await expect(
+        fileStore.compareAndSwap(null, receipt!)
+      ).rejects.toThrowError(
+        expect.objectContaining({ code: 'RECEIPT_LOCKED' })
+      )
+      expect(statSync(`${path}.lock`).isDirectory()).toBe(true)
+      rmSync(`${path}.lock`, { force: true, recursive: true })
+    }
+  })
+
+  it('preserves the primary failure when lock cleanup also fails', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'cohort-activation-cleanup-'))
+    const path = join(directory, 'receipt.json')
+    const fileStore = createFileActivationReceiptStore(path)
+    const primary = new Error('synthetic operation failure')
+    const failure = await fileStore
+      .runExclusive(async () => {
+        rmSync(`${path}.lock`, { force: true, recursive: true })
+        throw primary
+      })
+      .catch((error: unknown) => error)
+    expect(failure).toBeInstanceOf(AggregateError)
+    expect((failure as AggregateError).errors).toContain(primary)
+    expect(
+      (failure as AggregateError).errors.some(
+        (error) =>
+          error instanceof CohortActivationError &&
+          error.code === 'RECEIPT_LOCK_CLEANUP_FAILED'
+      )
+    ).toBe(true)
+  })
+
   it('does not let concurrent prepare calls overwrite receipt recovery evidence', async () => {
     const directory = mkdtempSync(
       join(tmpdir(), 'cohort-activation-concurrent-')
@@ -1012,6 +1269,27 @@ describe('cohort activation operator', () => {
       outcomes.find((outcome) => outcome.status === 'rejected')?.reason.code
     )
     expect((await fileStore.read())?.state).toBe('prepared')
+  })
+
+  it('leaves a durable in-flight receipt readable for rollback recovery', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'cohort-activation-inflight-'))
+    const path = join(directory, 'receipt.json')
+    const fileStore = createFileActivationReceiptStore(path)
+    await prepareCohortActivation(store, manifest, options(fileStore, manifest))
+    store.failTargetConfigUpdate = true
+    await expect(
+      switchCohortChatbot(store, manifest, {
+        ...options(fileStore, manifest),
+        chatbotAlias: 'chatbot-001',
+      })
+    ).rejects.toThrowError(expect.objectContaining({ code: 'CONCURRENT_EDIT' }))
+    expect((await fileStore.read())?.state).toBe('switching')
+    await expect(
+      rollbackCohortChatbot(store, manifest, {
+        ...options(fileStore, manifest),
+        chatbotAlias: 'chatbot-001',
+      })
+    ).resolves.toMatchObject({ status: 'rolled_back' })
   })
 
   it('serializes receipt updates, rejects stale digests, and refuses tampered shape', async () => {
