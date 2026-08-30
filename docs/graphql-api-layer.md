@@ -83,13 +83,18 @@ candidate validation.
 
 The remaining lifecycle is exposed as participant-authenticated mutations:
 `claimCardGenerationLease`, `completeCardGenerationLease`, and
-`abortCardGenerationLease` own generation claim and settlement;
+`abortCardGenerationLease` own generation claim and settlement. A claim
+verifies the exact ready plan tool result, participant and course ownership,
+the assistant attempt on that plan's branch, and that no newer ready plan has
+superseded it;
 `savePersonalElementCandidate` accepts only course, assistant-message,
 tool-call, and candidate identifiers. The service reloads the persisted
 terminal `generate_cards` result, verifies its participant, course, accepted
 plan, and lease lineage, then saves that candidate idempotently and repeats the
 title-similarity check inside its serializable transaction;
-`discardPersonalElementCandidate` persists the negative decision; and
+`discardPersonalElementCandidate` accepts the same linkage, reloads the same
+trusted terminal candidate, and persists the negative decision without copying
+candidate content; and
 `updatePersonalElement` applies the expected-version revision contract.
 `savedPersonalElementCandidateIds` returns only the requested saved candidate
 identities for generated-message reloads. `personalElements` remains the full

@@ -29,20 +29,22 @@ describe('personal-element generation lease adapter', () => {
   test('binds the accepted plan to the assistant attempt token', async () => {
     const lease = await claimGenerationLease({
       participantId: 'participant-1',
+      courseId: 'course-1',
       planMessageId: '00000000-0000-0000-0000-000000000001',
       planToolCallId: 'plan-tool-1',
-      attemptToken: 'assistant-attempt-1',
+      attemptToken: '00000000-0000-0000-0000-000000000002',
     })
 
     expect(lease).toEqual({
       id: 'lease-1',
-      attemptToken: 'assistant-attempt-1',
+      attemptToken: '00000000-0000-0000-0000-000000000002',
     })
     expect(mocks.claim).toHaveBeenCalledWith(
       {
+        courseId: 'course-1',
         planMessageId: '00000000-0000-0000-0000-000000000001',
         planToolCallId: 'plan-tool-1',
-        attemptToken: 'assistant-attempt-1',
+        attemptToken: '00000000-0000-0000-0000-000000000002',
       },
       'participant-1'
     )

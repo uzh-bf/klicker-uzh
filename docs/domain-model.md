@@ -96,15 +96,19 @@ read.
 
 The full lifecycle is exposed through participant-authenticated GraphQL
 operations. claimCardGenerationLease atomically claims or reclaims the
-generation lease for an owned plan message; completeCardGenerationLease and
-abortCardGenerationLease settle only the caller's current attempt.
+generation lease only after verifying the exact ready plan tool result,
+participant and course ownership, the assistant attempt on that plan's branch,
+and the absence of a newer ready plan on the same branch;
+completeCardGenerationLease and abortCardGenerationLease settle only the
+caller's current attempt.
 savePersonalElementCandidate accepts only course, assistant-message, tool-call,
 and candidate identifiers. It reloads the persisted terminal generation
 result, verifies its participant, course, accepted plan, and lease lineage, and
 saves that candidate idempotently with the final duplicate check in its
-transaction. discardPersonalElementCandidate persists the negative decision
-idempotently, and updatePersonalElement applies the expected-version and
-scheduling contract to a saved card.
+transaction. discardPersonalElementCandidate accepts the same identifiers,
+reloads the same trusted terminal candidate, and persists the negative decision
+idempotently without copying generated content. updatePersonalElement applies
+the expected-version and scheduling contract to a saved card.
 savedPersonalElementCandidateIds returns only the requested saved candidate
 identities for generated-message reloads; listPersonalElements returns the full
 course collection used by practice and saved-card management.
@@ -118,7 +122,8 @@ lifecycle. The rationale and future lecturer-owned composition contract are in
 [ADR 0042](./adr/0042-generated-elements-own-source-reference-snapshots.md).
 
 Chat candidates are not bulk-selected. Each card is saved or discarded on its
-own. A discard is stored in `PersonalElementDiscard`, scoped to the participant,
+own. Discard uses the same persisted message, tool-call, and candidate lineage
+as Save before storing `PersonalElementDiscard`, scoped to the participant,
 course, and candidate ID; the save service rejects that candidate inside its
 serializable transaction. This keeps the decision durable without copying
 generated content into lecturer-owned tables.

@@ -460,6 +460,7 @@ export async function createCardGeneration({
       }
       lease = await claimGenerationLease({
         participantId,
+        courseId,
         planMessageId: acceptedPlanReference.messageId,
         planToolCallId: acceptedPlanReference.toolCallId,
         attemptToken: assistantMessageId,

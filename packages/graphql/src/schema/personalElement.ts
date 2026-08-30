@@ -123,6 +123,7 @@ export const CardGenerationLeaseInput = builder.inputType(
   'CardGenerationLeaseInput',
   {
     fields: (t) => ({
+      courseId: t.string({ required: true }),
       planMessageId: t.string({ required: true }),
       planToolCallId: t.string({ required: true }),
       attemptToken: t.string({ required: true }),
@@ -130,8 +131,8 @@ export const CardGenerationLeaseInput = builder.inputType(
   }
 )
 
-export const SavePersonalElementCandidateInput = builder.inputType(
-  'SavePersonalElementCandidateInput',
+export const PersonalElementCandidateLinkageInput = builder.inputType(
+  'PersonalElementCandidateLinkageInput',
   {
     fields: (t) => ({
       courseId: t.string({ required: true }),

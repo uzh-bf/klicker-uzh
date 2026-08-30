@@ -324,7 +324,12 @@ export async function discardCardCandidateDecision(
 
   try {
     await discardPersonalElementCandidate(
-      { courseId: context.courseId, candidateId: input.candidateId },
+      {
+        courseId: context.courseId,
+        messageId: input.messageId,
+        toolCallId: input.toolCallId,
+        candidateId: input.candidateId,
+      },
       context.participantId
     )
   } catch (error) {

@@ -1,9 +1,5 @@
 mutation MDiscardPersonalElementCandidate(
-  $courseId: String!
-  $candidateId: String!
+  $input: PersonalElementCandidateLinkageInput!
 ) {
-  discardPersonalElementCandidate(
-    courseId: $courseId
-    candidateId: $candidateId
-  )
+  discardPersonalElementCandidate(input: $input)
 }

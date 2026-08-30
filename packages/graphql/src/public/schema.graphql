@@ -455,6 +455,7 @@ type CardGenerationLease {
 
 input CardGenerationLeaseInput {
   attemptToken: String!
+  courseId: String!
   planMessageId: String!
   planToolCallId: String!
 }
@@ -2631,7 +2632,7 @@ type Mutation {
   deleteUserLogin(id: String!): UserLogin
   demoteGroupAdminToMember(adminId: String!, groupId: Int!): Boolean!
   detachKbFromChatbot(chatbotId: ID!, kbId: ID!): Boolean!
-  discardPersonalElementCandidate(candidateId: String!, courseId: String!): Boolean!
+  discardPersonalElementCandidate(input: PersonalElementCandidateLinkageInput!): Boolean!
   duplicateAnswerCollection(id: Int!): AnswerCollection
   duplicateGeneratedElementDraft(input: GeneratedElementDraftInput!): GeneratedElementDraft!
   editActivityTemplate(activityId: String!, activityType: ActivityType!, description: String!, instructions: String!, name: String!, templateId: String!): Boolean!
@@ -2716,7 +2717,7 @@ type Mutation {
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
   saveGeneratedElements(input: ElementGenerationBuildInput!): ElementGenerationSaveResult!
-  savePersonalElementCandidate(input: SavePersonalElementCandidateInput!): PersonalElement
+  savePersonalElementCandidate(input: PersonalElementCandidateLinkageInput!): PersonalElement
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
@@ -3133,6 +3134,13 @@ type PersonalElement {
   wrongCount: Int!
 }
 
+input PersonalElementCandidateLinkageInput {
+  candidateId: String!
+  courseId: String!
+  messageId: String!
+  toolCallId: String!
+}
+
 type PersonalElementGenerationContext {
   courseLanguage: LocaleType!
   existingTitles: [String!]!
@@ -3522,13 +3530,6 @@ enum ReviewStatus {
   INCOMPLETE
   MODIFIED_AFTER_REVIEW
   REVIEWED
-}
-
-input SavePersonalElementCandidateInput {
-  candidateId: String!
-  courseId: String!
-  messageId: String!
-  toolCallId: String!
 }
 
 type SelectionActivityEvaluationData {

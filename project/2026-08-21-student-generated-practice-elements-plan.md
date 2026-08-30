@@ -113,9 +113,10 @@ Plain-language version:
    Saving calls a small API route in the chat app and sends only the persisted
    message, tool-call, and candidate identifiers to GraphQL. The backend reloads
    the terminal generation result, verifies the accepted plan and lease, and
-   copies the trusted candidate into the personal element. Discarding writes a bounded candidate
-   disposition keyed by participant, source message, source tool call, and
-   candidate ID; it is idempotent and survives thread reload. The GraphQL
+   copies the trusted candidate into the personal element. Discarding sends the
+   same identifiers, reloads the same terminal candidate, and writes a bounded
+   disposition keyed by participant, course, and candidate ID; it is idempotent
+   and survives thread reload. The GraphQL
    package exposes those rules through participant-authenticated GraphQL
    operations; Chat never imports GraphQL source files directly.
 6. **Practice lives in the PWA.** A "My cards" page per course lists and runs
@@ -1185,3 +1186,14 @@ Settled rulings for this implementation:
   focused GraphQL service suite passes 49 tests, and the five focused Chat
   suites pass 71 tests. The complete Chat suite passes all 897 active tests;
   13 integration tests remain skipped by their existing environment gate.
+- 2026-08-30 (decision-lineage correction): Lease claims now verify the exact
+  ready plan tool result, participant and course ownership, the assistant
+  generation attempt on that plan's branch, and that no newer ready plan has
+  superseded it. Discard now uses the same linkage-only input as Save and the
+  backend reloads the persisted terminal candidate before recording the
+  content-free decision. These changes close the final package review's two
+  remaining lifecycle-authority gaps without a schema or database migration.
+  The focused GraphQL service suite passes all 52 tests, the six focused Chat
+  suites pass all 73 tests, and GraphQL and Chat typechecks pass. The complete
+  Chat suite passes all 897 active tests; 13 integration tests remain skipped
+  by their existing environment gate.

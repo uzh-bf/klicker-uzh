@@ -80,9 +80,9 @@ import {
   CardGenerationLease,
   CardGenerationLeaseInput,
   PersonalElement,
+  PersonalElementCandidateLinkageInput,
   PrepareCardPlanInput,
   PreparedCardPlan,
-  SavePersonalElementCandidateInput,
   UpdatePersonalElementInput,
   ValidateCardCandidateInput,
 } from './personalElement.js'
@@ -735,7 +735,7 @@ export const Mutation = builder.mutationType({
         type: PersonalElement,
         args: {
           input: t.arg({
-            type: SavePersonalElementCandidateInput,
+            type: PersonalElementCandidateLinkageInput,
             required: true,
           }),
         },
@@ -752,14 +752,19 @@ export const Mutation = builder.mutationType({
 
       discardPersonalElementCandidate: t.withAuth(asParticipant).boolean({
         args: {
-          courseId: t.arg.string({ required: true }),
-          candidateId: t.arg.string({ required: true }),
+          input: t.arg({
+            type: PersonalElementCandidateLinkageInput,
+            required: true,
+          }),
         },
         resolve: async (_, args, ctx) => {
-          await PersonalElementService.discardPersonalElementCandidate(args, {
-            prisma: ctx.prisma,
-            participantId: ctx.user.sub,
-          })
+          await PersonalElementService.discardPersonalElementCandidate(
+            args.input,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
           return true
         },
       }),

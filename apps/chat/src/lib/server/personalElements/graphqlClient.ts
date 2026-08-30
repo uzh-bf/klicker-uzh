@@ -222,14 +222,19 @@ export async function savePersonalElementCandidate(
 }
 
 export async function discardPersonalElementCandidate(
-  input: { courseId: string; candidateId: string },
+  input: {
+    courseId: string
+    messageId: string
+    toolCallId: string
+    candidateId: string
+  },
   participantId: string
 ): Promise<boolean> {
   const data =
     await executePersonalElementOperation<MDiscardPersonalElementCandidateMutation>(
       {
         operationName: 'MDiscardPersonalElementCandidate',
-        variables: input,
+        variables: { input },
         participantId,
       }
     )

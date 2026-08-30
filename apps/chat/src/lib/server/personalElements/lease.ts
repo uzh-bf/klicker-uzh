@@ -42,17 +42,19 @@ export async function createGenerationAttemptMessage({
 
 export async function claimGenerationLease({
   participantId,
+  courseId,
   planMessageId,
   planToolCallId,
   attemptToken,
 }: {
   participantId: string
+  courseId: string
   planMessageId: string
   planToolCallId: string
   attemptToken: string
 }): Promise<CardGenerationLease> {
   const lease = await claimCardGenerationLease(
-    { planMessageId, planToolCallId, attemptToken },
+    { courseId, planMessageId, planToolCallId, attemptToken },
     participantId
   )
   return { id: lease.id, attemptToken }

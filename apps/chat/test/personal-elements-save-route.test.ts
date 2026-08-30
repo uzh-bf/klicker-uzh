@@ -187,7 +187,12 @@ describe('personal-element candidate decisions', () => {
       discarded: true,
     })
     expect(mocks.discardPersonalElementCandidate).toHaveBeenCalledWith(
-      { courseId: 'course-1', candidateId: candidate.candidateId },
+      {
+        courseId: 'course-1',
+        messageId,
+        toolCallId,
+        candidateId: candidate.candidateId,
+      },
       'participant-1'
     )
   })

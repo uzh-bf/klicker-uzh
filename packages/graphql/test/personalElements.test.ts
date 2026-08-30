@@ -156,6 +156,7 @@ async function createGeneratedCandidateAttempt(
   const message = await prisma.chatMessage.create({
     data: {
       threadId: fixture.planMessage.threadId,
+      parentId: fixture.planMessage.id,
       role: 'assistant',
       content: [],
       lifecycleStatus: persisted ? 'COMPLETED' : 'IN_PROGRESS',
@@ -205,6 +206,57 @@ async function createGeneratedCandidateAttempt(
       messageId: message.id,
       toolCallId: generationToolCallId,
       candidateId,
+    },
+  }
+}
+
+async function createLeasePlan(
+  fixture: Awaited<ReturnType<typeof createFixture>>
+) {
+  const planId = randomUUID()
+  const planToolCallId = `plan-${randomUUID()}`
+  await prisma.chatMessage.update({
+    where: { id: fixture.planMessage.id },
+    data: {
+      content: [
+        {
+          type: 'tool-call',
+          toolName: 'propose_card_plan',
+          toolCallId: planToolCallId,
+          result: {
+            status: 'ready',
+            planId,
+            topic: 'Economics',
+            cards: [
+              {
+                type: 'FLASHCARD',
+                candidateId: `${planId}:card-1`,
+                title: 'Opportunity cost',
+                intent: 'Explain opportunity cost',
+                query: 'opportunity cost',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  })
+
+  return {
+    courseId: fixture.course.id,
+    planMessageId: fixture.planMessage.id,
+    planToolCallId,
+    createAttempt: async (parentId = fixture.planMessage.id) => {
+      const attempt = await prisma.chatMessage.create({
+        data: {
+          threadId: fixture.planMessage.threadId,
+          parentId,
+          role: 'assistant',
+          content: [],
+          lifecycleStatus: 'IN_PROGRESS',
+        },
+      })
+      return attempt.id
     },
   }
 }
@@ -589,40 +641,34 @@ describe('personal elements service', () => {
   })
 
   it('serializes save and discard so only one candidate disposition wins', async () => {
-    const { course, participant } = await createFixture()
-    const savedInput = candidate()
-    const discardedInput = candidate({
-      candidateId: savedInput.candidateId,
-      sourceMessageId: randomUUID(),
-      sourceToolCallId: `retry-tool-${randomUUID()}`,
+    const fixture = await createFixture()
+    const attempt = await createGeneratedCandidateAttempt(fixture, {
+      persisted: true,
     })
 
     const results = await Promise.allSettled([
-      createPersonalElements(
-        { courseId: course.id, candidates: [savedInput] },
-        context(participant.id)
+      savePersonalElementCandidate(
+        attempt.linkage,
+        context(fixture.participant.id)
       ),
       discardPersonalElementCandidate(
-        {
-          courseId: course.id,
-          candidateId: discardedInput.candidateId,
-        },
-        context(participant.id)
+        attempt.linkage,
+        context(fixture.participant.id)
       ),
     ])
 
     const saved = await prisma.personalElement.count({
       where: {
-        participantId: participant.id,
-        courseId: course.id,
-        candidateId: savedInput.candidateId,
+        participantId: fixture.participant.id,
+        courseId: fixture.course.id,
+        candidateId: attempt.generated.candidateId,
       },
     })
     const discarded = await prisma.personalElementDiscard.count({
       where: {
-        participantId: participant.id,
-        courseId: course.id,
-        candidateId: savedInput.candidateId,
+        participantId: fixture.participant.id,
+        courseId: fixture.course.id,
+        candidateId: attempt.generated.candidateId,
       },
     })
 
@@ -633,7 +679,8 @@ describe('personal elements service', () => {
   })
 
   it('treats the plan candidate ID as stable across generation attempts', async () => {
-    const { course, participant } = await createFixture()
+    const fixture = await createFixture()
+    const { course, participant } = fixture
     const firstAttempt = candidate()
     const retryAttempt = candidate({
       candidateId: firstAttempt.candidateId,
@@ -658,16 +705,12 @@ describe('personal elements service', () => {
       })
     ).toBe(1)
 
-    const discardedAttempt = candidate({
-      candidateId: randomUUID(),
-      sourceMessageId: randomUUID(),
-      sourceToolCallId: `discard-tool-${randomUUID()}`,
+    const discardedAttempt = await createGeneratedCandidateAttempt(fixture, {
+      persisted: true,
+      title: 'Marginal cost',
     })
     await discardPersonalElementCandidate(
-      {
-        courseId: course.id,
-        candidateId: discardedAttempt.candidateId,
-      },
+      discardedAttempt.linkage,
       context(participant.id)
     )
     await expect(
@@ -676,7 +719,7 @@ describe('personal elements service', () => {
           courseId: course.id,
           candidates: [
             candidate({
-              candidateId: discardedAttempt.candidateId,
+              candidateId: discardedAttempt.generated.candidateId,
               sourceMessageId: randomUUID(),
               sourceToolCallId: `retry-tool-${randomUUID()}`,
             }),
@@ -690,19 +733,16 @@ describe('personal elements service', () => {
   })
 
   it('allows only one concurrent generation lease claim', async () => {
-    const { participant, planMessage } = await createFixture()
-    const key = {
-      planMessageId: planMessage.id,
-      planToolCallId: `plan-${randomUUID()}`,
-    }
+    const fixture = await createFixture()
+    const { createAttempt, ...key } = await createLeasePlan(fixture)
     const claims = await Promise.allSettled([
       claimCardGenerationLease(
-        { ...key, attemptToken: `attempt-${randomUUID()}` },
-        context(participant.id)
+        { ...key, attemptToken: await createAttempt() },
+        context(fixture.participant.id)
       ),
       claimCardGenerationLease(
-        { ...key, attemptToken: `attempt-${randomUUID()}` },
-        context(participant.id)
+        { ...key, attemptToken: await createAttempt() },
+        context(fixture.participant.id)
       ),
     ])
 
@@ -714,33 +754,101 @@ describe('personal elements service', () => {
     )
     expect(
       await prisma.cardGenerationLease.count({
-        where: { participantId: participant.id },
+        where: { participantId: fixture.participant.id },
       })
     ).toBe(1)
   })
 
+  it('rejects a lease claim for an arbitrary plan tool call', async () => {
+    const fixture = await createFixture()
+    const { createAttempt, ...key } = await createLeasePlan(fixture)
+
+    await expect(
+      claimCardGenerationLease(
+        {
+          ...key,
+          planToolCallId: `forged-${randomUUID()}`,
+          attemptToken: await createAttempt(),
+        },
+        context(fixture.participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'CARD_GENERATION_PLAN_NOT_FOUND' },
+    })
+    expect(
+      await prisma.cardGenerationLease.count({
+        where: { participantId: fixture.participant.id },
+      })
+    ).toBe(0)
+  })
+
+  it('rejects a lease claim for a superseded plan', async () => {
+    const fixture = await createFixture()
+    const { createAttempt, ...key } = await createLeasePlan(fixture)
+    const newerPlanId = randomUUID()
+    const newerPlan = await prisma.chatMessage.create({
+      data: {
+        threadId: fixture.planMessage.threadId,
+        parentId: fixture.planMessage.id,
+        role: 'assistant',
+        content: [
+          {
+            type: 'tool-call',
+            toolName: 'propose_card_plan',
+            toolCallId: `plan-${randomUUID()}`,
+            result: {
+              status: 'ready',
+              planId: newerPlanId,
+              topic: 'Economics',
+              cards: [
+                {
+                  type: 'FLASHCARD',
+                  candidateId: `${newerPlanId}:card-1`,
+                  title: 'Marginal cost',
+                  intent: 'Explain marginal cost',
+                  query: 'marginal cost',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    })
+
+    await expect(
+      claimCardGenerationLease(
+        { ...key, attemptToken: await createAttempt(newerPlan.id) },
+        context(fixture.participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'CARD_GENERATION_PLAN_SUPERSEDED' },
+    })
+    expect(
+      await prisma.cardGenerationLease.count({
+        where: { participantId: fixture.participant.id },
+      })
+    ).toBe(0)
+  })
+
   it('reclaims an expired lease once and protects the new owner', async () => {
-    const { participant, planMessage } = await createFixture()
-    const key = {
-      planMessageId: planMessage.id,
-      planToolCallId: `plan-${randomUUID()}`,
-    }
-    const staleAttemptToken = `attempt-${randomUUID()}`
+    const fixture = await createFixture()
+    const { createAttempt, ...key } = await createLeasePlan(fixture)
+    const staleAttemptToken = await createAttempt()
     const initial = await claimCardGenerationLease(
       { ...key, attemptToken: staleAttemptToken },
-      context(participant.id)
+      context(fixture.participant.id)
     )
     await prisma.cardGenerationLease.update({
       where: { id: initial.id },
       data: { leaseExpiresAt: new Date(Date.now() - 1_000) },
     })
 
-    const attemptTokens = [`attempt-${randomUUID()}`, `attempt-${randomUUID()}`]
+    const attemptTokens = await Promise.all([createAttempt(), createAttempt()])
     const reclaims = await Promise.allSettled(
       attemptTokens.map((attemptToken) =>
         claimCardGenerationLease(
           { ...key, attemptToken },
-          context(participant.id)
+          context(fixture.participant.id)
         )
       )
     )
@@ -751,14 +859,14 @@ describe('personal elements service', () => {
       await abortCardGenerationLease(
         initial.id,
         staleAttemptToken,
-        context(participant.id)
+        context(fixture.participant.id)
       )
     ).toBe(false)
     expect(
       await completeCardGenerationLease(
         initial.id,
         staleAttemptToken,
-        context(participant.id)
+        context(fixture.participant.id)
       )
     ).toBe(false)
 
@@ -770,13 +878,13 @@ describe('personal elements service', () => {
       await completeCardGenerationLease(
         current.id,
         current.attemptToken,
-        context(participant.id)
+        context(fixture.participant.id)
       )
     ).toBe(true)
     await expect(
       claimCardGenerationLease(
-        { ...key, attemptToken: `attempt-${randomUUID()}` },
-        context(participant.id)
+        { ...key, attemptToken: await createAttempt() },
+        context(fixture.participant.id)
       )
     ).rejects.toMatchObject({
       extensions: { code: 'CARD_GENERATION_ALREADY_COMPLETED' },
@@ -784,47 +892,44 @@ describe('personal elements service', () => {
   })
 
   it('releases an aborted lease for retry', async () => {
-    const { participant, planMessage } = await createFixture()
-    const key = {
-      planMessageId: planMessage.id,
-      planToolCallId: `plan-${randomUUID()}`,
-    }
-    const attemptToken = `attempt-${randomUUID()}`
+    const fixture = await createFixture()
+    const { createAttempt, ...key } = await createLeasePlan(fixture)
+    const attemptToken = await createAttempt()
     const lease = await claimCardGenerationLease(
       { ...key, attemptToken },
-      context(participant.id)
+      context(fixture.participant.id)
     )
     expect(
       await abortCardGenerationLease(
         lease.id,
         attemptToken,
-        context(participant.id)
+        context(fixture.participant.id)
       )
     ).toBe(true)
     expect(
       await completeCardGenerationLease(
         lease.id,
         attemptToken,
-        context(participant.id)
+        context(fixture.participant.id)
       )
     ).toBe(false)
 
     const retry = await claimCardGenerationLease(
-      { ...key, attemptToken: `attempt-${randomUUID()}` },
-      context(participant.id)
+      { ...key, attemptToken: await createAttempt() },
+      context(fixture.participant.id)
     )
     expect(retry.id).toBe(lease.id)
   })
 
   it('does not complete an expired lease', async () => {
-    const { participant, planMessage } = await createFixture()
+    const fixture = await createFixture()
+    const { createAttempt, ...key } = await createLeasePlan(fixture)
     const lease = await claimCardGenerationLease(
       {
-        planMessageId: planMessage.id,
-        planToolCallId: `plan-${randomUUID()}`,
-        attemptToken: `attempt-${randomUUID()}`,
+        ...key,
+        attemptToken: await createAttempt(),
       },
-      context(participant.id)
+      context(fixture.participant.id)
     )
     await prisma.cardGenerationLease.update({
       where: { id: lease.id },
@@ -835,20 +940,20 @@ describe('personal elements service', () => {
       await completeCardGenerationLease(
         lease.id,
         lease.attemptToken,
-        context(participant.id)
+        context(fixture.participant.id)
       )
     ).toBe(false)
   })
 
   it('does not abort an expired lease', async () => {
-    const { participant, planMessage } = await createFixture()
+    const fixture = await createFixture()
+    const { createAttempt, ...key } = await createLeasePlan(fixture)
     const lease = await claimCardGenerationLease(
       {
-        planMessageId: planMessage.id,
-        planToolCallId: `plan-${randomUUID()}`,
-        attemptToken: `attempt-${randomUUID()}`,
+        ...key,
+        attemptToken: await createAttempt(),
       },
-      context(participant.id)
+      context(fixture.participant.id)
     )
     await prisma.cardGenerationLease.update({
       where: { id: lease.id },
@@ -859,7 +964,7 @@ describe('personal elements service', () => {
       await abortCardGenerationLease(
         lease.id,
         lease.attemptToken,
-        context(participant.id)
+        context(fixture.participant.id)
       )
     ).toBe(false)
   })
@@ -1390,25 +1495,46 @@ describe('personal elements service', () => {
   })
 
   it('persists a discard idempotently', async () => {
-    const { course, participant } = await createFixture()
-    const input = candidate()
+    const fixture = await createFixture()
+    const attempt = await createGeneratedCandidateAttempt(fixture, {
+      persisted: true,
+    })
     await discardPersonalElementCandidate(
-      { courseId: course.id, candidateId: input.candidateId },
-      context(participant.id)
+      attempt.linkage,
+      context(fixture.participant.id)
     )
     await discardPersonalElementCandidate(
-      { courseId: course.id, candidateId: input.candidateId },
-      context(participant.id)
+      attempt.linkage,
+      context(fixture.participant.id)
     )
     expect(
       await prisma.personalElementDiscard.count({
         where: {
-          participantId: participant.id,
-          courseId: course.id,
-          candidateId: input.candidateId,
+          participantId: fixture.participant.id,
+          courseId: fixture.course.id,
+          candidateId: attempt.generated.candidateId,
         },
       })
     ).toBe(1)
+  })
+
+  it('rejects discard before a generated candidate is persisted', async () => {
+    const fixture = await createFixture()
+    const attempt = await createGeneratedCandidateAttempt(fixture)
+
+    await expect(
+      discardPersonalElementCandidate(
+        attempt.linkage,
+        context(fixture.participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_CANDIDATE_NOT_FOUND' },
+    })
+    expect(
+      await prisma.personalElementDiscard.count({
+        where: { participantId: fixture.participant.id },
+      })
+    ).toBe(0)
   })
 
   it('denies revision of a card owned by another participant', async () => {

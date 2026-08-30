@@ -59,12 +59,14 @@ claims a card was saved. Cards are acted on individually: Save sends only this
 lineage to GraphQL. The backend reloads the participant- and course-owned
 terminal `generate_cards` result, verifies the accepted plan and generation
 lease, and creates the participant-owned row from that persisted candidate.
-The browser and Chat route never supply card content or references to the save
-mutation. Discard writes a
-`PersonalElementDiscard` keyed by participant, course, and candidate. That
-discard record is returned with the saved-state
-lookup and is checked again inside the serializable GraphQL save transaction,
-so a discarded card stays discarded across reloads and save/discard races.
+The browser and Chat route never supply card content or references to either
+candidate-decision mutation. Discard sends the same message, tool-call, and
+candidate lineage as Save. The backend reloads and verifies the persisted
+terminal candidate before writing a `PersonalElementDiscard` keyed by
+participant, course, and candidate. That discard record is returned with the
+saved-state lookup and is checked again inside the serializable GraphQL save
+transaction, so a discarded card stays discarded across reloads and
+save/discard races.
 The discard route uses the same serializable service boundary and returns a
 conflict if the card was saved first.
 Candidate actions appear only after the completed assistant message is in the
@@ -82,13 +84,16 @@ authorization, caps, and revision semantics.
 Personal-element access is GraphQL-only for operations: the Chat server mints
 a short-lived participant JWT and calls the persisted-query operations
 through `src/lib/server/personalElements/graphqlClient.ts` instead of
-importing backend services. The client exposes list, lineage-only save,
+importing backend services. The client exposes list, lineage-only save and
 discard, lease mutations, plan preparation, candidate validation, a narrow
 generation-context query, the narrow saved-candidate lookup, and update
 operations. The generation context contains only the backend-owned course
 language and saved titles. Accepted-plan setup loads only saved candidate IDs,
-not full personal elements. Lease and discard state reads that GraphQL does not
-yet expose stay as participant-scoped Prisma reads inside the adapter. The
+not full personal elements. Before creating or reclaiming a lease, the backend
+verifies the exact ready plan tool result, the participant and course, the
+assistant generation attempt on that plan's branch, and the absence of a newer
+ready plan on the same branch. Lease and discard state reads that GraphQL does
+not yet expose stay as participant-scoped Prisma reads inside the adapter. The
 backend owns authorization, caps, duplicate policy, candidate provenance, and
 revision semantics.
 
