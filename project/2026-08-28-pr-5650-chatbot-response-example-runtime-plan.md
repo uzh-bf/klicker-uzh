@@ -196,10 +196,9 @@ preview and the later examples-excluded baseline.
 - Status: K6.1 through K6.4 are source-complete and published as open,
   non-draft PR #5650 against `v3-ai`. The deterministic current-source seed
   correction is committed, reviewed, and passed every hosted Playwright shard
-  on its published head. The separately approved integrations through
-  `origin/v3-ai@4b85e616b` are complete. The latest target update caused one
-  test-fixture conflict; its resolution preserves the closable MCP handle and
-  the response-example skill coverage. PR #5650 remains a standalone PR into
+  on its published head. The separately approved final upstream integration
+  through `origin/v3-ai@54fbfc921` is complete at merge head `256ff4d4b`. PR
+  #5650 remains a standalone PR into
   the long-lived `v3-ai` consolidation branch. The user removed the invalid
   native stack registration with PR #5092. Merge, deployment, and live model
   use remain withheld.
@@ -250,12 +249,11 @@ preview and the later examples-excluded baseline.
   error. No raw DevPod stop or cleanup bypass was attempted.
 - Delivery: branch `feat/chatbot-response-example-runtime` is published at PR
   #5650 as a standalone PR into `v3-ai`. The current merge candidate includes
-  `origin/v3-ai@4b85e616b`; the combined chat unit suite passes with 721 tests
-  and 14 explicit skips. The final-review policy rejects a standalone PR
-  targeting a non-default branch; no stack workaround applies to a
-  consolidation branch. Any further upstream integration, review-policy
-  change, and merge remain separately withheld.
-- Next: publish the integrated head and settle its exact-head checks. Resolve
-  support for final review on consolidation-branch PRs as a separate
-  repository-policy package before merge; do not involve the eventual
-  `v3-ai` to `v3` promotion PR.
+  `origin/v3-ai@54fbfc921`; its evidence layer is `delivery_pending` until the
+  integrated head is published and exact-head CI and final review settle. PR
+  #5674 merged consolidation-branch final-review eligibility into `v3` as
+  `e24287c97`. Any further upstream integration, PR merge, deployment, and live
+  activation remain separately withheld.
+- Next: run affected verification, publish merge head `256ff4d4b`, and settle
+  its exact-head checks and final review; do not involve the eventual `v3-ai`
+  to `v3` promotion PR.
