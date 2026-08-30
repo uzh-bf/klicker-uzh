@@ -14,12 +14,14 @@ import {
   createPersonalElements,
   deletePersonalElement,
   discardPersonalElementCandidate,
+  getPersonalElementGenerationContext,
   listPersonalElements,
   listSavedPersonalElementCandidateIds,
   normalizeElementSourceReferences,
   prepareCardPlan,
   readElementSourceReferences,
   respondToPersonalElement,
+  savePersonalElementCandidate,
   updatePersonalElement,
   validateCardCandidate,
 } from '../src/services/personalElements.js'
@@ -115,6 +117,96 @@ async function createFixture() {
 
 function context(participantId: string) {
   return { prisma, participantId }
+}
+
+async function createGeneratedCandidateAttempt(
+  fixture: Awaited<ReturnType<typeof createFixture>>,
+  { persisted = false, title = 'Opportunity cost' } = {}
+) {
+  const planId = randomUUID()
+  const candidateId = `${planId}:card-1`
+  const planToolCallId = `plan-${randomUUID()}`
+  const generationToolCallId = `generate-${randomUUID()}`
+  await prisma.chatMessage.update({
+    where: { id: fixture.planMessage.id },
+    data: {
+      content: [
+        {
+          type: 'tool-call',
+          toolName: 'propose_card_plan',
+          toolCallId: planToolCallId,
+          result: {
+            status: 'ready',
+            planId,
+            topic: 'Economics',
+            cards: [
+              {
+                type: 'FLASHCARD',
+                candidateId,
+                title,
+                intent: `Explain ${title}`,
+                query: title,
+              },
+            ],
+          },
+        },
+      ],
+    },
+  })
+  const message = await prisma.chatMessage.create({
+    data: {
+      threadId: fixture.planMessage.threadId,
+      role: 'assistant',
+      content: [],
+      lifecycleStatus: persisted ? 'COMPLETED' : 'IN_PROGRESS',
+    },
+  })
+  const generated = candidate({
+    candidateId,
+    name: title,
+    sourceMessageId: message.id,
+    sourceToolCallId: generationToolCallId,
+    origin: 'AI_GENERATED',
+  })
+  if (persisted) {
+    await prisma.chatMessage.update({
+      where: { id: message.id },
+      data: {
+        content: [
+          {
+            type: 'tool-call',
+            toolName: 'generate_cards',
+            toolCallId: generationToolCallId,
+            result: {
+              status: 'completed',
+              completed: 1,
+              total: 1,
+              candidates: [{ type: 'FLASHCARD', ...generated }],
+            },
+          },
+        ],
+      },
+    })
+  }
+  await prisma.cardGenerationLease.create({
+    data: {
+      participantId: fixture.participant.id,
+      planMessageId: fixture.planMessage.id,
+      planToolCallId,
+      attemptToken: message.id,
+      leaseExpiresAt: new Date(Date.now() + 60_000),
+      completedAt: persisted ? new Date() : null,
+    },
+  })
+  return {
+    generated,
+    linkage: {
+      courseId: fixture.course.id,
+      messageId: message.id,
+      toolCallId: generationToolCallId,
+      candidateId,
+    },
+  }
 }
 
 function expectNewLearningState(
@@ -1375,6 +1467,24 @@ describe('personal elements service', () => {
     expect(plan.discardedDuplicates).toEqual([])
   })
 
+  it('loads only the narrow backend-owned generation context', async () => {
+    const { course, participant } = await createFixture()
+    await createPersonalElements(
+      {
+        courseId: course.id,
+        candidates: [candidate({ name: 'Opportunity cost' })],
+      },
+      context(participant.id)
+    )
+
+    await expect(
+      getPersonalElementGenerationContext(course.id, context(participant.id))
+    ).resolves.toEqual({
+      courseLanguage: 'en',
+      existingTitles: ['Opportunity cost'],
+    })
+  })
+
   it('screens duplicate titles within the proposal and against saved cards', async () => {
     const { course, participant } = await createFixture()
     await createPersonalElements(
@@ -1481,29 +1591,66 @@ describe('personal elements service', () => {
   })
 
   it('validates a structurally sound candidate with owned sources', async () => {
-    const { course, participant, planMessage } = await createFixture()
+    const fixture = await createFixture()
+    const { generated } = await createGeneratedCandidateAttempt(fixture)
     const result = await validateCardCandidate(
       {
-        courseId: course.id,
-        candidateId: randomUUID(),
-        title: 'Opportunity cost',
-        front: 'What is opportunity cost?',
-        back: 'The value of the best alternative forgone.',
-        sources: [
-          {
-            sourceId: 'course-material',
-            chunkId: randomUUID(),
-            title: 'Economics notes',
-            url: 'https://example.org/economics',
-            page: 4,
-          },
-        ],
-        sourceMessageId: planMessage.id,
-        sourceToolCallId: 'tool-' + randomUUID(),
+        courseId: fixture.course.id,
+        candidateId: generated.candidateId,
+        title: generated.name,
+        front: generated.content,
+        back: generated.explanation,
+        sources: generated.sources,
+        sourceMessageId: generated.sourceMessageId,
+        sourceToolCallId: generated.sourceToolCallId,
       },
-      context(participant.id)
+      context(fixture.participant.id)
     )
     expect(result).toBe(true)
+  })
+
+  it('saves a persisted generated card from linkage only', async () => {
+    const fixture = await createFixture()
+    const attempt = await createGeneratedCandidateAttempt(fixture, {
+      persisted: true,
+    })
+
+    const saved = await savePersonalElementCandidate(
+      attempt.linkage,
+      context(fixture.participant.id)
+    )
+    expect(saved).toMatchObject({
+      candidateId: attempt.generated.candidateId,
+      name: attempt.generated.name,
+      content: attempt.generated.content,
+      explanation: attempt.generated.explanation,
+      sourceMessageId: attempt.linkage.messageId,
+      sourceToolCallId: attempt.linkage.toolCallId,
+    })
+  })
+
+  it('rejects forged generated-card linkage before saving', async () => {
+    const fixture = await createFixture()
+    const attempt = await createGeneratedCandidateAttempt(fixture, {
+      persisted: true,
+    })
+
+    await expect(
+      savePersonalElementCandidate(
+        { ...attempt.linkage, candidateId: randomUUID() },
+        context(fixture.participant.id)
+      )
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENTS_CANDIDATE_LINKAGE_INVALID' },
+    })
+    expect(
+      await prisma.personalElement.count({
+        where: {
+          participantId: fixture.participant.id,
+          courseId: fixture.course.id,
+        },
+      })
+    ).toBe(0)
   })
 
   it('rejects a candidate whose source message is not owned by the participant', async () => {
@@ -1529,12 +1676,15 @@ describe('personal elements service', () => {
         context(participant.id)
       )
     ).rejects.toMatchObject({
-      extensions: { code: 'PERSONAL_ELEMENTS_SOURCE_MESSAGE_NOT_FOUND' },
+      extensions: {
+        code: 'PERSONAL_ELEMENTS_CANDIDATE_LINKAGE_INVALID',
+      },
     })
   })
 
   it('rejects a candidate whose title duplicates a saved card', async () => {
-    const { course, participant, planMessage } = await createFixture()
+    const fixture = await createFixture()
+    const { course, participant } = fixture
     await createPersonalElements(
       {
         courseId: course.id,
@@ -1542,24 +1692,19 @@ describe('personal elements service', () => {
       },
       context(participant.id)
     )
+    const { generated } = await createGeneratedCandidateAttempt(fixture)
 
     await expect(
       validateCardCandidate(
         {
           courseId: course.id,
-          candidateId: randomUUID(),
-          title: 'Opportunity cost',
-          front: 'What is opportunity cost?',
-          back: 'The value of the best alternative forgone.',
-          sources: [
-            {
-              sourceId: 'course-material',
-              chunkId: randomUUID(),
-              title: 'Economics notes',
-            },
-          ],
-          sourceMessageId: planMessage.id,
-          sourceToolCallId: 'tool-' + randomUUID(),
+          candidateId: generated.candidateId,
+          title: generated.name,
+          front: generated.content,
+          back: generated.explanation,
+          sources: generated.sources,
+          sourceMessageId: generated.sourceMessageId,
+          sourceToolCallId: generated.sourceToolCallId,
         },
         context(participant.id)
       )

@@ -11,9 +11,10 @@ import {
   type PersonalCardGenerationEvaluator,
 } from './featureFlag'
 import {
+  getPersonalElementGenerationContext,
   listCompletedGenerationLeaseAttemptTokens,
   listDiscardedCandidateIds,
-  listPersonalElements,
+  listSavedPersonalElementCandidateIds,
   prepareCardPlan,
   validateCardCandidate,
 } from './graphqlClient'
@@ -228,6 +229,19 @@ export async function createCardGeneration({
   const docQueryToolName = baseToolNames.find(isDocQueryToolName)
   const retrievalRequired = hasImage || latestUserContent.trim().length > 0
   const personalToolsEligible = Boolean(docQueryToolName)
+  let personalElementContext: Awaited<
+    ReturnType<typeof getPersonalElementGenerationContext>
+  > | null = null
+  if (personalToolsEligible) {
+    try {
+      personalElementContext = await getPersonalElementGenerationContext(
+        courseId,
+        participantId
+      )
+    } catch {
+      personalElementContext = null
+    }
+  }
   let cardGenerationEnabled = false
   if (personalToolsEligible) {
     try {
@@ -242,7 +256,10 @@ export async function createCardGeneration({
     }
   }
   const generationEligible =
-    personalToolsEligible && cardGenerationEnabled && hasGenerationCredits
+    personalToolsEligible &&
+    personalElementContext !== null &&
+    cardGenerationEnabled &&
+    hasGenerationCredits
   const branchIds = getActiveBranchMessageIds(threadHistory, activeBranchLeafId)
   let tools: ToolSet = baseTools
   let toolOrder = [...baseToolNames]
@@ -252,20 +269,9 @@ export async function createCardGeneration({
   let leaseSettlementDone = false
   let acceptedPlan = null
   const personalToolNames: string[] = []
-  let existingCards: Awaited<ReturnType<typeof listPersonalElements>> | null =
-    null
-  const loadExistingCards = async () => {
-    existingCards ??= await listPersonalElements(courseId, participantId)
-    return existingCards
-  }
-
-  let courseLanguage = 'en'
+  const courseLanguage = String(personalElementContext?.courseLanguage ?? 'en')
+  const existingCardTitles = personalElementContext?.existingTitles ?? []
   if (personalToolsEligible && docQueryToolName) {
-    const course = await prisma.course.findUnique({
-      where: { id: courseId },
-      select: { language: true },
-    })
-    courseLanguage = String(course?.language ?? 'en')
     const personalToolOptions = {
       participantId,
       courseId,
@@ -287,7 +293,7 @@ export async function createCardGeneration({
       }),
     }
     personalToolNames.push('list_personal_elements')
-    if (hasGenerationCredits) {
+    if (hasGenerationCredits && personalElementContext) {
       tools = {
         ...tools,
         revise_personal_element:
@@ -380,10 +386,10 @@ export async function createCardGeneration({
       acceptedPlan.cards.map((card) => card.candidateId)
     )
     const savedPlanCandidateIds = new Set(
-      (await loadExistingCards()).flatMap((card) =>
-        card.candidateId && planCandidateIds.has(card.candidateId)
-          ? [card.candidateId]
-          : []
+      await listSavedPersonalElementCandidateIds(
+        courseId,
+        [...planCandidateIds],
+        participantId
       )
     )
     const discardedPlanCandidates = await listDiscardedCandidateIds({
@@ -420,12 +426,7 @@ export async function createCardGeneration({
       acceptedPlan.cards.filter(
         (card) => !skippedCandidateIds.has(card.candidateId)
       ),
-      (await loadExistingCards())
-        .filter(
-          (card) =>
-            !card.candidateId || !skippedCandidateIds.has(card.candidateId)
-        )
-        .map((card) => card.name)
+      existingCardTitles
     )
     if (duplicateCheck.discardedDuplicates.length > 0) {
       return {

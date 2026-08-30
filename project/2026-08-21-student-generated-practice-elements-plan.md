@@ -73,8 +73,8 @@ sequenceDiagram
   end
   M-->>S: candidate cards with citations, individual Save or Discard actions
   S->>R: POST or DELETE one candidate decision
-  R->>P: createPersonalElements(participantId, courseId, candidates)
-  P->>DB: insert PersonalElement rows
+  R->>P: savePersonalElementCandidate(courseId, messageId, toolCallId, candidateId)
+  P->>DB: verify persisted generation lineage and insert PersonalElement
   R-->>S: "Saved · Practice now" (deep link to /course/[courseId]/personal)
 ```
 
@@ -110,14 +110,14 @@ Plain-language version:
    tool-call state and `completed/total` progress so the student sees the
    generation run before the first card arrives.
 5. **Saving and discarding are deterministic actions, never the model.**
-   Saving calls a small API route in the chat app that uses the same server-safe
-   service entry the GraphQL API exposes. Discarding writes a bounded candidate
+   Saving calls a small API route in the chat app and sends only the persisted
+   message, tool-call, and candidate identifiers to GraphQL. The backend reloads
+   the terminal generation result, verifies the accepted plan and lease, and
+   copies the trusted candidate into the personal element. Discarding writes a bounded candidate
    disposition keyed by participant, source message, source tool call, and
    candidate ID; it is idempotent and survives thread reload. The GraphQL
-   package emits that service through an explicit server-only subpath/build
-   entry, and Chat declares it as a runtime dependency; Chat never imports
-   GraphQL source files directly. One implementation of the rules (caps, type
-   validation, ownership), two transports.
+   package exposes those rules through participant-authenticated GraphQL
+   operations; Chat never imports GraphQL source files directly.
 6. **Practice lives in the PWA.** A "My cards" page per course lists and runs
    personal elements with the same `Flashcard` component and the same
    spaced-repetition function (`updateSpacedRepetition`) as lecturer cards.
@@ -376,9 +376,12 @@ Goal: prove the two unverified mechanics before anyone builds on them.
 - `packages/graphql/src/services/personalElements.ts` with:
   `listPersonalElements(participantId, courseId)` ordered by `nextDueAt` nulls
   first (mirror `orderStacks` semantics in `packages/graphql/src/lib/util.ts`),
-  `createPersonalElements` (type `FLASHCARD` only, cap 500 per course, trims,
-  requires non-empty `content`/`explanation`, validates bounded card-local
-  sources, stores sanitized chat linkage), `respondToPersonalElement(id,
+  an internal trusted candidate persistence primitive (type `FLASHCARD` only,
+  cap 500 per course, trims, requires non-empty `content`/`explanation`,
+  validates bounded card-local sources, stores sanitized chat linkage), and a
+  participant-facing `savePersonalElementCandidate` entry that accepts only
+  persisted message/tool/candidate linkage and reloads the trusted terminal
+  tool result. `respondToPersonalElement(id,
   correctness)` mapping
   `FlashcardCorrectness` to a grade exactly as `stacks.ts:upsertFlashcardResponse`
   does and calling `updateSpacedRepetition`, `updatePersonalElement` (content
@@ -410,14 +413,17 @@ Goal: prove the two unverified mechanics before anyone builds on them.
 
 ### S2 — GraphQL surface (PR A)
 
-- Pothos types `PersonalElement`, enums, query `personalElements(courseId)`,
-  mutations `createPersonalElements`, `respondToPersonalElement`,
+- Pothos types `PersonalElement`, enums, queries `personalElements(courseId)`
+  and `personalElementGenerationContext(courseId)`, mutations
+  `savePersonalElementCandidate`, `respondToPersonalElement`,
   `updatePersonalElement`, `deletePersonalElement`, all
   `t.withAuth(asParticipant)` (pattern: `bookmarkElementStack` in
   `packages/graphql/src/schema/mutation.ts`), with the resolver passing
   explicit actor context and rejecting temporary participants.
-- Ops files `QPersonalElements.graphql`, `MCreatePersonalElements.graphql`,
-  `MRespondToPersonalElement.graphql`, `MUpdatePersonalElement.graphql`,
+- Ops files `QPersonalElements.graphql`,
+  `QPersonalElementGenerationContext.graphql`,
+  `MSavePersonalElementCandidate.graphql`,
+  `MRespondToPersonalElement.graphql`, `MUpdatePersonalElement.graphql`, and
   `MDeletePersonalElement.graphql`; run codegen.
 - Extend `getPracticeQuizList` (`packages/graphql/src/services/participants.ts`)
   so a course with personal elements but no published practice quiz still
@@ -551,10 +557,11 @@ Goal: prove the two unverified mechanics before anyone builds on them.
   (join on `sourceMessageId` + `sourceToolCallId`), never from the frozen
   tool result.
 - Save route: `POST /api/chatbots/[chatbotId]/personal-elements` guarded by
-  `withChatbotAuth`, passing explicit actor context, and calling
-  `createPersonalElements` from the server-safe shared service entry;
-  idempotent per `candidateId` and source message/tool call. Do not trust raw
-  candidate source JSON or a participant ID from the request body.
+  `withChatbotAuth`, passing only course, message, tool-call, and candidate
+  identifiers to `savePersonalElementCandidate`; idempotent per `candidateId`
+  and source message/tool call. The backend reloads the persisted terminal tool
+  result and verifies its plan and lease lineage. Do not trust raw candidate
+  content, source JSON, or a participant ID from the request body.
 - Discard route: `DELETE /api/chatbots/[chatbotId]/personal-elements` with the
   same linkage and one candidate ID. It is authorized against the completed
   generated result, rejects a candidate already saved, and upserts the
@@ -1165,3 +1172,16 @@ Settled rulings for this implementation:
   skipped by their existing environment gate. The local feature-flag tests now
   explicitly ignore the development override, which keeps them deterministic
   while the user-facing runtime remains enabled for manual AI testing.
+- 2026-08-30 (trusted-lineage correction): Participant save is now a
+  linkage-only GraphQL mutation. The backend reloads the persisted terminal
+  `generate_cards` result, verifies participant, course, accepted-plan, lease,
+  message, tool-call, and candidate lineage, and only then copies the candidate
+  into `PersonalElement` inside the serializable transaction. The generation
+  context now comes from a narrow backend query containing only course language
+  and saved titles, and accepted-plan setup loads only requested saved candidate
+  IDs. This removes participant-controlled card bodies from persistence and the
+  remaining full personal-element hydration from generation setup without a
+  schema or database migration. GraphQL generation/build/typecheck pass, the
+  focused GraphQL service suite passes 49 tests, and the five focused Chat
+  suites pass 71 tests. The complete Chat suite passes all 897 active tests;
+  13 integration tests remain skipped by their existing environment gate.

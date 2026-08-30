@@ -1,0 +1,7 @@
+mutation MSavePersonalElementCandidate(
+  $input: SavePersonalElementCandidateInput!
+) {
+  savePersonalElementCandidate(input: $input) {
+    ...FPersonalElement
+  }
+}

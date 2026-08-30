@@ -1,4 +1,3 @@
-import { PersonalElementOrigin } from '@klicker-uzh/graphql/dist/ops'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { z } from 'zod'
 import {
@@ -9,11 +8,11 @@ import {
 } from '@/src/lib/personalElements/failure'
 import { MAX_CARDS, parseStoredGeneratedCardCandidate } from './contracts'
 import {
-  createPersonalElements,
   discardPersonalElementCandidate,
   getGenerationLeaseState,
   listDiscardedCandidateIds,
   listSavedPersonalElementCandidateIds,
+  savePersonalElementCandidate,
 } from './graphqlClient'
 
 type PersistedPart = {
@@ -256,7 +255,7 @@ export async function saveCardCandidateDecision(
 ): Promise<
   CardDecisionOutcome<{
     courseId: string
-    elements: Awaited<ReturnType<typeof createPersonalElements>>
+    elements: Array<Awaited<ReturnType<typeof savePersonalElementCandidate>>>
   }>
 > {
   const attempt = await getCandidateAttempt(context, input)
@@ -275,26 +274,19 @@ export async function saveCardCandidateDecision(
     return failure(400, 'Candidate is not part of a completed generated result')
   }
 
-  const candidate = {
-    candidateId: generated.candidateId,
-    name: generated.name,
-    content: generated.content,
-    explanation: generated.explanation,
-    sources: generated.sources,
-    sourceMessageId: generated.sourceMessageId,
-    sourceToolCallId: generated.sourceToolCallId,
-    // The generated-candidate schema pins origin to AI_GENERATED.
-    origin: PersonalElementOrigin.AiGenerated,
-  }
-
   try {
-    const elements = await createPersonalElements(
-      { courseId: context.courseId, candidates: [candidate] },
+    const element = await savePersonalElementCandidate(
+      {
+        courseId: context.courseId,
+        messageId: input.messageId,
+        toolCallId: input.toolCallId,
+        candidateId: generated.candidateId,
+      },
       context.participantId
     )
     return {
       ok: true,
-      data: { courseId: context.courseId, elements },
+      data: { courseId: context.courseId, elements: [element] },
     }
   } catch (error) {
     if (errorCode(error) === 'PERSONAL_ELEMENTS_CANDIDATE_DISCARDED') {

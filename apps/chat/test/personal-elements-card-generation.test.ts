@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { z } from 'zod'
 
 const mocks = vi.hoisted(() => ({
+  getPersonalElementGenerationContext: vi.fn(),
   listPersonalElements: vi.fn(),
+  listSavedPersonalElementCandidateIds: vi.fn(),
   listDiscardedCandidateIds: vi.fn(),
   listCompletedGenerationLeaseAttemptTokens: vi.fn(),
   claimLease: vi.fn(),
@@ -26,7 +28,13 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../src/lib/server/personalElements/graphqlClient', () => ({
+  getPersonalElementGenerationContext:
+    mocks.getPersonalElementGenerationContext,
   listPersonalElements: mocks.listPersonalElements,
+  listSavedPersonalElementCandidateIds:
+    mocks.listSavedPersonalElementCandidateIds,
+  prepareCardPlan: vi.fn(),
+  validateCardCandidate: vi.fn().mockResolvedValue(true),
   listDiscardedCandidateIds: mocks.listDiscardedCandidateIds,
   listCompletedGenerationLeaseAttemptTokens:
     mocks.listCompletedGenerationLeaseAttemptTokens,
@@ -201,6 +209,11 @@ describe('personal card generation orchestration', () => {
     mocks.reviseToolOptions.length = 0
     mocks.updateAssistantMessage.mockResolvedValue({ count: 1 })
     mocks.listPersonalElements.mockResolvedValue([])
+    mocks.getPersonalElementGenerationContext.mockResolvedValue({
+      courseLanguage: 'en',
+      existingTitles: [],
+    })
+    mocks.listSavedPersonalElementCandidateIds.mockResolvedValue([])
     mocks.listDiscardedCandidateIds.mockResolvedValue([])
     mocks.listCompletedGenerationLeaseAttemptTokens.mockResolvedValue([])
     mocks.claimLease.mockResolvedValue({

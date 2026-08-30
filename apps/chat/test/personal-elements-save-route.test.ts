@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   findMessage: vi.fn(),
   getGenerationLeaseState: vi.fn(),
   listDiscardedCandidateIds: vi.fn(),
-  createPersonalElements: vi.fn(),
+  savePersonalElementCandidate: vi.fn(),
   discardPersonalElementCandidate: vi.fn(),
   listSavedPersonalElementCandidateIds: vi.fn(),
 }))
@@ -22,7 +22,7 @@ vi.mock('@klicker-uzh/prisma', () => ({
 }))
 
 vi.mock('../src/lib/server/personalElements/graphqlClient', () => ({
-  createPersonalElements: mocks.createPersonalElements,
+  savePersonalElementCandidate: mocks.savePersonalElementCandidate,
   discardPersonalElementCandidate: mocks.discardPersonalElementCandidate,
   listSavedPersonalElementCandidateIds:
     mocks.listSavedPersonalElementCandidateIds,
@@ -116,9 +116,10 @@ describe('personal-element candidate decisions', () => {
     mocks.getGenerationLeaseState.mockResolvedValue({
       completedAt: new Date('2026-08-24T10:02:00.000Z'),
     })
-    mocks.createPersonalElements.mockResolvedValue([
-      { id: 'element-1', candidateId: candidate.candidateId },
-    ])
+    mocks.savePersonalElementCandidate.mockResolvedValue({
+      id: 'element-1',
+      candidateId: candidate.candidateId,
+    })
     mocks.discardPersonalElementCandidate.mockResolvedValue({})
     mocks.listSavedPersonalElementCandidateIds.mockResolvedValue([])
     mocks.listDiscardedCandidateIds.mockResolvedValue([])
@@ -140,7 +141,7 @@ describe('personal-element candidate decisions', () => {
     await expect(response.json()).resolves.toEqual({
       error: `Candidate attempt is not ${adjective}`,
     })
-    expect(mocks.createPersonalElements).not.toHaveBeenCalled()
+    expect(mocks.savePersonalElementCandidate).not.toHaveBeenCalled()
     expect(mocks.discardPersonalElementCandidate).not.toHaveBeenCalled()
   })
 
@@ -150,23 +151,13 @@ describe('personal-element candidate decisions', () => {
     })
 
     expect(response.status).toBe(200)
-    expect(mocks.createPersonalElements).toHaveBeenCalledWith(
+    expect(mocks.savePersonalElementCandidate).toHaveBeenCalledWith(
       {
         courseId: 'course-1',
-        candidates: [
-          expect.objectContaining({
-            candidateId: candidate.candidateId,
-            sourceMessageId: messageId,
-            sourceToolCallId: toolCallId,
-          }),
-        ],
+        messageId,
+        toolCallId,
+        candidateId: candidate.candidateId,
       },
-      'participant-1'
-    )
-    expect(
-      mocks.createPersonalElements.mock.calls[0]?.[0].candidates[0]
-    ).not.toHaveProperty('type')
-    expect(mocks.createPersonalElements.mock.calls[0]?.[1]).toBe(
       'participant-1'
     )
   })
@@ -181,7 +172,7 @@ describe('personal-element candidate decisions', () => {
     )
 
     expect(response.status).toBe(400)
-    expect(mocks.createPersonalElements).not.toHaveBeenCalled()
+    expect(mocks.savePersonalElementCandidate).not.toHaveBeenCalled()
   })
 
   test('serializes one Discard decision through the same service boundary', async () => {
@@ -258,7 +249,7 @@ describe('personal-element candidate decisions', () => {
       params: Promise.resolve({ chatbotId }),
     })
     expect(unsupportedResponse.status).toBe(400)
-    expect(mocks.createPersonalElements).not.toHaveBeenCalled()
+    expect(mocks.savePersonalElementCandidate).not.toHaveBeenCalled()
   })
 
   test('rejects persisted generation results above the shared card limit', async () => {
@@ -280,7 +271,7 @@ describe('personal-element candidate decisions', () => {
     await expect(response.json()).resolves.toEqual({
       error: 'Candidate is not part of a completed generated result',
     })
-    expect(mocks.createPersonalElements).not.toHaveBeenCalled()
+    expect(mocks.savePersonalElementCandidate).not.toHaveBeenCalled()
   })
 
   test('rejects a retained candidate when its generation lease is incomplete', async () => {
@@ -294,7 +285,7 @@ describe('personal-element candidate decisions', () => {
     await expect(response.json()).resolves.toEqual({
       error: 'Candidate is not part of a completed generated result',
     })
-    expect(mocks.createPersonalElements).not.toHaveBeenCalled()
+    expect(mocks.savePersonalElementCandidate).not.toHaveBeenCalled()
     expect(mocks.getGenerationLeaseState).toHaveBeenCalledWith({
       participantId: 'participant-1',
       attemptToken: messageId,
@@ -321,7 +312,7 @@ describe('personal-element candidate decisions', () => {
     await expect(response.json()).resolves.toEqual({
       error: 'Candidate linkage does not match the generated message',
     })
-    expect(mocks.createPersonalElements).not.toHaveBeenCalled()
+    expect(mocks.savePersonalElementCandidate).not.toHaveBeenCalled()
     expect(mocks.discardPersonalElementCandidate).not.toHaveBeenCalled()
   })
 
@@ -397,7 +388,7 @@ describe('personal-element candidate decisions', () => {
   })
 
   test('maps the shared Save and Discard race conflicts', async () => {
-    mocks.createPersonalElements.mockRejectedValueOnce(
+    mocks.savePersonalElementCandidate.mockRejectedValueOnce(
       Object.assign(new Error('discarded'), {
         extensions: { code: 'PERSONAL_ELEMENTS_CANDIDATE_DISCARDED' },
       })
@@ -431,6 +422,6 @@ describe('personal-element candidate decisions', () => {
 
     expect(response).toBe(authResponse)
     expect(mocks.findMessage).not.toHaveBeenCalled()
-    expect(mocks.createPersonalElements).not.toHaveBeenCalled()
+    expect(mocks.savePersonalElementCandidate).not.toHaveBeenCalled()
   })
 })

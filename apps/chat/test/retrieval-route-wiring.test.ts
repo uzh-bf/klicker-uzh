@@ -14,7 +14,6 @@ const mocks = vi.hoisted(() => ({
   withChatbotAuth: vi.fn(),
   checkDisclaimerStatus: vi.fn(),
   chatbotFindUnique: vi.fn(),
-  courseFindUnique: vi.fn(),
   chatMessageFindMany: vi.fn(),
   chatMessageFindUnique: vi.fn(),
   chatMessageCreate: vi.fn(),
@@ -36,7 +35,9 @@ const mocks = vi.hoisted(() => ({
   buildPromptCacheRequest: vi.fn(),
   streamText: vi.fn(),
   toUIMessageStream: vi.fn(),
+  getPersonalElementGenerationContext: vi.fn(),
   listPersonalElements: vi.fn(),
+  listSavedPersonalElementCandidateIds: vi.fn(),
   prepareCardPlan: vi.fn(),
   validateCardCandidate: vi.fn(),
   listDiscardedCandidateIds: vi.fn(),
@@ -53,7 +54,11 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../src/lib/server/personalElements/graphqlClient', () => ({
+  getPersonalElementGenerationContext:
+    mocks.getPersonalElementGenerationContext,
   listPersonalElements: mocks.listPersonalElements,
+  listSavedPersonalElementCandidateIds:
+    mocks.listSavedPersonalElementCandidateIds,
   prepareCardPlan: mocks.prepareCardPlan,
   validateCardCandidate: mocks.validateCardCandidate,
   listDiscardedCandidateIds: mocks.listDiscardedCandidateIds,
@@ -77,7 +82,6 @@ vi.mock('@/src/services/disclaimers', () => ({
 vi.mock('@klicker-uzh/prisma', () => ({
   prisma: {
     chatbot: { findUnique: mocks.chatbotFindUnique },
-    course: { findUnique: mocks.courseFindUnique },
     chatMessage: {
       findMany: mocks.chatMessageFindMany,
       findUnique: mocks.chatMessageFindUnique,
@@ -336,7 +340,6 @@ describe('retrieval route wiring', () => {
         },
       ],
     })
-    mocks.courseFindUnique.mockResolvedValue({ language: 'en' })
     mocks.chatMessageFindMany.mockResolvedValue([])
     mocks.chatMessageFindUnique.mockResolvedValue(null)
     mocks.chatMessageCreate.mockResolvedValue({ id: 'assistant-created' })
@@ -371,6 +374,11 @@ describe('retrieval route wiring', () => {
     }))
     mocks.buildPromptCacheRequest.mockResolvedValue(null)
     mocks.listPersonalElements.mockResolvedValue([])
+    mocks.getPersonalElementGenerationContext.mockResolvedValue({
+      courseLanguage: 'en',
+      existingTitles: [],
+    })
+    mocks.listSavedPersonalElementCandidateIds.mockResolvedValue([])
     mocks.prepareCardPlan.mockImplementation(async (input) => ({
       planId: '00000000-0000-0000-0000-000000000001',
       courseLanguage: 'en',
@@ -749,7 +757,10 @@ describe('retrieval route wiring', () => {
   test('rejects approval when a saved card appears after the plan', async () => {
     const planMessageId = '00000000-0000-0000-0000-000000000004'
     const planToolCallId = 'plan-tool-existing'
-    mocks.listPersonalElements.mockResolvedValue([{ name: 'CAPM definition' }])
+    mocks.getPersonalElementGenerationContext.mockResolvedValue({
+      courseLanguage: 'en',
+      existingTitles: ['CAPM definition'],
+    })
     mocks.chatMessageFindMany.mockResolvedValue(
       approvedPlanHistory(planMessageId, planToolCallId, [
         {
@@ -841,13 +852,12 @@ describe('retrieval route wiring', () => {
   test('retries only unresolved cards from a partially decided plan', async () => {
     const planMessageId = '00000000-0000-0000-0000-000000000005'
     const planToolCallId = 'plan-tool-retry'
-    mocks.listPersonalElements.mockResolvedValue([
-      {
-        name: 'Rates',
-        candidateId: 'plan:card-1',
-        sourceMessageId: 'prior-generation-attempt',
-        sourceToolCallId: 'prior-generate-tool',
-      },
+    mocks.getPersonalElementGenerationContext.mockResolvedValue({
+      courseLanguage: 'en',
+      existingTitles: ['Rates'],
+    })
+    mocks.listSavedPersonalElementCandidateIds.mockResolvedValue([
+      'plan:card-1',
     ])
     mocks.chatMessageFindMany.mockResolvedValue(
       approvedPlanHistory(planMessageId, planToolCallId, [
@@ -882,6 +892,12 @@ describe('retrieval route wiring', () => {
     )
 
     expect(response.status).toBe(200)
+    expect(mocks.listPersonalElements).not.toHaveBeenCalled()
+    expect(mocks.listSavedPersonalElementCandidateIds).toHaveBeenCalledWith(
+      'course-1',
+      ['plan:card-1', 'plan:card-2'],
+      'participant-1'
+    )
     const calls = mocks.createGenerateCardsTool.mock.calls as unknown as Array<
       [{ skipCandidateIds?: ReadonlySet<string> }]
     >

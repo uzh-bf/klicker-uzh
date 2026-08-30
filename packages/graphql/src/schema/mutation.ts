@@ -79,10 +79,10 @@ import { MicroLearning } from './microLearning.js'
 import {
   CardGenerationLease,
   CardGenerationLeaseInput,
-  CreatePersonalElementsInput,
   PersonalElement,
   PrepareCardPlanInput,
   PreparedCardPlan,
+  SavePersonalElementCandidateInput,
   UpdatePersonalElementInput,
   ValidateCardCandidateInput,
 } from './personalElement.js'
@@ -730,14 +730,17 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createPersonalElements: t.withAuth(asParticipant).field({
+      savePersonalElementCandidate: t.withAuth(asParticipant).field({
         nullable: true,
-        type: [PersonalElement],
+        type: PersonalElement,
         args: {
-          input: t.arg({ type: CreatePersonalElementsInput, required: true }),
+          input: t.arg({
+            type: SavePersonalElementCandidateInput,
+            required: true,
+          }),
         },
         resolve: async (_, args, ctx) => {
-          return await PersonalElementService.createPersonalElements(
+          return await PersonalElementService.savePersonalElementCandidate(
             args.input,
             {
               prisma: ctx.prisma,

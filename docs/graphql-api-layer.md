@@ -56,32 +56,38 @@ and `respondToPersonalElement` requires the expected version so stale responses
 cannot update revised content.
 
 The public participant API consists of `personalElements`,
-`savedPersonalElementCandidateIds`,
+`personalElementGenerationContext`, `savedPersonalElementCandidateIds`,
 `respondToPersonalElement`, and `deletePersonalElement`. Chat is the only
 creation transport; its server route reaches Save and Discard through the
-same service via the persisted-query operations `MCreatePersonalElements`
-and `MDiscardPersonalElementCandidate`, never through a direct service
-import. The generated public operations are `QPersonalElements`,
-`MRespondToPersonalElement`, and `MDeletePersonalElement` in
+persisted-query operations `MSavePersonalElementCandidate` and
+`MDiscardPersonalElementCandidate`, never through a direct service import. The
+generated public operations include `QPersonalElements`,
+`QPersonalElementGenerationContext`, `MRespondToPersonalElement`, and
+`MDeletePersonalElement` in
 `packages/graphql/src/graphql/ops/`; rerun codegen whenever these fields or
 their selection sets change. `getPracticeQuizList` includes courses that have
 personal cards and exposes `personalElementCount` and `personalDueCount`.
 
 The backend also owns card-plan preparation and candidate validation through
 `prepareCardPlan` and `validateCardCandidate`. Chat calls both through generated
-persisted-query operations. `prepareCardPlan` returns a stable plan ID, the
-course language, the complete saved-title list, screens proposed titles against
+persisted-query operations. `personalElementGenerationContext` returns the
+course language and complete saved-title list without hydrating card bodies.
+`prepareCardPlan` returns a stable plan ID, screens proposed titles against
 saved cards and within the proposal, and assigns stable candidate identities.
-`validateCardCandidate` re-checks participation, source-message
-ownership, the structural Flashcard payload, source bounds, and current title
-similarity before a candidate can render. Chat keeps its own deterministic
-title-similarity check for the plan tool and no longer imports backend
-services for language, titles, duplicate policy, or candidate validation.
+`validateCardCandidate` re-checks participation, the accepted plan and active
+generation lease, source-message ownership, the structural Flashcard payload,
+source bounds, and current title similarity before a candidate can render.
+Chat keeps its own deterministic title-similarity check for the plan tool and
+no longer imports backend services for language, titles, duplicate policy, or
+candidate validation.
 
 The remaining lifecycle is exposed as participant-authenticated mutations:
 `claimCardGenerationLease`, `completeCardGenerationLease`, and
 `abortCardGenerationLease` own generation claim and settlement;
-`createPersonalElements` saves candidates idempotently and repeats the
+`savePersonalElementCandidate` accepts only course, assistant-message,
+tool-call, and candidate identifiers. The service reloads the persisted
+terminal `generate_cards` result, verifies its participant, course, accepted
+plan, and lease lineage, then saves that candidate idempotently and repeats the
 title-similarity check inside its serializable transaction;
 `discardPersonalElementCandidate` persists the negative decision; and
 `updatePersonalElement` applies the expected-version revision contract.

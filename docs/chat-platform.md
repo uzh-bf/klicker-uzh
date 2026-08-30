@@ -55,8 +55,12 @@ returns one of the bounded failure codes `retrieval_unavailable`,
 `insufficient_evidence`, or `generation_failed`; raw provider and retrieval
 diagnostics never cross the Chat API. The chat API joins saved state by
 assistant message, tool call, and candidate ID, so a frozen tool result never
-claims a card was saved. Cards are acted on individually: Save creates the
-participant-owned row, while Discard writes a
+claims a card was saved. Cards are acted on individually: Save sends only this
+lineage to GraphQL. The backend reloads the participant- and course-owned
+terminal `generate_cards` result, verifies the accepted plan and generation
+lease, and creates the participant-owned row from that persisted candidate.
+The browser and Chat route never supply card content or references to the save
+mutation. Discard writes a
 `PersonalElementDiscard` keyed by participant, course, and candidate. That
 discard record is returned with the saved-state
 lookup and is checked again inside the serializable GraphQL save transaction,
@@ -78,11 +82,15 @@ authorization, caps, and revision semantics.
 Personal-element access is GraphQL-only for operations: the Chat server mints
 a short-lived participant JWT and calls the persisted-query operations
 through `src/lib/server/personalElements/graphqlClient.ts` instead of
-importing backend services. The client exposes list, save, discard, lease
-mutations, plan preparation, candidate validation, the narrow saved-candidate
-lookup, and update operations. Lease and discard state reads the GraphQL surface
-does not expose stay as participant-scoped Prisma reads inside the adapter. The
-backend owns authorization, caps, duplicate policy, and revision semantics.
+importing backend services. The client exposes list, lineage-only save,
+discard, lease mutations, plan preparation, candidate validation, a narrow
+generation-context query, the narrow saved-candidate lookup, and update
+operations. The generation context contains only the backend-owned course
+language and saved titles. Accepted-plan setup loads only saved candidate IDs,
+not full personal elements. Lease and discard state reads that GraphQL does not
+yet expose stay as participant-scoped Prisma reads inside the adapter. The
+backend owns authorization, caps, duplicate policy, candidate provenance, and
+revision semantics.
 
 Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/layout.tsx` validates the route parameter as a UUID before querying Prisma, then calls `notFound()` for malformed or absent chatbot IDs; the root `src/app/not-found.tsx` preserves the 404 status while showing branded recovery and a safe return link. The root `src/app/error.tsx` sits above the dynamic layout, uses Next's `unstable_retry` callback to refresh a failed server payload, and exposes only retry/return actions; it never renders the underlying error text. The loading state in `src/components/assistant.tsx` uses the same branded card/skeleton language, and `/noLogin` keeps only a concise return notice instead of printing the UUID-bearing redirect URL.
 

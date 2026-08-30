@@ -439,6 +439,15 @@ const cardGenerationLeaseInputSchema = z
   })
   .strict()
 
+const cardCandidateLinkageSchema = z
+  .object({
+    courseId: z.string().trim().min(1).max(MAX_ID_LENGTH),
+    messageId: z.string().uuid(),
+    toolCallId: z.string().trim().min(1).max(MAX_ID_LENGTH),
+    candidateId: z.string().trim().min(1).max(MAX_ID_LENGTH),
+  })
+  .strict()
+
 const leaseSettlementSchema = z.object({
   id: z.string().uuid(),
   attemptToken: z.string().min(1),
@@ -534,6 +543,10 @@ export type CardGenerationLeaseInput = {
   planToolCallId: string
   attemptToken: string
 }
+
+export type CardCandidateLinkageInput = z.infer<
+  typeof cardCandidateLinkageSchema
+>
 
 function personalElementError(code: string, message = code) {
   return new GraphQLError(message, { extensions: { code } })
@@ -894,6 +907,11 @@ export type PreparedCardPlan = {
   discardedDuplicates: DiscardedDuplicateCard[]
 }
 
+export type PersonalElementGenerationContext = {
+  courseLanguage: DB.Locale
+  existingTitles: string[]
+}
+
 /**
  * Prepares a card plan on the backend: authorizes the course, loads the
  * course language and the complete saved-title list, screens the proposed
@@ -961,6 +979,148 @@ export async function prepareCardPlan(
   }
 }
 
+export async function getPersonalElementGenerationContext(
+  courseId: string,
+  context: PersonalElementServiceContext
+): Promise<PersonalElementGenerationContext> {
+  assertParticipantContext(context)
+  const parsedCourseId = parsePersonalElementInput(
+    z.string().trim().min(1).max(MAX_ID_LENGTH),
+    courseId
+  )
+  const participation = await context.prisma.participation.findUnique({
+    where: {
+      courseId_participantId: {
+        courseId: parsedCourseId,
+        participantId: context.participantId,
+      },
+    },
+    select: { course: { select: { language: true } } },
+  })
+  if (!participation) {
+    throw personalElementError(
+      'PERSONAL_ELEMENTS_NOT_PARTICIPATING',
+      'The participant is not enrolled in this course'
+    )
+  }
+
+  return {
+    courseLanguage: participation.course.language,
+    existingTitles: await fetchSavedTitles(
+      context.prisma,
+      context.participantId,
+      parsedCourseId
+    ),
+  }
+}
+
+type PersistedChatPart = {
+  type?: unknown
+  name?: unknown
+  toolCallId?: unknown
+  toolName?: unknown
+  isError?: unknown
+  result?: unknown
+}
+
+function findToolResult(
+  content: unknown,
+  toolName: string,
+  toolCallId: string
+): Record<string, unknown> | null {
+  if (!Array.isArray(content)) return null
+  const part = (content as PersistedChatPart[]).find(
+    (candidate) =>
+      candidate.type === 'tool-call' &&
+      candidate.toolName === toolName &&
+      candidate.toolCallId === toolCallId
+  )
+  if (
+    !part ||
+    part.isError === true ||
+    !part.result ||
+    typeof part.result !== 'object' ||
+    Array.isArray(part.result)
+  ) {
+    return null
+  }
+  return part.result as Record<string, unknown>
+}
+
+function findPlannedCard(
+  content: unknown,
+  toolCallId: string,
+  candidateId: string
+) {
+  const result = findToolResult(content, 'propose_card_plan', toolCallId)
+  if (!result || result.status !== 'ready' || !Array.isArray(result.cards)) {
+    return null
+  }
+  const parsedCards = z
+    .array(
+      z
+        .object({
+          candidateId: z.string().trim().min(1).max(MAX_ID_LENGTH),
+          title: z.string().trim().min(1).max(MAX_TITLE_LENGTH),
+        })
+        .passthrough()
+    )
+    .max(MAX_PLAN_CARDS)
+    .safeParse(result.cards)
+  return parsedCards.success
+    ? (parsedCards.data.find((card) => card.candidateId === candidateId) ??
+        null)
+    : null
+}
+
+async function getCandidateLeaseLinkage(
+  input: {
+    courseId: string
+    candidateId: string
+    title: string
+    sourceMessageId: string
+  },
+  prisma: DB.PrismaClient | PrismaTransactionClient,
+  participantId: string,
+  requireActiveLease: boolean
+) {
+  const lease = await prisma.cardGenerationLease.findFirst({
+    where: {
+      participantId,
+      attemptToken: input.sourceMessageId,
+      ...(requireActiveLease
+        ? { completedAt: null, leaseExpiresAt: { gt: new Date() } }
+        : {}),
+      planMessage: {
+        role: 'assistant',
+        thread: {
+          participantId,
+          chatbot: { courseId: input.courseId },
+        },
+      },
+    },
+    select: {
+      completedAt: true,
+      planToolCallId: true,
+      planMessage: { select: { content: true } },
+    },
+  })
+  const plannedCard = lease
+    ? findPlannedCard(
+        lease.planMessage.content,
+        lease.planToolCallId,
+        input.candidateId
+      )
+    : null
+  if (!lease || !plannedCard || plannedCard.title !== input.title) {
+    throw personalElementError(
+      'PERSONAL_ELEMENTS_CANDIDATE_LINKAGE_INVALID',
+      'The generated card does not belong to the accepted plan'
+    )
+  }
+  return lease
+}
+
 /**
  * Validates a generated Flashcard candidate before it can render: course
  * participation, source-message ownership, the structural FLASHCARD payload,
@@ -984,19 +1144,17 @@ export async function validateCardCandidate(
     parsed.courseId
   )
 
-  const sourceMessage = await context.prisma.chatMessage.findFirst({
-    where: {
-      id: parsed.sourceMessageId,
-      thread: { participantId: context.participantId },
+  await getCandidateLeaseLinkage(
+    {
+      courseId: parsed.courseId,
+      candidateId: parsed.candidateId,
+      title: parsed.title,
+      sourceMessageId: parsed.sourceMessageId,
     },
-    select: { id: true },
-  })
-  if (!sourceMessage) {
-    throw personalElementError(
-      'PERSONAL_ELEMENTS_SOURCE_MESSAGE_NOT_FOUND',
-      'The source message is not available to this participant'
-    )
-  }
+    context.prisma,
+    context.participantId,
+    true
+  )
 
   const savedTitles = await fetchSavedTitles(
     context.prisma,
@@ -1076,6 +1234,134 @@ function normalizeCandidates(
     )
   }
   return parsed
+}
+
+function isTerminalGenerationResult(result: Record<string, unknown>) {
+  const total = result.total
+  const completed = result.completed
+  if (
+    typeof total !== 'number' ||
+    !Number.isInteger(total) ||
+    total < 1 ||
+    total > MAX_PLAN_CARDS ||
+    typeof completed !== 'number' ||
+    !Number.isInteger(completed) ||
+    completed < total
+  ) {
+    return null
+  }
+  if (result.status === 'completed') return 'completed' as const
+  if (
+    result.status === 'partial' &&
+    result.settlement === 'partial' &&
+    Array.isArray(result.failedCards) &&
+    result.failedCards.length > 0
+  ) {
+    return 'partial' as const
+  }
+  return null
+}
+
+async function loadPersistedGeneratedCandidate(
+  input: CardCandidateLinkageInput,
+  prisma: DB.PrismaClient | PrismaTransactionClient,
+  participantId: string
+) {
+  const message = await prisma.chatMessage.findFirst({
+    where: {
+      id: input.messageId,
+      role: 'assistant',
+      lifecycleStatus: 'COMPLETED',
+      thread: {
+        participantId,
+        chatbot: { courseId: input.courseId },
+      },
+    },
+    select: { content: true },
+  })
+  if (!message || !Array.isArray(message.content)) {
+    throw personalElementError(
+      'PERSONAL_ELEMENTS_CANDIDATE_NOT_FOUND',
+      'The generated card is not available to this participant'
+    )
+  }
+  const content = message.content as PersistedChatPart[]
+  if (
+    content.some(
+      (part) =>
+        part.type === 'data' &&
+        (part.name === 'chat-stopped' || part.name === 'chat-error')
+    )
+  ) {
+    throw personalElementError(
+      'PERSONAL_ELEMENTS_CANDIDATE_NOT_READY',
+      'The generated card attempt did not finish successfully'
+    )
+  }
+
+  const result = findToolResult(content, 'generate_cards', input.toolCallId)
+  const terminalStatus = result ? isTerminalGenerationResult(result) : null
+  if (!result || !terminalStatus || !Array.isArray(result.candidates)) {
+    throw personalElementError(
+      'PERSONAL_ELEMENTS_CANDIDATE_NOT_READY',
+      'The generated card attempt is not ready to save'
+    )
+  }
+  const rawCandidate = result.candidates.find(
+    (value) =>
+      value &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      (value as { candidateId?: unknown }).candidateId === input.candidateId
+  ) as Record<string, unknown> | undefined
+  if (
+    !rawCandidate ||
+    rawCandidate.type !== 'FLASHCARD' ||
+    rawCandidate.origin !== 'AI_GENERATED' ||
+    rawCandidate.sourceMessageId !== input.messageId ||
+    rawCandidate.sourceToolCallId !== input.toolCallId ||
+    !Array.isArray(rawCandidate.sources)
+  ) {
+    throw personalElementError(
+      'PERSONAL_ELEMENTS_CANDIDATE_LINKAGE_INVALID',
+      'The generated card linkage is invalid'
+    )
+  }
+
+  const [candidate] = normalizeCandidates([
+    {
+      candidateId: rawCandidate.candidateId as string,
+      name: rawCandidate.name as string,
+      content: rawCandidate.content as string,
+      explanation: rawCandidate.explanation as string,
+      sources: rawCandidate.sources as PersonalElementSourceInput[],
+      sourceMessageId: rawCandidate.sourceMessageId as string,
+      sourceToolCallId: rawCandidate.sourceToolCallId as string,
+      origin: 'AI_GENERATED',
+    },
+  ])
+  if (!candidate) {
+    throw personalElementError('PERSONAL_ELEMENTS_CANDIDATE_NOT_FOUND')
+  }
+
+  const lease = await getCandidateLeaseLinkage(
+    {
+      courseId: input.courseId,
+      candidateId: candidate.candidateId,
+      title: candidate.name,
+      sourceMessageId: input.messageId,
+    },
+    prisma,
+    participantId,
+    false
+  )
+  if (terminalStatus === 'completed' && !lease.completedAt) {
+    throw personalElementError(
+      'PERSONAL_ELEMENTS_CANDIDATE_NOT_READY',
+      'The generated card lease is not complete'
+    )
+  }
+  return candidate
 }
 
 function toPersistedSources(sources: readonly PersonalElementSourceInput[]) {
@@ -1282,98 +1568,130 @@ function toCreateData(
   }
 }
 
+async function saveCandidatesInTransaction(
+  transaction: PrismaTransactionClient,
+  courseId: string,
+  candidates: readonly PersonalElementCandidate[],
+  participantId: string
+) {
+  await assertCourseParticipation(transaction, participantId, courseId)
+
+  const discarded = await transaction.personalElementDiscard.findMany({
+    where: {
+      participantId,
+      courseId,
+      candidateId: {
+        in: candidates.map((candidate) => candidate.candidateId),
+      },
+    },
+    select: { candidateId: true },
+  })
+  if (discarded.length > 0) {
+    throw personalElementError(
+      'PERSONAL_ELEMENTS_CANDIDATE_DISCARDED',
+      'A candidate has already been discarded'
+    )
+  }
+
+  const existing = await transaction.personalElement.findMany({
+    where: {
+      participantId,
+      courseId,
+      candidateId: {
+        in: candidates.map((candidate) => candidate.candidateId),
+      },
+    },
+  })
+  const existingByCandidateId = new Map(
+    existing.map((element) => [element.candidateId, element] as const)
+  )
+  const missing = candidates.filter(
+    (candidate) => !existingByCandidateId.has(candidate.candidateId)
+  )
+
+  if (missing.length > 0) {
+    const titlesToScreen = await fetchSavedTitles(
+      transaction,
+      participantId,
+      courseId,
+      missing.map((candidate) => candidate.candidateId)
+    )
+    for (const candidate of missing) {
+      const duplicate = findPotentialDuplicateTitle(
+        candidate.name,
+        titlesToScreen
+      )
+      if (duplicate) {
+        throw personalElementError(
+          'PERSONAL_ELEMENTS_DUPLICATE_TITLE',
+          'A card with a similar title already exists: ' +
+            duplicate.matchedTitle
+        )
+      }
+    }
+
+    const count = await transaction.personalElement.count({
+      where: { participantId, courseId },
+    })
+    if (count + missing.length > PERSONAL_ELEMENT_LIMIT) {
+      throw personalElementError(
+        'PERSONAL_ELEMENTS_LIMIT_REACHED',
+        `A participant can save at most ${PERSONAL_ELEMENT_LIMIT} personal elements per course`
+      )
+    }
+
+    for (const candidate of missing) {
+      const created = await transaction.personalElement.create({
+        data: toCreateData(candidate, participantId, courseId),
+      })
+      existingByCandidateId.set(candidate.candidateId, created)
+    }
+  }
+
+  return candidates.map(
+    (candidate) => existingByCandidateId.get(candidate.candidateId)!
+  )
+}
+
+/**
+ * Internal persistence primitive for candidates already loaded or created by
+ * trusted backend code. Participant-facing GraphQL uses linkage-only Save.
+ */
 export async function createPersonalElements(
   input: CreatePersonalElementsInput,
   context: PersonalElementServiceContext
 ) {
   assertParticipantContext(context)
   const candidates = normalizeCandidates(input.candidates)
-
-  return runSerializable(context.prisma, async (transaction) => {
-    await assertCourseParticipation(
+  return runSerializable(context.prisma, (transaction) =>
+    saveCandidatesInTransaction(
       transaction,
-      context.participantId,
-      input.courseId
+      input.courseId,
+      candidates,
+      context.participantId
     )
+  )
+}
 
-    const discarded = await transaction.personalElementDiscard.findMany({
-      where: {
-        participantId: context.participantId,
-        courseId: input.courseId,
-        candidateId: {
-          in: candidates.map((candidate) => candidate.candidateId),
-        },
-      },
-      select: { candidateId: true },
-    })
-    if (discarded.length > 0) {
-      throw personalElementError(
-        'PERSONAL_ELEMENTS_CANDIDATE_DISCARDED',
-        'A candidate has already been discarded'
-      )
-    }
-
-    const existing = await transaction.personalElement.findMany({
-      where: {
-        participantId: context.participantId,
-        courseId: input.courseId,
-        candidateId: {
-          in: candidates.map((candidate) => candidate.candidateId),
-        },
-      },
-    })
-    const existingByCandidateId = new Map(
-      existing.map((element) => [element.candidateId, element] as const)
+export async function savePersonalElementCandidate(
+  input: CardCandidateLinkageInput,
+  context: PersonalElementServiceContext
+) {
+  assertParticipantContext(context)
+  const parsed = parsePersonalElementInput(cardCandidateLinkageSchema, input)
+  return runSerializable(context.prisma, async (transaction) => {
+    const candidate = await loadPersistedGeneratedCandidate(
+      parsed,
+      transaction,
+      context.participantId
     )
-    const missing = candidates.filter(
-      (candidate) => !existingByCandidateId.has(candidate.candidateId)
+    const [saved] = await saveCandidatesInTransaction(
+      transaction,
+      parsed.courseId,
+      [candidate],
+      context.participantId
     )
-
-    if (missing.length > 0) {
-      const titlesToScreen = await fetchSavedTitles(
-        transaction,
-        context.participantId,
-        input.courseId,
-        missing.map((candidate) => candidate.candidateId)
-      )
-      for (const candidate of missing) {
-        const duplicate = findPotentialDuplicateTitle(
-          candidate.name,
-          titlesToScreen
-        )
-        if (duplicate) {
-          throw personalElementError(
-            'PERSONAL_ELEMENTS_DUPLICATE_TITLE',
-            'A card with a similar title already exists: ' +
-              duplicate.matchedTitle
-          )
-        }
-      }
-
-      const count = await transaction.personalElement.count({
-        where: {
-          participantId: context.participantId,
-          courseId: input.courseId,
-        },
-      })
-      if (count + missing.length > PERSONAL_ELEMENT_LIMIT) {
-        throw personalElementError(
-          'PERSONAL_ELEMENTS_LIMIT_REACHED',
-          `A participant can save at most ${PERSONAL_ELEMENT_LIMIT} personal elements per course`
-        )
-      }
-
-      for (const candidate of missing) {
-        const created = await transaction.personalElement.create({
-          data: toCreateData(candidate, context.participantId, input.courseId),
-        })
-        existingByCandidateId.set(candidate.candidateId, created)
-      }
-    }
-
-    return candidates.map(
-      (candidate) => existingByCandidateId.get(candidate.candidateId)!
-    )
+    return saved!
   })
 }
 

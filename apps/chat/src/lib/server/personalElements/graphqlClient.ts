@@ -1,25 +1,24 @@
 import hashes from '@klicker-uzh/graphql/dist/client.json'
 import type {
   CardGenerationLeaseInput,
-  CreatePersonalElementsInput,
   MAbortCardGenerationLeaseMutation,
   MClaimCardGenerationLeaseMutation,
   MCompleteCardGenerationLeaseMutation,
-  MCreatePersonalElementsMutation,
   MDiscardPersonalElementCandidateMutation,
   MPrepareCardPlanMutation,
+  MSavePersonalElementCandidateMutation,
   MUpdatePersonalElementMutation,
   MValidateCardCandidateMutation,
   PersonalElement,
-  PersonalElementCandidateInput,
+  QPersonalElementGenerationContextQuery,
   QPersonalElementsQuery,
   QSavedPersonalElementCandidateIdsQuery,
   UpdatePersonalElementInput,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
-  ElementType,
   ElementSourceKind,
   ElementSourceLocatorType,
+  ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
 import { prisma } from '@klicker-uzh/prisma'
 import type { ElementSourceReference } from '@klicker-uzh/types'
@@ -200,30 +199,26 @@ export async function abortCardGenerationLease(
   return data.abortCardGenerationLease
 }
 
-export async function createPersonalElements(
-  input: Omit<CreatePersonalElementsInput, 'candidates'> & {
-    candidates: Array<
-      Omit<PersonalElementCandidateInput, 'sources'> & {
-        sources: ElementSourceReference[]
-      }
-    >
+export async function savePersonalElementCandidate(
+  input: {
+    courseId: string
+    messageId: string
+    toolCallId: string
+    candidateId: string
   },
   participantId: string
-): Promise<PersonalElement[]> {
-  const graphqlInput: CreatePersonalElementsInput = {
-    ...input,
-    candidates: input.candidates.map((candidate) => ({
-      ...candidate,
-      sources: candidate.sources.map(toGraphqlSourceReference),
-    })),
-  }
+): Promise<PersonalElement> {
   const data =
-    await executePersonalElementOperation<MCreatePersonalElementsMutation>({
-      operationName: 'MCreatePersonalElements',
-      variables: { input: graphqlInput },
-      participantId,
-    })
-  return data.createPersonalElements ?? []
+    await executePersonalElementOperation<MSavePersonalElementCandidateMutation>(
+      {
+        operationName: 'MSavePersonalElementCandidate',
+        variables: { input },
+        participantId,
+      }
+    )
+  const element = data.savePersonalElementCandidate
+  if (!element) throw new Error('Personal element save returned no element')
+  return element
 }
 
 export async function discardPersonalElementCandidate(
@@ -315,6 +310,21 @@ export async function listPersonalElements(
     participantId,
   })
   return data.personalElements ?? []
+}
+
+export async function getPersonalElementGenerationContext(
+  courseId: string,
+  participantId: string
+) {
+  const data =
+    await executePersonalElementOperation<QPersonalElementGenerationContextQuery>(
+      {
+        operationName: 'QPersonalElementGenerationContext',
+        variables: { courseId },
+        participantId,
+      }
+    )
+  return data.personalElementGenerationContext
 }
 
 export async function listSavedPersonalElementCandidateIds(

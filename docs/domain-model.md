@@ -79,14 +79,15 @@ defined by the service and does not create a lecturer trust state. Chat proposes
 and generates at most five cards per request, and generation failures use
 bounded codes rather than provider or retrieval diagnostics.
 
-The backend owns the card-plan and candidate lifecycle. prepareCardPlan
-authorizes course participation, returns the course language and the complete
-saved-title list as read-only model context, screens proposed titles against
-saved cards and within the proposal using the deterministic title-similarity
-policy, and assigns stable server-issued candidate identities.
-validateCardCandidate re-checks participation, source-message ownership, the
-structural Flashcard payload, source bounds, and current title similarity
-before a candidate can render. Generated content is validated structurally
+The backend owns the card-plan and candidate lifecycle.
+personalElementGenerationContext authorizes course participation and returns
+the course language and complete saved-title list without card bodies.
+prepareCardPlan screens proposed titles against saved cards and within the
+proposal using the deterministic title-similarity policy, and assigns stable
+server-issued candidate identities. validateCardCandidate re-checks
+participation, the accepted plan and active generation lease, source-message
+ownership, the structural Flashcard payload, source bounds, and current title
+similarity before a candidate can render. Generated content is validated structurally
 (non-empty, bounded, contains letters or digits), never by matching English or
 German sentences. The save transaction enforces candidate-ID uniqueness and
 the per-course card cap, and repeats the title-similarity check inside the
@@ -97,10 +98,13 @@ The full lifecycle is exposed through participant-authenticated GraphQL
 operations. claimCardGenerationLease atomically claims or reclaims the
 generation lease for an owned plan message; completeCardGenerationLease and
 abortCardGenerationLease settle only the caller's current attempt.
-createPersonalElements saves candidates idempotently with the final duplicate
-check in its transaction, discardPersonalElementCandidate persists the
-negative decision idempotently, and updatePersonalElement applies the
-expected-version and scheduling contract to a saved card.
+savePersonalElementCandidate accepts only course, assistant-message, tool-call,
+and candidate identifiers. It reloads the persisted terminal generation
+result, verifies its participant, course, accepted plan, and lease lineage, and
+saves that candidate idempotently with the final duplicate check in its
+transaction. discardPersonalElementCandidate persists the negative decision
+idempotently, and updatePersonalElement applies the expected-version and
+scheduling contract to a saved card.
 savedPersonalElementCandidateIds returns only the requested saved candidate
 identities for generated-message reloads; listPersonalElements returns the full
 course collection used by practice and saved-card management.

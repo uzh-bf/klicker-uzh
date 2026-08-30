@@ -6,6 +6,7 @@ import type {
 import builder from '../builder.js'
 import {
   type DiscardedDuplicateCard as DiscardedDuplicateCardValue,
+  type PersonalElementGenerationContext as PersonalElementGenerationContextValue,
   type PreparedCardPlanEntry as PreparedCardPlanEntryValue,
   type PreparedCardPlan as PreparedCardPlanValue,
   readElementSourceReferences,
@@ -129,34 +130,14 @@ export const CardGenerationLeaseInput = builder.inputType(
   }
 )
 
-export const PersonalElementCandidateInput = builder.inputType(
-  'PersonalElementCandidateInput',
-  {
-    fields: (t) => ({
-      candidateId: t.string({ required: true }),
-      name: t.string({ required: true }),
-      content: t.string({ required: true }),
-      explanation: t.string({ required: true }),
-      sources: t.field({
-        type: [PersonalElementSourceInput],
-        required: true,
-      }),
-      sourceMessageId: t.string({ required: true }),
-      sourceToolCallId: t.string({ required: true }),
-      origin: t.field({ type: PersonalElementOrigin, required: false }),
-    }),
-  }
-)
-
-export const CreatePersonalElementsInput = builder.inputType(
-  'CreatePersonalElementsInput',
+export const SavePersonalElementCandidateInput = builder.inputType(
+  'SavePersonalElementCandidateInput',
   {
     fields: (t) => ({
       courseId: t.string({ required: true }),
-      candidates: t.field({
-        type: [PersonalElementCandidateInput],
-        required: true,
-      }),
+      messageId: t.string({ required: true }),
+      toolCallId: t.string({ required: true }),
+      candidateId: t.string({ required: true }),
     }),
   }
 )
@@ -261,6 +242,19 @@ export const PreparedCardPlan = PreparedCardPlanRef.implement({
     }),
   }),
 })
+
+export const PersonalElementGenerationContextRef =
+  builder.objectRef<PersonalElementGenerationContextValue>(
+    'PersonalElementGenerationContext'
+  )
+
+export const PersonalElementGenerationContext =
+  PersonalElementGenerationContextRef.implement({
+    fields: (t) => ({
+      courseLanguage: t.expose('courseLanguage', { type: LocaleType }),
+      existingTitles: t.exposeStringList('existingTitles'),
+    }),
+  })
 
 export const PersonalElementRef =
   builder.objectRef<DB.PersonalElement>('PersonalElement')

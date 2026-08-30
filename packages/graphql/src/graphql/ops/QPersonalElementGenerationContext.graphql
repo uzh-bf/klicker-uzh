@@ -1,0 +1,6 @@
+query QPersonalElementGenerationContext($courseId: String!) {
+  personalElementGenerationContext(courseId: $courseId) {
+    courseLanguage
+    existingTitles
+  }
+}

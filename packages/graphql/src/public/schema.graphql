@@ -1223,11 +1223,6 @@ type CreateAssessmentParticipantInvitationsPayload {
   totalProcessed: Int!
 }
 
-input CreatePersonalElementsInput {
-  candidates: [PersonalElementCandidateInput!]!
-  courseId: String!
-}
-
 enum CreditResetPeriod {
   BIWEEKLY
   DAILY
@@ -2607,7 +2602,6 @@ type Mutation {
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
   createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
-  createPersonalElements(input: CreatePersonalElementsInput!): [PersonalElement!]
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
   createUserGroup(members: [UserGroupMembersInput!]!, name: String!): UserGroup
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
@@ -2722,6 +2716,7 @@ type Mutation {
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
   saveGeneratedElements(input: ElementGenerationBuildInput!): ElementGenerationSaveResult!
+  savePersonalElementCandidate(input: SavePersonalElementCandidateInput!): PersonalElement
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
@@ -3138,15 +3133,9 @@ type PersonalElement {
   wrongCount: Int!
 }
 
-input PersonalElementCandidateInput {
-  candidateId: String!
-  content: String!
-  explanation: String!
-  name: String!
-  origin: PersonalElementOrigin
-  sourceMessageId: String!
-  sourceToolCallId: String!
-  sources: [PersonalElementSourceInput!]!
+type PersonalElementGenerationContext {
+  courseLanguage: LocaleType!
+  existingTitles: [String!]!
 }
 
 enum PersonalElementOrigin {
@@ -3393,6 +3382,7 @@ type Query {
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(assessmentOnly: Boolean, endpoint: String): [Participation!]
+  personalElementGenerationContext(courseId: String!): PersonalElementGenerationContext!
   personalElements(courseId: String!): [PersonalElement!]
   practiceQuiz(id: String!): PracticeQuiz
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
@@ -3532,6 +3522,13 @@ enum ReviewStatus {
   INCOMPLETE
   MODIFIED_AFTER_REVIEW
   REVIEWED
+}
+
+input SavePersonalElementCandidateInput {
+  candidateId: String!
+  courseId: String!
+  messageId: String!
+  toolCallId: String!
 }
 
 type SelectionActivityEvaluationData {

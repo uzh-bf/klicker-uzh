@@ -19,9 +19,10 @@ vi.mock('@klicker-uzh/prisma', () => ({
 
 vi.mock('@klicker-uzh/graphql/dist/client.json', () => ({
   default: {
-    MCreatePersonalElements: 'test-hash-create',
     MPrepareCardPlan: 'test-hash-prepare',
+    MSavePersonalElementCandidate: 'test-hash-save',
     MValidateCardCandidate: 'test-hash-validate',
+    QPersonalElementGenerationContext: 'test-hash-context',
     QPersonalElements: 'test-hash-list',
     QSavedPersonalElementCandidateIds: 'test-hash-saved-candidates',
   },
@@ -30,11 +31,13 @@ vi.mock('@klicker-uzh/graphql/dist/client.json', () => ({
 import {
   executePersonalElementOperation,
   getGenerationLeaseState,
+  getPersonalElementGenerationContext,
   listCompletedGenerationLeaseAttemptTokens,
   listDiscardedCandidateIds,
   listSavedPersonalElementCandidateIds,
   mintParticipantToken,
   prepareCardPlan,
+  savePersonalElementCandidate,
   validateCardCandidate,
 } from '../src/lib/server/personalElements/graphqlClient'
 
@@ -129,8 +132,15 @@ describe('personal-element GraphQL client', () => {
 
     await expect(
       executePersonalElementOperation({
-        operationName: 'MCreatePersonalElements',
-        variables: { input: { courseId: 'course-1', candidates: [] } },
+        operationName: 'MSavePersonalElementCandidate',
+        variables: {
+          input: {
+            courseId: 'course-1',
+            messageId: 'message-1',
+            toolCallId: 'tool-1',
+            candidateId: 'candidate-1',
+          },
+        },
         participantId: 'participant-1',
         fetchImpl,
       })
@@ -296,6 +306,84 @@ describe('personal-element GraphQL client', () => {
         },
       },
     })
+  })
+
+  test('loads narrow generation context and saves by linkage only', async () => {
+    process.env.APP_SECRET = 'test-secret'
+    process.env.APP_ORIGIN_API = 'https://api.example.test'
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            personalElementGenerationContext: {
+              courseLanguage: 'de',
+              existingTitles: ['Existing card'],
+            },
+          },
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            savePersonalElementCandidate: { id: 'element-1' },
+          },
+        }),
+      })
+    vi.stubGlobal('fetch', fetchImpl)
+
+    await expect(
+      getPersonalElementGenerationContext('course-1', 'participant-1')
+    ).resolves.toEqual({
+      courseLanguage: 'de',
+      existingTitles: ['Existing card'],
+    })
+    await expect(
+      savePersonalElementCandidate(
+        {
+          courseId: 'course-1',
+          messageId: '00000000-0000-0000-0000-000000000001',
+          toolCallId: 'generate-1',
+          candidateId: 'candidate-1',
+        },
+        'participant-1'
+      )
+    ).resolves.toEqual({ id: 'element-1' })
+
+    const requests = fetchImpl.mock.calls.map(([, request]) =>
+      JSON.parse((request as { body: string }).body)
+    )
+    expect(requests).toEqual([
+      expect.objectContaining({
+        operationName: 'QPersonalElementGenerationContext',
+        variables: { courseId: 'course-1' },
+        extensions: {
+          persistedQuery: {
+            sha256Hash: 'test-hash-context',
+            version: 1,
+          },
+        },
+      }),
+      expect.objectContaining({
+        operationName: 'MSavePersonalElementCandidate',
+        variables: {
+          input: {
+            courseId: 'course-1',
+            messageId: '00000000-0000-0000-0000-000000000001',
+            toolCallId: 'generate-1',
+            candidateId: 'candidate-1',
+          },
+        },
+        extensions: {
+          persistedQuery: {
+            sha256Hash: 'test-hash-save',
+            version: 1,
+          },
+        },
+      }),
+    ])
   })
 
   test('scopes lease and discard reads to the participant', async () => {
