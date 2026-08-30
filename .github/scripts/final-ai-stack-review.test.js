@@ -1154,6 +1154,63 @@ test('uses GLM Flash for individual and cumulative stack review jobs', () => {
   assert.doesNotMatch(workflow, /OCR_LLM_MODEL/)
 })
 
+test('retains only the rejected stack publisher inputs for one day', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  const stageStep = workflow.match(
+    /      - name: Stage rejected stack publisher inputs\n[\s\S]*?(?=\n      - name:)/
+  )?.[0]
+  const uploadStep = workflow.match(
+    /      - name: Upload rejected stack publisher inputs\n[\s\S]*?(?=\n      - name:|\n  finalize_stack:)/
+  )?.[0]
+
+  assert.ok(stageStep)
+  assert.ok(uploadStep)
+  assert.ok(
+    workflow.indexOf('Publish consolidated stack review') <
+      workflow.indexOf('Stage rejected stack publisher inputs')
+  )
+  assert.ok(
+    workflow.indexOf('Stage rejected stack publisher inputs') <
+      workflow.indexOf('Upload rejected stack publisher inputs')
+  )
+  assert.match(
+    stageStep,
+    /if: failure\(\) && steps\.publish\.outcome == 'failure'/
+  )
+  assert.match(stageStep, /test -f "\$\{code_result\}"/)
+  assert.match(stageStep, /test -f "\$\{topology_result\}"/)
+  assert.match(
+    stageStep,
+    /cp -- "\$\{code_result\}" "\$\{topology_result\}" "\$\{staging_dir\}\/"/
+  )
+  assert.match(stageStep, /mv -- "\$\{staging_dir\}" "\$\{artifact_dir\}"/)
+  assert.match(
+    uploadStep,
+    /if: failure\(\) && steps\.publish\.outcome == 'failure'/
+  )
+  assert.match(
+    uploadStep,
+    /uses: actions\/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4/
+  )
+  assert.match(
+    uploadStep,
+    /name: final-ai-stack-publisher-failure-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/
+  )
+  assert.match(
+    uploadStep,
+    /path: \$\{\{ runner\.temp \}\}\/final-ai-stack-publisher-failure/
+  )
+  assert.match(uploadStep, /if-no-files-found: error/)
+  assert.match(uploadStep, /retention-days: 1/)
+  assert.doesNotMatch(
+    `${stageStep}\n${uploadStep}`,
+    /stderr|config|manifest|ranges|\*/i
+  )
+})
+
 test('checks trusted review code out from the default branch', () => {
   for (const workflowName of [
     'check-ocr-final-review.yml',
