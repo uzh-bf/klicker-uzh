@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+method='GET'
+endpoint=''
+while (($# > 0)); do
+  case "$1" in
+    api)
+      shift
+      ;;
+    --method)
+      method=$2
+      shift 2
+      ;;
+    -H | -f | -F)
+      shift 2
+      ;;
+    --input)
+      shift 2
+      ;;
+    /*)
+      endpoint=$1
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+state=$(cat "$FAKE_STATE" 2>/dev/null || printf 'before')
+if [[ "$method" == 'PATCH' ]]; then
+  printf 'patched' >"$FAKE_STATE"
+  printf '{}\n'
+  exit 0
+fi
+if [[ "$method" == 'PUT' ]]; then
+  cat >/dev/null
+  printf 'after' >"$FAKE_STATE"
+  exit 0
+fi
+
+case "$endpoint" in
+  /repos/uzh-bf/klicker-uzh)
+    printf '{"id":42,"full_name":"uzh-bf/klicker-uzh","private":false,"default_branch":"v3"}\n'
+    ;;
+  /repos/uzh-bf/klicker-uzh/contents/.github/workflows/public-pr-playwright-shards.yml)
+    printf '{"type":"file","path":".github/workflows/public-pr-playwright-shards.yml"}\n'
+    ;;
+  /orgs/uzh-bf/actions/runner-groups)
+    selected='[]'
+    visibility='all'
+    allows_public='false'
+    restricted='false'
+    inherited='false'
+    read_only='false'
+    if [[ "$FAKE_SCENARIO" == 'exact' || "$state" == 'after' ]]; then
+      selected='["uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3"]'
+      visibility='selected'
+      allows_public='true'
+      restricted='true'
+    elif [[ "$FAKE_SCENARIO" == 'extra-workflow' ]]; then
+      selected='["uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3","uzh-bf/klicker-uzh/.github/workflows/check.yml@refs/heads/v3"]'
+      visibility='selected'
+      allows_public='true'
+      restricted='true'
+    elif [[ "$FAKE_SCENARIO" == 'inherited' ]]; then
+      inherited='true'
+    elif [[ "$FAKE_SCENARIO" == 'read-only' ]]; then
+      read_only='true'
+    fi
+    printf '{"total_count":1,"runner_groups":[{"id":7,"name":"public-pr-arm64","default":false,"visibility":"%s","allows_public_repositories":%s,"restricted_to_workflows":%s,"selected_workflows":%s,"inherited":%s,"workflow_restrictions_read_only":%s}]}\n' \
+      "$visibility" "$allows_public" "$restricted" "$selected" "$inherited" "$read_only"
+    ;;
+  /orgs/uzh-bf/actions/runner-groups/7/repositories)
+    if [[ "$FAKE_SCENARIO" == 'extra-repository' && "$state" != 'after' ]]; then
+      printf '{"total_count":2,"repositories":[{"id":42,"full_name":"uzh-bf/klicker-uzh"},{"id":99,"full_name":"uzh-bf/other"}]}\n'
+    elif [[ "$FAKE_SCENARIO" == 'exact' || "$state" == 'after' ]]; then
+      printf '{"total_count":1,"repositories":[{"id":42,"full_name":"uzh-bf/klicker-uzh"}]}\n'
+    else
+      printf '{"total_count":0,"repositories":[]}\n'
+    fi
+    ;;
+  /orgs/uzh-bf/actions/runner-groups/7/runners)
+    count=8
+    [[ "$FAKE_SCENARIO" == 'missing-runner' ]] && count=7
+    printf '{"total_count":%s,"runners":[' "$count"
+    for ((index = 1; index <= count; index++)); do
+      ((index > 1)) && printf ','
+      printf '{"id":%s,"name":"public-pr-arm64-%02d","status":"online","busy":false}' "$index" "$index"
+    done
+    printf ']}\n'
+    ;;
+  *)
+    printf 'unexpected endpoint: %s %s\n' "$method" "$endpoint" >&2
+    exit 1
+    ;;
+esac

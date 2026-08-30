@@ -162,6 +162,24 @@ so a stale reporter waiting for GitHub-hosted capacity cannot block current
 filtering, builds, or shards. Public container jobs also trust the exact mounted
 `GITHUB_WORKSPACE` after checkout because its host and container owners differ.
 
+Public PR jobs restore architecture-specific pnpm and Turbo caches but never
+save them. `warm-public-pr-arm64-cache.yml` is the only writer for this route:
+it runs in the same Playwright container on GitHub-hosted ARM64 after `v3`
+pushes or manual dispatch, uses read-only contents permission and no repository
+secrets, installs the frozen lockfile, and builds with the same four-task Turbo
+limit. The public build and trusted warmer summaries expose exact cache-hit
+flags and install/build seconds; Turbo's build log remains the source for task
+and cached-task counts. A cache miss is expected after a lockfile, Turbo config,
+toolchain, or architecture key change and is not by itself a runner failure.
+
+When comparing hosted and public routes, report the complete critical path:
+workflow start, prepare, build, artifact transfer, shard setup, test, aggregate
+status, and total completion. Include actual runner names and all eight artifact
+names. If host telemetry is installed, correlate its local journal records by
+run ID and runner name to distinguish CPU, memory, or Docker-disk pressure from
+cache or test-suite cost. Host telemetry is diagnostic only and must remain
+bounded and secret-free.
+
 The timing-aware sharder assigns whole spec files; it cannot divide one serial
 spec across runners. Long workflows must therefore split only where each new
 file can establish its own database and browser state. The live-quiz suite uses

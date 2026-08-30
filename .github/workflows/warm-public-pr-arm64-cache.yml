@@ -1,0 +1,115 @@
+name: Warm public PR ARM64 caches
+
+on:
+  push:
+    branches: [v3]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: warm-public-pr-arm64-cache
+  cancel-in-progress: true
+
+jobs:
+  warm:
+    runs-on: ubuntu-24.04-arm
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Define node version
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - name: Restore and save pnpm cache
+        id: pnpm-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-${{ runner.arch }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-pnpm-store-
+
+      - name: Restore and save turbo build artifacts
+        id: turbo-cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-${{ runner.arch }}-turbo-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}-${{ github.ref_name }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-turbo-${{ hashFiles('**/pnpm-lock.yaml', 'turbo.json') }}-
+            ${{ runner.os }}-${{ runner.arch }}-turbo-
+
+      - name: Install dependencies
+        id: install
+        shell: bash
+        run: |
+          started_at=$(date +%s)
+          pnpm install --frozen-lockfile
+          echo "duration_seconds=$(($(date +%s) - started_at))" >> "$GITHUB_OUTPUT"
+
+      - name: Build all packages and apps
+        id: build
+        shell: bash
+        run: |
+          started_at=$(date +%s)
+          pnpm run --filter @klicker-uzh/prisma build:test
+          pnpm run build:test --concurrency=4
+          echo "duration_seconds=$(($(date +%s) - started_at))" >> "$GITHUB_OUTPUT"
+        env:
+          APP_SECRET: abcd
+          DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
+          NODE_ENV: test
+          REDIS_HOST: localhost
+          REDIS_PASS: ''
+          REDIS_PORT: 6379
+          REDIS_CACHE_HOST: localhost
+          REDIS_CACHE_PORT: 6379
+          REDIS_ASSESSMENT_PORT: 6379
+          REDIS_ASSESSMENT_PASS: ''
+          REDIS_ASSESSMENT_HOST: localhost
+          APP_ORIGIN_API: http://127.0.0.1:3000
+          APP_ORIGIN_AUTH: http://127.0.0.1:3010
+          APP_ORIGIN_LTI: http://127.0.0.1:4000
+          APP_ORIGIN_PWA: http://127.0.0.1:3001
+          APP_ORIGIN_MANAGE: http://127.0.0.1:3002
+          APP_ORIGIN_CONTROL: http://127.0.0.1:3003
+          APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
+          APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
+
+      - name: Report cache warm result
+        if: always()
+        shell: bash
+        env:
+          PNPM_CACHE_HIT: ${{ steps.pnpm-cache.outputs.cache-hit }}
+          TURBO_CACHE_HIT: ${{ steps.turbo-cache.outputs.cache-hit }}
+          INSTALL_SECONDS: ${{ steps.install.outputs.duration_seconds }}
+          BUILD_SECONDS: ${{ steps.build.outputs.duration_seconds }}
+        run: |
+          {
+            echo '### Public PR ARM64 cache warm'
+            echo
+            echo "- Runner: \`${RUNNER_NAME}\`"
+            echo "- Platform: \`${RUNNER_OS}/${RUNNER_ARCH}\`"
+            echo "- pnpm exact cache hit: \`${PNPM_CACHE_HIT:-false}\`"
+            echo "- Turbo exact cache hit: \`${TURBO_CACHE_HIT:-false}\`"
+            echo "- Install: \`${INSTALL_SECONDS:-incomplete}s\`"
+            echo "- Build: \`${BUILD_SECONDS:-incomplete}s\`"
+          } >> "$GITHUB_STEP_SUMMARY"
