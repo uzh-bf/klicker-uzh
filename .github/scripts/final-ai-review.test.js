@@ -68,6 +68,7 @@ test('bounds individual and stack review token usage', () => {
 
   assert.equal(source.match(/--max-tokens-budget 750000/g)?.length, 2)
   assert.equal(source.match(/--max-tokens-budget 2000000/g)?.length, 1)
+  assert.equal(source.match(/--timeout 30/g)?.length, 3)
 })
 
 test('accepts only the exact command and calculated write permissions', () => {
