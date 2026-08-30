@@ -910,3 +910,14 @@ follow_up_stacks:
 - Next: Commit and push this review-only correction, resolve both follow-up
   threads, then require all eight exact-head hosted Playwright shards before A2
   is accepted and A3 starts.
+- A2 exact-head review round three: OpenCodeReview's three low-severity summary
+  findings were accepted. The capability notice now keeps its retry control
+  outside the live status region; the welcome stays neutral while advisory
+  readiness is checking, so it neither promises persistence nor flashes
+  degraded limits; and read-only override keys are derived from the actual
+  starter arrays so stale keys fail type checking. The focused 22 capability
+  and suggestion tests, Chat and Playwright type checks, Biome, Prettier, and
+  diff checks pass. The revised hosted journey pins the neutral checking state.
+- Next: Commit and push the final A2 review correction, post the summary
+  disposition, refresh PR #5679, and require all eight exact-head hosted
+  Playwright shards before accepting A2 and starting A3.

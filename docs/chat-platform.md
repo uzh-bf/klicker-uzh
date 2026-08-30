@@ -156,9 +156,11 @@ preflight for the embedded welcome. It opens a short-lived lecturer MCP client,
 classifies the actual session-filtered inventory as `draft-and-read`,
 `read-only`, or `unavailable`, and closes the client within a bounded deadline.
 The response exposes no tool names, scopes, configuration, or failure detail.
-The client starts in the conservative unavailable state, keeps curated-index
-documentation help and explicit no-save authoring available, and can retry the
-preflight without reloading the iframe. A client-side preflight deadline
+The client starts in the conservative unavailable state. While the preflight is
+checking, the welcome stays neutral: it does not advertise persistence or flash
+degraded no-save limits. Once the preflight settles, curated-index documentation
+help and explicit no-save authoring remain available in degraded states, and the
+client can retry without reloading the iframe. A client-side preflight deadline
 intentionally settles as retryable unavailable instead of auto-retrying in the
 background. Every chat turn repeats the same inventory classification; its
 response header replaces stale preflight state, so the preflight never grants

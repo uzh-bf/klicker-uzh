@@ -8,7 +8,7 @@ export interface ThreadSuggestion {
 }
 
 // Shown while browsing the question pool, with no single question or course in focus.
-const QUESTION_POOL_SUGGESTIONS: ThreadSuggestion[] = [
+const QUESTION_POOL_SUGGESTIONS = [
   {
     id: 'question-pool-draft',
     text: 'Draft a question',
@@ -27,10 +27,10 @@ const QUESTION_POOL_SUGGESTIONS: ThreadSuggestion[] = [
     prompt:
       'Ask me which question to improve, then suggest clearer answer-specific feedback for it.',
   },
-]
+] satisfies ThreadSuggestion[]
 
 // Shown while a single question is open in the element editor (ids.elementId is set).
-const ELEMENT_EDITOR_SUGGESTIONS: ThreadSuggestion[] = [
+const ELEMENT_EDITOR_SUGGESTIONS = [
   {
     id: 'element-editor-improve',
     text: 'Improve this question',
@@ -49,10 +49,10 @@ const ELEMENT_EDITOR_SUGGESTIONS: ThreadSuggestion[] = [
     prompt:
       'Suggest clearer, more specific answer feedback for the question I currently have open.',
   },
-]
+] satisfies ThreadSuggestion[]
 
 // Shown on a course dashboard (ids.courseId is set).
-const COURSE_DASHBOARD_SUGGESTIONS: ThreadSuggestion[] = [
+const COURSE_DASHBOARD_SUGGESTIONS = [
   {
     id: 'course-dashboard-summarize',
     text: 'Summarize this course',
@@ -71,10 +71,10 @@ const COURSE_DASHBOARD_SUGGESTIONS: ThreadSuggestion[] = [
     prompt:
       'Search my question pool for material relevant to the course I currently have open.',
   },
-]
+] satisfies ThreadSuggestion[]
 
 // Shown while assembling a quiz or other activity.
-const ACTIVITY_CREATION_SUGGESTIONS: ThreadSuggestion[] = [
+const ACTIVITY_CREATION_SUGGESTIONS = [
   {
     id: 'activity-creation-draft',
     text: 'Draft quiz questions',
@@ -93,10 +93,10 @@ const ACTIVITY_CREATION_SUGGESTIONS: ThreadSuggestion[] = [
     prompt:
       'Ask me to list the questions I am considering for this quiz, then suggest how to balance their difficulty.',
   },
-]
+] satisfies ThreadSuggestion[]
 
 // Shown on an evaluation/results view for a quiz.
-const EVALUATION_SUGGESTIONS: ThreadSuggestion[] = [
+const EVALUATION_SUGGESTIONS = [
   {
     id: 'evaluation-explain',
     text: 'Explain results',
@@ -115,12 +115,12 @@ const EVALUATION_SUGGESTIONS: ThreadSuggestion[] = [
     prompt:
       'Search my question pool for questions similar to the ones used in this quiz.',
   },
-]
+] satisfies ThreadSuggestion[]
 
 // Shown for the general manage surface, or when no context is available at all
 // (e.g. the assistant opened in a new tab). Must never reference page context
 // that is not actually present.
-const GENERAL_SUGGESTIONS: ThreadSuggestion[] = [
+const GENERAL_SUGGESTIONS = [
   {
     id: 'general-draft',
     text: 'Draft question',
@@ -139,7 +139,17 @@ const GENERAL_SUGGESTIONS: ThreadSuggestion[] = [
     prompt:
       'Create concise answer-specific feedback for a question. Ask me for the question details if needed.',
   },
-]
+] satisfies ThreadSuggestion[]
+
+type ManageSuggestion =
+  | (typeof QUESTION_POOL_SUGGESTIONS)[number]
+  | (typeof ELEMENT_EDITOR_SUGGESTIONS)[number]
+  | (typeof COURSE_DASHBOARD_SUGGESTIONS)[number]
+  | (typeof ACTIVITY_CREATION_SUGGESTIONS)[number]
+  | (typeof EVALUATION_SUGGESTIONS)[number]
+  | (typeof GENERAL_SUGGESTIONS)[number]
+
+type ManageSuggestionId = ManageSuggestion['id']
 
 const PLAN_QUESTION_NO_SAVE: Pick<ThreadSuggestion, 'prompt' | 'text'> = {
   text: 'Plan a question',
@@ -153,9 +163,8 @@ const IMPROVE_FEEDBACK_NO_SAVE: Pick<ThreadSuggestion, 'prompt' | 'text'> = {
     'Ask me to provide the question and its answer options, then suggest concise answer-specific feedback, and do not save anything.',
 }
 
-const READ_ONLY_OVERRIDES: Record<
-  string,
-  Pick<ThreadSuggestion, 'prompt' | 'text'>
+const READ_ONLY_OVERRIDES: Partial<
+  Record<ManageSuggestionId, Pick<ThreadSuggestion, 'prompt' | 'text'>>
 > = {
   'activity-creation-draft': {
     text: 'Plan quiz questions',
@@ -204,7 +213,7 @@ const UNAVAILABLE_SUGGESTIONS: ThreadSuggestion[] = [
 ]
 
 function withoutPersistenceIntent(
-  suggestion: ThreadSuggestion
+  suggestion: ManageSuggestion
 ): ThreadSuggestion {
   const override = READ_ONLY_OVERRIDES[suggestion.id]
   if (override) return { ...suggestion, ...override }
@@ -221,7 +230,7 @@ export function getManageSuggestions(
 ): ThreadSuggestion[] {
   if (capability === 'unavailable') return UNAVAILABLE_SUGGESTIONS
 
-  let suggestions: ThreadSuggestion[]
+  let suggestions: ManageSuggestion[]
   switch (context?.surface) {
     case 'question-pool':
       suggestions = QUESTION_POOL_SUGGESTIONS

@@ -753,7 +753,7 @@ test.describe('Manage Assistant — Capability availability', () => {
     await loginLecturer()
   })
 
-  test('starts conservatively and upgrades the welcome after preflight', async ({
+  test('keeps the welcome neutral while capability preflight runs', async ({
     page,
   }) => {
     await mockManageCapabilities(page, {
@@ -767,10 +767,23 @@ test.describe('Manage Assistant — Capability availability', () => {
       'Checking live data and draft availability'
     )
     await expect(
-      assistant.getByText('Plan a question', { exact: true })
-    ).toBeVisible()
-    await expect(
       assistant.getByText('Draft a question', { exact: true })
+    ).toHaveCount(0)
+    await expect(
+      assistant.getByText('Plan a question', { exact: true })
+    ).toHaveCount(0)
+    await expect(
+      assistant.getByText(
+        'Prepare question drafts and save them only after your confirmation',
+        {
+          exact: true,
+        }
+      )
+    ).toHaveCount(0)
+    await expect(
+      assistant.getByText('Prepare question drafts without saving them', {
+        exact: true,
+      })
     ).toHaveCount(0)
 
     await expect(status).toHaveCount(0, { timeout: 10_000 })
