@@ -4,6 +4,9 @@ set -euo pipefail
 SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 ROOT="${KLICKER_DEV_RUNTIME_ROOT:-$(cd "$(dirname "$SCRIPT_PATH")/.." && pwd)}"
 STATE_DIR="${KLICKER_DEV_RUNTIME_STATE_DIR:-$ROOT/.devcontainer/.runtime}"
+BOOTSTRAP_STATE_DIR="${KLICKER_DEV_RUNTIME_BOOTSTRAP_STATE_DIR:-/tmp/klicker-devcontainer}"
+BOOTSTRAP_MARKER_FILE="$BOOTSTRAP_STATE_DIR/bootstrap-complete"
+BOOTSTRAP_MARKER_TOKEN='klicker-devcontainer-bootstrap-v1'
 GENERATION_FILE="$STATE_DIR/generation"
 REPAIR_REQUEST_FILE="$STATE_DIR/next-repair-request"
 DEPENDENCY_STAMP_FILE="$ROOT/node_modules/.klicker-dependency-fingerprint"
@@ -125,6 +128,28 @@ write_atomic() {
   temporary="$(mktemp "${path}.tmp.XXXXXX")"
   printf '%s\n' "$value" >"$temporary"
   mv "$temporary" "$path"
+}
+
+# Bootstrap completion lives in the container's fixed /tmp state rather than
+# the mounted worktree. Tests may override this one directory for isolation.
+begin_bootstrap() {
+  rm -f -- "$BOOTSTRAP_MARKER_FILE"
+  echo '[dev-runtime] Invalidated the bootstrap completion marker.'
+}
+
+complete_bootstrap() {
+  write_atomic "$BOOTSTRAP_MARKER_FILE" "$BOOTSTRAP_MARKER_TOKEN"
+  echo '[dev-runtime] Published the bootstrap completion marker.'
+}
+
+require_bootstrap() {
+  require_tool cmp
+  [ -f "$BOOTSTRAP_MARKER_FILE" ] ||
+    die 'Bootstrap completion marker is missing.'
+  [ ! -L "$BOOTSTRAP_MARKER_FILE" ] ||
+    die 'Bootstrap completion marker must be a regular file.'
+  printf '%s\n' "$BOOTSTRAP_MARKER_TOKEN" | cmp -s - "$BOOTSTRAP_MARKER_FILE" ||
+    die 'Bootstrap completion marker is malformed or does not match the contract.'
 }
 
 read_generation() {
@@ -428,6 +453,9 @@ Usage:
   util/dev-runtime.sh fingerprint
   util/dev-runtime.sh dependency-fingerprint
   util/dev-runtime.sh generation
+  util/dev-runtime.sh begin-bootstrap
+  util/dev-runtime.sh complete-bootstrap
+  util/dev-runtime.sh require-bootstrap
   util/dev-runtime.sh stamp-dependencies
   util/dev-runtime.sh ensure-dependencies
   util/dev-runtime.sh request-repair <next-app>
@@ -455,6 +483,18 @@ main() {
       ;;
     generation)
       read_generation
+      ;;
+    begin-bootstrap)
+      [ "$#" -eq 1 ] || die "begin-bootstrap takes no arguments."
+      begin_bootstrap
+      ;;
+    complete-bootstrap)
+      [ "$#" -eq 1 ] || die "complete-bootstrap takes no arguments."
+      complete_bootstrap
+      ;;
+    require-bootstrap)
+      [ "$#" -eq 1 ] || die "require-bootstrap takes no arguments."
+      require_bootstrap
       ;;
     stamp-dependencies)
       stamp_dependencies
