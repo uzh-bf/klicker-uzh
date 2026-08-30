@@ -18,12 +18,13 @@ down-migration story that PostgreSQL cannot honestly provide.
 
 ## Decision
 
-Each AI release is cut as a short-lived release-candidate branch named
+The 3.4.0 AI release is cut as the short-lived release-candidate branch
 `v3.4.0-ai-rc` (pattern `v3*`, Docker-safe — both constraints are load-bearing)
-from a normalized `v3-ai` commit. Published candidates use the existing
-`v3.4.0-rc.N` tag sequence; a stable `v3.4.0` release remains a later,
-separately accepted step. Shared staging is repointed to the RC (repository
-variable and ArgoCD `targetRevision` together), reset
+from a normalized `v3-ai` commit. Future AI releases substitute their version
+in the `v<release>-ai-rc` branch and `v<release>-rc.N` tag patterns. Published
+3.4.0 candidates use the existing `v3.4.0-rc.N` tag sequence; a stable `v3.4.0`
+release remains a later, separately accepted step. Shared staging is repointed
+to the RC (repository variable and ArgoCD `targetRevision` together), reset
 destructively, and qualifies that exact tree. After qualification the RC merges
 into `v3`, the resulting tree is tagged and deployed dark, and feature trains
 continue on `v3-ai` throughout.

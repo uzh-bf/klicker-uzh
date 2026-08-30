@@ -46,29 +46,36 @@ What v4 changes, from the grill rulings:
 
 ## Progress
 
-Current status (2026-08-30): the approved current-target integration pass is
-complete locally for the release-governance custody package and complete and
-published for its companion staging-promotion safeguard.
+Current status (2026-08-30): both approved current-target integrations and
+their companion source corrections are published. This receipt records the
+reviewed source state; GitHub PR metadata remains the authoritative readback for
+later check completion and draft state.
 
 - Active package: finish PR readiness for
   [#5662](https://github.com/uzh-bf/klicker-uzh/pull/5662) against `v3` and
   [#5663](https://github.com/uzh-bf/klicker-uzh/pull/5663) against `v3-ai`.
 - Completed: roadmap and ADR custody, `3.4.0` RC correction, staging-pause
-  safeguard implementation, focused local verification, dedicated safeguard
-  reviews, initial upstream integration, draft PR publication, and current
-  parallel-owner inventory.
+  safeguard implementation and correction, focused local verification,
+  dedicated safeguard reviews, approved upstream integrations, draft PR
+  publication, and current parallel-owner inventory.
 - Latest verified integration commits: `20b0faab2` merges approved
   `v3@aaf7cdf34` into the safeguard; `88fefcf9c` merges approved
-  `v3-ai@54fbfc921` into roadmap custody. The safeguard remote branch matches
-  `20b0faab2`; this Progress update is the only custody change after
-  `88fefcf9c` and is included in the approved publication pass.
-- Fresh verification: the safeguard passes all 38 policy tests, Bash syntax,
+  `v3-ai@54fbfc921` into roadmap custody. The safeguard source head is
+  `a5ee745e9`; the custody content head before this Progress and ADR correction
+  is `04555a351`. The current PR heads are read back from GitHub before any
+  delivery decision.
+- Fresh verification: the safeguard passes all 39 policy tests, Bash syntax,
   ShellCheck, YAML parsing, Prettier, and diff checks. Custody passes Prettier,
   diff checks, and byte-equality checks proving it adds no Chat, deployment,
   Playwright, or lockfile delta over `v3-ai@54fbfc921`.
-- Exact-head CI: fresh checks are queued for PR #5662. PR #5663's preceding
-  exact-head checks become historical when this custody receipt is published.
-  Both final-AI-review contexts remain pending.
+- Review and CI evidence: every ordinary exact-head check passed for safeguard
+  head `a5ee745e9` and custody head `04555a351`. Safeguard OpenCodeReview run
+  `33298221805` timed out both selected executable files with zero completed
+  coverage and no verdict, so it is unavailable evidence rather than a clean or
+  adverse review. The integrated native final review found no correctness or
+  security blocker; it required this Progress refresh and raised only
+  non-blocking durability and test-simplification concerns. This docs-only
+  correction receives its own immutable check and review readback in PR #5663.
 - Later target drift: `v3` advanced once more to `e84103606` after the
   approved snapshot. That commit changes final-review configuration-path
   coverage in the shared policy-test and deployment-guide files, but it does
@@ -76,10 +83,11 @@ published for its companion staging-promotion safeguard.
   pass is authorized or performed. `v3-ai` still equals the integrated
   `54fbfc921` target.
 - Required delivery layer: `pr_ready` for both initial packages. Achieved
-  layer: integrated draft PR branches under the approved publication pass;
-  fresh exact-head CI and review acceptance remain open.
-- Remaining package gates: confirm the custody remote head, obtain fresh
-  exact-head CI and required reviews, then separately authorize each merge.
+  layer: integrated and reviewed draft PR branches under the approved
+  publication pass; PR #5663 still requires the exact-head readback for this
+  receipt correction, and PR #5662 retains the recorded OCR timeout.
+- Remaining package gates: reconcile those two exact-head review states under
+  repository policy, then separately authorize each merge.
   Repository controls, staging operations, tags, deployment, and live proof
   remain withheld.
 - Parallel-work rule: keep N2, N3, and N5 read-only until their existing
