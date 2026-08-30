@@ -4,12 +4,6 @@ import { jwtVerify } from 'jose'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-export async function getParticipantId(
-  req: NextRequest
-): Promise<{ participantId: string } | { response: NextResponse }> {
-  return getParticipantIdFromToken(req.cookies.get('participant_token')?.value)
-}
-
 export async function getParticipantIdFromToken(
   participantToken: string | undefined
 ): Promise<{ participantId: string } | { response: NextResponse }> {
