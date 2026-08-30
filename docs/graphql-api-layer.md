@@ -31,6 +31,7 @@ inventing `authScopes` variants.
 - `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.deleteCourse(args, ctx)`.
 - `services/*.ts` — all business logic, Prisma access, Redis, pubSub publishes. Import style: `import * as XService from '../services/x.js'`.
 - Context (`packages/graphql/src/lib/context.ts`): `Context` has optional `user`; `t.withAuth` narrows to `ContextWithUser` (`user.sub`, `role`, `scope`, catalyst flags) — services take `ctx` and rely on that narrowing.
+- Capability-gated reads (precedent: `getChatAccountUsage` with the `chat-account-usage` flag) keep authorization first, then call the fail-closed helper `lib/featureFlags.ts:isFeatureFlagEnabled` before any domain data query, and return `null` when the flag is unavailable or false. Visibility gates hide results; they never replace authorization and never gate administrative mutations that must stay reachable.
 
 ## Validation and errors
 

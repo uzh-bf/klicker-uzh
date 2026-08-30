@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client'
+import { useFeatureFlag } from '@klicker-uzh/feature-flags/react'
 import { UserProfileDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2 } from '@uzh-bf/design-system'
@@ -15,6 +16,7 @@ import ShortnameSetting from '../../components/user/ShortnameSetting'
 function Settings() {
   const t = useTranslations()
   const { data: user } = useQuery(UserProfileDocument)
+  const chatAccountUsageEnabled = useFeatureFlag('chat-account-usage')
 
   if (!user?.userProfile) {
     return <Loader />
@@ -31,9 +33,11 @@ function Settings() {
         <LanguageSetting user={user.userProfile} />
         <EmailSetting user={user.userProfile} />
 
-        <Suspense fallback={<Loader />}>
-          <ChatAccountUsageSettings />
-        </Suspense>
+        {chatAccountUsageEnabled && (
+          <Suspense fallback={<Loader />}>
+            <ChatAccountUsageSettings />
+          </Suspense>
+        )}
 
         <Suspense fallback={<Loader />}>
           <DelegatedAccessSettings shortname={user?.userProfile?.shortname} />

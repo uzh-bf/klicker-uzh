@@ -23,9 +23,10 @@ initialize GrowthBook only when they adopt their first flag.
 
 ## Active flags
 
-| Key                  | Consumer           | Fallback | Disabled behavior                                    |
-| -------------------- | ------------------ | -------- | ---------------------------------------------------- |
-| `learning-analytics` | Lecturer UI/Manage | `false`  | Analytics controls remain visible but are not usable |
+| Key                  | Consumer                               | Fallback | Disabled behavior                                                                          |
+| -------------------- | -------------------------------------- | -------- | ------------------------------------------------------------------------------------------ |
+| `learning-analytics` | Lecturer UI/Manage                     | `false`  | Analytics controls remain visible but are not usable                                       |
+| `chat-account-usage` | Manage settings + backend GraphQL read | `false`  | Settings section is not mounted; the usage query returns `null` without reading usage data |
 
 Disabled analytics controls explain that the feature is not yet available for
 the current account. This keeps a deliberately staged rollout distinguishable
@@ -168,16 +169,18 @@ await flags.initialize()
 flags.isEnabled(featureKey, requestAttributes)
 ```
 
-`packages/feature-flags/src/node.ts:NodeFeatureFlagClient` keeps the downloaded
-feature payload on the process client while passing the request-local
-`FeatureFlagAttributes` as `attributes` to every evaluation. The adapter filters
-unknown fields before calling GrowthBook, so direct identifiers cannot cross the
-boundary even when a JavaScript caller supplies a wider object. Never mutate
-global attributes with the current user. Call `getStatus()` from a readiness
-probe and `refresh()` from an intentional lifecycle or refresh hook if the
-service needs new definitions without restarting. A refresh marks the client
-healthy only after GrowthBook reports a successful payload update and retains the
-previous payload when a refresh fails.
+`packages/feature-flags/src/node.ts:NodeFeatureFlagClient` owns the payload
+lifecycle so a long-running backend never serves a silently stale definition:
+it fetches with an abortable two-second deadline, polls every 30 seconds
+(`GROWTHBOOK_REFRESH_INTERVAL_MS` override), deduplicates overlapping refreshes,
+and marks the client healthy only after a validated payload update. A payload
+becomes unusable 120 seconds after the last successful refresh; every
+evaluation fails closed before initialization, while stale, and after
+`destroy()`. `getStatus()` reports health, staleness, and the last successful
+refresh time without exposing keys or targeting data. Evaluations stay
+request-local: the adapter filters unknown attributes before calling GrowthBook,
+so direct identifiers cannot cross the boundary even when a JavaScript caller
+supplies a wider object. Never mutate global attributes with the current user.
 
 The `NODE_ENV` fallback covers local development and tests. It must not be used
 to distinguish staging from production because both normally run with

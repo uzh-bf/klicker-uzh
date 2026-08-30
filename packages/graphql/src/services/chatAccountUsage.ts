@@ -7,6 +7,7 @@ import {
   parseChatUsageCredits,
 } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
+import { isFeatureFlagEnabled } from '../lib/featureFlags.js'
 import type { ContextWithUser } from '../lib/context.js'
 
 export interface ChatAccountUsageLane {
@@ -131,6 +132,11 @@ export async function getChatAccountUsage(
   ctx: ContextWithUser
 ): Promise<ChatAccountUsageOverview | null> {
   const ownerId = resolveTargetOwnerId(args.ownerId, ctx)
+  // Visibility gate: callers keep their authorization errors, but the usage
+  // read stays hidden until the feature flag evaluates true for the caller.
+  if (!isFeatureFlagEnabled(ctx, 'chat-account-usage')) {
+    return null
+  }
   const now = args.now ?? new Date()
   const monthStart = getZurichMonthStart(now)
   const owner = await ctx.prisma.user.findUnique({
