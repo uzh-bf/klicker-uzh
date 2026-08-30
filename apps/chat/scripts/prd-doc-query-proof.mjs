@@ -877,7 +877,6 @@ export async function superviseProof({
       child.once('close', settle)
     })
     clearTimeout(deadlineTimer)
-    if (forceTimer) clearTimeout(forceTimer)
 
     let receipt = message ?? fixedFailureReceipt('protocol_failed')
     if (timedOut) receipt = fixedFailureReceipt('timeout')

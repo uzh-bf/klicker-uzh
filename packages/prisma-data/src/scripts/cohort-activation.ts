@@ -9,7 +9,7 @@ import {
   unlink,
 } from 'node:fs/promises'
 import { hostname } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 
 export const SOURCE_SERVER_NAME = 'Klicker-compat' as const
@@ -988,15 +988,6 @@ async function acquireReceiptLock(lockPath: string): Promise<ReceiptLockOwner> {
   if (!(await tryCreateReceiptLock(lockPath, owner))) {
     const existingOwner = await readLockOwner(lockPath)
     if (!existingOwner) throw lockError()
-    let dead = false
-    if (existingOwner.host === hostname()) {
-      try {
-        process.kill(existingOwner.pid, 0)
-      } catch (probeError) {
-        dead = errorCode(probeError) === 'ESRCH'
-      }
-    }
-    if (!dead) throw lockError()
     await reclaimDeadLock(lockPath, existingOwner)
     if (!(await tryCreateReceiptLock(lockPath, owner))) throw lockError()
   }
