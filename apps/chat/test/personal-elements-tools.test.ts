@@ -1254,7 +1254,7 @@ describe('personal-element chat tools', () => {
     })
 
     expect(result).toMatchObject({
-      status: 'updated',
+      status: 'pending',
       expectedVersion: 3,
       name: 'Revised card',
       content: 'Revised front',

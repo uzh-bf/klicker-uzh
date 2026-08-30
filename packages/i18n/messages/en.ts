@@ -317,6 +317,8 @@ export default {
         'We could not check whether these cards were already saved.',
       savedStateRetry: 'Check again',
       practiceNow: 'Practice now',
+      revisionPending:
+        'The card revision is being confirmed. Reload or check the saved card before trying again.',
       revisionUpdated: 'Updated · version {version}',
       revisionConflict: 'This card changed before the revision completed.',
       revisionInsufficientEvidence:

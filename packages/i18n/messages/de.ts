@@ -323,6 +323,8 @@ export default {
         'Wir konnten nicht prüfen, ob diese Karten bereits gespeichert wurden.',
       savedStateRetry: 'Erneut prüfen',
       practiceNow: 'Jetzt üben',
+      revisionPending:
+        'Die Überarbeitung der Karte wird bestätigt. Lade die Seite neu oder prüfe die gespeicherte Karte, bevor du es erneut versuchst.',
       revisionUpdated: 'Aktualisiert · Version {version}',
       revisionConflict:
         'Diese Karte wurde vor Abschluss der Überarbeitung geändert.',

@@ -943,6 +943,11 @@ no migration.
   failures, Chat now replaces the persisted revision proposal with an explicit
   unconfirmed result. Reload no longer presents an unverified revision as
   updated.
+- [x] 2026-08-30 live revision-state correction — generated revisions now
+  enter the persisted and streamed conversation as pending. Chat changes that
+  result to updated only after GraphQL applies the linkage and the confirmed
+  version is written back, so neither the live view nor a failed settlement
+  write can claim success prematurely.
 - [ ] Commit the final-review corrections, rerun the affected review gates,
   push all three stack branches atomically, update pull request #5483, and keep
   the local AI runtime running for manual verification.

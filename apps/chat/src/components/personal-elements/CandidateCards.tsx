@@ -521,7 +521,7 @@ type RevisionPart = {
 }
 
 type RevisionResult = {
-  status: 'updated' | 'conflict' | 'unchanged' | 'unavailable'
+  status: 'pending' | 'updated' | 'conflict' | 'unchanged' | 'unavailable'
   version?: number
   name?: string
   content?: string
@@ -534,6 +534,7 @@ function revisionFromResult(result: unknown): RevisionResult | null {
   if (!result || typeof result !== 'object') return null
   const value = result as Partial<RevisionResult>
   if (
+    value.status !== 'pending' &&
     value.status !== 'updated' &&
     value.status !== 'conflict' &&
     value.status !== 'unchanged' &&
@@ -550,6 +551,7 @@ export function SavedRevisionCard({ part }: { part: RevisionPart }) {
   if (!revision) return null
 
   if (
+    revision.status === 'pending' ||
     revision.status === 'conflict' ||
     revision.status === 'unchanged' ||
     revision.status === 'unavailable'
@@ -558,19 +560,24 @@ export function SavedRevisionCard({ part }: { part: RevisionPart }) {
       <article
         className="border-destructive/50 bg-destructive/10 rounded-lg border p-3 text-sm"
         data-cy={
-          revision.status === 'conflict'
-            ? 'personal-element-revision-conflict'
-            : revision.status === 'unavailable'
-              ? 'personal-element-revision-unavailable'
-              : 'personal-element-revision-unchanged'
+          revision.status === 'pending'
+            ? 'personal-element-revision-pending'
+            : revision.status === 'conflict'
+              ? 'personal-element-revision-conflict'
+              : revision.status === 'unavailable'
+                ? 'personal-element-revision-unavailable'
+                : 'personal-element-revision-unchanged'
         }
         role="alert"
       >
-        {revision.status === 'unchanged'
-          ? t('chat.personalElements.revisionInsufficientEvidence')
-          : revision.status === 'unavailable'
-            ? t('chat.personalElements.revisionUnavailable')
-            : (revision.reason ?? t('chat.personalElements.revisionConflict'))}
+        {revision.status === 'pending'
+          ? t('chat.personalElements.revisionPending')
+          : revision.status === 'unchanged'
+            ? t('chat.personalElements.revisionInsufficientEvidence')
+            : revision.status === 'unavailable'
+              ? t('chat.personalElements.revisionUnavailable')
+              : (revision.reason ??
+                t('chat.personalElements.revisionConflict'))}
       </article>
     )
   }

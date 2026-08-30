@@ -27,7 +27,7 @@ function pendingRevisionParts(content: unknown) {
     ) {
       return false
     }
-    return (part.result as { status?: unknown }).status === 'updated'
+    return (part.result as { status?: unknown }).status === 'pending'
   })
 }
 
@@ -44,7 +44,7 @@ function withAppliedVersion(
     part.result &&
     typeof part.result === 'object' &&
     !Array.isArray(part.result)
-      ? { ...part, result: { ...part.result, version } }
+      ? { ...part, result: { ...part.result, status: 'updated', version } }
       : part
   )
 }
@@ -119,17 +119,17 @@ export async function settlePersonalElementRevision({
   if (typeof toolCallId !== 'string') {
     return { status: 'failed', reason: 'invalid' }
   }
-  const persistRevisionFailure = (status: 'conflict' | 'unavailable') =>
-    prisma.chatMessage.updateMany({
+  const persistRevisionContent = async (content: unknown) => {
+    const result = await prisma.chatMessage.updateMany({
       where: { id: assistantMessageId, threadId, role: 'assistant' },
-      data: {
-        content: withRevisionFailure(
-          assistantMessageContent,
-          toolCallId,
-          status
-        ) as Prisma.InputJsonValue,
-      },
+      data: { content: content as Prisma.InputJsonValue },
     })
+    return result.count === 1
+  }
+  const persistRevisionFailure = (status: 'conflict' | 'unavailable') =>
+    persistRevisionContent(
+      withRevisionFailure(assistantMessageContent, toolCallId, status)
+    )
   const linkage = { courseId, messageId: assistantMessageId, toolCallId }
   let updated: Awaited<ReturnType<typeof applyPersonalElementRevision>>
   try {
@@ -159,13 +159,8 @@ export async function settlePersonalElementRevision({
     toolCallId,
     updated.version
   )
-  await prisma.chatMessage.updateMany({
-    where: {
-      id: assistantMessageId,
-      threadId,
-      role: 'assistant',
-    },
-    data: { content: content as Prisma.InputJsonValue },
-  })
-  return { status: 'completed' }
+  const persisted = await persistRevisionContent(content)
+  return persisted
+    ? { status: 'completed' }
+    : { status: 'failed', reason: 'unavailable' }
 }

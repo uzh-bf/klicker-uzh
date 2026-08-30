@@ -76,10 +76,13 @@ fails closed with an explicit retry action if durable decision state is still
 unavailable.
 `list_personal_elements` returns the participant's course-scoped compact rows;
 `revise_personal_element` checks the current version, creates a grounded full
-revision, and returns it as tool state without writing the card directly. After
-the assistant message is terminal and persisted, Chat sends only its course,
-message, and tool-call linkage to GraphQL. The backend reconstructs that result
-and atomically replaces the complete card and source-reference set.
+revision, and returns it as pending tool state without writing the card
+directly. The live conversation never presents that pending state as a
+confirmed update. After the assistant message is terminal and persisted, Chat
+sends only its course, message, and tool-call linkage to GraphQL. The backend
+reconstructs that result and atomically replaces the complete card and
+source-reference set. Chat changes the persisted tool result to updated only
+after it can also persist the confirmed element version.
 If both confirmation attempts fail at the transport boundary, Chat replaces
 the durable tool result with an explicit unconfirmed state instead of claiming
 that the revision succeeded.

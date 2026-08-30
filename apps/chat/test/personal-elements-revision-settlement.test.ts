@@ -17,7 +17,7 @@ const content = [
     toolName: 'revise_personal_element',
     toolCallId: 'revision-tool',
     result: {
-      status: 'updated',
+      status: 'pending',
       id: '00000000-0000-0000-0000-000000000001',
       expectedVersion: 3,
       name: 'Revised card',
@@ -75,7 +75,10 @@ describe('personal-element revision settlement', () => {
         data: {
           content: [
             expect.objectContaining({
-              result: expect.objectContaining({ version: 4 }),
+              result: expect.objectContaining({
+                status: 'updated',
+                version: 4,
+              }),
             }),
           ],
         },
@@ -137,5 +140,15 @@ describe('personal-element revision settlement', () => {
         },
       })
     )
+  })
+
+  test('does not report completion when the confirmed result was not persisted', async () => {
+    mocks.applyPersonalElementRevision.mockResolvedValue({ version: 4 })
+    mocks.updateMany.mockResolvedValue({ count: 0 })
+
+    await expect(settlePersonalElementRevision(input)).resolves.toEqual({
+      status: 'failed',
+      reason: 'unavailable',
+    })
   })
 })

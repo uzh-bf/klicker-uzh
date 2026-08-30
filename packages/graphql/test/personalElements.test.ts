@@ -237,7 +237,7 @@ async function createPersistedRevisionAttempt(
           toolName: 'revise_personal_element',
           toolCallId,
           result: {
-            status: 'updated',
+            status: 'pending',
             id: element.id,
             expectedVersion: element.version,
             name: overrides.name ?? element.name,

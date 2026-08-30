@@ -72,6 +72,7 @@ vi.mock('@/src/components/source-preview-content', () => ({
 
 import {
   CandidateCards,
+  SavedRevisionCard,
   fetchCandidateDecisionState,
   shouldExposeCandidateDecisionState,
   shouldLoadCandidateDecisionState,
@@ -235,6 +236,29 @@ describe('personal-element cards', () => {
     expect(html).toContain('data-cy="personal-element-references"')
     expect(html).toContain('Course reader')
     expect(html).toContain('[1]')
+  })
+
+  test('renders an unsettled revision as pending instead of updated', () => {
+    const html = renderToStaticMarkup(
+      createElement(SavedRevisionCard, {
+        part: {
+          result: {
+            status: 'pending',
+            id: '00000000-0000-0000-0000-000000000001',
+            expectedVersion: 3,
+            name: 'Unconfirmed revision',
+            content: 'Unconfirmed front',
+            explanation: 'Unconfirmed back',
+          },
+          status: { type: 'complete' },
+        },
+      })
+    )
+
+    expect(html).toContain('personal-element-revision-pending')
+    expect(html).toContain('chat.personalElements.revisionPending')
+    expect(html).not.toContain('Unconfirmed revision')
+    expect(html).not.toContain('chat.personalElements.revisionUpdated')
   })
 
   test('renders the final accepted plan without another approval control', () => {

@@ -459,7 +459,7 @@ const personalElementRevisionLinkageSchema = z
 
 const persistedPersonalElementRevisionSchema = z
   .object({
-    status: z.literal('updated'),
+    status: z.literal('pending'),
     id: z.string().uuid(),
     expectedVersion: z.number().int().min(1),
     version: z.number().int().min(1).optional(),

@@ -64,7 +64,13 @@ const revisionInputSchema = z.object({
 })
 
 const revisionOutputSchema = z.object({
-  status: z.enum(['updated', 'conflict', 'unchanged', 'unavailable']),
+  status: z.enum([
+    'pending',
+    'updated',
+    'conflict',
+    'unchanged',
+    'unavailable',
+  ]),
   id: z.string().uuid(),
   expectedVersion: z.number().int().min(1),
   version: z.number().int().min(1).optional(),
@@ -409,7 +415,7 @@ export function createRevisePersonalElementTool(
       }
 
       return {
-        status: 'updated' as const,
+        status: 'pending' as const,
         id: parsed.id,
         expectedVersion: parsed.expectedVersion,
         name: revised.name,
