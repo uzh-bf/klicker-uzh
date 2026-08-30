@@ -9,8 +9,8 @@
  * authoring arrives in a later slice.
  */
 
-import type { ChatbotModePromptStatus, Prisma } from './prisma/client/client.js'
 import { projectLegacySystemPrompts } from './chatbotPromptProjection.js'
+import type { ChatbotModePromptStatus, Prisma } from './prisma/client/client.js'
 
 export type PromptCatalogModeInput = {
   key: string
@@ -33,7 +33,7 @@ type LockedMode = {
 }
 
 function catalogError(reason: string): Error {
-  return new Error('PROMPT_CATALOG_' + reason)
+  return new Error(`PROMPT_CATALOG_${reason}`)
 }
 
 async function lockChatbot(
@@ -70,9 +70,9 @@ async function lockMode(
     FOR UPDATE OF m
   `
   const mode = rows[0]
-  if (!mode) throw catalogError('MODE_NOT_FOUND mode=' + modeKey)
+  if (!mode) throw catalogError(`MODE_NOT_FOUND mode=${modeKey}`)
   if (!mode.activePromptVersionId || mode.authoredPrompt == null) {
-    throw catalogError('MISSING_ACTIVE_VERSION mode=' + modeKey)
+    throw catalogError(`MISSING_ACTIVE_VERSION mode=${modeKey}`)
   }
   return mode
 }
@@ -85,7 +85,7 @@ function getProjectedMode(
   if (!projection.isValid) throw catalogError('MALFORMED_LEGACY_PROJECTION')
 
   const mode = projection.modes.find((item) => item.key === modeKey)
-  if (!mode) throw catalogError('DISAGREEMENT mode=' + modeKey)
+  if (!mode) throw catalogError(`DISAGREEMENT mode=${modeKey}`)
   return mode
 }
 
@@ -98,8 +98,23 @@ function requireProjectedMode(
     projected.prompt !== expected.prompt ||
     projected.description !== (expected.description ?? null)
   ) {
-    throw catalogError('DISAGREEMENT mode=' + expected.key)
+    throw catalogError(`DISAGREEMENT mode=${expected.key}`)
   }
+}
+
+async function lockProjectedMode(
+  tx: Prisma.TransactionClient,
+  chatbotId: string,
+  modeKey: string
+): Promise<{ chatbot: LockedChatbot; mode: LockedMode }> {
+  const chatbot = await lockChatbot(tx, chatbotId)
+  const mode = await lockMode(tx, chatbotId, modeKey)
+  requireProjectedMode(chatbot.systemPrompts, {
+    key: modeKey,
+    prompt: mode.authoredPrompt!,
+    description: mode.description,
+  })
+  return { chatbot, mode }
 }
 
 function requireInitializerProjection(
@@ -130,13 +145,15 @@ function updateLegacyModeEntry(
     throw catalogError('MALFORMED_LEGACY_PROJECTION')
   }
 
-  const root = { ...(systemPrompts ?? {}) } as Prisma.JsonObject
+  const root = (
+    systemPrompts == null ? {} : { ...systemPrompts }
+  ) as Prisma.JsonObject
   const existing = root[modeKey]
   if (
     existing != null &&
     (typeof existing !== 'object' || Array.isArray(existing))
   ) {
-    throw catalogError('MALFORMED_LEGACY_MODE mode=' + modeKey)
+    throw catalogError(`MALFORMED_LEGACY_MODE mode=${modeKey}`)
   }
 
   return {
@@ -210,7 +227,7 @@ export async function ensureChatbotPromptCatalog(
       )
     }
     if (activeText == null) {
-      throw catalogError('MISSING_ACTIVE_VERSION mode=' + mode.key)
+      throw catalogError(`MISSING_ACTIVE_VERSION mode=${mode.key}`)
     }
   }
 }
@@ -231,16 +248,10 @@ export async function appendChatbotModePromptVersion(
   modeKey: string,
   authoredPrompt: string
 ): Promise<AppendedPromptVersion> {
-  const chatbot = await lockChatbot(tx, chatbotId)
-  const mode = await lockMode(tx, chatbotId, modeKey)
+  const { chatbot, mode } = await lockProjectedMode(tx, chatbotId, modeKey)
   if (mode.status === 'RETIRED') {
-    throw catalogError('MODE_RETIRED mode=' + modeKey)
+    throw catalogError(`MODE_RETIRED mode=${modeKey}`)
   }
-  requireProjectedMode(chatbot.systemPrompts, {
-    key: modeKey,
-    prompt: mode.authoredPrompt!,
-    description: mode.description,
-  })
 
   const aggregate = await tx.chatbotModePromptVersion.aggregate({
     where: { modeId: mode.id },
@@ -273,16 +284,10 @@ export async function updateChatbotModeStatus(
   modeKey: string,
   status: ChatbotModePromptStatus
 ): Promise<void> {
-  const chatbot = await lockChatbot(tx, chatbotId)
-  const mode = await lockMode(tx, chatbotId, modeKey)
+  const { mode } = await lockProjectedMode(tx, chatbotId, modeKey)
   if (mode.status === 'RETIRED' && status !== 'RETIRED') {
-    throw catalogError('MODE_RETIRED mode=' + modeKey)
+    throw catalogError(`MODE_RETIRED mode=${modeKey}`)
   }
-  requireProjectedMode(chatbot.systemPrompts, {
-    key: modeKey,
-    prompt: mode.authoredPrompt!,
-    description: mode.description,
-  })
   if (mode.status === status) return
 
   await tx.chatbotMode.update({ where: { id: mode.id }, data: { status } })
@@ -300,13 +305,7 @@ export async function updateChatbotModePresentation(
   modeKey: string,
   update: ChatbotModePresentationUpdate
 ): Promise<void> {
-  const chatbot = await lockChatbot(tx, chatbotId)
-  const mode = await lockMode(tx, chatbotId, modeKey)
-  requireProjectedMode(chatbot.systemPrompts, {
-    key: modeKey,
-    prompt: mode.authoredPrompt!,
-    description: mode.description,
-  })
+  const { chatbot, mode } = await lockProjectedMode(tx, chatbotId, modeKey)
 
   const data: ChatbotModePresentationUpdate = {}
   if (update.name !== undefined) data.name = update.name

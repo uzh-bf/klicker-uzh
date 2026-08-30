@@ -1,3 +1,7 @@
+import {
+  DEFAULT_TUTOR_PROMPT,
+  ensureChatbotPromptCatalog,
+} from '@klicker-uzh/prisma'
 import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma } from '@klicker-uzh/prisma/client'
 import {
@@ -7,10 +11,6 @@ import {
 import { GraphQLError } from 'graphql'
 import { z } from 'zod'
 import type { Context, ContextWithUser } from '../lib/context.js'
-import {
-  DEFAULT_TUTOR_PROMPT,
-  ensureChatbotPromptCatalog,
-} from '@klicker-uzh/prisma'
 
 const chatModelSchema = z
   .object({
@@ -641,8 +641,9 @@ export async function createChatbot(
         },
         owner: { connect: { id: ctx.user.sub } },
         course: { connect: { id: args.courseId } },
-        // systemPrompts stays null (compatibility projection); the catalog
-        // is authoritative and the tutor mode is initialized below.
+        // systemPrompts stays null: the P1 runtime derives the same tutor
+        // fallback from this compatibility source. The matching catalog mode
+        // is initialized below for the later provenance cutover.
       },
       select: {
         ...chatbotOwnerSelect,

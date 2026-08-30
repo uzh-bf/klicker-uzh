@@ -16,7 +16,9 @@ export function projectLegacySystemPrompts(
   if (systemPrompts == null) {
     return {
       isValid: true,
-      modes: [{ key: 'tutor', prompt: DEFAULT_TUTOR_PROMPT }],
+      modes: [
+        { key: 'tutor', prompt: DEFAULT_TUTOR_PROMPT, description: null },
+      ],
     }
   }
 
@@ -39,7 +41,7 @@ export function projectLegacySystemPrompts(
     }
 
     const prompt =
-      key === 'tutor' && (entry.prompt === '' || entry.prompt === undefined)
+      key === 'tutor' && (entry.prompt == null || entry.prompt === '')
         ? DEFAULT_TUTOR_PROMPT
         : (entry.prompt ?? '')
     modes.push({
@@ -52,7 +54,9 @@ export function projectLegacySystemPrompts(
   if (modes.length === 0) {
     return {
       isValid: true,
-      modes: [{ key: 'tutor', prompt: DEFAULT_TUTOR_PROMPT }],
+      modes: [
+        { key: 'tutor', prompt: DEFAULT_TUTOR_PROMPT, description: null },
+      ],
     }
   }
   return { isValid: true, modes }

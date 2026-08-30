@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import type { PromptCatalogModeInput } from '@klicker-uzh/prisma'
 import {
   appendChatbotModePromptVersion,
   ensureChatbotPromptCatalog,
@@ -6,7 +7,6 @@ import {
   projectLegacySystemPrompts,
   updateChatbotModePresentation,
 } from '@klicker-uzh/prisma'
-import type { PromptCatalogModeInput } from '@klicker-uzh/prisma'
 import { Prisma } from '@klicker-uzh/prisma/client'
 
 const APPLY_FLAG = '--apply'
@@ -130,8 +130,12 @@ function requireSameModeKeys(
   current: readonly { key: string }[],
   desired: readonly { key: string }[]
 ): void {
-  const currentKeys = current.map((mode) => mode.key).sort()
-  const desiredKeys = desired.map((mode) => mode.key).sort()
+  const currentKeys = current
+    .map((mode) => mode.key)
+    .sort((left, right) => left.localeCompare(right))
+  const desiredKeys = desired
+    .map((mode) => mode.key)
+    .sort((left, right) => left.localeCompare(right))
   if (
     currentKeys.length !== desiredKeys.length ||
     currentKeys.some((key, index) => key !== desiredKeys[index])
@@ -141,8 +145,8 @@ function requireSameModeKeys(
 }
 
 async function main() {
-  let args
-  let config
+  let args: ReturnType<typeof parseArgs>
+  let config: ProvisionConfig
   try {
     args = parseArgs(process.argv.slice(2))
     config = loadConfig(args.configPath)

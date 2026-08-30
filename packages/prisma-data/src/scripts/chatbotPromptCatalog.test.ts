@@ -1,15 +1,17 @@
 import { randomUUID } from 'node:crypto'
-import { PrismaPg } from '@prisma/adapter-pg'
 import {
   appendChatbotModePromptVersion,
+  DEFAULT_TUTOR_PROMPT,
   ensureChatbotPromptCatalog,
   updateChatbotModePresentation,
   updateChatbotModeStatus,
 } from '@klicker-uzh/prisma'
 import {
   ChatbotModePromptStatus,
+  Prisma,
   PrismaClient,
 } from '@klicker-uzh/prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL
@@ -45,8 +47,8 @@ testDescribe('chatbot prompt catalog transactional writers', () => {
     await prisma.user.create({
       data: {
         id: ownerId,
-        email: 'prompt-catalog-' + ownerId + '@synthetic.invalid',
-        shortname: 'promptcatalog' + ownerId.slice(0, 8),
+        email: `prompt-catalog-${ownerId}@synthetic.invalid`,
+        shortname: `promptcatalog${ownerId.slice(0, 8)}`,
       },
     })
     await prisma.course.create({
@@ -74,7 +76,7 @@ testDescribe('chatbot prompt catalog transactional writers', () => {
     return prisma.$transaction(async (tx) => {
       const chatbot = await tx.chatbot.create({
         data: {
-          name: 'Synthetic prompt catalog bot ' + randomUUID(),
+          name: `Synthetic prompt catalog bot ${randomUUID()}`,
           ownerId,
           courseId,
           systemPrompts: {
@@ -251,6 +253,96 @@ testDescribe('chatbot prompt catalog transactional writers', () => {
     ).rejects.toThrow('PROMPT_CATALOG_MODE_RETIRED')
   })
 
+  test('enforces immutable lineage and validated catalog identities', async () => {
+    const chatbot = await createCatalogBot()
+    await prisma.$transaction((tx) =>
+      appendChatbotModePromptVersion(
+        tx,
+        chatbot.id,
+        'tutor',
+        'Tutor immutable version two'
+      )
+    )
+
+    const modes = await prisma.chatbotMode.findMany({
+      where: { chatbotId: chatbot.id },
+      select: {
+        id: true,
+        key: true,
+        activePromptVersion: { select: { id: true } },
+        versions: {
+          orderBy: { version: 'asc' },
+          select: { id: true, version: true },
+        },
+      },
+    })
+    const tutor = modes.find((mode) => mode.key === 'tutor')!
+    const explainer = modes.find((mode) => mode.key === 'explainer')!
+    const tutorVersionOne = tutor.versions.find(
+      (version) => version.version === 1
+    )!
+
+    await expect(
+      prisma.chatbotModePromptVersion.create({
+        data: {
+          modeId: tutor.id,
+          version: 0,
+          authoredPrompt: 'Invalid zero version',
+        },
+      })
+    ).rejects.toThrow()
+    await expect(
+      prisma.chatbotEffectiveSystemPrompt.create({
+        data: {
+          modePromptVersionId: tutor.activePromptVersion!.id,
+          sha256: 'A'.repeat(64),
+          systemPrompt: 'Invalid uppercase digest',
+        },
+      })
+    ).rejects.toThrow()
+    await expect(
+      prisma.chatbotMode.update({
+        where: { id: tutor.id },
+        data: {
+          activePromptVersionId: explainer.activePromptVersion!.id,
+        },
+      })
+    ).rejects.toThrow()
+    await expect(
+      prisma.chatbotModePromptVersion.update({
+        where: { id: tutorVersionOne.id },
+        data: { authoredPrompt: 'Mutated prompt' },
+      })
+    ).rejects.toThrow()
+
+    const effective = await prisma.chatbotEffectiveSystemPrompt.create({
+      data: {
+        modePromptVersionId: tutor.activePromptVersion!.id,
+        sha256: 'a'.repeat(64),
+        systemPrompt: 'Immutable effective prompt',
+      },
+    })
+    await expect(
+      prisma.chatbotEffectiveSystemPrompt.update({
+        where: { id: effective.id },
+        data: { systemPrompt: 'Mutated effective prompt' },
+      })
+    ).rejects.toThrow()
+    await expect(
+      prisma.chatbotEffectiveSystemPrompt.delete({
+        where: { id: effective.id },
+      })
+    ).rejects.toThrow()
+    await expect(
+      prisma.chatbotModePromptVersion.delete({
+        where: { id: tutorVersionOne.id },
+      })
+    ).rejects.toThrow()
+    await expect(
+      prisma.chatbotMode.delete({ where: { id: tutor.id } })
+    ).rejects.toThrow()
+  })
+
   test('rolls back catalog and projection changes together', async () => {
     const chatbot = await createCatalogBot()
 
@@ -318,5 +410,48 @@ testDescribe('chatbot prompt catalog transactional writers', () => {
     expect(
       await prisma.chatbotMode.count({ where: { chatbotId: chatbot.id } })
     ).toBe(0)
+  })
+
+  test('initializes the null legacy projection as tutor version one', async () => {
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Synthetic fallback catalog bot',
+        ownerId,
+        courseId,
+        systemPrompts: Prisma.DbNull,
+      },
+      select: { id: true },
+    })
+
+    const initialize = () =>
+      prisma.$transaction((tx) =>
+        ensureChatbotPromptCatalog(tx, chatbot.id, [
+          { key: 'tutor', prompt: DEFAULT_TUTOR_PROMPT },
+        ])
+      )
+
+    await initialize()
+    await initialize()
+
+    const mode = await prisma.chatbotMode.findUniqueOrThrow({
+      where: {
+        chatbotId_key: { chatbotId: chatbot.id, key: 'tutor' },
+      },
+      select: {
+        description: true,
+        activePromptVersion: {
+          select: { version: true, authoredPrompt: true },
+        },
+        versions: { select: { id: true } },
+      },
+    })
+    expect(mode).toEqual({
+      description: null,
+      activePromptVersion: {
+        version: 1,
+        authoredPrompt: DEFAULT_TUTOR_PROMPT,
+      },
+      versions: [expect.objectContaining({ id: expect.any(String) })],
+    })
   })
 })

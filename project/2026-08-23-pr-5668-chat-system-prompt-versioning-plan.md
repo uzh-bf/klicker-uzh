@@ -1,6 +1,6 @@
-# Chat system-prompt versioning execution plan
+# PR #5668 - Chat system-prompt versioning execution plan
 
-Status: ready for Gate 1 approval. No implementation has started.
+Status: implementation complete; whole-PR review corrections and fresh verification in progress.
 
 Planning review: the configured native planner returned
 `DONE_WITH_CONCERNS` on 2026-08-23. This plan accepts its three required
@@ -35,8 +35,9 @@ expose it.
   examples as authored prompts.
 - No prompt-cache identity change.
 - No removal of `Chatbot.systemPrompts` in this package.
-- No changes to the separately owned Informatik-und-Wirtschaft provisioner
-  branch.
+- No changes to an external or unmerged Informatik-und-Wirtschaft provisioner
+  branch. The provisioner implementation already folded into this PR is in scope
+  because P1 must not leave an active JSON-only writer.
 - No push, PR/stack mutation, ready marking, merge, deployment, live
   reconciliation, or cleanup under the initial execution authority.
 
@@ -675,5 +676,36 @@ adapted.
   succeeds; null active pointer reported as MISSING_ACTIVE_VERSION;
   healthy catalog reruns clean. Full check suite passes (Prisma, GraphQL,
   Prisma Data, Playwright tsc/Prettier, Biome).
-- Current boundary: waiting for Gate 1 approval of this plan. No implementation
-  file, branch base, remote branch, PR, deployment, or live data has changed.
+- 2026-08-30 (migration consolidation): before merge, folded the direct
+  ChatbotMode delete guard into the original
+  `20260823180000_chatbot_prompt_catalog` migration and removed the follow-up
+  `20260823181000` migration. This restores the package to one reviewable,
+  transactional migration; the earlier receipt above records the pre-merge
+  review state.
+- 2026-08-30 (PR #5668 whole-branch review): user approved implementation and a
+  complete PR review. Standards and specification reviews identified an
+  explicit-null tutor fallback mismatch between TypeScript and SQL, incomplete
+  catalog integrity and description-parity auditing, incorrect ADR references,
+  and documentation that described deferred P2 runtime provenance as current
+  P1 behavior. The correction pass also fixed two Chat test mocks that exposed
+  the shared default from the wrong object and replaced implicit string sorting
+  with locale-aware comparison.
+- 2026-08-30 (PR #5668 verification): the review added database checks for
+  positive authored-version numbers and lowercase 64-character SHA-256 values,
+  plus regression coverage for immutable updates, direct-delete guards,
+  same-mode active pointers, and GraphQL tutor-catalog initialization. A fresh
+  disposable PostgreSQL database replayed all 183 migrations; 12 catalog and
+  provisioner integration tests, 7 GraphQL chatbot tests, 3 projection tests,
+  and the values-free audit passed. The audit reported zero disagreements, and
+  cleanup left zero proof databases. The full Chat suite passed 420 tests with
+  13 explicitly gated integration tests skipped. Repository-wide
+  `pnpm run check:all` passed with Python 3.12 selected for the analytics
+  wheel set, and all 23 production build tasks passed. The aggregate
+  `pnpm run test:run` remains intentionally unavailable inside the
+  devcontainer because the Playwright package exits through its host-only
+  guard; this package changes no browser-facing contract.
+- Current boundary: review corrections and local verification are complete on
+  `rs/chat-system-prompt-versioning`; local commit and final review remain.
+  The task branch is two commits behind `origin/v3` on the last refreshed
+  refs. Upstream integration, push/PR mutation, deployment, live data work, and
+  cleanup remain separate authority boundaries.

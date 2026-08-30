@@ -45,7 +45,7 @@ enum ChatUsageClass {
 
 // Lifecycle state of one authored chatbot mode. ENABLED is selectable in the
 // participant mode picker; DISABLED is hidden but retains its prompt lineage;
-// RETIRED is a terminal state that also retains lineage. See ADR 0037.
+// RETIRED is a terminal state that also retains lineage. See ADR 0043.
 enum ChatbotModePromptStatus {
   ENABLED
   DISABLED
@@ -133,7 +133,7 @@ model ChatMessage {
   // Exact effective system-prompt provenance for assistant turns. Null means
   // unknown (historical or non-assistant messages); it is never inferred. The
   // referenced row stores the exact final instruction text once, so messages
-  // do not duplicate prompt content. New assistant writes require a resolved
+  // do not duplicate prompt content. P2 runtime writers will require a resolved
   // reference before generation (fail closed). See ADR 0043.
   effectiveSystemPromptId String? @db.Uuid
   // Participant feedback on an assistant answer; null until they vote.

@@ -3,20 +3,173 @@ import {
   prisma,
   projectLegacySystemPrompts,
 } from '@klicker-uzh/prisma'
+import { ChatbotModePromptStatus } from '@klicker-uzh/prisma/client'
 
 /**
- * Values-free audit/bootstrap for the chatbot prompt catalog (ADR 0037).
+ * Values-free audit/bootstrap for the chatbot prompt catalog (ADR 0043).
  *
  * Dry-run by default: reports counts and booleans only, never prompt text.
- * Checks every chatbot against the deterministic legacy projection:
- * wholly missing catalogs, missing active versions, projection
- * disagreements, and cross-lineage effective references. With --apply,
- * initializes ONLY wholly missing catalogs; any disagreement fails closed
- * and is never rewritten.
+ * With --apply, initializes only wholly missing deterministic catalogs. Existing
+ * disagreements always fail closed and are never rewritten.
  */
 
 const APPLY_FLAG = '--apply'
 const apply = process.argv.includes(APPLY_FLAG)
+
+type CatalogMode = {
+  id: string
+  key: string
+  description: string | null
+  status: ChatbotModePromptStatus
+  activePromptVersion: {
+    modeId: string
+    version: number
+    authoredPrompt: string
+  } | null
+  versions: { version: number }[]
+}
+
+type StructuralCounts = {
+  enabledMissingActive: number
+  crossModeActive: number
+  sequenceGap: number
+  activeNotLatest: number
+}
+
+function auditCatalogStructure(
+  chatbotId: string,
+  modes: readonly CatalogMode[]
+): StructuralCounts {
+  const counts: StructuralCounts = {
+    enabledMissingActive: 0,
+    crossModeActive: 0,
+    sequenceGap: 0,
+    activeNotLatest: 0,
+  }
+
+  for (const mode of modes) {
+    const active = mode.activePromptVersion
+    const sameModeActive = active?.modeId === mode.id ? active : null
+    if (
+      mode.status === ChatbotModePromptStatus.ENABLED &&
+      sameModeActive == null
+    ) {
+      counts.enabledMissingActive += 1
+      console.log(
+        `chatbot=${chatbotId} status=DISAGREEMENT kind=ENABLED_MODE_MISSING_SAME_MODE_ACTIVE mode=${mode.key}`
+      )
+    }
+    if (active != null && active.modeId !== mode.id) {
+      counts.crossModeActive += 1
+      console.log(
+        `chatbot=${chatbotId} status=DISAGREEMENT kind=CROSS_MODE_ACTIVE_POINTER mode=${mode.key}`
+      )
+    }
+
+    const versions = mode.versions
+      .map((version) => version.version)
+      .sort((left, right) => left - right)
+    if (
+      versions.length === 0 ||
+      versions.some((version, index) => version !== index + 1)
+    ) {
+      counts.sequenceGap += 1
+      console.log(
+        `chatbot=${chatbotId} status=DISAGREEMENT kind=VERSION_SEQUENCE_GAP mode=${mode.key}`
+      )
+    }
+
+    const latestVersion = versions.at(-1)
+    if (
+      sameModeActive != null &&
+      latestVersion != null &&
+      sameModeActive.version !== latestVersion
+    ) {
+      counts.activeNotLatest += 1
+      console.log(
+        `chatbot=${chatbotId} status=DISAGREEMENT kind=ACTIVE_VERSION_NOT_LATEST mode=${mode.key}`
+      )
+    }
+  }
+
+  return counts
+}
+
+function countProjectionDisagreements(
+  chatbotId: string,
+  projectedModes: readonly {
+    key: string
+    prompt: string
+    description?: string | null
+  }[],
+  modes: readonly CatalogMode[]
+): number {
+  let count = 0
+  const projectedByKey = new Map(projectedModes.map((mode) => [mode.key, mode]))
+
+  for (const projected of projectedModes) {
+    const existing = modes.find((mode) => mode.key === projected.key)
+    if (existing == null) {
+      count += 1
+      console.log(
+        `chatbot=${chatbotId} status=DISAGREEMENT kind=MISSING_MODE mode=${projected.key}`
+      )
+      continue
+    }
+
+    if (existing.description !== (projected.description ?? null)) {
+      count += 1
+      console.log(
+        `chatbot=${chatbotId} status=DISAGREEMENT kind=DESCRIPTION_MISMATCH mode=${existing.key}`
+      )
+    }
+
+    const active = existing.activePromptVersion
+    if (
+      active?.modeId === existing.id &&
+      active.authoredPrompt !== projected.prompt
+    ) {
+      count += 1
+      console.log(
+        `chatbot=${chatbotId} status=DISAGREEMENT kind=TEXT_MISMATCH mode=${existing.key}`
+      )
+    }
+  }
+
+  for (const existing of modes) {
+    if (!projectedByKey.has(existing.key)) {
+      count += 1
+      console.log(
+        `chatbot=${chatbotId} status=DISAGREEMENT kind=UNPROJECTED_MODE mode=${existing.key}`
+      )
+    }
+  }
+
+  return count
+}
+
+function addStructuralCounts(
+  total: StructuralCounts,
+  next: StructuralCounts
+): void {
+  total.enabledMissingActive += next.enabledMissingActive
+  total.crossModeActive += next.crossModeActive
+  total.sequenceGap += next.sequenceGap
+  total.activeNotLatest += next.activeNotLatest
+}
+
+async function countCrossLineageReferences(): Promise<bigint> {
+  const rows = await prisma.$queryRaw<{ count: bigint }[]>`
+    SELECT COUNT(*)::bigint AS count
+    FROM "ChatMessage" msg
+    JOIN "ChatThread" t ON t."id" = msg."threadId"
+    JOIN "ChatbotEffectiveSystemPrompt" esp ON esp."id" = msg."effectiveSystemPromptId"
+    JOIN "ChatbotModePromptVersion" v ON v."id" = esp."modePromptVersionId"
+    JOIN "ChatbotMode" m ON m."id" = v."modeId"
+    WHERE m."chatbotId" <> t."chatbotId"
+  `
+  return rows[0]?.count ?? 0n
+}
 
 async function run(): Promise<void> {
   const chatbots = await prisma.chatbot.findMany({
@@ -25,9 +178,18 @@ async function run(): Promise<void> {
       systemPrompts: true,
       modes: {
         select: {
+          id: true,
           key: true,
-          activePromptVersionId: true,
-          activePromptVersion: { select: { authoredPrompt: true } },
+          description: true,
+          status: true,
+          activePromptVersion: {
+            select: {
+              modeId: true,
+              version: true,
+              authoredPrompt: true,
+            },
+          },
+          versions: { select: { version: true } },
         },
       },
     },
@@ -36,10 +198,20 @@ async function run(): Promise<void> {
 
   let missingCatalogCount = 0
   let malformedJsonCount = 0
-  let disagreementCount = 0
+  let projectionDisagreementCount = 0
   let initializedCount = 0
+  const structuralCounts: StructuralCounts = {
+    enabledMissingActive: 0,
+    crossModeActive: 0,
+    sequenceGap: 0,
+    activeNotLatest: 0,
+  }
 
   for (const bot of chatbots) {
+    addStructuralCounts(
+      structuralCounts,
+      auditCatalogStructure(bot.id, bot.modes)
+    )
     const projection = projectLegacySystemPrompts(bot.systemPrompts)
     if (!projection.isValid) {
       malformedJsonCount += 1
@@ -52,81 +224,48 @@ async function run(): Promise<void> {
       console.log(
         `chatbot=${bot.id} status=MISSING_CATALOG mode_count=${projection.modes.length} can_initialize=true`
       )
-
       if (apply) {
-        // Wholly-missing catalog: initialize version rows straight from the
-        // legacy projection. Any disagreement inside the service fails closed.
-        await prisma.$transaction(async (tx) => {
-          await ensureChatbotPromptCatalog(tx, bot.id, projection.modes)
-        })
+        await prisma.$transaction((tx) =>
+          ensureChatbotPromptCatalog(tx, bot.id, projection.modes)
+        )
         initializedCount += 1
       }
       continue
     }
 
-    // Catalog exists: every projected mode must have an enabled active row
-    // whose authored text matches the legacy projection exactly.
-    const projectedByKey = new Map(
-      projection.modes.map((mode) => [mode.key, mode])
+    projectionDisagreementCount += countProjectionDisagreements(
+      bot.id,
+      projection.modes,
+      bot.modes
     )
-    for (const projected of projection.modes) {
-      const existing = bot.modes.find((mode) => mode.key === projected.key)
-      if (!existing) {
-        disagreementCount += 1
-        console.log(
-          `chatbot=${bot.id} status=DISAGREEMENT kind=MISSING_MODE mode=${projected.key}`
-        )
-        continue
-      }
-      if (!existing.activePromptVersionId) {
-        disagreementCount += 1
-        console.log(
-          `chatbot=${bot.id} status=DISAGREEMENT kind=MISSING_ACTIVE_VERSION mode=${existing.key}`
-        )
-        continue
-      }
-      if (!existing.activePromptVersion) {
-        disagreementCount += 1
-        console.log(
-          `chatbot=${bot.id} status=DISAGREEMENT kind=MISSING_ACTIVE_VERSION`
-        )
-        continue
-      }
-      if (existing.activePromptVersion.authoredPrompt !== projected.prompt) {
-        disagreementCount += 1
-        console.log(`chatbot=${bot.id} status=DISAGREEMENT kind=TEXT_MISMATCH`)
-      }
-    }
-
-    for (const existing of bot.modes) {
-      if (!projectedByKey.has(existing.key)) {
-        disagreementCount += 1
-        console.log(
-          `chatbot=${bot.id} status=DISAGREEMENT kind=UNPROJECTED_MODE`
-        )
-      }
-    }
   }
 
-  // A message must reference a prompt that belongs to its own chatbot.
-  const crossLineageRows = await prisma.$queryRaw<{ count: bigint }[]>`
-    SELECT COUNT(*)::bigint AS count
-    FROM "ChatMessage" msg
-    JOIN "ChatThread" t ON t."id" = msg."threadId"
-    JOIN "ChatbotEffectiveSystemPrompt" esp ON esp."id" = msg."effectiveSystemPromptId"
-    JOIN "ChatbotModePromptVersion" v ON v."id" = esp."modePromptVersionId"
-    JOIN "ChatbotMode" m ON m."id" = v."modeId"
-    WHERE m."chatbotId" <> t."chatbotId"
-  `
-  const crossLineageRefs = crossLineageRows[0]?.count ?? 0n
+  const crossLineageRefs = await countCrossLineageReferences()
+  const disagreementCount =
+    projectionDisagreementCount +
+    structuralCounts.enabledMissingActive +
+    structuralCounts.crossModeActive +
+    structuralCounts.sequenceGap +
+    structuralCounts.activeNotLatest
 
   console.log(`summary_chatbots_total=${chatbots.length}`)
   console.log(`summary_missing_catalog=${missingCatalogCount}`)
   console.log(`summary_malformed_json=${malformedJsonCount}`)
+  console.log(`summary_projection_disagreements=${projectionDisagreementCount}`)
+  console.log(
+    `summary_enabled_missing_same_mode_active=${structuralCounts.enabledMissingActive}`
+  )
+  console.log(
+    `summary_cross_mode_active_pointers=${structuralCounts.crossModeActive}`
+  )
+  console.log(`summary_version_sequence_gaps=${structuralCounts.sequenceGap}`)
+  console.log(
+    `summary_active_version_not_latest=${structuralCounts.activeNotLatest}`
+  )
   console.log(`summary_disagreements=${disagreementCount}`)
   console.log(`summary_cross_lineage_refs=${crossLineageRefs}`)
   console.log(`summary_initialized_with_apply=${initializedCount}`)
-  console.log(`mode=${apply ? 'APPLY' : 'DRY_RUN'}`)
+  console.log(`execution=${apply ? 'APPLY' : 'DRY_RUN'}`)
 }
 
 try {

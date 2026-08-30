@@ -29,7 +29,8 @@ CREATE TABLE "ChatbotModePromptVersion" (
     "authoredPrompt" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "ChatbotModePromptVersion_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "ChatbotModePromptVersion_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "ChatbotModePromptVersion_version_positive" CHECK ("version" > 0)
 );
 
 -- CreateTable
@@ -40,7 +41,8 @@ CREATE TABLE "ChatbotEffectiveSystemPrompt" (
     "systemPrompt" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "ChatbotEffectiveSystemPrompt_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "ChatbotEffectiveSystemPrompt_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "ChatbotEffectiveSystemPrompt_sha256_lower_hex" CHECK ("sha256" ~ '^[0-9a-f]{64}$')
 );
 
 -- CreateIndex
@@ -261,5 +263,22 @@ Users may attach images to their messages. Images are processed into textual des
   END LOOP;
 END;
 $backfill$;
+
+-- Guard: ChatbotMode rows may only disappear through their owning chatbot
+-- cascade. Direct deletion would erase immutable version lineage while the
+-- chatbot remains.
+CREATE FUNCTION "chatbot_mode_block_delete"() RETURNS trigger LANGUAGE plpgsql AS $fn$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM "Chatbot" c WHERE c."id" = OLD."chatbotId"
+  ) THEN
+    RAISE EXCEPTION 'direct ChatbotMode deletion is unsupported';
+  END IF;
+  RETURN OLD;
+END;
+$fn$;
+CREATE TRIGGER "trg_chatbot_mode_no_direct_delete"
+  BEFORE DELETE ON "ChatbotMode"
+  FOR EACH ROW EXECUTE FUNCTION "chatbot_mode_block_delete"();
 
 COMMIT;
