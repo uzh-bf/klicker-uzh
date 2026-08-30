@@ -3477,11 +3477,14 @@ function assertCandidateGroup(
   }
 }
 
-export async function switchCohortChatbot(
-  store: ActivationStore,
+function openCohortChatbotOperation(
   manifest: FrozenCohortManifest,
   options: ActivationOptions & { chatbotAlias: string }
-): Promise<ActivationResult> {
+): {
+  index: ReturnType<typeof buildManifestIndex>
+  manifestFingerprint: string
+  receiptStore: ActivationReceiptStore
+} {
   validateTarget(options.target)
   const index = buildManifestIndex(manifest)
   const manifestFingerprint = requireManifestFingerprint(
@@ -3493,15 +3496,40 @@ export async function switchCohortChatbot(
   if (!receiptStore) {
     fail('RECEIPT_REQUIRED', 'a durable receipt store is required')
   }
+  return { index, manifestFingerprint, receiptStore }
+}
+
+async function requireSessionReceipt(
+  session: ActivationReceiptSession,
+  index: ReturnType<typeof buildManifestIndex>,
+  manifestFingerprint: string,
+  allowedStates: readonly string[]
+) {
+  const receipt = requireReceipt(
+    await readReceipt(session),
+    index,
+    manifestFingerprint
+  )
+  validateReceiptState(receipt, allowedStates)
+  return receipt
+}
+
+export async function switchCohortChatbot(
+  store: ActivationStore,
+  manifest: FrozenCohortManifest,
+  options: ActivationOptions & { chatbotAlias: string }
+): Promise<ActivationResult> {
+  const { index, manifestFingerprint, receiptStore } =
+    openCohortChatbotOperation(manifest, options)
   const execute = async (
     session: ActivationReceiptSession
   ): Promise<ActivationResult> => {
-    const receipt = requireReceipt(
-      await readReceipt(session),
+    const receipt = await requireSessionReceipt(
+      session,
       index,
-      manifestFingerprint
+      manifestFingerprint,
+      ['prepared', 'switched']
     )
-    validateReceiptState(receipt, ['prepared', 'switched'])
 
     const currentState = await inspectCohortState(store, index, options.target)
     assertReceiptCurrent(currentState, index, receipt)
@@ -3598,26 +3626,17 @@ export async function rollbackCohortChatbot(
   manifest: FrozenCohortManifest,
   options: ActivationOptions & { chatbotAlias: string }
 ): Promise<ActivationResult> {
-  validateTarget(options.target)
-  const index = buildManifestIndex(manifest)
-  const manifestFingerprint = requireManifestFingerprint(
-    manifest,
-    options.expectedManifestFingerprint
-  )
-  resolveChatbotAlias(index, options.chatbotAlias)
-  const receiptStore = options.receiptStore
-  if (!receiptStore) {
-    fail('RECEIPT_REQUIRED', 'a durable receipt store is required')
-  }
+  const { index, manifestFingerprint, receiptStore } =
+    openCohortChatbotOperation(manifest, options)
   const execute = async (
     session: ActivationReceiptSession
   ): Promise<ActivationResult> => {
-    const receipt = requireReceipt(
-      await readReceipt(session),
+    const receipt = await requireSessionReceipt(
+      session,
       index,
-      manifestFingerprint
+      manifestFingerprint,
+      ['switched', 'switching', 'rolling_back']
     )
-    validateReceiptState(receipt, ['switched', 'switching', 'rolling_back'])
     if (
       !receipt.switchedChatbotAliases.includes(options.chatbotAlias) &&
       !(
