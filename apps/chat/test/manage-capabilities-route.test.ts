@@ -99,7 +99,7 @@ describe('GET /api/manage/capabilities', () => {
       new Error('private upstream detail')
     )
 
-    await expectState(await GET(request()), 200, 'unavailable')
+    await expectState(await GET(request()), 503, 'unavailable')
     expect(warning).toHaveBeenCalledWith(
       'Manage assistant capability preflight is unavailable'
     )
@@ -125,7 +125,7 @@ describe('GET /api/manage/capabilities', () => {
 
     const response = GET(request())
     await vi.advanceTimersByTimeAsync(MANAGE_CAPABILITY_TIMEOUT_MS)
-    await expectState(await response, 200, 'unavailable')
+    await expectState(await response, 503, 'unavailable')
     warning.mockRestore()
   })
 })

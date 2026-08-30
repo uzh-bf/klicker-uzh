@@ -49,6 +49,23 @@ describe('getManageSuggestions', () => {
     ])
     expect(suggestions[0]?.prompt).toContain('no-save preview')
     expect(suggestions[0]?.prompt).toContain('do not save anything')
+    expect(
+      suggestions.every((suggestion) =>
+        suggestion.prompt.toLowerCase().includes('do not save anything')
+      )
+    ).toBe(true)
+  })
+
+  test.each(
+    SURFACES
+  )('qualifies every read-only starter on surface "%s" as no-save', (surface) => {
+    const suggestions = getManageSuggestions(buildContext(surface), 'read-only')
+
+    expect(
+      suggestions.every((suggestion) =>
+        suggestion.prompt.toLowerCase().includes('do not save anything')
+      )
+    ).toBe(true)
   })
 
   test('offers only no-save and documentation work while live tools are unavailable', () => {

@@ -331,21 +331,28 @@ export async function mockManageCapabilities(
   {
     states = ['draft-and-read'],
     delayMs = 0,
+    delaysMs,
   }: {
     states?: ManageAssistantCapabilityState[]
     delayMs?: number
+    delaysMs?: number[]
   } = {}
 ) {
   let requestCount = 0
 
   await page.context().route('**/api/manage/capabilities', async (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
-    if (delayMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    const requestIndex = requestCount
+    requestCount += 1
+    const requestDelay =
+      delaysMs && delaysMs.length > 0
+        ? (delaysMs[Math.min(requestIndex, delaysMs.length - 1)] ?? 0)
+        : delayMs
+    if (requestDelay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, requestDelay))
     }
     const state =
-      states[Math.min(requestCount, states.length - 1)] ?? 'unavailable'
-    requestCount += 1
+      states[Math.min(requestIndex, states.length - 1)] ?? 'unavailable'
 
     return route.fulfill({
       body: JSON.stringify({ state }),

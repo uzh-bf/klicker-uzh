@@ -1,6 +1,7 @@
 import type { ToolSet } from 'ai'
 
 export const MANAGE_ASSISTANT_CAPABILITY_HEADER = 'X-Klicker-Manage-Capability'
+export const MANAGE_ASSISTANT_PREFLIGHT_TIMEOUT_MS = 5_000
 
 export type ManageAssistantCapabilityState =
   | 'draft-and-read'
@@ -25,6 +26,13 @@ export function isManageAssistantCapabilityState(
     value === 'read-only' ||
     value === 'unavailable'
   )
+}
+
+export function createManageAssistantPreflightSignal(
+  signal: AbortSignal,
+  timeoutMs = MANAGE_ASSISTANT_PREFLIGHT_TIMEOUT_MS
+) {
+  return AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)])
 }
 
 export function classifyManageAssistantCapabilityState(

@@ -49,6 +49,6 @@ export async function GET(req: NextRequest) {
     }
   } catch {
     console.warn('Manage assistant capability preflight is unavailable')
-    return capabilityResponse('unavailable')
+    return capabilityResponse('unavailable', 503)
   }
 }

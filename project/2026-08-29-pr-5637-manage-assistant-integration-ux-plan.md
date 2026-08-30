@@ -880,3 +880,22 @@ follow_up_stacks:
   required after the simplification correction.
 - Next: Verify and commit the accepted simplification, publish A2 as a draft
   stack layer, and require exact-head hosted build and browser evidence.
+- A2 publication and review: Draft PR #5679 publishes head `897263afdd8b` on
+  top of PR #5670. Its hosted compile, repository checks, package filters,
+  fallback build, and first OpenCodeReview pass completed successfully.
+  OpenCodeReview found three medium and two low issues. The valid corrections
+  distinguish transient preflight failures with HTTP 503, add a bounded
+  browser-side request signal plus non-OK handling, qualify every read-only
+  starter as no-save, and share the unavailable plan/feedback copy. The
+  review's claim that unavailable state has no retry was rejected because the
+  settled notice already renders an in-place retry and the browser regression
+  pins iframe preservation.
+- A2 review-correction verification: The complete Chat suite passes with 752
+  tests and 13 intentional skips; Chat and Playwright TypeScript checks and
+  focused Biome/Prettier checks pass. The corrected browser journey now covers
+  a stalled preflight timing out, retrying, and recovering without remounting
+  the iframe. Hosted exact-head build, browser, and follow-up review evidence
+  remain required after the correction is committed and pushed.
+- Next: Commit and push the A2 review correction, reply to and resolve all five
+  review findings with evidence, refresh PR #5679, and babysit the corrected
+  exact head through hosted browser acceptance before starting A3.

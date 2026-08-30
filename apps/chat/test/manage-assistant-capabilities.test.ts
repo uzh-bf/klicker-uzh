@@ -2,6 +2,7 @@ import type { ToolSet } from 'ai'
 import { describe, expect, test } from 'vitest'
 import {
   classifyManageAssistantCapabilityState,
+  createManageAssistantPreflightSignal,
   INITIAL_MANAGE_ASSISTANT_CAPABILITY_STATE,
   isManageAssistantCapabilityState,
   reduceManageAssistantCapabilityState,
@@ -54,5 +55,18 @@ describe('Manage assistant capability state', () => {
     expect(
       reduceManageAssistantCapabilityState(healthy, { type: 'check' })
     ).toEqual(INITIAL_MANAGE_ASSISTANT_CAPABILITY_STATE)
+  })
+
+  test('bounds a browser preflight independently of the server request', async () => {
+    const controller = new AbortController()
+    const signal = createManageAssistantPreflightSignal(controller.signal, 1)
+
+    expect(signal.aborted).toBe(false)
+    await new Promise<void>((resolve) => {
+      if (signal.aborted) return resolve()
+      signal.addEventListener('abort', () => resolve(), { once: true })
+    })
+    expect(signal.aborted).toBe(true)
+    expect(controller.signal.aborted).toBe(false)
   })
 })

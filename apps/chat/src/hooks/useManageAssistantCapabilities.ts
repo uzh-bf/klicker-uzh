@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useReducer, useRef } from 'react'
 import {
+  createManageAssistantPreflightSignal,
   INITIAL_MANAGE_ASSISTANT_CAPABILITY_STATE,
   isManageAssistantCapabilityState,
   MANAGE_ASSISTANT_CAPABILITY_HEADER,
@@ -26,9 +27,14 @@ export function useManageAssistantCapabilities() {
     void fetch('/api/manage/capabilities', {
       cache: 'no-store',
       credentials: 'same-origin',
-      signal: controller.signal,
+      signal: createManageAssistantPreflightSignal(controller.signal),
     })
       .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(
+            `Manage assistant capability preflight failed (${response.status})`
+          )
+        }
         const body: unknown = await response.json()
         const capability =
           body && typeof body === 'object' && 'state' in body

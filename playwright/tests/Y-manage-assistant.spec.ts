@@ -824,6 +824,33 @@ test.describe('Manage Assistant — Capability availability', () => {
     ).toBeVisible()
   })
 
+  test('bounds a stalled preflight and retries without remounting the iframe', async ({
+    page,
+  }) => {
+    await mockManageCapabilities(page, {
+      delaysMs: [5500, 0],
+      states: ['draft-and-read', 'draft-and-read'],
+    })
+    const assistant = await openManageAssistantWidget(page)
+    const frame = page.locator('[data-cy="manage-assistant-frame"]')
+    await frame.evaluate((element) => {
+      element.setAttribute('data-capability-frame', 'preserved')
+    })
+
+    const status = assistant.getByTestId('manage-assistant-capability-status')
+    await expect(status).toContainText(
+      'Checking live data and draft availability'
+    )
+    await expect(status).toContainText(
+      'Live course and question-pool tools are temporarily unavailable',
+      { timeout: 10_000 }
+    )
+
+    await assistant.getByTestId('manage-assistant-capability-retry').click()
+    await expect(status).toHaveCount(0, { timeout: 10_000 })
+    await expect(frame).toHaveAttribute('data-capability-frame', 'preserved')
+  })
+
   test('request-time inventory overrides an optimistic preflight', async ({
     page,
   }) => {

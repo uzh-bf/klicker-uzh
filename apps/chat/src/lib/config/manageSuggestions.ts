@@ -141,7 +141,19 @@ const GENERAL_SUGGESTIONS: ThreadSuggestion[] = [
   },
 ]
 
-const NO_SAVE_DRAFTS: Record<
+const PLAN_QUESTION_NO_SAVE: Pick<ThreadSuggestion, 'prompt' | 'text'> = {
+  text: 'Plan a question',
+  prompt:
+    'Help me plan a question as a no-save preview. Ask me for the topic and question type if needed, and do not save anything.',
+}
+
+const IMPROVE_FEEDBACK_NO_SAVE: Pick<ThreadSuggestion, 'prompt' | 'text'> = {
+  text: 'Improve feedback',
+  prompt:
+    'Ask me to provide the question and its answer options, then suggest concise answer-specific feedback, and do not save anything.',
+}
+
+const READ_ONLY_OVERRIDES: Record<
   string,
   Pick<ThreadSuggestion, 'prompt' | 'text'>
 > = {
@@ -165,11 +177,8 @@ const NO_SAVE_DRAFTS: Record<
     prompt:
       'Help me plan a follow-up question as a no-save preview. Ask me to describe the learning gap, and do not save anything.',
   },
-  'general-draft': {
-    text: 'Plan a question',
-    prompt:
-      'Help me plan a question as a no-save preview. Ask me for the topic and question type if needed, and do not save anything.',
-  },
+  'general-draft': PLAN_QUESTION_NO_SAVE,
+  'general-feedback': IMPROVE_FEEDBACK_NO_SAVE,
   'question-pool-draft': {
     text: 'Plan a question',
     prompt:
@@ -180,15 +189,11 @@ const NO_SAVE_DRAFTS: Record<
 const UNAVAILABLE_SUGGESTIONS: ThreadSuggestion[] = [
   {
     id: 'unavailable-plan-question',
-    text: 'Plan a question',
-    prompt:
-      'Help me plan a question as a no-save preview. Ask me for the topic and question type if needed, and do not save anything.',
+    ...PLAN_QUESTION_NO_SAVE,
   },
   {
     id: 'unavailable-feedback',
-    text: 'Improve feedback',
-    prompt:
-      'Ask me to provide the question and its answer options, then suggest concise answer-specific feedback without saving anything.',
+    ...IMPROVE_FEEDBACK_NO_SAVE,
   },
   {
     id: 'unavailable-documentation',
@@ -201,8 +206,13 @@ const UNAVAILABLE_SUGGESTIONS: ThreadSuggestion[] = [
 function withoutPersistenceIntent(
   suggestion: ThreadSuggestion
 ): ThreadSuggestion {
-  const noSave = NO_SAVE_DRAFTS[suggestion.id]
-  return noSave ? { ...suggestion, ...noSave } : suggestion
+  const override = READ_ONLY_OVERRIDES[suggestion.id]
+  if (override) return { ...suggestion, ...override }
+
+  return {
+    ...suggestion,
+    prompt: `${suggestion.prompt} Do not save anything.`,
+  }
 }
 
 export function getManageSuggestions(
