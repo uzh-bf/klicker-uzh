@@ -503,7 +503,10 @@ function ElementEditForm({
           onSecondaryAction={() => setDiscardChangesOpen(false)}
           dataSecondaryAction={{ cy: 'cancel-discard-element-changes' }}
           primaryLabel={discardChangesPrompt.confirmLabel}
-          onPrimaryAction={onClose}
+          onPrimaryAction={() => {
+            setDiscardChangesOpen(false)
+            onClose()
+          }}
           dataPrimaryAction={{ cy: 'confirm-discard-element-changes' }}
           data={{ cy: 'discard-element-changes-modal' }}
           className={{ content: 'max-w-lg' }}

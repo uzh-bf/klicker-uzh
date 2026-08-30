@@ -2186,7 +2186,10 @@ export const Mutation = builder.mutationType({
           content: t.arg.string({ required: true }),
           explanation: t.arg.string({ required: false }),
           basePoints: t.arg.boolean({ required: true }),
-          pointsMultiplier: t.arg.int({ required: true }),
+          pointsMultiplier: t.arg.int({
+            required: true,
+            validate: { min: 1 },
+          }),
           tags: t.arg.stringList({ required: false }),
           options: t.arg({ type: OptionsChoicesInput, required: false }),
         },
