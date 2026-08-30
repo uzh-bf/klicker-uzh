@@ -321,6 +321,8 @@ export default {
       revisionConflict: 'This card changed before the revision completed.',
       revisionInsufficientEvidence:
         'The saved card was not changed because the course material did not provide enough evidence for this revision.',
+      revisionUnavailable:
+        'The card revision could not be confirmed. Check the saved card before trying again.',
     },
     sources: {
       title: 'Sources',

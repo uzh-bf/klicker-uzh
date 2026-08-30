@@ -80,6 +80,9 @@ revision, and returns it as tool state without writing the card directly. After
 the assistant message is terminal and persisted, Chat sends only its course,
 message, and tool-call linkage to GraphQL. The backend reconstructs that result
 and atomically replaces the complete card and source-reference set.
+If both confirmation attempts fail at the transport boundary, Chat replaces
+the durable tool result with an explicit unconfirmed state instead of claiming
+that the revision succeeded.
 Insufficient evidence leaves both unchanged. Candidate cards do not have a
 separate unsaved-revision path; each generated card is either saved or
 discarded. The server-only GraphQL service is the single owner of

@@ -49,7 +49,11 @@ function withAppliedVersion(
   )
 }
 
-function withRejectedRevision(content: unknown, toolCallId: string) {
+function withRevisionFailure(
+  content: unknown,
+  toolCallId: string,
+  status: 'conflict' | 'unavailable'
+) {
   if (!Array.isArray(content)) return content
   return (content as RevisionPart[]).map((part) => {
     if (
@@ -66,10 +70,14 @@ function withRejectedRevision(content: unknown, toolCallId: string) {
     return {
       ...part,
       result: {
-        status: 'conflict',
+        status,
         id: result.id,
         expectedVersion: result.expectedVersion,
-        reason: 'The saved card changed before this revision completed',
+        ...(status === 'conflict'
+          ? {
+              reason: 'The saved card changed before this revision completed',
+            }
+          : {}),
       },
     }
   })
@@ -111,13 +119,14 @@ export async function settlePersonalElementRevision({
   if (typeof toolCallId !== 'string') {
     return { status: 'failed', reason: 'invalid' }
   }
-  const persistRejectedRevision = () =>
+  const persistRevisionFailure = (status: 'conflict' | 'unavailable') =>
     prisma.chatMessage.updateMany({
       where: { id: assistantMessageId, threadId, role: 'assistant' },
       data: {
-        content: withRejectedRevision(
+        content: withRevisionFailure(
           assistantMessageContent,
-          toolCallId
+          toolCallId,
+          status
         ) as Prisma.InputJsonValue,
       },
     })
@@ -127,14 +136,16 @@ export async function settlePersonalElementRevision({
     updated = await applyPersonalElementRevision(linkage, participantId)
   } catch (error) {
     if (isGraphqlRejection(error)) {
-      await persistRejectedRevision()
+      await persistRevisionFailure('conflict')
       return { status: 'failed', reason: 'rejected' }
     }
     try {
       updated = await applyPersonalElementRevision(linkage, participantId)
     } catch (retryError) {
       if (isGraphqlRejection(retryError)) {
-        await persistRejectedRevision()
+        await persistRevisionFailure('conflict')
+      } else {
+        await persistRevisionFailure('unavailable')
       }
       return {
         status: 'failed',

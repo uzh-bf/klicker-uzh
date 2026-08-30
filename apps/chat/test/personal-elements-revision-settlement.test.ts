@@ -117,4 +117,25 @@ describe('personal-element revision settlement', () => {
       })
     )
   })
+
+  test('marks an exhausted transport retry as unconfirmed', async () => {
+    mocks.applyPersonalElementRevision.mockRejectedValue(new Error('network'))
+
+    await expect(settlePersonalElementRevision(input)).resolves.toEqual({
+      status: 'failed',
+      reason: 'unavailable',
+    })
+    expect(mocks.applyPersonalElementRevision).toHaveBeenCalledTimes(2)
+    expect(mocks.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          content: [
+            expect.objectContaining({
+              result: expect.objectContaining({ status: 'unavailable' }),
+            }),
+          ],
+        },
+      })
+    )
+  })
 })

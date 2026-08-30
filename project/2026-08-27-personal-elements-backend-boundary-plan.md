@@ -939,6 +939,10 @@ no migration.
   Chat tests pass; GraphQL, Chat, and PWA TypeScript checks pass. The full
   GraphQL suite still has only the two pre-existing activity-sharing audit-log
   isolation failures.
+- [x] 2026-08-30 final transport correction — after two unknown GraphQL
+  failures, Chat now replaces the persisted revision proposal with an explicit
+  unconfirmed result. Reload no longer presents an unverified revision as
+  updated.
 - [ ] Commit the final-review corrections, rerun the affected review gates,
   push all three stack branches atomically, update pull request #5483, and keep
   the local AI runtime running for manual verification.

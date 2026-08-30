@@ -328,6 +328,8 @@ export default {
         'Diese Karte wurde vor Abschluss der Überarbeitung geändert.',
       revisionInsufficientEvidence:
         'Die gespeicherte Karte wurde nicht geändert, weil die Kursmaterialien nicht genügend Belege für diese Überarbeitung enthalten.',
+      revisionUnavailable:
+        'Die Überarbeitung der Karte konnte nicht bestätigt werden. Prüfe die gespeicherte Karte, bevor du es erneut versuchst.',
     },
     sources: {
       title: 'Quellen',
