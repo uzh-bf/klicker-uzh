@@ -357,3 +357,14 @@ revalidates branch ancestry and the source digest before persistence.
   fresh exact-head CI, integrated final review, PostgreSQL proof, browser
   smoke, upstream integration, merge, deployment, and activation remain
   pending or separately gated.
+
+- 2026-08-30 integrated P0 re-review approved the exact production package
+  through `68a86afd2` with no correctness, authorization, privacy,
+  concurrency, provider-contract, or roadmap finding. P0R now owns the dated
+  legacy-adapter removal. The correction passes 463 Chat tests with 32
+  PostgreSQL tests skipped, Chat typecheck, the production build, repository
+  pre-commit checks, formatting, and gitleaks. PostgreSQL and exact-head
+  browser proof remain evidence gaps. The branch is one non-overlapping
+  video-embed commit behind current `origin/v3`; publishing the correction,
+  fresh CI, upstream integration, merge, deployment, and activation remain
+  pending or separately gated.

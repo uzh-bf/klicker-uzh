@@ -902,3 +902,15 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   skipped; Chat typecheck, the production build, focused formatting, and
   `git diff --check` pass on Node 24.16.0 and pnpm 11.5.0. Immutable
   correction reviews remain pending for this follow-up.
+
+- 2026-08-30 integrated-review closure: correction commit `68a86afd2`
+  passed the immutable slice review with no finding. The simplifier found no
+  blocker; its optional removal of the preflight-race guard is declined
+  because a concurrent thread deletion can remove the row between the
+  preflight and transaction, and rollback is safer than recreating a legacy
+  trigger without its persisted bindings. The integrated final reviewer then
+  approved the exact `bb495a1b2..68a86afd2` package with no source-level
+  finding. PostgreSQL execution and exact-head browser proof remain evidence
+  gaps. The branch is still one non-overlapping video-embed commit behind
+  current `origin/v3`; publication, exact-head CI, and any new upstream
+  integration remain subsequent gates.
