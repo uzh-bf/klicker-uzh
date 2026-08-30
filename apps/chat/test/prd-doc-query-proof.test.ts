@@ -19,6 +19,10 @@ type MockToolResult = {
   content: Array<{ type: 'text'; text: string }>
 }
 
+function rejected(message = 'unauthorized: invalid token'): MockToolResult {
+  return { isError: true, content: [{ type: 'text', text: message }] }
+}
+
 afterEach(async () => {
   await Promise.all(
     temporaryDirectories
@@ -179,12 +183,15 @@ describe('PRD Doc Query proof manifest', () => {
 
 describe('PRD Doc Query proof transport', () => {
   test('disables Streamable HTTP reconnection attempts', () => {
+    let capturedUrl: URL | undefined
     let capturedOptions: {
       requestInit?: { headers?: Record<string, string>; redirect?: string }
+      fetch?: typeof fetch
       reconnectionOptions?: { maxRetries?: number }
     } = {}
     class RecordingTransport {
-      constructor(_url: URL, options: typeof capturedOptions) {
+      constructor(url: URL, options: typeof capturedOptions) {
+        capturedUrl = url
         capturedOptions = options
       }
     }
@@ -199,6 +206,45 @@ describe('PRD Doc Query proof transport', () => {
       requestInit: { headers, redirect: 'error' },
       reconnectionOptions: { maxRetries: 0 },
     })
+    expect(capturedUrl?.toString()).toBe(
+      'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker'
+    )
+    expect(capturedOptions.fetch).toBeTypeOf('function')
+  })
+
+  test('applies redirect refusal to the transport GET request', async () => {
+    const originalFetch = globalThis.fetch
+    let capturedInit: RequestInit | undefined
+    globalThis.fetch = (async (
+      _input: RequestInfo | URL,
+      init?: RequestInit
+    ) => {
+      capturedInit = init
+      return new Response(null, { status: 405 })
+    }) as typeof fetch
+    try {
+      let capturedOptions: { fetch?: typeof fetch } = {}
+      class RecordingTransport {
+        constructor(_url: URL, options: typeof capturedOptions) {
+          capturedOptions = options
+        }
+      }
+      createMcpTransport(
+        { authorization: 'Bearer dummy-transport-token' },
+        RecordingTransport as unknown as Parameters<
+          typeof createMcpTransport
+        >[1]
+      )
+      await capturedOptions.fetch?.('https://example.test/mcp', {
+        method: 'GET',
+      })
+      expect(capturedInit).toMatchObject({
+        method: 'GET',
+        redirect: 'error',
+      })
+    } finally {
+      globalThis.fetch = originalFetch
+    }
   })
 })
 
@@ -216,7 +262,7 @@ describe('PRD Doc Query proof matrix', () => {
     }): Promise<MockToolResult> => {
       call += 1
       if ((call >= 3 && call <= 8) || override) {
-        return { isError: true, content: [] }
+        return rejected(override ? 'invalid arguments' : undefined)
       }
       const positive = question.startsWith('positive')
       const marker = question.replace(
@@ -318,11 +364,45 @@ describe('PRD Doc Query proof matrix', () => {
       environment,
       invoke: async () => {
         calls += 1
-        return { isError: true, content: [] }
+        return rejected('backend unavailable')
       },
     })
     expect(receipt.failureClass).toBe('canary_positive_failed')
     expect(calls).toBe(1)
+  })
+
+  test('does not accept an unrelated tool error as an auth rejection', async () => {
+    const validated = validateManifest(manifest())
+    const environment = await dummyEnvironment()
+    let call = 0
+    const receipt = await runProofMatrix({
+      manifest: validated,
+      environment,
+      invoke: async ({ question }: { question: string }) => {
+        call += 1
+        if (call === 3) return rejected('backend unavailable')
+        const positive = question.startsWith('positive')
+        const marker = question.replace(
+          positive ? 'positive fixture ' : 'foreign fixture ',
+          positive ? 'positive-marker-' : 'safe-marker-'
+        )
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                mode: 'documents',
+                summary: { sources_returned: 1, chunks_returned: 1 },
+                sources: [{ reference: marker, chunks: [] }],
+              }),
+            },
+          ],
+        }
+      },
+    })
+    expect(receipt.failureClass).toBe('rejection_failed')
+    expect(receipt.failedRejectionClass).toBe('missing')
+    expect(call).toBe(3)
   })
 
   test('sends both protected fields in the trusted-filter rejection case', async () => {
@@ -343,7 +423,7 @@ describe('PRD Doc Query proof matrix', () => {
         call += 1
         if (override) overrides.push(override)
         if ((call >= 3 && call <= 8) || override) {
-          return { isError: true, content: [] }
+          return rejected(override ? 'invalid arguments' : undefined)
         }
         const positive = question.startsWith('positive')
         const marker = question.replace(
