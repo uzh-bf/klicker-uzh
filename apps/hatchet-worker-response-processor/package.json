@@ -40,7 +40,8 @@
     "dev:run": "nodemon -w dist/ --exec 'node --env-file .env dist/index.js'",
     "dev:test": "cross-env NODE_ENV=test ASSESSMENT_MODE=false tsx --env-file .env src/index.ts",
     "dev:watch": "run-p --npm-path pnpm dev:build dev:run",
-    "start:test": "node --env-file .env dist/index.js"
+    "start:test": "node --env-file .env dist/index.js",
+    "test:run": "tsx --test test/*.test.ts"
   },
   "engines": {
     "node": "=24"

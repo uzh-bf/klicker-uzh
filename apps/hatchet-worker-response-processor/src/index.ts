@@ -2,13 +2,22 @@ import {
   ConcurrencyLimitStrategy,
   Priority,
 } from '@hatchet-dev/typescript-sdk/index.js'
-import { hatchetClient } from '@klicker-uzh/hatchet'
+import {
+  createHatchetWorkerRuntime,
+  hatchetClient,
+  resolveWorkerRuntimeConfig,
+} from '@klicker-uzh/hatchet'
 import type { LiveQuizResponseInput } from '@klicker-uzh/types'
 import {
   aggregateAssessmentResponses,
   processAssessmentResponse,
 } from './processors/assessmentProcessor.js'
 import { processResponseMessage } from './processors/processor.js'
+import {
+  resolveResponseProcessorMode,
+  resolveResponseProcessorWorkerMode,
+  selectResponseProcessorWorkflows,
+} from './mode.js'
 
 export const processAnonymousResponseTask = hatchetClient.task({
   name: 'process-anonymous-response',
@@ -84,26 +93,36 @@ export const aggregateAssessmentResponsesTask = hatchetClient.durableTask({
 async function main() {
   console.log('Starting response processor worker...')
 
-  const mode =
-    process.env.ASSESSMENT_MODE === 'true' ? 'assessment' : 'live-quiz'
-  const workflows =
-    process.env.ASSESSMENT_MODE === 'true'
-      ? [processAssessmentResponseWorkflow, aggregateAssessmentResponsesTask]
-      : [processAuthenticatedResponseTask, processAnonymousResponseTask]
+  const mode = resolveResponseProcessorMode()
+  const runtimeConfig = resolveWorkerRuntimeConfig(
+    resolveResponseProcessorWorkerMode(mode)
+  )
+  const regularWorkflows = [
+    processAuthenticatedResponseTask,
+    processAnonymousResponseTask,
+  ]
+  const assessmentWorkflows = [
+    processAssessmentResponseWorkflow,
+    aggregateAssessmentResponsesTask,
+  ]
+  const workflows = selectResponseProcessorWorkflows({
+    mode,
+    regular: regularWorkflows,
+    assessment: assessmentWorkflows,
+  })
 
   console.log(`Mode: ${mode}`)
   console.log(`Workflows: ${workflows.length}`)
 
   console.log('Creating worker...')
-  const worker = await hatchetClient.worker(
-    'hatchet-worker-response-processor',
-    {
-      workflows,
-    }
-  )
+  const runtime = createHatchetWorkerRuntime({
+    config: runtimeConfig,
+    workflows,
+    workerFactory: (name, options) => hatchetClient.worker(name, options),
+  })
 
   console.log('▶Starting worker to process responses...')
-  await worker.start()
+  await runtime.start()
 
   console.log('Response processor worker started successfully!')
 }

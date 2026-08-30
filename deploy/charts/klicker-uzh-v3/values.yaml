@@ -106,7 +106,15 @@ hatchet:
   workers:
     general:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 1
       priorityClassName: production-workload
+      workerName: hatchet-worker-general
+      nonDurableSlots: 100
+      durableSlots: 1000
+      healthPort: 8001
+      startupTimeoutMs: 30000
+      terminationGracePeriodSeconds: 90
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-general
         pullPolicy: Always
@@ -122,7 +130,15 @@ hatchet:
 
     responseProcessor:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 1
       priorityClassName: production-workload
+      workerName: hatchet-worker-response-processor
+      nonDurableSlots: 100
+      durableSlots: 1000
+      healthPort: 8002
+      startupTimeoutMs: 30000
+      terminationGracePeriodSeconds: 90
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
         pullPolicy: Always
@@ -138,7 +154,15 @@ hatchet:
 
     responseProcessorAssessment:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 1
       priorityClassName: production-workload
+      workerName: hatchet-worker-response-processor-assessment
+      nonDurableSlots: 100
+      durableSlots: 1000
+      healthPort: 8003
+      startupTimeoutMs: 30000
+      terminationGracePeriodSeconds: 90
       image:
         repository: ghcr.io/uzh-bf/klicker-uzh/hatchet-worker-response-processor
         pullPolicy: Always

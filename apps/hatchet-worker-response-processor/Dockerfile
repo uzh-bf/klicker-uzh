@@ -60,4 +60,4 @@ USER nodejs
 
 EXPOSE 3000
 
-CMD node /app/apps/hatchet-worker-response-processor/dist/index.js
+CMD ["node", "/app/apps/hatchet-worker-response-processor/dist/index.js"]
