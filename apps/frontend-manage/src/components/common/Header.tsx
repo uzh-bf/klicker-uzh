@@ -25,6 +25,7 @@ import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import AsyncTaskCenter from '../asyncTasks/AsyncTaskCenter'
 import SupportModal from './SupportModal'
 
 type UserProfile = NonNullable<UserProfileQuery['userProfile']>
@@ -219,7 +220,7 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
     />
   )
 
-  const rightNavigation: NavigationItemProps[] = [
+  const rightNavigationBeforeTasks: NavigationItemProps[] = [
     {
       type: 'button',
       key: 'support-menubar-item',
@@ -251,6 +252,8 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
           data: { cy: `running-live-quiz-${quiz.name}` },
         })) ?? [],
     },
+  ]
+  const rightNavigationAfterTasks: NavigationItemProps[] = [
     {
       type: 'dropdown',
       key: 'user-menubar-dropdown',
@@ -328,10 +331,17 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
             </Tooltip>
           )}
         </div>
-        <Navigation
-          items={rightNavigation}
-          className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
-        />
+        <div className="flex h-10 flex-row items-center">
+          <Navigation
+            items={rightNavigationBeforeTasks}
+            className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
+          />
+          <AsyncTaskCenter />
+          <Navigation
+            items={rightNavigationAfterTasks}
+            className={{ root: '-gap-1 flex h-10 flex-row shadow-none' }}
+          />
+        </div>
       </div>
       {showSupportModal && (
         <SupportModal onClose={() => setShowSupportModal(false)} user={user} />

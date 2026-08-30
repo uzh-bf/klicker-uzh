@@ -2,7 +2,7 @@
 type: API Layer
 title: GraphQL API Layer
 description: Pothos code-first schema, the three-layer authorization pattern, service contract, operation naming, and the codegen ritual.
-timestamp: '2026-08-21'
+timestamp: '2026-08-28'
 tags:
   - backend
   - graphql
@@ -48,6 +48,10 @@ pnpm --filter @klicker-uzh/graphql generate
 ```
 
 The package build runs this generation before Rollup. Commit the handwritten operation/schema sources and the generated `src/public/schema.graphql` SDL snapshot; do not commit `src/ops.ts` or `src/public/{client,server}.json`, which are ignored build outputs. Frontends import typed documents from `@klicker-uzh/graphql/dist/ops`, and outside dev/test the backend only executes hashes present in `server.json` (see [Architecture Overview](./architecture-overview.md)). A missing generation step fails in two distinct ways: typecheck errors for missing documents or runtime persisted-query rejection for an unknown hash.
+
+### Lecturer async-task API
+
+`asyncTasks`, `asyncTaskAttentionCount`, and `acknowledgeAsyncTasks` use `asUser` without a subject-level permission wrapper because the task itself belongs to the authenticated lecturer. The service is the authorization boundary: every list/count/update includes `ownerId = ctx.user.sub`, acknowledgement accepts at most 50 unique ids and updates only unread terminal rows, and the row query returns bounded active plus recent-terminal sets (`packages/graphql/src/services/asyncTasks.ts:getAsyncTasks`). Clients may additionally request up to 50 valid, owner-scoped tracked UUIDs; those rows are merged into the bounded response so a locally started task cannot fall behind the recent-terminal window before its completion signal is handled. The separate count includes every active and unread recent-terminal task, so the header badge remains exact even when the popover rows are capped (`packages/graphql/src/services/asyncTasks.ts:getAsyncTaskAttentionCount`). The API exposes product lifecycle, subjects, stable error codes, and result ids; it does not expose Redis keys, Hatchet runs, leases, or retries.
 
 ### Assessment invitation API
 

@@ -3194,6 +3194,40 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Audience interaction has not been activated.',
       noFeedbacks: 'No feedbacks received or pinned yet...',
     },
+    asyncTasks: {
+      title: 'Tasks',
+      description: 'Work continues while you navigate.',
+      triggerLabel:
+        '{count, plural, =0 {No tasks need attention} one {# task needs attention} other {# tasks need attention}}',
+      markCompletedRead: 'Mark completed read',
+      acknowledgeFailed: 'Failed to mark tasks as read.',
+      empty: 'No background tasks yet.',
+      inProgress: 'In progress ({count})',
+      recent: 'Recent',
+      unread: 'Unread',
+      openResult: 'Open',
+      openResultLabel: 'Open {name}',
+      statusAt: '{status} · {time}',
+      courseDuplicationSource: 'Copy of "{source}"',
+      kind: {
+        courseDuplication: 'Course duplication',
+        knowledgeGraphGeneration: 'Knowledge graph generation',
+        questionGeneration: 'Question generation',
+      },
+      status: {
+        queued: 'Queued',
+        running: 'In progress',
+        succeeded: 'Completed',
+        failed: 'Failed',
+      },
+      failure: {
+        courseDuplicationAccess:
+          'You no longer have permission to duplicate this course.',
+        courseDuplicationPartial:
+          'Not all selected content could be duplicated. No partial course was created.',
+        generic: 'The task could not be completed.',
+      },
+    },
     courseList: {
       showDetails: 'Show course details',
       selectCourse: 'Please select a course',
@@ -3232,13 +3266,6 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Duplicating large courses can take a while.',
       courseDuplicationBackgroundInfo:
         'You can close this dialog. When the copy is ready, you will get a notification with a link to open it.',
-      courseDuplicationStatusTab: 'Course duplications',
-      courseDuplicationStatusCount:
-        '{count, plural, one {# active course duplication request} other {# active course duplication requests}}',
-      courseDuplicationStatusTitle: 'Active course duplications',
-      courseDuplicationStatusDescription:
-        'You can continue working while these courses are copied.',
-      courseDuplicationStatusSource: 'Copying from "{source}"',
       courseDuplicationSucceeded:
         'Course "{name}" has been duplicated successfully.',
       courseDuplicationOpenCourse: 'Open course',

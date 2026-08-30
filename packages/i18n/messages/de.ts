@@ -3244,6 +3244,41 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Publikumsinteraktion ist nicht aktiviert.',
       noFeedbacks: 'Bisher wurden keine Feedbacks eingegeben oder angepinnt...',
     },
+    asyncTasks: {
+      title: 'Aufgaben',
+      description: 'Vorgänge werden im Hintergrund fortgesetzt.',
+      triggerLabel:
+        '{count, plural, =0 {Keine Aufgabe erfordert Aufmerksamkeit} one {# Aufgabe erfordert Aufmerksamkeit} other {# Aufgaben erfordern Aufmerksamkeit}}',
+      markCompletedRead: 'Erledigte als gelesen markieren',
+      acknowledgeFailed:
+        'Die Aufgaben konnten nicht als gelesen markiert werden.',
+      empty: 'Noch keine Hintergrundaufgaben.',
+      inProgress: 'In Bearbeitung ({count})',
+      recent: 'Kürzlich',
+      unread: 'Ungelesen',
+      openResult: 'Öffnen',
+      openResultLabel: '{name} öffnen',
+      statusAt: '{status} · {time}',
+      courseDuplicationSource: 'Kopie von "{source}"',
+      kind: {
+        courseDuplication: 'Kursduplizierung',
+        knowledgeGraphGeneration: 'Wissensgraph-Erstellung',
+        questionGeneration: 'Fragengenerierung',
+      },
+      status: {
+        queued: 'In Warteschlange',
+        running: 'In Bearbeitung',
+        succeeded: 'Abgeschlossen',
+        failed: 'Fehlgeschlagen',
+      },
+      failure: {
+        courseDuplicationAccess:
+          'Sie verfügen nicht mehr über ausreichende Berechtigungen, um diesen Kurs zu duplizieren.',
+        courseDuplicationPartial:
+          'Nicht alle ausgewählten Inhalte konnten dupliziert werden. Es wurde kein unvollständiger Kurs erstellt.',
+        generic: 'Die Aufgabe konnte nicht abgeschlossen werden.',
+      },
+    },
     courseList: {
       showDetails: 'Kursinformationen anzeigen',
       selectCourse: 'Bitte wählen Sie einen Kurs aus',
@@ -3282,13 +3317,6 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Das Duplizieren grosser Kurse kann einen Moment dauern.',
       courseDuplicationBackgroundInfo:
         'Sie können diesen Dialog schliessen. Sobald die Kopie bereit ist, erhalten Sie eine Benachrichtigung mit einem Link zum Öffnen.',
-      courseDuplicationStatusTab: 'Kursduplizierungen',
-      courseDuplicationStatusCount:
-        '{count, plural, one {# laufender Kursduplizierungsauftrag} other {# laufende Kursduplizierungsaufträge}}',
-      courseDuplicationStatusTitle: 'Laufende Kursduplizierungen',
-      courseDuplicationStatusDescription:
-        'Sie können weiterarbeiten, während diese Kurse kopiert werden.',
-      courseDuplicationStatusSource: 'Kopie von "{source}"',
       courseDuplicationSucceeded: 'Kurs "{name}" wurde erfolgreich dupliziert.',
       courseDuplicationOpenCourse: 'Kurs öffnen',
       noCoursesFound:

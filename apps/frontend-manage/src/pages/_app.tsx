@@ -14,7 +14,7 @@ import { type Locale, NextIntlClientProvider } from 'next-intl'
 import { useEffect } from 'react'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
-import { CourseDuplicationProvider } from '../components/courses/CourseDuplicationStatusProvider'
+import { AsyncTaskProvider } from '../components/asyncTasks/AsyncTaskProvider'
 import ManageFeatureFlagProvider from '../components/featureFlags/ManageFeatureFlagProvider'
 import '../globals.css'
 import { useApollo } from '../lib/apollo'
@@ -58,10 +58,10 @@ function App({ Component, pageProps }: AppProps) {
         >
           <DndProvider backend={HTML5Backend}>
             <ManageFeatureFlagProvider>
-              <CourseDuplicationProvider>
+              <AsyncTaskProvider>
                 <Toaster closeButton position="top-right" />
                 <Component {...pageProps} />
-              </CourseDuplicationProvider>
+              </AsyncTaskProvider>
             </ManageFeatureFlagProvider>
           </DndProvider>
         </NextIntlClientProvider>

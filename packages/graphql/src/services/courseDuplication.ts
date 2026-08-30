@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import * as DB from '@klicker-uzh/prisma/client'
-import type { HatchetHandlers } from '@klicker-uzh/types'
+import {
+  COURSE_DUPLICATION_ERROR_CODES,
+  type HatchetHandlers,
+} from '@klicker-uzh/types'
 import {
   type PrismaTransactionClient,
   recomputeDerivedPermissions,
@@ -12,6 +15,12 @@ import utc from 'dayjs/plugin/utc.js'
 import { GraphQLError } from 'graphql'
 import type { Redis } from 'ioredis'
 import type { ContextWithUser } from '../lib/context.js'
+import { syncCourseDuplicationTask } from './asyncTasks.js'
+import {
+  COURSE_DUPLICATION_STALE_AFTER_MS,
+  COURSE_DUPLICATION_STATUS_KEY_PREFIX,
+  getCourseDuplicationStatusKey,
+} from './courseDuplicationShared.js'
 import { type CourseCreationArgs, createCourse } from './courses.js'
 import { manipulateGroupActivity } from './groups.js'
 import { manipulateLiveQuiz } from './liveQuizzes.js'
@@ -25,14 +34,7 @@ dayjs.extend(timezone)
 const DUPLICATE_COURSE_TRANSACTION_TIMEOUT = 10 * 60 * 1000
 const COURSE_DUPLICATION_TIME_ZONE = 'Europe/Zurich'
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
-const COURSE_DUPLICATION_PARTIAL_FAILURE_CODE =
-  'COURSE_DUPLICATION_PARTIAL_FAILURE'
 const COURSE_DUPLICATION_STATUS_TTL_SECONDS = 24 * 60 * 60
-// Pending Hatchet runs may wait up to 60 minutes for the task-local concurrency
-// slot. The extra 15 minutes allow cancellation and the five-minute sweep to
-// settle. A running attempt refreshes updatedAt when it starts and maintains a
-// heartbeat, so queue time cannot make live work stale.
-const COURSE_DUPLICATION_STALE_AFTER_MS = 75 * 60 * 1000
 const COURSE_DUPLICATION_PROCESS_LOCK_TTL_SECONDS = 60
 const COURSE_DUPLICATION_PROCESS_LOCK_RENEWAL_MS = 15 * 1000
 // The worker refreshes this key while an attempt is alive; stale normalization
@@ -44,12 +46,11 @@ export const COURSE_DUPLICATION_JOB_STATUS_VALUES = [
   'PENDING',
   'RUNNING',
 ] as const
-const COURSE_DUPLICATION_STATUS_KEY_PREFIX = 'course-duplication:job'
 const COURSE_DUPLICATION_SOURCE_LOCK_KEY_PREFIX = 'course-duplication:source'
 
 function courseDuplicationPartialFailure(message: string) {
   return new GraphQLError(message, {
-    extensions: { code: COURSE_DUPLICATION_PARTIAL_FAILURE_CODE },
+    extensions: { code: COURSE_DUPLICATION_ERROR_CODES.partialFailure },
   })
 }
 
@@ -105,10 +106,6 @@ interface CourseDuplicationJob extends CourseDuplicationStatus {
   catalystInstitutional: boolean
   catalystIndividual: boolean
   args?: CourseDuplicationJobArgs
-}
-
-function getCourseDuplicationStatusKey(jobId: string) {
-  return `${COURSE_DUPLICATION_STATUS_KEY_PREFIX}:${jobId}`
 }
 
 function getCourseDuplicationSourceLockKey({
@@ -184,7 +181,7 @@ function getCourseDuplicationJobErrorType(
   error: unknown
 ): CourseDuplicationErrorType {
   const code = getGraphQLErrorCode(error)
-  if (code === COURSE_DUPLICATION_PARTIAL_FAILURE_CODE) return 'partial'
+  if (code === COURSE_DUPLICATION_ERROR_CODES.partialFailure) return 'partial'
   if (code === 'FORBIDDEN') return 'access'
 
   return 'generic'
@@ -303,10 +300,24 @@ async function publishCourseDuplicationEvent(
         { cause: error instanceof Error ? error : undefined }
       )
       throw new GraphQLError('Course duplication could not be started', {
-        extensions: { code: 'COURSE_DUPLICATION_START_FAILED' },
+        extensions: { code: COURSE_DUPLICATION_ERROR_CODES.startFailed },
         originalError: publishError,
       })
     }
+  }
+}
+
+async function requireCourseDuplicationTask(
+  job: CourseDuplicationJob,
+  prisma: PrismaClient
+) {
+  try {
+    await syncCourseDuplicationTask(job, prisma)
+  } catch (error) {
+    throw new GraphQLError('Course duplication could not be started', {
+      extensions: { code: COURSE_DUPLICATION_ERROR_CODES.startFailed },
+      originalError: error instanceof Error ? error : undefined,
+    })
   }
 }
 
@@ -356,6 +367,7 @@ async function renewCourseDuplicationProcessLock(
 
 async function updateCourseDuplicationJob(
   redis: Redis,
+  prisma: PrismaClient,
   job: CourseDuplicationJob,
   patch: Partial<
     Pick<
@@ -374,6 +386,17 @@ async function updateCourseDuplicationJob(
 
   if (isTerminalCourseDuplicationStatus(updatedJob.status)) {
     await releaseCourseDuplicationSourceLock(redis, updatedJob)
+  }
+
+  try {
+    await syncCourseDuplicationTask(updatedJob, prisma)
+  } catch (error) {
+    // The durable task center mirrors product state, but it must never change
+    // the worker retry or copy-transaction outcome. The status query and stale
+    // sweep retry this synchronization while the Redis record exists.
+    console.error(
+      `Failed to synchronize async task ${updatedJob.id}: ${getErrorMessage(error)}`
+    )
   }
 
   return updatedJob
@@ -423,7 +446,7 @@ async function normalizeStaleCourseDuplicationJob(
     console.warn(
       `Course duplication job ${job.id} went stale but its course is committed; marking COMPLETED.`
     )
-    return await updateCourseDuplicationJob(redis, job, {
+    return await updateCourseDuplicationJob(redis, prisma, job, {
       status: 'COMPLETED',
       createdCourseId: committedCourse.id,
     })
@@ -432,7 +455,7 @@ async function normalizeStaleCourseDuplicationJob(
   console.warn(
     `Course duplication job ${job.id} went stale without a heartbeat; marking FAILED.`
   )
-  return await updateCourseDuplicationJob(redis, job, {
+  return await updateCourseDuplicationJob(redis, prisma, job, {
     status: 'FAILED',
     errorType: 'generic',
     errorMessage: 'Course duplication did not finish in time.',
@@ -488,10 +511,19 @@ export async function startCourseDuplication(
 
     if (!isTerminalCourseDuplicationStatus(normalizedExistingJob.status)) {
       if (normalizedExistingJob.status === 'PENDING') {
+        await requireCourseDuplicationTask(normalizedExistingJob, ctx.prisma)
         await publishCourseDuplicationEvent(
           ctx.hatchet,
           normalizedExistingJob.id
         )
+      } else {
+        try {
+          await syncCourseDuplicationTask(normalizedExistingJob, ctx.prisma)
+        } catch (error) {
+          console.error(
+            `Failed to restore async task ${normalizedExistingJob.id}: ${getErrorMessage(error)}`
+          )
+        }
       }
 
       return getPublicCourseDuplicationStatus(normalizedExistingJob)
@@ -538,7 +570,16 @@ export async function startCourseDuplication(
       await deleteCourseDuplicationJob(ctx.redisExec, job.id)
 
       if (lockedJob.status === 'PENDING') {
+        await requireCourseDuplicationTask(lockedJob, ctx.prisma)
         await publishCourseDuplicationEvent(ctx.hatchet, lockedJob.id)
+      } else {
+        try {
+          await syncCourseDuplicationTask(lockedJob, ctx.prisma)
+        } catch (error) {
+          console.error(
+            `Failed to restore async task ${lockedJob.id}: ${getErrorMessage(error)}`
+          )
+        }
       }
 
       return getPublicCourseDuplicationStatus(lockedJob)
@@ -567,10 +608,42 @@ export async function startCourseDuplication(
   }
 
   try {
+    await requireCourseDuplicationTask(job, ctx.prisma)
+  } catch (error) {
+    const cleanupResults = await Promise.allSettled([
+      deleteCourseDuplicationJob(ctx.redisExec, job.id),
+      releaseCourseDuplicationSourceLock(ctx.redisExec, job),
+    ])
+    for (const cleanupResult of cleanupResults) {
+      if (cleanupResult.status === 'rejected') {
+        console.error(
+          `Failed to clean up course duplication ${job.id}: ${getErrorMessage(cleanupResult.reason)}`
+        )
+      }
+    }
+    try {
+      await syncCourseDuplicationTask(
+        {
+          ...job,
+          status: 'FAILED',
+          errorType: 'generic',
+          updatedAt: new Date(),
+        },
+        ctx.prisma
+      )
+    } catch (taskCleanupError) {
+      console.error(
+        `Failed to mark async task ${job.id} as failed: ${getErrorMessage(taskCleanupError)}`
+      )
+    }
+    throw error
+  }
+
+  try {
     await publishCourseDuplicationEvent(ctx.hatchet, job.id)
   } catch (error) {
     try {
-      await updateCourseDuplicationJob(ctx.redisExec, job, {
+      await updateCourseDuplicationJob(ctx.redisExec, ctx.prisma, job, {
         status: 'FAILED',
         errorType: 'generic',
         errorMessage: 'Course duplication could not be started.',
@@ -613,6 +686,13 @@ export async function getCourseDuplicationStatuses(
       ctx.prisma,
       job
     )
+    try {
+      await syncCourseDuplicationTask(normalizedJob, ctx.prisma)
+    } catch (error) {
+      console.error(
+        `Failed to restore async task ${normalizedJob.id}: ${getErrorMessage(error)}`
+      )
+    }
     statuses.push(getPublicCourseDuplicationStatus(normalizedJob))
   }
 
@@ -632,6 +712,13 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
     }
 
     if (isTerminalCourseDuplicationStatus(pendingJob.status)) {
+      try {
+        await syncCourseDuplicationTask(pendingJob, globalCtx.prisma)
+      } catch (error) {
+        executionCtx.logger.warn(
+          `Failed to restore async task ${jobId}: ${getErrorMessage(error)}`
+        )
+      }
       if (pendingJob.status === 'COMPLETED') {
         await releaseCourseDuplicationSourceLock(redis, pendingJob)
       }
@@ -690,14 +777,16 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
 
       if (existingCourse) {
         committedCourseId = existingCourse.id
-        await updateCourseDuplicationJob(redis, job, {
+        await updateCourseDuplicationJob(redis, globalCtx.prisma, job, {
           status: 'COMPLETED',
           createdCourseId: existingCourse.id,
         })
         return true
       }
 
-      job = await updateCourseDuplicationJob(redis, job, { status: 'RUNNING' })
+      job = await updateCourseDuplicationJob(redis, globalCtx.prisma, job, {
+        status: 'RUNNING',
+      })
 
       const duplicatedCourse = await duplicateCourse(
         { ...duplicationArgs, courseId: job.id },
@@ -728,7 +817,7 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
       }
 
       committedCourseId = duplicatedCourse.id
-      await updateCourseDuplicationJob(redis, job, {
+      await updateCourseDuplicationJob(redis, globalCtx.prisma, job, {
         status: 'COMPLETED',
         createdCourseId: duplicatedCourse.id,
       })
@@ -751,7 +840,7 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
       }
 
       try {
-        await updateCourseDuplicationJob(redis, job, {
+        await updateCourseDuplicationJob(redis, globalCtx.prisma, job, {
           status: 'FAILED',
           errorType,
           errorMessage: getCourseDuplicationJobErrorMessage(error),
@@ -804,7 +893,18 @@ export const handleSweepStaleCourseDuplications: HatchetHandlers['handleSweepSta
         }
 
         const job = parseCourseDuplicationJob(await redis.get(key))
-        if (!job || isTerminalCourseDuplicationStatus(job.status)) continue
+        if (!job) continue
+
+        if (isTerminalCourseDuplicationStatus(job.status)) {
+          try {
+            await syncCourseDuplicationTask(job, globalCtx.prisma)
+          } catch (error) {
+            executionCtx.logger.warn(
+              `Failed to restore async task ${job.id}: ${getErrorMessage(error)}`
+            )
+          }
+          continue
+        }
 
         scannedJobs += 1
         const normalizedJob = await normalizeStaleCourseDuplicationJob(
