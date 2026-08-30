@@ -281,23 +281,65 @@ export default {
       searchedCourseMaterial: 'Kursmaterialien durchsucht',
       searchedCourseMaterialEmpty: 'Kursmaterialien durchsucht · keine Treffer',
       searchCourseMaterialFailed: 'Suche in Kursmaterialien fehlgeschlagen',
+      courseMaterialUnavailable:
+        'Ich konnte in den Kursmaterialien keine passenden Belege für diese Anfrage finden. Bitte stelle eine spezifischere Frage.',
       imageAnalyzed: 'Bild analysiert',
     },
     personalElements: {
       planTitle: 'Kartenplan',
+      planUnavailable:
+        'Dieser Kartenplan konnte nicht vorbereitet werden. Bitte versuche es erneut.',
       cardNumber: 'Karte {number}',
       approve: 'Diese Karten erstellen',
       generating: 'Karten werden erstellt...',
+      generationProgress: '{completed} von {total} Karten bereit',
+      generationComplete: 'Karten erstellt',
+      generationPartial:
+        'Einige Karten konnten nicht erstellt werden. Du kannst den Plan erneut ausführen.',
+      generationFailed: 'Kartenerstellung fehlgeschlagen',
       approvalMessage: 'Bitte erstelle die vorgeschlagenen Karten zu {topic}.',
+      accepted: 'Der Plan wurde angenommen.',
       superseded: 'Dieser Kartenplan wurde durch einen neueren Plan ersetzt.',
+      duplicatesSkipped: 'Mögliche doppelte Karten wurden übersprungen:',
+      allDuplicates:
+        'Alle vorgeschlagenen Karten ähneln bereits vorhandenen Karten. Bitte frage nach anderen Karten.',
+      candidateSuperseded: 'Durch die überarbeitete Karte ersetzt',
+      references: 'Referenzen',
+      candidateUnavailable:
+        'Diese Karte kann nicht gespeichert werden, weil die Erstellung nicht abgeschlossen wurde. Versuche den Kartenplan erneut.',
       saved: 'Gespeichert',
+      save: 'Speichern',
+      saving: 'Wird gespeichert...',
+      discard: 'Verwerfen',
+      discarding: 'Wird verworfen...',
+      discarded: 'Verworfen',
       saveSelected: 'Auswahl speichern',
       saveAll: 'Alle speichern',
+      saveError:
+        'Die Karten konnten nicht gespeichert werden. Bitte versuche es erneut.',
+      discardError:
+        'Die Karte konnte nicht verworfen werden. Bitte versuche es erneut.',
+      savedStateError:
+        'Wir konnten nicht prüfen, ob diese Karten bereits gespeichert wurden.',
+      savedStateRetry: 'Erneut prüfen',
       practiceNow: 'Jetzt üben',
+      revisionPending:
+        'Die Überarbeitung der Karte wird bestätigt. Lade die Seite neu oder prüfe die gespeicherte Karte, bevor du es erneut versuchst.',
+      revisionUpdated: 'Aktualisiert · Version {version}',
+      revisionConflict:
+        'Diese Karte wurde vor Abschluss der Überarbeitung geändert.',
+      revisionInsufficientEvidence:
+        'Die gespeicherte Karte wurde nicht geändert, weil die Kursmaterialien nicht genügend Belege für diese Überarbeitung enthalten.',
+      revisionUnavailable:
+        'Die Überarbeitung der Karte konnte nicht bestätigt werden. Prüfe die gespeicherte Karte, bevor du es erneut versuchst.',
     },
     sources: {
       title: 'Quellen',
       page: 'S. {page}',
+      pages: 'S. {from}–{to}',
+      pdfPage: 'PDF-S. {page}',
+      pdfPages: 'PDF-S. {from}–{to}',
+      unavailable: 'Quellenlink nicht verfügbar',
       video: 'Video',
       image: 'Bild',
     },
@@ -1150,15 +1192,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       dueCount:
         '{count, plural, =0 {Nichts fällig} one {# Karte fällig} other {# Karten fällig}}',
       empty:
-        'Sie haben für diesen Kurs noch keine persönlichen Karten gespeichert.',
-      noDue: 'Im Moment ist keine Karte fällig. Kommen Sie später wieder.',
+        'Du hast für diesen Kurs noch keine persönlichen Karten gespeichert.',
+      noDue: 'Im Moment ist keine Karte fällig. Komm später wieder.',
       error:
-        'Die Karten konnten nicht geladen oder aktualisiert werden. Bitte versuchen Sie es erneut.',
+        'Die Karten konnten nicht geladen oder aktualisiert werden. Bitte versuche es erneut.',
+      retry: 'Erneut versuchen',
       aiGenerated: 'KI-generiert',
       authored: 'Selbst erstellt',
       sourceLinked: 'mit Quellen verknüpft',
       notReviewed: 'nicht vom Kursteam geprüft',
       sources: 'Quellen',
+      generationSources: 'Quellen für die Erstellung dieser Karte',
+      page: 'S. {page}',
       previous: 'Zurück',
       next: 'Weiter',
       delete: 'Löschen',
@@ -1168,7 +1213,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       ownElements:
         '{count, plural, =0 {Eigene Elemente} one {Eigene Elemente · # fällig} other {Eigene Elemente · # fällig}}',
       practiceDescription:
-        'Üben Sie Ihre eigenen Karten mit derselben Navigation und demselben Fortschritt wie in einem Übungs-Quiz.',
+        'Übe deine eigenen Karten mit derselben Navigation und demselben Fortschritt wie in einem Übungs-Quiz.',
       homeLink: 'Meine persönlichen Karten',
       repetitionLink:
         '{count, plural, =0 {Meine persönlichen Karten} one {Meine persönlichen Karten · # fällig} other {Meine persönlichen Karten · # fällig}}',

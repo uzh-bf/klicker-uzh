@@ -1,7 +1,18 @@
+import {
+  type ElementSourceLocator,
+  type ElementSourceReference,
+  getElementSourceLocatorTarget,
+  isSafeElementSourceUrl,
+} from '@klicker-uzh/types'
 import { TOOL_NAME_SUFFIX_LENGTH } from '../config/toolNames'
+import { isFailedPersonalElementPart } from '../personalElements/failure'
 import type { ChatSource, ChatSourceType } from './types'
 
-const MAX_SOURCES = 12
+const MAX_DOC_QUERY_SOURCES = 12
+// Candidate generation is bounded by the tool schema (five candidates with up
+// to 32 sources each). Keep that citation registry separate from the compact
+// doc-query source list so later generated cards do not lose their chips.
+const MAX_CANDIDATE_SOURCES = 1_024
 const EXCERPT_MAX_LENGTH = 240
 
 // MCP tools are namespaced by server, e.g. `KB_doc_query` (see
@@ -39,7 +50,19 @@ interface SourceCandidate {
   endSec?: number
   url?: string
   excerpt?: string
+  elementReference?: ElementSourceReference
   dedupeKey: string
+}
+
+export function getCandidateSourceKey(source: {
+  candidateId?: string
+  sourceId: string
+}): string {
+  return (
+    'candidate:' +
+    (source.candidateId ? source.candidateId + ':' : '') +
+    source.sourceId
+  )
 }
 
 export function isDocQueryToolName(toolName: string): boolean {
@@ -79,21 +102,32 @@ export function normalizeSourcesFromParts(
 
   const seenDedupeKeys = new Set<string>()
   const sources: ChatSource[] = []
+  let docQuerySourceCount = 0
+  let candidateSourceCount = 0
 
   for (const part of parts) {
-    if (sources.length >= MAX_SOURCES) break
-    if (!isQualifyingPart(part)) continue
-
-    const payload = parseDocQueryPayload(part.result)
-    if (!payload || 'error' in payload) continue
-
-    const candidates =
-      payload.mode === 'documents'
-        ? normalizeDocumentsModeSources(payload)
-        : normalizeAnswerModeSources(payload)
+    const candidatePart = isCandidatePart(part)
+    const docQueryPart = !candidatePart && isQualifyingPart(part)
+    if (
+      (candidatePart && candidateSourceCount >= MAX_CANDIDATE_SOURCES) ||
+      (docQueryPart && docQuerySourceCount >= MAX_DOC_QUERY_SOURCES)
+    ) {
+      continue
+    }
+    const candidates = candidatePart
+      ? normalizeCandidateSources(part.result)
+      : docQueryPart
+        ? normalizeDocQuerySources(part.result)
+        : []
 
     for (const candidate of candidates) {
-      if (sources.length >= MAX_SOURCES) break
+      const sourceLimit = candidatePart
+        ? MAX_CANDIDATE_SOURCES
+        : MAX_DOC_QUERY_SOURCES
+      const sourceCount = candidatePart
+        ? candidateSourceCount
+        : docQuerySourceCount
+      if (sourceCount >= sourceLimit) break
       if (seenDedupeKeys.has(candidate.dedupeKey)) continue
 
       seenDedupeKeys.add(candidate.dedupeKey)
@@ -108,11 +142,39 @@ export function normalizeSourcesFromParts(
         endSec: candidate.endSec,
         url: candidate.url,
         excerpt: candidate.excerpt,
+        elementReference: candidate.elementReference,
       })
+      if (candidatePart) {
+        candidateSourceCount += 1
+      } else {
+        docQuerySourceCount += 1
+      }
     }
   }
 
   return sources
+}
+
+function normalizeDocQuerySources(raw: unknown): SourceCandidate[] {
+  const payload = parseDocQueryPayload(raw)
+  if (!payload || 'error' in payload) return []
+  return payload.mode === 'documents'
+    ? normalizeDocumentsModeSources(payload)
+    : normalizeAnswerModeSources(payload)
+}
+
+function isCandidatePart(
+  part: ChatSourcePart
+): part is ChatSourcePart & { toolName: string; result: unknown } {
+  const toolName = part.toolName === 'generate_cards' ? 'generate_cards' : null
+  return (
+    part.type === 'tool-call' &&
+    toolName !== null &&
+    !part.isError &&
+    !isFailedPersonalElementPart(part, toolName) &&
+    part.result !== undefined &&
+    part.result !== null
+  )
 }
 
 function isQualifyingPart(
@@ -126,6 +188,203 @@ function isQualifyingPart(
     part.result !== undefined &&
     part.result !== null
   )
+}
+
+function normalizeCandidateSources(raw: unknown): SourceCandidate[] {
+  if (!raw || typeof raw !== 'object') return []
+  const values = (raw as { candidates?: unknown }).candidates
+  if (!Array.isArray(values)) return []
+
+  return values.flatMap((candidate) => {
+    if (!candidate || typeof candidate !== 'object') return []
+    const candidateValue = candidate as {
+      candidateId?: unknown
+      sources?: unknown
+    }
+    const candidateId = cleanString(candidateValue.candidateId)
+    const sources = candidateValue.sources
+    if (!Array.isArray(sources)) return []
+    if (!candidateId) return []
+
+    return normalizeCandidateReferenceValues(candidateId, sources)
+  })
+}
+
+function normalizeCandidateReferenceValues(
+  candidateId: string,
+  values: unknown[]
+): SourceCandidate[] {
+  const references: ElementSourceReference[] = []
+  const legacy = new Map<
+    string,
+    {
+      title: string
+      url?: string
+      chunkIds: string[]
+      pages: Array<{ page: number }>
+    }
+  >()
+
+  for (const rawSource of values) {
+    if (!rawSource || typeof rawSource !== 'object') continue
+    const source = rawSource as Record<string, unknown>
+    const sourceId = cleanString(source.sourceId)
+    if (!sourceId) continue
+
+    const chunkIds = cleanStringArray(source.chunkIds)
+    const kind =
+      source.kind === 'WEB'
+        ? 'WEB'
+        : source.kind === 'DOCUMENT'
+          ? 'DOCUMENT'
+          : undefined
+    const title = cleanString(source.title)
+    const locators = normalizeElementLocators(source.locators)
+    if (kind && title && chunkIds.length > 0 && locators) {
+      const canonicalUrl = cleanSafeUrl(source.canonicalUrl)
+      references.push({
+        sourceId,
+        kind,
+        title,
+        ...(canonicalUrl ? { canonicalUrl } : {}),
+        chunkIds,
+        locators,
+      })
+      continue
+    }
+
+    const chunkId = cleanString(source.chunkId)
+    if (!chunkId) continue
+    const rawUrl = cleanSafeUrl(source.url)
+    const existing = legacy.get(sourceId)
+    const entry = existing ?? {
+      title: title ?? sourceId,
+      ...(rawUrl ? { url: rawUrl } : {}),
+      chunkIds: [],
+      pages: [],
+    }
+    entry.chunkIds.push(chunkId)
+    const page = cleanPage(source.page)
+    if (page !== undefined) entry.pages.push({ page })
+    legacy.set(sourceId, entry)
+  }
+
+  for (const [sourceId, source] of legacy) {
+    const pages = [...new Set(source.pages.map(({ page }) => page))].sort(
+      (left, right) => left - right
+    )
+    const kind =
+      pages.length > 0 || isPdfSourceUrl(source.url) ? 'DOCUMENT' : 'WEB'
+    references.push({
+      sourceId,
+      kind,
+      title: source.title,
+      ...(source.url ? { canonicalUrl: source.url } : {}),
+      chunkIds: [...new Set(source.chunkIds)],
+      locators:
+        kind === 'DOCUMENT'
+          ? pages.map((page) => ({
+              type: 'PAGE_RANGE' as const,
+              pageFrom: page,
+              pageTo: page,
+            }))
+          : source.url
+            ? [{ type: 'WEB_ANCHOR' as const, url: source.url }]
+            : [],
+    })
+  }
+
+  return references.map((reference) => {
+    const firstPage = reference.locators.find(
+      (locator) => locator.type === 'PAGE_RANGE'
+    )
+    const firstTarget = reference.locators
+      .map((locator) => getElementSourceLocatorTarget(reference, locator))
+      .find(Boolean)
+    return {
+      type: reference.kind === 'DOCUMENT' ? 'document' : 'link',
+      title: reference.title,
+      ...(firstPage?.type === 'PAGE_RANGE'
+        ? {
+            page: firstPage.pageFrom,
+            ...(firstPage.labelFrom
+              ? { labeledPage: firstPage.labelFrom }
+              : {}),
+          }
+        : {}),
+      ...(firstTarget ? { url: firstTarget } : {}),
+      elementReference: reference,
+      dedupeKey: getCandidateSourceKey({
+        candidateId,
+        sourceId: reference.sourceId,
+      }),
+    }
+  })
+}
+
+function isPdfSourceUrl(url: string | undefined) {
+  if (!url) return false
+  try {
+    return new URL(url).pathname.toLowerCase().endsWith('.pdf')
+  } catch {
+    return false
+  }
+}
+
+function cleanStringArray(value: unknown) {
+  if (!Array.isArray(value)) return []
+  const strings = value.flatMap((item) => {
+    const cleaned = cleanString(item)
+    return cleaned ? [cleaned] : []
+  })
+  return strings.length === value.length ? [...new Set(strings)] : []
+}
+
+function cleanSafeUrl(value: unknown) {
+  const url = cleanString(value)
+  return url && isSafeElementSourceUrl(url) ? url : undefined
+}
+
+function normalizeElementLocators(
+  value: unknown
+): ElementSourceLocator[] | undefined {
+  if (!Array.isArray(value)) return undefined
+  const locators: ElementSourceLocator[] = []
+  for (const raw of value) {
+    if (!raw || typeof raw !== 'object') return undefined
+    const locator = raw as Record<string, unknown>
+    if (locator.type === 'PAGE_RANGE') {
+      const pageFrom = cleanPage(locator.pageFrom)
+      const pageTo = cleanPage(locator.pageTo)
+      if (pageFrom === undefined || pageTo === undefined || pageTo < pageFrom) {
+        return undefined
+      }
+      locators.push({
+        type: 'PAGE_RANGE',
+        pageFrom,
+        pageTo,
+        ...(cleanString(locator.labelFrom)
+          ? { labelFrom: cleanString(locator.labelFrom) }
+          : {}),
+        ...(cleanString(locator.labelTo)
+          ? { labelTo: cleanString(locator.labelTo) }
+          : {}),
+      })
+    } else if (locator.type === 'WEB_ANCHOR') {
+      const url = cleanSafeUrl(locator.url)
+      if (!url) return undefined
+      locators.push({
+        type: 'WEB_ANCHOR',
+        url,
+        ...(cleanString(locator.label)
+          ? { label: cleanString(locator.label) }
+          : {}),
+      })
+    } else {
+      return undefined
+    }
+  }
+  return locators
 }
 
 /**

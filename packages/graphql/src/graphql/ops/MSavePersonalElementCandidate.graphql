@@ -1,0 +1,7 @@
+mutation MSavePersonalElementCandidate(
+  $input: PersonalElementCandidateLinkageInput!
+) {
+  savePersonalElementCandidate(input: $input) {
+    ...FPersonalElement
+  }
+}

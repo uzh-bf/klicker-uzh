@@ -22,7 +22,17 @@ import {
   normalizeCustomMathTags,
 } from '@/src/components/markdown-text'
 import { formatReasoningEffort } from '@/src/lib/config/reasoning'
-import { resolveDisclosureOpen } from './message-parts-state'
+import {
+  getPersonalElementToolPresentation,
+  isInternalChatTool,
+  resolveDisclosureOpen,
+  shouldGroupToolCalls,
+} from './message-parts-state'
+import {
+  CandidateCards,
+  SavedRevisionCard,
+} from './personal-elements/CandidateCards'
+import { PlanCard } from './personal-elements/PlanCard'
 import { ToolFallback } from './tool-fallback'
 
 type MessageWithCustomMetadata = {
@@ -215,7 +225,39 @@ const ChatStoppedPart: FC = () => {
   )
 }
 
+/**
+ * Server-owned terminal state for a grounded turn whose course search did not
+ * return usable evidence. It intentionally contains no model-authored answer.
+ */
+const RetrievalUnavailablePart: FC = () => {
+  const t = useTranslations()
+
+  return (
+    <div
+      data-cy="chat-retrieval-unavailable"
+      role="status"
+      className="bg-muted text-muted-foreground mt-2 flex items-start gap-2 rounded-md px-3 py-2 text-sm"
+    >
+      <AlertCircleIcon className="mt-0.5 size-4 shrink-0" aria-hidden />
+      <p>{t('chat.tools.courseMaterialUnavailable')}</p>
+    </div>
+  )
+}
+
 export const AssistantMessageParts: FC = () => {
+  const message = useAuiState((s) => s.message)
+  const hasGeneratedCards = message.content.some(
+    (part) =>
+      part.type === 'tool-call' &&
+      getPersonalElementToolPresentation(part.toolName) ===
+        'generated-candidates'
+  )
+  const hasRetrievalUnavailable = message.content.some(
+    (part) =>
+      part.type === 'tool-call' &&
+      part.toolName === 'course_retrieval_unavailable'
+  )
+
   return (
     <MessagePrimitive.GroupedParts
       indicator="never"
@@ -234,27 +276,53 @@ export const AssistantMessageParts: FC = () => {
                 </ReasoningGroup>
               </div>
             )
-          case 'group-tool':
-            return part.indices.length <= 1 ? (
+          case 'group-tool': {
+            const toolNames = part.indices.flatMap((index) => {
+              const groupedPart = message.content[index]
+              return groupedPart?.type === 'tool-call'
+                ? [groupedPart.toolName]
+                : []
+            })
+            const visibleToolCount = toolNames.filter(
+              (toolName) => !isInternalChatTool(toolName)
+            ).length
+            return !shouldGroupToolCalls(toolNames) ? (
               children
             ) : (
               <ToolGroup
                 active={part.status.type === 'running'}
-                count={part.indices.length}
+                count={visibleToolCount}
               >
                 {children}
               </ToolGroup>
             )
+          }
           case 'text':
-            return <MarkdownText />
+            return hasGeneratedCards || hasRetrievalUnavailable ? null : (
+              <MarkdownText />
+            )
           case 'reasoning':
             return <ReasoningPart {...part} />
-          case 'tool-call':
+          case 'tool-call': {
+            if (isInternalChatTool(part.toolName)) return null
+            const personalElementPresentation =
+              getPersonalElementToolPresentation(part.toolName)
             return (
               <div className="focus-visible:ring-ring rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
-                {part.toolUI ?? <ToolFallback {...part} />}
+                {personalElementPresentation === 'plan' ? (
+                  <PlanCard part={part} />
+                ) : personalElementPresentation === 'generated-candidates' ? (
+                  <CandidateCards part={part} />
+                ) : personalElementPresentation === 'saved-revision' ? (
+                  <SavedRevisionCard part={part} />
+                ) : part.toolName === 'course_retrieval_unavailable' ? (
+                  <RetrievalUnavailablePart />
+                ) : (
+                  (part.toolUI ?? <ToolFallback {...part} />)
+                )}
               </div>
             )
+          }
           case 'data':
             return part.name === 'chat-error' ? (
               <div className="focus-visible:ring-ring rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">

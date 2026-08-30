@@ -123,6 +123,15 @@ services:
       - GROWTHBOOK_MANAGEMENT_API_URL=${GROWTHBOOK_MANAGEMENT_API_URL:-}
       - GROWTHBOOK_MANAGEMENT_API_KEY=${GROWTHBOOK_MANAGEMENT_API_KEY:-}
       - GROWTHBOOK_BETA_SAVED_GROUP_ID=${GROWTHBOOK_BETA_SAVED_GROUP_ID:-}
+      # Read-only GrowthBook SDK connection and doc-query signing credentials
+      # are injected from Infisical by the host-side devrouter command.
+      - GROWTHBOOK_API_HOST=${GROWTHBOOK_API_HOST:-}
+      - GROWTHBOOK_CLIENT_KEY=${GROWTHBOOK_CLIENT_KEY:-}
+      - GROWTHBOOK_ENV=${GROWTHBOOK_ENV:-development}
+      - DOC_QUERY_SCOPE_PRIVATE_KEY=${DOC_QUERY_SCOPE_PRIVATE_KEY:-}
+      - DOC_QUERY_SCOPE_KID=${DOC_QUERY_SCOPE_KID:-dev-unconfigured}
+      - DOC_QUERY_SCOPE_ISSUER=${DOC_QUERY_SCOPE_ISSUER:-https://chat.klicker.localhost}
+      - DOC_QUERY_SCOPE_AUDIENCE=${DOC_QUERY_SCOPE_AUDIENCE:-klicker-doc-query-dev}
     extra_hosts:
       - 'api.klicker.localhost:host-gateway'
       - 'auth.klicker.localhost:host-gateway'

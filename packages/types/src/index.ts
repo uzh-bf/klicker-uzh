@@ -24,6 +24,7 @@ export * from './elementGeneration.js'
 // Provider-wire compatibility types; product-facing code uses elementGeneration.
 export * from './questionGeneration.js'
 export * from './flashcardGeneration.js'
+export * from './sourceReferences.js'
 
 // ----- ACTIVITY LOG TYPES -----
 // #region

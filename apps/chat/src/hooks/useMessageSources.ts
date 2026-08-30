@@ -46,7 +46,49 @@ export function useMessageSources(): MessageSources {
         ? '-'
         : typeof result === 'string'
           ? `s${result.length}`
-          : 'o'
+          : (() => {
+              if (!result || typeof result !== 'object') return 'o'
+              const value = result as {
+                status?: unknown
+                completed?: unknown
+                total?: unknown
+                candidates?: unknown
+              }
+              const candidates = Array.isArray(value.candidates)
+                ? value.candidates
+                    .flatMap((candidate) => {
+                      if (!candidate || typeof candidate !== 'object') {
+                        return []
+                      }
+                      const sourceValues = (candidate as { sources?: unknown })
+                        .sources
+                      if (!Array.isArray(sourceValues)) return []
+                      return sourceValues.flatMap((source) => {
+                        if (!source || typeof source !== 'object') return []
+                        const value = source as {
+                          sourceId?: unknown
+                          chunkId?: unknown
+                        }
+                        return [
+                          String(value.sourceId ?? '') +
+                            ':' +
+                            String(value.chunkId ?? ''),
+                        ]
+                      })
+                    })
+                    .join(',')
+                : ''
+              return (
+                'o:' +
+                String(value.status ?? '') +
+                ':' +
+                String(value.completed ?? '') +
+                ':' +
+                String(value.total ?? '') +
+                ':' +
+                candidates
+              )
+            })()
     fingerprint += `|${'toolCallId' in part ? String(part.toolCallId) : ''}:${part.isError ? 1 : 0}:${resultMark}`
   }
 

@@ -3,8 +3,16 @@ import { readFileSync } from 'fs'
 import { COURSE_ID_TEST, USER_ID_TEST } from './constants.js'
 
 export const CHATBOT_ID_TEST = '8f9c2e1d-4b7a-4c3e-9f5d-1a2b3c4d5e6f'
+export const KB_ID_TEST = 'f5d2c8b0-7e4a-4a85-9d22-3c2fa8f8d6b1'
 
 export const CHATBOT_AVATAR_HASH = '217ed4744160a52219711edc6636550d49b6d672'
+
+export function isLocalDocQueryFixtureEnabled() {
+  return (
+    process.env.NODE_ENV === 'development' &&
+    process.env.LOCAL_DOC_QUERY_FIXTURE_ENABLED === 'true'
+  )
+}
 
 const SEEDED_CHATBOT_MODEL_IDS = [
   'auto',
@@ -93,8 +101,54 @@ Der Chatbot soll **kursbezogene Fragen** im Kurs "Banking and Finance I/II" bean
     },
   })
 
+  if (!isLocalDocQueryFixtureEnabled()) {
+    return { testChatbot, testDisclaimer, testKnowledgeBase: null }
+  }
+
+  const testKnowledgeBase = await prisma.kB.upsert({
+    where: { id: KB_ID_TEST },
+    create: {
+      id: KB_ID_TEST,
+      name: 'Benibot local development fixture',
+      description: 'Synthetic knowledge scope for the local doc_query fixture.',
+      ownerId: USER_ID_TEST,
+    },
+    update: {
+      name: 'Benibot local development fixture',
+      description: 'Synthetic knowledge scope for the local doc_query fixture.',
+      deletedAt: null,
+      deletedById: null,
+    },
+  })
+
+  await prisma.$transaction(async (transaction) => {
+    await transaction.kBChatbot.updateMany({
+      where: {
+        chatbotId: testChatbot.id,
+        kbId: { not: testKnowledgeBase.id },
+        isEnabled: true,
+      },
+      data: { isEnabled: false },
+    })
+    await transaction.kBChatbot.upsert({
+      where: {
+        kbId_chatbotId: {
+          kbId: testKnowledgeBase.id,
+          chatbotId: testChatbot.id,
+        },
+      },
+      create: {
+        kbId: testKnowledgeBase.id,
+        chatbotId: testChatbot.id,
+        isEnabled: true,
+      },
+      update: { isEnabled: true },
+    })
+  })
+
   return {
     testChatbot,
     testDisclaimer,
+    testKnowledgeBase,
   }
 }

@@ -277,23 +277,62 @@ export default {
       searchedCourseMaterial: 'Searched course materials',
       searchedCourseMaterialEmpty: 'Searched course materials · no results',
       searchCourseMaterialFailed: 'Course material search failed',
+      courseMaterialUnavailable:
+        'I could not find usable evidence in the course materials for this request. Please try a more specific question.',
       imageAnalyzed: 'Image analyzed',
     },
     personalElements: {
       planTitle: 'Card plan',
+      planUnavailable:
+        'This card plan could not be prepared. Please try again.',
       cardNumber: 'Card {number}',
       approve: 'Generate these cards',
       generating: 'Generating cards...',
+      generationProgress: '{completed} of {total} cards ready',
+      generationComplete: 'Cards generated',
+      generationPartial:
+        'Some cards could not be generated. You can retry the plan.',
+      generationFailed: 'Card generation failed',
       approvalMessage: 'Please generate the proposed cards for {topic}.',
+      accepted: 'The plan was accepted.',
       superseded: 'This card plan was replaced by a newer plan.',
+      duplicatesSkipped: 'Potential duplicate cards were skipped:',
+      allDuplicates:
+        'All proposed cards look like duplicates of cards you already have. Please ask for different cards.',
+      candidateSuperseded: 'Replaced by the revised card',
+      references: 'References',
+      candidateUnavailable:
+        'This card cannot be saved because generation did not complete. Retry the card plan.',
       saved: 'Saved',
+      save: 'Save',
+      saving: 'Saving...',
+      discard: 'Discard',
+      discarding: 'Discarding...',
+      discarded: 'Discarded',
       saveSelected: 'Save selected',
       saveAll: 'Save all',
+      saveError: 'The cards could not be saved. Please try again.',
+      discardError: 'The card could not be discarded. Please try again.',
+      savedStateError:
+        'We could not check whether these cards were already saved.',
+      savedStateRetry: 'Check again',
       practiceNow: 'Practice now',
+      revisionPending:
+        'The card revision is being confirmed. Reload or check the saved card before trying again.',
+      revisionUpdated: 'Updated · version {version}',
+      revisionConflict: 'This card changed before the revision completed.',
+      revisionInsufficientEvidence:
+        'The saved card was not changed because the course material did not provide enough evidence for this revision.',
+      revisionUnavailable:
+        'The card revision could not be confirmed. Check the saved card before trying again.',
     },
     sources: {
       title: 'Sources',
       page: 'p. {page}',
+      pages: 'pp. {from}–{to}',
+      pdfPage: 'PDF p. {page}',
+      pdfPages: 'PDF pp. {from}–{to}',
+      unavailable: 'Source link unavailable',
       video: 'Video',
       image: 'Image',
     },
@@ -1144,11 +1183,14 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       empty: 'You have not saved any personal cards for this course yet.',
       noDue: 'You have no cards due right now. Come back later.',
       error: 'The cards could not be loaded or updated. Please try again.',
+      retry: 'Try again',
       aiGenerated: 'AI-generated',
       authored: 'Authored',
       sourceLinked: 'source-linked',
       notReviewed: 'not reviewed by the course team',
       sources: 'Sources',
+      generationSources: 'Sources used to generate this card',
+      page: 'p. {page}',
       previous: 'Previous',
       next: 'Next',
       delete: 'Delete',
@@ -1157,7 +1199,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       ownElements:
         '{count, plural, =0 {Own elements} one {Own elements · # due} other {Own elements · # due}}',
       practiceDescription:
-        'Practise your own cards with the same navigation and progress as a practice quiz.',
+        'Practice your own cards with the same navigation and progress controls as a practice quiz.',
       homeLink: 'My personal cards',
       repetitionLink:
         '{count, plural, =0 {My personal cards} one {My personal cards · # due} other {My personal cards · # due}}',

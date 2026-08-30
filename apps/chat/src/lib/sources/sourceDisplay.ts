@@ -1,3 +1,7 @@
+import type {
+  ElementSourceLocator,
+  ElementSourcePageLocator,
+} from '@klicker-uzh/types'
 import type { useTranslations } from 'next-intl'
 
 import type { ChatSource, ChatSourceType } from './types'
@@ -18,6 +22,47 @@ export function isMediaSource(source: Pick<ChatSource, 'type'>): boolean {
 export type Translate = ReturnType<typeof useTranslations<never>>
 
 const MAX_DISPLAY_URL_LENGTH = 48
+
+function pageRangeLabel(
+  from: string | number,
+  to: string | number,
+  t: Translate,
+  pdf = false
+) {
+  if (String(from) === String(to)) {
+    return t(pdf ? 'chat.sources.pdfPage' : 'chat.sources.page', {
+      page: from,
+    })
+  }
+  return t(pdf ? 'chat.sources.pdfPages' : 'chat.sources.pages', {
+    from,
+    to,
+  })
+}
+
+function pageLocatorLabel(locator: ElementSourcePageLocator, t: Translate) {
+  const labelFrom = locator.labelFrom
+  const labelTo = locator.labelTo ?? labelFrom
+  const physical = pageRangeLabel(locator.pageFrom, locator.pageTo, t)
+  if (!labelFrom || !labelTo) return physical
+
+  const labelled = pageRangeLabel(labelFrom, labelTo, t)
+  if (
+    String(labelFrom) === String(locator.pageFrom) &&
+    String(labelTo) === String(locator.pageTo)
+  ) {
+    return labelled
+  }
+  return `${labelled} (${pageRangeLabel(locator.pageFrom, locator.pageTo, t, true)})`
+}
+
+export function getElementSourceLocatorLabel(
+  locator: ElementSourceLocator,
+  t: Translate
+) {
+  if (locator.type === 'PAGE_RANGE') return pageLocatorLabel(locator, t)
+  return locator.label ?? getDisplayUrl(locator.url) ?? locator.url
+}
 
 /** `754` -> `12:34`, `3723` -> `1:02:03`. Minutes stay unpadded. */
 export function formatTimestamp(totalSeconds: number): string {
@@ -155,6 +200,14 @@ export function getSourceSecondaryLine(
   t: Translate
 ): string | null {
   const parts: string[] = []
+
+  if (source.elementReference) {
+    const locatorLabels = source.elementReference.locators.map((locator) =>
+      getElementSourceLocatorLabel(locator, t)
+    )
+    if (locatorLabels.length > 0) return locatorLabels.join(', ')
+    return t('chat.sources.unavailable')
+  }
 
   if (source.type === 'video') {
     const timestamp = getSourceTimestamp(source)

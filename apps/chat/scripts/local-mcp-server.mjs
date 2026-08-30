@@ -20,7 +20,7 @@ function createMcpServer() {
       description:
         'Search deterministic synthetic course material. Use this tool whenever the user asks to test the local MCP integration.',
       inputSchema: {
-        query: z
+        question: z
           .string()
           .min(1)
           .max(500)
@@ -33,7 +33,7 @@ function createMcpServer() {
         openWorldHint: false,
       },
     },
-    async ({ query }) => {
+    async ({ question: query }) => {
       const payload = {
         answer: `KLICKER_LOCAL_MCP_OK: the local MCP server received "${query}".`,
         sources_used: 1,
@@ -43,6 +43,20 @@ function createMcpServer() {
             source_type: 'pdf',
             file_name: 'synthetic-course-material.pdf',
             page_number: 1,
+            chunks: [
+              {
+                chunk_id: 'local-chunk-1',
+                content:
+                  'Portfolio-Diversifikation kombiniert Anlagen, deren Renditen nicht perfekt positiv korreliert sind. Sie reduziert das unsystematische, unternehmensspezifische Risiko, weil Verluste einer Anlage durch abweichende Renditen anderer Anlagen ausgeglichen werden können.',
+                page_number: 1,
+              },
+              {
+                chunk_id: 'local-chunk-2',
+                content:
+                  'Systematisches Risiko betrifft den gesamten Markt und kann durch Diversifikation nicht beseitigt werden. Unsystematisches Risiko betrifft einzelne Unternehmen oder Branchen und kann durch eine ausreichend breite Mischung von Anlagen reduziert werden.',
+                page_number: 2,
+              },
+            ],
           },
         ],
       }

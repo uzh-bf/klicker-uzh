@@ -44,6 +44,7 @@ model PersonalElement {
   updatedAt DateTime @updatedAt
 
   @@unique([participantId, courseId, candidateId])
+  @@index([courseId])
   @@index([participantId, courseId, nextDueAt])
 }
 
@@ -66,6 +67,7 @@ model CardGenerationLease {
 
   @@unique([participantId, planMessageId, planToolCallId])
   @@index([leaseExpiresAt])
+  @@index([planMessageId])
 }
 
 model PersonalElementDiscard {
@@ -83,4 +85,5 @@ model PersonalElementDiscard {
   updatedAt DateTime @updatedAt
 
   @@unique([participantId, courseId, candidateId])
+  @@index([courseId])
 }

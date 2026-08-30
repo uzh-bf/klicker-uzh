@@ -79,8 +79,9 @@ import { MicroLearning } from './microLearning.js'
 import {
   CardGenerationLease,
   CardGenerationLeaseInput,
-  CreatePersonalElementsInput,
   PersonalElement,
+  PersonalElementCandidateLinkageInput,
+  PersonalElementRevisionLinkageInput,
   PrepareCardPlanInput,
   PreparedCardPlan,
   UpdatePersonalElementInput,
@@ -730,14 +731,17 @@ export const Mutation = builder.mutationType({
         },
       }),
 
-      createPersonalElements: t.withAuth(asParticipant).field({
+      savePersonalElementCandidate: t.withAuth(asParticipant).field({
         nullable: true,
-        type: [PersonalElement],
+        type: PersonalElement,
         args: {
-          input: t.arg({ type: CreatePersonalElementsInput, required: true }),
+          input: t.arg({
+            type: PersonalElementCandidateLinkageInput,
+            required: true,
+          }),
         },
         resolve: async (_, args, ctx) => {
-          return await PersonalElementService.createPersonalElements(
+          return await PersonalElementService.savePersonalElementCandidate(
             args.input,
             {
               prisma: ctx.prisma,
@@ -749,14 +753,19 @@ export const Mutation = builder.mutationType({
 
       discardPersonalElementCandidate: t.withAuth(asParticipant).boolean({
         args: {
-          courseId: t.arg.string({ required: true }),
-          candidateId: t.arg.string({ required: true }),
+          input: t.arg({
+            type: PersonalElementCandidateLinkageInput,
+            required: true,
+          }),
         },
         resolve: async (_, args, ctx) => {
-          await PersonalElementService.discardPersonalElementCandidate(args, {
-            prisma: ctx.prisma,
-            participantId: ctx.user.sub,
-          })
+          await PersonalElementService.discardPersonalElementCandidate(
+            args.input,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
           return true
         },
       }),
@@ -769,6 +778,26 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await PersonalElementService.updatePersonalElement(
+            args.input,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
+        },
+      }),
+
+      applyPersonalElementRevision: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: PersonalElement,
+        args: {
+          input: t.arg({
+            type: PersonalElementRevisionLinkageInput,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.applyPersonalElementRevision(
             args.input,
             {
               prisma: ctx.prisma,

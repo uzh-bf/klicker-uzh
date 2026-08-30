@@ -151,12 +151,44 @@ state, including after answer text begins. A terminal incomplete or aborted
 tool-only turn must still expose valid completed sources after reload.
 Use direct `GPT-5.6 Luna` only to isolate the router from the model/tool path.
 
+For grounded personal-card generation, use the fixture's synthetic German
+portfolio material. Request one comparison card about systematic and
+unsystematic risk, accept the tool-rendered plan, and require the accepted plan
+to remain visible. The generated card must expose separate Save and Discard
+actions and cite `synthetic-course-material.pdf, pp. 1–2`. Discard it, reload
+the thread, and require the Discarded state to persist. This is local wiring
+evidence only; it does not qualify deployed Doc Query or retrieval quality.
+Before this smoke, confirm `LOCAL_DOC_QUERY_FIXTURE_ENABLED=true` inside the
+self-contained runtime. Never set it for an Infisical-backed shared dev,
+staging, or production seed.
+
 For source citation presentation changes, the browser pass must verify that
 source cards keep the source name and locator visible while excerpts stay in
 hover/focus tooltips, and that inline citation chips expose the same preview
 content plus their existing navigation hint. Keep touch verification scoped to
 the compact card and existing URL/in-page citation actions because Radix
 tooltips do not provide a separate tap disclosure contract.
+
+Personal-element changes add focused Vitest coverage for the retrieval-before-
+plan contract, the five-card cap, bounded cited-chunk normalization, typed
+generation failures, approval/replay claims, idempotent saves, and
+expected-version revision conflicts. Browser verification must use the seeded
+local MCP fixture and cover the plan, candidate save join, reload, unsaved
+revision, saved revision, and direct PWA practice route. The Chat capability
+flag must be tested both disabled (creation tools hidden) and enabled; saved
+card paths remain available in either state. A green GraphQL or chat check does
+not prove the browser state or the external model path.
+
+Grounded personal-element generation also needs deterministic tests for
+structured abstention, missing locators, evidence-protocol leakage, grouped and
+disjoint page ranges, exact web anchors, labelled-versus-physical page display,
+unsafe-link suppression, legacy-source normalization, and the absence of source
+bodies from persisted references. Revision tests must prove that a successful
+generated revision replaces content and references together, while insufficient
+evidence leaves both unchanged. Browser proof must show the same grouped
+references on the Chat candidate and saved-card views, keep unavailable sources
+visible without a link, and hide practice references until the answer is
+revealed.
 
 ## Pre-PR verification checklist
 

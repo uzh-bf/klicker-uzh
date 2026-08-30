@@ -14,6 +14,8 @@ import {
 } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 
+type ApprovedPlan = { messageId: string; toolCallId: string }
+
 /**
  * Hook for handling streaming chat responses from the backend.
  *
@@ -58,7 +60,11 @@ export function useChatResponse(
    * @param threadId - ID of the current chat thread
    */
   const generateChatResponse = useCallback(
-    async (messagesToSend: ExtendedThreadMessageLike[], threadId: string) => {
+    async (
+      messagesToSend: ExtendedThreadMessageLike[],
+      threadId: string,
+      approvedPlan?: ApprovedPlan
+    ) => {
       const abortController = new AbortController()
       abortControllerRef.current = abortController
 
@@ -117,7 +123,7 @@ export function useChatResponse(
             return String(message.content ?? '')
           }
 
-          return message.content
+          const text = message.content
             .filter(
               (
                 part
@@ -134,6 +140,8 @@ export function useChatResponse(
             )
             .map((part) => part.text)
             .join('')
+
+          return text
         }
 
         if (
@@ -223,6 +231,7 @@ export function useChatResponse(
                 } => typeof attachment.imageBase64 === 'string'
               )
               .map((attachment) => attachment.imageBase64),
+            ...(approvedPlan ? { approvedPlan } : {}),
           }),
         })
 

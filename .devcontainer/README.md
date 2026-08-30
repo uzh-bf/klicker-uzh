@@ -325,6 +325,18 @@ disabled and the rest of the DevPod still starts normally.
   `.env` is missing, so `post-create` seeds an **empty** `.env` in each dir (the
   container env from `devcontainer.env` is what actually applies).
 - Tier 3 (`chat`) needs an upstream LLM key: set `UPSTREAM_OPENAI_API_KEY`.
+- Real feature-flag evaluation and scoped doc-query calls can be injected from
+  Infisical by setting `GROWTHBOOK_API_HOST`, `GROWTHBOOK_CLIENT_KEY`,
+  `GROWTHBOOK_ENV`, and the four `DOC_QUERY_SCOPE_*` variables before
+  `devrouter ensure`. The compose service passes these values into the
+  container without storing them in the committed environment file.
+- The self-contained development stack enables personal-card generation with
+  `PERSONAL_CARD_GENERATION_ENABLED=true` in `devcontainer.env`, so the seeded
+  participant can exercise the prototype without changing shared GrowthBook
+  targeting. `LOCAL_DOC_QUERY_FIXTURE_ENABLED=true` separately gates the local
+  KB binding, MCP-row reconciliation, and loopback authentication exception.
+  Both overrides are development-only contracts and must stay unset for shared
+  dev, staging, and production databases.
 - Both MCP servers run plain `tsx` (no `--watch`) — `tsx --watch` is known to
   silently kill long-running Node 24 servers in this repo, so they deliberately
   do not use it in dev (no restart-on-change; restart the app manually via
@@ -333,4 +345,6 @@ disabled and the rest of the DevPod still starts normally.
   the same upstream as the selected answer model. With OpenRouter, use only
   seeded or synthetic content and expect the extra calls to add latency/cost.
 - Benibot's seeded Tutor and Explainer modes use the read-only `doc_query`
-  fixture at `http://localhost:1417/mcp`. Its log is `/tmp/local-mcp.log`.
+  fixture at `http://localhost:1417/mcp`. Only this exact loopback endpoint can
+  run without scoped authentication when the explicit local-fixture flag is on
+  in development. Its log is `/tmp/local-mcp.log`.

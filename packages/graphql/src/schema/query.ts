@@ -105,7 +105,10 @@ import {
   LiveQuizSummary,
 } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
-import { PersonalElement } from './personalElement.js'
+import {
+  PersonalElement,
+  PersonalElementGenerationContext,
+} from './personalElement.js'
 import {
   Participant,
   ParticipantGroup,
@@ -1202,6 +1205,39 @@ export const Query = builder.queryType({
             prisma: ctx.prisma,
             participantId: ctx.user.sub,
           })
+        },
+      }),
+
+      personalElementGenerationContext: t.withAuth(asParticipant).field({
+        type: PersonalElementGenerationContext,
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.getPersonalElementGenerationContext(
+            args.courseId,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
+        },
+      }),
+
+      savedPersonalElementCandidateIds: t.withAuth(asParticipant).field({
+        type: ['String'],
+        args: {
+          courseId: t.arg.string({ required: true }),
+          candidateIds: t.arg.stringList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.listSavedPersonalElementCandidateIds(
+            args,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
         },
       }),
 

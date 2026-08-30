@@ -1,3 +1,4 @@
+import { getElementSourceLocatorTarget } from '@klicker-uzh/types'
 import { describe, expect, test } from 'vitest'
 import {
   formatTimestamp,
@@ -13,6 +14,11 @@ import type { ChatSource } from '../src/lib/sources/types'
 // messages produce for the three keys this module reads.
 const t = ((key: string, values?: Record<string, unknown>) => {
   if (key === 'chat.sources.page') return `p. ${values?.page}`
+  if (key === 'chat.sources.pages') return `pp. ${values?.from}–${values?.to}`
+  if (key === 'chat.sources.pdfPage') return `PDF p. ${values?.page}`
+  if (key === 'chat.sources.pdfPages')
+    return `PDF pp. ${values?.from}–${values?.to}`
+  if (key === 'chat.sources.unavailable') return 'Source link unavailable'
   if (key === 'chat.sources.video') return 'Video'
   if (key === 'chat.sources.image') return 'Image'
   return key
@@ -155,6 +161,50 @@ describe('getDisplayUrl', () => {
 })
 
 describe('getSourceSecondaryLine', () => {
+  test('shows publisher labels before physical PDF pages for grouped references', () => {
+    expect(
+      getSourceSecondaryLine(
+        source({
+          elementReference: {
+            sourceId: 'script',
+            kind: 'DOCUMENT',
+            title: 'Course script',
+            canonicalUrl: 'https://example.org/script.pdf',
+            chunkIds: ['chunk-1', 'chunk-7'],
+            locators: [
+              {
+                type: 'PAGE_RANGE',
+                pageFrom: 1,
+                pageTo: 4,
+                labelFrom: 'i',
+                labelTo: 'iv',
+              },
+              { type: 'PAGE_RANGE', pageFrom: 7, pageTo: 9 },
+            ],
+          },
+        }),
+        t
+      )
+    ).toBe('pp. i–iv (PDF pp. 1–4), pp. 7–9')
+  })
+
+  test('marks a grouped reference without locators as unavailable', () => {
+    expect(
+      getSourceSecondaryLine(
+        source({
+          elementReference: {
+            sourceId: 'legacy',
+            kind: 'DOCUMENT',
+            title: 'Legacy source',
+            chunkIds: ['chunk-1'],
+            locators: [],
+          },
+        }),
+        t
+      )
+    ).toBe('Source link unavailable')
+  })
+
   test('documents lead with the page', () => {
     expect(
       getSourceSecondaryLine(
@@ -219,5 +269,117 @@ describe('getSourceSecondaryLine', () => {
 
   test('is null when nothing is known', () => {
     expect(getSourceSecondaryLine(source(), t)).toBeNull()
+  })
+})
+
+describe('getElementSourceLocatorTarget', () => {
+  test('opens a public PDF at the exact physical page', () => {
+    expect(
+      getElementSourceLocatorTarget(
+        {
+          sourceId: 'script',
+          kind: 'DOCUMENT',
+          title: 'Course script',
+          canonicalUrl: 'https://example.org/script.pdf',
+          chunkIds: ['chunk-1'],
+          locators: [],
+        },
+        { type: 'PAGE_RANGE', pageFrom: 7, pageTo: 9 }
+      )
+    ).toBe('https://example.org/script.pdf#page=7')
+  })
+
+  test('returns an exact public web anchor but disables private and signed URLs', () => {
+    const source = {
+      sourceId: 'website',
+      kind: 'WEB' as const,
+      title: 'Website',
+      chunkIds: ['chunk-1'],
+      locators: [],
+    }
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
+        url: 'https://example.org/chapter#section-2',
+      })
+    ).toBe('https://example.org/chapter#section-2')
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
+        url: 'http://localhost:1417/private',
+      })
+    ).toBeUndefined()
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
+        url: 'https://example.org/chapter?token=temporary',
+      })
+    ).toBeUndefined()
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
+        url: 'https://example.org/chapter?X-Amz-Signature=temporary',
+      })
+    ).toBeUndefined()
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
+        url: 'https://example.org/chapter#access_token=temporary',
+      })
+    ).toBeUndefined()
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
+        url: 'https://example.org/chapter#access_token%3Dtemporary',
+      })
+    ).toBeUndefined()
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
+        url: 'https://example.org/chapter#%61ccess_token%253Dtemporary',
+      })
+    ).toBeUndefined()
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
+        url: 'https://example.org/chapter#access_token%2525253Dtemporary',
+      })
+    ).toBeUndefined()
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
+        url: 'https://100.64.0.1/chapter',
+      })
+    ).toBeUndefined()
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
+        url: 'https://[fe90::1]/chapter',
+      })
+    ).toBeUndefined()
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
+        url: 'https://[::ffff:127.0.0.1]/chapter',
+      })
+    ).toBeUndefined()
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
+        url: 'https://[2001:10::1]/chapter',
+      })
+    ).toBeUndefined()
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
+        url: 'https://[2002:7f00:1::]/chapter',
+      })
+    ).toBeUndefined()
+    expect(
+      getElementSourceLocatorTarget(source, {
+        type: 'WEB_ANCHOR',
+        url: 'https://fcc.gov/document#section-2',
+      })
+    ).toBe('https://fcc.gov/document#section-2')
   })
 })

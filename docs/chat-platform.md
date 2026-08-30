@@ -20,9 +20,96 @@ tags:
 > framing is obsolete. Staged doc/skill changes for that exploration:
 > `project/plans_future/2026-07-07-wiki-skills-migration-roadmap.md`.
 
-**This app is an island — do not apply the pages-router conventions here.** It is the only Next.js **app-router** app (port 3004), talks to the backend's Prisma models directly through its own API route handlers (no GraphQL ops), uses **zustand** for client state (nowhere else in the repo), and renders chat via **assistant-ui** (`@assistant-ui/react`) over the Vercel AI SDK (`@ai-sdk/*`). The current runtime keeps the app's `useChatResponse` transport adapter after the U5 `useAISDKRuntime` spike gate was not verifiable without a live model key. Domain models live in `packages/prisma` `chat.prisma` (chatbots, threads, messages, credits as `Decimal(18,6)`).
+**This app is an island — do not apply the pages-router conventions here.** It is the only Next.js **app-router** app (port 3004), uses **zustand** for client state (nowhere else in the repo), and renders chat via **assistant-ui** (`@assistant-ui/react`) over the Vercel AI SDK (`@ai-sdk/*`). Most Chat API handlers still access the backend's Prisma models directly, but participant practice-card operations use persisted GraphQL operations through the server-only adapter described below. The current runtime keeps the app's `useChatResponse` transport adapter after the U5 `useAISDKRuntime` spike gate was not verifiable without a live model key. Domain models live in `packages/prisma` `chat.prisma` (chatbots, threads, messages, credits as `Decimal(18,6)`).
 
 The app runs Next.js 16 / React 19 and uses Turbopack for development, test, and production builds (`apps/chat/package.json:scripts`). Control, manage, and PWA production builds retain Webpack for service-worker compatibility. The chat production image copies the Next standalone server from `.next/standalone` and starts `apps/chat/server.js` (`apps/chat/Dockerfile`). Verify that path with a production build and container smoke test; a successful source build alone does not prove the runtime copy layout.
+
+## Participant-owned practice cards
+
+Each configured chatbot mode exposes the personal-card tools only when the
+chatbot has a `doc_query`-style MCP tool and the server-side
+`personal-card-generation` capability is enabled for the participant and
+chatbot. The flag defaults to false and a missing or unhealthy evaluator fails
+closed; saved-card listing, practice, revision, and removal remain available.
+Every non-empty text or image turn forces the retrieval tool before an
+answer; there is no phrase or locale allowlist, so greetings and short
+acknowledgements pay the same retrieval call as substantive questions. The
+plan tool is additionally gated by positive participant credits and can run
+only after retrieval in the current turn. The approval button sends a visible
+user message and a persisted plan/tool-call identifier; the route rechecks
+participant, thread, chatbot course, latest plan, credit, capability, and
+one-shot approval claim before forcing `generate_cards`.
+
+Each generation accepts at most five cards. Every generated card performs its
+own bounded retrieval and structured model call. The nested retrieval sends
+exactly the shared `doc_query` input field `question`; strict MCP servers reject
+unknown input fields. Normalization accepts at most 32 chunks and 128 KiB of
+aggregate UTF-8 chunk text before that evidence enters the generation calls.
+Its cited chunk IDs must be a non-empty subset of that retrieval. The generator
+returns either a ready card or structured
+`insufficient_evidence`; an abstention contains no card prose and never enters
+the candidate list. Ready cards may not expose cited chunk IDs or the retrieval
+protocol markers in participant-facing content. Only grouped, bounded,
+source-body-free references are persisted. A card that cannot be produced
+returns one of the bounded failure codes `retrieval_unavailable`,
+`insufficient_evidence`, or `generation_failed`; raw provider and retrieval
+diagnostics never cross the Chat API. The chat API joins saved state by
+assistant message, tool call, and candidate ID, so a frozen tool result never
+claims a card was saved. Cards are acted on individually: Save sends only this
+lineage to GraphQL. The backend reloads the participant- and course-owned
+terminal `generate_cards` result, verifies the accepted plan and generation
+lease against a currently published chatbot, and creates the participant-owned
+row from that persisted candidate.
+The browser and Chat route never supply card content or references to either
+candidate-decision mutation. Discard sends the same message, tool-call, and
+candidate lineage as Save. The backend reloads and verifies the persisted
+terminal candidate before writing a `PersonalElementDiscard` keyed by
+participant, course, and candidate. That discard record is returned with the
+saved-state lookup and is checked again inside the serializable GraphQL save
+transaction, so a discarded card stays discarded across reloads and
+save/discard races.
+The discard route uses the same serializable service boundary and returns a
+conflict if the card was saved first.
+Candidate actions appear only after the completed assistant message is in the
+active thread. The client retries the brief stream-to-persistence race, then
+fails closed with an explicit retry action if durable decision state is still
+unavailable.
+`list_personal_elements` returns the participant's course-scoped compact rows;
+`revise_personal_element` checks the current version, creates a grounded full
+revision, and returns it as pending tool state without writing the card
+directly. The live conversation never presents that pending state as a
+confirmed update. After the assistant message is terminal and persisted, Chat
+sends only its course, message, and tool-call linkage to GraphQL. The backend
+reconstructs that result and atomically replaces the complete card and
+source-reference set. Chat changes the persisted tool result to updated only
+after it can also persist the confirmed element version.
+If both confirmation attempts fail at the transport boundary, Chat replaces
+the durable tool result with an explicit unconfirmed state instead of claiming
+that the revision succeeded.
+Insufficient evidence leaves both unchanged. Candidate cards do not have a
+separate unsaved-revision path; each generated card is either saved or
+discarded. The server-only GraphQL service is the single owner of
+authorization, caps, and revision semantics.
+
+Personal-element access is GraphQL-only for operations: the Chat server mints
+a short-lived participant JWT and calls the persisted-query operations
+through `src/lib/server/personalElements/graphqlClient.ts` instead of
+importing backend services. The client exposes list, lineage-only save and
+discard, lease mutations, plan preparation, candidate validation, a narrow
+generation-context query, the narrow saved-candidate lookup, and update
+operations. Manual update operations cannot submit source references; generated
+revision persistence is a separate linkage-only operation. The generation
+context contains only the backend-owned course
+language and saved titles. Accepted-plan setup loads only saved candidate IDs,
+not full personal elements. Before creating or reclaiming a lease, the backend
+verifies current course participation, a published chatbot, the exact ready
+plan tool result, a live server-claimed assistant attempt on that plan's branch,
+and the absence of a newer ready plan on the same branch. Lease completion also
+requires the completed assistant message to contain a terminal card-generation
+result. Lease and discard state reads that GraphQL does
+not yet expose stay as participant-scoped Prisma reads inside the adapter. The
+backend owns authorization, caps, duplicate policy, candidate provenance, and
+revision semantics.
 
 Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/layout.tsx` validates the route parameter as a UUID before querying Prisma, then calls `notFound()` for malformed or absent chatbot IDs; the root `src/app/not-found.tsx` preserves the 404 status while showing branded recovery and a safe return link. The root `src/app/error.tsx` sits above the dynamic layout, uses Next's `unstable_retry` callback to refresh a failed server payload, and exposes only retry/return actions; it never renders the underlying error text. The loading state in `src/components/assistant.tsx` uses the same branded card/skeleton language, and `/noLogin` keeps only a concise return notice instead of printing the UUID-bearing redirect URL.
 
@@ -448,8 +535,9 @@ Chat carries the UZH brand through the shadcn semantic tokens in `src/app/global
 
 The chat branch uses `@assistant-ui/react` 0.15's stable `GroupedParts` primitive. Local
 composition lives in `src/components/message-parts.tsx:AssistantMessageParts`: adjacent
-reasoning parts share one disclosure, adjacent tool calls share one group when there is more
-than one, and a single tool call keeps its direct result disclosure. Reasoning auto-opens only
+reasoning parts share one disclosure, while two or more adjacent visible non-personal tool calls
+share a group. The internal `select_response_type` tool stays hidden, and interactive personal-
+element tools keep their direct result disclosure even beside another tool. Reasoning auto-opens only
 while active until the participant manually chooses an open state; that manual choice then wins.
 The source-card section is derived from completed `doc_query` tool results but
 stays hidden for the full time the same assistant message is actively running,
@@ -650,12 +738,58 @@ a separately authorised live-model evaluation.
 
 ## Sources and citations
 
+### Student-generated card plans
+
+When a student asks for new cards, the Chat plan tool calls the backend
+`prepareCardPlan` operation. The backend authorizes the participant, loads the
+complete saved-title list, screens duplicates, and returns stable plan and
+candidate identities together with the title context. After grounded retrieval,
+the route first forces
+`select_response_type`; its model-selected `answer` or `card_plan` result avoids
+language-specific request matching, and `card_plan` deterministically forces the
+interactive plan tool instead of allowing a prose-only card response. The raw
+participant-controlled titles are not interpolated into the model prompt.
+`propose_card_plan` applies the same deterministic local title check to the
+backend-screened result before approval: normalized exact matches,
+abbreviation/expanded-title matches,
+multi-word subsets, and close character-gram matches at or above the 0.8
+threshold are potential duplicates. Such entries are removed from the proposed
+plan and shown as skipped; a plan containing only potential duplicates returns
+as a localized, non-approvable result so the model must propose new titles. The
+same check runs again when the student approves the plan, protecting against a
+card saved between proposal and approval. Approved plan titles are also used
+as the generated card names so the deduplication key cannot drift. This is
+intentionally title-only and local; it adds no embedding provider, ingestion
+change, or retrieved-text persistence.
+
+Generated card explanations are the card backs, so the generation schema and
+the personal-element save service require a substantive, alphanumeric answer
+on both create and update; validation is structural and never matches
+language-specific boilerplate. The model is instructed to write the
+substantive answer instead; preview and later practice therefore share the
+same persisted content. If a generation attempt is partial, saved or
+discarded plan entries remain decided and a retry runs only the unresolved
+entries.
+
+Each ready candidate owns one grouped `ElementSourceReference` per source
+material. The reference contains the title snapshot, source kind, exact cited
+chunk IDs as internal lineage, an optional non-expiring safe canonical URL, and
+ordered page spans or provider-supplied web anchors. Chat reads physical and
+publisher-labelled pages from each cited chunk, collapses adjacent pages, and
+retains disjoint ranges. It copies no excerpt or source body into the tool
+result, GraphQL request, or saved card.
+
 An answer's sources are **derived from the message's own tool-call parts**, not carried in a
 dedicated API field or database column ([ADR 0004](./adr/0004-chat-citations-from-tool-call-parts.md)).
 `src/lib/sources/normalizeSources.ts` is the single seam: everything downstream — the source
 cards, the inline `[n]` chips, the friendly activity chip, and the server-side prompt contract —
-keys off the same `isDocQueryToolName` predicate, so a tool the predicate misses silently loses
-all four at once.
+keys off the same tool-name predicates. Retrieval tools use `isDocQueryToolName`; the
+`generate_cards` tool contributes its bounded source references through the same normalizer, with a
+stable `candidate:<candidateId>:<sourceId>` key so card-local citations and
+the message source area resolve the same source. A tool the relevant predicate misses silently
+loses all four at once. The compact twelve-source display bound applies only
+to doc-query results; candidate citations retain the bounded generation
+registry so later cards do not lose their source chips.
 
 That predicate must tolerate MCP namespacing. `toSafeToolName` (`src/services/mcpClients.ts`)
 prefixes the server name and appends **8 hex characters of a sha256** when the namespaced name
@@ -674,10 +808,13 @@ long-name regression case lives in `test/mcp-clients.test.ts`.
 `CallToolResult` envelope (`{ content: [{ type: 'text', text: '<json>' }] }`), a JSON string, or
 an already-parsed object. FastMCP may put the JSON payload in a `structuredContent.result` string;
 the normalizer unwraps that compatibility layer before applying the same rules. It treats the
-pipeline's literal `"N/A"` as absent; it dedupes by file/page/url and normalized video range
-(`startSec`/`endSec`), so citations for different video ranges remain separate, then numbers what
-survives **1..N in first-appearance order across every doc_query call in one message**, capped at
-`MAX_SOURCES`. Two rules follow from that numbering and are easy to break independently:
+pipeline's literal `"N/A"` as absent; it dedupes retrieval results by file/page/url and normalized
+video range (`startSec`/`endSec`) and generated-card results by their candidate/source key, then
+numbers what survives **1..N in first-appearance order across every retrieval or card tool call in
+one message**. The compact doc-query registry is capped at `MAX_DOC_QUERY_SOURCES`, while the
+candidate-card registry has its own `MAX_CANDIDATE_SOURCES` bound. Both registries still share one
+contiguous message-level index. Two rules follow from that numbering and are easy to break
+independently:
 
 Chatbot MCP configs are optional unless their existing `parameters` JSON contains the reserved
 runtime policy `{ "required": true, "toolAlias": "<name>" }`. A strict config must allow exactly
@@ -745,6 +882,14 @@ and only wrap when they genuinely no longer fit. Equal-width tracks keep mixed
 document/media results aligned, and the `min(230px, 100%)` floor keeps a track
 from forcing horizontal overflow in containers narrower than 230px (mobile and
 embedded mode).
+
+Generated-card citations render one card per source material. Publisher labels
+lead when they differ from physical PDF pages, and every disjoint page span or
+exact web anchor gets its own action. Public PDF actions open the first physical
+page of that span. Private, local, signed, expired, or otherwise unproven URLs
+remain passive snapshots labelled unavailable. Saved-card management always
+shows these references; active-recall practice hides them until the answer is
+revealed.
 
 The activity chip's four states come from the pure `getDocQueryChipState` in `tool-fallback.tsx`.
 "No results" is claimed only for a payload that actually **parsed**: a cancelled call leaves the
@@ -839,7 +984,15 @@ Start the self-contained devcontainer with
 `devrouter ensure . --profile chat,ai,mcp`. `post-start.sh` then starts the
 seeded local MCP fixture. Benibot's Tutor and Explainer configurations point to
 `http://localhost:1417/mcp` and allow `doc_query`; the runtime namespaces the
-tool as `KB_doc_query`. Keep Auto Mode selected, then prompt Benibot with “Use
+tool as `KB_doc_query`. `seedChatbots.ts:seedChatbots` creates the enabled
+Benibot knowledge-base binding only when the self-contained runtime sets
+`LOCAL_DOC_QUERY_FIXTURE_ENABLED=true`, while
+`mcpClients.ts:createAuthHeaders` permits unauthenticated access only for this
+exact loopback URL in development with the same flag. Every other `KB`
+endpoint retains scoped authentication; shared multi-tenant deployments also
+retain the transport-authentication contract described above.
+
+Keep Auto Mode selected, then prompt Benibot with “Use
 the local MCP tool to test the integration. Search for
 `portfolio diversification` and tell me the exact marker it returns.” The
 end-to-end pass requires a completed tool call, `KLICKER_LOCAL_MCP_OK` in the
@@ -849,11 +1002,21 @@ after reloading the thread. Use direct GPT-5.6 Luna only to isolate the router
 from the model/tool path. The fixture is synthetic wiring evidence only; it
 does not validate retrieval quality or a deployed MCP server.
 
+The same fixture provides two synthetic German portfolio-diversification
+passages on pages 1 and 2 for the personal-card smoke. Ask for one comparison
+card about systematic and unsystematic risk, accept the tool-rendered plan,
+and require a card with separate Save and Discard actions plus
+`synthetic-course-material.pdf, pp. 1–2`. The accepted plan must remain visible
+as accepted. Discard the card, reload the thread, and require the Discarded
+state to persist. This proves the local retrieval, nested structured model
+call, source-reference grouping, and decision persistence; it still does not
+prove deployed Doc Query behavior or retrieval quality.
+
 Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. The runner is `environment: 'node'` with no jsdom/testing-library, so component behavior is tested by extracting the decision logic into pure modules next to the component (`message-parts-state.ts`, `thread-list-state.ts`) — follow that pattern rather than adding a DOM environment. The whole suite shares **one fork** (`singleFork: true`), so a `vi.stubGlobal` is process-global: the config sets `unstubGlobals: true`, but that only restores before each _test_ — the next file's module **import** still sees whatever the previous file's last test left stubbed (a leaked `window`/`URL` once broke zustand-persist feature detection and `new URL` in unrelated files, order-dependently). Any file stubbing environment-shaped globals (`window`, `URL`, `document`) must also clean up itself with `afterEach(() => vi.unstubAllGlobals())`. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts`).
 
 `history-rail.test.ts` pins active-path order, adjacent user/assistant pairing, orphan messages, complete text, stable message anchors, exclusion of reasoning/tool/error part landmarks, and running/partial/error states. Browser verification must additionally exercise desktop tick activation, the mobile history-trigger/dialog flow, complete-text popovers, focus, current-entry highlighting, rapid navigation, and EN/DE rail labels; the seeded local app can prove the navigation and error states without an upstream model key.
 
-The `Chatbot Source Citations` block in that spec exercises the citation pipeline against real persisted tool-call parts: card ordering and count, dedupe across two doc_query calls, a valid `[n]` rendering as a citation chip/link while an out-of-range marker stays literal, compact cards with hover/focus previews for cards and inline citations, click-scroll without navigation, all four activity-chip labels with their icon gating, the composer hint's standalone/embedded gate, and the message timestamp. Seed tool results in the raw MCP envelope shape (`result: { content: [{ type: 'text', text: '<json>' }], isError }`) — that is what production sends, and `convertApiMessageToMessage` hoists `isError` to the part. Put more than one tool-call part on a single message only when you mean to: `message-parts.tsx` wraps two or more adjacent ones in a collapsed group that a test must expand first.
+The `Chatbot Source Citations` block in that spec exercises the citation pipeline against real persisted tool-call parts: card ordering and count, dedupe across two doc_query calls, a valid `[n]` rendering as a citation chip/link while an out-of-range marker stays literal, compact cards with hover/focus previews for cards and inline citations, click-scroll without navigation, all four activity-chip labels with their icon gating, the composer hint's standalone/embedded gate, and the message timestamp. Seed tool results in the raw MCP envelope shape (`result: { content: [{ type: 'text', text: '<json>' }], isError }`) — that is what production sends, and `convertApiMessageToMessage` hoists `isError` to the part. Put more than one tool-call part on a single message only when you mean to: `message-parts.tsx` collapses adjacent visible non-personal tools, so a test must expand that group first. The hidden response selector and interactive personal-element tools are exceptions.
 
 The chat package uses Turbopack for development, test, and production builds
 (`apps/chat/package.json:scripts`). For a production-readiness gate, run the package check,

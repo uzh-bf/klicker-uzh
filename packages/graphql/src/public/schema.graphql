@@ -455,6 +455,7 @@ type CardGenerationLease {
 
 input CardGenerationLeaseInput {
   attemptToken: String!
+  courseId: String!
   planMessageId: String!
   planToolCallId: String!
 }
@@ -1223,11 +1224,6 @@ type CreateAssessmentParticipantInvitationsPayload {
   totalProcessed: Int!
 }
 
-input CreatePersonalElementsInput {
-  candidates: [PersonalElementCandidateInput!]!
-  courseId: String!
-}
-
 enum CreditResetPeriod {
   BIWEEKLY
   DAILY
@@ -1600,6 +1596,45 @@ type ElementOptionsAnswerCollectionEntry {
 enum ElementOrderType {
   SEQUENTIAL
   SPACED_REPETITION
+}
+
+enum ElementSourceKind {
+  DOCUMENT
+  WEB
+}
+
+type ElementSourceLocator {
+  label: String
+  labelFrom: String
+  labelTo: String
+  pageFrom: Int
+  pageTo: Int
+  type: ElementSourceLocatorType!
+  url: String
+}
+
+input ElementSourceLocatorInput {
+  label: String
+  labelFrom: String
+  labelTo: String
+  pageFrom: Int
+  pageTo: Int
+  type: ElementSourceLocatorType!
+  url: String
+}
+
+enum ElementSourceLocatorType {
+  PAGE_RANGE
+  WEB_ANCHOR
+}
+
+type ElementSourceReference {
+  canonicalUrl: String
+  chunkIds: [String!]!
+  kind: ElementSourceKind!
+  locators: [ElementSourceLocator!]!
+  sourceId: String!
+  title: String!
 }
 
 type ElementStack {
@@ -2527,6 +2562,7 @@ type Mutation {
   addUserToUserGroup(asAdmin: Boolean, groupId: Int!, shortnameOrEmail: String!): UserInfo
   applyActivityBatchOperations(activityIds: [String!]!, basePoints: Int, bonusPoints: Int, correctnessPoints: Int, courseId: String, multiplier: Int, timeToZeroBonus: Int): Int!
   applyElementBatchOperations(archive: Boolean!, basePoints: Boolean, elementIds: [Int!]!, multiplier: Int, status: ElementStatus, unarchive: Boolean!, updateInstances: Boolean!, updateTemplateInstances: Boolean!): Int!
+  applyPersonalElementRevision(input: PersonalElementRevisionLinkageInput!): PersonalElement
   approveChatbotPublication(id: String!): Chatbot
   approveObjectSharingRequest(permissionLevel: PermissionLevel!, propagation: Boolean!, requestId: Int!, userId: String!): Boolean!
   approveResponseExample(id: String!): ResponseExampleSet
@@ -2568,7 +2604,6 @@ type Mutation {
   createMicroLearning(courseId: String!, description: String, displayName: String!, endDate: Date!, multiplier: Int!, name: String!, stacks: [ElementStackInput!]!, startDate: Date!): ActivityInfo
   createParticipantAccount(courseId: String, email: String!, isProfilePublic: Boolean!, password: String!, signedLtiData: String, username: String!): ParticipantTokenData
   createParticipantGroup(courseId: String!, name: String!): ParticipantGroup
-  createPersonalElements(input: CreatePersonalElementsInput!): [PersonalElement!]
   createPracticeQuiz(courseId: String!, description: String, displayName: String!, multiplier: Int!, name: String!, order: ElementOrderType!, resetTimeDays: Int!, stacks: [ElementStackInput!]!): ActivityInfo
   createUserGroup(members: [UserGroupMembersInput!]!, name: String!): UserGroup
   createUserLogin(name: String!, password: String!, scope: UserLoginScope!): UserLogin
@@ -2598,7 +2633,7 @@ type Mutation {
   deleteUserLogin(id: String!): UserLogin
   demoteGroupAdminToMember(adminId: String!, groupId: Int!): Boolean!
   detachKbFromChatbot(chatbotId: ID!, kbId: ID!): Boolean!
-  discardPersonalElementCandidate(candidateId: String!, courseId: String!): Boolean!
+  discardPersonalElementCandidate(input: PersonalElementCandidateLinkageInput!): Boolean!
   duplicateAnswerCollection(id: Int!): AnswerCollection
   duplicateGeneratedElementDraft(input: GeneratedElementDraftInput!): GeneratedElementDraft!
   editActivityTemplate(activityId: String!, activityType: ActivityType!, description: String!, instructions: String!, name: String!, templateId: String!): Boolean!
@@ -2683,6 +2718,7 @@ type Mutation {
   revokeAssessmentReport(id: String!): CourseAssessmentReportRecord!
   revokeObjectAccess(objectId: String!, objectType: ObjectType!, permissionId: Int!): Int
   saveGeneratedElements(input: ElementGenerationBuildInput!): ElementGenerationSaveResult!
+  savePersonalElementCandidate(input: PersonalElementCandidateLinkageInput!): PersonalElement
   scheduleLiveQuiz(availableFrom: Date, id: String!): LiveQuizMeta
   sendMagicLink(usernameOrEmail: String!): Boolean
   setActivityReviewStatus(activityId: String!, activityType: ActivityType!, isReviewed: Boolean!): ReviewStatus
@@ -3092,22 +3128,23 @@ type PersonalElement {
   partialCorrectCount: Int!
   sourceMessageId: String
   sourceToolCallId: String
-  sources: [PersonalElementSource!]
+  sources: [ElementSourceReference!]
   type: ElementType!
   updatedAt: Date!
   version: Int!
   wrongCount: Int!
 }
 
-input PersonalElementCandidateInput {
+input PersonalElementCandidateLinkageInput {
   candidateId: String!
-  content: String!
-  explanation: String!
-  name: String!
-  origin: PersonalElementOrigin
-  sourceMessageId: String!
-  sourceToolCallId: String!
-  sources: [PersonalElementSourceInput!]!
+  courseId: String!
+  messageId: String!
+  toolCallId: String!
+}
+
+type PersonalElementGenerationContext {
+  courseLanguage: LocaleType!
+  existingTitles: [String!]!
 }
 
 enum PersonalElementOrigin {
@@ -3115,19 +3152,20 @@ enum PersonalElementOrigin {
   AUTHORED
 }
 
-type PersonalElementSource {
-  chunkId: String!
-  metadata: Json
-  page: Float
-  sourceId: String!
-  title: String
-  url: String
+input PersonalElementRevisionLinkageInput {
+  courseId: String!
+  messageId: String!
+  toolCallId: String!
 }
 
 input PersonalElementSourceInput {
-  chunkId: String!
+  canonicalUrl: String
+  chunkId: String
+  chunkIds: [String!]
+  kind: ElementSourceKind
+  locators: [ElementSourceLocatorInput!]
   metadata: Json
-  page: Float
+  page: Int
   sourceId: String!
   title: String
   url: String
@@ -3188,6 +3226,7 @@ type PreparedCardPlan {
   courseLanguage: LocaleType!
   discardedDuplicates: [DiscardedDuplicateCard!]!
   existingTitles: [String!]!
+  planId: String!
 }
 
 type PreparedCardPlanEntry {
@@ -3358,10 +3397,12 @@ type Query {
   participantCourses: [Course!]
   participantGroups(courseId: String!): [ParticipantGroup!]
   participations(assessmentOnly: Boolean, endpoint: String): [Participation!]
+  personalElementGenerationContext(courseId: String!): PersonalElementGenerationContext!
   personalElements(courseId: String!): [PersonalElement!]
   practiceQuiz(id: String!): PracticeQuiz
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
+  savedPersonalElementCandidateIds(candidateIds: [String!]!, courseId: String!): [String!]!
   searchKbKnowledgeGraph(kbId: ID!, query: String!): KnowledgeGraphResponse!
   self(liveQuizId: String): Participant
   selfWithAchievements: ParticipantWithAchievements
@@ -3893,7 +3934,6 @@ input UpdatePersonalElementInput {
   explanation: String
   id: String!
   name: String
-  sources: [PersonalElementSourceInput!]
 }
 
 type User {

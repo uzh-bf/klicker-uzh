@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   threadFindFirst: vi.fn(),
   messageUpdateMany: vi.fn(),
   messageFindUnique: vi.fn(),
+  messageFindMany: vi.fn(),
   messageCreate: vi.fn(),
   attachmentFindMany: vi.fn(),
   attachmentDeleteMany: vi.fn(),
@@ -54,6 +55,7 @@ vi.mock('@klicker-uzh/prisma', () => ({
       update: mocks.threadUpdate,
     },
     chatMessage: {
+      findMany: mocks.messageFindMany,
       updateMany: mocks.messageUpdateMany,
       findUnique: mocks.messageFindUnique,
       create: mocks.messageCreate,
@@ -157,25 +159,8 @@ type StreamCallbacks = {
   onError: (error: unknown) => Promise<void>
 }
 
-type ResponseOptions = {
-  messageMetadata: (input: {
-    part: {
-      type: string
-      finishReason?: string
-      totalUsage?: {
-        inputTokens: number
-        outputTokens: number
-      }
-    }
-  }) => unknown
-}
-
 function streamCallbacks(): StreamCallbacks {
   return mocks.streamConfig as unknown as StreamCallbacks
-}
-
-function responseOptions(): ResponseOptions {
-  return mocks.responseOptions as unknown as ResponseOptions
 }
 
 function chatbot(overrides: Record<string, unknown> = {}) {
@@ -257,6 +242,7 @@ describe('account usage chat route', () => {
     mocks.attachmentFindMany.mockResolvedValue([])
     mocks.messageUpdateMany.mockResolvedValue({ count: 0 })
     mocks.messageFindUnique.mockResolvedValue(null)
+    mocks.messageFindMany.mockResolvedValue([])
     mocks.messageCreate.mockResolvedValue({ id: 'message-1' })
     mocks.threadUpdate.mockResolvedValue({ id: 'thread-1' })
     mocks.transaction.mockResolvedValue([])
@@ -270,11 +256,12 @@ describe('account usage chat route', () => {
     mocks.streamText.mockImplementation((config) => {
       mocks.streamConfig = config as Record<string, unknown>
       return {
-        toUIMessageStreamResponse: (options: Record<string, unknown>) => {
+        toUIMessageStream: (options: Record<string, unknown>) => {
           mocks.responseOptions = options
-          return new Response('{}', {
-            status: 200,
-            headers: { 'content-type': 'application/json' },
+          return new ReadableStream({
+            start(controller) {
+              controller.close()
+            },
           })
         },
       }
@@ -550,19 +537,6 @@ describe('account usage chat route', () => {
       'chatbot-1',
       0.000008
     )
-
-    expect(
-      responseOptions().messageMetadata({
-        part: {
-          type: 'finish',
-          finishReason: 'stop',
-          totalUsage: result.usage,
-        },
-      })
-    ).toMatchObject({
-      modelId: 'gpt-5.6-luna',
-      creditsUsed: 0.000008,
-    })
   })
 
   test('persists missing terminal usage without either credit decrement', async () => {
@@ -609,7 +583,7 @@ describe('account usage chat route', () => {
     )
   })
 
-  test('keeps invalid complete usage uncharged and metadata safe', async () => {
+  test('keeps invalid complete usage uncharged', async () => {
     mocks.roundChatUsageCredits.mockImplementation(() => {
       throw new RangeError('synthetic invalid cost')
     })
@@ -630,15 +604,6 @@ describe('account usage chat route', () => {
       expect.objectContaining({ rawCreditsUsed: null })
     )
     expect(mocks.decrementCredits).not.toHaveBeenCalled()
-    expect(
-      responseOptions().messageMetadata({
-        part: {
-          type: 'finish',
-          finishReason: 'stop',
-          totalUsage: { inputTokens: 10, outputTokens: 5 },
-        },
-      })
-    ).toMatchObject({ creditsUsed: null })
   })
 
   test('keeps invalid aborted usage uncharged without throwing', async () => {

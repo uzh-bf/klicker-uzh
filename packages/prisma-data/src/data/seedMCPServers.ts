@@ -1,6 +1,9 @@
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import { encrypt } from '@klicker-uzh/util'
-import { CHATBOT_ID_TEST } from './seedChatbots.js'
+import {
+  CHATBOT_ID_TEST,
+  isLocalDocQueryFixtureEnabled,
+} from './seedChatbots.js'
 
 enum MCP_SERVER_NAMES {
   Context7 = 'Context7',
@@ -34,7 +37,7 @@ const MCP_SERVERS: MCPServerSeed[] = [
     name: MCP_SERVER_NAMES.KB,
     description: 'A comprehensive knowledge base for various topics',
     url: 'http://localhost:1417/mcp',
-    authType: 'scope_token',
+    authType: 'none',
     isActive: true,
     passChatbotId: false,
   },
@@ -180,8 +183,18 @@ export async function seedMCPServers(prisma: PrismaClient) {
   console.log('Seeding MCP servers...')
 
   const createdServers = []
+  const localDocQueryFixtureEnabled = isLocalDocQueryFixtureEnabled()
 
   for (const serverConfig of MCP_SERVERS) {
+    if (
+      serverConfig.name === MCP_SERVER_NAMES.KB &&
+      !localDocQueryFixtureEnabled
+    ) {
+      console.log(
+        'Skipping local KB fixture outside self-contained development'
+      )
+      continue
+    }
     try {
       // Validate server configuration first
       if (!validateServerConfig(serverConfig)) {
@@ -209,9 +222,7 @@ export async function seedMCPServers(prisma: PrismaClient) {
               chatbotIdHeader: null,
             },
           })
-          console.log(
-            `Reconciled MCP server '${serverConfig.name}' with scoped authentication`
-          )
+          console.log(`Reconciled local MCP server '${serverConfig.name}'`)
           createdServers.push(reconciledServer)
           continue
         }

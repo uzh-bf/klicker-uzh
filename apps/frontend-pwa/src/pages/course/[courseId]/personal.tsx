@@ -9,15 +9,20 @@ import {
   QPersonalElementsDocument,
   type QPersonalElementsQuery,
 } from '@klicker-uzh/graphql/dist/ops'
-import Loader from '@klicker-uzh/shared-components/src/Loader'
 import Flashcard from '@klicker-uzh/shared-components/src/Flashcard'
+import Loader from '@klicker-uzh/shared-components/src/Loader'
+import {
+  type ElementSourceLocator,
+  type ElementSourceReference,
+  getElementSourceLocatorTarget,
+} from '@klicker-uzh/types'
 import { Button, H1, UserNotification } from '@uzh-bf/design-system'
-import { GetStaticPropsContext } from 'next'
-import { useTranslations } from 'next-intl'
+import type { GetStaticPropsContext } from 'next'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
-import Layout from '../../../components/Layout'
 import StepProgressWithScoring from '../../../components/common/StepProgressWithScoring'
+import Layout from '../../../components/Layout'
 import PracticeQuizOverview from '../../../components/practiceQuiz/PracticeQuizOverview'
 
 type PersonalCard = NonNullable<
@@ -39,31 +44,84 @@ function PersonalCardSources({ card }: { card: PersonalCard }) {
   if (!card.sources?.length) return null
 
   return (
-    <div className="mt-3 rounded border bg-slate-50 p-3 text-sm">
-      <p className="mb-1 font-semibold">{t('pwa.personalElements.sources')}</p>
-      <ul className="list-inside list-disc">
-        {card.sources.map((source) => (
-          <li key={`${source.sourceId}-${source.chunkId}`}>
-            {source.url ? (
-              <a
-                href={source.url}
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
-                {source.title ?? source.sourceId}
-              </a>
-            ) : (
-              (source.title ?? source.sourceId)
-            )}{' '}
-            {typeof source.page === 'number'
-              ? ` · ${t('chat.sources.page', { page: source.page })}`
-              : ''}
-          </li>
-        ))}
+    <div
+      className="mt-3 rounded border bg-slate-50 p-3 text-sm"
+      data-cy="personal-element-sources"
+    >
+      <p className="mb-1 font-semibold">
+        {t('pwa.personalElements.generationSources')}
+      </p>
+      <ul className="space-y-2">
+        {card.sources.map((rawSource) => {
+          const source = rawSource as ElementSourceReference
+          const actions = source.locators.flatMap((locator) => {
+            const url = getElementSourceLocatorTarget(source, locator)
+            return url ? [{ locator, url }] : []
+          })
+          return (
+            <li key={source.sourceId} className="rounded border bg-white p-2">
+              <span className="block font-medium">{source.title}</span>
+              {source.locators.length > 0 ? (
+                <span className="text-xs text-gray-600">
+                  {source.locators
+                    .map((locator) => sourceLocatorLabel(locator, t))
+                    .join(', ')}
+                </span>
+              ) : null}
+              {actions.length > 0 ? (
+                <span className="mt-1 flex flex-wrap gap-1">
+                  {actions.map(({ locator, url }) => (
+                    <a
+                      key={url}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded border px-1.5 py-0.5 text-xs underline"
+                      data-cy="personal-element-source-action"
+                    >
+                      {sourceLocatorLabel(locator, t)}
+                    </a>
+                  ))}
+                </span>
+              ) : (
+                <span className="mt-1 block text-xs text-gray-500">
+                  {t('chat.sources.unavailable')}
+                </span>
+              )}
+            </li>
+          )
+        })}
       </ul>
     </div>
   )
+}
+
+type Translate = ReturnType<typeof useTranslations<never>>
+
+function pageRangeLabel(
+  from: string | number,
+  to: string | number,
+  t: Translate,
+  pdf = false
+) {
+  return String(from) === String(to)
+    ? t(pdf ? 'chat.sources.pdfPage' : 'chat.sources.page', { page: from })
+    : t(pdf ? 'chat.sources.pdfPages' : 'chat.sources.pages', { from, to })
+}
+
+function sourceLocatorLabel(locator: ElementSourceLocator, t: Translate) {
+  if (locator.type === 'WEB_ANCHOR') return locator.label ?? locator.url
+
+  const labelFrom = locator.labelFrom
+  const labelTo = locator.labelTo ?? labelFrom
+  if (!labelFrom || !labelTo) {
+    return pageRangeLabel(locator.pageFrom, locator.pageTo, t)
+  }
+  const labelled = pageRangeLabel(labelFrom, labelTo, t)
+  return String(labelFrom) === String(locator.pageFrom) &&
+    String(labelTo) === String(locator.pageTo)
+    ? labelled
+    : `${labelled} (${pageRangeLabel(locator.pageFrom, locator.pageTo, t, true)})`
 }
 
 function PersonalElements() {
@@ -79,11 +137,13 @@ function PersonalElements() {
     Record<string, FlashcardCorrectness>
   >({})
   const [actionError, setActionError] = useState(false)
+  const [revealedCards, setRevealedCards] = useState<string[]>([])
 
   const {
     data: courseData,
     error: courseError,
     loading: courseLoading,
+    refetch: refetchCourse,
   } = useQuery(GetBasicCourseInformationDocument, {
     variables: { courseId },
     skip: !courseId,
@@ -123,6 +183,7 @@ function PersonalElements() {
     setResponses({})
     setSelectedResponses({})
     setActionError(false)
+    setRevealedCards([])
     setCurrentIx(dueCards.length > 0 ? 0 : -1)
   }
 
@@ -204,12 +265,12 @@ function PersonalElements() {
       return
     }
 
-    void router.push(`/course/${courseId}/personal`)
+    window.scrollTo(0, 0)
+    setCurrentIx(-1)
   }
 
-  const hasError =
-    actionError ||
-    Boolean(courseError || elementsError || respondError || deleteError)
+  const queryError = Boolean(courseError || elementsError)
+  const hasActionError = actionError || Boolean(respondError || deleteError)
 
   if (loading || courseLoading) {
     return (
@@ -229,30 +290,45 @@ function PersonalElements() {
           <H1 className={{ root: 'text-xl' }}>
             {t('pwa.personalElements.title')}
           </H1>
-          <span className="text-sm text-gray-600">
-            {t('pwa.personalElements.dueCount', { count: dueCards.length })}
-          </span>
+          {!queryError ? (
+            <span className="text-sm text-gray-600">
+              {t('pwa.personalElements.dueCount', { count: dueCards.length })}
+            </span>
+          ) : null}
         </div>
 
-        {hasError ? (
-          <UserNotification type="error">
-            {t('pwa.personalElements.error')}
-          </UserNotification>
-        ) : null}
-
-        {elements.length === 0 ? (
-          <UserNotification type="info">
-            {t('pwa.personalElements.empty')}
-          </UserNotification>
+        {queryError ? (
+          <div className="space-y-3">
+            <UserNotification type="error">
+              {t('pwa.personalElements.error')}
+            </UserNotification>
+            <Button
+              basic
+              onClick={() => void Promise.all([refetchCourse(), refetch()])}
+            >
+              <Button.Label>{t('pwa.personalElements.retry')}</Button.Label>
+            </Button>
+          </div>
         ) : (
           <>
-            {dueCards.length === 0 && currentIx === -1 ? (
+            {hasActionError ? (
+              <UserNotification type="error">
+                {t('pwa.personalElements.error')}
+              </UserNotification>
+            ) : null}
+
+            {elements.length === 0 ? (
+              <UserNotification type="info">
+                {t('pwa.personalElements.empty')}
+              </UserNotification>
+            ) : dueCards.length === 0 && currentIx === -1 ? (
               <UserNotification type="info">
                 {t('pwa.personalElements.noDue')}
               </UserNotification>
             ) : null}
 
-            {dueCards.length > 0 || currentIx !== -1 ? (
+            {elements.length > 0 &&
+            (dueCards.length > 0 || currentIx !== -1) ? (
               <>
                 <StepProgressWithScoring
                   items={sessionCards.map((card) => {
@@ -314,8 +390,17 @@ function PersonalElements() {
                         selectResponse(current.id, response)
                       }
                       elementIx={currentIx}
+                      onReveal={() =>
+                        setRevealedCards((previous) =>
+                          previous.includes(current.id)
+                            ? previous
+                            : [...previous, current.id]
+                        )
+                      }
                     />
-                    <PersonalCardSources card={current} />
+                    {revealedCards.includes(current.id) ? (
+                      <PersonalCardSources card={current} />
+                    ) : null}
                     <div className="mt-3 flex flex-wrap justify-between gap-2">
                       <Button
                         basic

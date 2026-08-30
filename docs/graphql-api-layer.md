@@ -50,33 +50,72 @@ authenticate the participant role and reject temporary participants before
 invoking the service. The service receives the participant ID together with
 the Prisma client, then re-checks course participation and row ownership. It
 reports conflicts through `GraphQLError.extensions.code`.
+Personal elements expose origin and source metadata, but no verification state;
+semantic content updates reset scheduling through the content-version baseline,
+and `respondToPersonalElement` requires the expected version so stale responses
+cannot update revised content.
 
-The participant API consists of `getPersonalElements`,
-`createPersonalElements`, `respondToPersonalElement`,
-`updatePersonalElement`, and `deletePersonalElement`. The generated operations
-are the `QPersonalElements` and `M*PersonalElement*` documents in
+The public participant API consists of `personalElements`,
+`personalElementGenerationContext`, `savedPersonalElementCandidateIds`,
+`respondToPersonalElement`, and `deletePersonalElement`. Chat is the only
+creation transport; its server route reaches Save and Discard through the
+persisted-query operations `MSavePersonalElementCandidate` and
+`MDiscardPersonalElementCandidate`, never through a direct service import. The
+generated public operations include `QPersonalElements`,
+`QPersonalElementGenerationContext`, `MRespondToPersonalElement`, and
+`MDeletePersonalElement` in
 `packages/graphql/src/graphql/ops/`; rerun codegen whenever these fields or
 their selection sets change. `getPracticeQuizList` includes courses that have
 personal cards and exposes `personalElementCount` and `personalDueCount`.
 
 The backend also owns card-plan preparation and candidate validation through
-`prepareCardPlan` and `validateCardCandidate`. `prepareCardPlan` returns the
-course language and the complete saved-title list, screens proposed titles
-against saved cards and within the proposal, and assigns stable candidate
-identities. `validateCardCandidate` re-checks participation, source-message
-ownership, the structural Flashcard payload, source bounds, and current title
-similarity before a candidate can render. Chat calls these operations through
-generated GraphQL documents and no longer imports backend services for
-language, titles, duplicate policy, or candidate validation.
+`prepareCardPlan` and `validateCardCandidate`. Chat calls both through generated
+persisted-query operations. `personalElementGenerationContext` returns the
+course language and complete saved-title list without hydrating card bodies.
+`prepareCardPlan` returns a stable plan ID, screens proposed titles against
+saved cards and within the proposal, and assigns stable candidate identities.
+`validateCardCandidate` re-checks participation, the accepted plan and active
+generation lease, source-message ownership, the structural Flashcard payload,
+source bounds, and current title similarity before a candidate can render.
+Chat keeps its own deterministic title-similarity check for the plan tool and
+no longer imports backend services for language, titles, duplicate policy, or
+candidate validation.
 
 The remaining lifecycle is exposed as participant-authenticated mutations:
 `claimCardGenerationLease`, `completeCardGenerationLease`, and
-`abortCardGenerationLease` own generation claim and settlement;
-`createPersonalElements` saves candidates idempotently and repeats the
-title-similarity check inside its serializable transaction;
-`discardPersonalElementCandidate` persists the negative decision; and
-`updatePersonalElement` applies the expected-version revision contract.
-`personalElements` returns the durable saved state for reload.
+`abortCardGenerationLease` own generation claim and settlement. A claim
+verifies current course participation, a published chatbot, the exact ready
+plan tool result, a live server-claimed assistant attempt on that plan's branch,
+and that no newer ready plan has superseded it. Completion requires the
+completed assistant message to contain a terminal card-generation result;
+`savePersonalElementCandidate` accepts only course, assistant-message,
+tool-call, and candidate identifiers. The service reloads the persisted
+terminal `generate_cards` result, verifies its participant, course, published
+chatbot, accepted plan, and lease lineage, then saves that candidate
+idempotently and repeats the title-similarity check inside its serializable
+transaction;
+`discardPersonalElementCandidate` accepts the same linkage, reloads the same
+trusted terminal candidate, and persists the negative decision without copying
+candidate content. `updatePersonalElement` applies the expected-version manual
+edit contract and cannot change source references.
+`applyPersonalElementRevision` accepts only course, terminal assistant-message,
+and revision tool-call identifiers. It reconstructs the full grounded revision
+from that participant's persisted published-chatbot turn, then atomically
+replaces card content and references. The stored latest-generation linkage
+makes an uncertain transport retry idempotent.
+`savedPersonalElementCandidateIds` returns only the requested saved candidate
+identities for generated-message reloads. `personalElements` remains the full
+course collection used by practice and saved-card management.
+
+`PersonalElement.sources` exposes grouped, source-body-free reference snapshots.
+Each reference identifies one source material and contains disjoint physical
+PDF page ranges or exact web anchors plus optional human-readable labels. The
+service accepts the earlier flat source shape during the transition, normalizes
+it to the grouped shape, suppresses unsafe or signed URLs, and stores the full
+replacement set atomically with a linkage-verified AI-generated content
+revision. Manual content updates preserve the existing references. Saved
+elements own these snapshots;
+they do not depend on retaining the Chat generation record.
 
 ## Layering contract
 

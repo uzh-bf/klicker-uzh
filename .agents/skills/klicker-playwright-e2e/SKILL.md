@@ -191,3 +191,13 @@ pnpm playwright:host -- --list --project=chromium
 The type and format checks can run in the devcontainer; the Playwright command
 cannot. If the host launcher cannot prove the routed stack, report that runtime
 validation was not possible instead of bypassing the boundary.
+
+For participant-owned practice cards, keep the direct `/course/[courseId]/personal`
+route in the browser matrix. Authenticate with delegated seeded credentials,
+seed only synthetic cards, and assert empty, due, rated, source-badge, delete-
+confirm, English/German, and mobile states. Verify that pooled `/practice`
+does not include personal cards. Chat generation evidence separately covers
+retrieval, the five-card plan cap, plan approval, candidate save/reload, and
+expected-version revision; when the capability flag is disabled, creation
+tools must be absent while saved-card practice remains reachable. Do not
+replace that browser proof with a route unit test.

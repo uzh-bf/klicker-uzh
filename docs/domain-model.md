@@ -2,7 +2,7 @@
 type: Domain Model
 title: Domain Model
 description: Core entities (User vs Participant, Course, Element, activities), status lifecycles, and the two-track gamification system.
-timestamp: '2026-08-26'
+timestamp: '2026-08-27'
 tags:
   - backend
   - prisma
@@ -65,20 +65,29 @@ not eligible. Course and participant deletion cascade to the cards.
 
 The row keeps its own SM-2 state (`eFactor`, `interval`, streak and response
 counters, and `nextDueAt`). The GraphQL service caps a participant at 500 cards
-per course, validates source metadata (up to 32 chunk references, bounded IDs,
-titles, URLs, and 64 KiB serialized metadata), and persists no retrieved text.
+per course and validates the grouped `ElementSourceReference` value stored in
+the existing `sources` JSON. One reference represents one source material and
+contains a stable title snapshot, source kind, exact cited chunk IDs as internal
+lineage, an optional safe canonical URL, and ordered page spans or exact web
+anchors. The parser accepts the unreleased flat prototype for compatibility but
+every new write is grouped. It bounds references, chunk IDs, locators, URLs,
+and the 64 KiB serialized value, rejects source bodies and signed URLs, and
+persists no retrieved text.
 The `origin` field records whether content was AI-generated or authored. Content
 revisions increment `version`; the revision and learning-state reset contract is
-defined by the service and does not create a lecturer trust state.
+defined by the service and does not create a lecturer trust state. Chat proposes
+and generates at most five cards per request, and generation failures use
+bounded codes rather than provider or retrieval diagnostics.
 
-The backend owns the card-plan and candidate lifecycle. prepareCardPlan
-authorizes course participation, returns the course language and the complete
-saved-title list as read-only model context, screens proposed titles against
-saved cards and within the proposal using the deterministic title-similarity
-policy, and assigns stable server-issued candidate identities.
-validateCardCandidate re-checks participation, source-message ownership, the
-structural Flashcard payload, source bounds, and current title similarity
-before a candidate can render. Generated content is validated structurally
+The backend owns the card-plan and candidate lifecycle.
+personalElementGenerationContext authorizes course participation and returns
+the course language and complete saved-title list without card bodies.
+prepareCardPlan screens proposed titles against saved cards and within the
+proposal using the deterministic title-similarity policy, and assigns stable
+server-issued candidate identities. validateCardCandidate re-checks
+participation, the accepted plan and active generation lease, source-message
+ownership, the structural Flashcard payload, source bounds, and current title
+similarity before a candidate can render. Generated content is validated structurally
 (non-empty, bounded, contains letters or digits), never by matching English or
 German sentences. The save transaction enforces candidate-ID uniqueness and
 the per-course card cap, and repeats the title-similarity check inside the
@@ -87,18 +96,47 @@ read.
 
 The full lifecycle is exposed through participant-authenticated GraphQL
 operations. claimCardGenerationLease atomically claims or reclaims the
-generation lease for an owned plan message; completeCardGenerationLease and
-abortCardGenerationLease settle only the caller's current attempt.
-createPersonalElements saves candidates idempotently with the final duplicate
-check in its transaction, discardPersonalElementCandidate persists the
-negative decision idempotently, and updatePersonalElement applies the
-expected-version and scheduling contract to a saved card. listPersonalElements
-returns the durable saved state for reload.
+generation lease only after verifying current course participation, a published
+chatbot, the exact ready plan tool result, a live server-claimed assistant
+attempt on that plan's branch, and the absence of a newer ready plan on the same
+branch. Completion requires the completed assistant message to contain a
+terminal card-generation result;
+completeCardGenerationLease and abortCardGenerationLease settle only the
+caller's current attempt.
+savePersonalElementCandidate accepts only course, assistant-message, tool-call,
+and candidate identifiers. It reloads the persisted terminal generation
+result, verifies its participant, course, published chatbot, accepted plan, and
+lease lineage, and saves that candidate idempotently with the final duplicate
+check in its transaction. discardPersonalElementCandidate accepts the same identifiers,
+reloads the same trusted terminal candidate, and persists the negative decision
+idempotently without copying generated content. updatePersonalElement applies
+the expected-version and scheduling contract to a saved card.
+savedPersonalElementCandidateIds returns only the requested saved candidate
+identities for generated-message reloads; listPersonalElements returns the full
+course collection used by practice and saved-card management.
 
-`ChatGenerationApproval` is the durable claim for an approved Chat generation.
-Its participant, chatbot, thread, plan message, and optional generated message
-relations are separate from the card content, with a unique
-participant/plan-message/tool-call key and a lease expiry for retry recovery.
+Source references are system-managed. Manual edits to card text preserve the
+existing set. A successful generated revision is reconstructed from its
+persisted terminal assistant message and tool call, supplies the full card, and
+replaces the complete set atomically; an abstention or failure changes neither.
+The row's source message and tool-call fields identify the latest applied
+generated content and make that exact revision idempotent.
+The saved `PersonalElement` owns this snapshot independently of the Chat
+generation record, so generated-message retention is not the citation
+lifecycle. The rationale and future lecturer-owned composition contract are in
+[ADR 0042](./adr/0042-generated-elements-own-source-reference-snapshots.md).
+
+Chat candidates are not bulk-selected. Each card is saved or discarded on its
+own. Discard uses the same persisted message, tool-call, and candidate lineage
+as Save before storing `PersonalElementDiscard`, scoped to the participant,
+course, and candidate ID; the save service rejects that candidate inside its
+serializable transaction. This keeps the decision durable without copying
+generated content into lecturer-owned tables.
+
+`CardGenerationLease` is the durable claim for an approved Chat generation.
+It links the participant and plan message, uses a unique
+participant/plan-message/tool-call key, and expires for retry recovery. It is
+operational coordination, not a second user-facing approval object.
 
 ## Activities
 

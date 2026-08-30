@@ -1,7 +1,10 @@
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { seedChatbotMCPConfigurations } from '../src/data/seedMCPServers.js'
+import {
+  seedChatbotMCPConfigurations,
+  seedMCPServers,
+} from '../src/data/seedMCPServers.js'
 
 const KB_SERVER = {
   id: 'kb-server',
@@ -74,4 +77,36 @@ describe('KB chatbot MCP seed reconciliation', () => {
       })
     }
   }
+
+  test('does not inspect or rewrite the local KB row outside development', async () => {
+    const previousNodeEnvironment = process.env.NODE_ENV
+    const previousFixtureFlag = process.env.LOCAL_DOC_QUERY_FIXTURE_ENABLED
+    process.env.NODE_ENV = 'staging'
+    process.env.LOCAL_DOC_QUERY_FIXTURE_ENABLED = 'true'
+    const inspectedNames: string[] = []
+    const prisma = {
+      chatbotMCPServer: {
+        findUnique: async ({ where }: { where: { name: string } }) => {
+          inspectedNames.push(where.name)
+          return { id: 'context7', name: where.name }
+        },
+      },
+    } as unknown as PrismaClient
+
+    try {
+      await seedMCPServers(prisma)
+      assert.deepEqual(inspectedNames, ['Context7'])
+    } finally {
+      if (previousNodeEnvironment === undefined) {
+        delete process.env.NODE_ENV
+      } else {
+        process.env.NODE_ENV = previousNodeEnvironment
+      }
+      if (previousFixtureFlag === undefined) {
+        delete process.env.LOCAL_DOC_QUERY_FIXTURE_ENABLED
+      } else {
+        process.env.LOCAL_DOC_QUERY_FIXTURE_ENABLED = previousFixtureFlag
+      }
+    }
+  })
 })
