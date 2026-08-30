@@ -95,8 +95,9 @@ describe('doc-query MCP scope authentication', () => {
     ).rejects.toThrow('Doc Query transport authentication is invalid')
   })
 
-  test('allows only the unauthenticated loopback fixture outside production', async () => {
+  test('allows only the explicitly enabled development loopback fixture', async () => {
     vi.stubEnv('NODE_ENV', 'development')
+    vi.stubEnv('LOCAL_DOC_QUERY_FIXTURE_ENABLED', 'true')
     const localServer = {
       ...SCOPE_SERVER,
       url: 'http://localhost:1417/mcp',
@@ -121,6 +122,17 @@ describe('doc-query MCP scope authentication', () => {
     ).rejects.toThrow('Doc Query transport authentication is invalid')
 
     vi.stubEnv('NODE_ENV', 'production')
+    await expect(createAuthHeaders(localServer, TEST_CONTEXT)).rejects.toThrow(
+      'Doc Query transport authentication is invalid'
+    )
+
+    vi.stubEnv('NODE_ENV', 'test')
+    await expect(createAuthHeaders(localServer, TEST_CONTEXT)).rejects.toThrow(
+      'Doc Query transport authentication is invalid'
+    )
+
+    vi.stubEnv('NODE_ENV', 'development')
+    vi.stubEnv('LOCAL_DOC_QUERY_FIXTURE_ENABLED', 'false')
     await expect(createAuthHeaders(localServer, TEST_CONTEXT)).rejects.toThrow(
       'Doc Query transport authentication is invalid'
     )

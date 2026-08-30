@@ -115,7 +115,7 @@ const GROUNDED_CARD_SYSTEM =
 
 function assertNoProtocolLeak(
   card: z.infer<typeof generationCandidateSchema>,
-  citedChunkIds: readonly string[]
+  retrievedChunkIds: readonly string[]
 ) {
   const content = [card.title, card.front, card.back]
   if (
@@ -123,7 +123,7 @@ function assertNoProtocolLeak(
       (value) =>
         value.includes(EVIDENCE_START) ||
         value.includes(EVIDENCE_END) ||
-        citedChunkIds.some((chunkId) => value.includes(chunkId))
+        retrievedChunkIds.some((chunkId) => value.includes(chunkId))
     )
   ) {
     throw new Error('Generated card leaked internal retrieval protocol')
@@ -154,7 +154,10 @@ async function generateGroundedCard(input: {
 
   const card = generated.output.result.card
   const citedChunkIds = assertCitedChunks(card.citedChunkIds, input.chunks)
-  assertNoProtocolLeak(card, citedChunkIds)
+  assertNoProtocolLeak(
+    card,
+    input.chunks.map((chunk) => chunk.chunkId)
+  )
   try {
     return {
       status: 'ready' as const,

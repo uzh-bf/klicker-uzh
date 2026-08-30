@@ -708,6 +708,11 @@ describe('personal-element chat tools', () => {
       })
     }
     expect(mocks.generateText).toHaveBeenCalledTimes(2)
+    const structuredOutput = mocks.generateText.mock.calls[0]?.[0].output
+    await expect(structuredOutput.responseFormat).resolves.toMatchObject({
+      type: 'json',
+      schema: { type: 'object', required: ['result'] },
+    })
     expect(outputs.at(-1)).toMatchObject({
       status: 'completed',
       completed: 2,
@@ -1057,6 +1062,74 @@ describe('personal-element chat tools', () => {
     for await (const output of executeStreamingTool(
       createGenerateCardsTool({ ...options, approvedPlan: plan })
     ).execute(plan, { toolCallId: 'generate-leak' })) {
+      outputs.push(output)
+    }
+
+    expect(outputs.at(-1)).toMatchObject({
+      status: 'error',
+      candidates: [],
+      failedCards: [{ candidateId: 'card-1', code: 'generation_failed' }],
+    })
+  })
+
+  test('rejects any retrieved chunk id in generated card content', async () => {
+    const plan: CardPlan = {
+      planId: '00000000-0000-0000-0000-000000000014',
+      topic: 'Monetary policy',
+      cards: [
+        {
+          type: 'FLASHCARD',
+          candidateId: 'card-1',
+          title: 'Rates',
+          intent: 'Define rates',
+          query: 'rates',
+        },
+      ],
+    }
+    const retrievalWithTwoChunks = {
+      sources: [
+        {
+          file_name: 'Synthetic notes',
+          source_type: 'document',
+          chunks: [
+            {
+              chunk_id: 'chunk-1',
+              content: 'Synthetic cited evidence.',
+              page_number: 1,
+            },
+            {
+              chunk_id: 'chunk-2',
+              content: 'Synthetic uncited evidence.',
+              page_number: 2,
+            },
+          ],
+        },
+      ],
+    }
+    mocks.generateText.mockResolvedValueOnce({
+      output: {
+        result: {
+          status: 'ready',
+          card: {
+            type: 'FLASHCARD',
+            title: 'Rates',
+            front: 'What is the concept?',
+            back: 'The answer mentions chunk-2.',
+            citedChunkIds: ['chunk-1'],
+          },
+        },
+      },
+    })
+    const outputs: unknown[] = []
+    for await (const output of executeStreamingTool(
+      createGenerateCardsTool({
+        ...options,
+        approvedPlan: plan,
+        docQueryTool: {
+          execute: vi.fn().mockResolvedValue(retrievalWithTwoChunks),
+        },
+      })
+    ).execute(plan, { toolCallId: 'generate-uncited-leak' })) {
       outputs.push(output)
     }
 

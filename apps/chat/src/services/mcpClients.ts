@@ -69,7 +69,11 @@ const RESERVED_DOC_QUERY_SCOPE_HEADERS = new Set([
 ])
 
 function isLocalUnauthenticatedDocQueryFixture(server: MCPServerConfig) {
-  if (process.env.NODE_ENV === 'production' || server.authType !== 'none') {
+  if (
+    process.env.NODE_ENV !== 'development' ||
+    process.env.LOCAL_DOC_QUERY_FIXTURE_ENABLED !== 'true' ||
+    server.authType !== 'none'
+  ) {
     return false
   }
 
