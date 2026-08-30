@@ -8,7 +8,8 @@ import { ChatbotModePromptStatus } from '@klicker-uzh/prisma/client'
 /**
  * Values-free audit/bootstrap for the chatbot prompt catalog (ADR 0043).
  *
- * Dry-run by default: reports counts and booleans only, never prompt text.
+ * Dry-run by default: reports aggregate counts and booleans only, never
+ * identifiers, mode keys, or prompt text.
  * With --apply, initializes only wholly missing deterministic catalogs. Existing
  * disagreements always fail closed and are never rewritten.
  */
@@ -37,7 +38,6 @@ type StructuralCounts = {
 }
 
 function auditCatalogStructure(
-  chatbotId: string,
   modes: readonly CatalogMode[]
 ): StructuralCounts {
   const counts: StructuralCounts = {
@@ -55,15 +55,9 @@ function auditCatalogStructure(
       sameModeActive == null
     ) {
       counts.enabledMissingActive += 1
-      console.log(
-        `chatbot=${chatbotId} status=DISAGREEMENT kind=ENABLED_MODE_MISSING_SAME_MODE_ACTIVE mode=${mode.key}`
-      )
     }
     if (active != null && active.modeId !== mode.id) {
       counts.crossModeActive += 1
-      console.log(
-        `chatbot=${chatbotId} status=DISAGREEMENT kind=CROSS_MODE_ACTIVE_POINTER mode=${mode.key}`
-      )
     }
 
     const versions = mode.versions
@@ -74,9 +68,6 @@ function auditCatalogStructure(
       versions.some((version, index) => version !== index + 1)
     ) {
       counts.sequenceGap += 1
-      console.log(
-        `chatbot=${chatbotId} status=DISAGREEMENT kind=VERSION_SEQUENCE_GAP mode=${mode.key}`
-      )
     }
 
     const latestVersion = versions.at(-1)
@@ -86,9 +77,6 @@ function auditCatalogStructure(
       sameModeActive.version !== latestVersion
     ) {
       counts.activeNotLatest += 1
-      console.log(
-        `chatbot=${chatbotId} status=DISAGREEMENT kind=ACTIVE_VERSION_NOT_LATEST mode=${mode.key}`
-      )
     }
   }
 
@@ -96,7 +84,6 @@ function auditCatalogStructure(
 }
 
 function countProjectionDisagreements(
-  chatbotId: string,
   projectedModes: readonly {
     key: string
     prompt: string
@@ -111,17 +98,11 @@ function countProjectionDisagreements(
     const existing = modes.find((mode) => mode.key === projected.key)
     if (existing == null) {
       count += 1
-      console.log(
-        `chatbot=${chatbotId} status=DISAGREEMENT kind=MISSING_MODE mode=${projected.key}`
-      )
       continue
     }
 
     if (existing.description !== (projected.description ?? null)) {
       count += 1
-      console.log(
-        `chatbot=${chatbotId} status=DISAGREEMENT kind=DESCRIPTION_MISMATCH mode=${existing.key}`
-      )
     }
 
     const active = existing.activePromptVersion
@@ -130,18 +111,12 @@ function countProjectionDisagreements(
       active.authoredPrompt !== projected.prompt
     ) {
       count += 1
-      console.log(
-        `chatbot=${chatbotId} status=DISAGREEMENT kind=TEXT_MISMATCH mode=${existing.key}`
-      )
     }
   }
 
   for (const existing of modes) {
     if (!projectedByKey.has(existing.key)) {
       count += 1
-      console.log(
-        `chatbot=${chatbotId} status=DISAGREEMENT kind=UNPROJECTED_MODE mode=${existing.key}`
-      )
     }
   }
 
@@ -208,22 +183,15 @@ async function run(): Promise<void> {
   }
 
   for (const bot of chatbots) {
-    addStructuralCounts(
-      structuralCounts,
-      auditCatalogStructure(bot.id, bot.modes)
-    )
+    addStructuralCounts(structuralCounts, auditCatalogStructure(bot.modes))
     const projection = projectLegacySystemPrompts(bot.systemPrompts)
     if (!projection.isValid) {
       malformedJsonCount += 1
-      console.log(`chatbot=${bot.id} status=MALFORMED_LEGACY_JSON`)
       continue
     }
 
     if (bot.modes.length === 0) {
       missingCatalogCount += 1
-      console.log(
-        `chatbot=${bot.id} status=MISSING_CATALOG mode_count=${projection.modes.length} can_initialize=true`
-      )
       if (apply) {
         await prisma.$transaction((tx) =>
           ensureChatbotPromptCatalog(tx, bot.id, projection.modes)
@@ -234,7 +202,6 @@ async function run(): Promise<void> {
     }
 
     projectionDisagreementCount += countProjectionDisagreements(
-      bot.id,
       projection.modes,
       bot.modes
     )
@@ -270,10 +237,8 @@ async function run(): Promise<void> {
 
 try {
   await run()
-} catch (error) {
-  console.error(
-    `ERROR: ${error instanceof Error ? error.message : String(error)}`
-  )
+} catch {
+  console.error('audit_failed=true')
   process.exitCode = 1
 } finally {
   await prisma.$disconnect()

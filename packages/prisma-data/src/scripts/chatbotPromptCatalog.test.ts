@@ -1,4 +1,6 @@
+import { execFileSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
+import { fileURLToPath } from 'node:url'
 import {
   appendChatbotModePromptVersion,
   DEFAULT_TUTOR_PROMPT,
@@ -36,6 +38,7 @@ if (
 }
 
 const testDescribe = isDisposableDatabase ? describe : describe.skip
+const SCRIPT_DIRECTORY = fileURLToPath(new URL('.', import.meta.url))
 
 testDescribe('chatbot prompt catalog transactional writers', () => {
   const adapter = new PrismaPg({ connectionString: DATABASE_URL! })
@@ -107,6 +110,28 @@ testDescribe('chatbot prompt catalog transactional writers', () => {
         },
       ])
       return chatbot
+    })
+  }
+
+  async function createModeLineage(
+    chatbotId: string,
+    key: string,
+    prompt: string,
+    description: string | null = null
+  ): Promise<void> {
+    const mode = await prisma.chatbotMode.create({
+      data: {
+        chatbotId,
+        key,
+        description,
+        status: ChatbotModePromptStatus.ENABLED,
+        versions: { create: { version: 1, authoredPrompt: prompt } },
+      },
+      select: { id: true, versions: { select: { id: true } } },
+    })
+    await prisma.chatbotMode.update({
+      where: { id: mode.id },
+      data: { activePromptVersionId: mode.versions[0]!.id },
     })
   }
 
@@ -410,6 +435,97 @@ testDescribe('chatbot prompt catalog transactional writers', () => {
     expect(
       await prisma.chatbotMode.count({ where: { chatbotId: chatbot.id } })
     ).toBe(0)
+  })
+
+  test('rejects partial and extra existing catalog mode sets', async () => {
+    const partial = await prisma.chatbot.create({
+      data: {
+        name: 'Synthetic partial catalog bot',
+        ownerId,
+        courseId,
+        systemPrompts: {
+          tutor: { prompt: 'Partial tutor', description: null },
+          explainer: { prompt: 'Missing explainer', description: null },
+        },
+      },
+      select: { id: true },
+    })
+    await createModeLineage(partial.id, 'tutor', 'Partial tutor')
+
+    await expect(
+      prisma.$transaction((tx) =>
+        ensureChatbotPromptCatalog(tx, partial.id, [
+          { key: 'tutor', prompt: 'Partial tutor' },
+          { key: 'explainer', prompt: 'Missing explainer' },
+        ])
+      )
+    ).rejects.toThrow('PROMPT_CATALOG_INITIALIZER_MODE_SET_MISMATCH')
+    expect(
+      await prisma.chatbotMode.count({ where: { chatbotId: partial.id } })
+    ).toBe(1)
+
+    const extra = await prisma.chatbot.create({
+      data: {
+        name: 'Synthetic extra catalog bot',
+        ownerId,
+        courseId,
+        systemPrompts: {
+          tutor: { prompt: 'Projected tutor', description: null },
+        },
+      },
+      select: { id: true },
+    })
+    await createModeLineage(extra.id, 'tutor', 'Projected tutor')
+    await createModeLineage(extra.id, 'unprojected', 'Unprojected prompt')
+
+    await expect(
+      prisma.$transaction((tx) =>
+        ensureChatbotPromptCatalog(tx, extra.id, [
+          { key: 'tutor', prompt: 'Projected tutor' },
+        ])
+      )
+    ).rejects.toThrow('PROMPT_CATALOG_INITIALIZER_MODE_SET_MISMATCH')
+    expect(
+      await prisma.chatbotMode.count({ where: { chatbotId: extra.id } })
+    ).toBe(2)
+  })
+
+  test('keeps prompt-catalog audit output values-free', async () => {
+    const marker = randomUUID()
+    const modeKey = `audit-mode-${marker}`
+    const prompt = `audit-prompt-${marker}`
+    const chatbot = await prisma.chatbot.create({
+      data: {
+        name: 'Synthetic values-free audit bot',
+        ownerId,
+        courseId,
+        systemPrompts: {
+          [modeKey]: { prompt, description: `audit-description-${marker}` },
+        },
+      },
+      select: { id: true },
+    })
+
+    const output = execFileSync(
+      process.execPath,
+      [
+        '../../node_modules/tsx/dist/cli.mjs',
+        '2026-08-23_audit_prompt_catalog.ts',
+      ],
+      {
+        cwd: SCRIPT_DIRECTORY,
+        encoding: 'utf8',
+        env: { ...process.env, DATABASE_URL },
+        timeout: 120000,
+      }
+    )
+
+    expect(output).toContain('summary_missing_catalog=')
+    expect(output).toContain('execution=DRY_RUN')
+    expect(output).not.toContain(chatbot.id)
+    expect(output).not.toContain(modeKey)
+    expect(output).not.toContain(prompt)
+    expect(output).not.toContain(marker)
   })
 
   test('initializes the null legacy projection as tutor version one', async () => {

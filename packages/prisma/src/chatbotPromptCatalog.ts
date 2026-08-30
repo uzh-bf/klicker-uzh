@@ -167,9 +167,9 @@ function updateLegacyModeEntry(
 
 /**
  * Ensure each listed mode has an active version whose authored text matches
- * the input exactly. Missing modes are created with version 1; an existing
- * mode with different active text throws (history is never rewritten); a
- * matching mode is an idempotent no-op.
+ * the input exactly. A wholly missing catalog is created with version 1; a
+ * partial or extra mode set and any active-text disagreement throw (history is
+ * never rewritten); an exact matching catalog is an idempotent no-op.
  */
 export async function ensureChatbotPromptCatalog(
   tx: Prisma.TransactionClient,
@@ -178,6 +178,20 @@ export async function ensureChatbotPromptCatalog(
 ): Promise<void> {
   const chatbot = await lockChatbot(tx, chatbotId)
   requireInitializerProjection(chatbot.systemPrompts, modes)
+
+  const existingModeKeys = await tx.chatbotMode.findMany({
+    where: { chatbotId },
+    select: { key: true },
+  })
+  if (existingModeKeys.length > 0) {
+    const requestedKeys = new Set(modes.map((mode) => mode.key))
+    if (
+      existingModeKeys.length !== requestedKeys.size ||
+      existingModeKeys.some((mode) => !requestedKeys.has(mode.key))
+    ) {
+      throw catalogError('INITIALIZER_MODE_SET_MISMATCH')
+    }
+  }
 
   for (const mode of modes) {
     const existing = await tx.chatbotMode.findUnique({

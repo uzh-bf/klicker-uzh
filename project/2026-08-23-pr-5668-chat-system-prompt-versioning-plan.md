@@ -704,8 +704,19 @@ adapted.
   `pnpm run test:run` remains intentionally unavailable inside the
   devcontainer because the Playwright package exits through its host-only
   guard; this package changes no browser-facing contract.
-- Current boundary: review corrections and local verification are complete on
-  `rs/chat-system-prompt-versioning`; local commit and final review remain.
+- 2026-08-30 (final-review corrections): the independent final-package review
+  found two medium and one low issue. The initializer now permits only a wholly
+  missing catalog or an exact persisted mode-key set and rejects partial or
+  extra lineages. Audit output now contains aggregate counts, booleans, and
+  fixed status names only, with a regression proving that chatbot ids, mode
+  keys, and prompt markers are absent. Effective-prompt documentation now
+  states the implemented authored-version-and-SHA-256 identity explicitly.
+  The corrected proof replayed all 183 migrations, passed 14 catalog and
+  provisioner tests plus 7 GraphQL chatbot tests, dropped its disposable
+  database, and passed `pnpm run check:all` plus all 23 production build tasks.
+- Current boundary: all final-review findings are corrected and verified on
+  `rs/chat-system-prompt-versioning`; the local correction commit and the one
+  permitted reviewer correction pass remain.
   The task branch is two commits behind `origin/v3` on the last refreshed
   refs. Upstream integration, push/PR mutation, deployment, live data work, and
   cleanup remain separate authority boundaries.

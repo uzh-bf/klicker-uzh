@@ -206,7 +206,7 @@ An immutable, numbered snapshot of the authored instruction/persona text for one
 _Avoid_: prompt backup, prompt history entry
 
 **Effective System Prompt**:
-The exact final instruction text sent to the model for one turn: authored version plus runtime contracts. Once runtime provenance is enabled, messages reference it once and share it; identical text reuses one row.
+The exact final instruction text sent to the model for one turn: authored version plus runtime contracts. Once runtime provenance is enabled, messages reference it once and share it only within that authored version; equal text under different authored versions remains separate.
 _Avoid_: compiled prompt cache, prompt hash key
 
 ### Legacy and boundary terms
