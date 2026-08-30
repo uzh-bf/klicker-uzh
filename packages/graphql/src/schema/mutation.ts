@@ -2183,15 +2183,27 @@ export const Mutation = builder.mutationType({
           }),
           status: t.arg({ type: ElementStatus, required: true }),
           type: t.arg({ type: GeneratableElementType, required: true }),
-          name: t.arg.string({ required: true }),
-          content: t.arg.string({ required: true }),
-          explanation: t.arg.string({ required: false }),
+          name: t.arg.string({
+            required: true,
+            validate: { minLength: 1, maxLength: 500 },
+          }),
+          content: t.arg.string({
+            required: true,
+            validate: { minLength: 1, maxLength: 20_000 },
+          }),
+          explanation: t.arg.string({
+            required: false,
+            validate: { maxLength: 20_000 },
+          }),
           basePoints: t.arg.boolean({ required: true }),
           pointsMultiplier: t.arg.int({
             required: true,
             validate: { min: 1 },
           }),
-          tags: t.arg.stringList({ required: false }),
+          tags: t.arg.stringList({
+            required: false,
+            validate: { maxLength: 20 },
+          }),
           choiceIds: t.arg.idList({
             required: false,
             validate: { maxLength: 10 },
