@@ -278,7 +278,6 @@ export const Thread: FC<ThreadProps> = ({ chatbotAvatar, chatbotName }) => {
     [activeThread?.messages]
   )
   const showHistoryRail = !embedded && historyEntries.length > 0
-  const modeOptions = useEffectiveModeOptions()
   const hasAvailableMode = useHasAvailableChatMode()
 
   return (
