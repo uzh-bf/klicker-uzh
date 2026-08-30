@@ -61,6 +61,33 @@ export default {
       dismiss: 'Dismiss update',
       details: 'Read more',
     },
+    // PLACEHOLDER COPY — the onboarding cards are pending editorial review.
+    // The key structure is settled and mirrored in de.ts; the wording is not.
+    onboarding: {
+      title: 'Welcome to KlickerUZH Chat',
+      replay: 'Show intro',
+      progress: 'Step {current} of {total}',
+      previous: 'Back',
+      next: 'Next',
+      skip: 'Skip',
+      done: 'Start chatting',
+      close: 'Close the introduction',
+      modesTitle: 'Two ways to ask',
+      modesBody:
+        'Switch between Tutor mode, which walks you towards the answer, and Explainer mode, which answers directly. The menu for it sits in the header of every conversation.',
+      sourcesTitle: 'Answers name their sources',
+      sourcesBody:
+        'When an answer draws on course material, it cites it. Open a citation to read the passage it came from and check it yourself.',
+      attachmentsTitle: 'Bring your own material',
+      attachmentsBody:
+        'Attach an image or a document to a message when your question is about something you are looking at.',
+      historyTitle: 'Your conversations stay',
+      historyBody:
+        'Every conversation is kept in the sidebar, so you can pick one up later or start a new one whenever you want.',
+      creditsTitle: 'Credits',
+      creditsBody:
+        'Every answer uses credits from your course budget. The sidebar shows how many you have left.',
+    },
     sidebar: {
       newChat: 'New Chat',
       closeSidebar: 'Close sidebar',
