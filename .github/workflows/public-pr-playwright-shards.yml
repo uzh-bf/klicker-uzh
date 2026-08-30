@@ -391,20 +391,43 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x .github/scripts/wait-for-services.sh
-          SHARD_PLAN=$(node .github/scripts/get-shard-files.js ${{ matrix.shardIndex }} ${{ matrix.shardTotal }} --json)
-          PROFILE=$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).profile)' "$SHARD_PLAN")
-          mapfile -t TEST_FILES < <(node -e 'for (const file of JSON.parse(process.argv[1]).files) console.log(file)' "$SHARD_PLAN")
+          PROFILE_RUNTIME_FILES=(
+            playwright/profiles.json
+            playwright/runtime-contract.yml
+            util/playwright-profile-runtime.mjs
+          )
+          profile_file_count=0
+          for profile_file in "${PROFILE_RUNTIME_FILES[@]}"; do
+            if [ -f "$profile_file" ]; then
+              profile_file_count=$((profile_file_count + 1))
+            fi
+          done
+
+          if [ "$profile_file_count" -eq "${#PROFILE_RUNTIME_FILES[@]}" ]; then
+            SHARD_PLAN=$(node .github/scripts/get-shard-files.js ${{ matrix.shardIndex }} ${{ matrix.shardTotal }} --json)
+            PROFILE=$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).profile)' "$SHARD_PLAN")
+            mapfile -t TEST_FILES < <(node -e 'for (const file of JSON.parse(process.argv[1]).files) console.log(file)' "$SHARD_PLAN")
+            RUNTIME_PLAN="${RUNNER_TEMP}/playwright-runtime-${{ matrix.shardIndex }}.json"
+            node util/playwright-profile-runtime.mjs resolve \
+              --profile "$PROFILE" \
+              --output "$RUNTIME_PLAN"
+            export PLAYWRIGHT_RUNTIME_PLAN="$RUNTIME_PLAN"
+            SERVICE_ENDPOINTS=$(node util/playwright-profile-runtime.mjs endpoints --plan "$RUNTIME_PLAN")
+            export SERVICE_ENDPOINTS
+          elif [ "$profile_file_count" -eq 0 ]; then
+            PROFILE=legacy-full-stack
+            SHARD_FILES=$(node .github/scripts/get-shard-files.js ${{ matrix.shardIndex }} ${{ matrix.shardTotal }})
+            read -r -a TEST_FILES <<< "$SHARD_FILES"
+            echo "::notice::Using legacy full-stack Playwright startup because the caller checkout predates the profile runtime"
+          else
+            echo "Playwright profile runtime files are partially present; refusing mixed startup" >&2
+            exit 1
+          fi
+
           if [ "${#TEST_FILES[@]}" -eq 0 ]; then
             echo "Shard plan contains no test files" >&2
             exit 1
           fi
-          RUNTIME_PLAN="${RUNNER_TEMP}/playwright-runtime-${{ matrix.shardIndex }}.json"
-          node util/playwright-profile-runtime.mjs resolve \
-            --profile "$PROFILE" \
-            --output "$RUNTIME_PLAN"
-          export PLAYWRIGHT_RUNTIME_PLAN="$RUNTIME_PLAN"
-          SERVICE_ENDPOINTS=$(node util/playwright-profile-runtime.mjs endpoints --plan "$RUNTIME_PLAN")
-          export SERVICE_ENDPOINTS
           echo "Running tests for shard ${{ matrix.shardIndex }} with profile $PROFILE: ${TEST_FILES[*]}"
           .github/scripts/wait-for-services.sh -- \
             env NODE_ENV=test \
