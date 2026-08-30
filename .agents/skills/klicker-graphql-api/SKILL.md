@@ -97,10 +97,11 @@ Publish from the service (`ctx.pubSub.publish('<topic>', payload)`), subscribe i
 
 ## Debugging quick table
 
-| Symptom                              | Likely cause                                                                   |
-| ------------------------------------ | ------------------------------------------------------------------------------ |
-| `Unauthorized` GraphQLError          | layer-1 scope object mismatch (wrong role/scope for the caller)                |
-| Field silently `null` for a lecturer | layer-2 `withPermission` failed (no ownership/grant at that `PermissionLevel`) |
-| Op works in dev, rejected deployed   | package build did not regenerate `server.json` (step 6)                        |
-| Frontend can't find `*Document`      | codegen not run after adding the op                                            |
-| Mutation fails `workflow not found`  | Hatchet worker missing → `klicker-environment-doctor` check 7                  |
+| Symptom                              | Likely cause                                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------------- |
+| `Unauthorized` GraphQLError          | layer-1 scope object mismatch (wrong role/scope for the caller)                 |
+| Field silently `null` for a lecturer | layer-2 `withPermission` failed (no ownership/grant at that `PermissionLevel`)  |
+| Op works in dev, rejected deployed   | package build did not regenerate `server.json` (step 6)                         |
+| Frontend can't find `*Document`      | codegen not run after adding the op                                             |
+| Mutation fails `workflow not found`  | Hatchet worker missing → `klicker-environment-doctor` check 7                   |
+| Question evidence source is rejected | native graph snapshots must use the provider's `${resourceId}.md` artifact name |

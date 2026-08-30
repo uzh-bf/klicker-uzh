@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-26'
+timestamp: '2026-08-27'
 tags:
   - testing
   - ci
@@ -20,7 +20,7 @@ tags:
 | React/browser feature-flag behavior                                               | browser verification; use e2e when a user flow covers it                                   | `npx agent-browser@0.32.2` against the adopting app                                                                 |
 | GraphQL services/resolvers                                                        | `packages/graphql` vitest — needs REAL Postgres + Redis + Hatchet + `HATCHET_CLIENT_TOKEN` | `pnpm --filter @klicker-uzh/graphql test:local` (one-command bootstrap: `test/run-tests-local.sh`)                  |
 | Auth adapter against shared Prisma client                                         | disposable local PostgreSQL through the guarded Auth round-trip                            | `pnpm --filter @klicker-uzh/auth test:prisma-adapter`                                                               |
-| UI / user flows                                                                   | Playwright e2e                                                                             | see routing below                                                                                                   |
+| UI / user flows                                                                   | Playwright e2e                                                                             | `pnpm playwright:host -- <args>` from the host; see routing below                                                   |
 | Office Add-in URL validation                                                      | Node's built-in test runner — safe without services                                        | `pnpm --filter @klicker-uzh/office-addin test`                                                                      |
 
 For server-paginated manage lists, browser coverage must exercise finite page
@@ -89,11 +89,21 @@ The Office Add-in has a separate host boundary. Its pure URL contract runs under
 
 **Playwright is the sole e2e test suite.** All e2e specs live under `playwright/`.
 
+Local Playwright has a strict host/container boundary. The canonical command is
+`pnpm playwright:host -- <args>` from a host shell. It reconciles the exact
+devrouter workspace, maps every browser origin, discovers the workspace's
+random loopback PostgreSQL port, and runs Playwright with host dependencies and
+browser binaries. Package scripts route to the same launcher, while
+`playwright.config.ts` rejects direct local commands and every local container
+before global setup can reset data. The devcontainer also sets a non-directory
+browser path so browser installation fails there. GitHub Actions is explicitly
+allowed and retains the direct official-container workflow.
+
 Specs click `data-cy` attributes ([Frontend Conventions](./frontend-conventions.md)). Specs are letter-prefixed for run order (`A-login-workflow` … `Z-credential-verification`).
 
 |               | Playwright (`playwright/`)                                 |
 | ------------- | ---------------------------------------------------------- |
-| Stack scripts | `dev:playwright` / `start:playwright`                      |
+| Local command | `pnpm playwright:host -- <args>`                           |
 | Infisical env | `dev-playwright`                                           |
 | Seed          | own `seedDatabase()` in `global-setup.ts` (once, wipes DB) |
 | CI            | official Playwright container, 8-way shard, all PRs        |
@@ -115,16 +125,22 @@ For authoring specifics, helper patterns, and failure triage, use the `klicker-p
 ## E2E environment dependencies
 
 - The local Chat model simulation includes LiteLLM's `auto-router` and
-  the GPT-5.6 Luna/Sol target aliases. After `devrouter ensure .`, verify the
+  the GPT-5.6 Luna/Sol target aliases. Start it with
+  `devrouter ensure . --profile chat,ai`; add `mcp` for the seeded synthetic
+  tool path. Then verify the
   LiteLLM liveness endpoint, direct embedding/model probes, expected Auto V2
   routing decisions in LiteLLM logs, and the chat credits response before
   browser testing the `Auto Mode`/`GPT-5.6 Luna` picker. A real
   `UPSTREAM_OPENAI_API_KEY` is required for these calls; service health alone is
   not classification or answer-stream evidence.
-- Tests that **publish, schedule, or end activities** need the Hatchet **general worker** running on top of the test stack — otherwise mutations fail with `workflow not found`. The worker needs `DATABASE_URL` pointed at the test DB ([Async & Workers](./async-and-workers.md)).
-- **Live-quiz response tests** additionally need `response-api` + the response processor with the same `APP_SECRET`/Redis/Postgres settings — otherwise the UI accepts answers that never reach cockpit/evaluation.
+- Tests that **publish, schedule, or end activities** need the Hatchet **general worker** running on top of the test stack — otherwise mutations fail with `workflow not found`. Use `live-quiz`, `manage,live-quiz`, or `full`; the worker needs `DATABASE_URL` pointed at the test DB ([Async & Workers](./async-and-workers.md)).
+- **Live-quiz response tests** use `devrouter ensure . --profile live-quiz`.
+  Startup proves Response API's `/healthz` contract plus live general and
+  response-processor worker descendants before reporting ready. Without those
+  processes and matching `APP_SECRET`/Redis/Postgres settings, the UI can
+  accept answers that never reach cockpit/evaluation.
 - The PWA course-chat drawer is covered in `playwright/tests/Y-course-chat-drawer.spec.ts`: modal relationships and focus containment, root isolation and restoration, multiple-chatbot selection, new-tab and iframe targets, desktop and embedded-mobile close controls, and both missing-participation and no-chatbot entry fallbacks.
-- The Manage lecturer assistant is covered in `playwright/tests/Y-manage-assistant.spec.ts`. Its route-error cases prove that 401 and 429 responses render only the generic `chat-assistant-message-error` UI, do not leak the raw status/body or stack details into the transcript, and leave the composer able to complete a retry.
+- The Manage lecturer assistant is covered in `playwright/tests/Y-manage-assistant.spec.ts`. The suite covers the non-modal page interaction contract, cross-origin Escape and focus restoration, short mobile viewports, desktop-only size persistence, readiness loading state, retained resizing, in-session reset without iframe reload, trusted proposal revisions, complete correctness/feedback review, and proposal clearance above the composer. Its route-error cases prove that 401 and 429 responses render only the generic `chat-assistant-message-error` UI, do not leak the raw status/body or stack details into the transcript, and leave the composer able to complete a retry.
 - Ordinary Playwright runs and CI shards stay Chromium-only. Set `PLAYWRIGHT_RELEASE_MATRIX=true` to make the named `firefox` and `webkit` projects available for targeted release checks. Those projects must pass against production builds before release; a development-server result or browser-startup failure is environment evidence, not product compatibility evidence.
 - `evaluation/manage-assistant` keeps the matching E7 readiness contract. Each case declares `assistant_text` or `transport_ui`: model-mediated faults must prove the expected zero-tool or `FORBIDDEN` tool-output condition and require a non-empty assistant message before the judge runs; assistant text, reasoning, tool outputs, route bodies, and the `Retry-After` header are all scanned for internal-detail leaks with payload-redacted diagnostics. Route-level 401/429 faults must match the exact public JSON/status/header contract. The 429 case exhausts a fresh dummy subject with invalid request bodies that return before model invocation, then captures the real limiter response. Run the deterministic contract suite with `cd evaluation/manage-assistant && uv run pytest -m offline -q`; live judged evidence remains a separate paid release gate.
 - Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, and the absence of horizontal overflow.

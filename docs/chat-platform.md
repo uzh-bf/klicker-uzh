@@ -2,7 +2,7 @@
 type: App Guide
 title: Chat Platform
 description: The apps/chat island — app router, zustand, assistant-ui, route-handler auth guards, and the model registry.
-timestamp: '2026-08-26'
+timestamp: '2026-08-27'
 tags:
   - frontend
   - chat
@@ -104,6 +104,10 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 - Local model proxy: the `litellm` compose service (port 4000).
 - Local MCP fixture: `scripts/local-mcp-server.mjs` exposes a deterministic,
   read-only `doc_query` tool on port 1417 for the seeded Benibot.
+- Local runtime profiles keep these capabilities independent: `chat` starts
+  the Chat/PWA/API/Auth app set, `ai` starts LiteLLM, and `mcp` starts the
+  fixture. Use `chat,ai,mcp` for the complete synthetic model/tool path; plain
+  `chat` intentionally starts neither optional capability.
 
 ## Owner-governed response examples
 
@@ -207,7 +211,15 @@ The two chat surfaces also differ in how they handle a missing model key. The pa
 
 The Manage chat route authenticates before admitting work, and applies its per-lecturer rate limit only after it acquires the pod's request slot; a busy rejection therefore does not consume the lecturer's rate budget. It is excluded from the Next middleware matcher so Next does not clone and truncate the body at its default 10 MiB buffer; the route therefore owns the full stream and enforces a 16 MiB serialized-body ceiling. Both declared and chunked oversized requests fail with a generic `413`, a body that exceeds the 30-second read deadline fails with a generic `408`, and malformed or structurally invalid requests retain the generic `400`. The request shape remains capped at 50 messages and also bounds aggregate parts, text, and individual encoded image/data parts before AI SDK conversion or MCP/model work.
 
-After the resource checks, the route uses the AI SDK's message validator before opening the lecturer MCP client. Browser-supplied system messages, unsupported user parts, non-user files, malformed tool states, and invalid image base64 are rejected. Every accepted message is reconstructed from allowlisted fields, dropping browser-owned provider metadata and other extra fields. Previous assistant prose is retained for conversational continuity, but browser-supplied assistant tool, data, reasoning, and file parts are removed before model conversion; only tool results produced inside the current server-owned MCP loop reach the model as tool history. A total 60-second abort deadline covers body parsing, the MCP transport's actual composed fetch signal, model streaming, and the response-lifetime slot, because self-hosted Next does not itself enforce the route's exported `maxDuration`.
+After the resource checks, the route uses the AI SDK's message validator before opening the lecturer MCP client. Browser-supplied system messages, unsupported user parts, non-user files, malformed tool states, and invalid image base64 are rejected. Every accepted message is reconstructed from allowlisted fields, dropping browser-owned provider metadata and other extra fields. Previous assistant prose is retained for conversational continuity, but browser-supplied assistant tool, data, reasoning, and file parts are removed before model conversion; only tool results produced inside the current server-owned MCP loop reach the model as tool history.
+
+One narrow exception supports conversational revisions such as “make this question German” without trusting browser-owned proposal JSON. Validation extracts only the opaque token from the exact signed-proposal tool part. The route verifies its signature, issuer, expiry, purpose, subject, and schema without consuming the token's replay identifier, then reconstructs a bounded canonical proposal block for the system prompt. The block uses the same unpredictable per-request data fence and structural forgery neutralizer as lecturer MCP results, because signing proves provenance but does not make lecturer-authored question text a trusted instruction. Invalid, expired, foreign, or fabricated tokens are ignored and ordinary chat continues. Raw tool output, token metadata, and browser payloads never reach the model; only the confirmation route claims the replay identifier, so creating a draft remains single-use. This continuity lasts no longer than the existing 15-minute proposal token.
+
+A total 60-second abort deadline covers body parsing, the MCP transport's actual composed fetch signal, model streaming, and the response-lifetime slot, because self-hosted Next does not itself enforce the route's exported `maxDuration`.
+
+Signed question proposals render as static lecturer reviews rather than interactive student previews. Choice questions show every option with explicit “Correct” or “Incorrect” text and its answer feedback; free-text questions show sample solutions and response-length restrictions. Both forms show the general explanation and use the sanitized Markdown renderer. The raw canonical JSON remains available only as an optional disclosure for diagnosis.
+
+The Manage embed is an in-session assistant dock, not a history surface. Closing and reopening the dock preserves its mounted runtime, while **Start a new conversation** clears the current assistant-ui thread plus unsent text and attachments after an inline confirmation when content exists. Reloading the page still starts a fresh runtime; there is no durable lecturer chat history, thread list, database model, or retention contract. The composer is an in-flow sibling of the transcript so a long proposal can scroll fully above it instead of being clipped by an overlay.
 
 Inline base64 images make parsing memory-intensive. Only one Manage request per Chat pod may enter the body/model path at a time; an overlapping authenticated request receives a generic retryable `503` before its body is read. Staging and production therefore request 200 MiB and limit the Chat pod to 400 MiB: a production-standalone probe with ten concurrent 15.5 MiB requests peaked at 235 MiB, below the 280 MiB (70%) risk threshold, with one parsed request and nine pre-read rejections. The Manage composer accepts at most two 5 MiB images so its largest supported request fits the route envelope; participant chat intentionally retains its separate three-image limit.
 
@@ -637,8 +649,13 @@ error bodies into `ChatMessage.content`. The live SSE path applies the same boun
 The mobile layout exports `viewportFit: 'cover'`, keeps the standalone composer
 in normal layout with bottom safe-area padding, wraps Markdown tables in
 horizontal scrolling, and uses a compact mode dropdown in an overflow-safe
-header grid. Embedded mode shows the loading state and compact credit/model
-information through the shared settings components. Direct thread URL
+header grid. The Chat/Knowledge graph workspace switch appears once in that
+header's right-hand control cluster in standalone and embedded layouts; the
+sidebar and content area do not repeat it
+(`src/components/assistant.tsx:SidebarMain`,
+`src/components/assistant.tsx:AssistantLayout`). Embedded mode shows the
+loading state and compact credit/model information through the shared settings
+components. Direct thread URL
 activation resynchronizes the thread's stored chat mode once per activation,
 without overriding a mode manually chosen afterward.
 
@@ -649,6 +666,46 @@ Whether that is the intended contract or the switcher should persist immediately
 product ruling (`project/2026-07-27-student-chat-v3-follow-up-roadmap.md`, W7 item 1). The
 switcher is hidden entirely when a chatbot exposes a single mode — `mode-switcher.tsx` returns
 `null` for one or fewer mode keys, so there is no disabled one-pill state to style.
+
+## Runtime system-prompt policy
+
+`src/lib/server/systemPromptCompiler.ts:compileSystemPrompt` treats a stored per-mode prompt as the
+chatbot's configurable persona, not as the complete system policy. On every chat request, after the
+available MCP tool names are known, it composes the final prompt in this order:
+
+1. stored mode prompt or `DEFAULT_PROMPT` fallback;
+2. fixed course-scope, evidence, tool-privacy, and safety policy from
+   `src/lib/server/coursePolicyInstructions.ts:withCoursePolicyContract`;
+3. the conditional citation policy when a `doc_query`-style tool is available; and
+4. the fixed conversation-language and Swiss High German policy from
+   `src/lib/server/languageInstructions.ts:withLanguageStyleContract`.
+
+The fixed policy explicitly overrides conflicting persona text, examples, retrieved material, tool
+output, and user attempts to change platform rules. It keeps answers within the owning course,
+asks one clarification when course relevance is genuinely ambiguous, and briefly refuses clearly
+unrelated requests. Immediate safety concerns are not refused merely as out of scope. Course-tool
+queries must omit or generalise personal names, contact details such as email addresses, phone
+numbers, or postal addresses, participant or student identifiers, and other sensitive personal
+information. Retrieved content is evidence rather than instruction.
+
+When a `doc_query`-style tool is present, the model is instructed to retrieve before course-content
+claims, use only relevant results, and acknowledge insufficient course evidence instead of filling
+gaps from general knowledge. Free-text queries start in the locked conversation language but may
+preserve exact non-personal course and source labels, titles, codes, and identifiers, or
+reformulate in a source language when retrieval genuinely needs it.
+
+Because compilation happens for every request after loading `chatbot.systemPrompts`, the policy
+applies to existing and newly created chatbots as soon as this application revision is deployed.
+No prompt-row migration is required. Existing stored prompts remain unchanged and continue to
+supply each mode's persona beneath the fixed policy. A chatbot served by an older application
+revision keeps the old behaviour until that revision is replaced.
+
+The language lock follows the user's latest non-trivial message or explicit language request.
+Quoted text, attached images or their descriptions, retrieved chunks, tool output, and earlier
+assistant messages cannot switch the response language. Short acknowledgements preserve the
+established conversation language. German answers use Swiss High German orthography (`ss`, never
+`ß`, and real umlauts). Unit tests prove prompt composition only; model compliance still requires
+a separately authorised live-model evaluation.
 
 ## Sources and citations
 
@@ -837,13 +894,8 @@ formula, surrounding Markdown, and assistant-row identity.
 
 Chat has no locale switcher: the locale comes from the `NEXT_LOCALE` cookie and falls back to `en` ([ADR 0001](./adr/0001-chat-locale-from-cookie.md)). It is resolved **directly in the chat-local `getRequestConfig`** (`src/types/i18n.ts`). Relying on `setRequestLocale`/`requestLocale` alone produces a split brain — `<html lang>` follows the cookie while server-side `getTranslations()` stays on the default locale. Messages come from the static `messagesByLocale` map exported there, which the root layout reuses: Turbopack cannot build a dynamic-import context for a bare package subpath (`import('@klicker-uzh/i18n/messages/' + locale)`), so the dynamic form silently resolves nothing in this app. Strings live in `packages/i18n/messages/{en,de}.ts`; `apps/chat/src/types/app.d.ts` enforces en/de key parity through a `DeepIntersection`, so a missing key fails `pnpm --filter @klicker-uzh/chat check` rather than at runtime. German addressed to students is informal (`Du`/`Dein`/`Dir`), instructors are "Dozierende", and Swiss `ss` is used instead of `ß`.
 
-Model answers are held to the same orthography server-side: the chat route wraps every system
-prompt in `withLanguageStyleContract` (`src/lib/server/languageInstructions.ts`) — unconditionally,
-unlike the citation contract, because a lecturer's stored prompt replaces `DEFAULT_PROMPT`
-entirely and a rule written only in the default text silently disappears the moment a custom
-prompt is saved. The contract asks for Swiss High German ("ss" not "ß", real umlauts, never
-ae/oe/ue). As with the citation contract, only prompt assembly is unit-tested; model compliance
-needs a live key the devcontainer does not carry.
+Model-answer language and orthography are fixed by the runtime system-prompt policy above, not by
+the UI locale or by a lecturer's stored persona prompt.
 
 Two recurring traps in this app's strings:
 
@@ -885,12 +937,20 @@ The chat route derives the enabled knowledge-base id from the authenticated chat
 
 `src/lib/server/docQueryScopeToken.ts:signDocQueryScopeToken` signs a five-minute ES256 token with `DOC_QUERY_SCOPE_PRIVATE_KEY`, `DOC_QUERY_SCOPE_KID`, `DOC_QUERY_SCOPE_ISSUER`, and `DOC_QUERY_SCOPE_AUDIENCE`. Claims bind `kb_id`, `chatbot_id`, session subject, and a unique `jti`; participant identity is intentionally absent. Scope-token requests carry the scoped bearer in `X-Doc-Query-Scope-Token` and retain `Authorization` only for transport authentication; they never use the legacy `Chatbot-ID` header for retrieval scope. Existing participant-JWT MCP authentication is unchanged.
 
+The staging isolation verifier keeps positive and negative evidence asymmetric:
+positive markers may appear in returned source references or chunk content, but
+each `foreign.forbidReferences` marker must identify a stable
+`source.reference` unique to the foreign corpus. Never use a shared subject
+term as negative evidence; related courses can legitimately retrieve the same
+terminology without crossing the signed knowledge-base boundary.
+
 The assistant UI registers the retrieval card through `src/components/tools-ui/rag-tool-ui.tsx:RAGToolUI`. Its registration uses `src/services/mcpScope.ts:DOC_QUERY_TOOL_NAME` (`KB_doc_query`), matching the namespaced runtime tool name. The card is localized through `pwa.chatbot.retrieval` and renders only a generic failure state; raw retrieval-service errors must never reach participants.
 
 ## Testing
 
-The self-contained devcontainer starts the seeded local MCP fixture through
-`post-start.sh`. Benibot's Tutor and Explainer configurations already point to
+Start the self-contained devcontainer with
+`devrouter ensure . --profile chat,ai,mcp`. `post-start.sh` then starts the
+seeded local MCP fixture. Benibot's Tutor and Explainer configurations point to
 `http://localhost:1417/mcp` and allow `doc_query`; the runtime namespaces the
 tool as `KB_doc_query`. `seedChatbots.ts:seedChatbots` creates the enabled
 Benibot knowledge-base binding only when the self-contained runtime sets

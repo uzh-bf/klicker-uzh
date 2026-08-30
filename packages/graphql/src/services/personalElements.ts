@@ -16,10 +16,12 @@ import type { PrismaTransactionClient } from '@klicker-uzh/util'
 import { GraphQLError } from 'graphql'
 import { isDeepEqual } from 'remeda'
 import { z } from 'zod'
+import { sleep } from '../lib/util.js'
 import { updateSpacedRepetition } from './stacks.js'
 
 const PERSONAL_ELEMENT_LIMIT = 500
-const TRANSACTION_RETRY_LIMIT = 3
+const TRANSACTION_RETRY_LIMIT = 5
+const TRANSACTION_RETRY_DELAY_MS = 10
 const TRANSACTION_MAX_WAIT_MS = 5_000
 const TRANSACTION_TIMEOUT_MS = 15_000
 const CARD_GENERATION_LEASE_MS = 5 * 60 * 1000
@@ -1074,6 +1076,9 @@ async function runSerializable<T>(
           isSerializationConflict(error)) &&
         attempt < TRANSACTION_RETRY_LIMIT - 1
       ) {
+        // Let the winning serializable transaction commit before retrying.
+        // Immediate retries can repeatedly collide with the same transaction.
+        await sleep(TRANSACTION_RETRY_DELAY_MS * (attempt + 1))
         continue
       }
       throw error

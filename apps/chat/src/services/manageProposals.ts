@@ -1,18 +1,18 @@
 import hashes from '@klicker-uzh/graphql/dist/client.json'
 import { prisma } from '@klicker-uzh/prisma'
 import { AuditLogType, ObjectType } from '@klicker-uzh/prisma/client'
-import { verifyJWT } from '@klicker-uzh/util'
+import { jwtVerify } from 'jose'
 import { z } from 'zod'
 import {
   choicesProposalPayloadSchema,
   freeTextProposalPayloadSchema,
-  manageElementCreateProposalSchema,
   type ManageElementCreateProposal,
+  manageElementCreateProposalSchema,
 } from './manageProposalSchema'
 
 export {
-  manageElementCreateProposalSchema,
   type ManageElementCreateProposal,
+  manageElementCreateProposalSchema,
 } from './manageProposalSchema'
 
 const MANAGE_PROPOSAL_PURPOSE = 'manage-assistant-proposal'
@@ -143,16 +143,22 @@ export function getRequiredManageOrigin(
   return origin
 }
 
-export async function verifyManageProposalToken(
+export async function readManageProposalToken(
   token: string,
   userId: string,
   settings: { issuer: string; secret: string }
 ): Promise<ManageElementCreateProposal & { jti: string | null }> {
   let parsed: z.infer<typeof manageProposalTokenSchema>
   try {
-    const payload = await verifyJWT(token, settings.secret, {
-      issuer: settings.issuer,
-    })
+    const { payload } = await jwtVerify(
+      token,
+      Buffer.from(settings.secret, 'utf8'),
+      {
+        algorithms: ['HS256'],
+        clockTolerance: '5s',
+        issuer: settings.issuer,
+      }
+    )
     parsed = manageProposalTokenSchema.parse(payload)
 
     if (parsed.sub !== userId) {
@@ -160,12 +166,6 @@ export async function verifyManageProposalToken(
     }
   } catch {
     throw new Error('Invalid Manage proposal token')
-  }
-
-  // Outside the signature/shape try-catch above so this rejection is
-  // distinguishable from "invalid token" (see claimProposalJti comment).
-  if (parsed.jti && !claimProposalJti(parsed.jti)) {
-    throw new Error('Manage proposal token already used')
   }
 
   return {
@@ -179,6 +179,20 @@ export async function verifyManageProposalToken(
     requiresConfirmation: true,
     summary: parsed.summary,
   }
+}
+
+export async function verifyManageProposalToken(
+  token: string,
+  userId: string,
+  settings: { issuer: string; secret: string }
+): Promise<ManageElementCreateProposal & { jti: string | null }> {
+  const proposal = await readManageProposalToken(token, userId, settings)
+
+  if (proposal.jti && !claimProposalJti(proposal.jti)) {
+    throw new Error('Manage proposal token already used')
+  }
+
+  return proposal
 }
 
 /**

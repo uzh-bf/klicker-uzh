@@ -1,9 +1,10 @@
+import { describe, expect, test } from 'vitest'
 import {
   buildManageAssistantSystemPrompt,
   getManageAssistantOpenAIProviderOptions,
   selectManageAssistantModel,
 } from '@/src/services/manageAssistantRuntime'
-import { describe, expect, test } from 'vitest'
+import type { ManageElementCreateProposal } from '@/src/services/manageProposals'
 
 const SAMPLE_CONTEXT = {
   version: 1 as const,
@@ -183,6 +184,55 @@ describe('Manage assistant runtime helpers', () => {
     expect(prompt).not.toContain(sentinel)
     expect(prompt).not.toContain('KLICKER_TOOL_DATA')
     expect(prompt).toContain('Lecturer MCP tools are currently unavailable')
+  })
+
+  test('adds canonical signed proposal context for conversational revisions', () => {
+    const previousProposal = {
+      kind: 'element.create.proposal',
+      payload: {
+        basePoints: true,
+        content: 'Which process converts grape sugar into ethanol?',
+        explanation: 'The expected process is alcoholic fermentation.',
+        name: 'Wine fermentation',
+        options: {
+          choices: [
+            {
+              correct: true,
+              feedback: 'Correct.',
+              value: 'Alcoholic fermentation',
+            },
+            {
+              correct: false,
+              feedback: 'This happens after alcoholic fermentation.',
+              value: 'Malolactic fermentation',
+            },
+          ],
+          displayMode: 'LIST',
+          hasAnswerFeedbacks: true,
+          hasSampleSolution: true,
+        },
+        pointsMultiplier: 1,
+        status: 'DRAFT',
+        tags: ['wine'],
+        type: 'SC',
+      },
+      requiresConfirmation: true,
+      summary: 'Create a wine question',
+    } satisfies ManageElementCreateProposal
+
+    const prompt = buildManageAssistantSystemPrompt(
+      SAMPLE_CONTEXT,
+      true,
+      true,
+      'sentinel',
+      previousProposal
+    )
+
+    expect(prompt).toContain('Latest verified signed proposal context')
+    expect(prompt).toContain('Which process converts grape sugar into ethanol?')
+    expect(prompt).toContain('This happens after alcoholic fermentation.')
+    expect(prompt).toContain('when the lecturer says “this question”')
+    expect(prompt).not.toContain('Create a wine question')
   })
 
   test('the injection-defense section coexists with both the draft and read-only tool-availability variants', () => {

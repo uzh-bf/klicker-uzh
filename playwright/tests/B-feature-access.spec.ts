@@ -298,6 +298,9 @@ test.describe('Tests the availability of standard activity creation formats', ()
     page,
     loginLecturer,
   }) => {
+    await loginLecturer()
+    await expect(page.getByTestId('homepage')).toBeVisible()
+
     await page.route('**/api/graphql*', async (route) => {
       if (getGraphqlOperationName(route.request()) === 'UserProfile') {
         await route.fulfill({
@@ -313,7 +316,6 @@ test.describe('Tests the availability of standard activity creation formats', ()
       await route.continue()
     })
 
-    await loginLecturer()
     const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
     await page.goto(`${manageUrl}/analytics/${COURSE_ID_TEST}/activity`)
 

@@ -108,13 +108,15 @@ The Playwright build job must tar the five `.next` trees before artifact upload 
 
 CI runs Playwright (8-way shard) on almost every code PR — CI is the real e2e gate. Run e2e locally only when your change plausibly breaks a flow (new UI, changed selectors/`data-cy`, auth/redirect changes, activity lifecycle). If you do:
 
-- You are **authorized to start the required servers for this purpose** — test stack via the e2e skills' setup instructions, plus the Hatchet general worker for publish/schedule/end flows and response-api + response processor for live-answer flows (exact triage in the e2e skills).
-- Tear down afterwards (`./_down.sh`); leave the machine as you found it.
+- Run `pnpm playwright:host -- <args>` from the host. Never invoke Playwright or install browsers through `devrouter exec`, a DevPod shell, or another local container.
+- You are **authorized to start the required servers for this purpose** through the host launcher. It reconciles the full devrouter profile, including the Hatchet workers, response-api, and response processor.
+- If the launcher started a runtime for your task, tear it down afterwards with `devrouter stop .`; leave the machine as you found it.
 - On environment failure, switch to `klicker-environment-doctor` before blaming the test.
 
 For Chat model-picker or LiteLLM routing changes, treat the local proxy as a
-separate proof gate: after `devrouter ensure .`, check LiteLLM liveness and the
-chat credits payload before browser interaction. The local Auto Mode maps to
+separate proof gate: start `devrouter ensure . --profile chat,ai`, adding `mcp`
+only for the seeded tool path. Check LiteLLM liveness and the chat credits
+payload before browser interaction. The local Auto Mode maps to
 LiteLLM's Auto V2 `complexity-router`: require direct embedding and target-model
 probes, then inspect logs for the expected `semantic_keyword_match` or
 `llm_classifier` cause and routed model. A successful answer after a classifier
@@ -131,8 +133,15 @@ reasoning against the deployed LiteLLM router.
 Without `UPSTREAM_OPENAI_API_KEY`, stop at picker/error-state verification and
 report the live-answer gap explicitly.
 
+For Chat/Knowledge graph workspace-switch placement, verify that standalone and
+embedded layouts show exactly one compact switch in the header, the standalone
+sidebar contains no duplicate, both destinations retain their active state, and
+the header does not overflow at desktop or mobile widths.
+
 For the seeded local MCP smoke test, verify
-`http://localhost:1417/health`, keep `Auto Mode` selected in Benibot, and send
+`devrouter exec . -- curl --fail --silent http://localhost:1417/health` after
+selecting `chat,ai,mcp`, keep `Auto Mode`
+selected in Benibot, and send
 the prompt recorded in `AGENTS.md`. Require a completed
 `KB_doc_query` chip, the `KLICKER_LOCAL_MCP_OK` marker, and the synthetic source
 card in a non-empty final answer both before and after reloading the thread.

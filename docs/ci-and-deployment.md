@@ -2,7 +2,7 @@
 type: Operations
 title: CI & Deployment
 description: PR gates, image builds, the standard-version release flow, Helm deployment reality, and what is NOT in this repo.
-timestamp: '2026-08-26'
+timestamp: '2026-08-27'
 tags:
   - ci
   - deployment
@@ -45,8 +45,8 @@ neither Node nor pnpm.
 
 ## Image builds
 
-15 stg + 15 prd image workflows (`v3_<app>-{stg,prd}.yml`) publish 16 ARM64
-images — the PWA has both an ordinary and an assessment pair, and
+Per-app stg and prd image workflows (`v3_<app>-{stg,prd}.yml`) publish the
+ARM64 images. The PWA has both an ordinary and an assessment pair, and
 `v3_backend-docker-{stg,prd}.yml` additionally builds
 `backend-docker-migrator` (see [Deployment migrations](#deployment-migrations)).
 This includes `mcp-lecturer` and `mcp-student`, which also have full chart
@@ -90,7 +90,7 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 
 ## Deployment values (facts, not procedures)
 
-- **stg** (`*.klicker.stg.df-app.ch`): everything rides the floating image tag selected by the `STG_SOURCE_BRANCH` repository variable (the committed values and unset default use `v3`), so the rendered manifest never changes on a rebuild and ArgoCD would never sync on its own. The promotion workflow aligns the image tags with the selected branch. The `rollout.klicker.uzh.ch/release` pod annotation is what makes it move — see [Staging promotion](#staging-promotion) below.
+- **stg** (`*.klicker.stg.df-app.ch`): everything rides the floating image tag selected by the `STG_SOURCE_BRANCH` repository variable (the current value and committed values use `v3-ai`; an unset variable defaults to `v3`), so the rendered manifest never changes on a rebuild and ArgoCD would never sync on its own. The promotion workflow aligns the image tags and promotion pull request with the selected branch. The `rollout.klicker.uzh.ch/release` pod annotation is what makes it move — see [Staging promotion](#staging-promotion) below.
 - **prd** (`*.klicker.uzh.ch`): pinned version tags, `replicaCount: 2` for web/API services.
 - **Secrets are external**: deployments reference `envFrom.secretRef` names, but the chart defines no `Secret` manifests — provision them out-of-band with matching names. GrowthBook-ready Node workloads also reference the optional shared `<rendered-chart-fullname>-secret-growthbook`, which supplies only `GROWTHBOOK_API_HOST` and the server SDK `GROWTHBOOK_CLIENT_KEY`; `GROWTHBOOK_ENV` comes from the global ConfigMap. Separately, only the primary GraphQL backend references optional `<rendered-chart-fullname>-secret-growthbook-management`, containing `GROWTHBOOK_MANAGEMENT_API_URL` and `GROWTHBOOK_MANAGEMENT_API_KEY`, which back the lecturer beta opt-in; its non-secret `GROWTHBOOK_BETA_SAVED_GROUP_ID` comes from the backend ConfigMap instead. The optional references preserve startup before provisioning. Do not place the write-capable management key in the shared evaluator Secret.
 - **Hatchet endpoint pair**: `hatchet.client.apiUrl` in the environment values renders `HATCHET_API_URL`, while the external secret supplies `HATCHET_CLIENT_HOST_PORT`. They must resolve to the same Hatchet installation; worker health alone does not validate programmatic schedule creation over the HTTP API. Staging uses `app-hatchet-svc-api.stg-hatchet-svc.svc.cluster.local:8080`, and production uses `app-hatchet-svc-api.prd-hatchet-svc.svc.cluster.local:8080` (see [Async & Workers](./async-and-workers.md)).
@@ -111,19 +111,21 @@ Why this shape (ArgoCD-native hook, dedicated migrator image, manual demoted to 
 
 **ArgoCD auto-syncs on git change** (prune + selfHeal, app `app-klicker`), but only when the _rendered manifest_ differs. Two things therefore do **not** trigger a sync, and both have bitten us:
 
-- **A rebuilt floating tag.** stg pulls the selected source tag (the committed values and unset default use `:v3`), so a new image leaves the Deployment spec byte-identical. `pullPolicy: Always` means a restart _would_ pick it up, but nothing asks for a restart.
+- **A rebuilt floating tag.** stg pulls the selected source tag (currently `:v3-ai`), so a new image leaves the Deployment spec byte-identical. `pullPolicy: Always` means a restart _would_ pick it up, but nothing asks for a restart.
 - **A hook-only change.** ArgoCD excludes hook manifests from the OutOfSync comparison, so a commit touching only the PreSync migration Job shows as "Synced" at the new revision with the hook never executed (this is why the hook in [ADR-0001](./adr/0001-automate-db-migrations-via-argocd-presync-hook.md) needed one manual sync to fire the first time).
 
-The `rollout.klicker.uzh.ch/release` annotation exists to break that tie: it lands in the **pod template**, so changing it is a real manifest change. It appears 15 times in `deploy/env-uzh-stg/values.yaml` and zero times in prd, which needs no such trigger because its pinned tags change on every release.
+The `rollout.klicker.uzh.ch/release` annotation exists to break that tie: it lands in the **pod template**, so changing it is a real manifest change. The promoter discovers every occurrence in `deploy/env-uzh-stg/values.yaml`; prd has no such annotation because its pinned tags change on every release.
 
-`.github/workflows/deploy-stg-promote.yml` reads `STG_SOURCE_BRANCH`, aligns all 15 image tags with that branch, and writes the built commit's short SHA once **every** `v3_*-stg.yml` image build for the selected commit has succeeded — so a rollout can never start against a half-published source tag, and the PreSync migration hook always runs before the new pods. It publishes as an auto-merging PR rather than a direct push, because `v3` restricts pushes and requires 6 status checks with no bypass actor; the PR touches only `deploy/**`, so `Build Fallback` supplies `build-amd`/`build-arm` in seconds. `[skip ci]` in the PR title keeps the squash-merge from re-running the 13 builds and re-firing the promoter.
+`.github/workflows/deploy-stg-promote.yml` resolves `STG_SOURCE_BRANCH` once, checks out that branch, aligns every discovered image tag, and writes the built commit's short SHA into every discovered rollout annotation once **every** `v3_*-stg.yml` image build for the selected commit has succeeded. Both inventories must be non-empty, but their sizes are intentionally independent. A rollout can therefore never start against a half-published source tag, and the PreSync migration hook runs before the new pods. The workflow publishes a pull request to the selected source branch rather than pushing directly. Before enabling auto-merge it waits for the exact `Verified generated staging promotion` status, which also protects an unprotected source branch from merging before the generated-content and exact-build checks finish. `[skip ci]` in the title prevents the squash commit from rebuilding every image and re-firing the promoter.
 
 Operational notes.
 
-- Set the repository variable `STG_SOURCE_BRANCH` to select the active supported `v3*` branch; it falls back to `v3` when unset. Set it explicitly to `v3-ai` for the current staging source. A new successful image build on that branch triggers reconciliation. If the selected commit is already built and no new push will occur, also dispatch this promoter with that commit SHA and `dry_run=false`. The branch name must be a Docker-safe image tag because the build workflows publish branch-name tags.
-- **Direct-source caveat:** the promoter always checks out and writes `v3`. If the external ArgoCD `Application` temporarily targets `v3-ai` directly, promotion commits on `v3` do not change the live manifests. Before changing `targetRevision`, render the staging chart from the branch ArgoCD will track and verify all workload image tags use that branch. After the sync, require both `Synced` and `Healthy`; a successful sync alone can still leave workloads in `ImagePullBackOff` or `OOMKilled`.
-- It needs `secrets.STG_PROMOTE_TOKEN`, an **admin-owned PAT** with `contents: write` + `pull-requests: write`. Two independent reasons it cannot be the default `GITHUB_TOKEN` or a plain App token: a PR opened with `GITHUB_TOKEN` does not trigger workflows, so its required checks never report and auto-merge never fires; and `v3`'s push restrictions carry an _empty_ user/team/app allowlist, which only repository admins bypass.
-- Two settings outside this repo are load-bearing. `squash_merge_commit_title` must stay `PR_TITLE`, or the `[skip ci]` marker never reaches the squash commit and every promotion rebuilds all 13 images. The workflow does not rely on it alone — the guard also refuses to promote any commit whose subject starts with `chore(deploy): promote ` — but the belt is worth keeping. Auto-merge must be enabled on the repository.
+- Set the repository variable `STG_SOURCE_BRANCH` to select the active supported `v3*` branch; it falls back to `v3` when unset. Set it explicitly to `v3-ai` for the current staging source. The branch name must be a Docker-safe image tag because the build workflows publish branch-name tags.
+- **Default-branch activation:** GitHub evaluates `workflow_run` from the repository default branch. A promoter correction merged only to `v3-ai` is available for a branch-selected manual dispatch but does not change automatic fan-in until the same executable correction reaches default branch `v3`. Activate it with a focused pull request; do not repeat a broad `v3` to `v3-ai` merge for that purpose.
+- **Already-built commits:** a build set started before a promoter correction keeps the old behavior. After the correction is active, first require every exact-head staging image build to succeed, inspect and resolve any stale wrong-base promotion pull request, then dispatch `Promote to stg` on the selected source ref with the full commit SHA and `dry_run=false`. Dispatch and rollout remain separate authorized actions. Merging the correction alone does not redeploy an existing image set.
+- Before changing ArgoCD `targetRevision`, render the staging chart from the branch ArgoCD will track and verify every workload image tag uses that branch. After an authorized sync, require both `Synced` and `Healthy`; a successful sync alone can still leave workloads in `ImagePullBackOff` or `OOMKilled`.
+- It needs `secrets.STG_PROMOTE_TOKEN`, a repository-owned PAT with `contents: write` and `pull-requests: write`, plus permission to merge into the selected source branch. A pull request opened with the default `GITHUB_TOKEN` does not trigger workflows, so the generated verifier would never report and the promoter would fail closed.
+- Two settings outside this repo are load-bearing. `squash_merge_commit_title` must stay `PR_TITLE`, or the `[skip ci]` marker never reaches the squash commit and every promotion rebuilds all staging images. The workflow does not rely on it alone — the guard also refuses to promote any commit whose subject starts with `chore(deploy): promote ` — but the belt is worth keeping. Auto-merge must be enabled on the repository.
 - The annotation records which commit _triggered_ the rollout, not which bits are in the image: two merges minutes apart cancel the first build (`cancel-in-progress: true`) and the selected source tag then holds the later images. Immutable per-commit tags are the fix if that ever matters.
 
 Rationale and rejected alternatives: [ADR-0003](./adr/0003-promote-stg-via-release-annotation-write-back.md).

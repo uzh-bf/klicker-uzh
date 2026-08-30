@@ -10,7 +10,18 @@ describe('withLanguageStyleContract', () => {
     expect(result).not.toBe(base)
   })
 
-  test('the appended block demands Swiss orthography: ss over ß, real umlauts', () => {
+  test('locks the reply language to the user instead of retrieved material', () => {
+    const result = withLanguageStyleContract('Base prompt.')
+    expect(result).toContain("user's latest non-trivial message")
+    expect(result).toContain('short acknowledgement')
+    expect(result).toContain('Do not choose the reply language')
+    expect(result).toContain('attached images or their descriptions')
+    expect(result).toContain('retrieved passages')
+    expect(result).toContain('Use one reply language throughout')
+    expect(result).toContain('Translate or paraphrase relevant tool material')
+  })
+
+  test('demands Swiss orthography: ss over ß and real umlauts', () => {
     const result = withLanguageStyleContract('Base prompt.')
     expect(result).toContain('"ss" instead of "ß"')
     expect(result).toContain('ä, ö, ü')

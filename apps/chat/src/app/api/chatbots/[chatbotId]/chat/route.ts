@@ -1,13 +1,33 @@
+import { createOpenAI } from '@ai-sdk/openai'
+import { prisma } from '@klicker-uzh/prisma'
+import type { Chatbot, Prisma } from '@klicker-uzh/prisma/client'
+import { safeDecrypt } from '@klicker-uzh/util'
+import { startActiveObservation } from '@langfuse/tracing'
+import {
+  consumeStream,
+  createUIMessageStreamResponse,
+  type FinishReason,
+  generateText,
+  type ModelMessage,
+  type StepResult,
+  streamText,
+  type ToolSet,
+  tool,
+  type UIMessageChunk,
+} from 'ai'
+import { createHash, randomUUID } from 'crypto'
+import { type NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
-import { type ReasoningEffort } from '@/src/lib/config/reasoning'
+import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
+  type ChatModelConfig,
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
   getModelsForChatbot,
   getParticipantFallbackModelId,
-  type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
@@ -15,27 +35,27 @@ import {
   getTraceIdForMessage,
   isAiTelemetryEnabled,
 } from '@/src/lib/server/langfuseTracing'
-import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
-import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import {
   buildAbortedAssistantContent,
   mapAssistantStepContent,
 } from '@/src/lib/server/persistedAssistantContent'
 import { createCardGeneration } from '@/src/lib/server/personalElements/cardGeneration'
+import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
   claimChatTurn,
   failChatTurn,
   finalizeChatTurn,
-  isChatAccountUsageEnforcementEnabled,
   isChatAccountUsageAvailable,
+  isChatAccountUsageEnforcementEnabled,
   roundChatUsageCredits,
 } from '@/src/services/accountUsage'
 import {
@@ -47,6 +67,7 @@ import { DisclaimersService } from '@/src/services/disclaimers'
 import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
+  type MCPToolsHandle,
 } from '@/src/services/mcpClients'
 import { resolveMcpScopeSessionId } from '@/src/services/mcpScope'
 import {
@@ -57,26 +78,6 @@ import {
   toPracticeCandidateId,
 } from '@/src/services/studentPracticeMcp'
 import { ThreadService } from '@/src/services/threads'
-import { createOpenAI } from '@ai-sdk/openai'
-import { prisma } from '@klicker-uzh/prisma'
-import { Chatbot, type Prisma } from '@klicker-uzh/prisma/client'
-import { safeDecrypt } from '@klicker-uzh/util'
-import { startActiveObservation } from '@langfuse/tracing'
-import {
-  consumeStream,
-  createUIMessageStreamResponse,
-  type FinishReason,
-  generateText,
-  streamText,
-  tool,
-  type ModelMessage,
-  type StepResult,
-  type ToolSet,
-  type UIMessageChunk,
-} from 'ai'
-import { createHash, randomUUID } from 'crypto'
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 
 export const runtime = 'nodejs'
 
@@ -1116,6 +1117,13 @@ export async function POST(
 
   let providerStreamStarted = false
   let abortCardGenerationLease: (() => Promise<void>) | null = null
+  let mcpToolsHandle: MCPToolsHandle | undefined
+  const closeMcpTools = async () => {
+    const activeHandle = mcpToolsHandle
+    mcpToolsHandle = undefined
+    await activeHandle?.close()
+  }
+
   try {
     // Discover MCP tools only after read-only participant authorization.
     const mcpScopeSessionId = resolveMcpScopeSessionId({
@@ -1130,13 +1138,14 @@ export async function POST(
 
     let mcpTools: ToolSet
     try {
-      mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, {
+      mcpToolsHandle = await getAggregatedMCPTools(mcpServersWithConfigs, {
         chatbotId,
         participantId,
         authMode,
         kbId: enabledKnowledgeBaseId,
         sessionId: mcpScopeSessionId,
       })
+      mcpTools = mcpToolsHandle.tools
     } catch (error) {
       if (error instanceof RequiredMCPUnavailableError) {
         await failOrDiscardUnstartedClaim('mcp.discovery')
@@ -1241,8 +1250,8 @@ export async function POST(
     const baseToolNames = Object.keys(chatTools)
 
     // Compile the full system prompt now that `toolNames` is known: the resolved
-    // base prompt plus the layered runtime contracts (conditional citation, then
-    // unconditional Swiss High German language style — see compileSystemPrompt).
+    // base prompt plus the layered runtime contracts (course policy, conditional
+    // citations, then unconditional language policy — see compileSystemPrompt).
     // Assigning the finished value here (rather than a separate `instructions`
     // variable) keeps the `systemPromptLength` / `systemPromptHash` telemetry
     // below truthful to what is actually sent to the model.
@@ -1831,6 +1840,7 @@ export async function POST(
         },
 
         onEnd: async (result) => {
+          await closeMcpTools()
           sawFinish = true
           // ai@7 still flushes onEnd after an abort once at least one step
           // completed. onAbort already persisted the partial answer and charged
@@ -1982,6 +1992,7 @@ export async function POST(
         },
 
         onAbort: async (steps) => {
+          await closeMcpTools()
           sawAbort = true
           let rawCreditsUsed: number | null = null
           if (steps && Array.isArray(steps.steps)) {
@@ -2082,6 +2093,7 @@ export async function POST(
 
         onError: async (error) => {
           await cardGeneration.abortLease()
+          await closeMcpTools()
           const serializedError = serializeStreamError(error)
           firstError = firstError ?? serializedError
           const classification = classifyStreamError(serializedError)
@@ -2140,6 +2152,7 @@ export async function POST(
       sendReasoning: true,
       sendFinish: false,
       onError: (error) => {
+        void closeMcpTools()
         const serializedError = serializeStreamError(error)
         const classification = classifyStreamError(serializedError)
 
@@ -2210,6 +2223,7 @@ export async function POST(
     })
   } catch (error) {
     await abortCardGenerationLease?.()
+    await closeMcpTools()
     if (providerStreamStarted) await failAssistantClaim('request')
     else await failOrDiscardUnstartedClaim('request')
     throw error
