@@ -58,7 +58,8 @@ assistant message, tool call, and candidate ID, so a frozen tool result never
 claims a card was saved. Cards are acted on individually: Save sends only this
 lineage to GraphQL. The backend reloads the participant- and course-owned
 terminal `generate_cards` result, verifies the accepted plan and generation
-lease, and creates the participant-owned row from that persisted candidate.
+lease against a currently published chatbot, and creates the participant-owned
+row from that persisted candidate.
 The browser and Chat route never supply card content or references to either
 candidate-decision mutation. Discard sends the same message, tool-call, and
 candidate lineage as Save. The backend reloads and verifies the persisted
@@ -90,9 +91,11 @@ generation-context query, the narrow saved-candidate lookup, and update
 operations. The generation context contains only the backend-owned course
 language and saved titles. Accepted-plan setup loads only saved candidate IDs,
 not full personal elements. Before creating or reclaiming a lease, the backend
-verifies the exact ready plan tool result, the participant and course, the
-assistant generation attempt on that plan's branch, and the absence of a newer
-ready plan on the same branch. Lease and discard state reads that GraphQL does
+verifies current course participation, a published chatbot, the exact ready
+plan tool result, a live server-claimed assistant attempt on that plan's branch,
+and the absence of a newer ready plan on the same branch. Lease completion also
+requires the completed assistant message to contain a terminal card-generation
+result. Lease and discard state reads that GraphQL does
 not yet expose stay as participant-scoped Prisma reads inside the adapter. The
 backend owns authorization, caps, duplicate policy, candidate provenance, and
 revision semantics.

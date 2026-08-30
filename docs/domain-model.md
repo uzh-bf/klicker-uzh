@@ -96,16 +96,18 @@ read.
 
 The full lifecycle is exposed through participant-authenticated GraphQL
 operations. claimCardGenerationLease atomically claims or reclaims the
-generation lease only after verifying the exact ready plan tool result,
-participant and course ownership, the assistant attempt on that plan's branch,
-and the absence of a newer ready plan on the same branch;
+generation lease only after verifying current course participation, a published
+chatbot, the exact ready plan tool result, a live server-claimed assistant
+attempt on that plan's branch, and the absence of a newer ready plan on the same
+branch. Completion requires the completed assistant message to contain a
+terminal card-generation result;
 completeCardGenerationLease and abortCardGenerationLease settle only the
 caller's current attempt.
 savePersonalElementCandidate accepts only course, assistant-message, tool-call,
 and candidate identifiers. It reloads the persisted terminal generation
-result, verifies its participant, course, accepted plan, and lease lineage, and
-saves that candidate idempotently with the final duplicate check in its
-transaction. discardPersonalElementCandidate accepts the same identifiers,
+result, verifies its participant, course, published chatbot, accepted plan, and
+lease lineage, and saves that candidate idempotently with the final duplicate
+check in its transaction. discardPersonalElementCandidate accepts the same identifiers,
 reloads the same trusted terminal candidate, and persists the negative decision
 idempotently without copying generated content. updatePersonalElement applies
 the expected-version and scheduling contract to a saved card.

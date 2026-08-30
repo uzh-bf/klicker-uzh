@@ -1197,3 +1197,16 @@ Settled rulings for this implementation:
   suites pass all 73 tests, and GraphQL and Chat typechecks pass. The complete
   Chat suite passes all 897 active tests; 13 integration tests remain skipped
   by their existing environment gate.
+- 2026-08-30 (backend publication and attempt authority): The final package
+  review exposed two remaining backend-only authority assumptions. GraphQL now
+  rechecks current course participation and `PUBLISHED` chatbot status before a
+  lease claim, and plan, lease, Save, validation, and Discard lineage queries
+  require the published chatbot. A claim accepts only a live server-claimed
+  assistant attempt on the accepted plan branch. Lease completion requires the
+  completed assistant message to contain a terminal card-generation result, so
+  a direct participant GraphQL caller cannot complete a lease before generation
+  persists. Focused denial tests cover removed participation, paused chatbots,
+  plan-message and completed-message attempt reuse, unclaimed in-progress
+  messages, and premature lease completion. No schema or database migration is
+  added by this correction. The focused GraphQL service suite passes all 58
+  tests and the GraphQL typecheck passes.

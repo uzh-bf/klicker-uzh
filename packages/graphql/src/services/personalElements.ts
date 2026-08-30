@@ -1105,7 +1105,10 @@ async function assertClaimableCardPlan(
       lifecycleStatus: 'COMPLETED',
       thread: {
         participantId: context.participantId,
-        chatbot: { courseId: input.courseId },
+        chatbot: {
+          courseId: input.courseId,
+          status: DB.ChatbotStatus.PUBLISHED,
+        },
       },
     },
     select: { content: true, createdAt: true, threadId: true },
@@ -1128,11 +1131,19 @@ async function assertClaimableCardPlan(
       role: true,
       content: true,
       createdAt: true,
+      lifecycleStatus: true,
+      lifecycleAttemptId: true,
     },
   })
   const byId = new Map(messages.map((message) => [message.id, message]))
   const attemptMessage = byId.get(input.attemptToken)
-  if (!attemptMessage || attemptMessage.role !== 'assistant') {
+  if (
+    !attemptMessage ||
+    attemptMessage.role !== 'assistant' ||
+    attemptMessage.lifecycleStatus !==
+      DB.ChatMessageLifecycleStatus.IN_PROGRESS ||
+    !attemptMessage.lifecycleAttemptId
+  ) {
     throw personalElementError(
       'CARD_GENERATION_ATTEMPT_NOT_FOUND',
       'The card generation attempt is not available'
@@ -1189,7 +1200,10 @@ async function getCandidateLeaseLinkage(
         role: 'assistant',
         thread: {
           participantId,
-          chatbot: { courseId: input.courseId },
+          chatbot: {
+            courseId: input.courseId,
+            status: DB.ChatbotStatus.PUBLISHED,
+          },
         },
       },
     },
@@ -1356,6 +1370,20 @@ function isTerminalGenerationResult(result: Record<string, unknown>) {
   return null
 }
 
+function hasCompletedCardGeneration(content: unknown) {
+  if (!Array.isArray(content)) return false
+  return (content as PersistedChatPart[]).some((part) => {
+    if (typeof part.toolCallId !== 'string') return false
+    const result = findToolResult(content, 'generate_cards', part.toolCallId)
+    return (
+      result !== null &&
+      isTerminalGenerationResult(result) === 'completed' &&
+      Array.isArray(result.candidates) &&
+      result.candidates.length > 0
+    )
+  })
+}
+
 async function loadPersistedGeneratedCandidate(
   input: CardCandidateLinkageInput,
   prisma: DB.PrismaClient | PrismaTransactionClient,
@@ -1368,7 +1396,10 @@ async function loadPersistedGeneratedCandidate(
       lifecycleStatus: 'COMPLETED',
       thread: {
         participantId,
-        chatbot: { courseId: input.courseId },
+        chatbot: {
+          courseId: input.courseId,
+          status: DB.ChatbotStatus.PUBLISHED,
+        },
       },
     },
     select: { content: true },
@@ -1516,6 +1547,11 @@ export async function claimCardGenerationLease(
     cardGenerationLeaseInputSchema,
     input
   )
+  await assertCourseParticipation(
+    context.prisma,
+    context.participantId,
+    parsed.courseId
+  )
   await assertClaimableCardPlan(parsed, context)
 
   const now = new Date()
@@ -1590,6 +1626,29 @@ export async function completeCardGenerationLease(
     id,
     attemptToken,
   })
+  const attemptMessage = await context.prisma.chatMessage.findFirst({
+    where: {
+      id: parsed.attemptToken,
+      role: 'assistant',
+      lifecycleStatus: DB.ChatMessageLifecycleStatus.COMPLETED,
+      thread: {
+        participantId: context.participantId,
+        chatbot: { status: DB.ChatbotStatus.PUBLISHED },
+      },
+    },
+    select: {
+      content: true,
+      thread: { select: { chatbot: { select: { courseId: true } } } },
+    },
+  })
+  if (!attemptMessage || !hasCompletedCardGeneration(attemptMessage.content)) {
+    return false
+  }
+  await assertCourseParticipation(
+    context.prisma,
+    context.participantId,
+    attemptMessage.thread.chatbot.courseId
+  )
   const completed = await context.prisma.cardGenerationLease.updateMany({
     where: {
       id: parsed.id,
