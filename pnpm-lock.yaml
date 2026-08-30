@@ -793,9 +793,6 @@ importers:
         specifier: 1.6.1
         version: 1.6.1
     devDependencies:
-      '@tailwindcss/aspect-ratio':
-        specifier: ~0.4.2
-        version: 0.4.2(tailwindcss@4.1.12)
       '@tailwindcss/forms':
         specifier: ~0.5.11
         version: 0.5.11(tailwindcss@4.1.12)
@@ -1034,9 +1031,6 @@ importers:
         specifier: 1.6.1
         version: 1.6.1
     devDependencies:
-      '@tailwindcss/aspect-ratio':
-        specifier: ~0.4.2
-        version: 0.4.2(tailwindcss@4.1.12)
       '@tailwindcss/container-queries':
         specifier: ~0.1.1
         version: 0.1.1(tailwindcss@4.1.12)
@@ -1248,9 +1242,6 @@ importers:
       '@capacitor/cli':
         specifier: ~5.3.0
         version: 5.3.0
-      '@tailwindcss/aspect-ratio':
-        specifier: ~0.4.2
-        version: 0.4.2(tailwindcss@4.1.12)
       '@tailwindcss/forms':
         specifier: ~0.5.11
         version: 0.5.11(tailwindcss@4.1.12)

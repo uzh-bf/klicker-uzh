@@ -150,7 +150,8 @@ Cleanup dialogs:
 - **Verify after reorder**: never click a `FastField`-wrapped `ContentInput` when verifying content after a `move()` — use `scrollIntoViewIfNeeded` + `toContainText` only; clicking can trigger a stale re-render showing the previous value. (`playwright/util/fixtures/elements.ts`)
 - **react-select**: target the inner `<input>` via `#container-id input` for `.fill()`/`.press()`/visibility assertions — typing against the wrapper does not work. (`playwright/tests/K-elements-selection.spec.ts`)
 - **localforage**: Playwright creates a fresh context per test, so IndexedDB does not carry across tests. Serial workflows depending on previous PWA answers must snapshot/restore localforage — and direct QR links may need restoration on the `https://pwa.klicker.com` origin, not `127.0.0.1`. (`playwright/util/workflow.ts`)
-- **PIN-cookie bridges**: clear test-side PIN cookie bridges wherever a spec clears cookies, or later direct-link checks bypass the expected PIN form via a stale `live-quiz-pin-*` cookie. (`playwright/tests/O-live-quiz.spec.ts`)
+- **PIN-cookie bridges**: clear test-side PIN cookie bridges wherever a spec clears cookies, or later direct-link checks bypass the expected PIN form via a stale `live-quiz-pin-*` cookie. (`playwright/tests/O2-live-quiz-collaboration.spec.ts`)
+- **Shardable serial workflows**: the timing-aware CI sharder assigns complete spec files. Split a long serial workflow only at a boundary where the new file can reset and seed its own database state. Repeated setup is expected when the files may land on different shards; never rely on spec-file execution order.
 
 ## CI Notes
 

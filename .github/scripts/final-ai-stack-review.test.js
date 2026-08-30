@@ -5,8 +5,9 @@ const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 
+const { FINAL_REVIEW_MODEL } = require('./final-ai-review.js')
 const {
-  FINAL_REVIEW_MODEL,
+  FINAL_STACK_REVIEW_MODEL,
   STACK_CLEAN_EVIDENCE_CHECK_NAME,
   STACK_REVIEW_CLEAN_STATUS_PREFIX,
   STACK_REVIEW_SCHEMA,
@@ -304,7 +305,7 @@ function stackFixture() {
 function completeOCRResult(comments = []) {
   return {
     status: 'complete',
-    llm: { model: FINAL_REVIEW_MODEL },
+    llm: { model: FINAL_STACK_REVIEW_MODEL },
     summary: {
       files_reviewed: 3,
       comments: comments.length,
@@ -337,7 +338,7 @@ function topologyResult(comments = []) {
   return {
     status: 'complete',
     finish_reason: 'stop',
-    model: FINAL_REVIEW_MODEL,
+    model: FINAL_STACK_REVIEW_MODEL,
     summary: { coverage: 'complete', comments: comments.length },
     comments,
     usage: { total_tokens: 50, prompt_tokens: 35, completion_tokens: 15 },
@@ -522,7 +523,7 @@ test('publishes clean stack evidence as a check without a pull-request comment',
     state.createdStatuses
       .at(-1)
       .description.startsWith(
-        'z-ai/glm-5.3-flash stack review clean; evidence='
+        `${FINAL_STACK_REVIEW_MODEL} stack review clean; evidence=`
       ),
     true
   )
@@ -1140,6 +1141,17 @@ test('keeps actions read permission for stack revalidation', () => {
       job.match(/\n {4}permissions:\n([\s\S]*?)(?=\n {4}steps:\n|$)/)?.[1] ?? ''
     assert.match(permissions, / {6}actions: read\n/)
   }
+})
+
+test('uses GLM Flash for individual and cumulative stack review jobs', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+
+  assert.equal(FINAL_STACK_REVIEW_MODEL, FINAL_REVIEW_MODEL)
+  assert.doesNotMatch(workflow, /anthropic\/claude-opus-4\.6/)
+  assert.doesNotMatch(workflow, /OCR_LLM_MODEL/)
 })
 
 test('checks trusted review code out from the default branch', () => {
@@ -2616,6 +2628,57 @@ test('rejects duplicate code and topology finding IDs before publication', async
   )
 })
 
+test('suppresses topology findings that restate an overlapping code finding', async () => {
+  const { github } = stackFixture()
+  const membership = await resolveStackMembership({
+    github,
+    context: context(),
+    pullNumber: 14,
+  })
+  const manifestBundle = await buildStackSnapshot({
+    github,
+    context: context(),
+    membership,
+  })
+  const plan = await buildStackReviewPlan({
+    github,
+    context: context(),
+    membership,
+  })
+  const duplicateContent =
+    'The topology pass repeated the same failure on the same changed line.'
+  const report = renderStackReview({
+    codeResult: completeOCRResult([codeFinding()]),
+    headSha: membership.top.head.sha,
+    manifestBundle,
+    topologyResult: topologyResult([
+      {
+        category: 'bug',
+        content: duplicateContent,
+        end_line: 4,
+        layer_numbers: [1],
+        path: 'src/one.ts',
+        severity: 'high',
+        start_line: 4,
+      },
+    ]),
+    policyDigest: plan.policyDigest,
+    trustedPolicySha: 'a'.repeat(40),
+    workflowUrl: 'https://github.com/uzh-bf/klicker-uzh/actions/runs/700',
+    workflowHeadSha: 'a'.repeat(40),
+    workflowSha: 'a'.repeat(40),
+    workflowRunId: 700,
+  })
+
+  assert.match(report, /The cumulative change can fail after merge\./)
+  assert.doesNotMatch(report, new RegExp(duplicateContent))
+  const metadata = parseStackReviewMetadata(report)
+  assert.equal(metadata.findings.length, 1)
+  assert.equal(metadata.findings[0].kind, 'code')
+  assert.equal(metadata.topology_pass.comments, 0)
+  assert.equal(metadata.topology_pass.generated_comments, 1)
+})
+
 test('renders consolidated code and topology findings with one stack marker', async () => {
   const { github } = stackFixture()
   const membership = await resolveStackMembership({
@@ -2766,7 +2829,7 @@ test('sends strict high-reasoning topology requests and rejects invalid owners',
         ok: true,
         status: 200,
         json: async () => ({
-          model: FINAL_REVIEW_MODEL,
+          model: FINAL_STACK_REVIEW_MODEL,
           choices: [
             {
               finish_reason: 'stop',
@@ -2790,6 +2853,11 @@ test('sends strict high-reasoning topology requests and rejects invalid owners',
   assert.equal(request.response_format.json_schema.strict, true)
   assert.equal(request.messages[0].content.includes('dummy-token'), false)
   assert.doesNotMatch(request.messages[1].content, /patch_hunks|operations/)
+  assert.match(
+    request.messages[1].content,
+    /The cumulative change can fail after merge\./
+  )
+  assert.match(request.messages[1].content, /"start_line":4/)
   assert.throws(
     () =>
       validateTopologyResult(
