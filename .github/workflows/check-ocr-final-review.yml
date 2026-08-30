@@ -401,6 +401,8 @@ jobs:
             --to "${HEAD_SHA}" \
             --audience agent \
             --effort low \
+            --timeout 30 \
+            --max-tokens-budget 750000 \
             --format json \
             --background "${BACKGROUND}" \
             --rule .github/open-code-review/final-review-rules.json \
@@ -499,6 +501,15 @@ jobs:
                 ? `Published ${url}`
                 : 'No actionable findings; skipped the pull-request comment'
             )
+
+      - name: Upload rejected individual publisher input
+        if: failure() && steps.publish.outcome == 'failure'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: final-ai-individual-publisher-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/final-ai-review-result.json
+          if-no-files-found: error
+          retention-days: 1
 
   finalize:
     needs: [authorize, start, review]
@@ -864,6 +875,8 @@ jobs:
                 --to "${HEAD}" \
                 --audience agent \
                 --effort low \
+                --timeout 30 \
+                --max-tokens-budget 750000 \
                 --format json \
                 --background "${BACKGROUND}" \
                 --rule .github/open-code-review/final-review-rules.json \
@@ -878,6 +891,8 @@ jobs:
               --to "${HEAD_SHA}" \
               --audience agent \
               --effort low \
+              --timeout 30 \
+              --max-tokens-budget 2000000 \
               --format json \
               --background "${BACKGROUND}" \
               --rule .github/open-code-review/final-review-rules.json \
@@ -1002,6 +1017,30 @@ jobs:
                 ? `Published ${url}`
                 : 'No actionable findings; skipped the pull-request comment'
             )
+
+      - name: Stage rejected stack publisher inputs
+        if: failure() && steps.publish.outcome == 'failure'
+        shell: bash
+        run: |
+          set -euo pipefail
+          code_result="${RUNNER_TEMP}/final-ai-stack-code-result.json"
+          topology_result="${RUNNER_TEMP}/final-ai-stack-topology-result.json"
+          staging_dir="${RUNNER_TEMP}/final-ai-stack-publisher-failure-staging"
+          artifact_dir="${RUNNER_TEMP}/final-ai-stack-publisher-failure"
+          test -f "${code_result}"
+          test -f "${topology_result}"
+          mkdir "${staging_dir}"
+          cp -- "${code_result}" "${topology_result}" "${staging_dir}/"
+          mv -- "${staging_dir}" "${artifact_dir}"
+
+      - name: Upload rejected stack publisher inputs
+        if: failure() && steps.publish.outcome == 'failure'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: final-ai-stack-publisher-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/final-ai-stack-publisher-failure
+          if-no-files-found: error
+          retention-days: 1
 
   finalize_stack:
     needs: [authorize_stack, start_stack, review_stack]

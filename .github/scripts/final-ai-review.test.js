@@ -61,6 +61,17 @@ test('normalizes untrusted PR titles to 200 Unicode code points', () => {
   assert.match(buildReviewBackground(title), /untrusted metadata/)
 })
 
+test('bounds individual and stack review token usage', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+
+  assert.equal(source.match(/--max-tokens-budget 750000/g)?.length, 2)
+  assert.equal(source.match(/--max-tokens-budget 2000000/g)?.length, 1)
+  assert.equal(source.match(/--timeout 30/g)?.length, 3)
+})
+
 test('accepts only the exact command and calculated write permissions', () => {
   assert.equal(isFinalReviewCommand('/final-review'), true)
   assert.equal(isFinalReviewCommand('/final-review please'), false)
@@ -835,6 +846,38 @@ test('scopes status locks to a verified native stack when available', async () =
     }),
     'pr-42'
   )
+})
+
+test('retains only the rejected individual publisher input for one day', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  const step = workflow.match(
+    /      - name: Upload rejected individual publisher input\n[\s\S]*?(?=\n      - name:|\n  finalize:)/
+  )?.[0]
+
+  assert.ok(step)
+  assert.ok(
+    workflow.indexOf('Publish consolidated final review') <
+      workflow.indexOf('Upload rejected individual publisher input')
+  )
+  assert.match(step, /if: failure\(\) && steps\.publish\.outcome == 'failure'/)
+  assert.match(
+    step,
+    /uses: actions\/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4/
+  )
+  assert.match(
+    step,
+    /name: final-ai-individual-publisher-failure-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/
+  )
+  assert.match(
+    step,
+    /path: \$\{\{ runner\.temp \}\}\/final-ai-review-result\.json/
+  )
+  assert.match(step, /if-no-files-found: error/)
+  assert.match(step, /retention-days: 1/)
+  assert.doesNotMatch(step, /stderr|config|manifest|ranges|\*/i)
 })
 
 test('renders findings without making finding count a failure', () => {
