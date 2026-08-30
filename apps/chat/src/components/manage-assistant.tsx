@@ -13,6 +13,7 @@ import {
   BookOpenTextIcon,
   FilePenLineIcon,
   MessageSquareTextIcon,
+  RefreshCwIcon,
   RotateCcwIcon,
   SearchIcon,
   WandSparkles,
@@ -21,9 +22,11 @@ import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useEmbeddedManageContext } from '../hooks/useEmbeddedManageContext'
+import { useManageAssistantCapabilities } from '../hooks/useManageAssistantCapabilities'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 import { MAX_MANAGE_IMAGE_ATTACHMENTS } from '../lib/config/attachmentLimits'
 import { getManageSuggestions } from '../lib/config/manageSuggestions'
+import type { ManageAssistantCapabilityState } from '../services/manageAssistantCapabilities'
 import {
   getManageContextLabel,
   type ManageAssistantContext,
@@ -45,17 +48,29 @@ function ManageAssistantInner() {
   const t = useTranslations('chat.manageAssistant')
   const { embedded } = useChatUi()
   const context = useEmbeddedManageContext()
+  const capability = useManageAssistantCapabilities()
   const contextLabel = getManageContextLabel(context)
-  const suggestions = getManageSuggestions(context)
+  const suggestions = getManageSuggestions(context, capability.capability)
   const capabilities: ThreadWelcomeCapability[] = [
-    { icon: SearchIcon, text: t('capabilitySearch') },
-    { icon: FilePenLineIcon, text: t('capabilityDraft') },
+    ...(capability.capability !== 'unavailable'
+      ? [{ icon: SearchIcon, text: t('capabilitySearch') }]
+      : []),
+    {
+      icon: FilePenLineIcon,
+      text:
+        capability.capability === 'draft-and-read'
+          ? t('capabilityDraft')
+          : t('capabilityNoSaveDraft'),
+    },
     { icon: MessageSquareTextIcon, text: t('capabilityFeedback') },
     { icon: BookOpenTextIcon, text: t('capabilityDocumentation') },
   ]
 
   return (
-    <ManageAssistantRuntimeProvider context={context}>
+    <ManageAssistantRuntimeProvider
+      capabilityFetch={capability.chatFetch}
+      context={context}
+    >
       <div className="relative flex h-dvh w-full flex-col overflow-hidden">
         {!embedded && (
           <div className="flex shrink-0 items-center justify-between gap-3 border-b bg-white px-3 py-2.5 sm:px-4">
@@ -78,6 +93,11 @@ function ManageAssistantInner() {
             <ManageAssistantToolbar />
           </div>
         )}
+        <ManageCapabilityNotice
+          capability={capability.capability}
+          phase={capability.phase}
+          retry={capability.retry}
+        />
         <Thread
           chatbotAvatar=""
           chatbotFallbackIcon={WandSparkles}
@@ -86,11 +106,56 @@ function ManageAssistantInner() {
           suggestions={suggestions}
           welcomeMessage={t('welcome')}
           capabilities={capabilities}
-          limitsNote={t('limitsNote')}
+          limitsNote={
+            capability.capability === 'draft-and-read'
+              ? t('limitsNote')
+              : t('degradedLimitsNote')
+          }
           maxImageAttachments={MAX_MANAGE_IMAGE_ATTACHMENTS}
         />
       </div>
     </ManageAssistantRuntimeProvider>
+  )
+}
+
+function ManageCapabilityNotice({
+  capability,
+  phase,
+  retry,
+}: {
+  capability: ManageAssistantCapabilityState
+  phase: 'checking' | 'settled'
+  retry: () => void
+}) {
+  const t = useTranslations('chat.manageAssistant')
+  if (phase === 'settled' && capability === 'draft-and-read') return null
+
+  const checking = phase === 'checking'
+  const text = checking
+    ? t('capabilityChecking')
+    : capability === 'read-only'
+      ? t('capabilityReadOnly')
+      : t('capabilityUnavailable')
+
+  return (
+    <div
+      role="status"
+      data-cy="manage-assistant-capability-status"
+      className="mx-3 mt-2 flex shrink-0 items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950"
+    >
+      <span className="min-w-0 flex-1">{text}</span>
+      {!checking ? (
+        <button
+          type="button"
+          data-cy="manage-assistant-capability-retry"
+          onClick={retry}
+          className="focus-visible:ring-uzh-blue inline-flex min-h-8 shrink-0 items-center gap-1 rounded-md px-2 font-medium text-amber-950 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2"
+        >
+          <RefreshCwIcon aria-hidden className="size-3.5" />
+          {t('capabilityRetry')}
+        </button>
+      ) : null}
+    </div>
   )
 }
 
@@ -160,9 +225,11 @@ function ManageAssistantToolbar() {
 }
 
 function ManageAssistantRuntimeProvider({
+  capabilityFetch,
   children,
   context,
 }: {
+  capabilityFetch: typeof globalThis.fetch
   children: React.ReactNode
   context: ManageAssistantContext | null
 }) {
@@ -170,11 +237,12 @@ function ManageAssistantRuntimeProvider({
     () =>
       new AssistantChatTransport({
         api: '/api/manage/chat',
+        fetch: capabilityFetch,
         body: {
           manageContext: context ?? undefined,
         },
       }),
-    [context]
+    [capabilityFetch, context]
   )
 
   const runtime = useChatRuntime({

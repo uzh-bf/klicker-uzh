@@ -62,6 +62,13 @@ function textStreamBody(text: string) {
 export const MANAGE_PROPOSAL_TOOL_NAME =
   'klicker_lecturer_element_create_draft_proposal'
 
+export type ManageAssistantCapabilityState =
+  | 'draft-and-read'
+  | 'read-only'
+  | 'unavailable'
+
+const MANAGE_ASSISTANT_CAPABILITY_HEADER = 'X-Klicker-Manage-Capability'
+
 export type ManageProposalEnvelope = {
   kind: 'element.create.proposal'
   proposalToken?: string
@@ -276,12 +283,14 @@ export async function mockManageChatStream(
     envelope,
     errorMode,
     errorText = 'The assistant is temporarily unavailable. Please try again.',
+    capabilityState = 'draft-and-read',
   }: {
     mode?: 'text' | 'proposal'
     text?: string
     envelope?: ManageProposalEnvelope
     errorMode?: ManageChatStreamErrorMode
     errorText?: string
+    capabilityState?: ManageAssistantCapabilityState
   } = {}
 ) {
   let errorServed = false
@@ -310,6 +319,39 @@ export async function mockManageChatStream(
         // response as a UI message stream (set by toUIMessageStreamResponse on
         // the real route).
         'x-vercel-ai-ui-message-stream': 'v1',
+        [MANAGE_ASSISTANT_CAPABILITY_HEADER]: capabilityState,
+      },
+      status: 200,
+    })
+  })
+}
+
+export async function mockManageCapabilities(
+  page: Page,
+  {
+    states = ['draft-and-read'],
+    delayMs = 0,
+  }: {
+    states?: ManageAssistantCapabilityState[]
+    delayMs?: number
+  } = {}
+) {
+  let requestCount = 0
+
+  await page.context().route('**/api/manage/capabilities', async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    if (delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+    const state =
+      states[Math.min(requestCount, states.length - 1)] ?? 'unavailable'
+    requestCount += 1
+
+    return route.fulfill({
+      body: JSON.stringify({ state }),
+      headers: {
+        'cache-control': 'private, no-store',
+        'content-type': 'application/json',
       },
       status: 200,
     })

@@ -1,27 +1,26 @@
-import {
-  mintLecturerMcpJwt,
-  resolveLecturerMcpScope,
-} from '@/src/lib/server/mcpAuthMint'
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import type { ToolSet } from 'ai'
+import { mintLecturerMcpJwt } from '@/src/lib/server/mcpAuthMint'
+import {
+  classifyManageAssistantCapabilityState,
+  type ManageAssistantCapabilityState,
+} from './manageAssistantCapabilities'
 import { buildMcpServiceUrl } from './mcpUrl'
 import {
   createFenceSentinel,
-  fenceToolSetResults,
   type FenceSentinel,
+  fenceToolSetResults,
 } from './toolOutputFencing'
 
 type LecturerMcpClient = Awaited<ReturnType<typeof createSDKMCPClient>>
 
 export type LecturerMcpToolBundle = {
   close: () => Promise<void>
-  // Whether the minted MCP scope includes `manage:draft`, i.e. whether
-  // `tools` contains the draft/proposal tools — the service registers a
-  // tool for a session only when the token carries the scope its policy
-  // declares. Callers use this to keep the assistant's system prompt honest
-  // about what it can actually call (see buildManageAssistantSystemPrompt).
-  hasDraftScope: boolean
+  // Derived from the actual session-filtered inventory, not the scope that
+  // requested it. Both preflight and chat turns use this value so a missing
+  // proposal tool can never be described as available.
+  capabilityState: ManageAssistantCapabilityState
   // Per-request sentinel used to fence tool-result content in `tools`
   // (see toolOutputFencing.ts). Callers thread this into
   // buildManageAssistantSystemPrompt so the model is told what the fence
@@ -71,17 +70,14 @@ export async function loadLecturerMcpTools(
   const url = getLecturerMcpUrl()
   if (!url) {
     return {
+      capabilityState: 'unavailable',
       close: async () => {},
-      hasDraftScope: false,
       sentinel: toolOutputFenceSentinel,
       tools: {},
     }
   }
 
   const token = await mintLecturerMcpJwt(userId, sessionScope)
-  const hasDraftScope = resolveLecturerMcpScope(sessionScope)
-    .split(' ')
-    .includes('manage:draft')
   const transport = new StreamableHTTPClientTransport(new URL(url), {
     requestInit: {
       headers: {
@@ -112,8 +108,8 @@ export async function loadLecturerMcpTools(
   try {
     const tools = (await client.tools()) as ToolSet
     return {
+      capabilityState: classifyManageAssistantCapabilityState(tools),
       close,
-      hasDraftScope,
       sentinel: toolOutputFenceSentinel,
       tools: fenceToolSetResults(tools, toolOutputFenceSentinel),
     }

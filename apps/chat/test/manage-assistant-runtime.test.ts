@@ -139,6 +139,9 @@ describe('Manage assistant runtime helpers', () => {
     expect(readOnlyPrompt).toContain('read-only Manage access')
     expect(readOnlyPrompt).toContain('Do not attempt to call them')
     expect(readOnlyPrompt).toContain(
+      'You can still draft in prose as a no-save preview'
+    )
+    expect(readOnlyPrompt).toContain(
       'If the signed proposal tool is unavailable or the requested question type is not supported by it'
     )
     expect(readOnlyPrompt).not.toContain(

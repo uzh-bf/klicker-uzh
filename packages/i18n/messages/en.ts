@@ -93,11 +93,20 @@ export default {
       capabilitySearch: 'Search your courses and question pool',
       capabilityDraft:
         'Draft single-choice, multiple-choice, and free-text questions — saved to your pool only after you confirm',
+      capabilityNoSaveDraft: 'Prepare question drafts without saving them',
       capabilityFeedback: 'Suggest improvements to question feedback',
       capabilityDocumentation:
-        'Explain KlickerUZH features using its documentation and tutorials',
+        'Explain common KlickerUZH workflows using a curated index of documentation and tutorials',
+      capabilityChecking: 'Checking live data and draft availability…',
+      capabilityReadOnly:
+        'Live lookups are available, but this session cannot save draft proposals. No-save drafting and documentation help remain available.',
+      capabilityUnavailable:
+        'Live course and question-pool tools are temporarily unavailable. No-save drafting and documentation help remain available.',
+      capabilityRetry: 'Retry',
       limitsNote:
-        'Read-only for everything else — it never publishes or edits existing content.',
+        'Documentation help uses a curated index rather than a complete search. The assistant never publishes or edits existing content.',
+      degradedLimitsNote:
+        'Provide missing content directly when live lookup is unavailable. Nothing is saved without a proposal card and your confirmation.',
       proposalReview: {
         reviewLabel: 'Question draft review',
         draftQuestion: 'Draft question',

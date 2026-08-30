@@ -36,6 +36,37 @@ describe('getManageSuggestions', () => {
     expect(suggestions).toEqual(getManageSuggestions(buildContext('general')))
   })
 
+  test('keeps reads but relabels persistence intents for read-only sessions', () => {
+    const suggestions = getManageSuggestions(
+      buildContext('question-pool'),
+      'read-only'
+    )
+
+    expect(suggestions.map((suggestion) => suggestion.text)).toEqual([
+      'Plan a question',
+      'Find questions',
+      'Improve feedback',
+    ])
+    expect(suggestions[0]?.prompt).toContain('no-save preview')
+    expect(suggestions[0]?.prompt).toContain('do not save anything')
+  })
+
+  test('offers only no-save and documentation work while live tools are unavailable', () => {
+    const suggestions = getManageSuggestions(
+      buildContext('course-dashboard'),
+      'unavailable'
+    )
+
+    expect(suggestions.map((suggestion) => suggestion.text)).toEqual([
+      'Plan a question',
+      'Improve feedback',
+      'KlickerUZH help',
+    ])
+    expect(
+      suggestions.map((suggestion) => suggestion.prompt).join(' ')
+    ).not.toContain('Search my question pool')
+  })
+
   test('surfaces produce distinct suggestion sets', () => {
     const bySurface = SURFACES.map((surface) =>
       getManageSuggestions(buildContext(surface))

@@ -151,6 +151,18 @@ The embedded lecturer assistant is a separate route family under `src/app/api/ma
 
 The entitlement is read live from the database rather than from the session token, so withdrawing it takes effect on the next request instead of at the lecturer's next sign-in. It is administered by email on the Manage admin panel (`setAiFeatures`), separately from `privatePreview`: one decides which unreleased features an account may see, the other whether it may spend model budget.
 
+`GET /api/manage/capabilities` is an authenticated, private, no-store advisory
+preflight for the embedded welcome. It opens a short-lived lecturer MCP client,
+classifies the actual session-filtered inventory as `draft-and-read`,
+`read-only`, or `unavailable`, and closes the client within a bounded deadline.
+The response exposes no tool names, scopes, configuration, or failure detail.
+The client starts in the conservative unavailable state, keeps curated-index
+documentation help and explicit no-save authoring available, and can retry the
+preflight without reloading the iframe. Every chat turn repeats the same
+inventory classification; its response header replaces stale preflight state,
+so the preflight never grants write authority or promises a missing proposal
+tool.
+
 Evaluation fails closed. An unconfigured or unreachable GrowthBook yields `false` for every flag, which is what makes a dark deploy safe: an image built before the `NEXT_PUBLIC_GROWTHBOOK_*` repository variables were set carries no SDK connection and shows nothing. Where no GrowthBook exists at all — local development, the end-to-end suite — `FEATURE_FLAGS_FORCED_ON` and `NEXT_PUBLIC_FEATURE_FLAGS_FORCED_ON` name registered keys to force on. That override is honored only when the flag environment resolves to `development` or `test` and only when no SDK connection is configured, so setting it on a staging or production build turns nothing on.
 
 The two chat surfaces also differ in how they handle a missing model key. The participant route falls back to `apiKey: process.env.OPENAI_API_KEY || 'no-key'` (`src/app/api/chatbots/[chatbotId]/chat/route.ts`), which the local LiteLLM proxy accepts, while `createManageAssistantModel` (`src/app/api/manage/chat/route.ts`) throws `OPENAI_API_KEY is required for the Manage assistant`. The devcontainer sets `OPENAI_BASE_URL` but no `OPENAI_API_KEY`, so the Manage assistant returns 500 there until the variable is set ([Getting Started](./getting-started.md#failure-signatures-fresh-clone--wrong-state)).

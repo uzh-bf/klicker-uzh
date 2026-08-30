@@ -1,12 +1,12 @@
+import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
+import type { ToolSet } from 'ai'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import {
   getLecturerMcpUrl,
   loadLecturerMcpTools,
 } from '@/src/services/lecturerMcp'
 import { fenceToolResultText } from '@/src/services/toolOutputFencing'
-import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import type { ToolSet } from 'ai'
-import { afterEach, describe, expect, test, vi } from 'vitest'
 
 // Mocks the seam between `loadLecturerMcpTools` and the outside world (the
 // MCP transport/client and JWT minting), so the regression test below
@@ -22,7 +22,6 @@ vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
 
 vi.mock('@/src/lib/server/mcpAuthMint', () => ({
   mintLecturerMcpJwt: vi.fn().mockResolvedValue('mock-lecturer-jwt'),
-  resolveLecturerMcpScope: vi.fn().mockReturnValue('manage:read manage:draft'),
 }))
 
 describe('lecturer MCP adapter', () => {
@@ -99,6 +98,7 @@ describe('loadLecturerMcpTools tool-result fencing (X4 regression)', () => {
     } as unknown as Awaited<ReturnType<typeof createSDKMCPClient>>)
 
     const bundle = await loadLecturerMcpTools('user-1', 'FULL_ACCESS')
+    expect(bundle.capabilityState).toBe('read-only')
     const tool = bundle.tools.klicker_lecturer_element_get
     expect(tool).toBeDefined()
 

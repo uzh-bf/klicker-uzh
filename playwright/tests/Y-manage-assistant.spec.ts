@@ -15,6 +15,7 @@ import {
   delayChatIframeScripts,
   getWindowMessages,
   makeProposalEnvelope,
+  mockManageCapabilities,
   mockManageChatStream,
   mockManageProposalConfirm,
   openManageAssistantWidget,
@@ -73,6 +74,7 @@ test.describe('Manage Assistant — Messaging', () => {
     // Must be registered before the first navigation (inside loginLecturer)
     // so it is present for every later page.
     await collectWindowMessages(page)
+    await mockManageCapabilities(page)
     await loginLecturer()
   })
 
@@ -686,7 +688,8 @@ test.describe('Manage Assistant — Messaging', () => {
 })
 
 test.describe('Manage Assistant — Per-surface suggestions', () => {
-  test.beforeEach(async ({ loginLecturer }) => {
+  test.beforeEach(async ({ loginLecturer, page }) => {
+    await mockManageCapabilities(page)
     await loginLecturer()
   })
 
@@ -745,8 +748,111 @@ test.describe('Manage Assistant — Per-surface suggestions', () => {
   })
 })
 
-test.describe('Manage Assistant — Slow hydration', () => {
+test.describe('Manage Assistant — Capability availability', () => {
   test.beforeEach(async ({ loginLecturer }) => {
+    await loginLecturer()
+  })
+
+  test('starts conservatively and upgrades the welcome after preflight', async ({
+    page,
+  }) => {
+    await mockManageCapabilities(page, {
+      delayMs: 2500,
+      states: ['draft-and-read'],
+    })
+    const assistant = await openManageAssistantWidget(page)
+
+    const status = assistant.getByTestId('manage-assistant-capability-status')
+    await expect(status).toContainText(
+      'Checking live data and draft availability'
+    )
+    await expect(
+      assistant.getByText('Plan a question', { exact: true })
+    ).toBeVisible()
+    await expect(
+      assistant.getByText('Draft a question', { exact: true })
+    ).toHaveCount(0)
+
+    await expect(status).toHaveCount(0, { timeout: 10_000 })
+    await expect(
+      assistant.getByText('Draft a question', { exact: true })
+    ).toBeVisible()
+  })
+
+  test('keeps live reads but relabels draft starters for a read-only inventory', async ({
+    page,
+  }) => {
+    await mockManageCapabilities(page, { states: ['read-only'] })
+    const assistant = await openManageAssistantWidget(page)
+
+    await expect(
+      assistant.getByTestId('manage-assistant-capability-status')
+    ).toContainText('this session cannot save draft proposals')
+    await expect(
+      assistant.getByText('Plan a question', { exact: true })
+    ).toBeVisible()
+    await expect(
+      assistant.getByText('Find questions', { exact: true })
+    ).toBeVisible()
+  })
+
+  test('recovers unavailable tools without remounting the iframe', async ({
+    page,
+  }) => {
+    await mockManageCapabilities(page, {
+      states: ['unavailable', 'draft-and-read'],
+    })
+    const assistant = await openManageAssistantWidget(page)
+    const frame = page.locator('[data-cy="manage-assistant-frame"]')
+    await frame.evaluate((element) => {
+      element.setAttribute('data-capability-frame', 'preserved')
+    })
+
+    const status = assistant.getByTestId('manage-assistant-capability-status')
+    await expect(status).toContainText(
+      'Live course and question-pool tools are temporarily unavailable'
+    )
+    await expect(
+      assistant.getByText('KlickerUZH help', { exact: true })
+    ).toBeVisible()
+
+    await assistant.getByTestId('manage-assistant-capability-retry').click()
+    await expect(status).toHaveCount(0, { timeout: 10_000 })
+    await expect(frame).toHaveAttribute('data-capability-frame', 'preserved')
+    await expect(
+      assistant.getByText('Draft a question', { exact: true })
+    ).toBeVisible()
+  })
+
+  test('request-time inventory overrides an optimistic preflight', async ({
+    page,
+  }) => {
+    await mockManageCapabilities(page, { states: ['draft-and-read'] })
+    await mockManageChatStream(page, {
+      capabilityState: 'unavailable',
+      text: 'I can still help without live data.',
+    })
+    const assistant = await openManageAssistantWidget(page)
+    await expect(
+      assistant.getByText('Draft a question', { exact: true })
+    ).toBeVisible()
+
+    await sendManageAssistantMessage(assistant, 'Help me plan a question')
+
+    await expect(
+      assistant.getByTestId('manage-assistant-capability-status')
+    ).toContainText(
+      'Live course and question-pool tools are temporarily unavailable'
+    )
+    await expect(
+      assistant.getByTestId('chat-assistant-message-content')
+    ).toContainText('I can still help without live data.')
+  })
+})
+
+test.describe('Manage Assistant — Slow hydration', () => {
+  test.beforeEach(async ({ loginLecturer, page }) => {
+    await mockManageCapabilities(page)
     await loginLecturer()
   })
 
@@ -883,7 +989,8 @@ test.describe('Manage Assistant — Slow hydration', () => {
 })
 
 test.describe('Manage Assistant — Error paths', () => {
-  test.beforeEach(async ({ loginLecturer }) => {
+  test.beforeEach(async ({ loginLecturer, page }) => {
+    await mockManageCapabilities(page)
     await loginLecturer()
   })
 

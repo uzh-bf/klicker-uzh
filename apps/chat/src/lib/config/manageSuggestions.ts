@@ -1,6 +1,8 @@
+import type { ManageAssistantCapabilityState } from '@/src/services/manageAssistantCapabilities'
 import type { ManageAssistantContext } from '@/src/services/manageContext'
 
 export interface ThreadSuggestion {
+  draftIntent?: boolean
   id: string
   text: string
   prompt: string
@@ -9,6 +11,7 @@ export interface ThreadSuggestion {
 // Shown while browsing the question pool, with no single question or course in focus.
 const QUESTION_POOL_SUGGESTIONS: ThreadSuggestion[] = [
   {
+    draftIntent: true,
     id: 'question-pool-draft',
     text: 'Draft a question',
     prompt:
@@ -37,6 +40,7 @@ const ELEMENT_EDITOR_SUGGESTIONS: ThreadSuggestion[] = [
       'Review the question I currently have open and suggest concrete improvements to its wording or answer options.',
   },
   {
+    draftIntent: true,
     id: 'element-editor-variant',
     text: 'Draft a variant',
     prompt:
@@ -59,6 +63,7 @@ const COURSE_DASHBOARD_SUGGESTIONS: ThreadSuggestion[] = [
       'Summarize the course I currently have open: its structure and how many questions it has in the pool.',
   },
   {
+    draftIntent: true,
     id: 'course-dashboard-draft',
     text: 'Draft course question',
     prompt:
@@ -75,6 +80,7 @@ const COURSE_DASHBOARD_SUGGESTIONS: ThreadSuggestion[] = [
 // Shown while assembling a quiz or other activity.
 const ACTIVITY_CREATION_SUGGESTIONS: ThreadSuggestion[] = [
   {
+    draftIntent: true,
     id: 'activity-creation-draft',
     text: 'Draft quiz questions',
     prompt:
@@ -103,6 +109,7 @@ const EVALUATION_SUGGESTIONS: ThreadSuggestion[] = [
       'Help me interpret the results for the quiz I am currently viewing.',
   },
   {
+    draftIntent: true,
     id: 'evaluation-followup',
     text: 'Follow-up question',
     prompt:
@@ -121,6 +128,7 @@ const EVALUATION_SUGGESTIONS: ThreadSuggestion[] = [
 // that is not actually present.
 const GENERAL_SUGGESTIONS: ThreadSuggestion[] = [
   {
+    draftIntent: true,
     id: 'general-draft',
     text: 'Draft question',
     prompt:
@@ -140,22 +148,99 @@ const GENERAL_SUGGESTIONS: ThreadSuggestion[] = [
   },
 ]
 
+const NO_SAVE_DRAFTS: Record<
+  string,
+  Pick<ThreadSuggestion, 'prompt' | 'text'>
+> = {
+  'activity-creation-draft': {
+    text: 'Plan quiz questions',
+    prompt:
+      'Help me plan one or more quiz questions as a no-save preview. Ask me for the topic and question type if unclear, and do not save anything.',
+  },
+  'course-dashboard-draft': {
+    text: 'Plan course question',
+    prompt:
+      'Help me plan a course question as a no-save preview. Ask me for the topic and question type if unclear, and do not save anything.',
+  },
+  'element-editor-variant': {
+    text: 'Plan a variant',
+    prompt:
+      'Help me plan a variant as a no-save preview. Ask me to provide any question details you cannot access, and do not save anything.',
+  },
+  'evaluation-followup': {
+    text: 'Plan follow-up',
+    prompt:
+      'Help me plan a follow-up question as a no-save preview. Ask me to describe the learning gap, and do not save anything.',
+  },
+  'general-draft': {
+    text: 'Plan a question',
+    prompt:
+      'Help me plan a question as a no-save preview. Ask me for the topic and question type if needed, and do not save anything.',
+  },
+  'question-pool-draft': {
+    text: 'Plan a question',
+    prompt:
+      'Help me plan a single-choice question as a no-save preview. Ask me for the topic first if needed, and do not save anything.',
+  },
+}
+
+const UNAVAILABLE_SUGGESTIONS: ThreadSuggestion[] = [
+  {
+    id: 'unavailable-plan-question',
+    text: 'Plan a question',
+    prompt:
+      'Help me plan a question as a no-save preview. Ask me for the topic and question type if needed, and do not save anything.',
+  },
+  {
+    id: 'unavailable-feedback',
+    text: 'Improve feedback',
+    prompt:
+      'Ask me to provide the question and its answer options, then suggest concise answer-specific feedback without saving anything.',
+  },
+  {
+    id: 'unavailable-documentation',
+    text: 'KlickerUZH help',
+    prompt:
+      'Help me with a KlickerUZH how-to question using the curated documentation index. Link the closest documented source and say when it is not an exact match.',
+  },
+]
+
+function withoutPersistenceIntent(
+  suggestion: ThreadSuggestion
+): ThreadSuggestion {
+  if (!suggestion.draftIntent) return suggestion
+  const noSave = NO_SAVE_DRAFTS[suggestion.id]
+  return noSave ? { ...suggestion, ...noSave, draftIntent: false } : suggestion
+}
+
 export function getManageSuggestions(
-  context: ManageAssistantContext | null
+  context: ManageAssistantContext | null,
+  capability: ManageAssistantCapabilityState = 'draft-and-read'
 ): ThreadSuggestion[] {
+  if (capability === 'unavailable') return UNAVAILABLE_SUGGESTIONS
+
+  let suggestions: ThreadSuggestion[]
   switch (context?.surface) {
     case 'question-pool':
-      return QUESTION_POOL_SUGGESTIONS
+      suggestions = QUESTION_POOL_SUGGESTIONS
+      break
     case 'element-editor':
-      return ELEMENT_EDITOR_SUGGESTIONS
+      suggestions = ELEMENT_EDITOR_SUGGESTIONS
+      break
     case 'course-dashboard':
-      return COURSE_DASHBOARD_SUGGESTIONS
+      suggestions = COURSE_DASHBOARD_SUGGESTIONS
+      break
     case 'activity-creation':
-      return ACTIVITY_CREATION_SUGGESTIONS
+      suggestions = ACTIVITY_CREATION_SUGGESTIONS
+      break
     case 'evaluation':
-      return EVALUATION_SUGGESTIONS
-    case 'general':
+      suggestions = EVALUATION_SUGGESTIONS
+      break
     default:
-      return GENERAL_SUGGESTIONS
+      suggestions = GENERAL_SUGGESTIONS
   }
+
+  return capability === 'read-only'
+    ? suggestions.map(withoutPersistenceIntent)
+    : suggestions
 }

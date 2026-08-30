@@ -627,9 +627,9 @@ follow_up_stacks:
 
 ## Progress
 
-- Status: `active_a2_preflight`
+- Status: `active_a2_review`
 - Baseline: PR #5637 exact head `85ffe927774b44b7a1b0759fa4fdbfeae81c5a96`
-  and PR #5670 exact head `5115e2958f3dfd4896756432190517994015f40b`
+  and PR #5670 exact head `c0d71a444dce3b9b4c83ee94db9e0fd5a27f3e53`
   are open, non-draft, and mergeable after the user-managed stack rebase. All
   applicable exact-head checks and all eight Playwright shards pass for both
   layers. The final-review aggregate remains red only because stack root #5637
@@ -845,3 +845,25 @@ follow_up_stacks:
 - Next: Commit and publish this A1 receipt to PR #5670, then create A2
   `rs/manage-assistant-capability-state` from the accepted A1 head and begin
   the authenticated advisory capability-state slice.
+- A1 receipt: Commit `c0d71a444` records the rebased acceptance evidence on
+  PR #5670. A2 branch `rs/manage-assistant-capability-state` starts from that
+  exact head without another upstream integration.
+- A2 implementation: The authenticated private no-store preflight now derives
+  one of three public states from the actual session-filtered lecturer-MCP tool
+  inventory and closes its bounded temporary client. Chat turns repeat the same
+  classification and return it in a response header. The conservative client
+  keeps no-save drafting and curated documentation help useful, relabels
+  persistence starters, supports in-place retry, and prevents a late preflight
+  from overriding newer request-time evidence.
+- A2 verification: Forty focused Chat tests, Chat and Playwright TypeScript
+  checks, focused Biome and Prettier checks, and the unchanged full Chat suite
+  pass under the pinned Node 24 toolchain. The wiki validator still reports its
+  35 pre-existing core errors and reports none in `docs/chat-platform.md`.
+- A2 runtime boundary: A focused local `chat,manage` start reached ready once,
+  but the installed devrouter then ignored the requested profile, fell back to
+  the full stack, terminated Turbo, and left unusable routes. The exact runtime
+  is stopped and reports zero routes. Hosted exact-head Playwright remains the
+  browser acceptance boundary; repeated local startup is not useful evidence.
+- Next: Commit the A2 slice, run the required simplification and risk reviews,
+  disposition any verified findings, then publish it as the next draft stack
+  layer and require exact-head hosted browser evidence.
