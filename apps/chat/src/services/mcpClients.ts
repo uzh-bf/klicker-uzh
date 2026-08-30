@@ -68,6 +68,28 @@ const RESERVED_DOC_QUERY_SCOPE_HEADERS = new Set([
   'prototype',
 ])
 
+function isLocalUnauthenticatedDocQueryFixture(server: MCPServerConfig) {
+  if (process.env.NODE_ENV === 'production' || server.authType !== 'none') {
+    return false
+  }
+
+  try {
+    const url = new URL(server.url)
+    return (
+      url.protocol === 'http:' &&
+      ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) &&
+      url.port === '1417' &&
+      url.pathname === '/mcp' &&
+      url.username === '' &&
+      url.password === '' &&
+      url.search === '' &&
+      url.hash === ''
+    )
+  } catch {
+    return false
+  }
+}
+
 function resolveDocQueryScopeHeader(server: MCPServerConfig): string {
   if (
     server.parameters !== undefined &&
@@ -184,6 +206,10 @@ export async function createAuthHeaders(
   const authType = server.authType.toLowerCase()
 
   if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
+    if (isLocalUnauthenticatedDocQueryFixture(server)) {
+      return baseHeaders
+    }
+
     if (!context.kbId || !context.sessionId) {
       throw new Error('Scoped knowledge retrieval is not available')
     }

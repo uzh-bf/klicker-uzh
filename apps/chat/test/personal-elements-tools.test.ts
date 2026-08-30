@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   listPersonalElements: vi.fn(),
   updatePersonalElement: vi.fn(),
-  generateObject: vi.fn(),
+  generateText: vi.fn(),
 }))
 
 vi.mock('../src/lib/server/personalElements/graphqlClient', () => ({
@@ -13,7 +13,7 @@ vi.mock('../src/lib/server/personalElements/graphqlClient', () => ({
 
 vi.mock('ai', async () => {
   const actual = await vi.importActual<typeof import('ai')>('ai')
-  return { ...actual, generateObject: mocks.generateObject }
+  return { ...actual, generateText: mocks.generateText }
 })
 
 import {
@@ -84,15 +84,17 @@ function executeStreamingTool(toolValue: unknown) {
 describe('personal-element chat tools', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.generateObject.mockResolvedValue({
-      object: {
-        status: 'ready',
-        card: {
-          type: 'FLASHCARD',
-          title: 'Revised card',
-          front: 'Short answer.',
-          back: 'Synthetic explanation.',
-          citedChunkIds: ['chunk-1'],
+    mocks.generateText.mockResolvedValue({
+      output: {
+        result: {
+          status: 'ready',
+          card: {
+            type: 'FLASHCARD',
+            title: 'Revised card',
+            front: 'Short answer.',
+            back: 'Synthetic explanation.',
+            citedChunkIds: ['chunk-1'],
+          },
         },
       },
       usage: { inputTokens: 8, outputTokens: 12 },
@@ -705,7 +707,7 @@ describe('personal-element chat tools', () => {
         question: expect.any(String),
       })
     }
-    expect(mocks.generateObject).toHaveBeenCalledTimes(2)
+    expect(mocks.generateText).toHaveBeenCalledTimes(2)
     expect(outputs.at(-1)).toMatchObject({
       status: 'completed',
       completed: 2,
@@ -752,7 +754,7 @@ describe('personal-element chat tools', () => {
     }
 
     expect(executeDocQuery).toHaveBeenCalledTimes(1)
-    expect(mocks.generateObject).toHaveBeenCalledTimes(1)
+    expect(mocks.generateText).toHaveBeenCalledTimes(1)
     expect(outputs.at(-1)).toMatchObject({
       status: 'completed',
       completed: 2,
@@ -955,8 +957,8 @@ describe('personal-element chat tools', () => {
         },
       ],
     }
-    mocks.generateObject.mockResolvedValueOnce({
-      object: { status: 'insufficient_evidence' },
+    mocks.generateText.mockResolvedValueOnce({
+      output: { result: { status: 'insufficient_evidence' } },
       usage: { inputTokens: 5, outputTokens: 1 },
     })
     const outputs: unknown[] = []
@@ -1037,15 +1039,17 @@ describe('personal-element chat tools', () => {
         },
       ],
     }
-    mocks.generateObject.mockResolvedValueOnce({
-      object: {
-        status: 'ready',
-        card: {
-          type: 'FLASHCARD',
-          title: 'Rates',
-          front: 'What does chunk-1 say?',
-          back: 'A substantive answer.',
-          citedChunkIds: ['chunk-1'],
+    mocks.generateText.mockResolvedValueOnce({
+      output: {
+        result: {
+          status: 'ready',
+          card: {
+            type: 'FLASHCARD',
+            title: 'Rates',
+            front: 'What does chunk-1 say?',
+            back: 'A substantive answer.',
+            citedChunkIds: ['chunk-1'],
+          },
         },
       },
     })
@@ -1075,8 +1079,8 @@ describe('personal-element chat tools', () => {
         nextDueAt: null,
       },
     ])
-    mocks.generateObject.mockResolvedValueOnce({
-      object: { status: 'insufficient_evidence' },
+    mocks.generateText.mockResolvedValueOnce({
+      output: { result: { status: 'insufficient_evidence' } },
     })
 
     const result = await execute(createRevisePersonalElementTool(options), {
@@ -1107,7 +1111,7 @@ describe('personal-element chat tools', () => {
         },
       ],
     }
-    mocks.generateObject.mockRejectedValueOnce(
+    mocks.generateText.mockRejectedValueOnce(
       new Error('provider response contains private diagnostics')
     )
     const outputs: unknown[] = []

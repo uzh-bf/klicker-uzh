@@ -34,7 +34,7 @@ const MCP_SERVERS: MCPServerSeed[] = [
     name: MCP_SERVER_NAMES.KB,
     description: 'A comprehensive knowledge base for various topics',
     url: 'http://localhost:1417/mcp',
-    authType: 'scope_token',
+    authType: 'none',
     isActive: true,
     passChatbotId: false,
   },
@@ -209,9 +209,7 @@ export async function seedMCPServers(prisma: PrismaClient) {
               chatbotIdHeader: null,
             },
           })
-          console.log(
-            `Reconciled MCP server '${serverConfig.name}' with scoped authentication`
-          )
+          console.log(`Reconciled local MCP server '${serverConfig.name}'`)
           createdServers.push(reconciledServer)
           continue
         }
