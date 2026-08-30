@@ -363,6 +363,15 @@ export async function prepareAuthoritativeConversation(
       orderBy: [{ position: 'asc' }, { id: 'asc' }],
     })
 
+    if (
+      created.count === 0 &&
+      input.usedLegacyAdapter &&
+      input.trigger.attachments.length > 0 &&
+      currentAttachments.length === 0
+    ) {
+      throw new AuthoritativeConversationError()
+    }
+
     if (created.count === 0 && !input.usedLegacyAdapter) {
       const requestedImages = preparedAttachments.map(
         (attachment) => attachment.imageBase64

@@ -380,6 +380,35 @@ describe('authoritative conversation history', () => {
     expect(mocks.transaction.chatAttachment.createMany).not.toHaveBeenCalled()
   })
 
+  test('fails closed when a legacy image retry has no persisted binding', async () => {
+    mocks.prisma.chatMessage.findUnique.mockResolvedValue({ id: 'trigger-1' })
+    mocks.transaction.chatMessage.createMany.mockResolvedValue({ count: 0 })
+    mocks.transaction.chatMessage.findUnique.mockResolvedValue({
+      threadId: 'thread-1',
+      parentId: null,
+      role: 'user',
+      content: [{ type: 'text', text: 'Question' }],
+      lifecycleStatus: 'COMPLETED',
+    })
+    mocks.transaction.chatAttachment.findMany.mockResolvedValue([])
+
+    await expect(
+      prepareAuthoritativeConversation({
+        ...input,
+        usedLegacyAdapter: true,
+        trigger: {
+          ...input.trigger,
+          attachments: [
+            { type: 'new-image', imageBase64: 'not-a-valid-image' },
+          ],
+        },
+      })
+    ).rejects.toBeInstanceOf(AuthoritativeConversationError)
+
+    expect(mocks.ensureImagePreviewBase64).not.toHaveBeenCalled()
+    expect(mocks.transaction.chatAttachment.createMany).not.toHaveBeenCalled()
+  })
+
   test('fails closed if a preflight legacy retry becomes a new trigger', async () => {
     mocks.prisma.chatMessage.findUnique.mockResolvedValue({ id: 'trigger-1' })
     mocks.transaction.chatMessage.createMany.mockResolvedValue({ count: 1 })

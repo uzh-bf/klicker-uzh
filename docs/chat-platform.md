@@ -120,7 +120,10 @@ Image reuse is binding-based. A canonical new raw image becomes a
 server-previewed binding on the trigger. The temporary legacy object-image
 form preserves its already accepted, validated preview field so compatible
 clients do not lose it or trigger duplicate preview work; this exception ends
-with the legacy adapter. A persisted attachment ID is copied only from a
+with the legacy adapter. An existing legacy trigger reuses only its persisted
+bindings without decoding replayed bytes. If its retry advertises an image but
+no server binding exists, the request fails closed instead of silently becoming
+text-only. A persisted attachment ID is copied only from a
 completed user message in the same participant, chatbot, owner, and thread
 scope. Edit omission removes the image only from the new binding set; source
 rows never change. A retry keeps its current binding IDs and bytes, may fill a

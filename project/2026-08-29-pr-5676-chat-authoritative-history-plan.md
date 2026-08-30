@@ -1034,3 +1034,17 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   integration gates, and its managed runtime was stopped with zero remaining
   routes. The required manual final review, PR readiness, merge, deployment,
   and activation remain separately gated.
+
+- 2026-08-30 exact-head OCR follow-up: run `33306881073` passed and reported
+  two medium findings plus six low cleanup suggestions. One medium edge is
+  accepted: an old user row can survive a legacy attachment-persistence
+  failure, so an image-bearing retry with no persisted binding now fails closed
+  instead of silently degrading to text-only. Existing bindings still win
+  without decoding replayed bytes. The generic public claim-conflict response
+  is retained deliberately to avoid an authorization or lifecycle oracle; its
+  values-free internal reason remains logged and tested. The six low cleanup
+  suggestions are declined because the independent simplifier found no
+  behavior-preserving reduction worth the added coupling or scope. Fresh local
+  verification, correction review, push, and exact-head CI/OCR remain before
+  the separately gated manual final review, PR readiness, merge, deployment,
+  and activation.
