@@ -3158,7 +3158,7 @@ function validateTarget(target: ActivationTarget): void {
 
 function validateReceiptState(
   receipt: ActivationReceipt,
-  allowed: ActivationReceiptState[]
+  allowed: readonly ActivationReceiptState[]
 ): void {
   if (!allowed.includes(receipt.state)) {
     fail('RECEIPT_STATE', 'receipt state is not valid for this operation')
@@ -3503,7 +3503,7 @@ async function requireSessionReceipt(
   session: ActivationReceiptSession,
   index: ReturnType<typeof buildManifestIndex>,
   manifestFingerprint: string,
-  allowedStates: readonly string[]
+  allowedStates: readonly ActivationReceiptState[]
 ) {
   const receipt = requireReceipt(
     await readReceipt(session),
