@@ -122,6 +122,14 @@ describe('response-example runtime projection', () => {
     expect(JSON.stringify(selected)).not.toMatch(/\[\d+\]/)
   })
 
+  it('rewrites markers after renderer normalization changes source offsets', () => {
+    const selected = boundResponseExampleSearchResults([
+      candidate('1', 'A &amp; B [1].'),
+    ])
+
+    expect(selected[0]?.referenceAnswer).toBe('A & B [example-source-1].')
+  })
+
   it('preserves citation-shaped Markdown outside renderer citation nodes', () => {
     const answer = [
       'Use the grounded concept [1].',

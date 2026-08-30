@@ -198,10 +198,13 @@ preview and the later examples-excluded baseline.
   correction is committed, reviewed, and passed every hosted Playwright shard
   on its published head. The separately approved final upstream integration
   through `origin/v3-ai@54fbfc921` is complete at merge head `256ff4d4b`. PR
-  #5650 remains a standalone PR into
-  the long-lived `v3-ai` consolidation branch. The user removed the invalid
+  #5650 remains a standalone PR into the long-lived `v3-ai` consolidation
+  branch. The user removed the invalid
   native stack registration with PR #5092. Merge, deployment, and live model
-  use remain withheld.
+  use remain withheld. Published head `dea34488a` passed all ordinary exact-head
+  checks. Its successful final review identified three medium corrections; the
+  branch now normalizes citation spans consistently, shares the current-
+  eligibility reconciliation core, and batches reconciliation writes.
 - Completed: remote-state gate, clean purpose-based worktree, approved program
   plan transfer, current source seam mapping, package-plan narrowing, shared
   current-evidence validation, owner-service reconciliation, and focused util,
@@ -233,7 +236,12 @@ preview and the later examples-excluded baseline.
   to revalidate citation parity; search now applies the shared parity predicate
   to that current row and the PostgreSQL regression proves concurrent invalid
   edits are omitted. The final correction review returned `DONE` with no
-  remaining findings at `4fe8565fefe3375189ecb4b8e98247a4c8a1f216`.
+  remaining findings at `4fe8565fefe3375189ecb4b8e98247a4c8a1f216`. The
+  published post-integration final review at `dea34488a` then found one
+  renderer-normalization offset bug, duplicated eligibility reconciliation,
+  and sequential chat-path writes. The corrective implementation uses one
+  normalized citation source, one shared query/evaluation/write plan, and at
+  most three batched updates per reconciliation.
 - Verification limitation: repository-wide `pnpm run check:all` reaches the
   unrelated analytics lint, where the container selects Python 3.14 and cannot
   build pandas because no C compiler is installed. All affected package checks
@@ -244,16 +252,15 @@ preview and the later examples-excluded baseline.
   A later CI-correction attempt to resume the same runtime failed before checks
   because the branch baseline does not yet satisfy the managed DevPod config
   validation and an existing process holds the Azurite host port. The managed
-  stop freed zero routes. The exact workspace currently reports provider state
-  `Busy`; devrouter route readback is blocked by a host-route lock identity
-  error. No raw DevPod stop or cleanup bypass was attempted.
+  stop freed zero routes. All exact partial-start containers are now stopped or
+  remained unstarted, and devrouter reports zero exact routes. No runtime data
+  was deleted.
 - Delivery: branch `feat/chatbot-response-example-runtime` is published at PR
   #5650 as a standalone PR into `v3-ai`. The current merge candidate includes
   `origin/v3-ai@54fbfc921`; its evidence layer is `delivery_pending` until the
-  integrated head is published and exact-head CI and final review settle. PR
+  corrective head is published and exact-head CI and final review settle. PR
   #5674 merged consolidation-branch final-review eligibility into `v3` as
   `e24287c97`. Any further upstream integration, PR merge, deployment, and live
   activation remain separately withheld.
-- Next: run affected verification, publish merge head `256ff4d4b`, and settle
-  its exact-head checks and final review; do not involve the eventual `v3-ai`
-  to `v3` promotion PR.
+- Next: publish the review-correction head and settle its exact-head checks and
+  final review; do not involve the eventual `v3-ai` to `v3` promotion PR.

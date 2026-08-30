@@ -162,7 +162,7 @@ export interface CitationParserOptions {
 }
 
 /** Parse the Markdown dialect and math setting used by the renderer. */
-export function parseMarkdownForCitations(
+function parseNormalizedMarkdownForCitations(
   source: string,
   options: CitationParserOptions = {}
 ): MarkdownAstNode {
@@ -172,9 +172,17 @@ export function parseMarkdownForCitations(
       singleDollarTextMath: options.singleDollarTextMath ?? false,
     })
     .use(remarkCitationMarkers)
-  return processor.runSync(
-    processor.parse(normalizeMarkdownContent(source))
-  ) as MarkdownAstNode
+  return processor.runSync(processor.parse(source)) as MarkdownAstNode
+}
+
+export function parseMarkdownForCitations(
+  source: string,
+  options: CitationParserOptions = {}
+): MarkdownAstNode {
+  return parseNormalizedMarkdownForCitations(
+    normalizeMarkdownContent(source),
+    options
+  )
 }
 
 /** Return citation markers that become citation links in the renderer. */
@@ -215,13 +223,14 @@ export interface CitationMarkerSpan {
   end: number
 }
 
-/** Return exact source spans for markers created by the citation renderer. */
+/** Return normalized source spans for markers created by the citation renderer. */
 export function extractCitationMarkerSpans(
   source: string,
   options: CitationParserOptions = {}
 ): CitationMarkerSpan[] {
   const spans: CitationMarkerSpan[] = []
-  const tree = parseMarkdownForCitations(source, options)
+  const normalizedSource = normalizeMarkdownContent(source)
+  const tree = parseNormalizedMarkdownForCitations(normalizedSource, options)
   const pending: MarkdownAstNode[] = [tree]
 
   while (pending.length > 0) {
@@ -246,7 +255,7 @@ export function extractCitationMarkerSpans(
         citationIndex !== null &&
         typeof start === 'number' &&
         typeof end === 'number' &&
-        source.slice(start, end) === `[${citationIndex}]`
+        normalizedSource.slice(start, end) === `[${citationIndex}]`
       ) {
         spans.push({ citationIndex, start, end })
       }

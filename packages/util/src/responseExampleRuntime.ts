@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import {
   extractCitationIndexes,
   extractCitationMarkerSpans,
+  normalizeMarkdownContent,
 } from './citations.js'
 import { hasCompleteResponseExampleCitationParity } from './responseExampleEligibility.js'
 
@@ -126,10 +127,11 @@ export function buildResponseExampleSkillProjection(args: {
 }
 
 export function rewriteResponseExampleCitations(answer: string) {
+  const normalizedAnswer = normalizeMarkdownContent(answer)
   const spans = extractCitationMarkerSpans(answer)
-  if (spans.length === 0) return answer
+  if (spans.length === 0) return normalizedAnswer
 
-  let result = answer
+  let result = normalizedAnswer
   for (let index = spans.length - 1; index >= 0; index -= 1) {
     const span = spans[index]!
     result = `${result.slice(0, span.start)}[example-source-${span.citationIndex}]${result.slice(span.end)}`

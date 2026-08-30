@@ -4,7 +4,12 @@ import {
   ResponseExampleStatus,
 } from '@klicker-uzh/prisma/client'
 import { computeResponseExampleSetDigest } from '@klicker-uzh/util/response-example-digest'
-import { evaluateResponseExampleCurrentEligibility } from '@klicker-uzh/util/response-example-eligibility'
+import {
+  applyResponseExampleEligibilityReconciliation,
+  buildResponseExampleEligibilityReconciliation,
+  loadCurrentResponseExampleResources,
+  type ResponseExampleEligibilityReconciliation,
+} from '@klicker-uzh/util/response-example-eligibility'
 import {
   boundResponseExampleSearchResults,
   buildResponseExampleSkillProjection,
@@ -77,47 +82,6 @@ function assertRuntimeSetWithinLimit(set: ResponseExampleRuntimeSet) {
   }
 }
 
-type CurrentResponseExampleResource = {
-  id: string
-  activeContentSha256: string | null
-  deletedAt: Date | null
-}
-
-async function loadCurrentResponseExampleResources(
-  prisma: ResponseExampleRuntimePrisma,
-  chatbotId: string,
-  sourceIds: readonly string[]
-) {
-  if (sourceIds.length === 0) return []
-
-  return await prisma.$queryRaw<CurrentResponseExampleResource[]>(
-    PrismaRuntime.sql`
-      WITH enabled_kb AS (
-        SELECT binding."kbId"
-        FROM "public"."KBChatbot" AS binding
-        INNER JOIN "public"."KB" AS kb ON kb."id" = binding."kbId"
-        WHERE binding."chatbotId" = ${chatbotId}::uuid
-          AND binding."isEnabled" = true
-          AND kb."deletedAt" IS NULL
-        ORDER BY binding."id" ASC
-        LIMIT 2
-      ), exact_kb AS (
-        SELECT "kbId"
-        FROM enabled_kb
-        WHERE (SELECT COUNT(*) FROM enabled_kb) = 1
-      )
-      SELECT
-        resource."id",
-        resource."activeContentSha256",
-        resource."deletedAt"
-      FROM exact_kb
-      INNER JOIN "public"."KBResource" AS resource
-        ON resource."kbId" = exact_kb."kbId"
-      WHERE resource."id" IN (${PrismaRuntime.join(sourceIds)})
-    `
-  )
-}
-
 async function loadCurrentEligibility(
   prisma: ResponseExampleRuntimePrisma,
   chatbotId: string,
@@ -140,34 +104,12 @@ async function loadCurrentEligibility(
     sourceIds
   )
 
-  return new Map(
-    set.examples.map((example) => [
-      example.id,
-      evaluateResponseExampleCurrentEligibility(example, resources),
-    ])
-  )
-}
-
-function needsReconciliation(
-  set: ResponseExampleRuntimeSet,
-  eligibility: Awaited<ReturnType<typeof loadCurrentEligibility>>
-) {
-  return set.examples.some((example) => {
-    const current = eligibility.get(example.id)
-    return (
-      example.evidenceReferences.some(
-        (reference, index) =>
-          reference.evidenceEligible !==
-          (current?.evidenceEligibility[index] ?? false)
-      ) ||
-      (example.status === ResponseExampleStatus.APPROVED && !current?.eligible)
-    )
-  })
+  return buildResponseExampleEligibilityReconciliation(set.examples, resources)
 }
 
 function projectCurrentEligibility(
   set: ResponseExampleRuntimeSet,
-  eligibility: Awaited<ReturnType<typeof loadCurrentEligibility>>
+  eligibility: ResponseExampleEligibilityReconciliation['currentEligibility']
 ): ResponseExampleRuntimeSet {
   return {
     ...set,
@@ -200,8 +142,11 @@ export async function reconcileCurrentResponseExampleRuntimeSet(
     chatbotId,
     initialSet
   )
-  if (!needsReconciliation(initialSet, initialEligibility)) {
-    return projectCurrentEligibility(initialSet, initialEligibility)
+  if (!initialEligibility.changed) {
+    return projectCurrentEligibility(
+      initialSet,
+      initialEligibility.currentEligibility
+    )
   }
 
   return await prisma.$transaction(async (tx) => {
@@ -230,39 +175,11 @@ export async function reconcileCurrentResponseExampleRuntimeSet(
     assertRuntimeSetWithinLimit(set)
 
     const eligibility = await loadCurrentEligibility(tx, chatbotId, set)
-    if (!needsReconciliation(set, eligibility)) {
-      return projectCurrentEligibility(set, eligibility)
+    if (!eligibility.changed) {
+      return projectCurrentEligibility(set, eligibility.currentEligibility)
     }
 
-    for (const example of set.examples) {
-      const current = eligibility.get(example.id)
-      for (const [index, reference] of example.evidenceReferences.entries()) {
-        const evidenceEligible = current?.evidenceEligibility[index] ?? false
-        if (reference.evidenceEligible !== evidenceEligible) {
-          await tx.responseExampleEvidenceReference.update({
-            where: { id: reference.id },
-            data: { evidenceEligible },
-          })
-        }
-      }
-
-      if (
-        example.status === ResponseExampleStatus.APPROVED &&
-        !current?.eligible
-      ) {
-        await tx.responseExample.updateMany({
-          where: {
-            id: example.id,
-            status: ResponseExampleStatus.APPROVED,
-          },
-          data: {
-            status: ResponseExampleStatus.NEEDS_REVIEW,
-            reviewedById: null,
-            reviewedAt: null,
-          },
-        })
-      }
-    }
+    await applyResponseExampleEligibilityReconciliation(tx, eligibility)
 
     const reconciledSet = await tx.responseExampleSet.findUnique({
       where: { id: set.id },

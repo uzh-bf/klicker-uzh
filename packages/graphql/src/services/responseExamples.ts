@@ -3,8 +3,13 @@ import * as DB from '@klicker-uzh/prisma/client'
 import { Prisma as PrismaRuntime } from '@klicker-uzh/prisma/client'
 import { computeResponseExampleSetDigest } from '@klicker-uzh/util/response-example-digest'
 import {
+  applyResponseExampleEligibilityReconciliation,
+  buildResponseExampleEligibilityReconciliation,
   evaluateResponseExampleCurrentEligibility,
+  loadCurrentResponseExampleResources,
   type ResponseExampleEligibilityInput,
+  type ResponseExampleEligibilityReconciliation,
+  type StoredResponseExampleEligibilityInput,
 } from '@klicker-uzh/util/response-example-eligibility'
 import { GraphQLError } from 'graphql'
 import { z } from 'zod'
@@ -114,51 +119,10 @@ async function refreshResponseExampleSetDigestAfterLock(
     .then(withChatbotModes)
 }
 
-type CurrentResponseExampleResource = {
-  id: string
-  activeContentSha256: string | null
-  deletedAt: Date | null
-}
-
-async function loadCurrentResponseExampleResources(
-  prisma: ResponseExamplePrisma,
-  chatbotId: string,
-  sourceIds: readonly string[]
-) {
-  if (sourceIds.length === 0) return []
-
-  return await prisma.$queryRaw<CurrentResponseExampleResource[]>(
-    PrismaRuntime.sql`
-      WITH enabled_kb AS (
-        SELECT binding."kbId"
-        FROM "public"."KBChatbot" AS binding
-        INNER JOIN "public"."KB" AS kb ON kb."id" = binding."kbId"
-        WHERE binding."chatbotId" = ${chatbotId}::uuid
-          AND binding."isEnabled" = true
-          AND kb."deletedAt" IS NULL
-        ORDER BY binding."id" ASC
-        LIMIT 2
-      ), exact_kb AS (
-        SELECT "kbId"
-        FROM enabled_kb
-        WHERE (SELECT COUNT(*) FROM enabled_kb) = 1
-      )
-      SELECT
-        resource."id",
-        resource."activeContentSha256",
-        resource."deletedAt"
-      FROM exact_kb
-      INNER JOIN "public"."KBResource" AS resource
-        ON resource."kbId" = exact_kb."kbId"
-      WHERE resource."id" IN (${PrismaRuntime.join(sourceIds)})
-    `
-  )
-}
-
 async function loadCurrentEligibility(
   prisma: ResponseExamplePrisma,
   chatbotId: string,
-  examples: readonly ResponseExampleEligibilityRecord[]
+  examples: readonly StoredResponseExampleEligibilityInput[]
 ) {
   const sourceIds = [
     ...new Set(
@@ -177,12 +141,7 @@ async function loadCurrentEligibility(
     sourceIds
   )
 
-  return new Map(
-    examples.map((example) => [
-      example.id,
-      evaluateResponseExampleCurrentEligibility(example, resources),
-    ])
-  )
+  return buildResponseExampleEligibilityReconciliation(examples, resources)
 }
 
 async function getCurrentEligibilityForExample(
@@ -190,9 +149,22 @@ async function getCurrentEligibilityForExample(
   chatbotId: string,
   example: ResponseExampleEligibilityRecord
 ) {
-  return (await loadCurrentEligibility(prisma, chatbotId, [example])).get(
-    example.id
+  const sourceIds = [
+    ...new Set(
+      example.evidenceReferences
+        .map((reference) => reference.sourceId)
+        .filter(
+          (sourceId) => responseExampleIdSchema.safeParse(sourceId).success
+        )
+    ),
+  ]
+  const resources = await loadCurrentResponseExampleResources(
+    prisma,
+    chatbotId,
+    sourceIds
   )
+
+  return evaluateResponseExampleCurrentEligibility(example, resources)
 }
 
 async function updateStoredEvidenceEligibility(
@@ -218,10 +190,7 @@ async function updateStoredEvidenceEligibility(
 
 function projectCurrentEligibility(
   set: ResponseExampleSetWithRelations,
-  eligibility: ReadonlyMap<
-    string,
-    ReturnType<typeof evaluateResponseExampleCurrentEligibility>
-  >
+  eligibility: ResponseExampleEligibilityReconciliation['currentEligibility']
 ) {
   return {
     ...set,
@@ -236,27 +205,6 @@ function projectCurrentEligibility(
       ),
     })),
   }
-}
-
-function needsCurrentEligibilityReconciliation(
-  set: ResponseExampleSetWithRelations,
-  eligibility: ReadonlyMap<
-    string,
-    ReturnType<typeof evaluateResponseExampleCurrentEligibility>
-  >
-) {
-  return set.examples.some((example) => {
-    const current = eligibility.get(example.id)
-    return (
-      example.evidenceReferences.some(
-        (reference, index) =>
-          reference.evidenceEligible !==
-          (current?.evidenceEligibility[index] ?? false)
-      ) ||
-      (example.status === DB.ResponseExampleStatus.APPROVED &&
-        !current?.eligible)
-    )
-  })
 }
 
 export async function reconcileCurrentResponseExampleEligibility(
@@ -274,9 +222,12 @@ export async function reconcileCurrentResponseExampleEligibility(
     chatbotId,
     initialSet.examples
   )
-  if (!needsCurrentEligibilityReconciliation(initialSet, initialEligibility)) {
+  if (!initialEligibility.changed) {
     return withChatbotModes(
-      projectCurrentEligibility(initialSet, initialEligibility)
+      projectCurrentEligibility(
+        initialSet,
+        initialEligibility.currentEligibility
+      )
     )
   }
 
@@ -309,35 +260,13 @@ export async function reconcileCurrentResponseExampleEligibility(
       chatbotId,
       set.examples
     )
-    if (!needsCurrentEligibilityReconciliation(set, currentEligibility)) {
+    if (!currentEligibility.changed) {
       return withChatbotModes(
-        projectCurrentEligibility(set, currentEligibility)
+        projectCurrentEligibility(set, currentEligibility.currentEligibility)
       )
     }
 
-    for (const example of set.examples) {
-      const current = currentEligibility.get(example.id)
-      if (current) {
-        await updateStoredEvidenceEligibility(tx, example, current)
-      }
-
-      if (
-        example.status === DB.ResponseExampleStatus.APPROVED &&
-        !current?.eligible
-      ) {
-        await tx.responseExample.updateMany({
-          where: {
-            id: example.id,
-            status: DB.ResponseExampleStatus.APPROVED,
-          },
-          data: {
-            status: DB.ResponseExampleStatus.NEEDS_REVIEW,
-            reviewedById: null,
-            reviewedAt: null,
-          },
-        })
-      }
-    }
+    await applyResponseExampleEligibilityReconciliation(tx, currentEligibility)
 
     return await refreshResponseExampleSetDigestAfterLock(tx, set.id)
   })
