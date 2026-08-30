@@ -673,4 +673,31 @@ ${passedReceiptSource()}
     expect((await proof).result).toBe('passed')
     expect((await stat(dummy.lockPath)).ino).toBe(replacement.ino)
   })
+
+  test('cleans up when reading the acquired proof lock identity fails', async () => {
+    const dummy = await writeDummy(passedReceiptSource())
+    const handle = await open(dummy.lockPath, 'wx', 0o600)
+    let closed = false
+    const receipt = await superviseProof({
+      sourceEnvironment:
+        (await dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+      childPath: dummy.path,
+      childArgs: [],
+      lockPath: dummy.lockPath,
+      acquireLockForProof: async () =>
+        ({
+          stat: async () => {
+            throw new Error('synthetic stat failure')
+          },
+          close: async () => {
+            closed = true
+            await handle.close()
+          },
+        }) as unknown as typeof handle,
+    })
+
+    expect(receipt.failureClass).toBe('child_failed')
+    expect(closed).toBe(true)
+    await expect(stat(dummy.lockPath)).rejects.toMatchObject({ code: 'ENOENT' })
+  })
 })
