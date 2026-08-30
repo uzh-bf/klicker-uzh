@@ -405,23 +405,49 @@ Stop and return to the user if any of these becomes necessary or true:
 
 ## Progress
 
-- **Status:** Gate 1 and the public-ownership ruling are approved; S0 is
-  complete and S1 is next. No implementation, pushes, branches beyond the
-  bottom branch, or PR creation has begun.
+- **Status:** Gate 1 and the public-ownership ruling are approved. S0 and S1 are
+  complete; S2 is next. Nothing has been pushed and no PR has been created.
 - **Completed:** university-specific research; product grilling and rulings;
   codebase seam exploration; privacy-by-design pass; current-base worktree;
   CONTEXT definition; ADR 0045 and index; native Sol planning review; accepted
   two-layer topology and corrections; public, ungated ownership ruling aligned
-  with ADR 0006; product-contract commit `b1dc3d9c6`.
+  with ADR 0006; product-contract commit `b1dc3d9c6`; reviewed plan commit
+  `0b48f9404`; S1 foundation commit `b4721f835`; and S1 review-correction commit
+  `720321124`.
 - **Base state:** `rs/peer-instruction-livequiz` matched `origin/v3` at
   `cd7426e3c59dbd8a63208a0afb162427918d9367` when the reviewed plan was written.
+  The remote target has since advanced by three commits. No upstream
+  integration is authorized or required before the branch passes on its
+  recorded base.
 - **Planning review:** `DONE_WITH_CONCERNS — APPROVE_WITH_CHANGES`; all changes
   are incorporated, and no material product decision remains open.
+- **S1 schema:** one Prisma-generated migration,
+  `20260830161726_peer_instruction_foundation`; the Prisma and analytics schemas
+  are synchronized, the database migration status is current, and Prisma
+  reports no schema drift.
+- **S1 verification:** Node 24 Prisma and shared-types checks; GraphQL codegen
+  and TypeScript check; six focused Peer Instruction foundation tests; the
+  focused assessment-reset test; Prisma sync validation; focused formatting;
+  and the complete `check:all` hook all pass. The test runner logged noisy
+  refused connections from unused local Redis clients, but the assertions and
+  process exits passed; the directly exercised assessment cache seam was
+  isolated in the test.
+- **S1 review:** the configured Gemini slice reviewer failed terminally before
+  work with an OpenRouter HTTP 402 credit limit, so the documented continuity
+  route used trusted `gpt-5.6-luna` at maximum effort. It found three P2 issues:
+  template-to-quiz preparation loss, incomplete cancellation reset, and missing
+  regression coverage. Commit `720321124` corrects all three, and the rerun
+  found no actionable issue. The simplifier's four follow-up suggestions were
+  rejected because they would reintroduce compile failures, defer an approved
+  typed lifecycle into a second migration, or add coupling without a material
+  reduction. Full reports are retained under `project/_local/reviews/`.
 - **Runtime:** the exact worktree container started, but the full application
   readiness check failed because the initial GraphQL build was killed with exit
   137 under the parallel development stack, so auth never started. Bounded
-  repository commands remain available in the container. The earlier
-  `gamification-roadmap` runtime is stopped and has zero devrouter routes.
+  repository commands remain available in the container, and its frozen
+  dependency restore completed successfully. The earlier `gamification-roadmap`
+  runtime is stopped and has zero devrouter routes.
 - **Active children:** none after the planner is closed.
-- **Next action:** commit this reviewed plan as the second S0 commit, then begin
-  S1 on the current bottom branch.
+- **Next action:** implement S2's isolated transient revision processor and
+  prove that revised responses cannot enter scoring, gamification, assessment,
+  or durable response history.
