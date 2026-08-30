@@ -3,15 +3,18 @@
 # Invoked by host-side `devrouter ensure` after it validates the exact container.
 # Launches every routed app plus both workers through the delivered helper.
 set -euo pipefail
-cd /workspaces/klicker-uzh
+ROOT="${KLICKER_DEVCONTAINER_ROOT:-/workspaces/klicker-uzh}"
+ROOT="$(cd "$ROOT" && pwd)"
+bash "$ROOT/util/dev-runtime.sh" require-bootstrap
+cd "$ROOT"
 
 # Re-source the canonical env (DevPod truncates env_file values at '='), then the
 # runtime Hatchet token written by post-create (if any). (GOTCHAS #1)
 set -a
 # shellcheck source=/dev/null
-. /workspaces/klicker-uzh/.devcontainer/devcontainer.env
+. "$ROOT/.devcontainer/devcontainer.env"
 # shellcheck source=/dev/null
-[ -f /workspaces/klicker-uzh/.devcontainer/.hatchet.env ] && . /workspaces/klicker-uzh/.devcontainer/.hatchet.env
+[ -f "$ROOT/.devcontainer/.hatchet.env" ] && . "$ROOT/.devcontainer/.hatchet.env"
 set +a
 
 # Detect if devrouter routing is active (via mkcert CA mount) or fallback to plain localhost ports
@@ -115,7 +118,7 @@ fi
 # process starts, so close that race here after the managed Hatchet service is
 # running. Capability-only profiles do not wait for a token they never consume.
 if [ "$PROFILE_WANTS_DEV" = yes ] && [ -z "${HATCHET_CLIENT_TOKEN:-}" ]; then
-  HATCHET_ENV=/workspaces/klicker-uzh/.devcontainer/.hatchet.env
+  HATCHET_ENV="$ROOT/.devcontainer/.hatchet.env"
   for attempt in $(seq 1 60); do
     if [ -s /config/authdisabled-token ]; then
       HATCHET_CLIENT_TOKEN=$(tr -d '[:space:]' < /config/authdisabled-token)
@@ -263,7 +266,7 @@ worker_runtime_pid() {
   for proc in /proc/[0-9]*; do
     pid="${proc##*/}"
     cwd="$(readlink "$proc/cwd" 2>/dev/null || true)"
-    [ "$cwd" = "/workspaces/klicker-uzh/apps/$worker" ] || continue
+    [ "$cwd" = "$ROOT/apps/$worker" ] || continue
     state="$(ps -o stat= -p "$pid" 2>/dev/null | tr -d '[:space:]')"
     [ -n "$state" ] && [[ "$state" != Z* ]] || continue
     cmdline="$(tr '\0' ' ' <"$proc/cmdline" 2>/dev/null || true)"

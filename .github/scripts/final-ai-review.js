@@ -33,6 +33,12 @@ const FINAL_REVIEW_CLEAN_STATUS_PREFIX = `${FINAL_REVIEW_MODEL} final review cle
 const FINAL_REVIEW_CLEAN_EVIDENCE_SCHEMA = 'final-ai-clean-evidence/v1'
 const FINAL_REVIEW_CLEAN_EVIDENCE_CHECK_NAME = 'Final AI clean evidence'
 const GENERATED_PROMOTION_STATUS = 'Verified generated staging promotion'
+// Long-lived consolidation branches (for example, v3-ai) that staging
+// deployments are cut from. Individual final reviews treat open ready pull
+// requests targeting one of these bases exactly like pull requests targeting
+// the default branch. Stack review and native-stack root validation stay
+// bound to the default branch.
+const CONSOLIDATION_BASE_BRANCHES = Object.freeze(['v3-ai'])
 const FINAL_REVIEW_RULES_PATH =
   '.github/open-code-review/final-review-rules.json'
 const FINAL_STACK_REVIEW_WORKFLOW_PATH =
@@ -54,6 +60,10 @@ const FINAL_REVIEW_POLICY_PATHS = Object.freeze(
   ].sort()
 )
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
+const OPENROUTER_TOOL_CANARY_MARKER = 'KLICKER_FINAL_REVIEW_TOOL_CANARY'
+const OPENROUTER_TOOL_CANARY_NAME = 'final_review_probe'
+const OPENROUTER_TOOL_CANARY_TIMEOUT_MS = 30_000
+const OCR_MAX_COMPLETION_TOKENS = 16_384
 const PROMOTION_FILE = 'deploy/env-uzh-stg/values.yaml'
 const REPORT_LIMIT = 55_000
 const MAX_INCREMENTAL_PATHS = 20
@@ -461,15 +471,150 @@ function buildOCRPolicy() {
       model: FINAL_REVIEW_MODEL,
       protocol: 'openai',
       extra_body: {
-        provider: {
-          require_parameters: true,
-        },
         reasoning: {
           effort: 'high',
         },
       },
     },
   }
+}
+
+function buildOpenRouterToolCanaryRequest() {
+  const policy = buildOCRPolicy()
+  return {
+    model: policy.llm.model,
+    max_completion_tokens: OCR_MAX_COMPLETION_TOKENS,
+    messages: [
+      {
+        role: 'system',
+        content:
+          'This is a public compatibility check. Return only the required function call.',
+      },
+      {
+        role: 'user',
+        content: `Call ${OPENROUTER_TOOL_CANARY_NAME} with marker ${OPENROUTER_TOOL_CANARY_MARKER}.`,
+      },
+    ],
+    ...policy.llm.extra_body,
+    tools: [
+      {
+        type: 'function',
+        function: {
+          name: OPENROUTER_TOOL_CANARY_NAME,
+          description: 'Confirm that the selected route supports tool calls.',
+          parameters: {
+            type: 'object',
+            properties: {
+              marker: {
+                type: 'string',
+                const: OPENROUTER_TOOL_CANARY_MARKER,
+              },
+            },
+            required: ['marker'],
+            additionalProperties: false,
+          },
+        },
+      },
+    ],
+    tool_choice: {
+      type: 'function',
+      function: { name: OPENROUTER_TOOL_CANARY_NAME },
+    },
+  }
+}
+
+function sanitizeOpenRouterDiagnostic(value, token, limit = 160) {
+  if (!['number', 'string'].includes(typeof value)) return ''
+  const redacted = String(value).split(token).join('[redacted]')
+  return normalizeTitle(redacted, limit)
+}
+
+function openRouterCanaryFailure(status, payload, token) {
+  const error = payload?.error
+  const provider =
+    payload?.provider ??
+    error?.metadata?.provider_name ??
+    error?.metadata?.provider
+  const fields = [`HTTP ${status}`]
+  for (const [label, value] of [
+    ['code', error?.code],
+    ['provider', provider],
+    ['message', error?.message],
+  ]) {
+    const sanitized = sanitizeOpenRouterDiagnostic(value, token)
+    if (sanitized) fields.push(`${label}=${sanitized}`)
+  }
+  return new Error(`OpenRouter tool canary failed (${fields.join('; ')})`)
+}
+
+function validateOpenRouterToolCanaryResponse(payload, token) {
+  const toolCalls = payload?.choices?.[0]?.message?.tool_calls
+  if (
+    payload?.model !== FINAL_REVIEW_MODEL ||
+    !Array.isArray(toolCalls) ||
+    toolCalls.length !== 1 ||
+    toolCalls[0]?.type !== 'function' ||
+    toolCalls[0]?.function?.name !== OPENROUTER_TOOL_CANARY_NAME
+  ) {
+    throw new Error(
+      'OpenRouter tool canary did not return the expected tool call'
+    )
+  }
+  let args
+  try {
+    args = JSON.parse(toolCalls[0].function.arguments)
+  } catch {
+    throw new Error(
+      'OpenRouter tool canary did not return the expected tool call'
+    )
+  }
+  if (
+    !args ||
+    typeof args !== 'object' ||
+    Array.isArray(args) ||
+    Object.keys(args).length !== 1 ||
+    args.marker !== OPENROUTER_TOOL_CANARY_MARKER
+  ) {
+    throw new Error(
+      'OpenRouter tool canary did not return the expected tool call'
+    )
+  }
+  return {
+    provider: sanitizeOpenRouterDiagnostic(payload.provider, token),
+  }
+}
+
+async function verifyOpenRouterToolAccess({
+  token,
+  fetchImpl = globalThis.fetch,
+}) {
+  if (!token) throw new Error('OPENROUTER_API_KEY is required')
+  if (typeof fetchImpl !== 'function') throw new Error('fetch is unavailable')
+  let response
+  try {
+    response = await fetchImpl(OPENROUTER_URL, {
+      body: JSON.stringify(buildOpenRouterToolCanaryRequest()),
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+      },
+      method: 'POST',
+      signal: AbortSignal.timeout(OPENROUTER_TOOL_CANARY_TIMEOUT_MS),
+    })
+  } catch {
+    throw new Error('OpenRouter tool canary request failed')
+  }
+  let payload
+  try {
+    payload = await response.json()
+  } catch {
+    payload = null
+  }
+  if (!response.ok) {
+    throw openRouterCanaryFailure(response.status, payload, token)
+  }
+  if (!payload) throw new Error('OpenRouter tool canary returned invalid JSON')
+  return validateOpenRouterToolCanaryResponse(payload, token)
 }
 
 function buildOCRConfig({ token }) {
@@ -786,12 +931,19 @@ async function getPull(github, context, pullNumber) {
   return response.data
 }
 
+function isEligibleBaseBranch({ baseRef, context }) {
+  return (
+    baseRef === context.payload.repository.default_branch ||
+    CONSOLIDATION_BASE_BRANCHES.includes(baseRef)
+  )
+}
+
 function isEligibleDefaultPull({ pull, context, baseSha, headSha }) {
   const repository = repositoryName(context)
   return (
     pull.state === 'open' &&
     !pull.draft &&
-    pull.base.ref === context.payload.repository.default_branch &&
+    isEligibleBaseBranch({ baseRef: pull.base.ref, context }) &&
     pull.base.repo.full_name === repository &&
     pull.head.repo?.full_name === repository &&
     (!baseSha || pull.base.sha === baseSha) &&
@@ -2114,7 +2266,7 @@ async function initializeFinalReview({
       if (!eligibility.eligible) {
         state = 'error'
         description =
-          'Final review requires the default branch or a verified native stack member'
+          'Final review requires the default branch, a designated consolidation branch, or a verified native stack member'
       }
     } catch (error) {
       state = 'error'
@@ -2164,7 +2316,7 @@ async function authorizeFinalReview({ github, context, core, trustedSha }) {
   const plan = await buildReviewPlan({ github, context, pull, trustedSha })
   if (!plan.eligible) {
     return deny(
-      'Final review requires an open, ready PR targeting the default branch or a verified native stack'
+      'Final review requires an open, ready PR targeting the default branch, a designated consolidation branch, or a verified native stack'
     )
   }
   if (
@@ -3138,7 +3290,9 @@ async function verifyCurrentIndividualFinalReview({ repository, prNumber }) {
 function runCli() {
   const command = process.argv[2]
   if (command === 'configure-ocr') {
-    writeOCRConfig({ token: fs.readFileSync(0, 'utf8') })
+    writeOCRConfig({
+      token: fs.readFileSync(0, 'utf8'),
+    })
     console.log('Ephemeral OCR configuration created')
     return
   }
@@ -3146,6 +3300,17 @@ function runCli() {
     removeOCRConfig()
     console.log('Ephemeral OCR configuration removed')
     return
+  }
+  if (command === 'verify-openrouter-tools') {
+    return verifyOpenRouterToolAccess({
+      token: fs.readFileSync(0, 'utf8'),
+    }).then(({ provider }) => {
+      console.log(
+        provider
+          ? `OpenRouter tool canary passed via ${provider}`
+          : 'OpenRouter tool canary passed via automatic routing'
+      )
+    })
   }
   if (command === 'verify-clean-status') {
     const repository = process.argv[3]
@@ -3197,6 +3362,7 @@ module.exports = {
   buildExpectedPromotionContent,
   buildOCRPolicy,
   buildOCRConfig,
+  buildOpenRouterToolCanaryRequest,
   buildReviewPlan,
   buildReviewBackground,
   createGhGithub,
@@ -3235,5 +3401,6 @@ module.exports = {
   validatePromotionContract,
   validateFinding,
   verifyPromotionBuilds,
+  verifyOpenRouterToolAccess,
   writeOCRConfig,
 }

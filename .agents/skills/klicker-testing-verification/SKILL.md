@@ -82,6 +82,12 @@ For Next framework or bundler changes, verify both repository-supported paths. `
 
 The Playwright build job must tar the five `.next` trees before artifact upload and extract them in each shard. Direct artifact upload dereferences Turbopack's `.next/node_modules` symlinks and can omit transitive runtime links, producing HTTP 500 before the suite starts. Each shard restores the generated GraphQL client map from `packages/graphql/dist/client.json` before tests because Turbo cache hits do not restore generated source files.
 
+Public PR ARM64 jobs may restore GitHub caches but must use the restore-only
+cache action. They must not spend post-job time uploading pnpm or Turbo caches
+from public PR code. Keep the build at four concurrent Turbo tasks for the
+four-runner, 16-vCPU host layout, and keep service health polling at five
+seconds so container readiness is detected promptly.
+
 ## Decide whether e2e is warranted locally
 
 CI runs Playwright (8-way shard) on almost every code PR — CI is the real e2e gate. Run e2e locally only when your change plausibly breaks a flow (new UI, changed selectors/`data-cy`, auth/redirect changes, activity lifecycle). If you do:
