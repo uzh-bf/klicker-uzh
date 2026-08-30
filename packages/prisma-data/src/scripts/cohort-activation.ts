@@ -1,5 +1,13 @@
-import { createHash } from 'node:crypto'
-import { chmod, mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { createHash, randomUUID } from 'node:crypto'
+import {
+  chmod,
+  mkdir,
+  readFile,
+  rename,
+  rm,
+  rmdir,
+  writeFile,
+} from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
 
@@ -7,6 +15,7 @@ export const SOURCE_SERVER_NAME = 'Klicker-compat' as const
 export const TARGET_SERVER_NAME = 'KB' as const
 export const TARGET_AUTH_TYPE = 'scope_token' as const
 export const DOC_QUERY_TOOL = 'doc_query' as const
+export const SOURCE_CHATBOT_ID_HEADER = 'Chatbot-ID' as const
 export const ACTIVATION_RECEIPT_VERSION = 1 as const
 
 export const EXPECTED_CORPORA = 15 as const
@@ -23,10 +32,17 @@ export const EXCLUDED_SOURCE_TOOLS = [
   'vorkurs2_expert',
 ] as const
 
+export const EXPECTED_EXCLUDED_TOOL_COUNTS = {
+  bf1_expert: 2,
+  df_cf2_expert: 1,
+  vorkurs2_expert: 1,
+} as const
+
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
 const MODE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/
+const FINGERPRINT_PATTERN = /^[0-9a-f]{64}$/i
 const CONTROL_CHARACTER_PATTERN = /\p{Cc}/u
 
 export type JsonValue =
@@ -97,6 +113,12 @@ export type KnowledgeBaseRecord = {
 export type ChatbotRecord = {
   id: string
   courseId: string
+  ownerId: string
+  updatedAt: Date
+}
+
+export type CourseRecord = {
+  id: string
   ownerId: string
   updatedAt: Date
 }
@@ -173,6 +195,7 @@ export type ActivationConfigCreate = {
 export type ActivationTransactionStore = {
   findKnowledgeBaseById(id: string): Promise<KnowledgeBaseRecord | null>
   findKnowledgeBasesByName(name: string): Promise<KnowledgeBaseRecord[]>
+  findCourseById(id: string): Promise<CourseRecord | null>
   findChatbotById(id: string): Promise<ChatbotRecord | null>
   findServersByName(name: string): Promise<ActivationServerRecord[]>
   findConfigById(id: string): Promise<ActivationConfigRecord | null>
@@ -204,8 +227,10 @@ export type ReceiptAliases = {
   sourceServer: typeof SOURCE_SERVER_NAME
   targetServer: typeof TARGET_SERVER_NAME
   corpora: string[]
+  courses: string[]
   chatbots: string[]
   configurations: string[]
+  excludedConfigurations: string[]
 }
 
 export type ReceiptCounts = {
@@ -257,8 +282,10 @@ export type ActivationReceipt = {
   sourceServer: SafeServerSnapshot
   targetServer: SafeServerSnapshot
   corpora: SafeIdentitySnapshot[]
+  courses: SafeIdentitySnapshot[]
   chatbots: SafeIdentitySnapshot[]
   legacyConfigurations: SafeConfigSnapshot[]
+  excludedConfigurations: SafeConfigSnapshot[]
   bindings: SafeBindingSnapshot[]
   configurations: SafeConfigSnapshot[]
   switchedChatbotAliases: string[]
@@ -283,10 +310,14 @@ export type ActivationReceiptPayload =
 
 export interface ActivationReceiptStore {
   read(): Promise<ActivationReceiptPayload | null>
-  write(receipt: ActivationReceiptPayload): Promise<void>
+  compareAndSwap(
+    expectedDigest: string | null,
+    receipt: ActivationReceiptPayload
+  ): Promise<void>
 }
 
 export type ActivationOptions = {
+  expectedManifestFingerprint: string
   receiptStore?: ActivationReceiptStore
   target: ActivationTarget
   dryRun?: boolean
@@ -306,7 +337,9 @@ export type ActivationResult = {
   aliases: {
     sourceServer: typeof SOURCE_SERVER_NAME
     targetServer: typeof TARGET_SERVER_NAME
+    courseAliases: string[]
     chatbotAliases: string[]
+    excludedConfigurationAliases: string[]
     switchedChatbotAliases: string[]
   }
   fingerprints: {
@@ -331,10 +364,15 @@ export class CohortActivationError extends Error {
 type ManifestIndex = {
   corpusByAlias: Map<string, FrozenCorpus>
   corpusAliasByChatbotId: Map<string, string>
+  courseAliasForId: Map<string, string>
+  courseIdByAlias: Map<string, string>
   chatbotAliasForId: Map<string, string>
   chatbotIdByAlias: Map<string, string>
   configByAlias: Map<string, FrozenConfiguration>
   configsByChatbotAlias: Map<string, Array<[string, FrozenConfiguration]>>
+  excludedByAlias: Map<string, FrozenExcludedConfiguration>
+  excludedConfigAliasById: Map<string, string>
+  excludedChatbotAliasForId: Map<string, string>
   bindingAliasByChatbotAlias: Map<string, string>
   aliases: ReceiptAliases
   counts: ReceiptCounts
@@ -345,8 +383,10 @@ type InspectedState = {
   sourceServer: ActivationServerRecord
   targetServer: ActivationServerRecord | null
   corpora: Map<string, KnowledgeBaseRecord>
+  courses: Map<string, CourseRecord>
   chatbots: Map<string, ChatbotRecord>
   legacyConfigurations: Map<string, ActivationConfigRecord>
+  excludedConfigurations: Map<string, ActivationConfigRecord>
   configurations: Map<string, ActivationConfigRecord | null>
   bindings: Map<string, ActivationBindingRecord | null>
   otherBindingsByChatbotAlias: Map<string, ActivationBindingRecord[]>
@@ -483,6 +523,26 @@ export function fingerprintManifestText(contents: string): string {
   return createHash('sha256').update(contents).digest('hex')
 }
 
+function requireManifestFingerprint(
+  manifest: FrozenCohortManifest,
+  expectedManifestFingerprint: string | undefined
+): string {
+  if (
+    typeof expectedManifestFingerprint !== 'string' ||
+    !FINGERPRINT_PATTERN.test(expectedManifestFingerprint)
+  ) {
+    fail(
+      'MANIFEST_FINGERPRINT_REQUIRED',
+      'an approved manifest fingerprint is required'
+    )
+  }
+  const actualFingerprint = fingerprintManifest(manifest)
+  if (actualFingerprint !== expectedManifestFingerprint) {
+    fail('MANIFEST_DRIFT', 'manifest fingerprint does not match contents')
+  }
+  return actualFingerprint
+}
+
 function assertManifestShape(manifest: FrozenCohortManifest): void {
   if (!isPlainObject(manifest)) fail('INVALID_MANIFEST', 'manifest is invalid')
   if (manifest.version !== 1) {
@@ -521,6 +581,7 @@ export function validateCohortManifest(manifest: FrozenCohortManifest): void {
   const excludedIds = new Set<string>()
   const excludedChatbotIds = new Set<string>()
   const sourceServerIds = new Set<string>()
+  const excludedToolCounts = new Map<string, number>()
 
   for (const corpus of manifest.corpora) {
     assertUuid(corpus.kbId)
@@ -627,6 +688,17 @@ export function validateCohortManifest(manifest: FrozenCohortManifest): void {
   if (sourceServerIds.size === 0) {
     fail('INVALID_MANIFEST', 'source server is missing')
   }
+  const [cohortSourceServerId] = sourceServerIds
+  for (const configuration of manifest.corpora.flatMap(
+    (corpus) => corpus.configurations
+  )) {
+    if (configuration.sourceServerId !== cohortSourceServerId) {
+      fail(
+        'SOURCE_SERVER_MISMATCH',
+        'cohort configurations use multiple servers'
+      )
+    }
+  }
   for (const entry of manifest.excluded) {
     assertUuid(entry.configId)
     assertUuid(entry.chatbotId)
@@ -647,12 +719,27 @@ export function validateCohortManifest(manifest: FrozenCohortManifest): void {
     }
     excludedIds.add(entry.configId)
     excludedChatbotIds.add(entry.chatbotId)
+    excludedToolCounts.set(
+      entry.tool,
+      (excludedToolCounts.get(entry.tool) ?? 0) + 1
+    )
     if (chatbotIds.has(entry.chatbotId)) {
       fail('EXCLUDED_CORPUS', 'an excluded chatbot is in the cohort')
     }
   }
   if (excludedChatbotIds.size !== EXPECTED_EXCLUDED_CHATBOTS) {
     fail('COHORT_COUNT_MISMATCH', 'excluded chatbot count is not approved')
+  }
+  for (const tool of EXCLUDED_SOURCE_TOOLS) {
+    if (excludedToolCounts.get(tool) !== EXPECTED_EXCLUDED_TOOL_COUNTS[tool]) {
+      fail(
+        'COHORT_COUNT_MISMATCH',
+        'the excluded tool multiset is not approved'
+      )
+    }
+  }
+  if (excludedToolCounts.size !== EXCLUDED_SOURCE_TOOLS.length) {
+    fail('COHORT_COUNT_MISMATCH', 'the excluded tool multiset is not approved')
   }
   if (
     manifest.fingerprint &&
@@ -686,39 +773,94 @@ export function createFileActivationReceiptStore(
   receiptPath: string
 ): ActivationReceiptStore {
   const absolutePath = resolve(receiptPath)
+  const lockPath = `${absolutePath}.lock`
+
+  async function readCurrent(): Promise<ActivationReceiptPayload | null> {
+    try {
+      const contents = await readFile(absolutePath, 'utf8')
+      const payload = JSON.parse(contents) as ActivationReceiptPayload
+      assertPayloadDigest(payload)
+      return payload
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        error.code === 'ENOENT'
+      ) {
+        return null
+      }
+      if (error instanceof CohortActivationError) throw error
+      fail('RECEIPT_READ_FAILED', 'could not read activation receipt')
+    }
+  }
+
   return {
     async read() {
+      return readCurrent()
+    },
+    async compareAndSwap(expectedDigest, receipt) {
+      if (
+        expectedDigest !== null &&
+        !FINGERPRINT_PATTERN.test(expectedDigest)
+      ) {
+        fail('RECEIPT_CAS_FAILED', 'receipt expected digest is invalid')
+      }
+      assertPayloadDigest(receipt)
       try {
-        const contents = await readFile(absolutePath, 'utf8')
-        return JSON.parse(contents) as ActivationReceiptPayload
+        await mkdir(dirname(absolutePath), { recursive: true })
+      } catch {
+        fail('RECEIPT_WRITE_FAILED', 'receipt directory is unavailable')
+      }
+      try {
+        await mkdir(lockPath)
       } catch (error) {
         if (
           error instanceof Error &&
           'code' in error &&
-          error.code === 'ENOENT'
+          error.code === 'EEXIST'
         ) {
-          return null
+          fail('RECEIPT_LOCKED', 'receipt is already being updated')
         }
-        fail('RECEIPT_READ_FAILED', 'could not read activation receipt')
+        fail('RECEIPT_WRITE_FAILED', 'receipt lock is unavailable')
       }
-    },
-    async write(receipt) {
-      await mkdir(dirname(absolutePath), { recursive: true })
-      const temporaryPath = `${absolutePath}.tmp-${process.pid}`
-      await writeFile(temporaryPath, `${JSON.stringify(receipt, null, 2)}\n`, {
-        encoding: 'utf8',
-        flag: 'wx',
-        mode: 0o600,
-      })
-      await chmod(temporaryPath, 0o600)
-      await rename(temporaryPath, absolutePath)
+      const temporaryPath = `${absolutePath}.tmp-${process.pid}-${randomUUID()}`
+      try {
+        const current = await readCurrent()
+        if ((current?.payloadDigest ?? null) !== expectedDigest) {
+          fail('RECEIPT_CAS_FAILED', 'receipt changed concurrently')
+        }
+        if (current) assertReceiptTransition(current, receipt)
+        else if (!isReceiptIntent(receipt)) {
+          fail('RECEIPT_STATE', 'a new receipt must start with intent')
+        }
+        if (current?.payloadDigest === receipt.payloadDigest) return
+        await writeFile(
+          temporaryPath,
+          `${JSON.stringify(receipt, null, 2)}\n`,
+          {
+            encoding: 'utf8',
+            flag: 'wx',
+            mode: 0o600,
+          }
+        )
+        await chmod(temporaryPath, 0o600)
+        await rename(temporaryPath, absolutePath)
+      } finally {
+        await rm(temporaryPath, { force: true }).catch(() => undefined)
+        await rmdir(lockPath).catch(() => undefined)
+      }
     },
   }
 }
 
 type PrismaActivationClient = Pick<
   PrismaClient,
-  'kB' | 'chatbot' | 'kBChatbot' | 'chatbotMCPServer' | 'chatbotMCPConfig'
+  | 'kB'
+  | 'course'
+  | 'chatbot'
+  | 'kBChatbot'
+  | 'chatbotMCPServer'
+  | 'chatbotMCPConfig'
 >
 
 function mapKnowledgeBase(record: {
@@ -744,6 +886,14 @@ function mapChatbot(record: {
     ownerId: record.course.ownerId,
     updatedAt: record.updatedAt,
   }
+}
+
+function mapCourse(record: {
+  id: string
+  ownerId: string
+  updatedAt: Date
+}): CourseRecord {
+  return record
 }
 
 function mapServer(record: {
@@ -847,6 +997,13 @@ function createPrismaActivationDelegate(
         select: kbSelect,
       })
       return records.map(mapKnowledgeBase)
+    },
+    async findCourseById(id) {
+      const record = await client.course.findUnique({
+        where: { id },
+        select: { id: true, ownerId: true, updatedAt: true },
+      })
+      return record ? mapCourse(record) : null
     },
     async findChatbotById(id) {
       const record = await client.chatbot.findUnique({
@@ -972,6 +1129,8 @@ function buildManifestIndex(manifest: FrozenCohortManifest): ManifestIndex {
   )
   const corpusByAlias = new Map<string, FrozenCorpus>()
   const corpusAliasByChatbotId = new Map<string, string>()
+  const courseAliasForId = new Map<string, string>()
+  const courseIdByAlias = new Map<string, string>()
   sortedCorpora.forEach((corpus, index) => {
     const alias = `corpus-${padAlias(index)}`
     corpusByAlias.set(alias, corpus)
@@ -981,6 +1140,15 @@ function buildManifestIndex(manifest: FrozenCohortManifest): ManifestIndex {
       }
       corpusAliasByChatbotId.set(chatbotId, alias)
     }
+  })
+
+  const courseIds = [
+    ...new Set(sortedCorpora.flatMap((corpus) => corpus.courseIds)),
+  ].sort()
+  courseIds.forEach((courseId, index) => {
+    const alias = `course-${padAlias(index)}`
+    courseAliasForId.set(courseId, alias)
+    courseIdByAlias.set(alias, courseId)
   })
 
   const chatbotIds = [...corpusAliasByChatbotId.keys()].sort()
@@ -1010,6 +1178,26 @@ function buildManifestIndex(manifest: FrozenCohortManifest): ManifestIndex {
     configsByChatbotAlias.set(chatbotAlias, list)
   })
 
+  const sortedExcluded = [...manifest.excluded].sort((left, right) =>
+    left.configId.localeCompare(right.configId)
+  )
+  const excludedByAlias = new Map<string, FrozenExcludedConfiguration>()
+  const excludedConfigAliasById = new Map<string, string>()
+  sortedExcluded.forEach((configuration, index) => {
+    const alias = `excluded-config-${padAlias(index)}`
+    excludedByAlias.set(alias, configuration)
+    excludedConfigAliasById.set(configuration.configId, alias)
+  })
+  const excludedChatbotAliasForId = new Map<string, string>()
+  ;[...new Set(sortedExcluded.map((configuration) => configuration.chatbotId))]
+    .sort()
+    .forEach((chatbotId, index) => {
+      excludedChatbotAliasForId.set(
+        chatbotId,
+        `excluded-chatbot-${padAlias(index)}`
+      )
+    })
+
   const bindingAliasByChatbotAlias = new Map<string, string>()
   for (const chatbotAlias of chatbotIdByAlias.keys()) {
     const chatbotId = chatbotIdByAlias.get(chatbotAlias)!
@@ -1024,17 +1212,24 @@ function buildManifestIndex(manifest: FrozenCohortManifest): ManifestIndex {
   return {
     corpusByAlias,
     corpusAliasByChatbotId,
+    courseAliasForId,
+    courseIdByAlias,
     chatbotAliasForId,
     chatbotIdByAlias,
     configByAlias,
     configsByChatbotAlias,
+    excludedByAlias,
+    excludedConfigAliasById,
+    excludedChatbotAliasForId,
     bindingAliasByChatbotAlias,
     aliases: {
       sourceServer: SOURCE_SERVER_NAME,
       targetServer: TARGET_SERVER_NAME,
       corpora: [...corpusByAlias.keys()].sort(),
+      courses: [...courseIdByAlias.keys()].sort(),
       chatbots: [...chatbotIdByAlias.keys()].sort(),
       configurations: [...configByAlias.keys()].sort(),
+      excludedConfigurations: [...excludedByAlias.keys()].sort(),
     },
     counts: {
       corpora: EXPECTED_CORPORA,
@@ -1043,9 +1238,12 @@ function buildManifestIndex(manifest: FrozenCohortManifest): ManifestIndex {
       configurations: EXPECTED_CONFIGURATIONS,
       bindings: EXPECTED_BINDINGS,
     },
-    sourceServerIds: new Set(
-      sortedConfigurations.map((configuration) => configuration.sourceServerId)
-    ),
+    sourceServerIds: new Set([
+      ...sortedConfigurations.map(
+        (configuration) => configuration.sourceServerId
+      ),
+      ...sortedExcluded.map((configuration) => configuration.serverId),
+    ]),
   }
 }
 
@@ -1079,13 +1277,408 @@ function makeReceipt(
   }
 }
 
-function assertPayloadDigest(payload: ActivationReceiptPayload): void {
-  if (payload.receiptVersion !== ACTIVATION_RECEIPT_VERSION) {
-    fail('RECEIPT_INVALID', 'receipt version is unsupported')
+const CORPUS_ALIAS_PATTERN = /^corpus-\d{3}$/
+const COURSE_ALIAS_PATTERN = /^course-\d{3}$/
+const CHATBOT_ALIAS_PATTERN = /^chatbot-\d{3}$/
+const EXCLUDED_CONFIGURATION_ALIAS_PATTERN = /^excluded-config-\d{3}$/
+const CONFIGURATION_ALIAS_PATTERN = /^config-\d{3}$/
+const BINDING_ALIAS_PATTERN = /^binding-corpus-\d{3}-chatbot-\d{3}$/
+const EXCLUDED_CHATBOT_ALIAS_PATTERN = /^excluded-chatbot-\d{3}$/
+
+function receiptInvalid(message: string): never {
+  fail('RECEIPT_INVALID', message)
+}
+
+function assertReceiptObject(
+  value: unknown
+): asserts value is Record<string, unknown> {
+  if (!isPlainObject(value)) receiptInvalid('receipt shape is invalid')
+}
+
+function assertReceiptKeys(
+  value: Record<string, unknown>,
+  keys: readonly string[]
+): void {
+  const actual = Object.keys(value).sort()
+  const expected = [...keys].sort()
+  if (canonicalJson(actual) !== canonicalJson(expected)) {
+    receiptInvalid('receipt shape is invalid')
   }
+}
+
+function assertReceiptFingerprint(value: unknown): asserts value is string {
+  if (typeof value !== 'string' || !FINGERPRINT_PATTERN.test(value)) {
+    receiptInvalid('receipt fingerprint is invalid')
+  }
+}
+
+function assertReceiptTimestamp(value: unknown): asserts value is string {
+  if (typeof value !== 'string') receiptInvalid('receipt timestamp is invalid')
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString() !== value) {
+    receiptInvalid('receipt timestamp is invalid')
+  }
+}
+
+function assertReceiptAlias(
+  value: unknown,
+  pattern: RegExp
+): asserts value is string {
+  if (typeof value !== 'string' || !pattern.test(value)) {
+    receiptInvalid('receipt alias is invalid')
+  }
+}
+
+function assertReceiptAliasArray(
+  value: unknown,
+  pattern: RegExp,
+  expectedLength: number
+): asserts value is string[] {
+  if (
+    !Array.isArray(value) ||
+    value.length !== expectedLength ||
+    value.some((alias) => typeof alias !== 'string' || !pattern.test(alias))
+  ) {
+    receiptInvalid('receipt aliases are invalid')
+  }
+  if (new Set(value).size !== value.length) {
+    receiptInvalid('receipt aliases are duplicated')
+  }
+}
+
+function assertReceiptCounts(value: unknown): asserts value is ReceiptCounts {
+  assertReceiptObject(value)
+  assertReceiptKeys(value, [
+    'corpora',
+    'courses',
+    'chatbots',
+    'configurations',
+    'bindings',
+  ])
+  if (
+    value.corpora !== EXPECTED_CORPORA ||
+    value.courses !== EXPECTED_COURSES ||
+    value.chatbots !== EXPECTED_CHATBOTS ||
+    value.configurations !== EXPECTED_CONFIGURATIONS ||
+    value.bindings !== EXPECTED_BINDINGS
+  ) {
+    receiptInvalid('receipt counts are invalid')
+  }
+}
+
+function assertReceiptAliases(value: unknown): asserts value is ReceiptAliases {
+  assertReceiptObject(value)
+  assertReceiptKeys(value, [
+    'sourceServer',
+    'targetServer',
+    'corpora',
+    'courses',
+    'chatbots',
+    'configurations',
+    'excludedConfigurations',
+  ])
+  if (
+    value.sourceServer !== SOURCE_SERVER_NAME ||
+    value.targetServer !== TARGET_SERVER_NAME
+  ) {
+    receiptInvalid('receipt server aliases are invalid')
+  }
+  assertReceiptAliasArray(value.corpora, CORPUS_ALIAS_PATTERN, EXPECTED_CORPORA)
+  assertReceiptAliasArray(value.courses, COURSE_ALIAS_PATTERN, EXPECTED_COURSES)
+  assertReceiptAliasArray(
+    value.chatbots,
+    CHATBOT_ALIAS_PATTERN,
+    EXPECTED_CHATBOTS
+  )
+  assertReceiptAliasArray(
+    value.configurations,
+    CONFIGURATION_ALIAS_PATTERN,
+    EXPECTED_CONFIGURATIONS
+  )
+  assertReceiptAliasArray(
+    value.excludedConfigurations,
+    EXCLUDED_CONFIGURATION_ALIAS_PATTERN,
+    EXPECTED_EXCLUDED_CONFIGURATIONS
+  )
+}
+
+function assertReceiptIdentitySnapshot(
+  value: unknown,
+  aliases: string[],
+  pattern: RegExp
+): void {
+  if (!Array.isArray(value) || value.length !== aliases.length) {
+    receiptInvalid('receipt snapshots are invalid')
+  }
+  const seen = new Set<string>()
+  for (const entry of value) {
+    assertReceiptObject(entry)
+    assertReceiptKeys(entry, ['alias', 'fingerprint', 'updatedAt'])
+    assertReceiptAlias(entry.alias, pattern)
+    assertReceiptFingerprint(entry.fingerprint)
+    assertReceiptTimestamp(entry.updatedAt)
+    if (seen.has(entry.alias))
+      receiptInvalid('receipt snapshots are duplicated')
+    seen.add(entry.alias)
+  }
+  if (canonicalJson([...seen].sort()) !== canonicalJson([...aliases].sort())) {
+    receiptInvalid('receipt snapshot aliases are invalid')
+  }
+}
+
+function assertReceiptConfigSnapshots(
+  value: unknown,
+  aliases: string[],
+  expectedAliasPattern: RegExp,
+  chatbotAliasPattern = CHATBOT_ALIAS_PATTERN
+): void {
+  if (!Array.isArray(value) || value.length !== aliases.length) {
+    receiptInvalid('receipt configuration snapshots are invalid')
+  }
+  const seen = new Set<string>()
+  for (const entry of value) {
+    assertReceiptObject(entry)
+    assertReceiptKeys(entry, [
+      'alias',
+      'fingerprint',
+      'updatedAt',
+      'chatbotAlias',
+      'chatMode',
+      'isEnabled',
+    ])
+    assertReceiptAlias(entry.alias, expectedAliasPattern)
+    assertReceiptFingerprint(entry.fingerprint)
+    assertReceiptTimestamp(entry.updatedAt)
+    assertReceiptAlias(entry.chatbotAlias, chatbotAliasPattern)
+    assertModeForReceipt(entry.chatMode)
+    if (typeof entry.isEnabled !== 'boolean') {
+      receiptInvalid('receipt configuration state is invalid')
+    }
+    if (seen.has(entry.alias))
+      receiptInvalid('receipt snapshots are duplicated')
+    seen.add(entry.alias)
+  }
+  if (canonicalJson([...seen].sort()) !== canonicalJson([...aliases].sort())) {
+    receiptInvalid('receipt snapshot aliases are invalid')
+  }
+}
+
+function assertModeForReceipt(value: unknown): asserts value is string {
+  if (typeof value !== 'string' || !MODE_PATTERN.test(value)) {
+    receiptInvalid('receipt chat mode is invalid')
+  }
+}
+
+function assertReceiptBindingSnapshots(
+  value: unknown,
+  expectedLength: number
+): void {
+  if (!Array.isArray(value) || value.length !== expectedLength) {
+    receiptInvalid('receipt binding snapshots are invalid')
+  }
+  const seen = new Set<string>()
+  for (const entry of value) {
+    assertReceiptObject(entry)
+    assertReceiptKeys(entry, [
+      'alias',
+      'fingerprint',
+      'updatedAt',
+      'chatbotAlias',
+      'corpusAlias',
+      'isEnabled',
+    ])
+    assertReceiptAlias(entry.alias, BINDING_ALIAS_PATTERN)
+    assertReceiptFingerprint(entry.fingerprint)
+    assertReceiptTimestamp(entry.updatedAt)
+    assertReceiptAlias(entry.chatbotAlias, CHATBOT_ALIAS_PATTERN)
+    assertReceiptAlias(entry.corpusAlias, CORPUS_ALIAS_PATTERN)
+    if (typeof entry.isEnabled !== 'boolean') {
+      receiptInvalid('receipt binding state is invalid')
+    }
+    if (seen.has(entry.alias))
+      receiptInvalid('receipt snapshots are duplicated')
+    seen.add(entry.alias)
+  }
+}
+
+function assertReceiptServerSnapshot(
+  value: unknown,
+  alias: typeof SOURCE_SERVER_NAME | typeof TARGET_SERVER_NAME
+): void {
+  assertReceiptObject(value)
+  assertReceiptKeys(value, [
+    'alias',
+    'fingerprint',
+    'hasTransportCredential',
+    'isActive',
+    'updatedAt',
+  ])
+  if (value.alias !== alias) receiptInvalid('receipt server alias is invalid')
+  assertReceiptFingerprint(value.fingerprint)
+  assertReceiptTimestamp(value.updatedAt)
+  if (
+    typeof value.hasTransportCredential !== 'boolean' ||
+    typeof value.isActive !== 'boolean'
+  ) {
+    receiptInvalid('receipt server state is invalid')
+  }
+}
+
+function assertReceiptCommonFields(value: Record<string, unknown>): void {
+  if (value.receiptVersion !== ACTIVATION_RECEIPT_VERSION) {
+    receiptInvalid('receipt version is unsupported')
+  }
+  assertReceiptFingerprint(value.manifestFingerprint)
+  assertReceiptCounts(value.counts)
+  assertReceiptAliases(value.aliases)
+  assertReceiptFingerprint(value.payloadDigest)
+}
+
+function assertPayloadShape(
+  value: unknown
+): asserts value is ActivationReceiptPayload {
+  assertReceiptObject(value)
+  if (value.state === 'preparing') {
+    assertReceiptKeys(value, [
+      'receiptVersion',
+      'manifestFingerprint',
+      'counts',
+      'aliases',
+      'state',
+      'payloadDigest',
+    ])
+    assertReceiptCommonFields(value)
+    return
+  }
+  assertReceiptKeys(value, [
+    'receiptVersion',
+    'manifestFingerprint',
+    'counts',
+    'aliases',
+    'sourceServer',
+    'targetServer',
+    'corpora',
+    'courses',
+    'chatbots',
+    'legacyConfigurations',
+    'excludedConfigurations',
+    'bindings',
+    'configurations',
+    'switchedChatbotAliases',
+    'pendingChatbotAlias',
+    'pendingRollbackAliases',
+    'state',
+    'payloadDigest',
+  ])
+  assertReceiptCommonFields(value)
+  if (
+    value.state !== 'prepared' &&
+    value.state !== 'switching' &&
+    value.state !== 'switched' &&
+    value.state !== 'rolling_back' &&
+    value.state !== 'rolled_back'
+  ) {
+    receiptInvalid('receipt state is invalid')
+  }
+  assertReceiptAliases(value.aliases)
+  const aliases = value.aliases
+  assertReceiptServerSnapshot(value.sourceServer, SOURCE_SERVER_NAME)
+  assertReceiptServerSnapshot(value.targetServer, TARGET_SERVER_NAME)
+  assertReceiptIdentitySnapshot(
+    value.corpora,
+    aliases.corpora,
+    CORPUS_ALIAS_PATTERN
+  )
+  assertReceiptIdentitySnapshot(
+    value.courses,
+    aliases.courses,
+    COURSE_ALIAS_PATTERN
+  )
+  assertReceiptIdentitySnapshot(
+    value.chatbots,
+    aliases.chatbots,
+    CHATBOT_ALIAS_PATTERN
+  )
+  assertReceiptConfigSnapshots(
+    value.legacyConfigurations,
+    aliases.configurations,
+    CONFIGURATION_ALIAS_PATTERN
+  )
+  assertReceiptConfigSnapshots(
+    value.excludedConfigurations,
+    aliases.excludedConfigurations,
+    EXCLUDED_CONFIGURATION_ALIAS_PATTERN,
+    EXCLUDED_CHATBOT_ALIAS_PATTERN
+  )
+  assertReceiptBindingSnapshots(value.bindings, EXPECTED_BINDINGS)
+  assertReceiptConfigSnapshots(
+    value.configurations,
+    aliases.configurations,
+    CONFIGURATION_ALIAS_PATTERN
+  )
+  const switchedChatbotAliases = value.switchedChatbotAliases
+  if (!Array.isArray(switchedChatbotAliases)) {
+    receiptInvalid('receipt switched aliases are invalid')
+  }
+  assertReceiptAliasArray(
+    switchedChatbotAliases,
+    CHATBOT_ALIAS_PATTERN,
+    switchedChatbotAliases.length
+  )
+  if (
+    value.pendingChatbotAlias !== null &&
+    (typeof value.pendingChatbotAlias !== 'string' ||
+      !CHATBOT_ALIAS_PATTERN.test(value.pendingChatbotAlias))
+  ) {
+    receiptInvalid('receipt pending alias is invalid')
+  }
+  const pendingRollbackAliases = value.pendingRollbackAliases
+  if (!Array.isArray(pendingRollbackAliases)) {
+    receiptInvalid('receipt rollback aliases are invalid')
+  }
+  assertReceiptAliasArray(
+    pendingRollbackAliases,
+    CHATBOT_ALIAS_PATTERN,
+    pendingRollbackAliases.length
+  )
+}
+
+function assertPayloadDigest(
+  payload: unknown
+): asserts payload is ActivationReceiptPayload {
+  assertPayloadShape(payload)
   const { payloadDigest: _payloadDigest, ...withoutDigest } = payload
   if (fingerprint(withoutDigest) !== payload.payloadDigest) {
     fail('RECEIPT_INVALID', 'receipt digest does not match')
+  }
+}
+
+function assertReceiptTransition(
+  current: ActivationReceiptPayload,
+  next: ActivationReceiptPayload
+): void {
+  assertPayloadShape(current)
+  assertPayloadShape(next)
+  if (current.manifestFingerprint !== next.manifestFingerprint) {
+    fail('RECEIPT_MISMATCH', 'receipt manifest identity changed')
+  }
+  if (current.payloadDigest === next.payloadDigest) return
+  if (isReceiptIntent(current)) {
+    if (!isReceiptIntent(next) && next.state === 'prepared') return
+    fail('RECEIPT_STATE', 'receipt intent has an invalid transition')
+  }
+  if (isReceiptIntent(next)) {
+    fail('RECEIPT_STATE', 'a complete receipt cannot return to intent')
+  }
+  const allowed: Record<ActivationReceiptState, ActivationReceiptState[]> = {
+    prepared: ['switching'],
+    switching: ['switched', 'rolling_back'],
+    switched: ['rolling_back'],
+    rolling_back: ['switched', 'rolled_back'],
+    rolled_back: [],
+  }
+  if (!allowed[current.state].includes(next.state)) {
+    fail('RECEIPT_STATE', 'receipt state transition is invalid')
   }
 }
 
@@ -1260,10 +1853,16 @@ function assertSourceServer(
   if (!server || server.name !== SOURCE_SERVER_NAME) {
     fail('SOURCE_SERVER_MISSING', 'the unique source server is missing')
   }
-  if (!server.isActive || !server.authSecret?.trim()) {
+  if (
+    server.authType !== 'bearer' ||
+    !server.isActive ||
+    server.passChatbotId !== true ||
+    server.chatbotIdHeader !== SOURCE_CHATBOT_ID_HEADER ||
+    !server.authSecret?.trim()
+  ) {
     fail(
-      'SOURCE_CREDENTIAL_MISSING',
-      'the source transport credential is unavailable'
+      'SOURCE_SERVER_MISMATCH',
+      'the source server contract is not the approved legacy contract'
     )
   }
 }
@@ -1323,6 +1922,17 @@ function assertChatbot(
   }
 }
 
+function assertCourse(
+  course: CourseRecord | null,
+  courseId: string,
+  ownerId: string
+): asserts course is CourseRecord {
+  if (!course) fail('COURSE_MISSING', 'a manifest course is missing')
+  if (course.id !== courseId || course.ownerId !== ownerId) {
+    fail('COURSE_DRIFT', 'a course owner or identifier drifted')
+  }
+}
+
 function assertSourceConfiguration(
   config: ActivationConfigRecord | null,
   configuration: FrozenConfiguration
@@ -1338,6 +1948,29 @@ function assertSourceConfiguration(
     !jsonEqual(config.parameters, configuration.parameters)
   ) {
     fail('SOURCE_CONFIG_DRIFT', 'a legacy configuration drifted')
+  }
+}
+
+function assertExcludedConfiguration(
+  config: ActivationConfigRecord | null,
+  configuration: FrozenExcludedConfiguration,
+  sourceServerId: string
+): asserts config is ActivationConfigRecord {
+  if (
+    !config ||
+    config.id !== configuration.configId ||
+    config.chatbotId !== configuration.chatbotId ||
+    config.mcpServerId !== sourceServerId ||
+    config.chatMode !== configuration.chatMode ||
+    !jsonEqual(config.allowedTools, [configuration.tool]) ||
+    config.priority !== 0 ||
+    !jsonEqual(config.parameters, {
+      required: true,
+      toolAlias: DOC_QUERY_TOOL,
+    }) ||
+    typeof config.isEnabled !== 'boolean'
+  ) {
+    fail('EXCLUDED_CONFIG_DRIFT', 'an excluded configuration drifted')
   }
 }
 
@@ -1393,6 +2026,15 @@ async function inspectCohortState(
   }
   const sourceServer = sourceServers[0]!
   assertSourceServer(sourceServer)
+  if (
+    index.sourceServerIds.size !== 1 ||
+    !index.sourceServerIds.has(sourceServer.id)
+  ) {
+    fail(
+      'SOURCE_SERVER_MISMATCH',
+      'a frozen server identifier does not match the source server'
+    )
+  }
 
   const corpora = new Map<string, KnowledgeBaseRecord>()
   for (const [alias, corpus] of index.corpusByAlias.entries()) {
@@ -1412,6 +2054,17 @@ async function inspectCohortState(
     }
   }
 
+  const courses = new Map<string, CourseRecord>()
+  for (const [courseId, courseAlias] of index.courseAliasForId.entries()) {
+    const corpus = [...index.corpusByAlias.values()].find((candidate) =>
+      candidate.courseIds.includes(courseId)
+    )
+    if (!corpus) fail('INVALID_MANIFEST', 'a course corpus is missing')
+    const course = await store.findCourseById(courseId)
+    assertCourse(course, courseId, corpus.ownerId)
+    courses.set(courseAlias, course)
+  }
+
   const chatbots = new Map<string, ChatbotRecord>()
   for (const [
     chatbotId,
@@ -1423,12 +2076,27 @@ async function inspectCohortState(
     assertChatbot(chatbot, corpus)
     chatbots.set(chatbotAliasFor(index, chatbotId), chatbot)
   }
+  const referencedCourseIds = new Set(
+    [...chatbots.values()].map((chatbot) => chatbot.courseId)
+  )
+  for (const courseId of index.courseIdByAlias.values()) {
+    if (!referencedCourseIds.has(courseId)) {
+      fail('COURSE_REFERENCE_MISSING', 'a listed course is not referenced')
+    }
+  }
 
   const legacyConfigurations = new Map<string, ActivationConfigRecord>()
   for (const [alias, configuration] of index.configByAlias.entries()) {
     const config = await store.findConfigById(configuration.configId)
     assertSourceConfiguration(config, configuration)
     legacyConfigurations.set(alias, config)
+  }
+
+  const excludedConfigurations = new Map<string, ActivationConfigRecord>()
+  for (const [alias, configuration] of index.excludedByAlias.entries()) {
+    const config = await store.findConfigById(configuration.configId)
+    assertExcludedConfiguration(config, configuration, sourceServer.id)
+    excludedConfigurations.set(alias, config)
   }
 
   const targetServer = await findTargetServer(store)
@@ -1499,8 +2167,10 @@ async function inspectCohortState(
     sourceServer,
     targetServer,
     corpora,
+    courses,
     chatbots,
     legacyConfigurations,
+    excludedConfigurations,
     configurations,
     bindings,
     otherBindingsByChatbotAlias,
@@ -1520,14 +2190,16 @@ function assertNoEnabledTargetRows(state: InspectedState): void {
   }
 }
 
-function assertNoEnabledOtherBinding(state: InspectedState): void {
-  for (const bindings of state.otherBindingsByChatbotAlias.values()) {
-    if (bindings.some((binding) => binding.isEnabled)) {
-      fail(
-        'ENABLED_KB_CONFLICT',
-        'another knowledge base is already enabled for the chatbot'
-      )
-    }
+function assertNoEnabledOtherBinding(
+  state: InspectedState,
+  chatbotAlias: string
+): void {
+  const bindings = state.otherBindingsByChatbotAlias.get(chatbotAlias)
+  if (bindings?.some((binding) => binding.isEnabled)) {
+    fail(
+      'ENABLED_KB_CONFLICT',
+      'another knowledge base is already enabled for the chatbot'
+    )
   }
 }
 
@@ -1656,6 +2328,16 @@ function assertReceiptCurrent(
       knowledgeBaseFingerprint(current)
     )
   }
+  for (const alias of index.courseIdByAlias.keys()) {
+    const current = state.courses.get(alias)
+    if (!current) fail('SNAPSHOT_MISMATCH', 'a course is missing')
+    assertSafeIdentity(
+      findReceiptSnapshot(receipt.courses, alias),
+      alias,
+      current,
+      fingerprint(current)
+    )
+  }
   for (const [alias, expectedChatbotId] of index.chatbotIdByAlias.entries()) {
     const current = state.chatbots.get(alias)
     if (!current || current.id !== expectedChatbotId) {
@@ -1680,6 +2362,24 @@ function assertReceiptCurrent(
       fail(
         'SNAPSHOT_MISMATCH',
         'a legacy configuration snapshot no longer matches'
+      )
+    }
+  }
+  for (const [alias, config] of state.excludedConfigurations.entries()) {
+    const expected = findReceiptSnapshot(receipt.excludedConfigurations, alias)
+    const chatbotAlias = index.excludedChatbotAliasForId.get(config.chatbotId)
+    if (!chatbotAlias) {
+      fail('SNAPSHOT_MISMATCH', 'an excluded chatbot alias is missing')
+    }
+    assertSafeIdentity(expected, alias, config, configFingerprint(config))
+    if (
+      expected.chatbotAlias !== chatbotAlias ||
+      expected.chatMode !== config.chatMode ||
+      expected.isEnabled !== config.isEnabled
+    ) {
+      fail(
+        'SNAPSHOT_MISMATCH',
+        'an excluded configuration snapshot no longer matches'
       )
     }
   }
@@ -1772,11 +2472,32 @@ function makeReceiptFromState(
       return safeIdentitySnapshot(alias, kb, knowledgeBaseFingerprint(kb))
     })
     .sort((left, right) => left.alias.localeCompare(right.alias))
+  const courses = [...index.courseIdByAlias.entries()]
+    .map(([alias]) => {
+      const course = state.courses.get(alias)
+      if (!course) fail('COURSE_MISSING', 'a manifest course is missing')
+      return safeIdentitySnapshot(alias, course, fingerprint(course))
+    })
+    .sort((left, right) => left.alias.localeCompare(right.alias))
   const chatbots = [...index.chatbotIdByAlias.entries()]
     .map(([alias]) => {
       const chatbot = state.chatbots.get(alias)
       if (!chatbot) fail('CHATBOT_MISSING', 'a manifest chatbot is missing')
       return safeIdentitySnapshot(alias, chatbot, chatbotFingerprint(chatbot))
+    })
+    .sort((left, right) => left.alias.localeCompare(right.alias))
+  const excludedConfigurations = [...index.excludedByAlias.entries()]
+    .map(([alias, configuration]) => {
+      const config = state.excludedConfigurations.get(alias)
+      if (!config)
+        fail('EXCLUDED_CONFIG_MISSING', 'an excluded configuration is missing')
+      const chatbotAlias = index.excludedChatbotAliasForId.get(
+        configuration.chatbotId
+      )
+      if (!chatbotAlias) {
+        fail('INVALID_MANIFEST', 'an excluded chatbot alias is missing')
+      }
+      return safeConfigSnapshot(alias, chatbotAlias, config)
     })
     .sort((left, right) => left.alias.localeCompare(right.alias))
   const legacyConfigurations = [...index.configByAlias.entries()]
@@ -1823,8 +2544,10 @@ function makeReceiptFromState(
     sourceServer: safeServerSnapshot(state.sourceServer, SOURCE_SERVER_NAME),
     targetServer: safeServerSnapshot(state.targetServer, TARGET_SERVER_NAME),
     corpora,
+    courses,
     chatbots,
     legacyConfigurations,
+    excludedConfigurations,
     bindings,
     configurations,
     switchedChatbotAliases: [...new Set(input.switchedChatbotAliases)].sort(),
@@ -1859,7 +2582,9 @@ function operationResult(
     aliases: {
       sourceServer: SOURCE_SERVER_NAME,
       targetServer: TARGET_SERVER_NAME,
+      courseAliases: [...index.aliases.courses],
       chatbotAliases: [...index.aliases.chatbots],
+      excludedConfigurationAliases: [...index.aliases.excludedConfigurations],
       switchedChatbotAliases: receipt
         ? [...receipt.switchedChatbotAliases]
         : [],
@@ -1932,11 +2657,15 @@ function targetWriteCounts(state: InspectedState): ActivationWrites {
 export async function dryRunCohortActivation(
   store: ActivationStore,
   manifest: FrozenCohortManifest,
-  target: ActivationTarget
+  target: ActivationTarget,
+  expectedManifestFingerprint: string
 ): Promise<ActivationResult> {
   validateTarget(target)
   const index = buildManifestIndex(manifest)
-  const manifestFingerprint = fingerprintManifest(manifest)
+  const manifestFingerprint = requireManifestFingerprint(
+    manifest,
+    expectedManifestFingerprint
+  )
   const state = await inspectCohortState(store, index, target)
   if (state.targetServer) {
     assertTargetGroupsCoherent(state, index)
@@ -1957,18 +2686,28 @@ export async function prepareCohortActivation(
 ): Promise<ActivationResult> {
   validateTarget(options.target)
   const index = buildManifestIndex(manifest)
-  const manifestFingerprint = fingerprintManifest(manifest)
+  const manifestFingerprint = requireManifestFingerprint(
+    manifest,
+    options.expectedManifestFingerprint
+  )
   if (options.dryRun) {
-    return dryRunCohortActivation(store, manifest, options.target)
+    return dryRunCohortActivation(
+      store,
+      manifest,
+      options.target,
+      options.expectedManifestFingerprint
+    )
   }
   if (!options.receiptStore) {
     fail('RECEIPT_REQUIRED', 'a durable receipt store is required')
   }
 
   const existing = await readReceipt(options.receiptStore)
+  let expectedReceiptDigest: string | null = null
   if (existing) {
     assertReceiptMatchesIndex(existing, index, manifestFingerprint)
     if (isReceiptIntent(existing)) {
+      expectedReceiptDigest = existing.payloadDigest
       const intentState = await inspectCohortState(store, index, options.target)
       assertNoEnabledTargetRows(intentState)
       assertNoUntrackedPartialTargetRows(intentState, index)
@@ -1989,7 +2728,9 @@ export async function prepareCohortActivation(
     const initialState = await inspectCohortState(store, index, options.target)
     assertNoEnabledTargetRows(initialState)
     assertNoUntrackedPartialTargetRows(initialState, index)
-    await options.receiptStore.write(makeIntent(index, manifestFingerprint))
+    const intent = makeIntent(index, manifestFingerprint)
+    await options.receiptStore.compareAndSwap(null, intent)
+    expectedReceiptDigest = intent.payloadDigest
   }
 
   const writes = zeroWrites()
@@ -2085,7 +2826,7 @@ export async function prepareCohortActivation(
       switchedChatbotAliases: [],
     })
   })
-  await options.receiptStore.write(receipt)
+  await options.receiptStore.compareAndSwap(expectedReceiptDigest, receipt)
   return operationResult(
     'prepared',
     index,
@@ -2097,14 +2838,18 @@ export async function prepareCohortActivation(
 
 async function prepareOrReadReceipt(
   manifest: FrozenCohortManifest,
-  receiptStore: ActivationReceiptStore
+  receiptStore: ActivationReceiptStore,
+  expectedManifestFingerprint: string
 ): Promise<{
   index: ManifestIndex
   manifestFingerprint: string
   receipt: ActivationReceipt
 }> {
   const index = buildManifestIndex(manifest)
-  const manifestFingerprint = fingerprintManifest(manifest)
+  const manifestFingerprint = requireManifestFingerprint(
+    manifest,
+    expectedManifestFingerprint
+  )
   const payload = await readReceipt(receiptStore)
   const receipt = requireReceipt(payload, index, manifestFingerprint)
   return {
@@ -2169,21 +2914,49 @@ export async function switchCohortChatbot(
 ): Promise<ActivationResult> {
   validateTarget(options.target)
   const index = buildManifestIndex(manifest)
-  const manifestFingerprint = fingerprintManifest(manifest)
-  const chatbotId = resolveChatbotAlias(index, options.chatbotAlias)
-  void chatbotId
-  if (options.dryRun) {
-    return operationResult('dry-run', index, manifestFingerprint, zeroWrites())
-  }
+  const manifestFingerprint = requireManifestFingerprint(
+    manifest,
+    options.expectedManifestFingerprint
+  )
+  resolveChatbotAlias(index, options.chatbotAlias)
   if (!options.receiptStore) {
     fail('RECEIPT_REQUIRED', 'a durable receipt store is required')
   }
-  const { receipt } = await prepareOrReadReceipt(manifest, options.receiptStore)
+  const { receipt } = await prepareOrReadReceipt(
+    manifest,
+    options.receiptStore,
+    options.expectedManifestFingerprint
+  )
   validateReceiptState(receipt, ['prepared', 'switched'])
 
   const currentState = await inspectCohortState(store, index, options.target)
   assertReceiptCurrent(currentState, index, receipt)
   assertTargetGroupsCoherent(currentState, index)
+  assertNoEnabledOtherBinding(currentState, options.chatbotAlias)
+  if (options.dryRun) {
+    if (receipt.switchedChatbotAliases.includes(options.chatbotAlias)) {
+      assertCandidateGroup(
+        currentState,
+        index,
+        options.chatbotAlias,
+        'switched'
+      )
+    } else {
+      assertCandidateGroup(
+        currentState,
+        index,
+        options.chatbotAlias,
+        'prepared'
+      )
+    }
+    return operationResult(
+      'dry-run',
+      index,
+      manifestFingerprint,
+      zeroWrites(),
+      receipt
+    )
+  }
   if (receipt.switchedChatbotAliases.includes(options.chatbotAlias)) {
     assertCandidateGroup(currentState, index, options.chatbotAlias, 'switched')
     return operationResult(
@@ -2195,7 +2968,6 @@ export async function switchCohortChatbot(
     )
   }
   assertCandidateGroup(currentState, index, options.chatbotAlias, 'prepared')
-  assertNoEnabledOtherBinding(currentState)
 
   const switchingReceipt = makeReceiptFromState(
     currentState,
@@ -2207,14 +2979,17 @@ export async function switchCohortChatbot(
       pendingChatbotAlias: options.chatbotAlias,
     }
   )
-  await options.receiptStore.write(switchingReceipt)
+  await options.receiptStore.compareAndSwap(
+    receipt.payloadDigest,
+    switchingReceipt
+  )
 
   const switchedReceipt = await store.transaction(async (tx) => {
     const state = await inspectCohortState(tx, index, options.target)
     assertReceiptCurrent(state, index, receipt)
     assertTargetGroupsCoherent(state, index)
     assertCandidateGroup(state, index, options.chatbotAlias, 'prepared')
-    assertNoEnabledOtherBinding(state)
+    assertNoEnabledOtherBinding(state, options.chatbotAlias)
     await applyChatbotSwitch(tx, state, index, options.chatbotAlias, true)
     const after = await inspectCohortState(tx, index, options.target)
     return makeReceiptFromState(after, index, manifestFingerprint, {
@@ -2225,7 +3000,10 @@ export async function switchCohortChatbot(
       ],
     })
   })
-  await options.receiptStore.write(switchedReceipt)
+  await options.receiptStore.compareAndSwap(
+    switchingReceipt.payloadDigest,
+    switchedReceipt
+  )
   return operationResult(
     'switched',
     index,
@@ -2242,15 +3020,19 @@ export async function rollbackCohortChatbot(
 ): Promise<ActivationResult> {
   validateTarget(options.target)
   const index = buildManifestIndex(manifest)
-  const manifestFingerprint = fingerprintManifest(manifest)
+  const manifestFingerprint = requireManifestFingerprint(
+    manifest,
+    options.expectedManifestFingerprint
+  )
   resolveChatbotAlias(index, options.chatbotAlias)
-  if (options.dryRun) {
-    return operationResult('dry-run', index, manifestFingerprint, zeroWrites())
-  }
   if (!options.receiptStore) {
     fail('RECEIPT_REQUIRED', 'a durable receipt store is required')
   }
-  const { receipt } = await prepareOrReadReceipt(manifest, options.receiptStore)
+  const { receipt } = await prepareOrReadReceipt(
+    manifest,
+    options.receiptStore,
+    options.expectedManifestFingerprint
+  )
   validateReceiptState(receipt, ['switched', 'switching', 'rolling_back'])
   if (
     !receipt.switchedChatbotAliases.includes(options.chatbotAlias) &&
@@ -2279,6 +3061,7 @@ export async function rollbackCohortChatbot(
     pending ? { pendingChatbotAlias: options.chatbotAlias } : {}
   )
   assertTargetGroupsCoherent(stateBefore, index)
+  assertNoEnabledOtherBinding(stateBefore, options.chatbotAlias)
   if (!pending) {
     assertCandidateGroup(stateBefore, index, options.chatbotAlias, 'switched')
   } else {
@@ -2286,6 +3069,15 @@ export async function rollbackCohortChatbot(
     if (current !== 'switched' && current !== 'prepared') {
       fail('MIXED_STATE', 'the selected chatbot group is mixed')
     }
+  }
+  if (options.dryRun) {
+    return operationResult(
+      'dry-run',
+      index,
+      manifestFingerprint,
+      zeroWrites(),
+      receipt
+    )
   }
 
   let rollbackReceipt = receipt
@@ -2300,7 +3092,10 @@ export async function rollbackCohortChatbot(
         pendingRollbackAliases: [options.chatbotAlias],
       }
     )
-    await options.receiptStore.write(rollbackReceipt)
+    await options.receiptStore.compareAndSwap(
+      receipt.payloadDigest,
+      rollbackReceipt
+    )
   } else if (receipt.state === 'switching') {
     rollbackReceipt = makeReceiptFromState(
       stateBefore,
@@ -2316,7 +3111,10 @@ export async function rollbackCohortChatbot(
         pendingRollbackAliases: [options.chatbotAlias],
       }
     )
-    await options.receiptStore.write(rollbackReceipt)
+    await options.receiptStore.compareAndSwap(
+      receipt.payloadDigest,
+      rollbackReceipt
+    )
   }
 
   const finalReceipt = await store.transaction(async (tx) => {
@@ -2325,6 +3123,7 @@ export async function rollbackCohortChatbot(
       pendingChatbotAlias: options.chatbotAlias,
     })
     assertTargetGroupsCoherent(state, index)
+    assertNoEnabledOtherBinding(state, options.chatbotAlias)
     const current = groupState(state, index, options.chatbotAlias)
     if (current !== 'switched' && current !== 'prepared') {
       fail('MIXED_STATE', 'the selected chatbot group is mixed')
@@ -2341,7 +3140,10 @@ export async function rollbackCohortChatbot(
       switchedChatbotAliases: remaining,
     })
   })
-  await options.receiptStore.write(finalReceipt)
+  await options.receiptStore.compareAndSwap(
+    rollbackReceipt.payloadDigest,
+    finalReceipt
+  )
   return operationResult(
     finalReceipt.state === 'rolled_back' ? 'rolled_back' : 'switched',
     index,
@@ -2362,7 +3164,8 @@ export async function readbackCohortActivation(
   }
   const { index, manifestFingerprint, receipt } = await prepareOrReadReceipt(
     manifest,
-    options.receiptStore
+    options.receiptStore,
+    options.expectedManifestFingerprint
   )
   validateReceiptState(receipt, ['prepared', 'switched', 'rolled_back'])
   const state = await inspectCohortState(store, index, options.target)
