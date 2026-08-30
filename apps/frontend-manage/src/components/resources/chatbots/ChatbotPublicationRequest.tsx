@@ -12,8 +12,8 @@ import {
   H4,
   UserNotification,
 } from '@uzh-bf/design-system'
-import { Form, Formik } from 'formik'
 import dayjs from 'dayjs'
+import { Form, Formik } from 'formik'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import * as Yup from 'yup'
@@ -34,9 +34,9 @@ type PublicationFormValues = {
 
 const MAX_SIGNED_INT32 = 2_147_483_647
 
-function positiveInteger(value: string | undefined) {
-  if (!value) return false
-  const normalizedValue = value.trim()
+function positiveInteger(value: string | number | null | undefined) {
+  const normalizedValue = value?.toString().trim()
+  if (!normalizedValue) return false
   if (!/^\d+$/.test(normalizedValue)) return false
 
   const parsedValue = Number(normalizedValue)
@@ -49,6 +49,44 @@ function readOnlyValue(
 ) {
   if (typeof value === 'number') return value.toLocaleString()
   return value?.trim() || unknown
+}
+
+function ChatbotPublicationAuthorizationNotice({
+  authorized,
+  loading,
+  error,
+}: {
+  authorized: boolean
+  loading: boolean
+  error: boolean
+}) {
+  const t = useTranslations()
+
+  if (loading) {
+    return (
+      <UserNotification>
+        {t('manage.resources.chatbotPublicationAuthorizationChecking')}
+      </UserNotification>
+    )
+  }
+
+  if (error) {
+    return (
+      <UserNotification type="error">
+        {t('manage.resources.chatbotPublicationAuthorizationUnavailable')}
+      </UserNotification>
+    )
+  }
+
+  if (!authorized) {
+    return (
+      <UserNotification type="warning">
+        {t('manage.resources.chatbotPublicationUnauthorized')}
+      </UserNotification>
+    )
+  }
+
+  return null
 }
 
 function ChatbotPublicationReadOnly({ chatbot }: { chatbot: Chatbot }) {
@@ -66,14 +104,20 @@ function ChatbotPublicationReadOnly({ chatbot }: { chatbot: Chatbot }) {
     t('shared.generic.unknown')
   )
 
-  const stateDescription =
-    chatbot.status === ChatbotStatus.PendingApproval
-      ? t('manage.resources.chatbotPublicationPending')
-      : chatbot.status === ChatbotStatus.Paused
-        ? t('manage.resources.chatbotPublicationPaused')
-        : chatbot.status === ChatbotStatus.Published
-          ? t('manage.resources.chatbotPublicationPublished')
-          : t('manage.resources.chatbotPublicationReadonly')
+  let stateDescription: string
+  switch (chatbot.status) {
+    case ChatbotStatus.PendingApproval:
+      stateDescription = t('manage.resources.chatbotPublicationPending')
+      break
+    case ChatbotStatus.Paused:
+      stateDescription = t('manage.resources.chatbotPublicationPaused')
+      break
+    case ChatbotStatus.Published:
+      stateDescription = t('manage.resources.chatbotPublicationPublished')
+      break
+    default:
+      stateDescription = t('manage.resources.chatbotPublicationReadonly')
+  }
 
   const publishedAtLabel = chatbot.publishedAt
     ? dayjs(chatbot.publishedAt).format('DD.MM.YYYY HH:mm')
@@ -233,19 +277,11 @@ function ChatbotPublicationRequest({
             </UserNotification>
           ) : null}
 
-          {publishingAuthorizationLoading ? (
-            <UserNotification>
-              {t('manage.resources.chatbotPublicationAuthorizationChecking')}
-            </UserNotification>
-          ) : publishingAuthorizationError ? (
-            <UserNotification type="error">
-              {t('manage.resources.chatbotPublicationAuthorizationUnavailable')}
-            </UserNotification>
-          ) : !publishingAuthorized ? (
-            <UserNotification type="warning">
-              {t('manage.resources.chatbotPublicationUnauthorized')}
-            </UserNotification>
-          ) : null}
+          <ChatbotPublicationAuthorizationNotice
+            authorized={publishingAuthorized}
+            loading={publishingAuthorizationLoading}
+            error={publishingAuthorizationError}
+          />
 
           {!hasDisclaimer ? (
             <UserNotification type="warning">
