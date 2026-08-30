@@ -180,6 +180,7 @@ async function run(prisma: PrismaClient): Promise<void> {
   let malformedJsonCount = 0
   let projectionDisagreementCount = 0
   let initializedCount = 0
+  let initializationFailureCount = 0
   const structuralCounts: StructuralCounts = {
     enabledMissingActive: 0,
     crossModeActive: 0,
@@ -198,10 +199,14 @@ async function run(prisma: PrismaClient): Promise<void> {
     if (bot.modes.length === 0) {
       missingCatalogCount += 1
       if (apply) {
-        await prisma.$transaction((tx) =>
-          ensureChatbotPromptCatalog(tx, bot.id, projection.modes)
-        )
-        initializedCount += 1
+        try {
+          await prisma.$transaction((tx) =>
+            ensureChatbotPromptCatalog(tx, bot.id, projection.modes)
+          )
+          initializedCount += 1
+        } catch {
+          initializationFailureCount += 1
+        }
       }
       continue
     }
@@ -237,7 +242,12 @@ async function run(prisma: PrismaClient): Promise<void> {
   console.log(`summary_disagreements=${disagreementCount}`)
   console.log(`summary_cross_lineage_refs=${crossLineageRefs}`)
   console.log(`summary_initialized_with_apply=${initializedCount}`)
+  console.log(`summary_initialization_failures=${initializationFailureCount}`)
   console.log(`execution=${apply ? 'APPLY' : 'DRY_RUN'}`)
+
+  if (initializationFailureCount > 0) {
+    process.exitCode = 1
+  }
 }
 
 try {

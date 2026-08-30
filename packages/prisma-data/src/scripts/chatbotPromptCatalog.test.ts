@@ -40,12 +40,13 @@ if (
 const testDescribe = isDisposableDatabase ? describe : describe.skip
 const SCRIPT_DIRECTORY = fileURLToPath(new URL('.', import.meta.url))
 
-function runPromptCatalogAudit(databaseUrl: string) {
+function runPromptCatalogAudit(databaseUrl: string, args: string[] = []) {
   return spawnSync(
     process.execPath,
     [
       '../../node_modules/tsx/dist/cli.mjs',
       '2026-08-23_audit_prompt_catalog.ts',
+      ...args,
     ],
     {
       cwd: SCRIPT_DIRECTORY,
@@ -554,6 +555,58 @@ testDescribe('chatbot prompt catalog transactional writers', () => {
     expect(failure.stdout).toBe('')
     expect(failure.stderr).toBe('audit_failed=true\n')
     expect(`${failure.stdout}${failure.stderr}`).not.toContain(failureMarker)
+
+    const rejectedId = '00000000-0000-4000-8000-000000005668'
+    const rejected = await prisma.chatbot.create({
+      data: {
+        id: rejectedId,
+        name: 'Synthetic rejected audit bot',
+        ownerId,
+        courseId,
+        systemPrompts: {
+          tutor: { prompt: 'Rejected audit prompt', description: null },
+        },
+      },
+      select: { id: true },
+    })
+    const accepted = await prisma.chatbot.create({
+      data: {
+        name: 'Synthetic accepted audit bot',
+        ownerId,
+        courseId,
+        systemPrompts: {
+          tutor: { prompt: 'Accepted audit prompt', description: null },
+        },
+      },
+      select: { id: true },
+    })
+    await prisma.$executeRaw`
+      ALTER TABLE "ChatbotMode"
+      ADD CONSTRAINT "ChatbotMode_synthetic_audit_rejection"
+      CHECK ("chatbotId" <> '00000000-0000-4000-8000-000000005668') NOT VALID
+    `
+
+    try {
+      const partialFailure = runPromptCatalogAudit(DATABASE_URL!, ['--apply'])
+
+      expect(partialFailure.status).toBe(1)
+      expect(partialFailure.stderr).toBe('')
+      expect(partialFailure.stdout).toContain(
+        'summary_initialization_failures=1'
+      )
+      expect(partialFailure.stdout).toContain('execution=APPLY')
+      expect(
+        await prisma.chatbotMode.count({ where: { chatbotId: rejected.id } })
+      ).toBe(0)
+      expect(
+        await prisma.chatbotMode.count({ where: { chatbotId: accepted.id } })
+      ).toBe(1)
+    } finally {
+      await prisma.$executeRaw`
+        ALTER TABLE "ChatbotMode"
+        DROP CONSTRAINT "ChatbotMode_synthetic_audit_rejection"
+      `
+    }
   })
 
   test('initializes the null legacy projection as tutor version one', async () => {

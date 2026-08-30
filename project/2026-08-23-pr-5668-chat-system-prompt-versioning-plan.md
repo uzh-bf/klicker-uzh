@@ -423,7 +423,7 @@ U2 finalizer. It does not mutate any existing branch in stack #5476.
 
 If the existing stack merges before publication, re-evaluate and ask before
 rebasing these layers onto current `v3`. Publishing into or alongside stack
-#5476 remains withheld.
+`#5476` remains withheld.
 
 ## Feature-wide test portfolio
 
@@ -738,6 +738,22 @@ adapted.
   after the build, then stopped with ten routes removed, zero drift, and every
   managed service and process stopped. A final route readback found no routes
   for this worktree.
-- Current boundary: commit this receipt, push the exact task head, update PR
-  #5668, and monitor its fresh CI and review feedback. PR merge, deployment,
-  live data work, and runtime or worktree deletion remain withheld.
+- 2026-08-30 (published-head feedback corrections): fresh CodeRabbit review
+  found two documentation defects and two operational robustness points. The
+  same-mode guard is now accurately documented as deferrable and initially
+  immediate, the plan's `#5476` reference no longer parses as a heading, and
+  the migration runbook now requires staging lock-duration proof plus a
+  low-traffic production window for the `ChatMessage` index and foreign key.
+  The values-free audit now isolates each missing-catalog initialization,
+  reports an aggregate failure count, continues remaining chatbots, and exits
+  non-zero if any initialization failed. A synthetic database constraint
+  proves one rejected chatbot remains untouched while a later chatbot is
+  initialized and the final summary remains available.
+- 2026-08-30 (feedback verification): a fresh disposable database replayed all
+  183 migrations; all 26 Prisma Data tests passed, including the new partial
+  failure path. The Prisma Data type checks and touched-file formatting passed,
+  and cleanup left zero proof databases.
+- Current boundary: commit and push the feedback corrections, then require
+  fresh exact-head CI, settled ordinary feedback, and the repository's manual
+  `/final-review` status. PR merge, deployment, live data work, and runtime or
+  worktree deletion remain withheld.
