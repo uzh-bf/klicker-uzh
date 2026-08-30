@@ -500,6 +500,15 @@ jobs:
                 : 'No actionable findings; skipped the pull-request comment'
             )
 
+      - name: Upload rejected individual publisher input
+        if: failure() && steps.publish.outcome == 'failure'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: final-ai-individual-publisher-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/final-ai-review-result.json
+          if-no-files-found: error
+          retention-days: 1
+
   finalize:
     needs: [authorize, start, review]
     if: >-
@@ -1002,6 +1011,17 @@ jobs:
                 ? `Published ${url}`
                 : 'No actionable findings; skipped the pull-request comment'
             )
+
+      - name: Upload rejected stack publisher inputs
+        if: failure() && steps.publish.outcome == 'failure'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: final-ai-stack-publisher-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/final-ai-stack-code-result.json
+            ${{ runner.temp }}/final-ai-stack-topology-result.json
+          if-no-files-found: error
+          retention-days: 1
 
   finalize_stack:
     needs: [authorize_stack, start_stack, review_stack]

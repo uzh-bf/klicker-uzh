@@ -138,12 +138,12 @@
 
 ## Progress
 
-- Status: Planning complete; S0 is active.
-- Completed: Fresh remote-state gate; clean worktree from `origin/v3`; root-cause diagnosis; current GitHub artifact contract check; native planning review.
-- Remaining: S0 plan commit; S1 workflow and test change; S1 specialist gates; S2 documentation; integrated verification and final review; push and draft pull request; plan rename and final evidence readback.
-- Latest verified baseline: `6135b55c56e3f25ff56d178c11e8ac184aea587f`, ahead/behind `0/0`. The planner reported the existing focused suites passing `88/88` on this baseline.
+- Status: S1 implementation is verified and ready to commit; its specialist gates are next.
+- Completed: Fresh remote-state gate; clean worktree from `origin/v3`; root-cause diagnosis; current GitHub artifact contract check; native planning review; S0 plan commit `1adaf5a14`; failure-only individual and stack artifact wiring with source assertions.
+- Remaining: S1 commit and specialist gates; S2 documentation; integrated verification and final review; push and draft pull request; plan rename and final evidence readback.
+- Latest verified baseline: `6135b55c56e3f25ff56d178c11e8ac184aea587f`, ahead/behind `0/0`. Current S1 evidence: both focused Node suites pass `90/90`; the workflow parses as YAML; changed content passes `git diff --check`; focused Prettier passes, with an unrelated pre-existing whole-file mismatch preserved in the stack test.
 - Required delivery layer: Reviewed draft pull request against `v3`.
 - Achieved delivery layer: Clean local task branch and worktree.
 - Unresolved required gates: S1 simplifier and risk review; integrated final review; push and draft pull-request evidence.
 - Active children: None.
-- Next action: Commit this plan, then implement S1 without changing parser behavior.
+- Next action: Commit S1, then dispatch its simplifier and security/correctness slice reviewer over the immutable commit.

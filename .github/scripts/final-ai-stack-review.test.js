@@ -1154,6 +1154,38 @@ test('uses GLM Flash for individual and cumulative stack review jobs', () => {
   assert.doesNotMatch(workflow, /OCR_LLM_MODEL/)
 })
 
+test('retains only the rejected stack publisher inputs for one day', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  const step = workflow.match(
+    /      - name: Upload rejected stack publisher inputs\n[\s\S]*?(?=\n      - name:|\n  finalize_stack:)/
+  )?.[0]
+
+  assert.ok(step)
+  assert.ok(
+    workflow.indexOf('Publish consolidated stack review') <
+      workflow.indexOf('Upload rejected stack publisher inputs')
+  )
+  assert.match(step, /if: failure\(\) && steps\.publish\.outcome == 'failure'/)
+  assert.match(
+    step,
+    /uses: actions\/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4/
+  )
+  assert.match(
+    step,
+    /name: final-ai-stack-publisher-failure-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/
+  )
+  assert.match(
+    step,
+    /path: \|\n            \$\{\{ runner\.temp \}\}\/final-ai-stack-code-result\.json\n            \$\{\{ runner\.temp \}\}\/final-ai-stack-topology-result\.json/
+  )
+  assert.match(step, /if-no-files-found: error/)
+  assert.match(step, /retention-days: 1/)
+  assert.doesNotMatch(step, /stderr|config|manifest|ranges|\*/i)
+})
+
 test('checks trusted review code out from the default branch', () => {
   for (const workflowName of [
     'check-ocr-final-review.yml',
