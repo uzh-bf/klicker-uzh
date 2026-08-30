@@ -110,6 +110,12 @@ test.describe('Generated element review inbox', () => {
         editor.getByTestId('generated-element-source-0')
       ).toHaveAttribute('href', 'https://example.invalid/synthetic-course')
       await expect(
+        editor.getByTestId('generated-element-source-1')
+      ).toHaveCount(0)
+      await expect(
+        editor.getByTestId('generated-element-sources')
+      ).toContainText('Synthetic course handout.pdf')
+      await expect(
         editor.getByTestId('generated-element-sources')
       ).toContainText('Document')
 

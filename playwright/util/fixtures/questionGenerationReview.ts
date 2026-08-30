@@ -179,6 +179,7 @@ export async function seedQuestionGenerationReviewFixture(): Promise<QuestionGen
             title: 'Synthetic course handout.pdf',
             type: DB.KBResourceType.BLOB,
             contentSha256: 'blob-source-sha256',
+            sourceUrl: 'javascript:alert("synthetic")',
             blobName: 'synthetic/course-handout.pdf',
           },
         ],

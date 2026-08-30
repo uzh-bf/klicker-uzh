@@ -179,6 +179,18 @@ function sourceForCitation(
   return build.sources.find((item) => item.resourceId === resourceId)
 }
 
+function safeSourceUrl(sourceUrl: string | null | undefined) {
+  if (!sourceUrl) return undefined
+  try {
+    const parsed = new URL(sourceUrl)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+      ? parsed.toString()
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
 function citationPages(
   citation: GeneratedElementDraftData['citations'][number],
   formatPage: (page: number) => string,
@@ -227,15 +239,16 @@ function GeneratedDraftSources({
                 (page) => t('review.sourcePage', { page }),
                 (from, to) => t('review.sourcePages', { from, to })
               )
+              const href = safeSourceUrl(sourceUrl)
               return (
                 <li
                   key={`${resourceId}-${citation.sourceFile}-${citation.pageFrom}-${citation.pageTo}-${citation.chunkIds.join('-')}`}
                 >
-                  {sourceUrl ? (
+                  {href ? (
                     <a
                       className="font-medium text-blue-700 underline"
                       data-cy={`generated-element-source-${ix}`}
-                      href={sourceUrl}
+                      href={href}
                       rel="noreferrer"
                       target="_blank"
                     >

@@ -630,7 +630,7 @@ ElementGenerationBuildSourceRef.implement({
 export type ElementGenerationBuildView = DB.ElementGenerationBuild & {
   reviews?: DB.ElementGenerationReview[]
   drafts: DB.GeneratedElementDraft[]
-  sourceGraphBuild?: { sources: ElementGenerationBuildSourceView[] }
+  sourceGraphBuild: { sources: ElementGenerationBuildSourceView[] }
 }
 export const ElementGenerationBuildRef =
   builder.objectRef<ElementGenerationBuildView>('ElementGenerationBuild')
@@ -684,7 +684,7 @@ ElementGenerationBuildRef.implement({
     drafts: t.expose('drafts', { type: [GeneratedElementDraftRef] }),
     sources: t.field({
       type: [ElementGenerationBuildSourceRef],
-      resolve: (build) => build.sourceGraphBuild?.sources ?? [],
+      resolve: (build) => build.sourceGraphBuild.sources,
     }),
   }),
 })
