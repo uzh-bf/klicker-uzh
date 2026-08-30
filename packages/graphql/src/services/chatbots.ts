@@ -705,35 +705,37 @@ export async function updateChatbotModelSettings(
     }
   }
 
-  const transition = await ctx.prisma.chatbot.updateMany({
-    where: {
-      id: chatbot.id,
-      ownerId: ctx.user.sub,
-      status: { in: metadataAndModelEditableStatuses },
-    },
-    data: {
-      modelSelection: args.modelSelection,
-      allowedModelIds: normalizedAllowedModelIds,
-      allowedReasoningEffortsByModel:
-        Object.keys(normalizedReasoningMap).length > 0
-          ? (normalizedReasoningMap as Prisma.InputJsonValue)
-          : Prisma.DbNull,
-    },
-  })
+  const updated = await ctx.prisma.$transaction(async (tx) => {
+    const transition = await tx.chatbot.updateMany({
+      where: {
+        id: chatbot.id,
+        ownerId: ctx.user.sub,
+        status: { in: metadataAndModelEditableStatuses },
+      },
+      data: {
+        modelSelection: args.modelSelection,
+        allowedModelIds: normalizedAllowedModelIds,
+        allowedReasoningEffortsByModel:
+          Object.keys(normalizedReasoningMap).length > 0
+            ? (normalizedReasoningMap as Prisma.InputJsonValue)
+            : Prisma.DbNull,
+      },
+    })
 
-  if (transition.count === 0) {
-    throw chatbotError(
-      'Chatbot model settings could not be saved because its status changed',
-      'CHATBOT_EDIT_CONFLICT'
-    )
-  }
+    if (transition.count === 0) {
+      throw chatbotError(
+        'Chatbot model settings could not be saved because its status changed',
+        'CHATBOT_EDIT_CONFLICT'
+      )
+    }
 
-  const updated = await ctx.prisma.chatbot.findUniqueOrThrow({
-    where: { id: chatbot.id },
-    select: {
-      ...chatbotOwnerSelect,
-      course: { select: { id: true, name: true } },
-    },
+    return await tx.chatbot.findUniqueOrThrow({
+      where: { id: chatbot.id },
+      select: {
+        ...chatbotOwnerSelect,
+        course: { select: { id: true, name: true } },
+      },
+    })
   })
 
   return shapeChatbotResponse(updated)
@@ -832,37 +834,39 @@ export async function updateChatbot(
     throw chatbotError('Chatbot name must not be empty', 'BAD_USER_INPUT')
   }
 
-  const transition = await ctx.prisma.chatbot.updateMany({
-    where: {
-      id: existing.id,
-      ownerId: ctx.user.sub,
-      status: { in: metadataAndModelEditableStatuses },
-    },
-    data: {
-      // name is a required column, so only overwrite it when a value is given.
-      ...(args.name != null ? { name: args.name } : {}),
-      // description/avatar are nullable: an explicit null clears them, an
-      // omitted (undefined) arg leaves them untouched.
-      ...(args.description !== undefined
-        ? { description: args.description }
-        : {}),
-      ...(args.avatar !== undefined ? { avatar: args.avatar } : {}),
-    },
-  })
+  const updated = await ctx.prisma.$transaction(async (tx) => {
+    const transition = await tx.chatbot.updateMany({
+      where: {
+        id: existing.id,
+        ownerId: ctx.user.sub,
+        status: { in: metadataAndModelEditableStatuses },
+      },
+      data: {
+        // name is a required column, so only overwrite it when a value is given.
+        ...(args.name != null ? { name: args.name } : {}),
+        // description/avatar are nullable: an explicit null clears them, an
+        // omitted (undefined) arg leaves them untouched.
+        ...(args.description !== undefined
+          ? { description: args.description }
+          : {}),
+        ...(args.avatar !== undefined ? { avatar: args.avatar } : {}),
+      },
+    })
 
-  if (transition.count === 0) {
-    throw chatbotError(
-      'Chatbot metadata could not be saved because its status changed',
-      'CHATBOT_EDIT_CONFLICT'
-    )
-  }
+    if (transition.count === 0) {
+      throw chatbotError(
+        'Chatbot metadata could not be saved because its status changed',
+        'CHATBOT_EDIT_CONFLICT'
+      )
+    }
 
-  const updated = await ctx.prisma.chatbot.findUniqueOrThrow({
-    where: { id: existing.id },
-    select: {
-      ...chatbotOwnerSelect,
-      course: { select: { id: true, name: true } },
-    },
+    return await tx.chatbot.findUniqueOrThrow({
+      where: { id: existing.id },
+      select: {
+        ...chatbotOwnerSelect,
+        course: { select: { id: true, name: true } },
+      },
+    })
   })
 
   return shapeChatbotResponse(updated)
@@ -1057,7 +1061,10 @@ export async function requestChatbotPublication(
   )
   try {
     validateDisclaimerContent(disclaimerTitle, disclaimerIntro)
-  } catch {
+  } catch (error) {
+    if (!(error instanceof GraphQLError)) {
+      throw error
+    }
     throw chatbotError(
       'A complete disclaimer is required before publication',
       'CHATBOT_DISCLAIMER_REQUIRED'
