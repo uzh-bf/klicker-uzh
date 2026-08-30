@@ -250,11 +250,15 @@ test.describe('Manage Assistant — Messaging', () => {
       'Suggest improvements to question feedback'
     )
     await expect(welcome).toContainText(
-      'Explain KlickerUZH features using its documentation and tutorials'
+      'Explain common KlickerUZH workflows using a curated index of documentation and tutorials'
     )
-    await expect(welcome).toContainText('Read-only for everything else')
+    await expect(welcome).toContainText(
+      'Documentation help uses a curated index rather than a complete search. The assistant never publishes or edits existing content.'
+    )
     await expect(
-      welcome.getByText(/Read-only for everything else/)
+      welcome.getByText(
+        /Documentation help uses a curated index rather than a complete search/
+      )
     ).toHaveClass(/(^|\s)text-muted-foreground(\s|$)/)
   })
 
@@ -412,8 +416,8 @@ test.describe('Manage Assistant — Messaging', () => {
     const input = assistant.getByTestId('chat-composer-input')
 
     await assistant.getByText('Draft a question', { exact: true }).click()
+    await expect(input).not.toHaveValue('')
     const draftPrompt = await input.inputValue()
-    expect(draftPrompt).not.toBe('')
 
     const dialog = page.getByTestId('manage-assistant-drawer')
     await dialog.getByRole('button', { name: 'Close' }).click()
