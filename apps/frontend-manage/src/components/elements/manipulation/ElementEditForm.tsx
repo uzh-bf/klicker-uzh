@@ -16,14 +16,12 @@ import {
   Tabs,
   toast,
 } from '@uzh-bf/design-system'
-import { Form, Formik } from 'formik'
+import { Form, Formik, type FormikProps } from 'formik'
 import { useTranslations } from 'next-intl'
 import {
   type Dispatch,
-  type MutableRefObject,
   type ReactNode,
   type SetStateAction,
-  useEffect,
   useRef,
   useState,
 } from 'react'
@@ -50,19 +48,6 @@ import SelectionOptions from './options/SelectionOptions'
 import StudentElementPreview from './StudentElementPreview'
 import type { ElementFormTypes } from './types'
 import useValidationSchema from './useValidationSchema'
-
-function DirtyStateMonitor({
-  dirty,
-  dirtyRef,
-}: {
-  dirty: boolean
-  dirtyRef: MutableRefObject<boolean>
-}) {
-  useEffect(() => {
-    dirtyRef.current = dirty
-  }, [dirty, dirtyRef])
-  return null
-}
 
 function ElementEditForm({
   isTemplate = false,
@@ -127,7 +112,7 @@ function ElementEditForm({
   const t = useTranslations()
   const [activeTab, setActiveTab] = useState('preview')
   const [discardChangesOpen, setDiscardChangesOpen] = useState(false)
-  const dirtyRef = useRef(false)
+  const formikRef = useRef<FormikProps<ElementFormTypes>>(null)
   const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
     { id: number; value: string }[]
   >([])
@@ -154,7 +139,7 @@ function ElementEditForm({
   const collections = data?.getAnswerCollectionsElements ?? []
 
   function requestClose() {
-    if (discardChangesPrompt && dirtyRef.current) {
+    if (discardChangesPrompt && formikRef.current?.dirty) {
       setDiscardChangesOpen(true)
       return
     }
@@ -179,6 +164,7 @@ function ElementEditForm({
       >
         {initialValues && (
           <Formik
+            innerRef={formikRef}
             validateOnMount
             // enableReinitialize={!isTemplate && !initialValues}
             initialValues={initialValues}
@@ -205,7 +191,6 @@ function ElementEditForm({
             {({
               values,
               errors,
-              dirty,
               isSubmitting,
               isValid,
               setFieldValue,
@@ -214,7 +199,6 @@ function ElementEditForm({
               submitForm,
             }) => (
               <>
-                <DirtyStateMonitor dirty={dirty} dirtyRef={dirtyRef} />
                 {!inputsDisabled && (
                   <AutoSaveMonitor
                     values={values}

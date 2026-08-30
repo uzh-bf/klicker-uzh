@@ -437,6 +437,10 @@ describe('atomic generated-element keep', () => {
       label: 'missing choices',
       options: { ...input.options, choices: undefined },
     },
+    {
+      label: 'empty choices',
+      options: { ...input.options, choices: [] },
+    },
   ])('rejects assessment options with $label', async ({ options }) => {
     const { ctx } = context(draft())
 

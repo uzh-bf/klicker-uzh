@@ -34,6 +34,30 @@ function draftNeedsAttention(draft: GeneratedElementDraftData) {
   )
 }
 
+function draftMatchesFilter(
+  draft: GeneratedElementDraftData,
+  filter: ReviewFilter
+) {
+  switch (filter) {
+    case 'all':
+      return true
+    case 'open':
+      return (
+        draft.decision === GeneratedElementDecision.Open &&
+        !draftNeedsAttention(draft)
+      )
+    case 'attention':
+      return draftNeedsAttention(draft)
+    case 'kept':
+      return (
+        draft.decision === GeneratedElementDecision.Accepted &&
+        draft.savedElementId !== null
+      )
+    case 'discarded':
+      return draft.decision === GeneratedElementDecision.Rejected
+  }
+}
+
 function difficultyLabelKey(level: number | null | undefined) {
   switch (level) {
     case 1:
@@ -341,33 +365,19 @@ export default function GeneratedElementReview({
 
   const counts = {
     all: build.drafts.length,
-    open: build.drafts.filter(
-      (draft) =>
-        draft.decision === GeneratedElementDecision.Open &&
-        !draftNeedsAttention(draft)
+    open: build.drafts.filter((draft) => draftMatchesFilter(draft, 'open'))
+      .length,
+    attention: build.drafts.filter((draft) =>
+      draftMatchesFilter(draft, 'attention')
     ).length,
-    attention: build.drafts.filter(draftNeedsAttention).length,
-    kept: build.drafts.filter(
-      (draft) =>
-        draft.decision === GeneratedElementDecision.Accepted &&
-        draft.savedElementId !== null
-    ).length,
-    discarded: build.drafts.filter(
-      (draft) => draft.decision === GeneratedElementDecision.Rejected
+    kept: build.drafts.filter((draft) => draftMatchesFilter(draft, 'kept'))
+      .length,
+    discarded: build.drafts.filter((draft) =>
+      draftMatchesFilter(draft, 'discarded')
     ).length,
   }
   const drafts = build.drafts.filter((draft) =>
-    filter === 'all'
-      ? true
-      : filter === 'open'
-        ? draft.decision === GeneratedElementDecision.Open &&
-          !draftNeedsAttention(draft)
-        : filter === 'attention'
-          ? draftNeedsAttention(draft)
-          : filter === 'kept'
-            ? draft.decision === GeneratedElementDecision.Accepted &&
-              draft.savedElementId !== null
-            : draft.decision === GeneratedElementDecision.Rejected
+    draftMatchesFilter(draft, filter)
   )
   const legacyAccepted = build.drafts.filter(
     (draft) =>

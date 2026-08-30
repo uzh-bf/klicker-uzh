@@ -287,7 +287,7 @@ function normalizedKeepPayload(
       'Generated element type cannot be changed'
     )
   }
-  if (!input.options?.choices) {
+  if (!input.options?.choices?.length) {
     throw questionGenerationServiceError(
       'DRAFT_INVALID',
       'A generated assessment element requires answer choices'

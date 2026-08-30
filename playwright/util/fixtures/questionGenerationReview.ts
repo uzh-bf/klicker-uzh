@@ -234,6 +234,7 @@ export async function seedQuestionGenerationReviewFixture(): Promise<QuestionGen
                 chunkIds: [`blob-chunk-${type}-${index + 1}`],
               },
             ],
+            bloomLevel: type === 'FLASHCARD' ? null : 'understand',
             targetDifficulty: type === 'FLASHCARD' ? null : 3,
             predictedDifficulty: type === 'FLASHCARD' ? null : 3.1,
             qualityFlags: index === 4 ? ['manual_review_required'] : undefined,
