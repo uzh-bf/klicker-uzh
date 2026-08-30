@@ -627,11 +627,13 @@ follow_up_stacks:
 
 ## Progress
 
-- Status: `active_a1_ci_correction`
-- Baseline: PR #5637 exact head `902af183d8018c79cadcefe46d4a7f17f395392a`;
-  all branch-executable checks and eight Playwright shards passed at that head;
-  one CodeRabbit thread is resolved. The `final-ai-review` status context is
-  red even though its trusted-policy jobs succeeded.
+- Status: `active_a2_preflight`
+- Baseline: PR #5637 exact head `85ffe927774b44b7a1b0759fa4fdbfeae81c5a96`
+  and PR #5670 exact head `5115e2958f3dfd4896756432190517994015f40b`
+  are open, non-draft, and mergeable after the user-managed stack rebase. All
+  applicable exact-head checks and all eight Playwright shards pass for both
+  layers. The final-review aggregate remains red only because stack root #5637
+  targets `v3-ai` instead of the repository default branch.
 - Planning: Approved F1-F10 audit mapped into Stack A, Stack B, and R3. Native
   planner launch failed; generic-continuity GPT-5.6 Sol returned
   `DONE_WITH_CONCERNS`. Accepted contract corrections are recorded above; its
@@ -823,3 +825,23 @@ follow_up_stacks:
   head hosted shard 2 remains the final browser proof.
 - Next: Refresh PR #5670 for head `f8b86fd59`, then require a clean exact-head
   hosted browser run before A1 is accepted.
+- A1 rebased reconciliation: The user rebased the stack remotely without
+  changing its reviewed behavior. A0 now ends at `85ffe927774b`, and A1 ends at
+  `5115e2958f3d`. PR #5670 covers 14 commits, 23 files, 658 additions, and 47
+  deletions; its whole-branch body reflects the rebased range.
+- A1 exact-head acceptance: Hosted build, codebase check, unit tests, gitleaks,
+  SonarCloud, CodeQL, trusted policy, and all eight Playwright shards pass at
+  `5115e2958f3d`. All four OpenCodeReview threads are resolved, no later review
+  feedback remains, and both stack layers are mergeable.
+- A1 stack-policy residual: `final-ai-review` and `final-ai-stack-review` stop
+  before review because the native stack root targets `v3-ai` rather than the
+  repository default branch. This is a workflow topology limitation, not an
+  A1 source failure. Changing PR bases remains outside the approved plan.
+- Local continuation: The pre-rebase local branch is preserved unchanged. The
+  existing stack worktree now uses local branch
+  `rs/manage-assistant-shell-recovery-resume`, based exactly on
+  `origin/rs/manage-assistant-shell-recovery`, so A2 can continue without a
+  reset, rebase, force-push, second worktree, or history rewrite.
+- Next: Commit and publish this A1 receipt to PR #5670, then create A2
+  `rs/manage-assistant-capability-state` from the accepted A1 head and begin
+  the authenticated advisory capability-state slice.
