@@ -54,9 +54,7 @@ preview and the later examples-excluded baseline.
 - Keep PR #5650 as a standalone PR targeted at `v3-ai`. The branch is a
   long-lived consolidation branch for staging deployment, not the foundation
   of a native stack. Never stack this PR with the separate eventual promotion
-  PR from `v3-ai` into `v3`. This supersedes the provisional stack registration
-  from 2026-08-29, which the user removed after identifying the invalid
-  topology.
+  PR from `v3-ai` into `v3`.
 
 - Keep the first implementation small. Use one server-only response-example
   runtime module in the chat app and shared pure projection helpers in the util
@@ -199,9 +197,9 @@ preview and the later examples-excluded baseline.
   on its published head. The separately approved final upstream integration
   through `origin/v3-ai@54fbfc921` is complete at merge head `256ff4d4b`. PR
   #5650 remains a standalone PR into the long-lived `v3-ai` consolidation
-  branch. The user removed the invalid
-  native stack registration with PR #5092. Merge, deployment, and live model
-  use remain withheld. Published head `dea34488a` passed all ordinary exact-head
+  branch. On 2026-08-29, the user removed the invalid native stack registration
+  with PR #5092. Merge, deployment, and live model use remain withheld.
+  Published head `dea34488a` passed all ordinary exact-head
   checks. Its successful final review identified three medium corrections; the
   branch now normalizes citation spans consistently, shares the current-
   eligibility reconciliation core, and batches reconciliation writes.
