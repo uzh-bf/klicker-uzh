@@ -341,6 +341,7 @@ Full reference (config schema, docker requirements, env injection, commands):
 Quick validation sequence:
 
 - Managed devcontainer consumer images contain no devrouter package or helper; `devrouter ensure` delivers the matching helper at runtime.
+- Devsy runtime: run `devrouter setup --yes --workspace-runtime devsy` once; `doctor` then reports verified agent readiness without network access.
 - `devrouter up`
 - `devrouter tls install` (required when repo defines tcp/postgres apps)
 - `devrouter app ls --repo .`
