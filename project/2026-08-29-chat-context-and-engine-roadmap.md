@@ -75,15 +75,19 @@ branches, credits, identity, privacy, or product policy.
 - **Verified:** the active authoritative-history package is published as draft
   PR #5676. It reconstructs one persisted ancestor chain, validates up to 256
   rows, sends the closest 64 projected rows, and makes image bindings
-  server-authoritative. Its integrated final review found no remaining
-  source-level correctness, authorization, privacy, security, or architecture
-  defect. The branch is one non-overlapping commit behind current `origin/v3`.
-  At the last published head, static, type, security, and policy checks passed;
-  hosted Playwright shards and the external review job were still pending.
-  The corrected PostgreSQL boundary fixture and managed browser smoke remain
-  local evidence gaps because provider-layer Devsy transitions failed and the
-  exact workspace exposes zero routes. Fresh exact-head CI remains required
-  after the final documentation receipt.
+  server-authoritative. At published head `4d392fb99`, every automated
+  policy, static, type, security, build, and hosted Playwright check passed;
+  only the manual final-review status remained pending. The successful OCR job
+  also returned actionable follow-up findings, so its success status was not
+  treated as source approval. A local correction pass now moves image
+  preprocessing outside the transaction, revalidates persisted sources inside
+  it, tightens request and lifecycle scope validation, preserves unexpected
+  failures as server errors, and makes attachment metadata truthful. The branch
+  remains one non-overlapping commit behind current `origin/v3`. The corrected
+  PostgreSQL fixture and managed browser smoke remain local evidence gaps
+  because provider-layer Devsy transitions failed and the exact workspace
+  exposes zero routes. Fresh exact-head review and CI are required after the
+  correction is published.
 - **Verified:** PR #5126 and draft PR #5129 are open and conflicting against
   current public history. Their contract and default-engine ideas are useful;
   their `chat-api` client-history and timestamp assumptions are not.
@@ -312,3 +316,20 @@ revalidates branch ancestry and the source digest before persistence.
   provider-layer Devsy failures, so the corrected PostgreSQL fixture rerun and
   browser smoke remain open evidence gaps. Exact-head CI, upstream integration,
   merge, deployment, and activation remain withheld gates.
+- 2026-08-30 OCR follow-up receipt: every automated check at published head
+  `4d392fb99`, including all eight hosted Playwright shards, later passed;
+  the manual final-review status remained pending. The OCR findings were
+  independently verified. The accepted local correction moves Sharp work
+  outside the transaction, rechecks source scope and bytes inside it, preserves
+  unexpected preview and database errors, returns a lifecycle-clean 409 for
+  post-claim conversation conflicts, fences successful finalization to the
+  participant-owned thread, validates primitive requests safely, and marks
+  preview-only finish metadata as such. Exact retry immutability, fail-closed
+  legacy history, and the 64-row model window remain unchanged by design.
+  Focused parser/history/lifecycle/route tests passed 65 cases. The full Chat
+  suite passed 459 tests with 32 integration tests skipped before one final
+  test-only addition; the final authoritative-history unit suite then passed
+  all 16 cases. Chat typecheck, focused Biome and Prettier checks, and
+  `git diff --check` pass. Commit, immutable correction review, push,
+  fresh exact-head CI, PostgreSQL proof, browser smoke, upstream integration,
+  merge, deployment, and activation remain pending or separately gated.

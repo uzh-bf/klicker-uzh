@@ -78,6 +78,9 @@ type ChatRouteModelMessage = {
 export const CHAT_MODEL_UNAVAILABLE_BASE = 'CHAT_MODEL_UNAVAILABLE_BASE'
 export const CHAT_MODEL_UNAVAILABLE_ADVANCED = 'CHAT_MODEL_UNAVAILABLE_ADVANCED'
 
+const IMAGE_DESCRIPTION_FALLBACK =
+  'The user attached an image that could not be described automatically.'
+
 function chatModelUnavailableResponse(
   usageClass: ChatModelConfig['usageClass']
 ) {
@@ -1123,8 +1126,7 @@ export async function POST(
           const { descriptionResult } = result.value
           descriptions.set(
             image.id,
-            descriptionResult.text.trim() ||
-              'The user attached an image that could not be described automatically.'
+            descriptionResult.text.trim() || IMAGE_DESCRIPTION_FALLBACK
           )
           if (descriptionResult.usage) {
             imageDescriptionCost += calcCost(
@@ -1138,10 +1140,7 @@ export async function POST(
             requestId,
             error: result.reason,
           })
-          descriptions.set(
-            image.id,
-            'The user attached an image that could not be described automatically.'
-          )
+          descriptions.set(image.id, IMAGE_DESCRIPTION_FALLBACK)
         }
       }
 
@@ -1186,21 +1185,22 @@ export async function POST(
         authoritativeConversation.modelMessages.findIndex(
           (message) => message.id === userMessageId
         )
-      if (triggerMessageIndex >= 0) {
-        const messageText = authoritativeConversation.triggerText
+      if (triggerMessageIndex < 0) {
+        throw new AuthoritativeConversationError()
+      }
 
-        modelMessages[triggerMessageIndex] = {
-          ...modelMessages[triggerMessageIndex],
-          content: [
-            ...(messageText
-              ? [{ type: 'text' as const, text: messageText }]
-              : []),
-            ...resolvedImages.map((image) => ({
-              type: 'image' as const,
-              image: image.imageBase64,
-            })),
-          ],
-        }
+      const messageText = authoritativeConversation.triggerText
+      modelMessages[triggerMessageIndex] = {
+        ...modelMessages[triggerMessageIndex],
+        content: [
+          ...(messageText
+            ? [{ type: 'text' as const, text: messageText }]
+            : []),
+          ...resolvedImages.map((image) => ({
+            type: 'image' as const,
+            image: image.imageBase64,
+          })),
+        ],
       }
     }
 
@@ -1709,7 +1709,7 @@ export async function POST(
             position: attachment.position,
             imagePreviewBase64: attachment.imagePreviewBase64,
             imageDescription: attachment.imageDescription,
-            hasFullImage: true,
+            hasFullImage: false,
           })),
         }
       },
@@ -1717,6 +1717,13 @@ export async function POST(
   } catch (error) {
     if (providerStreamStarted) await failAssistantClaim('request')
     else await failOrDiscardUnstartedClaim('request')
+
+    if (error instanceof AuthoritativeConversationError) {
+      return NextResponse.json(
+        { error: 'Chat conversation conflict' },
+        { status: 409 }
+      )
+    }
     throw error
   }
 }

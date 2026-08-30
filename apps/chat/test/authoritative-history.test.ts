@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  prisma: {
+    chatAttachment: {
+      findMany: vi.fn(),
+    },
+  },
   transaction: {
     chatMessage: {
       createMany: vi.fn(),
@@ -18,10 +23,19 @@ const mocks = vi.hoisted(() => ({
     $queryRaw: vi.fn(),
   },
   withTransaction: vi.fn(),
+  ensureImagePreviewBase64: vi.fn(),
+}))
+
+vi.mock('@klicker-uzh/prisma', () => ({
+  prisma: mocks.prisma,
 }))
 
 vi.mock('../src/utils/transactions', () => ({
   withTransaction: mocks.withTransaction,
+}))
+
+vi.mock('../src/lib/server/imagePreview', () => ({
+  ensureImagePreviewBase64: mocks.ensureImagePreviewBase64,
 }))
 
 import {
@@ -87,6 +101,12 @@ beforeEach(() => {
   mocks.withTransaction.mockImplementation(async (operation) =>
     operation(mocks.transaction)
   )
+  mocks.prisma.chatAttachment.findMany.mockResolvedValue([])
+  mocks.ensureImagePreviewBase64.mockImplementation(async (image) => ({
+    ...image,
+    imagePreviewBase64:
+      image.imagePreviewBase64 ?? 'data:image/jpeg;base64,PREVIEW',
+  }))
   mocks.transaction.chatThread.findFirst.mockResolvedValue({ id: 'thread-1' })
   mocks.transaction.chatMessage.createMany.mockResolvedValue({ count: 1 })
   mocks.transaction.chatAttachment.findMany.mockResolvedValue([])
@@ -119,6 +139,134 @@ describe('authoritative conversation history', () => {
       }),
       skipDuplicates: true,
     })
+  })
+
+  test('prepares image previews before opening the transaction', async () => {
+    const imageBase64 = 'data:image/png;base64,AAAA'
+    const imagePreviewBase64 = 'data:image/jpeg;base64,PREVIEW'
+    mocks.transaction.chatAttachment.findMany.mockResolvedValue([
+      {
+        id: 'attachment-1',
+        type: 'IMAGE',
+        position: 0,
+        imageBase64,
+        imagePreviewBase64,
+        imageDescription: null,
+      },
+    ])
+    mocks.ensureImagePreviewBase64.mockImplementationOnce(async (image) => {
+      expect(mocks.withTransaction).not.toHaveBeenCalled()
+      return { ...image, imagePreviewBase64 }
+    })
+
+    await prepareAuthoritativeConversation({
+      ...input,
+      trigger: {
+        ...input.trigger,
+        attachments: [{ type: 'new-image', imageBase64 }],
+      },
+    })
+
+    expect(mocks.ensureImagePreviewBase64).toHaveBeenCalledOnce()
+    expect(
+      mocks.ensureImagePreviewBase64.mock.invocationCallOrder[0]
+    ).toBeLessThan(mocks.withTransaction.mock.invocationCallOrder[0])
+    expect(mocks.transaction.chatAttachment.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          imageBase64,
+          imagePreviewBase64,
+        }),
+      ],
+    })
+  })
+
+  test('revalidates a persisted image source inside the transaction', async () => {
+    const sourceId = 'source-attachment'
+    const imageBase64 = 'data:image/png;base64,AAAA'
+    const imagePreviewBase64 = 'data:image/jpeg;base64,PREVIEW'
+    const source = {
+      id: sourceId,
+      type: 'IMAGE',
+      position: 0,
+      imageBase64,
+      imagePreviewBase64,
+      imageDescription: 'Persisted description',
+    }
+    mocks.prisma.chatAttachment.findMany.mockResolvedValueOnce([source])
+    mocks.transaction.chatAttachment.findMany
+      .mockResolvedValueOnce([source])
+      .mockResolvedValueOnce([
+        {
+          ...source,
+          id: 'current-binding',
+        },
+      ])
+
+    await prepareAuthoritativeConversation({
+      ...input,
+      trigger: {
+        ...input.trigger,
+        attachments: [{ type: 'persisted-image', id: sourceId }],
+      },
+    })
+
+    const expectedScope = {
+      id: { in: [sourceId] },
+      type: 'IMAGE',
+      message: {
+        threadId: 'thread-1',
+        role: 'user',
+        lifecycleStatus: 'COMPLETED',
+        thread: {
+          participantId: 'participant-1',
+          chatbotId: 'chatbot-1',
+          chatbot: { ownerId: 'owner-1' },
+        },
+      },
+    }
+    expect(mocks.prisma.chatAttachment.findMany).toHaveBeenCalledWith({
+      where: expectedScope,
+      select: expect.any(Object),
+    })
+    expect(mocks.transaction.chatAttachment.findMany).toHaveBeenNthCalledWith(
+      1,
+      {
+        where: expectedScope,
+        select: expect.any(Object),
+      }
+    )
+    expect(mocks.transaction.chatAttachment.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          imageBase64,
+          imagePreviewBase64,
+          imageDescription: 'Persisted description',
+        }),
+      ],
+    })
+  })
+
+  test('preserves an unexpected preview failure as a server error', async () => {
+    const error = new Error('preview failed')
+    mocks.ensureImagePreviewBase64.mockRejectedValueOnce(error)
+
+    await expect(
+      prepareAuthoritativeConversation({
+        ...input,
+        trigger: {
+          ...input.trigger,
+          attachments: [
+            {
+              type: 'new-image',
+              imageBase64: 'data:image/png;base64,AAAA',
+            },
+          ],
+        },
+      })
+    ).rejects.toBe(error)
+
+    expect(mocks.withTransaction).not.toHaveBeenCalled()
   })
 
   test('accepts only an exact normalized retry and does not rewrite it', async () => {
@@ -190,6 +338,95 @@ describe('authoritative conversation history', () => {
             'Root question\n\n[Attached image description: A synthetic diagram.]',
         },
         { id: 'trigger', role: 'user', content: 'Follow-up' },
+      ],
+    })
+  })
+
+  test('keeps attachment-only history truthful and omits truly empty rows', async () => {
+    const rows = [
+      header({
+        id: 'trigger',
+        parentId: 'marker-1',
+        depth: 1,
+        role: 'user',
+      }),
+      header({
+        id: 'marker-1',
+        parentId: 'image-only',
+        depth: 2,
+        role: 'assistant',
+      }),
+      header({
+        id: 'image-only',
+        parentId: 'marker-2',
+        depth: 3,
+        role: 'user',
+      }),
+      header({
+        id: 'marker-2',
+        parentId: 'empty-root',
+        depth: 4,
+        role: 'assistant',
+      }),
+      header({
+        id: 'empty-root',
+        parentId: null,
+        depth: 5,
+        role: 'user',
+      }),
+    ]
+    mocks.transaction.$queryRaw.mockResolvedValue(rows)
+    mocks.transaction.chatMessage.findMany.mockResolvedValue([
+      {
+        id: 'trigger',
+        role: 'user',
+        content: [{ type: 'text', text: 'Question' }],
+        attachments: [],
+      },
+      {
+        id: 'marker-1',
+        role: 'assistant',
+        content: [],
+        attachments: [],
+      },
+      {
+        id: 'image-only',
+        role: 'user',
+        content: [],
+        attachments: [{ imageDescription: null }],
+      },
+      {
+        id: 'marker-2',
+        role: 'assistant',
+        content: [],
+        attachments: [],
+      },
+      {
+        id: 'empty-root',
+        role: 'user',
+        content: [],
+        attachments: [],
+      },
+    ])
+
+    await expect(
+      prepareAuthoritativeConversation({
+        ...input,
+        trigger: {
+          ...input.trigger,
+          id: 'trigger',
+          parentId: 'marker-1',
+        },
+      })
+    ).resolves.toMatchObject({
+      modelMessages: [
+        {
+          id: 'image-only',
+          role: 'user',
+          content:
+            '[The user attached an image without an available description.]',
+        },
+        { id: 'trigger', role: 'user', content: 'Question' },
       ],
     })
   })

@@ -4,7 +4,7 @@ const uuidSchema = z.string().uuid()
 const imageDataUrlSchema = z
   .string()
   .max(7_000_000)
-  .refine((value) => /^data:image\/(jpeg|png|gif|webp);base64,/.test(value), {
+  .refine((value) => /^data:image\/(jpeg|png|gif|webp);base64,/i.test(value), {
     message: 'Must be a base64 data URL for jpeg, png, gif, or webp',
   })
 
@@ -13,6 +13,8 @@ const commonBodySchema = z.object({
   selectedModel: z.string().min(1),
   selectedMode: z
     .string()
+    .trim()
+    .min(1)
     .optional()
     .transform((value) => value?.toLowerCase())
     .default('tutor'),
@@ -84,6 +86,13 @@ export type ParsedChatRequest = {
   usedLegacyAdapter: boolean
 }
 
+class ChatRequestValidationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ChatRequestValidationError'
+  }
+}
+
 function assertUniquePersistedAttachments(
   attachments: ParsedChatRequest['trigger']['attachments']
 ) {
@@ -91,19 +100,28 @@ function assertUniquePersistedAttachments(
     attachment.type === 'persisted-image' ? [attachment.id] : []
   )
   if (new Set(persistedIds).size !== persistedIds.length) {
-    throw new z.ZodError([])
+    throw new ChatRequestValidationError(
+      'Persisted attachment IDs must be unique'
+    )
   }
 }
 
 export function parseChatRequestBody(value: unknown): ParsedChatRequest {
   const candidate = value as Record<string, unknown> | null
-  if (candidate && 'trigger' in candidate) {
+  if (
+    candidate &&
+    typeof candidate === 'object' &&
+    !Array.isArray(candidate) &&
+    'trigger' in candidate
+  ) {
     const parsed = canonicalBodySchema.parse(value)
     if (
       parsed.trigger.text.trim().length === 0 &&
       parsed.trigger.attachments.length === 0
     ) {
-      throw new z.ZodError([])
+      throw new ChatRequestValidationError(
+        'A chat trigger requires text or an attachment'
+      )
     }
     assertUniquePersistedAttachments(parsed.trigger.attachments)
     return {
@@ -123,7 +141,9 @@ export function parseChatRequestBody(value: unknown): ParsedChatRequest {
     finalMessage?.role !== 'user' ||
     (finalMessage.content.trim().length === 0 && parsed.images.length === 0)
   ) {
-    throw new z.ZodError([])
+    throw new ChatRequestValidationError(
+      'The final legacy message must be a non-empty user trigger'
+    )
   }
 
   return {

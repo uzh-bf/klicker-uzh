@@ -844,3 +844,35 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   present, and it exposes zero routes. Another workspace currently owns the
   machine-wide lifecycle transition, so no retry, raw Docker repair, deletion,
   or cleanup was attempted.
+
+## Progress addendum 2026-08-30 (OCR correction pass)
+
+- 2026-08-30: draft PR #5676 reached an exact published head of
+  `4d392fb99`. Every automated policy, static, type, security, build, and
+  hosted Playwright check passed. The manual `final-ai-review` status remained
+  pending. The successful OCR job returned actionable findings, so its success
+  status was not treated as source approval.
+- 2026-08-30: the OCR findings and three independent read-only code reviews
+  were verified against the package. Accepted corrections move Sharp preview
+  work outside the database transaction while revalidating persisted source
+  scope and bytes inside it; preserve unexpected preview and database failures
+  as server errors; return a lifecycle-clean 409 for a post-claim conversation
+  conflict; make preview-only finish metadata truthful; fence successful
+  assistant finalization to the participant-owned thread; reject primitive
+  request bodies without a TypeError; and keep attachment-only history
+  model-visible through a deterministic placeholder while omitting truly empty
+  rows.
+- 2026-08-30: strict retry byte equality, first-write-wins legacy adaptation,
+  fail-closed historical anomalies, and the accepted 64-of-256 model window
+  remain unchanged. Legacy repair belongs to a separately designed
+  reconciliation package. Absolute text and context budgets remain owned by
+  P1's deterministic public context guard rather than an arbitrary P0 limit.
+- 2026-08-30: the local correction passes 65 focused parser, history,
+  lifecycle, and route tests. The full Chat suite passed 459 tests with 32
+  PostgreSQL tests skipped before one final test-only addition; the final
+  authoritative-history unit suite then passed all 16 cases. Chat typecheck,
+  focused Biome and Prettier checks, and `git diff --check` pass. The runtime
+  still exposes zero routes, so the PostgreSQL fixture rerun and managed
+  browser smoke remain evidence gaps. Commit, immutable correction review,
+  push, fresh exact-head CI, upstream integration, merge, deployment, and
+  activation remain pending or separately gated.

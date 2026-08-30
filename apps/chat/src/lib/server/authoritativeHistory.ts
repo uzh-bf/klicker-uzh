@@ -1,9 +1,26 @@
+import { prisma } from '@klicker-uzh/prisma'
 import { Prisma } from '@klicker-uzh/prisma/client'
 import { withTransaction } from '../../utils/transactions'
 import { ensureImagePreviewBase64 } from './imagePreview'
 
 export const MAX_VALIDATED_HISTORY_ROWS = 256
 export const MAX_MODEL_HISTORY_ROWS = 64
+
+const IMAGE_WITHOUT_DESCRIPTION_PLACEHOLDER =
+  '[The user attached an image without an available description.]'
+
+const imageAttachmentSelect = {
+  id: true,
+  type: true,
+  position: true,
+  imageBase64: true,
+  imagePreviewBase64: true,
+  imageDescription: true,
+} as const
+
+type ImageAttachmentRecord = Prisma.ChatAttachmentGetPayload<{
+  select: typeof imageAttachmentSelect
+}>
 
 type HistoryHeader = {
   id: string
@@ -40,6 +57,26 @@ export type PrepareAuthoritativeConversationInput = {
     chatMode: string | null
     modelId: string | null
     reasoningEffort: string | null
+  }
+}
+
+function scopedSourceAttachmentWhere(
+  input: PrepareAuthoritativeConversationInput,
+  attachmentIds: string[]
+): Prisma.ChatAttachmentWhereInput {
+  return {
+    id: { in: attachmentIds },
+    type: 'IMAGE',
+    message: {
+      threadId: input.threadId,
+      role: 'user',
+      lifecycleStatus: 'COMPLETED',
+      thread: {
+        participantId: input.participantId,
+        chatbotId: input.chatbotId,
+        chatbot: { ownerId: input.ownerId },
+      },
+    },
   }
 }
 
@@ -143,6 +180,10 @@ export async function prepareAuthoritativeConversation(
     throw new AuthoritativeConversationError()
   }
 
+  if (input.trigger.attachments.length > 3) {
+    throw new AuthoritativeConversationError()
+  }
+
   const persistedAttachmentIds = input.trigger.attachments.flatMap(
     (attachment) =>
       attachment.type === 'persisted-image' ? [attachment.id] : []
@@ -150,6 +191,49 @@ export async function prepareAuthoritativeConversation(
   if (new Set(persistedAttachmentIds).size !== persistedAttachmentIds.length) {
     throw new AuthoritativeConversationError()
   }
+
+  const preloadedSources: ImageAttachmentRecord[] =
+    persistedAttachmentIds.length === 0
+      ? []
+      : await prisma.chatAttachment.findMany({
+          where: scopedSourceAttachmentWhere(input, persistedAttachmentIds),
+          select: imageAttachmentSelect,
+        })
+  if (preloadedSources.length !== persistedAttachmentIds.length) {
+    throw new AuthoritativeConversationError()
+  }
+
+  const preloadedSourcesById = new Map(
+    preloadedSources.map((attachment) => [attachment.id, attachment])
+  )
+  const preparedAttachments = await Promise.all(
+    input.trigger.attachments.map(async (attachment, position) => {
+      const source =
+        attachment.type === 'persisted-image'
+          ? preloadedSourcesById.get(attachment.id)
+          : null
+      const imageBase64 =
+        attachment.type === 'new-image'
+          ? attachment.imageBase64
+          : source?.imageBase64
+      if (!imageBase64) throw new AuthoritativeConversationError()
+
+      const resolved = await ensureImagePreviewBase64({
+        imageBase64,
+        imagePreviewBase64: source?.imagePreviewBase64 ?? null,
+      })
+      if (!resolved.imagePreviewBase64) {
+        throw new AuthoritativeConversationError()
+      }
+
+      return {
+        position,
+        sourceId: attachment.type === 'persisted-image' ? attachment.id : null,
+        imageBase64,
+        imagePreviewBase64: resolved.imagePreviewBase64,
+      }
+    })
+  )
 
   return withTransaction(async (tx) => {
     const thread = await tx.chatThread.findFirst({
@@ -206,85 +290,44 @@ export async function prepareAuthoritativeConversation(
       })
     }
 
-    const selectAttachment = {
-      id: true,
-      type: true,
-      position: true,
-      imageBase64: true,
-      imagePreviewBase64: true,
-      imageDescription: true,
-    } as const
-    const loadScopedSourceAttachments = async () => {
-      if (persistedAttachmentIds.length === 0) return new Map()
-
-      const sourceAttachments = await tx.chatAttachment.findMany({
-        where: {
-          id: { in: persistedAttachmentIds },
-          type: 'IMAGE',
-          message: {
-            threadId: input.threadId,
-            role: 'user',
-            lifecycleStatus: 'COMPLETED',
-            thread: {
-              participantId: input.participantId,
-              chatbotId: input.chatbotId,
-              chatbot: { ownerId: input.ownerId },
-            },
-          },
-        },
-        select: selectAttachment,
-      })
-      if (sourceAttachments.length !== persistedAttachmentIds.length) {
-        throw new AuthoritativeConversationError()
-      }
-
-      return new Map(
-        sourceAttachments.map((attachment) => [attachment.id, attachment])
-      )
+    const sourceAttachments: ImageAttachmentRecord[] =
+      persistedAttachmentIds.length === 0
+        ? []
+        : await tx.chatAttachment.findMany({
+            where: scopedSourceAttachmentWhere(input, persistedAttachmentIds),
+            select: imageAttachmentSelect,
+          })
+    if (sourceAttachments.length !== persistedAttachmentIds.length) {
+      throw new AuthoritativeConversationError()
     }
 
-    const sourceAttachments = await loadScopedSourceAttachments()
-    if (created.count === 1) {
-      let bindings: Array<{
-        type: 'IMAGE'
-        messageId: string
-        position: number
-        imageBase64: string
-        imagePreviewBase64: string
-        imageDescription: string | null
-      }>
-      try {
-        bindings = await Promise.all(
-          input.trigger.attachments.map(async (attachment, position) => {
-            const source =
-              attachment.type === 'persisted-image'
-                ? sourceAttachments.get(attachment.id)
-                : null
-            const imageBase64 =
-              attachment.type === 'new-image'
-                ? attachment.imageBase64
-                : source?.imageBase64
-            if (!imageBase64) throw new AuthoritativeConversationError()
+    const sourceAttachmentsById = new Map(
+      sourceAttachments.map((attachment) => [attachment.id, attachment])
+    )
+    for (const prepared of preparedAttachments) {
+      if (!prepared.sourceId) continue
 
-            const resolved = await ensureImagePreviewBase64({
-              imageBase64,
-              imagePreviewBase64: source?.imagePreviewBase64 ?? null,
-            })
-            return {
-              type: 'IMAGE' as const,
-              messageId: input.trigger.id,
-              position,
-              imageBase64,
-              imagePreviewBase64: resolved.imagePreviewBase64!,
-              imageDescription: source?.imageDescription ?? null,
-            }
-          })
-        )
-      } catch (error) {
-        if (error instanceof AuthoritativeConversationError) throw error
+      const source = sourceAttachmentsById.get(prepared.sourceId)
+      if (!source || source.imageBase64 !== prepared.imageBase64) {
         throw new AuthoritativeConversationError()
       }
+    }
 
+    if (created.count === 1) {
+      const bindings = preparedAttachments.map((prepared) => {
+        const source = prepared.sourceId
+          ? sourceAttachmentsById.get(prepared.sourceId)
+          : null
+        return {
+          type: 'IMAGE' as const,
+          messageId: input.trigger.id,
+          position: prepared.position,
+          imageBase64: prepared.imageBase64,
+          imagePreviewBase64:
+            source?.imagePreviewBase64 ?? prepared.imagePreviewBase64,
+          imageDescription: source?.imageDescription ?? null,
+        }
+      })
       if (bindings.length > 0) {
         await tx.chatAttachment.createMany({ data: bindings })
       }
@@ -292,15 +335,13 @@ export async function prepareAuthoritativeConversation(
 
     const currentAttachments = await tx.chatAttachment.findMany({
       where: { messageId: input.trigger.id },
-      select: selectAttachment,
+      select: imageAttachmentSelect,
       orderBy: [{ position: 'asc' }, { id: 'asc' }],
     })
 
     if (created.count === 0 && !input.usedLegacyAdapter) {
-      const requestedImages = input.trigger.attachments.map((attachment) =>
-        attachment.type === 'new-image'
-          ? attachment.imageBase64
-          : sourceAttachments.get(attachment.id)?.imageBase64
+      const requestedImages = preparedAttachments.map(
+        (attachment) => attachment.imageBase64
       )
       if (
         requestedImages.length !== currentAttachments.length ||
@@ -376,7 +417,7 @@ export async function prepareAuthoritativeConversation(
         role: true,
         content: true,
         attachments: {
-          where: { imageDescription: { not: null } },
+          where: { type: 'IMAGE' },
           select: { imageDescription: true },
           orderBy: { position: 'asc' },
         },
@@ -410,9 +451,15 @@ export async function prepareAuthoritativeConversation(
             )
             .join('\n\n')
           content = content ? `${content}\n\n${suffix}` : suffix
+        } else if (
+          message.role === 'user' &&
+          !content &&
+          message.attachments.length > 0
+        ) {
+          content = IMAGE_WITHOUT_DESCRIPTION_PLACEHOLDER
         }
 
-        if (message.role === 'assistant' && !content) return []
+        if (!content) return []
         return [{ id: message.id, role: message.role, content }]
       })
 

@@ -278,6 +278,11 @@ export async function finalizeChatTurn(
         role: 'assistant',
         lifecycleStatus: { in: ['IN_PROGRESS', 'FAILED'] },
         lifecycleAttemptId: input.lifecycleAttemptId,
+        thread: {
+          participantId: input.participantId,
+          chatbotId: input.chatbotId,
+          chatbot: { ownerId: input.ownerId },
+        },
       },
       data: {
         content: input.content,

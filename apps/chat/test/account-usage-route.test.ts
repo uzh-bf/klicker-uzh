@@ -528,7 +528,7 @@ describe('account usage chat route', () => {
           id: attachmentId,
           position: 0,
           imageDescription: 'Synthetic image description',
-          hasFullImage: true,
+          hasFullImage: false,
         },
       ],
     })
@@ -586,6 +586,51 @@ describe('account usage chat route', () => {
         }),
       ],
     })
+  })
+
+  test('fails the claimed turn when its image binding disappears', async () => {
+    const attachmentId = '00000000-0000-4000-8000-000000000106'
+    mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
+      triggerText: 'Explain this.',
+      modelMessages: [
+        { id: USER_MESSAGE_ID, role: 'user', content: 'Explain this.' },
+      ],
+      validatedRowCount: 1,
+      modelRowCount: 1,
+      truncated: false,
+      createdTrigger: false,
+      currentAttachments: [
+        {
+          id: attachmentId,
+          position: 0,
+          imageBase64: 'data:image/png;base64,AAAA',
+          imagePreviewBase64: 'data:image/jpeg;base64,BBBB',
+          imageDescription: null,
+        },
+      ],
+    })
+    mocks.generateText.mockResolvedValueOnce({
+      text: 'Description',
+      usage: { inputTokens: 2, outputTokens: 3 },
+    })
+    mocks.attachmentUpdateMany.mockResolvedValueOnce({ count: 0 })
+    mocks.attachmentFindFirst.mockResolvedValueOnce(null)
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(409)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Chat conversation conflict',
+    })
+    expect(mocks.failChatTurn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        assistantMessageId: ASSISTANT_MESSAGE_ID,
+        parentId: USER_MESSAGE_ID,
+      })
+    )
+    expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
   test('uses a concurrently completed image description', async () => {

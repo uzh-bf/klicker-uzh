@@ -92,6 +92,16 @@ describe('account usage finalization errors', () => {
       })
     ).rejects.toBe(error)
 
+    expect(mocks.transaction.chatMessage.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        thread: {
+          participantId: 'participant-1',
+          chatbotId: 'chatbot-1',
+          chatbot: { ownerId: 'owner-1' },
+        },
+      }),
+      data: expect.any(Object),
+    })
     expect(mocks.transaction.chatMessage.findUnique).not.toHaveBeenCalled()
   })
 })

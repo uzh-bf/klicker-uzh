@@ -89,6 +89,57 @@ describe('chat request parsing', () => {
     expect(() => parseChatRequestBody(body)).toThrow()
   })
 
+  test.each([
+    null,
+    true,
+    42,
+    'trigger',
+    [],
+  ])('rejects primitive or array body %j through validation', (body) => {
+    let error: unknown
+    try {
+      parseChatRequestBody(body)
+    } catch (caught) {
+      error = caught
+    }
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error).not.toBeInstanceOf(TypeError)
+  })
+
+  test('reports why a duplicate persisted attachment is invalid', () => {
+    expect(() =>
+      parseChatRequestBody({
+        ...common,
+        trigger: {
+          id: USER_ID,
+          text: '',
+          attachments: [
+            { type: 'persisted-image', id: ATTACHMENT_ID },
+            { type: 'persisted-image', id: ATTACHMENT_ID },
+          ],
+        },
+      })
+    ).toThrow('Persisted attachment IDs must be unique')
+  })
+
+  test('accepts case-insensitive image media types', () => {
+    expect(
+      parseChatRequestBody({
+        ...common,
+        trigger: {
+          id: USER_ID,
+          text: '',
+          attachments: [
+            {
+              type: 'new-image',
+              imageBase64: 'data:image/PNG;base64,AAAA',
+            },
+          ],
+        },
+      })
+    ).toMatchObject({ usedLegacyAdapter: false })
+  })
   test('accepts an image-only canonical trigger with a new raw image', () => {
     expect(
       parseChatRequestBody({

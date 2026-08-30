@@ -75,18 +75,22 @@ See [ADR 0044](./adr/0044-postgresql-owned-chat-context.md).
 
 `apps/chat/src/lib/server/authoritativeHistory.ts:prepareAuthoritativeConversation`
 runs before assistant claim, MCP discovery, image description, or provider
-work. In one participant-scoped transaction it creates or exactly validates
-the immutable user trigger, resolves its current image bindings, walks its
-PostgreSQL parent chain, and validates at most 256 rows. A longer valid chain
-uses row 256 as an effective root and records truncation. Only the closest 64
-validated rows are projected to the model. The browser-side
+work. It preloads participant-scoped persisted image sources and creates
+bounded previews before opening the database transaction. The transaction
+revalidates persisted source scope and immutable bytes, creates or exactly
+validates the user trigger and current bindings, walks its PostgreSQL parent
+chain, and validates at most 256 rows. A longer valid chain uses row 256 as an
+effective root and records truncation. Only the closest 64 validated rows are
+projected to the model. The browser-side
 `apps/chat/src/lib/conversationBranch.ts:walkConversationBranch` shares
 cycle-safe path semantics for rendering but cannot authorize or compose model
 history.
 
 The model projection includes persisted user and assistant text and bounded
-descriptions from prior user images. Marker-only assistant rows still
-participate in structural validation but are omitted from model history. Only
+descriptions from prior user images. An attachment-only user row without an
+available description gets a deterministic placeholder; a truly empty row is
+omitted. Marker-only assistant rows still participate in structural validation
+but are omitted from model history. Only
 the current user message contributes raw image bytes; siblings, older rows,
 prior raw images, reasoning, client data markers, and generic persisted tool
 payloads remain outside the request. Tool payload replay needs a tool-specific
@@ -99,9 +103,10 @@ completed user message in the same participant, chatbot, owner, and thread
 scope. Edit omission removes the image only from the new binding set; source
 rows never change. A retry keeps its current binding IDs and bytes, may fill a
 null-or-empty description through a conditional current-message update, and
-can never overwrite an existing description. The server returns authoritative
-binding IDs in finish metadata, while full-image hydration remains a display
-operation rather than a send prerequisite.
+can never overwrite an existing description. Finish metadata returns
+authoritative binding IDs, previews, and descriptions with `hasFullImage:
+false` because it does not serialize raw bytes. Full-image hydration remains a
+display operation rather than a send prerequisite.
 
 Assistant lifecycle ownership follows the same boundary.
 `apps/chat/src/services/accountUsage.ts:claimChatTurn`, `failChatTurn`, and
