@@ -35,7 +35,10 @@ const mocks = vi.hoisted(() => ({
   prepareAuthoritativeConversation: vi.fn(),
   streamConfig: null as Record<string, unknown> | null,
   responseOptions: null as Record<string, unknown> | null,
-  ChatTurnConflictError: class ChatTurnConflictError extends Error {},
+  ChatTurnConflictError: class ChatTurnConflictError extends Error {
+    readonly reason = 'claim_race'
+  },
+  InvalidImageDataError: class InvalidImageDataError extends Error {},
   AuthoritativeConversationError: class AuthoritativeConversationError extends Error {},
 }))
 
@@ -113,6 +116,7 @@ vi.mock('@/src/services/accountUsage', () => {
 
 vi.mock('@/src/lib/server/imagePreview', () => ({
   ensureImagePreviewBase64: mocks.ensureImagePreviewBase64,
+  InvalidImageDataError: mocks.InvalidImageDataError,
 }))
 
 vi.mock('@/src/lib/server/promptCacheIdentity', () => ({
@@ -262,7 +266,7 @@ describe('account usage chat route', () => {
       outcome: 'claimed',
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
     })
-    mocks.failChatTurn.mockResolvedValue(undefined)
+    mocks.failChatTurn.mockResolvedValue(true)
     mocks.isChatAccountUsageEnforcementEnabled.mockReturnValue(true)
     mocks.isChatAccountUsageAvailable.mockResolvedValue(true)
     mocks.roundChatUsageCredits.mockImplementation((value: number) => ({
@@ -408,6 +412,26 @@ describe('account usage chat route', () => {
       'participant-1',
       'chatbot-1'
     )
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
+  test('keeps claim collisions generic while logging a values-free reason', async () => {
+    mocks.claimChatTurn.mockRejectedValueOnce(new mocks.ChatTurnConflictError())
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(409)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Chat turn already completed',
+      code: 'CHAT_TURN_ALREADY_COMPLETED',
+    })
+    expect(console.warn).toHaveBeenCalledWith('Chat turn claim conflict:', {
+      requestId: expect.any(String),
+      reason: 'claim_race',
+    })
     expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
@@ -878,6 +902,24 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
+  test('rejects undecodable current image data before claim or provider work', async () => {
+    mocks.prepareAuthoritativeConversation.mockRejectedValueOnce(
+      new mocks.InvalidImageDataError()
+    )
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Invalid image data',
+    })
+    expect(mocks.claimChatTurn).not.toHaveBeenCalled()
+    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
+    expect(mocks.streamText).not.toHaveBeenCalled()
+  })
+
   test('denies zero-credit ADVANCED usage instead of crossing to BASE', async () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
@@ -1228,6 +1270,26 @@ describe('account usage chat route', () => {
       parentId: USER_MESSAGE_ID,
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
     })
+    expect(mocks.finalizeChatTurn).not.toHaveBeenCalled()
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
+  })
+
+  test('reports when a provider failure loses its lifecycle attempt fence', async () => {
+    mocks.failChatTurn.mockResolvedValueOnce(false)
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+    expect(response.status).toBe(200)
+
+    await streamCallbacks().onError(new Error('synthetic provider failure'))
+
+    expect(console.warn).toHaveBeenCalledWith(
+      'Assistant lifecycle attempt was not marked failed:',
+      {
+        requestId: expect.any(String),
+        phase: 'stream.error',
+      }
+    )
     expect(mocks.finalizeChatTurn).not.toHaveBeenCalled()
     expect(mocks.decrementCredits).not.toHaveBeenCalled()
   })

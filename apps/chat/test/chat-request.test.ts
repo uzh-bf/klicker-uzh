@@ -67,6 +67,33 @@ describe('chat request parsing', () => {
     })
   })
 
+  test('bounds canonical text and the temporary legacy request window', () => {
+    expect(() =>
+      parseChatRequestBody({
+        ...common,
+        trigger: { id: USER_ID, text: 'x'.repeat(100_001) },
+      })
+    ).toThrow()
+
+    expect(() =>
+      parseChatRequestBody({
+        ...common,
+        messages: [{ id: USER_ID, role: 'user', content: 'x'.repeat(100_001) }],
+      })
+    ).toThrow()
+
+    expect(() =>
+      parseChatRequestBody({
+        ...common,
+        messages: Array.from({ length: 101 }, () => ({
+          id: USER_ID,
+          role: 'user',
+          content: 'Question',
+        })),
+      })
+    ).toThrow()
+  })
+
   test.each([
     { ...common, trigger: { id: 'not-a-uuid', text: 'Question' } },
     {

@@ -9,16 +9,24 @@ const CREDIT_LIMIT = new Prisma.Decimal('1000000000000')
 export const CHAT_TURN_ALREADY_COMPLETED_CODE = 'CHAT_TURN_ALREADY_COMPLETED'
 export const CHAT_TURN_IN_PROGRESS_CODE = 'CHAT_TURN_IN_PROGRESS'
 
+export type ChatTurnConflictReason =
+  | 'invalid_parent'
+  | 'assistant_identity_mismatch'
+  | 'claim_race'
+  | 'finalize_conflict'
+
 export function isChatAccountUsageEnforcementEnabled(): boolean {
   return process.env.CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED === 'true'
 }
 
 export class ChatTurnConflictError extends Error {
   readonly code = CHAT_TURN_ALREADY_COMPLETED_CODE
+  readonly reason: ChatTurnConflictReason
 
-  constructor() {
-    super('Chat turn already completed')
+  constructor(reason: ChatTurnConflictReason) {
+    super('Chat turn conflict')
     this.name = 'ChatTurnConflictError'
+    this.reason = reason
   }
 }
 
@@ -125,7 +133,7 @@ export async function claimChatTurn(
       select: { id: true },
     })
     if (!parent) {
-      throw new ChatTurnConflictError()
+      throw new ChatTurnConflictError('invalid_parent')
     }
 
     const created = await tx.chatMessage.createMany({
@@ -199,7 +207,7 @@ export async function claimChatTurn(
         existing.thread.chatbotId !== input.chatbotId ||
         existing.thread.chatbot.ownerId !== input.ownerId
       ) {
-        throw new ChatTurnConflictError()
+        throw new ChatTurnConflictError('assistant_identity_mismatch')
       }
       if (existing.lifecycleStatus === 'COMPLETED') {
         return { outcome: 'completed', lifecycleAttemptId: null }
@@ -209,7 +217,7 @@ export async function claimChatTurn(
       }
     }
 
-    throw new ChatTurnConflictError()
+    throw new ChatTurnConflictError('claim_race')
   })
 }
 
@@ -229,8 +237,8 @@ export async function failChatTurn({
   threadId: string
   parentId: string
   lifecycleAttemptId: string
-}): Promise<void> {
-  await prisma.chatMessage.updateMany({
+}): Promise<boolean> {
+  const failed = await prisma.chatMessage.updateMany({
     where: {
       id: assistantMessageId,
       threadId,
@@ -246,6 +254,8 @@ export async function failChatTurn({
     },
     data: { lifecycleStatus: 'FAILED' },
   })
+
+  return failed.count === 1
 }
 
 export async function finalizeChatTurn(
@@ -274,7 +284,7 @@ export async function finalizeChatTurn(
       select: { id: true },
     })
     if (!parent) {
-      throw new ChatTurnConflictError()
+      throw new ChatTurnConflictError('invalid_parent')
     }
 
     const completed = await tx.chatMessage.updateMany({
@@ -334,7 +344,7 @@ export async function finalizeChatTurn(
           creditsUsed: existing.creditsUsed?.toNumber() ?? null,
         }
       }
-      throw new ChatTurnConflictError()
+      throw new ChatTurnConflictError('finalize_conflict')
     }
 
     if (credits !== null) {

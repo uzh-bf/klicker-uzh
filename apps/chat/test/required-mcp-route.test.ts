@@ -66,7 +66,9 @@ vi.mock('@/src/services/credits', () => ({
 
 vi.mock('@/src/services/accountUsage', () => ({
   CHAT_TURN_ALREADY_COMPLETED_CODE: 'CHAT_TURN_ALREADY_COMPLETED',
-  ChatTurnConflictError: class ChatTurnConflictError extends Error {},
+  ChatTurnConflictError: class ChatTurnConflictError extends Error {
+    readonly reason = 'claim_race'
+  },
   claimChatTurn: mocks.claimChatTurn,
   failChatTurn: mocks.failChatTurn,
   finalizeChatTurn: vi.fn(),
@@ -139,7 +141,7 @@ describe('required MCP chat preflight', () => {
       outcome: 'claimed',
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
     })
-    mocks.failChatTurn.mockResolvedValue(undefined)
+    mocks.failChatTurn.mockResolvedValue(true)
     mocks.findUnique.mockResolvedValue({
       id: 'chatbot-1',
       ownerId: 'owner-1',

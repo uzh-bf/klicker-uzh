@@ -32,6 +32,7 @@ vi.mock('../src/utils/transactions', () => ({
 
 import {
   claimChatTurn,
+  failChatTurn,
   finalizeChatTurn,
   roundChatUsageCredits,
 } from '../src/services/accountUsage'
@@ -86,6 +87,59 @@ describe('account usage lifecycle fencing', () => {
         },
       }),
       data: expect.any(Object),
+    })
+  })
+
+  test('reports a missed failed-turn transition without weakening its fence', async () => {
+    mocks.prisma.chatMessage.updateMany.mockResolvedValue({ count: 0 })
+
+    await expect(
+      failChatTurn({
+        ownerId: 'owner-1',
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+        assistantMessageId: 'message-1',
+        threadId: 'thread-1',
+        parentId: 'parent-1',
+        lifecycleAttemptId: 'attempt-1',
+      })
+    ).resolves.toBe(false)
+
+    expect(mocks.prisma.chatMessage.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'message-1',
+        threadId: 'thread-1',
+        parentId: 'parent-1',
+        role: 'assistant',
+        lifecycleStatus: 'IN_PROGRESS',
+        lifecycleAttemptId: 'attempt-1',
+        thread: {
+          participantId: 'participant-1',
+          chatbotId: 'chatbot-1',
+          chatbot: { ownerId: 'owner-1' },
+        },
+      },
+      data: { lifecycleStatus: 'FAILED' },
+    })
+  })
+
+  test('distinguishes an invalid parent in internal conflict evidence', async () => {
+    mocks.withTransaction.mockImplementation(async (operation) =>
+      operation(mocks.transaction)
+    )
+    mocks.transaction.chatMessage.findFirst.mockResolvedValue(null)
+
+    await expect(
+      claimChatTurn({
+        ownerId: 'owner-1',
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+        threadId: 'thread-1',
+        assistantMessageId: 'message-1',
+        parentId: 'parent-1',
+      })
+    ).rejects.toMatchObject({
+      reason: 'invalid_parent',
     })
   })
 })

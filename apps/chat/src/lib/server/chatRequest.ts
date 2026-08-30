@@ -2,6 +2,8 @@ import { z } from 'zod'
 
 const uuidSchema = z.string().uuid()
 const MAX_IMAGE_DATA_URL_LENGTH = 7_000_000
+const MAX_CHAT_TEXT_LENGTH = 100_000
+const MAX_LEGACY_MESSAGES = 100
 const IMAGE_DATA_URL_PATTERN =
   /^data:image\/(jpeg|png|gif|webp);base64,([A-Za-z0-9+/]+={0,2})$/i
 
@@ -47,7 +49,7 @@ const canonicalBodySchema = commonBodySchema.extend({
   trigger: z.object({
     id: uuidSchema,
     parentId: uuidSchema.nullable().optional().default(null),
-    text: z.string(),
+    text: z.string().max(MAX_CHAT_TEXT_LENGTH),
     attachments: z.array(triggerAttachmentSchema).max(3).optional().default([]),
   }),
 })
@@ -58,10 +60,11 @@ const legacyBodySchema = commonBodySchema.extend({
       z.object({
         id: uuidSchema,
         role: z.enum(['user', 'assistant']),
-        content: z.string(),
+        content: z.string().max(MAX_CHAT_TEXT_LENGTH),
       })
     )
-    .min(1),
+    .min(1)
+    .max(MAX_LEGACY_MESSAGES),
   parentId: uuidSchema.nullable().optional(),
   images: z
     .array(

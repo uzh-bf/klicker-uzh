@@ -71,6 +71,9 @@ trigger with its parent, text, and ordered image inputs. It never sends the
 browser's message path. `apps/chat/src/lib/server/chatRequest.ts:parseChatRequestBody`
 keeps one temporary compatibility adapter for already-open clients: it reads
 only the final user item and ignores every earlier browser-supplied message.
+Canonical trigger text and each compatibility message are capped at 100,000
+characters. The compatibility adapter accepts at most 100 messages, even
+though only the final user item can become the trigger.
 See [ADR 0044](./adr/0044-postgresql-owned-chat-context.md).
 
 `apps/chat/src/lib/server/authoritativeHistory.ts:prepareAuthoritativeConversation`
@@ -85,6 +88,13 @@ projected to the model. The browser-side
 `apps/chat/src/lib/conversationBranch.ts:walkConversationBranch` shares
 cycle-safe path semantics for rendering but cannot authorize or compose model
 history.
+
+A syntactically valid image data URL that cannot be decoded returns a generic
+`400` before assistant claim or provider work. Once an accepted trigger is
+persisted in an existing thread, a later assistant-key collision does not
+delete that canonical user input; the participant can retry with a fresh
+assistant key. A transient thread created for a rejected first turn is still
+discarded.
 
 The model projection includes persisted user and assistant text and bounded
 descriptions from prior user images. An attachment-only user row without an
@@ -345,8 +355,10 @@ The client-supplied assistant message ID is the turn lifecycle key.
 or provider work. Concurrent and completed claims return the same generic
 `409`; collision checks verify the assistant role, participant-owned thread,
 chatbot, owner, and exact completed user parent without revealing foreign
-scope. Failed attempts may be reclaimed with a new UUID only for that same
-parent, while callbacks from an older attempt cannot complete or charge the
+scope. Internal logs distinguish only a values-free conflict reason; the
+client response deliberately stays generic. Failed attempts may be reclaimed
+with a new UUID only for that same parent, while callbacks from an older
+attempt cannot complete or charge the
 turn. Claims have no timeout or automatic lease stealing.
 
 `apps/chat/src/services/accountUsage.ts:finalizeChatTurn` compares and sets the
@@ -362,6 +374,11 @@ History reads hide
 reservation, so the bounded final-turn and concurrent overrun accepted by
 [ADR 0041](./adr/0041-chatbot-trusted-pilot-boundary.md) remains possible; the next
 request then fails its live check.
+
+Failure callbacks use the same assistant, parent, participant, thread, and
+attempt fence. A zero-row transition is logged without changing the response;
+it normally means a newer attempt already owns the row and must not be
+overwritten.
 
 The existing `ChatUsageCredits` balance remains a separate participant
 allowance. Its decrement runs after account finalization and is not part of the

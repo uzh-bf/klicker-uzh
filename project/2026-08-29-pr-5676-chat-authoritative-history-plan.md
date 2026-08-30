@@ -151,7 +151,8 @@ approve W4, W5, or their storage and execution decisions.
 The canonical POST request carries one user trigger: UUID, nullable parent
 UUID, text, and an ordered maximum-three attachment list. It also carries the
 existing UUID thread and assistant IDs plus selected model, mode, and reasoning
-effort. The server supplies the `user` role; the client cannot choose it.
+effort. Trigger text is capped at 100,000 characters. The server supplies the
+`user` role; the client cannot choose it.
 
 Each attachment is either a genuinely new image with raw bytes or a persisted
 attachment UUID selected by the participant. A trigger is valid with non-blank
@@ -161,8 +162,9 @@ For one deployment window, the route also accepts the old `messages` body used
 by an already-open browser tab. It extracts only the final user item and the
 separate parent hint. Earlier items are ignored for authorization, context,
 attachment lookup, telemetry, and persistence. The adapter returns the same
-canonical internal trigger and is documented for removal in the roadmap
-receipt; it does not preserve client-history authority.
+canonical internal trigger, accepts at most 100 entries with 100,000
+characters per entry, and is documented for removal in the roadmap receipt; it
+does not preserve client-history authority.
 
 All identifier fields use UUID validation. Malformed bodies receive the
 existing generic request error without database or provider work.
@@ -183,7 +185,10 @@ description, or provider work, one transaction:
 An existing trigger is immutable. A different parent, content, role, thread,
 or attachment mutation under the same ID is a generic conflict, not an update.
 Edit creates a new user ID. Regenerate reuses the existing user ID and its
-bindings.
+bindings. Once accepted in an existing thread, the trigger remains canonical
+and auditable if the later assistant-key claim conflicts; the client retries
+with a fresh assistant key. A rejected first turn still discards its transient
+new thread.
 
 The CTE follows globally unique IDs so a parent in another thread is visible as
 invalid rather than indistinguishable from absence. It orders by parent-chain
@@ -959,3 +964,15 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   PostgreSQL execution and managed browser smoke remain runtime evidence gaps.
   Fresh exact-head build, push, GitHub CI/OCR, readiness, manual final review,
   merge, deployment, and activation remain pending or separately gated.
+
+- 2026-08-30 post-integration OCR hardening: exact-head source, CodeQL,
+  repository checks, gitleaks, build, all eight hosted Playwright shards, and
+  OCR passed at `8a2999c49`. The accepted follow-up bounds canonical and legacy
+  request text, caps the temporary legacy array, maps undecodable current image
+  data to a pre-claim `400`, records values-free internal conflict reasons, and
+  reports missed failed-attempt transitions without weakening lifecycle
+  fencing. The accepted-trigger audit boundary, generic client conflict, and
+  fail-closed legacy transaction race remain deliberate. The full Chat suite passes
+  474 tests with 32 PostgreSQL tests skipped; Chat typecheck, focused
+  formatting, and `git diff --check` pass on Node 24.16.0 and pnpm 11.5.0.
+  Commit, push, and fresh exact-head CI remain pending.

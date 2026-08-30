@@ -61,4 +61,19 @@ describe('ensureImagePreviewBase64', () => {
       imagePreviewBase64: 'data:image/jpeg;base64,cHJldmlldy1iaW5hcnk=',
     })
   })
+
+  test('reports syntactically valid but undecodable image data', async () => {
+    toBufferMock.mockRejectedValue(new Error('synthetic decode failure'))
+
+    const { ensureImagePreviewBase64, InvalidImageDataError } = await import(
+      '../src/lib/server/imagePreview'
+    )
+
+    await expect(
+      ensureImagePreviewBase64({
+        imageBase64: 'data:image/png;base64,AAAA',
+        imagePreviewBase64: null,
+      })
+    ).rejects.toBeInstanceOf(InvalidImageDataError)
+  })
 })

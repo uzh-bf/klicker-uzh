@@ -29,6 +29,7 @@ import {
   getParticipantFallbackModelId,
 } from '@/src/lib/server/chatModelRegistry'
 import { parseChatRequestBody } from '@/src/lib/server/chatRequest'
+import { InvalidImageDataError } from '@/src/lib/server/imagePreview'
 import {
   getParentSpanContext,
   getTraceIdForMessage,
@@ -670,7 +671,7 @@ export async function POST(
     assistantMessageId,
     selectedModel: parsed.selectedModel,
     selectedMode,
-    messageCount: 1,
+    triggerCount: 1,
     usedLegacyAdapter,
   })
 
@@ -945,6 +946,10 @@ export async function POST(
     ReturnType<typeof prepareAuthoritativeConversation>
   >
   try {
+    // Persist the accepted user trigger before claiming its assistant turn so
+    // canonical user input remains auditable even if the assistant key later
+    // collides. Claim conflicts never delete a user message from an existing
+    // thread.
     authoritativeConversation = await prepareAuthoritativeConversation({
       participantId,
       ownerId: chatbot.ownerId,
@@ -964,6 +969,10 @@ export async function POST(
       },
     })
   } catch (error) {
+    if (error instanceof InvalidImageDataError) {
+      await discardCreatedThread('history.invalid-image')
+      return NextResponse.json({ error: 'Invalid image data' }, { status: 400 })
+    }
     if (error instanceof AuthoritativeConversationError) {
       await discardCreatedThread('history.conflict')
       return NextResponse.json(
@@ -994,6 +1003,10 @@ export async function POST(
     })
   } catch (error) {
     if (error instanceof ChatTurnConflictError) {
+      console.warn('Chat turn claim conflict:', {
+        requestId,
+        reason: error.reason,
+      })
       await discardCreatedThread('claim.conflict')
       return completedTurnResponse()
     }
@@ -1012,7 +1025,7 @@ export async function POST(
 
   const failAssistantClaim = async (phase: string) => {
     try {
-      await failChatTurn({
+      const failed = await failChatTurn({
         ownerId: chatbot.ownerId,
         chatbotId,
         participantId,
@@ -1021,6 +1034,12 @@ export async function POST(
         parentId: userMessageId,
         lifecycleAttemptId,
       })
+      if (!failed) {
+        console.warn('Assistant lifecycle attempt was not marked failed:', {
+          requestId,
+          phase,
+        })
+      }
     } catch (error) {
       console.error('Failed to mark assistant lifecycle attempt as failed:', {
         requestId,
