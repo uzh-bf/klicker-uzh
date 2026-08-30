@@ -1003,3 +1003,17 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   immutable review, commit, push, exact-head CI/OCR, readiness, and manual
   final review remain before the separately gated PostgreSQL/browser proof,
   merge, deployment, or activation.
+
+- 2026-08-30 exact OCR-correction review closure: immutable source commit
+  `d68dd0306` passed the risk-selected slice review with no finding. The first
+  simplifier route could not inspect files because it inherited the known
+  symlinked-writable-root sandbox fault; the replacement simplifier reviewed
+  the complete immutable source diff supplied directly and found no warranted
+  reduction. Current official Sharp documentation confirms that `metadata()`
+  reads headers without decoding compressed pixels, so later pixel decode and
+  transformation failures deliberately remain server errors. A native Sharp
+  smoke validated the same-instance metadata-then-transform sequence with the
+  installed package. Full Chat tests and the native 25-task repository commit
+  gate pass. Push and fresh exact-head CI/OCR remain before readiness and the
+  required manual final review; PostgreSQL fixture proof, managed browser
+  smoke, merge, deployment, and activation remain separately gated.
