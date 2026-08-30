@@ -344,19 +344,24 @@ function hasAnyReferenceMarker(documents, markers) {
   })
 }
 
-function isRejected(result) {
-  if (!result || typeof result !== 'object') return false
-  if (result.isError === true) return true
+function isRejected(result, rejectionClass) {
+  if (!result || typeof result !== 'object' || result.isError !== true) {
+    return false
+  }
   if (!Array.isArray(result.content)) return false
+  const expected =
+    rejectionClass === 'trusted_filter_override'
+      ? /invalid arguments|validation error|extra inputs are not permitted/i
+      : /unauthorized:\s*(?:missing bearer token|invalid token)/i
   return result.content.some((block) => {
     if (block?.type !== 'text' || typeof block.text !== 'string') {
       return false
     }
     try {
       const parsed = JSON.parse(block.text)
-      return Boolean(parsed?.error)
+      return typeof parsed?.error === 'string' && expected.test(parsed.error)
     } catch {
-      return /unauthorized|invalid token|invalid arguments/i.test(block.text)
+      return expected.test(block.text)
     }
   })
 }
@@ -407,8 +412,11 @@ export function createMcpTransport(
   headers,
   Transport = StreamableHTTPClientTransport
 ) {
+  const noRedirectFetch = (input, init = {}) =>
+    fetch(input, { ...init, redirect: 'error' })
   return new Transport(new URL(PRD_ENDPOINT), {
     requestInit: { headers, redirect: 'error' },
+    fetch: noRedirectFetch,
     reconnectionOptions: {
       initialReconnectionDelay: 1_000,
       maxReconnectionDelay: 30_000,
@@ -510,7 +518,7 @@ async function proveRejections(
       scopeToken,
       question: proofCase.positive.question,
     })
-    if (!isRejected(result)) {
+    if (!isRejected(result, rejectionClass)) {
       throw new ProofFailure('rejection_failed', proofCase.id, rejectionClass)
     }
     receipt.rejections[rejectionClass] = 'passed'
@@ -524,7 +532,7 @@ async function proveRejections(
     question: proofCase.positive.question,
     override: foreignKbId,
   })
-  if (!isRejected(overrideResult)) {
+  if (!isRejected(overrideResult, 'trusted_filter_override')) {
     throw new ProofFailure(
       'rejection_failed',
       proofCase.id,
