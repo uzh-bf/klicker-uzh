@@ -213,7 +213,14 @@ Commit: `ci(playwright): use reusable profile plans`.
       policy, 10 focused profile/shard tests, YAML and formatter checks, all
       eight real shard plans through installed `0.0.51`, and `check:all`. The
       eight plans retain 45 total Turbo filters.
-- [ ] Integrate current `origin/v3` once without rebasing, rerun affected checks,
-      push the exact head, qualify PR #5683, and merge when safe.
+- [x] Current `origin/v3` `acf56b5331a24d4f53729046d9784d4aed006f65`
+      was integrated once without rebasing in merge commit
+      `d95902da4fc80931175ae0e4ec4bbe90730f9c33`. The resolved tree retains
+      Devrouter `0.0.51`; frozen install, focused profile/shard tests, all real
+      profile plans, and `check:all` pass on the merged base. Concrete old-head
+      feedback is covered by exact profile-union, invalid timing/shard-count,
+      empty-app, and readiness-widening regressions; frozen install disproves
+      the stale lockfile finding.
+- [ ] Push the exact head, qualify PR #5683, and merge when safe.
 - [ ] The first self-hosted performance measurement remains separately gated
       until the exact reusable workflow is merged to `v3`.

@@ -171,6 +171,20 @@ test('unsupported dependencies and malformed managed resources fail closed', () 
   )
 })
 
+test('empty app selections and readiness widening fail closed', () => {
+  assert.throws(
+    () => validateRuntimePlan(profilePlan({ apps: [] })),
+    /must select at least one app/
+  )
+  assert.throws(
+    () =>
+      validateRuntimePlan(
+        profilePlan({ readiness: ['api', 'unselected-app'] })
+      ),
+    /readiness app unselected-app is not selected/
+  )
+})
+
 test('shell-like Turbo arguments and external endpoints fail closed', () => {
   assert.throws(
     () =>

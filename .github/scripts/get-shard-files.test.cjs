@@ -5,6 +5,7 @@ const test = require('node:test')
 
 const {
   buildShardPlans,
+  canonicalProfile,
   parseProfileManifest,
   parseTimings,
 } = require('./get-shard-files.js')
@@ -44,9 +45,11 @@ test('eight shard plans preserve every spec and emit canonical profiles', () => 
     assert.equal(plan.shardTotal, 8)
     assert.ok(plan.files.length > 0)
     assert.ok(plan.estimatedDuration > 0)
-    assert.deepEqual(
-      plan.profile.split(','),
-      [...plan.profile.split(',')].sort()
+    assert.equal(
+      plan.profile,
+      canonicalProfile(
+        plan.files.map((file) => profiles.get(path.basename(file))).join(',')
+      )
     )
   }
 })
@@ -84,5 +87,50 @@ test('missing, stale, and duplicate profile assignments fail closed', () => {
         ['A-login.spec.ts']
       ),
     /more than one profile/
+  )
+})
+
+test('invalid timing data and shard counts fail closed', () => {
+  assert.throws(
+    () => parseTimings({ version: 2, durations: [] }, allFiles, () => {}),
+    /unsupported timing schema version/
+  )
+  assert.throws(
+    () =>
+      parseTimings(
+        {
+          version: 1,
+          durations: [
+            { spec: allFiles[0], duration: 1 },
+            { spec: allFiles[0], duration: 2 },
+          ],
+        },
+        allFiles,
+        () => {}
+      ),
+    /duplicate timing entries/
+  )
+  assert.throws(
+    () =>
+      parseTimings(
+        {
+          version: 1,
+          durations: [{ spec: allFiles[0], duration: 0 }],
+        },
+        allFiles,
+        () => {}
+      ),
+    /positive finite number/
+  )
+
+  const profiles = parseProfileManifest(manifest, allFiles)
+  const durations = parseTimings(timings, allFiles, () => {})
+  assert.throws(
+    () => buildShardPlans(allFiles, durations, profiles, 0),
+    /positive integer/
+  )
+  assert.throws(
+    () => buildShardPlans(allFiles, durations, profiles, allFiles.length + 1),
+    /exceeds/
   )
 })

@@ -189,6 +189,14 @@ function planShards({ testsDir, timingsPath, profilesPath, numShards }) {
 }
 
 function main(argv = process.argv.slice(2)) {
+  if (
+    argv.length < 2 ||
+    argv.length > 3 ||
+    (argv.length === 3 && argv[2] !== '--json')
+  ) {
+    fail('expected <shardIndex> <numShards> [--json]')
+  }
+
   const shardIndex = Number(argv[0])
   const numShards = Number(argv[1])
   const json = argv[2] === '--json'
@@ -198,9 +206,7 @@ function main(argv = process.argv.slice(2)) {
     !Number.isInteger(numShards) ||
     numShards < 1 ||
     shardIndex < 1 ||
-    shardIndex > numShards ||
-    (argv.length > 2 && !json) ||
-    argv.length > 3
+    shardIndex > numShards
   ) {
     fail(`shard index ${argv[0]} must be between 1 and ${numShards}`)
   }
@@ -227,7 +233,7 @@ if (require.main === module) {
   try {
     main()
   } catch (error) {
-    console.error(`Invalid Playwright shard input: ${error.message}`)
+    console.error(`Playwright shard planning failed: ${error.message}`)
     process.exitCode = 1
   }
 }
