@@ -164,7 +164,11 @@ client can retry without reloading the iframe. A client-side preflight deadline
 intentionally settles as retryable unavailable instead of auto-retrying in the
 background. Every chat turn repeats the same inventory classification; its
 response header replaces stale preflight state, so the preflight never grants
-write authority or promises a missing proposal tool.
+write authority or promises a missing proposal tool. Before the inventory is
+passed to the model, the adapter keeps only the known read tools for
+`read-only`, the known read and draft tools for `draft-and-read`, and no tools
+for `unavailable`; unknown or mismatched tools fail closed so service-version
+skew cannot contradict the advertised capability.
 
 Evaluation fails closed. An unconfigured or unreachable GrowthBook yields `false` for every flag, which is what makes a dark deploy safe: an image built before the `NEXT_PUBLIC_GROWTHBOOK_*` repository variables were set carries no SDK connection and shows nothing. Where no GrowthBook exists at all — local development, the end-to-end suite — `FEATURE_FLAGS_FORCED_ON` and `NEXT_PUBLIC_FEATURE_FLAGS_FORCED_ON` name registered keys to force on. That override is honored only when the flag environment resolves to `development` or `test` and only when no SDK connection is configured, so setting it on a staging or production build turns nothing on.
 

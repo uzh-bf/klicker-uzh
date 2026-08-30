@@ -32,7 +32,7 @@ describe('Manage assistant runtime helpers', () => {
     expect(prompt).toContain('signed proposal card')
     expect(prompt).toContain('use the signed proposal tool')
     expect(prompt).toContain(
-      'draft-only question, answer-choice, feedback, and signed proposal tools'
+      'signed proposal tool is available for supported draft creation'
     )
     expect(prompt).toContain(
       'omit status and type filters unless the lecturer explicitly asks'
@@ -108,7 +108,10 @@ describe('Manage assistant runtime helpers', () => {
       'Lecturer MCP read tools are available for authorized course and question-pool lookups'
     )
     expect(toolsAvailablePrompt).toContain(
-      'draft-only question, answer-choice, feedback, and signed proposal tools are available for content scaffolding'
+      'signed proposal tool is available for supported draft creation'
+    )
+    expect(toolsAvailablePrompt).toContain(
+      'Use any advertised draft-only question, answer-choice, or feedback scaffolding tools only when helpful'
     )
     expect(toolsAvailablePrompt).not.toContain(
       'Lecturer MCP tools are currently unavailable'
@@ -145,7 +148,7 @@ describe('Manage assistant runtime helpers', () => {
       'If the signed proposal tool is unavailable or the requested question type is not supported by it'
     )
     expect(readOnlyPrompt).not.toContain(
-      'draft-only question, answer-choice, feedback, and signed proposal tools are available for content scaffolding'
+      'signed proposal tool is available for supported draft creation'
     )
     expect(readOnlyPrompt).not.toContain(
       'Lecturer MCP tools are currently unavailable'
@@ -266,7 +269,7 @@ describe('Manage assistant runtime helpers', () => {
 
     // Draft-availability wording is unaffected by the new sentinel param.
     expect(draftPrompt).toContain(
-      'draft-only question, answer-choice, feedback, and signed proposal tools are available for content scaffolding'
+      'signed proposal tool is available for supported draft creation'
     )
     expect(draftPrompt).toContain(`KLICKER_TOOL_DATA ${sentinel}`)
 

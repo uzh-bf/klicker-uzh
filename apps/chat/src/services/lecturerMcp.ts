@@ -5,6 +5,7 @@ import { mintLecturerMcpJwt } from '@/src/lib/server/mcpAuthMint'
 import {
   classifyManageAssistantCapabilityState,
   type ManageAssistantCapabilityState,
+  selectManageAssistantTools,
 } from './manageAssistantCapabilities'
 import { buildMcpServiceUrl } from './mcpUrl'
 import {
@@ -107,11 +108,13 @@ export async function loadLecturerMcpTools(
 
   try {
     const tools = (await client.tools()) as ToolSet
+    const capabilityState = classifyManageAssistantCapabilityState(tools)
+    const selectedTools = selectManageAssistantTools(tools, capabilityState)
     return {
-      capabilityState: classifyManageAssistantCapabilityState(tools),
+      capabilityState,
       close,
       sentinel: toolOutputFenceSentinel,
-      tools: fenceToolSetResults(tools, toolOutputFenceSentinel),
+      tools: fenceToolSetResults(selectedTools, toolOutputFenceSentinel),
     }
   } catch (error) {
     await close()

@@ -18,6 +18,22 @@ const LIVE_READ_TOOL_NAMES = [
 const DRAFT_PROPOSAL_TOOL_NAME =
   'klicker_lecturer_element_create_draft_proposal'
 
+const DRAFT_TOOL_NAMES = [
+  'klicker_lecturer_question_draft',
+  'klicker_lecturer_choices_draft',
+  'klicker_lecturer_feedback_draft',
+  DRAFT_PROPOSAL_TOOL_NAME,
+] as const
+
+const TOOL_NAMES_BY_CAPABILITY: Record<
+  ManageAssistantCapabilityState,
+  readonly string[]
+> = {
+  'draft-and-read': [...LIVE_READ_TOOL_NAMES, ...DRAFT_TOOL_NAMES],
+  'read-only': LIVE_READ_TOOL_NAMES,
+  unavailable: [],
+}
+
 export function isManageAssistantCapabilityState(
   value: unknown
 ): value is ManageAssistantCapabilityState {
@@ -46,6 +62,16 @@ export function classifyManageAssistantCapabilityState(
   return Object.hasOwn(tools, DRAFT_PROPOSAL_TOOL_NAME)
     ? 'draft-and-read'
     : 'read-only'
+}
+
+export function selectManageAssistantTools(
+  tools: ToolSet,
+  capabilityState: ManageAssistantCapabilityState
+): ToolSet {
+  const allowedToolNames = new Set(TOOL_NAMES_BY_CAPABILITY[capabilityState])
+  return Object.fromEntries(
+    Object.entries(tools).filter(([name]) => allowedToolNames.has(name))
+  ) as ToolSet
 }
 
 export type ManageAssistantCapabilityClientState = {

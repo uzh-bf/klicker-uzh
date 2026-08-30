@@ -6,6 +6,7 @@ import {
   INITIAL_MANAGE_ASSISTANT_CAPABILITY_STATE,
   isManageAssistantCapabilityState,
   reduceManageAssistantCapabilityState,
+  selectManageAssistantTools,
 } from '@/src/services/manageAssistantCapabilities'
 
 function tools(...names: string[]): ToolSet {
@@ -32,6 +33,29 @@ describe('Manage assistant capability state', () => {
     expect(
       classifyManageAssistantCapabilityState(tools(readTool, proposalTool))
     ).toBe('draft-and-read')
+  })
+
+  test('exposes only tools permitted by the advertised capability', () => {
+    const readTool = 'klicker_lecturer_element_search'
+    const proposalTool = 'klicker_lecturer_element_create_draft_proposal'
+    const scaffoldTool = 'klicker_lecturer_question_draft'
+    const inventory = tools(
+      'klicker_lecturer_capabilities',
+      readTool,
+      scaffoldTool,
+      proposalTool,
+      'klicker_lecturer_future_write'
+    )
+
+    expect(
+      Object.keys(selectManageAssistantTools(inventory, 'unavailable'))
+    ).toEqual([])
+    expect(
+      Object.keys(selectManageAssistantTools(inventory, 'read-only'))
+    ).toEqual([readTool])
+    expect(
+      Object.keys(selectManageAssistantTools(inventory, 'draft-and-read'))
+    ).toEqual([readTool, scaffoldTool, proposalTool])
   })
 
   test('accepts only the three public response states', () => {
