@@ -91,7 +91,7 @@ process.send({
   failureClass: 'none',
   failedCaseId: null,
   failedRejectionClass: null,
-  counts: {kbExpected:15,kbPassed:15,chatbotsExpected:22,chatbotsPassed:22,excludedExpected:2,positivePassed:15,isolationPassed:15,rejectionsPassed:7,directCallsAttempted:37},
+  counts: {kbExpected:15,kbPassed:15,chatbotsInScope:22,representativeChatbotsExpected:15,representativeChatbotsPassed:15,excludedExpected:2,positivePassed:15,isolationPassed:15,rejectionsPassed:7,directCallsAttempted:37},
   rejections: {missing:'passed',expired:'passed',forged:'passed',wrong_issuer:'passed',wrong_audience:'passed',unknown_key:'passed',trusted_filter_override:'passed'},
   preservation: ${preservation}
 }, () => process.exit(0))
@@ -109,7 +109,7 @@ process.send({
   failureClass: 'canary_positive_failed',
   failedCaseId: 'corpus_1',
   failedRejectionClass: null,
-  counts: {kbExpected:15,kbPassed:0,chatbotsExpected:22,chatbotsPassed:0,excludedExpected:2,positivePassed:0,isolationPassed:0,rejectionsPassed:0,directCallsAttempted:0},
+  counts: {kbExpected:15,kbPassed:0,chatbotsInScope:22,representativeChatbotsExpected:15,representativeChatbotsPassed:0,excludedExpected:2,positivePassed:0,isolationPassed:0,rejectionsPassed:0,directCallsAttempted:0},
   rejections: {missing:'not_run',expired:'not_run',forged:'not_run',wrong_issuer:'not_run',wrong_audience:'not_run',unknown_key:'not_run',trusted_filter_override:'not_run'},
   secret: 'dummy-private-key'
 }, () => process.exit(1))
@@ -304,7 +304,9 @@ describe('PRD Doc Query proof matrix', () => {
     expect(receipt.result).toBe('passed')
     expect(receipt.counts).toMatchObject({
       kbPassed: 15,
-      chatbotsPassed: 22,
+      chatbotsInScope: 22,
+      representativeChatbotsExpected: 15,
+      representativeChatbotsPassed: 15,
       positivePassed: 15,
       isolationPassed: 15,
       rejectionsPassed: 7,

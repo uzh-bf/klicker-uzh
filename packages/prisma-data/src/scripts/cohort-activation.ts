@@ -1,5 +1,13 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { chmod, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import {
+  link,
+  mkdir,
+  open,
+  readFile,
+  rename,
+  rm,
+  unlink,
+} from 'node:fs/promises'
 import { hostname } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import type { PrismaClient } from '@klicker-uzh/prisma/client'
@@ -37,6 +45,14 @@ const NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
 const MODE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/
 const FINGERPRINT_PATTERN = /^[0-9a-f]{64}$/i
 const CONTROL_CHARACTER_PATTERN = /\p{Cc}/u
+const INTERNAL_PRD_TARGET_URL =
+  'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker'
+
+function compareUtf16Strings(left: string, right: string): number {
+  if (left < right) return -1
+  if (left > right) return 1
+  return 0
+}
 
 export type JsonValue =
   | null
@@ -449,11 +465,17 @@ function assertUrl(value: unknown): asserts value is string {
   } catch {
     fail('INVALID_TARGET', 'target URL is invalid')
   }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    fail('INVALID_TARGET', 'target URL must use HTTP or HTTPS')
-  }
   if (parsed.username || parsed.password) {
     fail('INVALID_TARGET', 'target URL must not contain credentials')
+  }
+  if (
+    parsed.protocol !== 'https:' &&
+    parsed.href !== new URL(INTERNAL_PRD_TARGET_URL).href
+  ) {
+    fail(
+      'INVALID_TARGET',
+      'target URL must use HTTPS or the reviewed internal PRD endpoint'
+    )
   }
 }
 
@@ -465,7 +487,7 @@ function canonicalize(value: unknown): unknown {
     return Object.fromEntries(
       Object.keys(record)
         .filter((key) => record[key] !== undefined)
-        .sort()
+        .sort(compareUtf16Strings)
         .map((key) => [key, canonicalize(record[key])])
     )
   }
@@ -505,8 +527,8 @@ function canonicalManifest(manifest: FrozenCohortManifest): unknown {
         targetCollection: corpus.targetCollection,
         tool: corpus.tool,
         alias: corpus.alias,
-        chatbotIds: [...corpus.chatbotIds].sort(),
-        courseIds: [...corpus.courseIds].sort(),
+        chatbotIds: [...corpus.chatbotIds].sort(compareUtf16Strings),
+        courseIds: [...corpus.courseIds].sort(compareUtf16Strings),
         configurations: [...corpus.configurations]
           .sort((left, right) => left.configId.localeCompare(right.configId))
           .map((configuration) => ({
@@ -774,8 +796,7 @@ export function parseFrozenActivationManifest(
   return { ...manifest, fingerprint: fingerprintManifest(manifest) }
 }
 
-const RECEIPT_LOCK_OWNER_FILE = 'owner.json'
-const RECEIPT_LOCK_OWNER_VERSION = 1 as const
+const RECEIPT_LOCK_OWNER_VERSION = 2 as const
 const RECEIPT_LOCK_OWNER_MAX_BYTES = 512
 
 type ReceiptLockOwner = {
@@ -783,6 +804,7 @@ type ReceiptLockOwner = {
   pid: number
   host: string
   token: string
+  acquiredAt: string
 }
 
 function errorCode(error: unknown): string | undefined {
@@ -796,7 +818,7 @@ function errorCode(error: unknown): string | undefined {
 function lockError(): CohortActivationError {
   return new CohortActivationError(
     'RECEIPT_LOCKED',
-    'activation receipt is already being updated'
+    'activation receipt is already being updated; verify and remove a stale lock file manually before retrying'
   )
 }
 
@@ -812,7 +834,8 @@ function sameLockOwner(left: ReceiptLockOwner, right: ReceiptLockOwner) {
     left.version === right.version &&
     left.pid === right.pid &&
     left.host === right.host &&
-    left.token === right.token
+    left.token === right.token &&
+    left.acquiredAt === right.acquiredAt
   )
 }
 
@@ -820,16 +843,13 @@ async function readLockOwner(
   lockPath: string
 ): Promise<ReceiptLockOwner | null> {
   try {
-    const contents = await readFile(
-      join(lockPath, RECEIPT_LOCK_OWNER_FILE),
-      'utf8'
-    )
+    const contents = await readFile(lockPath, 'utf8')
     if (Buffer.byteLength(contents, 'utf8') > RECEIPT_LOCK_OWNER_MAX_BYTES) {
       return null
     }
     const parsed: unknown = JSON.parse(contents)
     if (!isPlainObject(parsed)) return null
-    assertReceiptKeys(parsed, ['version', 'pid', 'host', 'token'])
+    assertReceiptKeys(parsed, ['version', 'pid', 'host', 'token', 'acquiredAt'])
     if (
       parsed.version !== RECEIPT_LOCK_OWNER_VERSION ||
       typeof parsed.pid !== 'number' ||
@@ -841,7 +861,10 @@ async function readLockOwner(
       parsed.host.length > 255 ||
       CONTROL_CHARACTER_PATTERN.test(parsed.host) ||
       typeof parsed.token !== 'string' ||
-      !UUID_PATTERN.test(parsed.token)
+      !UUID_PATTERN.test(parsed.token) ||
+      typeof parsed.acquiredAt !== 'string' ||
+      parsed.acquiredAt.length > 32 ||
+      !Number.isFinite(Date.parse(parsed.acquiredAt))
     ) {
       return null
     }
@@ -850,14 +873,87 @@ async function readLockOwner(
       pid: parsed.pid,
       host: parsed.host,
       token: parsed.token,
+      acquiredAt: parsed.acquiredAt,
     }
   } catch {
     return null
   }
 }
 
-async function removeUnownedLock(lockPath: string): Promise<void> {
-  await rm(lockPath, { force: false, recursive: true })
+async function syncContainingDirectory(path: string): Promise<void> {
+  const directory = await open(dirname(path), 'r')
+  try {
+    await directory.sync()
+  } finally {
+    await directory.close()
+  }
+}
+
+async function syncContainingDirectoryAfterPublish(
+  path: string
+): Promise<void> {
+  try {
+    await syncContainingDirectory(path)
+  } catch {
+    throw new CohortActivationError(
+      'RECEIPT_WRITE_FAILED',
+      'receipt publication durability is unknown'
+    )
+  }
+}
+
+async function writeDurablePrivateFile(
+  path: string,
+  contents: string
+): Promise<void> {
+  const file = await open(path, 'wx', 0o600)
+  try {
+    await file.writeFile(contents, { encoding: 'utf8' })
+    await file.sync()
+  } finally {
+    await file.close()
+  }
+}
+
+async function removeLockFile(lockPath: string): Promise<void> {
+  await unlink(lockPath)
+  await syncContainingDirectory(lockPath)
+}
+
+async function tryCreateReceiptLock(
+  lockPath: string,
+  owner: ReceiptLockOwner
+): Promise<boolean> {
+  const contents = `${JSON.stringify(owner)}\n`
+  if (Buffer.byteLength(contents, 'utf8') > RECEIPT_LOCK_OWNER_MAX_BYTES) {
+    throw new CohortActivationError(
+      'RECEIPT_WRITE_FAILED',
+      'receipt lock owner is too large'
+    )
+  }
+  const temporaryPath = `${lockPath}.tmp-${process.pid}-${randomUUID()}`
+  let linked = false
+  try {
+    await writeDurablePrivateFile(temporaryPath, contents)
+    try {
+      await link(temporaryPath, lockPath)
+      linked = true
+    } catch (error) {
+      if (errorCode(error) === 'EEXIST') return false
+      throw error
+    }
+    await syncContainingDirectoryAfterPublish(lockPath)
+    return true
+  } catch (error) {
+    if (linked) await syncContainingDirectory(lockPath).catch(() => undefined)
+    if (error instanceof CohortActivationError) throw error
+    throw new CohortActivationError(
+      'RECEIPT_WRITE_FAILED',
+      'receipt lock owner is unavailable'
+    )
+  } finally {
+    await rm(temporaryPath, { force: true }).catch(() => undefined)
+  }
 }
 
 async function reclaimDeadLock(
@@ -875,82 +971,34 @@ async function reclaimDeadLock(
   const currentOwner = await readLockOwner(lockPath)
   if (!currentOwner || !sameLockOwner(currentOwner, owner)) throw lockError()
   try {
-    await removeUnownedLock(lockPath)
+    await removeLockFile(lockPath)
   } catch (error) {
     throw new AggregateError([lockError(), error], lockCleanupError().message)
   }
 }
 
 async function acquireReceiptLock(lockPath: string): Promise<ReceiptLockOwner> {
-  try {
-    await mkdir(lockPath, { mode: 0o700 })
-  } catch (error) {
-    if (errorCode(error) !== 'EEXIST') {
-      throw new CohortActivationError(
-        'RECEIPT_WRITE_FAILED',
-        'receipt lock is unavailable'
-      )
-    }
-    const owner = await readLockOwner(lockPath)
-    if (!owner) throw lockError()
-    let dead = false
-    if (owner.host === hostname()) {
-      try {
-        process.kill(owner.pid, 0)
-      } catch (probeError) {
-        dead = errorCode(probeError) === 'ESRCH'
-      }
-    }
-    if (!dead) throw lockError()
-    await reclaimDeadLock(lockPath, owner)
-    try {
-      await mkdir(lockPath, { mode: 0o700 })
-    } catch (reacquireError) {
-      if (errorCode(reacquireError) === 'EEXIST') throw lockError()
-      throw new CohortActivationError(
-        'RECEIPT_WRITE_FAILED',
-        'receipt lock is unavailable'
-      )
-    }
-  }
-
   const owner: ReceiptLockOwner = {
     version: RECEIPT_LOCK_OWNER_VERSION,
     pid: process.pid,
     host: hostname(),
     token: randomUUID(),
+    acquiredAt: new Date().toISOString(),
   }
-  const contents = `${JSON.stringify(owner)}\n`
-  try {
-    await writeFile(join(lockPath, RECEIPT_LOCK_OWNER_FILE), contents, {
-      encoding: 'utf8',
-      flag: 'wx',
-      mode: 0o600,
-    })
-    await chmod(join(lockPath, RECEIPT_LOCK_OWNER_FILE), 0o600)
-  } catch {
-    const primary = new CohortActivationError(
-      'RECEIPT_WRITE_FAILED',
-      'receipt lock owner is unavailable'
-    )
-    try {
-      await removeUnownedLock(lockPath)
-    } catch (cleanupError) {
-      throw new AggregateError([primary, cleanupError], primary.message)
+  if (!(await tryCreateReceiptLock(lockPath, owner))) {
+    const existingOwner = await readLockOwner(lockPath)
+    if (!existingOwner) throw lockError()
+    let dead = false
+    if (existingOwner.host === hostname()) {
+      try {
+        process.kill(existingOwner.pid, 0)
+      } catch (probeError) {
+        dead = errorCode(probeError) === 'ESRCH'
+      }
     }
-    throw primary
-  }
-  if (Buffer.byteLength(contents, 'utf8') > RECEIPT_LOCK_OWNER_MAX_BYTES) {
-    const primary = new CohortActivationError(
-      'RECEIPT_WRITE_FAILED',
-      'receipt lock owner is too large'
-    )
-    try {
-      await removeUnownedLock(lockPath)
-    } catch (cleanupError) {
-      throw new AggregateError([primary, cleanupError], primary.message)
-    }
-    throw primary
+    if (!dead) throw lockError()
+    await reclaimDeadLock(lockPath, existingOwner)
+    if (!(await tryCreateReceiptLock(lockPath, owner))) throw lockError()
   }
   return owner
 }
@@ -993,13 +1041,12 @@ export function createFileActivationReceiptStore(
     }
     if (current?.payloadDigest === receipt.payloadDigest) return
     try {
-      await writeFile(temporaryPath, `${JSON.stringify(receipt, null, 2)}\n`, {
-        encoding: 'utf8',
-        flag: 'wx',
-        mode: 0o600,
-      })
-      await chmod(temporaryPath, 0o600)
+      await writeDurablePrivateFile(
+        temporaryPath,
+        `${JSON.stringify(receipt, null, 2)}\n`
+      )
       await rename(temporaryPath, absolutePath)
+      await syncContainingDirectoryAfterPublish(absolutePath)
     } catch (error) {
       if (error instanceof CohortActivationError) throw error
       fail('RECEIPT_WRITE_FAILED', 'could not persist activation receipt')
@@ -1014,7 +1061,7 @@ export function createFileActivationReceiptStore(
       throw lockCleanupError()
     }
     try {
-      await removeUnownedLock(lockPath)
+      await removeLockFile(lockPath)
     } catch (error) {
       throw new AggregateError(
         [lockCleanupError(), error],
@@ -1366,14 +1413,16 @@ function buildManifestIndex(manifest: FrozenCohortManifest): ManifestIndex {
 
   const courseIds = [
     ...new Set(sortedCorpora.flatMap((corpus) => corpus.courseIds)),
-  ].sort()
+  ].sort(compareUtf16Strings)
   courseIds.forEach((courseId, index) => {
     const alias = `course-${padAlias(index)}`
     courseAliasForId.set(courseId, alias)
     courseIdByAlias.set(alias, courseId)
   })
 
-  const chatbotIds = [...corpusAliasByChatbotId.keys()].sort()
+  const chatbotIds = [...corpusAliasByChatbotId.keys()].sort(
+    compareUtf16Strings
+  )
   const chatbotAliasForId = new Map<string, string>()
   const chatbotIdByAlias = new Map<string, string>()
   chatbotIds.forEach((chatbotId, index) => {
@@ -1410,7 +1459,7 @@ function buildManifestIndex(manifest: FrozenCohortManifest): ManifestIndex {
   })
   const excludedChatbotAliasForId = new Map<string, string>()
   ;[...new Set(sortedExcluded.map((configuration) => configuration.chatbotId))]
-    .sort()
+    .sort(compareUtf16Strings)
     .forEach((chatbotId, index) => {
       excludedChatbotAliasForId.set(
         chatbotId,
@@ -1444,12 +1493,16 @@ function buildManifestIndex(manifest: FrozenCohortManifest): ManifestIndex {
     aliases: {
       sourceServer: SOURCE_SERVER_NAME,
       targetServer: TARGET_SERVER_NAME,
-      corpora: [...corpusByAlias.keys()].sort(),
-      courses: [...courseIdByAlias.keys()].sort(),
-      chatbots: [...chatbotIdByAlias.keys()].sort(),
-      configurations: [...configByAlias.keys()].sort(),
-      bindings: [...bindingAliasByChatbotAlias.values()].sort(),
-      excludedConfigurations: [...excludedByAlias.keys()].sort(),
+      corpora: [...corpusByAlias.keys()].sort(compareUtf16Strings),
+      courses: [...courseIdByAlias.keys()].sort(compareUtf16Strings),
+      chatbots: [...chatbotIdByAlias.keys()].sort(compareUtf16Strings),
+      configurations: [...configByAlias.keys()].sort(compareUtf16Strings),
+      bindings: [...bindingAliasByChatbotAlias.values()].sort(
+        compareUtf16Strings
+      ),
+      excludedConfigurations: [...excludedByAlias.keys()].sort(
+        compareUtf16Strings
+      ),
     },
     counts: {
       corpora: EXPECTED_CORPORA,
@@ -1519,8 +1572,8 @@ function assertReceiptKeys(
   value: Record<string, unknown>,
   keys: readonly string[]
 ): void {
-  const actual = Object.keys(value).sort()
-  const expected = [...keys].sort()
+  const actual = Object.keys(value).sort(compareUtf16Strings)
+  const expected = [...keys].sort(compareUtf16Strings)
   if (canonicalJson(actual) !== canonicalJson(expected)) {
     receiptInvalid('receipt shape is invalid')
   }
@@ -1647,7 +1700,10 @@ function assertReceiptIdentitySnapshot(
       receiptInvalid('receipt snapshots are duplicated')
     seen.add(entry.alias)
   }
-  if (canonicalJson([...seen].sort()) !== canonicalJson([...aliases].sort())) {
+  if (
+    canonicalJson([...seen].sort(compareUtf16Strings)) !==
+    canonicalJson([...aliases].sort(compareUtf16Strings))
+  ) {
     receiptInvalid('receipt snapshot aliases are invalid')
   }
 }
@@ -1684,7 +1740,10 @@ function assertReceiptConfigSnapshots(
       receiptInvalid('receipt snapshots are duplicated')
     seen.add(entry.alias)
   }
-  if (canonicalJson([...seen].sort()) !== canonicalJson([...aliases].sort())) {
+  if (
+    canonicalJson([...seen].sort(compareUtf16Strings)) !==
+    canonicalJson([...aliases].sort(compareUtf16Strings))
+  ) {
     receiptInvalid('receipt snapshot aliases are invalid')
   }
 }
@@ -1725,7 +1784,10 @@ function assertReceiptBindingSnapshots(
       receiptInvalid('receipt snapshots are duplicated')
     seen.add(entry.alias)
   }
-  if (canonicalJson([...seen].sort()) !== canonicalJson([...aliases].sort())) {
+  if (
+    canonicalJson([...seen].sort(compareUtf16Strings)) !==
+    canonicalJson([...aliases].sort(compareUtf16Strings))
+  ) {
     receiptInvalid('receipt binding snapshot aliases are invalid')
   }
 }
@@ -3070,11 +3132,13 @@ function makeReceiptFromState(
     excludedConfigurations,
     bindings,
     configurations,
-    switchedChatbotAliases: [...new Set(input.switchedChatbotAliases)].sort(),
+    switchedChatbotAliases: [...new Set(input.switchedChatbotAliases)].sort(
+      compareUtf16Strings
+    ),
     pendingChatbotAlias: input.pendingChatbotAlias ?? null,
     pendingRollbackAliases: [
       ...new Set(input.pendingRollbackAliases ?? []),
-    ].sort(),
+    ].sort(compareUtf16Strings),
     pendingRollbackOrigin: input.pendingRollbackOrigin ?? null,
     state: input.state,
   })
@@ -3600,8 +3664,7 @@ export async function rollbackCohortChatbot(
       fail('RECEIPT_STATE', 'chatbot was not switched')
     }
     if (
-      (receipt.state === 'rolling_back' || receipt.state === 'switching') &&
-      receipt.state !== 'switching' &&
+      receipt.state === 'rolling_back' &&
       !receipt.pendingRollbackAliases.includes(options.chatbotAlias)
     ) {
       fail('RECEIPT_STATE', 'rollback intent does not name the chatbot')
