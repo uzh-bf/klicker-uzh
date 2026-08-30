@@ -1,12 +1,29 @@
+import { createOpenAI } from '@ai-sdk/openai'
+import { prisma } from '@klicker-uzh/prisma'
+import type { Chatbot, Prisma } from '@klicker-uzh/prisma/client'
+import { safeDecrypt } from '@klicker-uzh/util'
+import { startActiveObservation } from '@langfuse/tracing'
+import {
+  consumeStream,
+  generateText,
+  isStepCount,
+  type ModelMessage,
+  type StepResult,
+  streamText,
+  type ToolSet,
+} from 'ai'
+import { createHash, randomUUID } from 'crypto'
+import { type NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { DEFAULT_PROMPT } from '@/src/lib/config/prompts'
-import { type ReasoningEffort } from '@/src/lib/config/reasoning'
+import type { ReasoningEffort } from '@/src/lib/config/reasoning'
 import { withChatbotAuth } from '@/src/lib/server/apiGuards'
 import {
+  type ChatModelConfig,
   getAllowedReasoningEffortsForModel,
   getAutomaticModelId,
   getChatModelRegistry,
   getParticipantFallbackModelId,
-  type ChatModelConfig,
 } from '@/src/lib/server/chatModelRegistry'
 import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
@@ -14,26 +31,26 @@ import {
   getTraceIdForMessage,
   isAiTelemetryEnabled,
 } from '@/src/lib/server/langfuseTracing'
-import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   REQUIRED_MCP_UNAVAILABLE_CODE,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import { createOpenAIFetch } from '@/src/lib/server/openaiCachePolicy'
 import { getOpenAIResponsesStore } from '@/src/lib/server/openaiResponsesOptions'
-import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
 import {
   buildAbortedAssistantContent,
   mapAssistantStepContent,
 } from '@/src/lib/server/persistedAssistantContent'
+import { buildPromptCacheRequest } from '@/src/lib/server/promptCacheIdentity'
+import { compileSystemPrompt } from '@/src/lib/server/systemPromptCompiler'
 import {
   CHAT_TURN_ALREADY_COMPLETED_CODE,
   ChatTurnConflictError,
   claimChatTurn,
   failChatTurn,
   finalizeChatTurn,
-  isChatAccountUsageEnforcementEnabled,
   isChatAccountUsageAvailable,
+  isChatAccountUsageEnforcementEnabled,
   roundChatUsageCredits,
 } from '@/src/services/accountUsage'
 import { CreditsService } from '@/src/services/credits'
@@ -43,23 +60,6 @@ import {
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
 import { ThreadService } from '@/src/services/threads'
-import { createOpenAI } from '@ai-sdk/openai'
-import { prisma } from '@klicker-uzh/prisma'
-import { Chatbot, type Prisma } from '@klicker-uzh/prisma/client'
-import { safeDecrypt } from '@klicker-uzh/util'
-import { startActiveObservation } from '@langfuse/tracing'
-import {
-  consumeStream,
-  generateText,
-  isStepCount,
-  streamText,
-  type ModelMessage,
-  type StepResult,
-  type ToolSet,
-} from 'ai'
-import { createHash, randomUUID } from 'crypto'
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 
 export const runtime = 'nodejs'
 
@@ -897,9 +897,9 @@ export async function POST(
     },
   }))
 
-  // Resolve the participant-owned thread before acquiring the provider-work
-  // claim. The claim must exist before MCP discovery, image description, or
-  // model streaming can begin.
+  // Resolve the participant-owned thread before the provider-work boundary.
+  // Lifecycle-enabled deployments claim the assistant key here; the initial
+  // mixed-version rollout performs only the same ownership validation.
   let createdThreadId: string | null = null
   if (!currentThreadId && messages.length > 0) {
     try {
@@ -952,7 +952,7 @@ export async function POST(
     }
   }
 
-  let owningThread
+  let owningThread: { id: string } | null
   try {
     owningThread = await prisma.chatThread.findFirst({
       where: {
@@ -979,7 +979,7 @@ export async function POST(
     userMessageId = lastMessage.id
   }
 
-  let turnClaim
+  let turnClaim: Awaited<ReturnType<typeof claimChatTurn>>
   try {
     turnClaim = await claimChatTurn({
       ownerId: chatbot.ownerId,
@@ -1419,7 +1419,8 @@ export async function POST(
       rawCreditsUsed: number | null
       phase: 'complete' | 'abort'
     }) => {
-      let finalizationOutcome: 'completed' | 'duplicate' | 'failed' = 'failed'
+      let finalizationOutcome: 'completed' | 'duplicate' | 'empty' | 'failed' =
+        'failed'
       let participantCreditsUsed: number | null = null
 
       try {

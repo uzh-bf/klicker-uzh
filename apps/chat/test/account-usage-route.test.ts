@@ -590,7 +590,11 @@ describe('account usage chat route', () => {
     expect(mocks.decrementCredits).not.toHaveBeenCalled()
   })
 
-  test('finalizes an empty terminal result and charges reliable usage once', async () => {
+  test('does not charge an empty terminal result', async () => {
+    mocks.finalizeChatTurn.mockResolvedValueOnce({
+      outcome: 'empty',
+      creditsUsed: null,
+    })
     const response = await POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
@@ -608,12 +612,7 @@ describe('account usage chat route', () => {
         rawCreditsUsed: 0.00006,
       })
     )
-    expect(mocks.decrementCredits).toHaveBeenCalledOnce()
-    expect(mocks.decrementCredits).toHaveBeenCalledWith(
-      'participant-1',
-      'chatbot-1',
-      0.00006
-    )
+    expect(mocks.decrementCredits).not.toHaveBeenCalled()
   })
 
   test('keeps invalid complete usage uncharged and metadata safe', async () => {

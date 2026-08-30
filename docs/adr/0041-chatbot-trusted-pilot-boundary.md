@@ -24,10 +24,12 @@ invariants.
 
 ## Decision
 
-- Account usage enforcement remains **default-off**. The existing lifecycle
-  claim, participant-credit behavior, and completion semantics remain active
-  while the switch is false. Enabling enforcement is a separate operational
-  cutover decision for a named environment and cohort.
+- Account usage enforcement remains **default-off**. Lifecycle claim writers
+  use an independent default-off switch. The initial R1 rollout validates the
+  turn boundary before provider work but writes only a non-empty completed
+  answer, so older readers cannot observe an empty lifecycle placeholder.
+  Enabling account enforcement and enabling lifecycle writers are separate
+  operational cutovers for a named environment and cohort.
 - The budget mutation is an operations boundary. It is available only to the
   existing `ADMIN` role and requires an explicit target owner ID. Account
   owners retain read access to their own two usage lanes but cannot write
@@ -54,6 +56,9 @@ invariants.
   provider hard caps, secret or configuration writes, enforcement activation,
   deployment, and live smoke testing are separate tasks requiring explicit
   authority and their own evidence.
+- R2 lifecycle claims may be enabled only after all Chat pods run R1-compatible
+  readers. R1 then becomes the application rollback floor because R2 may leave
+  `IN_PROGRESS` or `FAILED` rows that older readers do not filter.
 
 ## Consequences
 
@@ -62,6 +67,10 @@ invariants.
 - The first release is transparent about estimates and bounded overruns while
   deferring reservations, immutable ledgers, refunds, invoices, and routed-cost
   reconciliation to a later usage-accounting package.
+- R1 may duplicate provider work for concurrent requests with the same
+  assistant key. The completed-message insert is the charging boundary: one
+  non-empty answer persists and charges, while duplicates and successful empty
+  completions do not.
 - Strict startup parsing can prevent readiness after a bad registry change;
   deployment configuration must therefore be validated and rolled back to the
   last valid registry before any later activation.

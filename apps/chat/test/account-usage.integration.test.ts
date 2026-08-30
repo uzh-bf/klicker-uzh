@@ -19,6 +19,7 @@ const THREAD_ONE_ID = randomUUID()
 const THREAD_TWO_ID = randomUUID()
 const TEST_KEY = `u2-account-${OWNER_ID.slice(0, 8)}`
 const initialEnforcement = process.env.CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED
+const initialLifecycleWrites = process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED
 
 let prisma: PrismaClient
 let accountUsage: typeof import('../src/services/accountUsage')
@@ -174,6 +175,7 @@ describePostgres('account usage PostgreSQL integration', () => {
 
   beforeEach(async () => {
     process.env.CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED = 'false'
+    process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED = 'true'
     await resetUsage()
   })
 
@@ -185,6 +187,11 @@ describePostgres('account usage PostgreSQL integration', () => {
       delete process.env.CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED
     } else {
       process.env.CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED = initialEnforcement
+    }
+    if (initialLifecycleWrites === undefined) {
+      delete process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED
+    } else {
+      process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED = initialLifecycleWrites
     }
   }, 60_000)
 
@@ -342,6 +349,137 @@ describePostgres('account usage PostgreSQL integration', () => {
     expect(usage.usedCredits.toString()).toBe('0.333334')
   })
 
+  test('keeps writer-off turns invisible until complete finalization', async () => {
+    process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED = 'false'
+    const messageId = randomUUID()
+    const input = turnInput(messageId)
+
+    const claim = await accountUsage.claimChatTurn({
+      ownerId: input.ownerId,
+      chatbotId: input.chatbotId,
+      threadId: input.threadId,
+      assistantMessageId: input.assistantMessageId,
+      parentId: input.parentId,
+    })
+    expect(claim).toEqual({ outcome: 'claimed', lifecycleAttemptId: null })
+    expect(
+      await prisma.chatMessage.findUnique({ where: { id: messageId } })
+    ).toBeNull()
+
+    await expect(
+      accountUsage.finalizeChatTurn({ ...input, lifecycleAttemptId: null })
+    ).resolves.toEqual({ outcome: 'completed', creditsUsed: 0.25 })
+
+    const [message, usage] = await Promise.all([
+      prisma.chatMessage.findUniqueOrThrow({ where: { id: messageId } }),
+      prisma.chatAccountUsage.findUniqueOrThrow({
+        where: {
+          ownerId_usageClass_monthStart: {
+            ownerId: OWNER_ID,
+            usageClass: 'BASE',
+            monthStart: MONTH_START,
+          },
+        },
+      }),
+    ])
+    expect(message.lifecycleStatus).toBe('COMPLETED')
+    expect(message.content).toEqual(input.content)
+    expect(usage.usedCredits.toString()).toBe('0.25')
+  })
+
+  test('charges one concurrent writer-off finalization', async () => {
+    process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED = 'false'
+    const messageId = randomUUID()
+    const input = {
+      ...turnInput(messageId),
+      lifecycleAttemptId: null,
+    }
+
+    const results = await Promise.all([
+      accountUsage.finalizeChatTurn(input),
+      accountUsage.finalizeChatTurn(input),
+    ])
+
+    expect(results.map((result) => result.outcome).sort()).toEqual([
+      'completed',
+      'duplicate',
+    ])
+    const [messageCount, usage] = await Promise.all([
+      prisma.chatMessage.count({ where: { id: messageId } }),
+      prisma.chatAccountUsage.findUniqueOrThrow({
+        where: {
+          ownerId_usageClass_monthStart: {
+            ownerId: OWNER_ID,
+            usageClass: 'BASE',
+            monthStart: MONTH_START,
+          },
+        },
+      }),
+    ])
+    expect(messageCount).toBe(1)
+    expect(usage.usedCredits.toString()).toBe('0.25')
+  })
+
+  test('does not persist or charge an empty writer-off completion', async () => {
+    process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED = 'false'
+    const messageId = randomUUID()
+
+    await expect(
+      accountUsage.finalizeChatTurn({
+        ...turnInput(messageId, { content: [] }),
+        lifecycleAttemptId: null,
+      })
+    ).resolves.toEqual({ outcome: 'empty', creditsUsed: null })
+
+    const [messageCount, usage] = await Promise.all([
+      prisma.chatMessage.count({ where: { id: messageId } }),
+      prisma.chatAccountUsage.findUniqueOrThrow({
+        where: {
+          ownerId_usageClass_monthStart: {
+            ownerId: OWNER_ID,
+            usageClass: 'BASE',
+            monthStart: MONTH_START,
+          },
+        },
+      }),
+    ])
+    expect(messageCount).toBe(0)
+    expect(usage.usedCredits.toString()).toBe('0')
+  })
+
+  test('leaves no row when a writer-off provider attempt fails', async () => {
+    process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED = 'false'
+    const messageId = randomUUID()
+    const claim = await accountUsage.claimChatTurn({
+      ownerId: OWNER_ID,
+      chatbotId: CHATBOT_ID,
+      threadId: THREAD_ONE_ID,
+      assistantMessageId: messageId,
+      parentId: null,
+    })
+    expect(claim).toEqual({ outcome: 'claimed', lifecycleAttemptId: null })
+
+    await accountUsage.failChatTurn({
+      assistantMessageId: messageId,
+      threadId: THREAD_ONE_ID,
+      lifecycleAttemptId: claim.lifecycleAttemptId,
+    })
+
+    expect(
+      await prisma.chatMessage.findUnique({ where: { id: messageId } })
+    ).toBeNull()
+    const usage = await prisma.chatAccountUsage.findUniqueOrThrow({
+      where: {
+        ownerId_usageClass_monthStart: {
+          ownerId: OWNER_ID,
+          usageClass: 'BASE',
+          monthStart: MONTH_START,
+        },
+      },
+    })
+    expect(usage.usedCredits.toString()).toBe('0')
+  })
+
   test('allows only one concurrent provider-work claim for one key', async () => {
     const messageId = randomUUID()
     const claimInput = {
@@ -364,7 +502,7 @@ describePostgres('account usage PostgreSQL integration', () => {
     ).toHaveLength(1)
 
     const winner = claims.find((claim) => claim.outcome === 'claimed')
-    if (!winner || winner.outcome !== 'claimed') {
+    if (winner?.outcome !== 'claimed') {
       throw new Error('Expected one winning lifecycle claim')
     }
     await accountUsage.finalizeChatTurn({

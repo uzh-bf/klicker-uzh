@@ -13,6 +13,10 @@ export function isChatAccountUsageEnforcementEnabled(): boolean {
   return process.env.CHAT_ACCOUNT_USAGE_ENFORCEMENT_ENABLED === 'true'
 }
 
+export function isChatTurnLifecycleWritesEnabled(): boolean {
+  return process.env.CHAT_TURN_LIFECYCLE_WRITES_ENABLED === 'true'
+}
+
 export class ChatTurnConflictError extends Error {
   readonly code = CHAT_TURN_ALREADY_COMPLETED_CODE
 
@@ -28,7 +32,7 @@ export type FinalizeChatTurnInput = {
   usageClass: ChatUsageClass
   threadId: string
   assistantMessageId: string
-  lifecycleAttemptId: string
+  lifecycleAttemptId: string | null
   parentId: string | null
   content: Prisma.InputJsonValue
   chatMode: string | null
@@ -40,7 +44,7 @@ export type FinalizeChatTurnInput = {
 }
 
 export type FinalizeChatTurnResult = {
-  outcome: 'completed' | 'duplicate'
+  outcome: 'completed' | 'duplicate' | 'empty'
   creditsUsed: number | null
 }
 
@@ -53,7 +57,7 @@ export type ClaimChatTurnInput = {
 }
 
 export type ClaimChatTurnResult =
-  | { outcome: 'claimed'; lifecycleAttemptId: string }
+  | { outcome: 'claimed'; lifecycleAttemptId: string | null }
   | { outcome: 'in_progress'; lifecycleAttemptId: null }
   | { outcome: 'completed'; lifecycleAttemptId: null }
 
@@ -105,6 +109,22 @@ export async function isChatAccountUsageAvailable({
 export async function claimChatTurn(
   input: ClaimChatTurnInput
 ): Promise<ClaimChatTurnResult> {
+  if (!isChatTurnLifecycleWritesEnabled()) {
+    const thread = await prisma.chatThread.findFirst({
+      where: {
+        id: input.threadId,
+        chatbotId: input.chatbotId,
+        chatbot: { ownerId: input.ownerId },
+      },
+      select: { id: true },
+    })
+    if (!thread) {
+      throw new ChatTurnConflictError()
+    }
+
+    return { outcome: 'claimed', lifecycleAttemptId: null }
+  }
+
   const lifecycleAttemptId = randomUUID()
 
   return withTransaction(async (tx) => {
@@ -201,8 +221,10 @@ export async function failChatTurn({
 }: {
   assistantMessageId: string
   threadId: string
-  lifecycleAttemptId: string
+  lifecycleAttemptId: string | null
 }): Promise<void> {
+  if (lifecycleAttemptId === null) return
+
   await prisma.chatMessage.updateMany({
     where: {
       id: assistantMessageId,
@@ -238,26 +260,46 @@ export async function finalizeChatTurn(
       throw new ChatTurnConflictError()
     }
 
-    const completed = await tx.chatMessage.updateMany({
-      where: {
-        id: input.assistantMessageId,
-        threadId: input.threadId,
-        role: 'assistant',
-        lifecycleStatus: { in: ['IN_PROGRESS', 'FAILED'] },
-        lifecycleAttemptId: input.lifecycleAttemptId,
-      },
-      data: {
-        parentId: input.parentId,
-        content: input.content,
-        chatMode: input.chatMode,
-        modelId: input.modelId,
-        reasoningEffort: input.reasoningEffort,
-        reasoningContent: input.reasoningContent,
-        creditsUsed: credits,
-        lifecycleStatus: 'COMPLETED',
-        lifecycleAttemptId: null,
-      },
-    })
+    if (
+      input.lifecycleAttemptId === null &&
+      Array.isArray(input.content) &&
+      input.content.length === 0
+    ) {
+      return { outcome: 'empty', creditsUsed: null }
+    }
+
+    const messageData = {
+      parentId: input.parentId,
+      content: input.content,
+      chatMode: input.chatMode,
+      modelId: input.modelId,
+      reasoningEffort: input.reasoningEffort,
+      reasoningContent: input.reasoningContent,
+      creditsUsed: credits,
+      lifecycleStatus: 'COMPLETED' as const,
+      lifecycleAttemptId: null,
+    }
+    const completed =
+      input.lifecycleAttemptId === null
+        ? await tx.chatMessage.createMany({
+            data: {
+              id: input.assistantMessageId,
+              threadId: input.threadId,
+              role: 'assistant',
+              ...messageData,
+            },
+            skipDuplicates: true,
+          })
+        : await tx.chatMessage.updateMany({
+            where: {
+              id: input.assistantMessageId,
+              threadId: input.threadId,
+              role: 'assistant',
+              lifecycleStatus: { in: ['IN_PROGRESS', 'FAILED'] },
+              lifecycleAttemptId: input.lifecycleAttemptId,
+            },
+            data: messageData,
+          })
     if (completed.count === 0) {
       const existing = await tx.chatMessage.findUnique({
         where: { id: input.assistantMessageId },
