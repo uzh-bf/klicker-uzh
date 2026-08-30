@@ -31,6 +31,7 @@ const {
   hasVerifiedGeneratedPromotionStatus,
   isFinalReviewCommand,
   isTrustedPermission,
+  initializeFinalReview,
   normalizeTitle,
   parseDispositionRecord,
   parseIndividualCleanEvidence,
@@ -1490,6 +1491,178 @@ test('authorizes a verified native stack member', async () => {
   )
   assert.equal(outputs.get('scope_kind'), 'native-stack')
   assert.equal(outputs.get('stack_id'), 'stack-42')
+})
+
+test('authorizes a pull request targeting a designated consolidation branch', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Consolidation change',
+    base: {
+      ref: 'v3-ai',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/consolidation-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github } = reviewGithub({ pull })
+  const outputs = new Map()
+  const core = {
+    notice: () => {},
+    setOutput: (name, value) => outputs.set(name, value),
+  }
+
+  assert.equal(
+    await authorizeFinalReview({
+      github,
+      context: reviewContext(),
+      core,
+    }),
+    true
+  )
+  assert.equal(outputs.get('scope_kind'), 'default')
+  assert.equal(outputs.get('stack_id'), '')
+})
+
+test('keeps the pending status for a consolidation-branch pull request', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Consolidation change',
+    base: {
+      ref: 'v3-ai',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/consolidation-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const statuses = []
+  const github = {
+    rest: {
+      repos: {
+        createCommitStatus: async (status) => statuses.push(status),
+      },
+    },
+  }
+  const context = {
+    ...reviewContext(),
+    payload: {
+      ...reviewContext().payload,
+      pull_request: pull,
+    },
+  }
+
+  await initializeFinalReview({
+    github,
+    context,
+    core: { info: () => {}, notice: () => {}, setOutput: () => {} },
+    sourceBranch: 'v3-ai',
+    trustedSha: 'd'.repeat(40),
+  })
+
+  assert.equal(statuses.length, 1)
+  assert.equal(statuses[0].state, 'pending')
+  assert.match(
+    statuses[0].description,
+    /Manual .* final review required for this head/
+  )
+})
+
+test('rejects a pull request targeting an unlisted integration branch', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Unlisted branch change',
+    base: {
+      ref: 'release/integration',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/unlisted-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const statuses = []
+  const github = {
+    rest: {
+      repos: {
+        createCommitStatus: async (status) => statuses.push(status),
+      },
+    },
+    request: async () => ({ data: [] }),
+  }
+  const context = {
+    ...reviewContext(),
+    payload: {
+      ...reviewContext().payload,
+      pull_request: pull,
+    },
+  }
+
+  await initializeFinalReview({
+    github,
+    context,
+    core: { info: () => {}, notice: () => {}, setOutput: () => {} },
+    sourceBranch: 'v3',
+    trustedSha: 'd'.repeat(40),
+  })
+
+  assert.equal(statuses.length, 1)
+  assert.equal(statuses[0].state, 'error')
+  assert.equal(
+    statuses[0].description,
+    'Final review requires the default branch, a designated consolidation branch, or a verified native stack member'
+  )
+})
+
+test('explains every eligible base option when authorization is denied', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Unlisted branch change',
+    base: {
+      ref: 'release/integration',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/unlisted-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github } = reviewGithub({ pull })
+  const notices = []
+  const core = {
+    notice: (message) => notices.push(message),
+    setOutput: () => {},
+  }
+
+  assert.equal(
+    await authorizeFinalReview({
+      github,
+      context: reviewContext(),
+      core,
+    }),
+    false
+  )
+  assert.deepEqual(notices, [
+    'Final review requires an open, ready PR targeting the default branch, a designated consolidation branch, or a verified native stack',
+  ])
 })
 
 test('selects incremental attestation only for bounded repaired changes', async () => {
