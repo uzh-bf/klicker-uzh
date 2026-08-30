@@ -374,6 +374,7 @@ jobs:
           set -euo pipefail
           printf '%s' "${OPENROUTER_API_KEY}" |
             node .github/scripts/final-ai-review.js configure-ocr
+          test -s "${HOME}/.opencodereview/config.json"
 
       - name: Verify OpenRouter tool access
         if: needs.start.outputs.run_review == 'true'
@@ -830,6 +831,7 @@ jobs:
           set -euo pipefail
           printf '%s' "${OPENROUTER_API_KEY}" |
             node .github/scripts/final-ai-review.js configure-ocr
+          test -s "${HOME}/.opencodereview/config.json"
 
       - name: Verify OpenRouter tool access
         if: needs.start_stack.outputs.run_review == 'true'
