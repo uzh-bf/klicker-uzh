@@ -401,6 +401,7 @@ jobs:
             --to "${HEAD_SHA}" \
             --audience agent \
             --effort low \
+            --max-tokens-budget 750000 \
             --format json \
             --background "${BACKGROUND}" \
             --rule .github/open-code-review/final-review-rules.json \
@@ -864,6 +865,7 @@ jobs:
                 --to "${HEAD}" \
                 --audience agent \
                 --effort low \
+                --max-tokens-budget 750000 \
                 --format json \
                 --background "${BACKGROUND}" \
                 --rule .github/open-code-review/final-review-rules.json \
@@ -878,6 +880,7 @@ jobs:
               --to "${HEAD_SHA}" \
               --audience agent \
               --effort low \
+              --max-tokens-budget 2000000 \
               --format json \
               --background "${BACKGROUND}" \
               --rule .github/open-code-review/final-review-rules.json \

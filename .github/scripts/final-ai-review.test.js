@@ -60,6 +60,16 @@ test('normalizes untrusted PR titles to 200 Unicode code points', () => {
   assert.match(buildReviewBackground(title), /untrusted metadata/)
 })
 
+test('bounds individual and stack review token usage', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+
+  assert.equal(source.match(/--max-tokens-budget 750000/g)?.length, 2)
+  assert.equal(source.match(/--max-tokens-budget 2000000/g)?.length, 1)
+})
+
 test('accepts only the exact command and calculated write permissions', () => {
   assert.equal(isFinalReviewCommand('/final-review'), true)
   assert.equal(isFinalReviewCommand('/final-review please'), false)
