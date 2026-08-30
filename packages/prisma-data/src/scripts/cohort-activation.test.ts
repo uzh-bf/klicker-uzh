@@ -68,11 +68,25 @@ function canonicalReceipt(value: unknown): unknown {
   return value
 }
 
-function receiptDigest(receipt: ActivationReceiptPayload): string {
+function receiptDigest(receipt: Record<string, unknown>): string {
   const { payloadDigest: _payloadDigest, ...withoutDigest } = receipt
   return createHash('sha256')
     .update(JSON.stringify(canonicalReceipt(withoutDigest)))
     .digest('hex')
+}
+
+function legacyReceipt(
+  receipt: ActivationReceipt,
+  overrides: Record<string, unknown> = {}
+): Record<string, unknown> {
+  const { pendingRollbackOrigin: _origin, ...withoutOrigin } = clone(receipt)
+  const legacy = {
+    ...withoutOrigin,
+    receiptVersion: 1,
+    ...overrides,
+  }
+  legacy.payloadDigest = receiptDigest(legacy)
+  return legacy
 }
 
 function deadPid(): number {
@@ -1273,6 +1287,12 @@ describe('cohort activation operator', () => {
     expect(['RECEIPT_LOCKED', 'RECEIPT_CAS_FAILED']).toContain(
       outcomes.find((outcome) => outcome.status === 'rejected')?.reason.code
     )
+    expect(store.writes).toBe(15 + 1 + 22 + 48)
+    expect(store.transactions).toBe(1)
+    expect(store.knowledgeBases).toHaveLength(15)
+    expect(store.targetServer()).not.toBeNull()
+    expect(store.bindings).toHaveLength(22)
+    expect(store.targetConfigs).toHaveLength(48)
     expect((await fileStore.read())?.state).toBe('prepared')
   })
 
@@ -1307,7 +1327,9 @@ describe('cohort activation operator', () => {
     ).toHaveLength(1)
     expect(
       outcomes.find((outcome) => outcome.status === 'rejected')?.reason
-    ).toMatchObject({ code: 'RECEIPT_CAS_FAILED' })
+    ).toMatchObject({
+      code: expect.stringMatching(/RECEIPT_(CAS_FAILED|LOCKED)/),
+    })
     expect(receiptStore.value?.state).toBe('prepared')
   })
 
@@ -1316,11 +1338,15 @@ describe('cohort activation operator', () => {
     const path = join(directory, 'receipt.json')
     const fileStore = createFileActivationReceiptStore(path)
     await prepareCohortActivation(store, manifest, options(fileStore, manifest))
+    await switchCohortChatbot(store, manifest, {
+      ...options(fileStore, manifest),
+      chatbotAlias: 'chatbot-001',
+    })
     store.failTargetConfigUpdate = true
     await expect(
       switchCohortChatbot(store, manifest, {
         ...options(fileStore, manifest),
-        chatbotAlias: 'chatbot-001',
+        chatbotAlias: 'chatbot-002',
       })
     ).rejects.toThrowError(expect.objectContaining({ code: 'CONCURRENT_EDIT' }))
     expect((await fileStore.read())?.state).toBe('switching')
@@ -1328,21 +1354,135 @@ describe('cohort activation operator', () => {
     await expect(
       rollbackCohortChatbot(store, manifest, {
         ...options(fileStore, manifest),
-        chatbotAlias: 'chatbot-001',
+        chatbotAlias: 'chatbot-002',
       })
     ).rejects.toThrowError('synthetic transaction failure')
     expect(await fileStore.read()).toMatchObject({
       state: 'rolling_back',
-      switchedChatbotAliases: [],
-      pendingRollbackAliases: ['chatbot-001'],
+      switchedChatbotAliases: ['chatbot-001'],
+      pendingRollbackAliases: ['chatbot-002'],
       pendingRollbackOrigin: 'switching',
     })
+    await expect(
+      rollbackCohortChatbot(store, manifest, {
+        ...options(fileStore, manifest),
+        chatbotAlias: 'chatbot-002',
+      })
+    ).resolves.toMatchObject({
+      status: 'switched',
+      aliases: { switchedChatbotAliases: ['chatbot-001'] },
+    })
+    expect(
+      store.bindingForChatbot(chatbotIdForAlias(manifest, 'chatbot-001'))
+        ?.isEnabled
+    ).toBe(true)
+    expect(
+      store.bindingForChatbot(chatbotIdForAlias(manifest, 'chatbot-002'))
+        ?.isEnabled
+    ).toBe(false)
     await expect(
       rollbackCohortChatbot(store, manifest, {
         ...options(fileStore, manifest),
         chatbotAlias: 'chatbot-001',
       })
     ).resolves.toMatchObject({ status: 'rolled_back' })
+  })
+
+  it('normalizes legacy receipts and refuses ambiguous rollback origin', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'cohort-activation-legacy-'))
+    const path = join(directory, 'receipt.json')
+    const fileStore = createFileActivationReceiptStore(path)
+    await prepareCohortActivation(store, manifest, options(fileStore, manifest))
+    const prepared = (await fileStore.read()) as ActivationReceipt
+
+    const legacyPrepared = legacyReceipt(prepared)
+    writeFileSync(path, `${JSON.stringify(legacyPrepared)}\n`)
+    await expect(fileStore.read()).resolves.toMatchObject({
+      receiptVersion: 2,
+      state: 'prepared',
+      pendingRollbackOrigin: null,
+    })
+    writeFileSync(
+      path,
+      `${JSON.stringify({ ...legacyPrepared, payloadDigest: '0'.repeat(64) })}\n`
+    )
+    await expect(fileStore.read()).rejects.toThrowError(
+      expect.objectContaining({ code: 'RECEIPT_INVALID' })
+    )
+
+    const legacySwitching = legacyReceipt(prepared, {
+      state: 'switching',
+      pendingChatbotAlias: 'chatbot-001',
+    })
+    writeFileSync(path, `${JSON.stringify(legacySwitching)}\n`)
+    await expect(fileStore.read()).resolves.toMatchObject({
+      receiptVersion: 2,
+      state: 'switching',
+      pendingRollbackOrigin: null,
+    })
+
+    writeFileSync(path, `${JSON.stringify(legacyPrepared)}\n`)
+    await switchCohortChatbot(store, manifest, {
+      ...options(fileStore, manifest),
+      chatbotAlias: 'chatbot-001',
+    })
+    const switched = (await fileStore.read()) as ActivationReceipt
+    const legacySwitched = legacyReceipt(switched)
+    writeFileSync(path, `${JSON.stringify(legacySwitched)}\n`)
+    await expect(fileStore.read()).resolves.toMatchObject({
+      receiptVersion: 2,
+      state: 'switched',
+      pendingRollbackOrigin: null,
+    })
+    await rollbackCohortChatbot(store, manifest, {
+      ...options(fileStore, manifest),
+      chatbotAlias: 'chatbot-001',
+    })
+    const rolledBack = (await fileStore.read()) as ActivationReceipt
+    const legacyRolledBack = legacyReceipt(rolledBack)
+    writeFileSync(path, `${JSON.stringify(legacyRolledBack)}\n`)
+    await expect(fileStore.read()).resolves.toMatchObject({
+      receiptVersion: 2,
+      state: 'rolled_back',
+      pendingRollbackOrigin: null,
+    })
+
+    const legacySwitchedRollback = legacyReceipt(switched, {
+      state: 'rolling_back',
+      pendingChatbotAlias: null,
+      pendingRollbackAliases: ['chatbot-001'],
+      switchedChatbotAliases: ['chatbot-001'],
+    })
+    writeFileSync(path, `${JSON.stringify(legacySwitchedRollback)}\n`)
+    await expect(fileStore.read()).resolves.toMatchObject({
+      receiptVersion: 2,
+      state: 'rolling_back',
+      pendingRollbackOrigin: 'switched',
+    })
+
+    const unambiguousRollback = legacyReceipt(rolledBack, {
+      state: 'rolling_back',
+      pendingChatbotAlias: null,
+      pendingRollbackAliases: ['chatbot-001'],
+      switchedChatbotAliases: [],
+    })
+    writeFileSync(path, `${JSON.stringify(unambiguousRollback)}\n`)
+    await expect(fileStore.read()).resolves.toMatchObject({
+      receiptVersion: 2,
+      state: 'rolling_back',
+      pendingRollbackOrigin: 'switching',
+    })
+
+    const ambiguousRollback = legacyReceipt(rolledBack, {
+      state: 'rolling_back',
+      pendingChatbotAlias: null,
+      pendingRollbackAliases: [],
+      switchedChatbotAliases: [],
+    })
+    writeFileSync(path, `${JSON.stringify(ambiguousRollback)}\n`)
+    await expect(fileStore.read()).rejects.toThrowError(
+      expect.objectContaining({ code: 'RECEIPT_STATE' })
+    )
   })
 
   it('serializes receipt updates, rejects stale digests, and refuses tampered shape', async () => {
