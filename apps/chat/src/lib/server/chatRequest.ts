@@ -92,7 +92,11 @@ export type ParsedChatRequest = {
     parentId: string | null
     text: string
     attachments: Array<
-      | { type: 'new-image'; imageBase64: string }
+      | {
+          type: 'new-image'
+          imageBase64: string
+          imagePreviewBase64?: string | null
+        }
       | { type: 'persisted-image'; id: string }
     >
   }
@@ -169,10 +173,18 @@ export function parseChatRequestBody(value: unknown): ParsedChatRequest {
       id: finalMessage.id,
       parentId: parsed.parentId ?? null,
       text: finalMessage.content,
-      attachments: parsed.images.map((image) => ({
-        type: 'new-image' as const,
-        imageBase64: typeof image === 'string' ? image : image.imageBase64,
-      })),
+      attachments: parsed.images.map((image) =>
+        typeof image === 'string'
+          ? {
+              type: 'new-image' as const,
+              imageBase64: image,
+            }
+          : {
+              type: 'new-image' as const,
+              imageBase64: image.imageBase64,
+              imagePreviewBase64: image.imagePreviewBase64,
+            }
+      ),
     },
     usedLegacyAdapter: true,
   }

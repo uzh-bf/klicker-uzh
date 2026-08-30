@@ -67,6 +67,32 @@ describe('chat request parsing', () => {
     })
   })
 
+  test('legacy adaptation preserves a supplied image preview', () => {
+    expect(
+      parseChatRequestBody({
+        ...common,
+        messages: [{ id: USER_ID, role: 'user', content: 'Question' }],
+        images: [
+          {
+            imageBase64: 'data:image/png;base64,AAAA',
+            imagePreviewBase64: 'data:image/jpeg;base64,BBBB',
+          },
+        ],
+      })
+    ).toMatchObject({
+      trigger: {
+        attachments: [
+          {
+            type: 'new-image',
+            imageBase64: 'data:image/png;base64,AAAA',
+            imagePreviewBase64: 'data:image/jpeg;base64,BBBB',
+          },
+        ],
+      },
+      usedLegacyAdapter: true,
+    })
+  })
+
   test('bounds canonical text and the temporary legacy request window', () => {
     expect(() =>
       parseChatRequestBody({

@@ -185,6 +185,33 @@ describe('authoritative conversation history', () => {
     })
   })
 
+  test('reuses a supplied preview for a new legacy image', async () => {
+    const imageBase64 = 'data:image/png;base64,AAAA'
+    const imagePreviewBase64 = 'data:image/jpeg;base64,PREVIEW'
+
+    await prepareAuthoritativeConversation({
+      ...input,
+      usedLegacyAdapter: true,
+      trigger: {
+        ...input.trigger,
+        attachments: [{ type: 'new-image', imageBase64, imagePreviewBase64 }],
+      },
+    })
+
+    expect(mocks.ensureImagePreviewBase64).toHaveBeenCalledWith({
+      imageBase64,
+      imagePreviewBase64,
+    })
+    expect(mocks.transaction.chatAttachment.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          imageBase64,
+          imagePreviewBase64,
+        }),
+      ],
+    })
+  })
+
   test('revalidates a persisted image source inside the transaction', async () => {
     const sourceId = 'source-attachment'
     const imageBase64 = 'data:image/png;base64,AAAA'

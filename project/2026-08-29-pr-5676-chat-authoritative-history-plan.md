@@ -1017,3 +1017,20 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   gate pass. Push and fresh exact-head CI/OCR remain before readiness and the
   required manual final review; PostgreSQL fixture proof, managed browser
   smoke, merge, deployment, and activation remain separately gated.
+
+- 2026-08-30 post-integration compatibility correction: current `origin/v3`
+  through `6135b55c5` was merged without conflict as `d49409afe`. Repository
+  checks, 88 final-review helper tests, all 507 Chat tests with both PostgreSQL
+  integration gates, the 23-task production build, and every exact-head hosted
+  Playwright shard passed. The managed app returned its expected in-container
+  login redirect, while browser access remained blocked by the documented
+  devcontainer alias mismatch and rendered Traefik's `404` instead. Exact-head
+  OCR run `33305590853` then found one valid compatibility regression: the
+  legacy object-image schema accepted a preview that adaptation discarded.
+  The narrow correction carries that validated preview through authoritative
+  preparation and persistence while leaving canonical new images
+  server-previewed. Parser and preparation regressions cover both seams. The
+  corrected exact tree passed all 509 Chat tests with both PostgreSQL
+  integration gates, and its managed runtime was stopped with zero remaining
+  routes. The required manual final review, PR readiness, merge, deployment,
+  and activation remain separately gated.

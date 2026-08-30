@@ -48,7 +48,11 @@ export type PrepareAuthoritativeConversationInput = {
     parentId: string | null
     text: string
     attachments: Array<
-      | { type: 'new-image'; imageBase64: string }
+      | {
+          type: 'new-image'
+          imageBase64: string
+          imagePreviewBase64?: string | null
+        }
       | { type: 'persisted-image'; id: string }
     >
   }
@@ -231,7 +235,10 @@ export async function prepareAuthoritativeConversation(
 
       const resolved = await ensureImagePreviewBase64({
         imageBase64,
-        imagePreviewBase64: source?.imagePreviewBase64 ?? null,
+        imagePreviewBase64:
+          attachment.type === 'new-image'
+            ? (attachment.imagePreviewBase64 ?? null)
+            : (source?.imagePreviewBase64 ?? null),
       })
       if (!resolved.imagePreviewBase64) {
         throw new AuthoritativeConversationError()
