@@ -311,7 +311,9 @@ Check:
 - [x] Revalidated participant, fallback, lifecycle, migration, and PR-stack findings.
 - [x] Settled the product and rollout contracts with the user.
 - [x] Disposition the independent planning review.
-- [ ] Receive one-time approval for this execution plan.
-- [ ] Commit the plan and complete Slices 2 through 4.
-- [ ] Run required checks and reviews.
+- [x] Receive one-time approval for this execution plan.
+- [x] Commit the plan and complete Slices 2 through 4.
+- [x] Run required checks and reviews. The integrated final review used the
+      documented main-session fallback after every child-reviewer provider
+      route failed terminally; the draft PR remains subject to human review.
 - [ ] Push and open the draft PR.
