@@ -164,8 +164,10 @@ client can retry without reloading the iframe. A client-side preflight deadline
 intentionally settles as retryable unavailable instead of auto-retrying in the
 background. Every chat turn repeats the same inventory classification; its
 response header replaces stale preflight state, so the preflight never grants
-write authority or promises a missing proposal tool. Before the inventory is
-passed to the model, the adapter keeps only the known read tools for
+write authority or promises a missing proposal tool. Chat requests reserve a
+monotonic revision when they start, so only the latest-started response can
+replace capability state even when concurrent responses finish out of order.
+Before the inventory is passed to the model, the adapter keeps only the known read tools for
 `read-only`, the known read and draft tools for `draft-and-read`, and no tools
 for `unavailable`; unknown or mismatched tools fail closed so service-version
 skew cannot contradict the advertised capability.

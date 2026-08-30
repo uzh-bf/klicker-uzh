@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react'
 import {
   createManageAssistantPreflightSignal,
+  fetchManageAssistantChatWithCapability,
   INITIAL_MANAGE_ASSISTANT_CAPABILITY_STATE,
   isManageAssistantCapabilityState,
-  MANAGE_ASSISTANT_CAPABILITY_HEADER,
   reduceManageAssistantCapabilityState,
 } from '@/src/services/manageAssistantCapabilities'
 
@@ -73,17 +73,16 @@ export function useManageAssistantCapabilities() {
   }, [runPreflight])
 
   const chatFetch = useCallback<typeof globalThis.fetch>(
-    async (input, init) => {
-      const response = await globalThis.fetch(input, init)
-      const capability = response.headers.get(
-        MANAGE_ASSISTANT_CAPABILITY_HEADER
-      )
-      if (isManageAssistantCapabilityState(capability)) {
-        turnRevision.current += 1
-        dispatch({ capability, type: 'resolve' })
-      }
-      return response
-    },
+    (input, init) =>
+      fetchManageAssistantChatWithCapability(
+        globalThis.fetch,
+        input,
+        init,
+        turnRevision,
+        (capability) => {
+          dispatch({ capability, type: 'resolve' })
+        }
+      ),
     []
   )
 

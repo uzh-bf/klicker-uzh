@@ -1,10 +1,12 @@
 import type { ToolSet } from 'ai'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import {
   classifyManageAssistantCapabilityState,
   createManageAssistantPreflightSignal,
+  fetchManageAssistantChatWithCapability,
   INITIAL_MANAGE_ASSISTANT_CAPABILITY_STATE,
   isManageAssistantCapabilityState,
+  MANAGE_ASSISTANT_CAPABILITY_HEADER,
   reduceManageAssistantCapabilityState,
   selectManageAssistantTools,
 } from '@/src/services/manageAssistantCapabilities'
@@ -92,5 +94,58 @@ describe('Manage assistant capability state', () => {
     })
     expect(signal.aborted).toBe(true)
     expect(controller.signal.aborted).toBe(false)
+  })
+
+  test('lets only the latest-started chat response update capability state', async () => {
+    let resolveOlder!: (response: Response) => void
+    let resolveNewer!: (response: Response) => void
+    const olderResponse = new Promise<Response>((resolve) => {
+      resolveOlder = resolve
+    })
+    const newerResponse = new Promise<Response>((resolve) => {
+      resolveNewer = resolve
+    })
+    const fetchImplementation = vi
+      .fn()
+      .mockReturnValueOnce(olderResponse)
+      .mockReturnValueOnce(newerResponse) as typeof globalThis.fetch
+    const turnRevision = { current: 0 }
+    const resolvedCapabilities: string[] = []
+
+    const olderRequest = fetchManageAssistantChatWithCapability(
+      fetchImplementation,
+      '/api/manage/chat',
+      undefined,
+      turnRevision,
+      (capability) => resolvedCapabilities.push(capability)
+    )
+    expect(turnRevision.current).toBe(1)
+    const newerRequest = fetchManageAssistantChatWithCapability(
+      fetchImplementation,
+      '/api/manage/chat',
+      undefined,
+      turnRevision,
+      (capability) => resolvedCapabilities.push(capability)
+    )
+    expect(turnRevision.current).toBe(2)
+
+    resolveNewer(
+      new Response(null, {
+        headers: {
+          [MANAGE_ASSISTANT_CAPABILITY_HEADER]: 'draft-and-read',
+        },
+      })
+    )
+    await newerRequest
+    resolveOlder(
+      new Response(null, {
+        headers: {
+          [MANAGE_ASSISTANT_CAPABILITY_HEADER]: 'unavailable',
+        },
+      })
+    )
+    await olderRequest
+
+    expect(resolvedCapabilities).toEqual(['draft-and-read'])
   })
 })

@@ -51,6 +51,28 @@ export function createManageAssistantPreflightSignal(
   return AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)])
 }
 
+export async function fetchManageAssistantChatWithCapability(
+  fetchImplementation: typeof globalThis.fetch,
+  input: Parameters<typeof globalThis.fetch>[0],
+  init: Parameters<typeof globalThis.fetch>[1],
+  turnRevision: { current: number },
+  onCapability: (capability: ManageAssistantCapabilityState) => void
+): Promise<Response> {
+  turnRevision.current += 1
+  const requestRevision = turnRevision.current
+  const response = await fetchImplementation(input, init)
+  const capability = response.headers.get(MANAGE_ASSISTANT_CAPABILITY_HEADER)
+
+  if (
+    isManageAssistantCapabilityState(capability) &&
+    requestRevision === turnRevision.current
+  ) {
+    onCapability(capability)
+  }
+
+  return response
+}
+
 export function classifyManageAssistantCapabilityState(
   tools: ToolSet
 ): ManageAssistantCapabilityState {
