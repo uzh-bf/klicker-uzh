@@ -111,36 +111,30 @@ export async function settlePersonalElementRevision({
   if (typeof toolCallId !== 'string') {
     return { status: 'failed', reason: 'invalid' }
   }
+  const persistRejectedRevision = () =>
+    prisma.chatMessage.updateMany({
+      where: { id: assistantMessageId, threadId, role: 'assistant' },
+      data: {
+        content: withRejectedRevision(
+          assistantMessageContent,
+          toolCallId
+        ) as Prisma.InputJsonValue,
+      },
+    })
   const linkage = { courseId, messageId: assistantMessageId, toolCallId }
   let updated: Awaited<ReturnType<typeof applyPersonalElementRevision>>
   try {
     updated = await applyPersonalElementRevision(linkage, participantId)
   } catch (error) {
     if (isGraphqlRejection(error)) {
-      await prisma.chatMessage.updateMany({
-        where: { id: assistantMessageId, threadId, role: 'assistant' },
-        data: {
-          content: withRejectedRevision(
-            assistantMessageContent,
-            toolCallId
-          ) as Prisma.InputJsonValue,
-        },
-      })
+      await persistRejectedRevision()
       return { status: 'failed', reason: 'rejected' }
     }
     try {
       updated = await applyPersonalElementRevision(linkage, participantId)
     } catch (retryError) {
       if (isGraphqlRejection(retryError)) {
-        await prisma.chatMessage.updateMany({
-          where: { id: assistantMessageId, threadId, role: 'assistant' },
-          data: {
-            content: withRejectedRevision(
-              assistantMessageContent,
-              toolCallId
-            ) as Prisma.InputJsonValue,
-          },
-        })
+        await persistRejectedRevision()
       }
       return {
         status: 'failed',
