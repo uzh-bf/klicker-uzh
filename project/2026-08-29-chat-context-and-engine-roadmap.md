@@ -165,6 +165,20 @@ integrated tests, final review, and honest disposition of browser proof. The
 existing 64-of-256 row window is accepted as a row-bounded baseline, not a hard
 token guarantee.
 
+### P0R — remove the temporary request adapter
+
+This is a separate compatibility PR owned by the public Chat maintainers. Its
+review date is 2026-09-30. An extension requires a dated roadmap receipt with a
+named compatibility reason; it must not become an indefinite second contract.
+
+Removal may proceed after P0 has run in production for one full deployment
+window and either supported-client compatibility is proven or values-free
+`usedLegacyAdapter` telemetry is zero for that window. The PR removes the old
+`messages` request schema, makes legacy payload rejection explicit in parser
+and route tests, updates the wiki, and reruns send, edit, regenerate, reload,
+and already-open-tab browser journeys. P0R does not block P1 or P2.1-P2.3, but
+it must land before P2.4 can activate another compatibility seam.
+
 ### P1 — add the basic legacy context guard
 
 One cohesive public PR after P0 lands. No schema change and no engine split.

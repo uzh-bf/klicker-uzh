@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   prisma: {
+    chatMessage: {
+      findUnique: vi.fn(),
+    },
     chatAttachment: {
       findMany: vi.fn(),
     },
@@ -101,6 +104,7 @@ beforeEach(() => {
   mocks.withTransaction.mockImplementation(async (operation) =>
     operation(mocks.transaction)
   )
+  mocks.prisma.chatMessage.findUnique.mockResolvedValue(null)
   mocks.prisma.chatAttachment.findMany.mockResolvedValue([])
   mocks.ensureImagePreviewBase64.mockImplementation(async (image) => ({
     ...image,
@@ -294,6 +298,80 @@ describe('authoritative conversation history', () => {
     await expect(
       prepareAuthoritativeConversation(input)
     ).rejects.toBeInstanceOf(AuthoritativeConversationError)
+  })
+
+  test('ignores replayed image bytes for an existing legacy trigger', async () => {
+    const currentAttachment = {
+      id: 'current-attachment',
+      type: 'IMAGE',
+      position: 0,
+      imageBase64: 'data:image/png;base64,PERSISTED',
+      imagePreviewBase64: 'data:image/jpeg;base64,PREVIEW',
+      imageDescription: 'Persisted description',
+    }
+    mocks.prisma.chatMessage.findUnique.mockResolvedValue({ id: 'trigger-1' })
+    mocks.transaction.chatMessage.createMany.mockResolvedValue({ count: 0 })
+    mocks.transaction.chatMessage.findUnique.mockResolvedValue({
+      threadId: 'thread-1',
+      parentId: null,
+      role: 'user',
+      content: [{ type: 'text', text: 'Question' }],
+      lifecycleStatus: 'COMPLETED',
+    })
+    mocks.transaction.chatAttachment.findMany.mockResolvedValue([
+      currentAttachment,
+    ])
+    mocks.ensureImagePreviewBase64.mockRejectedValue(
+      new Error('replayed bytes must be ignored')
+    )
+
+    await expect(
+      prepareAuthoritativeConversation({
+        ...input,
+        usedLegacyAdapter: true,
+        trigger: {
+          ...input.trigger,
+          attachments: [
+            { type: 'new-image', imageBase64: 'not-a-valid-image' },
+          ],
+        },
+      })
+    ).resolves.toMatchObject({
+      createdTrigger: false,
+      currentAttachments: [
+        {
+          id: currentAttachment.id,
+          position: currentAttachment.position,
+          imageBase64: currentAttachment.imageBase64,
+          imagePreviewBase64: currentAttachment.imagePreviewBase64,
+          imageDescription: currentAttachment.imageDescription,
+        },
+      ],
+    })
+
+    expect(mocks.ensureImagePreviewBase64).not.toHaveBeenCalled()
+    expect(mocks.transaction.chatAttachment.createMany).not.toHaveBeenCalled()
+  })
+
+  test('fails closed if a preflight legacy retry becomes a new trigger', async () => {
+    mocks.prisma.chatMessage.findUnique.mockResolvedValue({ id: 'trigger-1' })
+    mocks.transaction.chatMessage.createMany.mockResolvedValue({ count: 1 })
+
+    await expect(
+      prepareAuthoritativeConversation({
+        ...input,
+        usedLegacyAdapter: true,
+        trigger: {
+          ...input.trigger,
+          attachments: [
+            { type: 'new-image', imageBase64: 'not-a-valid-image' },
+          ],
+        },
+      })
+    ).rejects.toBeInstanceOf(AuthoritativeConversationError)
+
+    expect(mocks.ensureImagePreviewBase64).not.toHaveBeenCalled()
+    expect(mocks.transaction.chatAttachment.createMany).not.toHaveBeenCalled()
   })
 
   test('projects only the selected root-to-trigger text and prior descriptions', async () => {

@@ -97,6 +97,13 @@ payloads remain outside the request. Tool payload replay needs a tool-specific
 projection that reconstructs a valid AI SDK tool exchange; rendering a stored
 payload does not make it safe model context.
 
+The route emits one production-safe history event with bounded row counts, the
+truncation boolean, and whether the temporary legacy adapter was used. It never
+includes request, thread, participant, message, or attachment identifiers or
+content. AI SDK telemetry explicitly disables prompt and output capture; the
+existing values-free event remains available while the Langfuse exporter gap
+documented below is unresolved.
+
 Image reuse is binding-based. A new raw image becomes a server-previewed
 binding on the trigger. A persisted attachment ID is copied only from a
 completed user message in the same participant, chatbot, owner, and thread

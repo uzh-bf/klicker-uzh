@@ -247,6 +247,7 @@ describe('account usage chat route', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'info').mockImplementation(() => {})
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     mocks.streamConfig = null
     mocks.responseOptions = null
@@ -450,6 +451,40 @@ describe('account usage chat route', () => {
       mocks.getAggregatedMCPTools.mock.invocationCallOrder[0]
     )
     expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
+  test('records only values-free history telemetry', async () => {
+    mocks.prepareAuthoritativeConversation.mockResolvedValueOnce({
+      triggerText: 'Explain this.',
+      modelMessages: [
+        { id: USER_MESSAGE_ID, role: 'user', content: 'Explain this.' },
+      ],
+      validatedRowCount: 17,
+      modelRowCount: 12,
+      truncated: true,
+      createdTrigger: true,
+      currentAttachments: [],
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(console.info).toHaveBeenCalledWith('[chat] request.history', {
+      validatedHistoryRowCount: 17,
+      modelHistoryRowCount: 12,
+      historyTruncated: true,
+      usedLegacyAdapter: true,
+    })
+    expect(mocks.streamConfig).toMatchObject({
+      telemetry: {
+        isEnabled: false,
+        functionId: 'klicker-chat-response',
+        recordInputs: false,
+        recordOutputs: false,
+      },
+    })
   })
 
   test('describes and updates only the new authoritative image binding', async () => {

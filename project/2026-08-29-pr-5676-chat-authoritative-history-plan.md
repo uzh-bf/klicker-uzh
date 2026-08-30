@@ -890,3 +890,15 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   is clean. Push, fresh exact-head CI, integrated final review, PostgreSQL
   proof, browser smoke, upstream integration, merge, deployment, and activation
   remain pending or separately gated.
+- 2026-08-30 integrated-review follow-up: the full-package reviewer identified
+  one compatibility regression and two release-readiness gaps. Existing legacy
+  retries now bypass replayed attachment preprocessing and reuse only their
+  persisted immutable bindings, while a transaction race fails closed. The
+  route emits identifier-free history counts, truncation, and adapter usage in
+  production-safe telemetry and disables AI SDK prompt/output capture. The
+  roadmap now assigns the legacy adapter a 2026-09-30 review date, owner,
+  removal criteria, and activation gate. The 48 focused history and route
+  tests pass; the full Chat suite passes 463 tests with 32 PostgreSQL tests
+  skipped; Chat typecheck, the production build, focused formatting, and
+  `git diff --check` pass on Node 24.16.0 and pnpm 11.5.0. Immutable
+  correction reviews remain pending for this follow-up.

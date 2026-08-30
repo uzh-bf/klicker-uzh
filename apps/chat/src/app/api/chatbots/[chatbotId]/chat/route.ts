@@ -117,6 +117,7 @@ if (!process.env.OPENAI_API_KEY) {
   )
 }
 const CHAT_LOG_PREFIX = '[chat:dev]'
+const CHAT_TELEMETRY_PREFIX = '[chat]'
 const isDevLogging = process.env.NODE_ENV === 'development'
 const MAX_LOG_STRING_LENGTH = 500
 const HASH_DIGEST_LENGTH = 12
@@ -308,6 +309,15 @@ function logChatDev(
   } else {
     console.info(message, context)
   }
+}
+
+function logHistoryProjectionTelemetry(context: {
+  validatedHistoryRowCount: number
+  modelHistoryRowCount: number
+  historyTruncated: boolean
+  usedLegacyAdapter: boolean
+}) {
+  console.info(`${CHAT_TELEMETRY_PREFIX} request.history`, context)
 }
 
 type ToolDiagnostic = {
@@ -963,6 +973,13 @@ export async function POST(
     throw error
   }
 
+  logHistoryProjectionTelemetry({
+    validatedHistoryRowCount: authoritativeConversation.validatedRowCount,
+    modelHistoryRowCount: authoritativeConversation.modelRowCount,
+    historyTruncated: authoritativeConversation.truncated,
+    usedLegacyAdapter,
+  })
+
   let turnClaim: Awaited<ReturnType<typeof claimChatTurn>>
   try {
     turnClaim = await claimChatTurn({
@@ -1238,12 +1255,6 @@ export async function POST(
       elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
     })
 
-    logEvent('request.history', {
-      validatedHistoryRowCount: authoritativeConversation.validatedRowCount,
-      modelHistoryRowCount: authoritativeConversation.modelRowCount,
-      historyTruncated: authoritativeConversation.truncated,
-    })
-
     logEvent('thread.resolved', {
       hasOwningThread: true,
       elapsedMsFromRequestStart: Date.now() - requestStartedAtMs,
@@ -1377,7 +1388,12 @@ export async function POST(
       return streamText({
         model,
         maxOutputTokens,
-        telemetry: { isEnabled: isAiTelemetryEnabled },
+        telemetry: {
+          isEnabled: isAiTelemetryEnabled,
+          functionId: 'klicker-chat-response',
+          recordInputs: false,
+          recordOutputs: false,
+        },
         providerOptions: {
           openai: {
             ...(promptCacheRequest

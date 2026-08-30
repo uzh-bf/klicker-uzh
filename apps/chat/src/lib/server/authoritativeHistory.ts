@@ -184,9 +184,18 @@ export async function prepareAuthoritativeConversation(
     throw new AuthoritativeConversationError()
   }
 
-  const persistedAttachmentIds = input.trigger.attachments.flatMap(
-    (attachment) =>
-      attachment.type === 'persisted-image' ? [attachment.id] : []
+  const existingLegacyTrigger = input.usedLegacyAdapter
+    ? await prisma.chatMessage.findUnique({
+        where: { id: input.trigger.id },
+        select: { id: true },
+      })
+    : null
+  const attachmentsToPrepare = existingLegacyTrigger
+    ? []
+    : input.trigger.attachments
+
+  const persistedAttachmentIds = attachmentsToPrepare.flatMap((attachment) =>
+    attachment.type === 'persisted-image' ? [attachment.id] : []
   )
   if (new Set(persistedAttachmentIds).size !== persistedAttachmentIds.length) {
     throw new AuthoritativeConversationError()
@@ -207,7 +216,7 @@ export async function prepareAuthoritativeConversation(
     preloadedSources.map((attachment) => [attachment.id, attachment])
   )
   const preparedAttachments = await Promise.all(
-    input.trigger.attachments.map(async (attachment, position) => {
+    attachmentsToPrepare.map(async (attachment, position) => {
       const source =
         attachment.type === 'persisted-image'
           ? preloadedSourcesById.get(attachment.id)
@@ -261,6 +270,10 @@ export async function prepareAuthoritativeConversation(
       },
       skipDuplicates: true,
     })
+
+    if (existingLegacyTrigger && created.count === 1) {
+      throw new AuthoritativeConversationError()
+    }
 
     if (created.count === 0) {
       const existing = await tx.chatMessage.findUnique({
