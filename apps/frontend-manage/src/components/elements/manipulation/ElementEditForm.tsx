@@ -156,6 +156,12 @@ function ElementEditForm({
     setSecondaryActionLoading(true)
     try {
       await secondaryAction.onClick()
+    } catch {
+      toast({
+        type: 'error',
+        message: t('shared.generic.systemError'),
+        options: { duration: 6000 },
+      })
     } finally {
       setSecondaryActionLoading(false)
     }
