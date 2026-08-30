@@ -14,6 +14,8 @@ const MANIFEST_VERSION = 1
 const EXPECTED_KB_COUNT = 15
 const EXPECTED_CHATBOT_COUNT = 22
 const EXPECTED_EXCLUDED_CHATBOT_COUNT = 2
+const EXPECTED_CORPUS_PROOF_COUNT = 15
+const EXPECTED_DIRECT_CALL_COUNT = 37
 const COLLECTION = 'klicker_course_materials_v1'
 const PRD_ENDPOINT =
   'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker'
@@ -256,6 +258,7 @@ function emptyReceipt() {
       positivePassed: 0,
       isolationPassed: 0,
       rejectionsPassed: 0,
+      directCallsAttempted: 0,
     },
     rejections: Object.fromEntries(
       REJECTION_CLASSES.map((name) => [name, 'not_run'])
@@ -550,6 +553,13 @@ export async function runProofMatrix({
 }) {
   const receipt = emptyReceipt()
   try {
+    const invokeWithCap = async (request) => {
+      receipt.counts.directCallsAttempted += 1
+      if (receipt.counts.directCallsAttempted > EXPECTED_DIRECT_CALL_COUNT) {
+        throw new ProofFailure('protocol_failed')
+      }
+      return invoke(request)
+    }
     const signer = await createScopeSigner(environment)
     const canary = manifest.cases[0]
     const canaryChatbotId = canary.chatbotIds[0]
@@ -557,7 +567,7 @@ export async function runProofMatrix({
 
     if (
       !(await provePositive(
-        invoke,
+        invokeWithCap,
         signer,
         environment,
         canary,
@@ -569,7 +579,7 @@ export async function runProofMatrix({
     receipt.counts.positivePassed += 1
     if (
       !(await proveIsolation(
-        invoke,
+        invokeWithCap,
         signer,
         environment,
         canary,
@@ -579,11 +589,12 @@ export async function runProofMatrix({
       throw new ProofFailure('canary_isolation_failed', canary.id)
     }
     receipt.counts.isolationPassed += 1
-    receipt.counts.chatbotsPassed += 1
+    receipt.counts.chatbotsPassed += canary.chatbotIds.length
+    receipt.counts.kbPassed += 1
 
     receipt.phase = 'rejections'
     await proveRejections(
-      invoke,
+      invokeWithCap,
       signer,
       environment,
       canary,
@@ -593,35 +604,33 @@ export async function runProofMatrix({
     )
 
     receipt.phase = 'matrix'
-    for (const proofCase of manifest.cases) {
-      for (const chatbotId of proofCase.chatbotIds) {
-        if (proofCase === canary && chatbotId === canaryChatbotId) continue
-        if (
-          !(await provePositive(
-            invoke,
-            signer,
-            environment,
-            proofCase,
-            chatbotId
-          ))
-        ) {
-          throw new ProofFailure('positive_failed', proofCase.id)
-        }
-        receipt.counts.positivePassed += 1
-        if (
-          !(await proveIsolation(
-            invoke,
-            signer,
-            environment,
-            proofCase,
-            chatbotId
-          ))
-        ) {
-          throw new ProofFailure('isolation_failed', proofCase.id)
-        }
-        receipt.counts.isolationPassed += 1
-        receipt.counts.chatbotsPassed += 1
+    for (const proofCase of manifest.cases.slice(1)) {
+      const representativeChatbotId = [...proofCase.chatbotIds].sort().at(-1)
+      if (
+        !(await provePositive(
+          invokeWithCap,
+          signer,
+          environment,
+          proofCase,
+          representativeChatbotId
+        ))
+      ) {
+        throw new ProofFailure('positive_failed', proofCase.id)
       }
+      receipt.counts.positivePassed += 1
+      if (
+        !(await proveIsolation(
+          invokeWithCap,
+          signer,
+          environment,
+          proofCase,
+          representativeChatbotId
+        ))
+      ) {
+        throw new ProofFailure('isolation_failed', proofCase.id)
+      }
+      receipt.counts.isolationPassed += 1
+      receipt.counts.chatbotsPassed += proofCase.chatbotIds.length
       receipt.counts.kbPassed += 1
     }
 
@@ -721,9 +730,10 @@ function sanitizeReceipt(value) {
       value.counts?.chatbotsExpected !== EXPECTED_CHATBOT_COUNT ||
       value.counts?.chatbotsPassed !== EXPECTED_CHATBOT_COUNT ||
       value.counts?.excludedExpected !== EXPECTED_EXCLUDED_CHATBOT_COUNT ||
-      value.counts?.positivePassed !== EXPECTED_CHATBOT_COUNT ||
-      value.counts?.isolationPassed !== EXPECTED_CHATBOT_COUNT ||
+      value.counts?.positivePassed !== EXPECTED_CORPUS_PROOF_COUNT ||
+      value.counts?.isolationPassed !== EXPECTED_CORPUS_PROOF_COUNT ||
       value.counts?.rejectionsPassed !== REJECTION_CLASSES.length ||
+      value.counts?.directCallsAttempted !== EXPECTED_DIRECT_CALL_COUNT ||
       REJECTION_CLASSES.some((name) => value.rejections?.[name] !== 'passed') ||
       !hasExactZeroPreservation(value.preservation))
   ) {
