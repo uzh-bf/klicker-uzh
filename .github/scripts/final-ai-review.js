@@ -2139,7 +2139,7 @@ async function initializeFinalReview({
       if (!eligibility.eligible) {
         state = 'error'
         description =
-          'Final review requires the default branch or a verified native stack member'
+          'Final review requires the default branch, a designated consolidation branch, or a verified native stack member'
       }
     } catch (error) {
       state = 'error'
@@ -2189,7 +2189,7 @@ async function authorizeFinalReview({ github, context, core, trustedSha }) {
   const plan = await buildReviewPlan({ github, context, pull, trustedSha })
   if (!plan.eligible) {
     return deny(
-      'Final review requires an open, ready PR targeting the default branch or a verified native stack'
+      'Final review requires an open, ready PR targeting the default branch, a designated consolidation branch, or a verified native stack'
     )
   }
   if (

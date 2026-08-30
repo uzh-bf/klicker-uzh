@@ -1452,10 +1452,47 @@ test('rejects a pull request targeting an unlisted integration branch', async ()
 
   assert.equal(statuses.length, 1)
   assert.equal(statuses[0].state, 'error')
-  assert.match(
+  assert.equal(
     statuses[0].description,
-    /designated consolidation branch|default branch/
+    'Final review requires the default branch, a designated consolidation branch, or a verified native stack member'
   )
+})
+
+test('explains every eligible base option when authorization is denied', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Unlisted branch change',
+    base: {
+      ref: 'release/integration',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/unlisted-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github } = reviewGithub({ pull })
+  const notices = []
+  const core = {
+    notice: (message) => notices.push(message),
+    setOutput: () => {},
+  }
+
+  assert.equal(
+    await authorizeFinalReview({
+      github,
+      context: reviewContext(),
+      core,
+    }),
+    false
+  )
+  assert.deepEqual(notices, [
+    'Final review requires an open, ready PR targeting the default branch, a designated consolidation branch, or a verified native stack',
+  ])
 })
 
 test('selects incremental attestation only for bounded repaired changes', async () => {
