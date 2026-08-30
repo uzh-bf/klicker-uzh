@@ -1,4 +1,7 @@
-import { getChatModelBasePolicyIssues } from '@klicker-uzh/util'
+import {
+  CHAT_BASE_MODEL_ID,
+  getChatModelBasePolicyIssues,
+} from '@klicker-uzh/util'
 import { z } from 'zod'
 import { type ReasoningEffort } from '../config/reasoning'
 
@@ -304,25 +307,12 @@ export function getAutomaticModelId(allowedModelIds?: string[]): string | null {
   return primary.id
 }
 
-export function getParticipantFallbackModelId(
-  usageClass: ChatModelConfig['usageClass'],
-  allowedModelIds?: string[]
-): string | null {
-  const candidates = filterRegistryByAllowList(allowedModelIds).filter(
-    (model) => model.fallback && model.usageClass === usageClass
+export function getParticipantFallbackModelId(): string | null {
+  const fallback = getChatModelRegistry().find(
+    (model) =>
+      model.id === CHAT_BASE_MODEL_ID &&
+      model.usageClass === 'BASE' &&
+      model.fallback
   )
-  if (candidates.length === 0) return null
-
-  const configuredFallback = process.env.CHAT_FALLBACK_MODEL_ID
-  const configuredCandidate = configuredFallback
-    ? candidates.find((model) => model.id === configuredFallback)
-    : undefined
-
-  if (configuredFallback && !configuredCandidate) {
-    console.warn(
-      `[chat] CHAT_FALLBACK_MODEL_ID="${configuredFallback}" is not an allowed ${usageClass} fallback; using "${candidates[0].id}".`
-    )
-  }
-
-  return configuredCandidate?.id ?? candidates[0].id
+  return fallback?.id ?? null
 }

@@ -417,7 +417,7 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
-  test('denies zero-credit ADVANCED usage instead of crossing to BASE', async () => {
+  test('routes zero-credit ADVANCED usage to Luna BASE', async () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
         allowedModelIds: ['gpt-4.1', 'gpt-5.6-luna'],
@@ -429,21 +429,16 @@ describe('account usage chat route', () => {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
 
-    expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toEqual({
-      error: 'Chat model usage is unavailable',
-      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
-    })
+    expect(response.status).toBe(200)
     expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
       ownerId: 'owner-1',
-      usageClass: 'ADVANCED',
+      usageClass: 'BASE',
     })
-    expect(mocks.getAggregatedMCPTools).not.toHaveBeenCalled()
     expect(mocks.getUserCredits).not.toHaveBeenCalled()
-    expect(mocks.streamText).not.toHaveBeenCalled()
+    expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
-  test('keeps automatic zero-credit usage in its ADVANCED class', async () => {
+  test('routes automatic zero-credit usage to Luna BASE', async () => {
     vi.stubEnv('CHAT_PRIMARY_MODEL_ID', 'auto')
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({
@@ -457,15 +452,12 @@ describe('account usage chat route', () => {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
 
-    expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toMatchObject({
-      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
-    })
+    expect(response.status).toBe(200)
     expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
       ownerId: 'owner-1',
-      usageClass: 'ADVANCED',
+      usageClass: 'BASE',
     })
-    expect(mocks.streamText).not.toHaveBeenCalled()
+    expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
   test('does not use another class when the ADVANCED account budget is unavailable', async () => {
@@ -487,7 +479,7 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).not.toHaveBeenCalled()
   })
 
-  test('does not cross to BASE when no ADVANCED fallback is allow-listed', async () => {
+  test('uses Luna when the chatbot allow-list excludes it', async () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
       chatbot({ allowedModelIds: ['gpt-4.1'] })
     )
@@ -497,11 +489,31 @@ describe('account usage chat route', () => {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
 
-    expect(response.status).toBe(403)
-    await expect(response.json()).resolves.toMatchObject({
-      code: 'CHAT_MODEL_UNAVAILABLE_ADVANCED',
+    expect(response.status).toBe(200)
+    expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      usageClass: 'BASE',
     })
-    expect(mocks.streamText).not.toHaveBeenCalled()
+    expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
+  test('never uses GPT-4.1 Mini as a zero-credit fallback', async () => {
+    mocks.chatbotFindUnique.mockResolvedValueOnce(
+      chatbot({ allowedModelIds: ['gpt-4.1-mini'] })
+    )
+    mocks.previewUserCredits.mockResolvedValueOnce({ current: 0, total: 5 })
+
+    const response = await POST(
+      createRequest({ selectedModel: 'gpt-4.1-mini' }),
+      { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      usageClass: 'BASE',
+    })
+    expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
   test('finalizes the sole BASE model once and returns the rounded amount', async () => {

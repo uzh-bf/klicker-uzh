@@ -778,13 +778,16 @@ export async function POST(
     selectedModel = automaticModelId
   }
 
-  let selectedModelConfig = modelRegistry.find((m) => m.id === selectedModel)
-  if (!selectedModelConfig) {
+  const initialModelConfig = modelRegistry.find((m) => m.id === selectedModel)
+  if (!initialModelConfig) {
     return NextResponse.json(
       { error: `Unknown model: ${selectedModel}` },
       { status: 400 }
     )
   }
+  // Declared non-optional so closures that swap the fallback model cannot
+  // widen later uses back to `undefined`; every assignment below is checked.
+  let selectedModelConfig: ChatModelConfig = initialModelConfig
 
   // Enforce per-chatbot model allow-list
   if (allowedIds && !allowedIds.has(selectedModelConfig.id)) {
@@ -794,10 +797,31 @@ export async function POST(
     )
   }
 
-  if (isChatAccountUsageEnforcementEnabled()) {
-    let accountUsageAvailable = false
+  const selectParticipantFallback = () => {
+    const fallbackModelId = getParticipantFallbackModelId()
+    const fallbackModelConfig = modelRegistry.find(
+      (modelConfig) => modelConfig.id === fallbackModelId
+    )
+    if (!fallbackModelId || !fallbackModelConfig) return false
+
+    selectedModel = fallbackModelId
+    selectedModelConfig = fallbackModelConfig
+    return true
+  }
+
+  if (!selectedModelConfig.fallback) {
+    const creditPreview = await CreditsService.previewUserCredits(
+      participantId,
+      chatbotId
+    )
+    if (creditPreview.current <= 0 && !selectParticipantFallback()) {
+      return chatModelUnavailableResponse('BASE')
+    }
+  }
+
+  const accountUsageAvailableForSelectedModel = async () => {
     try {
-      accountUsageAvailable = await isChatAccountUsageAvailable({
+      return await isChatAccountUsageAvailable({
         ownerId: chatbot.ownerId,
         usageClass: selectedModelConfig.usageClass,
       })
@@ -806,9 +830,31 @@ export async function POST(
         requestId,
         error,
       })
+      return false
     }
-    if (!accountUsageAvailable) {
+  }
+
+  if (isChatAccountUsageEnforcementEnabled()) {
+    if (!(await accountUsageAvailableForSelectedModel())) {
       return chatModelUnavailableResponse(selectedModelConfig.usageClass)
+    }
+  }
+
+  if (!selectedModelConfig.fallback) {
+    const userCredits = await CreditsService.getUserCredits(
+      participantId,
+      chatbotId
+    )
+    if (userCredits.current <= 0) {
+      if (!selectParticipantFallback()) {
+        return chatModelUnavailableResponse('BASE')
+      }
+      if (
+        isChatAccountUsageEnforcementEnabled() &&
+        !(await accountUsageAvailableForSelectedModel())
+      ) {
+        return chatModelUnavailableResponse(selectedModelConfig.usageClass)
+      }
     }
   }
 
@@ -850,43 +896,6 @@ export async function POST(
       priority: config.priority,
     },
   }))
-
-  if (!selectedModelConfig.fallback) {
-    const creditPreview = await CreditsService.previewUserCredits(
-      participantId,
-      chatbotId
-    )
-    if (
-      creditPreview.current <= 0 &&
-      !getParticipantFallbackModelId(
-        selectedModelConfig.usageClass,
-        chatbot.allowedModelIds as string[]
-      )
-    ) {
-      return chatModelUnavailableResponse(selectedModelConfig.usageClass)
-    }
-  }
-
-  if (!selectedModelConfig.fallback) {
-    const userCredits = await CreditsService.getUserCredits(
-      participantId,
-      chatbotId
-    )
-    if (userCredits.current <= 0) {
-      const fallbackModelId = getParticipantFallbackModelId(
-        selectedModelConfig.usageClass,
-        chatbot.allowedModelIds as string[]
-      )
-      if (!fallbackModelId) {
-        return chatModelUnavailableResponse(selectedModelConfig.usageClass)
-      }
-
-      selectedModel = fallbackModelId
-      selectedModelConfig = modelRegistry.find(
-        (modelConfig) => modelConfig.id === fallbackModelId
-      )!
-    }
-  }
 
   // Resolve the participant-owned thread before acquiring the provider-work
   // claim. The claim must exist before MCP discovery, image description, or
