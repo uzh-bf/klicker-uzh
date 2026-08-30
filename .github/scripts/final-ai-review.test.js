@@ -69,10 +69,11 @@ test('bounds individual and stack review retries, tokens, and runtime', () => {
     'utf8'
   )
 
-  assert.equal(source.match(/--timeout 30/g)?.length, 2)
+  assert.equal(source.match(/--timeout 45/g)?.length, 1)
+  assert.equal(source.match(/--timeout 30/g)?.length, 1)
   assert.equal(source.match(/plan-ocr-resume/g)?.length, 2)
   assert.equal(source.match(/merge-ocr-resume/g)?.length, 2)
-  assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 750000/)
+  assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 1000000/)
   assert.match(source, /"\$\{REVIEW_FROM\}" "\$\{HEAD_SHA\}" 2000000/)
   assert.match(source, /resume_partial_result[\s\S]*750000 "\$\{RANGE_PATH\}"/)
   assert.equal(
@@ -85,10 +86,9 @@ test('bounds individual and stack review retries, tokens, and runtime', () => {
     )?.length,
     2
   )
-  assert.match(source, /now \+ 1860 > REVIEW_JOB_STARTED_AT \+ 3900/)
+  assert.match(source, /now \+ 2760 > REVIEW_JOB_STARTED_AT \+ 4800/)
   assert.match(source, /now \+ 1860 > REVIEW_JOB_STARTED_AT \+ 4200/)
-  assert.match(source, /timeout-minutes: 75/)
-  assert.match(source, /timeout-minutes: 90/)
+  assert.equal(source.match(/timeout-minutes: 90/g)?.length, 2)
   assert.equal(source.match(/RESUME_USED=true/g)?.length, 1)
   assert.match(
     source,
