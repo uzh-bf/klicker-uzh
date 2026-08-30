@@ -23,7 +23,7 @@ interface PracticeQuizOverviewProps {
   resetTimeDays?: number
   //   previouslyAnswered?: number
   //   stacksWithQuestions?: number
-  pointsMultiplier: number
+  pointsMultiplier?: number
   setCurrentIx: (ix: number) => void
   previewOnly: boolean
 }

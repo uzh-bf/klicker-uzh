@@ -1,15 +1,19 @@
 import { useQuery } from '@apollo/client'
-import { GetPracticeQuizListDocument } from '@klicker-uzh/graphql/dist/ops'
+import { faBookOpenReader, faRepeat } from '@fortawesome/free-solid-svg-icons'
+import { GetPracticeQuizListWithPersonalElementsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { H2, UserNotification } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import Layout from '../components/Layout'
-import CourseCollapsible from '../components/practiceQuiz/CourseCollapsible'
+import LinkButton from '../components/common/LinkButton'
+import { resetPracticeQuizLocalStorage } from '../components/practiceQuiz/PracticeQuiz'
 
 function Repetition() {
   const t = useTranslations()
-  const { data, loading } = useQuery(GetPracticeQuizListDocument)
+  const { data, loading } = useQuery(
+    GetPracticeQuizListWithPersonalElementsDocument
+  )
 
   if (loading) {
     return (
@@ -27,13 +31,8 @@ function Repetition() {
     return {
       id: course.id,
       displayName: course.displayName,
-      elements:
-        course.practiceQuizzes?.map((element) => {
-          return {
-            id: element.id,
-            displayName: element.displayName,
-          }
-        }) || [],
+      personalElementCount: course.personalElementCount ?? 0,
+      personalDueCount: course.personalDueCount ?? 0,
     }
   })
 
@@ -46,12 +45,26 @@ function Repetition() {
         <H2>{t('shared.generic.practiceQuizzes')}</H2>
         {courses?.length
           ? courses.map((course) => (
-              <CourseCollapsible
-                key={`list-${course.id}`}
-                courseId={course.id}
-                courseName={course.displayName}
-                elements={course.elements}
-              />
+              <div key={`list-${course.id}`} className="flex flex-col gap-2">
+                <H2 className={{ root: 'text-lg' }}>{course.displayName}</H2>
+                <LinkButton
+                  href={`/course/${course.id}/practice`}
+                  icon={faBookOpenReader}
+                  data={{ cy: `lecturer-elements-course-${course.id}` }}
+                  onClick={() => resetPracticeQuizLocalStorage(course.id)}
+                >
+                  {t('pwa.personalElements.lecturerElements')}
+                </LinkButton>
+                <LinkButton
+                  href={`/course/${course.id}/personal`}
+                  icon={faRepeat}
+                  data={{ cy: `own-elements-course-${course.id}` }}
+                >
+                  {t('pwa.personalElements.ownElements', {
+                    count: course.personalDueCount,
+                  })}
+                </LinkButton>
+              </div>
             ))
           : null}
 

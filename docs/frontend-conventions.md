@@ -145,3 +145,15 @@ Namespaces are per-app plus `shared` (`shared`, `auth`, `pwa`, `manage`, `contro
 ## Verification
 
 UI changes are verified in a real browser (`npx agent-browser` for agents — see [Getting Started](./getting-started.md) agent addendum) with before/after screenshots, not by reading the JSX.
+
+## Personal-element practice
+
+The participant-owned flashcard page is the direct course route
+`/course/[courseId]/personal`. It uses generated GraphQL documents and the
+shared `Flashcard` component through a small adapter; it must not add personal
+cards to the pooled practice query. Keep source-linked origin and course-review
+wording, course-local source links, due ordering, response state, and delete
+confirmation visible on the page. Home Practice and `/repetition` expose two
+course actions: lecturer elements and own elements. New cards are
+participant-owned, course-scoped, and available only to authenticated
+non-temporary participants.
