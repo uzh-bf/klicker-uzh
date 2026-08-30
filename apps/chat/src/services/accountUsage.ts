@@ -144,6 +144,8 @@ export async function claimChatTurn(
       return { outcome: 'claimed', lifecycleAttemptId }
     }
 
+    // The parent is part of the immutable claim identity. A legacy mismatch
+    // fails closed instead of reparenting a client-chosen assistant ID.
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const reclaimed = await tx.chatMessage.updateMany({
         where: {
@@ -152,6 +154,11 @@ export async function claimChatTurn(
           parentId: input.parentId,
           role: 'assistant',
           lifecycleStatus: 'FAILED',
+          thread: {
+            participantId: input.participantId,
+            chatbotId: input.chatbotId,
+            chatbot: { ownerId: input.ownerId },
+          },
         },
         data: {
           content: [],

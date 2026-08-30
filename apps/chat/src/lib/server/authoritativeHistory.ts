@@ -153,6 +153,8 @@ function assertValidHeaders(
     }
   }
 
+  // At the row cap, the oldest row is an effective context boundary, not
+  // a database root. Its real parent remains outside the validated window.
   const oldest = rows.at(-1)!
   const truncated =
     rows.length === MAX_VALIDATED_HISTORY_ROWS && oldest.parentId !== null
@@ -303,6 +305,8 @@ export async function prepareAuthoritativeConversation(
       })
     }
 
+    // Preview generation happens before the transaction. Re-read the source
+    // rows here so bindings commit only while those rows remain in scope.
     const sourceAttachments: ImageAttachmentRecord[] =
       persistedAttachmentIds.length === 0
         ? []

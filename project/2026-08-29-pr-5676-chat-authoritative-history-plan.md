@@ -930,3 +930,19 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   exact-head CI/OCR, the required manual final review, PostgreSQL/browser
   proof, upstream integration, merge, deployment, and activation remain open
   or separately gated.
+
+- 2026-08-30 superseding exact-head OCR disposition: all automated checks at
+  published head `1aacc1ae9` passed, including eight hosted Playwright shards.
+  The exact-head OCR pass reported 11 items. The final correction rejects
+  malformed or empty base64 payloads before persistence and model dispatch,
+  scopes failed-turn reclaim to the owning participant thread, names the image
+  request limit, and documents the bounded-history and transactional attachment
+  invariants. Regression tests cover both behavior changes. Six remaining
+  suggestions are declined because they would weaken server-authoritative empty
+  attachment metadata, bounded effective-root semantics, immutable parent
+  identity, explicit credit-boundary guards, or the established validation and
+  client-error contracts. The focused parser, history, lifecycle, and hydration
+  suite passes 51 tests; Chat typecheck, focused Biome, and `git diff --check`
+  pass. Commit, native hooks, push, fresh exact-head CI/OCR, and the required
+  manual final review remain before the separately gated PostgreSQL/browser
+  proof and upstream integration.

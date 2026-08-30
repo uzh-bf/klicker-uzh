@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   transaction: {
     chatAccountUsage: { upsert: vi.fn() },
     chatMessage: {
+      createMany: vi.fn(),
       updateMany: vi.fn(),
       findFirst: vi.fn(),
       findUnique: vi.fn(),
@@ -30,6 +31,7 @@ vi.mock('../src/utils/transactions', () => ({
 }))
 
 import {
+  claimChatTurn,
   finalizeChatTurn,
   roundChatUsageCredits,
 } from '../src/services/accountUsage'
@@ -50,6 +52,41 @@ describe('account usage credit rounding', () => {
 
   test('rejects the first value beyond Decimal(18,6)', () => {
     expect(() => roundChatUsageCredits(1e12)).toThrow(RangeError)
+  })
+})
+
+describe('account usage lifecycle fencing', () => {
+  test('scopes failed-turn reclaim to the owning thread', async () => {
+    mocks.withTransaction.mockImplementation(async (operation) =>
+      operation(mocks.transaction)
+    )
+    mocks.transaction.chatMessage.findFirst.mockResolvedValue({
+      id: 'parent-1',
+    })
+    mocks.transaction.chatMessage.createMany.mockResolvedValue({ count: 0 })
+    mocks.transaction.chatMessage.updateMany.mockResolvedValue({ count: 1 })
+
+    await expect(
+      claimChatTurn({
+        ownerId: 'owner-1',
+        chatbotId: 'chatbot-1',
+        participantId: 'participant-1',
+        threadId: 'thread-1',
+        assistantMessageId: 'message-1',
+        parentId: 'parent-1',
+      })
+    ).resolves.toMatchObject({ outcome: 'claimed' })
+
+    expect(mocks.transaction.chatMessage.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        thread: {
+          participantId: 'participant-1',
+          chatbotId: 'chatbot-1',
+          chatbot: { ownerId: 'owner-1' },
+        },
+      }),
+      data: expect.any(Object),
+    })
   })
 })
 

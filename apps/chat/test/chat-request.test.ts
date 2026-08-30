@@ -140,6 +140,24 @@ describe('chat request parsing', () => {
       })
     ).toMatchObject({ usedLegacyAdapter: false })
   })
+
+  test.each([
+    'data:image/png;base64,',
+    'data:image/png;base64,not-valid-base64!!!',
+    'data:image/png;base64,AAA',
+  ])('rejects malformed base64 image payload %s', (imageBase64) => {
+    expect(() =>
+      parseChatRequestBody({
+        ...common,
+        trigger: {
+          id: USER_ID,
+          text: '',
+          attachments: [{ type: 'new-image', imageBase64 }],
+        },
+      })
+    ).toThrow('Must be a valid base64 data URL for jpeg, png, gif, or webp')
+  })
+
   test('accepts an image-only canonical trigger with a new raw image', () => {
     expect(
       parseChatRequestBody({

@@ -377,3 +377,14 @@ revalidates branch ancestry and the source digest before persistence.
   guards. Focused route tests, Chat typecheck, and repository pre-commit checks
   pass. Fresh exact-head CI/OCR and manual final review now precede the
   separately gated PostgreSQL/browser proof and upstream integration.
+
+- 2026-08-30 superseding exact-head OCR disposition: the published public head
+  `1aacc1ae9` passed all automated checks and eight hosted Playwright shards.
+  The next bounded correction validates base64 payload structure, applies the
+  participant/thread ownership relation directly to failed-turn reclaim, and
+  documents deliberate effective-root and transaction revalidation semantics.
+  Its focused suite passes 51 tests, Chat typecheck and formatting checks pass,
+  and six behavior-changing or unnecessary abstraction suggestions are
+  declined. Fresh exact-head CI/OCR and the required manual final review still
+  precede upstream integration; PostgreSQL and managed-browser proof remain
+  separate evidence gaps.

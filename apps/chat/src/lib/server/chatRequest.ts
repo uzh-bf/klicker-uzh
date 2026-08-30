@@ -1,12 +1,22 @@
 import { z } from 'zod'
 
 const uuidSchema = z.string().uuid()
+const MAX_IMAGE_DATA_URL_LENGTH = 7_000_000
+const IMAGE_DATA_URL_PATTERN =
+  /^data:image\/(jpeg|png|gif|webp);base64,([A-Za-z0-9+/]+={0,2})$/i
+
 const imageDataUrlSchema = z
   .string()
-  .max(7_000_000)
-  .refine((value) => /^data:image\/(jpeg|png|gif|webp);base64,/i.test(value), {
-    message: 'Must be a base64 data URL for jpeg, png, gif, or webp',
-  })
+  .max(MAX_IMAGE_DATA_URL_LENGTH)
+  .refine(
+    (value) => {
+      const payload = IMAGE_DATA_URL_PATTERN.exec(value)?.[2]
+      return Boolean(payload && payload.length % 4 === 0)
+    },
+    {
+      message: 'Must be a valid base64 data URL for jpeg, png, gif, or webp',
+    }
+  )
 
 const commonBodySchema = z.object({
   threadId: uuidSchema.nullable().optional(),
