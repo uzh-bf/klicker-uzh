@@ -1108,3 +1108,21 @@ Settled rulings for this implementation:
   database migration, upstream integration, merge, deployment, or release
   action was performed. The exact runtime remains available for the user's
   manual testing.
+- 2026-08-30 (`v3-ai` merge-commit refresh): After explicit approval to
+  incorporate the current target branch without rebasing, `origin/v3-ai` was
+  merged into layer A, the updated layer A was merged into layer B, and the
+  updated layer B was merged into this layer. The resulting local heads are
+  `a8fba9113` (A), `d93fc7a03` (B), and `94fefc7e7` (C). The six top-layer
+  conflicts were resolved by composing the retrieval-backed card workflow with
+  the current `v3-ai` chat, GraphQL, documentation, and test contracts. GraphQL
+  generation, GraphQL and Chat typechecks, all 45 focused personal-element
+  service tests, and the full Chat test suite pass in the exact managed
+  runtime. The integration exposed one real serializable-transaction race: a
+  same-title concurrent save could exhaust three immediate retries and leak
+  Prisma `P2034`. The service now uses five bounded retries with a short linear
+  backoff, and the regression passes. Repository pre-commit checks, gitleaks,
+  formatting, linting, generated-file synchronization, and `git diff --check`
+  also pass. The stack is committed and awaits final review, normal atomic push,
+  pull-request refresh, and local runtime reconciliation. Protected-branch
+  merge, deployment, release, and physical database migration remain outside
+  this goal.
