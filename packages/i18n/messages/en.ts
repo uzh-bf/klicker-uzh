@@ -3250,8 +3250,10 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'The availability of microlearnings will be adjusted according to the new course dates based on the offset to the original course start date.',
       changeAvailabilityDateGroupActivities:
         'The availability of group activities will be adjusted according to the new course dates based on the offset to the original course start date.',
-      courseDatesForCourseDuplicationTooltip:
-        'Due to technical reasons, the course dates are fixed to a range as defined by the original course. You can change the dates for the duplicated course afterwards.',
+      courseDuplicationStartDateTooltip:
+        'Select a start date for the duplicated course. The end date is calculated automatically using the original course duration.',
+      courseDuplicationEndDateTooltip:
+        'The end date is calculated automatically using the original course duration and cannot be changed here. You can change the dates for the duplicated course afterwards.',
       fixedDateInterval:
         'Fixed date interval: {years, plural, =0 {} one {# year } other {# years }}{months, plural, =0 {} one {# month } other {# months }}{days, plural, =0 {} one {# day} other {# days}}',
       groupCreationDeadlineForCourseDuplicationTooltip:
@@ -3269,6 +3271,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       courseCopySuffix: 'Copy',
       courseDuplicationEndDateInPast:
         'The selected end date lies in the past. The duplicated course will already have ended when it is created - shift the start date if students should be able to access it.',
+      courseDuplicationDatesRequired:
+        'Select a start date before duplicating the course.',
       courseDuplicationFailed: 'Failed to duplicate course.',
       courseDuplicationAlreadyInProgress:
         'This course is already being duplicated.',
@@ -3327,6 +3331,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       startDate: 'Start date',
       startDateTooltip:
         "After the start date, students can access the course's content. The start date can be changed after creating the course.",
+      startDatePastTooltip:
+        'The start date is in the past and cannot be changed.',
       endDate: 'End date',
       endDateTooltip:
         'After the end date, the course will be shown as archived to students, but they can still access the content. The end date can be changed after creating the course.',

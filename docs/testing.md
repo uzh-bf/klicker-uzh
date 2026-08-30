@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-27'
+timestamp: '2026-08-29'
 tags:
   - testing
   - ci
@@ -97,16 +97,30 @@ For authoring specifics, helper patterns, and failure triage, use the `klicker-p
 
 ## E2E environment dependencies
 
+The self-contained devcontainer uses two independent cold-start guards:
+`devcontainer.json` waits for `postCreateCommand`, and the managed post-start
+adapter requires the exact completion marker written at the end of successful
+bootstrap. `bash util/test-dev-runtime.sh` covers missing, malformed,
+symlinked, invalidated, and valid marker states plus the script ordering. This
+is static lifecycle evidence; cold DevPod and Devsy startup remain the
+provider-level acceptance check.
+
 - The local Chat model simulation includes LiteLLM's `auto-router` and
-  the GPT-5.6 Luna/Sol target aliases. After `devrouter ensure .`, verify the
+  the GPT-5.6 Luna/Sol target aliases. Start it with
+  `devrouter ensure . --profile chat,ai`; add `mcp` for the seeded synthetic
+  tool path. Then verify the
   LiteLLM liveness endpoint, direct embedding/model probes, expected Auto V2
   routing decisions in LiteLLM logs, and the chat credits response before
   browser testing the `Auto Mode`/`GPT-5.6 Luna` picker. A real
   `UPSTREAM_OPENAI_API_KEY` is required for these calls; service health alone is
   not classification or answer-stream evidence.
-- Tests that **publish, schedule, or end activities** need the Hatchet **general worker** running on top of the test stack — otherwise mutations fail with `workflow not found`. The worker needs `DATABASE_URL` pointed at the test DB ([Async & Workers](./async-and-workers.md)).
-- **Live-quiz response tests** additionally need `response-api` + the response processor with the same `APP_SECRET`/Redis/Postgres settings — otherwise the UI accepts answers that never reach cockpit/evaluation.
-- Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, and the absence of horizontal overflow.
+- Tests that **publish, schedule, or end activities** need the Hatchet **general worker** running on top of the test stack — otherwise mutations fail with `workflow not found`. Use `live-quiz`, `manage,live-quiz`, or `full`; the worker needs `DATABASE_URL` pointed at the test DB ([Async & Workers](./async-and-workers.md)).
+- **Live-quiz response tests** use `devrouter ensure . --profile live-quiz`.
+  Startup proves Response API's `/healthz` contract plus live general and
+  response-processor worker descendants before reporting ready. Without those
+  processes and matching `APP_SECRET`/Redis/Postgres settings, the UI can
+  accept answers that never reach cockpit/evaluation.
+- Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, the absence of horizontal overflow, and a rendered player ratio of 16:9 within tolerance on both surfaces.
 
 ## CI matrix
 
@@ -134,8 +148,9 @@ uses a path-scoped filter and compiles once before running the 8 shards.
 Eligible same-repository public PRs (non-draft, non-bot, rollout enabled or
 canary) run the changed-path prepare and build in the Playwright container on
 the `public-pr-arm64` runner group through the reusable
-`public-pr-playwright-shards.yml` workflow, which gives at most three
-concurrent shards; pushes, fork PRs, drafts, bots, private repositories, and
+`public-pr-playwright-shards.yml` workflow, which runs eight concurrent shards
+across the two-host public pool; pushes, fork PRs, drafts, bots, private
+repositories, and
 disabled rollouts keep all eight shards on GitHub-hosted runners. Both paths
 preserve the same artifact names and feed the route-aware
 `test-playwright-status` gate, which requires exactly one of the hosted or
@@ -151,6 +166,15 @@ public route. The required status gate deliberately has no concurrency group,
 so a stale reporter waiting for GitHub-hosted capacity cannot block current
 filtering, builds, or shards. Public container jobs also trust the exact mounted
 `GITHUB_WORKSPACE` after checkout because its host and container owners differ.
+
+The timing-aware sharder assigns whole spec files; it cannot divide one serial
+spec across runners. Long workflows must therefore split only where each new
+file can establish its own database and browser state. The live-quiz suite uses
+`O1-live-quiz-core.spec.ts` for management, execution, and content, and
+`O2-live-quiz-collaboration.spec.ts` for sharing, access, PIN, and word-cloud
+flows. The second file deliberately repeats cleanup and common-question setup
+because it may run in a different disposable shard. Do not remove that setup or
+introduce cross-file ordering assumptions.
 
 **Hatchet tokens differ per workflow, because `test-playwright` is the only one that runs inside a `container:`.** `test-graphql` runs straight on the runner, so it reaches Hatchet at `localhost` and reads its boot-minted token with `docker exec`. Inside a container job neither works: service containers resolve by service **name** (`hatchet:8888` / `hatchet:7077`, exactly like the `postgres:5432` the same job already uses), and the Playwright image ships no Docker CLI. So `test-playwright` shares `/config` with the Hatchet service through the `hatchet_lite_config` volume and reads `/config/authdisabled-token` directly. Do not "simplify" those hostnames to `localhost` — every shard then fails in `Prepare .env files` before a single test runs. The HTTP token API is not a fallback: `hatchet-lite-dev` disables auth and answers `POST /api/v1/tenants/{id}/api-tokens` with 401 for every caller. The token's own claims always say `localhost`, which is harmless — `packages/hatchet/src/client.ts` passes `host_port`/`api_url` explicitly, and process env beats the `.env` templates for both `node --env-file` and `dotenv`.
 
