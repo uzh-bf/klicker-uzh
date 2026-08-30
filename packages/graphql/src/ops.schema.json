@@ -1,5 +1,6 @@
 {
   "__schema": {
+    "description": null,
     "queryType": {
       "name": "Query",
       "kind": "OBJECT"
@@ -17,6 +18,7 @@
         "kind": "OBJECT",
         "name": "Achievement",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -118,9 +120,34 @@
         "possibleTypes": null
       },
       {
+        "kind": "SCALAR",
+        "name": "String",
+        "description": "The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.",
+        "specifiedByURL": null,
+        "isOneOf": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "SCALAR",
+        "name": "Int",
+        "description": "The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.",
+        "specifiedByURL": null,
+        "isOneOf": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
         "kind": "OBJECT",
         "name": "ActivityDetails",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -450,9 +477,22 @@
         "possibleTypes": null
       },
       {
+        "kind": "SCALAR",
+        "name": "Boolean",
+        "description": "The `Boolean` scalar type represents `true` or `false`.",
+        "specifiedByURL": null,
+        "isOneOf": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
         "kind": "OBJECT",
         "name": "ActivityEvaluation",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -642,9 +682,22 @@
         "possibleTypes": null
       },
       {
+        "kind": "SCALAR",
+        "name": "ID",
+        "description": "The `ID` scalar type represents a unique identifier, often used to refetch an object or as key for a cache. The ID type appears in a JSON response as a String; however, it is not intended to be human-readable. When expected as an input type, any string (such as `\"4\"`) or integer (such as `4`) input value will be accepted as an ID.",
+        "specifiedByURL": null,
+        "isOneOf": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
         "kind": "OBJECT",
         "name": "ActivityFeedback",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -750,9 +803,22 @@
         "possibleTypes": null
       },
       {
+        "kind": "SCALAR",
+        "name": "Float",
+        "description": "The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](https://en.wikipedia.org/wiki/IEEE_floating_point).",
+        "specifiedByURL": null,
+        "isOneOf": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
         "kind": "OBJECT",
         "name": "ActivityInfo",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -1253,6 +1319,7 @@
         "kind": "OBJECT",
         "name": "ActivityInfoElement",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -1381,6 +1448,7 @@
         "kind": "OBJECT",
         "name": "ActivityInfoStack",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -1493,6 +1561,7 @@
         "kind": "ENUM",
         "name": "ActivityLevel",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -1523,6 +1592,7 @@
         "kind": "OBJECT",
         "name": "ActivityLogEntry",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -1711,6 +1781,7 @@
         "kind": "OBJECT",
         "name": "ActivityLogEntryOptions",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -1759,6 +1830,7 @@
         "kind": "ENUM",
         "name": "ActivityLogModificationFieldType",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -1789,6 +1861,7 @@
         "kind": "ENUM",
         "name": "ActivityLogType",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -1825,6 +1898,7 @@
         "kind": "OBJECT",
         "name": "ActivityPerformance",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -1901,6 +1975,7 @@
         "kind": "OBJECT",
         "name": "ActivityProgress",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -1989,6 +2064,7 @@
         "kind": "OBJECT",
         "name": "ActivityQuizAnalytics",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -2169,6 +2245,7 @@
         "kind": "OBJECT",
         "name": "ActivityStudentPerformance",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -2381,6 +2458,7 @@
         "kind": "OBJECT",
         "name": "ActivitySummary",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -2425,6 +2503,7 @@
         "kind": "OBJECT",
         "name": "ActivityTemplate",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -2569,6 +2648,7 @@
         "kind": "OBJECT",
         "name": "ActivityTemplateInfo",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -2645,6 +2725,7 @@
         "kind": "OBJECT",
         "name": "ActivityTemplateMetadata",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -2721,6 +2802,7 @@
         "kind": "ENUM",
         "name": "ActivityType",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -2757,6 +2839,7 @@
         "kind": "OBJECT",
         "name": "AnswerCollection",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -3005,6 +3088,7 @@
         "kind": "OBJECT",
         "name": "AnswerCollectionEntry",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -3061,6 +3145,7 @@
         "kind": "OBJECT",
         "name": "AnswerCollectionPreviewEntry",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -3105,6 +3190,7 @@
         "kind": "OBJECT",
         "name": "AppliedPointCorrection",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -3245,6 +3331,7 @@
         "kind": "OBJECT",
         "name": "AssessmentParticipant",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -3289,6 +3376,7 @@
         "kind": "OBJECT",
         "name": "AssessmentParticipantInvitation",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -3389,6 +3477,7 @@
         "kind": "OBJECT",
         "name": "AssessmentParticipantInvitationImportResult",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -3457,6 +3546,7 @@
         "kind": "ENUM",
         "name": "AssessmentParticipantInvitationImportStatus",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -3499,6 +3589,7 @@
         "kind": "INPUT_OBJECT",
         "name": "AssessmentParticipantInvitationInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -3539,6 +3630,7 @@
         "kind": "OBJECT",
         "name": "AssessmentParticipantInvitationPage",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -3591,6 +3683,7 @@
         "kind": "ENUM",
         "name": "AssessmentParticipantInvitationStatus",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -3615,6 +3708,7 @@
         "kind": "OBJECT",
         "name": "AssessmentReportComparison",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -3683,6 +3777,7 @@
         "kind": "OBJECT",
         "name": "AssessmentReportCourse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -3743,6 +3838,7 @@
         "kind": "ENUM",
         "name": "AssessmentReportCredentialStatus",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -3773,6 +3869,7 @@
         "kind": "OBJECT",
         "name": "AssessmentReportHistogramBin",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -3833,6 +3930,7 @@
         "kind": "ENUM",
         "name": "AssessmentReportIdentitySource",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -3857,6 +3955,7 @@
         "kind": "OBJECT",
         "name": "AssessmentReportResults",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -3997,6 +4096,7 @@
         "kind": "OBJECT",
         "name": "AssessmentReportSnapshot",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -4085,6 +4185,7 @@
         "kind": "OBJECT",
         "name": "AssessmentReportSubject",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -4165,6 +4266,7 @@
         "kind": "ENUM",
         "name": "AssessmentReportVerificationStatus",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -4201,6 +4303,7 @@
         "kind": "OBJECT",
         "name": "AssessmentResultsCourse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -4317,6 +4420,7 @@
         "kind": "OBJECT",
         "name": "AssessmentResultsLiveQuiz",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -4481,6 +4585,7 @@
         "kind": "OBJECT",
         "name": "AvatarSettings",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -4637,6 +4742,7 @@
         "kind": "INPUT_OBJECT",
         "name": "AvatarSettingsInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -4793,6 +4899,7 @@
         "kind": "OBJECT",
         "name": "AwardEntry",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -4922,20 +5029,10 @@
         "possibleTypes": null
       },
       {
-        "kind": "SCALAR",
-        "name": "Boolean",
-        "description": "The `Boolean` scalar type represents `true` or `false`.",
-        "isOneOf": null,
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
         "kind": "OBJECT",
         "name": "CaseStudyActivityEvaluationData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -5144,6 +5241,7 @@
         "kind": "OBJECT",
         "name": "CaseStudyCase",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -5236,6 +5334,7 @@
         "kind": "OBJECT",
         "name": "CaseStudyCaseCriterionSolution",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -5296,6 +5395,7 @@
         "kind": "INPUT_OBJECT",
         "name": "CaseStudyCaseInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -5392,6 +5492,7 @@
         "kind": "INPUT_OBJECT",
         "name": "CaseStudyCaseResponse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -5444,6 +5545,7 @@
         "kind": "OBJECT",
         "name": "CaseStudyCaseSolution",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -5496,6 +5598,7 @@
         "kind": "INPUT_OBJECT",
         "name": "CaseStudyCriteriaSolutionInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -5556,6 +5659,7 @@
         "kind": "OBJECT",
         "name": "CaseStudyCriterion",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -5684,6 +5788,7 @@
         "kind": "INPUT_OBJECT",
         "name": "CaseStudyCriterionInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -5816,6 +5921,7 @@
         "kind": "OBJECT",
         "name": "CaseStudyCriterionLabels",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -5872,6 +5978,7 @@
         "kind": "INPUT_OBJECT",
         "name": "CaseStudyCriterionLabelsInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -5928,6 +6035,7 @@
         "kind": "INPUT_OBJECT",
         "name": "CaseStudyCriterionResponse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -5972,6 +6080,7 @@
         "kind": "OBJECT",
         "name": "CaseStudyElement",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -6328,6 +6437,7 @@
         "kind": "OBJECT",
         "name": "CaseStudyElementData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -6480,6 +6590,7 @@
         "kind": "OBJECT",
         "name": "CaseStudyElementOptions",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -6604,6 +6715,7 @@
         "kind": "OBJECT",
         "name": "CaseStudyElementResultCase",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -6656,6 +6768,7 @@
         "kind": "OBJECT",
         "name": "CaseStudyElementResultCaseInfo",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -6716,6 +6829,7 @@
         "kind": "OBJECT",
         "name": "CaseStudyElementResultCriterion",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -6880,6 +6994,7 @@
         "kind": "OBJECT",
         "name": "CaseStudyElementResultCriterionInfo",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -6936,6 +7051,7 @@
         "kind": "OBJECT",
         "name": "CaseStudyElementResultItem",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -6988,6 +7104,7 @@
         "kind": "OBJECT",
         "name": "CaseStudyElementResultItemInfo",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -7032,6 +7149,7 @@
         "kind": "OBJECT",
         "name": "CaseStudyElementResultResponse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -7076,6 +7194,7 @@
         "kind": "OBJECT",
         "name": "CaseStudyElementResults",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -7144,6 +7263,7 @@
         "kind": "OBJECT",
         "name": "CaseStudyInstanceEvaluation",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -7400,6 +7520,7 @@
         "kind": "INPUT_OBJECT",
         "name": "CaseStudyItemResponse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -7452,6 +7573,7 @@
         "kind": "OBJECT",
         "name": "CaseStudySolution",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -7500,6 +7622,7 @@
         "kind": "INPUT_OBJECT",
         "name": "CaseStudySolutionInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -7552,6 +7675,7 @@
         "kind": "OBJECT",
         "name": "CatalogCollection",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -7696,6 +7820,7 @@
         "kind": "OBJECT",
         "name": "CatalogObject",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -7884,6 +8009,7 @@
         "kind": "OBJECT",
         "name": "CatalogSelectionObject",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -7926,8 +8052,163 @@
       },
       {
         "kind": "OBJECT",
+        "name": "ChatAccountUsageLane",
+        "description": null,
+        "specifiedByURL": null,
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "budgetCredits",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Float",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "remainingCredits",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Float",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "resetAt",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Date",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "usageClass",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "ENUM",
+                "name": "ChatUsageClass",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "usedCredits",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Float",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "ChatAccountUsageOverview",
+        "description": null,
+        "specifiedByURL": null,
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "advancedModelUsage",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "ChatAccountUsageLane",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "authorized",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "baseModelUsage",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "ChatAccountUsageLane",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
         "name": "ChatModelCapability",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -8041,9 +8322,35 @@
         "possibleTypes": null
       },
       {
+        "kind": "ENUM",
+        "name": "ChatUsageClass",
+        "description": null,
+        "specifiedByURL": null,
+        "isOneOf": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": [
+          {
+            "name": "ADVANCED",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "BASE",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "possibleTypes": null
+      },
+      {
         "kind": "OBJECT",
         "name": "Chatbot",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -8231,6 +8538,18 @@
             "deprecationReason": null
           },
           {
+            "name": "expectedStudentCount",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "id",
             "description": null,
             "args": [],
@@ -8303,6 +8622,58 @@
             "deprecationReason": null
           },
           {
+            "name": "publicationUseCase",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "publishedAt",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Date",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "reviewComment",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "status",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "ENUM",
+                "name": "ChatbotStatus",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "updatedAt",
             "description": null,
             "args": [],
@@ -8336,6 +8707,7 @@
         "kind": "OBJECT",
         "name": "ChatbotDisclaimerSummary",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -8444,6 +8816,7 @@
         "kind": "OBJECT",
         "name": "ChatbotMcpConfigurationSummary",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -8576,6 +8949,7 @@
         "kind": "OBJECT",
         "name": "ChatbotPublic",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -8644,6 +9018,7 @@
         "kind": "OBJECT",
         "name": "ChatbotReasoningConfig",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -8696,6 +9071,7 @@
         "kind": "INPUT_OBJECT",
         "name": "ChatbotReasoningConfigInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -8745,9 +9121,53 @@
         "possibleTypes": null
       },
       {
+        "kind": "ENUM",
+        "name": "ChatbotStatus",
+        "description": null,
+        "specifiedByURL": null,
+        "isOneOf": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": [
+          {
+            "name": "DRAFT",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "PAUSED",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "PENDING_APPROVAL",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "PUBLISHED",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "REJECTED",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "possibleTypes": null
+      },
+      {
         "kind": "OBJECT",
         "name": "ChatbotUsageSummary",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -8868,6 +9288,7 @@
         "kind": "OBJECT",
         "name": "Choice",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -8936,6 +9357,7 @@
         "kind": "OBJECT",
         "name": "ChoiceElementOptions",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -9012,6 +9434,7 @@
         "kind": "OBJECT",
         "name": "ChoiceElementResults",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -9080,6 +9503,7 @@
         "kind": "INPUT_OBJECT",
         "name": "ChoiceInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -9148,6 +9572,7 @@
         "kind": "OBJECT",
         "name": "ChoicesActivityEvaluationData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -9284,6 +9709,7 @@
         "kind": "OBJECT",
         "name": "ChoicesElement",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -9640,6 +10066,7 @@
         "kind": "OBJECT",
         "name": "ChoicesElementData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -9792,6 +10219,7 @@
         "kind": "OBJECT",
         "name": "ChoicesElementResults",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -9860,6 +10288,7 @@
         "kind": "OBJECT",
         "name": "ChoicesInstanceEvaluation",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -10096,6 +10525,7 @@
         "kind": "INPUT_OBJECT",
         "name": "ChoicesResponse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -10140,6 +10570,7 @@
         "kind": "OBJECT",
         "name": "ChoicesResponseObject",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -10184,6 +10615,7 @@
         "kind": "OBJECT",
         "name": "ClassAchievementInstance",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -10212,6 +10644,7 @@
         "kind": "OBJECT",
         "name": "ConfusionSummary",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -10268,6 +10701,7 @@
         "kind": "OBJECT",
         "name": "ConfusionTimestep",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -10328,6 +10762,7 @@
         "kind": "OBJECT",
         "name": "ContentActivityEvaluationData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -10464,6 +10899,7 @@
         "kind": "OBJECT",
         "name": "ContentElement",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -10804,6 +11240,7 @@
         "kind": "OBJECT",
         "name": "ContentElementData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -10940,6 +11377,7 @@
         "kind": "OBJECT",
         "name": "ContentElementResults",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -10984,6 +11422,7 @@
         "kind": "OBJECT",
         "name": "ContentInstanceEvaluation",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -11200,6 +11639,7 @@
         "kind": "OBJECT",
         "name": "Course",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -11884,6 +12324,7 @@
         "kind": "OBJECT",
         "name": "CourseActivityAnalytics",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -12032,6 +12473,7 @@
         "kind": "OBJECT",
         "name": "CourseActivityItem",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -12076,6 +12518,7 @@
         "kind": "OBJECT",
         "name": "CourseActivityList",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -12184,6 +12627,7 @@
         "kind": "OBJECT",
         "name": "CourseAssessmentReportRecord",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -12300,6 +12744,7 @@
         "kind": "OBJECT",
         "name": "CourseAssessmentReportRecordPage",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -12352,6 +12797,7 @@
         "kind": "ENUM",
         "name": "CourseDuplicationJobStatus",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -12388,6 +12834,7 @@
         "kind": "OBJECT",
         "name": "CourseDuplicationStatus",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -12548,6 +12995,7 @@
         "kind": "OBJECT",
         "name": "CourseLeaderboard",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -12628,6 +13076,7 @@
         "kind": "OBJECT",
         "name": "CourseListEntry",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -12672,6 +13121,7 @@
         "kind": "OBJECT",
         "name": "CourseOverview",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -12832,6 +13282,7 @@
         "kind": "OBJECT",
         "name": "CoursePerformanceAnalytics",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -13044,6 +13495,7 @@
         "kind": "OBJECT",
         "name": "CourseStudentTimeline",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -13160,6 +13612,7 @@
         "kind": "OBJECT",
         "name": "CourseStudentTimelineEntry",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -13244,6 +13697,7 @@
         "kind": "OBJECT",
         "name": "CourseSummary",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -13384,6 +13838,7 @@
         "kind": "OBJECT",
         "name": "CreateAssessmentParticipantInvitationsPayload",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -13500,6 +13955,7 @@
         "kind": "ENUM",
         "name": "CreditResetPeriod",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -13542,6 +13998,7 @@
         "kind": "SCALAR",
         "name": "Date",
         "description": "A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.",
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -13553,6 +14010,7 @@
         "kind": "OBJECT",
         "name": "DerivedPermissionInfo",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -13661,6 +14119,7 @@
         "kind": "OBJECT",
         "name": "DerivedPermissionOriginInformation",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -13761,6 +14220,7 @@
         "kind": "UNION",
         "name": "Element",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -13813,6 +14273,7 @@
         "kind": "OBJECT",
         "name": "ElementBatchSharingOutcome",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -13869,6 +14330,7 @@
         "kind": "ENUM",
         "name": "ElementBatchSharingReason",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -13899,6 +14361,7 @@
         "kind": "OBJECT",
         "name": "ElementBatchSharingResult",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -13947,6 +14410,7 @@
         "kind": "ENUM",
         "name": "ElementBatchSharingStatus",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -13977,6 +14441,7 @@
         "kind": "ENUM",
         "name": "ElementBatchSharingTargetError",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -14001,6 +14466,7 @@
         "kind": "OBJECT",
         "name": "ElementBlock",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -14197,6 +14663,7 @@
         "kind": "INPUT_OBJECT",
         "name": "ElementBlockInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -14321,6 +14788,7 @@
         "kind": "ENUM",
         "name": "ElementBlockStatus",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -14351,6 +14819,7 @@
         "kind": "UNION",
         "name": "ElementData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -14403,6 +14872,7 @@
         "kind": "ENUM",
         "name": "ElementDisplayMode",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -14427,6 +14897,7 @@
         "kind": "OBJECT",
         "name": "ElementFeedback",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -14515,6 +14986,7 @@
         "kind": "OBJECT",
         "name": "ElementInstance",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -14647,6 +15119,7 @@
         "kind": "UNION",
         "name": "ElementInstanceEvaluation",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -14694,6 +15167,7 @@
         "kind": "INPUT_OBJECT",
         "name": "ElementInstanceInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -14778,6 +15252,7 @@
         "kind": "OBJECT",
         "name": "ElementInstanceOptions",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -14838,6 +15313,7 @@
         "kind": "OBJECT",
         "name": "ElementInstanceSelectionItem",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -14882,6 +15358,7 @@
         "kind": "ENUM",
         "name": "ElementInstanceType",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -14918,6 +15395,7 @@
         "kind": "OBJECT",
         "name": "ElementInstanceVersionInfo",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -14978,6 +15456,7 @@
         "kind": "OBJECT",
         "name": "ElementOptionsAnswerCollection",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -15026,6 +15505,7 @@
         "kind": "OBJECT",
         "name": "ElementOptionsAnswerCollectionEntry",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -15070,6 +15550,7 @@
         "kind": "ENUM",
         "name": "ElementOrderType",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -15094,6 +15575,7 @@
         "kind": "OBJECT",
         "name": "ElementStack",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -15206,6 +15688,7 @@
         "kind": "INPUT_OBJECT",
         "name": "ElementStackInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -15282,6 +15765,7 @@
         "kind": "ENUM",
         "name": "ElementStackType",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -15312,6 +15796,7 @@
         "kind": "ENUM",
         "name": "ElementStatus",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -15342,6 +15827,7 @@
         "kind": "OBJECT",
         "name": "ElementSummary",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -15402,6 +15888,7 @@
         "kind": "ENUM",
         "name": "ElementType",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -15474,6 +15961,7 @@
         "kind": "OBJECT",
         "name": "EscapeRoomAttempt",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -15718,6 +16206,7 @@
         "kind": "OBJECT",
         "name": "EscapeRoomAttemptProgress",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -15906,6 +16395,7 @@
         "kind": "OBJECT",
         "name": "EscapeRoomConfig",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -16042,6 +16532,7 @@
         "kind": "OBJECT",
         "name": "EscapeRoomHint",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -16086,6 +16577,7 @@
         "kind": "OBJECT",
         "name": "EscapeRoomHintResult",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -16130,6 +16622,7 @@
         "kind": "OBJECT",
         "name": "EscapeRoomProgress",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -16214,6 +16707,7 @@
         "kind": "ENUM",
         "name": "EscapeRoomProgressStatus",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -16250,6 +16744,7 @@
         "kind": "ENUM",
         "name": "EscapeRoomStatus",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -16280,6 +16775,7 @@
         "kind": "OBJECT",
         "name": "Feedback",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -16436,6 +16932,7 @@
         "kind": "OBJECT",
         "name": "FeedbackResponse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -16524,6 +17021,7 @@
         "kind": "OBJECT",
         "name": "FileUploadSAS",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -16600,6 +17098,7 @@
         "kind": "OBJECT",
         "name": "FlashcardActivityEvaluationData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -16736,6 +17235,7 @@
         "kind": "ENUM",
         "name": "FlashcardCorrectness",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -16766,6 +17266,7 @@
         "kind": "ENUM",
         "name": "FlashcardCorrectnessType",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -16796,6 +17297,7 @@
         "kind": "OBJECT",
         "name": "FlashcardElement",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -17136,6 +17638,7 @@
         "kind": "OBJECT",
         "name": "FlashcardElementData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -17272,6 +17775,7 @@
         "kind": "OBJECT",
         "name": "FlashcardElementResults",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -17364,6 +17868,7 @@
         "kind": "OBJECT",
         "name": "FlashcardInstanceEvaluation",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -17577,20 +18082,10 @@
         "possibleTypes": null
       },
       {
-        "kind": "SCALAR",
-        "name": "Float",
-        "description": "The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](https://en.wikipedia.org/wiki/IEEE_floating_point).",
-        "isOneOf": null,
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
         "kind": "OBJECT",
         "name": "FreeElementResult",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -17647,6 +18142,7 @@
         "kind": "OBJECT",
         "name": "FreeElementResults",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -17747,6 +18243,7 @@
         "kind": "OBJECT",
         "name": "FreeTextActivityEvaluationData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -17883,6 +18380,7 @@
         "kind": "OBJECT",
         "name": "FreeTextElement",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -18239,6 +18737,7 @@
         "kind": "OBJECT",
         "name": "FreeTextElementData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -18391,6 +18890,7 @@
         "kind": "OBJECT",
         "name": "FreeTextElementOptions",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -18459,6 +18959,7 @@
         "kind": "OBJECT",
         "name": "FreeTextInstanceEvaluation",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -18715,6 +19216,7 @@
         "kind": "OBJECT",
         "name": "FreeTextRestrictions",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -18739,6 +19241,7 @@
         "kind": "INPUT_OBJECT",
         "name": "FreeTextRestrictionsInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -18787,6 +19290,7 @@
         "kind": "OBJECT",
         "name": "GroupAchievementInstance",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -18815,6 +19319,7 @@
         "kind": "OBJECT",
         "name": "GroupActivity",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -19067,6 +19572,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityClue",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -19171,6 +19677,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityClueAssignment",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -19199,6 +19706,7 @@
         "kind": "INPUT_OBJECT",
         "name": "GroupActivityClueInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -19287,6 +19795,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityClueInstance",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -19403,6 +19912,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityDecision",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -19543,6 +20053,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityDetails",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -19779,6 +20290,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityGrading",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -19851,6 +20363,7 @@
         "kind": "INPUT_OBJECT",
         "name": "GroupActivityGradingDecisionInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -19907,6 +20420,7 @@
         "kind": "INPUT_OBJECT",
         "name": "GroupActivityGradingInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -19971,6 +20485,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityInstance",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -20103,6 +20618,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityParameter",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -20131,6 +20647,7 @@
         "kind": "OBJECT",
         "name": "GroupActivityResults",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -20211,6 +20728,7 @@
         "kind": "OBJECT",
         "name": "GroupActivitySummary",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -20255,6 +20773,7 @@
         "kind": "OBJECT",
         "name": "GroupAssignmentPoolEntry",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -20327,6 +20846,7 @@
         "kind": "OBJECT",
         "name": "GroupLeaderboardEntry",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -20415,6 +20935,7 @@
         "kind": "OBJECT",
         "name": "GroupMessage",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -20516,20 +21037,10 @@
         "possibleTypes": null
       },
       {
-        "kind": "SCALAR",
-        "name": "ID",
-        "description": "The `ID` scalar type represents a unique identifier, often used to refetch an object or as key for a cache. The ID type appears in a JSON response as a String; however, it is not intended to be human-readable. When expected as an input type, any string (such as `\"4\"`) or integer (such as `4`) input value will be accepted as an ID.",
-        "isOneOf": null,
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
         "kind": "UNION",
         "name": "InstanceEvaluation",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -20577,6 +21088,7 @@
         "kind": "OBJECT",
         "name": "InstanceFeedback",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -20701,6 +21213,7 @@
         "kind": "OBJECT",
         "name": "InstancePerformance",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -20777,6 +21290,7 @@
         "kind": "OBJECT",
         "name": "InstanceQuizAnalytics",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -21053,6 +21567,7 @@
         "kind": "OBJECT",
         "name": "InstanceUpdateActivityInfo",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -21138,20 +21653,10 @@
         "possibleTypes": null
       },
       {
-        "kind": "SCALAR",
-        "name": "Int",
-        "description": "The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.",
-        "isOneOf": null,
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
         "kind": "OBJECT",
         "name": "IssuedAssessmentReport",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -21228,6 +21733,7 @@
         "kind": "SCALAR",
         "name": "Json",
         "description": "The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).",
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -21239,6 +21745,7 @@
         "kind": "OBJECT",
         "name": "LeaderboardEntry",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -21427,6 +21934,7 @@
         "kind": "OBJECT",
         "name": "LeaderboardStatistics",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -21471,6 +21979,7 @@
         "kind": "OBJECT",
         "name": "LeaveCourseParticipation",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -21515,6 +22024,7 @@
         "kind": "OBJECT",
         "name": "Level",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -21611,6 +22121,7 @@
         "kind": "OBJECT",
         "name": "LiveQuiz",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -22135,6 +22646,7 @@
         "kind": "ENUM",
         "name": "LiveQuizAccessMode",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -22159,6 +22671,7 @@
         "kind": "OBJECT",
         "name": "LiveQuizEmbeddingInfo",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -22223,6 +22736,7 @@
         "kind": "OBJECT",
         "name": "LiveQuizEmbeddingInfoElement",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -22267,6 +22781,7 @@
         "kind": "OBJECT",
         "name": "LiveQuizInfo",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -22311,6 +22826,7 @@
         "kind": "OBJECT",
         "name": "LiveQuizMeta",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -22383,6 +22899,7 @@
         "kind": "OBJECT",
         "name": "LiveQuizSelectionItem",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -22467,6 +22984,7 @@
         "kind": "OBJECT",
         "name": "LiveQuizStudentSettings",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -22511,6 +23029,7 @@
         "kind": "OBJECT",
         "name": "LiveQuizSummary",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -22587,6 +23106,7 @@
         "kind": "ENUM",
         "name": "LocaleType",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -22611,6 +23131,7 @@
         "kind": "OBJECT",
         "name": "MediaFile",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -22703,6 +23224,7 @@
         "kind": "OBJECT",
         "name": "MicroLearning",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -22951,6 +23473,7 @@
         "kind": "OBJECT",
         "name": "Mutation",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -23619,6 +24142,35 @@
                 "name": "Int",
                 "ofType": null
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "approveChatbotPublication",
+            "description": null,
+            "args": [
+              {
+                "name": "id",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Chatbot",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -25211,6 +25763,79 @@
               "kind": "OBJECT",
               "name": "CatalogCollection",
               "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "createChatbot",
+            "description": null,
+            "args": [
+              {
+                "name": "avatar",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "courseId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "description",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "name",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "Chatbot",
+                "ofType": null
+              }
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -31258,6 +31883,51 @@
             "deprecationReason": null
           },
           {
+            "name": "rejectChatbotPublication",
+            "description": null,
+            "args": [
+              {
+                "name": "comment",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "id",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Chatbot",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "removeCatalogObjectAssignment",
             "description": null,
             "args": [
@@ -31539,6 +32209,132 @@
                 "name": "Boolean",
                 "ofType": null
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "requestCatalystAccess",
+            "description": null,
+            "args": [
+              {
+                "name": "institution",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "useCase",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "requestChatbotPublication",
+            "description": null,
+            "args": [
+              {
+                "name": "expectedStudentCount",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "id",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "proposedCredits",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Int",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "useCase",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Chatbot",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -32212,6 +33008,67 @@
             "deprecationReason": null
           },
           {
+            "name": "setChatAccountUsageBudgets",
+            "description": null,
+            "args": [
+              {
+                "name": "advancedBudgetCredits",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Float",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "baseBudgetCredits",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "Float",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "ownerId",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "ChatAccountUsageOverview",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "setLiveQuizPin",
             "description": null,
             "args": [
@@ -32443,7 +33300,6 @@
             "deprecationReason": null
           },
           {
-<<<<<<< HEAD
             "name": "startCourseDuplication",
             "description": null,
             "args": [
@@ -32707,8 +33563,12 @@
             "type": {
               "kind": "OBJECT",
               "name": "CourseDuplicationStatus",
-||||||| parent of b8ba1a970 (feat(escape-room): add individual server runtime)
-=======
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
             "name": "startEscapeRoomAttempt",
             "description": null,
             "args": [
@@ -32776,7 +33636,6 @@
             "type": {
               "kind": "OBJECT",
               "name": "EscapeRoomAttempt",
->>>>>>> b8ba1a970 (feat(escape-room): add individual server runtime)
               "ofType": null
             },
             "isDeprecated": false,
@@ -33265,6 +34124,71 @@
             "type": {
               "kind": "SCALAR",
               "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "updateChatbot",
+            "description": null,
+            "args": [
+              {
+                "name": "avatar",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "description",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "id",
+                "description": null,
+                "type": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "name",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Chatbot",
               "ofType": null
             },
             "isDeprecated": false,
@@ -33934,6 +34858,7 @@
         "kind": "OBJECT",
         "name": "NumericalActivityEvaluationData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -34082,6 +35007,7 @@
         "kind": "OBJECT",
         "name": "NumericalElement",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -34438,6 +35364,7 @@
         "kind": "OBJECT",
         "name": "NumericalElementData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -34590,6 +35517,7 @@
         "kind": "OBJECT",
         "name": "NumericalElementOptions",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -34714,6 +35642,7 @@
         "kind": "OBJECT",
         "name": "NumericalElementResult",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -34770,6 +35699,7 @@
         "kind": "OBJECT",
         "name": "NumericalElementResults",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -34902,6 +35832,7 @@
         "kind": "OBJECT",
         "name": "NumericalElementSolutions",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -34938,6 +35869,7 @@
         "kind": "OBJECT",
         "name": "NumericalInstanceEvaluation",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -35214,6 +36146,7 @@
         "kind": "OBJECT",
         "name": "NumericalRestrictions",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -35250,6 +36183,7 @@
         "kind": "INPUT_OBJECT",
         "name": "NumericalRestrictionsInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -35286,6 +36220,7 @@
         "kind": "OBJECT",
         "name": "NumericalSolutionRange",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -35322,6 +36257,7 @@
         "kind": "ENUM",
         "name": "ObjectAccess",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -35346,6 +36282,7 @@
         "kind": "OBJECT",
         "name": "ObjectSharingRequest",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -35454,6 +36391,7 @@
         "kind": "ENUM",
         "name": "ObjectType",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -35514,6 +36452,7 @@
         "kind": "INPUT_OBJECT",
         "name": "OptionsCaseStudyInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -35610,6 +36549,7 @@
         "kind": "INPUT_OBJECT",
         "name": "OptionsChoicesInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -35678,6 +36618,7 @@
         "kind": "INPUT_OBJECT",
         "name": "OptionsFreeTextInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -35770,6 +36711,7 @@
         "kind": "INPUT_OBJECT",
         "name": "OptionsNumericalInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -35894,6 +36836,7 @@
         "kind": "INPUT_OBJECT",
         "name": "OptionsSelectionInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -35962,6 +36905,7 @@
         "kind": "ENUM",
         "name": "ParameterType",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -35986,6 +36930,7 @@
         "kind": "OBJECT",
         "name": "Participant",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -36290,6 +37235,7 @@
         "kind": "OBJECT",
         "name": "ParticipantAchievementInstance",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -36366,6 +37312,7 @@
         "kind": "OBJECT",
         "name": "ParticipantActivityPerformance",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -36442,6 +37389,7 @@
         "kind": "OBJECT",
         "name": "ParticipantActivityPerformances",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -36522,6 +37470,7 @@
         "kind": "OBJECT",
         "name": "ParticipantActivityTimestamp",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -36566,6 +37515,7 @@
         "kind": "OBJECT",
         "name": "ParticipantCourseActivity",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -36642,6 +37592,7 @@
         "kind": "OBJECT",
         "name": "ParticipantGroup",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -36786,6 +37737,7 @@
         "kind": "OBJECT",
         "name": "ParticipantLearningData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -36926,6 +37878,7 @@
         "kind": "OBJECT",
         "name": "ParticipantPerformance",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -37050,6 +38003,7 @@
         "kind": "OBJECT",
         "name": "ParticipantTokenData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -37086,6 +38040,7 @@
         "kind": "OBJECT",
         "name": "ParticipantWithAchievements",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -37138,6 +38093,7 @@
         "kind": "OBJECT",
         "name": "Participation",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -37250,6 +38206,7 @@
         "kind": "ENUM",
         "name": "PerformanceLevel",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -37280,6 +38237,7 @@
         "kind": "OBJECT",
         "name": "PerformanceRates",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -37436,6 +38394,7 @@
         "kind": "OBJECT",
         "name": "PermissionInfo",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -37552,6 +38511,7 @@
         "kind": "ENUM",
         "name": "PermissionLevel",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -37594,6 +38554,7 @@
         "kind": "OBJECT",
         "name": "PermissionsList",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -37658,6 +38619,7 @@
         "kind": "OBJECT",
         "name": "PointCorrection",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -37866,6 +38828,7 @@
         "kind": "ENUM",
         "name": "PointCorrectionType",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -37902,6 +38865,7 @@
         "kind": "OBJECT",
         "name": "PracticeQuiz",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -38186,6 +39150,7 @@
         "kind": "OBJECT",
         "name": "PublicAssessmentReportCourse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -38230,6 +39195,7 @@
         "kind": "OBJECT",
         "name": "PublicAssessmentReportSnapshot",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -38318,6 +39284,7 @@
         "kind": "OBJECT",
         "name": "PublicAssessmentReportSubject",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -38358,6 +39325,7 @@
         "kind": "OBJECT",
         "name": "PublicAssessmentReportVerification",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -38414,6 +39382,7 @@
         "kind": "ENUM",
         "name": "PublicationStatus",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -38462,6 +39431,7 @@
         "kind": "OBJECT",
         "name": "PushSubscription",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -38506,6 +39476,7 @@
         "kind": "OBJECT",
         "name": "QrScanElement",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -38846,6 +39817,7 @@
         "kind": "OBJECT",
         "name": "QrScanElementData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -38982,6 +39954,7 @@
         "kind": "OBJECT",
         "name": "QrScanPrintData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -39082,6 +40055,7 @@
         "kind": "OBJECT",
         "name": "Query",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -40612,6 +41586,31 @@
                   "ofType": null
                 }
               }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "getChatAccountUsage",
+            "description": null,
+            "args": [
+              {
+                "name": "ownerId",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "ChatAccountUsageOverview",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -43764,6 +44763,7 @@
         "kind": "OBJECT",
         "name": "QuestionFeedback",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -43832,6 +44832,7 @@
         "kind": "OBJECT",
         "name": "QuizAnalytics",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -43928,6 +44929,7 @@
         "kind": "OBJECT",
         "name": "ReducedActivityInfo",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -44052,6 +45054,7 @@
         "kind": "ENUM",
         "name": "ResponseCorrectness",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -44082,6 +45085,7 @@
         "kind": "ENUM",
         "name": "ResponseCorrectnessType",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -44112,6 +45116,7 @@
         "kind": "INPUT_OBJECT",
         "name": "ResponseInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -44196,6 +45201,7 @@
         "kind": "ENUM",
         "name": "ReviewStatus",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -44226,6 +45232,7 @@
         "kind": "OBJECT",
         "name": "SelectionActivityEvaluationData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -44362,6 +45369,7 @@
         "kind": "OBJECT",
         "name": "SelectionElement",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -44718,6 +45726,7 @@
         "kind": "OBJECT",
         "name": "SelectionElementData",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -44870,6 +45879,7 @@
         "kind": "OBJECT",
         "name": "SelectionElementOptions",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -44938,6 +45948,7 @@
         "kind": "OBJECT",
         "name": "SelectionElementResult",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -44998,6 +46009,7 @@
         "kind": "OBJECT",
         "name": "SelectionElementResults",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -45098,6 +46110,7 @@
         "kind": "OBJECT",
         "name": "SelectionInstanceEvaluation",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -45354,6 +46367,7 @@
         "kind": "OBJECT",
         "name": "SharingRequestResponse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -45398,6 +46412,7 @@
         "kind": "ENUM",
         "name": "SharingType",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -45428,6 +46443,7 @@
         "kind": "OBJECT",
         "name": "SingleCaseStudyResponse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -45512,6 +46528,7 @@
         "kind": "OBJECT",
         "name": "SingleChoiceResponse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -45556,6 +46573,7 @@
         "kind": "OBJECT",
         "name": "SingleFreeTextResponse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -45600,6 +46618,7 @@
         "kind": "OBJECT",
         "name": "SingleNumericalResponse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -45644,6 +46663,7 @@
         "kind": "OBJECT",
         "name": "SingleQuestionResponseCaseStudy",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -45680,6 +46700,7 @@
         "kind": "OBJECT",
         "name": "SingleQuestionResponseCaseStudyCase",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -45732,6 +46753,7 @@
         "kind": "OBJECT",
         "name": "SingleQuestionResponseCaseStudyCriterion",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -45788,6 +46810,7 @@
         "kind": "OBJECT",
         "name": "SingleQuestionResponseCaseStudyItem",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -45840,6 +46863,7 @@
         "kind": "OBJECT",
         "name": "SingleQuestionResponseChoices",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -45876,6 +46900,7 @@
         "kind": "OBJECT",
         "name": "SingleQuestionResponseContent",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -45904,6 +46929,7 @@
         "kind": "OBJECT",
         "name": "SingleQuestionResponseFlashcard",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -45932,6 +46958,7 @@
         "kind": "OBJECT",
         "name": "SingleQuestionResponseSelection",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -45968,6 +46995,7 @@
         "kind": "OBJECT",
         "name": "SingleQuestionResponseValue",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -45996,6 +47024,7 @@
         "kind": "OBJECT",
         "name": "SingleSelectionResponse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -46056,6 +47085,7 @@
         "kind": "INPUT_OBJECT",
         "name": "SolutionRangeInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -46092,6 +47122,7 @@
         "kind": "ENUM",
         "name": "SortByType",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -46134,6 +47165,7 @@
         "kind": "OBJECT",
         "name": "StackEvaluation",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -46278,6 +47310,7 @@
         "kind": "OBJECT",
         "name": "StackFeedback",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -46354,6 +47387,7 @@
         "kind": "ENUM",
         "name": "StackFeedbackStatus",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -46396,6 +47430,7 @@
         "kind": "INPUT_OBJECT",
         "name": "StackResponseInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -46560,6 +47595,7 @@
         "kind": "OBJECT",
         "name": "Statistics",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -46681,20 +47717,10 @@
         "possibleTypes": null
       },
       {
-        "kind": "SCALAR",
-        "name": "String",
-        "description": "The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.",
-        "isOneOf": null,
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
         "kind": "OBJECT",
         "name": "StudentAssessmentBlockResponse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -46747,6 +47773,7 @@
         "kind": "OBJECT",
         "name": "StudentAssessmentInstanceResponse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -46871,6 +47898,7 @@
         "kind": "OBJECT",
         "name": "StudentAssessmentResults",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -46979,6 +48007,7 @@
         "kind": "OBJECT",
         "name": "StudentAssessmentResultsItem",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -47107,6 +48136,7 @@
         "kind": "OBJECT",
         "name": "StudentCourse",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -47207,6 +48237,7 @@
         "kind": "OBJECT",
         "name": "StudentCourseLeaderboard",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -47259,6 +48290,7 @@
         "kind": "OBJECT",
         "name": "StudentPointCorrection",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -47411,6 +48443,7 @@
         "kind": "OBJECT",
         "name": "Subscription",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -47782,6 +48815,7 @@
         "kind": "INPUT_OBJECT",
         "name": "SubscriptionKeysInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -47826,6 +48860,7 @@
         "kind": "INPUT_OBJECT",
         "name": "SubscriptionObjectInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -47882,6 +48917,7 @@
         "kind": "OBJECT",
         "name": "Tag",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -47942,6 +48978,7 @@
         "kind": "INPUT_OBJECT",
         "name": "TemplateBlockElementInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -48026,6 +49063,7 @@
         "kind": "INPUT_OBJECT",
         "name": "TemplateBlockInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -48150,6 +49188,7 @@
         "kind": "OBJECT",
         "name": "TemplateElementInformation",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -48210,6 +49249,7 @@
         "kind": "INPUT_OBJECT",
         "name": "TemplateElementManipulationInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -48402,6 +49442,7 @@
         "kind": "OBJECT",
         "name": "Title",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -48430,6 +49471,7 @@
         "kind": "OBJECT",
         "name": "User",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -48650,6 +49692,7 @@
         "kind": "OBJECT",
         "name": "UserActivityList",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -48702,6 +49745,7 @@
         "kind": "OBJECT",
         "name": "UserElementList",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -48754,6 +49798,7 @@
         "kind": "OBJECT",
         "name": "UserGroup",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -48898,6 +49943,7 @@
         "kind": "INPUT_OBJECT",
         "name": "UserGroupMembersInput",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": false,
         "fields": null,
         "inputFields": [
@@ -48938,6 +49984,7 @@
         "kind": "OBJECT",
         "name": "UserInfo",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -49006,6 +50053,7 @@
         "kind": "OBJECT",
         "name": "UserLogin",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -49090,6 +50138,7 @@
         "kind": "ENUM",
         "name": "UserLoginScope",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -49144,6 +50193,7 @@
         "kind": "ENUM",
         "name": "UserRole",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -49180,6 +50230,7 @@
         "kind": "OBJECT",
         "name": "WeekdayActivityAnalytics",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -49304,6 +50355,7 @@
         "kind": "OBJECT",
         "name": "WeeklyCourseActivities",
         "description": null,
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -49354,536 +50406,9 @@
       },
       {
         "kind": "OBJECT",
-        "name": "__Directive",
-        "description": "A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.\n\nIn some cases, you need to provide options to alter GraphQL's execution behavior in ways field arguments will not suffice, such as conditionally including or skipping a field. Directives provide this by describing additional information to the executor.",
-        "isOneOf": null,
-        "fields": [
-          {
-            "name": "name",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "description",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "isRepeatable",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Boolean",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "locations",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "LIST",
-                "name": null,
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "ENUM",
-                    "name": "__DirectiveLocation",
-                    "ofType": null
-                  }
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "args",
-            "description": null,
-            "args": [
-              {
-                "name": "includeDeprecated",
-                "description": null,
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Boolean",
-                  "ofType": null
-                },
-                "defaultValue": "false",
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "LIST",
-                "name": null,
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "__InputValue",
-                    "ofType": null
-                  }
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
-        "inputFields": null,
-        "interfaces": [],
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "ENUM",
-        "name": "__DirectiveLocation",
-        "description": "A Directive can be adjacent to many parts of the GraphQL language, a __DirectiveLocation describes one such possible adjacencies.",
-        "isOneOf": null,
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
-        "enumValues": [
-          {
-            "name": "QUERY",
-            "description": "Location adjacent to a query operation.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "MUTATION",
-            "description": "Location adjacent to a mutation operation.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "SUBSCRIPTION",
-            "description": "Location adjacent to a subscription operation.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "FIELD",
-            "description": "Location adjacent to a field.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "FRAGMENT_DEFINITION",
-            "description": "Location adjacent to a fragment definition.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "FRAGMENT_SPREAD",
-            "description": "Location adjacent to a fragment spread.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "INLINE_FRAGMENT",
-            "description": "Location adjacent to an inline fragment.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "VARIABLE_DEFINITION",
-            "description": "Location adjacent to a variable definition.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "SCHEMA",
-            "description": "Location adjacent to a schema definition.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "SCALAR",
-            "description": "Location adjacent to a scalar definition.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "OBJECT",
-            "description": "Location adjacent to an object type definition.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "FIELD_DEFINITION",
-            "description": "Location adjacent to a field definition.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "ARGUMENT_DEFINITION",
-            "description": "Location adjacent to an argument definition.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "INTERFACE",
-            "description": "Location adjacent to an interface definition.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "UNION",
-            "description": "Location adjacent to a union definition.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "ENUM",
-            "description": "Location adjacent to an enum definition.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "ENUM_VALUE",
-            "description": "Location adjacent to an enum value definition.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "INPUT_OBJECT",
-            "description": "Location adjacent to an input object type definition.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "INPUT_FIELD_DEFINITION",
-            "description": "Location adjacent to an input object field definition.",
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
-        "possibleTypes": null
-      },
-      {
-        "kind": "OBJECT",
-        "name": "__EnumValue",
-        "description": "One possible value for a given Enum. Enum values are unique values, not a placeholder for a string or numeric value. However an Enum value is returned in a JSON response as a string.",
-        "isOneOf": null,
-        "fields": [
-          {
-            "name": "name",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "description",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "isDeprecated",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Boolean",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "deprecationReason",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
-        "inputFields": null,
-        "interfaces": [],
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "OBJECT",
-        "name": "__Field",
-        "description": "Object and Interface types are described by a list of Fields, each of which has a name, potentially a list of arguments, and a return type.",
-        "isOneOf": null,
-        "fields": [
-          {
-            "name": "name",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "description",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "args",
-            "description": null,
-            "args": [
-              {
-                "name": "includeDeprecated",
-                "description": null,
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Boolean",
-                  "ofType": null
-                },
-                "defaultValue": "false",
-                "isDeprecated": false,
-                "deprecationReason": null
-              }
-            ],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "LIST",
-                "name": null,
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "name": null,
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "__InputValue",
-                    "ofType": null
-                  }
-                }
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "type",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "__Type",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "isDeprecated",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Boolean",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "deprecationReason",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
-        "inputFields": null,
-        "interfaces": [],
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "OBJECT",
-        "name": "__InputValue",
-        "description": "Arguments provided to Fields or Directives and the input fields of an InputObject are represented as Input Values which describe their type and optionally a default value.",
-        "isOneOf": null,
-        "fields": [
-          {
-            "name": "name",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "description",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "type",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "__Type",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "defaultValue",
-            "description": "A GraphQL-formatted string representing the default value for this input value.",
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "isDeprecated",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Boolean",
-                "ofType": null
-              }
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "deprecationReason",
-            "description": null,
-            "args": [],
-            "type": {
-              "kind": "SCALAR",
-              "name": "String",
-              "ofType": null
-            },
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
-        "inputFields": null,
-        "interfaces": [],
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "OBJECT",
         "name": "__Schema",
         "description": "A GraphQL Schema defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, as well as the entry points for query, mutation, and subscription operations.",
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -49996,6 +50521,7 @@
         "kind": "OBJECT",
         "name": "__Type",
         "description": "The fundamental unit of any GraphQL Schema is the type. There are many kinds of types in GraphQL as represented by the `__TypeKind` enum.\n\nDepending on the kind of a type, certain fields describe information about that type. Scalar types provide no information beyond a name, description and optional `specifiedByURL`, while Enum types provide their values. Object and Interface types provide the fields they describe. Abstract types, Union and Interface, provide the Object types possible at runtime. List and NonNull types compose other types.",
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": [
           {
@@ -50223,6 +50749,7 @@
         "kind": "ENUM",
         "name": "__TypeKind",
         "description": "An enum describing what kind of type a given `__Type` is.",
+        "specifiedByURL": null,
         "isOneOf": null,
         "fields": null,
         "inputFields": null,
@@ -50278,34 +50805,542 @@
           }
         ],
         "possibleTypes": null
-      }
-    ],
-    "directives": [
+      },
       {
-        "name": "deprecated",
-        "description": "Marks an element of a GraphQL schema as no longer supported.",
-        "isRepeatable": false,
-        "locations": [
-          "ARGUMENT_DEFINITION",
-          "ENUM_VALUE",
-          "FIELD_DEFINITION",
-          "INPUT_FIELD_DEFINITION"
-        ],
-        "args": [
+        "kind": "OBJECT",
+        "name": "__Field",
+        "description": "Object and Interface types are described by a list of Fields, each of which has a name, potentially a list of arguments, and a return type.",
+        "specifiedByURL": null,
+        "isOneOf": null,
+        "fields": [
           {
-            "name": "reason",
-            "description": "Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formatted using the Markdown syntax, as specified by [CommonMark](https://commonmark.org/).",
+            "name": "name",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "description",
+            "description": null,
+            "args": [],
             "type": {
               "kind": "SCALAR",
               "name": "String",
               "ofType": null
             },
-            "defaultValue": "\"No longer supported\"",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "args",
+            "description": null,
+            "args": [
+              {
+                "name": "includeDeprecated",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                },
+                "defaultValue": "false",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "__InputValue",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "type",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "__Type",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "isDeprecated",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "deprecationReason",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
             "isDeprecated": false,
             "deprecationReason": null
           }
-        ]
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
       },
+      {
+        "kind": "OBJECT",
+        "name": "__InputValue",
+        "description": "Arguments provided to Fields or Directives and the input fields of an InputObject are represented as Input Values which describe their type and optionally a default value.",
+        "specifiedByURL": null,
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "name",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "description",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "type",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "__Type",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "defaultValue",
+            "description": "A GraphQL-formatted string representing the default value for this input value.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "isDeprecated",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "deprecationReason",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "__EnumValue",
+        "description": "One possible value for a given Enum. Enum values are unique values, not a placeholder for a string or numeric value. However an Enum value is returned in a JSON response as a string.",
+        "specifiedByURL": null,
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "name",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "description",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "isDeprecated",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "deprecationReason",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "__Directive",
+        "description": "A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.\n\nIn some cases, you need to provide options to alter GraphQL's execution behavior in ways field arguments will not suffice, such as conditionally including or skipping a field. Directives provide this by describing additional information to the executor.",
+        "specifiedByURL": null,
+        "isOneOf": null,
+        "fields": [
+          {
+            "name": "name",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "description",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "isRepeatable",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Boolean",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "locations",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "ENUM",
+                    "name": "__DirectiveLocation",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "args",
+            "description": null,
+            "args": [
+              {
+                "name": "includeDeprecated",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                },
+                "defaultValue": "false",
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "__InputValue",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "ENUM",
+        "name": "__DirectiveLocation",
+        "description": "A Directive can be adjacent to many parts of the GraphQL language, a __DirectiveLocation describes one such possible adjacencies.",
+        "specifiedByURL": null,
+        "isOneOf": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": [
+          {
+            "name": "QUERY",
+            "description": "Location adjacent to a query operation.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "MUTATION",
+            "description": "Location adjacent to a mutation operation.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "SUBSCRIPTION",
+            "description": "Location adjacent to a subscription operation.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "FIELD",
+            "description": "Location adjacent to a field.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "FRAGMENT_DEFINITION",
+            "description": "Location adjacent to a fragment definition.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "FRAGMENT_SPREAD",
+            "description": "Location adjacent to a fragment spread.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "INLINE_FRAGMENT",
+            "description": "Location adjacent to an inline fragment.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "VARIABLE_DEFINITION",
+            "description": "Location adjacent to a variable definition.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "SCHEMA",
+            "description": "Location adjacent to a schema definition.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "SCALAR",
+            "description": "Location adjacent to a scalar definition.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "OBJECT",
+            "description": "Location adjacent to an object type definition.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "FIELD_DEFINITION",
+            "description": "Location adjacent to a field definition.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "ARGUMENT_DEFINITION",
+            "description": "Location adjacent to an argument definition.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "INTERFACE",
+            "description": "Location adjacent to an interface definition.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "UNION",
+            "description": "Location adjacent to a union definition.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "ENUM",
+            "description": "Location adjacent to an enum definition.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "ENUM_VALUE",
+            "description": "Location adjacent to an enum value definition.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "INPUT_OBJECT",
+            "description": "Location adjacent to an input object type definition.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "INPUT_FIELD_DEFINITION",
+            "description": "Location adjacent to an input object field definition.",
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "possibleTypes": null
+      }
+    ],
+    "directives": [
       {
         "name": "include",
         "description": "Directs the executor to include this field or fragment only when the `if` argument is true.",
@@ -50333,15 +51368,6 @@
             "deprecationReason": null
           }
         ]
-      },
-      {
-        "name": "oneOf",
-        "description": "Indicates exactly one field must be supplied and this field must not be `null`.",
-        "isRepeatable": false,
-        "locations": [
-          "INPUT_OBJECT"
-        ],
-        "args": []
       },
       {
         "name": "skip",
@@ -50372,6 +51398,31 @@
         ]
       },
       {
+        "name": "deprecated",
+        "description": "Marks an element of a GraphQL schema as no longer supported.",
+        "isRepeatable": false,
+        "locations": [
+          "FIELD_DEFINITION",
+          "ARGUMENT_DEFINITION",
+          "INPUT_FIELD_DEFINITION",
+          "ENUM_VALUE"
+        ],
+        "args": [
+          {
+            "name": "reason",
+            "description": "Explains why this element was deprecated, usually also including a suggestion for how to access supported similar data. Formatted using the Markdown syntax, as specified by [CommonMark](https://commonmark.org/).",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            },
+            "defaultValue": "\"No longer supported\"",
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ]
+      },
+      {
         "name": "specifiedBy",
         "description": "Exposes a URL that specifies the behavior of this scalar.",
         "isRepeatable": false,
@@ -50396,6 +51447,15 @@
             "deprecationReason": null
           }
         ]
+      },
+      {
+        "name": "oneOf",
+        "description": "Indicates exactly one field must be supplied and this field must not be `null`.",
+        "isRepeatable": false,
+        "locations": [
+          "INPUT_OBJECT"
+        ],
+        "args": []
       }
     ]
   }
