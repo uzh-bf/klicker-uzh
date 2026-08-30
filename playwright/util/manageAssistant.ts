@@ -80,11 +80,21 @@ const DEFAULT_PROPOSAL_PAYLOAD = {
   name: 'Powerhouse of the cell',
   options: {
     choices: [
-      { correct: true, ix: 0, value: 'Mitochondria' },
-      { correct: false, ix: 1, value: 'Nucleus' },
+      {
+        correct: true,
+        feedback: 'Correct: mitochondria generate most cellular ATP.',
+        ix: 0,
+        value: 'Mitochondria',
+      },
+      {
+        correct: false,
+        feedback: 'The nucleus stores DNA but is not the cellular powerhouse.',
+        ix: 1,
+        value: 'Nucleus',
+      },
     ],
     displayMode: 'LIST',
-    hasAnswerFeedbacks: false,
+    hasAnswerFeedbacks: true,
     hasSampleSolution: true,
   },
   pointsMultiplier: 1,
@@ -359,20 +369,13 @@ export async function mockManageProposalConfirm(
  * Delay every script request the chat iframe's own document makes to its own
  * origin, to simulate a slow-hydrating iframe.
  *
- * The browser's `load` event (which triggers ManageAssistantWidget's
- * send-on-frameLoaded context post — see the `frameLoaded` effect in
- * ManageAssistantWidget.tsx) only waits for the iframe's resource *fetches*
- * to complete, not for those scripts to then execute, React to hydrate, and
- * useEmbeddedManageContext's effect to run and register its `message`
- * listener. Stretching out the script fetches themselves therefore reliably
- * pushes real hydration (and with it the `klicker:manage-context-ready`
- * ping) well past that first, easily-lost send — without needing to touch
- * the `load` event or any fragile chunk-name matching.
+ * Stretching the iframe script fetches delays React hydration and therefore
+ * its `klicker:manage-context-ready` ping without depending on fragile chunk
+ * names. Manage keeps its loading state until that validated ping and sends
+ * the initial route context in response.
  *
  * Used to prove the ready→resend handshake alone is sufficient to deliver
- * context to a slow iframe, i.e. that the redundant [300, 1000, 2500]ms retry
- * burst removed from ManageAssistantWidget.tsx / useEmbeddedManageContext.ts
- * was safe to drop.
+ * context to a slow iframe without a load-time send or retry burst.
  */
 export async function delayChatIframeScripts(page: Page, delayMs: number) {
   const chatOrigin = process.env.URL_CHAT ?? URL_CHAT

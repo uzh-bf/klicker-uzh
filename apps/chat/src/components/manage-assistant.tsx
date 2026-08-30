@@ -1,17 +1,24 @@
 'use client'
 
-import { AssistantRuntimeProvider } from '@assistant-ui/react'
+import {
+  AssistantRuntimeProvider,
+  useAui,
+  useAuiState,
+} from '@assistant-ui/react'
 import {
   AssistantChatTransport,
   useChatRuntime,
 } from '@assistant-ui/react-ai-sdk'
 import {
+  BookOpenTextIcon,
   FilePenLineIcon,
   MessageSquareTextIcon,
+  RotateCcwIcon,
   SearchIcon,
   WandSparkles,
 } from 'lucide-react'
-import { useMemo } from 'react'
+import { useTranslations } from 'next-intl'
+import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useEmbeddedManageContext } from '../hooks/useEmbeddedManageContext'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
@@ -26,21 +33,6 @@ import { EmbeddedSettings } from './embedded-settings'
 import { Thread, type ThreadWelcomeCapability } from './thread'
 
 const MANAGE_ASSISTANT_NAME = 'KlickerUZH Assistant'
-const MANAGE_ASSISTANT_WELCOME = 'Hello! How can I help you?'
-const MANAGE_ASSISTANT_CAPABILITIES: ThreadWelcomeCapability[] = [
-  { icon: SearchIcon, text: 'Search your courses and question pool' },
-  {
-    icon: FilePenLineIcon,
-    text: 'Draft single-choice, multiple-choice, and free-text questions — saved to your pool only after you confirm',
-  },
-  {
-    icon: MessageSquareTextIcon,
-    text: 'Suggest improvements to question feedback',
-  },
-]
-const MANAGE_ASSISTANT_LIMITS_NOTE =
-  'Read-only for everything else — it never publishes or edits existing content.'
-
 export function ManageAssistant() {
   return (
     <ChatUiProvider>
@@ -50,10 +42,17 @@ export function ManageAssistant() {
 }
 
 function ManageAssistantInner() {
+  const t = useTranslations('chat.manageAssistant')
   const { embedded } = useChatUi()
   const context = useEmbeddedManageContext()
   const contextLabel = getManageContextLabel(context)
   const suggestions = getManageSuggestions(context)
+  const capabilities: ThreadWelcomeCapability[] = [
+    { icon: SearchIcon, text: t('capabilitySearch') },
+    { icon: FilePenLineIcon, text: t('capabilityDraft') },
+    { icon: MessageSquareTextIcon, text: t('capabilityFeedback') },
+    { icon: BookOpenTextIcon, text: t('capabilityDocumentation') },
+  ]
 
   return (
     <ManageAssistantRuntimeProvider context={context}>
@@ -66,15 +65,17 @@ function ManageAssistantInner() {
                 {MANAGE_ASSISTANT_NAME}
               </div>
               <div className="mt-1 inline-flex max-w-full items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium leading-tight text-blue-800">
-                <span className="truncate">{contextLabel ?? 'Manage'}</span>
+                <span className="truncate">
+                  {contextLabel ?? t('manageContext')}
+                </span>
               </div>
             </div>
-            <EmbeddedSettings />
+            <ManageAssistantToolbar />
           </div>
         )}
         {embedded && (
-          <div className="absolute right-3 top-3 z-10">
-            <EmbeddedSettings />
+          <div className="flex shrink-0 justify-end px-3 pt-3">
+            <ManageAssistantToolbar />
           </div>
         )}
         <Thread
@@ -83,13 +84,78 @@ function ManageAssistantInner() {
           chatbotName={MANAGE_ASSISTANT_NAME}
           contextLabel={contextLabel}
           suggestions={suggestions}
-          welcomeMessage={MANAGE_ASSISTANT_WELCOME}
-          capabilities={MANAGE_ASSISTANT_CAPABILITIES}
-          limitsNote={MANAGE_ASSISTANT_LIMITS_NOTE}
+          welcomeMessage={t('welcome')}
+          capabilities={capabilities}
+          limitsNote={t('limitsNote')}
           maxImageAttachments={MAX_MANAGE_IMAGE_ATTACHMENTS}
         />
       </div>
     </ManageAssistantRuntimeProvider>
+  )
+}
+
+function ManageAssistantToolbar() {
+  const t = useTranslations()
+  const aui = useAui()
+  const isRunning = useAuiState((state) => state.thread.isRunning)
+  const messageCount = useAuiState((state) => state.thread.messages.length)
+  const composerIsEmpty = useAuiState((state) => state.composer.isEmpty)
+  const [confirmingReset, setConfirmingReset] = useState(false)
+  const hasConversation = messageCount > 0 || !composerIsEmpty
+
+  async function handleReset() {
+    if (isRunning) return
+    if (hasConversation && !confirmingReset) {
+      setConfirmingReset(true)
+      return
+    }
+
+    setConfirmingReset(false)
+    await aui.composer.reset()
+    aui.thread.reset()
+  }
+
+  return (
+    <div className="flex min-w-0 items-center justify-end gap-2">
+      <EmbeddedSettings />
+      <button
+        type="button"
+        disabled={isRunning}
+        onClick={() => void handleReset()}
+        onBlur={() => setConfirmingReset(false)}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            event.stopPropagation()
+            setConfirmingReset(false)
+          }
+        }}
+        aria-label={
+          confirmingReset
+            ? t('chat.assistant.confirmNewConversation')
+            : t('chat.assistant.newConversation')
+        }
+        title={
+          isRunning
+            ? t('chat.assistant.newConversationWait')
+            : t('chat.assistant.newConversation')
+        }
+        data-cy="manage-assistant-new-conversation"
+        className={twMerge(
+          'focus-visible:ring-ring inline-flex h-7 shrink-0 items-center justify-center rounded-md border bg-white text-xs font-medium shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+          confirmingReset
+            ? 'border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 gap-1.5 px-2'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground w-7'
+        )}
+      >
+        <RotateCcwIcon aria-hidden className="size-3.5" />
+        {confirmingReset ? (
+          <span>{t('chat.assistant.confirmNewConversationShort')}</span>
+        ) : null}
+      </button>
+      <span role="status" className="sr-only">
+        {confirmingReset ? t('chat.assistant.newConversationArmed') : ''}
+      </span>
+    </div>
   )
 }
 

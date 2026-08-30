@@ -5,6 +5,8 @@ import {
   formatManageContextForPrompt,
   type ManageAssistantContext,
 } from './manageContext'
+import { formatManageProposalContextForPrompt } from './manageProposalPrompt'
+import type { ManageElementCreateProposal } from './manageProposalSchema'
 import {
   describeToolOutputFencingForSystemPrompt,
   type FenceSentinel,
@@ -30,9 +32,14 @@ export function buildManageAssistantSystemPrompt(
   context: ManageAssistantContext | null,
   toolsAvailable = true,
   draftToolsAvailable = true,
-  toolOutputFenceSentinel?: FenceSentinel
+  toolOutputFenceSentinel?: FenceSentinel,
+  previousProposal: ManageElementCreateProposal | null = null
 ) {
   const contextPrompt = formatManageContextForPrompt(context)
+  const proposalPrompt = formatManageProposalContextForPrompt(
+    previousProposal,
+    toolOutputFenceSentinel
+  )
   const toolPrompt = !toolsAvailable
     ? 'Lecturer MCP tools are currently unavailable. Be transparent that live Klicker data cannot be queried in this response.'
     : draftToolsAvailable
@@ -52,6 +59,7 @@ export function buildManageAssistantSystemPrompt(
     injectionDefensePrompt,
     skillsPrompt,
     contextPrompt,
+    proposalPrompt,
   ]
     .filter(Boolean)
     .join('\n\n')

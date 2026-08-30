@@ -4,9 +4,10 @@ import {
   buildManageProposalGraphqlRequest,
   confirmManageProposal,
   getRequiredManageOrigin,
+  type ManageElementCreateProposal,
+  readManageProposalToken,
   recordProposalConfirmationAudit,
   verifyManageProposalToken,
-  type ManageElementCreateProposal,
 } from '../src/services/manageProposals'
 
 const mockAuditLogEntryCreate = vi.fn()
@@ -168,6 +169,36 @@ describe('Manage proposal confirmation helpers', () => {
     await expect(
       verifyManageProposalToken(token, 'lecturer-replay', settings)
     ).rejects.toThrow('Manage proposal token already used')
+
+    await expect(
+      readManageProposalToken(token, 'lecturer-replay', settings)
+    ).resolves.toMatchObject(proposal)
+  })
+
+  test('reads signed proposal context repeatedly without consuming confirmation', async () => {
+    const token = await signJWT(
+      {
+        jti: crypto.randomUUID(),
+        kind: proposal.kind,
+        payload: proposal.payload,
+        purpose: 'manage-assistant-proposal',
+        summary: proposal.summary,
+        sub: 'lecturer-context',
+      },
+      'proposal-secret',
+      { expiresIn: '15m', issuer: 'https://auth.test' }
+    )
+    const settings = { issuer: 'https://auth.test', secret: 'proposal-secret' }
+
+    await expect(
+      readManageProposalToken(token, 'lecturer-context', settings)
+    ).resolves.toMatchObject(proposal)
+    await expect(
+      readManageProposalToken(token, 'lecturer-context', settings)
+    ).resolves.toMatchObject(proposal)
+    await expect(
+      verifyManageProposalToken(token, 'lecturer-context', settings)
+    ).resolves.toMatchObject(proposal)
   })
 
   test('accepts repeat confirmation of a token signed without a jti (pre-rollout)', async () => {

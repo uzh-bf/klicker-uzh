@@ -75,9 +75,22 @@ import failure. That fix and its build-time regression check are recorded in
 
 ## Prevention
 
-The staging promoter currently checks out and writes `v3`. While ArgoCD tracks
-`v3-ai` directly, those promotion commits cannot update the active manifests.
-Before any direct-source switch, follow the render and runtime checks in
+The staging promoter now resolves `STG_SOURCE_BRANCH` once and checks out,
+updates, and opens its generated pull request against that same branch. It
+discovers the image tags and rollout annotations in the selected values file,
+requires both inventories to be non-empty, and proves every discovered entry was
+rewritten. This avoids a workload-count constant becoming stale when the chart
+adds or removes workloads.
+
+The `workflow_run` definition still activates from default branch `v3`. A
+correction merged only to `v3-ai` must therefore reach `v3` through a focused
+activation change before automatic build fan-in uses it. Build runs already in
+progress retain their old promoter behavior; after every exact-head image build
+passes, use a separately authorized branch-selected promoter dispatch or one
+bounded equivalent promotion commit. Merging the correction alone does not
+redeploy that existing image set.
+
+Before any source switch, follow the render and runtime checks in
 [CI & Deployment](../../ci-and-deployment.md#staging-promotion). The testing
 procedure also requires image-tag inspection and independent ArgoCD health
 verification.

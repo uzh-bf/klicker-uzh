@@ -20,6 +20,7 @@ securityContext: {}
 # running sync (upstream argo-cd#24187 / #27507).
 migrator:
   enabled: true
+  databaseUrlOnly: false
   image:
     repository: ghcr.io/uzh-bf/klicker-uzh/backend-docker-migrator
     pullPolicy: Always
