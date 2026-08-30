@@ -2,7 +2,6 @@ import type { ManageAssistantCapabilityState } from '@/src/services/manageAssist
 import type { ManageAssistantContext } from '@/src/services/manageContext'
 
 export interface ThreadSuggestion {
-  draftIntent?: boolean
   id: string
   text: string
   prompt: string
@@ -11,7 +10,6 @@ export interface ThreadSuggestion {
 // Shown while browsing the question pool, with no single question or course in focus.
 const QUESTION_POOL_SUGGESTIONS: ThreadSuggestion[] = [
   {
-    draftIntent: true,
     id: 'question-pool-draft',
     text: 'Draft a question',
     prompt:
@@ -40,7 +38,6 @@ const ELEMENT_EDITOR_SUGGESTIONS: ThreadSuggestion[] = [
       'Review the question I currently have open and suggest concrete improvements to its wording or answer options.',
   },
   {
-    draftIntent: true,
     id: 'element-editor-variant',
     text: 'Draft a variant',
     prompt:
@@ -63,7 +60,6 @@ const COURSE_DASHBOARD_SUGGESTIONS: ThreadSuggestion[] = [
       'Summarize the course I currently have open: its structure and how many questions it has in the pool.',
   },
   {
-    draftIntent: true,
     id: 'course-dashboard-draft',
     text: 'Draft course question',
     prompt:
@@ -80,7 +76,6 @@ const COURSE_DASHBOARD_SUGGESTIONS: ThreadSuggestion[] = [
 // Shown while assembling a quiz or other activity.
 const ACTIVITY_CREATION_SUGGESTIONS: ThreadSuggestion[] = [
   {
-    draftIntent: true,
     id: 'activity-creation-draft',
     text: 'Draft quiz questions',
     prompt:
@@ -109,7 +104,6 @@ const EVALUATION_SUGGESTIONS: ThreadSuggestion[] = [
       'Help me interpret the results for the quiz I am currently viewing.',
   },
   {
-    draftIntent: true,
     id: 'evaluation-followup',
     text: 'Follow-up question',
     prompt:
@@ -128,7 +122,6 @@ const EVALUATION_SUGGESTIONS: ThreadSuggestion[] = [
 // that is not actually present.
 const GENERAL_SUGGESTIONS: ThreadSuggestion[] = [
   {
-    draftIntent: true,
     id: 'general-draft',
     text: 'Draft question',
     prompt:
@@ -208,9 +201,8 @@ const UNAVAILABLE_SUGGESTIONS: ThreadSuggestion[] = [
 function withoutPersistenceIntent(
   suggestion: ThreadSuggestion
 ): ThreadSuggestion {
-  if (!suggestion.draftIntent) return suggestion
   const noSave = NO_SAVE_DRAFTS[suggestion.id]
-  return noSave ? { ...suggestion, ...noSave, draftIntent: false } : suggestion
+  return noSave ? { ...suggestion, ...noSave } : suggestion
 }
 
 export function getManageSuggestions(

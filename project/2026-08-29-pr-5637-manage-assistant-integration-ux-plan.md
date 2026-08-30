@@ -867,3 +867,16 @@ follow_up_stacks:
 - Next: Commit the A2 slice, run the required simplification and risk reviews,
   disposition any verified findings, then publish it as the next draft stack
   layer and require exact-head hosted browser evidence.
+- A2 reviews: The authenticated API/MCP risk review found no actionable defect
+  or material evidence gap. The simplifier's redundant `draftIntent` finding is
+  accepted because the no-save override map already owns the same key set. Its
+  reducer-removal finding is rejected: the approved validation contract calls
+  for the pure reducer, and the proposed replacement changes retry from the
+  conservative unavailable state to the prior optimistic capability.
+- A2 build evidence: The repository build completed the generated GraphQL
+  output but its Rollup process then slept for eight minutes without children,
+  reproducing the existing host-only build stall. The process was interrupted.
+  Focused Chat build evidence and hosted exact-head build/browser checks remain
+  required after the simplification correction.
+- Next: Verify and commit the accepted simplification, publish A2 as a draft
+  stack layer, and require exact-head hosted build and browser evidence.
