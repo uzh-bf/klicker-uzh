@@ -802,6 +802,8 @@ async function acquireLock(path) {
 }
 
 async function releaseOwnedLock(path, identity) {
+  // Removing and replacing this lock while its launcher is still running is
+  // unsupported. Stale-lock recovery starts only after the owner has stopped.
   try {
     const current = await stat(path)
     if (current.dev !== identity.dev || current.ino !== identity.ino) return
@@ -818,9 +820,10 @@ export async function superviseProof({
   deadlineMs = DEFAULT_DEADLINE_MS,
   lockPath = DEFAULT_LOCK_PATH,
   installSignalHandlers = false,
+  acquireLockForProof = acquireLock,
 }) {
   const startedAt = Date.now()
-  const lock = await acquireLock(lockPath)
+  const lock = await acquireLockForProof(lockPath)
   if (!lock) {
     return {
       ...fixedFailureReceipt('duplicate_refused'),
@@ -829,8 +832,7 @@ export async function superviseProof({
       elapsedMs: 0,
     }
   }
-  const lockIdentity = await lock.stat()
-
+  let lockIdentity
   let child
   let interrupted = false
   let timedOut = false
@@ -839,6 +841,7 @@ export async function superviseProof({
   const signalHandlers = new Map()
 
   try {
+    lockIdentity = await lock.stat()
     const environment = minimalChildEnvironment(sourceEnvironment, process.pid)
     child = spawn(process.execPath, [resolve(childPath), ...childArgs], {
       detached: true,
@@ -930,7 +933,11 @@ export async function superviseProof({
     for (const [signal, handler] of signalHandlers) {
       process.removeListener(signal, handler)
     }
-    await releaseOwnedLock(lockPath, lockIdentity).catch(() => undefined)
+    if (lockIdentity) {
+      await releaseOwnedLock(lockPath, lockIdentity).catch(() => undefined)
+    } else {
+      await unlink(lockPath).catch(() => undefined)
+    }
     await lock.close().catch(() => undefined)
   }
 }
