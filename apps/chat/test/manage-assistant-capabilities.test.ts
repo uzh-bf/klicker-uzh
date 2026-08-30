@@ -78,9 +78,11 @@ describe('Manage assistant capability state', () => {
       phase: 'settled',
     })
 
-    expect(
-      reduceManageAssistantCapabilityState(healthy, { type: 'check' })
-    ).toEqual(INITIAL_MANAGE_ASSISTANT_CAPABILITY_STATE)
+    const checking = reduceManageAssistantCapabilityState(healthy, {
+      type: 'check',
+    })
+    expect(checking).toEqual(INITIAL_MANAGE_ASSISTANT_CAPABILITY_STATE)
+    expect(checking).not.toBe(INITIAL_MANAGE_ASSISTANT_CAPABILITY_STATE)
   })
 
   test('rejects an impossible capability state action at runtime', () => {
@@ -89,7 +91,9 @@ describe('Manage assistant capability state', () => {
         INITIAL_MANAGE_ASSISTANT_CAPABILITY_STATE,
         { type: 'unexpected' } as never
       )
-    ).toThrow('Unknown Manage assistant capability action')
+    ).toThrow(
+      'Unknown Manage assistant capability action: {"type":"unexpected"}'
+    )
   })
 
   test('bounds a browser preflight independently of the server request', async () => {
@@ -146,15 +150,42 @@ describe('Manage assistant capability state', () => {
       })
     )
     await newerRequest
-    resolveOlder(
-      new Response(null, {
-        headers: {
-          [MANAGE_ASSISTANT_CAPABILITY_HEADER]: 'unavailable',
-        },
-      })
-    )
+    resolveOlder(new Response(null))
     await olderRequest
 
     expect(resolvedCapabilities).toEqual(['draft-and-read'])
+  })
+
+  test('settles the latest chat request as unavailable when the header is missing', async () => {
+    const turnRevision = { current: 0 }
+    const onCapability = vi.fn()
+
+    const response = await fetchManageAssistantChatWithCapability(
+      vi.fn().mockResolvedValue(new Response(null)) as typeof globalThis.fetch,
+      '/api/manage/chat',
+      undefined,
+      turnRevision,
+      onCapability
+    )
+
+    expect(response).toBeInstanceOf(Response)
+    expect(onCapability).toHaveBeenCalledWith('unavailable')
+  })
+
+  test('settles the latest chat request as unavailable when fetch fails', async () => {
+    const turnRevision = { current: 0 }
+    const onCapability = vi.fn()
+    const failure = new Error('request failed')
+
+    await expect(
+      fetchManageAssistantChatWithCapability(
+        vi.fn().mockRejectedValue(failure) as typeof globalThis.fetch,
+        '/api/manage/chat',
+        undefined,
+        turnRevision,
+        onCapability
+      )
+    ).rejects.toBe(failure)
+    expect(onCapability).toHaveBeenCalledWith('unavailable')
   })
 })

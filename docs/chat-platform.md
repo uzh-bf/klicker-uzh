@@ -154,7 +154,8 @@ The entitlement is read live from the database rather than from the session toke
 `GET /api/manage/capabilities` is an authenticated, private, no-store advisory
 preflight for the embedded welcome. It opens a short-lived lecturer MCP client,
 classifies the actual session-filtered inventory as `draft-and-read`,
-`read-only`, or `unavailable`, and closes the client within a bounded deadline.
+`read-only`, or `unavailable`, then starts best-effort client teardown without
+letting a slow close extend the response deadline.
 The three-second server budget remains below the browser's five-second deadline,
 and a best-effort per-pod limit allows 30 preflights per lecturer in five minutes
 before returning a private, retryable `429`. The response exposes no tool names,
@@ -169,7 +170,9 @@ background. Every chat turn repeats the same inventory classification; its
 response header replaces stale preflight state, so the preflight never grants
 write authority or promises a missing proposal tool. Chat requests reserve a
 monotonic revision when they start, so only the latest-started response can
-replace capability state even when concurrent responses finish out of order.
+replace capability state even when concurrent responses finish out of order. A
+latest chat response without a valid capability header, or a failed chat fetch,
+settles the client as retryable unavailable instead of leaving it checking.
 Before the inventory is passed to the model, the adapter keeps only the known read tools for
 `read-only`, the known read and draft tools for `draft-and-read`, and no tools
 for `unavailable`; unknown or mismatched tools fail closed so service-version

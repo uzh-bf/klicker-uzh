@@ -45,15 +45,19 @@ export function useManageAssistantCapabilities() {
           throw new Error('Invalid Manage assistant capability response')
         }
         if (
+          // Only the active preflight may settle; retries abort and replace it.
           preflightController.current === controller &&
+          // Chat turns increment this revision and supersede the preflight.
           revisionAtStart === turnRevision.current
         ) {
           dispatch({ capability, type: 'resolve' })
         }
       } catch {
         if (
+          // An aborted or replaced preflight must not overwrite its successor.
           preflightController.current === controller &&
           !controller.signal.aborted &&
+          // Chat fetches settle their own failures, so stale errors stay ignored.
           revisionAtStart === turnRevision.current
         ) {
           dispatch({ capability: 'unavailable', type: 'resolve' })

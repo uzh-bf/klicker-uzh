@@ -60,17 +60,26 @@ export async function fetchManageAssistantChatWithCapability(
 ): Promise<Response> {
   turnRevision.current += 1
   const requestRevision = turnRevision.current
-  const response = await fetchImplementation(input, init)
-  const capability = response.headers.get(MANAGE_ASSISTANT_CAPABILITY_HEADER)
 
-  if (
-    isManageAssistantCapabilityState(capability) &&
-    requestRevision === turnRevision.current
-  ) {
-    onCapability(capability)
+  try {
+    const response = await fetchImplementation(input, init)
+    const capability = response.headers.get(MANAGE_ASSISTANT_CAPABILITY_HEADER)
+
+    if (requestRevision === turnRevision.current) {
+      onCapability(
+        isManageAssistantCapabilityState(capability)
+          ? capability
+          : 'unavailable'
+      )
+    }
+
+    return response
+  } catch (error) {
+    if (requestRevision === turnRevision.current) {
+      onCapability('unavailable')
+    }
+    throw error
   }
-
-  return response
 }
 
 export function classifyManageAssistantCapabilityState(
@@ -117,13 +126,13 @@ export function reduceManageAssistantCapabilityState(
 ): ManageAssistantCapabilityClientState {
   switch (action.type) {
     case 'check':
-      return INITIAL_MANAGE_ASSISTANT_CAPABILITY_STATE
+      return { ...INITIAL_MANAGE_ASSISTANT_CAPABILITY_STATE }
     case 'resolve':
       return { capability: action.capability, phase: 'settled' }
     default: {
       const exhaustive: never = action
       throw new Error(
-        `Unknown Manage assistant capability action: ${String(exhaustive)}`
+        `Unknown Manage assistant capability action: ${JSON.stringify(exhaustive)}`
       )
     }
   }

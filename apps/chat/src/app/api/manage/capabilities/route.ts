@@ -56,11 +56,10 @@ export async function GET(req: NextRequest) {
       signal
     )
 
-    try {
-      return capabilityResponse(lecturerMcp.capabilityState)
-    } finally {
-      await lecturerMcp.close()
-    }
+    const response = capabilityResponse(lecturerMcp.capabilityState)
+    // The inventory is complete; teardown must not extend the response budget.
+    void lecturerMcp.close()
+    return response
   } catch {
     console.warn('Manage assistant capability preflight is unavailable')
     return capabilityResponse('unavailable', 503)

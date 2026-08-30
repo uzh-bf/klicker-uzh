@@ -102,6 +102,29 @@ describe('GET /api/manage/capabilities', () => {
     expect(mocks.close).toHaveBeenCalledTimes(1)
   })
 
+  test('returns the capability without waiting for client teardown', async () => {
+    let finishClose!: () => void
+    mocks.close.mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishClose = resolve
+      })
+    )
+
+    let timeoutId!: ReturnType<typeof setTimeout>
+    const timeout = new Promise<never>((_resolve, reject) => {
+      timeoutId = setTimeout(
+        () => reject(new Error('response waited for MCP close')),
+        100
+      )
+    })
+    const response = await Promise.race([GET(request()), timeout])
+    clearTimeout(timeoutId)
+
+    await expectState(response, 200, 'draft-and-read')
+    expect(mocks.close).toHaveBeenCalledTimes(1)
+    finishClose()
+  })
+
   test('rate-limits repeated preflights before opening an MCP session', async () => {
     mocks.rateLimitCheck.mockReturnValue({
       allowed: false,
