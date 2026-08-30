@@ -9,7 +9,7 @@ export const TARGET_SERVER_NAME = 'KB' as const
 export const TARGET_AUTH_TYPE = 'scope_token' as const
 export const DOC_QUERY_TOOL = 'doc_query' as const
 export const SOURCE_CHATBOT_ID_HEADER = 'Chatbot-ID' as const
-export const ACTIVATION_RECEIPT_VERSION = 1 as const
+export const ACTIVATION_RECEIPT_VERSION = 2 as const
 
 export const EXPECTED_CORPORA = 15 as const
 export const EXPECTED_COURSES = 16 as const
@@ -304,6 +304,9 @@ export type ActivationReceiptIntent = {
 export type ActivationReceiptPayload =
   | ActivationReceipt
   | ActivationReceiptIntent
+
+const LEGACY_ACTIVATION_RECEIPT_VERSION = 1 as const
+const legacyReceiptDigests = new WeakMap<object, string>()
 
 export interface ActivationReceiptStore extends ActivationReceiptSession {
   runExclusive<T>(
@@ -961,9 +964,7 @@ export function createFileActivationReceiptStore(
   async function readCurrent(): Promise<ActivationReceiptPayload | null> {
     try {
       const contents = await readFile(absolutePath, 'utf8')
-      const payload = JSON.parse(contents) as ActivationReceiptPayload
-      assertPayloadDigest(payload)
-      return payload
+      return normalizePersistedReceipt(JSON.parse(contents))
     } catch (error) {
       if (errorCode(error) === 'ENOENT') {
         return null
@@ -1880,14 +1881,120 @@ function assertPayloadShape(
   }
 }
 
+function assertPersistedPayloadDigest(
+  value: Record<string, unknown>
+): asserts value is Record<string, unknown> & { payloadDigest: string } {
+  assertReceiptFingerprint(value.payloadDigest)
+  const { payloadDigest: _payloadDigest, ...withoutDigest } = value
+  if (fingerprint(withoutDigest) !== value.payloadDigest) {
+    fail('RECEIPT_INVALID', 'receipt digest does not match')
+  }
+}
+
+function legacyReceiptDigest(payload: ActivationReceiptPayload): string {
+  const { payloadDigest: _payloadDigest, ...withoutDigest } = payload
+  const { pendingRollbackOrigin: _origin, ...withoutOrigin } =
+    withoutDigest as ActivationReceipt
+  return fingerprint({
+    ...withoutOrigin,
+    receiptVersion: LEGACY_ACTIVATION_RECEIPT_VERSION,
+  })
+}
+
+function inferLegacyRollbackOrigin(
+  value: Record<string, unknown>
+): ActivationRollbackOrigin {
+  const switchedAliases = value.switchedChatbotAliases
+  const rollbackAliases = value.pendingRollbackAliases
+  if (
+    !Array.isArray(switchedAliases) ||
+    !Array.isArray(rollbackAliases) ||
+    rollbackAliases.length !== 1
+  ) {
+    fail('RECEIPT_STATE', 'legacy rollback origin is ambiguous')
+  }
+  const pendingAlias = rollbackAliases[0]
+  if (
+    typeof pendingAlias !== 'string' ||
+    !switchedAliases.every((alias) => typeof alias === 'string')
+  ) {
+    fail('RECEIPT_STATE', 'legacy rollback origin is ambiguous')
+  }
+  return switchedAliases.includes(pendingAlias) ? 'switched' : 'switching'
+}
+
+function normalizePersistedReceipt(value: unknown): ActivationReceiptPayload {
+  assertReceiptObject(value)
+  if (value.receiptVersion !== LEGACY_ACTIVATION_RECEIPT_VERSION) {
+    assertPayloadDigest(value)
+    return value
+  }
+
+  const legacyIsIntent = value.state === 'preparing'
+  assertReceiptKeys(
+    value,
+    legacyIsIntent
+      ? [
+          'receiptVersion',
+          'manifestFingerprint',
+          'counts',
+          'aliases',
+          'state',
+          'payloadDigest',
+        ]
+      : [
+          'receiptVersion',
+          'manifestFingerprint',
+          'counts',
+          'aliases',
+          'sourceServer',
+          'targetServer',
+          'corpora',
+          'courses',
+          'chatbots',
+          'legacyConfigurations',
+          'excludedConfigurations',
+          'bindings',
+          'configurations',
+          'switchedChatbotAliases',
+          'pendingChatbotAlias',
+          'pendingRollbackAliases',
+          'state',
+          'payloadDigest',
+        ]
+  )
+  assertPersistedPayloadDigest(value)
+  const normalized = legacyIsIntent
+    ? {
+        ...value,
+        receiptVersion: ACTIVATION_RECEIPT_VERSION,
+      }
+    : {
+        ...value,
+        receiptVersion: ACTIVATION_RECEIPT_VERSION,
+        pendingRollbackOrigin:
+          value.state === 'rolling_back'
+            ? inferLegacyRollbackOrigin(value)
+            : null,
+      }
+  assertPayloadShape(normalized)
+  legacyReceiptDigests.set(normalized, value.payloadDigest)
+  return normalized
+}
+
 function assertPayloadDigest(
   payload: unknown
 ): asserts payload is ActivationReceiptPayload {
   assertPayloadShape(payload)
   const { payloadDigest: _payloadDigest, ...withoutDigest } = payload
-  if (fingerprint(withoutDigest) !== payload.payloadDigest) {
-    fail('RECEIPT_INVALID', 'receipt digest does not match')
+  if (fingerprint(withoutDigest) === payload.payloadDigest) return
+  if (
+    legacyReceiptDigests.get(payload) === payload.payloadDigest &&
+    legacyReceiptDigest(payload) === payload.payloadDigest
+  ) {
+    return
   }
+  fail('RECEIPT_INVALID', 'receipt digest does not match')
 }
 
 function assertReceiptTransition(
@@ -1910,7 +2017,7 @@ function assertReceiptTransition(
   const allowed: Record<ActivationReceiptState, ActivationReceiptState[]> = {
     prepared: ['switching'],
     switching: ['switched', 'rolling_back'],
-    switched: ['rolling_back'],
+    switched: ['switching', 'rolling_back'],
     rolling_back: ['switched', 'rolled_back'],
     rolled_back: [],
   }
@@ -1930,8 +2037,10 @@ async function readReceipt(
 ): Promise<ActivationReceiptPayload | null> {
   if (!receiptStore) return null
   const payload = await receiptStore.read()
-  if (payload) assertPayloadDigest(payload)
-  return payload
+  if (!payload) return null
+  const normalized = normalizePersistedReceipt(payload)
+  assertPayloadDigest(normalized)
+  return normalized
 }
 
 function assertReceiptMatchesIndex(
@@ -3112,138 +3221,158 @@ export async function prepareCohortActivation(
     fail('RECEIPT_REQUIRED', 'a durable receipt store is required')
   }
 
-  const existing = await readReceipt(options.receiptStore)
-  let expectedReceiptDigest: string | null = null
-  if (existing) {
-    assertReceiptMatchesIndex(existing, index, manifestFingerprint)
-    if (isReceiptIntent(existing)) {
-      expectedReceiptDigest = existing.payloadDigest
-      const intentState = await inspectCohortState(store, index, options.target)
-      assertNoEnabledTargetRows(intentState)
-      assertNoUntrackedPartialTargetRows(intentState, index)
-    } else {
-      validateReceiptState(existing, ['prepared'])
-      const state = await inspectCohortState(store, index, options.target)
-      assertReceiptCurrent(state, index, existing)
-      requirePreparedRows(state, index)
-      return operationResult(
-        'prepared',
-        index,
-        manifestFingerprint,
-        zeroWrites(),
-        existing
-      )
-    }
-  } else {
-    const initialState = await inspectCohortState(store, index, options.target)
-    assertNoEnabledTargetRows(initialState)
-    assertNoUntrackedPartialTargetRows(initialState, index)
-    const intent = makeIntent(index, manifestFingerprint)
-    await options.receiptStore.compareAndSwap(null, intent)
-    expectedReceiptDigest = intent.payloadDigest
-  }
-
-  const writes = zeroWrites()
-  const receipt = await store.transaction(async (tx) => {
-    const state = await inspectCohortState(tx, index, options.target)
-    assertNoEnabledTargetRows(state)
-
-    for (const [alias, corpus] of index.corpusByAlias.entries()) {
-      if (state.corpora.has(alias)) continue
-      const collisions = await tx.findKnowledgeBasesByName(corpus.kbName)
-      if (collisions.length > 0) {
-        fail('KB_NAME_COLLISION', 'a knowledge base name is not deterministic')
-      }
-      const created = await tx.createKnowledgeBase({
-        id: corpus.kbId,
-        name: corpus.kbName,
-        description: corpus.description ?? null,
-        ownerId: corpus.ownerId,
-      })
-      assertKnowledgeBase(created, corpus)
-      state.corpora.set(alias, created)
-      writes.knowledgeBases += 1
-    }
-
-    if (!state.targetServer) {
-      const encryptedTransportCredential = state.sourceServer.authSecret
-      if (!encryptedTransportCredential) {
-        fail(
-          'SOURCE_CREDENTIAL_MISSING',
-          'the source transport credential is unavailable'
+  const receiptStore = options.receiptStore
+  const execute = async (
+    session: ActivationReceiptSession
+  ): Promise<ActivationResult> => {
+    const existing = await readReceipt(session)
+    let expectedReceiptDigest: string | null = null
+    if (existing) {
+      assertReceiptMatchesIndex(existing, index, manifestFingerprint)
+      if (isReceiptIntent(existing)) {
+        expectedReceiptDigest = existing.payloadDigest
+        const intentState = await inspectCohortState(
+          store,
+          index,
+          options.target
+        )
+        assertNoEnabledTargetRows(intentState)
+        assertNoUntrackedPartialTargetRows(intentState, index)
+      } else {
+        validateReceiptState(existing, ['prepared'])
+        const state = await inspectCohortState(store, index, options.target)
+        assertReceiptCurrent(state, index, existing)
+        requirePreparedRows(state, index)
+        return operationResult(
+          'prepared',
+          index,
+          manifestFingerprint,
+          zeroWrites(),
+          existing
         )
       }
-      const created = await tx.createServer({
-        name: TARGET_SERVER_NAME,
-        description: options.target.description,
-        url: options.target.url,
-        authType: TARGET_AUTH_TYPE,
-        authSecret: encryptedTransportCredential,
-        passChatbotId: false,
-        chatbotIdHeader: null,
-        parameters: {},
-        isActive: true,
-      })
-      assertTargetServer(created, state.sourceServer, options.target)
-      state.targetServer = created
-      writes.server += 1
+    } else {
+      const initialState = await inspectCohortState(
+        store,
+        index,
+        options.target
+      )
+      assertNoEnabledTargetRows(initialState)
+      assertNoUntrackedPartialTargetRows(initialState, index)
+      const intent = makeIntent(index, manifestFingerprint)
+      await session.compareAndSwap(null, intent)
+      expectedReceiptDigest = intent.payloadDigest
     }
 
-    for (const [chatbotAlias, chatbotId] of index.chatbotIdByAlias.entries()) {
-      const corpusAlias = corpusAliasFor(index, chatbotId)
-      const kb = state.corpora.get(corpusAlias)
-      if (!kb) fail('KB_MISSING', 'a deterministic knowledge base is missing')
-      const existingBinding = state.bindings.get(chatbotAlias)
-      if (existingBinding) {
-        assertBinding(existingBinding, kb.id, chatbotId)
-      } else {
-        const createdBinding = await tx.createBinding({
-          kbId: kb.id,
-          chatbotId,
-          isEnabled: false,
+    const writes = zeroWrites()
+    const receipt = await store.transaction(async (tx) => {
+      const state = await inspectCohortState(tx, index, options.target)
+      assertNoEnabledTargetRows(state)
+
+      for (const [alias, corpus] of index.corpusByAlias.entries()) {
+        if (state.corpora.has(alias)) continue
+        const collisions = await tx.findKnowledgeBasesByName(corpus.kbName)
+        if (collisions.length > 0) {
+          fail(
+            'KB_NAME_COLLISION',
+            'a knowledge base name is not deterministic'
+          )
+        }
+        const created = await tx.createKnowledgeBase({
+          id: corpus.kbId,
+          name: corpus.kbName,
+          description: corpus.description ?? null,
+          ownerId: corpus.ownerId,
         })
-        assertBinding(createdBinding, kb.id, chatbotId)
-        state.bindings.set(chatbotAlias, createdBinding)
-        writes.bindings += 1
+        assertKnowledgeBase(created, corpus)
+        state.corpora.set(alias, created)
+        writes.knowledgeBases += 1
       }
-    }
 
-    for (const [alias, configuration] of index.configByAlias.entries()) {
-      const existingConfig = state.configurations.get(alias)
-      if (existingConfig) {
+      if (!state.targetServer) {
+        const encryptedTransportCredential = state.sourceServer.authSecret
+        if (!encryptedTransportCredential) {
+          fail(
+            'SOURCE_CREDENTIAL_MISSING',
+            'the source transport credential is unavailable'
+          )
+        }
+        const created = await tx.createServer({
+          name: TARGET_SERVER_NAME,
+          description: options.target.description,
+          url: options.target.url,
+          authType: TARGET_AUTH_TYPE,
+          authSecret: encryptedTransportCredential,
+          passChatbotId: false,
+          chatbotIdHeader: null,
+          parameters: {},
+          isActive: true,
+        })
+        assertTargetServer(created, state.sourceServer, options.target)
+        state.targetServer = created
+        writes.server += 1
+      }
+
+      for (const [
+        chatbotAlias,
+        chatbotId,
+      ] of index.chatbotIdByAlias.entries()) {
+        const corpusAlias = corpusAliasFor(index, chatbotId)
+        const kb = state.corpora.get(corpusAlias)
+        if (!kb) fail('KB_MISSING', 'a deterministic knowledge base is missing')
+        const existingBinding = state.bindings.get(chatbotAlias)
+        if (existingBinding) {
+          assertBinding(existingBinding, kb.id, chatbotId)
+        } else {
+          const createdBinding = await tx.createBinding({
+            kbId: kb.id,
+            chatbotId,
+            isEnabled: false,
+          })
+          assertBinding(createdBinding, kb.id, chatbotId)
+          state.bindings.set(chatbotAlias, createdBinding)
+          writes.bindings += 1
+        }
+      }
+
+      for (const [alias, configuration] of index.configByAlias.entries()) {
+        const existingConfig = state.configurations.get(alias)
+        if (existingConfig) {
+          assertTargetConfiguration(
+            existingConfig,
+            configuration,
+            state.targetServer.id
+          )
+          continue
+        }
+        const createdConfig = await tx.createConfig(
+          targetConfigData(configuration, state.targetServer.id)
+        )
         assertTargetConfiguration(
-          existingConfig,
+          createdConfig,
           configuration,
           state.targetServer.id
         )
-        continue
+        state.configurations.set(alias, createdConfig)
+        writes.configurations += 1
       }
-      const createdConfig = await tx.createConfig(
-        targetConfigData(configuration, state.targetServer.id)
-      )
-      assertTargetConfiguration(
-        createdConfig,
-        configuration,
-        state.targetServer.id
-      )
-      state.configurations.set(alias, createdConfig)
-      writes.configurations += 1
-    }
 
-    requirePreparedRows(state, index)
-    return makeReceiptFromState(state, index, manifestFingerprint, {
-      state: 'prepared',
-      switchedChatbotAliases: [],
+      requirePreparedRows(state, index)
+      return makeReceiptFromState(state, index, manifestFingerprint, {
+        state: 'prepared',
+        switchedChatbotAliases: [],
+      })
     })
-  })
-  await options.receiptStore.compareAndSwap(expectedReceiptDigest, receipt)
-  return operationResult(
-    'prepared',
-    index,
-    manifestFingerprint,
-    writes,
-    receipt
-  )
+    await session.compareAndSwap(expectedReceiptDigest, receipt)
+    return operationResult(
+      'prepared',
+      index,
+      manifestFingerprint,
+      writes,
+      receipt
+    )
+  }
+  return receiptStore.runExclusive(execute)
 }
 
 async function prepareOrReadReceipt(
