@@ -27,6 +27,14 @@ Rejected alternatives: a new repository variable (more moving parts, silent runt
 
 ## Boundaries
 
-- Local: edits, checks, one ci(final-review) commit on the worktree branch (authorized by the approved orchestration plan).
-- Withheld: push, PR creation into v3, merge, posting /final-review on #5650 (each needs an explicit user request).
-- Terminal condition: verified local commit on rs/final-review-consolidation-eligibility plus reported next boundary.
+- Authorized delivery: integrate the current `v3` head once, record progress, rerun affected checks, push the exact branch, and settle PR #5674's exact-head CI and final review.
+- Withheld: merge PR #5674, deploy or activate the policy, and post `/final-review` on PR #5650 before the policy has landed on `v3`.
+- Terminal condition: PR #5674 is merge-ready at its exact published head, with the remaining merge boundary reported to the user.
+
+## Progress
+
+- Status: delivery revalidation is in progress after the approved one-time integration of `v3` at `6135b55c5`.
+- Completed: the consolidation-base eligibility policy and its regression tests were implemented, corrected after review, published as PR #5674, and passed exact-head CI and final review at `64988b899` before integration.
+- Current evidence layer: `delivery_pending` until the integrated head is pushed and its CI and final review settle; the required terminal layer is `pr_ready`.
+- Next: verify the integrated source, publish it once, settle exact-head CI and final review, then stop at the explicit PR merge boundary.
+- Withheld actions remain unchanged: no PR merge, deployment, activation, or early `/final-review` on PR #5650.
