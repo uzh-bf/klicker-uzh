@@ -60,6 +60,15 @@ Student answers do not hit the GraphQL API. The path is:
 2. `apps/hatchet-worker-response-processor` consumes them (`processAnonymousResponseTask`, `processAuthenticatedResponseTask`, `processAssessmentResponseWorkflow`) and re-emits aggregation events.
 3. `apps/hatchet-worker-general` runs aggregation plus scheduled work (publish/end scheduled activities, daily crons for group scores and random group assignments) — task definitions in `packages/hatchet/src/index.ts:prepareHatchetTasks`, handlers from `@klicker-uzh/graphql`.
 
+Peer Instruction revisions branch before the initial processor. The response
+API registers the scoped response and opaque identity atomically in a separate
+`pi:` Redis namespace, then sends Hatchet only a message pointer. The response
+processor's dedicated revision workflow validates and records the transient
+answer without importing grading or Prisma. This keeps the existing initial
+path as the only points, XP, leaderboard, assessment, and durable response
+path. See [Async & Workers](./async-and-workers.md#peer-instruction-transient-state)
+and [ADR 0045](./adr/0045-peer-instruction-transient-pairing.md).
+
 Consequence: **publication, scheduling, and live-response features silently do nothing without a running Hatchet + workers** — mutations may even fail with `workflow not found`. The general worker selects its workflows via the `HATCHET_WORKFLOWS` env var (default: all).
 
 The backend also runs a homegrown boot-time data-migration runner (`apps/backend-docker/src/migration.ts:migrate`, currently an empty list) tracked in its own `Migration` table — distinct from Prisma migrations.

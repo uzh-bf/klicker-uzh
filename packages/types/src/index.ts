@@ -77,6 +77,31 @@ export type PeerInstructionRunState = {
   revisionEndsAt: string | null
 }
 
+export type PeerInstructionScope = {
+  liveQuizId: string
+  blockId: number
+  originalExecution: number
+  attempt: 1 | 2
+}
+
+export type PeerInstructionQuestionType =
+  | 'SC'
+  | 'MC'
+  | 'KPRIM'
+  | 'NUMERICAL'
+  | 'FREE_TEXT'
+  | 'SELECTION'
+  | 'CASE_STUDY'
+
+export type PeerInstructionInstanceMeta = {
+  type: PeerInstructionQuestionType
+  restrictions?: NumericalRestrictions | FreeTextRestrictions
+}
+
+export type PeerInstructionRevisionEvent = PeerInstructionScope & {
+  messageId: string
+}
+
 export type ElementStackInput = {
   order: number
   displayName?: string | null
@@ -605,8 +630,8 @@ export interface ElementOptionsCaseStudy extends BaseElementOptions {
   cases: CaseStudyCase[]
 }
 
-export interface ElementOptionsFlashcard {}
-export interface ElementOptionsContent {}
+export type ElementOptionsFlashcard = {}
+export type ElementOptionsContent = {}
 
 export type ElementOptions =
   | ElementOptionsChoices

@@ -10,8 +10,17 @@ import type {
   FreeTextRestrictions,
   LiveQuizResponseInput,
   NumericalRestrictions,
+  PeerInstructionInstanceMeta,
+  PeerInstructionScope,
 } from '@klicker-uzh/types'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
+import {
+  clearPendingPeerInstructionAnonymousIdentity,
+  createPeerInstructionParticipantIdentity,
+  type JWTPayload,
+  readPendingPeerInstructionAnonymousIdentity,
+  recordPeerInstructionInitialResponse,
+  verifyJWT,
+} from '@klicker-uzh/util'
 import { strict as assert } from 'assert'
 import { createHash } from 'crypto'
 import type { ChainableCommander } from 'ioredis'
@@ -23,13 +32,25 @@ import {
   getNumericalQuestionPoints,
   getSelectionQuestionPoints,
   updateLeaderboards,
-  validateStudentResponse,
 } from './helpers.js'
+import {
+  normalizeStudentResponse,
+  validateStudentResponse,
+} from './responseValidation.js'
 
 // TODO: what if the participant is not part of the course? when starting a session, prepopulate the leaderboard with all participations? what if a participant joins the course during a session? filter out all 0 point participants before rendering the LB
 // TODO: ensure that the response meets the restrictions specified in the element options
 
 const redisExec = getRedis() // use standard redis instance for regular response processor
+
+type PeerInstructionCapture = {
+  scope: PeerInstructionScope
+  instanceId: number
+  identity: string
+  response: LiveQuizResponseInput
+  instanceMeta: PeerInstructionInstanceMeta
+  anonymousIdentity?: string
+}
 
 export async function processResponseMessage(
   message: {
@@ -42,6 +63,9 @@ export async function processResponseMessage(
   },
   ctx: Context<JsonObject, {}> | DurableContext<JsonObject, {}>
 ) {
+  let peerInstructionCapture: PeerInstructionCapture | null = null
+  let pendingAnonymousIdentity: string | null = null
+
   ctx.logger.info('ProcessResponse: received message', {
     messageId: message.messageId,
     sessionId: message.sessionId,
@@ -165,6 +189,7 @@ export async function processResponseMessage(
       basePoints,
       pointsMultiplier,
       blockClosedAt,
+      blockExecution,
     } = instanceInfo
 
     if (blockClosedAt && Number(responseTimestamp) > Number(blockClosedAt)) {
@@ -175,7 +200,7 @@ export async function processResponseMessage(
       return { status: 200 }
     }
 
-    let parsedSolutions = undefined
+    let parsedSolutions
     try {
       if (solutions) {
         parsedSolutions = JSON.parse(solutions)
@@ -220,6 +245,54 @@ export async function processResponseMessage(
           })
       )
       return { status: 400 }
+    }
+
+    if (type !== 'CONTENT' && sessionBlockId && blockExecution) {
+      const scope: PeerInstructionScope = {
+        liveQuizId: message.sessionId,
+        blockId: Number(sessionBlockId),
+        originalExecution: Number(blockExecution),
+        attempt: 1,
+      }
+      let identity: string | null = null
+      if (
+        participantData?.role === 'PARTICIPANT' ||
+        participantData?.role === 'TEMPORARY_PARTICIPANT'
+      ) {
+        identity = createPeerInstructionParticipantIdentity({
+          scope,
+          participantId: participantData.sub,
+          participantRole: participantData.role,
+          secret: process.env.APP_SECRET as string,
+        })
+      } else {
+        pendingAnonymousIdentity =
+          await readPendingPeerInstructionAnonymousIdentity({
+            redis: redisExec,
+            liveQuizId: message.sessionId,
+            messageId: message.messageId,
+          })
+        identity = pendingAnonymousIdentity
+      }
+
+      if (identity) {
+        peerInstructionCapture = {
+          scope,
+          instanceId: Number(message.instanceId),
+          identity,
+          response: normalizeStudentResponse(
+            type as PeerInstructionInstanceMeta['type'],
+            response
+          ),
+          instanceMeta: {
+            type: type as PeerInstructionInstanceMeta['type'],
+            ...(parsedRestrictions ? { restrictions: parsedRestrictions } : {}),
+          },
+          ...(pendingAnonymousIdentity
+            ? { anonymousIdentity: pendingAnonymousIdentity }
+            : {}),
+        }
+      }
     }
 
     let pointsAwarded: number | string = 0
@@ -667,6 +740,37 @@ export async function processResponseMessage(
 
   try {
     await redisMulti.exec()
+    if (peerInstructionCapture) {
+      try {
+        await recordPeerInstructionInitialResponse({
+          redis: redisExec,
+          ...peerInstructionCapture,
+        })
+        if (pendingAnonymousIdentity) {
+          await clearPendingPeerInstructionAnonymousIdentity({
+            redis: redisExec,
+            liveQuizId: message.sessionId,
+            messageId: message.messageId,
+          })
+        }
+      } catch (error) {
+        ctx.logger.error(
+          `Failed to capture transient Peer Instruction input for message ${message.messageId}, session ${message.sessionId}, instance ${message.instanceId}: ${String(error)}`
+        )
+      }
+    } else if (pendingAnonymousIdentity) {
+      try {
+        await clearPendingPeerInstructionAnonymousIdentity({
+          redis: redisExec,
+          liveQuizId: message.sessionId,
+          messageId: message.messageId,
+        })
+      } catch (error) {
+        ctx.logger.error(
+          `Failed to clear pending Peer Instruction identity for message ${message.messageId}: ${String(error)}`
+        )
+      }
+    }
     ctx.logger.info("Successfully processed participant's response", {
       messageId: message.messageId,
       sessionId: message.sessionId,

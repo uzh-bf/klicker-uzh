@@ -1,10 +1,23 @@
+import { createHash } from 'node:crypto'
 import { hatchetClient } from '@klicker-uzh/hatchet'
 import { UserLoginScope } from '@klicker-uzh/prisma/client'
-import { verifyJWT, type JWTPayload } from '@klicker-uzh/util'
-import { randomUUID } from 'crypto'
-import { createServer, IncomingMessage, ServerResponse } from 'http'
+import {
+  clearPendingPeerInstructionAnonymousIdentity,
+  issuePendingPeerInstructionAnonymousToken,
+  type JWTPayload,
+  verifyJWT,
+} from '@klicker-uzh/util'
+import { randomUUID } from 'node:crypto'
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from 'node:http'
 import { Redis } from 'ioredis'
-import { createHash } from 'node:crypto'
+import {
+  getForwardedParticipantCookie,
+  submitPeerInstructionRevision,
+} from './peerInstruction.js'
 
 const redis = new Redis({
   family: 4,
@@ -112,27 +125,14 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   }
 
   // Only forward participant-related cookies. If both exist, include both.
-  let cookie: string | undefined
-  if (typeof req.headers['cookie'] === 'string') {
-    const raw = req.headers['cookie']
-    const parts = raw.split(';').map((s) => s.trim())
-    const participantPair = parts.find((p) =>
-      p.startsWith('participant_token=')
-    )
-    const temporaryPair = parts.find((p) =>
-      p.startsWith('temporary_participant_token=')
-    )
-    const forwarded: string[] = []
-    if (participantPair) forwarded.push(participantPair)
-    if (temporaryPair) forwarded.push(temporaryPair)
-    if (forwarded.length > 0) {
-      cookie = forwarded.join('; ')
-    }
-  }
+  const cookie = getForwardedParticipantCookie(
+    typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined
+  )
 
   const responseTimestamp = Date.now()
+  const messageId = randomUUID()
   const message = {
-    messageId: randomUUID(),
+    messageId,
     sessionId: String(liveQuizId),
     instanceId: String(instanceId),
     response, // pass through as-is; worker validates
@@ -150,10 +150,70 @@ async function handleAddResponse(req: IncomingMessage, res: ServerResponse) {
   const eventName = isAuthenticatedParticipant
     ? 'response-received:authenticated'
     : 'response-received:anonymous'
-  console.log(`Pushing event ${eventName} with payload`, message)
+  let pairingToken: string | undefined
+  if (!isAuthenticatedParticipant) {
+    pairingToken = await issuePendingPeerInstructionAnonymousToken({
+      redis,
+      liveQuizId: String(liveQuizId),
+      messageId,
+    })
+  }
+  console.log(`Pushing event ${eventName}`, {
+    messageId,
+    liveQuizId: String(liveQuizId),
+    instanceId: String(instanceId),
+  })
 
-  await hatchetClient.events.push(eventName, message)
-  return sendJson(req, res, 200, { status: 'ok', responseTimestamp })
+  try {
+    await hatchetClient.events.push(eventName, message)
+  } catch (error) {
+    if (pairingToken) {
+      await clearPendingPeerInstructionAnonymousIdentity({
+        redis,
+        liveQuizId: String(liveQuizId),
+        messageId,
+      })
+    }
+    console.error('Failed to publish standard response', {
+      messageId,
+      liveQuizId: String(liveQuizId),
+      instanceId: String(instanceId),
+      error,
+    })
+    return sendJson(req, res, 503, { error: 'response_queue_unavailable' })
+  }
+  return sendJson(req, res, 200, {
+    status: 'ok',
+    responseTimestamp,
+    ...(pairingToken ? { peerInstructionToken: pairingToken } : {}),
+  })
+}
+
+async function handlePeerInstructionRevision(
+  req: IncomingMessage,
+  res: ServerResponse
+) {
+  let payload: unknown
+  try {
+    payload = await readBody(req)
+  } catch (error) {
+    return badRequest(
+      req,
+      res,
+      error instanceof Error ? error.message : 'Invalid request body'
+    )
+  }
+  const result = await submitPeerInstructionRevision({
+    payload,
+    cookie: getForwardedParticipantCookie(
+      typeof req.headers.cookie === 'string' ? req.headers.cookie : undefined
+    ),
+    redis,
+    appSecret: process.env.APP_SECRET as string,
+    pushEvent: (eventName, event) =>
+      hatchetClient.events.push(eventName, event),
+  })
+  return sendJson(req, res, result.status, result.body)
 }
 
 async function handleAddAssessmentResponse(
@@ -370,6 +430,14 @@ const server = createServer(async (req, res) => {
         // if a valid cookie exists is not relevant at this point -> otherwise answers are simply treated as anonymous
         return await handleAddResponse(req, res)
       }
+    }
+
+    if (
+      url.pathname === '/PeerInstructionResponse' &&
+      req.method === 'POST' &&
+      process.env.ASSESSMENT_MODE !== 'true'
+    ) {
+      return await handlePeerInstructionRevision(req, res)
     }
 
     // fallback to 404 Not Found
