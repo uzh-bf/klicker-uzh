@@ -497,11 +497,7 @@ const ThreadWelcome: FC<{
   chatbotAvatar: string
   chatbotName: string
   initialModeOptions: Record<string, string>
-}> = ({
-  chatbotAvatar,
-  chatbotName,
-  initialModeOptions,
-}) => {
+}> = ({ chatbotAvatar, chatbotName, initialModeOptions }) => {
   const t = useTranslations()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
   const modeOptions = useWelcomeModeOptions(initialModeOptions)
@@ -1270,8 +1266,8 @@ const UserActionBar: FC = () => {
           {!hasAvailableMode
             ? t('chat.composer.modeUnavailable')
             : editDisabled
-            ? t('chat.message.editDisabledTooltip')
-            : t('chat.message.edit')}
+              ? t('chat.message.editDisabledTooltip')
+              : t('chat.message.edit')}
         </TooltipContent>
       </Tooltip>
 

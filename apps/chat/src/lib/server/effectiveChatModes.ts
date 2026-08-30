@@ -26,14 +26,10 @@ function isRequired(config: ChatModeMCPConfiguration): boolean {
 
 function getServerId(config: ChatModeMCPConfiguration): string | null {
   if (typeof config.mcpServerId === 'string') return config.mcpServerId
-  return typeof config.mcpServer?.id === 'string'
-    ? config.mcpServer.id
-    : null
+  return typeof config.mcpServer?.id === 'string' ? config.mcpServer.id : null
 }
 
-function hasRequiredDocQueryAlias(
-  config: ChatModeMCPConfiguration
-): boolean {
+function hasRequiredDocQueryAlias(config: ChatModeMCPConfiguration): boolean {
   const parameters = asRecord(config.parameters)
   const allowedTools = config.allowedTools
 
@@ -48,9 +44,7 @@ function hasRequiredDocQueryAlias(
   )
 }
 
-function hasExplicitDocQueryTool(
-  config: ChatModeMCPConfiguration
-): boolean {
+function hasExplicitDocQueryTool(config: ChatModeMCPConfiguration): boolean {
   const allowedTools = config.allowedTools
   return (
     Array.isArray(allowedTools) &&

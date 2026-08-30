@@ -181,17 +181,19 @@ describe('compileSystemPrompt', () => {
     expect(result.startsWith(INPUT_CONTEXT_MARK)).toBe(true)
   })
 
-  test.each(['tutor', 'explainer', 'quizzer', 'custom'])(
-    'keeps attachment descriptions in the fixed %s prompt layer',
-    (mode) => {
-      const stored = { [mode]: { prompt: `STORED-${mode}` } }
-      const result = compileSystemPrompt(stored, mode, [])
+  test.each([
+    'tutor',
+    'explainer',
+    'quizzer',
+    'custom',
+  ])('keeps attachment descriptions in the fixed %s prompt layer', (mode) => {
+    const stored = { [mode]: { prompt: `STORED-${mode}` } }
+    const result = compileSystemPrompt(stored, mode, [])
 
-      expect(result).toContain(INPUT_CONTEXT_MARK)
-      expect(result).toContain('[Attached image description: ...]')
-      expect(result).toContain('[Attached image N description: ...]')
-    }
-  )
+    expect(result).toContain(INPUT_CONTEXT_MARK)
+    expect(result).toContain('[Attached image description: ...]')
+    expect(result).toContain('[Attached image N description: ...]')
+  })
 
   test('keeps scope, evidence, privacy, and safety rules outside lecturer control', () => {
     const stored = {

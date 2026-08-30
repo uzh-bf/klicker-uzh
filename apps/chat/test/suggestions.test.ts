@@ -1,8 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import {
-  parseModeOptions,
-  resolveSelectedMode,
-} from '../src/lib/config/modes'
+import { parseModeOptions, resolveSelectedMode } from '../src/lib/config/modes'
 import { getThreadSuggestions } from '../src/lib/config/suggestions'
 
 describe('thread suggestions', () => {

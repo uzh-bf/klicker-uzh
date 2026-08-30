@@ -62,10 +62,7 @@ interface DisclaimerDeclinedProps {
   readonly onDecline: () => Promise<void>
 }
 
-export function Assistant({
-  chatbot,
-  initialModeOptions,
-}: AssistantProps) {
+export function Assistant({ chatbot, initialModeOptions }: AssistantProps) {
   const t = useTranslations()
   const embedded = useEmbedded()
   const participationRequired = useChatStore(

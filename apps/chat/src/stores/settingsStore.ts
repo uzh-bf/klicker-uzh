@@ -3,10 +3,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { DEFAULT_MODE_DESCRIPTIONS } from '../lib/config/mode-descriptions'
 import { type ModelID, type ModelOption } from '../lib/config/models'
-import {
-  parseModeOptions,
-  resolveSelectedMode,
-} from '../lib/config/modes'
+import { parseModeOptions, resolveSelectedMode } from '../lib/config/modes'
 import { type ReasoningEffort } from '../lib/config/reasoning'
 
 export interface ModeOption {
@@ -176,9 +173,7 @@ export const useSettingsStore = create<SettingsState>()(
 
           const modelSelectionEnabled = responseData.modelSelection ?? false
 
-          const resolvedModeOptions = parseModeOptions(
-            responseData.modeOptions
-          )
+          const resolvedModeOptions = parseModeOptions(responseData.modeOptions)
           if (!resolvedModeOptions) {
             throw new Error('Invalid mode options response')
           }

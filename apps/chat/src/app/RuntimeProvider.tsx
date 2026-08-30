@@ -62,9 +62,7 @@ export function RuntimeProvider({
         ?.supportsImageAttachments !== false
   )
   const activeModeOptions =
-    modeOptionsChatbotId === chatbotId
-      ? loadedModeOptions
-      : initialModeOptions
+    modeOptionsChatbotId === chatbotId ? loadedModeOptions : initialModeOptions
   const effectiveSelectedMode = resolveSelectedMode(
     activeModeOptions,
     selectedMode
