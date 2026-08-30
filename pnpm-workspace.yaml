@@ -10,6 +10,9 @@ minimumReleaseAge: 20160
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false
 minimumReleaseAgeExclude:
+  # K3 (playwright-profile-runtime-plan): exact Devrouter release verified for
+  # side-effect-free CI profile resolution before application startup.
+  - '@devrouter/cli@0.0.50'
   # Internal UZH design-system release: the exact 4.1.8 consumer bump is
   # reviewed and verified in this PR.
   - '@uzh-bf/design-system@4.1.8'

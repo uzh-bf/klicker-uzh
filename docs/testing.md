@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-29'
+timestamp: '2026-08-30'
 tags:
   - testing
   - ci
@@ -161,6 +161,22 @@ public route. The required status gate deliberately has no concurrency group,
 so a stale reporter waiting for GitHub-hosted capacity cannot block current
 filtering, builds, or shards. Public container jobs also trust the exact mounted
 `GITHUB_WORKSPACE` after checkout because its host and container owners differ.
+
+Each CI shard also carries an explicit runtime profile from
+`playwright/profiles.json`. Every active spec must appear in that manifest
+exactly once; missing, stale, or duplicate entries fail the shard-plan check.
+The timing-aware sharder emits the sorted union of its specs' profiles, then
+`devrouter profile resolve` expands that selection without starting or
+inspecting a runtime. The root dependency pins `@devrouter/cli` to exact version
+`0.0.50`; its reviewed minimum-release-age exception is exact as well.
+The Klicker-owned `util/playwright-profile-runtime.mjs` adapter validates the
+resolved apps against Klicker's fixed allowlist and starts only the matching
+Turbo packages. It waits for every selected app endpoint before Playwright runs,
+including apps outside Devrouter's normal startup readiness subset.
+Profile-resolution or allowlist failures stop the job; there is no full-stack
+fallback. GitHub's fixed Postgres, Redis, and Hatchet service containers remain
+present because job services are created before workflow steps run. Both the
+hosted and public ARM64 routes use this same contract.
 
 The timing-aware sharder assigns whole spec files; it cannot divide one serial
 spec across runners. Long workflows must therefore split only where each new

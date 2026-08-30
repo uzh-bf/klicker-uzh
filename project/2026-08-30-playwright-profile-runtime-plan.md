@@ -29,26 +29,28 @@ Date: 2026-08-30. Branch: `rs/playwright-ci-profiles` at exact `origin/v3`
 
 - Execution owner: this main session. No new subagents are created.
 - Authority: edit the isolated worktree, add scripts and tests, run focused and
-  repository-native checks, consume a locally packed Devrouter CLI for
-  qualification, and create local conventional commits.
-- Terminal: the source package is locally committed and verified against a
-  packed upstream CLI. Publication-ready dependency and lockfile changes wait
-  for an authorized `@devrouter/cli` `0.0.48` release.
-- Withheld: rebase, upstream merge, push, PR creation, merge, release
-  publication, live runner execution, runner settings, secrets, and cleanup.
-- Pause: PR #5678 has not landed before `.devrouter.yml` changes are needed;
-  Devrouter's report changes incompatibly; a spec cannot be mapped safely; or
-  runtime selection requires a secret or host-control capability.
+  repository-native checks, integrate `origin/v3` once with a merge commit,
+  consume exact `@devrouter/cli` `0.0.50`, and create local conventional
+  commits.
+- Terminal: the source package is locally committed, verified against the
+  exact locked registry CLI, and ready for a pull request.
+- Withheld: rebase, push, PR creation, merge, live runner execution, runner
+  settings, secrets, and cleanup.
+- Pause: Devrouter's report changes incompatibly; a spec cannot be mapped
+  safely; or runtime selection requires a secret or host-control capability.
 
 ## Package boundary and coordination
 
 - Worktree:
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/rs/playwright-ci-profiles`.
-- The active profile task owns PR #5678 and its `0.0.46` pin. This branch does
-  not edit that task's documentation or integrate it automatically.
+- PR #5678 merged with the repository metadata pin at `0.0.46`; PR #5681 later
+  advanced it to `0.0.50`. This branch adds only the exact CI dependency and
+  does not modify `.devrouter.yml`.
 - Upstream Devrouter plan:
   `docs/project/2026-08-30-ci-profile-resolution-plan.md` on
   `rs/ci-profile-resolution`.
+- Devrouter `0.0.50` is published and includes the profile resolver plus the
+  later bounded Traefik publication and removal recovery fixes.
 - The runner group remains locked to
   `uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3`.
   This package does not widen repository or workflow access.
@@ -144,20 +146,22 @@ Commit: `feat(ci): scope Playwright services by profile`.
 
 ### K3 - Wire both workflows
 
-Consume shard profile output in hosted and public reusable workflows. Add the
-exact Devrouter dependency only after `0.0.48` is published, update changed-path
-filters and the testing wiki, and preserve all security gates and service
-containers.
+Consume shard profile output in hosted and public reusable workflows. Add exact
+`@devrouter/cli` `0.0.50`, update changed-path filters and the testing wiki, and
+preserve all security gates and service containers.
 Commit: `ci(playwright): use resolved runtime profiles`.
 
 ### K4 - Qualify and measure
 
-Before publication, use a local packed Devrouter CLI for all profile unions and
-run format, script tests, YAML parsing, shell syntax, TypeScript, and applicable
-repository checks. After a separately authorized push, exact-head CI must prove
-runner names, profile summaries, process counts, readiness, all eight artifacts,
-and `test-playwright-status`. Compare startup and shard wall time with the
-recorded eight-runner baseline; do not claim a speedup from static checks.
+Use the exact locked Devrouter CLI for all profile unions and run format, script
+tests, YAML parsing, shell syntax, TypeScript, and applicable repository checks.
+A branch run can prove this change only on the hosted route:
+the public caller intentionally remains pinned to the reusable workflow on
+`v3`, and the runner group rejects every other ref. After a separately
+authorized merge, the first direct `v3` public run must prove runner names,
+profile summaries, process counts, readiness, all eight artifacts, and
+`test-playwright-status`. Compare startup and shard wall time with the recorded
+eight-runner baseline; do not claim a speedup from static checks.
 
 ## Progress
 
@@ -167,5 +171,23 @@ recorded eight-runner baseline; do not claim a speedup from static checks.
 - [x] K1 manifest and shard planning are committed as `23a7fb76b`.
 - [x] K2 runtime selection is committed as `854994b8b`; nine focused tests
       pass and every shard resolves with the locally built upstream CLI.
-- [ ] K3 waits for PR #5678 and published Devrouter `0.0.48`.
-- [ ] K4 local checks pass; live runner measurement remains separately gated.
+- [x] PR #5678 is merged; `v3` initially supplied the profile configuration at
+      Devrouter `0.0.46`. PR #5681 later advanced the configuration to exact
+      `0.0.50`, matching this package's root CLI pin without changing profiles.
+- [x] `origin/v3` commit `e24287c97470f7ca4621e7d9646b40ae114ee371`
+      was integrated once without rebasing in merge commit `1e9f7b0046845191`.
+- [x] K3 uses exact `@devrouter/cli` `0.0.50`, including an exact reviewed
+      minimum-release-age exception, and applies the same fail-closed adapter
+      to both hosted and public workflows.
+- [x] K4 registry qualification resolves all eight shard profile unions through
+      installed CLI `0.0.50`. The manifests select 45 Turbo processes instead
+      of the previous fixed 72; this remains a configuration-derived reduction,
+      not live speedup evidence.
+- [x] Final verification passes with Node `24.16.0` and pnpm `11.5.0`: frozen
+      install, the 21-task topological test build, complete repository checks,
+      focused profile tests, YAML parsing, staged secret scanning, and diff
+      checks. Main-session integrated review found no reportable finding; no
+      subagent was created under the execution contract. This plan is included
+      in the local K3 commit.
+- [ ] The first self-hosted performance measurement remains separately gated
+      until the exact reusable workflow is merged to `v3`.
