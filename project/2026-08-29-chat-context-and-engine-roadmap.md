@@ -333,3 +333,13 @@ revalidates branch ancestry and the source digest before persistence.
   `git diff --check` pass. Commit, immutable correction review, push,
   fresh exact-head CI, PostgreSQL proof, browser smoke, upstream integration,
   merge, deployment, and activation remain pending or separately gated.
+- 2026-08-30 correction-review receipt: correction commit `a188cd8fd` is
+  clean and passed the repository-native pre-commit gate, including staged
+  gitleaks and repository-wide check/lint work. The immutable slice reviewer
+  approved with no finding. The simplifier reported no blocker; its sole
+  optional suggestion would replace useful parser diagnostics with empty
+  `ZodError` instances, so it is declined. The correction does not alter the
+  P0 public contract, P1 trigger boundary, or Catalyst dependency seam. Push,
+  fresh exact-head CI, integrated final review, PostgreSQL proof, browser
+  smoke, upstream integration, merge, deployment, and activation remain
+  pending or separately gated.

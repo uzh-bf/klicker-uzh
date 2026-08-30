@@ -876,3 +876,17 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   browser smoke remain evidence gaps. Commit, immutable correction review,
   push, fresh exact-head CI, upstream integration, merge, deployment, and
   activation remain pending or separately gated.
+- 2026-08-30 correction-review receipt: the complete correction is committed
+  at `a188cd8fd`. Its native pre-commit hook passed staged gitleaks,
+  repository-wide check and lint tasks, formatting, syncpack, Prisma sync,
+  AGENTS and retired-path policy, and the host Playwright-launcher suite. The
+  independent slice reviewer approved the immutable
+  `4d392fb99..a188cd8fd` range with no correctness, authorization, privacy,
+  concurrency, lifecycle, provider-contract, or test-coverage finding. The
+  independent simplifier found no blocker and one optional request-parser
+  reduction. That suggestion is declined: the small internal validation error
+  preserves actionable operator logs, while reverting to empty `ZodError`
+  instances would recreate the diagnosed observability problem. The worktree
+  is clean. Push, fresh exact-head CI, integrated final review, PostgreSQL
+  proof, browser smoke, upstream integration, merge, deployment, and activation
+  remain pending or separately gated.
