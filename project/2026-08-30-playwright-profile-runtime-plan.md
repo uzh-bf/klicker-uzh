@@ -114,7 +114,7 @@ non-draft, non-bot, restore-only, and restricted by the existing runner group.
 | Deterministic shard plan | all eight shards retain exact-once file coverage and canonical profile unions |
 | Safe app mapping | known Devrouter apps become exact Turbo argv; unknown names fail without shell evaluation |
 | Readiness scope | selected HTTP apps produce the exact endpoint set; unselected Chat, Control, and Response endpoints are absent |
-| Local/full parity | `full` still maps to the current complete process list for explicit fallback testing |
+| Unsupported scope | profiles that select apps outside the Playwright allowlist fail closed instead of starting a larger stack |
 | Workflow parity | hosted and public workflows invoke one planner/adapter path |
 | Runner boundary | no Docker socket, secret, cache save, runner label, runner group, or service-container change |
 | Upstream package | a packed `@devrouter/cli` resolves the real `.devrouter.yml` for every manifest profile union |
@@ -163,7 +163,7 @@ recorded eight-runner baseline; do not claim a speedup from static checks.
 
 - [x] Existing profile and Devsy tasks confirmed non-overlapping source seams.
 - [x] Fresh isolated worktree created from exact `origin/v3` `e84103606`.
-- [ ] K0 plan is committed.
+- [x] K0 plan is committed as `04e0b48db`.
 - [ ] K1 manifest and shard planning are committed.
 - [ ] K2 runtime selection is committed and tested with a packed upstream CLI.
 - [ ] K3 waits for PR #5678 and published Devrouter `0.0.48`.
