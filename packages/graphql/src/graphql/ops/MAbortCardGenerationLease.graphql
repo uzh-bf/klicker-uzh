@@ -1,0 +1,3 @@
+mutation MAbortCardGenerationLease($id: String!, $attemptToken: String!) {
+  abortCardGenerationLease(id: $id, attemptToken: $attemptToken)
+}

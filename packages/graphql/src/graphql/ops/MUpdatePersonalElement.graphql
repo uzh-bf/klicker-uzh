@@ -1,0 +1,5 @@
+mutation MUpdatePersonalElement($input: UpdatePersonalElementInput!) {
+  updatePersonalElement(input: $input) {
+    ...FPersonalElement
+  }
+}

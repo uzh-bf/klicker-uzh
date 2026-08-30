@@ -1,0 +1,3 @@
+mutation MValidateCardCandidate($input: ValidateCardCandidateInput!) {
+  validateCardCandidate(input: $input)
+}

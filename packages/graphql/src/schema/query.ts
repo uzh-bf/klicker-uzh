@@ -20,6 +20,7 @@ import * as LiveQuizService from '../services/liveQuizzes.js'
 import * as MicroLearningService from '../services/microLearning.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
+import * as PersonalElementService from '../services/personalElements.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
 import * as ResponseExamplesService from '../services/responseExamples.js'
@@ -104,6 +105,7 @@ import {
   LiveQuizSummary,
 } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
+import { PersonalElement } from './personalElement.js'
 import {
   Participant,
   ParticipantGroup,
@@ -1186,6 +1188,20 @@ export const Query = builder.queryType({
         type: [CourseOverview],
         resolve: async (_, __, ctx) => {
           return await ParticipantService.getPracticeQuizList(ctx)
+        },
+      }),
+
+      personalElements: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: [PersonalElement],
+        args: {
+          courseId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.listPersonalElements(args, {
+            prisma: ctx.prisma,
+            participantId: ctx.user.sub,
+          })
         },
       }),
 

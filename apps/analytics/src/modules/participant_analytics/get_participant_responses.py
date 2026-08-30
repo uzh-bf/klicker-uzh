@@ -3,18 +3,24 @@ from datetime import date
 
 
 def map_details(detail, participantId):
+    if detail["practiceQuiz"] is None and detail["microLearning"] is None:
+        # Personal elements have their own response fields and must never enter
+        # the lecturer-owned question-response analytics boundary.
+        return None
     courseId = detail["practiceQuiz"]["courseId"] if detail["practiceQuiz"] else detail["microLearning"]["courseId"]
     return {**detail, "participantId": participantId, "courseId": courseId}
 
 
 def map_participants(participant):
     participant_dict = participant.dict()
-    return list(
-        map(
+    return [
+        mapped
+        for mapped in map(
             lambda detail: map_details(detail, participant_dict["id"]),
             participant_dict["detailQuestionResponses"],
         )
-    )
+        if mapped is not None
+    ]
 
 
 def convert_to_df(participants):

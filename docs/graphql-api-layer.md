@@ -42,6 +42,42 @@ omitted), `controlCourse` in `query.ts` (EXECUTE), `getLiveQuizSummary` (READ).
 Existing fields use `t.withAuth(...)` exclusively — follow them rather than
 inventing `authScopes` variants.
 
+## Student-owned practice elements
+
+Personal-element resolvers use `t.withAuth(asParticipant)` and delegate to
+`services/personalElements.ts`. The GraphQL and Chat entry boundaries
+authenticate the participant role and reject temporary participants before
+invoking the service. The service receives the participant ID together with
+the Prisma client, then re-checks course participation and row ownership. It
+reports conflicts through `GraphQLError.extensions.code`.
+
+The participant API consists of `getPersonalElements`,
+`createPersonalElements`, `respondToPersonalElement`,
+`updatePersonalElement`, and `deletePersonalElement`. The generated operations
+are the `QPersonalElements` and `M*PersonalElement*` documents in
+`packages/graphql/src/graphql/ops/`; rerun codegen whenever these fields or
+their selection sets change. `getPracticeQuizList` includes courses that have
+personal cards and exposes `personalElementCount` and `personalDueCount`.
+
+The backend also owns card-plan preparation and candidate validation through
+`prepareCardPlan` and `validateCardCandidate`. `prepareCardPlan` returns the
+course language and the complete saved-title list, screens proposed titles
+against saved cards and within the proposal, and assigns stable candidate
+identities. `validateCardCandidate` re-checks participation, source-message
+ownership, the structural Flashcard payload, source bounds, and current title
+similarity before a candidate can render. Chat calls these operations through
+generated GraphQL documents and no longer imports backend services for
+language, titles, duplicate policy, or candidate validation.
+
+The remaining lifecycle is exposed as participant-authenticated mutations:
+`claimCardGenerationLease`, `completeCardGenerationLease`, and
+`abortCardGenerationLease` own generation claim and settlement;
+`createPersonalElements` saves candidates idempotently and repeats the
+title-similarity check inside its serializable transaction;
+`discardPersonalElementCandidate` persists the negative decision; and
+`updatePersonalElement` applies the expected-version revision contract.
+`personalElements` returns the durable saved state for reload.
+
 ## Layering contract
 
 - `schema/*.ts` — Pothos object types + root `query.ts`/`mutation.ts`/`subscription.ts`. Resolvers delegate immediately: `resolve: (_, args, ctx) => CourseService.deleteCourse(args, ctx)`.

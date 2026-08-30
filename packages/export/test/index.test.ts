@@ -1,5 +1,5 @@
 import { statSync } from 'node:fs'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -15,6 +15,7 @@ import {
 } from '../src/elementInstances.js'
 import {
   type CourseExportResult,
+  exportCourseData,
   writeCombinedWorkbook,
 } from '../src/exportCourse.js'
 import { transformInvitation } from '../src/invitations.js'
@@ -135,6 +136,67 @@ describe('@klicker-uzh/export', () => {
     await expect(run('deleteMany')).rejects.toThrow('Write blocked')
     await expect(run('$queryRaw')).rejects.toThrow('Write blocked')
     await expect(run('$executeRaw')).rejects.toThrow('Write blocked')
+  })
+
+  it('does not read participant-owned personal elements', async () => {
+    const accessedModels: string[] = []
+    const personalElementSentinel = 'PERSONAL_ELEMENT_SENTINEL'
+    const prisma = new Proxy(
+      {},
+      {
+        get: (_target, property: string | symbol) => {
+          const model = String(property)
+          accessedModels.push(model)
+          if (model === 'personalElement') {
+            return {
+              findMany: async () => [
+                {
+                  name: personalElementSentinel,
+                  content: personalElementSentinel,
+                  explanation: personalElementSentinel,
+                },
+              ],
+            }
+          }
+          if (model === 'course') {
+            return {
+              findUniqueOrThrow: async () => ({
+                id: 'course-1',
+                name: 'Synthetic course',
+                displayName: 'Synthetic course',
+              }),
+            }
+          }
+          return { findMany: async () => [] }
+        },
+      }
+    ) as unknown as Parameters<typeof exportCourseData>[0]
+
+    const outputDir = await createTempDir()
+    const result = await exportCourseData(prisma, 'course-1', outputDir, {
+      exportedAt: '2026-08-21T00:00:00.000Z',
+      packageVersion: 'test',
+    })
+
+    expect(result.counts).toEqual({
+      liveQuizResponses: 0,
+      participants: 0,
+      invitations: 0,
+      corrections: 0,
+      liveQuizzes: 0,
+      elementInstances: 0,
+    })
+    expect(accessedModels).not.toContain('personalElement')
+
+    const exportedFiles = await readdir(result.outputPath)
+    const exportedContents = await Promise.all(
+      exportedFiles.map((file) => readFile(join(result.outputPath, file)))
+    )
+    expect(
+      exportedContents.some((contents) =>
+        contents.includes(personalElementSentinel)
+      )
+    ).toBe(false)
   })
 
   it('locks the combined workbook dir to 0700 and file to 0600', async () => {

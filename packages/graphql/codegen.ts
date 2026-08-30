@@ -2,6 +2,11 @@ import type { CodegenConfig } from '@graphql-codegen/cli'
 import { printSchema } from 'graphql'
 import { schema } from './src/index.js'
 
+const ensureSchemaTrailingNewline = (path: string, content: string) =>
+  path.endsWith('src/public/schema.graphql') && !content.endsWith('\n')
+    ? `${content}\n`
+    : content
+
 const config: CodegenConfig = {
   schema: printSchema(schema),
   // schema: 'src/graphql/schema.graphql',
@@ -66,6 +71,9 @@ const config: CodegenConfig = {
         },
       ],
     },
+  },
+  hooks: {
+    beforeOneFileWrite: ensureSchemaTrailingNewline,
   },
 }
 

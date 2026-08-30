@@ -142,6 +142,8 @@ model ChatMessage {
 
   attachments ChatAttachment[]
 
+  cardGenerationLeases CardGenerationLease[]
+
   thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   createdAt DateTime @default(now())
@@ -214,7 +216,6 @@ model Chatbot {
   threads           ChatThread[]
   usageCredits      ChatUsageCredits[]
   responseExampleSet ResponseExampleSet?
-
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   ownerId String @db.Uuid
 

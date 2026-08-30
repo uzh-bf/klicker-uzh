@@ -20,6 +20,7 @@ import * as MicroLearningService from '../services/microLearning.js'
 import * as NotificationService from '../services/notifications.js'
 import * as ParticipantInvitationService from '../services/participantInvitations.js'
 import * as ParticipantService from '../services/participants.js'
+import * as PersonalElementService from '../services/personalElements.js'
 import * as PracticeQuizService from '../services/practiceQuizzes.js'
 import * as ResourcesService from '../services/resources.js'
 import * as ResponseExamplesService from '../services/responseExamples.js'
@@ -76,6 +77,16 @@ import {
 } from './liveQuiz.js'
 import { MicroLearning } from './microLearning.js'
 import {
+  CardGenerationLease,
+  CardGenerationLeaseInput,
+  CreatePersonalElementsInput,
+  PersonalElement,
+  PrepareCardPlanInput,
+  PreparedCardPlan,
+  UpdatePersonalElementInput,
+  ValidateCardCandidateInput,
+} from './personalElement.js'
+import {
   AvatarSettingsInput,
   GroupMessage,
   LeaveCourseParticipation,
@@ -97,6 +108,7 @@ import {
   ElementStackInput,
   PracticeQuiz,
   ReviewStatus,
+  FlashcardCorrectnessType,
   StackFeedback,
   StackResponseInput,
 } from './practiceQuiz.js'
@@ -619,6 +631,161 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await ParticipantService.bookmarkElementStack(args, ctx)
+        },
+      }),
+
+      respondToPersonalElement: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: PersonalElement,
+        args: {
+          id: t.arg.string({ required: true }),
+          response: t.arg({ type: FlashcardCorrectnessType, required: true }),
+          expectedVersion: t.arg.int({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.respondToPersonalElement(args, {
+            prisma: ctx.prisma,
+            participantId: ctx.user.sub,
+          })
+        },
+      }),
+
+      prepareCardPlan: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: PreparedCardPlan,
+        args: {
+          input: t.arg({ type: PrepareCardPlanInput, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.prepareCardPlan(args.input, {
+            prisma: ctx.prisma,
+            participantId: ctx.user.sub,
+          })
+        },
+      }),
+
+      validateCardCandidate: t.withAuth(asParticipant).boolean({
+        args: {
+          input: t.arg({ type: ValidateCardCandidateInput, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.validateCardCandidate(
+            args.input,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
+        },
+      }),
+
+      claimCardGenerationLease: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: CardGenerationLease,
+        args: {
+          input: t.arg({ type: CardGenerationLeaseInput, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.claimCardGenerationLease(
+            args.input,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
+        },
+      }),
+
+      completeCardGenerationLease: t.withAuth(asParticipant).boolean({
+        args: {
+          id: t.arg.string({ required: true }),
+          attemptToken: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.completeCardGenerationLease(
+            args.id,
+            args.attemptToken,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
+        },
+      }),
+
+      abortCardGenerationLease: t.withAuth(asParticipant).boolean({
+        args: {
+          id: t.arg.string({ required: true }),
+          attemptToken: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.abortCardGenerationLease(
+            args.id,
+            args.attemptToken,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
+        },
+      }),
+
+      createPersonalElements: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: [PersonalElement],
+        args: {
+          input: t.arg({ type: CreatePersonalElementsInput, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.createPersonalElements(
+            args.input,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
+        },
+      }),
+
+      discardPersonalElementCandidate: t.withAuth(asParticipant).boolean({
+        args: {
+          courseId: t.arg.string({ required: true }),
+          candidateId: t.arg.string({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          await PersonalElementService.discardPersonalElementCandidate(args, {
+            prisma: ctx.prisma,
+            participantId: ctx.user.sub,
+          })
+          return true
+        },
+      }),
+
+      updatePersonalElement: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: PersonalElement,
+        args: {
+          input: t.arg({ type: UpdatePersonalElementInput, required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.updatePersonalElement(
+            args.input,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
+        },
+      }),
+
+      deletePersonalElement: t.withAuth(asParticipant).id({
+        nullable: true,
+        args: { id: t.arg.string({ required: true }) },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.deletePersonalElement(args, {
+            prisma: ctx.prisma,
+            participantId: ctx.user.sub,
+          })
         },
       }),
 

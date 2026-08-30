@@ -1,0 +1,12 @@
+query GetPracticeQuizListWithPersonalElements {
+  getPracticeQuizList {
+    id
+    displayName
+    personalElementCount
+    personalDueCount
+    practiceQuizzes {
+      id
+      displayName
+    }
+  }
+}

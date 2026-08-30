@@ -68,6 +68,28 @@ and group activities are built from stacks.
 from the control interface, with its own time limit and execution counter.
 Blocks are not stacks; only live quizzes have them.
 
+**Personal element**: An element (flashcard, later a question) owned by a
+Participant and visible only to them. It is practiced with the same
+spaced-repetition scheduling as lecturer elements but never appears in another
+student's practice. _Avoid_: student flashcard, user card.
+
+**Lecturer element**: An element owned by a lecturer and placed into a course
+activity. Students reach it only through published activities. _Avoid_: course
+element, official element (both blur the distinction between the element and
+its placement).
+
+**Candidate element**: A generated element shown in the chat that the student
+has not saved yet. It becomes a personal element only through an explicit save.
+_Avoid_: draft (that word names publication and element editing states).
+
+**Card plan**: The list of proposed personal elements the chatbot presents
+after retrieving material on the requested topic, which the student approves
+before any element is generated. _Avoid_: outline, proposal.
+
+**Origin**: How an element's content came to exist: AI-generated or authored by
+a person. Who owns it is a separate fact. _Avoid_: source (that word names
+citations).
+
 **Activity**: The umbrella for the four things a course can run — **live
 quiz**, **practice quiz**, **microlearning**, and **group activity**. Use the
 specific name whenever the statement is only true of one of them.
