@@ -26,9 +26,10 @@ project:
   name: klicker-uzh
 managedRuntime:
   devcontainer:
-    # Managed base: the DevPod primary `app` is implicit; postgres serves
-    # post-create reset/push/seed; hatchet is boot-critical for the backend.
-    baseServices: [postgres, hatchet]
+    # Managed base: the DevPod primary `app` is implicit; postgres and azurite
+    # provide persistent local data services; hatchet is boot-critical for the
+    # backend.
+    baseServices: [postgres, azurite, hatchet]
     # Optional capabilities selected per profile. The three Redis clients are
     # selected by every application profile because backend startup eagerly
     # creates all three. LiteLLM and MailHog are opt-in capabilities.

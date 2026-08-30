@@ -1126,3 +1126,18 @@ Settled rulings for this implementation:
   pull-request refresh, and local runtime reconciliation. Protected-branch
   merge, deployment, release, and physical database migration remain outside
   this goal.
+- 2026-08-30 (post-integration local runtime): The exact linked-worktree
+  runtime is ready with the `ai,chat,mcp` profile and remains available for
+  manual testing. The restart exposed that Azurite was present in the
+  devcontainer's native `runServices` but missing from the managed-runtime base
+  classification. `.devrouter.yml` now classifies PostgreSQL, Azurite, and
+  Hatchet as base services, and an exact devrouter 0.0.46 reconciliation reports
+  the requested profile active with no runtime drift. LiteLLM received the
+  OpenRouter key through transient Infisical injection without writing or
+  printing the value, and values-free inspection confirms both the non-empty
+  key and the intended OpenRouter base URL. The prior authenticated end-to-end
+  card proof remains valid for the feature source; the post-merge browser
+  rerun reached the local login page, but the isolated automation browser did
+  not hydrate that legacy Pages form and therefore could not establish a new
+  participant session. Package-level integration checks remain green, and the
+  ready runtime is retained for the user's authenticated manual smoke test.
