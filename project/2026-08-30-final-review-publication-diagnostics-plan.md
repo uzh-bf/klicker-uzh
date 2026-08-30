@@ -138,15 +138,15 @@
 
 ## Progress
 
-- Status: S1 and its required specialist gates are complete. S2 documentation is complete and verified. S3 is next.
+- Status: S1 and its required specialist gates are complete. S2 documentation is complete and verified. The approved one-time `v3` integration is in progress before S3 final review.
 - Completed: Fresh remote-state gate; clean worktree from `origin/v3`; root-cause diagnosis; current GitHub artifact contract check; native planning review; S0 plan commit `1adaf5a14`; S1 commit `b5aff4c8c` with failure-only individual and stack artifact wiring and source assertions; native ChatGPT continuity reviews approved by the user after the configured specialist transport failed before inspection.
 - Review evidence: The dedicated Luna Max simplifier passed with no warranted simplification. The dedicated Luna Max security/correctness slice review passed; its only optional note was a stricter test against an arbitrary extra stack path, while the committed workflow already contains exactly the two allowed paths.
 - Remaining: Integrated verification and final review; one approved upstream integration pass if required; push and draft pull request; plan rename and final evidence readback.
 - Latest verified implementation: `b5aff4c8c5de6a4582e8b60db68bc6ea46207de7`. Both focused Node suites pass `90/90`; the workflow parses as YAML; changed content passes `git diff --check`; focused Prettier passes, with an unrelated pre-existing whole-file mismatch preserved in the stack test.
 - S2 verification: The repository-pinned Prettier passed in the exact managed devcontainer; direct links and source citations resolve; the OKF validator reports no new core error and retains 25 pre-existing errors elsewhere in `docs/`. The full `check:all` attempt reached an unrelated analytics environment failure when Python 3.14 tried to build pandas 2.2.2 without a C compiler; that parallel failure cancelled unfinished checks.
-- Target drift: `origin/v3` advanced by one commit to `e24287c97470f7ca4621e7d9646b40ae114ee371`. It changes consolidation-branch eligibility and adds non-overlapping tests in `final-ai-review.test.js`; no upstream integration is authorized yet.
+- Integration: The user approved one merge of exact `origin/v3` head `cd7426e3c59dbd8a63208a0afb162427918d9367`. Its final-review runtime-bound changes overlapped the workflow, source tests, and CI guide. Git merged the workflow and tests automatically; the guide conflict preserves the upstream runtime-bound guidance plus this package's publisher-diagnostics boundary.
 - Required delivery layer: Reviewed draft pull request against `v3`.
-- Achieved delivery layer: Clean local task branch with S0-S2 prepared and reviewed.
+- Achieved delivery layer: Local task branch with S0-S2 reviewed and the approved `v3` integration staged.
 - Unresolved required gates: Integrated final review, exact-head push, and draft pull-request evidence.
 - Active children: None.
-- Next action: Commit S2, then complete integrated verification and final review before requesting the one-time upstream integration needed for delivery.
+- Next action: Verify and commit the approved integration, then complete integrated final review before pushing and opening the draft pull request.
