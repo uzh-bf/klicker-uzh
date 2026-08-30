@@ -70,6 +70,22 @@ an authenticated empty thread proves only the local application boundary. The
 synthetic model/tool smoke is the evidence that the local Chat request reaches
 LiteLLM and the configured upstream path.
 
+### Structured card generation rejects a valid provider response
+
+AI SDK 7 deprecates `generateObject` in favor of `generateText` with an
+explicit output contract. More importantly for the Responses API, the JSON
+Schema sent as `response_format` must have an object root. A top-level Zod
+discriminated union reached OpenRouter as a schema without `type: "object"` and
+failed with `Invalid schema for response_format 'response'` even though the
+outer Chat request itself streamed normally.
+
+`apps/chat/src/lib/server/personalElements/tools.ts:generateGroundedCard` uses
+`generateText` and wraps the ready-versus-abstain union inside
+`Output.object`. Keep the union nested under that object root. A provider 200
+is not sufficient evidence here: complete the personal-card browser smoke and
+require the accepted plan, a generated card, grouped page references, and a
+persisted card decision after reload.
+
 When the host-side operator reports that no valid login session exists, stop at
 secret authentication. It is an environment-setup blocker, not evidence that
 the OpenRouter key is invalid or that Chat is broken. Complete the operator

@@ -142,6 +142,14 @@ state, including after answer text begins. A terminal incomplete or aborted
 tool-only turn must still expose valid completed sources after reload.
 Use direct `GPT-5.6 Luna` only to isolate the router from the model/tool path.
 
+For grounded personal-card generation, use the fixture's synthetic German
+portfolio material. Request one comparison card about systematic and
+unsystematic risk, accept the tool-rendered plan, and require the accepted plan
+to remain visible. The generated card must expose separate Save and Discard
+actions and cite `synthetic-course-material.pdf, pp. 1–2`. Discard it, reload
+the thread, and require the Discarded state to persist. This is local wiring
+evidence only; it does not qualify deployed Doc Query or retrieval quality.
+
 For source citation presentation changes, the browser pass must verify that
 source cards keep the source name and locator visible while excerpts stay in
 hover/focus tooltips, and that inline citation chips expose the same preview

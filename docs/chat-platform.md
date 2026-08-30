@@ -892,7 +892,13 @@ The assistant UI registers the retrieval card through `src/components/tools-ui/r
 The self-contained devcontainer starts the seeded local MCP fixture through
 `post-start.sh`. Benibot's Tutor and Explainer configurations already point to
 `http://localhost:1417/mcp` and allow `doc_query`; the runtime namespaces the
-tool as `KB_doc_query`. Keep Auto Mode selected, then prompt Benibot with “Use
+tool as `KB_doc_query`. `seedChatbots.ts:seedChatbots` creates the enabled
+Benibot knowledge-base binding, while `mcpClients.ts:createAuthHeaders` permits
+unauthenticated access only for this exact loopback URL outside production.
+Every other `KB` endpoint retains the scope-token and transport-authentication
+contract described above.
+
+Keep Auto Mode selected, then prompt Benibot with “Use
 the local MCP tool to test the integration. Search for
 `portfolio diversification` and tell me the exact marker it returns.” The
 end-to-end pass requires a completed tool call, `KLICKER_LOCAL_MCP_OK` in the
@@ -901,6 +907,16 @@ Auto Mode selected and require the tool result, answer, and source to remain
 after reloading the thread. Use direct GPT-5.6 Luna only to isolate the router
 from the model/tool path. The fixture is synthetic wiring evidence only; it
 does not validate retrieval quality or a deployed MCP server.
+
+The same fixture provides two synthetic German portfolio-diversification
+passages on pages 1 and 2 for the personal-card smoke. Ask for one comparison
+card about systematic and unsystematic risk, accept the tool-rendered plan,
+and require a card with separate Save and Discard actions plus
+`synthetic-course-material.pdf, pp. 1–2`. The accepted plan must remain visible
+as accepted. Discard the card, reload the thread, and require the Discarded
+state to persist. This proves the local retrieval, nested structured model
+call, source-reference grouping, and decision persistence; it still does not
+prove deployed Doc Query behavior or retrieval quality.
 
 Pure-logic vitest lives in `apps/chat/test/` (safe without services); `apps/chat/vitest.config.ts` mirrors the `@/*` alias from the app tsconfig — keep them in sync. The runner is `environment: 'node'` with no jsdom/testing-library, so component behavior is tested by extracting the decision logic into pure modules next to the component (`message-parts-state.ts`, `thread-list-state.ts`) — follow that pattern rather than adding a DOM environment. The whole suite shares **one fork** (`singleFork: true`), so a `vi.stubGlobal` is process-global: the config sets `unstubGlobals: true`, but that only restores before each _test_ — the next file's module **import** still sees whatever the previous file's last test left stubbed (a leaked `window`/`URL` once broke zustand-persist feature detection and `new URL` in unrelated files, order-dependently). Any file stubbing environment-shaped globals (`window`, `URL`, `document`) must also clean up itself with `afterEach(() => vi.unstubAllGlobals())`. `message-parts.test.ts` owns disclosure-state rules, while `persisted-assistant-content.test.ts` owns the provider-error redaction boundary. E2E coverage is Playwright-only (`playwright/tests/Y-chat.spec.ts`).
 

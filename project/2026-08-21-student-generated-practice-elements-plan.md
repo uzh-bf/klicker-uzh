@@ -1078,3 +1078,25 @@ Settled rulings for this implementation:
   while retaining #5482 on #5481 and #5483 on #5482. Merge, deployment,
   feature-flag enablement, and runtime or worktree deletion remain outside this
   goal.
+- 2026-08-30 (local grounded-generation proof): The self-contained development
+  stack now enables the personal-card prototype through a development-only
+  override and binds seeded Benibot to the exact loopback `doc_query` fixture.
+  Every non-fixture Doc Query endpoint still requires transport authentication
+  and a scoped knowledge binding. AI SDK 7 card generation now uses
+  `generateText` with an object-root `Output.object` contract, which fixes the
+  OpenAI Responses schema rejection while preserving fail-closed abstention and
+  exact chunk-ID validation. In the managed Chat runtime, Auto Mode retrieved
+  two synthetic German course passages, displayed a tool-rendered one-card plan,
+  retained the accepted plan, generated a substantive card with
+  `synthetic-course-material.pdf, pp. 1–2`, and exposed separate Save and
+  Discard actions. After Discard and thread reload, the card remained marked
+  Discarded with the accepted plan and references intact. The focused Chat
+  suites pass 58 tests, Chat and Prisma data typechecks pass, and the complete
+  Prisma data package test now passes after excluding its Node test directory
+  from Vitest's second collection pass. The full Chat run passes 852 tests and
+  fails only the same two model-registry parity assertions already recorded on
+  the `v3-ai` baseline. The repository wiki validator still reports 37
+  pre-existing core conformance errors outside the changed pages. No physical
+  database migration, upstream integration, merge, deployment, or release
+  action was performed. The exact runtime remains available for the user's
+  manual testing.
