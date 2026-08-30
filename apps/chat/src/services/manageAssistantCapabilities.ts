@@ -122,7 +122,9 @@ export function reduceManageAssistantCapabilityState(
       return { capability: action.capability, phase: 'settled' }
     default: {
       const exhaustive: never = action
-      return exhaustive
+      throw new Error(
+        `Unknown Manage assistant capability action: ${String(exhaustive)}`
+      )
     }
   }
 }

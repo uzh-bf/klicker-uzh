@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   getAuthenticatedManageUser: vi.fn(),
   isManageAiEnabled: vi.fn(),
   loadLecturerMcpTools: vi.fn(),
+  rateLimitCheck: vi.fn(),
 }))
 
 vi.mock('@/src/lib/server/featureFlags', () => ({
@@ -18,6 +19,10 @@ vi.mock('@/src/lib/server/manageAuth', () => ({
 
 vi.mock('@/src/services/lecturerMcp', () => ({
   loadLecturerMcpTools: mocks.loadLecturerMcpTools,
+}))
+
+vi.mock('@/src/services/rateLimiter', () => ({
+  createRateLimiter: () => ({ check: mocks.rateLimitCheck }),
 }))
 
 import {
@@ -45,6 +50,10 @@ describe('GET /api/manage/capabilities', () => {
       sub: 'lecturer-1',
     })
     mocks.isManageAiEnabled.mockReset().mockResolvedValue(true)
+    mocks.rateLimitCheck.mockReset().mockReturnValue({
+      allowed: true,
+      retryAfterMs: 0,
+    })
     mocks.loadLecturerMcpTools.mockReset().mockResolvedValue({
       capabilityState: 'draft-and-read',
       close: mocks.close,
@@ -91,6 +100,19 @@ describe('GET /api/manage/capabilities', () => {
       expect.any(AbortSignal)
     )
     expect(mocks.close).toHaveBeenCalledTimes(1)
+  })
+
+  test('rate-limits repeated preflights before opening an MCP session', async () => {
+    mocks.rateLimitCheck.mockReturnValue({
+      allowed: false,
+      retryAfterMs: 1_200,
+    })
+
+    const response = await GET(request())
+
+    await expectState(response, 429, 'unavailable')
+    expect(response.headers.get('retry-after')).toBe('2')
+    expect(mocks.loadLecturerMcpTools).not.toHaveBeenCalled()
   })
 
   test('degrades without returning failure detail when inventory loading fails', async () => {

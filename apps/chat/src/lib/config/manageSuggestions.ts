@@ -153,6 +153,11 @@ type ManageSuggestionId = ManageSuggestion['id']
 
 const NO_SAVE_INSTRUCTION = 'do not save anything.'
 
+function withNoSaveInstruction(prompt: string) {
+  if (prompt.toLowerCase().includes(NO_SAVE_INSTRUCTION)) return prompt
+  return `${prompt} Please ${NO_SAVE_INSTRUCTION}`
+}
+
 const PLAN_QUESTION_NO_SAVE: Pick<ThreadSuggestion, 'prompt' | 'text'> = {
   text: 'Plan a question',
   prompt: `Help me plan a question as a no-save preview. Ask me for the topic and question type if needed, and ${NO_SAVE_INSTRUCTION}`,
@@ -213,11 +218,17 @@ function withoutPersistenceIntent(
   const override = READ_ONLY_OVERRIDES[suggestion.id]
   // Full overrides relabel starters whose base copy implies writing; the suffix
   // safely constrains every other prompt without changing its original intent.
-  if (override) return { ...suggestion, ...override }
+  if (override) {
+    return {
+      ...suggestion,
+      ...override,
+      prompt: withNoSaveInstruction(override.prompt),
+    }
+  }
 
   return {
     ...suggestion,
-    prompt: `${suggestion.prompt} Please ${NO_SAVE_INSTRUCTION}`,
+    prompt: withNoSaveInstruction(suggestion.prompt),
   }
 }
 

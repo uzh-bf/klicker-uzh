@@ -155,7 +155,10 @@ The entitlement is read live from the database rather than from the session toke
 preflight for the embedded welcome. It opens a short-lived lecturer MCP client,
 classifies the actual session-filtered inventory as `draft-and-read`,
 `read-only`, or `unavailable`, and closes the client within a bounded deadline.
-The response exposes no tool names, scopes, configuration, or failure detail.
+The three-second server budget remains below the browser's five-second deadline,
+and a best-effort per-pod limit allows 30 preflights per lecturer in five minutes
+before returning a private, retryable `429`. The response exposes no tool names,
+scopes, configuration, or failure detail.
 The client starts in the conservative unavailable state. While the preflight is
 checking, the welcome stays neutral: it does not advertise persistence or flash
 degraded no-save limits. Once the preflight settles, curated-index documentation

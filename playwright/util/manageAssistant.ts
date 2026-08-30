@@ -67,6 +67,8 @@ export type ManageAssistantCapabilityState =
   | 'read-only'
   | 'unavailable'
 
+// Mirrors apps/chat/src/services/manageAssistantCapabilities.ts for the
+// browser mock boundary; keep the public states and response header aligned.
 const MANAGE_ASSISTANT_CAPABILITY_HEADER = 'X-Klicker-Manage-Capability'
 
 export type ManageProposalEnvelope = {

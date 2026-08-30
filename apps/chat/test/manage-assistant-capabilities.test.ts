@@ -83,6 +83,15 @@ describe('Manage assistant capability state', () => {
     ).toEqual(INITIAL_MANAGE_ASSISTANT_CAPABILITY_STATE)
   })
 
+  test('rejects an impossible capability state action at runtime', () => {
+    expect(() =>
+      reduceManageAssistantCapabilityState(
+        INITIAL_MANAGE_ASSISTANT_CAPABILITY_STATE,
+        { type: 'unexpected' } as never
+      )
+    ).toThrow('Unknown Manage assistant capability action')
+  })
+
   test('bounds a browser preflight independently of the server request', async () => {
     const controller = new AbortController()
     const signal = createManageAssistantPreflightSignal(controller.signal, 1)
