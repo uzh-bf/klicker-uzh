@@ -138,15 +138,15 @@
 
 ## Progress
 
-- Status: S1 and its required specialist gates are complete. S2 documentation is complete and verified. The approved one-time `v3` integration is in progress before S3 final review.
+- Status: S1 and its required specialist gates are complete. S2 documentation is complete and verified. The approved one-time `v3` integration is committed and verified; S3 final review is next.
 - Completed: Fresh remote-state gate; clean worktree from `origin/v3`; root-cause diagnosis; current GitHub artifact contract check; native planning review; S0 plan commit `1adaf5a14`; S1 commit `b5aff4c8c` with failure-only individual and stack artifact wiring and source assertions; native ChatGPT continuity reviews approved by the user after the configured specialist transport failed before inspection.
 - Review evidence: The dedicated Luna Max simplifier passed with no warranted simplification. The dedicated Luna Max security/correctness slice review passed; its only optional note was a stricter test against an arbitrary extra stack path, while the committed workflow already contains exactly the two allowed paths.
-- Remaining: Integrated verification and final review; one approved upstream integration pass if required; push and draft pull request; plan rename and final evidence readback.
-- Latest verified implementation: `b5aff4c8c5de6a4582e8b60db68bc6ea46207de7`. Both focused Node suites pass `90/90`; the workflow parses as YAML; changed content passes `git diff --check`; focused Prettier passes, with an unrelated pre-existing whole-file mismatch preserved in the stack test.
+- Remaining: Integrated final review; exact-head push and draft pull request; plan rename and final evidence readback.
+- Latest verified implementation: merge commit `ed8defaf076f84a883260fecf23ae6adacd5f336`, with first parent `e26b88625d1ebcd8b34e99b1b0e012cc3ede2687` and exact `v3` second parent `cd7426e3c59dbd8a63208a0afb162427918d9367`. Both focused Node suites pass `96/96`; the workflow parses as YAML; changed content passes `git diff --check`; and the full repository pre-commit gate passed, including the staged secret scan, repository-native formatting, type checks, lint, syncpack, Prisma synchronization, and host-Playwright policy tests. The host gate warned that Node 26 was active while the repository pins Node 24.
 - S2 verification: The repository-pinned Prettier passed in the exact managed devcontainer; direct links and source citations resolve; the OKF validator reports no new core error and retains 25 pre-existing errors elsewhere in `docs/`. The full `check:all` attempt reached an unrelated analytics environment failure when Python 3.14 tried to build pandas 2.2.2 without a C compiler; that parallel failure cancelled unfinished checks.
-- Integration: The user approved one merge of exact `origin/v3` head `cd7426e3c59dbd8a63208a0afb162427918d9367`. Its final-review runtime-bound changes overlapped the workflow, source tests, and CI guide. Git merged the workflow and tests automatically; the guide conflict preserves the upstream runtime-bound guidance plus this package's publisher-diagnostics boundary.
+- Integration: The user approved one merge of exact `origin/v3` head `cd7426e3c59dbd8a63208a0afb162427918d9367`. Its final-review runtime-bound changes overlapped the workflow, source tests, and CI guide. Merge commit `ed8defaf0` preserves the automatically combined workflow and tests plus the resolved guide's upstream runtime-bound guidance and this package's publisher-diagnostics boundary.
 - Required delivery layer: Reviewed draft pull request against `v3`.
-- Achieved delivery layer: Local task branch with S0-S2 reviewed and the approved `v3` integration staged.
+- Achieved delivery layer: Verified local task branch with S0-S2 reviewed and the approved `v3` integration committed.
 - Unresolved required gates: Integrated final review, exact-head push, and draft pull-request evidence.
 - Active children: None.
-- Next action: Verify and commit the approved integration, then complete integrated final review before pushing and opening the draft pull request.
+- Next action: Complete the integrated final review, then push the exact reviewed head and open the draft pull request.
