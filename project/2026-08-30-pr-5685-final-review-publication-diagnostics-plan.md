@@ -20,11 +20,11 @@
 
 ## Plan Identity
 
-- Plan: `project/2026-08-30-final-review-publication-diagnostics-plan.md` until a pull-request number exists.
+- Plan: `project/2026-08-30-pr-5685-final-review-publication-diagnostics-plan.md`.
 - Branch: `rs/final-review-publication-diagnostics`.
 - Worktree: `trees/rs/final-review-publication-diagnostics`.
-- Target: `v3` at baseline `6135b55c56e3f25ff56d178c11e8ac184aea587f`.
-- Pull request: Not created yet. Rename this plan to include its number after creation.
+- Target: `v3` at integrated baseline `cd7426e3c59dbd8a63208a0afb162427918d9367`.
+- Pull request: Draft [PR #5685](https://github.com/uzh-bf/klicker-uzh/pull/5685), `ci(ocr): retain rejected publisher payloads`.
 - Related history: `project/2026-08-25-ai-review-lifecycle-plan.md` established the current manual review lifecycle. This package fixes a diagnostic gap in that recently merged behavior.
 
 ## Research
@@ -138,15 +138,15 @@
 
 ## Progress
 
-- Status: S1 and its required specialist gates, S2 documentation, the approved one-time `v3` integration, and S3 integrated final review are complete. Draft pull-request delivery remains.
-- Completed: Fresh remote-state gate; clean worktree from `origin/v3`; root-cause diagnosis; current GitHub artifact contract check; native planning review; S0 plan commit `1adaf5a14`; S1 commit `b5aff4c8c` with failure-only individual and stack artifact wiring and source assertions; native ChatGPT continuity reviews approved by the user after the configured specialist transport failed before inspection.
+- Status: The approved delivery terminal is reached: reviewed draft PR #5685 targets `v3`, the branch is published, and this PR-specific plan records the final package state.
+- Completed: Fresh remote-state gate; clean worktree from `origin/v3`; root-cause diagnosis; current GitHub artifact contract check; native planning review; S0 plan commit `1adaf5a14`; S1 commit `b5aff4c8c` with failure-only individual and stack artifact wiring and source assertions; native ChatGPT continuity reviews approved by the user after the configured specialist transport failed before inspection; exact-head pre-push build with 23 of 23 tasks passing; branch publication; and draft PR #5685 creation.
 - Review evidence: The dedicated Luna Max simplifier passed with no warranted simplification. The dedicated Luna Max security/correctness slice review passed; its optional exact-path hardening concern became material during integrated review. The integrated final reviewer found that `upload-artifact` could accept only one matched stack file. Commit `4807d7908` now verifies both files, copies them into a staging directory, and exposes the configured artifact directory only after the combined copy succeeds. The same final reviewer rechecked the complete package and passed it with no remaining finding.
-- Remaining: Exact-head push and draft pull request; plan rename and final evidence readback.
+- Remaining: None within the approved draft-PR terminal. Exact-head GitHub checks and the ready-state final-review procedure remain merge gates outside this execution authority.
 - Latest verified implementation: `4807d790879146b7bbf0234a37e4df00e22295bb`, including merge commit `ed8defaf076f84a883260fecf23ae6adacd5f336` with exact `v3` second parent `cd7426e3c59dbd8a63208a0afb162427918d9367`. Both focused Node suites pass `96/96`; the workflow parses as YAML; changed content passes `git diff --check`; and the full repository pre-commit gate passed, including the staged secret scan, repository-native formatting, type checks, lint, syncpack, Prisma synchronization, and host-Playwright policy tests. The host gate warned that Node 26 was active while the repository pins Node 24.
 - S2 verification: The repository-pinned Prettier passed in the exact managed devcontainer; direct links and source citations resolve; the OKF validator reports no new core error and retains 25 pre-existing errors elsewhere in `docs/`. The full `check:all` attempt reached an unrelated analytics environment failure when Python 3.14 tried to build pandas 2.2.2 without a C compiler; that parallel failure cancelled unfinished checks.
 - Integration: The user approved one merge of exact `origin/v3` head `cd7426e3c59dbd8a63208a0afb162427918d9367`. Its final-review runtime-bound changes overlapped the workflow, source tests, and CI guide. Merge commit `ed8defaf0` preserves the automatically combined workflow and tests plus the resolved guide's upstream runtime-bound guidance and this package's publisher-diagnostics boundary.
 - Required delivery layer: Reviewed draft pull request against `v3`.
-- Achieved delivery layer: Verified and integrated local task branch with all required local reviews complete.
-- Unresolved required gates: Exact-head push and draft pull-request evidence.
+- Achieved delivery layer: Reviewed draft PR #5685 against `v3`.
+- Unresolved required gates: None for draft delivery. Merge, ready transition, paid review replay, hosted artifact proof, and deployment remain withheld.
 - Active children: None.
-- Next action: Push the exact reviewed branch, open the draft pull request, rename this plan to the PR-specific path, and read back the final forge state.
+- Next action: Read back the renamed-plan head, PR body, and GitHub checks, then stop before ready transition or merge.
