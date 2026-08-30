@@ -508,8 +508,8 @@ function ElementEditForm({
             onClose()
           }}
           dataPrimaryAction={{ cy: 'confirm-discard-element-changes' }}
-          data={{ cy: 'discard-element-changes-modal' }}
-          className={{ content: 'max-w-lg' }}
+          dataContent={{ cy: 'discard-element-changes-modal' }}
+          className={{ overlay: 'z-[60]', content: 'z-[60] max-w-lg' }}
         >
           <p>{discardChangesPrompt.message}</p>
         </Modal>
