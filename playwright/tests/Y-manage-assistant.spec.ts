@@ -262,6 +262,23 @@ test.describe('Manage Assistant — Messaging', () => {
     ).toHaveClass(/(^|\s)text-muted-foreground(\s|$)/)
   })
 
+  test('Degraded suggestion labels follow the German Manage locale', async ({
+    page,
+  }) => {
+    await mockManageCapabilities(page, { states: ['unavailable'] })
+    const manageUrl = process.env.URL_MANAGE ?? URL_MANAGE
+    await page.goto(`${manageUrl}/de`)
+
+    const assistant = await openManageAssistantWidget(page)
+    const suggestions = assistant.getByTestId('chat-welcome-suggestion')
+
+    await expect(suggestions).toHaveText([
+      'Frage planen',
+      'Feedback verbessern',
+      'KlickerUZH Hilfe',
+    ])
+  })
+
   test('Manage composer accepts at most two images without changing the participant limit', async ({
     page,
   }) => {

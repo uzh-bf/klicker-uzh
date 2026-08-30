@@ -4,8 +4,14 @@ import type { ManageAssistantContext } from '@/src/services/manageContext'
 export interface ThreadSuggestion {
   id: string
   text: string
+  /** i18n key under chat.manageAssistant.suggestions; text is the fallback. */
+  textKey?: ManageSuggestionTextKey
   prompt: string
 }
+
+type ManageAssistantSuggestionMessages =
+  typeof import('@klicker-uzh/i18n/messages/en').default['chat']['manageAssistant']['suggestions']
+export type ManageSuggestionTextKey = keyof ManageAssistantSuggestionMessages
 
 // Shown while browsing the question pool, with no single question or course in focus.
 const QUESTION_POOL_SUGGESTIONS = [
@@ -27,7 +33,7 @@ const QUESTION_POOL_SUGGESTIONS = [
     prompt:
       'Ask me which question to improve, then suggest clearer answer-specific feedback for it.',
   },
-] satisfies ThreadSuggestion[]
+] as const satisfies readonly ThreadSuggestion[]
 
 // Shown while a single question is open in the element editor (ids.elementId is set).
 const ELEMENT_EDITOR_SUGGESTIONS = [
@@ -49,7 +55,7 @@ const ELEMENT_EDITOR_SUGGESTIONS = [
     prompt:
       'Suggest clearer, more specific answer feedback for the question I currently have open.',
   },
-] satisfies ThreadSuggestion[]
+] as const satisfies readonly ThreadSuggestion[]
 
 // Shown on a course dashboard (ids.courseId is set).
 const COURSE_DASHBOARD_SUGGESTIONS = [
@@ -71,7 +77,7 @@ const COURSE_DASHBOARD_SUGGESTIONS = [
     prompt:
       'Search my question pool for material relevant to the course I currently have open.',
   },
-] satisfies ThreadSuggestion[]
+] as const satisfies readonly ThreadSuggestion[]
 
 // Shown while assembling a quiz or other activity.
 const ACTIVITY_CREATION_SUGGESTIONS = [
@@ -93,7 +99,7 @@ const ACTIVITY_CREATION_SUGGESTIONS = [
     prompt:
       'Ask me to list the questions I am considering for this quiz, then suggest how to balance their difficulty.',
   },
-] satisfies ThreadSuggestion[]
+] as const satisfies readonly ThreadSuggestion[]
 
 // Shown on an evaluation/results view for a quiz.
 const EVALUATION_SUGGESTIONS = [
@@ -115,7 +121,7 @@ const EVALUATION_SUGGESTIONS = [
     prompt:
       'Search my question pool for questions similar to the ones used in this quiz.',
   },
-] satisfies ThreadSuggestion[]
+] as const satisfies readonly ThreadSuggestion[]
 
 // Shown for the general manage surface, or when no context is available at all
 // (e.g. the assistant opened in a new tab). Must never reference page context
@@ -151,47 +157,70 @@ type ManageSuggestion =
 
 type ManageSuggestionId = ManageSuggestion['id']
 
-const NO_SAVE_INSTRUCTION = 'do not save anything.'
+const NO_SAVE_SENTENCE = 'Please do not save anything.'
 
 function withNoSaveInstruction(prompt: string) {
-  if (prompt.toLowerCase().includes(NO_SAVE_INSTRUCTION)) return prompt
-  return `${prompt} Please ${NO_SAVE_INSTRUCTION}`
+  if (prompt.toLowerCase().includes('do not save anything')) return prompt
+  return `${prompt} ${NO_SAVE_SENTENCE}`
 }
 
-const PLAN_QUESTION_NO_SAVE: Pick<ThreadSuggestion, 'prompt' | 'text'> = {
+const PLAN_QUESTION_NO_SAVE: Pick<
+  ThreadSuggestion,
+  'prompt' | 'text' | 'textKey'
+> = {
   text: 'Plan a question',
-  prompt: `Help me plan a question as a no-save preview. Ask me for the topic and question type if needed, and ${NO_SAVE_INSTRUCTION}`,
+  textKey: 'planQuestion',
+  prompt:
+    'Help me plan a question as a no-save preview. Ask me for the topic and question type if needed.',
 }
 
-const IMPROVE_FEEDBACK_NO_SAVE: Pick<ThreadSuggestion, 'prompt' | 'text'> = {
+const IMPROVE_FEEDBACK_NO_SAVE: Pick<
+  ThreadSuggestion,
+  'prompt' | 'text' | 'textKey'
+> = {
   text: 'Improve feedback',
-  prompt: `Ask me to provide the question and its answer options, then suggest concise answer-specific feedback, and ${NO_SAVE_INSTRUCTION}`,
+  textKey: 'improveFeedback',
+  prompt:
+    'Ask me to provide the question and its answer options, then suggest concise answer-specific feedback.',
 }
 
 const READ_ONLY_OVERRIDES: Partial<
-  Record<ManageSuggestionId, Pick<ThreadSuggestion, 'prompt' | 'text'>>
+  Record<
+    ManageSuggestionId,
+    Pick<ThreadSuggestion, 'prompt' | 'text' | 'textKey'>
+  >
 > = {
   'activity-creation-draft': {
     text: 'Plan quiz questions',
-    prompt: `Help me plan one or more quiz questions as a no-save preview. Ask me for the topic and question type if unclear, and ${NO_SAVE_INSTRUCTION}`,
+    textKey: 'planQuizQuestions',
+    prompt:
+      'Help me plan one or more quiz questions as a no-save preview. Ask me for the topic and question type if unclear.',
   },
   'course-dashboard-draft': {
     text: 'Plan course question',
-    prompt: `Help me plan a course question as a no-save preview. Ask me for the topic and question type if unclear, and ${NO_SAVE_INSTRUCTION}`,
+    textKey: 'planCourseQuestion',
+    prompt:
+      'Help me plan a course question as a no-save preview. Ask me for the topic and question type if unclear.',
   },
   'element-editor-variant': {
     text: 'Plan a variant',
-    prompt: `Help me plan a variant as a no-save preview. Ask me to provide any question details you cannot access, and ${NO_SAVE_INSTRUCTION}`,
+    textKey: 'planVariant',
+    prompt:
+      'Help me plan a variant as a no-save preview. Ask me to provide any question details you cannot access.',
   },
   'evaluation-followup': {
     text: 'Plan follow-up',
-    prompt: `Help me plan a follow-up question as a no-save preview. Ask me to describe the learning gap, and ${NO_SAVE_INSTRUCTION}`,
+    textKey: 'planFollowUp',
+    prompt:
+      'Help me plan a follow-up question as a no-save preview. Ask me to describe the learning gap.',
   },
   'general-draft': PLAN_QUESTION_NO_SAVE,
   'general-feedback': IMPROVE_FEEDBACK_NO_SAVE,
   'question-pool-draft': {
     text: 'Plan a question',
-    prompt: `Help me plan a single-choice question as a no-save preview. Ask me for the topic first if needed, and ${NO_SAVE_INSTRUCTION}`,
+    textKey: 'planQuestion',
+    prompt:
+      'Help me plan a single-choice question as a no-save preview. Ask me for the topic first if needed.',
   },
 }
 
@@ -207,6 +236,7 @@ const UNAVAILABLE_SUGGESTIONS: ThreadSuggestion[] = [
   {
     id: 'unavailable-documentation',
     text: 'KlickerUZH help',
+    textKey: 'documentation',
     prompt:
       'Help me with a KlickerUZH how-to question using the curated documentation index. Link the closest documented source and say when it is not an exact match.',
   },
@@ -235,10 +265,16 @@ function withoutPersistenceIntent(
 export function getManageSuggestions(
   context: ManageAssistantContext | null,
   capability: ManageAssistantCapabilityState = 'draft-and-read'
-): ThreadSuggestion[] {
-  if (capability === 'unavailable') return UNAVAILABLE_SUGGESTIONS
+): readonly ThreadSuggestion[] {
+  if (capability === 'unavailable') {
+    // Without tools nothing can be saved; state the constraint uniformly.
+    return UNAVAILABLE_SUGGESTIONS.map((suggestion) => ({
+      ...suggestion,
+      prompt: withNoSaveInstruction(suggestion.prompt),
+    }))
+  }
 
-  let suggestions: ManageSuggestion[]
+  let suggestions: readonly ManageSuggestion[]
   switch (context?.surface) {
     case 'question-pool':
       suggestions = QUESTION_POOL_SUGGESTIONS

@@ -954,3 +954,22 @@ follow_up_stacks:
 - Next: Refresh PR #5679 for head `bb591019d`, wait for fresh exact-head
   hosted CI including all eight Playwright shards, accept A2 when it settles
   green with clear feedback, then start A3.
+- A2 review round five: Two inline and seven summary findings were verified.
+  Accepted corrections keep cancellation from downgrading a settled
+  capability, compose the browser preflight signal without
+  `AbortSignal.any`, make the neutral checking branch explicit, flatten the
+  runtime prompt selection, derive override ids as literal unions, normalize
+  no-save instructions, and localize EN/DE starter labels. Raw exception
+  logging remains rejected because the capability endpoint intentionally emits
+  values-free diagnostics. One content observation required no code change.
+  The hosted Playwright contract now pins German degraded-state labels.
+- A2 round-five verification: 56 focused Chat tests, Chat and Playwright
+  typechecks, Biome, Prettier, and diff checks pass. Local browser startup was
+  blocked before readiness because the managed DevPod could not resolve its
+  namespaced Azurite alias; the exact runtime was stopped with zero routes, so
+  browser acceptance remains an exact-head hosted Playwright gate. The prior
+  shard-three failure was an unrelated live-quiz deletion timeout and will be
+  re-executed on the corrected head.
+- Next: Pass the complete commit and pre-push gates, commit and push the A2
+  correction, disposition all round-five feedback, refresh PR #5679, and
+  require all eight exact-head hosted Playwright shards before starting A3.

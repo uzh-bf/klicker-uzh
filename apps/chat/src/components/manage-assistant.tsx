@@ -25,7 +25,10 @@ import { useEmbeddedManageContext } from '../hooks/useEmbeddedManageContext'
 import { useManageAssistantCapabilities } from '../hooks/useManageAssistantCapabilities'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 import { MAX_MANAGE_IMAGE_ATTACHMENTS } from '../lib/config/attachmentLimits'
-import { getManageSuggestions } from '../lib/config/manageSuggestions'
+import {
+  getManageSuggestions,
+  type ManageSuggestionTextKey,
+} from '../lib/config/manageSuggestions'
 import type { ManageAssistantCapabilityState } from '../services/manageAssistantCapabilities'
 import {
   getManageContextLabel,
@@ -53,11 +56,21 @@ function ManageAssistantInner() {
     capability.phase === 'settled' ? capability.capability : null
   const contextLabel = getManageContextLabel(context)
   const suggestions = welcomeCapability
-    ? getManageSuggestions(context, welcomeCapability)
+    ? getManageSuggestions(context, welcomeCapability).map((suggestion) => {
+        const textKey = (suggestion.textKey ??
+          suggestion.id) as ManageSuggestionTextKey
+        return {
+          ...suggestion,
+          text: t(`suggestions.${textKey}`),
+        }
+      })
     : []
   let capabilityActions: ThreadWelcomeCapability[] = []
   let limitsNote: string | undefined
   switch (welcomeCapability) {
+    case null:
+      // Still checking: keep the welcome minimal until the preflight settles.
+      break
     case 'draft-and-read':
       capabilityActions = [
         { icon: SearchIcon, text: t('capabilitySearch') },

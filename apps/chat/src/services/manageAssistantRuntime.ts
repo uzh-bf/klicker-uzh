@@ -41,11 +41,15 @@ export function buildManageAssistantSystemPrompt(
     previousProposal,
     toolOutputFenceSentinel
   )
-  const toolPrompt = !toolsAvailable
-    ? 'Lecturer MCP tools are currently unavailable. Be transparent that live Klicker data cannot be queried in this response.'
-    : draftToolsAvailable
-      ? 'Lecturer MCP read tools are available for authorized course and question-pool lookups, and the signed proposal tool is available for supported draft creation. Use any advertised draft-only question, answer-choice, or feedback scaffolding tools only when helpful.'
-      : 'Lecturer MCP read tools are available for authorized course and question-pool lookups. This session has read-only Manage access: draft-only question, answer-choice, and feedback scaffolding tools and the signed proposal tool are NOT available. Do not attempt to call them. You can still draft in prose as a no-save preview, but tell the lecturer that saving a draft proposal requires broader Manage access.'
+  let toolPrompt =
+    'Lecturer MCP tools are currently unavailable. Be transparent that live Klicker data cannot be queried in this response.'
+  if (toolsAvailable && draftToolsAvailable) {
+    toolPrompt =
+      'Lecturer MCP read tools are available for authorized course and question-pool lookups, and the signed proposal tool is available for supported draft creation. Use any advertised draft-only question, answer-choice, or feedback scaffolding tools only when helpful.'
+  } else if (toolsAvailable) {
+    toolPrompt =
+      'Lecturer MCP read tools are available for authorized course and question-pool lookups. This session has read-only Manage access: draft-only question, answer-choice, and feedback scaffolding tools and the signed proposal tool are NOT available. Do not attempt to call them. You can still draft in prose as a no-save preview, but tell the lecturer that saving a draft proposal requires broader Manage access.'
+  }
   // Only meaningful when tools are actually available to call (nothing to
   // fence otherwise) and a sentinel was minted for this request.
   const injectionDefensePrompt =

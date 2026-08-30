@@ -48,7 +48,28 @@ export function createManageAssistantPreflightSignal(
   signal: AbortSignal,
   timeoutMs = MANAGE_ASSISTANT_PREFLIGHT_TIMEOUT_MS
 ) {
-  return AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)])
+  const controller = new AbortController()
+  const abortFromParent = () => controller.abort(signal.reason)
+  const timeout = setTimeout(
+    () =>
+      controller.abort(
+        new DOMException('Manage assistant preflight timed out', 'TimeoutError')
+      ),
+    timeoutMs
+  )
+
+  controller.signal.addEventListener(
+    'abort',
+    () => {
+      clearTimeout(timeout)
+      signal.removeEventListener('abort', abortFromParent)
+    },
+    { once: true }
+  )
+  if (signal.aborted) abortFromParent()
+  else signal.addEventListener('abort', abortFromParent, { once: true })
+
+  return controller.signal
 }
 
 export async function fetchManageAssistantChatWithCapability(
@@ -75,7 +96,9 @@ export async function fetchManageAssistantChatWithCapability(
 
     return response
   } catch (error) {
-    if (requestRevision === turnRevision.current) {
+    // A canceled turn says nothing about capability; keep the settled value.
+    const aborted = error instanceof Error && error.name === 'AbortError'
+    if (requestRevision === turnRevision.current && !aborted) {
       onCapability('unavailable')
     }
     throw error

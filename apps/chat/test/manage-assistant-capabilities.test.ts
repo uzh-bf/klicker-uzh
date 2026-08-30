@@ -109,6 +109,15 @@ describe('Manage assistant capability state', () => {
     expect(controller.signal.aborted).toBe(false)
   })
 
+  test('propagates cancellation into the browser preflight signal', () => {
+    const controller = new AbortController()
+    const signal = createManageAssistantPreflightSignal(controller.signal)
+
+    controller.abort()
+
+    expect(signal.aborted).toBe(true)
+  })
+
   test('lets only the latest-started chat response update capability state', async () => {
     let resolveOlder!: (response: Response) => void
     let resolveNewer!: (response: Response) => void
@@ -187,5 +196,22 @@ describe('Manage assistant capability state', () => {
       )
     ).rejects.toBe(failure)
     expect(onCapability).toHaveBeenCalledWith('unavailable')
+  })
+
+  test('keeps capability state when a chat request is aborted', async () => {
+    const turnRevision = { current: 0 }
+    const onCapability = vi.fn()
+    const failure = new DOMException('aborted', 'AbortError')
+
+    await expect(
+      fetchManageAssistantChatWithCapability(
+        vi.fn().mockRejectedValue(failure) as typeof globalThis.fetch,
+        '/api/manage/chat',
+        undefined,
+        turnRevision,
+        onCapability
+      )
+    ).rejects.toBe(failure)
+    expect(onCapability).not.toHaveBeenCalled()
   })
 })
