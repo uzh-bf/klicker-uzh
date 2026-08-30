@@ -334,7 +334,6 @@ export const TemplateBlockInputRef =
 export const TemplateBlockInput = TemplateBlockInputRef.implement({
   fields: (t) => ({
     timeLimit: t.int({ required: false }),
-    isPeerInstructionEnabled: t.boolean({ required: false }),
     order: t.int({ required: true }),
     elements: t.field({ type: [TemplateBlockElementInput], required: true }),
   }),

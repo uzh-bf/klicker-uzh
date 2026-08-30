@@ -1568,6 +1568,11 @@ export async function createLiveQuizFromTemplate(
       id: template.liveQuizId,
       status: DB.PublicationStatus.TEMPLATE,
     },
+    include: {
+      blocks: {
+        select: { order: true, isPeerInstructionEnabled: true },
+      },
+    },
   })
 
   if (!templateLiveQuiz) {
@@ -1856,7 +1861,10 @@ export async function createLiveQuizFromTemplate(
         liveQuizContent.blocks.push({
           order: block.order,
           timeLimit: block.timeLimit,
-          isPeerInstructionEnabled: block.isPeerInstructionEnabled ?? false,
+          isPeerInstructionEnabled:
+            templateLiveQuiz.blocks.find(
+              (templateBlock) => templateBlock.order === block.order
+            )?.isPeerInstructionEnabled ?? false,
           elements,
         })
       }

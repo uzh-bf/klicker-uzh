@@ -2171,8 +2171,6 @@ export async function cancelLiveQuiz(
                 closedAt: null,
                 expiresAt: null,
                 execution: { increment: 1 },
-                peerInstructionPhase: DB.PeerInstructionPhase.INACTIVE,
-                peerInstructionRun: Prisma.DbNull,
               },
             },
           },
@@ -2180,6 +2178,14 @@ export async function cancelLiveQuiz(
         include: {
           activeBlock: true,
           blocks: { include: { elements: true, activeInLiveQuiz: true } },
+        },
+      }),
+
+      ctx.prisma.elementBlock.updateMany({
+        where: { liveQuizId: id },
+        data: {
+          peerInstructionPhase: DB.PeerInstructionPhase.INACTIVE,
+          peerInstructionRun: Prisma.DbNull,
         },
       }),
 

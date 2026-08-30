@@ -3086,7 +3086,6 @@ input TemplateBlockElementInput {
 
 input TemplateBlockInput {
   elements: [TemplateBlockElementInput!]!
-  isPeerInstructionEnabled: Boolean
   order: Int!
   timeLimit: Int
 }

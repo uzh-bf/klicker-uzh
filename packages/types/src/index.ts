@@ -272,7 +272,6 @@ export type TemplateBlockElementInput = {
 
 export type TemplateBlockInput = {
   timeLimit?: number | null
-  isPeerInstructionEnabled?: boolean | null
   order: number
   elements: TemplateBlockElementInput[]
 }
