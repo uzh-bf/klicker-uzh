@@ -2,7 +2,7 @@
 type: Guide
 title: Getting Started
 description: Toolchain, first-time setup, infrastructure bring-up, dev-server paths, and the exact failure signatures a fresh clone produces.
-timestamp: '2026-08-27'
+timestamp: '2026-08-29'
 tags:
   - environment
   - onboarding
@@ -103,7 +103,13 @@ destructive bootstrap and generated runtime inputs succeed; post-start checks
 that marker before it reads those inputs or starts a process. If the marker is
 missing or malformed, treat the workspace as incompletely bootstrapped and use
 the canonical stop/recovery path. A warm profile switch never manufactures the
-marker or reruns database bootstrap.
+marker or reruns database bootstrap. The `ROOT` contract in
+[post-create](../.devcontainer/post-create.sh) and
+[post-start](../.devcontainer/post-start.sh) canonicalizes
+`KLICKER_DEVCONTAINER_ROOT` once and uses that same checkout for every
+repository-local path. Post-create invalidates any earlier completion marker
+before it validates the configured root, so an invalid override cannot expose a
+stale successful bootstrap.
 
 Devrouter owns generic process lifecycle and route readiness. `ensure` verifies
 the selected routes and can spend one container recreate when an exact
