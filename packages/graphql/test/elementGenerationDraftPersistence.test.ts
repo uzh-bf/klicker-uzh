@@ -274,7 +274,7 @@ describe('atomic generated-element keep', () => {
         content: flashcard.front,
         explanation: flashcard.back,
         basePoints: false,
-        pointsMultiplier: 1,
+        pointsMultiplier: 10,
         tags: ['edited-flashcard'],
       },
       ctx as never
@@ -284,6 +284,8 @@ describe('atomic generated-element keep', () => {
       expect.objectContaining({
         type: DB.ElementType.FLASHCARD,
         status: DB.ElementStatus.DRAFT,
+        basePoints: false,
+        pointsMultiplier: 1,
         tags: [
           'generated-flashcard',
           'flashcard:definition',

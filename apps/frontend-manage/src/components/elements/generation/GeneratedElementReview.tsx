@@ -58,6 +58,19 @@ function draftMatchesFilter(
   }
 }
 
+function draftStatusClass(
+  draft: GeneratedElementDraftData,
+  needsAttention: boolean
+) {
+  if (draft.decision === GeneratedElementDecision.Accepted && !needsAttention) {
+    return 'rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800'
+  }
+  if (draft.decision === GeneratedElementDecision.Rejected) {
+    return 'rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700'
+  }
+  return 'rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900'
+}
+
 function difficultyLabelKey(level: number | null | undefined) {
   switch (level) {
     case 1:
@@ -552,16 +565,7 @@ export default function GeneratedElementReview({
                     ) : null}
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={
-                        draft.decision === GeneratedElementDecision.Accepted &&
-                        !needsAttention
-                          ? 'rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800'
-                          : draft.decision === GeneratedElementDecision.Rejected
-                            ? 'rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700'
-                            : 'rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900'
-                      }
-                    >
+                    <span className={draftStatusClass(draft, needsAttention)}>
                       {needsAttention
                         ? t('review.states.ATTENTION')
                         : t(`review.states.${draft.decision}`)}

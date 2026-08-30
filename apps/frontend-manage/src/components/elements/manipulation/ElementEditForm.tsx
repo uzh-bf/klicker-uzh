@@ -435,6 +435,7 @@ function ElementEditForm({
                       {secondaryAction ? (
                         <Button
                           onClick={secondaryAction.onClick}
+                          disabled={isSubmitting}
                           data={{ cy: secondaryAction.dataCy }}
                         >
                           {secondaryAction.label}

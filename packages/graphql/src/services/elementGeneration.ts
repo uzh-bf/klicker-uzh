@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util'
 import * as DB from '@klicker-uzh/prisma/client'
 import type {
   ElementManipulationInput,
@@ -5,7 +6,6 @@ import type {
   GeneratedQuestionEditable,
 } from '@klicker-uzh/types'
 import { ELEMENT_GENERATION_CAPABILITIES } from '@klicker-uzh/types'
-import { isDeepStrictEqual } from 'node:util'
 import type { ContextWithUser } from '../lib/context.js'
 import validateAndProcessElementOptions from '../lib/validateAndProcessElementOptions.js'
 import { isElementGenerationCostConfigured } from './elementGenerationAccounting.js'
@@ -275,7 +275,7 @@ function normalizedKeepPayload(
       explanation: current.back,
       // Flashcards never award points; the shared keep input still carries it.
       basePoints: false,
-      pointsMultiplier: input.pointsMultiplier,
+      pointsMultiplier: 1,
       tags: current.tags,
     }
     return { current, elementInput }
