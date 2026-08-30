@@ -138,12 +138,12 @@
 
 ## Progress
 
-- Status: S1 implementation is verified and ready to commit; its specialist gates are next.
-- Completed: Fresh remote-state gate; clean worktree from `origin/v3`; root-cause diagnosis; current GitHub artifact contract check; native planning review; S0 plan commit `1adaf5a14`; failure-only individual and stack artifact wiring with source assertions.
-- Remaining: S1 commit and specialist gates; S2 documentation; integrated verification and final review; push and draft pull request; plan rename and final evidence readback.
-- Latest verified baseline: `6135b55c56e3f25ff56d178c11e8ac184aea587f`, ahead/behind `0/0`. Current S1 evidence: both focused Node suites pass `90/90`; the workflow parses as YAML; changed content passes `git diff --check`; focused Prettier passes, with an unrelated pre-existing whole-file mismatch preserved in the stack test.
+- Status: S1 is committed and verified; its required specialist gates are blocked before inspection by the current encrypted task transport.
+- Completed: Fresh remote-state gate; clean worktree from `origin/v3`; root-cause diagnosis; current GitHub artifact contract check; native planning review; S0 plan commit `1adaf5a14`; S1 commit `b5aff4c8c` with failure-only individual and stack artifact wiring and source assertions.
+- Remaining: S1 specialist gates; S2 documentation; integrated verification and final review; push and draft pull request; plan rename and final evidence readback.
+- Latest verified commit: `b5aff4c8c5de6a4582e8b60db68bc6ea46207de7`. Both focused Node suites pass `90/90`; the workflow parses as YAML; changed content passes `git diff --check`; focused Prettier passes, with an unrelated pre-existing whole-file mismatch preserved in the stack test.
 - Required delivery layer: Reviewed draft pull request against `v3`.
 - Achieved delivery layer: Clean local task branch and worktree.
-- Unresolved required gates: S1 simplifier and risk review; integrated final review; push and draft pull-request evidence.
+- Unresolved required gates: The native `simplifier` and `slice-reviewer`, followed by their same-model generic continuity attempts, all failed before work with `unreadable_encrypted_agent_task`. Integrated final review, push, and draft pull-request evidence remain later gates.
 - Active children: None.
-- Next action: Commit S1, then dispatch its simplifier and security/correctness slice reviewer over the immutable commit.
+- Next action: Use a separately approved native ChatGPT fallback for the two blocked S1 gates, or resume after the plaintext task transport is repaired.
