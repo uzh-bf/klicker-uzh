@@ -42,6 +42,7 @@ import {
   StudentAssessmentBlockResponse,
   StudentAssessmentResults,
 } from './assessment.js'
+import { asChatbotAuthor } from './authScopes.js'
 import {
   AssessmentParticipant,
   Course,
@@ -135,11 +136,6 @@ export const Query = builder.queryType({
     const asParticipant = { authenticated: true, role: DB.UserRole.PARTICIPANT }
     const asUser = { authenticated: true, role: DB.UserRole.USER }
     const asAdmin = { authenticated: true, role: DB.UserRole.ADMIN }
-    const asChatbotAuthor = {
-      ...asUser,
-      catalyst: true,
-      scope: DB.UserLoginScope.FULL_ACCESS,
-    }
 
     return {
       self: t.field({
