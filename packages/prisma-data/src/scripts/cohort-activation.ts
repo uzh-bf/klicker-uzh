@@ -268,6 +268,8 @@ export type ActivationReceiptState =
   | 'rolling_back'
   | 'rolled_back'
 
+type ActivationRollbackOrigin = 'switched' | 'switching'
+
 export type ActivationReceipt = {
   receiptVersion: typeof ACTIVATION_RECEIPT_VERSION
   manifestFingerprint: string
@@ -285,6 +287,7 @@ export type ActivationReceipt = {
   switchedChatbotAliases: string[]
   pendingChatbotAlias: string | null
   pendingRollbackAliases: string[]
+  pendingRollbackOrigin: ActivationRollbackOrigin | null
   state: ActivationReceiptState
   payloadDigest: string
 }
@@ -1794,6 +1797,7 @@ function assertPayloadShape(
     'switchedChatbotAliases',
     'pendingChatbotAlias',
     'pendingRollbackAliases',
+    'pendingRollbackOrigin',
     'state',
     'payloadDigest',
   ])
@@ -1867,6 +1871,13 @@ function assertPayloadShape(
     CHATBOT_ALIAS_PATTERN,
     pendingRollbackAliases.length
   )
+  if (
+    value.pendingRollbackOrigin !== null &&
+    value.pendingRollbackOrigin !== 'switched' &&
+    value.pendingRollbackOrigin !== 'switching'
+  ) {
+    receiptInvalid('receipt rollback origin is invalid')
+  }
 }
 
 function assertPayloadDigest(
@@ -1966,6 +1977,7 @@ function assertReceiptSemantics(
   const chatbotAliases = new Set(index.aliases.chatbots)
   const switchedAliases = new Set(receipt.switchedChatbotAliases)
   const rollbackAliases = new Set(receipt.pendingRollbackAliases)
+  const rollbackOrigin = receipt.pendingRollbackOrigin
   if (
     [...switchedAliases].some((alias) => !chatbotAliases.has(alias)) ||
     [...rollbackAliases].some((alias) => !chatbotAliases.has(alias)) ||
@@ -1986,7 +1998,10 @@ function assertReceiptSemantics(
   if (rollbackAliases.size > 1) {
     fail('RECEIPT_STATE', 'receipt rollback intent names multiple chatbots')
   }
-  if ([...rollbackAliases].some((alias) => !switchedAliases.has(alias))) {
+  if (
+    rollbackOrigin !== 'switching' &&
+    [...rollbackAliases].some((alias) => !switchedAliases.has(alias))
+  ) {
     fail('RECEIPT_STATE', 'receipt rollback intent names an unswitched chatbot')
   }
 
@@ -2069,30 +2084,41 @@ function assertReceiptSemantics(
     if (
       switchedAliases.size !== 0 ||
       receipt.pendingChatbotAlias !== null ||
-      rollbackAliases.size !== 0
+      rollbackAliases.size !== 0 ||
+      rollbackOrigin !== null
     ) {
       fail('RECEIPT_STATE', 'prepared receipt intent fields are invalid')
     }
   } else if (receipt.state === 'switching') {
-    if (receipt.pendingChatbotAlias === null || rollbackAliases.size !== 0) {
+    if (
+      receipt.pendingChatbotAlias === null ||
+      rollbackAliases.size !== 0 ||
+      rollbackOrigin !== null
+    ) {
       fail('RECEIPT_STATE', 'switching receipt intent fields are invalid')
     }
   } else if (receipt.state === 'switched') {
     if (
       switchedAliases.size === 0 ||
       receipt.pendingChatbotAlias !== null ||
-      rollbackAliases.size !== 0
+      rollbackAliases.size !== 0 ||
+      rollbackOrigin !== null
     ) {
       fail('RECEIPT_STATE', 'switched receipt intent fields are invalid')
     }
   } else if (receipt.state === 'rolling_back') {
-    if (receipt.pendingChatbotAlias !== null || rollbackAliases.size !== 1) {
+    if (
+      receipt.pendingChatbotAlias !== null ||
+      rollbackAliases.size !== 1 ||
+      (rollbackOrigin !== 'switched' && rollbackOrigin !== 'switching')
+    ) {
       fail('RECEIPT_STATE', 'rollback receipt intent fields are invalid')
     }
   } else if (
     switchedAliases.size !== 0 ||
     receipt.pendingChatbotAlias !== null ||
-    rollbackAliases.size !== 0
+    rollbackAliases.size !== 0 ||
+    rollbackOrigin !== null
   ) {
     fail('RECEIPT_STATE', 'rolled-back receipt intent fields are invalid')
   }
@@ -2844,6 +2870,7 @@ function makeReceiptFromState(
     switchedChatbotAliases: string[]
     pendingChatbotAlias?: string | null
     pendingRollbackAliases?: string[]
+    pendingRollbackOrigin?: ActivationRollbackOrigin | null
   }
 ): ActivationReceipt {
   if (!state.targetServer) {
@@ -2939,6 +2966,7 @@ function makeReceiptFromState(
     pendingRollbackAliases: [
       ...new Set(input.pendingRollbackAliases ?? []),
     ].sort(),
+    pendingRollbackOrigin: input.pendingRollbackOrigin ?? null,
     state: input.state,
   })
 }
@@ -3433,8 +3461,11 @@ export async function rollbackCohortChatbot(
     if (
       !receipt.switchedChatbotAliases.includes(options.chatbotAlias) &&
       !(
-        receipt.state === 'switching' &&
-        receipt.pendingChatbotAlias === options.chatbotAlias
+        (receipt.state === 'switching' &&
+          receipt.pendingChatbotAlias === options.chatbotAlias) ||
+        (receipt.state === 'rolling_back' &&
+          receipt.pendingRollbackOrigin === 'switching' &&
+          receipt.pendingRollbackAliases.includes(options.chatbotAlias))
       )
     ) {
       fail('RECEIPT_STATE', 'chatbot was not switched')
@@ -3486,8 +3517,10 @@ export async function rollbackCohortChatbot(
           state: 'rolling_back',
           switchedChatbotAliases: receipt.switchedChatbotAliases,
           pendingRollbackAliases: [options.chatbotAlias],
+          pendingRollbackOrigin: 'switched',
         }
       )
+      assertReceiptMatchesIndex(rollbackReceipt, index, manifestFingerprint)
       await session.compareAndSwap(receipt.payloadDigest, rollbackReceipt)
     } else if (receipt.state === 'switching') {
       const current = groupState(stateBefore, index, options.chatbotAlias)
@@ -3502,8 +3535,10 @@ export async function rollbackCohortChatbot(
               ? [...receipt.switchedChatbotAliases, options.chatbotAlias]
               : receipt.switchedChatbotAliases,
           pendingRollbackAliases: [options.chatbotAlias],
+          pendingRollbackOrigin: 'switching',
         }
       )
+      assertReceiptMatchesIndex(rollbackReceipt, index, manifestFingerprint)
       await session.compareAndSwap(receipt.payloadDigest, rollbackReceipt)
     }
 

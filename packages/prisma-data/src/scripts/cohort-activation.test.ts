@@ -68,7 +68,7 @@ function canonicalReceipt(value: unknown): unknown {
   return value
 }
 
-function receiptDigest(receipt: ActivationReceipt): string {
+function receiptDigest(receipt: ActivationReceiptPayload): string {
   const { payloadDigest: _payloadDigest, ...withoutDigest } = receipt
   return createHash('sha256')
     .update(JSON.stringify(canonicalReceipt(withoutDigest)))
@@ -212,6 +212,7 @@ class MemoryStore implements ActivationStore {
   transactions = 0
   legacyUpdates = 0
   failTargetConfigUpdate = false
+  failNextTransaction = false
   private sequence = 20000
   private clock = 1
 
@@ -458,6 +459,10 @@ class MemoryStore implements ActivationStore {
     callback: (store: ActivationTransactionStore) => Promise<T>
   ): Promise<T> {
     this.transactions += 1
+    if (this.failNextTransaction) {
+      this.failNextTransaction = false
+      throw new Error('synthetic transaction failure')
+    }
     const before = this.snapshot()
     try {
       return await callback(this)
@@ -1271,6 +1276,41 @@ describe('cohort activation operator', () => {
     expect((await fileStore.read())?.state).toBe('prepared')
   })
 
+  it('rejects a stale prepare intent without overwriting the winner', async () => {
+    await prepareCohortActivation(
+      store,
+      manifest,
+      options(receiptStore, manifest)
+    )
+    const prepared = receiptStore.value!
+    const intentWithoutDigest = {
+      receiptVersion: prepared.receiptVersion,
+      manifestFingerprint: prepared.manifestFingerprint,
+      counts: prepared.counts,
+      aliases: prepared.aliases,
+      state: 'preparing' as const,
+    }
+    receiptStore.value = {
+      ...intentWithoutDigest,
+      payloadDigest: receiptDigest(intentWithoutDigest),
+    }
+
+    const outcomes = await Promise.allSettled([
+      prepareCohortActivation(store, manifest, options(receiptStore, manifest)),
+      prepareCohortActivation(store, manifest, options(receiptStore, manifest)),
+    ])
+    expect(
+      outcomes.filter((outcome) => outcome.status === 'fulfilled')
+    ).toHaveLength(1)
+    expect(
+      outcomes.filter((outcome) => outcome.status === 'rejected')
+    ).toHaveLength(1)
+    expect(
+      outcomes.find((outcome) => outcome.status === 'rejected')?.reason
+    ).toMatchObject({ code: 'RECEIPT_CAS_FAILED' })
+    expect(receiptStore.value?.state).toBe('prepared')
+  })
+
   it('leaves a durable in-flight receipt readable for rollback recovery', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'cohort-activation-inflight-'))
     const path = join(directory, 'receipt.json')
@@ -1284,6 +1324,19 @@ describe('cohort activation operator', () => {
       })
     ).rejects.toThrowError(expect.objectContaining({ code: 'CONCURRENT_EDIT' }))
     expect((await fileStore.read())?.state).toBe('switching')
+    store.failNextTransaction = true
+    await expect(
+      rollbackCohortChatbot(store, manifest, {
+        ...options(fileStore, manifest),
+        chatbotAlias: 'chatbot-001',
+      })
+    ).rejects.toThrowError('synthetic transaction failure')
+    expect(await fileStore.read()).toMatchObject({
+      state: 'rolling_back',
+      switchedChatbotAliases: [],
+      pendingRollbackAliases: ['chatbot-001'],
+      pendingRollbackOrigin: 'switching',
+    })
     await expect(
       rollbackCohortChatbot(store, manifest, {
         ...options(fileStore, manifest),
