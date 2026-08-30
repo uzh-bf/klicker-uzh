@@ -39,6 +39,8 @@ hatchet:
   workers:
     general:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 0
       priorityClassName: staging-workload
       podAnnotations:
         rollout.klicker.uzh.ch/release: 'd32bff8b1987'
@@ -64,6 +66,8 @@ hatchet:
 
     responseProcessor:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 0
       priorityClassName: staging-workload
       podAnnotations:
         rollout.klicker.uzh.ch/release: 'd32bff8b1987'
@@ -86,6 +90,8 @@ hatchet:
 
     responseProcessorAssessment:
       replicaCount: 1
+      podDisruptionBudget:
+        minAvailable: 0
       priorityClassName: staging-workload
       podAnnotations:
         rollout.klicker.uzh.ch/release: 'd32bff8b1987'
