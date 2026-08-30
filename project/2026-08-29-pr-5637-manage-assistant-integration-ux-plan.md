@@ -899,3 +899,14 @@ follow_up_stacks:
 - Next: Commit and push the A2 review correction, reply to and resolve all five
   review findings with evidence, refresh PR #5679, and babysit the corrected
   exact head through hosted browser acceptance before starting A3.
+- A2 exact-head review: Head `7ccd44ada` passes the hosted compile, repository
+  check, secret scan, GraphQL and lecturer-MCP status checks, trusted policy,
+  and OpenCodeReview. The follow-up review raised one valid nested-ternary style
+  finding and one question about timeout semantics. The notice now uses explicit
+  branches, and the platform documentation states the intentional contract: a
+  bounded client preflight settles as retryable unavailable rather than
+  starting an automatic background retry loop. The existing browser journey
+  pins timeout, manual retry, healthy recovery, and iframe preservation.
+- Next: Commit and push this review-only correction, resolve both follow-up
+  threads, then require all eight exact-head hosted Playwright shards before A2
+  is accepted and A3 starts.

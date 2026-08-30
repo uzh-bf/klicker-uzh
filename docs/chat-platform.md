@@ -158,10 +158,11 @@ classifies the actual session-filtered inventory as `draft-and-read`,
 The response exposes no tool names, scopes, configuration, or failure detail.
 The client starts in the conservative unavailable state, keeps curated-index
 documentation help and explicit no-save authoring available, and can retry the
-preflight without reloading the iframe. Every chat turn repeats the same
-inventory classification; its response header replaces stale preflight state,
-so the preflight never grants write authority or promises a missing proposal
-tool.
+preflight without reloading the iframe. A client-side preflight deadline
+intentionally settles as retryable unavailable instead of auto-retrying in the
+background. Every chat turn repeats the same inventory classification; its
+response header replaces stale preflight state, so the preflight never grants
+write authority or promises a missing proposal tool.
 
 Evaluation fails closed. An unconfigured or unreachable GrowthBook yields `false` for every flag, which is what makes a dark deploy safe: an image built before the `NEXT_PUBLIC_GROWTHBOOK_*` repository variables were set carries no SDK connection and shows nothing. Where no GrowthBook exists at all — local development, the end-to-end suite — `FEATURE_FLAGS_FORCED_ON` and `NEXT_PUBLIC_FEATURE_FLAGS_FORCED_ON` name registered keys to force on. That override is honored only when the flag environment resolves to `development` or `test` and only when no SDK connection is configured, so setting it on a staging or production build turns nothing on.
 

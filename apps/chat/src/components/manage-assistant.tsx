@@ -131,11 +131,14 @@ function ManageCapabilityNotice({
   if (phase === 'settled' && capability === 'draft-and-read') return null
 
   const checking = phase === 'checking'
-  const text = checking
-    ? t('capabilityChecking')
-    : capability === 'read-only'
-      ? t('capabilityReadOnly')
-      : t('capabilityUnavailable')
+  let text: string
+  if (checking) {
+    text = t('capabilityChecking')
+  } else if (capability === 'read-only') {
+    text = t('capabilityReadOnly')
+  } else {
+    text = t('capabilityUnavailable')
+  }
 
   return (
     <div
