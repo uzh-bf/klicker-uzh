@@ -72,6 +72,7 @@ function ChatbotCreateModal({
                 courseId: values.courseId,
               },
               refetchQueries: [{ query: GetChatbotsInfoDocument }],
+              awaitRefetchQueries: true,
             })
             const chatbotId = result.data?.createChatbot.id
             if (!chatbotId) {
