@@ -1,5 +1,9 @@
-import { getChatbotOr404 } from '@/src/lib/server/apiGuards'
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
+import {
+  hasConfiguredModeDescriptions,
+  resolveModeDescriptions,
+} from '@/src/lib/config/modes'
+import { getChatbotOr404, withChatbotAuth } from '@/src/lib/server/apiGuards'
 
 /**
  * Retrieves model details for a specific chatbot.
@@ -11,22 +15,29 @@ export async function GET(
   const { chatbotId } = await params
 
   try {
+    const authResult = await withChatbotAuth(req, chatbotId)
+    if ('response' in authResult) {
+      return authResult.response
+    }
+
     const chatbotResult = await getChatbotOr404(chatbotId, {
-      id: true,
-      name: true,
-      description: true,
-      avatar: true,
       modelSelection: true,
-      allowedReasoningEffortsByModel: true,
       systemPrompts: true,
-      disclaimerId: true,
     })
 
     if ('response' in chatbotResult) {
       return chatbotResult.response
     }
 
-    return NextResponse.json(chatbotResult.chatbot)
+    return NextResponse.json({
+      modelSelection: chatbotResult.chatbot.modelSelection,
+      modeDescriptions: resolveModeDescriptions(
+        chatbotResult.chatbot.systemPrompts
+      ),
+      modeDescriptionsAreFallback: !hasConfiguredModeDescriptions(
+        chatbotResult.chatbot.systemPrompts
+      ),
+    })
   } catch (error) {
     console.error('Failed to fetch model details:', error)
     return NextResponse.json(

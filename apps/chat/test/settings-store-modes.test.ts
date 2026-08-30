@@ -13,7 +13,8 @@ function modesResponse(mode: string) {
   return {
     ok: true,
     json: async () => ({
-      systemPrompts: { [mode]: { description: `${mode} mode` } },
+      modeDescriptions: { [mode]: `${mode} mode` },
+      modeDescriptionsAreFallback: false,
     }),
   }
 }
@@ -76,10 +77,8 @@ describe('settingsStore mode loading', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          systemPrompts: {
-            tutor: { description: 'Tutor mode' },
-            custom: { description: '' },
-          },
+          modeDescriptions: { tutor: 'Tutor mode', custom: '' },
+          modeDescriptionsAreFallback: false,
         }),
       })
     )
@@ -99,7 +98,13 @@ describe('settingsStore mode loading', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ systemPrompts: null }),
+        json: async () => ({
+          modeDescriptions: {
+            tutor: 'Tutor mode',
+            explainer: 'Explainer mode',
+          },
+          modeDescriptionsAreFallback: true,
+        }),
       })
     )
 

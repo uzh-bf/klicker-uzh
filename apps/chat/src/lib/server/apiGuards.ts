@@ -1,14 +1,18 @@
 import { prisma } from '@klicker-uzh/prisma'
-import { ChatbotStatus, Prisma } from '@klicker-uzh/prisma/client'
+import { ChatbotStatus, type Prisma } from '@klicker-uzh/prisma/client'
 import { jwtVerify } from 'jose'
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 export async function getParticipantId(
   req: NextRequest
 ): Promise<{ participantId: string } | { response: NextResponse }> {
-  const participantToken = req.cookies.get('participant_token')?.value
+  return getParticipantIdFromToken(req.cookies.get('participant_token')?.value)
+}
 
+export async function getParticipantIdFromToken(
+  participantToken: string | undefined
+): Promise<{ participantId: string } | { response: NextResponse }> {
   if (!participantToken) {
     return {
       response: NextResponse.json(
@@ -106,7 +110,20 @@ export async function withChatbotAuth(
   | { participantId: string; chatbot: { courseId: string } }
   | { response: NextResponse }
 > {
-  const participantResult = await getParticipantId(req)
+  return withChatbotTokenAuth(
+    req.cookies.get('participant_token')?.value,
+    chatbotId
+  )
+}
+
+export async function withChatbotTokenAuth(
+  participantToken: string | undefined,
+  chatbotId: string
+): Promise<
+  | { participantId: string; chatbot: { courseId: string } }
+  | { response: NextResponse }
+> {
+  const participantResult = await getParticipantIdFromToken(participantToken)
   if ('response' in participantResult) {
     return participantResult
   }
@@ -140,6 +157,7 @@ export async function requireParticipation(
           participantId,
         },
       },
+      select: { id: true },
     })
 
     if (!participation) {

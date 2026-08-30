@@ -3,7 +3,6 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { type ModelID, type ModelOption } from '../lib/config/models'
 import {
-  hasConfiguredModeDescriptions,
   resolveModeDescriptions,
   resolveSelectedMode,
 } from '../lib/config/modes'
@@ -18,6 +17,22 @@ const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'none'
 let creditsRequestGeneration = 0
 let creditsLoadedChatbotId: string | null = null
 let modeOptionsRequestGeneration = 0
+
+function parseModeDescriptions(value: unknown): Record<string, string> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null
+  }
+
+  const entries = Object.entries(value)
+  if (
+    entries.length === 0 ||
+    entries.some(([, description]) => typeof description !== 'string')
+  ) {
+    return null
+  }
+
+  return Object.fromEntries(entries) as Record<string, string>
+}
 
 const resolveAllowedReasoningEfforts = (
   model?: ModelOption
@@ -184,17 +199,19 @@ export const useSettingsStore = create<SettingsState>()(
 
           const modelSelectionEnabled = responseData.modelSelection ?? false
 
-          const resolvedModeOptions = resolveModeDescriptions(
-            responseData.systemPrompts
+          const responseModeDescriptions = parseModeDescriptions(
+            responseData.modeDescriptions
           )
+          const resolvedModeOptions =
+            responseModeDescriptions ?? fallbackModeOptions
 
           set((state) => {
             return {
               modeOptions: resolvedModeOptions,
               modeOptionsChatbotId: chatbotId,
-              modeOptionsAreFallback: !hasConfiguredModeDescriptions(
-                responseData.systemPrompts
-              ),
+              modeOptionsAreFallback: responseModeDescriptions
+                ? responseData.modeDescriptionsAreFallback === true
+                : fallbackModeOptionsAreFallback,
               modelSelectionEnabled,
               selectedMode: resolveSelectedMode(
                 resolvedModeOptions,
