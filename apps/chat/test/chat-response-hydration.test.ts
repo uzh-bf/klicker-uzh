@@ -232,7 +232,7 @@ describe('useChatResponse authoritative attachment requests', () => {
       .mockResolvedValue(
         createStreamingResponse([
           'data: {"type":"text-delta","delta":"hello"}',
-          'data: {"type":"finish","messageMetadata":{"chatMode":"chat","modelId":"model-1","reasoningEffort":"medium","imageAttachments":[{"id":"new-binding-1","type":"image","position":0,"imagePreviewBase64":"preview-1","imageDescription":"attachment","hasFullImage":true}]}}',
+          'data: {"type":"finish","messageMetadata":{"chatMode":"chat","modelId":"model-1","reasoningEffort":"medium","imageAttachments":[{"id":"new-binding-1","type":"image","position":0,"imagePreviewBase64":"preview-1","imageDescription":"attachment","hasFullImage":false}]}}',
           'data: [DONE]',
         ])
       )
@@ -277,7 +277,9 @@ describe('useChatResponse authoritative attachment requests', () => {
     expect(storeState.threads[0]?.messages[0]).toMatchObject({
       id: 'edited-message-id',
       attachmentSourceMessageId: null,
-      imageAttachments: [{ id: 'new-binding-1', position: 0 }],
+      imageAttachments: [
+        { id: 'new-binding-1', position: 0, hasFullImage: false },
+      ],
     })
   })
 
