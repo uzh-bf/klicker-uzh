@@ -850,12 +850,14 @@ export async function POST(
     selectedModelConfig,
     chatbot.allowedReasoningEffortsByModel
   )
-  const appliedReasoningEffort: ReasoningEffort | null =
-    allowedReasoningEfforts.length > 0
-      ? allowedReasoningEfforts.includes(requestedReasoningEffort)
-        ? requestedReasoningEffort
-        : getDefaultReasoningEffort(allowedReasoningEfforts)
-      : null
+  let appliedReasoningEffort: ReasoningEffort | null = null
+  if (allowedReasoningEfforts.length > 0) {
+    appliedReasoningEffort = allowedReasoningEfforts.includes(
+      requestedReasoningEffort
+    )
+      ? requestedReasoningEffort
+      : getDefaultReasoningEffort(allowedReasoningEfforts)
+  }
 
   const providerReasoningEffort =
     appliedReasoningEffort && appliedReasoningEffort !== 'none'
@@ -1176,10 +1178,6 @@ export async function POST(
             persistedDescriptions.set(id, imageDescription)
             return
           }
-          if (updated.count !== 0) {
-            throw new AuthoritativeConversationError()
-          }
-
           const existing = await prisma.chatAttachment.findFirst({
             where: { id, messageId: userMessageId },
             select: { imageDescription: true },
