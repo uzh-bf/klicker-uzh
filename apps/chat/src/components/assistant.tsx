@@ -526,7 +526,7 @@ function SidebarMain({
     <SidebarInset id="main-content" tabIndex={-1}>
       <header
         data-cy="chat-header"
-        className="bg-muted/50 grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2 border-b px-2 py-1.5"
+        className="bg-muted/50 grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2 border-b px-2 py-1.5 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto]"
       >
         {/* Only visible when the sidebar is closed — once it's open, the
             sidebar's own trigger closes it, so this stays the single toggle
@@ -574,11 +574,13 @@ function SidebarMain({
           </TooltipTrigger>
           <TooltipContent>{t('chat.sidebar.newChat')}</TooltipContent>
         </Tooltip>
+        <ChatGraphModeSwitch
+          chatbotId={chatbot.id}
+          compact
+          className="col-span-4 justify-self-end sm:col-span-1"
+        />
       </header>
       <MobileCreditsBar />
-      <div className="flex shrink-0 justify-center border-b border-[#E9E9E9] bg-white p-2">
-        <ChatGraphModeSwitch chatbotId={chatbot.id} />
-      </div>
       <main
         id="main-content"
         tabIndex={-1}
@@ -640,20 +642,22 @@ function AssistantLayout({
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden">
-      <div className="bg-muted/50 flex shrink-0 items-center justify-between gap-2 border-b px-2 py-1.5 sm:gap-4 sm:px-4 sm:py-3">
+      <div className="bg-muted/50 grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b px-2 py-1.5 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:gap-4 sm:px-4 sm:py-3">
         <h1 className="min-w-0 truncate text-xs font-semibold sm:text-sm">
           {chatbot.name}
         </h1>
         <EmbeddedSettings />
+        <ChatGraphModeSwitch
+          chatbotId={chatbot.id}
+          compact
+          className="col-span-2 justify-self-end sm:col-span-1"
+        />
       </div>
       <main
         id="main-content"
         tabIndex={-1}
         className="flex min-h-0 flex-1 flex-col"
       >
-        <div className="flex shrink-0 justify-center border-b border-[#E9E9E9] bg-white p-2">
-          <ChatGraphModeSwitch chatbotId={chatbot.id} />
-        </div>
         <div className="relative flex min-h-0 flex-1 flex-col">
           {isLoading && (
             <div className="bg-background absolute inset-0 z-10 overflow-y-auto">

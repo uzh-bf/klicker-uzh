@@ -14,6 +14,7 @@ import {
   parseQuestionGenerationResult,
   verifyQuestionGenerationProvenanceAuthority,
 } from '../src/services/questionGenerationArtifacts.js'
+import { questionGenerationSourceSnapshot } from '../src/services/questionGenerationGraph.js'
 
 const BUILD_ID = '123e4567-e89b-42d3-a456-426614174000'
 const RESOURCE_ID = '81bf28ea-4bdc-4ee3-a087-8cba68a8df5a'
@@ -179,6 +180,48 @@ function plan(overrides: Record<string, unknown> = {}) {
     ],
     ...overrides,
   }
+}
+
+function nativeSourceSnapshot(source: {
+  sourceUrl: string | null
+  blobName: string | null
+}) {
+  return questionGenerationSourceSnapshot([
+    {
+      resourceId: RESOURCE_ID,
+      title: 'Wine chemistry',
+      contentSha256: 'd'.repeat(64),
+      ...source,
+    },
+  ])
+}
+
+function schemaV3Plan(sourceFile: string) {
+  const legacy = plan()
+  return plan({
+    metadata: {
+      ...legacy.metadata,
+      format: 'SC',
+      item_format: 'sc',
+      question_blueprint_workflow: {
+        ...legacy.metadata.question_blueprint_workflow,
+        schema_version: 3,
+        frozen_graph_sha256: '7'.repeat(64),
+        pinned_question_evidence: pinnedQuestionEvidence(),
+      },
+    },
+    questions: [
+      {
+        ...legacy.questions[0],
+        source_evidence: [
+          {
+            ...legacy.questions[0]!.source_evidence[0],
+            source_file: sourceFile,
+          },
+        ],
+      },
+    ],
+  })
 }
 
 function pinnedQuestionEvidence(overrides: Record<string, unknown> = {}) {
@@ -356,6 +399,21 @@ function completeQuestionProvenance() {
 }
 
 describe('question-generation artifact normalization', () => {
+  it.each([
+    {
+      sourceUrl: null,
+      blobName: `knowledge-bases/${RESOURCE_ID}.pdf`,
+    },
+    {
+      sourceUrl: `https://example.test/${RESOURCE_ID}.html?version=1`,
+      blobName: null,
+    },
+  ])('uses the native graph artifact filename for source snapshots %#', (source) => {
+    expect(nativeSourceSnapshot(source)[0]?.sourceFile).toBe(
+      `${RESOURCE_ID}.md`
+    )
+  })
+
   it('pins graph-manifest lineage and rejects detached lineage references', () => {
     const policy = {
       filename: 'resolved_domain_policy.json',
@@ -848,6 +906,34 @@ describe('question-generation artifact normalization', () => {
       ],
     })
     expect(JSON.stringify(summary)).not.toContain('pinned_question_evidence')
+  })
+
+  it('accepts schema-v3 Plan evidence for the native graph artifact', () => {
+    expect(
+      parseQuestionGenerationPlan(bytes(schemaV3Plan(`${RESOURCE_ID}.md`)), {
+        buildId: BUILD_ID,
+        configuration,
+        sourceSnapshot: nativeSourceSnapshot({
+          sourceUrl: null,
+          blobName: `knowledge-bases/${RESOURCE_ID}.pdf`,
+        }),
+        v3Evidence: v3Evidence(),
+      }).questionCount
+    ).toBe(1)
+  })
+
+  it('rejects the original extension for native graph evidence', () => {
+    expect(() =>
+      parseQuestionGenerationPlan(bytes(schemaV3Plan(`${RESOURCE_ID}.pdf`)), {
+        buildId: BUILD_ID,
+        configuration,
+        sourceSnapshot: nativeSourceSnapshot({
+          sourceUrl: null,
+          blobName: `knowledge-bases/${RESOURCE_ID}.pdf`,
+        }),
+        v3Evidence: v3Evidence(),
+      })
+    ).toThrowError(expect.objectContaining({ code: 'ARTIFACT_INVALID' }))
   })
 
   it('accepts the direct schema-v3 KPRIM Plan contract', () => {

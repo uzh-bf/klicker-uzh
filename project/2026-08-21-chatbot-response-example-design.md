@@ -399,3 +399,9 @@ candidate, approve it, retrieve it during normal chat, exclude it during
 evaluation, and show a digest-bound latest report. It must also prove that a
 manifest mismatch, cross-chatbot search, changed chunk hash, and late callback
 fail closed.
+
+## Progress (roadmap reconciliation)
+
+- 2026-08-27 — Phase 5 routine reconciliation after package delivery: K1 (`feat/response-examples-foundation`, PR #5474) and K2 (`feat/response-examples-review`, PR #5498) merged into `v3-ai` as commits `0e10f2fa3` and `3d653275d` (verified reachable on `origin/v3-ai`). Remote branches and the design worktree were cleaned up. This independent milestone is delivered to its branch-integration boundary; deployment/live runtime activation stays outside it.
+- 2026-08-27 — Delivery sequence state: steps 1–2 delivered by this package (foundation + review workflow). Steps 3–5 remain separate future work: generation from real evidence is gated on the KB/graph foundation (staging enablement commit `08eef3ad7`/#5612 is a prerequisite signal, not a gate clearing); delivery of the runtime skill additionally requires deactivation/reactivation semantics per the corrections plan's follow-up boundary. Evaluation follows the skill step.
+- 2026-08-27 — Roadmap-level next W-item: **Lecturer Test & Teach** (save question/response pairs from chatbot preview into the existing candidate queue; no participant data, no AI rewrite/replay), exactly as bounded in the corrections plan follow-up boundary. It depends only on the now-merged review workflow and can start immediately as a separate plan in this same workstream on top of `v3-ai`. Corrections-plan verification note stands unchanged.

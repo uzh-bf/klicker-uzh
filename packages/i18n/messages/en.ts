@@ -75,6 +75,42 @@ export default {
       disclaimerDeclinedMessage:
         'You declined the chatbot disclaimer. Accept the terms to continue using the chatbot.',
       showDisclaimerAgain: 'Show disclaimer again',
+      newConversation: 'Start a new conversation',
+      confirmNewConversation: 'Confirm starting a new conversation',
+      confirmNewConversationShort: 'Start over?',
+      newConversationWait: 'Wait until the current answer is complete',
+      newConversationArmed:
+        'Confirmation required: activate again to start a new conversation.',
+    },
+    manageAssistant: {
+      welcome: 'Hello! How can I help you?',
+      manageContext: 'Manage',
+      capabilitySearch: 'Search your courses and question pool',
+      capabilityDraft:
+        'Draft single-choice, multiple-choice, and free-text questions — saved to your pool only after you confirm',
+      capabilityFeedback: 'Suggest improvements to question feedback',
+      capabilityDocumentation:
+        'Explain KlickerUZH features using its documentation and tutorials',
+      limitsNote:
+        'Read-only for everything else — it never publishes or edits existing content.',
+      proposalReview: {
+        reviewLabel: 'Question draft review',
+        draftQuestion: 'Draft question',
+        question: 'Question',
+        correctAnswer: 'Correct answer',
+        correctAnswers: 'Correct answers',
+        correct: 'Correct',
+        incorrect: 'Incorrect',
+        answerFeedback: 'Answer feedback',
+        notProvided: 'Not provided',
+        sampleSolution: 'Sample solution',
+        maximumResponseLength:
+          'Maximum response length: {maxLength} characters',
+        generalExplanation: 'General explanation',
+        singleChoice: 'Single choice',
+        multipleChoice: 'Multiple choice',
+        freeText: 'Free text',
+      },
     },
     recovery: {
       notFoundTitle: 'Chatbot not found',
@@ -1773,6 +1809,9 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       title: 'KlickerUZH Assistant',
       subtitle: 'AI assistant for your courses and question pool',
       openInNewTab: 'Open assistant in a new tab',
+      loading: 'Loading assistant…',
+      resize: 'Resize assistant',
+      resizeHint: 'Drag to resize. The arrow keys also resize the assistant.',
       elementCreatedToast: 'Draft "{name}" added to your question pool',
     },
     ai: {

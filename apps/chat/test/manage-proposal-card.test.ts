@@ -1,9 +1,9 @@
 import { describe, expect, test, vi } from 'vitest'
+import { applyDismiss } from '../src/components/manage-proposal-card'
 import {
-  applyDismiss,
   getManageProposalResult,
   isManageProposalResult,
-} from '../src/components/manage-proposal-card'
+} from '../src/services/manageProposalResult'
 import {
   closeFenceMarker,
   openFenceMarker,

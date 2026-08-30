@@ -1,14 +1,15 @@
 'use client'
 
 import {
+  MANAGE_CLOSE_REQUEST_MESSAGE_TYPE,
   MANAGE_CONTEXT_MESSAGE_TYPE,
   MANAGE_CONTEXT_READY_MESSAGE_TYPE,
 } from '@klicker-uzh/types'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import {
-  sanitizeManageAssistantContext,
   type ManageAssistantContext,
+  sanitizeManageAssistantContext,
 } from '../services/manageContext'
 import { useManageParentStore } from '../stores/manageParentStore'
 import { useEmbedded } from './useEmbedded'
@@ -60,7 +61,16 @@ export function useEmbeddedManageContext() {
       }
     }
 
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape' || !parentOrigin) return
+      window.parent.postMessage(
+        { type: MANAGE_CLOSE_REQUEST_MESSAGE_TYPE },
+        parentOrigin
+      )
+    }
+
     window.addEventListener('message', handleMessage)
+    window.addEventListener('keydown', handleKeyDown)
 
     // Announce readiness so the parent (re)sends the current context exactly
     // when this listener exists. The parent also posts once on iframe load,
@@ -78,7 +88,10 @@ export function useEmbeddedManageContext() {
       )
     }
 
-    return () => window.removeEventListener('message', handleMessage)
+    return () => {
+      window.removeEventListener('message', handleMessage)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [embedded, parentOrigin, setManageParentOrigin])
 
   return context

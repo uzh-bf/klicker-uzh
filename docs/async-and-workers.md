@@ -2,7 +2,7 @@
 type: Async Architecture
 title: Async & Workers
 description: The Hatchet-based response pipeline, worker task catalog, scheduled jobs, and what silently breaks without workers.
-timestamp: '2026-08-27'
+timestamp: '2026-08-29'
 tags:
   - backend
   - hatchet
@@ -79,6 +79,8 @@ With `KB_INGESTION_WORKER_DISABLED=false`, or with any of the three required ing
 
 KB graph builds use the separate `KB_GRAPH_HATCHET_*` connection and workflow settings plus `KB_GRAPH_TIMEOUT_SECONDS` and the named standard/high model pairs. The worker validates a partially configured graph integration at startup, then dispatches only a pinned build manifest and reconciles its external run. The GraphQL backend owns quota reservation and exposes `settleKbKnowledgeGraphResult` for the W1 terminal-result handoff; `prepareHatchetTasks` accepts the result-fetch and settlement callbacks so the worker never treats provider status as a publication contract. The production backend and general worker explicitly pass `getKBGraphTerminalResult` (the external Hatchet run output) and `settleKbKnowledgeGraphResult` into `prepareHatchetTasks`; omitting either adapter is not a supported runtime composition. `KB_GRAPH_HATCHET_CLIENT_TOKEN` remains in the general-worker secret; the non-secret settings belong under `hatchet.kbGraph` in the chart values. The startup gate is armed only by the ConfigMap-owned `KB_GRAPH_*` names, deliberately excluding that token: a secret rollout on its own must never fail the general worker's startup and stop every unrelated job. Once the gate is armed the token is still required, so the secret must carry it before `hatchet.kbGraph.workflowName` is set. Graph build input URLs and generated Blob SAS values must never be logged or placed in ConfigMaps.
 
+Native graph builds canonicalize every source artifact to `${resourceId}.md`, regardless of whether the original resource was an uploaded document or a URL. `packages/graphql/src/services/questionGenerationGraph.ts:questionGenerationSourceSnapshot` must preserve that filename when preparing question-generation evidence. Artifact validation remains extension-aware and rejects the original upload or URL basename when it does not identify the graph artifact.
+
 ## Course duplication operations
 
 Job state lives in Redis under three key families (all self-expiring): status records `course-duplication:job:<jobId>` and per-user/per-course source locks `course-duplication:source:<userId>:<sourceCourseId>` expire after **24 hours**; process leases `course-duplication:job:<jobId>:processing` and heartbeats `course-duplication:job:<jobId>:heartbeat` expire after 60/120 seconds. Postgres is the source of truth for outcomes: a committed course row whose id equals the job id proves the copy succeeded regardless of Redis state.
@@ -89,6 +91,6 @@ To correlate a user report ("my duplication vanished") with only a course name o
 
 ## Running locally (config-derived — verify on your machine)
 
-The Hatchet engine runs as the `hatchet` compose service using `hatchet-lite-dev` (gRPC 7077, UI 8888, no UI authentication required); workers pick up the client token automatically minted to `/config/authdisabled-token` or populated by `./util/_create_hatchet_token.sh`. Workers must see the **same `DATABASE_URL`, `APP_SECRET`, and Redis settings** as the app stack — a worker pointed at the wrong database happily processes events into nowhere. The `packages/graphql` vitest suite also requires a live Hatchet + `HATCHET_CLIENT_TOKEN` (see [Testing](./testing.md)).
+The Hatchet engine runs as the `hatchet` compose service using `hatchet-lite-dev` (gRPC 7077, UI 8888, no UI authentication required); workers pick up the client token automatically minted to `/config/authdisabled-token` or populated by `./util/_create_hatchet_token.sh`. Workers must see the **same `DATABASE_URL`, `APP_SECRET`, and Redis settings** as the app stack — a worker pointed at the wrong database happily processes events into nowhere. In the managed devcontainer, `devrouter ensure . --profile live-quiz` starts Response API and both workers, then proves `/healthz` and one live runtime process per worker before reporting ready. The `packages/graphql` vitest suite also requires a live Hatchet + `HATCHET_CLIENT_TOKEN` (see [Testing](./testing.md)).
 
 Both development workers compile with Rollup and run the emitted JavaScript under nodemon. Do not replace that runner with `tsx --watch` or `node --watch`: their in-process watch protocols reach Hatchet's heartbeat worker-thread listener, which treats the watch message as a logger method and crashes with `TypeError: this.logger[message.type] is not a function`. When checking worker health, verify that the process stays alive for more than one four-second heartbeat interval; the initial `Connection established using LISTEN_STRATEGY_V2` message alone is insufficient. See [Hatchet heartbeat workers crash under in-process watch mode](./solutions/runtime-error/hatchet-heartbeat-workers-crash-under-in-process-watch-mode.md).

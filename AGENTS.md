@@ -146,7 +146,7 @@ See [Domain Model](docs/domain-model.md) for the canonical explanation.
 
 ### Self-contained devcontainer (recommended)
 
-Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm/prisma/unit tests **inside the container**, never on the host. **Exception — Playwright E2E runs on the host**: run `bash util/run-host-e2e.sh --project=chromium tests/<spec>.spec.ts` (or `pnpm --filter @klicker-uzh/playwright test:host -- --project=chromium <spec>`) — it auto-maps the app URLs and seed database for routed devrouter workspaces, a plain primary devcontainer, or host-run apps, and shares host browser/node caches; never download browsers into a DevPod. Services without direct routes stay inside the container and are exercised through the routed apps; do not move Playwright into the container to reach them.
+Clone-and-run via a self-contained devcontainer — no Infisical/Doppler, no EduID, no `/etc/hosts` edits. The container owns the whole stack (Node 24 + pnpm toolchain, Postgres, 3× Redis, MailHog, Hatchet) and runs **all core apps in ONE container** via `turbo dev`. Run pnpm, Prisma, and unit tests **inside the container**. Playwright is the exception: always run `pnpm playwright:host -- <args>` from the host against the routed container stack. Never invoke Playwright or install its browsers through `devrouter exec`, a DevPod shell, or another local container; CI keeps its existing official Playwright container path.
 
 ```bash
 devrouter ensure .
@@ -154,10 +154,12 @@ devrouter ensure .
 
 The same command starts and proves primary and linked checkouts. Use `devrouter exec . -- <command...>` for one-shot commands or the exact DevPod ID printed by `ensure` for an interactive shell.
 
-The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The stack runs every routed app plus the two Hatchet workers (no worker route); analytics, Office add-in, and docs remain outside it. See `.devcontainer/README.md`.
+The dev servers auto-start in the background (`devrouter exec . -- tail -f /tmp/dev.log`; first compile takes ~1min). Host-side `devrouter ensure` owns lifecycle reconciliation and delivers its matching process helper to the exact validated container. The default `full` profile runs every routed app plus the two Hatchet workers (no worker route); `devrouter ensure . --profile <name>[,<name>]` selects exact app/service/process unions (e.g. `chat`, `ai`, `mcp`, `chat,ai,mcp` - see `.devcontainer/README.md`). Analytics, Office add-in, and docs remain outside this stack.
 
-**OpenRouter-backed local chat:** Infisical authentication and secret injection
-must run from a host shell outside the Codex sandbox. Do not run Infisical
+#### OpenRouter-backed local chat
+
+Infisical authentication and secret injection must run from a host shell
+outside the Codex sandbox. Do not run Infisical
 inside `devrouter exec`, the DevPod, or a container. Use the restricted
 `rs-infisical-operator` as the only repository-supported injection path. Inject
 the upstream key only at runtime, never into a file or the shell history:
@@ -168,7 +170,7 @@ rs-infisical-operator --profile <profile> permissions
 rs-infisical-operator --profile <profile> run \
   --map OPENROUTER_API_KEY=UPSTREAM_OPENAI_API_KEY -- \
   env UPSTREAM_OPENAI_BASE_URL=https://openrouter.ai/api/v1 \
-  devrouter ensure <checkout-path> --json
+  devrouter ensure <checkout-path> --profile chat,ai,mcp --json
 ```
 
 If the host-side operator profile or login is missing, stop and complete the
@@ -178,12 +180,12 @@ copy the key into a file, or pass it through chat, arguments, or logs.
 If LiteLLM is already running without those variables, stop the exact linked
 checkout with `devrouter stop <checkout-path>` and rerun the injection command;
 `ensure` does not replace environment variables inside an existing service
-container. Verify only that the destination exists with
-`devrouter exec <checkout-path> -- sh -c 'test -n "$UPSTREAM_OPENAI_API_KEY"'`.
+container. Verify key presence only in the exact LiteLLM service with the
+values-free host-side check in
+[the OpenRouter local Chat solution](docs/solutions/integration/openrouter-local-chat-runtime.md).
 Use only seeded or synthetic test content because OpenRouter is an external
 upstream and the Azure-specific chatbot disclaimer does not describe this
-local path. The repeatable smoke and troubleshooting details live in
-[the OpenRouter local Chat solution](docs/solutions/integration/openrouter-local-chat-runtime.md).
+local path.
 
 Local Auto Mode is selected by `CHAT_PRIMARY_MODEL_ID=auto`. Chat sends the
 `auto-router` deployment to LiteLLM at `http://litellm:4000`; LiteLLM classifies
@@ -213,7 +215,7 @@ card. Reload the thread and require the tool result, answer, and source to
 remain visible. Use the direct `GPT-5.6 Luna` option only when isolating the
 router from the model/tool integration.
 
-**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.38 fronts the stack over the shared `devnet` network. One-time host setup must happen **before** the container starts:
+**Routing:** [devrouter](https://github.com/rschlaefli/devrouter) ≥ 0.0.42 fronts the stack over the shared `devnet` network. Version 0.0.39 is insufficient for rollback-safe managed profile transitions. One-time host setup must happen **before** the container starts:
 
 ```bash
 devrouter setup --yes # Traefik + devnet + mkcert CA
@@ -344,6 +346,7 @@ Quick validation sequence:
 - `devrouter tls install` (required when repo defines tcp/postgres apps)
 - `devrouter app ls --repo .`
 - Primary or linked devcontainer checkout: `devrouter ensure . --json`
+- Managed selective profile: `devrouter ensure . --profile <name> --json`
 - Host/docker runtime app only: `devrouter app run <host-app> --repo . --yes`
 - `devrouter ls`
 <!-- /devrouter -->

@@ -77,20 +77,6 @@ function graphError(
   return new QuestionGenerationGraphError(code, message)
 }
 
-function sourceFile(source: {
-  title: string
-  blobName: string | null
-  sourceUrl: string | null
-}): string {
-  const candidate = source.blobName ?? source.sourceUrl
-  if (candidate) {
-    const withoutQuery = candidate.split(/[?#]/u, 1)[0] ?? candidate
-    const basename = withoutQuery.split('/').filter(Boolean).at(-1)
-    if (basename) return basename
-  }
-  return source.title.replace(/[\\/]/gu, '-').trim() || 'knowledge-source'
-}
-
 export function questionGenerationSourceSnapshot(
   sources: Array<{
     resourceId: string
@@ -103,7 +89,7 @@ export function questionGenerationSourceSnapshot(
   return sources.map((source) => ({
     resourceId: source.resourceId,
     title: source.title,
-    sourceFile: sourceFile(source),
+    sourceFile: `${source.resourceId}.md`,
     contentSha256: source.contentSha256,
     // The native graph ledger pins content identity rather than ingestion
     // counters. This compatibility value is never used as graph identity.
