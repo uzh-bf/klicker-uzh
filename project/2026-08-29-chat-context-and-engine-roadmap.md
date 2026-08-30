@@ -368,3 +368,12 @@ revalidates branch ancestry and the source digest before persistence.
   video-embed commit behind current `origin/v3`; publishing the correction,
   fresh CI, upstream integration, merge, deployment, and activation remain
   pending or separately gated.
+
+- 2026-08-30 exact-head OCR disposition: all automated checks at published
+  head `adaf03d91` passed. The five OCR items were verified; two
+  behavior-neutral cleanups are committed at `4de9874d3`, while three
+  proposed behavior/abstraction changes are rejected to preserve fail-closed
+  immutable bindings, transaction semantics, and explicit credit-boundary
+  guards. Focused route tests, Chat typecheck, and repository pre-commit checks
+  pass. Fresh exact-head CI/OCR and manual final review now precede the
+  separately gated PostgreSQL/browser proof and upstream integration.

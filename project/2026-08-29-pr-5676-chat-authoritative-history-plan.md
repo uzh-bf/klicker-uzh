@@ -914,3 +914,19 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   gaps. The branch is still one non-overlapping video-embed commit behind
   current `origin/v3`; publication, exact-head CI, and any new upstream
   integration remain subsequent gates.
+
+- 2026-08-30 exact-head OCR disposition: every automated GitHub check at
+  published head `adaf03d91` passed, including all eight hosted Playwright
+  shards and OCR. Five OCR items were verified. Commit `4de9874d3` accepts
+  the two behavior-neutral cleanups by flattening reasoning-effort selection
+  and removing an unreachable update-count branch. The suggested
+  best-effort image-binding downgrade is rejected because missing immutable
+  bindings must fail closed; existing tests cover binding disappearance and a
+  concurrent description winner. The proposed transaction race cannot occur
+  because the attachment insert and read share one Prisma transaction, and the
+  duplicated lifecycle guards remain explicit at both credit-sensitive
+  boundaries. The focused route suite passes 30 tests, Chat typecheck passes,
+  and the native pre-commit gate passes all repository checks. Push, fresh
+  exact-head CI/OCR, the required manual final review, PostgreSQL/browser
+  proof, upstream integration, merge, deployment, and activation remain open
+  or separately gated.
