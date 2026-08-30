@@ -4,6 +4,7 @@
 // letting a `true` here advertise a fallback the evaluation path cannot honor.
 export const FEATURE_FLAG_DEFAULTS = {
   'learning-analytics': false,
+  'chat-account-usage': false,
 } as const satisfies Record<string, false>
 
 export type KlickerFeatureFlags = {
