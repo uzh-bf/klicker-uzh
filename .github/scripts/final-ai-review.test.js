@@ -421,6 +421,30 @@ test('writes an Opus OCR config without GLM-specific provider routing', () => {
   assert.equal(fs.existsSync(configPath), false)
 })
 
+test('uses the OCR runtime config path for both preflight and review', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+
+  assert.doesNotMatch(workflow, /OCR_CONFIG_PATH/)
+  assert.equal(
+    workflow.match(/test -s "\$\{HOME\}\/\.opencodereview\/config\.json"/g)
+      ?.length,
+    2
+  )
+  assert.equal(
+    workflow.match(/node \.github\/scripts\/final-ai-review\.js configure-ocr/g)
+      ?.length,
+    2
+  )
+  assert.equal(
+    workflow.match(/node \.github\/scripts\/final-ai-review\.js cleanup-ocr/g)
+      ?.length,
+    2
+  )
+})
+
 function completeReviewResult(comments = []) {
   return {
     status: 'complete',
