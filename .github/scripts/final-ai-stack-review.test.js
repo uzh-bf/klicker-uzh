@@ -1143,32 +1143,15 @@ test('keeps actions read permission for stack revalidation', () => {
   }
 })
 
-test('uses Claude Opus only for cumulative stack review jobs', () => {
+test('uses GLM Flash for individual and cumulative stack review jobs', () => {
   const workflow = fs.readFileSync(
     path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
     'utf8'
   )
-  const individualJob =
-    workflow.match(
-      /\n {2}review:\n([\s\S]*?)(?=\n {2}[a-z][\w-]*:\n|$)/
-    )?.[1] ?? ''
-  const stackJob =
-    workflow.match(
-      /\n {2}review_stack:\n([\s\S]*?)(?=\n {2}[a-z][\w-]*:\n|$)/
-    )?.[1] ?? ''
 
-  assert.match(
-    individualJob,
-    new RegExp(`OCR_LLM_MODEL: ${FINAL_REVIEW_MODEL}`)
-  )
-  assert.doesNotMatch(individualJob, new RegExp(FINAL_STACK_REVIEW_MODEL))
-  assert.equal(
-    stackJob.match(
-      new RegExp(`OCR_LLM_MODEL: ${FINAL_STACK_REVIEW_MODEL}`, 'g')
-    )?.length,
-    2
-  )
-  assert.doesNotMatch(stackJob, new RegExp(FINAL_REVIEW_MODEL))
+  assert.equal(FINAL_STACK_REVIEW_MODEL, FINAL_REVIEW_MODEL)
+  assert.doesNotMatch(workflow, /anthropic\/claude-opus-4\.6/)
+  assert.doesNotMatch(workflow, /OCR_LLM_MODEL/)
 })
 
 test('checks trusted review code out from the default branch', () => {

@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-27'
+timestamp: '2026-08-29'
 tags:
   - testing
   - ci
@@ -120,7 +120,7 @@ provider-level acceptance check.
   response-processor worker descendants before reporting ready. Without those
   processes and matching `APP_SECRET`/Redis/Postgres settings, the UI can
   accept answers that never reach cockpit/evaluation.
-- Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, and the absence of horizontal overflow.
+- Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, the absence of horizontal overflow, and a rendered player ratio of 16:9 within tolerance on both surfaces.
 
 ## CI matrix
 

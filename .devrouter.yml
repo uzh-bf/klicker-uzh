@@ -21,7 +21,7 @@
 # maps a selection to exact turbo roots, readiness apps, and process markers.
 version: 1
 devrouter:
-  version: 0.0.45
+  version: 0.0.46
 project:
   name: klicker-uzh
 managedRuntime:
