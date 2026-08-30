@@ -252,3 +252,4 @@ Stage 2 is a future package, not an unimplemented slice of the Stage 1 pull requ
 - Required delivery layer: source-complete draft pull request against `v3`.
 - Runtime: not started and excluded from this plan.
 - Withheld beyond terminal: browser evidence, ready marking, merge, deployment, live evaluation, database work, upstream integration, practice-stack mutation, and cleanup.
+- 2026-08-30 CI correction active: exact-head hosted Playwright run `33296033863` passed 164 tests and exposed three stale English-copy assertions across two tests in `Y-chat.spec.ts`; the correction aligns them with the approved selected-mode card and platform-owned Tutor and Explainer descriptions. Local runtime remains excluded. Fresh static verification, publication, and exact-head CI are pending.

@@ -459,7 +459,10 @@ test.describe('Chatbot Messaging Interface', () => {
       'You are chatting with E2E Chatbot.'
     )
     await expect(page.getByTestId('chat-welcome-mode')).toContainText(
-      'Tutor mode.'
+      'Selected mode: Tutor'
+    )
+    await expect(page.getByTestId('chat-welcome-mode')).toContainText(
+      'Get step-by-step guidance with focused questions, hints, and feedback.'
     )
     await expect(page.getByTestId('chat-welcome-suggestion')).toHaveCount(2)
   })
@@ -1679,12 +1682,14 @@ test.describe('Chatbot Settings Panel', () => {
     await visitChat(page)
 
     await page.getByTestId('chat-mode-switcher').click()
-    await expect(page.getByTestId('chat-mode-description-tutor')).toContainText(
-      'patient'
+    await expect(page.getByTestId('chat-mode-description-tutor')).toHaveText(
+      'Get step-by-step guidance with focused questions, hints, and feedback.'
     )
     await expect(
       page.getByTestId('chat-mode-description-explainer')
-    ).toContainText('difficult concepts')
+    ).toHaveText(
+      'Get direct explanations with definitions and course-based examples.'
+    )
   })
 
   test('AI model section displays current model (automatic mode)', async ({
