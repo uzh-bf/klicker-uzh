@@ -324,6 +324,7 @@ jobs:
 
       - name: Start services, wait for readiness, and run Playwright tests
         timeout-minutes: 120
+        shell: bash
         run: |
           set -euo pipefail
           chmod +x .github/scripts/wait-for-services.sh

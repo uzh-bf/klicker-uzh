@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync, statSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -231,6 +231,24 @@ test('the start command passes validated filters as distinct argv entries', () =
       '--filter=@klicker-uzh/frontend-pwa',
     ],
   })
+})
+
+test('workflow shard startup steps explicitly select Bash', () => {
+  const workflowUrls = [
+    new URL('../.github/workflows/test-playwright.yml', import.meta.url),
+    new URL(
+      '../.github/workflows/public-pr-playwright-shards.yml',
+      import.meta.url
+    ),
+  ]
+
+  for (const workflowUrl of workflowUrls) {
+    const workflow = readFileSync(workflowUrl, 'utf8')
+    assert.match(
+      workflow,
+      /- name: Start services, wait for readiness, and run Playwright tests\n\s+timeout-minutes: 120\n\s+shell: bash\n\s+run: \|/
+    )
+  }
 })
 
 test('installed Devrouter plans every shard profile union from the real contract', () => {
