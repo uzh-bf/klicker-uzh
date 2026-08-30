@@ -92,6 +92,10 @@ export function ChatOnboardingProvider({
   // this decision is taken, and a gate that dipped to false in between would
   // send focus to the composer for a frame before the carousel took it back.
   const openCarousel = useCallback(() => {
+    // Any opening spends the one auto-show this page view gets: a replay
+    // closed before the stored state has arrived records nothing and would
+    // otherwise be followed by a surprise auto-open when the answer lands.
+    autoShown.current = true
     setOnboardingGateOpen(true)
     setIsOpen(true)
   }, [])
@@ -103,7 +107,6 @@ export function ChatOnboardingProvider({
     if (embedded || autoShown.current) return
     if (completed !== false || disclaimerPending) return
 
-    autoShown.current = true
     openCarousel()
   }, [completed, disclaimerPending, embedded, openCarousel])
 
