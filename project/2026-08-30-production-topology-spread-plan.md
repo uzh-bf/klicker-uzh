@@ -189,5 +189,5 @@ Check:
 - [x] Disposition the independent planning review.
 - [ ] Receive one-time approval for this execution plan.
 - [x] Commit the plan and implement Slice 2.
-- [ ] Run rendered-manifest checks and required reviews.
+- [x] Run rendered-manifest checks and required reviews.
 - [ ] Push and open the draft PR.
