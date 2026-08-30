@@ -726,9 +726,18 @@ adapted.
   proof databases. The one reviewer correction-pass budget is exhausted; this
   final narrow follow-up is main-session verified as required by the Finish
   Gate.
-- Current boundary: all final-review findings are corrected and verified on
-  `rs/chat-system-prompt-versioning`; only the local follow-up commit remains
-  before the upstream-integration and push authority boundary.
-  The task branch is two commits behind `origin/v3` on the last refreshed
-  refs. Upstream integration, push/PR mutation, deployment, live data work, and
-  cleanup remain separate authority boundaries.
+- 2026-08-30 (approved delivery integration): merged refreshed `origin/v3` at
+  `e84103606` once in merge commit `8f8a68678`. The upstream changes did not
+  overlap the reviewed prompt-versioning paths, so the final-review evidence
+  remains reusable. Fresh exact-head verification replayed all 183 migrations
+  on disposable database `prompt_review_5668_8f8a68678`; 17 Prisma Data tests,
+  7 GraphQL tests, and 420 Chat tests passed, with 13 database-gated Chat tests
+  skipped. `pnpm run check:all` passed all 25 checks, and all 23 production
+  build tasks passed. Cleanup left zero proof databases.
+- 2026-08-30 (runtime closeout): the managed runtime restored full readiness
+  after the build, then stopped with ten routes removed, zero drift, and every
+  managed service and process stopped. A final route readback found no routes
+  for this worktree.
+- Current boundary: commit this receipt, push the exact task head, update PR
+  #5668, and monitor its fresh CI and review feedback. PR merge, deployment,
+  live data work, and runtime or worktree deletion remain withheld.
