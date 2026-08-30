@@ -43,8 +43,10 @@ one-shot approval claim before forcing `generate_cards`.
 Each generation accepts at most five cards. Every generated card performs its
 own bounded retrieval and structured model call. The nested retrieval sends
 exactly the shared `doc_query` input field `question`; strict MCP servers reject
-unknown input fields. Its cited chunk IDs must be a non-empty subset of that
-retrieval. The generator returns either a ready card or structured
+unknown input fields. Normalization accepts at most 32 chunks and 128 KiB of
+aggregate UTF-8 chunk text before that evidence enters the generation calls.
+Its cited chunk IDs must be a non-empty subset of that retrieval. The generator
+returns either a ready card or structured
 `insufficient_evidence`; an abstention contains no card prose and never enters
 the candidate list. Ready cards may not expose cited chunk IDs or the retrieval
 protocol markers in participant-facing content. Only grouped, bounded,
@@ -77,10 +79,10 @@ Personal-element access is GraphQL-only for operations: the Chat server mints
 a short-lived participant JWT and calls the persisted-query operations
 through `src/lib/server/personalElements/graphqlClient.ts` instead of
 importing backend services. The client exposes list, save, discard, lease
-mutations, and update operations; lease and discard state reads the GraphQL
-surface does not expose stay as participant-scoped Prisma reads inside the
-adapter. The backend owns authorization, caps, duplicate policy, and
-revision semantics.
+mutations, plan preparation, candidate validation, the narrow saved-candidate
+lookup, and update operations. Lease and discard state reads the GraphQL surface
+does not expose stay as participant-scoped Prisma reads inside the adapter. The
+backend owns authorization, caps, duplicate policy, and revision semantics.
 
 Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/layout.tsx` validates the route parameter as a UUID before querying Prisma, then calls `notFound()` for malformed or absent chatbot IDs; the root `src/app/not-found.tsx` preserves the 404 status while showing branded recovery and a safe return link. The root `src/app/error.tsx` sits above the dynamic layout, uses Next's `unstable_retry` callback to refresh a failed server payload, and exposes only retry/return actions; it never renders the underlying error text. The loading state in `src/components/assistant.tsx` uses the same branded card/skeleton language, and `/noLogin` keeps only a concise return notice instead of printing the UUID-bearing redirect URL.
 
@@ -711,15 +713,18 @@ a separately authorised live-model evaluation.
 
 ### Student-generated card plans
 
-When a student asks for new cards, the Chat route loads every saved card title
-for that participant and course and passes that full title list to the server-side
-plan tool. After grounded retrieval, the route first forces
+When a student asks for new cards, the Chat plan tool calls the backend
+`prepareCardPlan` operation. The backend authorizes the participant, loads the
+complete saved-title list, screens duplicates, and returns stable plan and
+candidate identities together with the title context. After grounded retrieval,
+the route first forces
 `select_response_type`; its model-selected `answer` or `card_plan` result avoids
 language-specific request matching, and `card_plan` deterministically forces the
 interactive plan tool instead of allowing a prose-only card response. The raw
 participant-controlled titles are not interpolated into the model prompt.
-`propose_card_plan` then applies a deterministic local title check
-before approval: normalized exact matches, abbreviation/expanded-title matches,
+`propose_card_plan` applies the same deterministic local title check to the
+backend-screened result before approval: normalized exact matches,
+abbreviation/expanded-title matches,
 multi-word subsets, and close character-gram matches at or above the 0.8
 threshold are potential duplicates. Such entries are removed from the proposed
 plan and shown as skipped; a plan containing only potential duplicates returns

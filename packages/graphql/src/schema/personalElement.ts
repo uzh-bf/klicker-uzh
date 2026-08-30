@@ -252,6 +252,7 @@ export const PreparedCardPlanRef =
 
 export const PreparedCardPlan = PreparedCardPlanRef.implement({
   fields: (t) => ({
+    planId: t.exposeString('planId'),
     courseLanguage: t.expose('courseLanguage', { type: LocaleType }),
     existingTitles: t.exposeStringList('existingTitles'),
     cards: t.expose('cards', { type: [PreparedCardPlanEntry] }),

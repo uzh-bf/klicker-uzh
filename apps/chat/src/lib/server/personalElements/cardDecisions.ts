@@ -13,7 +13,7 @@ import {
   discardPersonalElementCandidate,
   getGenerationLeaseState,
   listDiscardedCandidateIds,
-  listPersonalElements,
+  listSavedPersonalElementCandidateIds,
 } from './graphqlClient'
 
 type PersistedPart = {
@@ -206,7 +206,7 @@ export async function loadCardDecisionState(
 ): Promise<
   CardDecisionOutcome<{
     courseId: string
-    elements: Awaited<ReturnType<typeof listPersonalElements>>
+    elements: Array<{ candidateId: string }>
     discardedCandidateIds: string[]
   }>
 > {
@@ -227,8 +227,12 @@ export async function loadCardDecisionState(
     }
   }
 
-  const [elements, discarded] = await Promise.all([
-    listPersonalElements(context.courseId, context.participantId),
+  const [savedCandidateIds, discarded] = await Promise.all([
+    listSavedPersonalElementCandidateIds(
+      context.courseId,
+      [...candidateIds],
+      context.participantId
+    ),
     listDiscardedCandidateIds({
       participantId: context.participantId,
       courseId: context.courseId,
@@ -240,9 +244,7 @@ export async function loadCardDecisionState(
     ok: true,
     data: {
       courseId: context.courseId,
-      elements: elements.filter((element) =>
-        candidateIds.has(element.candidateId ?? '')
-      ),
+      elements: savedCandidateIds.map((candidateId) => ({ candidateId })),
       discardedCandidateIds: discarded,
     },
   }

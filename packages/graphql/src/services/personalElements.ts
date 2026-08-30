@@ -887,6 +887,7 @@ export type PreparedCardPlanEntry = {
 }
 
 export type PreparedCardPlan = {
+  planId: string
   courseLanguage: DB.Locale
   existingTitles: string[]
   cards: PreparedCardPlanEntry[]
@@ -952,6 +953,7 @@ export async function prepareCardPlan(
   }
 
   return {
+    planId,
     courseLanguage: participation.course.language,
     existingTitles,
     cards: retained,
@@ -1010,6 +1012,43 @@ export async function validateCardCandidate(
   }
 
   return true
+}
+
+export async function listSavedPersonalElementCandidateIds(
+  {
+    courseId,
+    candidateIds,
+  }: { courseId: string; candidateIds: readonly string[] },
+  context: PersonalElementServiceContext
+) {
+  assertParticipantContext(context)
+  const parsed = parsePersonalElementInput(
+    z
+      .object({
+        courseId: z.string().trim().min(1).max(MAX_ID_LENGTH),
+        candidateIds: z
+          .array(z.string().trim().min(1).max(MAX_ID_LENGTH))
+          .max(MAX_CANDIDATE_COUNT),
+      })
+      .strict(),
+    { courseId, candidateIds: [...candidateIds] }
+  )
+  if (parsed.candidateIds.length === 0) return []
+
+  await assertCourseParticipation(
+    context.prisma,
+    context.participantId,
+    parsed.courseId
+  )
+  const elements = await context.prisma.personalElement.findMany({
+    where: {
+      participantId: context.participantId,
+      courseId: parsed.courseId,
+      candidateId: { in: [...new Set(parsed.candidateIds)] },
+    },
+    select: { candidateId: true },
+  })
+  return elements.map(({ candidateId }) => candidateId)
 }
 
 function normalizeCandidates(

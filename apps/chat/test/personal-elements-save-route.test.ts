@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   listDiscardedCandidateIds: vi.fn(),
   createPersonalElements: vi.fn(),
   discardPersonalElementCandidate: vi.fn(),
-  listPersonalElements: vi.fn(),
+  listSavedPersonalElementCandidateIds: vi.fn(),
 }))
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
@@ -24,7 +24,8 @@ vi.mock('@klicker-uzh/prisma', () => ({
 vi.mock('../src/lib/server/personalElements/graphqlClient', () => ({
   createPersonalElements: mocks.createPersonalElements,
   discardPersonalElementCandidate: mocks.discardPersonalElementCandidate,
-  listPersonalElements: mocks.listPersonalElements,
+  listSavedPersonalElementCandidateIds:
+    mocks.listSavedPersonalElementCandidateIds,
   getGenerationLeaseState: mocks.getGenerationLeaseState,
   listDiscardedCandidateIds: mocks.listDiscardedCandidateIds,
 }))
@@ -119,7 +120,7 @@ describe('personal-element candidate decisions', () => {
       { id: 'element-1', candidateId: candidate.candidateId },
     ])
     mocks.discardPersonalElementCandidate.mockResolvedValue({})
-    mocks.listPersonalElements.mockResolvedValue([])
+    mocks.listSavedPersonalElementCandidateIds.mockResolvedValue([])
     mocks.listDiscardedCandidateIds.mockResolvedValue([])
   })
 
@@ -337,14 +338,8 @@ describe('personal-element candidate decisions', () => {
         ],
       })
     )
-    mocks.listPersonalElements.mockResolvedValue([
-      {
-        id: 'saved-element',
-        candidateId: candidate.candidateId,
-        sourceMessageId: 'earlier-attempt-message',
-        sourceToolCallId: 'earlier-attempt-tool',
-      },
-      { id: 'unrelated-element', candidateId: 'other-candidate' },
+    mocks.listSavedPersonalElementCandidateIds.mockResolvedValue([
+      candidate.candidateId,
     ])
     mocks.listDiscardedCandidateIds.mockResolvedValue([candidate.candidateId])
 
@@ -358,16 +353,14 @@ describe('personal-element candidate decisions', () => {
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toEqual({
       courseId: 'course-1',
-      elements: [
-        {
-          id: 'saved-element',
-          candidateId: candidate.candidateId,
-          sourceMessageId: 'earlier-attempt-message',
-          sourceToolCallId: 'earlier-attempt-tool',
-        },
-      ],
+      elements: [{ candidateId: candidate.candidateId }],
       discardedCandidateIds: [candidate.candidateId],
     })
+    expect(mocks.listSavedPersonalElementCandidateIds).toHaveBeenCalledWith(
+      'course-1',
+      [candidate.candidateId],
+      'participant-1'
+    )
     expect(mocks.listDiscardedCandidateIds).toHaveBeenCalledWith({
       participantId: 'participant-1',
       courseId: 'course-1',
@@ -399,7 +392,7 @@ describe('personal-element candidate decisions', () => {
     await expect(response.json()).resolves.toEqual({
       error: 'Candidate decision state is not ready',
     })
-    expect(mocks.listPersonalElements).not.toHaveBeenCalled()
+    expect(mocks.listSavedPersonalElementCandidateIds).not.toHaveBeenCalled()
     expect(mocks.listDiscardedCandidateIds).not.toHaveBeenCalled()
   })
 

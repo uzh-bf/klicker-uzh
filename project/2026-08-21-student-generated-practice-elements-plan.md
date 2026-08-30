@@ -1055,7 +1055,19 @@ Settled rulings for this implementation:
   checks at their own immutable heads. The targeted four-file Chat suite passes
   42 tests and the full Chat suite passes 378 tests; both follow-up commits
   pass the repository hooks.
-- 2026-08-23 (production-readiness audit): The user invoked the manual\n+  deep-audit skill. Eight dimension workers reviewed exact head\n+  `7ecf61c569` over `origin/v3` at `d9e9b46a9`; two candidate blockers went to\n+  wave-two verification and both returned unverifiable because the exact\n+  workspace's public routes returned HTTP 404 for the whole audit window and\n+  the deployed `doc_query` producer is external to this repository.\n+  Verdict: not ready, recorded in\n+  `project/2026-08-23-pr5483-stack-production-readiness.md`. The two named\n+  settlement probes are an authenticated post-hydration reload check on\n+  working routes and a values-free staging `doc_query` chunk-contract probe;\n+  both are outside this audit's authority and remain user decisions. All\n+  other findings are non-blocking and unverified per audit rules; current-head\n+  required forge checks were green with two aggregate status jobs pending.
+- 2026-08-23 (production-readiness audit): The user invoked the manual
+  deep-audit skill. Eight dimension workers reviewed exact head
+  `7ecf61c569` over `origin/v3` at `d9e9b46a9`; two candidate blockers went to
+  wave-two verification and both returned unverifiable because the exact
+  workspace's public routes returned HTTP 404 for the whole audit window and
+  the deployed `doc_query` producer is external to this repository.
+  Verdict: not ready, recorded in
+  `project/2026-08-23-pr5483-stack-production-readiness.md`. The two named
+  settlement probes are an authenticated post-hydration reload check on
+  working routes and a values-free staging `doc_query` chunk-contract probe;
+  both are outside this audit's authority and remain user decisions. All
+  other findings are non-blocking and unverified per audit rules; current-head
+  required forge checks were green with two aggregate status jobs pending.
 - 2026-08-24 (follow-up execution): The main session retains implementation
   ownership for the approved candidate-disposition, practice-shell, generation
   progress, and source-normalization slices because their API, persistence, and
@@ -1141,3 +1153,15 @@ Settled rulings for this implementation:
   not hydrate that legacy Pages form and therefore could not establish a new
   participant session. Package-level integration checks remain green, and the
   ready runtime is retained for the user's authenticated manual smoke test.
+- 2026-08-30 (final-review corrections): Chat now invokes the backend
+  `prepareCardPlan` and `validateCardCandidate` contracts through persisted
+  GraphQL operations, while saved-card hydration uses one participant- and
+  course-scoped candidate-ID query instead of loading full personal elements.
+  Retrieved source text is capped at 128 KiB before the three generation
+  prompts are built, so oversized retrieval results fail closed. The malformed
+  escaped patch markers in this plan were removed. GraphQL generation and
+  typechecking pass, the focused GraphQL service suite passes all 46 tests, and
+  the complete Chat suite passes all 896 active tests with 13 integration tests
+  skipped by their existing environment gate. The local feature-flag tests now
+  explicitly ignore the development override, which keeps them deterministic
+  while the user-facing runtime remains enabled for manual AI testing.

@@ -1,10 +1,10 @@
-import { randomUUID } from 'node:crypto'
 import { generateText, Output, tool } from 'ai'
 import { z } from 'zod'
 import {
   assertCitedChunks,
   buildElementSourceReferences,
   type CardPlan,
+  type CardPlanInput,
   cardExplanationSchema,
   cardPlanInputSchema,
   cardPlanProposalSchema,
@@ -169,9 +169,13 @@ async function generateGroundedCard(input: {
   }
 }
 
-export function createProposeCardPlanTool(options?: {
-  existingCardTitles?: readonly string[]
-  getExistingCardTitles?: () => readonly string[] | Promise<readonly string[]>
+export function createProposeCardPlanTool(options: {
+  preparePlan: (input: CardPlanInput) => Promise<{
+    planId: string
+    existingTitles: readonly string[]
+    cards: CardPlan['cards']
+    discardedDuplicates: ReadonlyArray<{ title: string }>
+  }>
 }) {
   return tool({
     description:
@@ -179,37 +183,31 @@ export function createProposeCardPlanTool(options?: {
     inputSchema: cardPlanInputSchema,
     outputSchema: cardPlanProposalSchema,
     execute: async (input) => {
-      const existingCardTitles = options?.getExistingCardTitles
-        ? await options.getExistingCardTitles()
-        : (options?.existingCardTitles ?? [])
+      const prepared = await options.preparePlan(input)
       const { retained, discardedDuplicates } = discardPotentialDuplicateCards(
-        input.cards,
-        existingCardTitles
+        prepared.cards,
+        prepared.existingTitles
       )
+      const discardedTitles = [
+        ...prepared.discardedDuplicates.map(({ title }) => title),
+        ...discardedDuplicates.map(({ title }) => title),
+      ].filter((title, index, titles) => titles.indexOf(title) === index)
       if (retained.length === 0) {
         return {
           status: 'all_duplicates' as const,
-          planId: randomUUID(),
+          planId: prepared.planId,
           topic: input.topic,
           cards: [],
-          discardedDuplicates: discardedDuplicates.map(({ title }) => ({
-            title,
-          })),
+          discardedDuplicates: discardedTitles.map((title) => ({ title })),
         }
       }
 
-      const planId = randomUUID()
       return {
         status: 'ready' as const,
-        planId,
+        planId: prepared.planId,
         topic: input.topic,
-        cards: retained.map((card, index) => ({
-          ...card,
-          candidateId: `${planId}:card-${index + 1}`,
-        })),
-        discardedDuplicates: discardedDuplicates.map(({ title }) => ({
-          title,
-        })),
+        cards: retained,
+        discardedDuplicates: discardedTitles.map((title) => ({ title })),
       }
     },
   })
@@ -226,6 +224,7 @@ export type GenerateCardsToolContext = {
   }) => void
   docQueryTool: ExecutableTool
   skipCandidateIds?: ReadonlySet<string>
+  validateCandidate: (candidate: GeneratedCardCandidate) => Promise<boolean>
 }
 
 async function executeDocQuery(
@@ -500,7 +499,7 @@ async function generateCard(
   if (generated.status === 'insufficient_evidence') {
     throw new CardGenerationFailure('insufficient_evidence')
   }
-  return {
+  const candidate: GeneratedCardCandidate = {
     type: generated.card.type,
     candidateId: entry.candidateId,
     // Keep the persisted title equal to the accepted plan entry. The model
@@ -514,6 +513,14 @@ async function generateCard(
     sourceToolCallId: toolCallId,
     origin: 'AI_GENERATED',
   }
+  try {
+    if (!(await options.validateCandidate(candidate))) {
+      throw new Error('Candidate validation was rejected')
+    }
+  } catch {
+    throw new CardGenerationFailure('generation_failed')
+  }
+  return candidate
 }
 
 export function createGenerateCardsTool(options: GenerateCardsToolContext) {

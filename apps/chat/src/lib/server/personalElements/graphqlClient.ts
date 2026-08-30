@@ -7,13 +7,17 @@ import type {
   MCompleteCardGenerationLeaseMutation,
   MCreatePersonalElementsMutation,
   MDiscardPersonalElementCandidateMutation,
+  MPrepareCardPlanMutation,
   MUpdatePersonalElementMutation,
+  MValidateCardCandidateMutation,
   PersonalElement,
   PersonalElementCandidateInput,
   QPersonalElementsQuery,
+  QSavedPersonalElementCandidateIdsQuery,
   UpdatePersonalElementInput,
 } from '@klicker-uzh/graphql/dist/ops'
 import {
+  ElementType,
   ElementSourceKind,
   ElementSourceLocatorType,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -237,6 +241,70 @@ export async function discardPersonalElementCandidate(
   return data.discardPersonalElementCandidate
 }
 
+export async function prepareCardPlan(
+  input: {
+    courseId: string
+    topic: string
+    cards: Array<{
+      type: 'FLASHCARD'
+      title: string
+      intent: string
+      query: string
+    }>
+  },
+  participantId: string
+) {
+  const data = await executePersonalElementOperation<MPrepareCardPlanMutation>({
+    operationName: 'MPrepareCardPlan',
+    variables: {
+      input: {
+        ...input,
+        cards: input.cards.map((card) => ({
+          ...card,
+          type: ElementType.Flashcard,
+        })),
+      },
+    },
+    participantId,
+  })
+  const plan = data.prepareCardPlan
+  if (!plan) throw new Error('Card plan preparation returned no plan')
+  return {
+    ...plan,
+    cards: plan.cards.map((card) => ({
+      ...card,
+      type: 'FLASHCARD' as const,
+    })),
+  }
+}
+
+export async function validateCardCandidate(
+  input: {
+    courseId: string
+    candidateId: string
+    title: string
+    front: string
+    back: string
+    sources: ElementSourceReference[]
+    sourceMessageId: string
+    sourceToolCallId: string
+  },
+  participantId: string
+): Promise<boolean> {
+  const data =
+    await executePersonalElementOperation<MValidateCardCandidateMutation>({
+      operationName: 'MValidateCardCandidate',
+      variables: {
+        input: {
+          ...input,
+          sources: input.sources.map(toGraphqlSourceReference),
+        },
+      },
+      participantId,
+    })
+  return data.validateCardCandidate
+}
+
 export async function listPersonalElements(
   courseId: string,
   participantId: string
@@ -247,6 +315,23 @@ export async function listPersonalElements(
     participantId,
   })
   return data.personalElements ?? []
+}
+
+export async function listSavedPersonalElementCandidateIds(
+  courseId: string,
+  candidateIds: readonly string[],
+  participantId: string
+): Promise<string[]> {
+  if (candidateIds.length === 0) return []
+  const data =
+    await executePersonalElementOperation<QSavedPersonalElementCandidateIdsQuery>(
+      {
+        operationName: 'QSavedPersonalElementCandidateIds',
+        variables: { courseId, candidateIds: [...candidateIds] },
+        participantId,
+      }
+    )
+  return data.savedPersonalElementCandidateIds
 }
 
 export async function updatePersonalElement(

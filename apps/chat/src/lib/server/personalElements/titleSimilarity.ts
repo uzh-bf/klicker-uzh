@@ -132,11 +132,10 @@ export function findPotentialDuplicateTitle(
   return match
 }
 
-export function discardPotentialDuplicateCards(
-  cards: CardPlanInput['cards'],
-  existingTitles: readonly string[]
-) {
-  const retained: CardPlanInput['cards'] = []
+export function discardPotentialDuplicateCards<
+  TCard extends CardPlanInput['cards'][number],
+>(cards: readonly TCard[], existingTitles: readonly string[]) {
+  const retained: TCard[] = []
   const discardedDuplicates: DiscardedDuplicateCard[] = []
   const titlesToCompare = [...existingTitles]
 

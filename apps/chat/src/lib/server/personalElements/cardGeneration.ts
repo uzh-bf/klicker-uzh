@@ -14,6 +14,8 @@ import {
   listCompletedGenerationLeaseAttemptTokens,
   listDiscardedCandidateIds,
   listPersonalElements,
+  prepareCardPlan,
+  validateCardCandidate,
 } from './graphqlClient'
 import {
   extractUnsavedCandidates,
@@ -309,8 +311,8 @@ export async function createCardGeneration({
       ...tools,
       [RESPONSE_TYPE_TOOL_NAME]: createResponseTypeTool(),
       propose_card_plan: createProposeCardPlanTool({
-        getExistingCardTitles: async () =>
-          (await loadExistingCards()).map((card) => card.name),
+        preparePlan: async (input) =>
+          prepareCardPlan({ ...input, courseId }, participantId),
       }),
     }
     toolOrder = [
@@ -491,6 +493,20 @@ export async function createCardGeneration({
           nestedGenerationCost += calculateNestedCost(usage)
         },
         docQueryTool: baseTools[docQueryToolName] as ExecutableTool,
+        validateCandidate: async (candidate) =>
+          validateCardCandidate(
+            {
+              courseId,
+              candidateId: candidate.candidateId,
+              title: candidate.name,
+              front: candidate.content,
+              back: candidate.explanation,
+              sources: candidate.sources,
+              sourceMessageId: candidate.sourceMessageId,
+              sourceToolCallId: candidate.sourceToolCallId,
+            },
+            participantId
+          ),
       }),
     }
     toolOrder = [...baseToolNames, ...personalToolNames, 'generate_cards']

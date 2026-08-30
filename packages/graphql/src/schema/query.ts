@@ -1205,6 +1205,23 @@ export const Query = builder.queryType({
         },
       }),
 
+      savedPersonalElementCandidateIds: t.withAuth(asParticipant).field({
+        type: ['String'],
+        args: {
+          courseId: t.arg.string({ required: true }),
+          candidateIds: t.arg.stringList({ required: true }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.listSavedPersonalElementCandidateIds(
+            args,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
+        },
+      }),
+
       getCourseStudentTimelines: t.withAuth(asParticipant).field({
         nullable: true,
         type: [CourseStudentTimeline],

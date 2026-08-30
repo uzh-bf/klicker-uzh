@@ -32,7 +32,10 @@ afterEach(() => {
 describe('personal card generation capability', () => {
   test('targets the participant and chatbot through the shared evaluator', async () => {
     const flags = client()
-    const evaluate = createPersonalCardGenerationEvaluator({ client: flags })
+    const evaluate = createPersonalCardGenerationEvaluator({
+      client: flags,
+      developmentOverride: '',
+    })
 
     await expect(evaluate(target)).resolves.toBe(true)
     expect(flags.initialize).toHaveBeenCalledOnce()
@@ -53,7 +56,10 @@ describe('personal card generation capability', () => {
     ['disabled flag', { initialized: true, healthy: true, enabled: false }],
   ])('fails closed for %s', async (_, status) => {
     const flags = client(status)
-    const evaluate = createPersonalCardGenerationEvaluator({ client: flags })
+    const evaluate = createPersonalCardGenerationEvaluator({
+      client: flags,
+      developmentOverride: '',
+    })
 
     await expect(evaluate(target)).resolves.toBe(false)
     if (!status.initialized || !status.healthy) {
@@ -64,7 +70,10 @@ describe('personal card generation capability', () => {
   test('fails closed when the evaluator client throws', async () => {
     const flags = client()
     flags.initialize.mockRejectedValueOnce(new Error('provider unavailable'))
-    const evaluate = createPersonalCardGenerationEvaluator({ client: flags })
+    const evaluate = createPersonalCardGenerationEvaluator({
+      client: flags,
+      developmentOverride: '',
+    })
 
     await expect(evaluate(target)).resolves.toBe(false)
     expect(flags.isEnabled).not.toHaveBeenCalled()

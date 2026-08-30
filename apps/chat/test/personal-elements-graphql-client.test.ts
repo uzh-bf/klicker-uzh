@@ -20,7 +20,10 @@ vi.mock('@klicker-uzh/prisma', () => ({
 vi.mock('@klicker-uzh/graphql/dist/client.json', () => ({
   default: {
     MCreatePersonalElements: 'test-hash-create',
+    MPrepareCardPlan: 'test-hash-prepare',
+    MValidateCardCandidate: 'test-hash-validate',
     QPersonalElements: 'test-hash-list',
+    QSavedPersonalElementCandidateIds: 'test-hash-saved-candidates',
   },
 }))
 
@@ -29,7 +32,10 @@ import {
   getGenerationLeaseState,
   listCompletedGenerationLeaseAttemptTokens,
   listDiscardedCandidateIds,
+  listSavedPersonalElementCandidateIds,
   mintParticipantToken,
+  prepareCardPlan,
+  validateCardCandidate,
 } from '../src/lib/server/personalElements/graphqlClient'
 
 const originalSecret = process.env.APP_SECRET
@@ -42,6 +48,7 @@ describe('personal-element GraphQL client', () => {
   })
 
   afterEach(() => {
+    vi.unstubAllGlobals()
     if (originalSecret === undefined) delete process.env.APP_SECRET
     else process.env.APP_SECRET = originalSecret
     if (originalApiOrigin === undefined) delete process.env.APP_ORIGIN_API
@@ -164,6 +171,131 @@ describe('personal-element GraphQL client', () => {
       version: 1,
     })
     expect(body).not.toHaveProperty('query')
+  })
+
+  test('routes plan preparation and candidate validation through generated operations', async () => {
+    process.env.APP_SECRET = 'test-secret'
+    process.env.APP_ORIGIN_API = 'https://api.example.test'
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            prepareCardPlan: {
+              planId: '00000000-0000-0000-0000-000000000001',
+              courseLanguage: 'en',
+              existingTitles: [],
+              cards: [
+                {
+                  type: 'FLASHCARD',
+                  candidateId: '00000000-0000-0000-0000-000000000001:card-1',
+                  title: 'CAPM',
+                  intent: 'Define CAPM',
+                  query: 'CAPM',
+                },
+              ],
+              discardedDuplicates: [],
+            },
+          },
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: { validateCardCandidate: true } }),
+      })
+    vi.stubGlobal('fetch', fetchImpl)
+
+    await expect(
+      prepareCardPlan(
+        {
+          courseId: 'course-1',
+          topic: 'CAPM',
+          cards: [
+            {
+              type: 'FLASHCARD',
+              title: 'CAPM',
+              intent: 'Define CAPM',
+              query: 'CAPM',
+            },
+          ],
+        },
+        'participant-1'
+      )
+    ).resolves.toMatchObject({
+      planId: '00000000-0000-0000-0000-000000000001',
+    })
+    await expect(
+      validateCardCandidate(
+        {
+          courseId: 'course-1',
+          candidateId: 'candidate-1',
+          title: 'CAPM',
+          front: 'What is CAPM?',
+          back: 'The capital asset pricing model.',
+          sources: [
+            {
+              sourceId: 'course-script',
+              kind: 'DOCUMENT',
+              title: 'Course script',
+              chunkIds: ['chunk-1'],
+              locators: [{ type: 'PAGE_RANGE', pageFrom: 1, pageTo: 1 }],
+            },
+          ],
+          sourceMessageId: 'assistant-1',
+          sourceToolCallId: 'generate-1',
+        },
+        'participant-1'
+      )
+    ).resolves.toBe(true)
+
+    const requests = fetchImpl.mock.calls.map(([, request]) =>
+      JSON.parse((request as { body: string }).body)
+    )
+    expect(requests.map(({ operationName }) => operationName)).toEqual([
+      'MPrepareCardPlan',
+      'MValidateCardCandidate',
+    ])
+    expect(requests.map(({ extensions }) => extensions.persistedQuery)).toEqual(
+      [
+        { sha256Hash: 'test-hash-prepare', version: 1 },
+        { sha256Hash: 'test-hash-validate', version: 1 },
+      ]
+    )
+  })
+
+  test('loads only the requested saved candidate identities', async () => {
+    process.env.APP_SECRET = 'test-secret'
+    process.env.APP_ORIGIN_API = 'https://api.example.test'
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: { savedPersonalElementCandidateIds: ['candidate-1'] },
+      }),
+    })
+    vi.stubGlobal('fetch', fetchImpl)
+
+    await expect(
+      listSavedPersonalElementCandidateIds(
+        'course-1',
+        ['candidate-1', 'candidate-2'],
+        'participant-1'
+      )
+    ).resolves.toEqual(['candidate-1'])
+    const body = JSON.parse(fetchImpl.mock.calls[0]?.[1].body)
+    expect(body).toMatchObject({
+      operationName: 'QSavedPersonalElementCandidateIds',
+      variables: {
+        courseId: 'course-1',
+        candidateIds: ['candidate-1', 'candidate-2'],
+      },
+      extensions: {
+        persistedQuery: {
+          sha256Hash: 'test-hash-saved-candidates',
+          version: 1,
+        },
+      },
+    })
   })
 
   test('scopes lease and discard reads to the participant', async () => {

@@ -19,9 +19,11 @@ vi.mock('ai', async () => {
 import {
   buildElementSourceReferences,
   type CardPlan,
+  type CardPlanInput,
   cardPlanInputSchema,
   cardPlanSchema,
   generationCandidateSchema,
+  MAX_RETRIEVED_CHUNK_TEXT_BYTES,
   MAX_CARDS,
   normalizeRetrievedChunks,
 } from '../src/lib/server/personalElements/contracts'
@@ -62,6 +64,19 @@ const options = {
     execute: vi.fn().mockResolvedValue(retrieval),
   },
   onNestedUsage: vi.fn(),
+  validateCandidate: vi.fn().mockResolvedValue(true),
+}
+
+function preparedPlan(planId: string, existingTitles: readonly string[] = []) {
+  return vi.fn(async (input: CardPlanInput) => ({
+    planId,
+    existingTitles,
+    cards: input.cards.map((card, index) => ({
+      ...card,
+      candidateId: `${planId}:card-${index + 1}`,
+    })),
+    discardedDuplicates: [],
+  }))
 }
 
 function execute(toolValue: unknown, input: unknown, toolCallId = 'tool-1') {
@@ -113,17 +128,25 @@ describe('personal-element chat tools', () => {
         },
       ],
     }
-    const first = (await execute(createProposeCardPlanTool(), input)) as {
+    const firstPlanId = '00000000-0000-0000-0000-000000000001'
+    const secondPlanId = '00000000-0000-0000-0000-000000000002'
+    const first = (await execute(
+      createProposeCardPlanTool({ preparePlan: preparedPlan(firstPlanId) }),
+      input
+    )) as {
       planId: string
       cards: Array<{ candidateId: string }>
     }
-    const second = (await execute(createProposeCardPlanTool(), input)) as {
+    const second = (await execute(
+      createProposeCardPlanTool({ preparePlan: preparedPlan(secondPlanId) }),
+      input
+    )) as {
       planId: string
       cards: Array<{ candidateId: string }>
     }
 
-    expect(first.planId).toMatch(/^[0-9a-f-]{36}$/)
-    expect(second.planId).toMatch(/^[0-9a-f-]{36}$/)
+    expect(first.planId).toBe(firstPlanId)
+    expect(second.planId).toBe(secondPlanId)
     expect(first.cards[0]?.candidateId).toBe(`${first.planId}:card-1`)
     expect(second.cards[0]?.candidateId).toBe(`${second.planId}:card-1`)
     expect(first.cards[0]?.candidateId).not.toBe(second.cards[0]?.candidateId)
@@ -168,7 +191,9 @@ describe('personal-element chat tools', () => {
   test('filters potential duplicate titles before approval', async () => {
     const result = (await execute(
       createProposeCardPlanTool({
-        existingCardTitles: ['Capital Asset Pricing Model Definition'],
+        preparePlan: preparedPlan('00000000-0000-0000-0000-000000000003', [
+          'Capital Asset Pricing Model Definition',
+        ]),
       }),
       {
         topic: 'CAPM',
@@ -201,7 +226,11 @@ describe('personal-element chat tools', () => {
   test('rejects a plan made entirely of potential duplicates', async () => {
     await expect(
       execute(
-        createProposeCardPlanTool({ existingCardTitles: ['CAPM Definition'] }),
+        createProposeCardPlanTool({
+          preparePlan: preparedPlan('00000000-0000-0000-0000-000000000004', [
+            'CAPM Definition',
+          ]),
+        }),
         {
           topic: 'CAPM',
           cards: [
@@ -221,25 +250,24 @@ describe('personal-element chat tools', () => {
     })
   })
 
-  test('loads the saved-title list when the plan tool actually executes', async () => {
-    const getExistingCardTitles = vi.fn().mockResolvedValue(['Private card'])
+  test('prepares the plan only when the plan tool actually executes', async () => {
+    const preparePlan = preparedPlan('00000000-0000-0000-0000-000000000005', [
+      'Private card',
+    ])
 
-    const result = (await execute(
-      createProposeCardPlanTool({ getExistingCardTitles }),
-      {
-        topic: 'CAPM',
-        cards: [
-          {
-            type: 'FLASHCARD',
-            title: 'Private card',
-            intent: 'Define CAPM',
-            query: 'CAPM',
-          },
-        ],
-      }
-    )) as { status: string; cards: unknown[] }
+    const result = (await execute(createProposeCardPlanTool({ preparePlan }), {
+      topic: 'CAPM',
+      cards: [
+        {
+          type: 'FLASHCARD',
+          title: 'Private card',
+          intent: 'Define CAPM',
+          query: 'CAPM',
+        },
+      ],
+    })) as { status: string; cards: unknown[] }
 
-    expect(getExistingCardTitles).toHaveBeenCalledOnce()
+    expect(preparePlan).toHaveBeenCalledOnce()
     expect(result.status).toBe('all_duplicates')
     expect(result.cards).toEqual([])
   })
@@ -331,6 +359,33 @@ describe('personal-element chat tools', () => {
         labeledPage: 'iv',
       },
     ])
+  })
+
+  test('bounds aggregate retrieved chunk text by UTF-8 bytes', () => {
+    const retrievalWithText = (texts: string[]) => ({
+      sources: [
+        {
+          source_id: 'course-script',
+          source_type: 'document',
+          chunks: texts.map((content, index) => ({
+            chunk_id: `chunk-${index + 1}`,
+            content,
+          })),
+        },
+      ],
+    })
+    const half = MAX_RETRIEVED_CHUNK_TEXT_BYTES / 2
+
+    expect(
+      normalizeRetrievedChunks(
+        retrievalWithText(['a'.repeat(half), 'b'.repeat(half)])
+      ).chunks
+    ).toHaveLength(2)
+    expect(() =>
+      normalizeRetrievedChunks(
+        retrievalWithText(['a'.repeat(half), 'b'.repeat(half + 1)])
+      )
+    ).toThrow('aggregate byte limit')
   })
 
   test('drops unsafe provider fragments after assembling the exact web target', () => {
@@ -721,6 +776,39 @@ describe('personal-element chat tools', () => {
         expect.objectContaining({ candidateId: 'card-1', name: 'Rates' }),
         expect.objectContaining({ candidateId: 'card-2' }),
       ]),
+    })
+  })
+
+  test('does not present a candidate rejected by backend validation', async () => {
+    const plan: CardPlan = {
+      planId: '00000000-0000-0000-0000-000000000020',
+      topic: 'Monetary policy',
+      cards: [
+        {
+          type: 'FLASHCARD',
+          candidateId: 'card-1',
+          title: 'Rates',
+          intent: 'Define rates',
+          query: 'rates',
+        },
+      ],
+    }
+    options.validateCandidate.mockRejectedValueOnce(
+      new Error('synthetic duplicate rejection')
+    )
+    const outputs: unknown[] = []
+
+    for await (const output of executeStreamingTool(
+      createGenerateCardsTool({ ...options, approvedPlan: plan })
+    ).execute(plan, { toolCallId: 'generate-backend-rejection' })) {
+      outputs.push(output)
+    }
+
+    expect(options.validateCandidate).toHaveBeenCalledOnce()
+    expect(outputs.at(-1)).toMatchObject({
+      status: 'error',
+      candidates: [],
+      failedCards: [{ candidateId: 'card-1', code: 'generation_failed' }],
     })
   })
 

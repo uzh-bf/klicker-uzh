@@ -56,6 +56,7 @@ and `respondToPersonalElement` requires the expected version so stale responses
 cannot update revised content.
 
 The public participant API consists of `personalElements`,
+`savedPersonalElementCandidateIds`,
 `respondToPersonalElement`, and `deletePersonalElement`. Chat is the only
 creation transport; its server route reaches Save and Discard through the
 same service via the persisted-query operations `MCreatePersonalElements`
@@ -67,10 +68,11 @@ their selection sets change. `getPracticeQuizList` includes courses that have
 personal cards and exposes `personalElementCount` and `personalDueCount`.
 
 The backend also owns card-plan preparation and candidate validation through
-`prepareCardPlan` and `validateCardCandidate`. `prepareCardPlan` returns the
-course language and the complete saved-title list, screens proposed titles
-against saved cards and within the proposal, and assigns stable candidate
-identities. `validateCardCandidate` re-checks participation, source-message
+`prepareCardPlan` and `validateCardCandidate`. Chat calls both through generated
+persisted-query operations. `prepareCardPlan` returns a stable plan ID, the
+course language, the complete saved-title list, screens proposed titles against
+saved cards and within the proposal, and assigns stable candidate identities.
+`validateCardCandidate` re-checks participation, source-message
 ownership, the structural Flashcard payload, source bounds, and current title
 similarity before a candidate can render. Chat keeps its own deterministic
 title-similarity check for the plan tool and no longer imports backend
@@ -83,7 +85,9 @@ The remaining lifecycle is exposed as participant-authenticated mutations:
 title-similarity check inside its serializable transaction;
 `discardPersonalElementCandidate` persists the negative decision; and
 `updatePersonalElement` applies the expected-version revision contract.
-`personalElements` returns the durable saved state for reload.
+`savedPersonalElementCandidateIds` returns only the requested saved candidate
+identities for generated-message reloads. `personalElements` remains the full
+course collection used by practice and saved-card management.
 
 `PersonalElement.sources` exposes grouped, source-body-free reference snapshots.
 Each reference identifies one source material and contains disjoint physical

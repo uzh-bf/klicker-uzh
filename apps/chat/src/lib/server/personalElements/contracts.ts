@@ -14,6 +14,7 @@ import { parseDocQueryPayload } from '@/src/lib/sources/normalizeSources'
 
 export const MAX_CARDS = 5
 const MAX_CHUNKS = 32
+export const MAX_RETRIEVED_CHUNK_TEXT_BYTES = 128 * 1024
 
 export const cardExplanationSchema = z
   .string()
@@ -518,6 +519,7 @@ export function normalizeRetrievedChunks(raw: unknown): {
   const rawSources = Array.isArray(payload.sources) ? payload.sources : []
   const chunks: RetrievedChunk[] = []
   const seen = new Set<string>()
+  let chunkTextBytes = 0
 
   for (const [sourceIndex, value] of rawSources.entries()) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -553,6 +555,11 @@ export function normalizeRetrievedChunks(raw: unknown): {
         stringValue(chunk.text) ??
         stringValue(chunk.excerpt)
       if (!text) throw new Error('Retrieved chunk has no text')
+      const nextChunkTextBytes =
+        chunkTextBytes + Buffer.byteLength(text, 'utf8')
+      if (nextChunkTextBytes > MAX_RETRIEVED_CHUNK_TEXT_BYTES) {
+        throw new Error('Retrieved chunk text exceeds the aggregate byte limit')
+      }
 
       const chunkId = sourceIdentity(
         chunk.chunk_id ?? chunk.chunkId ?? chunk.id
@@ -568,6 +575,7 @@ export function normalizeRetrievedChunks(raw: unknown): {
         throw new Error('Retrieved result exceeds the 32 chunk limit')
       }
       seen.add(chunkId)
+      chunkTextBytes = nextChunkTextBytes
       const page = pageValue(chunk.page_number) ?? parentPage
       const labeledPage =
         sourceLabel(chunk.labeled_page_number) ??

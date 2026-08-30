@@ -3222,6 +3222,7 @@ type PreparedCardPlan {
   courseLanguage: LocaleType!
   discardedDuplicates: [DiscardedDuplicateCard!]!
   existingTitles: [String!]!
+  planId: String!
 }
 
 type PreparedCardPlanEntry {
@@ -3396,6 +3397,7 @@ type Query {
   practiceQuiz(id: String!): PracticeQuiz
   previousPointCorrections(courseId: String, instanceId: Int, liveQuizId: String): [PointCorrection!]
   publicParticipantProfile(participantId: String!): Participant
+  savedPersonalElementCandidateIds(candidateIds: [String!]!, courseId: String!): [String!]!
   searchKbKnowledgeGraph(kbId: ID!, query: String!): KnowledgeGraphResponse!
   self(liveQuizId: String): Participant
   selfWithAchievements: ParticipantWithAchievements

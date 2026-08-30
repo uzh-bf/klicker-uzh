@@ -7,6 +7,7 @@ type GenerateToolOptions = {
     inputTokens?: number
     outputTokens?: number
   }) => void
+  validateCandidate: (candidate: Record<string, unknown>) => Promise<boolean>
 }
 
 const mocks = vi.hoisted(() => ({
@@ -36,6 +37,8 @@ const mocks = vi.hoisted(() => ({
   streamText: vi.fn(),
   toUIMessageStream: vi.fn(),
   listPersonalElements: vi.fn(),
+  prepareCardPlan: vi.fn(),
+  validateCardCandidate: vi.fn(),
   listDiscardedCandidateIds: vi.fn(),
   listCompletedGenerationLeaseAttemptTokens: vi.fn(),
   claimCardGenerationLease: vi.fn(),
@@ -51,6 +54,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../src/lib/server/personalElements/graphqlClient', () => ({
   listPersonalElements: mocks.listPersonalElements,
+  prepareCardPlan: mocks.prepareCardPlan,
+  validateCardCandidate: mocks.validateCardCandidate,
   listDiscardedCandidateIds: mocks.listDiscardedCandidateIds,
   listCompletedGenerationLeaseAttemptTokens:
     mocks.listCompletedGenerationLeaseAttemptTokens,
@@ -310,6 +315,7 @@ describe('retrieval route wiring', () => {
       modelSelection: true,
       openaiApiKey: null,
       openaiBaseUrl: null,
+      knowledgeBases: [],
       mcpConfigurations: [
         {
           chatMode: 'explainer',
@@ -344,7 +350,8 @@ describe('retrieval route wiring', () => {
     mocks.chatThreadFindFirst.mockResolvedValue({ id: 'thread-1' })
     mocks.chatThreadUpdate.mockResolvedValue({})
     mocks.getAggregatedMCPTools.mockResolvedValue({
-      KB_doc_query: docQueryTool,
+      tools: { KB_doc_query: docQueryTool },
+      close: vi.fn().mockResolvedValue(undefined),
     })
     mocks.getUserCredits.mockResolvedValue({ current: 1, total: 1 })
     mocks.previewUserCredits.mockResolvedValue({ current: 1, total: 1 })
@@ -364,6 +371,19 @@ describe('retrieval route wiring', () => {
     }))
     mocks.buildPromptCacheRequest.mockResolvedValue(null)
     mocks.listPersonalElements.mockResolvedValue([])
+    mocks.prepareCardPlan.mockImplementation(async (input) => ({
+      planId: '00000000-0000-0000-0000-000000000001',
+      courseLanguage: 'en',
+      existingTitles: ['Existing CAPM card', 'Existing inflation card'],
+      cards: input.cards.map(
+        (card: Record<string, unknown>, index: number) => ({
+          ...card,
+          candidateId: `00000000-0000-0000-0000-000000000001:card-${index + 1}`,
+        })
+      ),
+      discardedDuplicates: [],
+    }))
+    mocks.validateCardCandidate.mockResolvedValue(true)
     mocks.isPersonalCardGenerationEnabled.mockResolvedValue(true)
     mocks.createGenerateCardsTool.mockImplementation((options) => {
       mocks.generateToolOptions.push(options)
@@ -604,16 +624,7 @@ describe('retrieval route wiring', () => {
     )
   })
 
-  test('passes the complete saved-title list to plan creation', async () => {
-    mocks.listPersonalElements.mockResolvedValue([
-      {
-        name: 'Existing CAPM card',
-      },
-      {
-        name: 'Existing inflation card',
-      },
-    ])
-
+  test('routes plan preparation through the participant-scoped backend service', async () => {
     const response = await POST(
       createRequest('Generate flashcards about CAPM.', 'assistant-title-list'),
       { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
@@ -622,18 +633,37 @@ describe('retrieval route wiring', () => {
     expect(response.status).toBe(200)
     expect(mocks.createProposeCardPlanTool).toHaveBeenCalledWith(
       expect.objectContaining({
-        getExistingCardTitles: expect.any(Function),
+        preparePlan: expect.any(Function),
       })
     )
     const planToolOptions = (
       mocks.createProposeCardPlanTool.mock.calls as unknown as Array<
-        [{ getExistingCardTitles: () => Promise<readonly string[]> }]
+        [
+          {
+            preparePlan: (input: {
+              topic: string
+              cards: Array<Record<string, unknown>>
+            }) => Promise<unknown>
+          },
+        ]
       >
     )[0]![0]
-    await expect(planToolOptions.getExistingCardTitles()).resolves.toEqual([
-      'Existing CAPM card',
-      'Existing inflation card',
-    ])
+    const input = {
+      topic: 'CAPM',
+      cards: [
+        {
+          type: 'FLASHCARD',
+          title: 'CAPM definition',
+          intent: 'Define CAPM',
+          query: 'CAPM',
+        },
+      ],
+    }
+    await planToolOptions.preparePlan(input)
+    expect(mocks.prepareCardPlan).toHaveBeenCalledWith(
+      { ...input, courseId: 'course-1' },
+      'participant-1'
+    )
     const options = mocks.streamText.mock.calls[0]?.[0] as {
       instructions?: string
     }
@@ -641,9 +671,7 @@ describe('retrieval route wiring', () => {
     expect(options.instructions).toContain('complete saved-title list')
   })
 
-  test('loads saved titles lazily and keeps them out of the model instructions for ordinary chat', async () => {
-    mocks.listPersonalElements.mockResolvedValue([{ name: 'Private title' }])
-
+  test('prepares plans lazily and keeps saved titles out of ordinary chat instructions', async () => {
     const response = await POST(
       createRequest('What is CAPM?', 'assistant-no-title-disclosure'),
       { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
@@ -652,22 +680,28 @@ describe('retrieval route wiring', () => {
     expect(response.status).toBe(200)
     expect(mocks.createProposeCardPlanTool).toHaveBeenCalledWith(
       expect.objectContaining({
-        getExistingCardTitles: expect.any(Function),
+        preparePlan: expect.any(Function),
       })
     )
-    expect(mocks.listPersonalElements).not.toHaveBeenCalled()
+    expect(mocks.prepareCardPlan).not.toHaveBeenCalled()
     const planToolOptions = (
       mocks.createProposeCardPlanTool.mock.calls as unknown as Array<
-        [{ getExistingCardTitles: () => Promise<readonly string[]> }]
+        [
+          {
+            preparePlan: (input: {
+              topic: string
+              cards: Array<Record<string, unknown>>
+            }) => Promise<unknown>
+          },
+        ]
       >
     )[0]![0]
-    await expect(planToolOptions.getExistingCardTitles()).resolves.toEqual([
-      'Private title',
-    ])
+    await planToolOptions.preparePlan({ topic: 'CAPM', cards: [] })
+    expect(mocks.prepareCardPlan).toHaveBeenCalledOnce()
     const options = mocks.streamText.mock.calls[0]?.[0] as {
       instructions?: string
     }
-    expect(options.instructions).not.toContain('Private title')
+    expect(options.instructions).not.toContain('Existing CAPM card')
   })
 
   test('rejects approval when titles duplicate within the approved plan', async () => {
@@ -852,6 +886,41 @@ describe('retrieval route wiring', () => {
       [{ skipCandidateIds?: ReadonlySet<string> }]
     >
     expect(calls.at(-1)?.[0].skipCandidateIds).toEqual(new Set(['plan:card-1']))
+    const generatedCandidate = {
+      candidateId: 'plan:card-2',
+      name: 'Inflation',
+      content: 'What is inflation?',
+      explanation: 'A sustained increase in the general price level.',
+      sources: [
+        {
+          sourceId: 'course-script',
+          kind: 'DOCUMENT',
+          title: 'Course script',
+          canonicalUrl: null,
+          chunkIds: ['chunk-1'],
+          locators: [{ type: 'PAGE_RANGE', pageFrom: 1, pageTo: 1 }],
+        },
+      ],
+      sourceMessageId: 'assistant-approval-retry',
+      sourceToolCallId: 'generate-cards',
+      origin: 'AI_GENERATED',
+    }
+    await expect(
+      mocks.generateToolOptions.at(-1)?.validateCandidate(generatedCandidate)
+    ).resolves.toBe(true)
+    expect(mocks.validateCardCandidate).toHaveBeenCalledWith(
+      {
+        courseId: 'course-1',
+        candidateId: 'plan:card-2',
+        title: 'Inflation',
+        front: 'What is inflation?',
+        back: 'A sustained increase in the general price level.',
+        sources: generatedCandidate.sources,
+        sourceMessageId: 'assistant-approval-retry',
+        sourceToolCallId: 'generate-cards',
+      },
+      'participant-1'
+    )
     const options = mocks.streamText.mock.calls[0]?.[0] as {
       instructions: string
       tools: Record<string, unknown>

@@ -15,6 +15,7 @@ import {
   deletePersonalElement,
   discardPersonalElementCandidate,
   listPersonalElements,
+  listSavedPersonalElementCandidateIds,
   normalizeElementSourceReferences,
   prepareCardPlan,
   readElementSourceReferences,
@@ -1136,6 +1137,31 @@ describe('personal elements service', () => {
     ).toBeNull()
   })
 
+  it('loads saved state only for the requested candidate IDs', async () => {
+    const { course, participant } = await createFixture()
+    const [requested, unrelated] = await createPersonalElements(
+      {
+        courseId: course.id,
+        candidates: [
+          candidate({ name: 'Requested card' }),
+          candidate({ name: 'Unrelated card' }),
+        ],
+      },
+      context(participant.id)
+    )
+
+    await expect(
+      listSavedPersonalElementCandidateIds(
+        {
+          courseId: course.id,
+          candidateIds: [requested!.candidateId, randomUUID()],
+        },
+        context(participant.id)
+      )
+    ).resolves.toEqual([requested!.candidateId])
+    expect(unrelated!.candidateId).not.toBe(requested!.candidateId)
+  })
+
   it('rejects a save whose title duplicates a saved card', async () => {
     const { course, participant } = await createFixture()
     await createPersonalElements(
@@ -1337,6 +1363,7 @@ describe('personal elements service', () => {
     )
 
     expect(plan.courseLanguage).toBe('en')
+    expect(plan.planId).toMatch(/^[0-9a-f-]{36}$/)
     expect(plan.existingTitles).toEqual(['Opportunity cost'])
     expect(plan.cards).toHaveLength(1)
     expect(plan.cards[0]).toMatchObject({

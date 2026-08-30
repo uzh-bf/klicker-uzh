@@ -1,0 +1,9 @@
+query QSavedPersonalElementCandidateIds(
+  $courseId: String!
+  $candidateIds: [String!]!
+) {
+  savedPersonalElementCandidateIds(
+    courseId: $courseId
+    candidateIds: $candidateIds
+  )
+}

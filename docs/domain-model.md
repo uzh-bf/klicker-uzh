@@ -100,8 +100,10 @@ abortCardGenerationLease settle only the caller's current attempt.
 createPersonalElements saves candidates idempotently with the final duplicate
 check in its transaction, discardPersonalElementCandidate persists the
 negative decision idempotently, and updatePersonalElement applies the
-expected-version and scheduling contract to a saved card. listPersonalElements
-returns the durable saved state for reload.
+expected-version and scheduling contract to a saved card.
+savedPersonalElementCandidateIds returns only the requested saved candidate
+identities for generated-message reloads; listPersonalElements returns the full
+course collection used by practice and saved-card management.
 
 Source references are system-managed. Manual edits to card text preserve the
 existing set. A successful generated revision supplies the full card and
