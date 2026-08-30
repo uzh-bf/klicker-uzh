@@ -1,4 +1,4 @@
-# Course chatbot Tutor, Explainer, and Quizzer modes
+# PR #5656 — Course chatbot Tutor, Explainer, and Quizzer modes
 
 ## Goal
 
@@ -22,7 +22,8 @@ The first pull request must improve existing chatbots automatically where the re
 
 ## Plan identity
 
-- Plan: `project/2026-08-27-course-chatbot-quizzer-mode-plan.md`
+- Plan: `project/2026-08-27-pr-5656-course-chatbot-quizzer-mode-plan.md`
+- Pull request: [#5656](https://github.com/uzh-bf/klicker-uzh/pull/5656)
 - Repository: `uzh-bf/klicker-uzh`
 - Branch: `rs/chat-quizzer-mode`
 - Worktree: `trees/chat-quizzer-mode`
