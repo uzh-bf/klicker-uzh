@@ -19,6 +19,7 @@ import {
   testImageUpload,
 } from '../util/chat.js'
 import { selectOption } from '../util/workflow.js'
+import { isRendererCrash } from '../util/resources.js'
 
 const UNKNOWN_CHATBOT_ID = '00000000-0000-4000-8000-000000000404'
 const MALFORMED_CHATBOT_ID = 'not-a-chatbot-id'
@@ -33,9 +34,31 @@ const MALFORMED_CHATBOT_ID = 'not-a-chatbot-id'
  */
 
 async function visitChat(page: Page) {
+  // Timestamped crash markers let the CI log be correlated with the resource
+  // sampler timeline (test-results/resource-samples.jsonl) after a run.
+  page.on('crash', () => {
+    console.log('[pw-crash]', new Date().toISOString())
+  })
   await page.goto(`${chatUrl()}/${CHATBOT_ID}`, {
     waitUntil: 'domcontentloaded',
   })
+  // A hydration stall under CI load is transient: one recovery navigation
+  // re-runs the app and usually clears it. A renderer crash is not: retrying
+  // navigation on a dead renderer masks the original failure and turns one
+  // crash into a cascade of misleading assertion failures, so crash-class
+  // errors are surfaced immediately instead of retried here.
+  const skeleton = page.getByTestId('chat-loading')
+  try {
+    await expect(skeleton).toHaveCount(0)
+  } catch (error) {
+    if (isRendererCrash(error)) {
+      throw error
+    }
+    await page.goto(`${chatUrl()}/${CHATBOT_ID}`, {
+      waitUntil: 'domcontentloaded',
+    })
+    await expect(skeleton).toHaveCount(0)
+  }
 }
 
 async function typeMessage(page: Page, text: string) {
