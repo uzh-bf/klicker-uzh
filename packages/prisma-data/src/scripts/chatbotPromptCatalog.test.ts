@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import {
@@ -39,6 +39,26 @@ if (
 
 const testDescribe = isDisposableDatabase ? describe : describe.skip
 const SCRIPT_DIRECTORY = fileURLToPath(new URL('.', import.meta.url))
+
+function runPromptCatalogAudit(databaseUrl: string) {
+  return spawnSync(
+    process.execPath,
+    [
+      '../../node_modules/tsx/dist/cli.mjs',
+      '2026-08-23_audit_prompt_catalog.ts',
+    ],
+    {
+      cwd: SCRIPT_DIRECTORY,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        DATABASE_URL: databaseUrl,
+        PRISMA_LOG_LEVELS: 'query',
+      },
+      timeout: 120000,
+    }
+  )
+}
 
 testDescribe('chatbot prompt catalog transactional writers', () => {
   const adapter = new PrismaPg({ connectionString: DATABASE_URL! })
@@ -506,26 +526,34 @@ testDescribe('chatbot prompt catalog transactional writers', () => {
       select: { id: true },
     })
 
-    const output = execFileSync(
-      process.execPath,
-      [
-        '../../node_modules/tsx/dist/cli.mjs',
-        '2026-08-23_audit_prompt_catalog.ts',
-      ],
-      {
-        cwd: SCRIPT_DIRECTORY,
-        encoding: 'utf8',
-        env: { ...process.env, DATABASE_URL },
-        timeout: 120000,
-      }
-    )
+    const success = runPromptCatalogAudit(DATABASE_URL!)
 
-    expect(output).toContain('summary_missing_catalog=')
-    expect(output).toContain('execution=DRY_RUN')
-    expect(output).not.toContain(chatbot.id)
-    expect(output).not.toContain(modeKey)
-    expect(output).not.toContain(prompt)
-    expect(output).not.toContain(marker)
+    expect(success.status).toBe(0)
+    expect(success.stderr).toBe('')
+    expect(success.stdout).toContain('summary_missing_catalog=')
+    expect(success.stdout).toContain('execution=DRY_RUN')
+    expect(
+      success.stdout
+        .trim()
+        .split('\n')
+        .every(
+          (line) =>
+            /^summary_[a-z_]+=\d+$/.test(line) || line === 'execution=DRY_RUN'
+        )
+    ).toBe(true)
+    expect(success.stdout).not.toContain(chatbot.id)
+    expect(success.stdout).not.toContain(modeKey)
+    expect(success.stdout).not.toContain(prompt)
+    expect(success.stdout).not.toContain(marker)
+
+    const failureMarker = `audit-failure-${marker}`
+    const failure = runPromptCatalogAudit(
+      `postgresql://x:x@127.0.0.1:1/${failureMarker}?connect_timeout=1`
+    )
+    expect(failure.status).toBe(1)
+    expect(failure.stdout).toBe('')
+    expect(failure.stderr).toBe('audit_failed=true\n')
+    expect(`${failure.stdout}${failure.stderr}`).not.toContain(failureMarker)
   })
 
   test('initializes the null legacy projection as tutor version one', async () => {

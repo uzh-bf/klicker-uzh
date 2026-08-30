@@ -714,9 +714,21 @@ adapted.
   The corrected proof replayed all 183 migrations, passed 14 catalog and
   provisioner tests plus 7 GraphQL chatbot tests, dropped its disposable
   database, and passed `pnpm run check:all` plus all 23 production build tasks.
+- 2026-08-30 (final-review correction pass): the same reviewer confirmed the
+  initializer and effective-identity documentation findings were resolved, but
+  found that the shared Prisma client's configurable query/error logging could
+  bypass the audit's values-free wrapper. Scope reassessment kept the correction
+  inside the approved output-hygiene contract. The audit now creates a scoped
+  Prisma client with logging disabled. Its subprocess regression captures stdout
+  and stderr, enables `PRISMA_LOG_LEVELS=query`, and forces a connection failure;
+  both success and failure expose only fixed summary/status output. A fresh
+  183-migration replay and all 8 catalog tests passed, and cleanup left zero
+  proof databases. The one reviewer correction-pass budget is exhausted; this
+  final narrow follow-up is main-session verified as required by the Finish
+  Gate.
 - Current boundary: all final-review findings are corrected and verified on
-  `rs/chat-system-prompt-versioning`; the local correction commit and the one
-  permitted reviewer correction pass remain.
+  `rs/chat-system-prompt-versioning`; only the local follow-up commit remains
+  before the upstream-integration and push authority boundary.
   The task branch is two commits behind `origin/v3` on the last refreshed
   refs. Upstream integration, push/PR mutation, deployment, live data work, and
   cleanup remain separate authority boundaries.

@@ -1,9 +1,12 @@
 import {
   ensureChatbotPromptCatalog,
-  prisma,
   projectLegacySystemPrompts,
 } from '@klicker-uzh/prisma'
-import { ChatbotModePromptStatus } from '@klicker-uzh/prisma/client'
+import {
+  ChatbotModePromptStatus,
+  PrismaClient,
+} from '@klicker-uzh/prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 
 /**
  * Values-free audit/bootstrap for the chatbot prompt catalog (ADR 0043).
@@ -133,7 +136,9 @@ function addStructuralCounts(
   total.activeNotLatest += next.activeNotLatest
 }
 
-async function countCrossLineageReferences(): Promise<bigint> {
+async function countCrossLineageReferences(
+  prisma: PrismaClient
+): Promise<bigint> {
   const rows = await prisma.$queryRaw<{ count: bigint }[]>`
     SELECT COUNT(*)::bigint AS count
     FROM "ChatMessage" msg
@@ -146,7 +151,7 @@ async function countCrossLineageReferences(): Promise<bigint> {
   return rows[0]?.count ?? 0n
 }
 
-async function run(): Promise<void> {
+async function run(prisma: PrismaClient): Promise<void> {
   const chatbots = await prisma.chatbot.findMany({
     select: {
       id: true,
@@ -207,7 +212,7 @@ async function run(): Promise<void> {
     )
   }
 
-  const crossLineageRefs = await countCrossLineageReferences()
+  const crossLineageRefs = await countCrossLineageReferences(prisma)
   const disagreementCount =
     projectionDisagreementCount +
     structuralCounts.enabledMissingActive +
@@ -236,10 +241,14 @@ async function run(): Promise<void> {
 }
 
 try {
-  await run()
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+  const prisma = new PrismaClient({ adapter, log: [] })
+  try {
+    await run(prisma)
+  } finally {
+    await prisma.$disconnect()
+  }
 } catch {
   console.error('audit_failed=true')
   process.exitCode = 1
-} finally {
-  await prisma.$disconnect()
 }
