@@ -929,6 +929,28 @@ follow_up_stacks:
   because the filesystem route is authoritative and a client constant would be
   a second source of truth. Raw preflight error logging is rejected because this
   public endpoint intentionally emits values-free diagnostics.
-- Next: Verify, commit, and push the accepted review cleanup, post the exact
-  disposition, resolve the remaining thread, refresh PR #5679, and require all
-  exact-head hosted checks before accepting A2 and starting A3.
+- A2 capability-settle correction: OpenCodeReview correctly found that a
+  failed or headerless latest chat response could strand the client in the
+  checking phase with no visible recovery control. Commit `bb591019d` fixes
+  both sources: the route no longer lets best-effort MCP teardown extend the
+  bounded response, and every latest-started chat result (headerless or
+  rejected) settles retryable `unavailable` instead of leaving checking
+  active. Reducer checks return fresh state, impossible actions serialize
+  context, and the new preflight guards carry inline rationale.
+- A2 correction review evidence: The simplifier covered
+  `e6bc54856..bb591019d` natively with no net simplification. The native
+  slice-reviewer, the generic-continuity substitute, and the user-authorized
+  cross-provider fallback all failed before inspection on the same OpenRouter
+  budget cap (65,536 requested vs 50,454 affordable tokens). The documented
+  main-session substitute completed the required risk review on the full
+  one-commit diff plus call sites with fresh Node 24 exact-head evidence and
+  found no defect across abort/teardown, conservative settle, values-free
+  diagnostics, and reducer contracts; the fallback identity is recorded in
+  `project/_local/reviews/2026-08-30-a2-capability-correction-slice-review-fallback.md`.
+- A2 correction verification: The two affected Chat test files pass 17/17
+  fresh on Node 24 at the exact head; complete commit hooks and the 26-task
+  pre-push repository build pass; summary disposition is posted top-level and
+  the three OCR threads are replied to and resolved.
+- Next: Refresh PR #5679 for head `bb591019d`, wait for fresh exact-head
+  hosted CI including all eight Playwright shards, accept A2 when it settles
+  green with clear feedback, then start A3.
