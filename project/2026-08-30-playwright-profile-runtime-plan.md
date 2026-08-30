@@ -165,7 +165,7 @@ recorded eight-runner baseline; do not claim a speedup from static checks.
 - [x] Fresh isolated worktree created from exact `origin/v3` `e84103606`.
 - [x] K0 plan is committed as `04e0b48db`.
 - [x] K1 manifest and shard planning are committed as `23a7fb76b`.
-- [ ] K2 runtime selection passes nine focused tests and resolves every shard
-      with the locally built upstream CLI; local commit pending.
+- [x] K2 runtime selection is committed as `854994b8b`; nine focused tests
+      pass and every shard resolves with the locally built upstream CLI.
 - [ ] K3 waits for PR #5678 and published Devrouter `0.0.48`.
 - [ ] K4 local checks pass; live runner measurement remains separately gated.
