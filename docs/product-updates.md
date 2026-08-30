@@ -363,9 +363,11 @@ otherwise fight over the page.
 
 A spotlight announces one feature. A tour orients someone who has just arrived:
 several steps over the parts of an interface that are always on screen. Manage
-has one today (`manage-onboarding-v1`); the student app and the chat app are
-meant to follow, which is why the mechanics live in a package instead of next to
-the manage header.
+has one (`manage-onboarding-v1`) and chat has one (`chat-onboarding-v1`); the
+student app is meant to follow, which is why the shared mechanics live in a
+package instead of next to the manage header. The two surfaces present their
+tours differently — manage walks the page with driver.js, chat shows a modal
+carousel — and share the id list and the completion semantics.
 
 ### The shared package
 
@@ -401,7 +403,7 @@ floor as the read-state mutations. The upsert keeps a non-empty `update` branch
 so Prisma emits a native upsert; an empty one becomes a read-then-insert that
 two tabs can race into a unique-constraint error.
 
-**Two writers, one set of rules.** The chat app is Prisma-direct and will write
+**Two writers, one set of rules.** The chat app is Prisma-direct and writes
 `ParticipantTourState` from its own API route rather than through GraphQL. The
 per-surface tour ids keep the rows disjoint, but the semantics above — validated
 id, non-empty-update upsert, first write wins on `completedAt` — must stay
@@ -448,3 +450,50 @@ button rather than a link, since it acts on the current page.
 Step copy lives under `manage.productTours` in the shared message files, in both
 locales, and is escaped before it reaches a popover for the reason described in
 the spotlight section.
+
+### The chat carousel
+
+`chat-onboarding-v1` is not a walkthrough. Chat is one screen, and the five
+things a newcomer needs — the two modes, cited sources, attachments, the
+conversation list, credits — are explained faster in a modal carousel than by a
+spotlight moving around a page. It is therefore a design-system `Modal`
+(`onboarding-carousel.tsx`), with no driver.js, no overlay and no DOM targeting,
+and it does not use the session slot: chat has no second unsolicited overlay to
+collide with.
+
+**Sequencing.** The carousel opens strictly after the disclaimer, never beside
+it. `ChatOnboardingProvider` (`chat-onboarding.tsx`) takes the gate's open state
+from `assistant.tsx` as `disclaimerPending` and opens only from settled state:
+completion known and not recorded, no disclaimer in the way. Deriving it this
+way rather than watching the gate close is what makes the bot that requires a
+disclaimer and the bot that does not take the same path. A declined disclaimer
+never reaches the provider, because that state renders its own blocked view.
+
+**Focus.** The carousel publishes its open state through the same external store
+in `chat-ui-context.tsx` that the disclaimer uses, so the composer does not
+autofocus underneath it and takes focus back when it closes — after the first
+showing and after a replay alike. The store carries one flag per dialog and the
+composer reads their disjunction, because the carousel claims the gate in the
+same commit in which the disclaimer releases it; a single shared flag would dip
+to false in between and hand focus over for one frame. The modal focuses its own
+content on open for the reason given in the chat-surface section above.
+
+**State.** `apps/chat/src/app/api/onboarding-tour/route.ts` is the participant
+half of the GraphQL tour service, restated for the Prisma-direct app:
+`GET ?tourId=` reports the completion, `POST {tourId}` records it, both behind
+`getTourParticipantId` — the tours-worded sibling of the product-update guard,
+requiring the `PARTICIPANT` role. The id is validated against `TOUR_IDS`, and an
+unknown one is refused rather than answered with empty state, which a client
+would otherwise read as "never completed". Finishing, skipping and closing all
+record completion; a failed request leaves the carousel unrecorded, so it may
+appear once more, which is the harmless direction.
+
+**Replay and embedding.** "Show intro" sits in the sidebar footer next to
+"What's new" and reopens the carousel from the first card. It writes nothing:
+the state is already stored and `completedAt` never moves anyway. An embedded
+conversation is suppressed entirely — no state request and no modal — because it
+has no sidebar and nobody opened it to be introduced to an application.
+
+Card copy lives under `chat.onboarding` in both message files, one `<id>Title`
+and `<id>Body` per card, and is currently placeholder text awaiting editorial
+review.
