@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-27'
+timestamp: '2026-08-29'
 tags:
   - testing
   - ci
@@ -124,6 +124,14 @@ For authoring specifics, helper patterns, and failure triage, use the `klicker-p
 
 ## E2E environment dependencies
 
+The self-contained devcontainer uses two independent cold-start guards:
+`devcontainer.json` waits for `postCreateCommand`, and the managed post-start
+adapter requires the exact completion marker written at the end of successful
+bootstrap. `bash util/test-dev-runtime.sh` covers missing, malformed,
+symlinked, invalidated, and valid marker states plus the script ordering. This
+is static lifecycle evidence; cold DevPod and Devsy startup remain the
+provider-level acceptance check.
+
 - The local Chat model simulation includes LiteLLM's `auto-router` and
   the GPT-5.6 Luna/Sol target aliases. Start it with
   `devrouter ensure . --profile chat,ai`; add `mcp` for the seeded synthetic
@@ -143,7 +151,7 @@ For authoring specifics, helper patterns, and failure triage, use the `klicker-p
 - The Manage lecturer assistant is covered in `playwright/tests/Y-manage-assistant.spec.ts`. The suite covers the non-modal page interaction contract, cross-origin Escape and focus restoration, short mobile viewports, desktop-only size persistence, readiness loading state, retained resizing, in-session reset without iframe reload, trusted proposal revisions, complete correctness/feedback review, and proposal clearance above the composer. Its route-error cases prove that 401 and 429 responses render only the generic `chat-assistant-message-error` UI, do not leak the raw status/body or stack details into the transcript, and leave the composer able to complete a retry.
 - Ordinary Playwright runs and CI shards stay Chromium-only. Set `PLAYWRIGHT_RELEASE_MATRIX=true` to make the named `firefox` and `webkit` projects available for targeted release checks. Those projects must pass against production builds before release; a development-server result or browser-startup failure is environment evidence, not product compatibility evidence.
 - `evaluation/manage-assistant` keeps the matching E7 readiness contract. Each case declares `assistant_text` or `transport_ui`: model-mediated faults must prove the expected zero-tool or `FORBIDDEN` tool-output condition and require a non-empty assistant message before the judge runs; assistant text, reasoning, tool outputs, route bodies, and the `Retry-After` header are all scanned for internal-detail leaks with payload-redacted diagnostics. Route-level 401/429 faults must match the exact public JSON/status/header contract. The 429 case exhausts a fresh dummy subject with invalid request bodies that return before model invocation, then captures the real limiter response. Run the deterministic contract suite with `cd evaluation/manage-assistant && uv run pytest -m offline -q`; live judged evidence remains a separate paid release gate.
-- Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, and the absence of horizontal overflow.
+- Markdown video integration is covered on genuine Manage element-editor and mobile PWA live-quiz surfaces in `playwright/tests/0-video-embed.spec.ts`. The spec verifies immediate YouTube/Kaltura iframes, ordinary-link behavior, the absence of horizontal overflow, and a rendered player ratio of 16:9 within tolerance on both surfaces.
 
 ## Lecturer MCP smoke tests
 
@@ -179,8 +187,9 @@ uses a path-scoped filter and compiles once before running the 8 shards.
 Eligible same-repository public PRs (non-draft, non-bot, rollout enabled or
 canary) run the changed-path prepare and build in the Playwright container on
 the `public-pr-arm64` runner group through the reusable
-`public-pr-playwright-shards.yml` workflow, which gives at most three
-concurrent shards; pushes, fork PRs, drafts, bots, private repositories, and
+`public-pr-playwright-shards.yml` workflow, which runs eight concurrent shards
+across the two-host public pool; pushes, fork PRs, drafts, bots, private
+repositories, and
 disabled rollouts keep all eight shards on GitHub-hosted runners. Both paths
 preserve the same artifact names and feed the route-aware
 `test-playwright-status` gate, which requires exactly one of the hosted or
@@ -201,6 +210,15 @@ filtering, builds, or shards. Public container jobs also trust the exact mounted
 unit tests, migrates and seeds Postgres, boots the built server, then executes
 `smoke:local` and `smoke:negative`. Its required always-reporting
 `test-mcp-lecturer-status` gate stays separate from the consolidated unit suites.
+
+The timing-aware sharder assigns whole spec files; it cannot divide one serial
+spec across runners. Long workflows must therefore split only where each new
+file can establish its own database and browser state. The live-quiz suite uses
+`O1-live-quiz-core.spec.ts` for management, execution, and content, and
+`O2-live-quiz-collaboration.spec.ts` for sharing, access, PIN, and word-cloud
+flows. The second file deliberately repeats cleanup and common-question setup
+because it may run in a different disposable shard. Do not remove that setup or
+introduce cross-file ordering assumptions.
 
 **Hatchet tokens differ per workflow, because `test-playwright` is the only one that runs inside a `container:`.** `test-graphql` runs straight on the runner, so it reaches Hatchet at `localhost` and reads its boot-minted token with `docker exec`. Inside a container job neither works: service containers resolve by service **name** (`hatchet:8888` / `hatchet:7077`, exactly like the `postgres:5432` the same job already uses), and the Playwright image ships no Docker CLI. So `test-playwright` shares `/config` with the Hatchet service through the `hatchet_lite_config` volume and reads `/config/authdisabled-token` directly. Do not "simplify" those hostnames to `localhost` — every shard then fails in `Prepare .env files` before a single test runs. The HTTP token API is not a fallback: `hatchet-lite-dev` disables auth and answers `POST /api/v1/tenants/{id}/api-tokens` with 401 for every caller. The token's own claims always say `localhost`, which is harmless — `packages/hatchet/src/client.ts` passes `host_port`/`api_url` explicitly, and process env beats the `.env` templates for both `node --env-file` and `dotenv`.
 

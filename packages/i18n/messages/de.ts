@@ -3823,8 +3823,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Die Verfügbarkeit der Microlearnings wird basierend auf dem ursprünglichen Kursstartdatum an die neuen Kursdaten angepasst.',
       changeAvailabilityDateGroupActivities:
         'Die Verfügbarkeitsdaten der Gruppenaktivitäten werden entsprechend der Verschiebung zum ursprünglichen Kursstartdatum an die neuen Kursdaten angepasst.',
-      courseDatesForCourseDuplicationTooltip:
-        'Aus technischen Gründen sind die Kursdaten auf ein fixes Intervall festgelegt, das durch den ursprünglichen Kurs definiert ist. Sie können die Daten für den duplizierten Kurs anschliessend ändern.',
+      courseDuplicationStartDateTooltip:
+        'Wählen Sie ein Startdatum für den duplizierten Kurs. Das Enddatum wird automatisch anhand der ursprünglichen Kursdauer berechnet.',
+      courseDuplicationEndDateTooltip:
+        'Das Enddatum wird automatisch anhand der ursprünglichen Kursdauer berechnet und kann hier nicht geändert werden. Sie können die Daten für den duplizierten Kurs anschliessend ändern.',
       fixedDateInterval:
         'Fixes Datumsintervall: {years, plural, =0 {} one {# Jahr } other {# Jahre }}{months, plural, =0 {} one {# Monat } other {# Monate }}{days, plural, =0 {} one {# Tag} other {# Tage}}',
       groupCreationDeadlineForCourseDuplicationTooltip:
@@ -3842,6 +3844,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       courseCopySuffix: 'Kopie',
       courseDuplicationEndDateInPast:
         'Das gewählte Enddatum liegt in der Vergangenheit. Der duplizierte Kurs ist bereits beendet, sobald er erstellt wird - verschieben Sie das Startdatum, falls Studierende auf den Kurs zugreifen sollen.',
+      courseDuplicationDatesRequired:
+        'Wählen Sie vor dem Duplizieren des Kurses ein Startdatum aus.',
       courseDuplicationFailed: 'Duplizieren des Kurses fehlgeschlagen.',
       courseDuplicationAlreadyInProgress:
         'Dieser Kurs wird bereits dupliziert.',
@@ -3902,6 +3906,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       startDate: 'Startdatum',
       startDateTooltip:
         'Ab dem Startdatum können die Studierenden auf die freigeschalteten Inhalte des Kurses zugreifen. Das Startdatum können Sie auch nach Erstellen des Kurses noch verändern.',
+      startDatePastTooltip:
+        'Das Startdatum liegt in der Vergangenheit und kann nicht geändert werden.',
       endDate: 'Enddatum',
       endDateTooltip:
         'Nach dem Enddatum wird der Kurs für die Studierenden als archiviert angezeigt, sie können aber weiterhin auf die Inhalte zugreifen. Das Enddatum können Sie auch nach Erstellen des Kurses noch verändern.',

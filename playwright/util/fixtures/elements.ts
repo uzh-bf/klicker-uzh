@@ -105,6 +105,17 @@ export async function setElementStatus(page: Page, statusLabel: string) {
 }
 
 // ---------------------------------------------------------------------------
+// Clear a rich-text editor through keyboard input so Slate emits onChange.
+// ---------------------------------------------------------------------------
+export async function clearEditorField(page: Page, testId: string) {
+  const editor = page.getByTestId(testId)
+  await editor.scrollIntoViewIfNeeded()
+  await editor.click()
+  await editor.press('ControlOrMeta+A')
+  await editor.press('Backspace')
+}
+
+// ---------------------------------------------------------------------------
 // Fill a rich-text editor field (click → pressSequentially).
 // Optionally clears the field first.
 // ---------------------------------------------------------------------------
