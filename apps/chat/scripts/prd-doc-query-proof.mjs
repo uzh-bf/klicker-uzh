@@ -32,6 +32,12 @@ const ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
+function compareUtf16Strings(left, right) {
+  if (left < right) return -1
+  if (left > right) return 1
+  return 0
+}
+
 const SECRET_ENV_NAMES = [
   'DOC_QUERY_JWT_TOKEN_KLICKER',
   'DOC_QUERY_SCOPE_PRIVATE_KEY',
@@ -252,8 +258,9 @@ function emptyReceipt() {
     counts: {
       kbExpected: EXPECTED_KB_COUNT,
       kbPassed: 0,
-      chatbotsExpected: EXPECTED_CHATBOT_COUNT,
-      chatbotsPassed: 0,
+      chatbotsInScope: EXPECTED_CHATBOT_COUNT,
+      representativeChatbotsExpected: EXPECTED_CORPUS_PROOF_COUNT,
+      representativeChatbotsPassed: 0,
       excludedExpected: EXPECTED_EXCLUDED_CHATBOT_COUNT,
       positivePassed: 0,
       isolationPassed: 0,
@@ -589,7 +596,7 @@ export async function runProofMatrix({
       throw new ProofFailure('canary_isolation_failed', canary.id)
     }
     receipt.counts.isolationPassed += 1
-    receipt.counts.chatbotsPassed += canary.chatbotIds.length
+    receipt.counts.representativeChatbotsPassed += 1
     receipt.counts.kbPassed += 1
 
     receipt.phase = 'rejections'
@@ -605,7 +612,9 @@ export async function runProofMatrix({
 
     receipt.phase = 'matrix'
     for (const proofCase of manifest.cases.slice(1)) {
-      const representativeChatbotId = [...proofCase.chatbotIds].sort().at(-1)
+      const representativeChatbotId = [...proofCase.chatbotIds]
+        .sort(compareUtf16Strings)
+        .at(-1)
       if (
         !(await provePositive(
           invokeWithCap,
@@ -630,7 +639,7 @@ export async function runProofMatrix({
         throw new ProofFailure('isolation_failed', proofCase.id)
       }
       receipt.counts.isolationPassed += 1
-      receipt.counts.chatbotsPassed += proofCase.chatbotIds.length
+      receipt.counts.representativeChatbotsPassed += 1
       receipt.counts.kbPassed += 1
     }
 
@@ -727,8 +736,11 @@ function sanitizeReceipt(value) {
       value.failedRejectionClass !== null ||
       value.counts?.kbExpected !== EXPECTED_KB_COUNT ||
       value.counts?.kbPassed !== EXPECTED_KB_COUNT ||
-      value.counts?.chatbotsExpected !== EXPECTED_CHATBOT_COUNT ||
-      value.counts?.chatbotsPassed !== EXPECTED_CHATBOT_COUNT ||
+      value.counts?.chatbotsInScope !== EXPECTED_CHATBOT_COUNT ||
+      value.counts?.representativeChatbotsExpected !==
+        EXPECTED_CORPUS_PROOF_COUNT ||
+      value.counts?.representativeChatbotsPassed !==
+        EXPECTED_CORPUS_PROOF_COUNT ||
       value.counts?.excludedExpected !== EXPECTED_EXCLUDED_CHATBOT_COUNT ||
       value.counts?.positivePassed !== EXPECTED_CORPUS_PROOF_COUNT ||
       value.counts?.isolationPassed !== EXPECTED_CORPUS_PROOF_COUNT ||
@@ -812,6 +824,7 @@ export async function superviseProof({
   let interrupted = false
   let timedOut = false
   let message = null
+  let forceTimer
   const signalHandlers = new Map()
 
   try {
@@ -826,7 +839,6 @@ export async function superviseProof({
       if (message === null) message = sanitizeReceipt(candidate)
     })
 
-    let forceTimer
     const terminateChildGroup = () => {
       killProcessGroup(child, 'SIGTERM')
       if (forceTimer) return
@@ -834,6 +846,7 @@ export async function superviseProof({
         () => killProcessGroup(child, 'SIGKILL'),
         TERMINATION_GRACE_MS
       )
+      forceTimer.unref()
     }
 
     if (installSignalHandlers) {
@@ -864,6 +877,7 @@ export async function superviseProof({
       child.once('close', settle)
     })
     clearTimeout(deadlineTimer)
+    if (forceTimer) clearTimeout(forceTimer)
 
     let receipt = message ?? fixedFailureReceipt('protocol_failed')
     if (timedOut) receipt = fixedFailureReceipt('timeout')
@@ -902,11 +916,12 @@ export async function superviseProof({
       elapsedMs: Math.min(Date.now() - startedAt, DEFAULT_DEADLINE_MS + 5_000),
     }
   } finally {
+    if (forceTimer) clearTimeout(forceTimer)
     for (const [signal, handler] of signalHandlers) {
       process.removeListener(signal, handler)
     }
-    await lock.close().catch(() => undefined)
     await unlink(lockPath).catch(() => undefined)
+    await lock.close().catch(() => undefined)
   }
 }
 

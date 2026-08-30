@@ -1,9 +1,7 @@
 import { createHash } from 'node:crypto'
 import {
-  mkdirSync,
   mkdtempSync,
   readFileSync,
-  rmdirSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -101,14 +99,14 @@ function deadPid(): number {
 }
 
 function writeLockOwner(lockPath: string, pid: number, host = hostname()) {
-  mkdirSync(lockPath)
   writeFileSync(
-    join(lockPath, 'owner.json'),
+    lockPath,
     `${JSON.stringify({
-      version: 1,
+      version: 2,
       pid,
       host,
       token: uuid(9990),
+      acquiredAt: new Date().toISOString(),
     })}\n`
   )
 }
@@ -670,6 +668,31 @@ describe('cohort activation operator', () => {
     expect(() => validateCohortManifest(wrongExclusionMultiset)).toThrowError(
       expect.objectContaining({ code: 'COHORT_COUNT_MISMATCH' })
     )
+  })
+
+  it('allows HTTPS or only the reviewed internal PRD target', async () => {
+    await expect(
+      dryRunCohortActivation(
+        store,
+        manifest,
+        {
+          description: TARGET.description,
+          url: 'http://mcp-doc-query.prd-doc-query.svc.cluster.local:1417/mcp/klicker',
+        },
+        fingerprintManifest(manifest)
+      )
+    ).resolves.toMatchObject({ status: 'dry-run' })
+    await expect(
+      dryRunCohortActivation(
+        store,
+        manifest,
+        {
+          description: TARGET.description,
+          url: 'http://other.internal.invalid/mcp',
+        },
+        fingerprintManifest(manifest)
+      )
+    ).rejects.toThrowError(expect.objectContaining({ code: 'INVALID_TARGET' }))
   })
 
   it('requires the source contract and every frozen server id to agree', async () => {
@@ -1235,8 +1258,8 @@ describe('cohort activation operator', () => {
       ).rejects.toThrowError(
         expect.objectContaining({ code: 'RECEIPT_LOCKED' })
       )
-      expect(statSync(`${path}.lock`).isDirectory()).toBe(true)
-      rmSync(`${path}.lock`, { force: true, recursive: true })
+      expect(statSync(`${path}.lock`).isFile()).toBe(true)
+      rmSync(`${path}.lock`, { force: true })
     }
   })
 
@@ -1247,7 +1270,7 @@ describe('cohort activation operator', () => {
     const primary = new Error('synthetic operation failure')
     const failure = await fileStore
       .runExclusive(async () => {
-        rmSync(`${path}.lock`, { force: true, recursive: true })
+        rmSync(`${path}.lock`, { force: true })
         throw primary
       })
       .catch((error: unknown) => error)
@@ -1493,11 +1516,11 @@ describe('cohort activation operator', () => {
     const prepared = await fileStore.read()
     expect(prepared).not.toBeNull()
 
-    mkdirSync(`${path}.lock`)
+    writeFileSync(`${path}.lock`, '')
     await expect(
       fileStore.compareAndSwap(prepared!.payloadDigest, prepared!)
     ).rejects.toThrowError(expect.objectContaining({ code: 'RECEIPT_LOCKED' }))
-    rmdirSync(`${path}.lock`)
+    rmSync(`${path}.lock`)
     expect(await fileStore.read()).toEqual(prepared)
 
     await expect(
