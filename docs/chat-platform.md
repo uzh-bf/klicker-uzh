@@ -29,6 +29,7 @@ Chatbot route recovery is intentionally split by cause. `src/app/[chatbotId]/lay
 ## Structure
 
 - `src/app/api/chatbots/[chatbotId]/…` — route handlers (chat streaming, attachments, threads).
+- `src/app/api/product-updates/` — the participant-scoped product update feed and its read/dismiss/presented writes, deliberately outside the chatbot tree.
 - `src/lib/server/` — server-only helpers: auth/model configuration, image handling, telemetry, and sanitized assistant-message persistence.
 - `src/stores/` — zustand: `chatStore`, `composerStore`, `settingsStore`.
 - `src/stores/ratingRequestCoordinator.ts` — per-thread/message serialization of rating requests.
@@ -118,6 +119,8 @@ cache hits, latency, or cost savings.
 ## Auth guard pattern (route handlers)
 
 Three steps: `getParticipantId` → `getChatbotOr404` → `requireParticipation`. The composed helper `withChatbotAuth(req, chatbotId)` (`src/lib/server/apiGuards.ts`) covers the standard `{ courseId: true }` case — use it for new routes; fall back to the individual guards only for a custom chatbot `select`. `getChatbotOr404` returns 404 for any non-`PUBLISHED` chatbot (`DRAFT`, `PENDING_APPROVAL`, `PAUSED`, `REJECTED`) and reads `status` as a guard-only field, so a participant can never reach an unpublished bot regardless of the projection a caller passes — the publication gate holds on every route (see [ADR 0020](./adr/0020-two-tier-chatbot-approval.md)). Participant identity comes from the same participant JWT cookies as the PWA ([Auth Model](./auth-model.md)); local chat dev therefore needs the backend's `APP_SECRET` and `DATABASE_URL` visible to the chat app, or cookies won't verify and Prisma can't load chatbots.
+
+A route that belongs to the participant rather than to a chatbot has no chatbot to gate on, so the chain above does not apply. Use `getProductUpdateParticipantId` (same module) when such a surface must also exclude anonymous live-quiz accounts: its `UserRole.PARTICIPANT` check is the only thing keeping a `TEMPORARY_PARTICIPANT` token off the surface, and it is pinned by `apps/chat/test/product-updates-guard.test.ts`.
 
 ## Model registry and credits
 

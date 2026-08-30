@@ -12,7 +12,12 @@ export type LocalizedText = { de: string; en: string }
 export const PRODUCT_UPDATE_AUDIENCES = ['lecturer', 'student'] as const
 export type ProductUpdateAudience = (typeof PRODUCT_UPDATE_AUDIENCES)[number]
 
-export const PRODUCT_UPDATE_SURFACES = ['manage', 'pwa', 'docs'] as const
+export const PRODUCT_UPDATE_SURFACES = [
+  'manage',
+  'pwa',
+  'docs',
+  'chat',
+] as const
 export type ProductUpdateSurface = (typeof PRODUCT_UPDATE_SURFACES)[number]
 
 // "Planned" is deliberately absent: work that is not usable by the audience

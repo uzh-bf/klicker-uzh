@@ -386,6 +386,9 @@ importers:
       '@klicker-uzh/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
+      '@klicker-uzh/product-updates':
+        specifier: workspace:*
+        version: link:../../packages/product-updates
       '@klicker-uzh/shared-components':
         specifier: workspace:*
         version: link:../../packages/shared-components

@@ -143,14 +143,57 @@ carry no scope claim, so the floor applies to lecturer sessions only.
 
 The write path comes in two shapes, both safe under two browser tabs touching
 the same entry at once. `recordProductUpdatePresentation` is a single upsert
-with a database-side increment, so no presentation is lost to a
+with a database-side increment; because that update has something to set,
+Prisma emits a native `INSERT ... ON CONFLICT`, so no presentation is lost to a
 read-modify-write race. `markProductUpdateRead` and `dismissProductUpdate`
 insert the row if it is absent and then claim the timestamp only while it is
-still unset: the insert is an upsert, so it cannot collide on the unique
-constraint, and the second statement keeps the first read and the first
-dismissal from moving.
+still unset. Their insert has an empty update, which Prisma runs as a
+find-then-create instead, so a concurrent first interaction can make one of the
+two inserts hit the unique constraint; the service treats that violation as
+proof that the row now exists and reads it back. The second statement then
+keeps the first read and the first dismissal from moving.
 
-## Current consumers
+## The chat surface
+
+`apps/chat` is the first interactive feed. It does not use the GraphQL fields
+above: chat talks to Prisma directly like every other data path in that
+application, so `apps/chat/src/services/productUpdates.ts` restates the
+participant half of the GraphQL service, keeping the same idempotent write
+shapes, and `apps/chat/src/app/api/product-updates/route.ts` exposes them as one
+authenticated REST route (`GET` for the feed, `POST` with `read`, `dismiss`, or
+`presented`). Both halves must move together when the write semantics change.
+
+Two behaviors are specific to this surface. The route is guarded by
+`getProductUpdateParticipantId`, a sibling of `getParticipantId` that additionally
+requires the `PARTICIPANT` role, because the shared participant guard accepts the
+temporary accounts issued for anonymous live-quiz participation. And no feature
+flags are evaluated here, so an entry carrying `requiredFeatureFlags` never
+becomes eligible in chat — the fail-closed direction, consistent with the
+selection rule above.
+
+The sidebar footer carries only an entry point: a "What's new" item with an
+unread badge (`ProductUpdatesMenuItem`), which opens the feed as a design-system
+`Modal` (`ProductUpdatesModal`). The entry renders nothing while the feed is
+empty, and the embedded chatbot mode hides the whole sidebar, so an embedded
+conversation neither shows nor requests product updates. Locale comes from the
+`NEXT_LOCALE` cookie; the chrome lives in `packages/i18n/messages/{de,en}.ts`
+under `chat.productUpdates`.
+
+Loading the feed records nothing. A card counts as presented — and is marked
+read — only once it is actually visible inside the open modal, observed per card
+with an `IntersectionObserver`; otherwise every sidebar mount would inflate
+`presentationCount` for entries nobody looked at. Reopening the feed counts
+again, which is what `lastPresentedAt` and the increment are for. Because the
+mandated card shows its whole body at once, there is no separate "opened the
+entry" gesture, so the read timestamp coincides with that first visibility.
+The design-system `Modal` suppresses Radix's automatic focus handling in both
+directions, so the surface does it itself: the modal focuses its own content on
+open, and `ProductUpdatesMenuItem` — not the modal, and not Radix — returns
+focus to the sidebar entry on close. Dismissing the last card is the exception,
+because the emptied feed unmounts that entry; focus then goes to
+`#main-content`, the target of the application's skip link.
+
+## Other consumers
 
 The documentation homepage banner
 (`apps/docs/src/components/landing/TitleImage.tsx`) renders the newest released
