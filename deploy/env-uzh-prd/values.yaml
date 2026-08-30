@@ -158,9 +158,6 @@ auth:
 
   replicaCount: 3
 
-  autoscaling:
-    enabled: false
-
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -218,9 +215,6 @@ chat:
     enabled: false
 
   replicaCount: 1
-
-  autoscaling:
-    enabled: false
 
   automaticModels:
     primaryId: auto
@@ -596,9 +590,6 @@ frontendControl:
     pullPolicy: IfNotPresent
     tag: v3.4.0-alpha.73
 
-  autoscaling:
-    enabled: false
-
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -720,9 +711,6 @@ olatApi:
     pullPolicy: IfNotPresent
     tag: v3.4.0-alpha.73
 
-  autoscaling:
-    enabled: false
-
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -826,9 +814,6 @@ responseApi:
     tag: v3.4.0-alpha.73
     pullPolicy: IfNotPresent
 
-  autoscaling:
-    enabled: false
-
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -873,8 +858,6 @@ assessment:
   frontendPWA:
     priorityClassName: production-workload
     replicaCount: 4
-    autoscaling:
-      enabled: false
 
     affinity:
       podAntiAffinity:
@@ -950,8 +933,6 @@ assessment:
   backendGraphql:
     priorityClassName: production-workload
     replicaCount: 4
-    autoscaling:
-      enabled: false
 
     affinity:
       podAntiAffinity:
@@ -1041,9 +1022,6 @@ assessment:
     priorityClassName: production-workload
 
     replicaCount: 3
-
-    autoscaling:
-      enabled: false
 
     affinity:
       podAntiAffinity:
