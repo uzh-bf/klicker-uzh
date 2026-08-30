@@ -198,6 +198,8 @@ function ContentInput({
             renderElement={renderElement}
             renderLeaf={renderLeaf}
             onKeyDown={(event) => {
+              if (disabled) return
+
               for (const hotkey in HOTKEYS) {
                 if (isHotkey(hotkey, event)) {
                   event.preventDefault()
@@ -235,6 +237,7 @@ function ContentInput({
                   }}
                 >
                   <MarkButton
+                    disabled={disabled}
                     format="bold"
                     icon={faBold}
                     dataCy="content-input-bold"
@@ -249,6 +252,7 @@ function ContentInput({
                   }}
                 >
                   <MarkButton
+                    disabled={disabled}
                     format="italic"
                     icon={faItalic}
                     dataCy="content-input-italic"
@@ -260,6 +264,7 @@ function ContentInput({
               <>
                 <MarkButton
                   native
+                  disabled={disabled}
                   format="bold"
                   icon={faBold}
                   dataCy="content-input-bold"
@@ -268,6 +273,7 @@ function ContentInput({
 
                 <MarkButton
                   native
+                  disabled={disabled}
                   format="italic"
                   icon={faItalic}
                   dataCy="content-input-italic"
@@ -285,6 +291,7 @@ function ContentInput({
                   }}
                 >
                   <MarkButton
+                    disabled={disabled}
                     format="code"
                     icon={faCode}
                     dataCy="content-input-code"
@@ -299,6 +306,7 @@ function ContentInput({
                   }}
                 >
                   <BlockButton
+                    disabled={disabled}
                     format="block-quote"
                     icon={faQuoteRight}
                     dataCy="content-input-quote"
@@ -317,6 +325,7 @@ function ContentInput({
                   }}
                 >
                   <BlockButton
+                    disabled={disabled}
                     format="numbered-list"
                     icon={faListOl}
                     dataCy="content-input-numbered-list"
@@ -331,6 +340,7 @@ function ContentInput({
                   }}
                 >
                   <BlockButton
+                    disabled={disabled}
                     format="bulleted-list"
                     icon={faListUl}
                     dataCy="content-input-bulleted-list"
@@ -342,6 +352,7 @@ function ContentInput({
               <>
                 <BlockButton
                   native
+                  disabled={disabled}
                   format="numbered-list"
                   icon={faListOl}
                   dataCy="content-input-numbered-list"
@@ -350,6 +361,7 @@ function ContentInput({
 
                 <BlockButton
                   native
+                  disabled={disabled}
                   format="bulleted-list"
                   icon={faListUl}
                   dataCy="content-input-bulleted-list"
@@ -409,6 +421,7 @@ function ContentInput({
               >
                 <SlateButton
                   active={isImageDropzoneOpen}
+                  disabled={disabled}
                   data-cy="open-image-input"
                   aria-label={t('shared.contentInput.image')}
                   onClick={() => {
@@ -426,6 +439,7 @@ function ContentInput({
             {hasFullToolbar && allowVideoEmbedding ? (
               <button
                 type="button"
+                disabled={disabled}
                 title={t('shared.contentInput.video')}
                 aria-label={t('shared.contentInput.video')}
                 aria-controls="video-embed-panel"
@@ -458,6 +472,7 @@ function ContentInput({
                 >
                   <SlateButton
                     active={false}
+                    disabled={disabled}
                     data-cy="insert-inline-latex"
                     aria-label={t('shared.contentInput.latex')}
                     onClick={(e: React.MouseEvent<HTMLSpanElement>) => {
@@ -479,6 +494,7 @@ function ContentInput({
                 >
                   <SlateButton
                     active={false}
+                    disabled={disabled}
                     data-cy="insert-block-latex"
                     aria-label={t('shared.contentInput.latexCentered')}
                     onClick={(e: React.MouseEvent<HTMLSpanElement>) => {
@@ -507,6 +523,7 @@ function ContentInput({
           </div>
           <button
             type="button"
+            disabled={disabled}
             onClick={() => editor.undo()}
             onMouseDown={(event) => event.preventDefault()}
             className="my-auto mr-3 flex h-7 w-7 cursor-pointer items-center justify-center rounded"
@@ -519,6 +536,7 @@ function ContentInput({
           </button>
           <button
             type="button"
+            disabled={disabled}
             onClick={() => editor.redo()}
             onMouseDown={(event) => event.preventDefault()}
             className="my-auto mr-0.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded"
@@ -532,7 +550,7 @@ function ContentInput({
         </div>
       </Slate>
 
-      {hasFullToolbar && isImageDropzoneOpen && (
+      {hasFullToolbar && !disabled && isImageDropzoneOpen && (
         <div
           className={twMerge(
             'border-t-0! absolute z-10 flex w-full flex-col rounded-b-md border-2 border-solid bg-white md:flex-row',
@@ -551,7 +569,10 @@ function ContentInput({
         </div>
       )}
 
-      {hasFullToolbar && allowVideoEmbedding && isVideoInputOpen ? (
+      {hasFullToolbar &&
+      allowVideoEmbedding &&
+      !disabled &&
+      isVideoInputOpen ? (
         <div
           id="video-embed-panel"
           className={twMerge(
@@ -714,6 +735,7 @@ const Leaf = ({ attributes, children, leaf }: LeafProps) => {
 }
 
 const BlockButton = ({
+  disabled = false,
   format,
   icon,
   className,
@@ -721,6 +743,7 @@ const BlockButton = ({
   label,
   native = false,
 }: {
+  disabled?: boolean
   format: BlockType
   icon: IconDefinition
   className?: string
@@ -744,6 +767,7 @@ const BlockButton = ({
   return native ? (
     <NativeSlateButton
       active={isActive}
+      disabled={disabled}
       title={label}
       data-cy={dataCy}
       aria-label={label}
@@ -755,6 +779,7 @@ const BlockButton = ({
   ) : (
     <SlateButton
       active={isActive}
+      disabled={disabled}
       title={label}
       data-cy={dataCy}
       aria-label={label}
@@ -769,6 +794,7 @@ const BlockButton = ({
 }
 
 const MarkButton = ({
+  disabled = false,
   format,
   icon,
   className,
@@ -776,6 +802,7 @@ const MarkButton = ({
   label,
   native = false,
 }: {
+  disabled?: boolean
   format: FormatType
   icon: IconDefinition
   className?: string
@@ -799,6 +826,7 @@ const MarkButton = ({
   return native ? (
     <NativeSlateButton
       active={isActive}
+      disabled={disabled}
       title={label}
       data-cy={dataCy}
       aria-label={label}
@@ -810,6 +838,7 @@ const MarkButton = ({
   ) : (
     <SlateButton
       active={isActive}
+      disabled={disabled}
       title={label}
       data-cy={dataCy}
       aria-label={label}
@@ -826,15 +855,21 @@ const MarkButton = ({
 const SlateButton = React.forwardRef<
   HTMLSpanElement,
   PropsWithChildren<
-    React.HTMLAttributes<HTMLSpanElement> & { active?: boolean }
+    React.HTMLAttributes<HTMLSpanElement> & {
+      active?: boolean
+      disabled?: boolean
+    }
   >
->(({ className, active = false, ...props }, ref) => {
+>(({ className, active = false, disabled = false, onClick, ...props }, ref) => {
   return (
     <span
       {...props}
+      aria-disabled={disabled}
+      onClick={disabled ? undefined : onClick}
       className={twMerge(
         className,
         'my-auto flex h-7 w-7 cursor-pointer items-center justify-center rounded',
+        disabled && 'cursor-not-allowed',
         active && 'bg-uzh-grey-40'
       )}
       ref={ref}

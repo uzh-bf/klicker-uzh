@@ -232,7 +232,9 @@ function validateDisclaimerContent(title: string, introText: string) {
 
     if (
       !BASIC_DISCLAIMER_MARKDOWN_NODES.has(node.type) ||
-      (node.type === 'listItem' && node.checked != null)
+      (node.type === 'listItem' &&
+        node.checked !== null &&
+        node.checked !== undefined)
     ) {
       throw chatbotError(
         'Disclaimer introduction contains unsupported Markdown',
