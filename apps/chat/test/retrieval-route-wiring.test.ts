@@ -606,7 +606,7 @@ describe('retrieval route wiring', () => {
       ],
     })
     expect(Array.isArray(options.stopWhen)).toBe(true)
-    expect(options.stopWhen).toHaveLength(3)
+    expect(options.stopWhen).toHaveLength(4)
 
     const stopConditions = options.stopWhen as Array<
       (input: { steps: unknown[] }) => boolean
@@ -623,11 +623,16 @@ describe('retrieval route wiring', () => {
     ).toBe(false)
     expect(
       stopConditions[1]?.({
+        steps: [{ toolCalls: [{ toolName: 'revise_personal_element' }] }],
+      })
+    ).toBe(true)
+    expect(
+      stopConditions[2]?.({
         steps: [{ toolCalls: [{ toolName: 'course_retrieval_unavailable' }] }],
       })
     ).toBe(true)
-    expect(stopConditions[2]?.({ steps: Array.from({ length: 5 }) })).toBe(true)
-    expect(stopConditions[2]?.({ steps: Array.from({ length: 4 }) })).toBe(
+    expect(stopConditions[3]?.({ steps: Array.from({ length: 5 }) })).toBe(true)
+    expect(stopConditions[3]?.({ steps: Array.from({ length: 4 }) })).toBe(
       false
     )
   })

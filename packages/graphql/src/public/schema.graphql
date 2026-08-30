@@ -2562,6 +2562,7 @@ type Mutation {
   addUserToUserGroup(asAdmin: Boolean, groupId: Int!, shortnameOrEmail: String!): UserInfo
   applyActivityBatchOperations(activityIds: [String!]!, basePoints: Int, bonusPoints: Int, correctnessPoints: Int, courseId: String, multiplier: Int, timeToZeroBonus: Int): Int!
   applyElementBatchOperations(archive: Boolean!, basePoints: Boolean, elementIds: [Int!]!, multiplier: Int, status: ElementStatus, unarchive: Boolean!, updateInstances: Boolean!, updateTemplateInstances: Boolean!): Int!
+  applyPersonalElementRevision(input: PersonalElementRevisionLinkageInput!): PersonalElement
   approveChatbotPublication(id: String!): Chatbot
   approveObjectSharingRequest(permissionLevel: PermissionLevel!, propagation: Boolean!, requestId: Int!, userId: String!): Boolean!
   approveResponseExample(id: String!): ResponseExampleSet
@@ -3149,6 +3150,12 @@ type PersonalElementGenerationContext {
 enum PersonalElementOrigin {
   AI_GENERATED
   AUTHORED
+}
+
+input PersonalElementRevisionLinkageInput {
+  courseId: String!
+  messageId: String!
+  toolCallId: String!
 }
 
 input PersonalElementSourceInput {
@@ -3927,7 +3934,6 @@ input UpdatePersonalElementInput {
   explanation: String
   id: String!
   name: String
-  sources: [PersonalElementSourceInput!]
 }
 
 type User {

@@ -35,6 +35,10 @@ import {
   completeGenerationLease,
   createGenerationAttemptMessage,
 } from './lease'
+import {
+  type RevisionSettlement,
+  settlePersonalElementRevision,
+} from './revisionSettlement'
 import { discardPotentialDuplicateCards } from './titleSimilarity'
 import {
   createGenerateCardsTool,
@@ -120,6 +124,10 @@ export type CardGenerationSetup = {
     generationEligible: boolean
   }
   getNestedGenerationCost: () => number
+  settleRevision: (input: {
+    assistantMessagePersisted: boolean
+    assistantMessageContent: unknown
+  }) => Promise<RevisionSettlement>
   settleLease: (input: {
     assistantMessagePersisted: boolean
     assistantMessageContent: unknown
@@ -606,11 +614,16 @@ export async function createCardGeneration({
     : generationEligible
       ? [
           hasToolCall('propose_card_plan'),
+          hasToolCall('revise_personal_element'),
           hasToolCall(RETRIEVAL_UNAVAILABLE_TOOL_NAME),
           isStepCount(5),
         ]
       : retrievalRequired && personalToolsEligible
-        ? [hasToolCall(RETRIEVAL_UNAVAILABLE_TOOL_NAME), isStepCount(5)]
+        ? [
+            hasToolCall('revise_personal_element'),
+            hasToolCall(RETRIEVAL_UNAVAILABLE_TOOL_NAME),
+            isStepCount(5),
+          ]
         : isStepCount(5)
 
   const abortLease = async () => {
@@ -750,6 +763,18 @@ export async function createCardGeneration({
       generationEligible,
     },
     getNestedGenerationCost: () => nestedGenerationCost,
+    settleRevision: (input: {
+      assistantMessagePersisted: boolean
+      assistantMessageContent: unknown
+    }) =>
+      settlePersonalElementRevision({
+        prisma,
+        participantId,
+        courseId,
+        threadId,
+        assistantMessageId,
+        ...input,
+      }),
     settleLease,
     abortLease,
   }

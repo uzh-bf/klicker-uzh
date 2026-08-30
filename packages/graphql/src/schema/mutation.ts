@@ -81,6 +81,7 @@ import {
   CardGenerationLeaseInput,
   PersonalElement,
   PersonalElementCandidateLinkageInput,
+  PersonalElementRevisionLinkageInput,
   PrepareCardPlanInput,
   PreparedCardPlan,
   UpdatePersonalElementInput,
@@ -777,6 +778,26 @@ export const Mutation = builder.mutationType({
         },
         resolve: async (_, args, ctx) => {
           return await PersonalElementService.updatePersonalElement(
+            args.input,
+            {
+              prisma: ctx.prisma,
+              participantId: ctx.user.sub,
+            }
+          )
+        },
+      }),
+
+      applyPersonalElementRevision: t.withAuth(asParticipant).field({
+        nullable: true,
+        type: PersonalElement,
+        args: {
+          input: t.arg({
+            type: PersonalElementRevisionLinkageInput,
+            required: true,
+          }),
+        },
+        resolve: async (_, args, ctx) => {
+          return await PersonalElementService.applyPersonalElementRevision(
             args.input,
             {
               prisma: ctx.prisma,

@@ -925,3 +925,20 @@ no migration.
 - [ ] Implement S7, run its focused and browser checks, complete the slice and
   integrated review gates, push the exact reviewed head, and leave the local
   runtime available for user testing.
+- [x] 2026-08-30 target integration — incorporated cached `origin/v3-ai` head
+  `54fbfc92107f9b215cd1e8ef14355b76112199fc` through A, B, and C with merge
+  commits. Pull request #5481 still targets `v3-ai`, and the local ancestry is
+  `v3-ai` → A → B → C. No unrelated `v3` or `dev` branch was integrated.
+- [x] 2026-08-30 final-review corrections — removed source references from the
+  participant-owned manual update input. Generated revisions now persist their
+  terminal tool result first, then use a linkage-only GraphQL mutation that
+  reconstructs and atomically applies the complete revision. Existing source
+  linkage fields make transport retries idempotent. The personal-card page now
+  renders query error, empty, and populated states exclusively and offers an
+  explicit query retry. Focused GraphQL personal-element tests and 38 focused
+  Chat tests pass; GraphQL, Chat, and PWA TypeScript checks pass. The full
+  GraphQL suite still has only the two pre-existing activity-sharing audit-log
+  isolation failures.
+- [ ] Commit the final-review corrections, rerun the affected review gates,
+  push all three stack branches atomically, update pull request #5483, and keep
+  the local AI runtime running for manual verification.

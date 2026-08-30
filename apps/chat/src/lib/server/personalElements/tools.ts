@@ -16,7 +16,7 @@ import {
   normalizeRetrievedChunks,
   type RetrievedChunk,
 } from './contracts'
-import { listPersonalElements, updatePersonalElement } from './graphqlClient'
+import { listPersonalElements } from './graphqlClient'
 import { discardPotentialDuplicateCards } from './titleSimilarity'
 
 export const generationFailureCodeSchema = z.enum([
@@ -408,43 +408,14 @@ export function createRevisePersonalElementTool(
         }
       }
 
-      try {
-        const updated = await updatePersonalElement(
-          {
-            id: parsed.id,
-            expectedVersion: parsed.expectedVersion,
-            name: revised.name,
-            content: revised.content,
-            explanation: revised.explanation,
-            sources: revised.sources,
-          },
-          options.participantId
-        )
-        return {
-          status: 'updated' as const,
-          id: updated.id,
-          expectedVersion: parsed.expectedVersion,
-          version: updated.version,
-          name: updated.name,
-          content: updated.content,
-          explanation: updated.explanation,
-          sources: revised.sources,
-        }
-      } catch (error) {
-        const code =
-          error && typeof error === 'object' && 'extensions' in error
-            ? (error.extensions as { code?: unknown })?.code
-            : undefined
-        if (code === 'PERSONAL_ELEMENT_VERSION_CONFLICT') {
-          return {
-            status: 'conflict' as const,
-            id: parsed.id,
-            expectedVersion: parsed.expectedVersion,
-            version: current.version,
-            reason: 'The saved card changed before this revision completed',
-          }
-        }
-        throw error
+      return {
+        status: 'updated' as const,
+        id: parsed.id,
+        expectedVersion: parsed.expectedVersion,
+        name: revised.name,
+        content: revised.content,
+        explanation: revised.explanation,
+        sources: revised.sources,
       }
     },
   })

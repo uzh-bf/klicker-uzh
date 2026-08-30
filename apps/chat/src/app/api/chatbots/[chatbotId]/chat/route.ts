@@ -1919,6 +1919,30 @@ export async function POST(
             phase: 'complete',
           })
 
+          const revisionSettlement = await cardGeneration.settleRevision({
+            assistantMessagePersisted: finalizationOutcome !== 'failed',
+            assistantMessageContent,
+          })
+          if (revisionSettlement.status === 'failed') {
+            const reason =
+              revisionSettlement.reason === 'rejected'
+                ? 'Personal card revision was rejected'
+                : revisionSettlement.reason === 'unavailable'
+                  ? 'Personal card revision could not be confirmed'
+                  : 'Personal card revision result was invalid'
+            firstError = firstError ?? serializeStreamError(new Error(reason))
+            emitFinalOnce('error', {
+              elapsedMsFromStreamStart: Date.now() - streamStartedAtMs,
+              classification: 'unknown',
+              reason,
+            })
+            resolveStreamTerminalOutcome({
+              status: 'error',
+              errorText: 'An error occurred while processing the request.',
+            })
+            return
+          }
+
           const leaseSettlement = await cardGeneration.settleLease({
             assistantMessagePersisted: finalizationOutcome !== 'failed',
             assistantMessageContent,

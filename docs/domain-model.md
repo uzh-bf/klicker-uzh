@@ -116,8 +116,11 @@ identities for generated-message reloads; listPersonalElements returns the full
 course collection used by practice and saved-card management.
 
 Source references are system-managed. Manual edits to card text preserve the
-existing set. A successful generated revision supplies the full card and
+existing set. A successful generated revision is reconstructed from its
+persisted terminal assistant message and tool call, supplies the full card, and
 replaces the complete set atomically; an abstention or failure changes neither.
+The row's source message and tool-call fields identify the latest applied
+generated content and make that exact revision idempotent.
 The saved `PersonalElement` owns this snapshot independently of the Chat
 generation record, so generated-message retention is not the citation
 lifecycle. The rationale and future lecturer-owned composition contract are in

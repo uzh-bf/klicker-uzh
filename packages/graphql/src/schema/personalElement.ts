@@ -143,6 +143,17 @@ export const PersonalElementCandidateLinkageInput = builder.inputType(
   }
 )
 
+export const PersonalElementRevisionLinkageInput = builder.inputType(
+  'PersonalElementRevisionLinkageInput',
+  {
+    fields: (t) => ({
+      courseId: t.string({ required: true }),
+      messageId: t.string({ required: true }),
+      toolCallId: t.string({ required: true }),
+    }),
+  }
+)
+
 export const UpdatePersonalElementInput = builder.inputType(
   'UpdatePersonalElementInput',
   {
@@ -152,10 +163,6 @@ export const UpdatePersonalElementInput = builder.inputType(
       name: t.string({ required: false }),
       content: t.string({ required: false }),
       explanation: t.string({ required: false }),
-      sources: t.field({
-        type: [PersonalElementSourceInput],
-        required: false,
-      }),
     }),
   }
 )

@@ -75,9 +75,12 @@ active thread. The client retries the brief stream-to-persistence race, then
 fails closed with an explicit retry action if durable decision state is still
 unavailable.
 `list_personal_elements` returns the participant's course-scoped compact rows;
-`revise_personal_element` updates a saved row with an expected-version check
-and atomically replaces the complete card and source-reference set only after a
-grounded ready result. Insufficient evidence leaves both unchanged. Candidate cards do not have a
+`revise_personal_element` checks the current version, creates a grounded full
+revision, and returns it as tool state without writing the card directly. After
+the assistant message is terminal and persisted, Chat sends only its course,
+message, and tool-call linkage to GraphQL. The backend reconstructs that result
+and atomically replaces the complete card and source-reference set.
+Insufficient evidence leaves both unchanged. Candidate cards do not have a
 separate unsaved-revision path; each generated card is either saved or
 discarded. The server-only GraphQL service is the single owner of
 authorization, caps, and revision semantics.
@@ -88,7 +91,9 @@ through `src/lib/server/personalElements/graphqlClient.ts` instead of
 importing backend services. The client exposes list, lineage-only save and
 discard, lease mutations, plan preparation, candidate validation, a narrow
 generation-context query, the narrow saved-candidate lookup, and update
-operations. The generation context contains only the backend-owned course
+operations. Manual update operations cannot submit source references; generated
+revision persistence is a separate linkage-only operation. The generation
+context contains only the backend-owned course
 language and saved titles. Accepted-plan setup loads only saved candidate IDs,
 not full personal elements. Before creating or reclaiming a lease, the backend
 verifies current course participation, a published chatbot, the exact ready

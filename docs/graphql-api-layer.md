@@ -96,8 +96,13 @@ idempotently and repeats the title-similarity check inside its serializable
 transaction;
 `discardPersonalElementCandidate` accepts the same linkage, reloads the same
 trusted terminal candidate, and persists the negative decision without copying
-candidate content; and
-`updatePersonalElement` applies the expected-version revision contract.
+candidate content. `updatePersonalElement` applies the expected-version manual
+edit contract and cannot change source references.
+`applyPersonalElementRevision` accepts only course, terminal assistant-message,
+and revision tool-call identifiers. It reconstructs the full grounded revision
+from that participant's persisted published-chatbot turn, then atomically
+replaces card content and references. The stored latest-generation linkage
+makes an uncertain transport retry idempotent.
 `savedPersonalElementCandidateIds` returns only the requested saved candidate
 identities for generated-message reloads. `personalElements` remains the full
 course collection used by practice and saved-card management.
@@ -107,8 +112,9 @@ Each reference identifies one source material and contains disjoint physical
 PDF page ranges or exact web anchors plus optional human-readable labels. The
 service accepts the earlier flat source shape during the transition, normalizes
 it to the grouped shape, suppresses unsafe or signed URLs, and stores the full
-replacement set atomically with an AI-generated content revision. Manual content
-updates preserve the existing references. Saved elements own these snapshots;
+replacement set atomically with a linkage-verified AI-generated content
+revision. Manual content updates preserve the existing references. Saved
+elements own these snapshots;
 they do not depend on retaining the Chat generation record.
 
 ## Layering contract

@@ -1,0 +1,7 @@
+mutation MApplyPersonalElementRevision(
+  $input: PersonalElementRevisionLinkageInput!
+) {
+  applyPersonalElementRevision(input: $input) {
+    ...FPersonalElement
+  }
+}

@@ -1179,6 +1179,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       empty: 'You have not saved any personal cards for this course yet.',
       noDue: 'You have no cards due right now. Come back later.',
       error: 'The cards could not be loaded or updated. Please try again.',
+      retry: 'Try again',
       aiGenerated: 'AI-generated',
       authored: 'Authored',
       sourceLinked: 'source-linked',

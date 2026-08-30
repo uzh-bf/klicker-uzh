@@ -449,6 +449,27 @@ const cardCandidateLinkageSchema = z
   })
   .strict()
 
+const personalElementRevisionLinkageSchema = z
+  .object({
+    courseId: z.string().trim().min(1).max(MAX_ID_LENGTH),
+    messageId: z.string().uuid(),
+    toolCallId: z.string().trim().min(1).max(MAX_ID_LENGTH),
+  })
+  .strict()
+
+const persistedPersonalElementRevisionSchema = z
+  .object({
+    status: z.literal('updated'),
+    id: z.string().uuid(),
+    expectedVersion: z.number().int().min(1),
+    version: z.number().int().min(1).optional(),
+    name: z.string().trim().min(1).max(MAX_TITLE_LENGTH),
+    content: z.string().trim().min(1).max(8_192),
+    explanation: cardExplanationSchema,
+    sources: z.array(z.record(z.string(), z.unknown())).min(1),
+  })
+  .strict()
+
 const leaseSettlementSchema = z.object({
   id: z.string().uuid(),
   attemptToken: z.string().uuid(),
@@ -531,8 +552,11 @@ export type UpdatePersonalElementInput = {
   name?: string | null
   content?: string | null
   explanation?: string | null
-  sources?: readonly PersonalElementSourceInput[] | null
 }
+
+export type PersonalElementRevisionLinkageInput = z.infer<
+  typeof personalElementRevisionLinkageSchema
+>
 
 export type PersonalElementServiceContext = {
   prisma: DB.PrismaClient
@@ -2042,16 +2066,6 @@ export async function updatePersonalElement(
   if (!Number.isInteger(input.expectedVersion) || input.expectedVersion < 1) {
     throw personalElementError('PERSONAL_ELEMENT_INVALID_VERSION')
   }
-  if (input.sources && (!input.name || !input.content || !input.explanation)) {
-    throw personalElementError(
-      'PERSONAL_ELEMENTS_INVALID_INPUT',
-      'A generated revision must replace the complete card and source reference set'
-    )
-  }
-
-  const normalizedSources = input.sources
-    ? toPersistedSources(input.sources)
-    : undefined
   const updateData = {
     name: input.name?.trim(),
     content: input.content?.trim(),
@@ -2067,11 +2081,7 @@ export async function updatePersonalElement(
       .strict(),
     updateData
   )
-  const parsedUpdate = {
-    ...parsedFields,
-    ...(normalizedSources ? { sources: normalizedSources } : {}),
-  }
-  if (Object.values(parsedUpdate).every((value) => value === undefined)) {
+  if (Object.values(parsedFields).every((value) => value === undefined)) {
     throw personalElementError(
       'PERSONAL_ELEMENT_INVALID_INPUT',
       'At least one card field must be updated'
@@ -2098,21 +2108,132 @@ export async function updatePersonalElement(
     }
 
     const semanticChanged =
-      (parsedUpdate.content !== undefined &&
-        parsedUpdate.content !== element.content) ||
-      (parsedUpdate.explanation !== undefined &&
-        parsedUpdate.explanation !== element.explanation) ||
-      (parsedUpdate.sources !== undefined &&
-        !isDeepEqual(parsedUpdate.sources, element.sources))
+      (parsedFields.content !== undefined &&
+        parsedFields.content !== element.content) ||
+      (parsedFields.explanation !== undefined &&
+        parsedFields.explanation !== element.explanation)
 
-    if (!semanticChanged && parsedUpdate.name === undefined) {
+    if (!semanticChanged && parsedFields.name === undefined) {
       return element
     }
 
     return transaction.personalElement.update({
       where: { id: input.id },
       data: {
-        ...parsedUpdate,
+        ...parsedFields,
+        ...(semanticChanged
+          ? { version: { increment: 1 }, ...NEW_PERSONAL_ELEMENT_STATE }
+          : {}),
+      },
+    })
+  })
+}
+
+export async function applyPersonalElementRevision(
+  input: PersonalElementRevisionLinkageInput,
+  context: PersonalElementServiceContext
+) {
+  assertParticipantContext(context)
+  const linkage = parsePersonalElementInput(
+    personalElementRevisionLinkageSchema,
+    input
+  )
+
+  return runSerializable(context.prisma, async (transaction) => {
+    await assertCourseParticipation(
+      transaction,
+      context.participantId,
+      linkage.courseId
+    )
+    const message = await transaction.chatMessage.findFirst({
+      where: {
+        id: linkage.messageId,
+        role: 'assistant',
+        lifecycleStatus: DB.ChatMessageLifecycleStatus.COMPLETED,
+        thread: {
+          participantId: context.participantId,
+          chatbot: {
+            courseId: linkage.courseId,
+            status: DB.ChatbotStatus.PUBLISHED,
+          },
+        },
+      },
+      select: { content: true },
+    })
+    if (!message || !Array.isArray(message.content)) {
+      throw personalElementError(
+        'PERSONAL_ELEMENT_REVISION_NOT_FOUND',
+        'The generated revision is not available to this participant'
+      )
+    }
+    if (
+      (message.content as PersistedChatPart[]).some(
+        (part) =>
+          part.type === 'data' &&
+          (part.name === 'chat-stopped' || part.name === 'chat-error')
+      )
+    ) {
+      throw personalElementError(
+        'PERSONAL_ELEMENT_REVISION_NOT_READY',
+        'The generated revision did not finish successfully'
+      )
+    }
+
+    const rawRevision = findToolResult(
+      message.content,
+      'revise_personal_element',
+      linkage.toolCallId
+    )
+    if (!rawRevision) {
+      throw personalElementError(
+        'PERSONAL_ELEMENT_REVISION_NOT_READY',
+        'The generated revision is not ready to apply'
+      )
+    }
+    const revision = parsePersonalElementInput(
+      persistedPersonalElementRevisionSchema,
+      rawRevision
+    )
+    const sources = toPersistedSources(
+      revision.sources as PersonalElementSourceInput[]
+    )
+    const element = await transaction.personalElement.findUnique({
+      where: { id: revision.id },
+    })
+    if (
+      !element ||
+      element.participantId !== context.participantId ||
+      element.courseId !== linkage.courseId
+    ) {
+      throw personalElementError('PERSONAL_ELEMENT_NOT_FOUND')
+    }
+    if (
+      element.sourceMessageId === linkage.messageId &&
+      element.sourceToolCallId === linkage.toolCallId
+    ) {
+      return element
+    }
+    if (element.version !== revision.expectedVersion) {
+      throw personalElementError(
+        'PERSONAL_ELEMENT_VERSION_CONFLICT',
+        'The card was changed by another request'
+      )
+    }
+
+    const semanticChanged =
+      revision.content !== element.content ||
+      revision.explanation !== element.explanation ||
+      !isDeepEqual(sources, element.sources)
+
+    return transaction.personalElement.update({
+      where: { id: element.id },
+      data: {
+        name: revision.name,
+        content: revision.content,
+        explanation: revision.explanation,
+        sources,
+        sourceMessageId: linkage.messageId,
+        sourceToolCallId: linkage.toolCallId,
         ...(semanticChanged
           ? { version: { increment: 1 }, ...NEW_PERSONAL_ELEMENT_STATE }
           : {}),

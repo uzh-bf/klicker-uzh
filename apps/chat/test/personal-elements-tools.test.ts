@@ -2,13 +2,11 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   listPersonalElements: vi.fn(),
-  updatePersonalElement: vi.fn(),
   generateText: vi.fn(),
 }))
 
 vi.mock('../src/lib/server/personalElements/graphqlClient', () => ({
   listPersonalElements: mocks.listPersonalElements,
-  updatePersonalElement: mocks.updatePersonalElement,
 }))
 
 vi.mock('ai', async () => {
@@ -23,8 +21,8 @@ import {
   cardPlanInputSchema,
   cardPlanSchema,
   generationCandidateSchema,
-  MAX_RETRIEVED_CHUNK_TEXT_BYTES,
   MAX_CARDS,
+  MAX_RETRIEVED_CHUNK_TEXT_BYTES,
   normalizeRetrievedChunks,
 } from '../src/lib/server/personalElements/contracts'
 import {
@@ -644,11 +642,11 @@ describe('personal-element chat tools', () => {
     })
   })
 
-  test('returns a stale-version conflict without changing saved content', async () => {
+  test('returns a stale-version conflict before generating a revision', async () => {
     mocks.listPersonalElements.mockResolvedValue([
       {
         id: '00000000-0000-0000-0000-000000000001',
-        version: 1,
+        version: 2,
         name: 'Card',
         content: 'Front',
         explanation: 'Back',
@@ -656,12 +654,6 @@ describe('personal-element chat tools', () => {
         nextDueAt: null,
       },
     ])
-    mocks.updatePersonalElement.mockRejectedValue(
-      Object.assign(new Error('stale'), {
-        extensions: { code: 'PERSONAL_ELEMENT_VERSION_CONFLICT' },
-      })
-    )
-
     const result = await execute(
       createRevisePersonalElementTool({ ...options }),
       {
@@ -674,9 +666,9 @@ describe('personal-element chat tools', () => {
     expect(result).toMatchObject({
       status: 'conflict',
       expectedVersion: 1,
-      version: 1,
+      version: 2,
     })
-    expect(mocks.updatePersonalElement).toHaveBeenCalledTimes(1)
+    expect(mocks.generateText).not.toHaveBeenCalled()
   })
 
   test('rejects a generated plan whose card details differ from approval', async () => {
@@ -1228,7 +1220,50 @@ describe('personal-element chat tools', () => {
     })
   })
 
-  test('does not update a saved card when revision evidence is insufficient', async () => {
+  test('returns a grounded revision for post-persistence settlement', async () => {
+    mocks.listPersonalElements.mockResolvedValue([
+      {
+        id: '00000000-0000-0000-0000-000000000013',
+        version: 3,
+        name: 'Saved card',
+        content: 'Front',
+        explanation: 'Back',
+        origin: 'AI_GENERATED',
+        nextDueAt: null,
+      },
+    ])
+    mocks.generateText.mockResolvedValueOnce({
+      output: {
+        result: {
+          status: 'ready',
+          card: {
+            type: 'FLASHCARD',
+            title: 'Revised card',
+            front: 'Revised front',
+            back: 'Revised back',
+            citedChunkIds: ['chunk-1'],
+          },
+        },
+      },
+    })
+
+    const result = await execute(createRevisePersonalElementTool(options), {
+      id: '00000000-0000-0000-0000-000000000013',
+      expectedVersion: 3,
+      instruction: 'Make it more specific',
+    })
+
+    expect(result).toMatchObject({
+      status: 'updated',
+      expectedVersion: 3,
+      name: 'Revised card',
+      content: 'Revised front',
+      explanation: 'Revised back',
+    })
+    expect(result).not.toHaveProperty('version')
+  })
+
+  test('does not propose a saved-card update when revision evidence is insufficient', async () => {
     mocks.listPersonalElements.mockResolvedValue([
       {
         id: '00000000-0000-0000-0000-000000000014',
@@ -1255,7 +1290,6 @@ describe('personal-element chat tools', () => {
       version: 3,
       reason: 'insufficient_evidence',
     })
-    expect(mocks.updatePersonalElement).not.toHaveBeenCalled()
   })
 
   test('maps model and citation failures to generation_failed', async () => {

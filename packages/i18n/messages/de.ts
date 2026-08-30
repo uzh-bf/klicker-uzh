@@ -1192,6 +1192,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       noDue: 'Im Moment ist keine Karte fällig. Komm später wieder.',
       error:
         'Die Karten konnten nicht geladen oder aktualisiert werden. Bitte versuche es erneut.',
+      retry: 'Erneut versuchen',
       aiGenerated: 'KI-generiert',
       authored: 'Selbst erstellt',
       sourceLinked: 'mit Quellen verknüpft',

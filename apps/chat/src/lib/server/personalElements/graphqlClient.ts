@@ -2,6 +2,7 @@ import hashes from '@klicker-uzh/graphql/dist/client.json'
 import type {
   CardGenerationLeaseInput,
   MAbortCardGenerationLeaseMutation,
+  MApplyPersonalElementRevisionMutation,
   MClaimCardGenerationLeaseMutation,
   MCompleteCardGenerationLeaseMutation,
   MDiscardPersonalElementCandidateMutation,
@@ -350,29 +351,37 @@ export async function listSavedPersonalElementCandidateIds(
 }
 
 export async function updatePersonalElement(
-  input: Omit<UpdatePersonalElementInput, 'sources'> & {
-    sources?: ElementSourceReference[] | null
-  },
+  input: UpdatePersonalElementInput,
   participantId: string
 ): Promise<PersonalElement> {
-  const { sources, ...update } = input
-  const graphqlInput: UpdatePersonalElementInput = {
-    ...update,
-    ...(sources
-      ? { sources: sources.map(toGraphqlSourceReference) }
-      : sources === null
-        ? { sources: null }
-        : {}),
-  }
   const data =
     await executePersonalElementOperation<MUpdatePersonalElementMutation>({
       operationName: 'MUpdatePersonalElement',
-      variables: { input: graphqlInput },
+      variables: { input },
       participantId,
     })
   const element = data.updatePersonalElement
   if (!element) {
     throw new Error('Personal element update returned no element')
+  }
+  return element
+}
+
+export async function applyPersonalElementRevision(
+  input: { courseId: string; messageId: string; toolCallId: string },
+  participantId: string
+): Promise<PersonalElement> {
+  const data =
+    await executePersonalElementOperation<MApplyPersonalElementRevisionMutation>(
+      {
+        operationName: 'MApplyPersonalElementRevision',
+        variables: { input },
+        participantId,
+      }
+    )
+  const element = data.applyPersonalElementRevision
+  if (!element) {
+    throw new Error('Personal element revision returned no element')
   }
   return element
 }

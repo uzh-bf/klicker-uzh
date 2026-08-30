@@ -143,6 +143,7 @@ function PersonalElements() {
     data: courseData,
     error: courseError,
     loading: courseLoading,
+    refetch: refetchCourse,
   } = useQuery(GetBasicCourseInformationDocument, {
     variables: { courseId },
     skip: !courseId,
@@ -268,9 +269,8 @@ function PersonalElements() {
     setCurrentIx(-1)
   }
 
-  const hasError =
-    actionError ||
-    Boolean(courseError || elementsError || respondError || deleteError)
+  const queryError = Boolean(courseError || elementsError)
+  const hasActionError = actionError || Boolean(respondError || deleteError)
 
   if (loading || courseLoading) {
     return (
@@ -290,30 +290,45 @@ function PersonalElements() {
           <H1 className={{ root: 'text-xl' }}>
             {t('pwa.personalElements.title')}
           </H1>
-          <span className="text-sm text-gray-600">
-            {t('pwa.personalElements.dueCount', { count: dueCards.length })}
-          </span>
+          {!queryError ? (
+            <span className="text-sm text-gray-600">
+              {t('pwa.personalElements.dueCount', { count: dueCards.length })}
+            </span>
+          ) : null}
         </div>
 
-        {hasError ? (
-          <UserNotification type="error">
-            {t('pwa.personalElements.error')}
-          </UserNotification>
-        ) : null}
-
-        {elements.length === 0 ? (
-          <UserNotification type="info">
-            {t('pwa.personalElements.empty')}
-          </UserNotification>
+        {queryError ? (
+          <div className="space-y-3">
+            <UserNotification type="error">
+              {t('pwa.personalElements.error')}
+            </UserNotification>
+            <Button
+              basic
+              onClick={() => void Promise.all([refetchCourse(), refetch()])}
+            >
+              <Button.Label>{t('pwa.personalElements.retry')}</Button.Label>
+            </Button>
+          </div>
         ) : (
           <>
-            {dueCards.length === 0 && currentIx === -1 ? (
+            {hasActionError ? (
+              <UserNotification type="error">
+                {t('pwa.personalElements.error')}
+              </UserNotification>
+            ) : null}
+
+            {elements.length === 0 ? (
+              <UserNotification type="info">
+                {t('pwa.personalElements.empty')}
+              </UserNotification>
+            ) : dueCards.length === 0 && currentIx === -1 ? (
               <UserNotification type="info">
                 {t('pwa.personalElements.noDue')}
               </UserNotification>
             ) : null}
 
-            {dueCards.length > 0 || currentIx !== -1 ? (
+            {elements.length > 0 &&
+            (dueCards.length > 0 || currentIx !== -1) ? (
               <>
                 <StepProgressWithScoring
                   items={sessionCards.map((card) => {

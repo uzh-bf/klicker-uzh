@@ -10,6 +10,7 @@ import { FlashcardCorrectness } from '@klicker-uzh/types'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import {
   abortCardGenerationLease,
+  applyPersonalElementRevision,
   claimCardGenerationLease,
   completeCardGenerationLease,
   createPersonalElements,
@@ -209,6 +210,49 @@ async function createGeneratedCandidateAttempt(
       toolCallId: generationToolCallId,
       candidateId,
     },
+  }
+}
+
+async function createPersistedRevisionAttempt(
+  fixture: Awaited<ReturnType<typeof createFixture>>,
+  element: PersonalElement,
+  overrides: Partial<{
+    name: string
+    content: string
+    explanation: string
+    sources: ReturnType<typeof candidate>['sources']
+    lifecycleStatus: 'COMPLETED' | 'IN_PROGRESS'
+  }> = {}
+) {
+  const toolCallId = `revise-${randomUUID()}`
+  const message = await prisma.chatMessage.create({
+    data: {
+      threadId: fixture.planMessage.threadId,
+      parentId: fixture.planMessage.id,
+      role: 'assistant',
+      lifecycleStatus: overrides.lifecycleStatus ?? 'COMPLETED',
+      content: [
+        {
+          type: 'tool-call',
+          toolName: 'revise_personal_element',
+          toolCallId,
+          result: {
+            status: 'updated',
+            id: element.id,
+            expectedVersion: element.version,
+            name: overrides.name ?? element.name,
+            content: overrides.content ?? element.content,
+            explanation: overrides.explanation ?? element.explanation,
+            sources: overrides.sources ?? candidate().sources,
+          },
+        },
+      ],
+    },
+  })
+  return {
+    courseId: fixture.course.id,
+    messageId: message.id,
+    toolCallId,
   }
 }
 
@@ -608,24 +652,40 @@ describe('personal elements service', () => {
     )
   })
 
-  it('requires generated source revisions to replace the complete card atomically', async () => {
+  it('preserves system-managed sources during manual card updates', async () => {
     const { course, participant } = await createFixture()
     const [element] = await createPersonalElements(
       { courseId: course.id, candidates: [candidate()] },
       context(participant.id)
     )
 
+    const updated = await updatePersonalElement(
+      {
+        id: element!.id,
+        expectedVersion: element!.version,
+        content: 'What is the value of the next-best alternative?',
+      },
+      context(participant.id)
+    )
+    expect(updated.sources).toEqual(element!.sources)
+  })
+
+  it('applies only a persisted terminal generated revision', async () => {
+    const fixture = await createFixture()
+    const [element] = await createPersonalElements(
+      { courseId: fixture.course.id, candidates: [candidate()] },
+      context(fixture.participant.id)
+    )
+    const linkage = await createPersistedRevisionAttempt(fixture, element!, {
+      content: 'Revised front',
+      explanation: 'Revised back with enough detail.',
+      lifecycleStatus: 'IN_PROGRESS',
+    })
+
     await expect(
-      updatePersonalElement(
-        {
-          id: element!.id,
-          expectedVersion: element!.version,
-          sources: candidate().sources,
-        },
-        context(participant.id)
-      )
+      applyPersonalElementRevision(linkage, context(fixture.participant.id))
     ).rejects.toMatchObject({
-      extensions: { code: 'PERSONAL_ELEMENTS_INVALID_INPUT' },
+      extensions: { code: 'PERSONAL_ELEMENT_REVISION_NOT_FOUND' },
     })
     expect(
       await prisma.personalElement.findUniqueOrThrow({
@@ -633,10 +693,30 @@ describe('personal elements service', () => {
       })
     ).toMatchObject({
       version: element!.version,
-      name: element!.name,
       content: element!.content,
-      explanation: element!.explanation,
       sources: element!.sources,
+    })
+  })
+
+  it('rejects a persisted revision after its chatbot is paused', async () => {
+    const fixture = await createFixture()
+    const [element] = await createPersonalElements(
+      { courseId: fixture.course.id, candidates: [candidate()] },
+      context(fixture.participant.id)
+    )
+    const linkage = await createPersistedRevisionAttempt(fixture, element!, {
+      content: 'Revised front',
+      explanation: 'Revised back with enough detail.',
+    })
+    await prisma.chatbot.update({
+      where: { id: fixture.chatbot.id },
+      data: { status: ChatbotStatus.PAUSED },
+    })
+
+    await expect(
+      applyPersonalElementRevision(linkage, context(fixture.participant.id))
+    ).rejects.toMatchObject({
+      extensions: { code: 'PERSONAL_ELEMENT_REVISION_NOT_FOUND' },
     })
   })
 
@@ -1114,7 +1194,8 @@ describe('personal elements service', () => {
   })
 
   it('progresses SM-2 and guards revisions by version', async () => {
-    const { course, participant } = await createFixture()
+    const fixture = await createFixture()
+    const { course, participant } = fixture
     const [element] = await createPersonalElements(
       { courseId: course.id, candidates: [candidate()] },
       context(participant.id)
@@ -1181,15 +1262,13 @@ describe('personal elements service', () => {
         locators: [{ type: 'PAGE_RANGE' as const, pageFrom: 7, pageTo: 9 }],
       },
     ]
-    const revisedWithSources = await updatePersonalElement(
-      {
-        id: element!.id,
-        expectedVersion: 2,
-        name: revised.name,
-        content: revised.content,
-        explanation: revised.explanation,
-        sources: revisedSources,
-      },
+    const revisionLinkage = await createPersistedRevisionAttempt(
+      fixture,
+      revised,
+      { sources: revisedSources }
+    )
+    const revisedWithSources = await applyPersonalElementRevision(
+      revisionLinkage,
       context(participant.id)
     )
     expect(revisedWithSources.version).toBe(3)
@@ -1263,7 +1342,6 @@ describe('personal elements service', () => {
         expectedVersion: 1,
         content: null,
         explanation: null,
-        sources: null,
         name: 'Renamed card',
       },
       context(participant.id)
@@ -1274,7 +1352,8 @@ describe('personal elements service', () => {
   })
 
   it('resets learning state when explanation or sources change', async () => {
-    const { course, participant } = await createFixture()
+    const fixture = await createFixture()
+    const { course, participant } = fixture
     const input = candidate()
     const [element] = await createPersonalElements(
       { courseId: course.id, candidates: [input] },
@@ -1309,23 +1388,22 @@ describe('personal elements service', () => {
       context(participant.id)
     )
     const updatedChunkId = randomUUID()
-    const revised = await updatePersonalElement(
+    const updatedSources = [
       {
-        id: element!.id,
-        expectedVersion: 2,
-        sources: [
-          {
-            sourceId: 'course-material',
-            kind: 'DOCUMENT',
-            title: 'Updated economics notes',
-            chunkIds: [updatedChunkId],
-            locators: [{ type: 'PAGE_RANGE', pageFrom: 7, pageTo: 9 }],
-          },
-        ],
-        name: element!.name,
-        content: element!.content,
-        explanation: explanationRevision.explanation,
+        sourceId: 'course-material',
+        kind: 'DOCUMENT' as const,
+        title: 'Updated economics notes',
+        chunkIds: [updatedChunkId],
+        locators: [{ type: 'PAGE_RANGE' as const, pageFrom: 7, pageTo: 9 }],
       },
+    ]
+    const revisionLinkage = await createPersistedRevisionAttempt(
+      fixture,
+      explanationRevision,
+      { sources: updatedSources }
+    )
+    const revised = await applyPersonalElementRevision(
+      revisionLinkage,
       context(participant.id)
     )
 
@@ -1340,24 +1418,8 @@ describe('personal elements service', () => {
     )
     expectNewLearningState(revised)
 
-    const sameSources = [
-      {
-        title: 'Updated economics notes',
-        sourceId: 'course-material',
-        kind: 'DOCUMENT' as const,
-        chunkIds: [updatedChunkId],
-        locators: [{ type: 'PAGE_RANGE' as const, pageFrom: 7, pageTo: 9 }],
-      },
-    ]
-    const unchanged = await updatePersonalElement(
-      {
-        id: element!.id,
-        expectedVersion: 3,
-        name: revised.name,
-        content: revised.content,
-        explanation: revised.explanation,
-        sources: sameSources,
-      },
+    const unchanged = await applyPersonalElementRevision(
+      revisionLinkage,
       context(participant.id)
     )
     expect(unchanged.version).toBe(3)
