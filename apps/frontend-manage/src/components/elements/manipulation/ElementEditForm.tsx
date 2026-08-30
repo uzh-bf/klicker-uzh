@@ -101,7 +101,11 @@ function ElementEditForm({
   submitLabel?: string
   submitErrorMessage?: string
   submitDataCy?: string
-  secondaryAction?: { label: string; onClick: () => void; dataCy: string }
+  secondaryAction?: {
+    label: string
+    onClick: () => void | Promise<void>
+    dataCy: string
+  }
   supplementaryContent?: ReactNode
   discardChangesPrompt?: {
     title: string
@@ -112,6 +116,7 @@ function ElementEditForm({
   const t = useTranslations()
   const [activeTab, setActiveTab] = useState('preview')
   const [discardChangesOpen, setDiscardChangesOpen] = useState(false)
+  const [secondaryActionLoading, setSecondaryActionLoading] = useState(false)
   const formikRef = useRef<FormikProps<ElementFormTypes>>(null)
   const [answerCollectionEntries, setAnswerCollectionEntries] = useState<
     { id: number; value: string }[]
@@ -144,6 +149,16 @@ function ElementEditForm({
       return
     }
     onClose()
+  }
+
+  async function runSecondaryAction() {
+    if (!secondaryAction || secondaryActionLoading) return
+    setSecondaryActionLoading(true)
+    try {
+      await secondaryAction.onClick()
+    } finally {
+      setSecondaryActionLoading(false)
+    }
   }
 
   return (
@@ -434,8 +449,9 @@ function ElementEditForm({
                       </Button>
                       {secondaryAction ? (
                         <Button
-                          onClick={secondaryAction.onClick}
-                          disabled={isSubmitting}
+                          onClick={runSecondaryAction}
+                          disabled={isSubmitting || secondaryActionLoading}
+                          loading={secondaryActionLoading}
                           data={{ cy: secondaryAction.dataCy }}
                         >
                           {secondaryAction.label}
