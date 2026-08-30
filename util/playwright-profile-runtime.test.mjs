@@ -251,6 +251,25 @@ test('workflow shard startup steps explicitly select Bash', () => {
   }
 })
 
+test('local full-stack startup stays independent from the CI runtime plan', () => {
+  const packageJson = JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+  )
+
+  assert.equal(
+    packageJson.scripts['start:playwright'],
+    'run-s --npm-path pnpm build:test start:playwright:full'
+  )
+  assert.match(
+    packageJson.scripts['start:playwright:full'],
+    /turbo run start:test --filter=/
+  )
+  assert.equal(
+    packageJson.scripts['start:playwright:ci'],
+    'node ./util/playwright-profile-runtime.mjs start'
+  )
+})
+
 test('installed Devrouter plans every shard profile union from the real contract', () => {
   const outputDir = mkdtempSync(join(tmpdir(), 'klicker-profile-plan-'))
   const profiles = ['manage,pwa', 'live-quiz,manage,pwa', 'chat,manage,pwa']
