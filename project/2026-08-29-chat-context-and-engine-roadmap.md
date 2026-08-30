@@ -388,3 +388,14 @@ revalidates branch ancestry and the source digest before persistence.
   declined. Fresh exact-head CI/OCR and the required manual final review still
   precede upstream integration; PostgreSQL and managed-browser proof remain
   separate evidence gaps.
+
+- 2026-08-30 upstream-integration receipt: explicit approval closed both
+  repository drift gates without rewriting published history. Public
+  `origin/v3` through `e84103606` merged cleanly as `d4455b281`; its two
+  upstream commits do not overlap P0. Catalyst `origin/main` through
+  `de7342867` merged cleanly as `bf0ac5c24`; the Catalyst PR net diff remains
+  its single roadmap file. Public post-integration repository checks and 35
+  final-review helper tests pass. Catalyst formatting and both repositories'
+  diff and gitleaks checks pass. PostgreSQL/browser proof and exact-head
+  publication checks remain public gates; no private implementation, contract
+  mutation, deployment, or activation occurred.

@@ -946,3 +946,16 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   pass. Commit, native hooks, push, fresh exact-head CI/OCR, and the required
   manual final review remain before the separately gated PostgreSQL/browser
   proof and upstream integration.
+
+- 2026-08-30 upstream-integration receipt: after explicit user approval,
+  current `origin/v3` through `e84103606` was merged without conflict as
+  `d4455b281`. The two upstream commits change video-embed support and the
+  final-review runtime-config path; neither overlaps the 23-file P0 net diff.
+  The integrated tree passes all 25 repository check tasks, all seven lint
+  tasks, formatting, Syncpack, Prisma sync, policy checks, nine Playwright
+  host-launcher tests, 35 final-review helper tests, `git diff --check`, and
+  a branch-wide gitleaks scan with no leaks. Prior P0 source reviews remain
+  valid because the integration did not change the reviewed package.
+  PostgreSQL execution and managed browser smoke remain runtime evidence gaps.
+  Fresh exact-head build, push, GitHub CI/OCR, readiness, manual final review,
+  merge, deployment, and activation remain pending or separately gated.
