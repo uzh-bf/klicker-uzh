@@ -453,32 +453,36 @@ function isTrustedPermission(permission) {
   return permission === 'write' || permission === 'admin'
 }
 
-function buildOCRPolicy() {
+function buildOCRPolicy({ model = FINAL_REVIEW_MODEL } = {}) {
+  const extraBody = {
+    reasoning: {
+      effort: 'high',
+    },
+  }
+  if (model === FINAL_REVIEW_MODEL) {
+    extraBody.provider = {
+      order: ['deepinfra', 'fireworks'],
+      allow_fallbacks: true,
+    }
+  }
+
   return {
     language: 'English',
     llm: {
       url: OPENROUTER_URL,
-      model: FINAL_REVIEW_MODEL,
+      model,
       protocol: 'openai',
-      extra_body: {
-        provider: {
-          order: ['deepinfra', 'fireworks'],
-          allow_fallbacks: true,
-        },
-        reasoning: {
-          effort: 'high',
-        },
-      },
+      extra_body: extraBody,
     },
   }
 }
 
-function buildOCRConfig({ token }) {
+function buildOCRConfig({ token, model = FINAL_REVIEW_MODEL }) {
   if (!token) {
     throw new Error('OPENROUTER_API_KEY is required')
   }
 
-  const policy = buildOCRPolicy()
+  const policy = buildOCRPolicy({ model })
   return {
     ...policy,
     llm: {
@@ -492,11 +496,18 @@ function defaultOCRConfigPath() {
   return path.join(os.homedir(), '.opencodereview', 'config.json')
 }
 
-function writeOCRConfig({ token, configPath = defaultOCRConfigPath() }) {
+function writeOCRConfig({
+  token,
+  model = FINAL_REVIEW_MODEL,
+  configPath = defaultOCRConfigPath(),
+}) {
   fs.mkdirSync(path.dirname(configPath), { recursive: true, mode: 0o700 })
   const descriptor = fs.openSync(configPath, 'wx', 0o600)
   try {
-    fs.writeFileSync(descriptor, JSON.stringify(buildOCRConfig({ token })))
+    fs.writeFileSync(
+      descriptor,
+      JSON.stringify(buildOCRConfig({ token, model }))
+    )
   } finally {
     fs.closeSync(descriptor)
   }
@@ -3141,6 +3152,7 @@ function runCli() {
   if (command === 'configure-ocr') {
     writeOCRConfig({
       token: fs.readFileSync(0, 'utf8'),
+      model: process.env.OCR_LLM_MODEL || FINAL_REVIEW_MODEL,
       configPath: process.env.OCR_CONFIG_PATH || undefined,
     })
     console.log('Ephemeral OCR configuration created')
