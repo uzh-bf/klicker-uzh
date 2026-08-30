@@ -46,9 +46,9 @@ What v4 changes, from the grill rulings:
 
 ## Progress
 
-Current status (2026-08-30): the release-governance custody package and its
-companion staging-promotion safeguard are published as draft PRs. Their exact
-heads remain stable and match their remote feature branches.
+Current status (2026-08-30): the approved current-target integration pass is
+complete locally for the release-governance custody package and complete and
+published for its companion staging-promotion safeguard.
 
 - Active package: finish PR readiness for
   [#5662](https://github.com/uzh-bf/klicker-uzh/pull/5662) against `v3` and
@@ -57,29 +57,36 @@ heads remain stable and match their remote feature branches.
   safeguard implementation, focused local verification, dedicated safeguard
   reviews, initial upstream integration, draft PR publication, and current
   parallel-owner inventory.
-- Latest verified heads: `967d7b067` for the safeguard and `e9875c633` for
-  roadmap custody. Both local heads equal their remote feature-branch heads.
-- Exact-head CI: ordinary checks pass on both PRs. PR #5662's OpenCodeReview
-  job failed because both selected file reviews exceeded the provider's
-  10-minute limit; it produced no code finding. PR #5663's OpenCodeReview job
-  passed. Both final-AI-review contexts remain pending.
-- Target drift: `v3` advanced by one non-overlapping commit to `aaf7cdf34`;
-  `v3-ai` advanced by four non-overlapping commits to `54fbfc921`. Neither
-  target has been integrated after this receipt.
+- Latest verified integration commits: `20b0faab2` merges approved
+  `v3@aaf7cdf34` into the safeguard; `88fefcf9c` merges approved
+  `v3-ai@54fbfc921` into roadmap custody. The safeguard remote branch matches
+  `20b0faab2`; this Progress update is the only custody change after
+  `88fefcf9c` and is included in the approved publication pass.
+- Fresh verification: the safeguard passes all 38 policy tests, Bash syntax,
+  ShellCheck, YAML parsing, Prettier, and diff checks. Custody passes Prettier,
+  diff checks, and byte-equality checks proving it adds no Chat, deployment,
+  Playwright, or lockfile delta over `v3-ai@54fbfc921`.
+- Exact-head CI: fresh checks are queued for PR #5662. PR #5663's preceding
+  exact-head checks become historical when this custody receipt is published.
+  Both final-AI-review contexts remain pending.
+- Later target drift: `v3` advanced once more to `e84103606` after the
+  approved snapshot. That commit changes final-review configuration-path
+  coverage in the shared policy-test and deployment-guide files, but it does
+  not change the staging-promotion workflow or helper. No second integration
+  pass is authorized or performed. `v3-ai` still equals the integrated
+  `54fbfc921` target.
 - Required delivery layer: `pr_ready` for both initial packages. Achieved
-  layer: draft PRs with exact-head CI evidence; review acceptance and current
-  target integration remain open.
-- Remaining package gates: approve and perform one exact upstream integration
-  pass per branch, restore working Git transport, obtain fresh exact-head CI
-  and required reviews, then separately authorize each merge. Repository
-  controls, staging operations, tags, deployment, and live proof remain
-  withheld.
+  layer: integrated draft PR branches under the approved publication pass;
+  fresh exact-head CI and review acceptance remain open.
+- Remaining package gates: confirm the custody remote head, obtain fresh
+  exact-head CI and required reviews, then separately authorize each merge.
+  Repository controls, staging operations, tags, deployment, and live proof
+  remain withheld.
 - Parallel-work rule: keep N2, N3, and N5 read-only until their existing
   owners publish exact-head receipts; reconcile their work instead of
   recreating it.
-- Next action: after explicit integration approval and restored Git transport,
-  merge exact `v3@aaf7cdf34` into the safeguard branch and exact
-  `v3-ai@54fbfc921` into the custody branch, then rerun affected checks.
+- Next action: publish this custody receipt under the approved pass, confirm
+  both exact remote heads, and let fresh exact-head CI settle.
 
 ## 1. Verified repository constraints (refreshed 2026-08-29)
 
@@ -802,3 +809,27 @@ these three conditions decide.
   integration was attempted.
 - No reviewer, parallel Codex task, repository control, deployment, tag,
   staging reset, or remote branch was changed while producing this receipt.
+
+### 2026-08-30 approved integration receipt
+
+- The user approved one bounded integration-and-publication pass for exact
+  `v3@aaf7cdf34` and `v3-ai@54fbfc921`. It did not authorize force-pushes,
+  manual review retries, PR merges, repository controls, tags, staging
+  operations, or deployments.
+- Safeguard merge `20b0faab2` has parents `967d7b067` and `aaf7cdf34`. Its
+  remote feature branch was read back at that exact commit after publication.
+- Custody merge `88fefcf9c` has parents `4e56cc75e` and `54fbfc921`. The
+  current Progress update is documentation-only and rides with the authorized
+  custody publication.
+- Post-integration verification passed all 38 safeguard policy tests, Bash
+  syntax, ShellCheck, workflow YAML parsing, relevant Prettier checks, and
+  range diff checks. The custody branch passed all relevant Prettier and diff
+  checks and remains byte-identical to its target for Chat, deployment,
+  Playwright, and lockfile paths.
+- During the pass, `v3` advanced to `e84103606` with a final-review
+  configuration-path fix. It overlaps the safeguard's policy-test and
+  deployment-guide files but not its staging-promotion workflow or helper.
+  Per the one-pass integration contract, it was inspected and recorded but
+  not merged. `v3-ai` did not move beyond `54fbfc921`.
+- Fresh PR checks and live remote readback remain the authoritative publication
+  evidence. No parallel Codex task was contacted or influenced.
