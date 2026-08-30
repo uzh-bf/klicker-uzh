@@ -58,6 +58,16 @@ jobs:
             exit 1
           fi
 
+      - name: Report prepare runner
+        shell: bash
+        run: |
+          {
+            echo '### Public ARM64 Playwright prepare'
+            echo
+            echo "- Runner: \`${RUNNER_NAME}\`"
+            echo "- Platform: \`${RUNNER_OS}/${RUNNER_ARCH}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
@@ -70,7 +80,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/|packages/|playwright/|\.github/workflows/test-playwright\.yml|\.github/workflows/public-pr-playwright-shards\.yml|\.github/workflows/update-playwright-timings\.yml|\.github/actions/changed-paths/|\.github/scripts/get-shard-files\.js|\.github/scripts/update-playwright-timings\.py|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh)'
+          pattern: '^(apps/|packages/|playwright/|\.devrouter\.yml|\.github/workflows/test-playwright\.yml|\.github/workflows/public-pr-playwright-shards\.yml|\.github/workflows/update-playwright-timings\.yml|\.github/actions/changed-paths/|\.github/scripts/get-shard-files\.(js|test\.cjs)|\.github/scripts/update-playwright-timings\.py|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh|util/playwright-profile-runtime\.(mjs|test\.mjs))'
 
   build-and-compile:
     needs: prepare
@@ -81,6 +91,16 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble
     steps:
+      - name: Report build runner
+        shell: bash
+        run: |
+          {
+            echo '### Public ARM64 Playwright build'
+            echo
+            echo "- Runner: \`${RUNNER_NAME}\`"
+            echo "- Platform: \`${RUNNER_OS}/${RUNNER_ARCH}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Check out repository code
         uses: actions/checkout@v4
         with:
@@ -104,8 +124,8 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
+      - name: Restore pnpm cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             ${{ env.STORE_PATH }}
@@ -113,8 +133,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-pnpm-store-
 
-      - name: Cache turbo build artifacts
-        uses: actions/cache@v4
+      - name: Restore turbo build artifacts
+        uses: actions/cache/restore@v4
         with:
           path: |
             .turbo
@@ -127,7 +147,7 @@ jobs:
         run: pnpm install
 
       - name: Build all packages and apps
-        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test --concurrency=2
+        run: pnpm run --filter @klicker-uzh/prisma build:test && pnpm run build:test --concurrency=4
         env:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
@@ -210,8 +230,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardIndex: [1, 2, 3]
-        shardTotal: [3]
+        shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
+        shardTotal: [8]
     services:
       postgres:
         image: postgres:15
@@ -221,7 +241,7 @@ jobs:
           POSTGRES_DB: klicker-prod
         options: >-
           --health-cmd "pg_isready -U klicker-prod -d klicker-prod"
-          --health-interval 10s
+          --health-interval 5s
           --health-timeout 5s
           --health-retries 5
       postgres_hatchet:
@@ -240,21 +260,21 @@ jobs:
         image: redis:7
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 10s
+          --health-interval 5s
           --health-timeout 5s
           --health-retries 5
       redis_exec:
         image: redis:7
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 10s
+          --health-interval 5s
           --health-timeout 5s
           --health-retries 5
       redis_assessment_exec:
         image: redis:7
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 10s
+          --health-interval 5s
           --health-timeout 5s
           --health-retries 5
       hatchet:
@@ -275,14 +295,26 @@ jobs:
           SERVER_LOGGER_FORMAT: console
         options: >-
           --health-cmd "curl -f http://localhost:8888/healthz"
-          --health-interval 30s
+          --health-interval 5s
           --health-timeout 10s
           --health-retries 10
         volumes:
           - hatchet_lite_config_${{ github.run_id }}_${{ github.run_attempt }}_${{ matrix.shardIndex }}:/config
 
     steps:
-      - run: echo "Running Playwright tests (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})"
+      - name: Report shard runner
+        shell: bash
+        env:
+          SHARD_INDEX: ${{ matrix.shardIndex }}
+          SHARD_TOTAL: ${{ matrix.shardTotal }}
+        run: |
+          echo "Running Playwright tests (shard ${SHARD_INDEX}/${SHARD_TOTAL})"
+          {
+            echo "### Playwright shard ${SHARD_INDEX}/${SHARD_TOTAL}"
+            echo
+            echo "- Runner: \`${RUNNER_NAME}\`"
+            echo "- Platform: \`${RUNNER_OS}/${RUNNER_ARCH}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -305,8 +337,8 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
+      - name: Restore pnpm cache
+        uses: actions/cache/restore@v4
         with:
           path: ${{ env.STORE_PATH }}
           key: ${{ runner.os }}-${{ runner.arch }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -355,15 +387,30 @@ jobs:
 
       - name: Start services, wait for readiness, and run Playwright tests
         timeout-minutes: 120
+        shell: bash
         run: |
+          set -euo pipefail
           chmod +x .github/scripts/wait-for-services.sh
-          TEST_FILES=$(node .github/scripts/get-shard-files.js ${{ matrix.shardIndex }} ${{ matrix.shardTotal }})
-          echo "Running tests for shard ${{ matrix.shardIndex }}: $TEST_FILES"
+          SHARD_PLAN=$(node .github/scripts/get-shard-files.js ${{ matrix.shardIndex }} ${{ matrix.shardTotal }} --json)
+          PROFILE=$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).profile)' "$SHARD_PLAN")
+          mapfile -t TEST_FILES < <(node -e 'for (const file of JSON.parse(process.argv[1]).files) console.log(file)' "$SHARD_PLAN")
+          if [ "${#TEST_FILES[@]}" -eq 0 ]; then
+            echo "Shard plan contains no test files" >&2
+            exit 1
+          fi
+          RUNTIME_PLAN="${RUNNER_TEMP}/playwright-runtime-${{ matrix.shardIndex }}.json"
+          node util/playwright-profile-runtime.mjs resolve \
+            --profile "$PROFILE" \
+            --output "$RUNTIME_PLAN"
+          export PLAYWRIGHT_RUNTIME_PLAN="$RUNTIME_PLAN"
+          SERVICE_ENDPOINTS=$(node util/playwright-profile-runtime.mjs endpoints --plan "$RUNTIME_PLAN")
+          export SERVICE_ENDPOINTS
+          echo "Running tests for shard ${{ matrix.shardIndex }} with profile $PROFILE: ${TEST_FILES[*]}"
           .github/scripts/wait-for-services.sh -- \
             env NODE_ENV=test \
             pnpm --filter @klicker-uzh/playwright exec playwright test \
               --project=chromium \
-              $TEST_FILES
+              "${TEST_FILES[@]}"
         env:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
@@ -375,7 +422,6 @@ jobs:
           URL_STUDENT: http://127.0.0.1:3001
           URL_STUDENT_LOGIN: http://127.0.0.1:3001/login
           URL_CHAT: http://127.0.0.1:3004
-          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3004/noLogin http://127.0.0.1:3010'
           SERVICE_START_SCRIPT: start:playwright:ci
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'

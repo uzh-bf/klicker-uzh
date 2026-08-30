@@ -95,6 +95,7 @@ jobs:
     concurrency:
       group: final-ai-status-lock-${{ needs.resolve_lock.outputs.lock_key }}
       cancel-in-progress: false
+      queue: max
     permissions:
       actions: read
       checks: read
@@ -137,6 +138,7 @@ jobs:
     concurrency:
       group: final-ai-status-lock-${{ needs.resolve_lock.outputs.lock_key }}
       cancel-in-progress: false
+      queue: max
     permissions:
       actions: read
       checks: read
@@ -232,6 +234,7 @@ jobs:
     concurrency:
       group: final-ai-status-lock-${{ needs.authorize.outputs.status_lock_key }}
       cancel-in-progress: false
+      queue: max
     permissions:
       contents: read
       checks: read
@@ -359,7 +362,7 @@ jobs:
       - name: Install pinned OpenCodeReview CLI
         if: needs.start.outputs.run_review == 'true'
         run: |
-          npm install -g @alibaba-group/open-code-review@1.9.10
+          npm install -g @alibaba-group/open-code-review@1.11.0
           ocr version
 
       - name: Configure ephemeral OpenRouter access
@@ -371,6 +374,16 @@ jobs:
           set -euo pipefail
           printf '%s' "${OPENROUTER_API_KEY}" |
             node .github/scripts/final-ai-review.js configure-ocr
+          test -s "${HOME}/.opencodereview/config.json"
+
+      - name: Verify OpenRouter tool access
+        if: needs.start.outputs.run_review == 'true'
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          set -euo pipefail
+          printf '%s' "${OPENROUTER_API_KEY}" |
+            node .github/scripts/final-ai-review.js verify-openrouter-tools
 
       - name: Run final review
         id: run_review
@@ -387,10 +400,48 @@ jobs:
             --from "${REVIEW_FROM}" \
             --to "${HEAD_SHA}" \
             --audience agent \
+            --effort low \
+            --timeout 30 \
+            --max-tokens-budget 750000 \
             --format json \
             --background "${BACKGROUND}" \
             --rule .github/open-code-review/final-review-rules.json \
             >"${RESULT_PATH}" 2>"${STDERR_PATH}"
+
+      - name: Summarize final review failure output
+        if: failure() && steps.run_review.outcome == 'failure'
+        env:
+          RESULT_PATH: ${{ runner.temp }}/final-ai-review-result.json
+          STDERR_PATH: ${{ runner.temp }}/final-ai-review-stderr.log
+        run: |
+          set -euo pipefail
+          echo '::group::Final review CLI failure output'
+          cat "${STDERR_PATH}" 2>/dev/null || echo 'stderr log was not created'
+          echo '::endgroup::'
+          if [[ -f "${RESULT_PATH}" ]]; then
+            echo '::group::Final review CLI result JSON'
+            cat "${RESULT_PATH}"
+            echo
+            echo '::endgroup::'
+          fi
+          {
+            echo '### Final review CLI failure'
+            echo
+            echo '```text'
+            if [[ -f "${STDERR_PATH}" ]]; then
+              tail -c 8000 "${STDERR_PATH}"
+            else
+              echo 'stderr log was not created'
+            fi
+            echo '```'
+            if [[ -f "${RESULT_PATH}" ]]; then
+              echo
+              echo '```json'
+              tail -c 8000 "${RESULT_PATH}"
+              echo
+              echo '```'
+            fi
+          } >>"${GITHUB_STEP_SUMMARY}"
 
       - name: Remove ephemeral OpenRouter access
         id: cleanup
@@ -451,6 +502,15 @@ jobs:
                 : 'No actionable findings; skipped the pull-request comment'
             )
 
+      - name: Upload rejected individual publisher input
+        if: failure() && steps.publish.outcome == 'failure'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: final-ai-individual-publisher-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/final-ai-review-result.json
+          if-no-files-found: error
+          retention-days: 1
+
   finalize:
     needs: [authorize, start, review]
     if: >-
@@ -462,6 +522,7 @@ jobs:
     concurrency:
       group: final-ai-status-lock-${{ needs.authorize.outputs.status_lock_key }}
       cancel-in-progress: false
+      queue: max
     permissions:
       checks: write
       contents: read
@@ -607,6 +668,7 @@ jobs:
     concurrency:
       group: final-ai-status-lock-${{ needs.authorize_stack.outputs.status_lock_key }}
       cancel-in-progress: false
+      queue: max
     permissions:
       actions: read
       checks: read
@@ -768,7 +830,7 @@ jobs:
       - name: Install pinned OpenCodeReview CLI
         if: needs.start_stack.outputs.run_review == 'true'
         run: |
-          npm install -g @alibaba-group/open-code-review@1.9.10
+          npm install -g @alibaba-group/open-code-review@1.11.0
           ocr version
 
       - name: Configure ephemeral OpenRouter access
@@ -780,6 +842,16 @@ jobs:
           set -euo pipefail
           printf '%s' "${OPENROUTER_API_KEY}" |
             node .github/scripts/final-ai-review.js configure-ocr
+          test -s "${HOME}/.opencodereview/config.json"
+
+      - name: Verify OpenRouter tool access
+        if: needs.start_stack.outputs.run_review == 'true'
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          set -euo pipefail
+          printf '%s' "${OPENROUTER_API_KEY}" |
+            node .github/scripts/final-ai-review.js verify-openrouter-tools
 
       - name: Run cumulative code review
         id: code_review
@@ -802,6 +874,9 @@ jobs:
                 --from "${BASE}" \
                 --to "${HEAD}" \
                 --audience agent \
+                --effort low \
+                --timeout 30 \
+                --max-tokens-budget 750000 \
                 --format json \
                 --background "${BACKGROUND}" \
                 --rule .github/open-code-review/final-review-rules.json \
@@ -815,11 +890,49 @@ jobs:
               --from "${REVIEW_FROM}" \
               --to "${HEAD_SHA}" \
               --audience agent \
+              --effort low \
+              --timeout 30 \
+              --max-tokens-budget 2000000 \
               --format json \
               --background "${BACKGROUND}" \
               --rule .github/open-code-review/final-review-rules.json \
               >"${RESULT_PATH}" 2>"${STDERR_PATH}"
           fi
+
+      - name: Summarize cumulative review failure output
+        if: failure() && steps.code_review.outcome == 'failure'
+        env:
+          RESULT_PATH: ${{ runner.temp }}/final-ai-stack-code-result.json
+          STDERR_PATH: ${{ runner.temp }}/final-ai-stack-code-stderr.log
+        run: |
+          set -euo pipefail
+          echo '::group::Cumulative review CLI failure output'
+          cat "${STDERR_PATH}" 2>/dev/null || echo 'stderr log was not created'
+          echo '::endgroup::'
+          if [[ -f "${RESULT_PATH}" ]]; then
+            echo '::group::Cumulative review CLI result JSON'
+            cat "${RESULT_PATH}"
+            echo
+            echo '::endgroup::'
+          fi
+          {
+            echo '### Cumulative review CLI failure'
+            echo
+            echo '```text'
+            if [[ -f "${STDERR_PATH}" ]]; then
+              tail -c 8000 "${STDERR_PATH}"
+            else
+              echo 'stderr log was not created'
+            fi
+            echo '```'
+            if [[ -f "${RESULT_PATH}" ]]; then
+              echo
+              echo '```json'
+              tail -c 8000 "${RESULT_PATH}"
+              echo
+              echo '```'
+            fi
+          } >>"${GITHUB_STEP_SUMMARY}"
 
       - name: Remove ephemeral OpenRouter access after code review
         id: cleanup
@@ -905,6 +1018,30 @@ jobs:
                 : 'No actionable findings; skipped the pull-request comment'
             )
 
+      - name: Stage rejected stack publisher inputs
+        if: failure() && steps.publish.outcome == 'failure'
+        shell: bash
+        run: |
+          set -euo pipefail
+          code_result="${RUNNER_TEMP}/final-ai-stack-code-result.json"
+          topology_result="${RUNNER_TEMP}/final-ai-stack-topology-result.json"
+          staging_dir="${RUNNER_TEMP}/final-ai-stack-publisher-failure-staging"
+          artifact_dir="${RUNNER_TEMP}/final-ai-stack-publisher-failure"
+          test -f "${code_result}"
+          test -f "${topology_result}"
+          mkdir "${staging_dir}"
+          cp -- "${code_result}" "${topology_result}" "${staging_dir}/"
+          mv -- "${staging_dir}" "${artifact_dir}"
+
+      - name: Upload rejected stack publisher inputs
+        if: failure() && steps.publish.outcome == 'failure'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: final-ai-stack-publisher-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/final-ai-stack-publisher-failure
+          if-no-files-found: error
+          retention-days: 1
+
   finalize_stack:
     needs: [authorize_stack, start_stack, review_stack]
     if: >-
@@ -917,6 +1054,7 @@ jobs:
     concurrency:
       group: final-ai-status-lock-${{ needs.authorize_stack.outputs.status_lock_key }}
       cancel-in-progress: false
+      queue: max
     permissions:
       actions: read
       checks: write
