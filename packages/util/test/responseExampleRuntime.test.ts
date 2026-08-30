@@ -130,6 +130,16 @@ describe('response-example runtime projection', () => {
     expect(selected[0]?.referenceAnswer).toBe('A & B [example-source-1].')
   })
 
+  it('rewrites markers after Markdown source decoding changes text offsets', () => {
+    const selected = boundResponseExampleSearchResults([
+      candidate('1', 'A &#38; B \\*literally\\* [1].'),
+    ])
+
+    expect(selected[0]?.referenceAnswer).toBe(
+      'A &#38; B \\*literally\\* [example-source-1].'
+    )
+  })
+
   it('preserves citation-shaped Markdown outside renderer citation nodes', () => {
     const answer = [
       'Use the grounded concept [1].',
