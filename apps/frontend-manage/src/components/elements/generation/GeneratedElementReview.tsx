@@ -3,6 +3,7 @@ import {
   ElementDisplayMode,
   ElementStatus,
   ElementType,
+  GeneratableElementType,
   GeneratedElementDecision,
   KeepGeneratedElementDraftDocument,
   SaveGeneratedElementsDocument,
@@ -24,6 +25,21 @@ import type {
 } from './elementGenerationTypes'
 
 type ReviewFilter = 'all' | 'open' | 'attention' | 'kept' | 'discarded'
+
+function toGeneratableElementType(type: ElementType) {
+  switch (type) {
+    case ElementType.Sc:
+      return GeneratableElementType.Sc
+    case ElementType.Mc:
+      return GeneratableElementType.Mc
+    case ElementType.Kprim:
+      return GeneratableElementType.Kprim
+    case ElementType.Flashcard:
+      return GeneratableElementType.Flashcard
+    default:
+      return undefined
+  }
+}
 
 function draftNeedsAttention(draft: GeneratedElementDraftData) {
   return (
@@ -254,6 +270,7 @@ function GeneratedDraftEditor({
   onChanged: () => Promise<void>
 }) {
   const t = useTranslations('manage.elementGeneration')
+  const tShared = useTranslations('shared.generic')
   const initialValues = useMemo(() => draftToFormValues(draft), [draft])
   const [keepDraft] = useMutation(KeepGeneratedElementDraftDocument)
   const [setDecision] = useMutation(SetGeneratedElementDecisionDocument)
@@ -286,10 +303,16 @@ function GeneratedDraftEditor({
             ) {
               throw new Error('Generated element was not discarded')
             }
-            await onChanged()
-            onClose()
           } catch {
             toast({ type: 'error', message: t('review.actionError') })
+            return
+          }
+
+          onClose()
+          try {
+            await onChanged()
+          } catch {
+            toast({ type: 'error', message: tShared('systemError') })
           }
         },
       }}
@@ -331,13 +354,14 @@ function GeneratedDraftEditor({
             }
             return undefined
           })()
-          if (!variables) return false
+          const type = toGeneratableElementType(values.type)
+          if (!variables || !type) return false
           const result = await keepDraft({
             variables: {
               draftId: draft.id,
               expectedRevision: draft.revision,
               status: values.status,
-              type: values.type,
+              type,
               name: variables.name,
               content: variables.content,
               explanation: variables.explanation,
@@ -349,11 +373,16 @@ function GeneratedDraftEditor({
           })
           if (!result.data?.keepGeneratedElementDraft.savedElementId)
             return false
-          await onChanged()
-          return true
         } catch {
           return false
         }
+
+        try {
+          await onChanged()
+        } catch {
+          toast({ type: 'error', message: tShared('systemError') })
+        }
+        return true
       }}
     />
   )

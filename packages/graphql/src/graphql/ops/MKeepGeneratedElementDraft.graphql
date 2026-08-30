@@ -2,7 +2,7 @@ mutation KeepGeneratedElementDraft(
   $draftId: ID!
   $expectedRevision: Int!
   $status: ElementStatus!
-  $type: ElementType!
+  $type: GeneratableElementType!
   $name: String!
   $content: String!
   $explanation: String
