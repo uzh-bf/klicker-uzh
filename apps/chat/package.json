@@ -15,6 +15,7 @@
     "@klicker-uzh/markdown": "workspace:*",
     "@klicker-uzh/next-config": "workspace:*",
     "@klicker-uzh/prisma": "workspace:*",
+    "@klicker-uzh/product-tours": "workspace:*",
     "@klicker-uzh/product-updates": "workspace:*",
     "@klicker-uzh/shared-components": "workspace:*",
     "@klicker-uzh/util": "workspace:*",

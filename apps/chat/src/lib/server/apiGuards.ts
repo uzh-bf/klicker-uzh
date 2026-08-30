@@ -65,15 +65,18 @@ export async function getParticipantId(
   return { participantId: result.participantId }
 }
 
-// Product updates are addressed to people who own a persistent account, so the
-// caller must be a full participant. `getParticipantId` deliberately accepts any
-// token that carries a subject, which includes the temporary accounts issued for
-// anonymous live-quiz participation; this guard is the only thing that keeps
-// those out. It mirrors `resolveActor` in the GraphQL product-update service,
-// which rejects such accounts outright instead of returning an empty feed, so a
-// misdirected caller learns it is on the wrong surface.
-export async function getProductUpdateParticipantId(
-  req: NextRequest
+// Announcements and guided tours are addressed to people who own a persistent
+// account, so the caller must be a full participant. `getParticipantId`
+// deliberately accepts any token that carries a subject, which includes the
+// temporary accounts issued for anonymous live-quiz participation; the guards
+// below are the only thing that keeps those out. They mirror `resolveActor` in
+// the matching GraphQL services, which reject such accounts outright instead of
+// answering with empty state, so a misdirected caller learns it is on the wrong
+// surface. Each surface names itself in the refusal, hence the message
+// parameter.
+async function getFullParticipantId(
+  req: NextRequest,
+  wrongAccountTypeMessage: string
 ): Promise<{ participantId: string } | { response: NextResponse }> {
   const result = await verifyParticipantToken(req)
   if ('response' in result) {
@@ -85,13 +88,34 @@ export async function getProductUpdateParticipantId(
   if (result.payload.role !== UserRole.PARTICIPANT) {
     return {
       response: NextResponse.json(
-        { error: 'This account type does not receive product updates' },
+        { error: wrongAccountTypeMessage },
         { status: 403 }
       ),
     }
   }
 
   return { participantId: result.participantId }
+}
+
+export async function getProductUpdateParticipantId(
+  req: NextRequest
+): Promise<{ participantId: string } | { response: NextResponse }> {
+  return await getFullParticipantId(
+    req,
+    'This account type does not receive product updates'
+  )
+}
+
+// The refusal repeats the wording of the GraphQL tour service so that both
+// writers of the tour-state tables turn the same accounts away with the same
+// explanation.
+export async function getTourParticipantId(
+  req: NextRequest
+): Promise<{ participantId: string } | { response: NextResponse }> {
+  return await getFullParticipantId(
+    req,
+    'This account type does not receive guided tours'
+  )
 }
 
 export async function getChatbotOr404<TSelect extends Prisma.ChatbotSelect>(
