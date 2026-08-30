@@ -3,6 +3,7 @@
   "name": "@klicker-uzh/playwright",
   "devDependencies": {
     "@klicker-uzh/prisma": "workspace:*",
+    "@klicker-uzh/prisma-data": "workspace:*",
     "@klicker-uzh/types": "workspace:*",
     "@playwright/test": "~1.58.0",
     "@types/bcryptjs": "^2.4.6",
