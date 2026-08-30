@@ -1,4 +1,4 @@
-import { mkdtemp, open, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, open, rm, stat, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { exportPKCS8, generateKeyPair } from 'jose'
@@ -642,5 +642,35 @@ ${passedReceiptSource()}
     })
     expect(receipt.failureClass).toBe('duplicate_refused')
     expect(receipt.exitCode).toBeNull()
+  })
+
+  test('does not remove a replacement proof lock during cleanup', async () => {
+    const dummy = await writeDummy(
+      passedReceiptSource(
+        'await new Promise((resolve) => setTimeout(resolve, 200))'
+      )
+    )
+    const proof = superviseProof({
+      sourceEnvironment:
+        (await dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+      childPath: dummy.path,
+      childArgs: [],
+      lockPath: dummy.lockPath,
+      deadlineMs: 2_000,
+    })
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      try {
+        await stat(dummy.lockPath)
+        break
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, 10))
+      }
+    }
+    await unlink(dummy.lockPath)
+    await writeFile(dummy.lockPath, 'replacement', { flag: 'wx', mode: 0o600 })
+    const replacement = await stat(dummy.lockPath)
+
+    expect((await proof).result).toBe('passed')
+    expect((await stat(dummy.lockPath)).ino).toBe(replacement.ino)
   })
 })

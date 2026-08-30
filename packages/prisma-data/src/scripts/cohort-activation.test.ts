@@ -670,6 +670,22 @@ describe('cohort activation operator', () => {
     )
   })
 
+  it('uses stable UTF-16 ordering for mixed-case identity fingerprints', () => {
+    const mixedCase = clone(manifest)
+    mixedCase.corpora[0]!.kbId = 'BBBBBBBB-BBBB-4BBB-8BBB-BBBBBBBBBBBB'
+    mixedCase.corpora[1]!.kbId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+    mixedCase.corpora[0]!.configurations[0]!.configId =
+      'CCCCCCCC-CCCC-4CCC-8CCC-CCCCCCCCCCCC'
+    mixedCase.corpora[0]!.configurations[1]!.configId =
+      'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+    mixedCase.excluded[0]!.configId = 'DDDDDDDD-DDDD-4DDD-8DDD-DDDDDDDDDDDD'
+    mixedCase.excluded[1]!.configId = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
+
+    expect(fingerprintManifest(mixedCase)).toBe(
+      '4fc6fe7ae1f5ab0de21993d21d292e929fdc4c6ab0418ca99e004dd41ca86fa0'
+    )
+  })
+
   it('allows HTTPS or only the reviewed internal PRD target', async () => {
     await expect(
       dryRunCohortActivation(
@@ -1217,18 +1233,16 @@ describe('cohort activation operator', () => {
     expect(await fileStore.read()).toEqual(receipt)
   })
 
-  it('reclaims only a dead same-host lock owner for in-flight recovery', async () => {
+  it('refuses a dead same-host lock until explicit manual recovery', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'cohort-activation-stale-'))
     const path = join(directory, 'receipt.json')
     writeLockOwner(`${path}.lock`, deadPid())
     const fileStore = createFileActivationReceiptStore(path)
-    const result = await prepareCohortActivation(
-      store,
-      manifest,
-      options(fileStore, manifest)
-    )
-    expect(result.status).toBe('prepared')
-    expect(() => statSync(`${path}.lock`)).toThrow()
+    await expect(
+      prepareCohortActivation(store, manifest, options(fileStore, manifest))
+    ).rejects.toThrowError(expect.objectContaining({ code: 'RECEIPT_LOCKED' }))
+    expect(statSync(`${path}.lock`).isFile()).toBe(true)
+    expect(store.writes).toBe(0)
   })
 
   it('refuses live and unknown receipt lock owners without expiry', async () => {
