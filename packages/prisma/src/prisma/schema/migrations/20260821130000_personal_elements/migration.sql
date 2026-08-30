@@ -69,13 +69,22 @@ CREATE INDEX "PersonalElement_participantId_courseId_nextDueAt_idx" ON "Personal
 CREATE UNIQUE INDEX "PersonalElement_participantId_courseId_candidateId_key" ON "PersonalElement"("participantId", "courseId", "candidateId");
 
 -- CreateIndex
+CREATE INDEX "PersonalElement_courseId_idx" ON "PersonalElement"("courseId");
+
+-- CreateIndex
 CREATE INDEX "CardGenerationLease_leaseExpiresAt_idx" ON "CardGenerationLease"("leaseExpiresAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "CardGenerationLease_participantId_planMessageId_planToolCallId_key" ON "CardGenerationLease"("participantId", "planMessageId", "planToolCallId");
 
 -- CreateIndex
+CREATE INDEX "CardGenerationLease_planMessageId_idx" ON "CardGenerationLease"("planMessageId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "PersonalElementDiscard_participantId_courseId_candidateId_key" ON "PersonalElementDiscard"("participantId", "courseId", "candidateId");
+
+-- CreateIndex
+CREATE INDEX "PersonalElementDiscard_courseId_idx" ON "PersonalElementDiscard"("courseId");
 
 -- AddForeignKey
 ALTER TABLE "PersonalElement" ADD CONSTRAINT "PersonalElement_participantId_fkey" FOREIGN KEY ("participantId") REFERENCES "Participant"("id") ON DELETE CASCADE ON UPDATE CASCADE;

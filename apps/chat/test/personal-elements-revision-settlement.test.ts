@@ -142,6 +142,31 @@ describe('personal-element revision settlement', () => {
     )
   })
 
+  test('retries internal GraphQL errors before marking the revision unconfirmed', async () => {
+    mocks.applyPersonalElementRevision.mockRejectedValue(
+      Object.assign(new Error('internal'), {
+        extensions: { code: 'INTERNAL_SERVER_ERROR' },
+      })
+    )
+
+    await expect(settlePersonalElementRevision(input)).resolves.toEqual({
+      status: 'failed',
+      reason: 'unavailable',
+    })
+    expect(mocks.applyPersonalElementRevision).toHaveBeenCalledTimes(2)
+    expect(mocks.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          content: [
+            expect.objectContaining({
+              result: expect.objectContaining({ status: 'unavailable' }),
+            }),
+          ],
+        },
+      })
+    )
+  })
+
   test('does not report completion when the confirmed result was not persisted', async () => {
     mocks.applyPersonalElementRevision.mockResolvedValue({ version: 4 })
     mocks.updateMany.mockResolvedValue({ count: 0 })

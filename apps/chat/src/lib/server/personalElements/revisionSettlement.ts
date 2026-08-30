@@ -83,13 +83,24 @@ function withRevisionFailure(
   })
 }
 
+const REVISION_REJECTION_CODES = new Set([
+  'PERSONAL_ELEMENTS_INVALID_INPUT',
+  'PERSONAL_ELEMENTS_NOT_PARTICIPATING',
+  'PERSONAL_ELEMENTS_UNAUTHORIZED',
+  'PERSONAL_ELEMENT_NOT_FOUND',
+  'PERSONAL_ELEMENT_REVISION_NOT_FOUND',
+  'PERSONAL_ELEMENT_REVISION_NOT_READY',
+  'PERSONAL_ELEMENT_VERSION_CONFLICT',
+])
+
 function isGraphqlRejection(error: unknown) {
-  return Boolean(
-    error &&
-      typeof error === 'object' &&
-      'extensions' in error &&
-      (error as { extensions?: unknown }).extensions
-  )
+  if (!error || typeof error !== 'object' || !('extensions' in error)) {
+    return false
+  }
+  const extensions = (error as { extensions?: unknown }).extensions
+  if (!extensions || typeof extensions !== 'object') return false
+  const code = (extensions as { code?: unknown }).code
+  return typeof code === 'string' && REVISION_REJECTION_CODES.has(code)
 }
 
 export async function settlePersonalElementRevision({
