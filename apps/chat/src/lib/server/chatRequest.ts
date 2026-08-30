@@ -142,7 +142,7 @@ export function parseChatRequestBody(value: unknown): ParsedChatRequest {
       threadId: parsed.threadId ?? null,
       trigger: {
         ...parsed.trigger,
-        parentId: parsed.trigger.parentId ?? null,
+        parentId: parsed.trigger.parentId,
       },
       usedLegacyAdapter: false,
     }

@@ -986,3 +986,20 @@ does not prove CI, deployment, runtime routing, CodeAPI, or live model behavior.
   fixture execution and managed browser proof remain environment-gated. Push,
   fresh exact-head CI/OCR, readiness, manual final review, merge, deployment,
   and activation remain pending or separately gated.
+
+- 2026-08-30 exact-head OCR and hosted-browser disposition: published head
+  `ae96c61d2` passed repository checks, security analysis, build, OCR, all eight
+  hosted Playwright shards, and the aggregate Playwright status. The fresh OCR
+  pass reported one medium and five low items. The accepted correction first
+  validates image metadata, maps only metadata/input rejection to a pre-claim
+  `400`, and preserves later Sharp transformation or runtime failures as server
+  errors with their original stack. It also removes one redundant canonical
+  `parentId` coalescing operation. Strict padded browser-generated base64,
+  explicit duplicate lifecycle guards, generic conflict messages with
+  separately logged bounded reasons, and the unreachable trigger fallback
+  remain deliberate. The focused parser and image-preview suites pass 22 tests;
+  the full Chat suite passes 475 tests with 32 PostgreSQL tests skipped. Chat
+  typecheck, focused Biome and Prettier, and `git diff --check` pass. A fresh
+  immutable review, commit, push, exact-head CI/OCR, readiness, and manual
+  final review remain before the separately gated PostgreSQL/browser proof,
+  merge, deployment, or activation.

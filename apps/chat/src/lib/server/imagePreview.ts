@@ -10,8 +10,8 @@ export type ImagePreviewInput = {
 }
 
 export class InvalidImageDataError extends Error {
-  constructor() {
-    super('Invalid image data')
+  constructor(options?: ErrorOptions) {
+    super('Invalid image data', options)
     this.name = 'InvalidImageDataError'
   }
 }
@@ -33,26 +33,28 @@ export async function ensureImagePreviewBase64<T extends ImagePreviewInput>(
     return image
   }
 
-  let previewBuffer: Buffer
+  let imagePipeline: sharp.Sharp
   try {
     const inputBuffer = Buffer.from(
       extractBase64Payload(image.imageBase64),
       'base64'
     )
-
-    previewBuffer = await sharp(inputBuffer)
-      .rotate()
-      .resize({
-        width: IMAGE_PREVIEW_MAX_DIMENSION,
-        height: IMAGE_PREVIEW_MAX_DIMENSION,
-        fit: 'inside',
-        withoutEnlargement: true,
-      })
-      .jpeg({ quality: IMAGE_PREVIEW_QUALITY })
-      .toBuffer()
-  } catch {
-    throw new InvalidImageDataError()
+    imagePipeline = sharp(inputBuffer)
+    await imagePipeline.metadata()
+  } catch (cause) {
+    throw new InvalidImageDataError({ cause })
   }
+
+  const previewBuffer = await imagePipeline
+    .rotate()
+    .resize({
+      width: IMAGE_PREVIEW_MAX_DIMENSION,
+      height: IMAGE_PREVIEW_MAX_DIMENSION,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .jpeg({ quality: IMAGE_PREVIEW_QUALITY })
+    .toBuffer()
 
   return {
     ...image,

@@ -89,12 +89,14 @@ projected to the model. The browser-side
 cycle-safe path semantics for rendering but cannot authorize or compose model
 history.
 
-A syntactically valid image data URL that cannot be decoded returns a generic
-`400` before assistant claim or provider work. Once an accepted trigger is
-persisted in an existing thread, a later assistant-key collision does not
-delete that canonical user input; the participant can retry with a fresh
-assistant key. A transient thread created for a rejected first turn is still
-discarded.
+A syntactically valid image data URL whose metadata cannot be decoded returns a
+generic `400` before assistant claim or provider work. Preview transformation
+starts only after that input validation; transformation or runtime failures
+remain server errors instead of being mislabeled as client input. Once an
+accepted trigger is persisted in an existing thread, a later assistant-key
+collision does not delete that canonical user input; the participant can retry
+with a fresh assistant key. A transient thread created for a rejected first
+turn is still discarded.
 
 The model projection includes persisted user and assistant text and bounded
 descriptions from prior user images. An attachment-only user row without an
