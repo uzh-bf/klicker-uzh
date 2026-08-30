@@ -235,7 +235,7 @@ does not present a UI whose backend state transition is not yet settled.
 - [x] Revalidated frontend, GraphQL, and feature-flag seams.
 - [x] Confirmed bounded polling avoids a new EventSource dependency.
 - [x] Disposition the independent planning review.
-- [ ] Receive one-time approval for this execution plan.
-- [ ] Commit the plan and complete Slices 2 and 3.
-- [ ] Run browser proof, checks, and reviews.
-- [ ] Push and open the draft PR.
++ [x] Receive one-time approval for this execution plan.
++ [x] Commit the plan and complete Slices 2 and 3.
++ [x] Run browser proof, checks, and reviews. (Browser true-state capture is not feasible locally without a GrowthBook instance; mutating GrowthBook is withheld. The true path is covered by the 19 GraphQL service/schema tests.)
++ [x] Push and open the draft PR.
