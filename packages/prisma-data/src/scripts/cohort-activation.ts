@@ -517,7 +517,7 @@ function canonicalManifest(manifest: FrozenCohortManifest): unknown {
     environment: manifest.environment,
     singletonCanaryKbId: manifest.singletonCanaryKbId,
     corpora: [...manifest.corpora]
-      .sort((left, right) => left.kbId.localeCompare(right.kbId))
+      .sort((left, right) => compareUtf16Strings(left.kbId, right.kbId))
       .map((corpus) => ({
         kbId: corpus.kbId,
         kbName: corpus.kbName,
@@ -530,14 +530,16 @@ function canonicalManifest(manifest: FrozenCohortManifest): unknown {
         chatbotIds: [...corpus.chatbotIds].sort(compareUtf16Strings),
         courseIds: [...corpus.courseIds].sort(compareUtf16Strings),
         configurations: [...corpus.configurations]
-          .sort((left, right) => left.configId.localeCompare(right.configId))
+          .sort((left, right) =>
+            compareUtf16Strings(left.configId, right.configId)
+          )
           .map((configuration) => ({
             ...configuration,
             allowedTools: [...configuration.allowedTools],
           })),
       })),
     excluded: [...manifest.excluded].sort((left, right) =>
-      left.configId.localeCompare(right.configId)
+      compareUtf16Strings(left.configId, right.configId)
     ),
   }
 }
@@ -956,27 +958,6 @@ async function tryCreateReceiptLock(
   }
 }
 
-async function reclaimDeadLock(
-  lockPath: string,
-  owner: ReceiptLockOwner
-): Promise<void> {
-  if (owner.host !== hostname()) throw lockError()
-  let dead = false
-  try {
-    process.kill(owner.pid, 0)
-  } catch (error) {
-    dead = errorCode(error) === 'ESRCH'
-  }
-  if (!dead) throw lockError()
-  const currentOwner = await readLockOwner(lockPath)
-  if (!currentOwner || !sameLockOwner(currentOwner, owner)) throw lockError()
-  try {
-    await removeLockFile(lockPath)
-  } catch (error) {
-    throw new AggregateError([lockError(), error], lockCleanupError().message)
-  }
-}
-
 async function acquireReceiptLock(lockPath: string): Promise<ReceiptLockOwner> {
   const owner: ReceiptLockOwner = {
     version: RECEIPT_LOCK_OWNER_VERSION,
@@ -985,12 +966,7 @@ async function acquireReceiptLock(lockPath: string): Promise<ReceiptLockOwner> {
     token: randomUUID(),
     acquiredAt: new Date().toISOString(),
   }
-  if (!(await tryCreateReceiptLock(lockPath, owner))) {
-    const existingOwner = await readLockOwner(lockPath)
-    if (!existingOwner) throw lockError()
-    await reclaimDeadLock(lockPath, existingOwner)
-    if (!(await tryCreateReceiptLock(lockPath, owner))) throw lockError()
-  }
+  if (!(await tryCreateReceiptLock(lockPath, owner))) throw lockError()
   return owner
 }
 
@@ -1385,7 +1361,7 @@ export function createPrismaActivationStore(
 function buildManifestIndex(manifest: FrozenCohortManifest): ManifestIndex {
   validateCohortManifest(manifest)
   const sortedCorpora = [...manifest.corpora].sort((left, right) =>
-    left.kbId.localeCompare(right.kbId)
+    compareUtf16Strings(left.kbId, right.kbId)
   )
   const corpusByAlias = new Map<string, FrozenCorpus>()
   const corpusAliasByChatbotId = new Map<string, string>()
@@ -1424,7 +1400,7 @@ function buildManifestIndex(manifest: FrozenCohortManifest): ManifestIndex {
 
   const sortedConfigurations = manifest.corpora
     .flatMap((corpus) => corpus.configurations)
-    .sort((left, right) => left.configId.localeCompare(right.configId))
+    .sort((left, right) => compareUtf16Strings(left.configId, right.configId))
   const configByAlias = new Map<string, FrozenConfiguration>()
   const configsByChatbotAlias = new Map<
     string,
@@ -1441,7 +1417,7 @@ function buildManifestIndex(manifest: FrozenCohortManifest): ManifestIndex {
   })
 
   const sortedExcluded = [...manifest.excluded].sort((left, right) =>
-    left.configId.localeCompare(right.configId)
+    compareUtf16Strings(left.configId, right.configId)
   )
   const excludedByAlias = new Map<string, FrozenExcludedConfiguration>()
   sortedExcluded.forEach((configuration, index) => {

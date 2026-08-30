@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { open, readFile, unlink } from 'node:fs/promises'
+import { open, readFile, stat, unlink } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { isAbsolute, resolve } from 'node:path'
 import process from 'node:process'
@@ -801,6 +801,16 @@ async function acquireLock(path) {
   }
 }
 
+async function releaseOwnedLock(path, identity) {
+  try {
+    const current = await stat(path)
+    if (current.dev !== identity.dev || current.ino !== identity.ino) return
+    await unlink(path)
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error
+  }
+}
+
 export async function superviseProof({
   sourceEnvironment = process.env,
   childPath = WORKER_PATH,
@@ -819,6 +829,7 @@ export async function superviseProof({
       elapsedMs: 0,
     }
   }
+  const lockIdentity = await lock.stat()
 
   let child
   let interrupted = false
@@ -919,7 +930,7 @@ export async function superviseProof({
     for (const [signal, handler] of signalHandlers) {
       process.removeListener(signal, handler)
     }
-    await unlink(lockPath).catch(() => undefined)
+    await releaseOwnedLock(lockPath, lockIdentity).catch(() => undefined)
     await lock.close().catch(() => undefined)
   }
 }
