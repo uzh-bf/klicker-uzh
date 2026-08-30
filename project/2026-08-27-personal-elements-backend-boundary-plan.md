@@ -10,10 +10,10 @@ This plan also removes language-specific retrieval and presentation heuristics,
 reduces the Chat route and supporting modules, and keeps one small extension
 seam for future personal-element types.
 
-Status: S1 through S6 and the 2026-08-29 grounded-generation follow-up are
-complete and published on pull request #5483. S7 is approved and in progress on
-the existing top worktree. No deployment, migration, or stack integration is
-authorized.
+Status: S1 through S7 are complete, reviewed, and published on pull request
+#5483. The exact local AI workspace remains stopped pending explicit authority
+for its supported delete/recreate recovery. No deployment, physical migration,
+merge, or release is authorized.
 
 ## Plan identity and prior decisions
 
@@ -922,9 +922,8 @@ no migration.
   transfer, export, and cleanup work is mapped but not authorized here.
 - [x] Obtain approval for S7 implementation, local commit, push to the existing
   remote branch, and pull-request #5483 update.
-- [ ] Implement S7, run its focused and browser checks, complete the slice and
-  integrated review gates, push the exact reviewed head, and leave the local
-  runtime available for user testing.
+- [x] Implement S7, run its focused and browser checks, complete the slice and
+  integrated review gates, and publish the exact reviewed application head.
 - [x] 2026-08-30 target integration — incorporated cached `origin/v3-ai` head
   `54fbfc92107f9b215cd1e8ef14355b76112199fc` through A, B, and C with merge
   commits. Pull request #5481 still targets `v3-ai`, and the local ancestry is
@@ -948,6 +947,13 @@ no migration.
   result to updated only after GraphQL applies the linkage and the confirmed
   version is written back, so neither the live view nor a failed settlement
   write can claim success prematurely.
-- [ ] Commit the final-review corrections, rerun the affected review gates,
-  push all three stack branches atomically, update pull request #5483, and keep
-  the local AI runtime running for manual verification.
+- [x] Commit the final-review corrections, rerun the affected review gates,
+  push all three stack branches atomically, and update pull request #5483. The
+  published heads are A `a8fba9113`, B `d93fc7a03`, and C `38310b859`; final
+  package review approved the exact application head, the Chat suite passed
+  906 tests on pinned Node 24, `check:all` passed 29/29, and the push build
+  passed 26/26.
+- [ ] After explicit authority, delete and recreate only the degraded synthetic
+  workspace `rs-student-generated-practice-el`, inject the OpenRouter key from
+  Infisical, reseed synthetic data, rerun the authenticated AI/browser smoke,
+  and leave the exact workspace running for manual verification.
