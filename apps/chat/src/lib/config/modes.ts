@@ -29,7 +29,12 @@ export function parseModeOptions(
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
 
   const entries = Object.entries(value)
-  if (entries.some(([, description]) => typeof description !== 'string')) {
+  if (
+    entries.some(
+      ([mode, description]) =>
+        mode.trim().length === 0 || typeof description !== 'string'
+    )
+  ) {
     return null
   }
   return Object.fromEntries(entries) as Record<string, string>

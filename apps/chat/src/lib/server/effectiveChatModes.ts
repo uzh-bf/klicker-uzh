@@ -38,10 +38,12 @@ function hasRequiredDocQueryAlias(config: ChatModeMCPConfiguration): boolean {
     parameters.toolAlias === 'doc_query' &&
     Array.isArray(allowedTools) &&
     allowedTools.length === 1 &&
-    typeof allowedTools[0] === 'string' &&
-    allowedTools[0].length > 0 &&
-    !/[*?]/.test(allowedTools[0])
+    isConcreteToolName(allowedTools[0])
   )
+}
+
+function isConcreteToolName(tool: unknown): tool is string {
+  return typeof tool === 'string' && tool.length > 0 && !/[*?]/.test(tool)
 }
 
 function hasExplicitDocQueryTool(config: ChatModeMCPConfiguration): boolean {
@@ -49,10 +51,7 @@ function hasExplicitDocQueryTool(config: ChatModeMCPConfiguration): boolean {
   return (
     Array.isArray(allowedTools) &&
     allowedTools.length > 0 &&
-    allowedTools.every(
-      (tool) =>
-        typeof tool === 'string' && tool.length > 0 && !/[*?]/.test(tool)
-    ) &&
+    allowedTools.every(isConcreteToolName) &&
     allowedTools.includes('doc_query')
   )
 }
@@ -65,9 +64,17 @@ export function isSafeDocQueryBinding(
     : hasExplicitDocQueryTool(config)
 }
 
+type EffectiveMCPConfiguration<T extends ChatModeMCPConfiguration> = Omit<
+  T,
+  'allowedTools' | 'chatMode'
+> &
+  Pick<ChatModeMCPConfiguration, 'allowedTools' | 'chatMode'>
+
 function narrowInheritedBinding<T extends ChatModeMCPConfiguration>(
   config: T
-): T {
+): EffectiveMCPConfiguration<T> {
+  // Required alias bindings keep their sole raw tool name. Optional Tutor
+  // bindings expose only doc_query when inherited by Quizzer.
   if (hasRequiredDocQueryAlias(config)) {
     return { ...config, chatMode: 'quizzer' }
   }
@@ -87,7 +94,7 @@ function sortByPriority<T extends ChatModeMCPConfiguration>(configs: T[]): T[] {
 
 export function resolveEffectiveMCPConfigurations<
   T extends ChatModeMCPConfiguration,
->(configs: readonly T[], selectedMode: string): T[] {
+>(configs: readonly T[], selectedMode: string): EffectiveMCPConfiguration<T>[] {
   if (selectedMode !== 'quizzer') {
     return sortByPriority(
       configs.filter(
@@ -106,7 +113,7 @@ export function resolveEffectiveMCPConfigurations<
     else if (isEnabled(config)) exactWithoutServer.push(config)
   }
 
-  const resolved = [
+  const resolved: EffectiveMCPConfiguration<T>[] = [
     ...exactWithoutServer,
     ...Array.from(exactByServer.values()).filter(isEnabled),
   ]
@@ -126,6 +133,19 @@ export function resolveEffectiveMCPConfigurations<
   }
 
   return sortByPriority(resolved)
+}
+
+export function resolveRequestedChatMode(
+  modeOptions: Record<string, string>,
+  requestedMode: string
+): string {
+  if (Object.hasOwn(modeOptions, requestedMode)) return requestedMode
+
+  const normalizedMode = requestedMode.toLowerCase()
+  const isStandardMode = Object.hasOwn(DEFAULT_PROMPT, normalizedMode)
+  return isStandardMode && Object.hasOwn(modeOptions, normalizedMode)
+    ? normalizedMode
+    : requestedMode
 }
 
 function isModeExplicitlyDisabled(
@@ -162,6 +182,7 @@ export function resolveEffectiveChatModeOptions(
   const modeOptions: Record<string, string> = {}
 
   for (const mode of candidates) {
+    if (mode.trim().length === 0) continue
     if (isModeExplicitlyDisabled(systemPrompts, mode)) continue
 
     const effectiveConfigurations = resolveEffectiveMCPConfigurations(

@@ -21,10 +21,9 @@ import {
   MarkdownText,
   normalizeCustomMathTags,
 } from '@/src/components/markdown-text'
-import { hasAvailableChatMode } from '@/src/lib/config/modes'
 import { formatReasoningEffort } from '@/src/lib/config/reasoning'
-import { useSettingsStore } from '@/src/stores/settingsStore'
 import { resolveDisclosureOpen } from './message-parts-state'
+import { useHasAvailableChatMode } from './mode-options-context'
 import { ToolFallback } from './tool-fallback'
 
 type MessageWithCustomMetadata = {
@@ -153,9 +152,7 @@ type ChatErrorPartData = {
  */
 const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
   const t = useTranslations()
-  const hasAvailableMode = useSettingsStore((state) =>
-    hasAvailableChatMode(state.modeOptions)
-  )
+  const hasAvailableMode = useHasAvailableChatMode()
 
   return (
     <div
@@ -198,9 +195,7 @@ const ChatErrorPart: FC<{ data: ChatErrorPartData }> = ({ data }) => {
  */
 const ChatStoppedPart: FC = () => {
   const t = useTranslations()
-  const hasAvailableMode = useSettingsStore((state) =>
-    hasAvailableChatMode(state.modeOptions)
-  )
+  const hasAvailableMode = useHasAvailableChatMode()
 
   return (
     <div

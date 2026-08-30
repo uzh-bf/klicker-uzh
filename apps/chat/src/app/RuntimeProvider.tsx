@@ -15,6 +15,7 @@ import {
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useChatUi } from '../components/chat-ui-context'
+import { ModeOptionsProvider } from '../components/mode-options-context'
 import { imageAttachmentAdapter } from '../lib/attachments/imageAttachmentAdapter'
 import { resolveSelectedMode } from '../lib/config/modes'
 
@@ -321,8 +322,10 @@ export function RuntimeProvider({
   })
 
   return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      {children}
-    </AssistantRuntimeProvider>
+    <ModeOptionsProvider modeOptions={activeModeOptions}>
+      <AssistantRuntimeProvider runtime={runtime}>
+        {children}
+      </AssistantRuntimeProvider>
+    </ModeOptionsProvider>
   )
 }

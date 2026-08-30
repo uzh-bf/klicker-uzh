@@ -91,6 +91,45 @@ function createRequest(selectedMode?: string) {
   })
 }
 
+function createMcpServer(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'server-1',
+    name: 'IW',
+    url: 'https://mcp.example.test',
+    authType: 'none',
+    authSecret: null,
+    parameters: null,
+    isActive: false,
+    passChatbotId: false,
+    chatbotIdHeader: null,
+    ...overrides,
+  }
+}
+
+function createMcpConfiguration(overrides: Record<string, unknown> = {}) {
+  return {
+    chatMode: 'tutor',
+    isEnabled: true,
+    priority: 0,
+    allowedTools: ['informatik_und_wirtschaft_video_expert'],
+    parameters: { required: true, toolAlias: 'doc_query' },
+    mcpServer: createMcpServer(),
+    ...overrides,
+  }
+}
+
+function createChatbot(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'chatbot-1',
+    ownerId: 'owner-1',
+    allowedModelIds: ['gpt-4.1'],
+    modelSelection: true,
+    systemPrompts: { tutor: { prompt: 'Use course material.' } },
+    mcpConfigurations: [createMcpConfiguration()],
+    ...overrides,
+  }
+}
+
 describe('required MCP chat preflight', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -112,33 +151,7 @@ describe('required MCP chat preflight', () => {
       lifecycleAttemptId: '00000000-0000-4000-8000-000000000001',
     })
     mocks.failChatTurn.mockResolvedValue(undefined)
-    mocks.findUnique.mockResolvedValue({
-      id: 'chatbot-1',
-      ownerId: 'owner-1',
-      allowedModelIds: ['gpt-4.1'],
-      modelSelection: true,
-      systemPrompts: { tutor: { prompt: 'Use course material.' } },
-      mcpConfigurations: [
-        {
-          chatMode: 'tutor',
-          isEnabled: true,
-          priority: 0,
-          allowedTools: ['informatik_und_wirtschaft_video_expert'],
-          parameters: { required: true, toolAlias: 'doc_query' },
-          mcpServer: {
-            id: 'server-1',
-            name: 'IW',
-            url: 'https://mcp.example.test',
-            authType: 'none',
-            authSecret: null,
-            parameters: null,
-            isActive: false,
-            passChatbotId: false,
-            chatbotIdHeader: null,
-          },
-        },
-      ],
-    })
+    mocks.findUnique.mockResolvedValue(createChatbot())
     mocks.getAggregatedMCPTools.mockRejectedValue(
       new RequiredMCPUnavailableError()
     )
@@ -235,24 +248,30 @@ describe('required MCP chat preflight', () => {
     expect(mocks.createThread).not.toHaveBeenCalled()
   })
 
-  test('hides a mode without its required MCP binding', async () => {
-    mocks.findUnique.mockResolvedValueOnce({
-      id: 'chatbot-1',
-      ownerId: 'owner-1',
-      allowedModelIds: ['gpt-4.1'],
-      modelSelection: true,
-      systemPrompts: {
-        tutor: { prompt: 'Use course material.' },
-        explainer: { prompt: 'Explain course material.' },
-      },
-      mcpConfigurations: [
-        {
-          chatMode: 'explainer',
-          isEnabled: true,
-          parameters: { required: true, toolAlias: 'doc_query' },
-        },
-      ],
+  test('accepts legacy casing for a standard mode', async () => {
+    const response = await POST(createRequest('Tutor'), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
     })
+
+    expect(response.status).toBe(503)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledOnce()
+  })
+
+  test('hides a mode without its required MCP binding', async () => {
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({
+        systemPrompts: {
+          tutor: { prompt: 'Use course material.' },
+          explainer: { prompt: 'Explain course material.' },
+        },
+        mcpConfigurations: [
+          createMcpConfiguration({
+            chatMode: 'explainer',
+            parameters: { required: true, toolAlias: 'doc_query' },
+          }),
+        ],
+      })
+    )
 
     const response = await POST(createRequest(), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
@@ -267,36 +286,14 @@ describe('required MCP chat preflight', () => {
   })
 
   test('forwards an inherited required document-query binding for Quizzer', async () => {
-    mocks.findUnique.mockResolvedValueOnce({
-      id: 'chatbot-1',
-      ownerId: 'owner-1',
-      allowedModelIds: ['gpt-4.1'],
-      modelSelection: true,
-      systemPrompts: {
-        tutor: { prompt: 'Use course material.' },
-        quizzer: { prompt: 'Ask course questions.' },
-      },
-      mcpConfigurations: [
-        {
-          chatMode: 'tutor',
-          isEnabled: true,
-          priority: 0,
-          allowedTools: ['informatik_und_wirtschaft_video_expert'],
-          parameters: { required: true, toolAlias: 'doc_query' },
-          mcpServer: {
-            id: 'server-1',
-            name: 'IW',
-            url: 'https://mcp.example.test',
-            authType: 'none',
-            authSecret: null,
-            parameters: null,
-            isActive: false,
-            passChatbotId: false,
-            chatbotIdHeader: null,
-          },
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({
+        systemPrompts: {
+          tutor: { prompt: 'Use course material.' },
+          quizzer: { prompt: 'Ask course questions.' },
         },
-      ],
-    })
+      })
+    )
 
     const response = await POST(createRequest('quizzer'), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
@@ -317,33 +314,17 @@ describe('required MCP chat preflight', () => {
   })
 
   test('fails Quizzer closed when optional MCP discovery returns no document-query tool', async () => {
-    mocks.findUnique.mockResolvedValueOnce({
-      id: 'chatbot-1',
-      ownerId: 'owner-1',
-      allowedModelIds: ['gpt-4.1'],
-      modelSelection: true,
-      systemPrompts: { tutor: { prompt: 'Use course material.' } },
-      mcpConfigurations: [
-        {
-          chatMode: 'tutor',
-          isEnabled: true,
-          priority: 0,
-          allowedTools: ['doc_query'],
-          parameters: null,
-          mcpServer: {
-            id: 'server-1',
-            name: 'Course',
-            url: 'https://mcp.example.test',
-            authType: 'none',
-            authSecret: null,
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({
+        mcpConfigurations: [
+          createMcpConfiguration({
+            allowedTools: ['doc_query'],
             parameters: null,
-            isActive: true,
-            passChatbotId: false,
-            chatbotIdHeader: null,
-          },
-        },
-      ],
-    })
+            mcpServer: createMcpServer({ name: 'Course', isActive: true }),
+          }),
+        ],
+      })
+    )
     mocks.getAggregatedMCPTools.mockResolvedValueOnce({})
 
     const response = await POST(createRequest('quizzer'), {
@@ -365,26 +346,21 @@ describe('required MCP chat preflight', () => {
   })
 
   test('rejects Quizzer when Tutor only has a wildcard tool binding', async () => {
-    mocks.findUnique.mockResolvedValueOnce({
-      id: 'chatbot-1',
-      ownerId: 'owner-1',
-      allowedModelIds: ['gpt-4.1'],
-      modelSelection: true,
-      systemPrompts: {
-        tutor: { prompt: 'Use course material.' },
-        quizzer: { prompt: 'Ask course questions.' },
-      },
-      mcpConfigurations: [
-        {
-          chatMode: 'tutor',
-          isEnabled: true,
-          priority: 0,
-          allowedTools: ['*'],
-          parameters: null,
-          mcpServer: { id: 'server-1' },
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({
+        systemPrompts: {
+          tutor: { prompt: 'Use course material.' },
+          quizzer: { prompt: 'Ask course questions.' },
         },
-      ],
-    })
+        mcpConfigurations: [
+          createMcpConfiguration({
+            allowedTools: ['*'],
+            parameters: null,
+            mcpServer: { id: 'server-1' },
+          }),
+        ],
+      })
+    )
 
     const response = await POST(createRequest('quizzer'), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),
@@ -399,35 +375,21 @@ describe('required MCP chat preflight', () => {
   })
 
   test('preserves the exact key for a mixed-case custom mode', async () => {
-    mocks.findUnique.mockResolvedValueOnce({
-      id: 'chatbot-1',
-      ownerId: 'owner-1',
-      allowedModelIds: ['gpt-4.1'],
-      modelSelection: true,
-      systemPrompts: {
-        QuickCheck: { prompt: 'Ask one brief question.' },
-      },
-      mcpConfigurations: [
-        {
-          chatMode: 'QuickCheck',
-          isEnabled: true,
-          priority: 0,
-          allowedTools: ['course_search'],
-          parameters: { required: true, toolAlias: 'doc_query' },
-          mcpServer: {
-            id: 'server-1',
-            name: 'Course',
-            url: 'https://mcp.example.test',
-            authType: 'none',
-            authSecret: null,
-            parameters: null,
-            isActive: false,
-            passChatbotId: false,
-            chatbotIdHeader: null,
-          },
+    mocks.findUnique.mockResolvedValueOnce(
+      createChatbot({
+        systemPrompts: {
+          QuickCheck: { prompt: 'Ask one brief question.' },
         },
-      ],
-    })
+        mcpConfigurations: [
+          createMcpConfiguration({
+            allowedTools: ['course_search'],
+            chatMode: 'QuickCheck',
+            parameters: { required: true, toolAlias: 'doc_query' },
+            mcpServer: createMcpServer({ name: 'Course' }),
+          }),
+        ],
+      })
+    )
 
     const response = await POST(createRequest('QuickCheck'), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),

@@ -45,6 +45,8 @@ describe('thread suggestions', () => {
       explainer: 'Explainer description',
     })
     expect(parseModeOptions({ tutor: { description: 'Tutor' } })).toBeNull()
+    expect(parseModeOptions({ '': 'Blank mode' })).toBeNull()
+    expect(parseModeOptions({ '   ': 'Whitespace mode' })).toBeNull()
     expect(parseModeOptions(null)).toBeNull()
   })
 

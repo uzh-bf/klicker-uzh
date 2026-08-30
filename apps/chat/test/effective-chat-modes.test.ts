@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
+  resolveRequestedChatMode,
 } from '../src/lib/server/effectiveChatModes'
 
 function config({
@@ -63,6 +64,35 @@ describe('effective chatbot modes', () => {
         []
       )
     ).toEqual({})
+  })
+
+  test('does not expose blank custom mode keys', () => {
+    const modeOptions = resolveEffectiveChatModeOptions(
+      {
+        '': { description: 'Blank mode' },
+        '   ': { description: 'Whitespace mode' },
+        custom: { description: 'Custom mode' },
+      },
+      []
+    )
+
+    expect(Object.hasOwn(modeOptions, '')).toBe(false)
+    expect(Object.hasOwn(modeOptions, '   ')).toBe(false)
+  })
+
+  test('normalizes standard mode casing without changing exact custom keys', () => {
+    const modeOptions = {
+      tutor: 'Tutor',
+      QuickCheck: 'Quick check',
+    }
+
+    expect(resolveRequestedChatMode(modeOptions, 'Tutor')).toBe('tutor')
+    expect(resolveRequestedChatMode(modeOptions, 'QuickCheck')).toBe(
+      'QuickCheck'
+    )
+    expect(resolveRequestedChatMode(modeOptions, 'quickcheck')).toBe(
+      'quickcheck'
+    )
   })
 
   test('hides modes that cannot satisfy the chatbot required-tool policy', () => {

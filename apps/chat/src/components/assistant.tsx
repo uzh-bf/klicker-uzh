@@ -121,10 +121,7 @@ export function Assistant({ chatbot, initialModeOptions }: AssistantProps) {
           chatbotId={chatbot.id}
           initialModeOptions={initialModeOptions}
         >
-          <AssistantLayout
-            chatbot={chatbot}
-            initialModeOptions={initialModeOptions}
-          />
+          <AssistantLayout chatbot={chatbot} />
         </RuntimeProvider>
       </ChatUiProvider>
 
@@ -465,10 +462,8 @@ function ThreadSkeleton() {
 
 function SidebarMain({
   chatbot,
-  initialModeOptions,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
-  initialModeOptions: Record<string, string>
 }) {
   const t = useTranslations()
   const { open } = useSidebar()
@@ -554,7 +549,6 @@ function SidebarMain({
           <Thread
             chatbotAvatar={chatbot.avatar ?? ''}
             chatbotName={chatbot.name}
-            initialModeOptions={initialModeOptions}
           />
         </div>
       </div>
@@ -564,10 +558,8 @@ function SidebarMain({
 
 function AssistantLayout({
   chatbot,
-  initialModeOptions,
 }: {
   chatbot: { id: string; name: string; avatar?: string }
-  initialModeOptions: Record<string, string>
 }) {
   const { showSidebar } = useChatUi()
   const isLoading = useChatStore((state) => state.isLoading)
@@ -576,10 +568,7 @@ function AssistantLayout({
     return (
       <SidebarProvider className="h-dvh overflow-hidden">
         <AppSidebar />
-        <SidebarMain
-          chatbot={chatbot}
-          initialModeOptions={initialModeOptions}
-        />
+        <SidebarMain chatbot={chatbot} />
       </SidebarProvider>
     )
   }
@@ -606,7 +595,6 @@ function AssistantLayout({
           <Thread
             chatbotAvatar={chatbot.avatar ?? ''}
             chatbotName={chatbot.name}
-            initialModeOptions={initialModeOptions}
           />
         </div>
         <EmbeddedCreditsBar />

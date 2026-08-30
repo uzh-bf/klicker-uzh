@@ -144,6 +144,16 @@ export const useSettingsStore = create<SettingsState>()(
         const fallbackModeOptions = hasInitialModeOptions
           ? initialModeOptions
           : SAFE_FALLBACK_MODE_OPTIONS
+        const applyFallbackModeOptions = () =>
+          set((state) => ({
+            modeOptions: fallbackModeOptions,
+            modeOptionsChatbotId: chatbotId,
+            selectedMode: resolveSelectedMode(
+              fallbackModeOptions,
+              state.selectedMode
+            ),
+            modelSelectionEnabled: false,
+          }))
         set({
           modeOptions: {},
           modeOptionsChatbotId: null,
@@ -157,17 +167,9 @@ export const useSettingsStore = create<SettingsState>()(
 
           if (!response.ok) {
             console.warn(
-              'No valid mode options found, falling back to defaults.'
+              'No valid mode options found, falling back to initial or default mode options.'
             )
-            set((state) => ({
-              modeOptions: fallbackModeOptions,
-              modeOptionsChatbotId: chatbotId,
-              selectedMode: resolveSelectedMode(
-                fallbackModeOptions,
-                state.selectedMode
-              ),
-              modelSelectionEnabled: false,
-            }))
+            applyFallbackModeOptions()
             return
           }
 
@@ -193,15 +195,7 @@ export const useSettingsStore = create<SettingsState>()(
           console.error('Error fetching mode options:', error)
           if (requestGeneration !== modeOptionsRequestGeneration) return
 
-          set((state) => ({
-            modeOptions: fallbackModeOptions,
-            modeOptionsChatbotId: chatbotId,
-            selectedMode: resolveSelectedMode(
-              fallbackModeOptions,
-              state.selectedMode
-            ),
-            modelSelectionEnabled: false,
-          }))
+          applyFallbackModeOptions()
         }
       },
 

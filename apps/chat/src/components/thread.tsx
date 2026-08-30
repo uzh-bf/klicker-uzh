@@ -64,7 +64,6 @@ import {
   formatModeLabel,
   getComposerSubmitMode,
   getModeDescription,
-  hasAvailableChatMode,
   isKnownMode,
   resolveSelectedMode,
 } from '../lib/config/modes'
@@ -81,6 +80,10 @@ import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
 import { hasChatError, isStoppedWithoutText } from './message-parts-state'
 import { MessageSourcesProvider } from './message-sources-context'
+import {
+  useEffectiveModeOptions,
+  useHasAvailableChatMode,
+} from './mode-options-context'
 import { ModeSwitcher } from './mode-switcher'
 import { SourcesSection } from './sources-section'
 import { formatCredits } from './thread-credits-format'
@@ -90,7 +93,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 type ThreadProps = {
   chatbotAvatar: string
   chatbotName: string
-  initialModeOptions: Record<string, string>
 }
 const EMPTY_REMOVED_ATTACHMENT_KEYS: string[] = []
 const EMPTY_MESSAGES: ExtendedThreadMessageLike[] = []
@@ -264,11 +266,7 @@ const MessageMetadata: FC<{ includeCredits?: boolean }> = ({
   )
 }
 
-export const Thread: FC<ThreadProps> = ({
-  chatbotAvatar,
-  chatbotName,
-  initialModeOptions,
-}) => {
+export const Thread: FC<ThreadProps> = ({ chatbotAvatar, chatbotName }) => {
   const t = useTranslations()
   const { embedded } = useChatUi()
   const isRunning = useAuiState((s) => s.thread.isRunning)
@@ -280,8 +278,8 @@ export const Thread: FC<ThreadProps> = ({
     [activeThread?.messages]
   )
   const showHistoryRail = !embedded && historyEntries.length > 0
-  const modeOptions = useWelcomeModeOptions(initialModeOptions)
-  const hasAvailableMode = hasAvailableChatMode(modeOptions)
+  const modeOptions = useEffectiveModeOptions()
+  const hasAvailableMode = useHasAvailableChatMode()
 
   return (
     <ThreadPrimitive.Root
@@ -316,7 +314,6 @@ export const Thread: FC<ThreadProps> = ({
         <ThreadWelcome
           chatbotAvatar={chatbotAvatar}
           chatbotName={chatbotName}
-          initialModeOptions={initialModeOptions}
         />
 
         <ChatbotAvatarContext.Provider value={chatbotAvatar}>
@@ -482,25 +479,13 @@ const ThinkingDots: FC = () => {
   )
 }
 
-const useWelcomeModeOptions = (initialModeOptions: Record<string, string>) => {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
-  const modeOptions = useSettingsStore((state) => state.modeOptions)
-  const modeOptionsChatbotId = useSettingsStore(
-    (state) => state.modeOptionsChatbotId
-  )
-  const hasCurrentChatbotModeOptions = modeOptionsChatbotId === chatbotId
-
-  return hasCurrentChatbotModeOptions ? modeOptions : initialModeOptions
-}
-
 const ThreadWelcome: FC<{
   chatbotAvatar: string
   chatbotName: string
-  initialModeOptions: Record<string, string>
-}> = ({ chatbotAvatar, chatbotName, initialModeOptions }) => {
+}> = ({ chatbotAvatar, chatbotName }) => {
   const t = useTranslations()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
-  const modeOptions = useWelcomeModeOptions(initialModeOptions)
+  const modeOptions = useEffectiveModeOptions()
   const activeMode = resolveSelectedMode(modeOptions, selectedMode)
   const modeLabel = activeMode ? formatModeLabel(t, activeMode) : null
   const modeDescription = activeMode
@@ -567,7 +552,7 @@ const ThreadWelcome: FC<{
             )}
           </div>
         </div>
-        <ThreadWelcomeSuggestions initialModeOptions={initialModeOptions} />
+        <ThreadWelcomeSuggestions />
       </div>
     </AuiIf>
   )
@@ -575,12 +560,10 @@ const ThreadWelcome: FC<{
 
 const SUGGESTION_DELAY_CLASSNAMES = ['delay-150', 'delay-200']
 
-const ThreadWelcomeSuggestions: FC<{
-  initialModeOptions: Record<string, string>
-}> = ({ initialModeOptions }) => {
+const ThreadWelcomeSuggestions: FC = () => {
   const t = useTranslations()
   const selectedMode = useSettingsStore((state) => state.selectedMode)
-  const modeOptions = useWelcomeModeOptions(initialModeOptions)
+  const modeOptions = useEffectiveModeOptions()
 
   if (Object.keys(modeOptions).length === 0) return null
 
@@ -1181,6 +1164,17 @@ const getMessageAttachments = (
   return []
 }
 
+function getEditTooltip(
+  t: ReturnType<typeof useTranslations<never>>,
+  hasAvailableMode: boolean,
+  editDisabled: boolean
+): string {
+  if (!hasAvailableMode) return t('chat.composer.modeUnavailable')
+  return editDisabled
+    ? t('chat.message.editDisabledTooltip')
+    : t('chat.message.edit')
+}
+
 const UserMessage: FC = () => {
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const attachments = getMessageAttachments(message)
@@ -1219,9 +1213,7 @@ const UserActionBar: FC = () => {
   const { showMessageActions } = useChatUi()
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
   const supportsImages = useSupportsImageAttachments()
-  const hasAvailableMode = useSettingsStore((state) =>
-    hasAvailableChatMode(state.modeOptions)
-  )
+  const hasAvailableMode = useHasAvailableChatMode()
 
   if (!showMessageActions) return null
 
@@ -1263,11 +1255,7 @@ const UserActionBar: FC = () => {
           )}
         </TooltipTrigger>
         <TooltipContent>
-          {!hasAvailableMode
-            ? t('chat.composer.modeUnavailable')
-            : editDisabled
-              ? t('chat.message.editDisabledTooltip')
-              : t('chat.message.edit')}
+          {getEditTooltip(t, hasAvailableMode, editDisabled)}
         </TooltipContent>
       </Tooltip>
 
@@ -1316,9 +1304,7 @@ const EditComposer: FC = () => {
   const composerText = useAuiState((s) => s.message.composer.text)
   const originalText = extractMessageText(message)
   const aui = useAui()
-  const hasAvailableMode = useSettingsStore((state) =>
-    hasAvailableChatMode(state.modeOptions)
-  )
+  const hasAvailableMode = useHasAvailableChatMode()
 
   useEffect(() => {
     return () => {
@@ -1603,9 +1589,7 @@ const AssistantActionBar: FC<{ embedded?: boolean }> = ({ embedded }) => {
   const t = useTranslations()
   const { showMessageActions } = useChatUi()
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
-  const hasAvailableMode = useSettingsStore((state) =>
-    hasAvailableChatMode(state.modeOptions)
-  )
+  const hasAvailableMode = useHasAvailableChatMode()
   if (!showMessageActions) return null
   // Failed and stopped-without-text callouts carry their own retry action,
   // and an incomplete turn has no answer to rate.

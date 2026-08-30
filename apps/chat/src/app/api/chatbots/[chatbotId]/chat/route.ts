@@ -12,6 +12,7 @@ import { ensureImagePreviewBase64 } from '@/src/lib/server/imagePreview'
 import {
   resolveEffectiveChatModeOptions,
   resolveEffectiveMCPConfigurations,
+  resolveRequestedChatMode,
 } from '@/src/lib/server/effectiveChatModes'
 import {
   getParentSpanContext,
@@ -678,7 +679,7 @@ export async function POST(
   const {
     messages,
     threadId,
-    selectedMode,
+    selectedMode: requestedMode,
     reasoningEffort: requestedReasoningEffort,
     parentId,
     assistantMessageId,
@@ -706,7 +707,7 @@ export async function POST(
     threadId,
     assistantMessageId,
     selectedModel: parsed.selectedModel,
-    selectedMode,
+    selectedMode: requestedMode,
     messageCount: messages.length,
   })
 
@@ -748,9 +749,10 @@ export async function POST(
     chatbot.systemPrompts,
     chatbot.mcpConfigurations
   )
+  const selectedMode = resolveRequestedChatMode(modeOptions, requestedMode)
   if (!Object.hasOwn(modeOptions, selectedMode)) {
     return NextResponse.json(
-      { error: `Unsupported chat mode: ${selectedMode}` },
+      { error: `Unsupported chat mode: ${requestedMode}` },
       { status: 400 }
     )
   }
