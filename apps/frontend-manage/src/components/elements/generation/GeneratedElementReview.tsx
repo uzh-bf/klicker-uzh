@@ -229,7 +229,7 @@ function GeneratedDraftSources({
               )
               return (
                 <li
-                  key={`${resourceId}-${citation.pageFrom}-${citation.pageTo}`}
+                  key={`${resourceId}-${citation.sourceFile}-${citation.pageFrom}-${citation.pageTo}-${citation.chunkIds.join('-')}`}
                 >
                   {sourceUrl ? (
                     <a
