@@ -2192,6 +2192,13 @@ test('staging promoter targets the selected source without fixed value counts', 
     /--merge-verified[\s\S]{0,100}"\$PR_NUMBER" "\$PROMOTION_HEAD" "\$SHORT" "\$SOURCE_BRANCH"/
   )
   assert.ok(workflow.includes('PROMOTION_GIT_TOKEN="$GH_TOKEN"'))
+  assert.ok(workflow.includes('gh api --paginate --slurp'))
+  assert.ok(
+    workflow.includes('/commits/${PROMOTION_HEAD}/statuses?per_page=100')
+  )
+  assert.ok(
+    workflow.includes('[.[][] | select(.context == "final-ai-review")] | first')
+  )
   assert.doesNotMatch(workflow, /token: \$\{\{ secrets\.STG_PROMOTE_TOKEN \}\}/)
   assert.doesNotMatch(workflow, /gh pr close[\s\S]{0,200}\|\| true/)
   assert.doesNotMatch(workflow, /gh pr merge "\$BRANCH"/)
@@ -2218,6 +2225,19 @@ test('staging pause guard accepts only strict values', () => {
       `${JSON.stringify(entry.value)}: ${result.stderr}`
     )
   }
+})
+
+test('staging promotion merge checks every commit-status page', () => {
+  const script = fs.readFileSync(
+    path.join(__dirname, 'stg-promotion-control.sh'),
+    'utf8'
+  )
+
+  assert.ok(script.includes('gh api --paginate --slurp'))
+  assert.ok(script.includes('/commits/${verified_head}/statuses?per_page=100'))
+  assert.ok(
+    script.includes('[.[][] | select(.context == "final-ai-review")] | first')
+  )
 })
 
 test('live staging pause checks fail closed when GitHub cannot be read', () => {
@@ -2379,7 +2399,8 @@ if [ "\${1:-}" = api ]; then
     printf '%s\\n' "$MOCK_AUTO_DELETE"
     exit 0
   fi
-  if [[ "$2" == */commits/*/statuses ]]; then
+  if [[ "$*" == *'/commits/'*'/statuses?per_page=100'* ]]; then
+    [[ "$*" == *'--paginate --slurp'* ]] || exit 10
     printf '%s\\n' "$MOCK_VERIFICATION_STATUS"
     exit 0
   fi

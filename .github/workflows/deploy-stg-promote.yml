@@ -378,8 +378,9 @@ jobs:
           PROMOTION_HEAD=$(git rev-parse HEAD)
           VERIFIED='false'
           for attempt in 1 2 3 4 5 6; do
-            STATUS=$(gh api "/repos/${GITHUB_REPOSITORY}/commits/${PROMOTION_HEAD}/statuses" \
-              --jq '[.[] | select(.context == "final-ai-review")] | first | [.state, .description] | @tsv')
+            STATUS=$(gh api --paginate --slurp \
+              "/repos/${GITHUB_REPOSITORY}/commits/${PROMOTION_HEAD}/statuses?per_page=100" \
+              --jq '[.[][] | select(.context == "final-ai-review")] | first | [.state, .description] | @tsv')
             case "$STATUS" in
               $'success\tVerified generated staging promotion')
                 VERIFIED='true'; break ;;

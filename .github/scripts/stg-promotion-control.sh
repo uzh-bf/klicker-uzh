@@ -161,8 +161,9 @@ merge_verified_promotion() {
     fi
 
     status="$(
-      gh api "/repos/${GITHUB_REPOSITORY}/commits/${verified_head}/statuses" \
-        --jq '[.[] | select(.context == "final-ai-review")] | first | [.state, .description] | @tsv'
+      gh api --paginate --slurp \
+        "/repos/${GITHUB_REPOSITORY}/commits/${verified_head}/statuses?per_page=100" \
+        --jq '[.[][] | select(.context == "final-ai-review")] | first | [.state, .description] | @tsv'
     )"
     [ "$status" = $'success\tVerified generated staging promotion' ] \
       || fail "promotion PR #${pr_number} no longer has its exact verification status"
