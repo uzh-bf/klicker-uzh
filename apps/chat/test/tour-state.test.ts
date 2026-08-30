@@ -20,11 +20,11 @@ const PARTICIPANT_ID = '3f2b1a09-8c7d-4e6f-9a5b-2c1d0e9f8a7b'
 const TOUR_ID = 'chat-onboarding-v1'
 const FIRST_ENDING = new Date('2026-02-01T10:00:00.000Z')
 
-// The GraphQL tour service holds the canonical version of this write and guards
-// it with its own test. Chat restates the participant half against Prisma
-// directly, so the shape of the upsert needs proof here too: it is what keeps a
-// replay from rewriting a completion, and what keeps two tabs from racing the
-// first write into a unique-constraint error.
+// The GraphQL tour service holds the canonical version of this write but
+// carries no test of its own, so this suite is the only proof of the upsert's
+// shape for either writer: it is what keeps a replay from rewriting a
+// completion, and what keeps two tabs from racing the first write into a
+// unique-constraint error.
 describe('chat tour state writes', () => {
   beforeEach(() => {
     vi.clearAllMocks()

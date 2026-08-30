@@ -83,9 +83,13 @@ export function OnboardingCarousel({
       onClose={onClose}
     >
       <div ref={focusContent} tabIndex={-1} className="space-y-6 outline-none">
+        {/* Live so stepping announces the new card's title and body — focus
+            stays on the Next/Back button the participant is standing on. */}
         <div
           data-cy="chat-onboarding-card"
           data-card={cardId}
+          aria-live="polite"
+          aria-atomic="true"
           className="flex gap-4 rounded-lg border p-4"
         >
           <CardIcon
@@ -104,7 +108,7 @@ export function OnboardingCarousel({
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           {/* The dots show the position at a glance; the sentence next to them
-              is what a screen reader announces when the card changes. */}
+              is announced alongside the card content when the step changes. */}
           <div className="flex items-center gap-2">
             <span aria-hidden="true" className="flex gap-1.5">
               {CARD_IDS.map((id, dotIndex) => (
