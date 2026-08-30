@@ -27,7 +27,7 @@
   ],
   "devDependencies": {
     "@biomejs/biome": "~2.5.2",
-    "@devrouter/cli": "0.0.50",
+    "@devrouter/cli": "0.0.51",
     "@types/node": "^24.10.1",
     "cross-env": "~7.0.3",
     "husky": "~9.1.7",

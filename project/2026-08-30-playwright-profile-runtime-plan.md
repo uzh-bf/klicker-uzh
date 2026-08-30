@@ -1,7 +1,7 @@
 # Playwright profile-aware CI runtime plan
 
 Date: 2026-08-30. Branch: `rs/playwright-ci-profiles` at exact `origin/v3`
-`e84103606`. Target: `v3`. Pull request: none.
+`e84103606`. Target: `v3`. Pull request: #5683.
 
 ## Goal
 
@@ -22,20 +22,20 @@ Date: 2026-08-30. Branch: `rs/playwright-ci-profiles` at exact `origin/v3`
   Hatchet remain statically declared in the first iteration.
 - Do not change Playwright workers, retries, test behavior, shard count,
   database isolation, runner-group policy, secrets, or cache write policy.
-- Do not publish, push, open or merge a pull request, change runner hosts, or
-  alter organization settings under this plan.
+- Do not change runner hosts or organization settings.
 
 ## Execution contract
 
 - Execution owner: this main session. No new subagents are created.
-- Authority: edit the isolated worktree, add scripts and tests, run focused and
-  repository-native checks, integrate `origin/v3` once with a merge commit,
-  consume exact `@devrouter/cli` `0.0.50`, and create local conventional
-  commits.
-- Terminal: the source package is locally committed, verified against the
-  exact locked registry CLI, and ready for a pull request.
-- Withheld: rebase, push, PR creation, merge, live runner execution, runner
-  settings, secrets, and cleanup.
+- Authority: the approved cross-repository plan in Devrouter
+  `docs/project/2026-08-30-ci-profile-plan-contract-plan.md` extends this package
+  through exact `@devrouter/cli` `0.0.51` adoption, one merge of `origin/v3`,
+  push, PR qualification, safe merge, and first eligible public-runner proof.
+- Terminal: the source package is merged, exact-head CI passes, and the first
+  safe eligible public run proves the restricted runner route or records
+  `delivery_pending` when no trigger exists.
+- Withheld: rebase, force-push, runner settings, secrets, cleanup, and unrelated
+  source changes.
 - Pause: Devrouter's report changes incompatibly; a spec cannot be mapped
   safely; or runtime selection requires a secret or host-control capability.
 
@@ -44,13 +44,12 @@ Date: 2026-08-30. Branch: `rs/playwright-ci-profiles` at exact `origin/v3`
 - Worktree:
   `/Users/rschlae/Git/klicker/klicker-uzh/trees/rs/playwright-ci-profiles`.
 - PR #5678 merged with the repository metadata pin at `0.0.46`; PR #5681 later
-  advanced it to `0.0.50`. This branch adds only the exact CI dependency and
-  does not modify `.devrouter.yml`.
+  advanced it to `0.0.50`. This branch now advances the exact root dependency
+  and repository metadata to published `0.0.51`.
 - Upstream Devrouter plan:
-  `docs/project/2026-08-30-ci-profile-resolution-plan.md` on
-  `rs/ci-profile-resolution`.
-- Devrouter `0.0.50` is published and includes the profile resolver plus the
-  later bounded Traefik publication and removal recovery fixes.
+  `docs/project/2026-08-30-ci-profile-plan-contract-plan.md` on merged PR #50.
+- Devrouter `0.0.51` is published from merge commit `93acdcae80be4688bd792ed3256e2e37b5e47ede`
+  and adds the strict side-effect-free profile-plan contract.
 - The runner group remains locked to
   `uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3`.
   This package does not widen repository or workflow access.
@@ -76,13 +75,16 @@ fails planning instead of silently receiving an undersized runtime.
 Pin the released `@devrouter/cli` exactly and invoke only:
 
 ```text
-devrouter profile resolve --repo . --profile <selection> --json
+devrouter profile plan --repo . --profile <selection> \
+  --contract playwright/runtime-contract.yml --output <plan> --json
 ```
 
-A Klicker-owned adapter maps the exact returned app names to Turbo package
-filters and local readiness URLs. It rejects unknown apps and never parses
-profile names itself. Devrouter owns profile syntax, defaults, merging,
-wildcards, and validation; Klicker owns how its app names start in CI.
+The repository-owned contract maps exact app names to literal Turbo filters and
+loopback readiness URLs, constrains selected services, and requires the exact
+managed process marker. Devrouter owns profile syntax, defaults, merging,
+wildcards, resource validation, deterministic binding aggregation, and secure
+output. The thin Klicker adapter owns expected binding keys, safe literal
+shapes, and argv construction; it never parses profile names itself.
 
 The start command receives only validated package filters and replaces its
 current fixed nine-process list. Readiness waits only for selected HTTP apps
@@ -98,10 +100,11 @@ non-draft, non-bot, restore-only, and restricted by the existing runner group.
 ## Security and failure behavior
 
 - Public PR code already executes on the dedicated public runner pool. The new
-  command reads only the checked-out `.devrouter.yml` and starts only
-  allowlisted Klicker packages.
-- The adapter never evaluates shell text from YAML or JSON. Every app name must
-  match a checked-in exact mapping before an argv entry is created.
+  command reads only checked-in `.devrouter.yml` and
+  `playwright/runtime-contract.yml`, then starts only contracted packages.
+- Devrouter treats binding values as data. The adapter accepts only exact
+  binding keys, scoped Turbo-filter literals, and loopback HTTP endpoints, and
+  passes every filter as a distinct argument without a shell.
 - Profile or manifest errors fail before application startup. There is no
   fallback to the full stack because that would hide drift and erase the
   performance signal.
@@ -114,12 +117,12 @@ non-draft, non-bot, restore-only, and restricted by the existing runner group.
 | --- | --- |
 | Complete test coverage | every active spec is assigned exactly once; stale and missing entries fail |
 | Deterministic shard plan | all eight shards retain exact-once file coverage and canonical profile unions |
-| Safe app mapping | known Devrouter apps become exact Turbo argv; unknown names fail without shell evaluation |
+| Safe app mapping | every selected app has a contract mapping; unknown resources and unsafe literals fail before argv construction |
 | Readiness scope | selected HTTP apps produce the exact endpoint set; unselected Chat, Control, and Response endpoints are absent |
-| Unsupported scope | profiles that select apps outside the Playwright allowlist fail closed instead of starting a larger stack |
+| Unsupported scope | profiles that widen dependencies, services, processes, or unmapped apps fail contract validation |
 | Workflow parity | hosted and public workflows invoke one planner/adapter path |
 | Runner boundary | no Docker socket, secret, cache save, runner label, runner group, or service-container change |
-| Upstream package | a packed `@devrouter/cli` resolves the real `.devrouter.yml` for every manifest profile union |
+| Upstream package | published `@devrouter/cli@0.0.51` resolves and plans every real manifest profile union |
 
 ## Slices
 
@@ -163,6 +166,14 @@ profile summaries, process counts, readiness, all eight artifacts, and
 `test-playwright-status`. Compare startup and shard wall time with the recorded
 eight-runner baseline; do not claim a speedup from static checks.
 
+### K5 - Consume the reusable profile-plan contract
+
+Move app-to-Turbo, endpoint, service, and process policy into
+`playwright/runtime-contract.yml`. Upgrade to exact Devrouter `0.0.51`, keep the
+adapter as a safe literal consumer, explicitly deny optional native SSH build
+scripts, and rerun local plus exact-head qualification before delivery.
+Commit: `ci(playwright): use reusable profile plans`.
+
 ## Progress
 
 - [x] Existing profile and Devsy tasks confirmed non-overlapping source seams.
@@ -189,5 +200,20 @@ eight-runner baseline; do not claim a speedup from static checks.
       checks. Main-session integrated review found no reportable finding; no
       subagent was created under the execution contract. This plan is included
       in the local K3 commit.
+- [x] Devrouter PR #50 merged at
+      `93acdcae80be4688bd792ed3256e2e37b5e47ede`. Release workflow
+      `33322193976` published exact `@devrouter/cli@0.0.51`; registry integrity,
+      shasum, SLSA provenance, and an isolated installed profile plan match that
+      commit.
+- [x] K5 moves app, filter, endpoint, service, and process policy into
+      `playwright/runtime-contract.yml`. The adapter now consumes only exact
+      binding keys and safe literal shapes. Optional `cpu-features` and `ssh2`
+      build scripts are explicitly denied.
+- [x] Current-base qualification passes the final frozen install and supply-chain
+      policy, 10 focused profile/shard tests, YAML and formatter checks, all
+      eight real shard plans through installed `0.0.51`, and `check:all`. The
+      eight plans retain 45 total Turbo filters.
+- [ ] Integrate current `origin/v3` once without rebasing, rerun affected checks,
+      push the exact head, qualify PR #5683, and merge when safe.
 - [ ] The first self-hosted performance measurement remains separately gated
       until the exact reusable workflow is merged to `v3`.

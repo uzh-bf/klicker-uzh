@@ -22,8 +22,8 @@ importers:
         specifier: ~2.5.2
         version: 2.5.2
       '@devrouter/cli':
-        specifier: 0.0.50
-        version: 0.0.50
+        specifier: 0.0.51
+        version: 0.0.51
       '@types/node':
         specifier: ^24.10.1
         version: 24.12.4
@@ -4064,8 +4064,8 @@ packages:
   '@date-fns/tz@1.2.0':
     resolution: {integrity: sha512-LBrd7MiJZ9McsOgxqWX7AaxrDjcFVjWH/tIKJd7pnR7McaslGYOP1QmmiBXdJH/H/yLCT+rcQ7FaPBUxRGUtrg==}
 
-  '@devrouter/cli@0.0.50':
-    resolution: {integrity: sha512-2fNdrtQQj0TEScpkmEVxtqK4pw48IC4PP40r/1vq7I3H+8AyeX53xh+v1ebLd9UlCGZJvOHYPlm8dWQPd8S9bw==}
+  '@devrouter/cli@0.0.51':
+    resolution: {integrity: sha512-yddVEBZWOyyKfgKNlxz2ALAkoAr5aruWxMwoFFsTJBbSuaEW1pQSkjDYlx62EstRhM9TxGRiXibxx34lwoHG8A==}
     engines: {node: '>=24'}
     hasBin: true
 
@@ -22182,7 +22182,7 @@ snapshots:
 
   '@date-fns/tz@1.2.0': {}
 
-  '@devrouter/cli@0.0.50':
+  '@devrouter/cli@0.0.51':
     dependencies:
       commander: 12.1.0
       dockerode: 4.0.12

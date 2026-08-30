@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawn, spawnSync } from 'node:child_process'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -11,56 +11,14 @@ const DEFAULT_DEVROUTER_BIN = resolve(
   REPOSITORY_ROOT,
   'node_modules/.bin/devrouter'
 )
-
-const APP_RUNTIME = Object.freeze({
-  api: {
-    packages: ['@klicker-uzh/backend-docker'],
-    endpoint: 'http://127.0.0.1:3000/healthz',
-  },
-  auth: {
-    packages: ['@klicker-uzh/auth'],
-    endpoint: 'http://127.0.0.1:3010',
-  },
-  chat: {
-    packages: ['@klicker-uzh/chat'],
-    endpoint: 'http://127.0.0.1:3004/noLogin',
-  },
-  control: {
-    packages: ['@klicker-uzh/frontend-control'],
-    endpoint: 'http://127.0.0.1:3003',
-  },
-  manage: {
-    packages: ['@klicker-uzh/frontend-manage'],
-    endpoint: 'http://127.0.0.1:3002',
-  },
-  pwa: {
-    packages: ['@klicker-uzh/frontend-pwa'],
-    endpoint: 'http://127.0.0.1:3001',
-  },
-  'response-api': {
-    packages: [
-      '@klicker-uzh/response-api',
-      '@klicker-uzh/hatchet-worker-general',
-      '@klicker-uzh/hatchet-worker-response-processor',
-    ],
-    endpoint: 'http://127.0.0.1:7078/healthz',
-  },
-})
-
-const ALLOWED_MANAGED_SERVICES = new Set([
-  'hatchet',
-  'postgres',
-  'redis_assessment',
-  'redis_cache',
-  'redis_exec',
-])
+const PROFILE_PLAN_CONTRACT = 'playwright/runtime-contract.yml'
+const PROFILE_PLAN_BINDINGS = ['serviceEndpoints', 'turboFilters']
+const TURBO_FILTER = /^--filter=@klicker-uzh\/[a-z0-9][a-z0-9-]*$/
+const LOOPBACK_ENDPOINT =
+  /^http:\/\/127\.0\.0\.1:[0-9]{1,5}(?:\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*)?$/
 
 function fail(message) {
   throw new Error(message)
-}
-
-function sortedUnique(values) {
-  return [...new Set(values)].sort()
 }
 
 function requireString(value, label) {
@@ -71,8 +29,11 @@ function requireString(value, label) {
 }
 
 function requireStringArray(value, label) {
-  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
-    fail(`${label} must be an array of strings`)
+  if (
+    !Array.isArray(value) ||
+    value.some((item) => typeof item !== 'string' || item.length === 0)
+  ) {
+    fail(`${label} must be an array of non-empty strings`)
   }
   if (new Set(value).size !== value.length) {
     fail(`${label} must not contain duplicates`)
@@ -88,81 +49,12 @@ function requireCanonicalArray(value, label) {
   return items
 }
 
-function exactArray(actual, expected, label) {
+function requireExactArray(actual, expected, label) {
   if (
     actual.length !== expected.length ||
     actual.some((item, index) => item !== expected[index])
   ) {
-    fail(`${label} does not match the selected apps`)
-  }
-}
-
-function runtimeForApps(apps) {
-  const packages = []
-  const serviceEndpoints = []
-
-  for (const app of apps) {
-    const runtime = APP_RUNTIME[app]
-    if (!runtime) fail(`unsupported Playwright app ${app}`)
-    packages.push(...runtime.packages)
-    serviceEndpoints.push(runtime.endpoint)
-  }
-
-  return {
-    turboFilters: sortedUnique(packages).map((name) => `--filter=${name}`),
-    serviceEndpoints: sortedUnique(serviceEndpoints),
-  }
-}
-
-export function buildRuntimePlan(report) {
-  if (!report || report.schemaVersion !== SCHEMA_VERSION) {
-    fail(`unsupported Devrouter profile schema ${report?.schemaVersion}`)
-  }
-
-  const profile = requireString(report.profile, 'profile')
-  const apps = requireCanonicalArray(report.apps, 'apps')
-  if (apps.length === 0) fail('profile must select at least one Playwright app')
-
-  const dependencies = requireCanonicalArray(
-    report.dependencies,
-    'dependencies'
-  )
-  if (dependencies.length > 0) {
-    fail(`unsupported Devrouter dependencies: ${dependencies.join(', ')}`)
-  }
-
-  const readiness = requireCanonicalArray(report.readiness, 'readiness')
-  for (const app of readiness) {
-    if (!apps.includes(app)) fail(`readiness app ${app} is not selected`)
-  }
-
-  const managedRuntime = report.managedRuntime
-  if (!managedRuntime || typeof managedRuntime !== 'object') {
-    fail('managedRuntime must be an object')
-  }
-  const managedServices = requireCanonicalArray(
-    managedRuntime.services,
-    'managedRuntime.services'
-  )
-  for (const service of managedServices) {
-    if (!ALLOWED_MANAGED_SERVICES.has(service)) {
-      fail(`unsupported managed service ${service}`)
-    }
-  }
-  const processes = requireCanonicalArray(
-    managedRuntime.processes,
-    'managedRuntime.processes'
-  )
-  exactArray(processes, ['klicker-dev'], 'managedRuntime.processes')
-
-  const runtime = runtimeForApps(apps)
-  return {
-    schemaVersion: SCHEMA_VERSION,
-    profile,
-    apps,
-    upstreamReadiness: readiness,
-    managedServices,
-    ...runtime,
+    fail(`${label} must equal ${expected.join(', ')}`)
   }
 }
 
@@ -171,34 +63,74 @@ export function validateRuntimePlan(plan) {
     fail(`unsupported Playwright runtime schema ${plan?.schemaVersion}`)
   }
 
+  requireString(plan.repoPath, 'repoPath')
   const profile = requireString(plan.profile, 'profile')
   const apps = requireCanonicalArray(plan.apps, 'apps')
   if (apps.length === 0) fail('runtime plan must select at least one app')
-  const upstreamReadiness = requireCanonicalArray(
-    plan.upstreamReadiness,
-    'upstreamReadiness'
-  )
+  const dependencies = requireCanonicalArray(plan.dependencies, 'dependencies')
+  if (dependencies.length > 0) {
+    fail(
+      `Playwright runtime does not support dependencies: ${dependencies.join(', ')}`
+    )
+  }
+  const upstreamReadiness = requireCanonicalArray(plan.readiness, 'readiness')
   for (const app of upstreamReadiness) {
     if (!apps.includes(app)) fail(`readiness app ${app} is not selected`)
   }
+  if (!plan.managedRuntime || typeof plan.managedRuntime !== 'object') {
+    fail('managedRuntime must be an object')
+  }
   const managedServices = requireCanonicalArray(
-    plan.managedServices,
-    'managedServices'
+    plan.managedRuntime.services,
+    'managedRuntime.services'
   )
-  for (const service of managedServices) {
-    if (!ALLOWED_MANAGED_SERVICES.has(service)) {
-      fail(`unsupported managed service ${service}`)
+  requireCanonicalArray(
+    plan.managedRuntime.processes,
+    'managedRuntime.processes'
+  )
+
+  const contractPath = requireString(plan.contractPath, 'contractPath')
+  if (contractPath !== PROFILE_PLAN_CONTRACT) {
+    fail(`contractPath must equal ${PROFILE_PLAN_CONTRACT}`)
+  }
+  if (!plan.bindings || typeof plan.bindings !== 'object') {
+    fail('bindings must be an object')
+  }
+  requireExactArray(
+    Object.keys(plan.bindings).sort(),
+    PROFILE_PLAN_BINDINGS,
+    'binding keys'
+  )
+
+  const turboFilters = requireStringArray(
+    plan.bindings.turboFilters,
+    'bindings.turboFilters'
+  )
+  if (turboFilters.length === 0) fail('bindings.turboFilters must not be empty')
+  for (const filter of turboFilters) {
+    if (!TURBO_FILTER.test(filter)) fail(`unsafe Turbo filter ${filter}`)
+  }
+  const serviceEndpoints = requireStringArray(
+    plan.bindings.serviceEndpoints,
+    'bindings.serviceEndpoints'
+  )
+  if (serviceEndpoints.length === 0) {
+    fail('bindings.serviceEndpoints must not be empty')
+  }
+  for (const endpoint of serviceEndpoints) {
+    if (!LOOPBACK_ENDPOINT.test(endpoint)) {
+      fail(`unsafe service endpoint ${endpoint}`)
+    }
+    let port
+    try {
+      port = Number(new URL(endpoint).port)
+    } catch {
+      fail(`unsafe service endpoint ${endpoint}`)
+    }
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      fail(`unsafe service endpoint ${endpoint}`)
     }
   }
-
-  const expected = runtimeForApps(apps)
-  const turboFilters = requireCanonicalArray(plan.turboFilters, 'turboFilters')
-  const serviceEndpoints = requireCanonicalArray(
-    plan.serviceEndpoints,
-    'serviceEndpoints'
-  )
-  exactArray(turboFilters, expected.turboFilters, 'turboFilters')
-  exactArray(serviceEndpoints, expected.serviceEndpoints, 'serviceEndpoints')
 
   return {
     schemaVersion: SCHEMA_VERSION,
@@ -206,8 +138,8 @@ export function validateRuntimePlan(plan) {
     apps,
     upstreamReadiness,
     managedServices,
-    turboFilters,
-    serviceEndpoints,
+    turboFilters: [...turboFilters].sort(),
+    serviceEndpoints: [...serviceEndpoints].sort(),
   }
 }
 
@@ -224,38 +156,53 @@ export function resolveRuntimePlan({
   output,
   repo = REPOSITORY_ROOT,
   devrouterBin = DEFAULT_DEVROUTER_BIN,
+  contract = PROFILE_PLAN_CONTRACT,
 }) {
   requireString(profile, 'profile selection')
   requireString(output, 'output path')
+  requireString(contract, 'contract path')
 
   const result = spawnSync(
     devrouterBin,
-    ['profile', 'resolve', '--repo', repo, '--profile', profile, '--json'],
+    [
+      'profile',
+      'plan',
+      '--repo',
+      repo,
+      '--profile',
+      profile,
+      '--contract',
+      contract,
+      '--output',
+      output,
+      '--json',
+    ],
     { encoding: 'utf8' }
   )
   if (result.error) {
-    fail(
-      `Devrouter profile resolution could not start: ${result.error.message}`
-    )
+    fail(`Devrouter profile planning could not start: ${result.error.message}`)
   }
   if (result.status !== 0) {
     const detail = result.stderr.trim() || `exit status ${result.status}`
-    fail(`Devrouter profile resolution failed: ${detail}`)
+    fail(`Devrouter profile planning failed: ${detail}`)
   }
 
-  let report
+  let stdoutPlan
   try {
-    report = JSON.parse(result.stdout)
+    stdoutPlan = JSON.parse(result.stdout)
   } catch (error) {
     fail(`Devrouter returned invalid JSON: ${error.message}`)
   }
 
-  const plan = buildRuntimePlan(report)
-  writeFileSync(output, `${JSON.stringify(plan, null, 2)}\n`, {
-    encoding: 'utf8',
-    mode: 0o600,
-  })
-  return plan
+  const filePlan = readJson(output, 'Devrouter profile plan')
+  if (JSON.stringify(stdoutPlan) !== JSON.stringify(filePlan)) {
+    fail('Devrouter stdout and output plans differ')
+  }
+  const runtime = validateRuntimePlan(filePlan)
+  if (resolve(filePlan.repoPath) !== resolve(repo)) {
+    fail(`Devrouter resolved unexpected repository ${filePlan.repoPath}`)
+  }
+  return runtime
 }
 
 function option(args, name, fallback) {
@@ -278,8 +225,7 @@ function planPath(args) {
   return option(args, '--plan', process.env.PLAYWRIGHT_RUNTIME_PLAN)
 }
 
-export function buildStartCommand(input) {
-  const plan = validateRuntimePlan(input)
+export function buildStartCommand(plan) {
   return {
     command: 'bash',
     args: [
@@ -328,13 +274,20 @@ function main(args = process.argv.slice(2)) {
   if (command === 'resolve') {
     rejectUnknownOptions(
       options,
-      new Set(['--profile', '--output', '--repo', '--devrouter-bin'])
+      new Set([
+        '--profile',
+        '--output',
+        '--repo',
+        '--devrouter-bin',
+        '--contract',
+      ])
     )
     const plan = resolveRuntimePlan({
       profile: option(options, '--profile'),
       output: option(options, '--output'),
       repo: option(options, '--repo', REPOSITORY_ROOT),
       devrouterBin: option(options, '--devrouter-bin', DEFAULT_DEVROUTER_BIN),
+      contract: option(options, '--contract', PROFILE_PLAN_CONTRACT),
     })
     console.log(
       `Resolved Playwright profile ${plan.profile}: ${plan.apps.join(', ')}`
