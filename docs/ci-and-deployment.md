@@ -102,6 +102,39 @@ Version bumps are **local and manual** via standard-version: `pnpm run release[:
 - **KB graph token ordering**: the general worker's external secret must already carry `KB_GRAPH_HATCHET_CLIENT_TOKEN` before `hatchet.kbGraph.workflowName` is set. The token alone does not arm the worker's startup gate (so a secret rollout cannot stop unrelated jobs), but once any chart-owned `KB_GRAPH_*` value is present the token is required and startup fails without it.
 - **KB ingestion staging contract is rendered explicitly**: `pnpm run check:kb-ingestion-stg` renders the STG backend and worker ConfigMaps and requires this layer's exact state. The readiness layer requires both ingestion kill switches; the activation layer requires those false-valued keys to be absent. Both layers require the exact cluster-local ingestion and source-gateway endpoints, both graph kill switches, response-processor isolation, and no ingestion secret keys in ConfigMaps.
 
+### Replica ownership
+
+Every rendered Deployment has exactly one replica owner. A static Deployment
+sets `spec.replicas` from its Git-owned `replicaCount`. An autoscaled Deployment
+leaves `spec.replicas` out and is targeted by exactly one HPA or KEDA scaler. A
+Deployment must never combine the two ownership models or have more than one
+scaler target.
+
+Only PWA, Manage, and GraphQL may declare an `autoscaling` stanza. Their current
+HPA templates scale on CPU utilization only; memory utilization is intentionally
+excluded because retained Node.js heap can keep that metric elevated after load
+subsides. Every other workload is statically owned and must not declare an
+unused autoscaling stanza.
+
+LTI is intentionally static in the chart base and both environment overlays:
+the base keeps `replicaCount: 2`, staging sets `replicaCount: 1`, and production
+sets `replicaCount: 2`. No LTI scaler or LTI autoscaling stanza is rendered.
+
+When external ArgoCD desired-state configuration permits replica differences
+for an active autoscaler, the exception must name the exact scaler target and
+the exact `/spec/replicas` field. W1 does not add or change an ArgoCD ignore
+rule, and static LTI has no replica ignore. ArgoCD `Healthy` describes resource
+health; it does not mean the application is `Synced`. Check application sync
+status and resource-level drift separately.
+
+Run `pnpm run check:klicker-replica-ownership` as the focused chart gate when
+values or replica-owner templates change. The command renders base, staging,
+production, and a synthetic all-three-HPA configuration. CI provisions Helm in
+the shared codebase workflow. It runs the same gate for pushes to `v3` and
+`v3*`, and when a pull request is opened, synchronized, or reopened. The gate
+also rejects unsupported autoscaling stanzas in the base, staging, and
+production values files.
+
 ## Deployment migrations
 
 `prisma migrate deploy` runs automatically as an ArgoCD **`PreSync` hook Job** (`deploy/charts/klicker-uzh-v3/templates/job-migrate.yaml`) before each stg and prd rollout. **On prd the hook is enabled** (`migrator.enabled: true`) because the pinned release tags have matching migrator images, so normal prd rollouts apply pending Prisma migrations to the primary GraphQL database before its application Deployments start. The assessment database is covered only if its separate backend Secret targets that same database; otherwise it needs a separately proven migration path. The dedicated `backend-docker-migrator` image (`packages/prisma/Dockerfile`) is CI-built in lockstep with `backend-docker` (`v3_backend-docker-{stg,prd}.yml`); its tag auto-tracks the backend tag (the chart defaults `migrator.image.tag` to `backendGraphql.image.tag`), so it always matches the app release with no separate per-env pin. A failed hook aborts the whole sync, so app Deployments in the main wave never start against an unmigrated DB. The hook uses **ArgoCD-native** annotations (`argocd.argoproj.io/hook: PreSync`), not Helm chart hooks — the two must not be mixed, because a single ArgoCD hook annotation makes ArgoCD ignore _all_ Helm-native hooks on the chart. Full details: [Data & Migrations → Deployment migrations](./data-and-migrations.md#deployment-migrations). Manual `pnpm --filter @klicker-uzh/prisma prisma:deploy:prod` remains a break-glass fallback only.

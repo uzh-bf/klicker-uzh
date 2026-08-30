@@ -27,6 +27,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Helm
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4.3.1
+        with:
+          version: v3.19.0
+
       - name: Set up uv
         uses: astral-sh/setup-uv@v5
         with:
@@ -72,6 +77,9 @@ jobs:
 
       - name: Check Prisma schema sync drift
         run: pnpm run check:prisma-sync
+
+      - name: Check replica ownership contract
+        run: pnpm run check:klicker-replica-ownership
 
       - name: Check AGENTS.md command smoke
         run: pnpm run check:agents-md
