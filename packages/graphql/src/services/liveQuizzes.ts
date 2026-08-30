@@ -2874,17 +2874,48 @@ function removeSolutionFromInstances({
 }
 
 export async function getRunningLiveQuiz({ id }: { id: string }, ctx: Context) {
+  // TODO: REMOVE
+  console.log('INCOMING REQUEST FOR RUNNING LIVE QUIZ, USER:', ctx.user)
+
   // only get the minimal required information of the quiz
-  const quizInfo = await ctx.prisma.liveQuiz.findUnique({ where: { id } })
+  const quizInfo = await ctx.prisma.liveQuiz.findUnique({
+    where: { id },
+    include: {
+      permissions: {
+        where: {
+          userId: ctx.user?.sub,
+          permissionLevel: {
+            in: [
+              DB.PermissionLevel.EXECUTE,
+              DB.PermissionLevel.WRITE,
+              DB.PermissionLevel.ADMIN,
+              DB.PermissionLevel.OWNER,
+            ],
+          },
+        },
+      },
+    },
+  })
 
   // if the quiz is not available, return early
   if (!quizInfo || quizInfo.status !== DB.PublicationStatus.PUBLISHED) {
     return null
   }
 
-  // if the live quiz is an assessment live quiz, verify that the user
-  // is logged in and a participant in the corresponding course
-  if (quizInfo.isAssessmentEnabled) {
+  // check if the user has direct permissions on the live quiz that should also allow access to the participant view
+  const isCoCreator =
+    ctx.user?.sub &&
+    (ctx.user.role === DB.UserRole.ADMIN ||
+      ctx.user.role === DB.UserRole.USER) &&
+    quizInfo.permissions.length > 0
+
+  // TODO: remove
+  console.log('IS COCREATOR', isCoCreator)
+
+  // if the live quiz is an assessment live quiz, verify that the participants
+  // are logged in and have a participation in the corresponding assessment course
+  // -> users with direct access should also be able to access the live quiz
+  if (quizInfo.isAssessmentEnabled && !isCoCreator) {
     // if the user is not logged in, send them to the the assessment login page
     if (
       !ctx.user?.sub ||

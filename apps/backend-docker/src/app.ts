@@ -52,6 +52,12 @@ function prepareApp({
 
     // Assessment mode: only check for student NextAuth cookie
     if (process.env.ASSESSMENT_MODE === 'true') {
+      // TODO: REMOVE
+      console.log('IN ASSESSMENT MODE CASE')
+
+      // TODO: REMOVE
+      console.log('REQ HEADERS ORIGIN:', req.headers.origin)
+
       if (
         req.headers.origin?.includes(
           process.env.APP_MANAGE_SUBDOMAIN ?? 'manage'
@@ -66,7 +72,12 @@ function prepareApp({
           process.env.APP_ASSESSMENT_SUBDOMAIN ?? 'assessment'
         )
       ) {
-        token = req.cookies?.['next-auth.participant-session-token']
+        // TODO: REMOVE
+        console.log('WENT THROUGH ASSESSMENT MODE')
+
+        token =
+          req.cookies?.['next-auth.participant-session-token'] ??
+          req.cookies?.['next-auth.session-token']
       }
     } else {
       if (
@@ -87,6 +98,9 @@ function prepareApp({
           req.cookies?.['next-auth.session-token']
       }
     }
+
+    // TODO: REMOVE
+    console.log('TOKEN IDENTIDIFED IN BACKEND:', token)
 
     // ! DO NOT TOUCH - assessment live quiz mode relies on it
     token =
