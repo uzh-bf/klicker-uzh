@@ -297,12 +297,14 @@ charging boundary. In R2, it updates the matching `IN_PROGRESS` or `FAILED`
 attempt to `COMPLETED`. In R1, it atomically inserts the completed result with
 `skipDuplicates`. In either mode, one non-empty completed answer also increments
 the owner/class/month counter by its rounded six-decimal credit value and updates
-the thread timestamp in one `ReadCommitted` transaction. A successful empty
-completion is not a lifecycle row and is not charged. Duplicate completion
-returns the stored result without charging again; a foreign or mismatched key
-conflicts. A normal finish and an abort use this finalizer once, and a late
-`onEnd` after an abort is ignored. Missing reliable main-stream usage still
-closes the message key with `creditsUsed = null` and no account charge. History
+the thread timestamp in one `ReadCommitted` transaction. In R1, a successful
+empty completion creates no row and is not charged; in R2, it closes the existing
+placeholder as an empty completed message and is not charged. Duplicate
+completion returns the stored result without charging again; a foreign or
+mismatched key conflicts. A normal finish and an abort use this finalizer once,
+and a late `onEnd` after an abort is ignored. Missing reliable main-stream
+usage still closes the message key with `creditsUsed = null` and no account
+charge. History
 reads hide `IN_PROGRESS` and `FAILED` placeholders. The availability check is
 not a reservation, so the bounded final-turn and concurrent overrun accepted by
 [ADR 0041](./adr/0041-chatbot-trusted-pilot-boundary.md) remains possible; the
