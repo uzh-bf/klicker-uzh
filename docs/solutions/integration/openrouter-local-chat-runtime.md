@@ -86,6 +86,13 @@ is not sufficient evidence here: complete the personal-card browser smoke and
 require the accepted plan, a generated card, grouped page references, and a
 persisted card decision after reload.
 
+The fixture is additionally gated by `LOCAL_DOC_QUERY_FIXTURE_ENABLED=true`.
+That flag is set only in the self-contained devcontainer; without it, the seed
+must not reconcile the globally named `KB` MCP row or bind the fixture KB, and
+Chat must reject unauthenticated access even to the loopback URL. This keeps
+the fixture from mutating a shared dev or staging database when `seedTEST.ts`
+is run through an Infisical-backed seed command.
+
 When the host-side operator reports that no valid login session exists, stop at
 secret authentication. It is an environment-setup blocker, not evidence that
 the OpenRouter key is invalid or that Chat is broken. Complete the operator

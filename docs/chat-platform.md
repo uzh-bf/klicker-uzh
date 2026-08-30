@@ -893,10 +893,12 @@ The self-contained devcontainer starts the seeded local MCP fixture through
 `post-start.sh`. Benibot's Tutor and Explainer configurations already point to
 `http://localhost:1417/mcp` and allow `doc_query`; the runtime namespaces the
 tool as `KB_doc_query`. `seedChatbots.ts:seedChatbots` creates the enabled
-Benibot knowledge-base binding, while `mcpClients.ts:createAuthHeaders` permits
-unauthenticated access only for this exact loopback URL outside production.
-Every other `KB` endpoint retains the scope-token and transport-authentication
-contract described above.
+Benibot knowledge-base binding only when the self-contained runtime sets
+`LOCAL_DOC_QUERY_FIXTURE_ENABLED=true`, while
+`mcpClients.ts:createAuthHeaders` permits unauthenticated access only for this
+exact loopback URL in development with the same flag. Every other `KB`
+endpoint retains scoped authentication; shared multi-tenant deployments also
+retain the transport-authentication contract described above.
 
 Keep Auto Mode selected, then prompt Benibot with “Use
 the local MCP tool to test the integration. Search for

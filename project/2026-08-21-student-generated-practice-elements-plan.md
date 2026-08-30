@@ -1080,9 +1080,13 @@ Settled rulings for this implementation:
   goal.
 - 2026-08-30 (local grounded-generation proof): The self-contained development
   stack now enables the personal-card prototype through a development-only
-  override and binds seeded Benibot to the exact loopback `doc_query` fixture.
-  Every non-fixture Doc Query endpoint still requires transport authentication
-  and a scoped knowledge binding. AI SDK 7 card generation now uses
+  override and binds seeded Benibot to the exact loopback `doc_query` fixture
+  only when `LOCAL_DOC_QUERY_FIXTURE_ENABLED=true`. Without that explicit
+  self-contained-runtime flag, the seed skips the globally named KB MCP row and
+  fixture binding, and Chat rejects unauthenticated loopback access. Every
+  non-fixture endpoint still requires scoped authentication; shared
+  multi-tenant deployments also require transport authentication. AI SDK 7
+  card generation now uses
   `generateText` with an object-root `Output.object` contract, which fixes the
   OpenAI Responses schema rejection while preserving fail-closed abstention and
   exact chunk-ID validation. In the managed Chat runtime, Auto Mode retrieved
@@ -1091,9 +1095,13 @@ Settled rulings for this implementation:
   `synthetic-course-material.pdf, pp. 1–2`, and exposed separate Save and
   Discard actions. After Discard and thread reload, the card remained marked
   Discarded with the accepted plan and references intact. The focused Chat
-  suites pass 58 tests, Chat and Prisma data typechecks pass, and the complete
+  suites pass 59 tests, Chat and Prisma data typechecks pass, and the complete
   Prisma data package test now passes after excluding its Node test directory
-  from Vitest's second collection pass. The full Chat run passes 852 tests and
+  from Vitest's second collection pass. The risk-review corrections also
+  disable any previously enabled KB binding before enabling the fixture, reject
+  every retrieved chunk ID from user-visible card content, and pin the
+  structured-output regression to an object-root JSON schema. The full Chat run
+  passes 852 tests and
   fails only the same two model-registry parity assertions already recorded on
   the `v3-ai` baseline. The repository wiki validator still reports 37
   pre-existing core conformance errors outside the changed pages. No physical
