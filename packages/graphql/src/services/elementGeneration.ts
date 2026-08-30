@@ -101,6 +101,7 @@ export type KeepGeneratedElementDraftInput = {
   basePoints: boolean
   pointsMultiplier: number
   tags?: string[] | null
+  choiceIds?: string[] | null
   options?: ElementManipulationInput['options']
 }
 
@@ -293,11 +294,23 @@ function normalizedKeepPayload(
       'A generated assessment element requires answer choices'
     )
   }
-  const storedCurrent = draft.current as GeneratedQuestionEditable
-  const choices = [...input.options.choices]
-    .sort((left, right) => left.ix - right.ix)
-    .map((choice, index) => ({
-      id: storedCurrent.choices[index]?.id ?? `${draft.id}-choice-${index + 1}`,
+  const choiceIds = input.choiceIds?.map((id) => id.trim())
+  if (
+    !choiceIds ||
+    choiceIds.length !== input.options.choices.length ||
+    choiceIds.some((id) => !id || id.length > 100) ||
+    new Set(choiceIds).size !== choiceIds.length
+  ) {
+    throw questionGenerationServiceError(
+      'DRAFT_INVALID',
+      'Generated assessment choice identities are invalid'
+    )
+  }
+  const choices = input.options.choices
+    .map((choice, index) => ({ choice, id: choiceIds[index]! }))
+    .sort((left, right) => left.choice.ix - right.choice.ix)
+    .map(({ choice, id }, index) => ({
+      id,
       label: String.fromCharCode(65 + index),
       text: choice.value,
       correct: choice.correct ?? false,
@@ -360,6 +373,8 @@ function savedElementMatchesKeepRequest(
   elementInput: ElementManipulationInput,
   ownerId: string
 ) {
+  // manipulateElement persists this validator result for every Element type;
+  // optionless types therefore intentionally compare against an empty object.
   const options = validateAndProcessElementOptions(
     elementInput.type,
     elementInput.options

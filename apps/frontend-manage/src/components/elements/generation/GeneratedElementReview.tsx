@@ -369,6 +369,12 @@ function GeneratedDraftEditor({
               basePoints: variables.basePoints,
               pointsMultiplier: variables.pointsMultiplier,
               tags: variables.tags,
+              choiceIds:
+                values.type === ElementType.Sc ||
+                values.type === ElementType.Mc ||
+                values.type === ElementType.Kprim
+                  ? values.options.choices.map((choice) => choice.id)
+                  : undefined,
             },
           })
           if (!result.data?.keepGeneratedElementDraft.savedElementId)

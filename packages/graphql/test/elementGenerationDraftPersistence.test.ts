@@ -65,6 +65,7 @@ const input = {
   basePoints: true,
   pointsMultiplier: 2,
   tags: ['generated'],
+  choiceIds: current.choices.map((choice) => choice.id),
   options: {
     displayMode: DisplayMode.LIST,
     hasSampleSolution: true,
@@ -312,6 +313,111 @@ describe('atomic generated-element keep', () => {
     )
   })
 
+  it('returns an exactly persisted optionless Flashcard on retry', async () => {
+    const flashcard = {
+      name: 'Definition',
+      front: 'What is atomicity?',
+      back: 'A transaction either completes fully or has no effect.',
+      cardType: 'definition' as const,
+      tags: ['generated-flashcard', 'flashcard:definition'],
+    }
+    const flashcardInput = {
+      draftId,
+      expectedRevision: 2,
+      status: DB.ElementStatus.REVIEW,
+      type: DB.ElementType.FLASHCARD,
+      name: flashcard.name,
+      content: flashcard.front,
+      explanation: flashcard.back,
+      basePoints: false,
+      pointsMultiplier: 1,
+      tags: flashcard.tags,
+    }
+    const { ctx, transaction } = context(
+      draft({
+        elementType: DB.ElementType.FLASHCARD,
+        original: flashcard,
+        current: flashcard,
+        targetDifficulty: null,
+        revision: 3,
+        decision: DB.GeneratedElementDecision.ACCEPTED,
+        savedElementId: 92,
+        savedElement: {
+          id: 92,
+          ownerId,
+          type: DB.ElementType.FLASHCARD,
+          status: DB.ElementStatus.REVIEW,
+          name: flashcard.name,
+          content: flashcard.front,
+          explanation: flashcard.back,
+          basePoints: false,
+          pointsMultiplier: 1,
+          difficultyLevel: null,
+          options: {},
+          tags: flashcard.tags.map((name) => ({ name })),
+        },
+        savedAt,
+      })
+    )
+
+    await expect(
+      keepGeneratedElementDraft(flashcardInput, ctx as never)
+    ).resolves.toMatchObject({ savedElementId: 92 })
+    expect(manipulateElement).not.toHaveBeenCalled()
+    expect(transaction.generatedElementDraft.updateMany).not.toHaveBeenCalled()
+  })
+
+  it('preserves choice identities through reorder and replacement', async () => {
+    const { ctx, transaction } = context(draft())
+    vi.mocked(manipulateElement).mockResolvedValue(savedElement() as never)
+    const editedChoices = [
+      {
+        id: 'choice-b',
+        ix: 0,
+        value: 'Answer B edited',
+        correct: true,
+        feedback: null,
+      },
+      {
+        id: 'choice-new',
+        ix: 1,
+        value: 'Answer C',
+        correct: false,
+        feedback: null,
+      },
+    ]
+
+    await keepGeneratedElementDraft(
+      {
+        ...input,
+        choiceIds: editedChoices.map((choice) => choice.id),
+        options: { ...input.options, choices: editedChoices },
+      },
+      ctx as never
+    )
+
+    expect(transaction.generatedElementDraft.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          current: expect.objectContaining({
+            choices: [
+              expect.objectContaining({
+                id: 'choice-b',
+                label: 'A',
+                text: 'Answer B edited',
+              }),
+              expect.objectContaining({
+                id: 'choice-new',
+                label: 'B',
+                text: 'Answer C',
+              }),
+            ],
+          }),
+        }),
+      })
+    )
+  })
+
   it('uses the ordinary Element option contract when keeping an MC draft', async () => {
     const mcCurrent = {
       ...current,
@@ -340,6 +446,7 @@ describe('atomic generated-element keep', () => {
       {
         ...input,
         type: DB.ElementType.MC,
+        choiceIds: mcCurrent.choices.map((choice) => choice.id),
         options: {
           ...input.options,
           choices: mcCurrent.choices.map((choice, ix) => ({
@@ -448,6 +555,19 @@ describe('atomic generated-element keep', () => {
 
     await expect(
       keepGeneratedElementDraft({ ...input, options } as never, ctx as never)
+    ).rejects.toMatchObject({ code: 'DRAFT_INVALID' })
+    expect(manipulateElement).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { label: 'missing', choiceIds: undefined },
+    { label: 'wrong count', choiceIds: ['choice-a'] },
+    { label: 'duplicates', choiceIds: ['choice-a', 'choice-a'] },
+  ])('rejects $label assessment choice identities', async ({ choiceIds }) => {
+    const { ctx } = context(draft())
+
+    await expect(
+      keepGeneratedElementDraft({ ...input, choiceIds }, ctx as never)
     ).rejects.toMatchObject({ code: 'DRAFT_INVALID' })
     expect(manipulateElement).not.toHaveBeenCalled()
   })

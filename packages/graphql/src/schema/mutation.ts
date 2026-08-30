@@ -2192,6 +2192,10 @@ export const Mutation = builder.mutationType({
             validate: { min: 1 },
           }),
           tags: t.arg.stringList({ required: false }),
+          choiceIds: t.arg.idList({
+            required: false,
+            validate: { maxLength: 10 },
+          }),
           options: t.arg({ type: OptionsChoicesInput, required: false }),
         },
         resolve: async (_, args, ctx) => {

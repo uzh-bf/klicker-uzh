@@ -82,6 +82,7 @@ describe('unified element-generation GraphQL contract', () => {
         'content',
         'basePoints',
         'pointsMultiplier',
+        'choiceIds',
       ])
     )
 
