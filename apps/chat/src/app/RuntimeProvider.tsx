@@ -389,7 +389,9 @@ export function RuntimeProvider({
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <PersonalElementsProvider value={{ approvePlan, getPlanStatus }}>
+      <PersonalElementsProvider
+        value={{ approvePlan, getPlanStatus, isThreadRunning: isRunning }}
+      >
         {children}
       </PersonalElementsProvider>
     </AssistantRuntimeProvider>

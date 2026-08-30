@@ -40,6 +40,45 @@ export async function createGenerationAttemptMessage({
   })
 }
 
+export async function ensureGenerationTriggerMessage({
+  prisma,
+  userMessageId,
+  threadId,
+  parentId,
+  content,
+}: {
+  prisma: PrismaClient
+  userMessageId: string
+  threadId: string
+  parentId: string
+  content: string
+}) {
+  await prisma.chatMessage.createMany({
+    data: {
+      id: userMessageId,
+      threadId,
+      parentId,
+      role: 'user',
+      content: [{ type: 'text', text: content }],
+    },
+    skipDuplicates: true,
+  })
+
+  const message = await prisma.chatMessage.findUnique({
+    where: { id: userMessageId },
+    select: { threadId: true, parentId: true, role: true, content: true },
+  })
+  if (
+    message?.threadId !== threadId ||
+    message.parentId !== parentId ||
+    message.role !== 'user' ||
+    JSON.stringify(message.content) !==
+      JSON.stringify([{ type: 'text', text: content }])
+  ) {
+    throw new Error('The card generation trigger message is not available')
+  }
+}
+
 export async function claimGenerationLease({
   participantId,
   courseId,

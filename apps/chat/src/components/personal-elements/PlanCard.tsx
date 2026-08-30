@@ -43,7 +43,8 @@ function nextRenderKey(
 export function PlanCard({ part }: { part: PlanPart }) {
   const t = useTranslations()
   const message = useAuiState((state) => state.message)
-  const { approvePlan, getPlanStatus } = usePersonalElementsRuntime()
+  const { approvePlan, getPlanStatus, isThreadRunning } =
+    usePersonalElementsRuntime()
   const [submitting, setSubmitting] = useState(false)
   const inputPlan = useMemo(() => parseJson(part.argsText), [part.argsText])
   const resultPlan = asObject(part.result)
@@ -158,7 +159,7 @@ export function PlanCard({ part }: { part: PlanPart }) {
       ) : (
         <button
           type="button"
-          disabled={submitting || isRunning}
+          disabled={submitting || isRunning || isThreadRunning}
           onClick={() => {
             setSubmitting(true)
             void approvePlan(

@@ -34,6 +34,7 @@ import {
   claimGenerationLease,
   completeGenerationLease,
   createGenerationAttemptMessage,
+  ensureGenerationTriggerMessage,
 } from './lease'
 import {
   type RevisionSettlement,
@@ -457,6 +458,16 @@ export async function createCardGeneration({
 
     let attemptMessageCreated = false
     try {
+      if (!attemptParentMessageId || !activeBranchLeafId) {
+        throw new Error('The accepted card plan branch is not available')
+      }
+      await ensureGenerationTriggerMessage({
+        prisma,
+        userMessageId: attemptParentMessageId,
+        threadId,
+        parentId: activeBranchLeafId,
+        content: latestUserContent,
+      })
       if (!assistantMessageAlreadyCreated) {
         await createGenerationAttemptMessage({
           prisma,

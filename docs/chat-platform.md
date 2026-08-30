@@ -762,6 +762,12 @@ as the generated card names so the deduplication key cannot drift. This is
 intentionally title-only and local; it adds no embedding provider, ingestion
 change, or retrieved-text persistence.
 
+Plan approval allocates the follow-up user message in the browser. Chat persists
+and verifies that trigger on the accepted plan branch before it asks the backend
+to claim the generation lease. The approval control remains disabled until the
+originating assistant turn is terminal, so a participant cannot start the
+follow-up against a branch that has not finished persisting.
+
 Generated card explanations are the card backs, so the generation schema and
 the personal-element save service require a substantive, alphanumeric answer
 on both create and update; validation is structural and never matches

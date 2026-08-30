@@ -953,7 +953,25 @@ no migration.
   package review approved the exact application head, the Chat suite passed
   906 tests on pinned Node 24, `check:all` passed 29/29, and the push build
   passed 26/26.
-- [ ] After explicit authority, delete and recreate only the degraded synthetic
-  workspace `rs-student-generated-practice-el`, inject the OpenRouter key from
-  Infisical, reseed synthetic data, rerun the authenticated AI/browser smoke,
-  and leave the exact workspace running for manual verification.
+- [x] 2026-08-30 synthetic runtime recreation and authenticated AI/browser
+  smoke — deleted and recreated only workspace
+  `rs-student-generated-practice-el`, injected the OpenRouter key through
+  Infisical, reset and reseeded synthetic data, and restored the
+  `ai,chat,mcp` profile. The smoke exposed two acceptance-flow races: the
+  client-allocated approval trigger was not persisted before the backend lease
+  claim, and the approval control could become active before the originating
+  assistant turn was terminal. Chat now persists and validates the trigger on
+  the accepted plan branch and keeps approval disabled for the full turn. The
+  focused suite passes 39 tests, the complete Chat suite passes 910 tests with
+  13 integration skips, and the Chat type check passes. Authenticated Auto Mode
+  retrieval proposed two grounded cards, approval generated both cards with
+  `synthetic-course-material.pdf, pp. 1–2`, and a reload retained one Saved and
+  one Discarded decision. Proof screenshots are
+  `/private/tmp/student-generated-practice-cards-generated-proof.png` and
+  `/private/tmp/student-generated-practice-cards-persisted-proof.png`. The
+  exact workspace remains running for manual verification.
+- [ ] Incorporate the newly fetched `origin/v3-ai` head
+  `e9e8f2952aec96bc7e5e80e2ce7a8cc82493ebd1` through A, B, and C with the
+  approved merge-commit topology, rerun the affected checks and browser smoke,
+  complete the correction review gates, publish the exact reviewed stack
+  heads, and update pull request #5483.

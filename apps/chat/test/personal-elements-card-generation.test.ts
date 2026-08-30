@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   completeLease: vi.fn(),
   abortLease: vi.fn(),
   createAttemptMessage: vi.fn(),
+  ensureTriggerMessage: vi.fn(),
   isPersonalCardGenerationEnabled: vi.fn(),
   generateToolOptions: [] as Array<{
     onNestedUsage: (usage: {
@@ -45,6 +46,7 @@ vi.mock('../src/lib/server/personalElements/lease', () => ({
   completeGenerationLease: mocks.completeLease,
   abortGenerationLease: mocks.abortLease,
   createGenerationAttemptMessage: mocks.createAttemptMessage,
+  ensureGenerationTriggerMessage: mocks.ensureTriggerMessage,
 }))
 
 vi.mock('../src/lib/server/personalElements/tools', () => ({
@@ -223,6 +225,7 @@ describe('personal card generation orchestration', () => {
     mocks.completeLease.mockResolvedValue(true)
     mocks.abortLease.mockResolvedValue(true)
     mocks.createAttemptMessage.mockResolvedValue(undefined)
+    mocks.ensureTriggerMessage.mockResolvedValue(undefined)
     mocks.isPersonalCardGenerationEnabled.mockResolvedValue(true)
   })
 
@@ -252,6 +255,21 @@ describe('personal card generation orchestration', () => {
 
     expect(mocks.completeLease).toHaveBeenCalledOnce()
     expect(mocks.abortLease).not.toHaveBeenCalled()
+  })
+
+  test('persists the accepted-plan trigger before claiming the lease', async () => {
+    await createSetup()
+
+    expect(mocks.ensureTriggerMessage).toHaveBeenCalledWith({
+      prisma: expect.anything(),
+      userMessageId: 'user-2',
+      threadId: 'thread-1',
+      parentId: planMessageId,
+      content: 'Generate the accepted cards.',
+    })
+    expect(mocks.ensureTriggerMessage.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.claimLease.mock.invocationCallOrder[0]!
+    )
   })
 
   test.each([

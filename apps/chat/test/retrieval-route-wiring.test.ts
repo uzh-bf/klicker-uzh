@@ -45,6 +45,7 @@ const mocks = vi.hoisted(() => ({
   claimCardGenerationLease: vi.fn(),
   completeCardGenerationLease: vi.fn(),
   abortCardGenerationLease: vi.fn(),
+  ensureGenerationTriggerMessage: vi.fn(),
   createProposeCardPlanTool: vi.fn(() => ({ execute: vi.fn() })),
   createGenerateCardsTool: vi.fn((_options: GenerateToolOptions) => ({
     execute: vi.fn(),
@@ -68,6 +69,16 @@ vi.mock('../src/lib/server/personalElements/graphqlClient', () => ({
   completeCardGenerationLease: mocks.completeCardGenerationLease,
   abortCardGenerationLease: mocks.abortCardGenerationLease,
 }))
+
+vi.mock('../src/lib/server/personalElements/lease', async () => {
+  const actual = await vi.importActual<
+    typeof import('../src/lib/server/personalElements/lease')
+  >('../src/lib/server/personalElements/lease')
+  return {
+    ...actual,
+    ensureGenerationTriggerMessage: mocks.ensureGenerationTriggerMessage,
+  }
+})
 
 vi.mock('@/src/lib/server/apiGuards', () => ({
   withChatbotAuth: mocks.withChatbotAuth,
@@ -348,6 +359,7 @@ describe('retrieval route wiring', () => {
     mocks.claimCardGenerationLease.mockResolvedValue({ id: 'lease-1' })
     mocks.completeCardGenerationLease.mockResolvedValue(true)
     mocks.abortCardGenerationLease.mockResolvedValue(true)
+    mocks.ensureGenerationTriggerMessage.mockResolvedValue(undefined)
     mocks.listDiscardedCandidateIds.mockResolvedValue([])
     mocks.listCompletedGenerationLeaseAttemptTokens.mockResolvedValue([])
     mocks.chatThreadFindFirst.mockResolvedValue({ id: 'thread-1' })

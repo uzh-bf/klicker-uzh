@@ -127,6 +127,7 @@ export function getPlanStatusInMessages(
 type PersonalElementsRuntime = {
   approvePlan: (plan: ApprovedPlan, message: string) => Promise<void>
   getPlanStatus: (plan: ApprovedPlan) => PlanStatus
+  isThreadRunning: boolean
 }
 
 const PersonalElementsContext = createContext<PersonalElementsRuntime | null>(

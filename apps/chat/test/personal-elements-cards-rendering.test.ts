@@ -267,6 +267,7 @@ describe('personal-element cards', () => {
         value: {
           approvePlan: vi.fn(),
           getPlanStatus: () => 'accepted' as const,
+          isThreadRunning: false,
         },
         children: createElement(PlanCard, {
           part: {
@@ -305,12 +306,40 @@ describe('personal-element cards', () => {
     expect(html).not.toContain('chat.personalElements.approve')
   })
 
+  test('keeps plan approval disabled until the assistant turn finishes', () => {
+    const html = renderToStaticMarkup(
+      PersonalElementsProvider({
+        value: {
+          approvePlan: vi.fn(),
+          getPlanStatus: () => 'current' as const,
+          isThreadRunning: true,
+        },
+        children: createElement(PlanCard, {
+          part: {
+            toolCallId: 'streaming-plan-tool',
+            argsText: '{}',
+            result: {
+              status: 'ready',
+              topic: 'Diversification',
+              cards: [{ title: 'Portfolio risk' }],
+            },
+            status: { type: 'complete' },
+          },
+        }),
+      })
+    )
+
+    expect(html).toContain('<button type="button" disabled=""')
+    expect(html).toContain('chat.personalElements.approve')
+  })
+
   test('does not expose an approval control for a failed plan tool call', () => {
     const html = renderToStaticMarkup(
       PersonalElementsProvider({
         value: {
           approvePlan: vi.fn(),
           getPlanStatus: () => 'current' as const,
+          isThreadRunning: false,
         },
         children: createElement(PlanCard, {
           part: {
@@ -341,6 +370,7 @@ describe('personal-element cards', () => {
           value: {
             approvePlan: vi.fn(),
             getPlanStatus: () => 'current' as const,
+            isThreadRunning: false,
           },
           children: createElement(PlanCard, {
             part: {
