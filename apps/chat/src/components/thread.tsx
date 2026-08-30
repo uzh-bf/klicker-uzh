@@ -73,7 +73,7 @@ import {
   getHistoryRailMessageAnchor,
 } from '../lib/history-rail'
 import { BranchPicker } from './branch-picker'
-import { useChatUi, useDisclaimerGateOpen } from './chat-ui-context'
+import { useChatUi, useComposerGateOpen } from './chat-ui-context'
 import { HistoryRail } from './history-rail'
 import { MessageAttachments } from './message-attachments'
 import { AssistantMessageParts } from './message-parts'
@@ -672,20 +672,20 @@ const AttachmentErrorBanner: FC<{
 const Composer: FC = () => {
   const t = useTranslations()
   const { embedded } = useChatUi()
-  const disclaimerGateOpen = useDisclaimerGateOpen()
+  const gateOpen = useComposerGateOpen()
   const [attachmentError, setAttachmentError] = useState<string | null>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  // Whether the gate was open the last time this ran, so only the *closing*
-  // transition hands focus back — the ordinary, no-disclaimer mount is
-  // already covered by `autoFocus` below and must not be duplicated here.
+  // Whether a gate was open the last time this ran, so only the *closing*
+  // transition hands focus back — the ordinary, ungated mount is already
+  // covered by `autoFocus` below and must not be duplicated here.
   const gateWasOpenRef = useRef(false)
 
-  // `autoFocus` only ever fires once, on mount, so it cannot react to the
-  // disclaimer gate closing later — hand focus back to the input explicitly
-  // once `disclaimerGateOpen` (see chat-ui-context.tsx) flips from true to
-  // false.
+  // `autoFocus` only ever fires once, on mount, so it cannot react to a dialog
+  // in front of the composer closing later — hand focus back to the input
+  // explicitly once `gateOpen` (the disclaimer and the onboarding carousel
+  // together, see chat-ui-context.tsx) flips from true to false.
   useEffect(() => {
-    if (disclaimerGateOpen) {
+    if (gateOpen) {
       gateWasOpenRef.current = true
       return
     }
@@ -693,7 +693,7 @@ const Composer: FC = () => {
       gateWasOpenRef.current = false
       inputRef.current?.focus()
     }
-  }, [disclaimerGateOpen])
+  }, [gateOpen])
 
   return (
     <ComposerDropzone
@@ -722,7 +722,7 @@ const Composer: FC = () => {
             data-cy="chat-composer-input"
             ref={inputRef}
             rows={1}
-            autoFocus={!disclaimerGateOpen}
+            autoFocus={!gateOpen}
             placeholder={t('chat.composer.placeholder')}
             className={twMerge(
               'placeholder:text-muted-foreground flex-grow cursor-text resize-none border-none bg-transparent px-2 text-base outline-none focus:ring-0 disabled:cursor-not-allowed',

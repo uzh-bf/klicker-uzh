@@ -17,6 +17,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import * as React from 'react'
 import { useChatStore } from '../stores/chatStore'
+import { OnboardingMenuItem } from './chat-onboarding'
 import { CreditsFooter } from './credits-footer'
 import { ProductUpdatesMenuItem } from './product-updates-menu-item'
 import { SettingsPanel } from './settings-panel'
@@ -94,6 +95,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SettingsPanel />
         <CreditsFooter />
         <ProductUpdatesMenuItem />
+        <OnboardingMenuItem />
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>

@@ -74,7 +74,6 @@ export default {
       next: 'Weiter',
       skip: 'Überspringen',
       done: 'Chat starten',
-      close: 'Einführung schliessen',
       modesTitle: 'Zwei Arten zu fragen',
       modesBody:
         'Wechsle zwischen dem Tutor-Modus, der Dich zur Antwort hinführt, und dem Explainer-Modus, der direkt antwortet. Das Menü dafür ist im Kopfbereich jeder Konversation.',

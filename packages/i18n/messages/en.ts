@@ -71,7 +71,6 @@ export default {
       next: 'Next',
       skip: 'Skip',
       done: 'Start chatting',
-      close: 'Close the introduction',
       modesTitle: 'Two ways to ask',
       modesBody:
         'Switch between Tutor mode, which walks you towards the answer, and Explainer mode, which answers directly. The menu for it sits in the header of every conversation.',

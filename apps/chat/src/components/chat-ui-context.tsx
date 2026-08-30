@@ -49,24 +49,42 @@ export function useChatUi() {
 // cannot reach the composer through `ChatUiContext` as an ordinary prop.
 // This small external store lets `disclaimer-modal.tsx` publish the gate's
 // open state and `thread.tsx` subscribe to it across that tree boundary.
+//
+// The onboarding carousel joins the same store rather than bringing its own:
+// the composer does not care which dialog is in front of it, only that one is
+// — it must not autofocus underneath it, and it takes focus back when the last
+// one closes. The two flags stay separate because they are set by different
+// components, and the carousel opens in the same commit in which the
+// disclaimer closes.
 let disclaimerGateOpen = false
-const disclaimerGateListeners = new Set<() => void>()
+let onboardingGateOpen = false
+const gateListeners = new Set<() => void>()
+
+function publishGateState() {
+  gateListeners.forEach((listener) => listener())
+}
 
 export function setDisclaimerGateOpen(open: boolean) {
   if (disclaimerGateOpen === open) return
   disclaimerGateOpen = open
-  disclaimerGateListeners.forEach((listener) => listener())
+  publishGateState()
 }
 
-function subscribeToDisclaimerGate(listener: () => void) {
-  disclaimerGateListeners.add(listener)
-  return () => disclaimerGateListeners.delete(listener)
+export function setOnboardingGateOpen(open: boolean) {
+  if (onboardingGateOpen === open) return
+  onboardingGateOpen = open
+  publishGateState()
 }
 
-export function useDisclaimerGateOpen() {
+function subscribeToGateState(listener: () => void) {
+  gateListeners.add(listener)
+  return () => gateListeners.delete(listener)
+}
+
+export function useComposerGateOpen() {
   return useSyncExternalStore(
-    subscribeToDisclaimerGate,
-    () => disclaimerGateOpen,
+    subscribeToGateState,
+    () => disclaimerGateOpen || onboardingGateOpen,
     () => false
   )
 }
