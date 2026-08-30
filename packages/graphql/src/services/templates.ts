@@ -485,6 +485,7 @@ export async function createActivityTemplate(
               create: liveQuiz.blocks.map((block) => ({
                 order: block.order,
                 timeLimit: block.timeLimit,
+                isPeerInstructionEnabled: block.isPeerInstructionEnabled,
                 elements: {
                   create: block.elements.map((element) => ({
                     elementType: element.elementType,
@@ -876,6 +877,17 @@ export async function createActivityTemplate(
 
       // update the activity status to indicate that it has been converted to a template
       if (activityType === ActivityType.LIVE_QUIZ) {
+        await tx.elementBlock.updateMany({
+          where: { liveQuizId: activityId },
+          data: {
+            peerInstructionPhase: DB.PeerInstructionPhase.INACTIVE,
+            peerInstructionRun: DB.Prisma.DbNull,
+          },
+        })
+        await tx.elementInstance.updateMany({
+          where: { elementBlock: { liveQuizId: activityId } },
+          data: { peerInstructionComparison: DB.Prisma.DbNull },
+        })
         await tx.liveQuiz.update({
           where: {
             id: activityId,
@@ -1596,6 +1608,7 @@ export async function createLiveQuizFromTemplate(
         blocks: {
           order: number
           timeLimit?: number | null
+          isPeerInstructionEnabled: boolean
           elements: {
             order: number
             element: DB.Element
@@ -1843,6 +1856,7 @@ export async function createLiveQuizFromTemplate(
         liveQuizContent.blocks.push({
           order: block.order,
           timeLimit: block.timeLimit,
+          isPeerInstructionEnabled: block.isPeerInstructionEnabled ?? false,
           elements,
         })
       }
@@ -1871,6 +1885,7 @@ export async function createLiveQuizFromTemplate(
             create: liveQuizContent.blocks.map((block) => ({
               order: block.order,
               timeLimit: block.timeLimit,
+              isPeerInstructionEnabled: block.isPeerInstructionEnabled,
               elements: {
                 create: block.elements.map((entry) => {
                   const elementData = processElementData(entry.element)

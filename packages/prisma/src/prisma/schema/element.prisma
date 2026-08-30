@@ -88,6 +88,9 @@ model ElementInstance {
   /// [PrismaElementResults]
   anonymousResults Json // contains the collection of gathered results by anonymous participants
 
+  /// [PrismaPeerInstructionComparison]
+  peerInstructionComparison Json?
+
   isVersionOutdated Boolean @default(false) // flag to indicate if the element version has changed since the instance was created
 
   responses           QuestionResponse[]
@@ -186,6 +189,19 @@ enum ElementBlockStatus {
   EXECUTED
 }
 
+enum PeerInstructionPhase {
+  INACTIVE
+  AVAILABLE
+  DISCUSSION
+  REVISION_OPEN
+  REVISION_FINALIZING
+  COMPARISON_READY
+  REVEALED
+  CANCELLED
+  REPLACEMENT_AVAILABLE
+  ABANDONED
+}
+
 model ElementBlock {
   id    Int @id @default(autoincrement())
   order Int
@@ -195,6 +211,12 @@ model ElementBlock {
   randomSelection Int?
   execution       Int                @default(0)
   status          ElementBlockStatus @default(SCHEDULED)
+
+  isPeerInstructionEnabled Boolean              @default(false)
+  peerInstructionPhase     PeerInstructionPhase @default(INACTIVE)
+
+  /// [PrismaPeerInstructionRunState]
+  peerInstructionRun Json?
 
   startedAt DateTime?
   closedAt  DateTime?

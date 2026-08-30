@@ -1,4 +1,5 @@
 import * as DB from '@klicker-uzh/prisma/client'
+import { Prisma } from '@klicker-uzh/prisma/client'
 import {
   ActivityType,
   ElementData,
@@ -396,6 +397,7 @@ export async function manipulateLiveQuiz(
         order: block.order,
         timeLimit: block.timeLimit,
         randomSelection: block.randomSelection,
+        isPeerInstructionEnabled: block.isPeerInstructionEnabled ?? false,
         elements: {
           connectOrCreate: block.elements.map((instance) =>
             getActivityInstanceConnectOrCreate({
@@ -431,6 +433,7 @@ export async function manipulateLiveQuiz(
         data: {
           elementBlockId: null,
           order: persistentInstanceOrderMap[instance.id],
+          peerInstructionComparison: Prisma.DbNull,
           options: {
             ...instance.options,
             pointsMultiplier: Math.max(multiplier, 1) * elementMultiplier,
@@ -2168,6 +2171,8 @@ export async function cancelLiveQuiz(
                 closedAt: null,
                 expiresAt: null,
                 execution: { increment: 1 },
+                peerInstructionPhase: DB.PeerInstructionPhase.INACTIVE,
+                peerInstructionRun: Prisma.DbNull,
               },
             },
           },
@@ -2183,7 +2188,11 @@ export async function cancelLiveQuiz(
 
         return ctx.prisma.elementInstance.update({
           where: { id: instance.id },
-          data: { results: initialResults, anonymousResults: initialResults },
+          data: {
+            results: initialResults,
+            anonymousResults: initialResults,
+            peerInstructionComparison: Prisma.DbNull,
+          },
         })
       }),
     ])
@@ -2572,6 +2581,8 @@ export async function resetAssessmentLiveQuiz(
               closedAt: null,
               expiresAt: null,
               execution: { increment: 1 },
+              peerInstructionPhase: DB.PeerInstructionPhase.INACTIVE,
+              peerInstructionRun: Prisma.DbNull,
             },
           })
 
@@ -2587,6 +2598,7 @@ export async function resetAssessmentLiveQuiz(
                 liveQuizResponses: { deleteMany: {} },
                 results: initialResults,
                 anonymousResults: initialResults,
+                peerInstructionComparison: Prisma.DbNull,
               },
             })
           }
@@ -2785,11 +2797,9 @@ export async function setLiveQuizPinCookie(
   return true
 }
 
-function removeSolutionFromInstances({
-  instances,
-}: {
-  instances: DB.ElementInstance[]
-}) {
+function removeSolutionFromInstances<
+  T extends { elementData: DB.ElementInstance['elementData'] },
+>({ instances }: { instances: T[] }) {
   return instances.map((instance) => {
     const elementData = instance.elementData
     if (

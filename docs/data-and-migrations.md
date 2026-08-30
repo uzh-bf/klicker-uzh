@@ -2,7 +2,7 @@
 type: Data Layer
 title: Data & Migrations
 description: Split Prisma schema, the migrate→sync→build ritual, seeding paths, typed Json fields, and schema-level gotchas.
-timestamp: '2026-08-25'
+timestamp: '2026-08-30'
 tags:
   - backend
   - prisma
@@ -37,6 +37,15 @@ The Python twin (`apps/analytics/prisma/schema/py.prisma`) uses `prisma-client-p
 
 - Prisma migrations live in `packages/prisma/src/prisma/schema/migrations/` (~170 since 2022). Migrations may contain data backfills (SQL `ROW_NUMBER()` etc.), not just DDL.
 - Separately, the backend runs a **homegrown boot-time data-migration runner** (`apps/backend-docker/src/migration.ts:migrate`) with its own `Migration` table for one-off data fixes — currently an empty list; don't confuse it with `prisma migrate deploy`.
+
+The Peer Instruction foundation is one additive, Prisma-generated migration:
+`20260830161726_peer_instruction_foundation`. It adds the
+`PeerInstructionPhase` enum, preparation and nullable runtime fields to
+`ElementBlock`, and a nullable comparison field to `ElementInstance`. Existing
+rows retain ordinary LiveQuiz behavior through `isPeerInstructionEnabled =
+false` and `peerInstructionPhase = INACTIVE`; no backfill or manual SQL is
+required. The two JSON fields are typed through `PrismaJson`, and
+`element.prisma` is mirrored into Analytics.
 
 ### Deployment migrations
 

@@ -64,7 +64,17 @@ export type ElementBlockInput = {
   order: number
   timeLimit?: number | null
   randomSelection?: number | null
+  isPeerInstructionEnabled?: boolean | null
   elements: ElementInstanceInput[]
+}
+
+export type PeerInstructionRunState = {
+  originalExecution: number
+  attempt: 1 | 2
+  instanceIds: number[]
+  timeLimit: number | null
+  revisionStartedAt: string | null
+  revisionEndsAt: string | null
 }
 
 export type ElementStackInput = {
@@ -262,6 +272,7 @@ export type TemplateBlockElementInput = {
 
 export type TemplateBlockInput = {
   timeLimit?: number | null
+  isPeerInstructionEnabled?: boolean | null
   order: number
   elements: TemplateBlockElementInput[]
 }
@@ -724,6 +735,15 @@ export type ElementInstanceResults =
   | ElementResultsContent
   | ElementResultsSelection
   | ElementResultsCaseStudy
+
+export type PeerInstructionComparison = {
+  originalExecution: number
+  attempt: 1 | 2
+  pairedResponseCount: number
+  unpairedRevisedResponseCount: number
+  initial: ElementInstanceResults
+  revised: ElementInstanceResults
+}
 
 export type GroupActivityDecision = {
   instanceId: number

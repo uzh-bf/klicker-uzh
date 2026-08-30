@@ -1106,6 +1106,7 @@ async function copyCourseLiveQuizzes({
           order: block.order,
           timeLimit: block.timeLimit,
           randomSelection: block.randomSelection,
+          isPeerInstructionEnabled: block.isPeerInstructionEnabled,
           elements: getDuplicatedActivityElements(block.elements),
         })),
         courseId: newCourseId,

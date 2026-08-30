@@ -356,6 +356,8 @@ export async function getArtificialElementInstance(
     },
     results: initialResults,
     anonymousResults: initialResults,
+    peerInstructionComparison: null,
+    isVersionOutdated: false,
     ownerId: '',
     elementBlockId: 0,
     elementStackId: null,
