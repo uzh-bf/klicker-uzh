@@ -121,7 +121,7 @@ function PracticeQuizElement({
   const beginRetry = () => {
     const previousAnswer = state?.currentAttempt?.answer ?? ''
     answerStartedAt.current = Date.now()
-    setAnswer(previousAnswer, true)
+    setAnswer(previousAnswer, previousAnswer.trim().length > 0)
     setEditing(true)
   }
 
@@ -137,8 +137,10 @@ function PracticeQuizElement({
   }
 
   const practiceAgain = async () => {
-    await startPracticeCycle()
-    setDetailsOpen(false)
+    const nextState = await startPracticeCycle()
+    if (nextState) {
+      setDetailsOpen(false)
+    }
   }
 
   const reviewConsent = async () => {

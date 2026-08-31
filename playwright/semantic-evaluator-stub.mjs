@@ -343,6 +343,6 @@ server.listen(port, HOST, () => {
   )
 })
 
-const shutdown = () => server.close(() => process.exit(0))
+const shutdown = () => server.close(() => process.exit(process.exitCode ?? 0))
 process.on('SIGINT', shutdown)
 process.on('SIGTERM', shutdown)
