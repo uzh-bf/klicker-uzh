@@ -627,7 +627,7 @@ follow_up_stacks:
 
 ## Progress
 
-- Status: `a4_gate_3_ready`
+- Status: `a4_exact_head_reverification`
 - Baseline: PR #5637 exact head `85ffe927774b44b7a1b0759fa4fdbfeae81c5a96`
   and PR #5670 exact head `c0d71a444dce3b9b4c83ee94db9e0fd5a27f3e53`
   are open, non-draft, and mergeable after the user-managed stack rebase. All
@@ -1102,13 +1102,13 @@ follow_up_stacks:
   corrected by an iframe blur boundary that follows frame generations,
   pointer-aware body-focus handling (including iframe blur ordering), and
   resetting the preset on viewport changes.
-- A4 Gate 3 receipt: Exact head `a97e281d0` adds the iframe-blur ordering guard
+- A4 correction receipt: Exact head `3d01074af` adds the iframe-blur ordering guard
   and a compact journey assertion that focuses the embedded composer, clicks
   blank panel chrome, and confirms focus is not stolen by Close. The focused
   Manage tests (5/5), affected typechecks, repository `check:all`, complete
   commit hooks, and the 26-task pre-push build pass before this receipt. The
-  exact-head hosted source checks and OCR pass; the final reviewer found no
-  actionable findings. Hosted browser execution remains deferred at this
-  stacked layer, where the browser jobs are filtered, and the manual
-  `final-ai-review` status remains expected. PR #5704 stays a draft; no merge
+  prior exact-head hosted source checks, OCR, and final review passed on the
+  preceding code head; this test-only head now requires its own push, checks,
+  and final review. Hosted browser execution remains deferred at this stacked
+  layer, where the browser jobs are filtered. PR #5704 stays a draft; no merge
   or deployment is included in this Gate 3 handoff.
