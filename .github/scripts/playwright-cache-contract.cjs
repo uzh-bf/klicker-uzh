@@ -11,6 +11,8 @@ const BUILD_IMAGE_DIGEST =
   'sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d'
 
 const FIXED_FILES = [
+  '.github/actions/playwright-build/action.yml',
+  '.github/actions/playwright-shard/action.yml',
   '.github/scripts/playwright-cache-contract.cjs',
   '.github/scripts/playwright-telemetry.cjs',
   '.github/scripts/turbo-telemetry.cjs',
