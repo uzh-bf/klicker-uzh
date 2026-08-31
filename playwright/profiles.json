@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "groups": [
+    {
+      "profile": "manage,pwa",
+      "specs": [
+        "0-baseline-ops.spec.ts",
+        "0-video-embed.spec.ts",
+        "B-catalyst-request.spec.ts",
+        "B-feature-access.spec.ts",
+        "D-elements-content.spec.ts",
+        "E-elements-flashcards.spec.ts",
+        "F-elements-sc.spec.ts",
+        "G-elements-mc.spec.ts",
+        "H-elements-kprim.spec.ts",
+        "I-elements-numerical.spec.ts",
+        "J-elements-free-text.spec.ts",
+        "K-elements-selection.spec.ts",
+        "L-elements-case-study.spec.ts",
+        "MA-elements-operations.spec.ts",
+        "MB-instance-updates.spec.ts",
+        "N-course.spec.ts",
+        "P-microlearning.spec.ts",
+        "P-pagination-show-all.spec.ts",
+        "Q-practice-quiz.spec.ts",
+        "R-bookmarking.spec.ts",
+        "S-group-activity.spec.ts",
+        "T-resources.spec.ts",
+        "U-catalog.spec.ts",
+        "V-template.spec.ts",
+        "W-activity-log.spec.ts",
+        "X-review.spec.ts",
+        "Z-credential-verification.spec.ts"
+      ]
+    },
+    {
+      "profile": "manage,chat",
+      "specs": ["A-login.spec.ts", "Y-chat.spec.ts"]
+    },
+    {
+      "profile": "manage,live-quiz",
+      "specs": [
+        "C-control.spec.ts",
+        "O1-live-quiz-core.spec.ts",
+        "O2-live-quiz-collaboration.spec.ts"
+      ]
+    }
+  ]
+}
