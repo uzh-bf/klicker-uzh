@@ -232,19 +232,22 @@ gitlink. Run a simplifier and one slice reviewer after the immutable commit.
   completed without an evaluation error. The measured request used 321 prompt,
   45 completion, and 366 total tokens at an estimated cost of USD 0.0001182.
   The temporary tunnel was closed and its local listener verified absent.
-- The developer-key path also passes through an isolated local LiteLLM 1.96.2
-  proxy. The restricted `ai-buddy-judge-dev` profile supplied only the DEV
-  LiteLLM key; the local proxy forwarded the exact Klicker alias through the
-  DEV LiteLLM Service to Azure OpenAI without exposing or widening access to a
-  raw Azure provider key. Local health and exact-alias visibility returned HTTP
-  200. One paid one-case, one-metric evaluation produced one local proxy POST
-  and one evaluator usage record, scored `1.0`, and completed without an
-  evaluation error. The request used 321 prompt, 46 completion, and 367 total
-  tokens at an estimated cost of USD 0.0001 in 2.57 seconds. The host-local
-  proxy needed FastAPI 0.136.3 pinned alongside LiteLLM because the
-  unconstrained proxy extra resolved an incompatible newer FastAPI. The local
-  proxy and DEV tunnel were stopped, and both local listeners were verified
-  absent.
+- The earlier isolated local LiteLLM 1.96.2 proxy proof used the restricted
+  `ai-buddy-judge-dev` key and forwarded through the DEV LiteLLM Service. It
+  remains valid transport evidence but is superseded as developer-key
+  acceptance because the required path is local LiteLLM directly to the
+  developer Azure Foundry.
+- The direct developer Foundry attempt now uses the `klicker-dev` profile's
+  `AZURE_OPENAI_API_KEY` and `AZURE_OPENAI_BASE_URL`, added to that profile's
+  readable allowlist after explicit approval. The local proxy targets the
+  Azure OpenAI v1 endpoint as `openai/gpt-5.6-luna`, with one local alias and
+  zero retries. The exact credentials advanced the response from `401` to
+  `403 Access denied due to Virtual Network/Firewall rules`, identifying the
+  network ACL as the current blocker while credential validity beyond that
+  gate and the quality evaluation remain unproven. The developer Foundry admits
+  only the configured UZH network ranges, so the next run requires UZH VPN or
+  an approved UZH-egress tunnel. Both failed attempts produced zero evaluator
+  usage records. The local proxy was stopped and its listener verified absent.
 - Live Klicker target quality remains unproven because the authenticated AI-SDK
   stream still lacks a verified evaluator endpoint, authentication, and mode
   adapter.
