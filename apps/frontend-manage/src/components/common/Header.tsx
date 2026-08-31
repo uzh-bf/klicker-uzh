@@ -388,9 +388,12 @@ function Header({ user }: { user?: UserProfile | null }): React.ReactElement {
             <NotificationBadgeWrapper
               showBadge={unreadCount > 0}
               size="sm"
+              // Even the design system's smallest badge is a full 16px circle,
+              // sized to hold a count. This badge never shows one, so it is
+              // shrunk to a corner dot that marks the icon without covering it.
               className={{
                 root: 'flex items-center',
-                badge: 'top-0.5 right-0',
+                badge: '-top-0.5 -right-0.5 h-2.5 w-2.5',
               }}
               data={{ cy: 'product-updates-badge' }}
             >
