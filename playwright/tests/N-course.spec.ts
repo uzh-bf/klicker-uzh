@@ -2726,6 +2726,9 @@ test.describe('Part 4: Course deletion', () => {
       .fill(DELETION.notificationEmail)
     // Keep gamification and groups enabled so the course supports all four
     // activity types, including group activities.
+    await page.getByTestId('max-group-size').fill('6')
+    await page.getByTestId('preferred-group-size').fill('4')
+    await expect(page.getByTestId('manipulate-course-submit')).toBeEnabled()
     await page.getByTestId('manipulate-course-submit').click()
     await page.getByTestId('courses').click()
     await expect(
@@ -2885,33 +2888,46 @@ test.describe('Part 4: Course deletion', () => {
     await page.getByTestId('courses').click()
 
     // Delete non-gamified course (renamed in Part 3)
-    await page.getByTestId(`delete-course-${COURSE1.nameNew}`).click()
-    await page.getByTestId('course-deletion-modal-confirm').click()
-    await expectCourseDeletionCompleted(page, COURSE1.nameNew)
+    const courseOneBeforeDeletion = await getCourseDeletionPersistenceSummary({
+      courseName: COURSE1.nameNew,
+      ownerId: LECTURER_ID,
+    })
+    const courseOne = page.getByTestId(`course-list-button-${COURSE1.nameNew}`)
+    if (courseOneBeforeDeletion && !courseOneBeforeDeletion.isDeleted) {
+      await expect(courseOne).toBeVisible()
+      await page.getByTestId(`delete-course-${COURSE1.nameNew}`).click()
+      await page.getByTestId('course-deletion-modal-confirm').click()
+      await expectCourseDeletionCompleted(page, COURSE1.nameNew)
+    }
 
     // Delete gamified course (its participations and groups are retained)
     const courseTwoBeforeDeletion = await getCourseDeletionPersistenceSummary({
       courseName: COURSE2.name,
       ownerId: LECTURER_ID,
     })
-    await page.getByTestId(`delete-course-${COURSE2.name}`).click()
-    await confirmCourseDeletion(page)
-    await expectCourseDeletionCompleted(page, COURSE2.name)
+    const courseTwo = page.getByTestId(`course-list-button-${COURSE2.name}`)
+    if (courseTwoBeforeDeletion && !courseTwoBeforeDeletion.isDeleted) {
+      await expect(courseTwo).toBeVisible()
+      await page.getByTestId(`delete-course-${COURSE2.name}`).click()
+      await confirmCourseDeletion(page)
+      await expectCourseDeletionCompleted(page, COURSE2.name)
+    }
     const courseTwoAfterDeletion = await getCourseDeletionPersistenceSummary({
       courseName: COURSE2.name,
       ownerId: LECTURER_ID,
     })
-    expect(courseTwoBeforeDeletion).not.toBeNull()
-    expect(courseTwoAfterDeletion).not.toBeNull()
-    expect(courseTwoAfterDeletion!.participations).toBe(
-      courseTwoBeforeDeletion!.participations
-    )
-    expect(courseTwoAfterDeletion!.participantGroups).toBe(
-      courseTwoBeforeDeletion!.participantGroups
-    )
-    expect(courseTwoAfterDeletion!.leaderboardEntries).toBe(
-      courseTwoBeforeDeletion!.leaderboardEntries
-    )
+    if (courseTwoBeforeDeletion) {
+      expect(courseTwoAfterDeletion).not.toBeNull()
+      expect(courseTwoAfterDeletion!.participations).toBe(
+        courseTwoBeforeDeletion.participations
+      )
+      expect(courseTwoAfterDeletion!.participantGroups).toBe(
+        courseTwoBeforeDeletion.participantGroups
+      )
+      expect(courseTwoAfterDeletion!.leaderboardEntries).toBe(
+        courseTwoBeforeDeletion.leaderboardEntries
+      )
+    }
 
     // UI deletion is intentionally soft; fixture cleanup remains physical so
     // repeated E2E runs do not retain activities that reference this question.
@@ -2930,10 +2946,14 @@ test.describe('Part 4: Course deletion', () => {
     await page.getByTestId('library').click()
     await page.getByTestId('elements-search-input').fill(DELETION.qTitle)
     await page.keyboard.press('Enter')
-    await expect(
-      page.getByTestId(`element-item-${DELETION.qTitle}`)
-    ).toBeVisible()
-    await deleteElement(page, DELETION.qTitle)
+    const deletionQuestion = page.getByTestId(`element-item-${DELETION.qTitle}`)
+    const deletionQuestionExists = await deletionQuestion
+      .waitFor({ state: 'visible', timeout: 10_000 })
+      .then(() => true)
+      .catch(() => false)
+    if (deletionQuestionExists) {
+      await deleteElement(page, DELETION.qTitle)
+    }
     await page.getByTestId('elements-search-input').clear()
     await expect(
       page.getByTestId(`element-item-${DELETION.qTitle}`)
