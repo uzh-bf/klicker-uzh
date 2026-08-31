@@ -67,9 +67,10 @@ export const ManageProposalCard: FC<ManageProposalCardProps> = ({
 }) => {
   const t = useTranslations('chat.manageAssistant.proposal')
   const { embedded } = useChatUi()
-  const hasManageParent = useManageParentStore(
-    (state) => embedded && Boolean(state.manageParentOrigin)
+  const hasManageParentOrigin = useManageParentStore((state) =>
+    Boolean(state.manageParentOrigin)
   )
+  const hasManageParent = embedded && hasManageParentOrigin
   const [confirmation, setConfirmation] = useState<ConfirmationState>({
     type: 'idle',
   })

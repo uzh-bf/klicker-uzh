@@ -98,11 +98,15 @@ function ManageAssistantInner() {
       return
     }
 
-    setContextAnnouncement(
-      contextLabel
-        ? t('context.changed', { context: contextLabel })
-        : t('context.cleared')
-    )
+    if (context) {
+      setContextAnnouncement(
+        t('context.changed', {
+          context: contextLabel ?? t('manageContext'),
+        })
+      )
+    } else {
+      setContextAnnouncement(t('context.cleared'))
+    }
   }, [context, contextLabel, embedded, t])
   const suggestions = welcomeCapability
     ? getManageSuggestions(context, welcomeCapability).map((suggestion) => {
