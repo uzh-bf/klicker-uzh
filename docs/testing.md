@@ -2,7 +2,7 @@
 type: Testing Guide
 title: Testing
 description: Which test level to use when, what runs safely without services, the Playwright e2e stack and its seeds, and the CI test matrix.
-timestamp: '2026-08-29'
+timestamp: '2026-08-30'
 tags:
   - testing
   - ci
@@ -210,6 +210,27 @@ filtering, builds, or shards. Public container jobs also trust the exact mounted
 unit tests, migrates and seeds Postgres, boots the built server, then executes
 `smoke:local` and `smoke:negative`. Its required always-reporting
 `test-mcp-lecturer-status` gate stays separate from the consolidated unit suites.
+Each CI shard also carries an explicit runtime profile from
+`playwright/profiles.json`. Every active spec must appear in that manifest
+exactly once; missing, stale, or duplicate entries fail the shard-plan check.
+The timing-aware sharder emits the sorted union of its specs' profiles, then
+`devrouter profile plan` expands and validates that selection against
+`playwright/runtime-contract.yml` without starting or inspecting a runtime. The
+root dependency pins `@devrouter/cli` to exact version `0.0.51`; its reviewed
+minimum-release-age exception is exact as well. The package's optional native
+SSH helpers are explicitly denied build scripts because profile planning has no
+Docker or SSH path.
+The repository-owned contract maps app identities to literal Turbo filters and
+loopback readiness endpoints, constrains managed services, and requires the
+exact process marker. `util/playwright-profile-runtime.mjs` remains a thin
+consumer: it checks the exact contract path and binding keys, rejects shell-like
+filters and non-loopback endpoints, and passes filters as distinct arguments.
+It waits for every selected app endpoint before Playwright runs, including apps
+outside Devrouter's normal startup readiness subset. Contract, resolution, or
+adapter failures stop the job; there is no full-stack fallback. GitHub's fixed
+Postgres, Redis, and Hatchet service containers remain present because job
+services are created before workflow steps run. Both the hosted and public ARM64
+routes use this same contract.
 
 The timing-aware sharder assigns whole spec files; it cannot divide one serial
 spec across runners. Long workflows must therefore split only where each new

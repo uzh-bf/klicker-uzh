@@ -39,7 +39,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/|packages/|playwright/|\.github/workflows/test-playwright\.yml|\.github/workflows/public-pr-playwright-shards\.yml|\.github/workflows/update-playwright-timings\.yml|\.github/actions/changed-paths/|\.github/scripts/get-shard-files\.js|\.github/scripts/update-playwright-timings\.py|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh)'
+          pattern: '^(apps/|packages/|playwright/|\.devrouter\.yml|\.github/workflows/test-playwright\.yml|\.github/workflows/public-pr-playwright-shards\.yml|\.github/workflows/update-playwright-timings\.yml|\.github/actions/changed-paths/|\.github/scripts/get-shard-files\.(js|test\.cjs)|\.github/scripts/update-playwright-timings\.py|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh|util/playwright-profile-runtime\.(mjs|test\.mjs))'
 
   build-and-compile-hosted:
     needs: filter-hosted
@@ -333,15 +333,53 @@ jobs:
 
       - name: Start services, wait for readiness, and run Playwright tests
         timeout-minutes: 120
+        shell: bash
         run: |
+          set -euo pipefail
           chmod +x .github/scripts/wait-for-services.sh
-          TEST_FILES=$(node .github/scripts/get-shard-files.js ${{ matrix.shardIndex }} ${{ matrix.shardTotal }})
-          echo "Running tests for shard ${{ matrix.shardIndex }}: $TEST_FILES"
+          PROFILE_RUNTIME_FILES=(
+            playwright/profiles.json
+            playwright/runtime-contract.yml
+            util/playwright-profile-runtime.mjs
+          )
+          profile_file_count=0
+          for profile_file in "${PROFILE_RUNTIME_FILES[@]}"; do
+            if [ -f "$profile_file" ]; then
+              profile_file_count=$((profile_file_count + 1))
+            fi
+          done
+
+          if [ "$profile_file_count" -eq "${#PROFILE_RUNTIME_FILES[@]}" ]; then
+            SHARD_PLAN=$(node .github/scripts/get-shard-files.js ${{ matrix.shardIndex }} ${{ matrix.shardTotal }} --json)
+            PROFILE=$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).profile)' "$SHARD_PLAN")
+            mapfile -t TEST_FILES < <(node -e 'for (const file of JSON.parse(process.argv[1]).files) console.log(file)' "$SHARD_PLAN")
+            RUNTIME_PLAN="${RUNNER_TEMP}/playwright-runtime-${{ matrix.shardIndex }}.json"
+            node util/playwright-profile-runtime.mjs resolve \
+              --profile "$PROFILE" \
+              --output "$RUNTIME_PLAN"
+            export PLAYWRIGHT_RUNTIME_PLAN="$RUNTIME_PLAN"
+            SERVICE_ENDPOINTS=$(node util/playwright-profile-runtime.mjs endpoints --plan "$RUNTIME_PLAN")
+            export SERVICE_ENDPOINTS
+          elif [ "$profile_file_count" -eq 0 ]; then
+            PROFILE=legacy-full-stack
+            SHARD_FILES=$(node .github/scripts/get-shard-files.js ${{ matrix.shardIndex }} ${{ matrix.shardTotal }})
+            read -r -a TEST_FILES <<< "$SHARD_FILES"
+            echo "::notice::Using legacy full-stack Playwright startup because the caller checkout predates the profile runtime"
+          else
+            echo "Playwright profile runtime files are partially present; refusing mixed startup" >&2
+            exit 1
+          fi
+
+          if [ "${#TEST_FILES[@]}" -eq 0 ]; then
+            echo "Shard plan contains no test files" >&2
+            exit 1
+          fi
+          echo "Running tests for shard ${{ matrix.shardIndex }} with profile $PROFILE: ${TEST_FILES[*]}"
           .github/scripts/wait-for-services.sh -- \
             env NODE_ENV=test \
             pnpm --filter @klicker-uzh/playwright exec playwright test \
               --project=chromium \
-              $TEST_FILES
+              "${TEST_FILES[@]}"
         env:
           APP_SECRET: abcd
           DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
@@ -356,7 +394,6 @@ jobs:
           URL_STUDENT: http://127.0.0.1:3001
           URL_STUDENT_LOGIN: http://127.0.0.1:3001/login
           URL_CHAT: http://127.0.0.1:3004
-          SERVICE_ENDPOINTS: 'http://127.0.0.1:3000/healthz http://127.0.0.1:3001 http://127.0.0.1:3002 http://127.0.0.1:3003 http://127.0.0.1:3004/noLogin http://127.0.0.1:3010'
           SERVICE_START_SCRIPT: start:playwright:ci
           TIMEOUT_SECONDS: '300'
           CHECK_INTERVAL: '5'

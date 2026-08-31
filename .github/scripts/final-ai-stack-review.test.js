@@ -5,7 +5,10 @@ const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 
-const { FINAL_REVIEW_MODEL } = require('./final-ai-review.js')
+const {
+  FINAL_REVIEW_MODEL,
+  mergeOCRResumeResults,
+} = require('./final-ai-review.js')
 const {
   FINAL_STACK_REVIEW_MODEL,
   STACK_CLEAN_EVIDENCE_CHECK_NAME,
@@ -1152,6 +1155,63 @@ test('uses GLM Flash for individual and cumulative stack review jobs', () => {
   assert.equal(FINAL_STACK_REVIEW_MODEL, FINAL_REVIEW_MODEL)
   assert.doesNotMatch(workflow, /anthropic\/claude-opus-4\.6/)
   assert.doesNotMatch(workflow, /OCR_LLM_MODEL/)
+})
+
+test('retains only the rejected stack publisher inputs for one day', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  const stageStep = workflow.match(
+    /      - name: Stage rejected stack publisher inputs\n[\s\S]*?(?=\n      - name:)/
+  )?.[0]
+  const uploadStep = workflow.match(
+    /      - name: Upload rejected stack publisher inputs\n[\s\S]*?(?=\n      - name:|\n  finalize_stack:)/
+  )?.[0]
+
+  assert.ok(stageStep)
+  assert.ok(uploadStep)
+  assert.ok(
+    workflow.indexOf('Publish consolidated stack review') <
+      workflow.indexOf('Stage rejected stack publisher inputs')
+  )
+  assert.ok(
+    workflow.indexOf('Stage rejected stack publisher inputs') <
+      workflow.indexOf('Upload rejected stack publisher inputs')
+  )
+  assert.match(
+    stageStep,
+    /if: failure\(\) && steps\.publish\.outcome == 'failure'/
+  )
+  assert.match(stageStep, /test -f "\$\{code_result\}"/)
+  assert.match(stageStep, /test -f "\$\{topology_result\}"/)
+  assert.match(
+    stageStep,
+    /cp -- "\$\{code_result\}" "\$\{topology_result\}" "\$\{staging_dir\}\/"/
+  )
+  assert.match(stageStep, /mv -- "\$\{staging_dir\}" "\$\{artifact_dir\}"/)
+  assert.match(
+    uploadStep,
+    /if: failure\(\) && steps\.publish\.outcome == 'failure'/
+  )
+  assert.match(
+    uploadStep,
+    /uses: actions\/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4/
+  )
+  assert.match(
+    uploadStep,
+    /name: final-ai-stack-publisher-failure-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/
+  )
+  assert.match(
+    uploadStep,
+    /path: \$\{\{ runner\.temp \}\}\/final-ai-stack-publisher-failure/
+  )
+  assert.match(uploadStep, /if-no-files-found: error/)
+  assert.match(uploadStep, /retention-days: 1/)
+  assert.doesNotMatch(
+    `${stageStep}\n${uploadStep}`,
+    /stderr|config|manifest|ranges|\*/i
+  )
 })
 
 test('checks trusted review code out from the default branch', () => {
@@ -2349,6 +2409,103 @@ test('combines complete OCR results for per-layer attestation ranges', () => {
   assert.equal(combined.summary.files_reviewed, 6)
   assert.equal(combined.summary.total_tokens, 200)
   assert.deepEqual(combined.comments[0].stack_layer_numbers, [1])
+  assert.deepEqual(combined.warnings, [])
+})
+
+test('combines a strictly resumed OCR layer with ordinary stack ranges', () => {
+  const parentId = '11111111-1111-4111-8111-111111111111'
+  const resumedId = '22222222-2222-4222-8222-222222222222'
+  const completed = {
+    item_id: 'completed',
+    path: 'src/one.ts',
+    fingerprint: 'a'.repeat(64),
+  }
+  const failed = {
+    item_id: 'failed',
+    path: 'src/two.ts',
+    fingerprint: 'b'.repeat(64),
+    classification: 'timeout',
+  }
+  const identity = {
+    repository: { identity_sha256: 'c'.repeat(64) },
+    input: {
+      mode: 'range',
+      resolved_base: 'd'.repeat(40),
+      resolved_head: 'e'.repeat(40),
+      source_artifact_sha256: 'f'.repeat(64),
+    },
+    execution: {
+      provider: 'openrouter',
+      model: FINAL_STACK_REVIEW_MODEL,
+      rule_config_sha256: '1'.repeat(64),
+    },
+  }
+  const parent = {
+    status: 'partial',
+    llm: { provider: 'openrouter', model: FINAL_STACK_REVIEW_MODEL },
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 60,
+      input_tokens: 45,
+      output_tokens: 15,
+      elapsed: '30m0s',
+    },
+    comments: [],
+    warnings: [],
+    session_id: parentId,
+    manifest: {
+      schema_version: 'ocr.run-manifest/v1',
+      run_id: parentId,
+      operation: 'review',
+      terminal_state: 'partial',
+      ...identity,
+      coverage: {
+        selected: [completed, failed],
+        completed: [completed],
+        reused: [],
+        failed: [failed],
+        waived: [],
+      },
+    },
+  }
+  const resumed = {
+    status: 'complete',
+    llm: { ...parent.llm },
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 40,
+      input_tokens: 30,
+      output_tokens: 10,
+      elapsed: '4m0s',
+    },
+    comments: [],
+    warnings: [],
+    session_id: resumedId,
+    resume: { resumed_from: parentId, reused_files: 1, rerun_files: 1 },
+    manifest: {
+      schema_version: 'ocr.run-manifest/v1',
+      run_id: resumedId,
+      parent_run_id: parentId,
+      operation: 'review',
+      terminal_state: 'complete',
+      ...identity,
+      coverage: {
+        selected: [completed, failed],
+        completed: [failed],
+        reused: [completed],
+        failed: [],
+        waived: [],
+      },
+    },
+  }
+
+  const merged = mergeOCRResumeResults(parent, resumed, 750_000)
+  const combined = combineOCRResults([completeOCRResult([]), merged], [1, 2])
+  assert.equal(combined.status, 'complete')
+  assert.equal(combined.summary.files_reviewed, 5)
+  assert.equal(combined.summary.total_tokens, 200)
   assert.deepEqual(combined.warnings, [])
 })
 

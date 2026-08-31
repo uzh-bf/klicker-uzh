@@ -10,6 +10,9 @@ minimumReleaseAge: 20160
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false
 minimumReleaseAgeExclude:
+  # K5 (playwright-profile-runtime-plan): exact Devrouter release verified for
+  # side-effect-free, repository-owned CI profile bindings before startup.
+  - '@devrouter/cli@0.0.51'
   # Internal UZH design-system release: the exact 4.1.8 consumer bump is
   # reviewed and verified in this PR.
   - '@uzh-bf/design-system@4.1.8'
@@ -50,7 +53,11 @@ packageExtensions:
 
 ignoredBuiltDependencies:
   - '@microsoft/teamsapp-cli'
+  # Devrouter's Docker transport can use these optional native SSH helpers, but
+  # profile planning has no Docker or SSH path and must not build them in CI.
+  - cpu-features
   - keytar
+  - ssh2
   # Transitive of fastmcp -> mcp-proxy -> pipenet. Its install script refreshes a
   # public-suffix list we never consult; neither MCP service uses pipenet.
   - tldjs
@@ -82,10 +89,12 @@ allowBuilds:
   azure-functions-core-tools: true
   core-js: true
   core-js-pure: true
+  cpu-features: false
   esbuild: true
   keytar: false
   prisma: true
   protobufjs: true
   sharp: true
+  ssh2: false
   tldjs: false
   unrs-resolver: true
