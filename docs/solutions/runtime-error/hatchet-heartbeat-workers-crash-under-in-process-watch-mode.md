@@ -35,7 +35,12 @@ Clearing `process.execArgv` inside the application did not help because the watc
 
 ## Solution
 
+<<<<<<< HEAD
 Compile each worker before startup, keep Rollup watching the TypeScript sources, and let nodemon supervise a plain `node` process for the emitted JavaScript. The general-worker scripts implement this split at `apps/hatchet-worker-general/package.json:36`; the response processor mirrors it at `apps/hatchet-worker-response-processor/package.json:33`.
+||||||| parent of 9cd73014c (fix(hatchet): keep development workers alive)
+=======
+Compile each worker before startup, keep Rollup watching the TypeScript sources, and let nodemon supervise a plain `node` process for the emitted JavaScript. The general-worker scripts implement this split at `apps/hatchet-worker-general/package.json:36`; the response processor mirrors it at `apps/hatchet-worker-response-processor/package.json:34`.
+>>>>>>> 9cd73014c (fix(hatchet): keep development workers alive)
 
 ## Why This Works
 

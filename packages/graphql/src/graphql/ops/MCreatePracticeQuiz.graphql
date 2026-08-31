@@ -7,6 +7,10 @@ mutation CreatePracticeQuiz(
   $multiplier: Int!
   $order: ElementOrderType!
   $resetTimeDays: Int!
+  $isEscapeRoom: Boolean
+  $escapeRoomTimeLimit: Int
+  $escapeRoomHintPenalty: Int
+  $escapeRoomIntroText: String
 ) {
   createPracticeQuiz(
     name: $name
@@ -17,6 +21,10 @@ mutation CreatePracticeQuiz(
     multiplier: $multiplier
     order: $order
     resetTimeDays: $resetTimeDays
+    isEscapeRoom: $isEscapeRoom
+    escapeRoomTimeLimit: $escapeRoomTimeLimit
+    escapeRoomHintPenalty: $escapeRoomHintPenalty
+    escapeRoomIntroText: $escapeRoomIntroText
   ) {
     ...ActivityInfoData
   }

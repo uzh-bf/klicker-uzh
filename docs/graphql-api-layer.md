@@ -38,7 +38,11 @@ Sensitive answer material uses defense in depth. `qrScanPrintData` requires `OWN
 
 - Arg validation via the Pothos **Zod plugin** — pass `validate:` on args (email/regex/length examples in `mutation.ts`); issues are joined into a `GraphQLError` by the shaper in `builder.ts`.
 - Service-level errors: prefer `GraphQLError` with `extensions.code` (e.g. `LIVE_QUIZ_PIN_INVALID`, `FORBIDDEN` in `services/liveQuizzes.ts`). Plain `throw new Error` exists in older code — don't add more.
-- Validate element-type placement in the service after resolving new, retained, and duplicated instances, not only in the authoring UI. The QR foundation deliberately rejects QR placement in all activity and live-quiz-template inputs with `BAD_USER_INPUT` until its participant runtime and grading are present.
+- Validate element-type placement in the service after resolving new, retained, and duplicated instances, not only in the authoring UI. QR Scan is accepted only when a Practice Quiz or Microlearning is configured as an Escape Room; Group Activity, Live Quiz, and live-quiz-template inputs still reject it with `BAD_USER_INPUT`.
+
+Individual Escape Rooms expose `startEscapeRoomAttempt`, `requestEscapeRoomHint`, `resetEscapeRoomAttempt`, `escapeRoomProgress`, and the attempt/config fields on Practice Quiz and Microlearning data. The public operations accept only `practiceQuizId` or `microLearningId` in this layer. The Prisma model and internal services retain dormant Group Activity and Live Quiz block references for later stacked layers, but those modes have no GraphQL entry point yet.
+
+Attempt state is server-owned. `escapeRoomStackSubmissions.ts` verifies the current stage, exact response set, lockout, expiry, and a Redis lifecycle claim before the ordinary stack grading path writes anything. Structured `ESCAPE_ROOM_*` error codes carry authoritative remaining lockout/expiry data to the participant UI. Lecturer progress reads require READ permission; resets and raw hint readback require WRITE permission.
 
 ## Client operations and codegen
 

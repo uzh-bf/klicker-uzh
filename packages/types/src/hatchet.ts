@@ -101,6 +101,10 @@ export interface HatchetHandlers {
     globalCtx: HatchetHandlerGlobalContext,
     executionCtx: Context<unknown>
   ) => Promise<boolean>
+  handlePruneEscapeRooms: (
+    globalCtx: HatchetHandlerGlobalContext,
+    executionCtx: Context<unknown>
+  ) => Promise<boolean>
 }
 
 // Contract for the tasks that are passed into the GraphQL context.
@@ -154,4 +158,5 @@ export interface PreparedHatchetTasks {
     Record<string, never>,
     { success: boolean }
   >
+  pruneEscapeRooms: TaskWorkflowDeclaration<{}, { success: boolean }>
 }

@@ -68,7 +68,7 @@ function AddStackButton({
         isOver: !!monitor.isOver(),
       }),
     }),
-    []
+    [acceptedTypes]
   )
 
   return (

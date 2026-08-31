@@ -25,6 +25,7 @@ interface EvaluationNavigationProps {
   type: ActivityEvaluationType
   leaderboardAvailable?: boolean
   feedbacksAvailable?: boolean
+  escapeRoomAvailable?: boolean
 }
 
 function EvaluationNavigation({
@@ -40,6 +41,7 @@ function EvaluationNavigation({
   type,
   leaderboardAvailable,
   feedbacksAvailable,
+  escapeRoomAvailable,
 }: EvaluationNavigationProps) {
   const t = useTranslations()
   const learningAnalyticsEnabled = useFeatureFlag('learning-analytics')
@@ -108,6 +110,7 @@ function EvaluationNavigation({
           type={type}
           leaderboardAvailable={leaderboardAvailable}
           feedbacksAvailable={feedbacksAvailable}
+          escapeRoomAvailable={escapeRoomAvailable}
         />
       </div>
     </div>

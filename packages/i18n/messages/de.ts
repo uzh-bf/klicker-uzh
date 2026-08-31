@@ -380,6 +380,11 @@ export default {
       text: 'Bitte scannen Sie den versteckten Code oder geben Sie ihn ein.',
       richtext:
         'Bitte <b>scannen Sie</b> den versteckten Code oder geben Sie ihn ein.',
+      startCamera: 'QR-Code scannen',
+      stopCamera: 'Kamera stoppen',
+      cameraFallback:
+        'Der Kamerascan ist nicht verfügbar. Geben Sie den Code stattdessen unten ein.',
+      manualLabel: 'Code manuell eingeben',
     },
     login: {
       installButton: 'Jetzt installieren',
@@ -1143,6 +1148,45 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
       correctAnswerOptions: 'Richtige Antwortoptionen',
       topNAnswers: 'Top {number} Antworten',
+      escapeRoomStartTitle: 'Escape-Room-Modus',
+      escapeRoomStartDesc:
+        'Schalte Fragen nacheinander frei, indem du sie richtig beantwortest, bevor die Zeit abläuft!',
+      escapeRoomTimeLimitLabel: 'Zeitlimit',
+      escapeRoomPenaltyLabel: 'Hinweis-Strafzeit',
+      escapeRoomStartButton: 'Versuch starten',
+      escapeRoomExpiredTitle: 'Zeit abgelaufen!',
+      escapeRoomExpiredDesc:
+        'Die Zeit ist abgelaufen! Dieser Versuch ist abgelaufen.',
+      escapeRoomCompletedTitle: 'Erfolgreich entkommen!',
+      escapeRoomCompletedDesc:
+        'Herzlichen Glückwunsch! Du hast alle Fragen richtig beantwortet und den Escape Room abgeschlossen.',
+      escapeRoomTitle: 'Escape Room',
+      escapeRoomTimeRemaining: 'Verbleibende Zeit',
+      escapeRoomContactLecturer:
+        'Wende dich an deine Dozentin oder deinen Dozenten, wenn dieser Versuch zurückgesetzt werden soll.',
+      escapeRoomLockoutToast:
+        'Falsch — du bist für kurze Zeit gesperrt, bevor du es erneut versuchen kannst.',
+      escapeRoomLockoutCountdown:
+        'Gesperrt. Du kannst es in {seconds}s erneut versuchen.',
+      escapeRoomIncorrectToast: 'Falsche Antwort! Bitte versuche es erneut.',
+      escapeRoomExpiredToast:
+        'Die Zeit ist abgelaufen — dieser Escape-Room-Versuch ist verfallen.',
+      escapeRoomGatedToast:
+        'Beantworte die vorherigen Fragen richtig, bevor du diesen Schritt bearbeitest.',
+      escapeRoomForbiddenToast:
+        'Dieser Escape Room kann nur mit einem aktiven Versuch beantwortet werden.',
+      escapeRoomRequestHint: 'Hinweis anzeigen (−{penalty}s)',
+      escapeRoomHintRevealedToast:
+        'Hinweis angezeigt — {penalty}s zu deiner Zeit hinzugefügt.',
+      escapeRoomStagesLabel: 'Stationen',
+      escapeRoomStagesCleared: 'Gelöste Stationen',
+      escapeRoomClearedProgress:
+        'Du hast {cleared} von {total} Stationen gelöst, bevor die Zeit abgelaufen ist.',
+      escapeRoomStatsTime: 'Fluchtzeit',
+      escapeRoomStatsHints: 'Genutzte Hinweise',
+      escapeRoomStatsPenalty: 'Zeitstrafe',
+      escapeRoomOverviewInfo:
+        'Escape Room: ein zeitlich begrenzter Versuch, löse alle Stationen der Reihe nach',
     },
     microLearning: {
       numOfQuestionSets: 'Anzahl Fragesets: {number}',
@@ -2642,6 +2686,28 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Übungs-Quizzes können alle verfügbaren Element-Typen enthalten.',
       practiceQuizUseCase:
         '<link>Übungs-Quizzes</link> können zur Vorbereitung auf Prüfungen und zur Wiederholung von Lerninhalten eingesetzt werden. Im Rahmen einer kompakten Evaluation erhalten die Studierenden Feedback zu ihren Antworten.',
+      escapeRoomMode: 'Escape-Room-Modus',
+      escapeRoomTimeLimit: 'Zeitlimit (Minuten)',
+      escapeRoomHintPenalty: 'Hinweis-Strafe (Sekunden)',
+      escapeRoomAssessmentIncompatible:
+        'Der Escape-Room-Modus kann nicht mit dem Bewertungsmodus kombiniert werden.',
+      escapeRoomNoQrOutside:
+        'QR-Scan-Fragen können nur in Escape-Room-Blöcken verwendet werden.',
+      escapeRoomHintPlaceholder: 'Optionaler Hinweis (kostet Zeit bei Anzeige)',
+      escapeRoomTimeLimitRequired: 'Zeitlimit ist erforderlich',
+      escapeRoomInteger: 'Muss eine ganze Zahl sein',
+      escapeRoomTimeLimitPositive: 'Muss eine positive Anzahl Minuten sein',
+      escapeRoomTimeLimitMax:
+        'Zeitlimit darf 1440 Minuten (24h) nicht überschreiten',
+      escapeRoomHintPenaltyRequired: 'Hinweis-Strafe ist erforderlich',
+      escapeRoomHintPenaltyMin: 'Muss eine nicht-negative Anzahl Sekunden sein',
+      escapeRoomHintPenaltyMax:
+        'Hinweis-Strafe darf 3600 Sekunden (1h) nicht überschreiten',
+      escapeRoomIntroText: 'Einleitungsgeschichte (optional)',
+      escapeRoomIntroTextPlaceholder:
+        'Stimmen Sie die Teilnehmenden ein — wird auf dem Startbildschirm vor dem Start des Timers angezeigt (Markdown wird unterstützt)',
+      escapeRoomIntroTextMax:
+        'Die Einleitungsgeschichte darf 5000 Zeichen nicht überschreiten',
       selectGamifiedCourse:
         'Bitte wählen Sie einen gamifizierten Kurs für die Erstellung dieses Elements.',
       groupActivityInformation:
@@ -3229,6 +3295,27 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bisher sind aufgrund fehlender Antworten noch keine Statistiken verfügbar.',
       practiceQuizEvaluation: 'Übungs-Quiz Evaluation',
       microLearningEvaluation: 'Microlearning Evaluation',
+      escapeRoomTab: 'Escape Room',
+      escapeRoomProgressDescription:
+        'Live-Fortschritt aller Teilnehmenden in diesem Escape Room. Wird automatisch aktualisiert, solange dieser Tab geöffnet ist.',
+      escapeRoomNoAttempts:
+        'Noch keine Teilnehmenden haben diesen Escape Room gestartet.',
+      escapeRoomColParticipant: 'Teilnehmer:in',
+      escapeRoomColStatus: 'Status',
+      escapeRoomColProgress: 'Fortschritt',
+      escapeRoomColHints: 'Hinweise',
+      escapeRoomColPenalty: 'Strafzeit',
+      escapeRoomColTime: 'Zeit',
+      escapeRoomColActions: 'Aktionen',
+      escapeRoomStatusInProgress: 'Laufend',
+      escapeRoomStatusNotStarted: 'Nicht gestartet',
+      escapeRoomStatusCompleted: 'Abgeschlossen',
+      escapeRoomStatusExpired: 'Abgelaufen',
+      escapeRoomLockedOut: 'Gesperrt',
+      escapeRoomReset: 'Zurücksetzen',
+      escapeRoomResetConfirm: 'Zurücksetzen bestätigen',
+      escapeRoomResetError:
+        'Der Versuch konnte nicht zurückgesetzt werden. Bitte erneut versuchen.',
       chartTypeNotSupported:
         'Derzeit wird der ausgewählte Diagrammtyp für diesen Elementtyp nicht unterstützt.',
       histogramNotSupported:

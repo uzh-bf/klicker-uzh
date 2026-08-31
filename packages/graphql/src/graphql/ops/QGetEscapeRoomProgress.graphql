@@ -1,0 +1,24 @@
+query GetEscapeRoomProgress($practiceQuizId: String, $microLearningId: String) {
+  escapeRoomProgress(
+    practiceQuizId: $practiceQuizId
+    microLearningId: $microLearningId
+  ) {
+    activityId
+    totalStacks
+    timeLimit
+    attempts {
+      id
+      participantId
+      displayName
+      avatar
+      status
+      startedAt
+      completedAt
+      lockoutUntil
+      penaltySeconds
+      hintsUsedCount
+      clearedStacks
+      timeSpentSeconds
+    }
+  }
+}

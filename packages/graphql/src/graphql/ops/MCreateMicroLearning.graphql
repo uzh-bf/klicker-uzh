@@ -7,6 +7,10 @@ mutation CreateMicroLearning(
   $multiplier: Int!
   $startDate: Date!
   $endDate: Date!
+  $isEscapeRoom: Boolean
+  $escapeRoomTimeLimit: Int
+  $escapeRoomHintPenalty: Int
+  $escapeRoomIntroText: String
 ) {
   createMicroLearning(
     name: $name
@@ -17,6 +21,10 @@ mutation CreateMicroLearning(
     multiplier: $multiplier
     startDate: $startDate
     endDate: $endDate
+    isEscapeRoom: $isEscapeRoom
+    escapeRoomTimeLimit: $escapeRoomTimeLimit
+    escapeRoomHintPenalty: $escapeRoomHintPenalty
+    escapeRoomIntroText: $escapeRoomIntroText
   ) {
     ...ActivityInfoData
   }
