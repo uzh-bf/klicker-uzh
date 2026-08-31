@@ -2036,6 +2036,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       emptyStateDescription:
         'Elements are reusable questions and content for your activities. Create one to get started.',
       clearSearch: 'Clear search',
+      elementsLoadError: 'The elements could not be loaded.',
+      retry: 'Retry',
       resetFilters: 'Reset filters',
       showArchived: 'Show archived',
       hideArchived: 'Hide archived',

@@ -2050,6 +2050,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       emptyStateDescription:
         'Elemente sind wiederverwendbare Fragen und Inhalte für Ihre Aktivitäten. Erstellen Sie eines, um loszulegen.',
       clearSearch: 'Suche löschen',
+      elementsLoadError: 'Die Elemente konnten nicht geladen werden.',
+      retry: 'Erneut versuchen',
       resetFilters: 'Filter zurücksetzen',
       showArchived: 'Archiv anzeigen',
       hideArchived: 'Archiv verstecken',

@@ -24,6 +24,7 @@
         "MB-instance-updates.spec.ts",
         "P-pagination-show-all.spec.ts",
         "P-question-library-batch-operations.spec.ts",
+        "P-question-library-feedback.spec.ts",
         "P-question-library-filters.spec.ts",
         "P-question-library-first-use.spec.ts",
         "T-resources.spec.ts",

@@ -7,7 +7,7 @@ import {
   SharingType,
 } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
-import { Button, toast } from '@uzh-bf/design-system'
+import { Button, UserNotification, toast } from '@uzh-bf/design-system'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
@@ -126,6 +126,7 @@ function Index() {
 
   const {
     loading: loadingElements,
+    error: errorElements,
     data: dataElements,
     refetch: refetchElements,
   } = useQuery(GetUserElementsDocument, {
@@ -421,7 +422,22 @@ function Index() {
               </div>
             </div>
 
-            {!dataElements || loadingElements ? (
+            {errorElements ? (
+              <UserNotification
+                type="error"
+                message={t('manage.questionPool.elementsLoadError')}
+                className={{ root: 'ml-7 text-sm' }}
+              >
+                <button
+                  type="button"
+                  onClick={() => refetchElements()}
+                  data-cy="elements-error-retry"
+                  className="cursor-pointer font-bold underline"
+                >
+                  {t('manage.questionPool.retry')}
+                </button>
+              </UserNotification>
+            ) : !dataElements || loadingElements ? (
               <div className="flex flex-1 items-center justify-center">
                 <Loader />
               </div>
