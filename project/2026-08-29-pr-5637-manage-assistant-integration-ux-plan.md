@@ -979,6 +979,24 @@ follow_up_stacks:
   values. Chat typecheck, Biome, commit hooks, and the 26-task pre-push build
   pass; the prior full Chat run also passed the new locale suite but hit its
   known local loopback restriction in the unrelated MCP canary.
-- Next: Refresh PR #5679 for `b1c6d4a19`, check feedback before its fresh CI,
-  and require all eight exact-head hosted Playwright shards before accepting
-  A2 and starting A3.
+- A2 proposal-layout correction: Exact-head hosted shard one showed the
+  proposal content and controls rendered correctly, but the strict geometry
+  assertion compared a clipped scroll-container layout box directly with the
+  separate composer. Commit `2b7ae887a` now settles the thread viewport and
+  checks the proposal against the viewport fold and composer boundary, matching
+  the existing chat layout contract.
+- A2 capability-meta correction: OpenCodeReview found that the registered
+  `klicker_lecturer_capabilities` `manage:read` tool was omitted from the
+  selected read-capable tool sets. Commit `82e92c1c2` preserves it in
+  `read-only` and `draft-and-read` while keeping a meta-only inventory
+  `unavailable`. The 30-per-lecturer/5-minute preflight burst guard was
+  verified as intentional and already documented as best-effort and per-pod;
+  that low-severity observation required no code change.
+- A2 latest verification: The focused capability tests pass 11/11; Chat and
+  Playwright typechecks, Biome, the complete commit hook, and the 26-task
+  pre-push build pass at `82e92c1c2`. Both new OCR findings have replies with
+  evidence. Local browser execution remains unavailable because the managed
+  DevPod exposes zero routes; hosted Playwright remains the acceptance gate.
+- Next: Refresh PR #5679 for `82e92c1c2`, wait for fresh exact-head hosted CI
+  including all eight Playwright shards, accept A2 when it settles green with
+  clear feedback, then start A3.
