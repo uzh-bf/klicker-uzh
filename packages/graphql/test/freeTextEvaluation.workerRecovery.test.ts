@@ -49,6 +49,53 @@ afterAll(async () => {
   await cleanupFixtures(TEST_PREFIX)
 })
 
+async function evaluateAttempt({
+  ctx,
+  answer,
+  answerTime = 3,
+  score,
+  level,
+  needsReview = false,
+}: {
+  ctx: ReturnType<typeof participantContext>
+  answer: string
+  answerTime?: number
+  score: number
+  level: Parameters<typeof evaluatorResponse>[2]
+  needsReview?: boolean
+}) {
+  const pending = await createFreeTextAttempt(
+    {
+      instanceId: fixture.instance.id,
+      answer,
+      answerTime,
+      clientSubmissionId: randomUUID(),
+    },
+    ctx,
+    { disclosureVersion: '2026-08-18' }
+  )
+  const response = evaluatorResponse(pending.currentAttempt!.id, score, level)
+  response.rubric_assessments[0]!.needs_review = needsReview
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(response), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+    )
+  )
+  await handleEvaluateFreeTextAttempt(
+    {
+      attemptId: pending.currentAttempt!.id,
+      evaluationRevision: pending.currentAttempt!.evaluationRevision,
+    },
+    { prisma } as never,
+    {} as never
+  )
+  return pending
+}
+
 describe('semantic free-text evaluation worker recovery', () => {
   it.each([
     'retry',
@@ -124,40 +171,13 @@ describe('semantic free-text evaluation worker recovery', () => {
       { disclosureVersion: '2026-08-18', accepted: true },
       ctx
     )
-    const pending = await createFreeTextAttempt(
-      {
-        instanceId: fixture.instance.id,
-        answer: 'It spreads investments across assets.',
-        answerTime: 3,
-        clientSubmissionId: randomUUID(),
-      },
+    await evaluateAttempt({
       ctx,
-      { disclosureVersion: '2026-08-18' }
-    )
-    const response = evaluatorResponse(
-      pending.currentAttempt!.id,
-      60,
-      'partial'
-    )
-    response.rubric_assessments[0]!.needs_review = true
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(response), {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-        })
-      )
-    )
-
-    await handleEvaluateFreeTextAttempt(
-      {
-        attemptId: pending.currentAttempt!.id,
-        evaluationRevision: 0,
-      },
-      { prisma } as never,
-      {} as never
-    )
+      answer: 'It spreads investments across assets.',
+      score: 60,
+      level: 'partial',
+      needsReview: true,
+    })
     const state = await getFreeTextPracticeState(
       { instanceId: fixture.instance.id },
       ctx
@@ -182,40 +202,13 @@ describe('semantic free-text evaluation worker recovery', () => {
       { disclosureVersion: '2026-08-18', accepted: true },
       ctx
     )
-    const pending = await createFreeTextAttempt(
-      {
-        instanceId: fixture.instance.id,
-        answer: semanticConfig.accepted_exact_answers[0]!,
-        answerTime: 3,
-        clientSubmissionId: randomUUID(),
-      },
+    const pending = await evaluateAttempt({
       ctx,
-      { disclosureVersion: '2026-08-18' }
-    )
-    const response = evaluatorResponse(
-      pending.currentAttempt!.id,
-      60,
-      'partial'
-    )
-    response.rubric_assessments[0]!.needs_review = true
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(response), {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-        })
-      )
-    )
-
-    await handleEvaluateFreeTextAttempt(
-      {
-        attemptId: pending.currentAttempt!.id,
-        evaluationRevision: 0,
-      },
-      { prisma } as never,
-      {} as never
-    )
+      answer: semanticConfig.accepted_exact_answers[0]!,
+      score: 60,
+      level: 'partial',
+      needsReview: true,
+    })
 
     const storedAttempt = await prisma.freeTextAttempt.findUniqueOrThrow({
       where: { id: pending.currentAttempt!.id },
@@ -333,37 +326,13 @@ describe('semantic free-text evaluation worker recovery', () => {
     )
 
     for (const score of [0, 0]) {
-      const pending = await createFreeTextAttempt(
-        {
-          instanceId: fixture.instance.id,
-          answer: `Incomplete answer ${score}`,
-          answerTime: 2,
-          clientSubmissionId: randomUUID(),
-        },
+      await evaluateAttempt({
         ctx,
-        { disclosureVersion: '2026-08-18' }
-      )
-      vi.stubGlobal(
-        'fetch',
-        vi
-          .fn()
-          .mockResolvedValue(
-            new Response(
-              JSON.stringify(
-                evaluatorResponse(pending.currentAttempt!.id, score, 'missing')
-              ),
-              { status: 200, headers: { 'content-type': 'application/json' } }
-            )
-          )
-      )
-      await handleEvaluateFreeTextAttempt(
-        {
-          attemptId: pending.currentAttempt!.id,
-          evaluationRevision: 0,
-        },
-        { prisma } as never,
-        {} as never
-      )
+        answer: `Incomplete answer ${score}`,
+        answerTime: 2,
+        score,
+        level: 'missing',
+      })
     }
 
     const exhausted = await getFreeTextPracticeState(
@@ -461,37 +430,13 @@ describe('semantic free-text evaluation worker recovery', () => {
     )
 
     for (const score of [0, 0]) {
-      const pending = await createFreeTextAttempt(
-        {
-          instanceId: fixture.instance.id,
-          answer: `Incomplete answer ${score}`,
-          answerTime: 2,
-          clientSubmissionId: randomUUID(),
-        },
+      await evaluateAttempt({
         ctx,
-        { disclosureVersion: '2026-08-18' }
-      )
-      vi.stubGlobal(
-        'fetch',
-        vi
-          .fn()
-          .mockResolvedValue(
-            new Response(
-              JSON.stringify(
-                evaluatorResponse(pending.currentAttempt!.id, score, 'missing')
-              ),
-              { status: 200, headers: { 'content-type': 'application/json' } }
-            )
-          )
-      )
-      await handleEvaluateFreeTextAttempt(
-        {
-          attemptId: pending.currentAttempt!.id,
-          evaluationRevision: pending.currentAttempt!.evaluationRevision,
-        },
-        { prisma } as never,
-        {} as never
-      )
+        answer: `Incomplete answer ${score}`,
+        answerTime: 2,
+        score,
+        level: 'missing',
+      })
     }
 
     const state = await getFreeTextPracticeState(
