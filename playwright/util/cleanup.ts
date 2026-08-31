@@ -1,5 +1,11 @@
-import globalSetup from '../global-setup.js'
+import {
+  cleanupDatabase,
+  ensureDatabaseViews,
+  seedDatabase,
+} from '../global-setup.js'
 
 export async function cleanupTest() {
-  await globalSetup()
+  await ensureDatabaseViews()
+  await cleanupDatabase()
+  await seedDatabase()
 }

@@ -134,6 +134,7 @@ function FreeTextRetryPanel({
       <div className="mt-3 flex flex-wrap gap-2">
         {state.canSubmitAnswer && attempt && !editing && (
           <Button
+            type="button"
             primary
             disabled={loading}
             onClick={onTryAgain}
@@ -144,6 +145,7 @@ function FreeTextRetryPanel({
         )}
         {state.canSubmitAnswer && editing && (
           <Button
+            type="button"
             primary
             loading={loading}
             disabled={loading || !answerChanged}
@@ -157,6 +159,7 @@ function FreeTextRetryPanel({
         )}
         {state.canRetryEvaluation && (
           <Button
+            type="button"
             primary
             loading={loading}
             disabled={loading}
@@ -168,6 +171,7 @@ function FreeTextRetryPanel({
         )}
         {consentRecoveryAvailable && (
           <Button
+            type="button"
             disabled={loading}
             onClick={onReviewConsent}
             data={{ cy: 'semantic-review-disclosure' }}
@@ -177,6 +181,7 @@ function FreeTextRetryPanel({
         )}
         {state.canRevealSolution && (
           <Button
+            type="button"
             disabled={loading}
             onClick={onRevealSolution}
             data={{ cy: 'semantic-show-solution' }}
@@ -186,6 +191,7 @@ function FreeTextRetryPanel({
         )}
         {state.solutionAuthorized && (
           <Button
+            type="button"
             disabled={loading}
             onClick={onToggleDetails}
             aria-controls={explanationId}
@@ -199,6 +205,7 @@ function FreeTextRetryPanel({
         )}
         {state.canPracticeAgain && (
           <Button
+            type="button"
             disabled={loading}
             onClick={onPracticeAgain}
             data={{ cy: 'semantic-practice-again' }}

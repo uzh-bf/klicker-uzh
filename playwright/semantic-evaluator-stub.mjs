@@ -225,7 +225,9 @@ if (process.env.NODE_ENV !== 'test') {
 const port = Number(
   process.env.PLAYWRIGHT_SEMANTIC_EVALUATOR_PORT ?? DEFAULT_PORT
 )
-const retryOnceTaskBundles = new Set()
+const MAX_REQUEST_BYTES = 256 * 1024
+const AUTOMATIC_EVALUATION_REQUESTS = 4
+const retryOnceTaskBundleRequests = new Map()
 const server = createServer((request, response) => {
   if (
     !isSemanticEvaluatorStubAuthorized(
@@ -248,6 +250,7 @@ const server = createServer((request, response) => {
   }
 
   let body = ''
+  let bodyBytes = 0
   let requestFailed = false
   request.on('error', () => {
     requestFailed = true
@@ -262,6 +265,14 @@ const server = createServer((request, response) => {
   })
   request.setEncoding('utf8')
   request.on('data', (chunk) => {
+    bodyBytes += Buffer.byteLength(chunk)
+    if (bodyBytes > MAX_REQUEST_BYTES) {
+      requestFailed = true
+      if (!response.headersSent) {
+        sendJson(response, 413, { error: 'request_too_large' })
+      }
+      return
+    }
     body += chunk
   })
   request.on('end', () => {
@@ -281,16 +292,17 @@ const server = createServer((request, response) => {
     }
 
     const scenario = selectScenario(value.response.text)
-    if (
-      scenario === 'retry-once' &&
-      !retryOnceTaskBundles.has(value.task_bundle_id)
-    ) {
-      retryOnceTaskBundles.add(value.task_bundle_id)
-      // Return a contract-invalid success once. The public boundary converts this
-      // into a retryable UNAVAILABLE state without Hatchet automatically retrying
-      // the same workflow, so the participant retry control is exercised.
-      sendJson(response, 200, { error: 'synthetic_retry_once' })
-      return
+    if (scenario === 'retry-once') {
+      const requestCount =
+        (retryOnceTaskBundleRequests.get(value.task_bundle_id) ?? 0) + 1
+      retryOnceTaskBundleRequests.set(value.task_bundle_id, requestCount)
+
+      // Exhaust the initial workflow's request plus its three automatic retries.
+      // The next request is the participant-triggered retry of the same attempt.
+      if (requestCount <= AUTOMATIC_EVALUATION_REQUESTS) {
+        sendJson(response, 200, { error: 'synthetic_retry_once' })
+        return
+      }
     }
     if (scenario === 'failure') {
       sendJson(response, 503, { error: 'synthetic_failure' })

@@ -80,8 +80,9 @@ async function startSemanticEvaluatorStub() {
     { token: SEMANTIC_EVALUATOR_TOKEN }
   )
   if (running) {
-    console.log('[global-setup] Reusing semantic evaluator stub.')
-    return
+    throw new Error(
+      `Semantic evaluator stub port ${evaluatorUrl.port} is already in use. Stop the other Playwright run before starting this one.`
+    )
   }
 
   const child = spawn(
@@ -98,7 +99,13 @@ async function startSemanticEvaluatorStub() {
   )
   if (!child.pid) throw new Error('Could not start semantic evaluator stub')
   process.env.PLAYWRIGHT_SEMANTIC_EVALUATOR_PID = String(child.pid)
-  await waitForSemanticEvaluatorStub(healthUrl)
+  try {
+    await waitForSemanticEvaluatorStub(healthUrl)
+  } catch (error) {
+    child.kill('SIGTERM')
+    delete process.env.PLAYWRIGHT_SEMANTIC_EVALUATOR_PID
+    throw error
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -143,7 +150,7 @@ export async function ensureDatabaseViews() {
 export async function cleanupDatabase() {
   const prisma = await getPrisma()
   try {
-    await prisma.freeTextConsentEvent.deleteMany()
+    await prisma.participantSemanticEvaluationConsent.deleteMany()
 
     await prisma.liveQuiz.deleteMany()
     await prisma.microLearning.deleteMany()
@@ -794,13 +801,32 @@ export async function seedSemanticPracticeQuiz({
 // Default export consumed by playwright.config.ts globalSetup
 // ---------------------------------------------------------------------------
 export default async function globalSetup() {
-  console.log('[global-setup] Starting semantic evaluator stub...')
-  await startSemanticEvaluatorStub()
-  console.log('[global-setup] Ensuring database views...')
-  await ensureDatabaseViews()
-  console.log('[global-setup] Cleaning up database...')
-  await cleanupDatabase()
-  console.log('[global-setup] Seeding database...')
-  await seedDatabase()
-  console.log('[global-setup] Done.')
+  try {
+    console.log('[global-setup] Starting semantic evaluator stub...')
+    await startSemanticEvaluatorStub()
+    console.log('[global-setup] Ensuring database views...')
+    await ensureDatabaseViews()
+    console.log('[global-setup] Cleaning up database...')
+    await cleanupDatabase()
+    console.log('[global-setup] Seeding database...')
+    await seedDatabase()
+    console.log('[global-setup] Done.')
+  } catch (error) {
+    const rawPid = process.env.PLAYWRIGHT_SEMANTIC_EVALUATOR_PID
+    const pid = Number(rawPid)
+    if (rawPid && Number.isInteger(pid) && pid > 0) {
+      try {
+        process.kill(pid, 'SIGTERM')
+      } catch (stopError) {
+        if ((stopError as NodeJS.ErrnoException).code !== 'ESRCH') {
+          console.error(
+            '[global-setup] Could not stop semantic evaluator stub:',
+            stopError
+          )
+        }
+      }
+      delete process.env.PLAYWRIGHT_SEMANTIC_EVALUATOR_PID
+    }
+    throw error
+  }
 }
