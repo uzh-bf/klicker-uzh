@@ -3,15 +3,22 @@
 import { experimental_createMCPClient as createSDKMCPClient } from '@ai-sdk/mcp'
 import { safeDecrypt } from '@klicker-uzh/util'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
-import { createHash } from 'crypto'
+import { createHash, randomUUID } from 'crypto'
 import {
   MAX_TOOL_NAME_LENGTH,
   TOOL_NAME_SUFFIX_LENGTH,
 } from '@/src/lib/config/toolNames'
+import { signDocQueryScopeToken } from '@/src/lib/server/docQueryScopeToken'
 import {
   parseMCPRuntimePolicy,
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
+import {
+  canLoadMCPServer,
+  DOC_QUERY_MCP_SERVER_NAME,
+  DOC_QUERY_SCOPE_TOKEN_HEADER,
+  normalizeDocQueryKbId,
+} from './mcpScope'
 
 // Type definitions for MCP server configuration
 export interface MCPServerConfig {
@@ -39,6 +46,8 @@ export interface MCPServerWithConfig {
 
 export interface MCPRequestOptions {
   requestTimeoutMs?: number
+  kbId?: string
+  sessionId?: string
 }
 
 function toToolNameHash(rawName: string): string {
@@ -108,13 +117,42 @@ function toSafeToolName(
 /**
  * Creates authentication headers based on server auth type
  */
-function createAuthHeaders(
+export async function createAuthHeaders(
   server: MCPServerConfig,
-  chatbotId: string
-): Record<string, string> {
+  chatbotId: string,
+  options: MCPRequestOptions = {}
+): Promise<Record<string, string>> {
   const baseHeaders = Object.assign(Object.create(null), {
     'Content-Type': 'application/json',
   }) as Record<string, string>
+
+  const authType = server.authType.toLowerCase()
+
+  if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
+    if (!canLoadMCPServer(server, options)) {
+      throw new Error('Scoped knowledge retrieval is not available')
+    }
+    if (authType !== 'bearer' || !server.authSecret) {
+      throw new Error('Doc Query transport authentication is invalid')
+    }
+    if (
+      typeof options.sessionId !== 'string' ||
+      options.sessionId.trim().length === 0
+    ) {
+      throw new Error('Scoped knowledge retrieval is not available')
+    }
+
+    const kbId = normalizeDocQueryKbId(options.kbId)
+    baseHeaders.Authorization = `Bearer ${safeDecrypt(server.authSecret)}`
+    const token = await signDocQueryScopeToken({
+      kbId,
+      chatbotId,
+      sessionId: options.sessionId,
+      jti: randomUUID(),
+    })
+    baseHeaders[DOC_QUERY_SCOPE_TOKEN_HEADER] = `Bearer ${token}`
+    return baseHeaders
+  }
 
   // Add chatbot ID if configured (new behavior - defaults to false for backward compatibility)
   if (server.passChatbotId) {
@@ -129,7 +167,7 @@ function createAuthHeaders(
 
   const decryptedSecret = safeDecrypt(server.authSecret)
 
-  switch (server.authType.toLowerCase()) {
+  switch (authType) {
     case 'custom':
       // Parse and apply custom headers from JSON
       {
@@ -192,7 +230,7 @@ export async function createMCPClient(
   }
 
   try {
-    const headers = createAuthHeaders(server, chatbotId)
+    const headers = await createAuthHeaders(server, chatbotId, options)
 
     const httpTransport = new StreamableHTTPClientTransport(
       new URL(server.url),

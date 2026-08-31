@@ -221,6 +221,57 @@ describe('required MCP chat preflight', () => {
     )
   })
 
+  test('passes the resolved KB scope and owning thread to MCP discovery', async () => {
+    mocks.findUnique.mockResolvedValueOnce({
+      id: 'chatbot-1',
+      ownerId: 'owner-1',
+      allowedModelIds: ['gpt-4.1'],
+      modelSelection: true,
+      systemPrompts: { tutor: { prompt: 'Use course material.' } },
+      mcpConfigurations: [
+        {
+          chatMode: 'tutor',
+          priority: 0,
+          allowedTools: ['doc_query'],
+          parameters: {
+            required: true,
+            toolAlias: 'doc_query',
+            kb_id: '7016810d-31e9-4b39-9529-cd46feb2bf63',
+          },
+          mcpServer: {
+            id: 'kb-server',
+            name: 'KB',
+            url: 'https://mcp.example.test',
+            authType: 'bearer',
+            authSecret: 'opaque-transport-token',
+            parameters: null,
+            isActive: true,
+            passChatbotId: false,
+            chatbotIdHeader: null,
+          },
+        },
+      ],
+    })
+
+    const response = await POST(createRequest(), {
+      params: Promise.resolve({ chatbotId: 'chatbot-1' }),
+    })
+
+    expect(response.status).toBe(503)
+    expect(mocks.getAggregatedMCPTools).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          server: expect.objectContaining({ name: 'KB' }),
+        }),
+      ],
+      'chatbot-1',
+      {
+        kbId: '7016810d-31e9-4b39-9529-cd46feb2bf63',
+        sessionId: 'thread-1',
+      }
+    )
+  })
+
   test('rejects an unsupported mode before MCP and thread work', async () => {
     const response = await POST(createRequest('unsupported'), {
       params: Promise.resolve({ chatbotId: 'chatbot-1' }),

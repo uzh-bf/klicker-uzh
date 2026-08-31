@@ -42,6 +42,7 @@ import {
   getAggregatedMCPTools,
   type MCPServerWithConfig,
 } from '@/src/services/mcpClients'
+import { resolveMcpScope } from '@/src/services/mcpScope'
 import { ThreadService } from '@/src/services/threads'
 import { createOpenAI } from '@ai-sdk/openai'
 import { prisma } from '@klicker-uzh/prisma'
@@ -832,6 +833,22 @@ export async function POST(
     )
   }
 
+  let scopedKbId: string | undefined
+  try {
+    scopedKbId = resolveMcpScope(enabledMCPConfigurations, selectedMode)
+  } catch (error) {
+    if (error instanceof RequiredMCPUnavailableError) {
+      return NextResponse.json(
+        {
+          error: 'Required MCP tool unavailable',
+          code: REQUIRED_MCP_UNAVAILABLE_CODE,
+        },
+        { status: 503 }
+      )
+    }
+    throw error
+  }
+
   mcpServersWithConfigs = selectedMCPConfigurations.map((config) => ({
     server: {
       id: config.mcpServer.id,
@@ -1026,7 +1043,12 @@ export async function POST(
     // Discover MCP tools only after read-only participant authorization.
     let mcpTools: ToolSet
     try {
-      mcpTools = await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
+      mcpTools = scopedKbId
+        ? await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId, {
+            kbId: scopedKbId,
+            sessionId: owningThread.id,
+          })
+        : await getAggregatedMCPTools(mcpServersWithConfigs, chatbotId)
     } catch (error) {
       if (error instanceof RequiredMCPUnavailableError) {
         await failOrDiscardUnstartedClaim('mcp.discovery')
