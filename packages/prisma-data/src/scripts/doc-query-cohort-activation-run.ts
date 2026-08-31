@@ -1,11 +1,24 @@
 import { encrypt } from '@klicker-uzh/util'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@klicker-uzh/prisma/client'
-import { readFile, rename, mkdir, writeFile } from 'node:fs/promises'
+import { createConnection, createServer, type Server } from 'node:net'
+import {
+  chmod,
+  readFile,
+  rename,
+  mkdir,
+  unlink,
+  writeFile,
+} from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
 import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   assertReceiptMatchesManifest,
+  assertReceiptTransition,
   type CohortActivationManifest,
+  type CohortActivationReceiptExpectation,
+  type CohortActivationReceiptFile,
   type CohortActivationReceipt,
   type CohortActivationReceiptIntent,
   dryRunCohortActivation,
@@ -14,6 +27,7 @@ import {
   recoverPreparedCohortActivation,
   readCohortActivationState,
   rollbackCohortActivation,
+  receiptExpectation,
   switchCohortActivation,
   validatePinnedManifest,
   validateCohortActivationReceiptIntent,
@@ -25,7 +39,11 @@ const TOKEN_ENV = 'DOC_QUERY_JWT_TOKEN_KLICKER'
 const DB_PORT_FORWARD_PORT = 7432
 
 type Command = 'dry-run' | 'migrate' | 'recover' | 'rollback' | 'readback'
-type ReceiptFile = CohortActivationReceipt | CohortActivationReceiptIntent
+type ReceiptFile = CohortActivationReceiptFile
+
+export type CohortActivationSessionLock = {
+  release: () => Promise<void>
+}
 
 function usage(): never {
   throw new Error('usage')
@@ -63,17 +81,112 @@ async function readJsonFile<T>(path: string): Promise<T> {
   return JSON.parse(raw) as T
 }
 
-async function writeReceipt(path: string, receipt: ReceiptFile): Promise<void> {
+function closeServer(server: Server): Promise<void> {
+  if (!server.listening) return Promise.resolve()
+  return new Promise((resolve, reject) => {
+    server.close((error) => (error ? reject(error) : resolve()))
+  })
+}
+
+function listenOnSocket(path: string): Promise<Server> {
+  const server = createServer((socket) => socket.destroy())
+  return new Promise((resolve, reject) => {
+    const onListening = () => {
+      server.removeListener('error', onError)
+      resolve(server)
+    }
+    const onError = (error: Error & { code?: string }) => {
+      server.removeListener('listening', onListening)
+      reject(error)
+    }
+    server.once('listening', onListening)
+    server.once('error', onError)
+    server.listen(path)
+  })
+}
+
+function probeSocket(path: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = createConnection(path)
+    socket.once('connect', () => {
+      socket.destroy()
+      resolve(true)
+    })
+    socket.once('error', (error: NodeJS.ErrnoException) => {
+      socket.destroy()
+      resolve(error.code !== 'ECONNREFUSED' && error.code !== 'ENOENT')
+    })
+  })
+}
+
+/**
+ * Keep one process-wide lifecycle lock for a receipt path. A Unix socket is
+ * released by the operating system when its owner exits; the pathname is
+ * reclaimed only after probing that no listener remains.
+ */
+export async function acquireCohortActivationSessionLock(
+  receiptPath: string
+): Promise<CohortActivationSessionLock> {
+  const lockPath = `${receiptPath}.lock`
+  await mkdir(dirname(receiptPath), { recursive: true })
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const server = await listenOnSocket(lockPath)
+      return {
+        release: async () => {
+          // Keep the pathname until the next owner proves that the socket is
+          // stale. This avoids unlinking a socket acquired during close().
+          await closeServer(server)
+        },
+      }
+    } catch (error) {
+      if (
+        !error ||
+        typeof error !== 'object' ||
+        !('code' in error) ||
+        error.code !== 'EADDRINUSE'
+      ) {
+        throw error
+      }
+      if (await probeSocket(lockPath)) {
+        throw new Error('SESSION_LOCKED')
+      }
+      await unlink(lockPath).catch((unlinkError: NodeJS.ErrnoException) => {
+        if (unlinkError.code !== 'ENOENT') throw unlinkError
+      })
+    }
+  }
+  throw new Error('SESSION_LOCKED')
+}
+
+export async function writeReceipt(
+  path: string,
+  receipt: ReceiptFile,
+  expected: CohortActivationReceiptExpectation
+): Promise<void> {
   if (receipt.state === 'preparing')
     validateCohortActivationReceiptIntent(receipt)
   else validateReceipt(receipt)
-  const temporary = `${path}.tmp-${process.pid}`
+  const current = await readReceipt(path)
+  assertReceiptTransition(expected, current, receipt)
+  if (current?.payloadDigest === receipt.payloadDigest) return
+  const temporary = `${path}.tmp-${process.pid}-${randomUUID()}`
   await mkdir(dirname(path), { recursive: true })
-  await writeFile(temporary, `${JSON.stringify(receipt)}\n`, {
-    encoding: 'utf8',
-    mode: 0o600,
-  })
-  await rename(temporary, path)
+  try {
+    await writeFile(temporary, `${JSON.stringify(receipt)}\n`, {
+      encoding: 'utf8',
+      mode: 0o600,
+      flag: 'wx',
+    })
+    await chmod(temporary, 0o600)
+    const latest = await readReceipt(path)
+    assertReceiptTransition(expected, latest, receipt)
+    await rename(temporary, path)
+  } finally {
+    await unlink(temporary).catch((error: NodeJS.ErrnoException) => {
+      if (error.code !== 'ENOENT') throw error
+    })
+  }
 }
 
 async function readReceipt(path: string): Promise<ReceiptFile | null> {
@@ -158,10 +271,25 @@ async function main(): Promise<void> {
     return
   }
 
+  let sessionLock: CohortActivationSessionLock
+  try {
+    sessionLock = await acquireCohortActivationSessionLock(args.receiptPath)
+  } catch (error) {
+    if (error instanceof Error && error.message === 'SESSION_LOCKED') {
+      printResult({ status: 'refused', reason: 'session_locked' })
+      process.exitCode = 3
+      return
+    }
+    printResult({ status: 'failed', category: 'SESSION_LOCK_FAILED' })
+    process.exitCode = 1
+    return
+  }
+
   let prisma: PrismaClient
   try {
     prisma = createPrismaClient()
   } catch {
+    await sessionLock.release()
     printResult({ status: 'failed', category: 'DB_CONFIG_FAILED' })
     process.exitCode = 1
     return
@@ -188,6 +316,11 @@ async function main(): Promise<void> {
     }
 
     const existingReceipt = await readReceipt(args.receiptPath)
+    let expectedReceipt = receiptExpectation(existingReceipt)
+    const persistReceipt = async (receipt: ReceiptFile): Promise<void> => {
+      await writeReceipt(args.receiptPath, receipt, expectedReceipt)
+      expectedReceipt = receiptExpectation(receipt)
+    }
     if (args.command === 'migrate') {
       if (existingReceipt) {
         printResult({ status: 'refused', reason: 'receipt_exists' })
@@ -211,7 +344,7 @@ async function main(): Promise<void> {
         manifest,
         existingTargetServerId
       )
-      await writeReceipt(args.receiptPath, intent)
+      await persistReceipt(intent)
       // The token is read only long enough to encrypt it. It is never written
       // to a receipt, argument list, log, or child process.
       const encryptedBearer = bearer ? encrypt(bearer) : undefined
@@ -220,14 +353,13 @@ async function main(): Promise<void> {
         encryptedBearer,
         intent,
       })
-      await writeReceipt(args.receiptPath, prepared)
+      await persistReceipt(prepared)
       const switched = await switchCohortActivation(
         store,
         prepared,
-        (checkpoint: CohortActivationReceipt) =>
-          writeReceipt(args.receiptPath, checkpoint)
+        (checkpoint: CohortActivationReceipt) => persistReceipt(checkpoint)
       )
-      await writeReceipt(args.receiptPath, switched)
+      await persistReceipt(switched)
       const state = await readCohortActivationState(store, switched)
       printResult({
         status: 'switched',
@@ -261,7 +393,7 @@ async function main(): Promise<void> {
         manifest,
         existingReceipt
       )
-      await writeReceipt(args.receiptPath, recovered)
+      await persistReceipt(recovered)
       printResult({
         status: 'prepared_recovered',
         state: recovered.state,
@@ -285,10 +417,9 @@ async function main(): Promise<void> {
       const rolledBack = await rollbackCohortActivation(
         store,
         existingReceipt,
-        (checkpoint: CohortActivationReceipt) =>
-          writeReceipt(args.receiptPath, checkpoint)
+        (checkpoint: CohortActivationReceipt) => persistReceipt(checkpoint)
       )
-      await writeReceipt(args.receiptPath, rolledBack)
+      await persistReceipt(rolledBack)
       const state = await readCohortActivationState(store, rolledBack)
       printResult({
         status: 'rolled_back',
@@ -315,8 +446,17 @@ async function main(): Promise<void> {
     printResult({ status: 'failed', category: classifyError(error) })
     process.exitCode = 1
   } finally {
-    await prisma.$disconnect()
+    try {
+      await prisma.$disconnect()
+    } finally {
+      await sessionLock.release()
+    }
   }
 }
 
-await main()
+const entrypoint = process.argv[1]
+const isEntrypoint =
+  entrypoint !== undefined &&
+  resolve(entrypoint) === fileURLToPath(import.meta.url)
+
+if (isEntrypoint) await main()

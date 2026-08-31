@@ -1,4 +1,11 @@
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import {
+  acquireCohortActivationSessionLock,
+  writeReceipt,
+} from './doc-query-cohort-activation-run.js'
 import {
   assertReceiptMatchesManifest,
   DOC_QUERY_ROUTE_PATH,
@@ -17,6 +24,7 @@ import {
   fingerprintManifest,
   makeCohortActivationReceiptIntent,
   prepareCohortActivation,
+  receiptExpectation,
   recoverPreparedCohortActivation,
   readCohortActivationState,
   rollbackCohortActivation,
@@ -360,6 +368,50 @@ describe('cohort activation contract', () => {
         makeCohortActivationReceiptIntent(manifest)
       )
     ).rejects.toMatchObject({ code: 'RECOVERY_AMBIGUOUS' })
+  })
+
+  it('refuses a concurrent session for the same receipt path', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'cohort-activation-lock-'))
+    const receiptPath = join(directory, 'receipt.json')
+    const first = await acquireCohortActivationSessionLock(receiptPath)
+    try {
+      await expect(
+        acquireCohortActivationSessionLock(receiptPath)
+      ).rejects.toMatchObject({ message: 'SESSION_LOCKED' })
+    } finally {
+      await first.release()
+      const second = await acquireCohortActivationSessionLock(receiptPath)
+      await second.release()
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('refuses stale and out-of-order receipt replacement', async () => {
+    const directory = await mkdtemp(
+      join(tmpdir(), 'cohort-activation-receipt-')
+    )
+    const receiptPath = join(directory, 'receipt.json')
+    const intent = makeCohortActivationReceiptIntent(makeManifest())
+    try {
+      await writeReceipt(receiptPath, intent, null)
+
+      const fake = fakeStore()
+      const prepared = await prepareCohortActivation(
+        fake.store,
+        makeManifest(),
+        { encryptedBearer: 'encrypted-synthetic-bearer' }
+      )
+      const switched = await switchCohortActivation(fake.store, prepared)
+
+      await expect(
+        writeReceipt(receiptPath, prepared, null)
+      ).rejects.toMatchObject({ code: 'RECEIPT_CONCURRENT_WRITE' })
+      await expect(
+        writeReceipt(receiptPath, switched, receiptExpectation(intent))
+      ).rejects.toMatchObject({ code: 'RECEIPT_STATE_TRANSITION' })
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
   })
 
   it('dry-runs without writes and reports target creation', async () => {

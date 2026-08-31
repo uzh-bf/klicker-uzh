@@ -239,6 +239,16 @@ export type CohortActivationReceiptIntent = {
   payloadDigest: string
 }
 
+export type CohortActivationReceiptFile =
+  | CohortActivationReceipt
+  | CohortActivationReceiptIntent
+
+export type CohortActivationReceiptExpectation = {
+  manifestFingerprint: string
+  payloadDigest: string
+  state: CohortActivationReceiptFile['state']
+} | null
+
 export type CohortActivationPrepareOptions = {
   encryptedBearer?: string
   intent?: CohortActivationReceiptIntent
@@ -1393,6 +1403,91 @@ export function validateReceipt(receipt: CohortActivationReceipt): void {
     .digest('hex')
   if (expected !== receipt.payloadDigest) {
     fail('RECEIPT_INVALID', 'cohortActivation receipt digest does not match')
+  }
+}
+
+function validateReceiptFile(receipt: CohortActivationReceiptFile): void {
+  if (receipt.state === 'preparing')
+    validateCohortActivationReceiptIntent(receipt)
+  else validateReceipt(receipt)
+}
+
+export function receiptExpectation(
+  receipt: CohortActivationReceiptFile | null
+): CohortActivationReceiptExpectation {
+  return receipt
+    ? {
+        manifestFingerprint: receipt.manifestFingerprint,
+        payloadDigest: receipt.payloadDigest,
+        state: receipt.state,
+      }
+    : null
+}
+
+const RECEIPT_STATE_TRANSITIONS: Record<
+  CohortActivationReceiptFile['state'],
+  readonly CohortActivationReceiptFile['state'][]
+> = {
+  preparing: ['prepared'],
+  prepared: ['switching', 'switched', 'rolling_back', 'rolled_back'],
+  switching: ['switching', 'switched', 'rolling_back', 'rolled_back'],
+  switched: ['rolling_back', 'rolled_back'],
+  rolling_back: ['rolling_back', 'rolled_back'],
+  rolled_back: [],
+}
+
+/**
+ * Validate the receipt compare-and-swap contract before replacing the file.
+ * The runner holds the session lock while calling this function, but the
+ * expected digest and state also reject stale or out-of-order writes.
+ */
+export function assertReceiptTransition(
+  expected: CohortActivationReceiptExpectation,
+  current: CohortActivationReceiptFile | null,
+  next: CohortActivationReceiptFile
+): void {
+  validateReceiptFile(next)
+  if (expected === null) {
+    if (current !== null) {
+      fail(
+        'RECEIPT_CONCURRENT_WRITE',
+        'receipt was created before the expected initial write'
+      )
+    }
+    if (next.state !== 'preparing') {
+      fail(
+        'RECEIPT_STATE_TRANSITION',
+        'an initial receipt must be a preparing intent'
+      )
+    }
+    return
+  }
+  if (current === null) {
+    fail(
+      'RECEIPT_CONCURRENT_WRITE',
+      'receipt disappeared before the expected transition'
+    )
+  }
+  validateReceiptFile(current)
+  if (
+    current.manifestFingerprint !== expected.manifestFingerprint ||
+    current.payloadDigest !== expected.payloadDigest ||
+    current.state !== expected.state
+  ) {
+    fail(
+      'RECEIPT_CONCURRENT_WRITE',
+      'receipt changed before the expected transition'
+    )
+  }
+  if (current.manifestFingerprint !== next.manifestFingerprint) {
+    fail('RECEIPT_MANIFEST_MISMATCH', 'receipt transition changed the manifest')
+  }
+  if (current.payloadDigest === next.payloadDigest) return
+  if (!RECEIPT_STATE_TRANSITIONS[current.state].includes(next.state)) {
+    fail(
+      'RECEIPT_STATE_TRANSITION',
+      'receipt transition is not allowed from the current state'
+    )
   }
 }
 
