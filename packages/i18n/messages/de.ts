@@ -307,6 +307,8 @@ export default {
     },
     DRAFT: {
       statusLabel: 'Entwurf',
+      statusDescription:
+        'Manueller Status: noch nicht fertig und in Bearbeitung.',
     },
     SCHEDULED: {
       statusLabel: 'Geplant',
@@ -329,9 +331,12 @@ export default {
     },
     REVIEW: {
       statusLabel: 'Review',
+      statusDescription: 'Manueller Status: Review angefragt.',
     },
     READY: {
       statusLabel: 'Bereit',
+      statusDescription:
+        'Manueller Status: als wiederverwendbar eingestuft; Standard für neue Elemente.',
     },
     SC: {
       short: 'SC',
@@ -2041,6 +2046,10 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       createElementaryLabel: 'Elemente',
       createActivitiesLabel: 'Aktivitäten',
       createElement: 'Element erstellen',
+      emptyStateTitle: 'Erstellen Sie Ihr erstes Element',
+      emptyStateDescription:
+        'Elemente sind wiederverwendbare Fragen und Inhalte für Ihre Aktivitäten. Erstellen Sie eines, um loszulegen.',
+      clearSearch: 'Suche löschen',
       resetFilters: 'Filter zurücksetzen',
       showArchived: 'Archiv anzeigen',
       hideArchived: 'Archiv verstecken',

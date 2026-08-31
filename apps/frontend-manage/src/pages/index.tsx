@@ -40,6 +40,7 @@ function Index() {
   const t = useTranslations()
 
   // search, filter and pagination states
+  const [searchInput, setSearchInput] = useState('')
   const [searchString, setSearchString] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -291,6 +292,27 @@ function Index() {
   )
   const filtersActive = filtersActiveExceptCourse || !!filters.courseId
 
+  const handleApplySearch = useCallback((value: string) => {
+    setSearchString(value)
+    setCurrentPage(1)
+  }, [])
+
+  const handleClearSearch = useCallback(() => {
+    setSearchInput('')
+    setSearchString('')
+    setCurrentPage(1)
+  }, [])
+
+  const handleCreateElement = useCallback(() => {
+    const value = localStorage.getItem('autosave-element-creation')
+
+    if (value) {
+      setShowRecoveryPrompt(true)
+    } else {
+      setIsElementCreationModalOpen(true)
+    }
+  }, [])
+
   return (
     <Layout
       displayName={t('manage.general.questionPool')}
@@ -301,15 +323,7 @@ function Index() {
         <SuspendedCreationButtons
           setCreationMode={setCreationMode}
           showActivityChoices={typeof creationMode === 'undefined'}
-          onCreateElement={() => {
-            const value = localStorage.getItem('autosave-element-creation')
-
-            if (value) {
-              setShowRecoveryPrompt(true)
-            } else {
-              setIsElementCreationModalOpen(true)
-            }
-          }}
+          onCreateElement={handleCreateElement}
         />
       </Suspense>
 
@@ -375,7 +389,11 @@ function Index() {
                   setSelectedElements={setSelectedElements}
                   creationMode={creationMode}
                 />
-                <ElementListSearch setSearchString={setSearchString} />
+                <ElementListSearch
+                  value={searchInput}
+                  onValueChange={setSearchInput}
+                  onApplySearch={handleApplySearch}
+                />
                 <ElementListSorting
                   sort={sort}
                   handleSortByChange={handleSortByChange}
@@ -454,6 +472,9 @@ function Index() {
                       })
                     }
                     handleFilterReset={handleResetCleanURL}
+                    hasActiveSearch={searchString.trim() !== ''}
+                    onClearSearch={handleClearSearch}
+                    onCreateElement={handleCreateElement}
                     refetchElements={refetchElementsForChildren}
                   />
                 </div>

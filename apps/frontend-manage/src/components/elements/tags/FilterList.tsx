@@ -41,6 +41,7 @@ import { useTranslations } from 'next-intl'
 import React, { Suspense } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { LibraryFilters } from '../../../lib/hooks/useSortingAndFiltering'
+import useStatusOptions from '../manipulation/useStatusOptions'
 import FilterItem from './FilterItem'
 import FilterListEntry from './FilterListEntry'
 import SuspendedActivitySelection from './SuspendedActivitySelection'
@@ -109,6 +110,7 @@ function FilterList({
   refetchElements,
 }: FilterListProps): React.ReactElement {
   const t = useTranslations()
+  const statusOptions = useStatusOptions()
 
   const { data: user } = useQuery(UserProfileDocument, {
     fetchPolicy: 'cache-only',
@@ -142,21 +144,23 @@ function FilterList({
           appliedLabel={t('manage.questionPool.filterApplied')}
           data={{ cy: 'collapse-tag-header-status' }}
         >
-          {Object.entries(ELEMENT_STATUS_FILTERS).map(([status, icons]) => (
+          {statusOptions.map((option) => (
             <FilterItem
-              key={status}
-              text={t(`shared.${status as ElementStatus}.statusLabel`)}
-              icon={icons}
-              active={filters.status === status}
+              key={option.value}
+              text={option.shortLabel}
+              description={option.description}
+              icon={ELEMENT_STATUS_FILTERS[option.value]}
+              active={filters.status === option.value}
               onClick={(): void =>
                 handleTagClick({
-                  valueOrId: status,
+                  valueOrId: option.value,
                   isTypeTag: false,
                   isStatusTag: true,
                   isSharingTypeTag: false,
                   isUntagged: false,
                 })
               }
+              data={{ cy: `element-status-filter-${option.value}` }}
             />
           ))}
         </FilterListEntry>

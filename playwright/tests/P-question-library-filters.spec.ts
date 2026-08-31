@@ -1,3 +1,4 @@
+import { ElementStatus } from '@klicker-uzh/prisma/client'
 import { getPrisma } from '../global-setup.js'
 import { LECTURER_ID } from '../util/constants.js'
 import { expect, test } from '../util/fixtures.js'
@@ -8,6 +9,12 @@ const TYPES_HEADER = 'collapse-tag-header-types'
 const MULTIPLIER_HEADER = 'collapse-tag-header-multiplier'
 const GAMIFICATION_HEADER = 'collapse-tag-header-gamification'
 const RESET_BUTTON = 'reset-question-pool-filters'
+const STATUS_CASES = [
+  { status: ElementStatus.DRAFT, label: 'Draft' },
+  { status: ElementStatus.REVIEW, label: 'Review' },
+  { status: ElementStatus.READY, label: 'Ready' },
+] as const
+
 test.describe('Question library filter groups', () => {
   test.beforeEach(async ({ loginLecturer }) => {
     await loginLecturer()
@@ -63,6 +70,51 @@ test.describe('Question library filter groups', () => {
       'open'
     )
   })
+
+  for (const selectedCase of STATUS_CASES) {
+    test(`filters actual results by ${selectedCase.label} status`, async ({
+      page,
+    }, testInfo) => {
+      const prisma = await getPrisma()
+      const names = STATUS_CASES.map(
+        ({ label }) =>
+          `W7 ${label} Filter ${selectedCase.status}-${testInfo.workerIndex}-${testInfo.retry}`
+      )
+
+      try {
+        for (const [index, statusCase] of STATUS_CASES.entries()) {
+          await createQuestionMC({
+            name: names[index],
+            content: `Element with ${statusCase.label} status`,
+            choices: [{ value: 'Correct' }, { value: 'Incorrect' }],
+            userId: LECTURER_ID,
+          })
+          await prisma.element.updateMany({
+            where: { ownerId: LECTURER_ID, name: names[index] },
+            data: { status: statusCase.status },
+          })
+        }
+
+        await page.reload()
+        await page
+          .getByTestId(`element-status-filter-${selectedCase.status}`)
+          .click()
+
+        for (const [index, statusCase] of STATUS_CASES.entries()) {
+          const result = page.getByTestId(`element-item-${names[index]}`)
+          if (statusCase.status === selectedCase.status) {
+            await expect(result).toBeVisible()
+          } else {
+            await expect(result).toHaveCount(0)
+          }
+        }
+      } finally {
+        await prisma.element.deleteMany({
+          where: { ownerId: LECTURER_ID, name: { in: names } },
+        })
+      }
+    })
+  }
 
   test('projects the Markdown-rich card preview to plain text while the tooltip keeps the rendered Markdown', async ({
     page,
