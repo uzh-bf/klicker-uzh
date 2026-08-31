@@ -683,7 +683,7 @@ const Composer: FC = () => {
 
   // `autoFocus` only ever fires once, on mount, so it cannot react to a dialog
   // in front of the composer closing later — hand focus back to the input
-  // explicitly once `gateOpen` (the disclaimer and the onboarding carousel
+  // explicitly once `gateOpen` (the disclaimer and the onboarding tour
   // together, see chat-ui-context.tsx) flips from true to false.
   useEffect(() => {
     if (gateOpen) {

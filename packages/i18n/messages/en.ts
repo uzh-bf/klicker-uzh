@@ -61,7 +61,7 @@ export default {
       dismiss: 'Dismiss update',
       details: 'Read more',
     },
-    // PLACEHOLDER COPY — the onboarding cards are pending editorial review.
+    // PLACEHOLDER COPY — the onboarding steps are pending editorial review.
     // The key structure is settled and mirrored in de.ts; the wording is not.
     onboarding: {
       title: 'Welcome to KlickerUZH Chat',

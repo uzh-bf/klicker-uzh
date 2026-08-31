@@ -124,11 +124,11 @@ export function Assistant({
   return (
     <>
       <ChatUiProvider>
-        {/* The onboarding carousel lives inside this provider and therefore
+        {/* The onboarding tour lives inside this provider and therefore
             ahead of the disclaimer modal below: it has to claim the composer's
             focus gate in the same commit in which the disclaimer releases it.
             `showDisclaimerModal` is exactly "the disclaimer still stands", so
-            the carousel waits for an acceptance and never stacks on top of a
+            the tour waits for an acceptance and never stacks on top of a
             decision the participant has not made yet. */}
         <ChatOnboardingProvider disclaimerPending={showDisclaimerModal}>
           <RuntimeProvider

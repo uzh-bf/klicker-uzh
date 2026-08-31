@@ -50,12 +50,12 @@ export function useChatUi() {
 // This small external store lets `disclaimer-modal.tsx` publish the gate's
 // open state and `thread.tsx` subscribe to it across that tree boundary.
 //
-// The onboarding carousel joins the same store rather than bringing its own:
-// the composer does not care which dialog is in front of it, only that one is
-// — it must not autofocus underneath it, and it takes focus back when the last
+// The onboarding tour joins the same store rather than bringing its own: the
+// composer does not care which overlay is in front of it, only that one is —
+// it must not autofocus underneath it, and it takes focus back when the last
 // one closes. The two flags stay separate because they are set by different
-// components, and the carousel opens in the same commit in which the
-// disclaimer closes.
+// components, and the tour opens in the same commit in which the disclaimer
+// closes.
 let disclaimerGateOpen = false
 let onboardingGateOpen = false
 const gateListeners = new Set<() => void>()
