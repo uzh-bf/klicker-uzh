@@ -163,7 +163,6 @@ runs:
         DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
 
     - name: Start services, wait for readiness, and run Playwright tests
-      timeout-minutes: 120
       shell: bash
       run: |
         set -euo pipefail
