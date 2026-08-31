@@ -310,7 +310,7 @@ const PERM_OWNER = 'Owner'
 const COURSE_DUPLICATION_RESPONSE_TIMEOUT = 120_000
 const COURSE_DUPLICATION_STATUS_TIMEOUT = 150_000
 const COURSE_DUPLICATION_TEST_TIMEOUT = 360_000
-const SHARING_COURSE_GROUP_DEADLINE = new Date(
+const FUTURE_COURSE_GROUP_DEADLINE = new Date(
   new Date().getFullYear(),
   new Date().getMonth() + 1,
   2,
@@ -1515,7 +1515,7 @@ async function verifyCourseDuplicationModalUi(
   )
   await expect(page.getByTestId('course-gamification')).not.toBeVisible()
 
-  const adjustedGroupDeadline = new Date(SHARING_COURSE_GROUP_DEADLINE)
+  const adjustedGroupDeadline = new Date(FUTURE_COURSE_GROUP_DEADLINE)
   adjustedGroupDeadline.setDate(adjustedGroupDeadline.getDate() + 1)
   const adjustedGroupDeadlineValue = getNativeDateInputValue(
     adjustedGroupDeadline
@@ -2734,6 +2734,11 @@ test.describe('Part 4: Course deletion', () => {
     await expect(
       page.getByTestId(`course-list-button-${DELETION.courseName}`)
     ).toBeVisible()
+    await updateCourseGroupDeadlineDate({
+      courseName: DELETION.courseName,
+      groupDeadlineDate: FUTURE_COURSE_GROUP_DEADLINE,
+      ownerId: LECTURER_ID,
+    })
     await page.reload()
 
     // --- Create question ---
@@ -3236,7 +3241,7 @@ test.describe('Part 5: Course Sharing - Individual permissions', () => {
     await expect(page.getByText(SHARING.course)).toBeVisible()
     await updateCourseGroupDeadlineDate({
       courseName: SHARING.course,
-      groupDeadlineDate: SHARING_COURSE_GROUP_DEADLINE,
+      groupDeadlineDate: FUTURE_COURSE_GROUP_DEADLINE,
     })
     await page.reload()
 
