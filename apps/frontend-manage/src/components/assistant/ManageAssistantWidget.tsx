@@ -704,7 +704,7 @@ export function ManageAssistantWidget() {
                 className="border-border bg-background text-foreground focus-visible:ring-ring hidden h-11 max-w-28 shrink-0 rounded-md border px-2 text-xs focus-visible:outline-none focus-visible:ring-2 md:block"
                 data-cy="manage-assistant-panel-preset"
               >
-                <option value="custom">
+                <option value="custom" disabled={panelPreset !== 'custom'}>
                   {t('manage.assistant.panelSizeCustom')}
                 </option>
                 <option value="default">

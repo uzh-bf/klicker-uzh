@@ -929,6 +929,7 @@ test.describe('Manage Assistant — Messaging', () => {
       expect(box?.height).toBe(768)
     }).toPass()
     await expect(preset).toHaveValue('wide')
+    await expect(preset.locator('option[value="custom"]')).toBeDisabled()
 
     await preset.selectOption('max')
     await expect(async () => {

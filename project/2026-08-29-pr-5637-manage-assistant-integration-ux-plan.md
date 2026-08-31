@@ -1082,3 +1082,15 @@ follow_up_stacks:
   to document the desktop complementary dock and compact full-viewport dialog,
   scoped app-content isolation, cleanup transitions, and desktop-only sizing
   persistence. Then rerun exact-head checks and the final review.
+- A4 preset correction: OpenCodeReview's medium finding about the desktop
+  preset selector was valid. The `Custom` option is now disabled while a named
+  preset is active, so the controlled select cannot accept a dead selection and
+  snap back. Manual resizing still selects `Custom`, where the option remains
+  available as the current value; the hosted journey pins the disabled state.
+- A4 final correction acceptance: The preset correction, skill upkeep, and
+  hosted-journey assertion are committed together after focused tests,
+  affected typechecks, repository checks, and the complete commit hook pass.
+  The next gate is to push this exact head, refresh PR #5704, resolve the
+  verified OCR thread with evidence, and rerun exact-head CI plus the final
+  review. Hosted Playwright remains a stack-layer acceptance limitation because
+  this PR targets the workflow-continuity branch.
