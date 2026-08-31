@@ -213,6 +213,7 @@ try {
 } finally {
   try {
     await prisma.$transaction(async (tx) => {
+      await allowCoursePurgeInTransaction(tx)
       await tx.course.updateMany({
         where: { id: { in: fixtureIds.courseIds } },
         data: {
@@ -224,7 +225,6 @@ try {
           isDeletionPending: false,
         },
       })
-      await allowCoursePurgeInTransaction(tx)
       await tx.course.deleteMany({
         where: { id: { in: fixtureIds.courseIds } },
       })

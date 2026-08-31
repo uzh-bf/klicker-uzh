@@ -182,11 +182,11 @@ export async function deleteCourseByName({
 }) {
   const prisma = await getPrisma()
   await prisma.$transaction(async (tx) => {
+    await allowCoursePurgeInTransaction(tx)
     await tx.course.updateMany({
       where: { name: courseName, ownerId },
       data: { isDeleted: true },
     })
-    await allowCoursePurgeInTransaction(tx)
     await tx.course.deleteMany({
       where: { name: courseName, ownerId, isDeleted: true },
     })
@@ -222,11 +222,11 @@ export async function deleteCourseWithActivitiesByName({
     await tx.liveQuiz.deleteMany({
       where: { courseId: { in: courseIds } },
     })
+    await allowCoursePurgeInTransaction(tx)
     await tx.course.updateMany({
       where: { id: { in: courseIds } },
       data: { isDeleted: true },
     })
-    await allowCoursePurgeInTransaction(tx)
     await tx.course.deleteMany({
       where: { id: { in: courseIds }, isDeleted: true },
     })

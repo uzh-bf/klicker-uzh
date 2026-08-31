@@ -77,23 +77,13 @@ interface CourseDeletionJob extends Omit<CourseDeletionStatus, 'isQueued'> {
 async function persistCourseDeletionResponseFences(
   redis: Redis,
   liveQuizIds: string[],
-  value: string,
-  ttlSeconds?: number
+  value: string
 ) {
   if (liveQuizIds.length === 0) return
 
   const pipeline = redis.pipeline()
   for (const liveQuizId of liveQuizIds) {
-    if (ttlSeconds) {
-      pipeline.set(
-        getLiveQuizCourseDeletedKey(liveQuizId),
-        value,
-        'EX',
-        ttlSeconds
-      )
-    } else {
-      pipeline.set(getLiveQuizCourseDeletedKey(liveQuizId), value)
-    }
+    pipeline.set(getLiveQuizCourseDeletedKey(liveQuizId), value)
   }
 
   const results = await pipeline.exec()
@@ -1505,7 +1495,7 @@ export const handleProcessCourseDeletion: HatchetHandlers['handleProcessCourseDe
           )
         }
         try {
-          job = (await protectCourseDeletionRetry(redis, job)) ?? job
+          await protectCourseDeletionRetry(redis, job)
         } catch (protectionError) {
           executionCtx.logger.warn(
             `Failed to protect course deletion job ${jobId} for retry: ${getErrorMessage(protectionError)}`

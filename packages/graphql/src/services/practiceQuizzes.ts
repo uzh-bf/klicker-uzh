@@ -794,7 +794,7 @@ export async function removePracticeQuiz(
 }
 
 export const handlePublishScheduledPracticeQuiz: HatchetHandlers['handlePublishScheduledPracticeQuiz'] =
-  async ({ practiceQuizId }, globalCtx) => {
+  async ({ practiceQuizId }, globalCtx, _executionCtx) => {
     try {
       // check if the practice quiz exists and if its availableFrom date is in the past
       const practiceQuiz = await globalCtx.prisma.practiceQuiz.findUnique({

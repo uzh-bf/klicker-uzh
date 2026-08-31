@@ -103,11 +103,11 @@ function runFailingScript(args: Array<string>): string {
       await prisma.chatbot.deleteMany({ where: { courseId } })
       await prisma.chatbotDisclaimer.deleteMany({ where: { ownerId: userId } })
       await prisma.$transaction(async (tx) => {
+        await allowCoursePurgeInTransaction(tx)
         await tx.course.updateMany({
           where: { id: courseId },
           data: { isDeleted: true },
         })
-        await allowCoursePurgeInTransaction(tx)
         await tx.course
           .delete({ where: { id: courseId, isDeleted: true } })
           .catch(() => undefined)

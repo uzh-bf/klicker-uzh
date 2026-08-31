@@ -130,11 +130,11 @@ async function createFixture() {
 async function cleanupFixtures() {
   const courseIds = fixtureIds.courseIds.splice(0)
   await prisma.$transaction(async (tx) => {
+    await allowCoursePurgeInTransaction(tx)
     await tx.course.updateMany({
       where: { id: { in: courseIds } },
       data: { isDeleted: true },
     })
-    await allowCoursePurgeInTransaction(tx)
     await tx.course.deleteMany({
       where: { id: { in: courseIds }, isDeleted: true },
     })

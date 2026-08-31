@@ -180,11 +180,11 @@ testDescribe('seed demo participants', () => {
       await rememberCreatedParticipants()
       await cleanupCreatedParticipants()
       await prisma.$transaction(async (tx) => {
+        await allowCoursePurgeInTransaction(tx)
         await tx.course.updateMany({
           where: { ownerId },
           data: { isDeleted: true },
         })
-        await allowCoursePurgeInTransaction(tx)
         await tx.course.deleteMany({ where: { ownerId, isDeleted: true } })
       })
       await prisma.user

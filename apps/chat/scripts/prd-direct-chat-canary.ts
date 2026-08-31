@@ -1714,11 +1714,11 @@ async function deleteFixture(
       })
       if (participant.count !== 1)
         fail('FIXTURE_DELETE_FAILED', 'synthetic participant was not deleted')
+      await allowCoursePurgeInTransaction(tx)
       await tx.course.updateMany({
         where: { id: fixture.ids.courseId, ownerId: fixture.ids.ownerId },
         data: { isDeleted: true },
       })
-      await allowCoursePurgeInTransaction(tx)
       const course = await tx.course.deleteMany({
         where: {
           id: fixture.ids.courseId,

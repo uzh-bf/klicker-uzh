@@ -105,11 +105,11 @@ async function cleanupTestData() {
 
   const courseWhere = { name: { startsWith: TEST_PREFIX } }
   await prisma.$transaction(async (tx) => {
+    await allowCoursePurgeInTransaction(tx)
     await tx.course.updateMany({
       where: courseWhere,
       data: { isDeleted: true },
     })
-    await allowCoursePurgeInTransaction(tx)
     await tx.course.deleteMany({
       where: { ...courseWhere, isDeleted: true },
     })
