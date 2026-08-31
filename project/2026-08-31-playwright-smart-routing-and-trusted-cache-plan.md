@@ -925,7 +925,19 @@ native planner gate.
   selector policy from trusted `v3`, treats candidate code as data, and never
   allocates the public runner group. Representative ten-head evidence remains
   externally gated until this slice is delivered to `v3`.
+- [x] M3.1/M3.2 local unified execution envelope and default-off smart routing
+  implemented in `49185181c`. Trusted hosted preparation computes one route and
+  canonical plan; hosted and public backends consume the same artifact; ready
+  runs require exactly eight shards; drafts remain hosted/full unless the
+  independent smart-draft control enables a selected plan. Public jobs use
+  trusted `v3` remote composite actions, restore-only caches, no secrets, and
+  the existing Klicker-only runner group.
+- [x] M3 local verification completed: 39 focused tests, repository-wide checks
+  (25 tasks), workflow policy validation, YAML parsing, and the cached build
+  (23 tasks) passed. Node 26.8.1 emitted the existing warning because the repo
+  pins Node 24.
 - [ ] M2 selector shadow evidence: compare at least ten representative draft
   plans with the authoritative full suite and disposition every miss.
-- [ ] M3 canary and global activation.
+- [ ] M3 canary and global activation; live proof still requires the exact
+  `v3` delivery, runner-group readback, and separately approved controls.
 - [ ] M4 read-only metric decision and any separately approved packages.
