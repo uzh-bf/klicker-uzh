@@ -401,7 +401,9 @@ The chat branch uses `@assistant-ui/react` 0.15's stable `GroupedParts` primitiv
 composition lives in `src/components/message-parts.tsx:AssistantMessageParts`: adjacent
 reasoning parts share one disclosure, adjacent tool calls share one group when there is more
 than one, and a single tool call keeps its direct result disclosure. These trace rows use the
-same compact spacing, with 32px controls by default and 44px touch targets on coarse pointers.
+same compact spacing, with 24px controls by default and 44px touch targets on coarse pointers.
+Reasoning rows use a brain icon, while tool rows use their current status icon; both reserve the same
+leading icon slot so their labels share one column.
 Reasoning auto-opens only while active until the participant manually chooses an open state; that
 manual choice then wins.
 The source-card section is derived from completed `doc_query` tool results but

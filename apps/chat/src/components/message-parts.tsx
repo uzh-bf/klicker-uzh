@@ -8,6 +8,7 @@ import {
 import { Markdown } from '@klicker-uzh/markdown'
 import {
   AlertCircleIcon,
+  BrainIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   CircleStopIcon,
@@ -15,7 +16,12 @@ import {
   RefreshCwIcon,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { type FC, type PropsWithChildren, useState } from 'react'
+import {
+  type FC,
+  type PropsWithChildren,
+  type ReactNode,
+  useState,
+} from 'react'
 
 import {
   MarkdownText,
@@ -38,6 +44,7 @@ const GroupedDisclosure: FC<
     autoOpen?: boolean
     contentClassName: string
     dataCy: string
+    icon?: ReactNode
     label: string
   }>
 > = ({
@@ -46,19 +53,20 @@ const GroupedDisclosure: FC<
   children,
   contentClassName,
   dataCy,
+  icon,
   label,
 }) => {
   const [manualOpen, setManualOpen] = useState<boolean | null>(null)
   const isOpen = resolveDisclosureOpen(manualOpen, autoOpen, active)
 
   return (
-    <div className="mt-0.5">
+    <div>
       <button
         type="button"
         data-cy={dataCy}
         aria-expanded={isOpen}
         onClick={() => setManualOpen(!isOpen)}
-        className="text-muted-foreground hover:text-foreground inline-flex min-h-8 items-center gap-1 rounded-full px-2 text-xs transition-colors touch-manipulation [@media(pointer:coarse)]:min-h-11"
+        className="text-muted-foreground hover:text-foreground inline-flex min-h-6 items-center gap-1 rounded-full px-2 text-xs transition-colors touch-manipulation [@media(pointer:coarse)]:min-h-11"
       >
         {isOpen ? (
           <ChevronDownIcon className="size-3" />
@@ -71,7 +79,9 @@ const GroupedDisclosure: FC<
         >
           {active ? (
             <LoaderCircleIcon className="text-primary size-3 animate-spin" />
-          ) : null}
+          ) : (
+            icon
+          )}
         </span>
         {label}
       </button>
@@ -116,6 +126,7 @@ const ReasoningGroup: FC<
       active={active}
       autoOpen
       dataCy="chat-reasoning-toggle"
+      icon={<BrainIcon className="size-3" aria-hidden />}
       label={`${t('chat.message.reasoningToggle')}${effortLabel}`}
       contentClassName="text-muted-foreground border-border mb-2 border-l-2 pl-3 text-sm"
     >

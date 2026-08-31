@@ -240,14 +240,14 @@ export const ToolFallback: FC<ToolFallbackProps> = ({
         : JSON.stringify(result, null, 2)
 
   return (
-    <div className="mb-0.5">
+    <div>
       <button
         type="button"
         data-cy="chat-tool-call-toggle"
         onClick={() => setIsCollapsed(!isCollapsed)}
         aria-expanded={!isCollapsed}
         className={twMerge(
-          'inline-flex min-h-8 items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors touch-manipulation [@media(pointer:coarse)]:min-h-11',
+          'inline-flex min-h-6 items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors touch-manipulation [@media(pointer:coarse)]:min-h-11',
           isFailed
             ? 'bg-destructive/10 text-foreground hover:bg-destructive/20'
             : 'text-muted-foreground hover:bg-accent hover:text-foreground'
