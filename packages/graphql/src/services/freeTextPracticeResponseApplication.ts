@@ -39,7 +39,8 @@ export async function applyEvaluatedFreeTextAttemptInTransaction(
     !attempt ||
     attempt.questionResponseDetailId !== null ||
     attempt.evaluationStatus !== DB.FreeTextEvaluationStatus.EVALUATED ||
-    attempt.aggregateScore === null
+    attempt.aggregateScore === null ||
+    attempt.correctness === null
   ) {
     return false
   }
@@ -83,6 +84,12 @@ export async function applyEvaluatedFreeTextAttemptInTransaction(
   const xpAwarded = attempt.cycle.xpRewardEligible
     ? Math.max(0, currentXp - attempt.cycle.bestXp)
     : 0
+  const responseCorrectness =
+    attempt.correctness === DB.FreeTextCorrectnessCategory.CORRECT
+      ? DB.ResponseCorrectness.CORRECT
+      : attempt.correctness === DB.FreeTextCorrectnessCategory.PARTIAL
+        ? DB.ResponseCorrectness.PARTIAL
+        : DB.ResponseCorrectness.WRONG
 
   const result = await applyQuestionResponseInTransaction(
     {
@@ -95,7 +102,8 @@ export async function applyEvaluatedFreeTextAttemptInTransaction(
       },
       evaluationPolicy: {
         kind: 'PRECOMPUTED',
-        correctness: currentPercentage,
+        scorePercentage: currentPercentage,
+        responseCorrectness,
         award: { pointsAwarded, xpAwarded },
       },
     },

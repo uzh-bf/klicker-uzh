@@ -230,6 +230,17 @@ describe('semantic free-text evaluation worker', () => {
         },
       },
     })
+    await prisma.instanceStatistics.update({
+      where: { elementInstanceId: fixture.instance.id },
+      data: {
+        firstCorrectCount: 0,
+        firstPartialCorrectCount: 0,
+        firstWrongCount: 0,
+        lastCorrectCount: 0,
+        lastPartialCorrectCount: 0,
+        lastWrongCount: 0,
+      },
+    })
     const ctx = participantContext(fixture.participant.id)
     await decideSemanticEvaluationConsent(
       { disclosureVersion: '2026-08-18', accepted: true },
@@ -300,6 +311,79 @@ describe('semantic free-text evaluation worker', () => {
         select: { xp: true },
       })
     ).toEqual({ xp: 10 })
+    const appliedAttempt = await prisma.freeTextAttempt.findUniqueOrThrow({
+      where: { id: pending.currentAttempt!.id },
+      include: { questionResponseDetail: true },
+    })
+    expect(appliedAttempt.questionResponseDetail).toMatchObject({
+      score: 8,
+      pointsAwarded: 8,
+      xpAwarded: 10,
+    })
+
+    const questionResponse = await prisma.questionResponse.findUniqueOrThrow({
+      where: {
+        participantId_elementInstanceId: {
+          participantId: fixture.participant.id,
+          elementInstanceId: fixture.instance.id,
+        },
+      },
+    })
+    expect(questionResponse).toMatchObject({
+      totalScore: 8,
+      firstResponseCorrectness: 'CORRECT',
+      lastResponseCorrectness: 'CORRECT',
+      correctCount: 1,
+      correctCountStreak: 1,
+      partialCorrectCount: 0,
+      wrongCount: 0,
+    })
+    const responseResults = questionResponse.aggregatedResponses as {
+      responses: Record<
+        string,
+        { value: string; count: number; correct: boolean }
+      >
+      total: number
+    }
+    expect(responseResults.total).toBe(1)
+    expect(Object.values(responseResults.responses)).toEqual([
+      {
+        value: 'it reduces asset-specific risk.',
+        count: 1,
+        correct: true,
+      },
+    ])
+
+    const trackedInstance = await prisma.elementInstance.findUniqueOrThrow({
+      where: { id: fixture.instance.id },
+      select: { results: true, instanceStatistics: true },
+    })
+    expect(trackedInstance.instanceStatistics).toMatchObject({
+      correctCount: 1,
+      partialCorrectCount: 0,
+      wrongCount: 0,
+      firstCorrectCount: 1,
+      firstPartialCorrectCount: 0,
+      firstWrongCount: 0,
+      lastCorrectCount: 1,
+      lastPartialCorrectCount: 0,
+      lastWrongCount: 0,
+    })
+    const instanceResults = trackedInstance.results as {
+      responses: Record<
+        string,
+        { value: string; count: number; correct: boolean }
+      >
+      total: number
+    }
+    expect(instanceResults.total).toBe(1)
+    expect(Object.values(instanceResults.responses)).toEqual([
+      {
+        value: 'it reduces asset-specific risk.',
+        count: 1,
+        correct: true,
+      },
+    ])
   })
 
   it('applies a recovered evaluated attempt exactly once under concurrency', async () => {

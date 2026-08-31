@@ -43,7 +43,8 @@ export type QuestionResponseEvaluationPolicy =
   | { kind: 'DEFAULT' }
   | {
       kind: 'PRECOMPUTED'
-      correctness: number
+      scorePercentage: number
+      responseCorrectness: DB.ResponseCorrectness
       award: {
         pointsAwarded: number | null
         xpAwarded: number
@@ -126,12 +127,12 @@ function computeAggregatedResponsesOpen({
   instance,
   existingResponse,
   responseValue,
-  correctness,
+  correct,
 }: {
   instance: DB.ElementInstance
   existingResponse: DB.QuestionResponse | null
   responseValue: string
-  correctness: number
+  correct: boolean
 }) {
   const newAggResponses = (existingResponse?.aggregatedResponses ??
     getInitialInstanceResults(instance.elementData)) as ElementResultsOpen
@@ -153,7 +154,7 @@ function computeAggregatedResponsesOpen({
       [hashedValue]: {
         value: responseValue,
         count: 1,
-        correct: correctness === 1,
+        correct,
       },
     }
   }
@@ -222,13 +223,13 @@ function computeAggregatedResponsesQuestion({
   instance,
   existingResponse,
   response,
-  correctness,
+  responseCorrectness,
   caseStudySolutions,
 }: {
   instance: DB.ElementInstance
   existingResponse: DB.QuestionResponse | null
   response: ResponseInput
-  correctness?: number | null
+  responseCorrectness: DB.ResponseCorrectness
   caseStudySolutions?: CaseStudySolutionsObject
 }): ElementInstanceResults | null {
   if (
@@ -252,7 +253,7 @@ function computeAggregatedResponsesQuestion({
         instance.elementType === DB.ElementType.NUMERICAL
           ? String(parseFloat(response.value!))
           : toLowerCase(response.value!.trim()),
-      correctness: correctness ?? 0,
+      correct: responseCorrectness === DB.ResponseCorrectness.CORRECT,
     })
   } else if (instance.elementType === DB.ElementType.SELECTION) {
     return computeAggregatedResponsesSelection({
@@ -278,7 +279,7 @@ async function upsertQuestionResponse({
   participantId,
   courseId,
   response,
-  correctness,
+  responseCorrectness,
   score,
   pointsAwarded,
   lastAwardedAt,
@@ -296,7 +297,7 @@ async function upsertQuestionResponse({
   participantId: string
   courseId: string
   response: ResponseInput
-  correctness: number
+  responseCorrectness: DB.ResponseCorrectness
   score: number
   pointsAwarded: number | null
   lastAwardedAt: Date
@@ -309,13 +310,6 @@ async function upsertQuestionResponse({
   microLearningId?: string
   resultSpacedRepetition: SpacedRepetitionResult
 }) {
-  const responseCorrectness =
-    correctness === 1
-      ? DB.ResponseCorrectness.CORRECT
-      : correctness === 0
-        ? DB.ResponseCorrectness.WRONG
-        : DB.ResponseCorrectness.PARTIAL
-
   await prisma.questionResponse.upsert({
     where: {
       participantId_elementInstanceId: { participantId, elementInstanceId: id },
@@ -348,9 +342,9 @@ async function upsertQuestionResponse({
         },
       },
       ...combineNewCorrectnessParams({
-        correct: correctness === 1,
-        partial: correctness > 0 && correctness < 1,
-        incorrect: correctness === 0,
+        correct: responseCorrectness === DB.ResponseCorrectness.CORRECT,
+        partial: responseCorrectness === DB.ResponseCorrectness.PARTIAL,
+        incorrect: responseCorrectness === DB.ResponseCorrectness.WRONG,
       }),
       eFactor: resultSpacedRepetition.efactor,
       nextDueAt: resultSpacedRepetition.nextDueAt,
@@ -369,9 +363,9 @@ async function upsertQuestionResponse({
         typeof pointsAwarded === 'number' ? { increment: pointsAwarded } : null,
       totalXpAwarded: { increment: xpAwarded },
       ...combineCorrectnessParams({
-        correct: correctness === 1,
-        partial: correctness > 0 && correctness < 1,
-        incorrect: correctness === 0,
+        correct: responseCorrectness === DB.ResponseCorrectness.CORRECT,
+        partial: responseCorrectness === DB.ResponseCorrectness.PARTIAL,
+        incorrect: responseCorrectness === DB.ResponseCorrectness.WRONG,
         existingResponse,
       }),
       eFactor: resultSpacedRepetition.efactor,
@@ -523,13 +517,27 @@ export async function applyQuestionResponseInTransaction(
     caseStudySolutions,
     correctnessOverride:
       evaluationPolicy.kind === 'PRECOMPUTED'
-        ? evaluationPolicy.correctness
+        ? evaluationPolicy.scorePercentage
+        : undefined,
+    resultCorrectOverride:
+      evaluationPolicy.kind === 'PRECOMPUTED'
+        ? evaluationPolicy.responseCorrectness ===
+          DB.ResponseCorrectness.CORRECT
         : undefined,
   })
 
   if (!modified || results === null) {
     return null
   }
+
+  const responseCorrectness =
+    evaluationPolicy.kind === 'PRECOMPUTED'
+      ? evaluationPolicy.responseCorrectness
+      : correctness === 1
+        ? DB.ResponseCorrectness.CORRECT
+        : correctness !== null && correctness > 0
+          ? DB.ResponseCorrectness.PARTIAL
+          : DB.ResponseCorrectness.WRONG
 
   const { newAverageResponseTime, newAverageInstanceTime } = participation
     ? computeNewAverageTimes({
@@ -545,9 +553,9 @@ export async function applyQuestionResponseInTransaction(
     participation,
     existingResponse,
     newAverageInstanceTime,
-    answerCorrect: correctness === 1,
-    answerPartial: (correctness ?? 0) < 1 && (correctness ?? 0) > 0,
-    answerIncorrect: correctness === 0,
+    answerCorrect: responseCorrectness === DB.ResponseCorrectness.CORRECT,
+    answerPartial: responseCorrectness === DB.ResponseCorrectness.PARTIAL,
+    answerIncorrect: responseCorrectness === DB.ResponseCorrectness.WRONG,
     instanceInPracticeQuiz: !!existingInstance.elementStack?.practiceQuizId,
   })
   const updatedInstance = !skipTracking
@@ -570,11 +578,11 @@ export async function applyQuestionResponseInTransaction(
   })
   const percentile = questionEval?.percentile ?? 0
   const status =
-    percentile === 0
-      ? StackFeedbackStatus.INCORRECT
-      : percentile === 1
-        ? StackFeedbackStatus.CORRECT
-        : StackFeedbackStatus.PARTIAL
+    responseCorrectness === DB.ResponseCorrectness.CORRECT
+      ? StackFeedbackStatus.CORRECT
+      : responseCorrectness === DB.ResponseCorrectness.PARTIAL
+        ? StackFeedbackStatus.PARTIAL
+        : StackFeedbackStatus.INCORRECT
 
   if (!questionEval || !actor) {
     return {
@@ -633,7 +641,7 @@ export async function applyQuestionResponseInTransaction(
       instance: updatedInstance,
       existingResponse,
       response,
-      correctness,
+      responseCorrectness,
       caseStudySolutions,
     })
     if (!newAggResponses) {
@@ -647,7 +655,7 @@ export async function applyQuestionResponseInTransaction(
       interval: existingResponse?.interval ?? 1,
       streak:
         (existingResponse?.correctCountStreak ?? 0) +
-        (percentile === 1 ? 1 : 0),
+        (responseCorrectness === DB.ResponseCorrectness.CORRECT ? 1 : 0),
       grade: percentile,
     })
     const responseDetail = await createQuestionResponseDetail({
@@ -672,7 +680,7 @@ export async function applyQuestionResponseInTransaction(
       participantId: activeParticipantId,
       courseId,
       response,
-      correctness: percentile,
+      responseCorrectness,
       score: questionEval.score ?? 0,
       pointsAwarded,
       lastAwardedAt: lastAwardedAt ?? new Date(),
