@@ -2818,9 +2818,15 @@ test.describe('Part 4: Course deletion', () => {
       clues: [
         {
           type: 'text',
-          name: 'Deletion clue',
-          displayName: 'Deletion clue',
-          content: 'Deletion fixture',
+          name: 'Deletion clue 1',
+          displayName: 'Deletion clue 1',
+          content: 'Deletion fixture 1',
+        },
+        {
+          type: 'text',
+          name: 'Deletion clue 2',
+          displayName: 'Deletion clue 2',
+          content: 'Deletion fixture 2',
         },
       ],
       stack: { elements: [DELETION.qTitle] },
