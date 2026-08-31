@@ -26,6 +26,10 @@ assert.deepEqual(
   sanitizeManageElementCreatedPayload({ id: 42, name: 'Draft question' }),
   { id: 42, name: 'Draft question' }
 )
+assert.deepEqual(
+  sanitizeManageElementCreatedPayload({ id: 42, name: 'x'.repeat(201) }),
+  { id: 42, name: 'x'.repeat(201) }
+)
 
 // Rejects malformed or out-of-bounds payloads instead of trusting the
 // postMessage sender.
@@ -35,10 +39,6 @@ assert.equal(
 )
 assert.equal(sanitizeManageElementCreatedPayload({ id: 42, name: 123 }), null)
 assert.equal(sanitizeManageElementCreatedPayload({ id: 42, name: '' }), null)
-assert.equal(
-  sanitizeManageElementCreatedPayload({ id: 42, name: 'x'.repeat(201) }),
-  null
-)
 assert.equal(
   sanitizeManageElementCreatedPayload({
     id: Number.POSITIVE_INFINITY,

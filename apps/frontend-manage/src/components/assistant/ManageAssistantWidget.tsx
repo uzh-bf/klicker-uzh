@@ -271,7 +271,7 @@ export function ManageAssistantWidget() {
       // Let the Manage editor own focus before changing the route. The
       // assistant must not return focus to its launcher during this handoff.
       closeWidget(false)
-      void router.push(route)
+      void router.push(route, undefined, { shallow: true })
     },
     [closeWidget, router]
   )

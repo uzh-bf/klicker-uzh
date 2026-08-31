@@ -257,8 +257,7 @@ function parseConfirmedElement(value: unknown): ConfirmedElement | null {
     !Number.isInteger(id) ||
     id <= 0 ||
     typeof name !== 'string' ||
-    name.length === 0 ||
-    name.length > 200
+    name.length === 0
   ) {
     return null
   }

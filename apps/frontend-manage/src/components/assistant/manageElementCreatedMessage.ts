@@ -1,7 +1,5 @@
 import { MANAGE_ELEMENT_CREATED_MESSAGE_TYPE } from '@klicker-uzh/types'
 
-const MAX_NAME_LENGTH = 200
-
 export type ManageElementCreatedPayload = {
   id: number
   name: string
@@ -32,11 +30,7 @@ export function sanitizeManageElementCreatedPayload(
   // (z.number().int().positive()): a created element id is always a positive
   // integer, so reject fractional or non-positive values at this boundary too.
   if (typeof id !== 'number' || !Number.isInteger(id) || id <= 0) return null
-  if (
-    typeof name !== 'string' ||
-    name.length === 0 ||
-    name.length > MAX_NAME_LENGTH
-  ) {
+  if (typeof name !== 'string' || name.length === 0) {
     return null
   }
 
