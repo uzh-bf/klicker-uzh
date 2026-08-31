@@ -237,17 +237,20 @@ gitlink. Run a simplifier and one slice reviewer after the immutable commit.
   remains valid transport evidence but is superseded as developer-key
   acceptance because the required path is local LiteLLM directly to the
   developer Azure Foundry.
-- The direct developer Foundry attempt now uses the `klicker-dev` profile's
+- The direct developer Foundry proof uses the `klicker-dev` profile's
   `AZURE_OPENAI_API_KEY` and `AZURE_OPENAI_BASE_URL`, added to that profile's
   readable allowlist after explicit approval. The local proxy targets the
   Azure OpenAI v1 endpoint as `openai/gpt-5.6-luna`, with one local alias and
-  zero retries. The exact credentials advanced the response from `401` to
-  `403 Access denied due to Virtual Network/Firewall rules`, identifying the
-  network ACL as the current blocker while credential validity beyond that
-  gate and the quality evaluation remain unproven. The developer Foundry admits
-  only the configured UZH network ranges, so the next run requires UZH VPN or
-  an approved UZH-egress tunnel. Both failed attempts produced zero evaluator
-  usage records. The local proxy was stopped and its listener verified absent.
+  zero retries. The initial off-VPN checks produced `401` for the wrong
+  upstream key and then `403 Access denied due to Virtual Network/Firewall
+  rules` for the exact developer credentials; both failed attempts produced
+  zero evaluator usage records. After connecting to the UZH VPN, local health
+  and exact-alias visibility returned HTTP 200. One paid one-case, one-metric
+  evaluation then produced one local proxy POST and one evaluator usage record,
+  scored `1.0`, and completed without an evaluation error. The direct Foundry
+  request used 321 prompt, 45 completion, and 366 total tokens at an estimated
+  cost of USD 0.0001182 in 4.97 seconds. The local proxy was stopped and its
+  listener verified absent.
 - Live Klicker target quality remains unproven because the authenticated AI-SDK
   stream still lacks a verified evaluator endpoint, authentication, and mode
   adapter.
