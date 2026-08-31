@@ -107,6 +107,11 @@ Neither PR may merge under this plan.
   ESLint, staged secret scan, and diff check). The security/cross-system slice
   review passed. The simplifier removed three unused or redundant exports, and
   the same focused verification passed afterward.
-- [ ] S1b configuration-only activation operator implemented and reviewed.
+- [x] S1b configuration-only activation operator implemented at `4f953f5f8`.
+  Focused verification passed (23 Vitest tests, `check:scripts`, Prettier,
+  staged secret scan, and diff check). The data-integrity and security review
+  passed with no findings. The simplifier's two recovery reductions were
+  declined because they would weaken exact outcome-unknown evidence for a
+  production configuration transaction.
 - [ ] S1c sealed proof entry point implemented and reviewed.
 - [ ] Canonical and maintenance PRs published with terminal exact-head CI.
