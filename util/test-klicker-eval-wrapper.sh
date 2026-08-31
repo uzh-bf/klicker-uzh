@@ -43,6 +43,11 @@ printf "%s\n" "$@" >"$KLICKER_TEST_OPERATOR_LOG"
 while [ "$#" -gt 0 ]; do
   if [ "$1" = "--" ]; then
     shift
+    if [ "${KLICKER_TEST_EMPTY_SECRET:-false}" = "true" ]; then
+      export LITELLM_API_KEY=""
+    else
+      export LITELLM_API_KEY="synthetic-test-key"
+    fi
     exec "$@"
   fi
   shift
@@ -53,6 +58,11 @@ write_file "$FAKE_BIN/uv" '#!/usr/bin/env bash
 for name in LITELLM_API_BASE EVAL_MODEL EVAL_MODEL_CAPABILITY_MODEL EVAL_REASONING_EFFORT EVAL_JUDGE_SINGLE_ATTEMPT EVAL_METRICS_PATH EVAL_TOOLS_PATH GT_ROOT_DIR DEFAULT_GT_DIR TOOL_PROFILE; do
   printf "%s=%s\n" "$name" "${!name-}" >>"$KLICKER_TEST_CHILD_LOG"
 done
+if [[ -v EVAL_MODEL_CAPABILITY_MODEL ]]; then
+  printf "EVAL_MODEL_CAPABILITY_MODEL_STATE=set\n" >>"$KLICKER_TEST_CHILD_LOG"
+else
+  printf "EVAL_MODEL_CAPABILITY_MODEL_STATE=unset\n" >>"$KLICKER_TEST_CHILD_LOG"
+fi
 printf "ARG=%s\n" "$@" >>"$KLICKER_TEST_CHILD_LOG"'
 
 chmod +x "$FAKE_BIN/git" "$FAKE_BIN/rs-infisical-operator" "$FAKE_BIN/uv"
@@ -113,6 +123,7 @@ assert_line 'ARG=explicit-profile' "$CHILD_LOG"
 : >"$CHILD_LOG"
 env -i \
   EVAL_MODEL='caller/model-with-own-metadata' \
+  EVAL_MODEL_CAPABILITY_MODEL='' \
   LITELLM_API_BASE='https://caller.example.test' \
   PATH="$FAKE_BIN:$PATH" \
   KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
@@ -122,6 +133,20 @@ env -i \
 
 assert_line 'EVAL_MODEL=caller/model-with-own-metadata' "$CHILD_LOG"
 assert_line 'EVAL_MODEL_CAPABILITY_MODEL=' "$CHILD_LOG"
+assert_line 'EVAL_MODEL_CAPABILITY_MODEL_STATE=unset' "$CHILD_LOG"
+
+status=0
+env -i \
+  KLICKER_TEST_EMPTY_SECRET='true' \
+  LITELLM_API_BASE='https://litellm.example.test' \
+  PATH="$FAKE_BIN:$PATH" \
+  KLICKER_TEST_REPO_ROOT="$FAKE_REPO" \
+  KLICKER_TEST_OPERATOR_LOG="$OPERATOR_LOG" \
+  KLICKER_TEST_CHILD_LOG="$CHILD_LOG" \
+  "$WRAPPER" --mode eval >"$TEST_ROOT/empty-key.out" 2>&1 || status=$?
+
+[ "$status" -eq 1 ] || fail "empty mapped key returned $status instead of 1"
+assert_line 'Error: mapped LITELLM_API_KEY is missing or empty' "$TEST_ROOT/empty-key.out"
 
 MISSING_REPO="$TEST_ROOT/missing-repo"
 mkdir -p "$MISSING_REPO"

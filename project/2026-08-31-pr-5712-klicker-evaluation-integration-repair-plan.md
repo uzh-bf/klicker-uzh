@@ -260,3 +260,12 @@ gitlink. Run a simplifier and one slice reviewer after the immutable commit.
   as a draft. The dependent Klicker branch was then published and pull request
   #5712 is open as a draft. Exact-head CI and mergeability readback remain before
   either review request can be marked ready.
+- Pull request review confirmed that the private evaluator feature branch
+  advertises the pinned commit, but the public gitlink must move to the merged
+  evaluator commit before merge because the private merge request squashes and
+  removes its source branch.
+- Review correction: the wrapper now rejects an empty mapped
+  `LITELLM_API_KEY` before starting `uv`; the operator already fails when the
+  source secret is missing. The contract test also distinguishes an explicitly
+  empty capability variable from an absent child variable. Default-value
+  assertions remain intentional regression pins.

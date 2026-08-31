@@ -57,7 +57,17 @@ cd "$REPO_ROOT"
 exec rs-infisical-operator --profile klicker-uzh-stg run \
   --map PIPELINES_LITELLM_API_KEY=LITELLM_API_KEY -- \
   "${EVAL_ENV[@]}" \
-  uv run --project "$FRAMEWORK_ROOT" \
-  "$FRAMEWORK_RUNNER" \
-  --no-dotenv \
-  "$@"
+  bash -c '
+    set -euo pipefail
+    if [ -z "${LITELLM_API_KEY:-}" ]; then
+      echo "Error: mapped LITELLM_API_KEY is missing or empty" >&2
+      exit 1
+    fi
+    framework_root="$1"
+    framework_runner="$2"
+    shift 2
+    exec uv run --project "$framework_root" \
+      "$framework_runner" \
+      --no-dotenv \
+      "$@"
+  ' klicker-eval "$FRAMEWORK_ROOT" "$FRAMEWORK_RUNNER" "$@"
