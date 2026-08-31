@@ -152,12 +152,10 @@ export function createProofManifest({
     : manifest
 }
 
-export async function proofDummyEnvironment(
-  registry: TemporaryDirectoryRegistry = defaultProofEnvironmentRegistry
-): Promise<Record<string, string>> {
+export async function proofDummyEnvironment(): Promise<Record<string, string>> {
   const { privateKey } = await generateKeyPair('ES256')
   const directory = await createPrivateDirectory(
-    registry,
+    defaultProofEnvironmentRegistry,
     'klicker-doc-query-proof-env-'
   )
   return {
