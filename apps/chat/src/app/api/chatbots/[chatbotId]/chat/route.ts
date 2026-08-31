@@ -764,11 +764,13 @@ export async function POST(
     chatbot.allowedModelIds.length > 0
       ? new Set(chatbot.allowedModelIds as string[])
       : null
+  const hasActiveAllowedModel =
+    allowedIds === null ||
+    modelRegistry.some((model) => allowedIds.has(model.id))
+  let automaticModelId: string | null = null
 
   if (!chatbot.modelSelection) {
-    const automaticModelId = getAutomaticModelId(
-      chatbot.allowedModelIds as string[]
-    )
+    automaticModelId = getAutomaticModelId(chatbot.allowedModelIds as string[])
     if (!automaticModelId) {
       return NextResponse.json(
         { error: 'No model is available for this chatbot' },
@@ -790,7 +792,16 @@ export async function POST(
   let selectedModelConfig: ChatModelConfig = initialModelConfig
 
   // Enforce per-chatbot model allow-list
-  if (allowedIds && !allowedIds.has(selectedModelConfig.id)) {
+  // Automatic selection is authoritative when a persisted allow-list contains
+  // only retired models: getAutomaticModelId resolves that state to Luna, the
+  // unconditional base fallback, so the stale list must not reject the turn.
+  if (
+    allowedIds &&
+    !allowedIds.has(selectedModelConfig.id) &&
+    selectedModelConfig.id !== automaticModelId &&
+    (hasActiveAllowedModel ||
+      selectedModelConfig.id !== getParticipantFallbackModelId())
+  ) {
     return NextResponse.json(
       { error: `Model not available for this chatbot: ${selectedModel}` },
       { status: 400 }

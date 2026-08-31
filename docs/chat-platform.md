@@ -229,9 +229,10 @@ production Azure URLs, model prefixes, secrets, or failover topology. Local
 Auto Mode is therefore evidence about the wiring and policy simulation, never
 live production routing. The local chat registry maps the user-facing `auto`
 model id to the `auto-router` LiteLLM deployment and exposes `gpt-5.6-luna` for
-a direct comparison. The seeded Benibot fixture allow-lists all three of
-`auto`, `gpt-5.6-luna` and `gpt-4.1-mini` explicitly, so it satisfies the
-strict model allow-list. Runtime fallback never bypasses that allow-list.
+a direct comparison. The seeded Benibot fixture allow-lists all three active
+options — `auto`, `gpt-5.6-luna` and `gpt-4.1` — explicitly, so it satisfies
+the strict model allow-list. The zero-credit safety fallback may use Luna even
+when that allow-list omits it.
 
 The local LiteLLM service pins
 `ghcr.io/berriai/litellm-database:v1.96.2` by immutable multi-platform digest,
@@ -324,9 +325,10 @@ per-chatbot allocation, and participant-credit migration remain deferred.
 
 - Omitted `supportsImageAttachments` defaults to **false** — every image-capable model must set it explicitly in deployment values or the attach button disappears.
 - The zero-credit participant path uses GPT-5.6 Luna as the base-lane fallback
-  even when the chatbot allow-list excludes it or a legacy configuration names
-  GPT-4.1 Mini. The registry must contain a `fallback` GPT-5.6 Luna `BASE`
-  entry; the route denies the turn only if that entry is absent. A
+  even when the chatbot allow-list excludes it. The registry must contain a
+  `fallback` GPT-5.6 Luna `BASE` entry; the route denies the turn only if that
+  entry is absent. Retired model IDs in persisted allow-lists are ignored, and
+  an automatic chatbot with no current allowed model resolves to Luna. A
   `CHAT_FALLBACK_MODEL_ID` override changes only automatic-mode selection, not
   this zero-credit safety fallback.
 - OpenAI Responses backends: keep `CHAT_OPENAI_STORE_RESPONSES=true` in shared/staged deployments — with `store: false`, LiteLLM/Azure can return "item not found" when a model references prior response items across tool-call steps. Local OpenRouter-style setups can leave it false.

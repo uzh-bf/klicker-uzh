@@ -112,6 +112,19 @@ describe('chat model registry provider protocol', () => {
     )
   })
 
+  test('uses Luna when an allow-list contains only retired models', async () => {
+    const { getAutomaticModelId, getModelsForChatbot } = await import(
+      '../src/lib/server/chatModelRegistry'
+    )
+
+    expect(
+      getModelsForChatbot({ allowedModelIds: ['gpt-4.1-mini'] }).map(
+        (model) => model.id
+      )
+    ).toEqual(['gpt-5.6-luna'])
+    expect(getAutomaticModelId(['gpt-4.1-mini'])).toBe('gpt-5.6-luna')
+  })
+
   test('always selects Luna as the participant fallback', async () => {
     vi.stubEnv('CHAT_FALLBACK_MODEL_ID', 'advanced-fallback')
     vi.stubEnv(

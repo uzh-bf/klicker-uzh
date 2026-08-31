@@ -21,8 +21,9 @@ environment.
 - When participant credits are exhausted, Chat always uses the registry's base
   fallback, GPT-5.6 Luna. The chatbot allow-list and selected usage class do not
   block that fallback.
-- GPT-4.1 Mini remains selectable only for compatibility in this release. Its
-  complete retirement is a separate cleanup.
+- GPT-4.1 Mini is retired from active registries, deployment values, and local
+  router configuration. Persisted allow-lists containing only retired models
+  resolve to the narrow GPT-5.6 Luna base fallback until they are repaired.
 - Lifecycle writers are off by default in the first rollout. New readers and
   complete-only writes must coexist safely with older readers.
 
@@ -30,7 +31,8 @@ environment.
 
 - Do not merge, rebase, retarget, or edit the existing chatbot authoring stack.
 - Do not add a GraphQL chatbot-bootstrap query.
-- Do not remove GPT-4.1 Mini from every registry or historical configuration.
+- Do not rewrite historical usage-analysis snapshots or prior rollout records
+  that mention GPT-4.1 Mini.
 - Do not enable lifecycle claims, account-usage enforcement, or any feature
   flag in an environment.
 - Do not add or edit a Prisma migration.
@@ -162,7 +164,8 @@ Check:
 
 - Registry and route tests cover Advanced, Auto, and a chatbot allow-list that
   omits Luna; all exhausted-credit cases use GPT-5.6 Luna.
-- Tests prove GPT-4.1 Mini is never selected as a fallback.
+- Tests prove a stale allow-list containing only GPT-4.1 Mini resolves to GPT-5.6
+  Luna in automatic mode.
 - Registry parity still requires one base fallback with the Luna identifier.
 
 Commit:
@@ -262,7 +265,7 @@ Check:
 | Chat availability | One ready replica and no PDB observed | Separate HA proposal for replicas, disruption budget, and spread |
 | Branch protection | No required checks or reviews observed | Separate repository-governance mutation after owners select policy |
 | Beta signup | Exists only on the broader `v3-ai` branch | Redesign as an audited, concurrency-safe, default-off feature before release |
-| Deferred model cleanup | GPT-4.1 Mini remains selectable | Remove it in a separate compatibility cleanup |
+| Model registry cleanup | GPT-4.1 Mini remains in active defaults and deployment values | Retire it in this release and preserve historical analysis records |
 | Account enforcement | Default off | Inventory budgets and owners before a separately approved cutover |
 
 ## Production qualification sequence

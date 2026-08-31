@@ -497,14 +497,31 @@ describe('account usage chat route', () => {
     expect(mocks.streamText).toHaveBeenCalledOnce()
   })
 
-  test('never uses GPT-4.1 Mini as a zero-credit fallback', async () => {
+  test('uses Luna when only a retired model remains in the automatic allow-list', async () => {
     mocks.chatbotFindUnique.mockResolvedValueOnce(
-      chatbot({ allowedModelIds: ['gpt-4.1-mini'] })
+      chatbot({ modelSelection: false, allowedModelIds: ['gpt-4.1-mini'] })
     )
-    mocks.previewUserCredits.mockResolvedValueOnce({ current: 0, total: 5 })
 
     const response = await POST(
       createRequest({ selectedModel: 'gpt-4.1-mini' }),
+      { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
+    )
+
+    expect(response.status).toBe(200)
+    expect(mocks.isChatAccountUsageAvailable).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      usageClass: 'BASE',
+    })
+    expect(mocks.streamText).toHaveBeenCalledOnce()
+  })
+
+  test('allows Luna when model selection is enabled but only retired models remain', async () => {
+    mocks.chatbotFindUnique.mockResolvedValueOnce(
+      chatbot({ allowedModelIds: ['gpt-4.1-mini'] })
+    )
+
+    const response = await POST(
+      createRequest({ selectedModel: 'gpt-5.6-luna' }),
       { params: Promise.resolve({ chatbotId: 'chatbot-1' }) }
     )
 

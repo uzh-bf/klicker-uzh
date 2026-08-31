@@ -1771,8 +1771,8 @@ test.describe('Chatbot Settings Panel', () => {
     await expect(modelSection).toBeVisible()
     await expect(page.getByTestId('chat-model-display')).toHaveCount(0)
 
-    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-4.1 Mini')
-    await expect(modelSection).toContainText('GPT-4.1 Mini')
+    await selectOption(page, '[data-cy="chat-model-select"]', 'GPT-4.1')
+    await expect(modelSection).toContainText('GPT-4.1')
 
     const chatRequestPromise = page.waitForRequest(
       (request) =>
@@ -1783,7 +1783,7 @@ test.describe('Chatbot Settings Panel', () => {
 
     const chatRequest = await chatRequestPromise
     const payload = chatRequest.postDataJSON() as { selectedModel?: string }
-    expect(payload.selectedModel).toBe('gpt-4.1-mini')
+    expect(payload.selectedModel).toBe('gpt-4.1')
     await expect(page.getByTestId('chat-assistant-message')).toContainText(
       'assistant reply #1',
       { timeout: 15_000 }

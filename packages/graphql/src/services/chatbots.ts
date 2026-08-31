@@ -137,20 +137,6 @@ const DEFAULT_CHAT_MODEL_REGISTRY_INPUT = [
     apiVersion: 'preview',
     cost: { input: 2.0, output: 8.0 },
   },
-  {
-    id: 'gpt-4.1-mini',
-    deploymentId: 'gpt-4.1-mini',
-    name: 'GPT-4.1 Mini',
-    description: 'Small OpenAI model',
-    fallback: false,
-    supportsReasoning: false,
-    usesResponsesApi: false,
-    supportedReasoningEfforts: [],
-    maxOutputTokens: 4096,
-    usageClass: 'ADVANCED',
-    apiVersion: 'preview',
-    cost: { input: 0.4, output: 1.6 },
-  },
 ]
 
 export const DEFAULT_CHAT_MODEL_REGISTRY: ChatModelCapability[] =
@@ -198,9 +184,13 @@ function parseAllowedReasoningEffortsByModel(
   }
 
   const entries: ChatbotReasoningConfigEntry[] = []
+  const activeModelIds = new Set(
+    getChatModelRegistry().map((model) => model.id)
+  )
   for (const [modelId, rawEfforts] of Object.entries(
     rawConfig as Record<string, unknown>
   )) {
+    if (!activeModelIds.has(modelId)) continue
     if (!Array.isArray(rawEfforts)) continue
     const validEfforts = rawEfforts.filter(
       (effort): effort is string =>
@@ -307,13 +297,33 @@ const chatbotOwnerSelect = {
 } satisfies Prisma.ChatbotSelect
 
 type ChatbotWithOwnerCourse = {
+  allowedModelIds: string[]
   allowedReasoningEffortsByModel: unknown
   course: { id: string; name: string } | null
+}
+
+function normalizeAllowedModelIds(allowedModelIds: string[]) {
+  const activeModelIds = new Set(
+    getChatModelRegistry().map((model) => model.id)
+  )
+  const normalized = dedupeStrings(allowedModelIds).filter((modelId) =>
+    activeModelIds.has(modelId)
+  )
+
+  if (normalized.length > 0 || allowedModelIds.length === 0) {
+    return normalized
+  }
+
+  // Keep a chatbot with an allow-list made entirely of retired or unknown
+  // models on the narrowest current model instead of silently widening it to
+  // every active model.
+  return [CHAT_BASE_MODEL_ID]
 }
 
 function shapeChatbotResponse<T extends ChatbotWithOwnerCourse>(chatbot: T) {
   return {
     ...chatbot,
+    allowedModelIds: normalizeAllowedModelIds(chatbot.allowedModelIds),
     allowedReasoningEffortsByModel: parseAllowedReasoningEffortsByModel(
       chatbot.allowedReasoningEffortsByModel
     ),

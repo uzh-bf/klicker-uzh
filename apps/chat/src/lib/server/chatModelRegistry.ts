@@ -174,20 +174,6 @@ export const DEFAULT_MODEL_REGISTRY: ChatModelConfig[] = parseRegistryValue([
     usageClass: 'ADVANCED',
     cost: { input: 2.0, output: 8.0 },
   },
-  {
-    id: 'gpt-4.1-mini',
-    deploymentId: 'gpt-4.1-mini',
-    name: 'GPT-4.1 Mini',
-    description: 'Small OpenAI model',
-    fallback: false,
-    supportsReasoning: false,
-    usesResponsesApi: false,
-    supportsImageAttachments: true,
-    supportedReasoningEfforts: [],
-    maxOutputTokens: 4096,
-    usageClass: 'ADVANCED',
-    cost: { input: 0.4, output: 1.6 },
-  },
 ])
 
 let cachedRegistry: ChatModelConfig[] | null = null
@@ -264,12 +250,20 @@ function filterRegistryByAllowList(
   if (!allowedModelIds || allowedModelIds.length === 0) return registry
 
   const allowed = new Set(allowedModelIds)
-  return registry.filter((model) => allowed.has(model.id))
+  const filtered = registry.filter((model) => allowed.has(model.id))
+  if (filtered.length > 0) return filtered
+
+  // A stored allow-list can outlive every model it names. Keep that chatbot
+  // usable through the unconditional base fallback without widening it to all
+  // current models.
+  const fallbackModelId = getParticipantFallbackModelId()
+  return registry.filter((model) => model.id === fallbackModelId)
 }
 
 /**
  * Filters the global model registry by a chatbot's allow-list.
- * Empty allowedModelIds means all models are available (backward-compatible default).
+ * Empty allowedModelIds means all models are available (backward-compatible
+ * default). A stale nonempty list retains only the base fallback.
  */
 export function getModelsForChatbot(chatbot: {
   allowedModelIds: string[]
