@@ -1681,7 +1681,7 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
     ingestAll: 'Ingest all',
     ingestAllTitle: 'Ingest all resources',
     ingestAllDescription:
-      'The server will queue {count} resources that are not available in their current form. Resources that are already current or in progress will stay unchanged.',
+      '{count, plural, one {The server will queue # resource that is not available in its current form. Resources that are already current or in progress will stay unchanged.} other {The server will queue # resources that are not available in their current form. Resources that are already current or in progress will stay unchanged.}}',
     ingestAllConfirm: 'Start ingestion',
     ingestAllNeeds: 'Need ingestion',
     ingestAllFailed: 'Failed attempts',

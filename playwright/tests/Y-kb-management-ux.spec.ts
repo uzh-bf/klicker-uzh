@@ -263,7 +263,7 @@ test.describe('Knowledge base management workspace', () => {
       await page.getByTestId('ingest-all-kb-resources').click()
       const ingestAllModal = page.getByTestId('ingest-all-kb-resources-modal')
       await expect(ingestAllModal).toBeVisible()
-      await expect(ingestAllModal).toContainText('1 resources')
+      await expect(ingestAllModal).toContainText('1 resource')
       await ingestAllModal
         .getByTestId('confirm-ingest-all-kb-resources')
         .click()

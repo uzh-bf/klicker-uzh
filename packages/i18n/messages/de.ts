@@ -1693,7 +1693,7 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
     ingestAll: 'Alle verarbeiten',
     ingestAllTitle: 'Alle Ressourcen verarbeiten',
     ingestAllDescription:
-      'Der Server plant {count} Ressourcen ein, die in ihrer aktuellen Form noch nicht verfügbar sind. Bereits aktuelle oder laufende Verarbeitungen bleiben unverändert.',
+      '{count, plural, one {Der Server plant # Ressource ein, die in ihrer aktuellen Form noch nicht verfügbar ist. Bereits aktuelle oder laufende Verarbeitungen bleiben unverändert.} other {Der Server plant # Ressourcen ein, die in ihrer aktuellen Form noch nicht verfügbar sind. Bereits aktuelle oder laufende Verarbeitungen bleiben unverändert.}}',
     ingestAllConfirm: 'Verarbeitung starten',
     ingestAllNeeds: 'Verarbeitung nötig',
     ingestAllFailed: 'Fehlgeschlagene Versuche',
