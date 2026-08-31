@@ -596,22 +596,21 @@ export function defineProofSupervisorSuite(
         'child_failed',
       ],
       ['a missing receipt', () => 'process.exit(0)', 'child_failed'],
-    ] as Array<[string, () => string, string]>)(
-      'rejects %s',
-      async (_name, source, expectedFailure) => {
-        const dummy = await config.writeDummy(source())
-        const receipt = await behaviors.superviseProof({
-          sourceEnvironment:
-            (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
-          childPath: dummy.path,
-          childArgs: [],
-          lockPath: dummy.lockPath,
-          deadlineMs: 2_000,
-        })
-        expect(receipt.result).toBe('failed')
-        expect(receipt.failureClass).toBe(expectedFailure)
-      }
-    )
+    ] as Array<
+      [string, () => string, string]
+    >)('rejects %s', async (_name, source, expectedFailure) => {
+      const dummy = await config.writeDummy(source())
+      const receipt = await behaviors.superviseProof({
+        sourceEnvironment:
+          (await config.dummyEnvironment()) as unknown as NodeJS.ProcessEnv,
+        childPath: dummy.path,
+        childArgs: [],
+        lockPath: dummy.lockPath,
+        deadlineMs: 2_000,
+      })
+      expect(receipt.result).toBe('failed')
+      expect(receipt.failureClass).toBe(expectedFailure)
+    })
 
     test('preserves a protocol failure when a failed child claims writes', async () => {
       const dummy = await config.writeDummy(
