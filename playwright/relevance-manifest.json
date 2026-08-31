@@ -69,6 +69,7 @@
         "T-resources.spec.ts",
         "U-catalog.spec.ts",
         "V-template.spec.ts",
+        "W4-activity-wizard-safety.spec.ts",
         "W-activity-log.spec.ts",
         "X-review.spec.ts",
         "Y-chat.spec.ts",
