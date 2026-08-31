@@ -2,7 +2,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 
 const EXPECTED_CALL =
-  'uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3'
+  'uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@v3'
 const EXPECTED_BUILD_ACTION =
   'uses: uzh-bf/klicker-uzh/.github/actions/playwright-build@refs/heads/v3'
 const EXPECTED_SHARD_ACTION =
@@ -166,7 +166,7 @@ function validatePublicPlaywrightWorkflow(root) {
   if (
     (
       caller.match(
-        /uses: uzh-bf\/klicker-uzh\/.github\/workflows\/public-pr-playwright-shards\.yml@refs\/heads\/v3/g
+        /uses: uzh-bf\/klicker-uzh\/.github\/workflows\/public-pr-playwright-shards\.yml@v3/g
       ) ?? []
     ).length !== 1 ||
     (caller.match(/concurrency:/g) ?? []).length !== 1 ||
@@ -241,6 +241,15 @@ function validatePublicPlaywrightWorkflow(root) {
     )
   ) {
     issues.push('cache seed must reject manual dispatches from other refs')
+  }
+  if (
+    !seedWorkflow.includes(
+      'git config --global --add safe.directory "$GITHUB_WORKSPACE"'
+    )
+  ) {
+    issues.push(
+      'cache seed must trust only the exact checked-out workspace before Git operations'
+    )
   }
   if (
     !seedWorkflow.includes('mcr.microsoft.com/playwright:v1.58.2-noble@sha256:')
