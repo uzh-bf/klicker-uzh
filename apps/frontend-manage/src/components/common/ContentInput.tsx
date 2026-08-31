@@ -734,6 +734,62 @@ const Leaf = ({ attributes, children, leaf }: LeafProps) => {
   return <span {...attributes}>{formattedChildren}</span>
 }
 
+const ToolbarFormatButton = ({
+  active,
+  disabled,
+  icon,
+  className,
+  dataCy,
+  label,
+  native,
+  onToggle,
+}: {
+  active: boolean
+  disabled: boolean
+  icon: IconDefinition
+  className?: string
+  dataCy: string
+  label: string
+  native: boolean
+  onToggle: () => void
+}) => {
+  const content = (
+    <div className={twMerge('mt-0.5', className)}>
+      <FontAwesomeIcon icon={icon} color={active ? 'black' : 'grey'} />
+      <span className="sr-only">{label}</span>
+    </div>
+  )
+  const onClick = (event: React.MouseEvent<HTMLElement>) => {
+    event.preventDefault()
+    onToggle()
+  }
+
+  return native ? (
+    <NativeSlateButton
+      active={active}
+      disabled={disabled}
+      title={label}
+      data-cy={dataCy}
+      aria-label={label}
+      aria-pressed={active}
+      onClick={onClick}
+    >
+      {content}
+    </NativeSlateButton>
+  ) : (
+    <SlateButton
+      active={active}
+      disabled={disabled}
+      title={label}
+      data-cy={dataCy}
+      aria-label={label}
+      onClick={onClick}
+    >
+      {content}
+    </SlateButton>
+  )
+}
+
 const BlockButton = ({
   disabled = false,
   format,
@@ -752,44 +808,18 @@ const BlockButton = ({
   native?: boolean
 }) => {
   const editor = useSlate()
-  const isActive = isBlockActive(editor, format)
-  const content = (
-    <div className={twMerge('mt-0.5', className)}>
-      <FontAwesomeIcon icon={icon} color={isActive ? 'black' : 'grey'} />
-      <span className="sr-only">{label}</span>
-    </div>
-  )
-  const onClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault()
-    toggleBlock(editor, format)
-  }
 
-  return native ? (
-    <NativeSlateButton
-      active={isActive}
+  return (
+    <ToolbarFormatButton
+      active={isBlockActive(editor, format)}
       disabled={disabled}
-      title={label}
-      data-cy={dataCy}
-      aria-label={label}
-      aria-pressed={isActive}
-      onClick={onClick}
-    >
-      {content}
-    </NativeSlateButton>
-  ) : (
-    <SlateButton
-      active={isActive}
-      disabled={disabled}
-      title={label}
-      data-cy={dataCy}
-      aria-label={label}
-      onClick={(event: React.MouseEvent<HTMLSpanElement>) => {
-        event.preventDefault()
-        toggleBlock(editor, format)
-      }}
-    >
-      {content}
-    </SlateButton>
+      icon={icon}
+      className={className}
+      dataCy={dataCy}
+      label={label}
+      native={native}
+      onToggle={() => toggleBlock(editor, format)}
+    />
   )
 }
 
@@ -811,44 +841,18 @@ const MarkButton = ({
   native?: boolean
 }) => {
   const editor = useSlate()
-  const isActive = isMarkActive(editor, format)
-  const content = (
-    <div className={twMerge('mt-0.5', className)}>
-      <FontAwesomeIcon icon={icon} color={isActive ? 'black' : 'grey'} />
-      <span className="sr-only">{label}</span>
-    </div>
-  )
-  const onClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault()
-    toggleMark(editor, format)
-  }
 
-  return native ? (
-    <NativeSlateButton
-      active={isActive}
+  return (
+    <ToolbarFormatButton
+      active={isMarkActive(editor, format)}
       disabled={disabled}
-      title={label}
-      data-cy={dataCy}
-      aria-label={label}
-      aria-pressed={isActive}
-      onClick={onClick}
-    >
-      {content}
-    </NativeSlateButton>
-  ) : (
-    <SlateButton
-      active={isActive}
-      disabled={disabled}
-      title={label}
-      data-cy={dataCy}
-      aria-label={label}
-      onClick={(event: React.MouseEvent<HTMLSpanElement>) => {
-        event.preventDefault()
-        toggleMark(editor, format)
-      }}
-    >
-      {content}
-    </SlateButton>
+      icon={icon}
+      className={className}
+      dataCy={dataCy}
+      label={label}
+      native={native}
+      onToggle={() => toggleMark(editor, format)}
+    />
   )
 }
 
@@ -860,22 +864,49 @@ const SlateButton = React.forwardRef<
       disabled?: boolean
     }
   >
->(({ className, active = false, disabled = false, onClick, ...props }, ref) => {
-  return (
-    <span
-      {...props}
-      aria-disabled={disabled}
-      onClick={disabled ? undefined : onClick}
-      className={twMerge(
-        className,
-        'my-auto flex h-7 w-7 cursor-pointer items-center justify-center rounded',
-        disabled && 'cursor-not-allowed',
-        active && 'bg-uzh-grey-40'
-      )}
-      ref={ref}
-    />
-  )
-})
+>(
+  (
+    {
+      className,
+      active = false,
+      disabled = false,
+      onClick,
+      onKeyDown,
+      tabIndex = 0,
+      ...props
+    },
+    ref
+  ) => {
+    return (
+      // biome-ignore lint/a11y/useSemanticElements: Tooltip already renders the surrounding native button trigger.
+      <span
+        {...props}
+        role="button"
+        tabIndex={disabled ? -1 : tabIndex}
+        aria-disabled={disabled}
+        onClick={disabled ? undefined : onClick}
+        onKeyDown={(event) => {
+          onKeyDown?.(event)
+          if (
+            !event.defaultPrevented &&
+            !disabled &&
+            (event.key === 'Enter' || event.key === ' ')
+          ) {
+            event.preventDefault()
+            event.currentTarget.click()
+          }
+        }}
+        className={twMerge(
+          className,
+          'my-auto flex h-7 w-7 cursor-pointer items-center justify-center rounded',
+          disabled && 'cursor-not-allowed',
+          active && 'bg-uzh-grey-40'
+        )}
+        ref={ref}
+      />
+    )
+  }
+)
 SlateButton.displayName = 'Button'
 
 const NativeSlateButton = React.forwardRef<
