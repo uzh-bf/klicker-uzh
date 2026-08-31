@@ -301,7 +301,7 @@ jobs:
       needs.authorize.outputs.authorized == 'true' &&
       needs.start.outputs.run_review == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 90
     concurrency:
       group: final-ai-review-${{ needs.authorize.outputs.pr_number }}
       cancel-in-progress: true
@@ -409,7 +409,7 @@ jobs:
             local now
             [[ "${REVIEW_JOB_STARTED_AT}" =~ ^[1-9][0-9]*$ ]]
             now="$(date +%s)"
-            if (( now + 1860 > REVIEW_JOB_STARTED_AT + 3900 )); then
+            if (( now + 2760 > REVIEW_JOB_STARTED_AT + 4800 )); then
               echo 'Refusing to start OCR without the reserved cleanup window' >&2
               return 1
             fi
@@ -421,7 +421,7 @@ jobs:
               --to "${HEAD_SHA}" \
               --audience agent \
               --effort low \
-              --timeout 30 \
+              --timeout 45 \
               --max-tokens-budget "${token_budget}" \
               --format json \
               --background "${BACKGROUND}" \
@@ -431,10 +431,10 @@ jobs:
           }
 
           : >"${STDERR_PATH}"
-          run_ocr_attempt "${RESULT_PATH}" 750000
+          run_ocr_attempt "${RESULT_PATH}" 1000000
           RESUME_PLAN_PATH="${RESULT_PATH}.resume-plan"
           node .github/scripts/final-ai-review.js plan-ocr-resume \
-            "${RESULT_PATH}" 750000 >"${RESUME_PLAN_PATH}"
+            "${RESULT_PATH}" 1000000 >"${RESUME_PLAN_PATH}"
           mapfile -t RESUME_PLAN <"${RESUME_PLAN_PATH}"
           if (( ${#RESUME_PLAN[@]} > 0 )); then
             (( ${#RESUME_PLAN[@]} == 2 ))
@@ -447,7 +447,7 @@ jobs:
             run_ocr_attempt \
               "${RESUMED_PATH}" "${REMAINING_TOKENS}" "${SESSION_ID}"
             node .github/scripts/final-ai-review.js merge-ocr-resume \
-              "${RESULT_PATH}" "${RESUMED_PATH}" 750000 >"${MERGED_PATH}"
+              "${RESULT_PATH}" "${RESUMED_PATH}" 1000000 >"${MERGED_PATH}"
             mv "${MERGED_PATH}" "${RESULT_PATH}"
           fi
 
