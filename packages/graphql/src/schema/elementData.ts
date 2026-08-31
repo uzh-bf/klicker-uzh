@@ -139,7 +139,7 @@ export function freeTextExplanationForViewer(
   data: IFreeTextElementData,
   role: DB.UserRole | undefined
 ) {
-  return data.options.semanticEvaluation && !isAuthoringRole(role)
+  return data.options?.semanticEvaluation && !isAuthoringRole(role)
     ? null
     : data.explanation
 }

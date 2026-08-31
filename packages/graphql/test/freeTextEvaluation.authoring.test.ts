@@ -8,6 +8,8 @@ import {
   UserRole,
 } from '@klicker-uzh/prisma/client'
 import type { ElementOptionsFreeText } from '@klicker-uzh/types'
+import { recomputeDerivedPermissions } from '@klicker-uzh/util'
+import { createYoga } from 'graphql-yoga'
 import {
   afterAll,
   afterEach,
@@ -17,6 +19,7 @@ import {
   it,
   vi,
 } from 'vitest'
+import { schema } from '../src/index.js'
 import type { Context } from '../src/lib/context.js'
 import {
   freeTextExplanationForViewer,
@@ -363,7 +366,7 @@ describe('semantic free-text authoring', () => {
     expect(ownerData.options.semanticEvaluation).toEqual(semanticConfig)
   })
 
-  it('withholds semantic authoring and solution data from live quiz reads', async () => {
+  it('keeps cockpit explanations readable while withholding participant solution data', async () => {
     const liveQuiz = await prisma.liveQuiz.create({
       data: {
         name: `${TEST_PREFIX}-live-quiz`,
@@ -392,6 +395,7 @@ describe('semantic free-text authoring', () => {
         },
       },
     })
+    await recomputeDerivedPermissions({ liveQuizId: liveQuiz.id }, prisma)
 
     const participantView = await getRunningLiveQuiz(
       { id: liveQuiz.id },
@@ -405,5 +409,46 @@ describe('semantic free-text authoring', () => {
     expect(participantData.options.semanticEvaluation).toBeUndefined()
     expect(participantData.options.solutions).toBeUndefined()
     expect(participantData.explanation).toBeNull()
+
+    const yoga = createYoga({
+      schema,
+      context: () => lecturerContext(fixture.lecturer.id),
+      graphqlEndpoint: '/graphql',
+    })
+    const response = await yoga.fetch('http://localhost/graphql', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        query: `
+          query CockpitFreeTextExplanation($id: String!) {
+            cockpitQuiz(id: $id) {
+              blocks {
+                elements {
+                  elementData {
+                    ... on FreeTextElementData {
+                      explanation
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `,
+        variables: { id: liveQuiz.id },
+      }),
+    })
+    const body = (await response.json()) as {
+      data?: {
+        cockpitQuiz?: {
+          blocks: { elements: { elementData: { explanation: string } }[] }[]
+        }
+      }
+      errors?: unknown[]
+    }
+
+    expect(body.errors).toBeUndefined()
+    expect(
+      body.data?.cockpitQuiz?.blocks[0]?.elements[0]?.elementData.explanation
+    ).toBe('Diversification reduces asset-specific risk.')
   })
 })
