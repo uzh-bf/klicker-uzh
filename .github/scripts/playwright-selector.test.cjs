@@ -100,6 +100,8 @@ test('selects a directly changed spec and assigns its trusted profile', () => {
   assert.deepEqual(plan.selectedSpecs, ['tests/A-login.spec.ts'])
   assert.equal(plan.profileAssignments['tests/A-login.spec.ts'], 'chat,manage')
   assert.deepEqual(plan.selectedProfiles, ['chat,manage'])
+  assert.equal(plan.shardCount, 1)
+  assert.deepEqual(plan.shards[0].files, ['tests/A-login.spec.ts'])
 })
 
 test('maps known feature paths, skips documentation, and fails unknown paths closed', () => {
@@ -150,6 +152,11 @@ test('ready state overrides a documentation-only diff with the full candidate su
     plan.selectedSpecs,
     trustedCandidateSpecs.map((spec) => `tests/${spec}`)
   )
+  assert.equal(plan.shardCount, 8)
+  assert.deepEqual(
+    plan.shards.flatMap((shard) => shard.files).sort(),
+    plan.selectedSpecs.slice().sort()
+  )
   assert.ok(plan.reasonCodes.includes('ready-for-review'))
 })
 
@@ -168,6 +175,7 @@ test('new and renamed specs receive the maximal trusted runtime profile', () => 
 
   assert.equal(plan.mode, 'selected')
   assert.deepEqual(plan.selectedSpecs, ['tests/new-flow.spec.ts'])
+  assert.equal(plan.shardCount, 1)
   assert.equal(plan.profileAssignments['tests/new-flow.spec.ts'], 'full')
 })
 

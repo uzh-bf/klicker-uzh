@@ -917,7 +917,9 @@ native planner gate.
 - [x] M2.1 selector implemented locally with trusted policy provenance,
   rename-aware null-delimited diff handling, candidate inventory validation,
   conservative profile fallback, and selector tests (7 passing).
-- [ ] M2.2 deterministic selected-subset sharding.
+- [x] M2.2 deterministic selected-subset sharding implemented in
+  `9d9bb7b86`; selected plans use profile/global medians, the 120-second
+  fallback, a four-shard cap, stable greedy assignment, and exact-once tests.
 - [ ] M2.3 hosted-only shadow planning and representative evidence.
 - [ ] M2 selector shadow mode.
 - [ ] M3 canary and global activation.

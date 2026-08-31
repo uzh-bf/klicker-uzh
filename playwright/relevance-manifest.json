@@ -2,11 +2,7 @@
   "version": 1,
   "owner": "Klicker CI maintainers",
   "reviewRule": "Update this manifest when a Playwright spec or runtime dependency changes; unknown paths fall back to the full suite.",
-  "docsOnlyPathPrefixes": [
-    ".agents/skills/",
-    "docs/",
-    "project/"
-  ],
+  "docsOnlyPathPrefixes": [".agents/skills/", "docs/", "project/"],
   "docsOnlyExtensions": [".md", ".mdx"],
   "fullPathPrefixes": [
     ".devrouter.yml",
@@ -129,17 +125,11 @@
     {
       "id": "auth",
       "pathPrefixes": ["apps/auth/"],
-      "specs": [
-        "A-login.spec.ts",
-        "Z-credential-verification.spec.ts"
-      ]
+      "specs": ["A-login.spec.ts", "Z-credential-verification.spec.ts"]
     },
     {
       "id": "shared-ui",
-      "pathPrefixes": [
-        "packages/i18n/",
-        "packages/shared-components/"
-      ],
+      "pathPrefixes": ["packages/i18n/", "packages/shared-components/"],
       "specs": [
         "0-baseline-ops.spec.ts",
         "0-video-embed.spec.ts",

@@ -5,9 +5,11 @@ const test = require('node:test')
 
 const {
   buildShardPlans,
+  buildSelectedShardPlans,
   canonicalProfile,
   parseProfileManifest,
   parseTimings,
+  selectedDurationMap,
 } = require('./get-shard-files.js')
 
 const repositoryRoot = path.join(__dirname, '../..')
@@ -152,5 +154,78 @@ test('invalid timing data and shard counts fail closed', () => {
   assert.throws(
     () => buildShardPlans(allFiles, durations, profiles, allFiles.length + 1),
     /exceeds/
+  )
+})
+
+test('selected plans use profile and global medians before the versioned fallback', () => {
+  const profiles = new Map([
+    ['a.spec.ts', 'alpha'],
+    ['b.spec.ts', 'alpha'],
+    ['c.spec.ts', 'beta'],
+    ['helper.spec.ts', 'alpha'],
+  ])
+  const durations = new Map([
+    ['a.spec.ts', 60],
+    ['helper.spec.ts', 180],
+  ])
+
+  const estimates = selectedDurationMap(
+    ['b.spec.ts', 'c.spec.ts'],
+    durations,
+    profiles
+  )
+  assert.equal(estimates.get('b.spec.ts'), 120)
+  assert.equal(estimates.get('c.spec.ts'), 120)
+
+  const noTimings = selectedDurationMap(['c.spec.ts'], new Map(), profiles)
+  assert.equal(noTimings.get('c.spec.ts'), 120)
+})
+
+test('selected shard plans are deterministic, capped at four, and preserve exact-once coverage', () => {
+  const selected = ['a.spec.ts', 'b.spec.ts', 'c.spec.ts', 'd.spec.ts']
+  const profiles = new Map(selected.map((file) => [file, 'manage']))
+  const durations = new Map(selected.map((file) => [file, 600]))
+
+  const first = buildSelectedShardPlans(selected, durations, profiles)
+  const second = buildSelectedShardPlans(selected, durations, profiles)
+
+  assert.equal(first.length, 4)
+  assert.deepEqual(first, second)
+  assert.deepEqual(
+    first.flatMap((plan) => plan.files).sort(),
+    selected.map((file) => `tests/${file}`).sort()
+  )
+  assert.ok(first.every((plan) => plan.files.length > 0))
+
+  const small = buildSelectedShardPlans(
+    ['a.spec.ts', 'b.spec.ts'],
+    new Map([
+      ['a.spec.ts', 100],
+      ['b.spec.ts', 100],
+    ]),
+    new Map([
+      ['a.spec.ts', 'manage'],
+      ['b.spec.ts', 'manage'],
+    ])
+  )
+  assert.equal(small.length, 1)
+})
+
+test('selected plans reject empty, duplicate, or unprofiled files', () => {
+  const profiles = new Map([['a.spec.ts', 'manage']])
+  const durations = new Map([['a.spec.ts', 1]])
+
+  assert.throws(
+    () => buildSelectedShardPlans([], durations, profiles),
+    /non-empty array/
+  )
+  assert.throws(
+    () =>
+      buildSelectedShardPlans(['a.spec.ts', 'a.spec.ts'], durations, profiles),
+    /unique/
+  )
+  assert.throws(
+    () => buildSelectedShardPlans(['b.spec.ts'], durations, profiles),
+    /no validated profile/
   )
 })

@@ -2,6 +2,13 @@ const childProcess = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
 
+const {
+  buildSelectedShardPlans,
+  buildShardPlans,
+  parseTimings,
+  selectedDurationMap,
+} = require('./get-shard-files.js')
+
 const SELECTOR_SCHEMA_VERSION = 1
 const SUPPORTED_PROFILE_VERSION = 1
 const TEST_FILE_PATTERN = /^[^/]+\.spec\.ts$/
@@ -542,6 +549,29 @@ function buildSelectionPlan({
     manifest: relevanceManifest,
     prState,
   })
+  const profileMap = new Map(Object.entries(assignments))
+  const trustedTimings = readJson(
+    path.join(controlRoot, 'playwright/timings.json'),
+    'trusted Playwright timings'
+  )
+  const durationMap = parseTimings(trustedTimings, trustedSpecs, () => {})
+  let shards = []
+
+  if (selection.mode === 'selected') {
+    shards = buildSelectedShardPlans(
+      selection.selectedSpecs,
+      durationMap,
+      profileMap
+    )
+  } else if (selection.mode === 'full') {
+    const estimates = selectedDurationMap(
+      candidateSpecs,
+      durationMap,
+      profileMap
+    )
+    shards = buildShardPlans(candidateSpecs, estimates, profileMap, 8)
+  }
+
   return {
     schemaVersion: SELECTOR_SCHEMA_VERSION,
     mode: selection.mode,
@@ -562,6 +592,8 @@ function buildSelectionPlan({
       ...new Set(selection.selectedSpecs.map((spec) => assignments[spec])),
     ].sort(compareNames),
     selectedGroupIds: selection.selectedGroupIds,
+    shardCount: shards.length,
+    shards,
   }
 }
 
