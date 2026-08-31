@@ -203,7 +203,8 @@ gitlink. Run a simplifier and one slice reviewer after the immutable commit.
     reserved property names during strict-schema traversal.
 - Evaluation verification: 351 tests pass; the final correction tree has 129
   focused passing tests, and Ruff format and lint pass. The private-safe review
-  findings were applied; integrated re-review is pending at `e191248`.
+  findings were applied. The evaluator slice review and integrated final review
+  approve exact evaluator head `e191248`.
 - Klicker Slice B implementation and verification are complete. The local
   integration branch pins evaluator commit `e191248`; the wrapper contract and
   shell syntax pass, and all 20 FineCo cases validate with zero tool warnings,
@@ -216,7 +217,8 @@ gitlink. Run a simplifier and one slice reviewer after the immutable commit.
   new core error.
 - The prior Klicker slice findings and the simplifier's accepted test-isolation,
   dependency, and documentation reductions are applied. Current-head
-  revalidation is pending after the capability-binding correction.
+  revalidation and the integrated final review approve exact Klicker head
+  `1e35d17`.
 - The exact pinned evaluator passes a no-cost one-case eval against a local fake
   proxy with one `/v1/chat/completions` request, the exact Klicker alias, strict
   `json_schema`, and no parse request. A synthetic 503 produces one request and
@@ -228,3 +230,5 @@ gitlink. Run a simplifier and one slice reviewer after the immutable commit.
 - Live Klicker target quality remains unproven because the authenticated AI-SDK
   stream still lacks a verified evaluator endpoint, authentication, and mode
   adapter.
+- Publishing either branch remains withheld. The private evaluator must be
+  published before the public Klicker gitlink when publication is authorized.
