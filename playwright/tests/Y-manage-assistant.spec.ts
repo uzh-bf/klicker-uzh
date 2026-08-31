@@ -140,15 +140,32 @@ test.describe('Manage Assistant — Messaging', () => {
     const createDraft = assistant.getByRole('button', { name: 'Create draft' })
     await expect(createDraft).toBeEnabled()
 
-    const createDraftBox = await createDraft.boundingBox()
-    const composerBox = await assistant
-      .getByTestId('chat-composer')
-      .boundingBox()
-    expect(createDraftBox).not.toBeNull()
-    expect(composerBox).not.toBeNull()
-    expect(
-      (createDraftBox?.y ?? 0) + (createDraftBox?.height ?? 0)
-    ).toBeLessThanOrEqual(composerBox?.y ?? 0)
+    const viewport = assistant.getByTestId('chat-thread-viewport')
+    // The proposal card lives in a scrollable viewport. Disable smooth
+    // scrolling while settling at the end so the measurement reads the
+    // settled position, not a transient scroll position.
+    await viewport.evaluate((element) => {
+      element.style.scrollBehavior = 'auto'
+      element.scrollTop = element.scrollHeight
+      element.style.scrollBehavior = ''
+    })
+    await expect(createDraft).toBeInViewport()
+    await expect(async () => {
+      const [createDraftBox, viewportBox, composerBox] = await Promise.all([
+        createDraft.boundingBox(),
+        viewport.boundingBox(),
+        assistant.getByTestId('chat-composer').boundingBox(),
+      ])
+      expect(createDraftBox).not.toBeNull()
+      expect(viewportBox).not.toBeNull()
+      expect(composerBox).not.toBeNull()
+      expect(createDraftBox!.y + createDraftBox!.height).toBeLessThanOrEqual(
+        viewportBox!.y + viewportBox!.height - 8
+      )
+      expect(viewportBox!.y + viewportBox!.height).toBeLessThanOrEqual(
+        composerBox!.y + 1
+      )
+    }).toPass()
   })
 
   test('Confirming a proposal shows a success state and notifies the manage parent window', async ({
