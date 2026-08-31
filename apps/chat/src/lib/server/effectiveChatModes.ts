@@ -36,9 +36,8 @@ function hasRequiredDocQueryAlias(config: ChatModeMCPConfiguration): boolean {
   return !!(
     parameters?.required === true &&
     parameters.toolAlias === 'doc_query' &&
-    Array.isArray(allowedTools) &&
-    allowedTools.length === 1 &&
-    isConcreteToolName(allowedTools[0])
+    hasConcreteAllowedTools(allowedTools) &&
+    allowedTools.length === 1
   )
 }
 
@@ -46,14 +45,29 @@ function isConcreteToolName(tool: unknown): tool is string {
   return typeof tool === 'string' && tool.length > 0 && !/[*?]/.test(tool)
 }
 
-function hasExplicitDocQueryTool(config: ChatModeMCPConfiguration): boolean {
-  const allowedTools = config.allowedTools
+function hasConcreteAllowedTools(
+  allowedTools: unknown
+): allowedTools is string[] {
   return (
     Array.isArray(allowedTools) &&
     allowedTools.length > 0 &&
-    allowedTools.every(isConcreteToolName) &&
-    allowedTools.includes('doc_query')
+    allowedTools.every(isConcreteToolName)
   )
+}
+
+function hasExplicitDocQueryTool(config: ChatModeMCPConfiguration): boolean {
+  const allowedTools = config.allowedTools
+  return (
+    hasConcreteAllowedTools(allowedTools) && allowedTools.includes('doc_query')
+  )
+}
+
+function hasSafeQuizzerToolRestriction(
+  config: ChatModeMCPConfiguration
+): boolean {
+  return isRequired(config)
+    ? hasRequiredDocQueryAlias(config)
+    : hasConcreteAllowedTools(config.allowedTools)
 }
 
 export function isSafeDocQueryBinding(
@@ -114,8 +128,10 @@ export function resolveEffectiveMCPConfigurations<
   }
 
   const resolved: EffectiveMCPConfiguration<T>[] = [
-    ...exactWithoutServer,
-    ...Array.from(exactByServer.values()).filter(isEnabled),
+    ...exactWithoutServer.filter(hasSafeQuizzerToolRestriction),
+    ...Array.from(exactByServer.values()).filter(
+      (config) => isEnabled(config) && hasSafeQuizzerToolRestriction(config)
+    ),
   ]
 
   for (const config of configs) {

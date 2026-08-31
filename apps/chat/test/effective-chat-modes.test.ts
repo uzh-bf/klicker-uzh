@@ -232,6 +232,38 @@ describe('effective chatbot modes', () => {
     ])
   })
 
+  test('drops unbounded exact Quizzer tools when safe retrieval also exists', () => {
+    const configurations = [
+      config({
+        allowedTools: ['doc_query'],
+        chatMode: 'quizzer',
+        serverId: 'course',
+      }),
+      config({
+        allowedTools: ['*'],
+        chatMode: 'quizzer',
+        serverId: 'unrestricted',
+      }),
+      config({
+        allowedTools: undefined,
+        chatMode: 'quizzer',
+        serverId: 'all-tools',
+      }),
+    ]
+
+    expect(
+      resolveEffectiveMCPConfigurations(configurations, 'quizzer')
+    ).toEqual([
+      expect.objectContaining({
+        allowedTools: ['doc_query'],
+        mcpServer: { id: 'course' },
+      }),
+    ])
+    expect(
+      resolveEffectiveChatModeOptions(null, configurations)
+    ).toHaveProperty('quizzer')
+  })
+
   test('does not expose Quizzer without a safe document-query binding', () => {
     const configurations = [
       config({
