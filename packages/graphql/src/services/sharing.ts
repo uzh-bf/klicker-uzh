@@ -2538,7 +2538,7 @@ export async function getCatalogCollectionPermissions(
   ctx: ContextWithUser
 ) {
   const catalogCollection = await ctx.prisma.catalogCollection.findUnique({
-    where: { id, isDeleted: false },
+    where: { id },
     include: {
       directPermissions: {
         include: {

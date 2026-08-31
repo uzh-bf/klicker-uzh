@@ -1,4 +1,5 @@
 import type { Hatchet } from '@hatchet-dev/typescript-sdk'
+import { allowCourseDeletionMutationInTransaction } from '@klicker-uzh/prisma'
 import {
   AuditLogType,
   ElementType,
@@ -4086,9 +4087,12 @@ describe('Integration tests for sharing functionalities of activities (e.g. live
       course1.id
     )
 
-    await prisma.course.update({
-      where: { id: course1.id },
-      data: { isDeleted: true, isDeletionPending: false },
+    await prisma.$transaction(async (tx) => {
+      await allowCourseDeletionMutationInTransaction(tx)
+      await tx.course.update({
+        where: { id: course1.id },
+        data: { isDeleted: true, isDeletionPending: false },
+      })
     })
     const coursesAfterSoftDeletion = await getActiveUserCourses(
       { activityId: liveQuiz.id, activityType: ActivityType.LIVE_QUIZ },

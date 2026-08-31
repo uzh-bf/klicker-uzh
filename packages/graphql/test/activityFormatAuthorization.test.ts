@@ -153,8 +153,9 @@ function buildContext({
   catalystIndividual?: boolean
 }) {
   const prismaFindUnique = vi.fn()
+  const guardedObjectFindUnique = vi.fn()
 
-  return {
+  const context = {
     prisma: {
       derivedPermission: {
         findUnique: prismaFindUnique,
@@ -170,6 +171,15 @@ function buildContext({
   } as ContextWithUser & {
     prisma: { derivedPermission: { findUnique: typeof prismaFindUnique } }
   }
+
+  Object.assign(context.prisma, {
+    course: { findUnique: guardedObjectFindUnique },
+    groupActivity: { findUnique: guardedObjectFindUnique },
+    microLearning: { findUnique: guardedObjectFindUnique },
+    practiceQuiz: { findUnique: guardedObjectFindUnique },
+  })
+
+  return context
 }
 
 async function executeMutation(
