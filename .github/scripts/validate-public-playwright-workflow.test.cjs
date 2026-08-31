@@ -39,6 +39,15 @@ test('the current public workflow satisfies the runner trust boundary', () => {
   assert.match(sources[2], /ref: \$\{\{ job\.workflow_sha \}\}/)
   assert.match(sources[3], /repository: \$\{\{ job\.workflow_repository \}\}/)
   assert.match(sources[3], /ref: \$\{\{ job\.workflow_sha \}\}/)
+
+  const seedWorkflow = fs.readFileSync(
+    path.join(root, '.github/workflows/playwright-cache-seed.yml'),
+    'utf8'
+  )
+  assert.match(
+    seedWorkflow,
+    /git config --global --add safe\.directory "\$GITHUB_WORKSPACE"/
+  )
 })
 
 test('the reusable envelope owns lifecycle routing and selector shadow planning', () => {
@@ -57,7 +66,7 @@ test('the reusable envelope owns lifecycle routing and selector shadow planning'
   assert.match(workflow, /test-playwright-execution:/)
   assert.match(
     workflow,
-    /uses: uzh-bf\/klicker-uzh\/.github\/workflows\/public-pr-playwright-shards\.yml@refs\/heads\/v3/
+    /uses: uzh-bf\/klicker-uzh\/.github\/workflows\/public-pr-playwright-shards\.yml@v3/
   )
   assert.doesNotMatch(workflow, /group: public-pr-arm64/)
   assert.match(workflow, /test-playwright-status:/)
