@@ -103,8 +103,8 @@ export function useProductUpdates(): UseProductUpdatesResult {
           // drops the read or dismissal the other answer already delivered.
           const merged = {
             ...state,
-            readAt: state.readAt ?? cached?.readAt,
-            dismissedAt: state.dismissedAt ?? cached?.dismissedAt,
+            readAt: state.readAt ?? cached?.readAt ?? null,
+            dismissedAt: state.dismissedAt ?? cached?.dismissedAt ?? null,
           }
 
           return {
