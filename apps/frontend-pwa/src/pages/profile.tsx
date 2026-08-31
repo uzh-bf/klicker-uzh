@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import { faPencil, faRoute } from '@fortawesome/free-solid-svg-icons'
+import { faCompass, faPencil } from '@fortawesome/free-solid-svg-icons'
 import { SelfWithAchievementsDocument } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { Button } from '@uzh-bf/design-system'
@@ -46,7 +46,7 @@ const Profile = () => {
               className={{ root: 'hover:bg-white hover:underline' }}
               data={{ cy: 'replay-onboarding-tour' }}
             >
-              <Button.Icon icon={faRoute} />
+              <Button.Icon icon={faCompass} />
               <Button.Label>{t('pwa.productTours.replayTitle')}</Button.Label>
             </Button>
           )}
