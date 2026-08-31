@@ -316,6 +316,23 @@ test.describe.serial('Lecturer chatbot draft authoring', () => {
       'page'
     )
     await page.getByTestId('chatbot-model-selection-switch').click()
+    const advancedUrl = page.url()
+    const historyDiscardDialogPromise = page
+      .waitForEvent('dialog')
+      .then((dialog) => {
+        expect(dialog.message()).toBe('Discard your unsaved chatbot changes?')
+        return dialog.dismiss()
+      })
+    await page.evaluate(() => window.history.back())
+    await historyDiscardDialogPromise
+    await expect.poll(() => page.url()).toBe(advancedUrl)
+    await expect(page.getByTestId('chatbot-view-advanced')).toHaveAttribute(
+      'aria-current',
+      'page'
+    )
+
+    await page.getByTestId('chatbot-view-advanced').click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
     const createDiscardDialogPromise = page
       .waitForEvent('dialog')
       .then((dialog) => {

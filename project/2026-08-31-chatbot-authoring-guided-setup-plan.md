@@ -347,9 +347,16 @@ Return to the user if:
 - [x] Execution plan approved by the user on 2026-08-31.
 - [x] Fourth branch created at exact Layer 3 head without mutating lower heads;
       stale local `gh stack` metadata required the safe direct-branch fallback.
-- [ ] Slice 1 implemented and locally verified: focused Biome, Manage and
+- [x] Slice 1 implemented, committed, and reviewed. Focused Biome, Manage and
       Playwright TypeScript checks, all six authoring Playwright scenarios, and
-      English desktop/mobile browser proof pass. Commit and review gates remain.
+      English desktop/mobile browser proof pass. Review corrections prevent a
+      one-shot route allowance from leaking and restore the current URL when a
+      dirty browser-history navigation is cancelled; the corrected history
+      scenario passes on the host.
+- [ ] The root `check:all` attempt passed its JavaScript and TypeScript paths but
+      stopped in the unrelated Analytics lint task because uv selected Python
+      3.14 and the devcontainer has no C compiler for pandas 2.2.2. Resolve or
+      isolate that environment-only gap at the integrated finish gate.
 - [ ] Slice 2 implemented, verified, reviewed, and committed.
 - [ ] Integrated browser proof and final review completed.
 - [ ] Fourth branch pushed and draft stacked PR opened or updated.

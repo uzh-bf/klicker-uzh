@@ -15,10 +15,26 @@ function useChatbotNavigationGuard({
 }) {
   const stateRef = useRef(state)
   const allowNextRouteRef = useRef(false)
+  const currentHistoryEntryRef = useRef<
+    | {
+        asPath: string
+        href: string
+        state: unknown
+      }
+    | undefined
+  >(undefined)
 
   useEffect(() => {
     stateRef.current = state
   }, [state])
+
+  useEffect(() => {
+    currentHistoryEntryRef.current = {
+      asPath: router.asPath,
+      href: window.location.href,
+      state: window.history.state,
+    }
+  }, [router.asPath])
 
   const confirmNavigation = useCallback(() => {
     if (stateRef.current.pending) {
@@ -29,19 +45,27 @@ function useChatbotNavigationGuard({
     return !stateRef.current.dirty || window.confirm(discardMessage)
   }, [discardMessage, pendingMessage])
 
+  const runRouteNavigation = useCallback((navigate: () => Promise<boolean>) => {
+    allowNextRouteRef.current = true
+    void navigate().then(
+      () => {
+        allowNextRouteRef.current = false
+      },
+      () => {
+        allowNextRouteRef.current = false
+      }
+    )
+  }, [])
+
   const runNavigation = useCallback(
-    (navigate: () => unknown) => {
+    (navigate: () => Promise<boolean>) => {
       if (!confirmNavigation()) return
-      allowNextRouteRef.current = true
-      void navigate()
+      runRouteNavigation(navigate)
     },
-    [confirmNavigation]
+    [confirmNavigation, runRouteNavigation]
   )
 
-  const runInternalNavigation = useCallback((navigate: () => unknown) => {
-    allowNextRouteRef.current = true
-    void navigate()
-  }, [])
+  const runInternalNavigation = runRouteNavigation
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -67,7 +91,32 @@ function useChatbotNavigationGuard({
     }
 
     const previousBeforePopState = () => {
-      if (!confirmNavigation()) return false
+      if (!confirmNavigation()) {
+        const currentEntry = currentHistoryEntryRef.current
+        if (currentEntry) {
+          const targetState = window.history.state as Record<
+            string,
+            unknown
+          > | null
+          const currentState = currentEntry.state as Record<
+            string,
+            unknown
+          > | null
+          window.history.pushState(
+            currentState
+              ? {
+                  ...currentState,
+                  key: targetState?.key ?? currentState.key,
+                  as: currentEntry.asPath,
+                  url: currentEntry.asPath,
+                }
+              : currentState,
+            '',
+            currentEntry.href
+          )
+        }
+        return false
+      }
       allowNextRouteRef.current = true
       return true
     }

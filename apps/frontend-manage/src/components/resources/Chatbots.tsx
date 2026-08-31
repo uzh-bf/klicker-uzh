@@ -138,6 +138,7 @@ function Chatbots() {
   ])
 
   const selectChatbot = (chatbotId: string, internal = false) => {
+    if (chatbotId === selectedChatbot?.id) return
     const chatbot = chatbots.find((item) => item.id === chatbotId)
     if (!chatbot) return
     const nextState = normalizeWorkspaceState(chatbot, undefined, undefined)
@@ -164,6 +165,12 @@ function Chatbots() {
     step?: ChatbotSetupStep
   ) => {
     if (!selectedChatbot) return
+    if (
+      view === workspaceState.view &&
+      (view !== 'setup' || step === workspaceState.step)
+    ) {
+      return
+    }
     const nextState = normalizeWorkspaceState(selectedChatbot, view, step)
     runNavigation(() => {
       setNavigationState(cleanNavigationState)
