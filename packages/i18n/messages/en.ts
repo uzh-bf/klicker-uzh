@@ -3341,9 +3341,34 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       hideArchive: 'Hide archive',
       deleteCourse: 'Delete course',
       courseDeletionMessage:
-        'The course will be hidden and made inaccessible in the background. Its activities, participations, groups, results, and leaderboard data will be retained.',
+        'The course will be hidden and made inaccessible immediately. Deletion will continue in the background. Activities, participations, groups, results, and leaderboard data will be retained unless you select the option to permanently delete linked draft activities.',
       deleteDraftActivitiesOption:
         'Also permanently delete {number, plural, one {the # linked draft activity} other {all # linked draft activities}}.',
+      courseDeletionNoParticipations: 'This course contains no participants.',
+      courseDeletionParticipations:
+        '{number} participant(s) will lose course access. Their points and responses will be retained.',
+      courseDeletionNoLiveQuizzes: 'This course contains no live quizzes.',
+      courseDeletionLiveQuizzes:
+        '{number} live quizze(s) will remain accessible and read-only. Draft activities are permanently deleted only when selected above.',
+      courseDeletionNoPracticeQuizzes:
+        'This course contains no practice quizzes.',
+      courseDeletionPracticeQuizzes:
+        '{number} practice quizze(s) and their results will be retained. Draft activities are permanently deleted only when selected above.',
+      courseDeletionNoMicroLearnings: 'This course contains no microlearnings.',
+      courseDeletionMicroLearnings:
+        '{number} microlearning(s) and their results will be retained. Draft activities are permanently deleted only when selected above.',
+      courseDeletionNoGroupActivities:
+        'This course contains no group activities.',
+      courseDeletionGroupActivities:
+        '{number} group activit(y/ies) and their results will be retained. Draft activities are permanently deleted only when selected above.',
+      courseDeletionNoParticipantGroups:
+        'This course contains no participant groups.',
+      courseDeletionParticipantGroups:
+        '{number} participant group(s) will be retained.',
+      courseDeletionNoLeaderboardEntries:
+        'This course contains no leaderboard entries.',
+      courseDeletionLeaderboardEntries:
+        '{number} leaderboard entr(y/ies) and collected points will be retained.',
       activityAnalytics: 'Activity Analytics',
     },
     course: {

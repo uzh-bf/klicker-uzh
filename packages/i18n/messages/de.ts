@@ -3399,9 +3399,36 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       hideArchive: 'Archiv verbergen',
       deleteCourse: 'Kurs löschen',
       courseDeletionMessage:
-        'Der Kurs wird im Hintergrund ausgeblendet und unzugänglich gemacht. Seine Aktivitäten, Teilnahmen, Gruppen, Resultate und Leaderboard-Daten bleiben erhalten.',
+        'Der Kurs wird sofort ausgeblendet und unzugänglich gemacht. Die Löschung läuft im Hintergrund weiter. Aktivitäten, Teilnahmen, Gruppen, Resultate und Leaderboard-Daten bleiben erhalten, ausser Sie wählen die Option zum dauerhaften Löschen verknüpfter Aktivitäten im Entwurfsstatus.',
       deleteDraftActivitiesOption:
         'Zusätzlich {number, plural, one {die # verknüpfte Aktivität im Entwurfsstatus} other {alle # verknüpften Aktivitäten im Entwurfsstatus}} dauerhaft löschen.',
+      courseDeletionNoParticipations:
+        'Dieser Kurs enthält keine Teilnehmenden.',
+      courseDeletionParticipations:
+        '{number} Teilnehmende verlieren den Kurszugriff. Ihre Punkte und Antworten bleiben erhalten.',
+      courseDeletionNoLiveQuizzes: 'Dieser Kurs enthält keine Live-Quizze.',
+      courseDeletionLiveQuizzes:
+        '{number} Live-Quizze bleiben zugänglich und werden schreibgeschützt. Aktivitäten im Entwurfsstatus werden nur gelöscht, wenn sie oben ausgewählt wurden.',
+      courseDeletionNoPracticeQuizzes:
+        'Dieser Kurs enthält keine Übungsquizze.',
+      courseDeletionPracticeQuizzes:
+        '{number} Übungsquizze und ihre Resultate bleiben erhalten. Aktivitäten im Entwurfsstatus werden nur gelöscht, wenn sie oben ausgewählt wurden.',
+      courseDeletionNoMicroLearnings:
+        'Dieser Kurs enthält keine Microlearnings.',
+      courseDeletionMicroLearnings:
+        '{number} Microlearnings und ihre Resultate bleiben erhalten. Aktivitäten im Entwurfsstatus werden nur gelöscht, wenn sie oben ausgewählt wurden.',
+      courseDeletionNoGroupActivities:
+        'Dieser Kurs enthält keine Gruppenaktivitäten.',
+      courseDeletionGroupActivities:
+        '{number} Gruppenaktivitäten und ihre Resultate bleiben erhalten. Aktivitäten im Entwurfsstatus werden nur gelöscht, wenn sie oben ausgewählt wurden.',
+      courseDeletionNoParticipantGroups:
+        'Dieser Kurs enthält keine Teilnehmendengruppen.',
+      courseDeletionParticipantGroups:
+        '{number} Teilnehmendengruppe(n) bleiben erhalten.',
+      courseDeletionNoLeaderboardEntries:
+        'Dieser Kurs enthält keine Leaderboard-Einträge.',
+      courseDeletionLeaderboardEntries:
+        '{number} Leaderboard-Einträge und gesammelte Punkte bleiben erhalten.',
       activityAnalytics: 'Quiz Analysen',
     },
     course: {

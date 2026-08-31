@@ -2,9 +2,29 @@ import { useQuery } from '@apollo/client'
 import { GetCourseDeletionSummaryV2Document } from '@klicker-uzh/graphql/dist/ops'
 import { Modal } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCourseDeletionStatus } from '../CourseDeletionStatusProvider'
 import CourseDeletionConfirmations from './CourseDeletionConfirmations'
+
+export interface CourseDeletionConfirmationType {
+  participations: boolean
+  liveQuizzes: boolean
+  practiceQuizzes: boolean
+  microLearnings: boolean
+  groupActivities: boolean
+  participantGroups: boolean
+  leaderboardEntries: boolean
+}
+
+const initialConfirmations: CourseDeletionConfirmationType = {
+  participations: false,
+  liveQuizzes: false,
+  practiceQuizzes: false,
+  microLearnings: false,
+  groupActivities: false,
+  participantGroups: false,
+  leaderboardEntries: false,
+}
 
 function CourseDeletionModal({
   onClose,
@@ -13,6 +33,10 @@ function CourseDeletionModal({
   onClose: () => void
   courseId: string | null
 }) {
+  const [confirmations, setConfirmations] =
+    useState<CourseDeletionConfirmationType>({
+      ...initialConfirmations,
+    })
   const [deleteDraftActivities, setDeleteDraftActivities] = useState(false)
   const [deletionStarting, setDeletionStarting] = useState(false)
   const t = useTranslations()
@@ -29,8 +53,25 @@ function CourseDeletionModal({
 
   const closeModal = () => {
     onClose()
+    setConfirmations({ ...initialConfirmations })
     setDeleteDraftActivities(false)
   }
+
+  useEffect(() => {
+    if (!courseId || !data?.getCourseSummary) {
+      return
+    }
+
+    setConfirmations({
+      participations: data.getCourseSummary.numOfParticipations === 0,
+      liveQuizzes: data.getCourseSummary.numOfLiveQuizzes === 0,
+      practiceQuizzes: data.getCourseSummary.numOfPracticeQuizzes === 0,
+      microLearnings: data.getCourseSummary.numOfMicroLearnings === 0,
+      groupActivities: data.getCourseSummary.numOfGroupActivities === 0,
+      participantGroups: data.getCourseSummary.numOfParticipantGroups === 0,
+      leaderboardEntries: data.getCourseSummary.numOfLeaderboardEntries === 0,
+    })
+  }, [courseId, data?.getCourseSummary])
 
   const summary = data?.getCourseSummary
   if (!courseId) {
@@ -47,7 +88,11 @@ function CourseDeletionModal({
       primaryLabel={t('shared.generic.confirm')}
       primaryButtonStyle="destructive"
       primaryLoading={deletionStarting}
-      primaryDisabled={queryLoading || !summary}
+      primaryDisabled={
+        queryLoading ||
+        !summary ||
+        Object.values(confirmations).some((confirmation) => !confirmation)
+      }
       onPrimaryAction={async () => {
         setDeletionStarting(true)
         let started = false
@@ -69,6 +114,8 @@ function CourseDeletionModal({
       {summary && (
         <CourseDeletionConfirmations
           summary={summary}
+          confirmations={confirmations}
+          setConfirmations={setConfirmations}
           deleteDraftActivities={deleteDraftActivities}
           setDeleteDraftActivities={setDeleteDraftActivities}
         />

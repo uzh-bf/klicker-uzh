@@ -949,6 +949,25 @@ async function openStudentGroupTab(page: Page) {
 }
 
 async function confirmCourseDeletion(page: Page) {
+  const warningTestIds = [
+    'course-deletion-participations-confirm',
+    'course-deletion-live-quiz-confirm',
+    'course-deletion-practice-quiz-confirm',
+    'course-deletion-micro-learning-confirm',
+    'course-deletion-group-activity-confirm',
+    'course-deletion-participant-group-confirm',
+    'course-deletion-leaderboard-entry-confirm',
+  ]
+
+  await expect(page.getByTestId('course-deletion-confirmations')).toBeVisible()
+
+  for (const warningTestId of warningTestIds) {
+    const warning = page.getByTestId(warningTestId)
+    if ((await warning.count()) > 0) {
+      await warning.click()
+    }
+  }
+
   const finalConfirm = page.getByTestId('course-deletion-modal-confirm')
   await expect(finalConfirm).toBeEnabled()
   await finalConfirm.click()
@@ -2847,12 +2866,14 @@ test.describe('Part 4: Course deletion', () => {
     await expect(
       page.getByTestId('course-deletion-delete-draft-activities')
     ).toBeVisible()
+    await expect(
+      page.getByTestId('course-deletion-modal-confirm')
+    ).toBeDisabled()
     await page.getByTestId('course-deletion-delete-draft-activities').click()
     await expect(
       page.getByTestId('course-deletion-modal-confirm')
-    ).toBeEnabled()
-
-    await page.getByTestId('course-deletion-modal-confirm').click()
+    ).toBeDisabled()
+    await confirmCourseDeletion(page)
     await expectCourseDeletionCompleted(page, DELETION.courseName)
     const persistedDeletion = await getCourseDeletionPersistenceSummary({
       courseName: DELETION.courseName,
@@ -2907,7 +2928,7 @@ test.describe('Part 4: Course deletion', () => {
     if (courseOneBeforeDeletion && !courseOneBeforeDeletion.isDeleted) {
       await expect(courseOne).toBeVisible()
       await page.getByTestId(`delete-course-${COURSE1.nameNew}`).click()
-      await page.getByTestId('course-deletion-modal-confirm').click()
+      await confirmCourseDeletion(page)
       await expectCourseDeletionCompleted(page, COURSE1.nameNew)
     }
 
