@@ -1059,6 +1059,15 @@ follow_up_stacks:
 - A4 review correction: Both compact-only effects now guard the actual enabled
   assistant render state and assistant URL, and clean up when either changes.
   The affected Manage typecheck and diff checks pass after the correction.
-- Next: Commit the route-exit correction, rerun the required local gate, then
-  publish the reviewed branch and require exact-head hosted browser evidence
-  at the desktop, compact, and breakpoint viewports.
+- A4 correction acceptance: Commit `636420d81` now guards both compact-only
+  effects with the enabled assistant render state and assistant URL. The
+  affected Manage typecheck, repository diff checks, complete commit hook, and
+  26-task pre-push build pass. The full local build was also attempted but its
+  GraphQL Rollup process remained asleep for more than 13 minutes without
+  children and was cancelled; hosted exact-head build remains authoritative.
+- A4 publication: The responsive-control branch is published as draft PR #5704
+  on top of `rs/manage-assistant-workflow-continuity` at `72826a259`. Its body
+  records the responsive dock, compact isolation, viewport clamp, desktop-only
+  persistence, route-exit cleanup, and required hosted browser acceptance.
+- Next: Check PR #5704 feedback before CI disposition, then require exact-head
+  hosted browser evidence at the desktop, compact, and breakpoint viewports.
