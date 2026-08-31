@@ -17,6 +17,7 @@ const {
   buildIndividualCleanEvidenceMetadata,
   buildExpectedPromotionContent,
   buildOCRConfig,
+  buildOpenRouterToolCanaryRequest,
   buildReviewPlan,
   buildReviewBackground,
   createGhGithub,
@@ -30,10 +31,13 @@ const {
   hasVerifiedGeneratedPromotionStatus,
   isFinalReviewCommand,
   isTrustedPermission,
+  initializeFinalReview,
+  mergeOCRResumeResults,
   normalizeTitle,
   parseDispositionRecord,
   parseIndividualCleanEvidence,
   parseReviewMetadata,
+  planOCRResume,
   publishFinalReview,
   promotionBody,
   removeOCRConfig,
@@ -43,6 +47,7 @@ const {
   requiresColdIncrementalReview,
   startFinalReview,
   validatePromotionContract,
+  verifyOpenRouterToolAccess,
   writeOCRConfig,
 } = require('./final-ai-review.js')
 
@@ -56,6 +61,39 @@ test('normalizes untrusted PR titles to 200 Unicode code points', () => {
   assert.equal(normalized.includes('\u200b'), false)
   assert.equal(Array.from(normalized).length, 200)
   assert.match(buildReviewBackground(title), /untrusted metadata/)
+})
+
+test('bounds individual and stack review retries, tokens, and runtime', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+
+  assert.equal(source.match(/--timeout 30/g)?.length, 2)
+  assert.equal(source.match(/plan-ocr-resume/g)?.length, 2)
+  assert.equal(source.match(/merge-ocr-resume/g)?.length, 2)
+  assert.match(source, /run_ocr_attempt "\$\{RESULT_PATH\}" 750000/)
+  assert.match(source, /"\$\{REVIEW_FROM\}" "\$\{HEAD_SHA\}" 2000000/)
+  assert.match(source, /resume_partial_result[\s\S]*750000 "\$\{RANGE_PATH\}"/)
+  assert.equal(
+    source.match(/steps:\n {6}- name: Record review job start/g)?.length,
+    2
+  )
+  assert.equal(
+    source.match(
+      /REVIEW_JOB_STARTED_AT: \$\{\{ steps\.job_start\.outputs\.epoch \}\}/g
+    )?.length,
+    2
+  )
+  assert.match(source, /now \+ 1860 > REVIEW_JOB_STARTED_AT \+ 3900/)
+  assert.match(source, /now \+ 1860 > REVIEW_JOB_STARTED_AT \+ 4200/)
+  assert.match(source, /timeout-minutes: 75/)
+  assert.match(source, /timeout-minutes: 90/)
+  assert.equal(source.match(/RESUME_USED=true/g)?.length, 1)
+  assert.match(
+    source,
+    /Only one partial OCR result may be resumed per stack job/
+  )
 })
 
 test('accepts only the exact command and calculated write permissions', () => {
@@ -87,27 +125,75 @@ test('grants clean evidence check access only to the required workflow jobs', ()
   assert.doesNotMatch(permissionsFor('review'), / {6}checks:/)
 })
 
-test('pins trusted review code to the event workflow commit when the default branch moves', () => {
+test('pins trusted review code to the event workflow commit when the default branch moves', async () => {
   for (const workflow of ['../workflows/check-ocr-final-review.yml']) {
     const source = fs.readFileSync(path.join(__dirname, workflow), 'utf8')
+    assert.match(source, /^  pull_request_target:/m)
+    assert.match(source, /^  issue_comment:/m)
     assert.match(
       source,
       /GITHUB_WORKFLOW_SHA: \$\{\{ github\.workflow_sha \}\}/
     )
     assert.match(
       source,
+      /- name: Resolve trusted default-branch commit\n        id: resolve\n        uses: actions\/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9\.0\.0/
+    )
+    assert.match(
+      source,
       /const workflowSha = process\.env\.GITHUB_WORKFLOW_SHA/
     )
     assert.match(source, /github\.rest\.repos\.getCommit/)
+    assert.match(source, /ref: workflowSha/)
+    assert.doesNotMatch(source, /commit_sha: workflowSha/)
     assert.match(source, /core\.setOutput\('trusted_sha', workflowSha\)/)
     assert.doesNotMatch(
       source,
       /const branch = context\.payload\.repository\.default_branch/
     )
+
+    const script = source.match(
+      /- name: Resolve trusted default-branch commit[\s\S]*?\n          script: \|\n((?: {12}.*\n)+)/
+    )?.[1]
+    assert.ok(script)
+    const resolveTrustedPolicy = new Function(
+      'github',
+      'context',
+      'core',
+      'process',
+      `return (async () => {\n${script.replace(/^ {12}/gm, '')}\n})()`
+    )
+    const workflowSha = '86e8ac2e13c77e90a9bcd45d0f6b5f03fff18eed'
+    const getCommit = async (parameters) => {
+      assert.deepEqual(parameters, {
+        owner: 'uzh-bf',
+        repo: 'klicker-uzh',
+        ref: workflowSha,
+      })
+      return { data: { sha: workflowSha } }
+    }
+
+    for (const eventName of ['pull_request_target', 'issue_comment']) {
+      const outputs = new Map()
+      await resolveTrustedPolicy(
+        {
+          rest: { repos: { getCommit } },
+        },
+        {
+          eventName,
+          repo: { owner: 'uzh-bf', repo: 'klicker-uzh' },
+        },
+        {
+          setFailed: assert.fail,
+          setOutput: (name, value) => outputs.set(name, value),
+        },
+        { env: { GITHUB_WORKFLOW_SHA: workflowSha } }
+      )
+      assert.equal(outputs.get('trusted_sha'), workflowSha)
+    }
   }
 })
 
-test('serializes every final-review status writer without canceling it', () => {
+test('queues and serializes every final-review status writer', () => {
   const job = (source, name) =>
     source.match(
       new RegExp(`\\n {2}${name}:\\n([\\s\\S]*?)(?=\\n {2}[a-z][\\w-]*:\\n|$)`)
@@ -118,16 +204,26 @@ test('serializes every final-review status writer without canceling it', () => {
       path.join(__dirname, `../workflows/${workflowName}`),
       'utf8'
     )
-    for (const jobName of ['initialize', 'start', 'finalize']) {
+    const statusWriters = [
+      ['initialize', 'resolve_lock'],
+      ['initialize_stack', 'resolve_lock'],
+      ['start', 'authorize'],
+      ['finalize', 'authorize'],
+      ['start_stack', 'authorize_stack'],
+      ['finalize_stack', 'authorize_stack'],
+    ]
+    for (const [jobName, dependency] of statusWriters) {
       const block = job(source, jobName)
       assert.match(
         block,
-        jobName === 'initialize'
+        dependency === 'resolve_lock'
           ? /group: final-ai-status-lock-\$\{\{ needs\.resolve_lock\.outputs\.lock_key \}\}\n/
-          : /group: final-ai-status-lock-\$\{\{ needs\.authorize\.outputs\.status_lock_key \}\}\n/
+          : new RegExp(
+              `group: final-ai-status-lock-\\$\\{\\{ needs\\.${dependency}\\.outputs\\.status_lock_key \\}\\}\\n`
+            )
       )
       assert.match(block, /cancel-in-progress: false\n/)
-      assert.doesNotMatch(block, /queue:/)
+      assert.match(block, /queue: max\n/)
     }
     assert.match(source, /resolve_lock:\n/)
     assert.match(source, /needs: \[trusted_policy, resolve_lock\]/)
@@ -340,13 +436,195 @@ test('writes an exact high-reasoning OCR config with mode 0600', () => {
   assert.deepEqual(config, buildOCRConfig({ token }))
   assert.equal(config.llm.model, FINAL_REVIEW_MODEL)
   assert.deepEqual(config.llm.extra_body, {
-    provider: { require_parameters: true },
     reasoning: { effort: 'high' },
   })
   assert.equal(fs.statSync(configPath).mode & 0o777, 0o600)
 
   removeOCRConfig(configPath)
   assert.equal(fs.existsSync(configPath), false)
+})
+
+function toolCanaryResponse({
+  args = { marker: 'KLICKER_FINAL_REVIEW_TOOL_CANARY' },
+  model = FINAL_REVIEW_MODEL,
+  provider = 'Fireworks',
+  toolName = 'final_review_probe',
+} = {}) {
+  return {
+    model,
+    provider,
+    choices: [
+      {
+        message: {
+          tool_calls: [
+            {
+              type: 'function',
+              function: {
+                name: toolName,
+                arguments: JSON.stringify(args),
+              },
+            },
+          ],
+        },
+      },
+    ],
+  }
+}
+
+test('verifies the exact public OpenRouter tool contract', async () => {
+  const token = 'dummy-canary-token'
+  let request
+  const result = await verifyOpenRouterToolAccess({
+    token,
+    fetchImpl: async (url, options) => {
+      assert.equal(url, 'https://openrouter.ai/api/v1/chat/completions')
+      assert.equal(options.headers.authorization, `Bearer ${token}`)
+      request = JSON.parse(options.body)
+      return {
+        ok: true,
+        status: 200,
+        json: async () => toolCanaryResponse(),
+      }
+    },
+  })
+
+  assert.deepEqual(request, buildOpenRouterToolCanaryRequest())
+  assert.equal(request.model, FINAL_REVIEW_MODEL)
+  assert.equal(request.max_completion_tokens, 16_384)
+  assert.deepEqual(request.reasoning, { effort: 'high' })
+  assert.equal(Object.hasOwn(request, 'provider'), false)
+  assert.deepEqual(result, { provider: 'Fireworks' })
+})
+
+test('rejects malformed successful OpenRouter tool responses', async () => {
+  for (const payload of [
+    { model: FINAL_REVIEW_MODEL, choices: [] },
+    toolCanaryResponse({ args: { marker: 'wrong' } }),
+    toolCanaryResponse({
+      args: { marker: 'KLICKER_FINAL_REVIEW_TOOL_CANARY', extra: true },
+    }),
+    toolCanaryResponse({ model: 'unexpected/model' }),
+    toolCanaryResponse({ toolName: 'unexpected_tool' }),
+  ]) {
+    await assert.rejects(
+      verifyOpenRouterToolAccess({
+        token: 'dummy-canary-token',
+        fetchImpl: async () => ({
+          ok: true,
+          status: 200,
+          json: async () => payload,
+        }),
+      }),
+      /did not return the expected tool call/
+    )
+  }
+})
+
+test('bounds and redacts OpenRouter tool-canary failure diagnostics', async () => {
+  const token = 'dummy-secret-token'
+  await assert.rejects(
+    verifyOpenRouterToolAccess({
+      token,
+      fetchImpl: async () => ({
+        ok: false,
+        status: 404,
+        json: async () => ({
+          error: {
+            code: 'provider_error\u0000',
+            message: `${token}\n${'x'.repeat(500)}`,
+            metadata: {
+              provider_name: 'Fireworks\u0000',
+              raw: 'must-not-reach-logs',
+            },
+          },
+          choices: ['must-not-reach-logs'],
+        }),
+      }),
+    }),
+    (error) => {
+      assert.match(error.message, /HTTP 404/)
+      assert.match(error.message, /provider=Fireworks/)
+      assert.match(error.message, /\[redacted\]/)
+      assert.equal(error.message.includes(token), false)
+      assert.equal(error.message.includes('must-not-reach-logs'), false)
+      assert.equal(error.message.includes('\u0000'), false)
+      assert.ok(error.message.length < 300)
+      return true
+    }
+  )
+})
+
+test('uses one qualified canary and OCR release in both manual jobs', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  const job = (name) =>
+    source.match(
+      new RegExp(`\\n {2}${name}:\\n([\\s\\S]*?)(?=\\n {2}[a-z][\\w-]*:\\n|$)`)
+    )?.[1] ?? ''
+
+  assert.equal(
+    source.match(/@alibaba-group\/open-code-review@1\.11\.0/g)?.length,
+    2
+  )
+  assert.equal(source.match(/verify-openrouter-tools/g)?.length, 2)
+  assert.equal(source.match(/--effort low/g)?.length, 2)
+  assert.doesNotMatch(source, /@alibaba-group\/open-code-review@1\.9\.10/)
+  assert.doesNotMatch(source, /ocr llm test/)
+  assert.doesNotMatch(source, /OCR_CONFIG_PATH/)
+  assert.doesNotMatch(source, /OCR_LLM_/)
+
+  for (const name of ['review', 'review_stack']) {
+    const block = job(name)
+    assert.match(block, /runs-on: ubuntu-latest/)
+    assert.ok(
+      block.indexOf('configure-ocr') <
+        block.indexOf('verify-openrouter-tools') &&
+        block.indexOf('verify-openrouter-tools') < block.indexOf('ocr review')
+    )
+    assert.match(
+      block,
+      /if: always\(\) && needs\.(?:start|start_stack)\.outputs\.run_review == 'true'/
+    )
+  }
+})
+
+test('keeps DeepSeek V4 Flash 0731 for automatic draft reviews', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-review.yml'),
+    'utf8'
+  )
+
+  assert.equal(
+    source.match(/llm_model: deepseek\/deepseek-v4-flash-0731/g)?.length,
+    1
+  )
+  assert.doesNotMatch(source, /z-ai\/glm-5\.3-flash/)
+})
+
+test('uses the OCR runtime config path for both preflight and review', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+
+  assert.doesNotMatch(workflow, /OCR_CONFIG_PATH/)
+  assert.equal(
+    workflow.match(/test -s "\$\{HOME\}\/\.opencodereview\/config\.json"/g)
+      ?.length,
+    2
+  )
+  assert.equal(
+    workflow.match(/node \.github\/scripts\/final-ai-review\.js configure-ocr/g)
+      ?.length,
+    2
+  )
+  assert.equal(
+    workflow.match(/node \.github\/scripts\/final-ai-review\.js cleanup-ocr/g)
+      ?.length,
+    2
+  )
 })
 
 function completeReviewResult(comments = []) {
@@ -368,6 +646,264 @@ function completeReviewResult(comments = []) {
     },
   }
 }
+
+function partialResumeResult(overrides = {}) {
+  const sessionId = '11111111-1111-4111-8111-111111111111'
+  const completed = {
+    item_id: 'completed',
+    path: 'src/complete.ts',
+    fingerprint: 'a'.repeat(64),
+  }
+  const failed = {
+    item_id: 'failed',
+    path: 'src/timed-out.ts',
+    fingerprint: 'b'.repeat(64),
+    classification: 'timeout',
+    reason: 'concurrent task timeout',
+  }
+  return {
+    status: 'partial',
+    llm: { provider: 'openrouter', model: FINAL_REVIEW_MODEL },
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 300,
+      input_tokens: 240,
+      output_tokens: 60,
+      elapsed: '30m0s',
+    },
+    comments: [],
+    warnings: [],
+    session_id: sessionId,
+    manifest: {
+      schema_version: 'ocr.run-manifest/v1',
+      run_id: sessionId,
+      operation: 'review',
+      terminal_state: 'partial',
+      repository: { identity_sha256: 'c'.repeat(64) },
+      input: {
+        mode: 'range',
+        resolved_base: 'd'.repeat(40),
+        resolved_head: 'e'.repeat(40),
+        source_artifact_sha256: 'f'.repeat(64),
+      },
+      execution: {
+        provider: 'openrouter',
+        model: FINAL_REVIEW_MODEL,
+        rule_config_sha256: '1'.repeat(64),
+      },
+      coverage: {
+        selected: [completed, failed],
+        completed: [completed],
+        reused: [],
+        failed: [failed],
+        waived: [],
+      },
+    },
+    ...overrides,
+  }
+}
+
+function completedResumeResult(parent = partialResumeResult(), overrides = {}) {
+  const sessionId = '22222222-2222-4222-8222-222222222222'
+  const completed = parent.manifest.coverage.selected[1]
+  const reused = parent.manifest.coverage.selected[0]
+  return {
+    status: 'complete',
+    llm: { ...parent.llm },
+    summary: {
+      files_reviewed: 2,
+      comments: 0,
+      total_tokens: 200,
+      input_tokens: 150,
+      output_tokens: 50,
+      elapsed: '12m0s',
+    },
+    comments: [],
+    warnings: [],
+    session_id: sessionId,
+    resume: {
+      resumed_from: parent.session_id,
+      reused_files: 1,
+      rerun_files: 1,
+      previous_model: FINAL_REVIEW_MODEL,
+      current_model: FINAL_REVIEW_MODEL,
+    },
+    manifest: {
+      schema_version: 'ocr.run-manifest/v1',
+      run_id: sessionId,
+      parent_run_id: parent.manifest.run_id,
+      operation: 'review',
+      terminal_state: 'complete',
+      repository: { ...parent.manifest.repository },
+      input: { ...parent.manifest.input },
+      execution: { ...parent.manifest.execution },
+      coverage: {
+        selected: [reused, completed],
+        completed: [completed],
+        reused: [reused],
+        failed: [],
+        waived: [],
+      },
+    },
+    ...overrides,
+  }
+}
+
+test('plans one resume from a valid partial OCR session', () => {
+  assert.equal(planOCRResume(completeReviewResult(), 750_000), null)
+  assert.deepEqual(planOCRResume(partialResumeResult(), 750_000), {
+    sessionId: '11111111-1111-4111-8111-111111111111',
+    remainingTokens: 749_700,
+  })
+})
+
+test('rejects malformed or already-resumed partial OCR sessions', () => {
+  const parent = partialResumeResult()
+  assert.throws(
+    () =>
+      planOCRResume({ ...parent, session_id: '../../unsafe-session' }, 750_000),
+    /safe session ID/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        {
+          ...parent,
+          manifest: { ...parent.manifest, run_id: 'different-run' },
+        },
+        750_000
+      ),
+    /session or manifest identity/
+  )
+  assert.throws(
+    () =>
+      planOCRResume(
+        { ...parent, resume: { resumed_from: 'older-run' } },
+        750_000
+      ),
+    /already a resumed run/
+  )
+})
+
+test('rejects every OCR budget-exhaustion signal before resuming', () => {
+  const parent = partialResumeResult()
+  const cases = [
+    {
+      ...parent,
+      summary: { ...parent.summary, budget_exceeded: true },
+    },
+    {
+      ...parent,
+      warnings: [
+        {
+          type: 'token_budget_reached',
+          file: 'src/timed-out.ts',
+          message: 'budget reached',
+        },
+      ],
+    },
+    {
+      ...parent,
+      manifest: {
+        ...parent.manifest,
+        coverage: {
+          ...parent.manifest.coverage,
+          failed: [
+            {
+              ...parent.manifest.coverage.failed[0],
+              classification: 'budget',
+            },
+          ],
+        },
+      },
+    },
+  ]
+  for (const result of cases) {
+    assert.throws(() => planOCRResume(result, 750_000), /token budget/)
+  }
+  assert.throws(
+    () => planOCRResume(parent, parent.summary.total_tokens),
+    /no token budget left/
+  )
+})
+
+test('merges only validated complete resume usage within the original ceiling', () => {
+  const parent = partialResumeResult()
+  const resumed = completedResumeResult(parent)
+  const merged = mergeOCRResumeResults(parent, resumed, 750_000)
+
+  assert.equal(merged.manifest, resumed.manifest)
+  assert.equal(merged.comments, resumed.comments)
+  assert.equal(merged.summary.files_reviewed, 2)
+  assert.equal(merged.summary.comments, 0)
+  assert.equal(merged.summary.elapsed, '12m0s')
+  assert.equal(merged.summary.input_tokens, 390)
+  assert.equal(merged.summary.output_tokens, 110)
+  assert.equal(merged.summary.total_tokens, 500)
+})
+
+test('rejects incorrect resume lineage, identity, and incomplete coverage', () => {
+  const parent = partialResumeResult()
+  const resumed = completedResumeResult(parent)
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        { ...resumed, resume: { ...resumed.resume, resumed_from: 'wrong' } },
+        750_000
+      ),
+    /parent lineage/
+  )
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          session_id: parent.session_id,
+          manifest: {
+            ...resumed.manifest,
+            run_id: parent.manifest.run_id,
+          },
+        },
+        750_000
+      ),
+    /parent lineage/
+  )
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          manifest: {
+            ...resumed.manifest,
+            input: { ...resumed.manifest.input, resolved_head: '9'.repeat(40) },
+          },
+        },
+        750_000
+      ),
+    /changed its review identity/
+  )
+  assert.throws(
+    () =>
+      mergeOCRResumeResults(
+        parent,
+        {
+          ...resumed,
+          status: 'partial',
+          manifest: { ...resumed.manifest, terminal_state: 'partial' },
+        },
+        750_000
+      ),
+    /session or manifest identity/
+  )
+  assert.throws(
+    () => mergeOCRResumeResults(parent, resumed, 400),
+    /original token budget/
+  )
+})
 
 function completeReviewMetadata(headSha = 'a'.repeat(40), overrides = {}) {
   return {
@@ -592,6 +1128,38 @@ test('scopes status locks to a verified native stack when available', async () =
     }),
     'pr-42'
   )
+})
+
+test('retains only the rejected individual publisher input for one day', () => {
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '../workflows/check-ocr-final-review.yml'),
+    'utf8'
+  )
+  const step = workflow.match(
+    /      - name: Upload rejected individual publisher input\n[\s\S]*?(?=\n      - name:|\n  finalize:)/
+  )?.[0]
+
+  assert.ok(step)
+  assert.ok(
+    workflow.indexOf('Publish consolidated final review') <
+      workflow.indexOf('Upload rejected individual publisher input')
+  )
+  assert.match(step, /if: failure\(\) && steps\.publish\.outcome == 'failure'/)
+  assert.match(
+    step,
+    /uses: actions\/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4/
+  )
+  assert.match(
+    step,
+    /name: final-ai-individual-publisher-failure-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/
+  )
+  assert.match(
+    step,
+    /path: \$\{\{ runner\.temp \}\}\/final-ai-review-result\.json/
+  )
+  assert.match(step, /if-no-files-found: error/)
+  assert.match(step, /retention-days: 1/)
+  assert.doesNotMatch(step, /stderr|config|manifest|ranges|\*/i)
 })
 
 test('renders findings without making finding count a failure', () => {
@@ -1248,6 +1816,178 @@ test('authorizes a verified native stack member', async () => {
   )
   assert.equal(outputs.get('scope_kind'), 'native-stack')
   assert.equal(outputs.get('stack_id'), 'stack-42')
+})
+
+test('authorizes a pull request targeting a designated consolidation branch', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Consolidation change',
+    base: {
+      ref: 'v3-ai',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/consolidation-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github } = reviewGithub({ pull })
+  const outputs = new Map()
+  const core = {
+    notice: () => {},
+    setOutput: (name, value) => outputs.set(name, value),
+  }
+
+  assert.equal(
+    await authorizeFinalReview({
+      github,
+      context: reviewContext(),
+      core,
+    }),
+    true
+  )
+  assert.equal(outputs.get('scope_kind'), 'default')
+  assert.equal(outputs.get('stack_id'), '')
+})
+
+test('keeps the pending status for a consolidation-branch pull request', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Consolidation change',
+    base: {
+      ref: 'v3-ai',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/consolidation-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const statuses = []
+  const github = {
+    rest: {
+      repos: {
+        createCommitStatus: async (status) => statuses.push(status),
+      },
+    },
+  }
+  const context = {
+    ...reviewContext(),
+    payload: {
+      ...reviewContext().payload,
+      pull_request: pull,
+    },
+  }
+
+  await initializeFinalReview({
+    github,
+    context,
+    core: { info: () => {}, notice: () => {}, setOutput: () => {} },
+    sourceBranch: 'v3-ai',
+    trustedSha: 'd'.repeat(40),
+  })
+
+  assert.equal(statuses.length, 1)
+  assert.equal(statuses[0].state, 'pending')
+  assert.match(
+    statuses[0].description,
+    /Manual .* final review required for this head/
+  )
+})
+
+test('rejects a pull request targeting an unlisted integration branch', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Unlisted branch change',
+    base: {
+      ref: 'release/integration',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/unlisted-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const statuses = []
+  const github = {
+    rest: {
+      repos: {
+        createCommitStatus: async (status) => statuses.push(status),
+      },
+    },
+    request: async () => ({ data: [] }),
+  }
+  const context = {
+    ...reviewContext(),
+    payload: {
+      ...reviewContext().payload,
+      pull_request: pull,
+    },
+  }
+
+  await initializeFinalReview({
+    github,
+    context,
+    core: { info: () => {}, notice: () => {}, setOutput: () => {} },
+    sourceBranch: 'v3',
+    trustedSha: 'd'.repeat(40),
+  })
+
+  assert.equal(statuses.length, 1)
+  assert.equal(statuses[0].state, 'error')
+  assert.equal(
+    statuses[0].description,
+    'Final review requires the default branch, a designated consolidation branch, or a verified native stack member'
+  )
+})
+
+test('explains every eligible base option when authorization is denied', async () => {
+  const pull = {
+    number: 42,
+    state: 'open',
+    draft: false,
+    title: 'Unlisted branch change',
+    base: {
+      ref: 'release/integration',
+      sha: 'b'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+    head: {
+      ref: 'rs/unlisted-change',
+      sha: 'a'.repeat(40),
+      repo: { full_name: 'uzh-bf/klicker-uzh' },
+    },
+  }
+  const { github } = reviewGithub({ pull })
+  const notices = []
+  const core = {
+    notice: (message) => notices.push(message),
+    setOutput: () => {},
+  }
+
+  assert.equal(
+    await authorizeFinalReview({
+      github,
+      context: reviewContext(),
+      core,
+    }),
+    false
+  )
+  assert.deepEqual(notices, [
+    'Final review requires an open, ready PR targeting the default branch, a designated consolidation branch, or a verified native stack',
+  ])
 })
 
 test('selects incremental attestation only for bounded repaired changes', async () => {

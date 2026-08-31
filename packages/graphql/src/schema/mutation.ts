@@ -1544,13 +1544,23 @@ export const Mutation = builder.mutationType({
         resolve: async (_, args, ctx) => {
           if (!args.sourceCourseId) {
             return await CourseService.createCourse(args, ctx)
-          } else {
-            await CourseDeletionGuard.assertCourseMutationAllowed(
-              args.sourceCourseId,
-              ctx
-            )
-            return await CourseDuplicationService.duplicateCourse(args, ctx)
           }
+
+          return await withPermission<
+            unknown,
+            typeof args,
+            Awaited<ReturnType<typeof CourseDuplicationService.duplicateCourse>>
+          >(
+            (duplicationArgs) => ({
+              courseId: duplicationArgs.sourceCourseId!,
+            }),
+            DB.PermissionLevel.ADMIN,
+            async (_root, duplicationArgs, duplicationCtx) =>
+              CourseDuplicationService.duplicateCourse(
+                duplicationArgs,
+                duplicationCtx
+              )
+          )(_, args, ctx)
         },
       }),
 

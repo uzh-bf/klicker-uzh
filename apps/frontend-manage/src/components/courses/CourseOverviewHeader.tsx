@@ -413,7 +413,7 @@ function CourseOverviewHeader({
             } catch (error) {
               onError()
               setSubmitting(false)
-              console.log(error)
+              console.error(error)
             }
           }}
         />

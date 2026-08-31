@@ -633,16 +633,42 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
     }
 
     if (isTerminalCourseDuplicationStatus(pendingJob.status)) {
-      if (pendingJob.status === 'COMPLETED') {
-        await releaseCourseDuplicationSourceLock(redis, pendingJob)
-      }
+      // A worker may have persisted FAILED and crashed before releasing the
+      // source lock. Always reconcile the lock when a retry observes a
+      // terminal job so a failed duplication cannot block future attempts.
+      await releaseCourseDuplicationSourceLock(redis, pendingJob)
       return true
     }
 
     if (!pendingJob.args) {
-      executionCtx.logger.warn(
-        `Course duplication job ${jobId} has no stored arguments; cannot process.`
+      executionCtx.logger.error(
+        `Course duplication job ${jobId} has no stored arguments; marking it as failed.`
       )
+
+      try {
+        await updateCourseDuplicationJob(redis, pendingJob, {
+          status: 'FAILED',
+          errorType: 'generic',
+          errorMessage: 'Course duplication failed.',
+        })
+      } catch (statusUpdateError) {
+        executionCtx.logger.error(
+          `Failed to mark course duplication job ${jobId} as FAILED: ${getErrorMessage(statusUpdateError)}`
+        )
+        try {
+          await releaseCourseDuplicationSourceLock(redis, pendingJob)
+        } catch (releaseError) {
+          executionCtx.logger.error(
+            `Failed to release course duplication source lock for job ${jobId}: ${getErrorMessage(releaseError)}`
+          )
+        }
+
+        // Keep the Hatchet attempt retryable when Redis could not persist the
+        // terminal status. Returning success here would leave the job visible
+        // as RUNNING until the long stale-job sweep.
+        throw statusUpdateError
+      }
+
       return false
     }
     const duplicationArgs = pendingJob.args
@@ -661,29 +687,30 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
       throw new Error('Course duplication job is already being processed')
     }
 
-    await renewCourseDuplicationHeartbeat(redis, jobId)
-
-    const processLockRenewal = setInterval(() => {
-      void renewCourseDuplicationProcessLock(
-        redis,
-        processLockKey,
-        processLockValue
-      ).catch((error) => {
-        executionCtx.logger.warn(
-          `Course duplication job ${jobId} process lock renewal failed: ${getErrorMessage(error)}`
-        )
-      })
-      void renewCourseDuplicationHeartbeat(redis, jobId).catch((error) => {
-        executionCtx.logger.warn(
-          `Course duplication job ${jobId} heartbeat renewal failed: ${getErrorMessage(error)}`
-        )
-      })
-    }, COURSE_DUPLICATION_PROCESS_LOCK_RENEWAL_MS)
-
     let job = pendingJob
     let committedCourseId: string | null = null
+    let processLockRenewal: ReturnType<typeof setInterval> | undefined
 
     try {
+      await renewCourseDuplicationHeartbeat(redis, jobId)
+
+      processLockRenewal = setInterval(() => {
+        void renewCourseDuplicationProcessLock(
+          redis,
+          processLockKey,
+          processLockValue
+        ).catch((error) => {
+          executionCtx.logger.warn(
+            `Course duplication job ${jobId} process lock renewal failed: ${getErrorMessage(error)}`
+          )
+        })
+        void renewCourseDuplicationHeartbeat(redis, jobId).catch((error) => {
+          executionCtx.logger.warn(
+            `Course duplication job ${jobId} heartbeat renewal failed: ${getErrorMessage(error)}`
+          )
+        })
+      }, COURSE_DUPLICATION_PROCESS_LOCK_RENEWAL_MS)
+
       const existingCourse = await globalCtx.prisma.course.findUnique({
         where: { id: job.id },
         select: { id: true },
@@ -768,11 +795,15 @@ export const handleProcessCourseDuplication: HatchetHandlers['handleProcessCours
             `Failed to release course duplication source lock for job ${jobId}: ${getErrorMessage(releaseError)}`
           )
         }
+
+        // Let Hatchet retry a transient Redis failure instead of reporting a
+        // successful worker run while the job remains non-terminal.
+        throw statusUpdateError
       }
 
       return false
     } finally {
-      clearInterval(processLockRenewal)
+      if (processLockRenewal) clearInterval(processLockRenewal)
       await releaseCourseDuplicationLockValue(
         redis,
         processLockKey,
