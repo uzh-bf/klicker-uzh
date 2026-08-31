@@ -1,0 +1,314 @@
+name: Run one Playwright shard
+description: Restore the canonical plan and run one isolated shard on either backend
+
+inputs:
+  route:
+    description: Execution route reported in telemetry
+    required: true
+  mode:
+    description: Canonical selector mode
+    required: true
+  shard-index:
+    description: One-based shard index
+    required: true
+  shard-total:
+    description: Total shard count
+    required: true
+  cache-enabled:
+    description: Whether restore-only Actions caches are enabled
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Report shard runner
+      shell: bash
+      env:
+        SHARD_INDEX: ${{ inputs.shard-index }}
+        SHARD_TOTAL: ${{ inputs.shard-total }}
+      run: |
+        echo "Running Playwright tests (shard ${SHARD_INDEX}/${SHARD_TOTAL})"
+        {
+          echo "### Playwright shard ${SHARD_INDEX}/${SHARD_TOTAL}"
+          echo
+          echo "- Runner: \`${RUNNER_NAME}\`"
+          echo "- Platform: \`${RUNNER_OS}/${RUNNER_ARCH}\`"
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Reserve trusted control path
+      shell: bash
+      run: |
+        set -euo pipefail
+        rm -rf -- "$GITHUB_WORKSPACE/.ci-control"
+        test ! -e "$GITHUB_WORKSPACE/.ci-control" && test ! -L "$GITHUB_WORKSPACE/.ci-control"
+
+    - name: Check out trusted CI control
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ job.workflow_repository }}
+        ref: ${{ job.workflow_sha }}
+        path: .ci-control
+        persist-credentials: false
+
+    - name: Trust mounted workspace
+      shell: bash
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+    - name: Define node version
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: package.json
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 11.5.0
+        run_install: false
+
+    - name: Compute cache contract
+      id: cache-contract
+      continue-on-error: true
+      shell: bash
+      run: node .ci-control/.github/scripts/playwright-cache-contract.cjs --root "$GITHUB_WORKSPACE"
+
+    - name: Get pnpm store directory
+      shell: bash
+      run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+    - name: Restore pnpm cache
+      if: inputs.cache-enabled == 'true' && steps.cache-contract.outcome == 'success'
+      id: pnpm-cache
+      continue-on-error: true
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ env.STORE_PATH }}
+        key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
+        restore-keys: |
+          playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install
+
+    - name: Download canonical Playwright execution plan
+      uses: actions/download-artifact@v4
+      with:
+        name: playwright-execution-plan
+
+    - name: Validate selected shard
+      shell: bash
+      env:
+        EXPECTED_MODE: ${{ inputs.mode }}
+        EXPECTED_INDEX: ${{ inputs.shard-index }}
+        EXPECTED_TOTAL: ${{ inputs.shard-total }}
+      run: |
+        node - <<'NODE'
+        const fs = require('node:fs')
+        const plan = JSON.parse(fs.readFileSync('playwright-execution-plan.json'))
+        const shard = plan.shards.find(
+          (entry) => entry.shardIndex === Number(process.env.EXPECTED_INDEX)
+        )
+        if (plan.mode !== process.env.EXPECTED_MODE) {
+          throw new Error(`execution plan mode ${plan.mode} does not match ${process.env.EXPECTED_MODE}`)
+        }
+        if (!shard || shard.shardTotal !== Number(process.env.EXPECTED_TOTAL)) {
+          throw new Error('requested shard is absent from the canonical execution plan')
+        }
+        if (shard.files.length === 0) {
+          throw new Error('requested shard has no test files')
+        }
+        NODE
+
+    - name: Download Playwright build outputs
+      uses: actions/download-artifact@v4
+      with:
+        name: playwright-build-artifact
+
+    - name: Restore generated GraphQL client
+      shell: bash
+      run: |
+        mkdir -p packages/graphql/src/public
+        test -s packages/graphql/dist/client.json
+        cp packages/graphql/dist/client.json packages/graphql/src/public/client.json
+
+    - name: Restore Next build outputs
+      shell: bash
+      run: tar -xf playwright-next-builds.tar
+
+    - name: Generate Prisma Client
+      shell: bash
+      run: pnpm --filter @klicker-uzh/prisma generate
+      env:
+        DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+
+    - name: Prepare .env files
+      shell: bash
+      run: ./util/_create_hatchet_token_test.sh
+      env:
+        HATCHET_API_URL: http://hatchet:8888
+        HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
+
+    - name: Apply migrations and reset database
+      shell: bash
+      run: |
+        cd packages/prisma
+        pnpm run prisma:reset:raw -f
+      env:
+        DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+
+    - name: Seed test participants for Playwright
+      shell: bash
+      run: pnpm --filter @klicker-uzh/prisma-data seed:test
+      env:
+        DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+
+    - name: Start services, wait for readiness, and run Playwright tests
+      timeout-minutes: 120
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "PLAYWRIGHT_STARTED_SECONDS=$(date +%s)" >> "$GITHUB_ENV"
+        chmod +x .github/scripts/wait-for-services.sh
+        PROFILE_RUNTIME_FILES=(
+          playwright/profiles.json
+          playwright/runtime-contract.yml
+          util/playwright-profile-runtime.mjs
+        )
+        profile_file_count=0
+        for profile_file in "${PROFILE_RUNTIME_FILES[@]}"; do
+          if [ -f "$profile_file" ]; then
+            profile_file_count=$((profile_file_count + 1))
+          fi
+        done
+
+        SHARD_PLAN=$(node -e '
+          const fs = require("node:fs")
+          const plan = JSON.parse(fs.readFileSync("playwright-execution-plan.json"))
+          const shard = plan.shards.find((entry) => entry.shardIndex === Number(process.env.SHARD_INDEX))
+          if (!shard || shard.shardTotal !== Number(process.env.SHARD_TOTAL)) process.exit(1)
+          process.stdout.write(JSON.stringify(shard))
+        ')
+        PROFILE=$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).profile)' "$SHARD_PLAN")
+        mapfile -t TEST_FILES < <(node -e 'for (const file of JSON.parse(process.argv[1]).files) console.log(file)' "$SHARD_PLAN")
+
+        if [ "$profile_file_count" -eq "${#PROFILE_RUNTIME_FILES[@]}" ]; then
+          RUNTIME_PLAN="${RUNNER_TEMP}/playwright-runtime-${SHARD_INDEX}.json"
+          node util/playwright-profile-runtime.mjs resolve \
+            --profile "$PROFILE" \
+            --output "$RUNTIME_PLAN"
+          export PLAYWRIGHT_RUNTIME_PLAN="$RUNTIME_PLAN"
+          SERVICE_ENDPOINTS=$(node util/playwright-profile-runtime.mjs endpoints --plan "$RUNTIME_PLAN")
+          export SERVICE_ENDPOINTS
+        elif [ "$profile_file_count" -eq 0 ]; then
+          PROFILE=legacy-full-stack
+          echo "::notice::Using legacy full-stack Playwright startup because the caller checkout predates the profile runtime"
+        else
+          echo "Playwright profile runtime files are partially present; refusing mixed startup" >&2
+          exit 1
+        fi
+
+        if [ "${#TEST_FILES[@]}" -eq 0 ]; then
+          echo "Shard plan contains no test files" >&2
+          exit 1
+        fi
+        echo "Running tests for shard ${SHARD_INDEX}/${SHARD_TOTAL} with profile $PROFILE: ${TEST_FILES[*]}"
+        .github/scripts/wait-for-services.sh -- \
+          env NODE_ENV=test \
+          pnpm --filter @klicker-uzh/playwright exec playwright test \
+            --project=chromium \
+            "${TEST_FILES[@]}"
+      env:
+        SHARD_INDEX: ${{ inputs.shard-index }}
+        SHARD_TOTAL: ${{ inputs.shard-total }}
+        APP_SECRET: abcd
+        DATABASE_URL: postgres://klicker-prod:klicker@postgres:5432/klicker-prod
+        NODE_ENV: production
+        PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
+        URL_AUTH: http://127.0.0.1:3010
+        URL_CONTROL: http://127.0.0.1:3003
+        URL_MANAGE: http://127.0.0.1:3002
+        URL_STUDENT: http://127.0.0.1:3001
+        URL_STUDENT_LOGIN: http://127.0.0.1:3001/login
+        URL_CHAT: http://127.0.0.1:3004
+        SERVICE_START_SCRIPT: start:playwright:ci
+        TIMEOUT_SECONDS: '300'
+        CHECK_INTERVAL: '5'
+        POSTGRES_CHECK_HOST: postgres
+        POSTGRES_CHECK_PORT: 5432
+        POSTGRES_CHECK_USER: klicker-prod
+        POSTGRES_CHECK_DATABASE: klicker-prod
+        REDIS_HOST: redis_exec
+        REDIS_PASS: ''
+        REDIS_PORT: 6379
+        REDIS_CACHE_HOST: redis_cache
+        REDIS_CACHE_PORT: 6379
+        REDIS_ASSESSMENT_PORT: 6379
+        REDIS_ASSESSMENT_PASS: ''
+        REDIS_ASSESSMENT_HOST: redis_assessment_exec
+        HATCHET_CHECK_HOST: hatchet
+        HATCHET_HTTP_PORT: 8888
+        HATCHET_GRPC_PORT: 7077
+        HATCHET_API_URL: http://hatchet:8888
+        HATCHET_TENANT_ID: 707d0855-80ab-4e1f-a156-f1c4546cbf52
+        HATCHET_CLIENT_HOST_PORT: hatchet:7077
+        HATCHET_HOST_PORT: hatchet:7077
+        HATCHET_CLIENT_TLS_STRATEGY: none
+        APP_ORIGIN_API: http://127.0.0.1:3000
+        APP_ORIGIN_AUTH: http://127.0.0.1:3010
+        APP_ORIGIN_LTI: http://127.0.0.1:4000
+        APP_ORIGIN_PWA: http://127.0.0.1:3001
+        APP_ORIGIN_MANAGE: http://127.0.0.1:3002
+        APP_ORIGIN_CONTROL: http://127.0.0.1:3003
+        APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
+        APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
+
+    - name: Upload Playwright JUnit results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-results-${{ inputs.shard-index }}-of-${{ inputs.shard-total }}
+        path: playwright/test-results/junit.xml
+        if-no-files-found: ignore
+        retention-days: 1
+
+    - name: Upload Playwright diagnostics
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-diagnostics-${{ inputs.shard-index }}-of-${{ inputs.shard-total }}
+        path: |
+          playwright/playwright-report
+          playwright/test-results
+          service.log
+        if-no-files-found: ignore
+        retention-days: 1
+
+    - name: Write shard telemetry
+      if: always()
+      continue-on-error: true
+      shell: bash
+      env:
+        PLAYWRIGHT_TELEMETRY_PHASE: shard
+        PLAYWRIGHT_ROUTE: ${{ inputs.route }}
+        PLAYWRIGHT_MODE: ${{ inputs.mode }}
+        PLAYWRIGHT_CACHE_CONTRACT: ${{ steps.cache-contract.outputs.fingerprint }}
+        PNPM_CACHE_HIT: ${{ steps.pnpm-cache.outputs.cache-hit }}
+        PNPM_CACHE_KEY: ${{ steps.pnpm-cache.outputs.cache-primary-key }}
+        PNPM_CACHE_MATCHED_KEY: ${{ steps.pnpm-cache.outputs.cache-matched-key }}
+        PLAYWRIGHT_SHARD_INDEX: ${{ inputs.shard-index }}
+        PLAYWRIGHT_SHARD_TOTAL: ${{ inputs.shard-total }}
+        PLAYWRIGHT_CONCLUSION: ${{ job.status }}
+      run: |
+        started="${PLAYWRIGHT_STARTED_SECONDS:-$(date +%s)}"
+        export PLAYWRIGHT_DURATION_SECONDS="$(( $(date +%s) - started ))"
+        node .ci-control/.github/scripts/playwright-telemetry.cjs --output "playwright-telemetry-${PLAYWRIGHT_SHARD_INDEX}.json"
+
+    - name: Upload shard telemetry
+      if: always()
+      continue-on-error: true
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-telemetry-${{ inputs.shard-index }}-of-${{ inputs.shard-total }}
+        path: playwright-telemetry-${{ inputs.shard-index }}.json
+        if-no-files-found: ignore
+        retention-days: 1

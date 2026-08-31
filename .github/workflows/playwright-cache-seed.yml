@@ -1,0 +1,191 @@
+name: Seed Playwright CI caches
+
+on:
+  push:
+    branches: [v3]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PLAYWRIGHT_CACHE_ENABLED: 'true'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify trusted source ref
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = 'push' ] && [ "$REF" != 'refs/heads/v3' ]; then
+            echo 'Cache seeding accepts only pushes to refs/heads/v3.' >&2
+            exit 1
+          fi
+          if [ "$EVENT_NAME" = 'workflow_dispatch' ] && [ "$REF" != 'refs/heads/v3' ]; then
+            echo 'Manual cache seeding must be dispatched from refs/heads/v3.' >&2
+            exit 1
+          fi
+
+  seed:
+    needs: validate-source
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 120
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d
+    steps:
+      - name: Check out exact trusted source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify checked-out source
+        shell: bash
+        env:
+          EVENT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          actual_sha=$(git rev-parse HEAD)
+          test "$actual_sha" = "$EVENT_SHA"
+
+      - name: Define node version
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.0
+          run_install: false
+
+      - name: Compute cache contract
+        id: cache-contract
+        run: node .github/scripts/playwright-cache-contract.cjs --root "$GITHUB_WORKSPACE"
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+
+      - name: Restore pnpm cache
+        id: pnpm-cache
+        continue-on-error: true
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
+          restore-keys: |
+            playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-
+
+      - name: Restore Turbo cache
+        id: turbo-cache
+        continue-on-error: true
+        uses: actions/cache/restore@v4
+        with:
+          path: .turbo
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-turbo-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
+          restore-keys: |
+            playwright-${{ runner.os }}-${{ runner.arch }}-turbo-${{ steps.cache-contract.outputs.fingerprint }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages and apps
+        id: build
+        shell: bash
+        run: |
+          started=$(date +%s)
+          set +e
+          set -o pipefail
+          pnpm run --filter @klicker-uzh/prisma build:test 2>&1 | tee turbo-build.log
+          prisma_status=("${PIPESTATUS[@]}")
+          pnpm run build:test --concurrency=4 2>&1 | tee -a turbo-build.log
+          build_status=("${PIPESTATUS[@]}")
+          status=0
+          if [ "${prisma_status[0]}" -ne 0 ] ||
+            [ "${prisma_status[1]}" -ne 0 ] ||
+            [ "${build_status[0]}" -ne 0 ] ||
+            [ "${build_status[1]}" -ne 0 ]; then
+            status=1
+          fi
+          set -e
+          echo "PLAYWRIGHT_DURATION_SECONDS=$(( $(date +%s) - started ))" >> "$GITHUB_ENV"
+          exit "$status"
+        env:
+          APP_SECRET: abcd
+          DATABASE_URL: postgres://klicker-prod:klicker@localhost:5432/klicker-prod
+          NODE_ENV: test
+          REDIS_HOST: localhost
+          REDIS_PASS: ''
+          REDIS_PORT: 6379
+          REDIS_CACHE_HOST: localhost
+          REDIS_CACHE_PORT: 6379
+          REDIS_ASSESSMENT_PORT: 6379
+          REDIS_ASSESSMENT_PASS: ''
+          REDIS_ASSESSMENT_HOST: localhost
+          APP_ORIGIN_API: http://127.0.0.1:3000
+          APP_ORIGIN_AUTH: http://127.0.0.1:3010
+          APP_ORIGIN_LTI: http://127.0.0.1:4000
+          APP_ORIGIN_PWA: http://127.0.0.1:3001
+          APP_ORIGIN_MANAGE: http://127.0.0.1:3002
+          APP_ORIGIN_CONTROL: http://127.0.0.1:3003
+          APP_ORIGIN_ASSESSMENT_API: http://127.0.0.1:3000
+          APP_ORIGIN_ASSESSMENT_PWA: http://127.0.0.1:3001
+
+      - name: Extract Turbo build telemetry
+        if: always()
+        continue-on-error: true
+        run: node .github/scripts/turbo-telemetry.cjs --log turbo-build.log
+
+      - name: Save pnpm cache
+        if: steps.build.outcome == 'success' && steps.pnpm-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-pnpm-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
+
+      - name: Save Turbo cache
+        if: steps.build.outcome == 'success' && steps.turbo-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: .turbo
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-turbo-${{ steps.cache-contract.outputs.fingerprint }}-${{ github.sha }}
+
+      - name: Write seed telemetry
+        if: always()
+        continue-on-error: true
+        env:
+          PLAYWRIGHT_TELEMETRY_PHASE: cache-seed
+          PLAYWRIGHT_ROUTE: trusted-hosted-arm64
+          PLAYWRIGHT_MODE: full
+          PLAYWRIGHT_CACHE_CONTRACT: ${{ steps.cache-contract.outputs.fingerprint }}
+          PNPM_CACHE_HIT: ${{ steps.pnpm-cache.outputs.cache-hit }}
+          PNPM_CACHE_KEY: ${{ steps.pnpm-cache.outputs.cache-primary-key }}
+          PNPM_CACHE_MATCHED_KEY: ${{ steps.pnpm-cache.outputs.cache-matched-key }}
+          TURBO_CACHE_HIT: ${{ steps.turbo-cache.outputs.cache-hit }}
+          TURBO_CACHE_KEY: ${{ steps.turbo-cache.outputs.cache-primary-key }}
+          TURBO_CACHE_MATCHED_KEY: ${{ steps.turbo-cache.outputs.cache-matched-key }}
+          PLAYWRIGHT_CONCLUSION: ${{ steps.build.outcome }}
+        run: node .github/scripts/playwright-telemetry.cjs --output playwright-cache-seed-telemetry.json
+
+      - name: Upload seed telemetry
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-cache-seed-telemetry
+          path: playwright-cache-seed-telemetry.json
+          if-no-files-found: ignore
+          retention-days: 1
