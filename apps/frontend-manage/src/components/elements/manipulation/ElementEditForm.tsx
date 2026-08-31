@@ -173,8 +173,8 @@ function ElementEditForm({
                 setElementDataTypename={setElementDataTypename}
                 validateForm={validateForm}
               />
-              <div className="flex flex-row gap-12">
-                <div className="flex-1">
+              <div className="flex flex-col gap-6 xl:flex-row xl:gap-12">
+                <div className="min-w-0 flex-1">
                   <Form className="w-full" id="question-manipulation-form">
                     <ElementInformationFields
                       isTemplate={isTemplate}
@@ -208,7 +208,7 @@ function ElementEditForm({
                         />
                       )}
 
-                    <div className="mt-4 flex flex-row gap-4">
+                    <div className="mt-4 flex flex-wrap gap-4">
                       <OptionsLabel type={values.type} />
                       <AnswerFeedbackSetting
                         disabled={isTemplate || inputsDisabled}
@@ -241,6 +241,7 @@ function ElementEditForm({
                       <FreeTextOptions
                         inputsDisabled={inputsDisabled}
                         values={values}
+                        setFieldValue={setFieldValue}
                       />
                     )}
 

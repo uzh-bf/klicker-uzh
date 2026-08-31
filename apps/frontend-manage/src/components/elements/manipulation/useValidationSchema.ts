@@ -1,3 +1,4 @@
+import { validateSemanticFreeTextConfig } from '@klicker-uzh/grading'
 import {
   ElementDisplayMode,
   ElementStatus,
@@ -5,7 +6,7 @@ import {
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 import * as yup from 'yup'
-import { ElementFormTypesCaseStudy } from './types'
+import type { ElementFormTypesCaseStudy } from './types'
 
 function useSharedValidationSchema() {
   const t = useTranslations()
@@ -393,13 +394,27 @@ function useOptionsSchemaFreeText() {
           .min(1, t('manage.formErrors.enterSolution'))
       )
       .nullable()
-      .when('hasSampleSolution', {
-        is: true,
+      .when(['hasSampleSolution', 'semanticEvaluation'], {
+        is: (hasSampleSolution: boolean, semanticEvaluation: unknown) =>
+          hasSampleSolution && semanticEvaluation == null,
         then: (schema) =>
           schema
             .required(t('manage.formErrors.solutionRequired'))
             .min(1, t('manage.formErrors.solutionRequired')),
       }),
+    semanticEvaluation: yup
+      .mixed()
+      .nullable()
+      .test({
+        message: t('manage.formErrors.semanticFreeTextInvalid'),
+        test: (value) =>
+          value == null || validateSemanticFreeTextConfig(value).length === 0,
+      }),
+    semanticEvaluationLoadError: yup.boolean().test({
+      message: t('manage.formErrors.semanticFreeTextInvalid'),
+      test: (value) => value !== true,
+    }),
+    preservedSemanticEvaluation: yup.mixed(),
   }
 }
 

@@ -3,16 +3,23 @@ import {
   FormikNumberField,
   FormikTextField,
 } from '@uzh-bf/design-system'
+import type { FormikProps } from 'formik'
 import { FieldArray, FieldArrayRenderProps } from 'formik'
 import { useTranslations } from 'next-intl'
 import { ElementFormTypesFreeText } from '../types'
+import SemanticFreeTextOptions from './SemanticFreeTextOptions'
 
 interface FreeTextOptionsProps {
   inputsDisabled?: boolean
   values: ElementFormTypesFreeText
+  setFieldValue: FormikProps<ElementFormTypesFreeText>['setFieldValue']
 }
 
-function FreeTextOptions({ inputsDisabled, values }: FreeTextOptionsProps) {
+function FreeTextOptions({
+  inputsDisabled,
+  values,
+  setFieldValue,
+}: FreeTextOptionsProps) {
   const t = useTranslations()
 
   return (
@@ -31,60 +38,66 @@ function FreeTextOptions({ inputsDisabled, values }: FreeTextOptionsProps) {
           hideError
         />
       </div>
-      {values.options.hasSampleSolution && (
-        <FieldArray name="options.solutions">
-          {({ push, remove }: FieldArrayRenderProps) => (
-            <div className="flex w-max flex-col gap-1">
-              {values.options.solutions
-                ? values.options.solutions.map((_solution, index) => (
-                    <div
-                      className="flex flex-row items-end gap-2"
-                      key={`${index}-${values.options.solutions!.length}`}
-                    >
-                      <FormikTextField
-                        required
-                        disabled={inputsDisabled}
-                        name={`options.solutions.${index}`}
-                        label={t('manage.elements.possibleSolutionN', {
-                          number: String(index + 1),
-                        })}
-                        type="text"
-                        placeholder={t('shared.generic.solution')}
-                        data={{ cy: `set-solution-ix-${index}` }}
-                      />
-                      {!inputsDisabled ? (
-                        <Button
-                          destructive
-                          onClick={() => remove(index)}
-                          className={{
-                            root: 'h-9',
-                          }}
-                          data={{
-                            cy: `delete-solution-ix-${index}`,
-                          }}
-                        >
-                          {t('shared.generic.delete')}
-                        </Button>
-                      ) : null}
-                    </div>
-                  ))
-                : null}
-              {!inputsDisabled ? (
-                <Button
-                  fluid
-                  className={{
-                    root: 'mt-1 h-8 border-gray-300 font-bold',
-                  }}
-                  onClick={() => push('')}
-                  data={{ cy: 'add-solution-value' }}
-                >
-                  {t('manage.elements.addSolution')}
-                </Button>
-              ) : null}
-            </div>
-          )}
-        </FieldArray>
-      )}
+      {values.options.hasSampleSolution &&
+        values.options.semanticEvaluation == null && (
+          <FieldArray name="options.solutions">
+            {({ push, remove }: FieldArrayRenderProps) => (
+              <div className="flex w-max flex-col gap-1">
+                {values.options.solutions
+                  ? values.options.solutions.map((_solution, index) => (
+                      <div
+                        className="flex flex-row items-end gap-2"
+                        key={`${index}-${values.options.solutions!.length}`}
+                      >
+                        <FormikTextField
+                          required
+                          disabled={inputsDisabled}
+                          name={`options.solutions.${index}`}
+                          label={t('manage.elements.possibleSolutionN', {
+                            number: String(index + 1),
+                          })}
+                          type="text"
+                          placeholder={t('shared.generic.solution')}
+                          data={{ cy: `set-solution-ix-${index}` }}
+                        />
+                        {!inputsDisabled ? (
+                          <Button
+                            destructive
+                            onClick={() => remove(index)}
+                            className={{
+                              root: 'h-9',
+                            }}
+                            data={{
+                              cy: `delete-solution-ix-${index}`,
+                            }}
+                          >
+                            {t('shared.generic.delete')}
+                          </Button>
+                        ) : null}
+                      </div>
+                    ))
+                  : null}
+                {!inputsDisabled ? (
+                  <Button
+                    fluid
+                    className={{
+                      root: 'mt-1 h-8 border-gray-300 font-bold',
+                    }}
+                    onClick={() => push('')}
+                    data={{ cy: 'add-solution-value' }}
+                  >
+                    {t('manage.elements.addSolution')}
+                  </Button>
+                ) : null}
+              </div>
+            )}
+          </FieldArray>
+        )}
+      <SemanticFreeTextOptions
+        values={values}
+        inputsDisabled={inputsDisabled}
+        setFieldValue={setFieldValue}
+      />
     </div>
   )
 }

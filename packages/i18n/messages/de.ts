@@ -2868,6 +2868,61 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       possibleSolutionN: 'Mögliche Lösung {number}',
       possibleSolutions: 'Mögliche Lösungen',
       addSolution: 'Neue Lösung hinzufügen',
+      semanticEvaluation: 'Semantisches Feedback und Wiederholungen',
+      semanticEvaluationDescription:
+        'Bewerten Sie offene Antworten anhand von Rubriken und lassen Sie Teilnehmende ihre Antwort verbessern. Exakte Antworten bleiben als deterministischer Fallback erhalten.',
+      semanticEntitlement: 'Catalyst-Zugriff',
+      semanticEntitled: 'Für dieses Konto verfügbar',
+      semanticNotEntitled: 'Für dieses Konto nicht verfügbar',
+      semanticEvaluator: 'Bewertungsdienst',
+      semanticEvaluatorAvailable: 'Verfügbar',
+      semanticEvaluatorDegraded: 'Eingeschränkt',
+      semanticEvaluatorUnavailable: 'Nicht verfügbar',
+      semanticCatalystRequired:
+        'Für die Konfiguration des semantischen Feedbacks ist Catalyst-Zugriff erforderlich.',
+      semanticReadOnlyWithoutEntitlement:
+        'Diese bestehende Konfiguration ist schreibgeschützt, weil für Ihr Konto derzeit kein Catalyst-Zugriff verfügbar ist.',
+      semanticStoredConfigInvalid:
+        'Die gespeicherte Konfiguration für semantisches Feedback ist ungültig und kann nicht sicher bearbeitet werden. Löschen Sie sie ausdrücklich, bevor Sie diese Frage speichern.',
+      semanticAvailabilityWarning:
+        'Sie können die Frage konfigurieren, semantische Bewertungen sind jedoch derzeit nicht verfügbar. Der exakte Abgleich bleibt verfügbar.',
+      semanticQuestionLanguage: 'Sprache der Frage',
+      semanticAttemptLimit: 'Maximale Anzahl Antwortversuche',
+      semanticSolutionReveal: 'Teilnehmenden das Anzeigen der Lösung erlauben',
+      semanticAcceptedExactAnswers: 'Akzeptierte exakte Antworten',
+      semanticAcceptedExactAnswersDescription:
+        'Diese Antworten werden lokal und ohne KI-Bewertung abgeglichen. Gross-/Kleinschreibung und umgebende Leerzeichen werden ignoriert.',
+      semanticExactAnswerN: 'Exakte Antwort {number}',
+      semanticAddExactAnswer: 'Exakte Antwort hinzufügen',
+      semanticReferenceSolution: 'Referenzlösung und detaillierte Erklärung',
+      semanticSchemaVersion: 'Version des Rubrikschemas',
+      semanticSchemaName: 'Name des Rubrikschemas',
+      semanticSchemaDescription: 'Beschreibung des Rubrikschemas',
+      semanticRubrics: 'Rubriken',
+      semanticRubricsDescription:
+        'Die Gewichtungen müssen zusammen 1 ergeben. Erweiterte generierte Felder bleiben unten erhalten.',
+      semanticRubricId: 'Rubrik-ID',
+      semanticRubricWeight: 'Gewichtung',
+      semanticAchievementLevels: 'Erfüllungsstufen',
+      semanticNormalizedScore: 'Punktzahl (0–100)',
+      semanticAddAchievementLevel: 'Erfüllungsstufe hinzufügen',
+      semanticDeleteRubric: 'Rubrik löschen',
+      semanticAddRubric: 'Rubrik hinzufügen',
+      semanticOutcomeBands: 'Feedback-Zustände',
+      semanticOutcomeBandsDescription:
+        'Die Zustände müssen den gesamten Punktebereich von 0 bis 100 ohne Lücken oder Überschneidungen abdecken.',
+      semanticOutcomeId: 'Zustands-ID',
+      semanticOutcomeLabel: 'Bezeichnung für Teilnehmende',
+      semanticMinimumScore: 'Minimum',
+      semanticMaximumScore: 'Maximum',
+      semanticCategory: 'Kategorie',
+      semanticIncorrect: 'Nicht korrekt',
+      semanticPartial: 'Teilweise korrekt',
+      semanticCorrect: 'Korrekt',
+      semanticAddOutcomeBand: 'Feedback-Zustand hinzufügen',
+      semanticAdvancedMetadata: 'Erweiterte generierte Metadaten',
+      semanticAdvancedMetadataDescription:
+        'Diese Rubrikfelder bleiben beim Speichern erhalten, sind in diesem Editor aber schreibgeschützt.',
       noFeedbackDefined: 'Kein Feedback definiert',
       createElement: '{element} erstellen',
       editElement: '{element} bearbeiten',
@@ -3372,6 +3427,8 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bei MC-Fragen muss mindestens eine Antwort korrekt sein.',
       enterSolution: 'Bitte geben Sie eine Lösung ein.',
       FTMaxLength: 'Die maximale Länge der Lösung muss mindestens 1 betragen.',
+      semanticFreeTextInvalid:
+        'Vervollständigen Sie die Einstellungen der semantischen Bewertung. Die Versuche müssen zwischen 1 und 10 liegen, die Rubrikgewichtungen zusammen 1 ergeben, Stufen Punktzahlen von 0 bis 100 haben und Feedback-Zustände den gesamten Bereich abdecken.',
       solutionRequired:
         'Bitte geben Sie mindestens eine Lösung an oder deaktivieren Sie die Musterlösung.',
       NRMinLessThanMaxSol:
@@ -3649,6 +3706,18 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Bitte bestätigen Sie, dass der Block geschlossen werden soll. Ab diesem Zeitpunkt akzeptiert das System keine weiteren Antworten der Studierenden und die vollständige Auswertung (inkl. Musterlösung) kann eingesehen werden.',
     },
     evaluation: {
+      semanticRetryAnalytics: 'Analyse semantischer Wiederholungen',
+      semanticRetryAnalyticsDescription:
+        'Nur aggregierter Lernfortschritt. Antworten, Rubrikbegründungen und Fehler des Bewertungsdienstes sind nicht enthalten.',
+      semanticCycles: 'Übungszyklen',
+      semanticAttemptsUsed: 'Antwortversuche',
+      semanticAverageAttempts: 'Durchschnittliche Versuche',
+      semanticSuccessRate: 'Erfolgsquote',
+      semanticRevealRate: 'Quote angezeigter Lösungen',
+      semanticUnavailable: 'Derzeit nicht verfügbar',
+      semanticOutcomeMoment: 'Ergebnis',
+      semanticFirstOutcome: 'Erste bewertete Antwort',
+      semanticBestOutcome: 'Beste bewertete Antwort',
       evaluationNotYetAvailable:
         'Die Evaluation zu dieser Frage kann leider (noch) nicht angezeigt werden. Sollten Sie diese Seite irgendwo einbinden wollen, beispielsweise über das PowerPoint-Plugin, wird die Evaluation automatisch nach Starten der Frage angezeigt.',
       noSignedInStudents:

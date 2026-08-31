@@ -1,7 +1,7 @@
 import { UserNotification } from '@uzh-bf/design-system'
-import { FormikErrors } from 'formik'
+import type { FormikErrors } from 'formik'
 import { useTranslations } from 'next-intl'
-import { ElementFormTypes } from './types'
+import type { ElementFormTypes } from './types'
 
 interface ElementFormErrorsProps {
   errors: FormikErrors<ElementFormTypes>
@@ -179,6 +179,22 @@ function ElementFormErrors({
             <li>{`${t(
               'manage.elements.possibleSolutions'
             )}: ${errors.options.solutions}`}</li>
+          )}
+        {'options' in errors &&
+          errors.options &&
+          'semanticEvaluation' in errors.options &&
+          errors.options.semanticEvaluation && (
+            <li>{`${t('manage.elements.semanticEvaluation')}: ${String(
+              errors.options.semanticEvaluation
+            )}`}</li>
+          )}
+        {'options' in errors &&
+          errors.options &&
+          'semanticEvaluationLoadError' in errors.options &&
+          errors.options.semanticEvaluationLoadError && (
+            <li>{`${t('manage.elements.semanticEvaluation')}: ${String(
+              errors.options.semanticEvaluationLoadError
+            )}`}</li>
           )}
 
         {/* error messages specific to SE / CS questions */}

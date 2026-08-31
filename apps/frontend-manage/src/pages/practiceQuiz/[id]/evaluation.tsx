@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client'
-import { GetPracticeQuizEvaluationDocument } from '@klicker-uzh/graphql/dist/ops'
+import { GetPracticeQuizEvaluationV2Document } from '@klicker-uzh/graphql/dist/ops'
 import Loader from '@klicker-uzh/shared-components/src/Loader'
 import { GetStaticPropsContext } from 'next'
 import { useTranslations } from 'next-intl'
@@ -12,11 +12,14 @@ function PracticeQuizEvaluation() {
   const router = useRouter()
 
   // fetch evaluation data
-  const { data, loading, error } = useQuery(GetPracticeQuizEvaluationDocument, {
-    variables: {
-      id: router.query.id as string,
-    },
-  })
+  const { data, loading, error } = useQuery(
+    GetPracticeQuizEvaluationV2Document,
+    {
+      variables: {
+        id: router.query.id as string,
+      },
+    }
+  )
 
   if (loading) {
     return (

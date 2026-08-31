@@ -2829,6 +2829,61 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       possibleSolutionN: 'Possible solution {number}',
       possibleSolutions: 'Possible solutions',
       addSolution: 'Add new solution',
+      semanticEvaluation: 'Semantic feedback and retries',
+      semanticEvaluationDescription:
+        'Evaluate open answers against a rubric and let participants improve their answer. Exact answers remain a deterministic fallback.',
+      semanticEntitlement: 'Catalyst access',
+      semanticEntitled: 'Available for this account',
+      semanticNotEntitled: 'Not available for this account',
+      semanticEvaluator: 'Evaluation service',
+      semanticEvaluatorAvailable: 'Available',
+      semanticEvaluatorDegraded: 'Degraded',
+      semanticEvaluatorUnavailable: 'Unavailable',
+      semanticCatalystRequired:
+        'Catalyst access is required to configure semantic feedback.',
+      semanticReadOnlyWithoutEntitlement:
+        'This existing configuration is read-only because Catalyst access is not currently available for your account.',
+      semanticStoredConfigInvalid:
+        'The stored semantic feedback configuration is invalid and cannot be edited safely. Delete it explicitly before saving this question.',
+      semanticAvailabilityWarning:
+        'You can configure the question, but semantic evaluations are currently unavailable. Exact matching remains available.',
+      semanticQuestionLanguage: 'Question language',
+      semanticAttemptLimit: 'Maximum answer attempts',
+      semanticSolutionReveal: 'Allow participants to reveal the solution',
+      semanticAcceptedExactAnswers: 'Accepted exact answers',
+      semanticAcceptedExactAnswersDescription:
+        'These answers are matched locally without an AI evaluation. Matching ignores capitalization and surrounding spaces.',
+      semanticExactAnswerN: 'Exact answer {number}',
+      semanticAddExactAnswer: 'Add exact answer',
+      semanticReferenceSolution: 'Reference solution and detailed explanation',
+      semanticSchemaVersion: 'Rubric schema version',
+      semanticSchemaName: 'Rubric schema name',
+      semanticSchemaDescription: 'Rubric schema description',
+      semanticRubrics: 'Rubrics',
+      semanticRubricsDescription:
+        'Weights must add up to 1. Advanced generated fields are preserved below.',
+      semanticRubricId: 'Rubric ID',
+      semanticRubricWeight: 'Weight',
+      semanticAchievementLevels: 'Achievement levels',
+      semanticNormalizedScore: 'Score (0–100)',
+      semanticAddAchievementLevel: 'Add achievement level',
+      semanticDeleteRubric: 'Delete rubric',
+      semanticAddRubric: 'Add rubric',
+      semanticOutcomeBands: 'Feedback states',
+      semanticOutcomeBandsDescription:
+        'States must cover the complete score range from 0 to 100 without gaps or overlaps.',
+      semanticOutcomeId: 'State ID',
+      semanticOutcomeLabel: 'Participant label',
+      semanticMinimumScore: 'Minimum',
+      semanticMaximumScore: 'Maximum',
+      semanticCategory: 'Category',
+      semanticIncorrect: 'Incorrect',
+      semanticPartial: 'Partially correct',
+      semanticCorrect: 'Correct',
+      semanticAddOutcomeBand: 'Add feedback state',
+      semanticAdvancedMetadata: 'Advanced generated metadata',
+      semanticAdvancedMetadataDescription:
+        'These rubric fields are preserved when saving but are read-only in this editor.',
       noFeedbackDefined: 'No feedback defined',
       createElement: 'Create {element}',
       editElement: 'Edit {element}',
@@ -3315,6 +3370,8 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
       enterSolution: 'Please enter a solution.',
       FTMaxLength:
         'The maximum length of a free text question response has to be at least 1.',
+      semanticFreeTextInvalid:
+        'Complete the semantic evaluation settings. Attempts must be between 1 and 10, rubric weights must add up to 1, levels need scores from 0 to 100, and feedback states must cover the full range.',
       solutionRequired:
         'Please enter at least one solution or deactivate the sample solution.',
       NRMinLessThanMaxSol:
@@ -3579,6 +3636,18 @@ Since the KlickerUZH app is not yet available in the iOS App Store, follow these
         'Please confirm that the active block should be closed. After your confirmation, the system will not accept any further answers from the students and the complete evaluation (including sample solution) can be displayed.',
     },
     evaluation: {
+      semanticRetryAnalytics: 'Semantic retry analytics',
+      semanticRetryAnalyticsDescription:
+        'Aggregate learning progress only. Participant answers, rubric rationales, and evaluator errors are not included.',
+      semanticCycles: 'Practice cycles',
+      semanticAttemptsUsed: 'Answer attempts',
+      semanticAverageAttempts: 'Average attempts',
+      semanticSuccessRate: 'Success rate',
+      semanticRevealRate: 'Solution reveal rate',
+      semanticUnavailable: 'Currently unavailable',
+      semanticOutcomeMoment: 'Outcome',
+      semanticFirstOutcome: 'First evaluated answer',
+      semanticBestOutcome: 'Best evaluated answer',
       evaluationNotYetAvailable:
         'The evaluation for this question cannot be displayed yet. If you want to embed this page somewhere, e.g. via the PowerPoint plugin, the evaluation will be displayed automatically after starting the question.',
       noSignedInStudents:

@@ -6,6 +6,7 @@ import { ChartType } from '@klicker-uzh/shared-components/src/constants'
 import { ActivityEvaluationType } from '../ActivityEvaluation'
 import ElementChart from '../ElementChart'
 import { TextSizeType } from '../textSizes'
+import FreeTextRetryAnalytics from './FreeTextRetryAnalytics'
 import FTSidebar from './FTSidebar'
 
 import {
@@ -43,6 +44,9 @@ function FTEvaluation({
 
   return (
     <>
+      {instanceEvaluation.retryAnalytics && (
+        <FreeTextRetryAnalytics analytics={instanceEvaluation.retryAnalytics} />
+      )}
       {showSolution ? (
         <ResizablePanelGroup
           autoSaveId="evaluation-ft"

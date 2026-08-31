@@ -1,14 +1,16 @@
+import { validateSemanticFreeTextConfig } from '@klicker-uzh/grading'
 import {
-  Element,
+  type Element,
   ElementDisplayMode,
   ElementStatus,
   ElementType,
 } from '@klicker-uzh/graphql/dist/ops'
+import type { SemanticFreeTextConfig } from '@klicker-uzh/types'
 import { nanoid } from 'nanoid'
 import { useMemo } from 'react'
 import { sort } from 'remeda'
 import { ElementEditMode } from './ElementEditModal'
-import {
+import type {
   ElementFormTypes,
   ElementFormTypesCaseStudySolution,
   ElementFormTypesCaseStudySolutions,
@@ -117,6 +119,12 @@ function useElementFormInitialValues({
       }
     } else if (question.__typename === 'FreeTextElement') {
       const options = question.options
+      const semanticEvaluationLoadError =
+        options.semanticEvaluation != null &&
+        validateSemanticFreeTextConfig(options.semanticEvaluation).length > 0
+      const semanticEvaluation = semanticEvaluationLoadError
+        ? undefined
+        : (options.semanticEvaluation as SemanticFreeTextConfig | null)
 
       return {
         ...sharedAttributes,
@@ -129,6 +137,11 @@ function useElementFormInitialValues({
               }
             : undefined,
           solutions: options.solutions,
+          semanticEvaluation,
+          semanticEvaluationLoadError,
+          preservedSemanticEvaluation: semanticEvaluationLoadError
+            ? options.semanticEvaluation
+            : undefined,
         },
       }
     } else if (question.__typename === 'SelectionElement') {

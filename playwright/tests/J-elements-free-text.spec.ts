@@ -24,6 +24,11 @@ const FT = {
     'Sample Solution 2',
     'Sample Solution 3',
   ],
+  semanticExactAnswer: 'Semantic exact answer',
+  semanticReferenceSolution: 'Semantic reference solution',
+  semanticUnsavedRubricName: 'Unsaved semantic rubric',
+  semanticUnsavedSolution: 'Unsaved semantic reference solution',
+  semanticTitle: 'Semantic Free Text Question Title',
 }
 
 test('CLEANUP', cleanupTest)
@@ -106,6 +111,56 @@ test.describe('Test creation and editing functionalities for Free Text elements'
     await page.getByTestId('close-element-modal').click()
   })
 
+  test('Enabling semantic feedback enables sample-solution scoring', async ({
+    page,
+  }) => {
+    await page.getByTestId('create-question').click()
+    await page.getByTestId('select-question-type').click()
+    await page
+      .getByTestId(`select-question-type-${elementTypeLabels.freeText}`)
+      .click()
+    await page.getByTestId('insert-question-title').fill(FT.semanticTitle)
+
+    await expect(
+      page.getByTestId('configure-sample-solution')
+    ).not.toBeChecked()
+    await page.getByTestId('configure-semantic-free-text').click()
+
+    await expect(page.getByTestId('configure-sample-solution')).toBeChecked()
+    await expect(page.getByTestId('configure-sample-solution')).toBeDisabled()
+    await expect(page.getByTestId('select-multiplier')).toBeVisible()
+    await expect(
+      page.getByText(
+        'Multipliers only influence the scoring of a question if a sample solution is defined and correctness and bonus points (live quiz) are awarded.'
+      )
+    ).toHaveCount(0)
+
+    await page
+      .getByTestId('semantic-reference-solution')
+      .fill(FT.semanticUnsavedSolution)
+    await page
+      .getByTestId('semantic-rubric-name-0')
+      .fill(FT.semanticUnsavedRubricName)
+
+    await page.getByTestId('configure-semantic-free-text').click()
+    await expect(
+      page.getByTestId('configure-sample-solution')
+    ).not.toBeChecked()
+    await expect(
+      page.getByTestId('configure-sample-solution')
+    ).not.toBeDisabled()
+
+    await page.getByTestId('configure-semantic-free-text').click()
+    await expect(page.getByTestId('semantic-reference-solution')).toHaveValue(
+      FT.semanticUnsavedSolution
+    )
+    await expect(page.getByTestId('semantic-rubric-name-0')).toHaveValue(
+      FT.semanticUnsavedRubricName
+    )
+
+    await page.getByTestId('close-element-modal').click()
+  })
+
   // -------------------------------------------------------------------------
   // Edit + sample solution
   // -------------------------------------------------------------------------
@@ -141,8 +196,9 @@ test.describe('Test creation and editing functionalities for Free Text elements'
       await expect(page.getByTestId('save-new-question')).not.toBeDisabled()
     }
 
-    await page.getByTestId('save-new-question').click({ force: true })
-    await page.waitForTimeout(1000)
+    const saveButton = page.getByTestId('save-new-question')
+    await saveButton.click({ force: true })
+    await expect(saveButton).toBeHidden()
 
     await validateElement(page, FT.titleEdited, [
       FT.contentEdited,
@@ -176,6 +232,53 @@ test.describe('Test creation and editing functionalities for Free Text elements'
       )
     }
 
+    await page.getByTestId('close-element-modal').click()
+  })
+
+  test('Keep legacy sample solutions separate from semantic exact answers', async ({
+    page,
+  }) => {
+    await searchAndEdit(page, FT.titleEdited)
+
+    await page.getByTestId('configure-semantic-free-text').click()
+    await expect(page.getByTestId('semantic-editor')).toBeVisible()
+    await page
+      .getByTestId('semantic-exact-answer-0')
+      .fill(FT.semanticExactAnswer)
+    await page
+      .getByTestId('semantic-reference-solution')
+      .fill(FT.semanticReferenceSolution)
+    const saveButton = page.getByTestId('save-new-question')
+    await saveButton.click({ force: true })
+    await expect(saveButton).toBeHidden()
+
+    await searchAndEdit(page, FT.titleEdited)
+    await expect(page.getByTestId('semantic-exact-answer-0')).toHaveValue(
+      FT.semanticExactAnswer
+    )
+    await expect(page.getByTestId('semantic-reference-solution')).toHaveValue(
+      FT.semanticReferenceSolution
+    )
+
+    await page.getByTestId('configure-semantic-free-text').click()
+    for (let ix = 0; ix < FT.sampleSolution.length; ix++) {
+      await expect(page.getByTestId(`set-solution-ix-${ix}`)).toHaveValue(
+        FT.sampleSolution[ix]
+      )
+    }
+    await saveButton.click({ force: true })
+    await expect(saveButton).toBeHidden()
+
+    await searchAndEdit(page, FT.titleEdited)
+    await expect(
+      page.getByTestId('configure-semantic-free-text')
+    ).not.toBeChecked()
+    await expect(page.getByTestId('semantic-editor')).toHaveCount(0)
+    for (let ix = 0; ix < FT.sampleSolution.length; ix++) {
+      await expect(page.getByTestId(`set-solution-ix-${ix}`)).toHaveValue(
+        FT.sampleSolution[ix]
+      )
+    }
     await page.getByTestId('close-element-modal').click()
   })
 })

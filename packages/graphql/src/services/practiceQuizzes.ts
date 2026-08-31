@@ -23,6 +23,7 @@ import {
 import { hideSemanticFreeTextAuthoringData } from './freeTextEvaluationVisibility.js'
 import { splitActivityInstances } from './liveQuizzes.js'
 import { sendTeamsNotification } from './notifications.js'
+import { getFreeTextRetryAnalyticsByInstance } from './practiceQuizFreeTextAnalytics.js'
 import { computeStackEvaluation } from './stacks.js'
 
 export async function getPracticeQuizData(
@@ -133,6 +134,34 @@ export async function getPracticeQuizEvaluation(
 
   // compute evaluation
   const stackEvaluation = computeStackEvaluation(practiceQuiz.stacks)
+  const semanticFreeTextInstanceIds = new Set(
+    practiceQuiz.stacks.flatMap((stack) =>
+      stack.elements.flatMap((instance) =>
+        instance.elementType === DB.ElementType.FREE_TEXT &&
+        instance.elementData.type === DB.ElementType.FREE_TEXT &&
+        instance.elementData.options.semanticEvaluation != null
+          ? [instance.id]
+          : []
+      )
+    )
+  )
+  const retryAnalyticsByInstance = await getFreeTextRetryAnalyticsByInstance(
+    id,
+    [...semanticFreeTextInstanceIds],
+    ctx
+  )
+  const evaluationWithRetryAnalytics = stackEvaluation.map((stack) => ({
+    ...stack,
+    instances: stack.instances.map((instance) =>
+      instance.type === DB.ElementType.FREE_TEXT &&
+      semanticFreeTextInstanceIds.has(instance.id)
+        ? {
+            ...instance,
+            retryAnalytics: retryAnalyticsByInstance.get(instance.id),
+          }
+        : instance
+    ),
+  }))
 
   return {
     id: practiceQuiz.id,
@@ -140,7 +169,7 @@ export async function getPracticeQuizEvaluation(
     displayName: practiceQuiz.displayName,
     description: practiceQuiz.description,
     courseId: practiceQuiz.courseId,
-    results: stackEvaluation,
+    results: evaluationWithRetryAnalytics,
   }
 }
 
