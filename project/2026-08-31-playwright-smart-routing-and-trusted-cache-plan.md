@@ -974,6 +974,11 @@ native planner gate.
   The last confirmed policy remains the Klicker-only `public-pr-arm64` group
   restricted to the exact `public-pr-playwright-shards.yml@refs/heads/v3`
   workflow; fresh proof remains pending an authorized readback.
+- [x] Repository control variables were checked read-only on 2026-08-31:
+  `PUBLIC_PR_ARM64_PLAYWRIGHT_ENABLED=true` and
+  `PUBLIC_PR_ARM64_PLAYWRIGHT_CANARY_PR=0`; the smart-draft and Playwright
+  cache controls are not present. The new routing and cache paths therefore
+  cannot be live until the branch is delivered and their controls are created.
 - [ ] M2 selector shadow evidence: compare at least ten representative draft
   plans with the authoritative full suite and disposition every miss.
 - [ ] M3 canary and global activation; live proof still requires the exact
