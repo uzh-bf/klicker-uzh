@@ -17,17 +17,10 @@
         "J-elements-free-text.spec.ts",
         "K-elements-selection.spec.ts",
         "L-elements-case-study.spec.ts",
-        "MA-elements-operations.spec.ts",
         "MB-instance-updates.spec.ts",
-        "N-course.spec.ts",
-        "P-microlearning.spec.ts",
         "P-pagination-show-all.spec.ts",
-        "Q-practice-quiz.spec.ts",
-        "R-bookmarking.spec.ts",
-        "S-group-activity.spec.ts",
         "T-resources.spec.ts",
         "U-catalog.spec.ts",
-        "V-template.spec.ts",
         "W-activity-log.spec.ts",
         "X-review.spec.ts",
         "Z-credential-verification.spec.ts"
@@ -41,8 +34,15 @@
       "profile": "manage,live-quiz",
       "specs": [
         "C-control.spec.ts",
+        "MA-elements-operations.spec.ts",
+        "N-course.spec.ts",
         "O1-live-quiz-core.spec.ts",
-        "O2-live-quiz-collaboration.spec.ts"
+        "O2-live-quiz-collaboration.spec.ts",
+        "P-microlearning.spec.ts",
+        "Q-practice-quiz.spec.ts",
+        "R-bookmarking.spec.ts",
+        "S-group-activity.spec.ts",
+        "V-template.spec.ts"
       ]
     }
   ]

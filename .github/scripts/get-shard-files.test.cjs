@@ -29,6 +29,26 @@ test('the profile manifest assigns every active spec exactly once', () => {
   assert.deepEqual([...profiles.keys()].sort(), allFiles)
 })
 
+test('activity lifecycle specs select the worker-bearing live-quiz profile', () => {
+  const profiles = parseProfileManifest(manifest, allFiles)
+  const activityLifecycleSpecs = [
+    'MA-elements-operations.spec.ts',
+    'N-course.spec.ts',
+    'P-microlearning.spec.ts',
+    'Q-practice-quiz.spec.ts',
+    'R-bookmarking.spec.ts',
+    'S-group-activity.spec.ts',
+    'V-template.spec.ts',
+  ]
+
+  for (const spec of activityLifecycleSpecs) {
+    assert.ok(
+      profiles.get(spec)?.split(',').includes('live-quiz'),
+      `${spec} must start the Hatchet workers through live-quiz`
+    )
+  }
+})
+
 test('eight shard plans preserve every spec and emit canonical profiles', () => {
   const profiles = parseProfileManifest(manifest, allFiles)
   const durations = parseTimings(timings, allFiles, () => {})
