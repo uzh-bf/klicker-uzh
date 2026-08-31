@@ -65,12 +65,14 @@ export function getManageAssistantPanelPresetSize(
   preset: ManageAssistantPanelPreset,
   viewport: { height: number; width: number }
 ): ManageAssistantPanelSize {
-  const requestedSize =
-    preset === 'default'
-      ? DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE
-      : preset === 'wide'
-        ? WIDE_PANEL_SIZE
-        : { height: viewport.height, width: viewport.width }
+  let requestedSize: ManageAssistantPanelSize
+  if (preset === 'default') {
+    requestedSize = DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE
+  } else if (preset === 'wide') {
+    requestedSize = WIDE_PANEL_SIZE
+  } else {
+    requestedSize = { height: viewport.height, width: viewport.width }
+  }
 
   return clampManageAssistantPanelSize(requestedSize, viewport)
 }
