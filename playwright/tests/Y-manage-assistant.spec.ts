@@ -870,6 +870,22 @@ test.describe('Manage Assistant — Messaging', () => {
     expect(panelBox?.height).toBeLessThanOrEqual(390)
     await expect(panel.getByRole('button', { name: 'Close' })).toBeVisible()
     await expect(page.getByTestId('manage-assistant-resize')).toBeHidden()
+    await expect(panel).toHaveRole('dialog')
+    await expect(panel).toHaveAttribute('aria-modal', 'true')
+    const appContent = page.locator('#manage-assistant-app-content')
+    await expect(appContent).toHaveAttribute('aria-hidden', 'true')
+    expect(
+      await appContent.evaluate((element) => (element as HTMLElement).inert)
+    ).toBe(true)
+    await expect(page.locator('#__app')).not.toHaveAttribute(
+      'aria-hidden',
+      'true'
+    )
+    expect(
+      await page
+        .locator('#__app')
+        .evaluate((element) => (element as HTMLElement).inert)
+    ).toBe(false)
     expect(
       await page.evaluate(() =>
         JSON.parse(
@@ -879,6 +895,95 @@ test.describe('Manage Assistant — Messaging', () => {
         )
       )
     ).toEqual(desktopSize)
+
+    await panel.getByRole('button', { name: 'Close' }).click()
+    await expect(panel).toBeHidden()
+    await expect(appContent).not.toHaveAttribute('aria-hidden', 'true')
+    expect(
+      await appContent.evaluate((element) => (element as HTMLElement).inert)
+    ).toBe(false)
+  })
+
+  test('Desktop size presets share the viewport clamp and remove the old hard maximum', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page)
+    await page.setViewportSize({ height: 900, width: 1_440 })
+    await page.evaluate(() => {
+      window.localStorage.removeItem('klicker-manage-assistant-panel-size-v1')
+    })
+    await page.reload()
+
+    await openManageAssistantWidget(page)
+    const panel = page.getByTestId('manage-assistant-drawer')
+    const preset = page.getByTestId('manage-assistant-panel-preset')
+    const resize = page.getByTestId('manage-assistant-resize')
+    await expect(preset).toHaveValue('custom')
+    await expect(resize).toHaveCSS('width', '44px')
+    await expect(resize).toHaveCSS('height', '44px')
+
+    await preset.selectOption('wide')
+    await expect(async () => {
+      const box = await panel.boundingBox()
+      expect(box?.width).toBe(720)
+      expect(box?.height).toBe(768)
+    }).toPass()
+    await expect(preset).toHaveValue('wide')
+
+    await preset.selectOption('max')
+    await expect(async () => {
+      const box = await panel.boundingBox()
+      expect(box?.width).toBe(1_392)
+      expect(box?.height).toBe(852)
+    }).toPass()
+    await expect(preset).toHaveValue('max')
+
+    await preset.selectOption('default')
+    await expect(async () => {
+      const box = await panel.boundingBox()
+      expect(box?.width).toBe(448)
+      expect(box?.height).toBe(672)
+    }).toPass()
+    await expect(preset).toHaveValue('default')
+  })
+
+  test('Crossing the compact breakpoint keeps the conversation and releases modal isolation', async ({
+    page,
+  }) => {
+    await mockManageChatStream(page, {
+      text: 'The conversation survives the breakpoint change.',
+    })
+    await page.setViewportSize({ height: 900, width: 1_024 })
+    const assistant = await openManageAssistantWidget(page)
+    await sendManageAssistantMessage(assistant, 'Keep this conversation')
+    await expect(
+      assistant.getByTestId('chat-assistant-message-content')
+    ).toContainText('The conversation survives the breakpoint change.')
+
+    const panel = page.getByTestId('manage-assistant-drawer')
+    const appContent = page.locator('#manage-assistant-app-content')
+    await page.setViewportSize({ height: 844, width: 390 })
+    await expect(panel).toHaveRole('dialog')
+    await expect(panel).toHaveAttribute('aria-modal', 'true')
+    await expect(appContent).toHaveAttribute('aria-hidden', 'true')
+    expect(
+      await appContent.evaluate((element) => (element as HTMLElement).inert)
+    ).toBe(true)
+
+    await page.setViewportSize({ height: 900, width: 1_024 })
+    await expect(panel).toHaveRole('complementary')
+    await expect(panel).not.toHaveAttribute('aria-modal', 'true')
+    await expect(appContent).not.toHaveAttribute('aria-hidden', 'true')
+    expect(
+      await appContent.evaluate((element) => (element as HTMLElement).inert)
+    ).toBe(false)
+    await expect(
+      assistant.getByTestId('chat-assistant-message-content')
+    ).toContainText('The conversation survives the breakpoint change.')
+
+    const search = page.getByPlaceholder('Search...')
+    await search.fill('Manage is interactive again')
+    await expect(search).toHaveValue('Manage is interactive again')
   })
 })
 

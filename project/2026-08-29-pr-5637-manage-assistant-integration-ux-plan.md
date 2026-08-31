@@ -1041,3 +1041,13 @@ follow_up_stacks:
 - Next: Create the A4 branch from the accepted A3 head, inspect the existing
   panel-size and Manage shell contracts, then implement and verify the
   responsive control slice before its review fan-out.
+- A4 implementation: The responsive control slice now uses a full-viewport
+  compact sheet with scoped modal isolation, a non-modal desktop dock with
+  viewport-clamped presets and a 44px resize target, and desktop-only size
+  persistence. The embedded Chat layout keeps readable content centred and
+  leaves safe-area space for the composer. Focused Manage tests (5/5), Chat
+  proposal/runtime tests (24/24), both affected typechecks, repository
+  `check:all`, Biome, Prettier, and diff checks pass on the current branch.
+- Next: Run the required simplifier and A4 slice-risk review on the committed
+  implementation, then publish the reviewed branch and require exact-head
+  hosted browser evidence at the desktop, compact, and breakpoint viewports.

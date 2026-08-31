@@ -1905,6 +1905,11 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
       resize: 'Grösse des Assistenten ändern',
       resizeHint:
         'Ziehen Sie, um die Grösse zu ändern. Die Pfeiltasten ändern die Grösse ebenfalls.',
+      panelSize: 'Grösse des Assistentenfensters',
+      panelSizeCustom: 'Benutzerdefiniert',
+      panelSizeDefault: 'Standard',
+      panelSizeWide: 'Breit',
+      panelSizeMax: 'Maximal',
       elementCreatedToast: 'Entwurf "{name}" zum Fragepool hinzugefügt',
     },
     ai: {

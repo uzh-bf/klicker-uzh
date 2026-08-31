@@ -333,7 +333,9 @@ export const Thread: FC<ThreadProps> = ({
       data-cy="chat-thread"
       className="bg-background relative box-border flex min-h-0 flex-1 flex-col overflow-hidden"
       style={{
-        ['--thread-max-width' as string]: embedded ? '100%' : '60rem',
+        ['--thread-max-width' as string]: embedded
+          ? 'min(100%, 48rem)'
+          : '60rem',
       }}
     >
       <ThreadRunAnnouncer />
@@ -395,7 +397,7 @@ export const Thread: FC<ThreadProps> = ({
         className={twMerge(
           'z-10 flex w-full flex-col items-center justify-end',
           embedded
-            ? 'relative shrink-0 px-2 pb-2'
+            ? 'relative shrink-0 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]'
             : 'relative shrink-0 px-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-4'
         )}
       >
@@ -591,7 +593,7 @@ const ThreadWelcome: FC<{
           />
           <div
             data-cy="chat-welcome-message"
-            className="aui-thread-welcome-message relative flex size-full flex-col items-center justify-center px-8 text-center"
+            className="aui-thread-welcome-message relative flex size-full flex-col items-center justify-center px-4 text-center sm:px-8"
           >
             {/* `ChatbotAvatar` (not a bare `Image`): the manage assistant has
                 no avatar asset and renders its fallback icon instead. */}
@@ -701,7 +703,7 @@ const ThreadWelcomeSuggestions: FC<{
     <section
       aria-label={t('chat.suggestions.sectionLabel')}
       data-cy="chat-welcome-suggestions"
-      className="mt-4 w-full px-8"
+      className="mt-4 w-full px-4 sm:px-8"
     >
       <p
         data-cy="chat-welcome-suggestion-hint"
@@ -829,7 +831,10 @@ const Composer: FC<{ maxImageAttachments: number }> = ({
     <ComposerDropzone
       setError={setAttachmentError}
       maxImageAttachments={maxImageAttachments}
-      className="w-full max-w-3xl"
+      className={twMerge(
+        'w-full max-w-3xl',
+        embedded && 'max-w-[var(--thread-max-width)]'
+      )}
       roundedClass="rounded-3xl"
     >
       <ComposerPrimitive.Root
@@ -1363,6 +1368,7 @@ function getEditTooltip(
 
 const UserMessage: FC = () => {
   const message = useAuiState((s) => s.message) as MessageWithCustomMetadata
+  const { embedded } = useChatUi()
   const attachments = getMessageAttachments(message)
 
   return (
@@ -1374,7 +1380,10 @@ const UserMessage: FC = () => {
     >
       <div
         data-cy="chat-user-message-content"
-        className="bg-muted text-foreground max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-2xl px-5 py-2.5"
+        className={twMerge(
+          'bg-muted text-foreground break-words rounded-2xl px-5 py-2.5',
+          embedded ? 'max-w-[80%]' : 'max-w-[calc(var(--thread-max-width)*0.8)]'
+        )}
       >
         {attachments.length > 0 && (
           <MessageAttachments

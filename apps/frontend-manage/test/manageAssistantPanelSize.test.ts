@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import {
   clampManageAssistantPanelSize,
   getManageAssistantKeyboardResizeDelta,
+  getManageAssistantPanelPresetSize,
   parseManageAssistantPanelSize,
   resizeManageAssistantPanelFromTopLeft,
 } from '../src/components/assistant/manageAssistantPanelSize.ts'
@@ -22,7 +23,36 @@ assert.deepEqual(
     { height: 2_000, width: 2_000 },
     { height: 800, width: 1_200 }
   ),
-  { height: 752, width: 1_024 }
+  { height: 752, width: 1_152 }
+)
+
+assert.deepEqual(
+  getManageAssistantPanelPresetSize('default', {
+    height: 900,
+    width: 1_440,
+  }),
+  { height: 672, width: 448 }
+)
+assert.deepEqual(
+  getManageAssistantPanelPresetSize('wide', {
+    height: 900,
+    width: 1_440,
+  }),
+  { height: 768, width: 720 }
+)
+assert.deepEqual(
+  getManageAssistantPanelPresetSize('max', {
+    height: 900,
+    width: 1_440,
+  }),
+  { height: 852, width: 1_392 }
+)
+assert.deepEqual(
+  getManageAssistantPanelPresetSize('max', {
+    height: 390,
+    width: 320,
+  }),
+  { height: 342, width: 272 }
 )
 
 assert.deepEqual(

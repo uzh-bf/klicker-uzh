@@ -18,6 +18,7 @@ import { Tooltip, toast } from '@uzh-bf/design-system'
 import { useRouter } from 'next/router'
 import { useTranslations } from 'next-intl'
 import {
+  type ChangeEvent as ReactChangeEvent,
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
@@ -35,6 +36,7 @@ import { useAiFeaturesEnabled } from '../../lib/hooks/useAiFeaturesEnabled'
 import {
   buildManageAssistantElementEditRoute,
   buildManageAssistantUrl,
+  MANAGE_ASSISTANT_APP_CONTENT_ID,
 } from './manageAssistantConfig'
 import {
   buildManageAssistantContext,
@@ -50,6 +52,8 @@ import {
   clampManageAssistantPanelSize,
   DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE,
   getManageAssistantKeyboardResizeDelta,
+  getManageAssistantPanelPresetSize,
+  type ManageAssistantPanelPreset,
   type ManageAssistantPanelSize,
   parseManageAssistantPanelSize,
   resizeManageAssistantPanelFromTopLeft,
@@ -117,12 +121,22 @@ const MANAGE_ASSISTANT_OVERLAY_CONTENT: Record<
   },
 }
 const DESKTOP_PANEL_MEDIA_QUERY = '(min-width: 768px)'
+const MANAGE_ASSISTANT_FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  'iframe:not([tabindex="-1"])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',')
 
 export function ManageAssistantWidget() {
   const t = useTranslations()
   const router = useRouter()
   const apolloClient = useApolloClient()
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
+  const panelRef = useRef<HTMLElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const closeButtonRef = useRef<HTMLButtonElement | null>(null)
   const shouldRestoreFocusRef = useRef(false)
@@ -134,10 +148,14 @@ export function ManageAssistantWidget() {
   } | null>(null)
   const [open, setOpen] = useState(false)
   const [hasOpened, setHasOpened] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(false)
   const [panelSize, setPanelSize] = useState(
     DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE
   )
   const [panelSizeInitialized, setPanelSizeInitialized] = useState(false)
+  const [panelPreset, setPanelPreset] = useState<
+    ManageAssistantPanelPreset | 'custom'
+  >('custom')
 
   // Mounted app-wide rather than inside Layout, so the login screen has to be
   // excluded explicitly: every other Manage route requires a signed-in user.
@@ -301,32 +319,118 @@ export function ManageAssistantWidget() {
   }, [closeWidget, open])
 
   useEffect(() => {
-    const initialSize =
-      readStoredPanelSize() ?? DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE
+    if (!open || isDesktop) return
+
+    const panel = panelRef.current
+    if (!panel) return
+    const panelElement = panel
+
+    function getFocusableElements() {
+      return Array.from(
+        panelElement.querySelectorAll<HTMLElement>(
+          MANAGE_ASSISTANT_FOCUSABLE_SELECTOR
+        )
+      ).filter((element) => !element.hidden && element.getClientRects().length)
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Tab') return
+
+      const focusableElements = getFocusableElements()
+      if (focusableElements.length === 0) {
+        event.preventDefault()
+        panelElement.focus()
+        return
+      }
+
+      const first = focusableElements[0]
+      const last = focusableElements[focusableElements.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last?.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first?.focus()
+      }
+    }
+
+    function handleFocusIn(event: FocusEvent) {
+      const target = event.target
+      if (target instanceof Node && !panelElement.contains(target)) {
+        closeButtonRef.current?.focus()
+      }
+    }
+
+    panelElement.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('focusin', handleFocusIn)
+    return () => {
+      panelElement.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('focusin', handleFocusIn)
+    }
+  }, [isDesktop, open])
+
+  useEffect(() => {
+    if (!open || isDesktop) return
+
+    const appContent = document.getElementById(MANAGE_ASSISTANT_APP_CONTENT_ID)
+    if (!appContent) return
+
+    const previousAriaHidden = appContent.getAttribute('aria-hidden')
+    const previousInert = appContent.inert
+    appContent.setAttribute('aria-hidden', 'true')
+    appContent.inert = true
+
+    return () => {
+      appContent.inert = previousInert
+      if (previousAriaHidden === null) {
+        appContent.removeAttribute('aria-hidden')
+      } else {
+        appContent.setAttribute('aria-hidden', previousAriaHidden)
+      }
+    }
+  }, [isDesktop, open])
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(DESKTOP_PANEL_MEDIA_QUERY)
+    const initialSize = mediaQuery.matches
+      ? (readStoredPanelSize() ?? DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE)
+      : DEFAULT_MANAGE_ASSISTANT_PANEL_SIZE
+    const viewport = {
+      height: window.innerHeight,
+      width: window.innerWidth,
+    }
+    setIsDesktop(mediaQuery.matches)
     setPanelSize(
-      window.matchMedia(DESKTOP_PANEL_MEDIA_QUERY).matches
-        ? clampManageAssistantPanelSize(initialSize, {
-            height: window.innerHeight,
-            width: window.innerWidth,
-          })
+      mediaQuery.matches
+        ? clampManageAssistantPanelSize(initialSize, viewport)
         : initialSize
     )
     setPanelSizeInitialized(true)
+
+    function handleMediaChange(event: MediaQueryListEvent) {
+      setIsDesktop(event.matches)
+      if (event.matches) {
+        setPanelSize((currentSize) =>
+          clampManageAssistantPanelSize(readStoredPanelSize() ?? currentSize, {
+            height: window.innerHeight,
+            width: window.innerWidth,
+          })
+        )
+      }
+    }
+
+    mediaQuery.addEventListener('change', handleMediaChange)
+    return () => mediaQuery.removeEventListener('change', handleMediaChange)
   }, [])
 
   useEffect(() => {
-    if (
-      !panelSizeInitialized ||
-      !window.matchMedia(DESKTOP_PANEL_MEDIA_QUERY).matches
-    ) {
-      return
-    }
+    if (!panelSizeInitialized || !isDesktop) return
     writeStoredPanelSize(panelSize)
-  }, [panelSize, panelSizeInitialized])
+  }, [isDesktop, panelSize, panelSizeInitialized])
 
   useEffect(() => {
     function handleResize() {
-      if (!window.matchMedia(DESKTOP_PANEL_MEDIA_QUERY).matches) return
+      if (!isDesktop) return
       setPanelSize((currentSize) =>
         clampManageAssistantPanelSize(currentSize, {
           height: window.innerHeight,
@@ -337,11 +441,11 @@ export function ManageAssistantWidget() {
 
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
-  }, [])
+  }, [isDesktop])
 
   const handleResizePointerDown = useCallback(
     (event: ReactPointerEvent<HTMLButtonElement>) => {
-      if (event.button !== 0) return
+      if (event.button !== 0 || !isDesktop) return
       event.preventDefault()
       event.currentTarget.setPointerCapture(event.pointerId)
       resizeSessionRef.current = {
@@ -351,13 +455,15 @@ export function ManageAssistantWidget() {
         startY: event.clientY,
       }
     },
-    [panelSize]
+    [isDesktop, panelSize]
   )
 
   const handleResizePointerMove = useCallback(
     (event: ReactPointerEvent<HTMLButtonElement>) => {
       const session = resizeSessionRef.current
-      if (!session || session.pointerId !== event.pointerId) return
+      if (!isDesktop || !session || session.pointerId !== event.pointerId) {
+        return
+      }
 
       setPanelSize(
         resizeManageAssistantPanelFromTopLeft({
@@ -367,8 +473,9 @@ export function ManageAssistantWidget() {
           viewport: { height: window.innerHeight, width: window.innerWidth },
         })
       )
+      setPanelPreset('custom')
     },
-    []
+    [isDesktop]
   )
 
   const handleResizePointerEnd = useCallback(
@@ -386,6 +493,7 @@ export function ManageAssistantWidget() {
     (event: ReactKeyboardEvent<HTMLButtonElement>) => {
       const delta = getManageAssistantKeyboardResizeDelta(event.key)
       if (!delta) return
+      if (!isDesktop) return
       event.preventDefault()
       setPanelSize((currentSize) =>
         resizeManageAssistantPanelFromTopLeft({
@@ -394,8 +502,32 @@ export function ManageAssistantWidget() {
           viewport: { height: window.innerHeight, width: window.innerWidth },
         })
       )
+      setPanelPreset('custom')
     },
-    []
+    [isDesktop]
+  )
+
+  const handlePanelPresetChange = useCallback(
+    (event: ReactChangeEvent<HTMLSelectElement>) => {
+      if (!isDesktop) return
+
+      const preset = event.target.value
+      if (preset !== 'default' && preset !== 'wide' && preset !== 'max') {
+        return
+      }
+
+      setPanelSize(
+        getManageAssistantPanelPresetSize(
+          preset as ManageAssistantPanelPreset,
+          {
+            height: window.innerHeight,
+            width: window.innerWidth,
+          }
+        )
+      )
+      setPanelPreset(preset as ManageAssistantPanelPreset)
+    },
+    [isDesktop]
   )
 
   useEffect(() => {
@@ -488,6 +620,7 @@ export function ManageAssistantWidget() {
           type="button"
           aria-controls={MANAGE_ASSISTANT_PANEL_ID}
           aria-expanded={open}
+          aria-haspopup={!isDesktop ? 'dialog' : undefined}
           aria-label={t('manage.assistant.open')}
           onClick={() => {
             setHasOpened(true)
@@ -505,9 +638,13 @@ export function ManageAssistantWidget() {
         createPortal(
           <aside
             id={MANAGE_ASSISTANT_PANEL_ID}
-            aria-hidden={!open}
+            role={isDesktop ? 'complementary' : 'dialog'}
+            aria-hidden={!open ? true : undefined}
+            aria-modal={!isDesktop && open ? true : undefined}
             aria-label={t('manage.assistant.title')}
             inert={!open}
+            ref={panelRef}
+            tabIndex={-1}
             style={
               {
                 '--manage-assistant-height': `${panelSize.height}px`,
@@ -515,15 +652,15 @@ export function ManageAssistantWidget() {
               } as CSSProperties
             }
             className={twMerge(
-              'fixed bottom-0 left-0 right-0 z-40 flex h-[min(85dvh,44rem)] w-screen flex-col overflow-hidden overscroll-contain border-t border-gray-200 bg-white shadow-2xl md:inset-x-auto md:bottom-6 md:left-auto md:right-6 md:h-[var(--manage-assistant-height)] md:w-[var(--manage-assistant-width)] md:rounded-md md:border',
+              'fixed inset-0 z-40 flex h-dvh w-screen flex-col overflow-hidden overscroll-contain bg-white shadow-2xl md:inset-x-auto md:bottom-6 md:left-auto md:right-6 md:top-auto md:h-[var(--manage-assistant-height)] md:w-[var(--manage-assistant-width)] md:rounded-md md:border md:border-gray-200',
               !open && 'hidden'
             )}
             data-cy="manage-assistant-drawer"
           >
-            <div className="relative flex shrink-0 items-start gap-3 border-b bg-white px-3 py-3 md:pl-9">
+            <div className="relative flex shrink-0 items-start gap-3 border-b bg-white px-3 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] md:pl-12 md:pt-3">
               <button
                 type="button"
-                className="focus-visible:outline-uzh-blue-40 absolute left-1 top-1 hidden size-7 touch-none cursor-nwse-resize items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 md:inline-flex"
+                className="focus-visible:outline-uzh-blue-40 absolute left-0 top-0 hidden size-11 touch-none cursor-nwse-resize items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 md:inline-flex"
                 aria-label={t('manage.assistant.resize')}
                 aria-describedby="manage-assistant-resize-hint"
                 data-cy="manage-assistant-resize"
@@ -553,6 +690,33 @@ export function ManageAssistantWidget() {
                   </span>
                 </div>
               </div>
+              <label
+                className="sr-only"
+                htmlFor="manage-assistant-panel-preset"
+              >
+                {t('manage.assistant.panelSize')}
+              </label>
+              <select
+                id="manage-assistant-panel-preset"
+                aria-label={t('manage.assistant.panelSize')}
+                value={panelPreset}
+                onChange={handlePanelPresetChange}
+                className="border-border bg-background text-foreground focus-visible:ring-ring hidden h-11 max-w-28 shrink-0 rounded-md border px-2 text-xs focus-visible:outline-none focus-visible:ring-2 md:block"
+                data-cy="manage-assistant-panel-preset"
+              >
+                <option value="custom">
+                  {t('manage.assistant.panelSizeCustom')}
+                </option>
+                <option value="default">
+                  {t('manage.assistant.panelSizeDefault')}
+                </option>
+                <option value="wide">
+                  {t('manage.assistant.panelSizeWide')}
+                </option>
+                <option value="max">
+                  {t('manage.assistant.panelSizeMax')}
+                </option>
+              </select>
               <Tooltip
                 tooltip={t('manage.assistant.openInNewTab')}
                 delay={0}

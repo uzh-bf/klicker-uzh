@@ -13,6 +13,8 @@ export type ManageAssistantElementEditRoute = {
   query: { editElementId: string }
 }
 
+export const MANAGE_ASSISTANT_APP_CONTENT_ID = 'manage-assistant-app-content'
+
 export function buildManageAssistantUrl({
   chatUrl,
   locale,
