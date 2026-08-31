@@ -102,7 +102,11 @@ Neither PR may merge under this plan.
   line, with the same patch qualified on current `v3`.
 - [x] Current `v3` branch refreshed through `fed364a33`; the intervening Moodle
   embedding change does not overlap this package.
-- [ ] S1a scoped runtime and signer implemented and reviewed.
+- [x] S1a scoped runtime and signer implemented at `dc942f9af`; focused
+  verification passed (4 Vitest files, 31 tests, Chat TypeScript, Prettier,
+  ESLint, staged secret scan, and diff check). The security/cross-system slice
+  review passed. The simplifier removed three unused or redundant exports, and
+  the same focused verification passed afterward.
 - [ ] S1b configuration-only activation operator implemented and reviewed.
 - [ ] S1c sealed proof entry point implemented and reviewed.
 - [ ] Canonical and maintenance PRs published with terminal exact-head CI.

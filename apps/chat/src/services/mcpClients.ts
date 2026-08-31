@@ -14,7 +14,6 @@ import {
   RequiredMCPUnavailableError,
 } from '@/src/lib/server/mcpRuntimePolicy'
 import {
-  canLoadMCPServer,
   DOC_QUERY_MCP_SERVER_NAME,
   DOC_QUERY_SCOPE_TOKEN_HEADER,
   normalizeDocQueryKbId,
@@ -129,7 +128,7 @@ export async function createAuthHeaders(
   const authType = server.authType.toLowerCase()
 
   if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
-    if (!canLoadMCPServer(server, options)) {
+    if (!(options.kbId && options.sessionId)) {
       throw new Error('Scoped knowledge retrieval is not available')
     }
     if (authType !== 'bearer' || !server.authSecret) {

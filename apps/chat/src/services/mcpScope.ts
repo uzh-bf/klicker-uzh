@@ -1,7 +1,6 @@
 import { RequiredMCPUnavailableError } from '@/src/lib/server/mcpRuntimePolicy'
 
 export const DOC_QUERY_MCP_SERVER_NAME = 'KB'
-export const DOC_QUERY_TOOL_NAME = `${DOC_QUERY_MCP_SERVER_NAME}_doc_query`
 export const DOC_QUERY_SCOPE_TOKEN_HEADER = 'X-Doc-Query-Scope-Token'
 
 const UUID_PATTERN =
@@ -119,40 +118,4 @@ export function resolveMcpScope(
   if (selectedModeCount !== 1) requiredScopeError()
 
   return kbConfigurations[0].kbId
-}
-
-/**
- * Keeps a client-supplied thread from becoming a scope subject before route
- * ownership has been established.
- */
-export function resolveMcpScopeSessionId({
-  requestedThreadId,
-  owningThreadId,
-  fallbackId,
-}: {
-  requestedThreadId?: string | null
-  owningThreadId?: string
-  fallbackId: string
-}): string | null {
-  if (requestedThreadId && requestedThreadId !== owningThreadId) {
-    return null
-  }
-
-  return owningThreadId ?? fallbackId
-}
-
-/**
- * Returns whether a server can participate in the current request scope.
- * Non-KB servers retain their existing behavior; the KB target requires both
- * resolved scope values before a client may be created.
- */
-export function canLoadMCPServer(
-  server: { name: string },
-  context: { kbId?: string; sessionId?: string }
-): boolean {
-  if (server.name === DOC_QUERY_MCP_SERVER_NAME) {
-    return Boolean(context.kbId && context.sessionId)
-  }
-
-  return true
 }
