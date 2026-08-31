@@ -72,6 +72,26 @@ function validatePublicPlaywrightWorkflow(root) {
     issues.push('queue telemetry must not target the public runner pool')
   }
 
+  const shadowJob = caller.slice(
+    caller.indexOf('  playwright-selector-shadow:')
+  )
+  if (!shadowJob.includes('runs-on: ubuntu-latest')) {
+    issues.push('selector shadow must run on GitHub-hosted Ubuntu')
+  }
+  if (shadowJob.includes('public-pr-arm64')) {
+    issues.push('selector shadow must not target the public runner pool')
+  }
+  if (
+    !shadowJob.includes('ref: refs/heads/v3') ||
+    !shadowJob.includes('path: .ci-control') ||
+    !shadowJob.includes('path: .candidate') ||
+    !shadowJob.includes('.ci-control/.github/scripts/playwright-selector.cjs')
+  ) {
+    issues.push(
+      'selector shadow must use trusted v3 code and a data-only candidate checkout'
+    )
+  }
+
   if (!seedWorkflow.includes('branches: [v3]')) {
     issues.push('cache seed must trigger only on the v3 branch')
   }

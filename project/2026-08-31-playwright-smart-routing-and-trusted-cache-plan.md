@@ -920,7 +920,12 @@ native planner gate.
 - [x] M2.2 deterministic selected-subset sharding implemented in
   `9d9bb7b86`; selected plans use profile/global medians, the 120-second
   fallback, a four-shard cap, stable greedy assignment, and exact-once tests.
-- [ ] M2.3 hosted-only shadow planning and representative evidence.
-- [ ] M2 selector shadow mode.
+- [x] M2.3 hosted-only selector shadow planning implemented locally in the
+  current branch. It observes all pull-request lifecycle transitions, loads
+  selector policy from trusted `v3`, treats candidate code as data, and never
+  allocates the public runner group. Representative ten-head evidence remains
+  externally gated until this slice is delivered to `v3`.
+- [ ] M2 selector shadow evidence: compare at least ten representative draft
+  plans with the authoritative full suite and disposition every miss.
 - [ ] M3 canary and global activation.
 - [ ] M4 read-only metric decision and any separately approved packages.

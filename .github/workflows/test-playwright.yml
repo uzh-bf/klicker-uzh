@@ -4,7 +4,7 @@ on:
     branches: ['v3', 'v3*']
   pull_request:
     branches: ['v3', 'v3*']
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
 
 env:
   REGISTRY: ghcr.io
@@ -38,7 +38,7 @@ jobs:
         id: check
         uses: ./.github/actions/changed-paths
         with:
-          pattern: '^(apps/|packages/|playwright/|\.devrouter\.yml|\.github/workflows/test-playwright\.yml|\.github/workflows/public-pr-playwright-shards\.yml|\.github/workflows/playwright-cache-seed\.yml|\.github/workflows/update-playwright-timings\.yml|\.github/actions/changed-paths/|\.github/scripts/get-shard-files\.(js|test\.cjs)|\.github/scripts/playwright-(cache-contract|telemetry|turbo-telemetry)\.(cjs|test\.cjs)|\.github/scripts/update-playwright-timings\.py|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh|util/playwright-profile-runtime\.(mjs|test\.mjs))'
+          pattern: '^(apps/|packages/|playwright/|\.devrouter\.yml|\.github/workflows/test-playwright\.yml|\.github/workflows/public-pr-playwright-shards\.yml|\.github/workflows/playwright-cache-seed\.yml|\.github/workflows/update-playwright-timings\.yml|\.github/actions/changed-paths/|\.github/scripts/get-shard-files\.(js|test\.cjs)|\.github/scripts/playwright-(cache-contract|selector|telemetry|turbo-telemetry)\.(cjs|test\.cjs)|\.github/scripts/update-playwright-timings\.py|\.github/scripts/wait-for-services\.sh|package\.json|pnpm-lock\.yaml|playwright/relevance-manifest\.json|util/_create_hatchet_token_test\.sh|util/_with_local_test_origins\.sh|util/_run_with_infisical\.sh|util/playwright-profile-runtime\.(mjs|test\.mjs))'
 
   build-and-compile-hosted:
     needs: filter-hosted
@@ -578,6 +578,97 @@ jobs:
       group: ${{ github.workflow }}-public-pr-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
     uses: uzh-bf/klicker-uzh/.github/workflows/public-pr-playwright-shards.yml@refs/heads/v3
+
+  # Shadow planning is hosted-only and reads the PR checkout strictly as data.
+  # It does not control execution or allocate a public self-hosted runner.
+  playwright-selector-shadow:
+    if: github.event_name == 'pull_request'
+    concurrency:
+      group: ${{ github.workflow }}-selector-shadow-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out trusted selector source
+        uses: actions/checkout@v4
+        with:
+          repository: uzh-bf/klicker-uzh
+          ref: refs/heads/v3
+          path: .ci-control
+          persist-credentials: false
+
+      - name: Check out PR candidate as data
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: .candidate
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch the exact base object
+        shell: bash
+        env:
+          BASE_REPOSITORY: ${{ github.repository }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git -C .candidate remote add base "https://github.com/$BASE_REPOSITORY.git"
+          git -C .candidate fetch --no-tags base "$BASE_SHA" --depth=1
+          test "$(git -C .candidate rev-parse HEAD)" = "$HEAD_SHA"
+
+      - name: Build the shadow selection plan
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+        run: |
+          set -euo pipefail
+          if [ "$PR_DRAFT" = 'true' ]; then
+            pr_state=draft
+          else
+            pr_state=ready
+          fi
+          node .ci-control/.github/scripts/playwright-selector.cjs \
+            --control-root .ci-control \
+            --candidate-root .candidate \
+            --base-sha "$BASE_SHA" \
+            --head-sha "$HEAD_SHA" \
+            --pr-state "$pr_state" \
+            --output playwright-selector-shadow.json
+
+      - name: Summarize the shadow plan
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const plan = JSON.parse(fs.readFileSync('playwright-selector-shadow.json'))
+          const summary = [
+            '### Playwright selector shadow',
+            '',
+            `- Mode: \`${plan.mode}\``,
+            `- Reasons: \`${plan.reasonCodes.join(',')}\``,
+            `- Candidate specs: \`${plan.candidateSpecs.length}\``,
+            `- Selected specs: \`${plan.selectedSpecs.length}\``,
+            `- Shards: \`${plan.shardCount}\``,
+            `- Selected groups: \`${plan.selectedGroupIds.join(',') || 'none'}\``,
+            '',
+            'This plan is observational; the existing full Playwright execution remains authoritative.',
+          ]
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${summary.join('\\n')}\\n`)
+          NODE
+
+      - name: Upload selector shadow plan
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-selector-shadow
+          path: playwright-selector-shadow.json
+          if-no-files-found: error
+          retention-days: 1
 
   # Always reports a status even when the tests are skipped by the path filter,
   # so this job can be used as a required check in branch protection.
