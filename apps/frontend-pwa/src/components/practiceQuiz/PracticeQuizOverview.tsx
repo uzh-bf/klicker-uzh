@@ -6,14 +6,14 @@ import {
 import { faRepeat, faShuffle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
-  ElementOrderType,
+  type ElementOrderType,
   SelfDocument,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import { Button, H3, UserNotification } from '@uzh-bf/design-system'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
 
 interface PracticeQuizOverviewProps {
   displayName: string
@@ -24,7 +24,8 @@ interface PracticeQuizOverviewProps {
   //   previouslyAnswered?: number
   //   stacksWithQuestions?: number
   pointsMultiplier: number
-  setCurrentIx: (ix: number) => void
+  onStart: () => void
+  startLoading?: boolean
   previewOnly: boolean
 }
 
@@ -37,7 +38,8 @@ function PracticeQuizOverview({
   //   previouslyAnswered,
   //   stacksWithQuestions,
   pointsMultiplier,
-  setCurrentIx,
+  onStart,
+  startLoading = false,
   previewOnly,
 }: PracticeQuizOverviewProps) {
   const t = useTranslations()
@@ -163,8 +165,10 @@ function PracticeQuizOverview({
 
       <Button
         primary
+        disabled={startLoading}
+        loading={startLoading}
         className={{ root: 'h-9 self-end text-lg' }}
-        onClick={() => setCurrentIx(0)}
+        onClick={onStart}
         data={{ cy: 'start-practice-quiz' }}
       >
         <Button.Label>{t('shared.generic.start')}</Button.Label>

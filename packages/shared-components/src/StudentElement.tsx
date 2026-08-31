@@ -1,6 +1,7 @@
 import type {
   ElementInstance,
   FlashcardCorrectness,
+  FreeTextPracticeStateDataFragment,
   InstanceEvaluation,
 } from '@klicker-uzh/graphql/dist/ops'
 import { ElementType } from '@klicker-uzh/graphql/dist/ops'
@@ -91,6 +92,9 @@ interface StudentElementBaseProps {
   sequential?: boolean
   preview?: boolean
   compact?: boolean
+  freeTextPracticeState?: FreeTextPracticeStateDataFragment | null
+  freeTextInputEditable?: boolean
+  showFreeTextSemanticDetails?: boolean
 }
 
 interface StudentElementStackProps extends StudentElementBaseProps {
@@ -124,6 +128,9 @@ function StudentElement({
   sequential = false, // chose cases of case study element sequentially to student
   preview = false,
   compact = false,
+  freeTextPracticeState,
+  freeTextInputEditable = false,
+  showFreeTextSemanticDetails = false,
 }: StudentElementStackProps | StudentElementSingleProps) {
   const evaluation = stackStorage?.[element.id]?.evaluation
 
@@ -279,6 +286,9 @@ function StudentElement({
             ? evaluation
             : undefined
         }
+        semanticState={freeTextPracticeState}
+        semanticInputEditable={freeTextInputEditable}
+        showSemanticDetails={showFreeTextSemanticDetails}
         elementIx={elementIx}
         noPoints={
           element.elementData.basePoints === false &&

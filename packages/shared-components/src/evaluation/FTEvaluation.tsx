@@ -1,17 +1,52 @@
 import type {
   FreeTextElementOptions,
   FreeTextInstanceEvaluation,
+  FreeTextPracticeStateDataFragment,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useTranslations } from 'next-intl'
 
 interface FTEvaluationProps {
   options: FreeTextElementOptions
-  evaluation: FreeTextInstanceEvaluation
+  evaluation?: FreeTextInstanceEvaluation
+  semanticState?: FreeTextPracticeStateDataFragment | null
 }
 
-function FTEvaluation({ options, evaluation }: FTEvaluationProps) {
+function FTEvaluation({
+  options,
+  evaluation,
+  semanticState,
+}: FTEvaluationProps) {
   const t = useTranslations()
   const solutions = options.solutions ? options.solutions : []
+
+  if (semanticState?.solutionAuthorized) {
+    return (
+      <div className="flex flex-col gap-4" data-cy="semantic-solution-details">
+        {semanticState.peerAnswers.length > 0 && (
+          <div>
+            <div className="font-bold">
+              {t('pwa.practiceQuiz.othersAnswered')}
+            </div>
+            <div>
+              {semanticState.peerAnswers
+                .map((answer) => `${answer.value} (${answer.count})`)
+                .join(', ')}
+            </div>
+          </div>
+        )}
+        {semanticState.referenceSolution && (
+          <div>
+            <div className="font-bold">
+              {t('shared.generic.sampleSolution')}
+            </div>
+            <div>{semanticState.referenceSolution}</div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  if (!evaluation) return null
 
   return (
     <div>

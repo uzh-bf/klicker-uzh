@@ -7,6 +7,7 @@ import {
   getPrisma,
   seedActivities,
   seedDatabase,
+  seedSemanticPracticeQuiz,
 } from '../global-setup.js'
 import { disableAnimations, setSessionCookieForUrl } from './authSession.js'
 import {
@@ -1140,6 +1141,55 @@ export async function runTask(name: string, args: any = {}) {
   if (name === 'cleanupDatabase') return cleanupDatabase()
   if (name === 'seedDatabase') return seedDatabase()
   if (name === 'seedActivities') return seedActivities()
+  if (name === 'seedSemanticPracticeQuiz') {
+    return seedSemanticPracticeQuiz(args)
+  }
+  if (name === 'getSemanticPracticeSnapshot') {
+    const participant = await prisma.participant.findUniqueOrThrow({
+      where: { username: args.username },
+    })
+    let cycle = null
+    for (let attempt = 0; attempt < 50 && cycle === null; attempt++) {
+      cycle = await prisma.freeTextPracticeCycle.findFirst({
+        where: {
+          participantId: participant.id,
+          elementInstanceId: args.instanceId,
+        },
+        orderBy: { ordinal: 'desc' },
+        include: {
+          attempts: {
+            orderBy: { ordinal: 'asc' },
+            include: { questionResponseDetail: true },
+          },
+        },
+      })
+      if (cycle === null) {
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      }
+    }
+
+    if (cycle === null) {
+      throw new Error('Semantic practice cycle did not become available')
+    }
+
+    return {
+      attemptCount: cycle.attempts.length,
+      clientSubmissionIds: cycle.attempts.map(
+        (attempt) => attempt.clientSubmissionId
+      ),
+      responseDetailCount: cycle.attempts.filter(
+        (attempt) => attempt.questionResponseDetail !== null
+      ).length,
+      responseDetailPoints: cycle.attempts.map(
+        (attempt) => attempt.questionResponseDetail?.pointsAwarded ?? 0
+      ),
+      responseDetailXp: cycle.attempts.map(
+        (attempt) => attempt.questionResponseDetail?.xpAwarded ?? 0
+      ),
+      pointsAwarded: cycle.pointsAwarded ?? 0,
+      xpAwarded: cycle.xpAwarded,
+    }
+  }
   if (name === 'removeSoftDeletedPracticeQuiz') {
     return (
       (

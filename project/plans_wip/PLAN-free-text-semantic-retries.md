@@ -84,7 +84,7 @@ This is a substantial cross-layer feature and should be implemented as a native
 four-layer GitHub stack after explicit topology approval. The existing isolated Codex
 worktree is the stack worktree, rooted at
 `/Users/paldov/.codex/worktrees/f0ec/klicker-uzh`; its bottom branch is
-`feat/free-text-semantic-contract`.
+`feat/free-text-semantic-contract`, based on `v3-ai`.
 
 | Layer | Work package                                      | Independent proof                                        |
 | ----: | ------------------------------------------------- | -------------------------------------------------------- |
@@ -92,6 +92,32 @@ worktree is the stack worktree, rooted at
 |     2 | GraphQL state machine, Catalyst adapter, Hatchet  | GraphQL integration tests including idempotency          |
 |     3 | Lecturer editor and aggregate analytics           | Manage check/build and browser authoring evidence        |
 |     4 | Participant retry/consent/solution flow           | PWA check/build, focused Playwright, browser screenshots |
+
+## Approved participant rubric-feedback refinement
+
+The revealed solution state will use a KlickerUZH-native interpretation of the
+provided rubric-feedback reference. The existing generic result remains the only
+feedback shown before solution authorization; rubric names, achieved levels,
+rationales, and the reference solution stay server-gated behind a correct result or
+the existing **Show solution** action.
+
+Once authorized, the solution area contains three progressively detailed layers:
+
+1. a restrained rubric header with the number of fully met criteria and a segmented
+   progress indicator derived from each assessment's normalized score;
+2. an always-visible overview of every assessed rubric, its lecturer/evaluator-defined
+   achieved-level label, and a status icon that distinguishes fully met, partially met,
+   and open criteria without replacing the configured label; and
+3. accessible native disclosure rows for every criterion, with the first row expanded
+   initially and the remaining rows collapsed. Each row shows the rubric name,
+   achieved level, normalized score, and evaluator rationale.
+
+The presentation uses existing KlickerUZH/UZH colors, spacing, typography, icons, and
+semantic HTML. It deliberately excludes the reference application's conversational
+follow-up chips and free-form coaching input because those require a separate LLM
+interaction contract and consent/usage model. The Playwright fixture will contain
+multiple synthetic rubrics with mixed deterministic results so browser evidence proves
+the complete overview and detailed-card behavior at desktop and mobile widths.
 
 ## Canonical public contracts
 
@@ -384,7 +410,7 @@ a sanitized reason and retryability. Never encode service health into `catalyst`
 - [x] Add validation for `SemanticFreeTextConfig` on element manipulation.
       Require Catalyst only when semantic configuration changes; unrelated edits may
       preserve a read-only configuration after entitlement loss.
-- [ ] Split legacy `solutions` from new `accepted_exact_answers` and
+- [x] Split legacy `solutions` from new `accepted_exact_answers` and
       `reference_solution`. On explicit upgrade seed accepted answers from legacy
       solutions, leave the reference solution empty, and require it when reveal is
       enabled.
@@ -479,29 +505,30 @@ initial stack result with persisted state, and preserves a client submission UUI
 across network retries. `FreeTextRetryPanel` renders actions solely from server
 booleans.
 
-- [ ] Keep the initial stack-wide submission. Generate and retain a
+- [x] Keep the initial stack-wide submission. Generate and retain a
       `clientSubmissionId` for each semantic free-text answer and store the returned
       semantic state independently of the locked neighboring elements.
-- [ ] Poll persisted state while pending; stop on evaluated or unavailable. On reload,
+- [x] Poll persisted state while pending; stop on evaluated or unavailable. On reload,
       query by instance and restore the current cycle without trusting localStorage.
-- [ ] Render localized pending, correct, partial, incorrect, and unavailable generic
+- [x] Render localized pending, correct, partial, incorrect, and unavailable generic
       feedback; show attempts remaining and the applicable Try again, Retry evaluation,
       Show solution, View explanation, and Practice again actions.
-- [ ] Reopen only the semantic free-text input with the previous answer as editable
+- [x] Reopen only the semantic free-text input with the previous answer as editable
       text. Render prior attempts without making them resubmittable.
-- [ ] Add the non-dismissible versioned consent modal before the first external
-      retry. Accept retries the saved answer; decline runs exact fallback without
-      sending the answer externally.
-- [ ] Fetch/render reference solution, explanation, per-rubric achieved level and
+- [x] Add the non-dismissible versioned consent modal to the Start action of every
+      Practice Quiz containing semantic rubric feedback. Accept or decline persists
+      the current-version decision before entering the first stack; decline runs exact
+      fallback without sending an answer externally.
+- [x] Fetch/render reference solution, explanation, per-rubric achieved level and
       rationale, points/XP delta, and peer answers only after the server returns detailed
       data. Never render raw rubric JSON.
-- [ ] Keep legacy free-text rendering unchanged when `semanticState` is null.
-- [ ] Add English and German participant copy and stable `data-cy` hooks.
-- [ ] Run PWA/shared-components checks and builds; expect exit 0.
-- [ ] Verify pending, partial retry, correct explanation, unavailable retry, decline
+- [x] Keep legacy free-text rendering unchanged when `semanticState` is null.
+- [x] Add English and German participant copy and stable `data-cy` hooks.
+- [x] Run PWA/shared-components checks and builds; expect exit 0.
+- [x] Verify pending, partial retry, correct explanation, unavailable retry, decline
       fallback, reveal, exhaustion, reload, and Practice again in a real PWA browser at
       desktop and mobile widths; save screenshots with the Manage evidence.
-- [ ] Commit the layer with `feat(pwa): add semantic free-text retry flow`.
+- [x] Commit the layer with `feat(pwa): add semantic free-text retry flow`.
 
 ## Task 6: Deterministic end-to-end proof and documentation completion
 
@@ -518,27 +545,139 @@ booleans.
   `.github/workflows/test-playwright.yml`
 - Update: `docs/formative-free-text-evaluation.md`
 - Update: `docs/async-and-workers.md`
+- Update: `project/plans_wip/PLAN-free-text-semantic-retries.md`
 
 **Interfaces:** the stub binds only in the Playwright environment, verifies the
 request contract, and returns deterministic correct/partial/incorrect/uncertain/
 failure fixtures selected by synthetic marker text. Production has no fixture mode.
 
-- [ ] Start the no-dependency evaluator stub from Playwright global setup, expose its
+- [x] Start the no-dependency evaluator stub from Playwright global setup, expose its
       localhost URL to the already-running worker through the test environment, and stop
       it in global teardown. Refuse to start outside `NODE_ENV=test`.
-- [ ] Seed one semantic-retry free-text question with a synthetic rubric and accepted
+- [x] Seed one semantic-retry free-text question with a synthetic rubric and accepted
       answer; add no real course or participant data.
-- [ ] Extend `Q-practice-quiz.spec.ts` to prove consent, pending-to-partial, individual
+- [x] Add a focused Practice Quiz semantic spec to prove pre-start consent,
+      pending-to-partial, individual
       retry-to-correct, no neighboring unlock, reload recovery, detail gating, reveal,
       exhaustion, exact fallback, and no duplicate reward after a repeated request.
-- [ ] Run `pnpm --filter @klicker-uzh/playwright check`; expect exit 0.
-- [ ] Run the focused Practice Quiz Playwright spec against the full local stack with
+- [x] Run `pnpm --filter @klicker-uzh/playwright check`; expect exit 0.
+- [x] Run the focused Practice Quiz Playwright spec against the full local stack with
       both Hatchet workers; expect all semantic and existing legacy workflows to pass.
-- [ ] Run `pnpm run check:all`, `pnpm run build`, and
+- [x] Run `pnpm run check:all`, `pnpm run build`, and
       `opengrep scan --config auto`; classify any unrelated existing failures explicitly.
-- [ ] Run the wiki validator and Markdown formatter, attach the captured desktop/
-      mobile English/German screenshots to the final draft PR, and update this plan's
-      Progress section with exact commands and results.
+- [ ] Run the wiki validator; its documented external script is not installed in
+      this environment.
+- [x] Run the Markdown formatter, attach the captured desktop/mobile English/German
+      screenshots to the final draft PR, and update this plan's Progress section with
+      exact commands and results.
+
+## Task 7: Rich participant rubric feedback
+
+**Files:**
+
+- Modify: `packages/shared-components/src/evaluation/FreeTextRubricBreakdown.tsx`
+- Modify: `packages/shared-components/src/evaluation/FTEvaluation.tsx`
+- Modify: `apps/frontend-pwa/src/components/practiceQuiz/FreeTextRetryPanel.tsx`
+- Modify: `packages/i18n/messages/en.ts`
+- Modify: `packages/i18n/messages/de.ts`
+- Modify: `playwright/fixtures/Q-practice-quiz.json`
+- Modify: `playwright/semantic-evaluator-stub.mjs`
+- Modify: `playwright/tests/Q-practice-quiz-semantic.spec.ts`
+- Update: `project/plans_wip/PLAN-free-text-semantic-retries.md`
+- Add: `project/plans_wip/assets/free-text-semantic-retries/participant-rubric-feedback-desktop.png`
+- Add: `project/plans_wip/assets/free-text-semantic-retries/participant-rubric-feedback-mobile.png`
+
+**Interfaces:** `FreeTextRubricBreakdown` continues to consume the authorized
+`structuredResult` JSON. Its parser additionally retains `normalized_score`, and its
+rendered contract exposes stable `semantic-rubric-summary`,
+`semantic-rubric-overview-{rubricId}`, and existing
+`semantic-rubric-result-{rubricId}` hooks. No GraphQL or persistence contract changes.
+
+- [x] Extend the deterministic fixture from one rubric to four equally weighted
+      synthetic diversification criteria. Make the partial scenario return a mix of
+      full, partial, and open achievement levels while keeping correct/incorrect
+      scenarios deterministic for every rubric.
+- [x] Add focused Playwright assertions for all four overview rows, the fully-met
+      count, the first expanded detail row, and the remaining collapsed detail rows.
+      The focused test is discovered and type-checks; local execution reaches browser
+      launch but is blocked by the missing pinned Chromium executable in the DevPod.
+- [x] Extend the parsed assessment shape exactly as follows and keep malformed result
+      objects fail-closed:
+
+  ```ts
+  type RubricAssessment = {
+    rubricId: string
+    rubricName: string
+    proposedLevel: string
+    normalizedScore: number
+    rationale: string
+  }
+
+  type RubricStatus = 'MET' | 'PARTIAL' | 'OPEN'
+
+  function getRubricStatus(normalizedScore: number): RubricStatus {
+    if (normalizedScore >= 100) return 'MET'
+    if (normalizedScore > 0) return 'PARTIAL'
+    return 'OPEN'
+  }
+  ```
+
+- [x] Replace the flat card list with the approved three-layer presentation: a
+      segmented score indicator, every-rubric overview, and native `<details>` rows.
+      Use Font Awesome's existing `faCircleCheck`, `faCircleHalfStroke`,
+      `faCircleXmark`, and `faChevronDown`; the first criterion uses `open` and all
+      rows remain keyboard accessible. Show configured achieved-level labels and
+      evaluator rationales verbatim, but never raw JSON.
+- [x] Add the localized keys `semanticRubricCriteriaMet`,
+      `semanticRubricCriterionCount`, `semanticRubricScore`, and
+      `semanticRubricDetails` in English and German. Keep lecturer-defined level names
+      in the question language rather than translating them in the UI.
+- [x] Run `pnpm --filter @klicker-uzh/shared-components check`,
+      `pnpm --filter @klicker-uzh/frontend-pwa check`, and
+      `pnpm --filter @klicker-uzh/playwright check`; expect exit 0. Run formatting,
+      lint, `git diff --check`, and an OpenGrep scan over the changed source files.
+- [x] Verify the accepted partial-evaluation and revealed rubric state in the real
+      PWA at desktop and mobile widths, plus the German labels in the English PWA.
+      Confirm every criterion is visible in the overview, expand/collapse works by
+      keyboard, and content does not overflow.
+- [x] Replace the insufficient fallback screenshot evidence in PR #5433 with the new
+      desktop/mobile rubric-feedback screenshots, commit the Layer 4 refinement, push
+      the top stack branch, and re-read the draft PR to verify the rendered links.
+
+## Task 8: Criterion-level AI explanations and complete student evidence
+
+**Files:**
+
+- Modify: `packages/shared-components/src/evaluation/FreeTextRubricBreakdown.tsx`
+- Modify: `packages/i18n/messages/en.ts`
+- Modify: `packages/i18n/messages/de.ts`
+- Modify: `playwright/semantic-evaluator-stub.mjs`
+- Modify: `playwright/tests/Q-practice-quiz-semantic.spec.ts`
+- Update: `project/plans_wip/PLAN-free-text-semantic-retries.md`
+- Replace: `project/plans_wip/assets/free-text-semantic-retries/participant-rubric-feedback-desktop.png`
+- Replace: `project/plans_wip/assets/free-text-semantic-retries/participant-rubric-feedback-mobile.png`
+
+**Interfaces:** the authorized rubric parser keeps required non-empty assessment
+`rationale` values and joins optional non-empty `feedback_proposals[].feedback` by
+exact `rubric_id`. Each detail card exposes
+`semantic-rubric-ai-feedback-{rubricId}` and keeps all raw evaluator metadata hidden.
+
+- [x] Return criterion-specific German rationales and feedback proposals from the
+      deterministic evaluator stub and assert the complete first-card copy in the
+      focused Playwright behavior contract.
+- [x] Render localized **AI feedback**, **Why this score**, and **How to improve**
+      labels inside the authorized native disclosure without changing GraphQL,
+      persistence, or the evaluator contract.
+- [x] Run shared-components, PWA, and Playwright checks, PWA lint, formatting,
+      `git diff --check`, focused OpenGrep, and the full pre-commit `check:all` suite.
+- [x] Exercise the natural partial answer through the real evaluation handler and
+      deterministic Catalyst boundary; verify keyboard disclosure behavior and no
+      horizontal overflow at 390 px.
+- [x] Replace the cropped rubric-panel evidence with complete 1440 x 1900 and
+      390 x 2400 student views containing the question, answer, generic result,
+      revealed solution, all criteria, and expanded AI feedback together.
+- [x] Push the participant layer through the native stack, replace the duplicate
+      screenshot sections in draft PR #5433, and re-read the PR state and checks.
 
 ## Self-review checklist
 
@@ -584,3 +723,66 @@ failure fixtures selected by synthetic marker text. Production has no fixture mo
   analytics screenshot was retained. The Manage production bundle compiled, then
   hit the existing `_app` `NextRouter was not mounted` prerender failure on the 404
   and answer-collection pages.
+- **2026-08-19:** Completed the Layer 4 participant state hook, localized retry and
+  consent UI, stale-response protection, terminal solution/rubric rendering, and
+  per-attempt reward display. Real browser verification covered exact fallback,
+  decline/unavailable behavior, reload, reveal, fresh-cycle creation, German
+  disclosure copy, and desktop/mobile layouts. Added a contract-validating Catalyst
+  stub and four focused semantic Playwright workflows. Playwright type-checking
+  passes; local browser execution remains pending because the DevPod's initially
+  absent Chromium cache could not be completed cleanly on arm64.
+- **2026-08-19:** Final Layer 4 verification passed the affected package checks,
+  17 focused GraphQL integration tests, PWA lint, the complete `check:all` suite,
+  `git diff --check`, and an OpenGrep scan of the new files. The PWA production
+  build and complete pre-push build later passed from the clean hook environment;
+  the focused Playwright run remains unclaimed for the browser-cache limitation
+  above.
+- **2026-08-19:** Published the approved draft stack as
+  [#5430](https://github.com/uzh-bf/klicker-uzh/pull/5430),
+  [#5431](https://github.com/uzh-bf/klicker-uzh/pull/5431),
+  [#5432](https://github.com/uzh-bf/klicker-uzh/pull/5432), and
+  [#5433](https://github.com/uzh-bf/klicker-uzh/pull/5433). The participant PR
+  description contains the desktop/mobile solution views, exact-match result, and
+  German disclosure screenshot.
+- **2026-08-19:** Refined the accepted-feedback state with a full-width segmented
+  rubric summary, all-criterion overview, and keyboard-accessible criterion details.
+  The four mixed outcomes and German lecturer-defined labels were verified in the
+  real PWA at 1440 px and 390 px without overflow. Shared-components, PWA, and
+  Playwright type checks, PWA lint, formatting, `git diff --check`, and focused
+  OpenGrep all passed. The focused Playwright test reached launch but the DevPod does
+  not contain the pinned Chromium executable; CI remains the automated browser gate.
+  Committed the refinement as `b66216c5f`, pushed the top stack branch, and updated
+  draft PR #5433 so the all-rubric desktop/mobile evidence appears first.
+- **2026-08-19:** Added criterion-level AI feedback that pairs each required score
+  rationale with its optional exact-ID feedback proposal, preserving the existing
+  solution-authorization boundary. Replaced the cropped evidence with complete
+  1440 x 1900 and 390 x 2400 student views, verified keyboard expansion and mobile
+  overflow in the real PWA, and committed the evidence as `0f7c4aed2`. Pushed all
+  four tracked branches through the native GitHub stack and updated draft PR #5433
+  to show only the two integrated student views before the exact-match and disclosure
+  evidence. The PR remained draft and correctly targeted #5432; its new CI runs were
+  pending when checked, with no actionable comments or review threads.
+- **2026-08-25:** Rebased the complete four-layer stack onto `v3-ai` and retargeted
+  the native PR topology to `v3-ai` → #5430 → #5431 → #5432 → #5433. The integration
+  keeps the `v3-ai` Chat drawer, feature flags, LTI hardening, compact free-text
+  rendering, and generated AI operations alongside the semantic-evaluation surface.
+  Closed the remaining API authorization/validation gaps, stabilized authoring field
+  identities, hardened participant start and submission state transitions, and added
+  Playwright coverage for same-attempt evaluator retry and replay idempotency. The
+  grading suite passes 23/23, all 27 repository check tasks and all 7 lint tasks pass,
+  and Chromium discovers all seven focused semantic Practice Quiz tests. A local
+  application runtime was not active, so the executable browser run remains a CI gate.
+- **2026-08-28:** Completed the post-rebase production-readiness pass. Exact answers
+  now use exact matching only as the unavailable/declined fallback; accepted semantic
+  evaluation still returns the full rubric rationale and AI feedback. Hardened config
+  hashing, score validation, async state transitions, UUID fallback, polling stability,
+  disclosure state, and the deterministic evaluator stub. The focused GraphQL policy,
+  state-machine, and worker suites pass 34/34; shared-components, PWA, Playwright, and
+  both lower-layer `check:all` runs pass. A host-auth classifier fix makes the
+  documented local runner accept lecturer cookies on `127.0.0.1`.
+- **2026-08-28:** Ran the real host Chromium proof against disposable Postgres, Redis,
+  Hatchet, both workers, the GraphQL API, Manage, and PWA. All 16 focused tests pass:
+  seven lecturer free-text authoring cases and nine semantic Practice Quiz cases,
+  including an accepted exact answer with all four rubric criteria and AI feedback.
+  Real-browser desktop/mobile review also confirmed the integrated student view,
+  disclosure behavior, keyboard details, and no 390 px horizontal overflow.

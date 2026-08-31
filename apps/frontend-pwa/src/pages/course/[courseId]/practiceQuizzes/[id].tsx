@@ -64,7 +64,7 @@
  */
 import { useQuery } from '@apollo/client'
 import {
-  GetPracticeQuizDocument,
+  GetPracticeQuizV2Document,
   PublicationStatus,
   StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
@@ -133,7 +133,7 @@ function PracticeQuizPage({
     cookiesAvailable,
   })
 
-  const { loading, error, data } = useQuery(GetPracticeQuizDocument, {
+  const { loading, error, data } = useQuery(GetPracticeQuizV2Document, {
     variables: { id },
   })
 

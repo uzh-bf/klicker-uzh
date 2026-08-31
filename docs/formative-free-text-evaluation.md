@@ -2,7 +2,7 @@
 type: Design
 title: Formative Free-Text Evaluation
 description: Approved target design for semantic retries, rubric outcomes, durable evaluation, consent, fallback, and solution reveal in Practice Quizzes.
-timestamp: '2026-08-18'
+timestamp: '2026-08-19'
 tags:
   - backend
   - frontend
@@ -12,8 +12,8 @@ tags:
 
 # Formative Free-Text Evaluation
 
-> **Backend contract, orchestration, lecturer authoring, and aggregate analytics
-> implemented; participant UI follows in the next stack layer.** Implementation is tracked in
+> **Backend contract, orchestration, lecturer authoring, participant retries, and
+> aggregate analytics are implemented.** Implementation is tracked in
 > [`PLAN-free-text-semantic-retries.md`](../project/plans_wip/PLAN-free-text-semantic-retries.md).
 
 Semantic retry is an opt-in capability for `FREE_TEXT` elements in formative
@@ -86,12 +86,26 @@ semantic-retry element then has its own server-owned practice cycle:
    in history.
 4. Re-evaluating unchanged text after an evaluator failure updates the same attempt
    and consumes no additional answer attempt.
-5. Correct, solution revealed, or attempts exhausted makes the cycle terminal.
-   **Practice again** creates a new cycle; points and XP eligibility remains governed
-   independently by the existing reset windows.
+5. Correct, solution revealed, evaluated attempts exhausted, or an unavailable
+   result at the answer limit makes the cycle terminal. **Practice again** creates
+   a new cycle; points and XP eligibility remains governed independently by the
+   existing reset windows.
 
-The attempt limit applies per participant, element, and practice cycle. A value of 1
-disables answer retry without disabling semantic feedback.
+The attempt limit applies per participant, element, and practice cycle. Distinct
+submitted answers consume attempts; re-evaluating unchanged text does not. A value
+of 1 disables answer retry without disabling semantic feedback.
+
+The PWA restores this state from the server after reload and polls only while the
+current evaluation is pending. Neighboring elements stay locked after the initial
+stack submission; **Try again** reopens only the semantic free-text input and
+prefills the previous answer. Mutations and query responses are reconciled by cycle,
+attempt, evaluation revision, and terminal status so an older response cannot roll
+the UI back after **Practice again**.
+
+Question-specific generated feedback uses the question's configured language. The
+versioned external-AI disclosure uses the participant app's selected interface
+language and appears when the participant starts a Practice Quiz containing semantic
+rubric feedback. A saved decision for the current version prevents repeat prompts.
 
 ## Availability and deterministic fallback
 
@@ -102,7 +116,8 @@ Entitlement, service availability, and participant consent are different gates:
 - the evaluator reports availability separately, with a sanitized reason and
   retryability
 - the participant must accept the current version of the semantic-evaluation
-  disclosure before any answer is sent externally
+  disclosure before an affected Practice Quiz starts and before any answer is sent
+  externally
 
 A missing or declined disclosure keeps the answer in public KlickerUZH. Changing
 the disclosure version requires a new decision. Enforcement is server-side.
@@ -140,6 +155,7 @@ The evaluator adapter is configured with:
 
 - `CATALYST_FORMATIVE_EVALUATOR_URL`
 - `CATALYST_FORMATIVE_EVALUATOR_TOKEN` (optional bearer token)
+- `CATALYST_FORMATIVE_EVALUATOR_HEALTH_URL` (optional availability probe)
 - `CATALYST_FORMATIVE_EVALUATOR_TIMEOUT_MS` (optional; 30 seconds by default)
 - `SEMANTIC_EVALUATION_DISCLOSURE_VERSION`
 
@@ -151,8 +167,11 @@ Local HTTP is accepted only outside production for loopback or
 `CATALYST_FORMATIVE_EVALUATOR_ALLOW_INSECURE_LOCAL=true` (or under
 `NODE_ENV=test`).
 
-Absent configuration selects the deterministic unavailable/exact-match fallback;
-it is not interpreted as an incorrect answer.
+When advanced evaluation is unavailable, the deterministic exact matcher can
+only confirm accepted answers as correct. Non-matches remain unavailable,
+consume a distinct-answer attempt, and allow another answer until the
+lecturer-configured limit is exhausted. A retryable evaluator failure can
+instead re-evaluate the same attempt without consuming another answer attempt.
 
 ## Feedback and solution boundary
 
@@ -168,6 +187,34 @@ and rationale, and peer answers. Raw rubric JSON is never shown. Solution reveal
 terminal; exhaustion reveals automatically when enabled. If reveal is disabled,
 exhaustion ends with the final generic outcome only. Peer answers remain hidden
 until the cycle is terminal.
+
+Each attempt displays only its own points/XP delta. Cycle totals are not repeated in
+the attempt history.
+
+## Deterministic Playwright boundary
+
+Playwright starts a dependency-free evaluator stub when `NODE_ENV=test`. Host-only
+runs bind it to loopback. Profile-backed runs bind a Docker-facing listener protected
+by a synthetic bearer token so the application container can reach it. The service
+validates the outbound v1 request and returns synthetic
+correct, partial, incorrect, uncertain, or failing results selected by explicit
+fixture markers. It refuses to start outside the test environment. The application,
+GraphQL API, database, Hatchet scheduling, and participant UI remain real; only the
+private Catalyst HTTP boundary is replaced.
+
+The local test-origin wrapper sets the stub URL and disclosure version. The profile
+runtime also uses a health probe, so the evaluator is reported unavailable whenever
+the authenticated test stub is absent. Set
+`PLAYWRIGHT_SEMANTIC_EVALUATOR_STUB=false` to run a test environment without the
+stub.
+
+Because the evaluator URL belongs to the application and worker environment, this
+focused spec cannot target an already-running devrouter container whose environment
+does not contain the synthetic boundary. For local execution, start the host test
+runtime with `pnpm run dev:playwright` and run the spec through
+`E2E_MODE=host bash util/run-host-e2e.sh ...`; the host runner fails explicitly for
+unsupported devcontainer targets. CI launches all of these processes in one test
+environment and is the merge gate for the complete browser journey.
 
 ## Rewards and lecturer analytics
 

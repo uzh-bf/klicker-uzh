@@ -1,20 +1,24 @@
-import { useQuery } from '@apollo/client'
+import { useLazyQuery, useMutation, useQuery } from '@apollo/client'
 import {
-  Course,
+  type Course,
+  DecideSemanticEvaluationConsentDocument,
   GetBookmarksPracticeQuizDocument,
-  PracticeQuiz as PracticeQuizType,
+  type PracticeQuiz as PracticeQuizType,
   SelfDocument,
+  SemanticFreeTextCapabilityV2Document,
   StackFeedbackStatus,
   UserRole,
 } from '@klicker-uzh/graphql/dist/ops'
 import { useLocalStorage } from '@uidotdev/usehooks'
-import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/router'
+import { useTranslations } from 'next-intl'
+import { useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import PreviewMessage from '../common/PreviewMessage'
 import StepProgressWithScoring from '../common/StepProgressWithScoring'
 import ElementStack from './ElementStack'
 import PracticeQuizOverview from './PracticeQuizOverview'
+import SemanticEvaluationConsentModal from './SemanticEvaluationConsentModal'
 
 export const FEEDBACK_STATUS_PROGRESS_MAP: Record<
   StackFeedbackStatus,
@@ -60,9 +64,98 @@ function PracticeQuiz({
   const router = useRouter()
   const t = useTranslations()
   const currentStack = quiz.stacks?.[currentIx]
-  const { data: dataParticipant } = useQuery(SelfDocument, {
-    skip: previewOnly,
+  const { data: dataParticipant, loading: participantLoading } = useQuery(
+    SelfDocument,
+    {
+      skip: previewOnly,
+    }
+  )
+  const hasSemanticEvaluation = useMemo(
+    () =>
+      quiz.stacks?.some((stack) =>
+        stack.elements?.some(
+          (element) =>
+            element.elementData.__typename === 'FreeTextElementData' &&
+            element.elementData.options.hasSemanticEvaluation
+        )
+      ) ?? false,
+    [quiz.stacks]
+  )
+  const registeredParticipant =
+    dataParticipant?.self?.role === UserRole.Participant
+  const shouldGateSemanticEvaluation =
+    hasSemanticEvaluation && !previewOnly && registeredParticipant
+  const [
+    loadSemanticCapability,
+    { data: capabilityData, loading: capabilityLoading },
+  ] = useLazyQuery(SemanticFreeTextCapabilityV2Document, {
+    fetchPolicy: 'network-only',
   })
+  const [decideConsentMutation, consentResult] = useMutation(
+    DecideSemanticEvaluationConsentDocument
+  )
+  const [consentTargetIx, setConsentTargetIx] = useState<number | null>(null)
+  const quizStartRequestInFlight = useRef(false)
+  const capability = capabilityData?.semanticFreeTextCapability
+  const semanticGateLoading =
+    hasSemanticEvaluation &&
+    !previewOnly &&
+    (participantLoading || capabilityLoading)
+
+  const requestQuizStart = async (targetIx: number) => {
+    if (semanticGateLoading || quizStartRequestInFlight.current) return
+    if (!shouldGateSemanticEvaluation) {
+      setCurrentIx(targetIx)
+      return
+    }
+
+    quizStartRequestInFlight.current = true
+    try {
+      const { data } = await loadSemanticCapability()
+      const currentCapability = data?.semanticFreeTextCapability
+
+      if (!currentCapability || currentCapability.consentDecision) {
+        setCurrentIx(targetIx)
+        return
+      }
+
+      setConsentTargetIx(targetIx)
+    } catch {
+      // Capability failures preserve the deterministic exact-match fallback.
+      setCurrentIx(targetIx)
+    } finally {
+      quizStartRequestInFlight.current = false
+    }
+  }
+
+  const decideConsent = async (accepted: boolean) => {
+    if (!capability || consentTargetIx === null) return
+
+    try {
+      await decideConsentMutation({
+        variables: {
+          disclosureVersion: capability.disclosureVersion,
+          accepted,
+        },
+        refetchQueries: [SemanticFreeTextCapabilityV2Document],
+        awaitRefetchQueries: true,
+      })
+      const targetIx = consentTargetIx
+      setConsentTargetIx(null)
+      setCurrentIx(targetIx)
+    } catch {
+      // The open modal renders Apollo's mutation error and permits a retry.
+    }
+  }
+
+  const setQuizStep = (targetIx: number) => {
+    if (currentIx === -1 && targetIx >= 0) {
+      void requestQuizStart(targetIx)
+      return
+    }
+
+    setCurrentIx(targetIx)
+  }
 
   const handleAllStacksCompletion = () => {
     if (onAllStacksCompletion) {
@@ -134,7 +227,7 @@ function PracticeQuiz({
             }) || []
           }
           currentIx={currentIx}
-          setCurrentIx={setCurrentIx}
+          setCurrentIx={setQuizStep}
           resetLocalStorage={
             showResetLocalStorage
               ? () => {
@@ -163,7 +256,8 @@ function PracticeQuiz({
             // previouslyAnswered={quiz.previouslyAnswered ?? undefined}
             // stacksWithQuestions={quiz.stacksWithQuestions ?? undefined}
             pointsMultiplier={quiz.pointsMultiplier}
-            setCurrentIx={setCurrentIx}
+            onStart={() => void requestQuizStart(0)}
+            startLoading={semanticGateLoading}
             previewOnly={previewOnly}
           />
         )}
@@ -195,6 +289,16 @@ function PracticeQuiz({
           />
         )}
       </div>
+      {consentTargetIx !== null && capability && (
+        <SemanticEvaluationConsentModal
+          provider={capability.provider}
+          disclosureVersion={capability.disclosureVersion}
+          loading={consentResult.loading}
+          error={!!consentResult.error}
+          onAccept={() => void decideConsent(true)}
+          onDecline={() => void decideConsent(false)}
+        />
+      )}
     </div>
   )
 }

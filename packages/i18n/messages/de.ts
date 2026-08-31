@@ -1186,6 +1186,61 @@ Da die KlickerUZH-App noch nicht im iOS-App-Store verfügbar ist, folgen Sie die
         'Du hast das Übungs-Quiz <it>{name}</it> erfolgreich absolviert. Da du allerdings nicht Mitglied dieses Kurses bist, werden deine Punkte und Erfahrungspunkte nicht gespeichert. Um in Zukunft sowohl Punkte als auch XP zu sammeln, tritt jetzt dem Kurs bei.',
       correctAnswerOptions: 'Richtige Antwortoptionen',
       topNAnswers: 'Top {number} Antworten',
+      semanticPending: 'Ihre Antwort wird bewertet.',
+      semanticUnavailable:
+        'Semantisches Feedback ist derzeit nicht verfügbar. Das bedeutet nicht, dass Ihre Antwort falsch ist.',
+      semanticReady: 'Ihre nächste Antwort kann eingereicht werden.',
+      semanticCorrect: 'Korrekt',
+      semanticPartiallyCorrect: 'Teilweise korrekt',
+      semanticIncorrect: 'Noch nicht korrekt',
+      semanticAttemptsUsed: 'Antwortversuche: {used} von {limit}',
+      semanticAttemptsRemaining:
+        '{remaining, plural, =1 {1 Versuch verbleibend} other {# Versuche verbleibend}}',
+      semanticRewardDelta: 'Vergeben: {points} Punkte, {xp} XP',
+      semanticActionFailed:
+        'Die Aktion konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.',
+      semanticTryAgain: 'Erneut versuchen',
+      semanticSubmitAnswer: 'Antwort einreichen',
+      semanticSubmitImprovedAnswer: 'Verbesserte Antwort einreichen',
+      semanticRetryEvaluation: 'Bewertung erneut versuchen',
+      semanticShowSolution: 'Lösung anzeigen',
+      semanticViewExplanation: 'Erklärung anzeigen',
+      semanticHideExplanation: 'Erklärung ausblenden',
+      semanticPracticeAgain: 'Nochmals üben',
+      semanticAttemptHistory: 'Bisherige Antworten',
+      semanticHistoryPending: 'Bewertung ausstehend',
+      semanticHistoryUnavailable: 'Bewertung nicht verfügbar',
+      semanticHistoryEvaluated: 'Bewertet',
+      semanticRubricFeedback: 'Rubrik-Feedback',
+      semanticRubricFromAttempt:
+        'Dieses Rubrik-Feedback gehört zu Antwortversuch {attempt}.',
+      semanticAchievedLevel: 'Erreichte Stufe',
+      semanticRubricCriteriaMet:
+        '{met} von {total} Kriterien vollständig erfüllt',
+      semanticRubricCriterionCount:
+        '{count, plural, =1 {1 Kriterium bewertet} other {# Kriterien bewertet}}',
+      semanticRubricScore: 'Punktwert: {score}%',
+      semanticRubricStatusMet: 'Kriterium vollständig erfüllt',
+      semanticRubricStatusPartial: 'Kriterium teilweise erfüllt',
+      semanticRubricStatusOpen: 'Kriterium nicht erfüllt',
+      semanticRubricDetails: 'Detailliertes Feedback',
+      semanticAiFeedback: 'KI-Feedback',
+      semanticWhyThisScore: 'Warum diese Bewertung?',
+      semanticHowToImprove: 'So können Sie sich verbessern',
+      semanticConsentTitle: 'KI-gestütztes Feedback',
+      semanticConsentIntro:
+        'Dieses Übungs-Quiz kann einen externen KI-Bewertungsdienst verwenden, um Ihre Antworten mit den Rubriken der Lehrperson zu vergleichen und formatives Feedback zu geben.',
+      semanticConsentData:
+        'Wenn Sie zustimmen, sendet KlickerUZH betroffene Fragen, Ihre Antworten, die Referenzlösungen und die Rubriken an {provider}. Ihre Teilnehmendenidentität wird nicht übermittelt.',
+      semanticConsentResponsibility:
+        'Das Feedback kann unvollständig oder falsch sein. Nutzen Sie es als Lernhilfe und vergleichen Sie detailliertes Feedback mit der Referenzlösung.',
+      semanticConsentDecline:
+        'Wenn Sie ablehnen, bleiben Ihre Antworten in KlickerUZH. Es wird nur der Abgleich mit akzeptierten exakten Antworten verwendet; eine Abweichung bleibt unbewertet.',
+      semanticConsentPolicy: 'Version der Information: {version}',
+      semanticConsentDeclineAction: 'Ablehnen und exakt abgleichen',
+      semanticConsentAcceptAction: 'Zustimmen und Übungs-Quiz starten',
+      semanticReviewDisclosure: 'KI-Information erneut ansehen',
+      semanticConsentAcceptRetryAction: 'Zustimmen und Bewertung wiederholen',
     },
     microLearning: {
       numOfQuestionSets: 'Anzahl Fragesets: {number}',
