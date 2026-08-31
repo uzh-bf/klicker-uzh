@@ -35,10 +35,12 @@ const DOCUMENTATION_LINK_CLASS = 'driver-popover-doc-link'
  * - The app must import `driver.js/dist/driver.css` into a cascade layer; see
  *   the file header.
  *
- * Only tokens that all three apps define are used — `popover`, `foreground`,
- * `muted-foreground`, `border`, `primary`, `primary-foreground` and `accent`.
- * Their values differ per app on purpose: the accent is UZH blue in the chat
- * and the neutral design-system primary in the lecturer and student apps.
+ * Only tokens that all three apps define are used — `popover`,
+ * `popover-foreground`, `foreground`, `muted-foreground`, `border`, `accent`
+ * and the `primary-100` / `primary-80` brand pair. The brand pair, not the
+ * shadcn `primary` token: `primary` resolves to near-black in the lecturer and
+ * student apps, so a call to action built on it would come out black in two of
+ * the three apps and UZH blue in the third.
  */
 export const TOUR_POPOVER_CLASS = `
   font-sans max-w-sm rounded-lg border border-border bg-popover p-5
@@ -55,7 +57,7 @@ export const TOUR_POPOVER_CLASS = `
   [&_.driver-popover-doc-link]:block
   [&_.driver-popover-doc-link]:text-sm
   [&_.driver-popover-doc-link]:font-medium
-  [&_.driver-popover-doc-link]:text-primary
+  [&_.driver-popover-doc-link]:text-primary-100
   [&_.driver-popover-doc-link]:underline
   [&_.driver-popover-doc-link]:underline-offset-2
   [&_.driver-popover-footer]:mt-5
@@ -66,13 +68,13 @@ export const TOUR_POPOVER_CLASS = `
   [&_.driver-popover-navigation-btns_button]:ml-0
   [&_.driver-popover-next-btn]:rounded-md
   [&_.driver-popover-next-btn]:border-transparent
-  [&_.driver-popover-next-btn]:bg-primary
+  [&_.driver-popover-next-btn]:bg-primary-100
   [&_.driver-popover-next-btn]:px-3
   [&_.driver-popover-next-btn]:py-1.5
   [&_.driver-popover-next-btn]:text-sm
   [&_.driver-popover-next-btn]:font-semibold
-  [&_.driver-popover-next-btn]:text-primary-foreground
-  [&_.driver-popover-next-btn:hover]:bg-primary/90
+  [&_.driver-popover-next-btn]:text-white
+  [&_.driver-popover-next-btn:hover]:bg-primary-80
   [&_.driver-popover-prev-btn]:rounded-md
   [&_.driver-popover-prev-btn]:border
   [&_.driver-popover-prev-btn]:border-border
