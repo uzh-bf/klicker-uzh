@@ -1,30 +1,30 @@
 import { useMutation, useQuery } from '@apollo/client'
 import {
-  CaseStudyCaseResponse,
-  ElementStack as ElementStackType,
+  type CaseStudyCaseResponse,
+  type ElementStack as ElementStackType,
   ElementType,
   FlashcardCorrectness,
   FlashcardCorrectnessType,
   GetPreviousStackEvaluationDocument,
   RespondToElementStackDocument,
-  StackFeedbackStatus,
+  type StackFeedbackStatus,
 } from '@klicker-uzh/graphql/dist/ops'
-import StudentElement, {
-  CaseStudyStudentResponseType,
-  StackStudentResponseType,
-} from '@klicker-uzh/shared-components/src/StudentElement'
 import DynamicMarkdown from '@klicker-uzh/shared-components/src/evaluation/DynamicMarkdown'
 import useStudentResponse from '@klicker-uzh/shared-components/src/hooks/useStudentResponse'
-import { ChoicesResponse } from '@klicker-uzh/types'
+import StudentElement, {
+  type CaseStudyStudentResponseType,
+  type StackStudentResponseType,
+} from '@klicker-uzh/shared-components/src/StudentElement'
+import type { ChoicesResponse } from '@klicker-uzh/types'
 import { useLocalStorage } from '@uidotdev/usehooks'
 import { Button, H2, UserNotification } from '@uzh-bf/design-system'
 import { useTranslations } from 'next-intl'
-import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import useComponentVisibleCounter from '../hooks/useComponentVisibleCounter'
 import useStackElementFeedbacks from '../hooks/useStackElementFeedbacks'
 import Bookmark from './Bookmark'
-import InstanceHeader from './InstanceHeader'
 import type { EmbedQuizNavigationState } from './embed'
+import InstanceHeader from './InstanceHeader'
 
 // Choices render their explanation inline. Other element types render their
 // solutions in the evaluation panel, so focused feedback must show that panel.
@@ -88,19 +88,12 @@ function ElementStack({
   useComponentVisibleCounter({ timeRef })
 
   const embeddedButtonClass = embedded ? 'shadow-lg' : 'float-right mt-4'
-  const hostActionRef = useRef<HTMLDivElement>(null)
+  const hostAdvanceActionRef = useRef<(() => void) | null>(null)
   const lastHandledHostAdvanceRequest = useRef(hostAdvanceRequest)
   const wrapEmbedded = (node: ReactNode) =>
-    embedded ? (
-      <div
-        ref={hostActionRef}
-        className={
-          hostNavigation ? 'hidden' : 'sticky bottom-4 z-50 flex justify-end'
-        }
-      >
-        {node}
-      </div>
-    ) : (
+    embedded && !hostNavigation ? (
+      <div className="sticky bottom-4 z-50 flex justify-end">{node}</div>
+    ) : embedded ? null : (
       node
     )
 
@@ -170,22 +163,6 @@ function ElementStack({
     if (!hostNavigation) return
     onHostNavigationStateChange?.(hostNavigationState)
   }, [hostNavigation, hostNavigationState, onHostNavigationStateChange])
-
-  useEffect(() => {
-    if (!hostNavigation) {
-      lastHandledHostAdvanceRequest.current = hostAdvanceRequest
-      return
-    }
-
-    if (lastHandledHostAdvanceRequest.current === hostAdvanceRequest) return
-    lastHandledHostAdvanceRequest.current = hostAdvanceRequest
-
-    if (!hostNavigationState.canAdvance) return
-
-    const actionButton = hostActionRef.current?.querySelector('button')
-    if (!actionButton || actionButton.disabled) return
-    actionButton.click()
-  }, [hostAdvanceRequest, hostNavigation, hostNavigationState.canAdvance])
 
   // initialize student responses
   useStudentResponse({
@@ -376,6 +353,218 @@ function ElementStack({
     previewOnly,
   ])
 
+  const handleContinue = () => {
+    setStudentResponse({})
+
+    if (currentStep === totalSteps) {
+      onAllStacksCompletion()
+    } else {
+      handleNextElement()
+    }
+  }
+
+  const handleMarkAsRead = () => {
+    // update the read status of all content elements in studentResponse to true
+    setStudentResponse((currentResponses) =>
+      Object.fromEntries(
+        Object.entries(currentResponses).map(([instanceId, value]) => [
+          instanceId,
+          value.type === ElementType.Content
+            ? { ...value, response: true }
+            : value,
+        ])
+      )
+    )
+  }
+
+  const handleSubmit = async () => {
+    const result = await respondToElementStack({
+      variables: {
+        isOwner: previewOnly,
+        stackId: stack.id,
+        courseId: courseId,
+        stackAnswerTime: timeRef.current,
+        responses: Object.entries(studentResponse).map(
+          ([instanceId, value]) => {
+            if (value.type === ElementType.Flashcard) {
+              let responseValue: FlashcardCorrectnessType
+              if (value.response === FlashcardCorrectness.Correct) {
+                responseValue = FlashcardCorrectnessType.Correct
+              } else if (value.response === FlashcardCorrectness.Partial) {
+                responseValue = FlashcardCorrectnessType.Partial
+              } else {
+                responseValue = FlashcardCorrectnessType.Incorrect
+              }
+
+              return {
+                instanceId: parseInt(instanceId),
+                type: ElementType.Flashcard,
+                flashcardResponse: responseValue,
+              }
+            } else if (value.type === ElementType.Content) {
+              return {
+                instanceId: parseInt(instanceId),
+                type: ElementType.Content,
+                contentReponse: value.response,
+              }
+            } else if (
+              value.type === ElementType.Sc ||
+              value.type === ElementType.Mc ||
+              value.type === ElementType.Kprim
+            ) {
+              // convert the solution objects into integer lists
+              const responseList: ChoicesResponse[] = Object.entries(
+                value.response!
+              )
+                .filter(([, value]) => value)
+                .map(([key, value]) => ({
+                  ix: parseInt(key),
+                  selected: value ?? false,
+                }))
+
+              return {
+                instanceId: parseInt(instanceId),
+                type: value.type,
+                choicesResponse: responseList,
+              }
+            }
+            // submission logic for numerical questions
+            else if (value.type === ElementType.Numerical) {
+              return {
+                instanceId: parseInt(instanceId),
+                type: ElementType.Numerical,
+                numericalResponse: parseFloat(value.response!),
+              }
+            } else if (value.type === ElementType.FreeText) {
+              return {
+                instanceId: parseInt(instanceId),
+                type: ElementType.FreeText,
+                freeTextResponse: value.response,
+              }
+            } else if (value.type === ElementType.Selection) {
+              return {
+                instanceId: parseInt(instanceId),
+                type: ElementType.Selection,
+                selectionResponse: Object.values(value.response!).map(
+                  (entry) =>
+                    typeof entry === 'undefined' || entry === null ? -1 : entry
+                ),
+              }
+            } else if (value.type === ElementType.CaseStudy) {
+              const caseStudyResponse: CaseStudyCaseResponse[] = Object.entries(
+                value.response!
+              ).map(([caseId, caseResponse]) => {
+                return {
+                  caseId,
+                  itemResponses: Object.entries(caseResponse).map(
+                    ([itemId, itemResponse]) => {
+                      return {
+                        itemId: parseInt(itemId),
+                        criterionResponses: Object.entries(
+                          itemResponse
+                        ).flatMap(([criterionId, criterionResponse]) => {
+                          if (typeof criterionResponse === 'undefined') {
+                            return []
+                          }
+
+                          return {
+                            criterionId: criterionId,
+                            response: criterionResponse,
+                          }
+                        }),
+                      }
+                    }
+                  ),
+                }
+              })
+
+              return {
+                instanceId: parseInt(instanceId),
+                type: value.type,
+                caseStudyResponse,
+              }
+            } else {
+              return {
+                instanceId: parseInt(instanceId),
+                type: value.type,
+                response: value.response,
+              }
+            }
+          }
+        ),
+      },
+    })
+
+    if (!result.data || !result.data?.respondToElementStack) {
+      console.error('Error submitting response')
+      return
+    }
+
+    setStackStorage(
+      Object.entries(studentResponse).reduce<StackStudentResponseType>(
+        (acc, [key, value]) => {
+          return {
+            ...acc,
+            [key]: {
+              ...value,
+              evaluation: result.data!.respondToElementStack!.evaluations?.find(
+                (evaluation) => evaluation.instanceId === parseInt(key)
+              ),
+            },
+          }
+        },
+        {}
+      )
+    )
+
+    // set status and score according to returned correctness
+    const grading = result.data?.respondToElementStack
+    setStudentResponse({})
+
+    if (typeof setStepStatus !== 'undefined') {
+      setStepStatus({
+        status: grading.status,
+        score: grading.score,
+      })
+    }
+
+    // continue if stack only included content elements and/or flashcards, otherwise show evaluation
+    if (
+      Object.values(studentResponse).every(
+        (response) =>
+          response.type === ElementType.Content ||
+          response.type === ElementType.Flashcard
+      )
+    ) {
+      if (currentStep === totalSteps) {
+        onAllStacksCompletion()
+      } else {
+        handleNextElement()
+      }
+    }
+  }
+
+  hostAdvanceActionRef.current =
+    typeof stackStorage !== 'undefined' && !showMarkAsRead
+      ? handleContinue
+      : showMarkAsRead
+        ? handleMarkAsRead
+        : handleSubmit
+
+  useEffect(() => {
+    if (!hostNavigation) {
+      lastHandledHostAdvanceRequest.current = hostAdvanceRequest
+      return
+    }
+
+    if (lastHandledHostAdvanceRequest.current === hostAdvanceRequest) return
+    lastHandledHostAdvanceRequest.current = hostAdvanceRequest
+
+    if (!hostNavigationState.canAdvance) return
+
+    hostAdvanceActionRef.current?.()
+  }, [hostAdvanceRequest, hostNavigation, hostNavigationState.canAdvance])
+
   return (
     <div className={hostNavigation ? 'pb-0' : 'pb-12'}>
       <div className="w-full">
@@ -481,15 +670,7 @@ function ElementStack({
       {typeof stackStorage !== 'undefined' && !showMarkAsRead
         ? wrapEmbedded(
             <Button
-              onClick={() => {
-                setStudentResponse({})
-
-                if (currentStep === totalSteps) {
-                  onAllStacksCompletion()
-                } else {
-                  handleNextElement()
-                }
-              }}
+              onClick={handleContinue}
               className={{
                 root: embeddedButtonClass,
               }}
@@ -512,29 +693,7 @@ function ElementStack({
               root: embeddedButtonClass,
             }}
             disabled={responsesInvalid}
-            onClick={() => {
-              // update the read status of all content elements in studentResponse to true
-              setStudentResponse((currentResponses) =>
-                Object.entries(
-                  currentResponses
-                ).reduce<StackStudentResponseType>(
-                  (acc, [instanceId, value]) => {
-                    if (value.type === ElementType.Content) {
-                      return {
-                        ...acc,
-                        [instanceId]: {
-                          ...value,
-                          response: true,
-                        },
-                      }
-                    } else {
-                      return { ...acc, [instanceId]: value }
-                    }
-                  },
-                  {}
-                )
-              )
-            }}
+            onClick={handleMarkAsRead}
             data={{ cy: 'practice-quiz-mark-all-as-read' }}
           >
             <Button.Label>{t('pwa.practiceQuiz.markAllAsRead')}</Button.Label>
@@ -551,183 +710,7 @@ function ElementStack({
             className={{
               root: embeddedButtonClass,
             }}
-            onClick={async () => {
-              const result = await respondToElementStack({
-                variables: {
-                  isOwner: previewOnly,
-                  stackId: stack.id,
-                  courseId: courseId,
-                  stackAnswerTime: timeRef.current,
-                  responses: Object.entries(studentResponse).map(
-                    ([instanceId, value]) => {
-                      if (value.type === ElementType.Flashcard) {
-                        let responseValue: FlashcardCorrectnessType
-                        if (value.response === FlashcardCorrectness.Correct) {
-                          responseValue = FlashcardCorrectnessType.Correct
-                        } else if (
-                          value.response === FlashcardCorrectness.Partial
-                        ) {
-                          responseValue = FlashcardCorrectnessType.Partial
-                        } else {
-                          responseValue = FlashcardCorrectnessType.Incorrect
-                        }
-
-                        return {
-                          instanceId: parseInt(instanceId),
-                          type: ElementType.Flashcard,
-                          flashcardResponse: responseValue,
-                        }
-                      } else if (value.type === ElementType.Content) {
-                        return {
-                          instanceId: parseInt(instanceId),
-                          type: ElementType.Content,
-                          contentReponse: value.response,
-                        }
-                      } else if (
-                        value.type === ElementType.Sc ||
-                        value.type === ElementType.Mc ||
-                        value.type === ElementType.Kprim
-                      ) {
-                        // convert the solution objects into integer lists
-                        const responseList: ChoicesResponse[] = Object.entries(
-                          value.response!
-                        )
-                          .filter(([, value]) => value)
-                          .map(([key, value]) => ({
-                            ix: parseInt(key),
-                            selected: value ?? false,
-                          }))
-
-                        return {
-                          instanceId: parseInt(instanceId),
-                          type: value.type,
-                          choicesResponse: responseList,
-                        }
-                      }
-                      // submission logic for numerical questions
-                      else if (value.type === ElementType.Numerical) {
-                        return {
-                          instanceId: parseInt(instanceId),
-                          type: ElementType.Numerical,
-                          numericalResponse: parseFloat(value.response!),
-                        }
-                      } else if (value.type === ElementType.FreeText) {
-                        return {
-                          instanceId: parseInt(instanceId),
-                          type: ElementType.FreeText,
-                          freeTextResponse: value.response,
-                        }
-                      } else if (value.type === ElementType.Selection) {
-                        return {
-                          instanceId: parseInt(instanceId),
-                          type: ElementType.Selection,
-                          selectionResponse: Object.values(value.response!).map(
-                            (entry) =>
-                              typeof entry === 'undefined' || entry === null
-                                ? -1
-                                : entry
-                          ),
-                        }
-                      } else if (value.type === ElementType.CaseStudy) {
-                        const caseStudyResponse: CaseStudyCaseResponse[] =
-                          Object.entries(value.response!).map(
-                            ([caseId, caseResponse]) => {
-                              return {
-                                caseId,
-                                itemResponses: Object.entries(caseResponse).map(
-                                  ([itemId, itemResponse]) => {
-                                    return {
-                                      itemId: parseInt(itemId),
-                                      criterionResponses: Object.entries(
-                                        itemResponse
-                                      ).flatMap(
-                                        ([criterionId, criterionResponse]) => {
-                                          if (
-                                            typeof criterionResponse ===
-                                            'undefined'
-                                          ) {
-                                            return []
-                                          }
-
-                                          return {
-                                            criterionId: criterionId,
-                                            response: criterionResponse,
-                                          }
-                                        }
-                                      ),
-                                    }
-                                  }
-                                ),
-                              }
-                            }
-                          )
-
-                        return {
-                          instanceId: parseInt(instanceId),
-                          type: value.type,
-                          caseStudyResponse,
-                        }
-                      } else {
-                        return {
-                          instanceId: parseInt(instanceId),
-                          type: value.type,
-                          response: value.response,
-                        }
-                      }
-                    }
-                  ),
-                },
-              })
-
-              if (!result.data || !result.data?.respondToElementStack) {
-                console.error('Error submitting response')
-                return
-              }
-
-              setStackStorage(
-                Object.entries(
-                  studentResponse
-                ).reduce<StackStudentResponseType>((acc, [key, value]) => {
-                  return {
-                    ...acc,
-                    [key]: {
-                      ...value,
-                      evaluation:
-                        result.data!.respondToElementStack!.evaluations?.find(
-                          (evaluation) =>
-                            evaluation.instanceId === parseInt(key)
-                        ),
-                    },
-                  }
-                }, {})
-              )
-
-              // set status and score according to returned correctness
-              const grading = result.data?.respondToElementStack
-              setStudentResponse({})
-
-              if (typeof setStepStatus !== 'undefined') {
-                setStepStatus({
-                  status: grading.status,
-                  score: grading.score,
-                })
-              }
-
-              // continue if stack only included content elements and/or flashcards, otherwise show evaluation
-              if (
-                Object.values(studentResponse).every(
-                  (response) =>
-                    response.type === ElementType.Content ||
-                    response.type === ElementType.Flashcard
-                )
-              ) {
-                if (currentStep === totalSteps) {
-                  onAllStacksCompletion()
-                } else {
-                  handleNextElement()
-                }
-              }
-            }}
+            onClick={handleSubmit}
             data={{ cy: 'student-stack-submit' }}
           >
             <Button.Label>{t('shared.generic.submit')}</Button.Label>
