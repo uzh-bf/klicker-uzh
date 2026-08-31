@@ -43,10 +43,12 @@ export async function getPracticeQuizData(
     },
     include: {
       course: true,
-      permissions: {
-        where: { userId: ctx.user?.sub ?? '' },
-        select: { id: true },
-      },
+      permissions: ctx.user?.sub
+        ? {
+            where: { userId: ctx.user.sub },
+            select: { id: true },
+          }
+        : false,
       stacks: {
         include: {
           elements: {
@@ -70,7 +72,7 @@ export async function getPracticeQuizData(
       : false
   const isAuthoringUser =
     ctx.user?.role === DB.UserRole.USER || ctx.user?.role === DB.UserRole.ADMIN
-  const canViewAuthoringData = isOwner || quiz.permissions.length > 0
+  const canViewAuthoringData = isOwner || (quiz.permissions?.length ?? 0) > 0
   const visibleQuiz =
     isAuthoringUser && !canViewAuthoringData
       ? {

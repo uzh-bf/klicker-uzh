@@ -17,6 +17,7 @@ import {
   it,
   vi,
 } from 'vitest'
+import type { Context } from '../src/lib/context.js'
 import {
   freeTextExplanationForViewer,
   freeTextSolutionsForViewer,
@@ -283,6 +284,20 @@ describe('semantic free-text authoring', () => {
     expect(ownerData.options.solutions).toEqual([
       'Diversification reduces idiosyncratic risk.',
     ])
+  })
+
+  it('loads published practice quizzes for anonymous viewers', async () => {
+    const anonymousContext = {
+      ...lecturerContext(fixture.lecturer.id),
+      user: undefined,
+    } as unknown as Context
+
+    const view = await getPracticeQuizData(
+      { id: fixture.practiceQuiz.id },
+      anonymousContext
+    )
+
+    expect(view?.id).toBe(fixture.practiceQuiz.id)
   })
 
   it('withholds semantic authoring data from unrelated lecturers in microlearning', async () => {
