@@ -113,5 +113,9 @@ Neither PR may merge under this plan.
   passed with no findings. The simplifier's two recovery reductions were
   declined because they would weaken exact outcome-unknown evidence for a
   production configuration transaction.
-- [ ] S1c sealed proof entry point implemented and reviewed.
+- [x] S1c sealed proof entry point implemented through `fb6a6166fe`.
+  Focused verification passed (29 Vitest tests, ESLint, Chat TypeScript,
+  Prettier, staged secret scan, and diff check). Review-confirmed corrections
+  fail closed when a child claims writes and exercise the real SQLite duplicate
+  guard. The shared test-support API remains compatible with active STG branches.
 - [ ] Canonical and maintenance PRs published with terminal exact-head CI.
